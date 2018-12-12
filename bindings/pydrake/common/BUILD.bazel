@@ -190,6 +190,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "drake_variant_pybind",
+    hdrs = ["drake_variant_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
     name = "type_safe_index_pybind",
     hdrs = ["type_safe_index_pybind.h"],
     declare_installed_headers = 0,
@@ -333,7 +340,10 @@ drake_py_unittest(
 
 drake_pybind_cc_googletest(
     name = "cpp_param_pybind_test",
-    cc_deps = [":cpp_param_pybind"],
+    cc_deps = [
+        ":cpp_param_pybind",
+        "//bindings/pydrake:test_util_pybind",
+    ],
     py_deps = [":cpp_param_py"],
 )
 
@@ -348,10 +358,19 @@ drake_pybind_cc_googletest(
     name = "cpp_template_pybind_test",
     cc_deps = [
         ":cpp_template_pybind",
+        "//bindings/pydrake:test_util_pybind",
         "//common:nice_type_name",
         "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
+)
+
+drake_pybind_cc_googletest(
+    name = "drake_variant_pybind_test",
+    cc_deps = [
+        ":drake_variant_pybind",
+        "//bindings/pydrake:test_util_pybind",
+    ],
 )
 
 drake_pybind_library(
@@ -377,6 +396,7 @@ drake_pybind_cc_googletest(
     name = "type_safe_index_pybind_test",
     cc_deps = [
         ":type_safe_index_pybind",
+        "//bindings/pydrake:test_util_pybind",
         "//common:nice_type_name",
     ],
 )
@@ -419,4 +439,8 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    enable_clang_format_lint = False,
+)

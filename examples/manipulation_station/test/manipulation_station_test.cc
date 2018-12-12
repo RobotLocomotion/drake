@@ -5,7 +5,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -20,12 +21,13 @@ using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
-  station.AddCupboard();
-  multibody::parsing::AddModelFromSdfFile(
+  station.SetupDefaultStation();
+  multibody::Parser parser(&station.get_mutable_multibody_plant(),
+                           &station.get_mutable_scene_graph());
+  parser.AddModelFromFile(
       FindResourceOrThrow("drake/examples/manipulation_station/models"
                           "/061_foam_brick.sdf"),
-      "object", &station.get_mutable_multibody_plant(),
-      &station.get_mutable_scene_graph());
+      "object");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
@@ -109,6 +111,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
 GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   const double kTimeStep = 0.002;
   ManipulationStation<double> station(kTimeStep);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -116,18 +119,19 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   // Expect state from the velocity interpolators in the iiwa and the wsg and
   // from the multibody state of the plant.
   EXPECT_EQ(context->get_num_discrete_state_groups(), 3);
-
-  // The tests below expect desired_state_from_position to be the second
-  // state.  Verify this by checking the sizes.
-  const int plant_index = 0, state_from_position_index = 1;
-  EXPECT_GT(context->get_discrete_state(plant_index).size(),
-            7);  // iiwa+wsg pos+vel.
-  const int plant_state_size = context->get_discrete_state(plant_index).size();
-  EXPECT_EQ(context->get_discrete_state(state_from_position_index).size(), 7);
-
   // Expect continuous state from the integral term in the PID from the
   // inverse dynamics controller.
   EXPECT_EQ(context->get_continuous_state().size(), 7);
+
+  const auto& plant = station.get_multibody_plant();
+  const auto& position_to_state = dynamic_cast<
+      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
+      station.GetSubsystemByName("desired_state_from_position"));
+
+  auto& plant_context =
+      station.GetMutableSubsystemContext(plant, context.get());
+  auto& position_to_state_context =
+      station.GetMutableSubsystemContext(position_to_state, context.get());
 
   const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.43, 0.7);
   context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
@@ -139,21 +143,18 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
                         Vector1d(0.05));
   context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
                         Vector1d(40));
-  context->get_mutable_discrete_state(plant_index).SetZero();
-  context->get_mutable_discrete_state(state_from_position_index).SetZero();
+  plant_context.get_mutable_discrete_state_vector().SetZero();
+  position_to_state.set_initial_position(&position_to_state_context,
+                                         VectorXd::Zero(7));
 
   auto next_state = station.AllocateDiscreteVariables();
   station.CalcDiscreteVariableUpdates(*context, next_state.get());
 
-  EXPECT_TRUE(CompareMatrices(
-      next_state->get_vector(state_from_position_index).get_value(),
-      iiwa_position));
-
   // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
   // by setting the right side to zero and confirming that vdot ≈ 0.
-  const auto& plant = station.get_multibody_plant();
+
   // Make up some state (with zeros for non-iiwa states).
-  VectorXd arbitrary_plant_state = VectorXd::Zero(plant_state_size);
+  VectorXd arbitrary_plant_state = VectorXd::Zero(plant.num_multibody_states());
   const auto& base_joint =
       plant.GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");
   const int iiwa_position_start = base_joint.position_start();
@@ -163,18 +164,17 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
       VectorXd::LinSpaced(7, 0.735, 0.983);
   arbitrary_plant_state.segment<7>(iiwa_velocity_start) =
       VectorXd::LinSpaced(7, -1.23, 0.456);
-  context->get_mutable_discrete_state(plant_index)
-      .SetFromVector(arbitrary_plant_state);
+  plant_context.get_mutable_discrete_state_vector().SetFromVector(
+      arbitrary_plant_state);
 
   // Set desired position to actual position and the desired velocity to the
   // actual velocity.
   context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
                         arbitrary_plant_state.segment<7>(iiwa_position_start));
-  // Last iiwa_position should have been iiwa_position - time_step*velocity.
-  context->get_mutable_discrete_state(state_from_position_index)
-      .SetFromVector(arbitrary_plant_state.segment<7>(iiwa_position_start) -
-                     kTimeStep *
-                         arbitrary_plant_state.segment<7>(iiwa_velocity_start));
+  position_to_state.set_initial_state(
+      &position_to_state_context,
+      arbitrary_plant_state.segment<7>(iiwa_position_start),
+      arbitrary_plant_state.segment<7>(iiwa_velocity_start));
   // Set integral terms to zero.
   context->get_mutable_continuous_state_vector().SetZero();
 
@@ -192,29 +192,22 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   station.CalcDiscreteVariableUpdates(*context, next_state.get());
 
   // Check that vdot ≈ 0 by checking that next velocity ≈ velocity.
-  VectorXd vddot = (next_state->get_vector(plant_index)
-                        .get_value()
-                        .segment<7>(iiwa_velocity_start) -
-                    arbitrary_plant_state.segment<7>(iiwa_velocity_start)) /
-                   kTimeStep;
+  VectorXd next_velocity =
+      station.GetSubsystemDiscreteValues(plant, *next_state)
+          .get_vector()
+          .get_value()
+          .segment<7>(iiwa_velocity_start);
 
-  // Note: This tolerance could be 2e-12 if the wsg was not attached.
-  // After significant inspection, RussTedrake and amcastro-TRI believe that
-  // the remaining source of error is due entirely to the lack of
-  // compensation for the dynamics of the fingers.  We verified that using
-  // the lumped gripper model "exactly" cancels out the ID torques on the arm
-  // joints. However, and especially if velocities are non-zero, nothing
-  // prevents the fingers from sliding off the gripper's body. That is, ID is
-  // not enough to keep the arm static. Even if by small amount, the fingers
-  // will attempt to move, and since all dofs in the arm are coupled, including
-  // those of the fingers, we see this error propagated into the other joints
-  // as well.
-  const double kTolerance = 0.05;  // rad/sec^2.
-  EXPECT_TRUE(CompareMatrices(vddot, VectorXd::Zero(7), kTolerance));
+  // Note: This tolerance could be much smaller if the wsg was not attached.
+  const double kTolerance = 1e-4;  // rad/sec.
+  EXPECT_TRUE(
+      CompareMatrices(arbitrary_plant_state.segment<7>(iiwa_velocity_start),
+                      next_velocity, kTolerance));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -238,6 +231,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -260,15 +254,16 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
 }
 
 GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
-  ManipulationStation<double> station1(0.002, IiwaCollisionModel::kNoCollision);
+  ManipulationStation<double> station1(0.002);
+  station1.SetupDefaultStation(IiwaCollisionModel::kNoCollision);
 
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
   const int num_collisions =
       station1.get_multibody_plant().num_collision_geometries();
 
-  ManipulationStation<double> station2(0.002,
-                                       IiwaCollisionModel::kBoxCollision);
+  ManipulationStation<double> station2(0.002);
+  station2.SetupDefaultStation(IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
   EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
@@ -277,6 +272,86 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   // The controlled model does not register with a scene graph, so has zero
   // collisions.
   EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
+}
+
+// Check that making many stations does not exhaust resources.
+GTEST_TEST(ManipulationStationTest, MultipleInstanceTest) {
+  for (int i = 0; i < 20; ++i) {
+    ManipulationStation<double> station;
+    station.SetupDefaultStation();
+    station.Finalize();
+  }
+}
+
+GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
+  {
+    // Test default setup.
+    std::map<std::string, math::RigidTransform<double>> default_poses;
+
+    auto set_default_camera_poses = [&default_poses]() {
+      default_poses.emplace(
+          "0", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(1.69101, 0.176488, 0.432721),
+                   Eigen::Vector3d(-0.233066, -0.451461, 0.466761)));
+
+      default_poses.emplace(
+          "1", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(-1.68974, 0.20245, -0.706783),
+                   Eigen::Vector3d(-0.197236, 0.468471, 0.436499)));
+
+      default_poses.emplace(
+          "2", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(0.0438918, 1.03776, -3.13612),
+                   Eigen::Vector3d(0.786905, -0.0284378, 1.04287)));
+    };
+
+    ManipulationStation<double> dut;
+    dut.SetupDefaultStation();
+
+    std::map<std::string, math::RigidTransform<double>> camera_poses =
+        dut.GetStaticCameraPosesInWorld();
+    set_default_camera_poses();
+
+    EXPECT_EQ(camera_poses.size(), default_poses.size());
+
+    for (const auto& pair : camera_poses) {
+      auto found = default_poses.find(pair.first);
+      EXPECT_TRUE(found != default_poses.end());
+      EXPECT_TRUE(found->second.IsExactlyEqualTo(pair.second));
+    }
+  }
+
+  {
+    // Test registration to custom frames.
+    ManipulationStation<double> dut;
+    multibody::MultibodyPlant<double>& plant =
+        dut.get_mutable_multibody_plant();
+
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+
+    math::RigidTransform<double> X_WF0(Eigen::Vector3d(0, 0, 0.2));
+    math::RigidTransform<double> X_F0C0(Eigen::Vector3d(0.3, 0.2, 0.0));
+    const auto& frame0 =
+        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "frame0", plant.world_frame(), X_WF0.GetAsIsometry3()));
+    dut.RegisterRgbdCamera("camera0", frame0, X_F0C0, camera_properties);
+
+    math::RigidTransform<double> X_F0F1(Eigen::Vector3d(0, -0.1, 0.2));
+    math::RigidTransform<double> X_F1C1(Eigen::Vector3d(-0.2, 0.2, 0.33));
+    const auto& frame1 =
+        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "frame1", frame0, X_F0F1.GetAsIsometry3()));
+    dut.RegisterRgbdCamera("camera1", frame1, X_F1C1, camera_properties);
+
+    std::map<std::string, math::RigidTransform<double>> camera_poses =
+        dut.GetStaticCameraPosesInWorld();
+
+    EXPECT_EQ(camera_poses.size(), 2);
+    EXPECT_TRUE(camera_poses.at("camera0").IsExactlyEqualTo(X_WF0 * X_F0C0));
+    EXPECT_TRUE(
+        camera_poses.at("camera1").IsExactlyEqualTo(X_WF0 * X_F0F1 * X_F1C1));
+  }
 }
 
 }  // namespace

@@ -11,11 +11,6 @@ Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 
-# When a function signature's parameters or a function call's arguments need to
-# wrap onto another line, indent by four spaces -- do not whitespace castle all
-# the way over to the open-paren.
-AlignAfterOpenBracket: DontAlign
-
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.

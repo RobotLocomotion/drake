@@ -6,7 +6,7 @@
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -36,12 +36,13 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->AddCupboard();
-  auto object = multibody::parsing::AddModelFromSdfFile(
+  station->SetupDefaultStation();
+  multibody::Parser parser(&station->get_mutable_multibody_plant(),
+                           &station->get_mutable_scene_graph());
+  auto object = parser.AddModelFromFile(
       FindResourceOrThrow(
           "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-      "object", &station->get_mutable_multibody_plant(),
-      &station->get_mutable_scene_graph());
+      "object");
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
@@ -109,7 +110,6 @@ int do_main(int argc, char* argv[]) {
                                            &station_context));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.Initialize();
   simulator.StepTo(FLAGS_duration);
 
   // Check that the arm is (very roughly) in the commanded position.

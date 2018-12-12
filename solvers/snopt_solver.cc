@@ -26,6 +26,113 @@
 // infeasible constraints, ...)
 // todo(sammy-tri) :  avoid all dynamic allocation
 
+
+namespace {
+
+// This struct is a helper to bridge the gap between SNOPT's 7.4 and 7.6 APIs.
+// Its specializations provide static methods that express the SNOPT 7.6 APIs.
+// When compiled using SNOPT 7.6, these static methods are mere aliases to the
+// underlying SNOPT 7.6 functions.  When compiled using SNOPT 7.4, these static
+// methods rewrite the arguments and call the older 7.4 APIs.
+template <bool is_snopt_76>
+struct SnoptImpl {};
+
+// This is the SNOPT 7.6 implementation.  It just aliases the function pointers.
+template<>
+struct SnoptImpl<true> {
+  static constexpr auto snend = ::f_snend;
+  static constexpr auto sninit = ::f_sninit;
+  static constexpr auto snkera = ::f_snkera;
+  static constexpr auto snmema = ::f_snmema;
+  static constexpr auto snseti = ::f_snseti;
+  static constexpr auto snsetr = ::f_snsetr;
+};
+
+// This is the SNOPT 7.4 implementation.
+//
+// It re-spells the 7.6-style arguments into 7.4-style calls, with the most
+// common change being that int and double are passed by-value in 7.6 and
+// by-mutable-pointer in 7.4.
+//
+// Below, we use `Int* iw` as a template argument (instead of `int* iw`), so
+// that SFINAE ignores the function bodies when the user has SNOPT 7.6.
+template<>
+struct SnoptImpl<false> {
+  static const int kLegacyPrintDefault = 9;
+  template <typename Int>
+  static void snend(
+      Int* iw, int leniw, double* rw, int lenrw) {
+    Int iprint = kLegacyPrintDefault;
+    ::f_snend(&iprint);
+  }
+  template <typename Int>
+  static void sninit(
+      const char* name, int len, int summOn,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    Int iprint = kLegacyPrintDefault;
+    ::f_sninit(name, &len, &iprint, &summOn, iw, &leniw, rw, &lenrw);
+  }
+  template <typename Int>
+  static void snkera(
+      int start, const char* name,
+      int nf, int n, double objadd, int objrow,
+      snFunA usrfun, isnLog snLog, isnLog2 snLog2,
+      isqLog sqLog, isnSTOP snSTOP,
+      int* iAfun, int* jAvar, int neA, double* A,
+      int* iGfun, int* jGvar, int neG,
+      double* xlow, double* xupp,
+      double* flow, double* fupp,
+      double* x, int* xstate, double* xmul,
+      double* f, int* fstate, double* fmul,
+      int* inform, int* ns, int* ninf, double* sinf,
+      int* miniw, int* minrw,
+      int* iu, int leniu, double* ru, int lenru,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    ::f_snkera(
+         &start, name,
+         &nf, &n, &objadd, &objrow,
+         usrfun, snLog, snLog2, sqLog, snSTOP,
+         iAfun, jAvar, &neA, A,
+         iGfun, jGvar, &neG,
+         xlow, xupp,
+         flow, fupp,
+         x, xstate, xmul,
+         f, fstate, fmul,
+         inform, ns, ninf, sinf,
+         miniw,  minrw,
+         iu, &leniu,
+         ru, &lenru,
+         iw, &leniw,
+         rw, &lenrw);
+  }
+  template <typename Int>
+  static void snmema(
+      int* info, int nf, int n, int neA, int neG, int* miniw, int* minrw,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    ::f_snmema(info, &nf, &n, &neA, &neG, miniw, minrw, iw, &leniw, rw, &lenrw);
+  }
+  template <typename Int>
+  static void snseti(
+      const char* buffer, int len, int iopt, int* errors,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    ::f_snseti(buffer, &len, &iopt, errors, iw, &leniw, rw, &lenrw);
+  }
+  template <typename Int>
+  static void snsetr(
+      const char* buffer, int len, double rvalue, int* errors,
+      Int* iw, int leniw, double* rw, int lenrw) {
+    ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
+  }
+};
+
+// Choose the correct SnoptImpl specialization.
+void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
+const bool kIsSnopt76 =
+    std::is_same<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>::value;
+using Snopt = SnoptImpl<kIsSnopt76>;
+
+}  // namespace
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -505,16 +612,12 @@ void SolveWithGivenOptions(
     const std::unordered_map<std::string, double>& snopt_options_double,
     int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val) {
   DRAKE_ASSERT(x_val->rows() == prog.num_vars());
-  char problem_name[] = "drake_problem";
+  const char problem_name[] = "drake_problem";
   std::string print_file_name;
   const auto print_file_it = snopt_options_string.find("Print file");
   if (print_file_it != snopt_options_string.end()) {
     print_file_name = print_file_it->second;
   }
-  isnLog snopt_problem_snLog = NULL;
-  isnLog2 snopt_problem_snLog2 = NULL;
-  isqLog snopt_problem_sqLog = NULL;
-  isnSTOP snopt_problem_snSTOP = NULL;
   int snopt_problem_leniw = 500;
   int snopt_problem_lenrw = 500;
   int* snopt_problem_iw =
@@ -526,13 +629,10 @@ void SolveWithGivenOptions(
   int* snopt_problem_iu = NULL;
   double* snopt_problem_ru = NULL;
 
-  int iprint = 9;
-  int isumm = 0;
-  int print_file_name_len = print_file_name.length();
-  f_sninit(const_cast<char*>(print_file_name.c_str()),
-           &print_file_name_len /* print_file_len */, &iprint,
-           &isumm /* no summary */, snopt_problem_iw, &snopt_problem_leniw,
-           snopt_problem_rw, &snopt_problem_lenrw);
+  Snopt::sninit(
+      print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
+      snopt_problem_iw, snopt_problem_leniw,
+      snopt_problem_rw, snopt_problem_lenrw);
 
   const std::set<int> nonlinear_cost_gradient_indices =
       GetAllNonlinearCostNonzeroGradientIndices(prog);
@@ -691,19 +791,19 @@ void SolveWithGivenOptions(
 
   for (const auto& it : snopt_options_double) {
     int errors;
-    int option_len = it.first.length();
-    f_snsetr(const_cast<char*>(it.first.c_str()), &option_len,
-             const_cast<double*>(&(it.second)), &errors, snopt_problem_iw,
-             &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    Snopt::snsetr(
+        it.first.c_str(), it.first.length(), it.second, &errors,
+        snopt_problem_iw, snopt_problem_leniw,
+        snopt_problem_rw, snopt_problem_lenrw);
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
 
   for (const auto& it : snopt_options_int) {
     int errors;
-    int option_len = it.first.length();
-    f_snseti(const_cast<char*>(it.first.c_str()), &option_len,
-             const_cast<int*>(&(it.second)), &errors, snopt_problem_iw,
-             &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    Snopt::snseti(
+        it.first.c_str(), it.first.length(), it.second, &errors,
+        snopt_problem_iw, snopt_problem_leniw,
+        snopt_problem_rw, snopt_problem_lenrw);
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
 
@@ -714,21 +814,23 @@ void SolveWithGivenOptions(
   int nInf{0};
   double sInf{0.0};
 
-  // Reallocate int and real workspace
+  // Reallocate int and real workspace.
   int miniw, minrw;
-  f_snmema(snopt_status, &nF, &nx, &lenA, &lenG, &miniw, &minrw,
-           snopt_problem_iw, &snopt_problem_leniw, snopt_problem_rw,
-           &snopt_problem_lenrw);
+  Snopt::snmema(
+      snopt_status, nF, nx, lenA, lenG, &miniw, &minrw,
+      snopt_problem_iw, snopt_problem_leniw,
+      snopt_problem_rw, snopt_problem_lenrw);
+  // TODO(jwnimmer-tri) Check snopt_status for errors.
   if (miniw > snopt_problem_leniw) {
     snopt_problem_leniw = miniw;
     snopt_problem_iw = static_cast<int*>(
         realloc(snopt_problem_iw, sizeof(int) * snopt_problem_leniw));
     const std::string option = "Total int workspace";
     int errors;
-    int option_len = option.length();
-    f_snseti(const_cast<char*>(option.c_str()), &option_len,
-             &snopt_problem_leniw, &errors, snopt_problem_iw,
-             &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    Snopt::snseti(
+        option.c_str(), option.length(), snopt_problem_leniw, &errors,
+        snopt_problem_iw, snopt_problem_leniw,
+        snopt_problem_rw, snopt_problem_lenrw);
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   if (minrw > snopt_problem_lenrw) {
@@ -737,34 +839,39 @@ void SolveWithGivenOptions(
         realloc(snopt_problem_rw, sizeof(double) * snopt_problem_lenrw));
     const std::string option = "Total real workspace";
     int errors;
-    int option_len = option.length();
-    f_snseti(const_cast<char*>(option.c_str()), &option_len,
-             &snopt_problem_lenrw, &errors, snopt_problem_iw,
-             &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+    Snopt::snseti(
+        option.c_str(), option.length(), snopt_problem_lenrw, &errors,
+        snopt_problem_iw, snopt_problem_leniw,
+        snopt_problem_rw, snopt_problem_lenrw);
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   // Actual solve.
-  f_snkera(&Cold, problem_name, &nF, &nx, &ObjAdd, &ObjRow, snopt_userfun,
-           snopt_problem_snLog, snopt_problem_snLog2, snopt_problem_sqLog,
-           snopt_problem_snSTOP, iAfun.data(), jAvar.data(), &lenA, A.data(),
-           iGfun.data(), jGvar.data(), &lenG, xlow.data(), xupp.data(),
-           Flow.data(), Fupp.data(), x.data(), xstate.data(), xmul.data(),
-           F.data(), Fstate.data(), Fmul.data(), snopt_status, &nS, &nInf,
-           &sInf, &miniw, &minrw, snopt_problem_iu, &snopt_problem_leniu,
-           snopt_problem_ru, &snopt_problem_lenru, snopt_problem_iw,
-           &snopt_problem_leniw, snopt_problem_rw, &snopt_problem_lenrw);
+  Snopt::snkera(
+      Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
+      nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
+      nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
+      iAfun.data(), jAvar.data(), lenA, A.data(),
+      iGfun.data(), jGvar.data(), lenG,
+      xlow.data(), xupp.data(),
+      Flow.data(), Fupp.data(),
+      x.data(), xstate.data(), xmul.data(),
+      F.data(), Fstate.data(), Fmul.data(),
+      snopt_status, &nS, &nInf, &sInf,
+      &miniw, &minrw,
+      snopt_problem_iu, snopt_problem_leniu,
+      snopt_problem_ru, snopt_problem_lenru,
+      snopt_problem_iw, snopt_problem_leniw,
+      snopt_problem_rw, snopt_problem_lenrw);
   *x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
   *objective = F[0];
 
   // Frees internal memory associated with SNOPT
-  f_snend(&iprint);
+  Snopt::snend(
+      snopt_problem_iw, snopt_problem_leniw,
+      snopt_problem_rw, snopt_problem_lenrw);
   free(snopt_problem_iw);
   free(snopt_problem_rw);
   // Sets snopt problem parameters to null or empty.
-  snopt_problem_snLog = nullptr;
-  snopt_problem_snLog2 = nullptr;
-  snopt_problem_sqLog = nullptr;
-  snopt_problem_snSTOP = nullptr;
   snopt_problem_leniw = 0;
   snopt_problem_lenrw = 0;
   snopt_problem_iw = nullptr;
@@ -798,28 +905,45 @@ SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
 
 bool SnoptSolver::is_available() { return true; }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+void SnoptSolver::Solve(const MathematicalProgram& prog,
+                        const optional<Eigen::VectorXd>& initial_guess,
+                        const optional<SolverOptions>& solver_options,
+                        MathematicalProgramResult* result) const {
+  *result = {};
+
+  // Our function's arguments for initial_guess and solver_options take
+  // precedence over prog's values.
+  const Eigen::VectorXd& x_init =
+      initial_guess ? *initial_guess : prog.initial_guess();
+  SolverOptions merged_options =
+      solver_options ? *solver_options : SolverOptions();
+  merged_options.Merge(prog.solver_options());
+
+  // Call SNOPT.
   int snopt_status{0};
   double objective{0};
   Eigen::VectorXd x_val(prog.num_vars());
   SolveWithGivenOptions(
-      prog, prog.initial_guess(), prog.GetSolverOptionsStr(id()),
-      prog.GetSolverOptionsInt(id()), prog.GetSolverOptionsDouble(id()),
+      prog, x_init,
+      merged_options.GetOptionsStr(id()),
+      merged_options.GetOptionsInt(id()),
+      merged_options.GetOptionsDouble(id()),
       &snopt_status, &objective, &x_val);
+
+  // Populate our results structure.
+  result->set_solver_id(id());
+  const SolutionResult solution_result =
+      MapSnoptInfoToSolutionResult(snopt_status);
+  result->set_solution_result(solution_result);
+  result->set_x_val(x_val);
+  if (solution_result == SolutionResult::kUnbounded) {
+    result->set_optimal_cost(MathematicalProgram::kUnboundedCost);
+  } else {
+    result->set_optimal_cost(objective);
+  }
   // TODO(hongkai.dai) add other useful quantities to a struct specific to
   // SNOPT, to include information on constraint values, xstate, Fstate, xmul,
   // Fmul, etc.
-  SolverResult solver_result(id());
-  solver_result.set_decision_variable_values(x_val);
-  solver_result.set_optimal_cost(objective);
-
-  const SolutionResult solution_result =
-      MapSnoptInfoToSolutionResult(snopt_status);
-  if (solution_result == SolutionResult::kUnbounded) {
-    solver_result.set_optimal_cost(MathematicalProgram::kUnboundedCost);
-  }
-  prog.SetSolverResult(solver_result);
-  return solution_result;
 }
 
 bool SnoptSolver::is_thread_safe() { return true; }

@@ -17,12 +17,12 @@ Two Docker containers are provided with Drake to allow developers to test and
 develop without needing to configure a supported operating system. These
 containers will build Drake in isolated Ubuntu 16.04 environments.
 
-The Nvidia Dockerfile is based upon the nvidia docker plugin base image, which 
-also contains CUDA support. The opensource Dockerfile is based on the 
-the vanilla Ubuntu 16.04 image and is intended to support opensource graphics
-card drivers such as nouveau and intel. Should you need to build inside of
+The Nvidia Dockerfile is based upon the Nvidia Docker plugin base image, which
+also contains CUDA support. The opensource Dockerfile is based on the
+the vanilla Ubuntu 16.04 image and is intended to support open source graphics
+card drivers such as Nouveau and Intel. Should you need to build inside of
 another base image (FROM line in the Dockerfile), they are available `here
-<https://hub.docker.com/explore/>`_. 
+<https://hub.docker.com/explore/>`_.
 
 .. note::
 
@@ -82,16 +82,16 @@ When using the Nvidia proprietary drivers:
 ::
 
   $ cd drake
-  $ docker build -t drake -f setup/docker/Dockerfile.ubuntu16.04.nvidia .
+  $ docker build -t drake -f setup/ubuntu/docker/xenial/Dockerfile.nvidia-cuda-8.0-devel-ubuntu16.04 .
 
 Open Source
 ~~~~~~~~~~~
-When using open source video drivers (nouveau, intel, ...):
+When using open source video drivers (Nouveau, Intel, ...):
 
 ::
 
   $ cd drake
-  $ docker build -t drake -f setup/docker/Dockerfile.ubuntu16.04.opensource .
+  $ docker build -t drake -f setup/ubuntu/docker/xenial/Dockerfile .
 
 If successful, ``docker images`` should show an image named drake and
 ``docker ps`` will show any running Docker containers on your system.
@@ -114,7 +114,6 @@ where you can run commands such as:
 
 ::
 
-  $ cd /drake
   $ bazel build //...
   $ bazel test //...
 
@@ -154,7 +153,7 @@ To install nvidia-docker on Ubuntu 16.04:
   -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \
   --privileged -t drake; xhost -local:root
 
-The default command defined behavior will start the Drake visualizer and run 
+The default command defined behavior will start the Drake Visualizer and run
 the bowling ball simulation.
 
 Walking through this command:
@@ -192,8 +191,7 @@ It is also possible to enter a bash shell for interactive development with:
 where you may want to try various demonstrations, e.g.:
 
 ::
- 
-  $ cd /drake
+
   $ bazel run //examples/contact_model:bowling_ball
   $ bazel run //examples/kuka_iiwa_arm:kuka_simulation
   $ bazel run //examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
@@ -207,7 +205,7 @@ Note: these are currently not rendering properly due to VTK .obj/.mtl importing.
 Open source drivers:
 ~~~~~~~~~~~~~~~~~~~~
 With open source graphics drivers like Nouveau and Intel you do not need the
-nvidia-docker plugin.
+Nvidia Docker plugin.
 
 ::
 

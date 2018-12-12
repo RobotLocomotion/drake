@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     AbstractValue,
     BasicVector, BasicVector_,
     Context,
+    Diagram,
     DiagramBuilder,
     kUseDefaultName,
     LeafSystem, LeafSystem_,
@@ -25,6 +26,7 @@ from pydrake.systems.framework import (
     VectorSystem,
     )
 from pydrake.systems.primitives import (
+    Adder,
     ZeroOrderHold,
     )
 
@@ -99,6 +101,24 @@ class CustomVectorSystem(VectorSystem):
         return True
 
 
+# Wraps `Adder`.
+class CustomDiagram(Diagram):
+    # N.B. The CustomDiagram is used to unit test the DiagramBuilder.BuildInto
+    # method.  For pydrake users, this is not a good example.  The best way in
+    # pydrake to create a Diagram is DiagramBuilder.Build (as seen in the test
+    # case named test_adder_simulation).
+
+    def __init__(self, num_inputs, size):
+        Diagram.__init__(self)
+        builder = DiagramBuilder()
+        adder = Adder(num_inputs, size)
+        builder.AddSystem(adder)
+        builder.ExportOutput(adder.get_output_port(0))
+        for i in range(num_inputs):
+            builder.ExportInput(adder.get_input_port(i))
+        builder.BuildInto(self)
+
+
 class TestCustom(unittest.TestCase):
     def _create_adder_system(self):
         system = CustomAdder(2, 3)
@@ -108,6 +128,13 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(context.get_num_input_ports(), 2)
         context.FixInputPort(0, BasicVector([1, 2, 3]))
         context.FixInputPort(1, BasicVector([4, 5, 6]))
+
+    def test_diagram_adder(self):
+        system = CustomDiagram(2, 3)
+        self.assertEqual(system.get_num_input_ports(), 2)
+        self.assertEqual(system.get_input_port(0).size(), 3)
+        self.assertEqual(system.get_num_output_ports(), 1)
+        self.assertEqual(system.get_output_port(0).size(), 3)
 
     def test_adder_execution(self):
         system = self._create_adder_system()
@@ -406,6 +433,29 @@ class TestCustom(unittest.TestCase):
                 context = system.CreateDefaultContext()
                 self.assertEqual(
                     context.get_continuous_state_vector().size(), 6)
+
+    def test_discrete_state_api(self):
+        # N.B. Since this has trivial operations, we can test all scalar types.
+        for T in [float, AutoDiffXd, Expression]:
+
+            class TrivialSystem(LeafSystem_[T]):
+                def __init__(self, index):
+                    LeafSystem_[T].__init__(self)
+                    num_states = 3
+                    if index == 0:
+                        self._DeclareDiscreteState(
+                            num_state_variables=num_states)
+                    elif index == 1:
+                        self._DeclareDiscreteState([1, 2, 3])
+                    elif index == 2:
+                        self._DeclareDiscreteState(
+                            BasicVector_[T](num_states))
+
+            for index in range(3):
+                system = TrivialSystem(index)
+                context = system.CreateDefaultContext()
+                self.assertEqual(
+                    context.get_discrete_state(0).size(), 3)
 
     def test_abstract_io_port(self):
         test = self

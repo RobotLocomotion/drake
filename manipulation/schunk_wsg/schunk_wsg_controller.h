@@ -8,12 +8,22 @@ namespace manipulation {
 namespace schunk_wsg {
 
 /// This class implements a controller for a Schunk WSG gripper.  It
-/// has two input ports which receive lcmt_schunk_wsg_command messages
-/// and the current state, and an output port which emits the target
-/// force for the actuated finger.  The internal implementation
-/// consists of a PID controller (which controls the target position
-/// from the command message) combined with a saturation block (which
-/// applies the force control from the command message).
+/// has three input ports: lcmt_schunk_wsg_command message, a vectorized
+/// representation of the same message (SchunkWsgCommand), and the current
+/// state, and an output port which emits the target force for the actuated
+/// finger. Note, only one of the command input ports should be connected,
+/// However, if both are connected, the message input will be ignored.
+/// The internal implementation consists of a PID controller (which controls
+/// the target position from the command message) combined with a saturation
+/// block (which applies the force control from the command message).
+///
+/// @system{
+///   @input_port{state}
+///   @input_port{command_vector}
+///   @input_port{command_message}
+///   @output_port{force}
+/// }
+///
 /// @ingroup manipulation_systems
 class SchunkWsgController : public systems::Diagram<double> {
  public:
@@ -24,18 +34,6 @@ class SchunkWsgController : public systems::Diagram<double> {
   // target.
   explicit SchunkWsgController(double kp = 2000.0, double ki = 0.0,
                                double kd = 5.0);
-
-  const systems::InputPort<double>& get_command_input_port() const {
-    return this->get_input_port(command_input_port_);
-  }
-
-  const systems::InputPort<double>& get_state_input_port() const {
-    return this->get_input_port(state_input_port_);
-  }
-
- private:
-  int command_input_port_{};
-  int state_input_port_{};
 };
 
 }  // namespace schunk_wsg

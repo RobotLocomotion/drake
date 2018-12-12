@@ -4,7 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 
 namespace drake {
 namespace manipulation {
@@ -12,7 +12,7 @@ namespace {
 
 using multibody::multibody_plant::MultibodyPlant;
 using multibody::ModelInstanceIndex;
-using multibody::parsing::AddModelFromSdfFile;
+using multibody::Parser;
 
 GTEST_TEST(AllegroHandTest, TestTree) {
   const std::string kPathRight(FindResourceOrThrow(
@@ -23,10 +23,11 @@ GTEST_TEST(AllegroHandTest, TestTree) {
       "allegro_hand_description_left.sdf"));
 
   MultibodyPlant<double> plant;
-  const ModelInstanceIndex right_hand_index = AddModelFromSdfFile(
-                                                kPathRight, &plant);
-  const ModelInstanceIndex left_hand_index = AddModelFromSdfFile(
-                                                kPathLeft, &plant);
+  Parser parser(&plant);
+  const ModelInstanceIndex right_hand_index =
+      parser.AddModelFromFile(kPathRight);
+  const ModelInstanceIndex left_hand_index =
+      parser.AddModelFromFile(kPathLeft);
   plant.Finalize();
 
   // MultibodyPlant always creates at least two model instances, one for the

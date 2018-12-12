@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <unordered_set>
 #include <vector>
@@ -10,6 +11,7 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -135,17 +137,20 @@ class ProximityEngine {
 
   /** Updates the poses for all of the dynamic geometries in the engine. It
    is an invariant that _every_ registered dynamic geometry, across _all_
-   geometry sources, has a _unique_ index that lies in the range
-   [0, num_dynamic() - 1]. Therefore, `X_WG` should have size equal to
-   num_dynamics() and any other length will cause program failure. The iᵗʰ entry
-   contains the pose for the geometry whose GeometryIndex value is `i`.
-   @param X_WG     The poses of each geometry `G` measured and expressed in the
-                   world frame `W`.  */
+   geometry sources, with a proximity role has a _unique_ index that lies in the
+   range [0, num_dynamic() - 1]. `indices.size()` should be equal to
+   num_dynamic() and any other length will cause program failure.
+   @param X_WG      The poses of each geometry `G` measured and expressed in the
+                    world frame `W` (including geometries which may *not* be
+                    registered with the proximity engine).
+   @param indices   Indices into `X_WG` mapping engine index to geometry index.
+  */
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
-  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG);
+  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG,
+                        const std::vector<GeometryIndex>& indices);
 
   // ----------------------------------------------------------------------
   /**@name              Signed Distance Queries
@@ -174,8 +179,22 @@ class ProximityEngine {
   std::vector<SignedDistancePair<double>>
   ComputeSignedDistancePairwiseClosestPoints(
       const std::vector<GeometryId>& geometry_map) const;
-  //@}
 
+  /** Performs work in support of GeometryState::ComputeSignedDistanceToPoint().
+   @param[in] p_WQ            Position of a query point Q in world frame W.
+   @param[in] geometry_map    A map from geometry _index_ to the corresponding
+                              global geometry identifier.
+   @param[in] threshold       Ignore any object beyond this distance.
+   @retval signed_distances   A vector populated with per-object signed
+                              distance and gradient vector.
+                              See SignedDistanceFieldValue for details.
+   */
+  std::vector<SignedDistanceToPoint<double>>
+  ComputeSignedDistanceToPoint(
+      const Vector3<double>& p_WQ,
+      const std::vector<GeometryId>& geometry_map,
+      const double threshold = std::numeric_limits<double>::infinity()) const;
+  //@}
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
@@ -246,6 +265,10 @@ class ProximityEngine {
       const std::unordered_set<GeometryIndex>& dynamic2,
       const std::unordered_set<GeometryIndex>& anchored2);
 
+  /** Reports true if the geometry pair (index1, index2) has been filtered from
+   collision.  */
+  bool CollisionFiltered(GeometryIndex index1, bool is_dynamic_1,
+                         GeometryIndex index2, bool is_dynamic_2) const;
   //@}
 
  private:

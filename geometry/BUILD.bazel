@@ -52,6 +52,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
+        "//geometry/query_results:signed_distance_to_point",
         "@fcl",
         "@tinyobjloader",
     ],
@@ -114,6 +115,7 @@ drake_cc_library(
     hdrs = ["geometry_instance.h"],
     deps = [
         ":geometry_ids",
+        ":geometry_roles",
         ":materials",
         ":shape_specification",
         ":utilities",
@@ -194,6 +196,7 @@ drake_cc_library(
         "//common:essential",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
+        "//geometry/query_results:signed_distance_to_point",
         "//systems/framework",
         "//systems/rendering:pose_bundle",
     ],
@@ -239,6 +242,7 @@ drake_cc_library(
     deps = [
         ":geometry_ids",
         ":geometry_index",
+        ":geometry_roles",
         ":internal_frame",
         ":materials",
         ":shape_specification",

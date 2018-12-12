@@ -2,9 +2,12 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+    "drake_cc_library_aliases",
+)
+load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -13,192 +16,56 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
+# TODO(jwnimmer-tri) Set `add_deprecation_warning = True` in all of the below
+# once Drake no longer internally uses any of these labels, and then schedule
+# this package for removal at a specific date.
+
 drake_cc_package_library(
     name = "multibody_plant",
     deps = [
         ":contact_info",
         ":contact_results",
+        ":contact_results_to_lcm",
         ":coulomb_friction",
-        ":multibody_plant_core",
+        ":forwarding_hdrs",
     ],
 )
 
-drake_cc_library(
-    name = "multibody_plant_core",
-    srcs = [
-        "multibody_plant.cc",
-    ],
-    hdrs = [
-        "multibody_plant.h",
+# Each of these aliases both `cc_library(name = "foo")` and `foo.h`.
+_RELATIVE_LABELS = [
+    ":contact_info",
+    ":contact_results",
+    ":contact_results_to_lcm",
+    ":coulomb_friction",
+]
+
+# Each of these aliases only `foo.h`, without a similarly-named cc_library.
+_EXTRA_PLANT_HDRS = [
+    "multibody_plant.h",
+]
+
+# Generates header files with the old include paths that include the header
+# with its new include path.
+drake_cc_hdrs_forwarding_library(
+    name = "forwarding_hdrs",
+    actual_subdir = "multibody/plant",
+    add_deprecation_warning = False,
+    relative_labels = _RELATIVE_LABELS + [
+        ":" + x[:-2]
+        for x in _EXTRA_PLANT_HDRS
     ],
     visibility = ["//visibility:private"],
-    deps = [
-        ":contact_results",
-        ":coulomb_friction",
-        "//common:default_scalars",
-        "//geometry:geometry_ids",
-        "//geometry:scene_graph",
-        "//math:orthonormal_basis",
-        "//multibody/multibody_tree",
-        "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # noqa
-        "//systems/framework:leaf_system",
-    ],
 )
 
-drake_cc_library(
-    name = "contact_info",
-    srcs = [
-        "contact_info.cc",
-    ],
-    hdrs = [
-        "contact_info.h",
-    ],
+# Forwards the bazel labels in this package to alias into the new package.
+drake_cc_library_aliases(
+    actual_subdir = "multibody/plant",
+    add_deprecation_warning = False,
+    relative_labels = _RELATIVE_LABELS,
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
     deps = [
-        "//common:default_scalars",
-        "//geometry/query_results:penetration_as_point_pair",
-        "//multibody/multibody_tree:multibody_tree_indexes",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_results",
-    srcs = [
-        "contact_results.cc",
-    ],
-    hdrs = [
-        "contact_results.h",
-    ],
-    deps = [
-        ":contact_info",
-        "//common:default_scalars",
-    ],
-)
-
-drake_cc_library(
-    name = "contact_results_to_lcm",
-    srcs = [
-        "contact_results_to_lcm.cc",
-    ],
-    hdrs = [
-        "contact_results_to_lcm.h",
-    ],
-    tags = [
-        # Don't add this library into the ":multibody_plant" package library.
-        # Use of MBP doesn't imply use of contact visualization so this
-        # dependency should be invoked explicitly.
-        "exclude_from_package",
-    ],
-    deps = [
-        ":contact_results",
-        ":multibody_plant",
-        "//lcmtypes:contact_info_for_viz",
-        "//lcmtypes:contact_results_for_viz",
-        "//systems/framework:diagram_builder",
-        "//systems/lcm:lcm_pubsub_system",
-    ],
-)
-
-drake_cc_library(
-    name = "coulomb_friction",
-    srcs = [
-        "coulomb_friction.cc",
-    ],
-    hdrs = [
-        "coulomb_friction.h",
-    ],
-    deps = [
-        "//common:default_scalars",
-        "//common:drake_bool",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_plant_test",
-    data = [
-        "test/split_pendulum.sdf",
-        "//examples/kuka_iiwa_arm/models",
-        "//examples/simple_gripper:simple_gripper_models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-        "//multibody/benchmarks/acrobot:models",
-        "//multibody/parsing:test_models",
-    ],
-    deps = [
-        ":multibody_plant",
-        "//common:autodiff",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//math:geometric_transform",
-        "//math:gradient",
-        "//multibody/benchmarks/acrobot",
-        "//multibody/benchmarks/pendulum",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
-        "//systems/primitives:linear_system",
-    ],
-)
-
-drake_cc_googletest(
-    name = "box_test",
-    timeout = "moderate",
-    data = ["test/box.sdf"],
-    deps = [
-        ":multibody_plant",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "contact_results_to_lcm_test",
-    deps = [
-        ":contact_results_to_lcm",
-        "//common/test_utilities:eigen_geometry_compare",
-        "//multibody/benchmarks/acrobot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "coulomb_friction_test",
-    deps = [
-        ":coulomb_friction",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "inclined_plane_test",
-    timeout = "moderate",
-    deps = [
-        ":multibody_plant",
-        "//multibody/benchmarks/inclined_plane",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "joint_limits_test",
-    timeout = "long",
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    shard_count = 3,
-    deps = [
-        ":multibody_plant",
-        "//common:find_resource",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "spring_mass_system_test",
-    timeout = "moderate",
-    deps = [
-        ":multibody_plant",
-        "//systems/analysis:simulator",
+        ":forwarding_hdrs",
+        "//multibody/plant",
     ],
 )
 

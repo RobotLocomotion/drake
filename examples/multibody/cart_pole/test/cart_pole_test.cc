@@ -11,8 +11,8 @@
 #include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
 #include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -24,7 +24,7 @@ namespace {
 using drake::multibody::Body;
 using drake::multibody::JointActuator;
 using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::UniformGravityFieldElement;
@@ -36,7 +36,7 @@ class CartPoleTest : public ::testing::Test {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
         "drake/examples/multibody/cart_pole/cart_pole.sdf");
-    AddModelFromSdfFile(full_name, &cart_pole_);
+    Parser(&cart_pole_).AddModelFromFile(full_name);
 
     // Add gravity to the model.
     cart_pole_.AddForceElement<UniformGravityFieldElement>(

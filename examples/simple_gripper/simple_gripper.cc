@@ -16,8 +16,8 @@
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
 #include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -43,7 +43,7 @@ using drake::multibody::Body;
 using drake::multibody::multibody_plant::CoulombFriction;
 using drake::multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer;
 using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::UniformGravityFieldElement;
 using drake::systems::ImplicitEulerIntegrator;
@@ -157,7 +157,7 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                      "collision" + std::to_string(i), friction);
 
-    const geometry::VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
     plant->RegisterVisualGeometry(finger, X_FS, Sphere(kPadMinorRadius),
                                   "visual" + std::to_string(i), red);
   }
@@ -176,13 +176,14 @@ int do_main() {
       *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
       *builder.AddSystem<MultibodyPlant>();
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  Parser parser(&plant);
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  AddModelFromSdfFile(full_name, &plant);
+  parser.AddModelFromFile(full_name);
 
   full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  AddModelFromSdfFile(full_name, &plant);
+  parser.AddModelFromFile(full_name);
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the

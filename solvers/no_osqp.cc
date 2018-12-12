@@ -17,5 +17,14 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram&) const {
       "solver.");
 }
 
+void OsqpSolver::Solve(const MathematicalProgram&,
+                       const optional<Eigen::VectorXd>&,
+                       const optional<SolverOptions>&,
+                       MathematicalProgramResult*) const {
+  throw std::runtime_error(
+      "The OSQP bindings were not compiled.  You'll need to use a different "
+      "solver.");
+}
+
 }  // namespace solvers
 }  // namespace drake

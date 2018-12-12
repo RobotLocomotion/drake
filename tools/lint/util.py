@@ -5,7 +5,6 @@ import os
 import sys
 
 
-# TODO(jwnimmer-tri) Port clang-format-includes & cpplint_wrapper to use this.
 def find_all_sources(workspace_name):
     """Return [workspace, paths] list, where `workspace` is a path to the root
     of the given `workspace_name`, and `paths` are relative paths under it that

@@ -183,11 +183,25 @@ void SetOsqpSolverSetting(const std::unordered_map<std::string, T1>& options,
   }
 }
 
-void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
+template <typename T1, typename T2>
+void SetOsqpSolverSettingWithDefaultValue(
+    const std::unordered_map<std::string, T1>& options,
+    const std::string& option_name, T2* osqp_setting_field,
+    const T1& default_field_value) {
+  const auto it = options.find(option_name);
+  if (it != options.end()) {
+    *osqp_setting_field = it->second;
+  } else {
+    *osqp_setting_field = default_field_value;
+  }
+}
+
+void SetOsqpSolverSettings(const SolverOptions& solver_options,
+                           OSQPSettings* settings) {
   const std::unordered_map<std::string, double>& options_double =
-      prog->GetSolverOptionsDouble(OsqpSolver::id());
+      solver_options.GetOptionsDouble(OsqpSolver::id());
   const std::unordered_map<std::string, int>& options_int =
-      prog->GetSolverOptionsInt(OsqpSolver::id());
+      solver_options.GetOptionsInt(OsqpSolver::id());
   // TODO(hongkai.dai): Fill in all the fields defined in OSQPSettings.
   SetOsqpSolverSetting(options_double, "rho", &(settings->rho));
   SetOsqpSolverSetting(options_double, "sigma", &(settings->sigma));
@@ -195,13 +209,29 @@ void SetOsqpSolverSettings(MathematicalProgram* prog, OSQPSettings* settings) {
   SetOsqpSolverSetting(options_int, "max_iter", &(settings->max_iter));
   SetOsqpSolverSetting(options_int, "polish_refine_iter",
                        &(settings->polish_refine_iter));
-  SetOsqpSolverSetting(options_int, "verbose", &(settings->verbose));
+  SetOsqpSolverSettingWithDefaultValue(options_int, "verbose",
+                                       &(settings->verbose), 0);
+  // Default polish to true, to get an accurate solution.
+  SetOsqpSolverSettingWithDefaultValue(options_int, "polish",
+                                       &(settings->polish), 1);
 }
 }  // namespace
 
 bool OsqpSolver::is_available() { return true; }
 
-SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
+void OsqpSolver::Solve(const MathematicalProgram& prog,
+                       const optional<Eigen::VectorXd>& initial_guess,
+                       const optional<SolverOptions>& solver_options,
+                       MathematicalProgramResult* result) const {
+  *result = {};
+  // TODO(hongkai.dai): OSQP uses initial guess to warm start.
+  unused(initial_guess);
+  if (!AreProgramAttributesSatisfied(prog)) {
+    throw std::invalid_argument(
+        "OSQP solver's capability doesn't satisfy the requirement of the "
+        "problem.");
+  }
+
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
@@ -239,11 +269,11 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   OSQPSettings* settings =
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   osqp_set_default_settings(settings);
-  // Default polish to true, to get an accurate solution.
-  // TODO(hongkai.dai): add a setter so that we can turn off polishing.
-  settings->polish = 1;
-  settings->verbose = 0;
-  SetOsqpSolverSettings(&prog, settings);
+
+  SolverOptions merged_solver_options =
+      solver_options.value_or(SolverOptions());
+  merged_solver_options.Merge(prog.solver_options());
+  SetOsqpSolverSettings(merged_solver_options, settings);
 
   // Setup workspace.
   // OSQP structures.
@@ -254,7 +284,17 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_int osqp_exitflag = osqp_solve(work);
 
   SolutionResult solution_result;
-  SolverResult solver_result(id());
+  result->set_solver_id(id());
+  OsqpSolverDetails& solver_details =
+      result->SetSolverDetailsType<OsqpSolverDetails>();
+  solver_details.iter = work->info->iter;
+  solver_details.status_val = work->info->status_val;
+  solver_details.primal_res = work->info->pri_res;
+  solver_details.dual_res = work->info->dua_res;
+  solver_details.setup_time = work->info->setup_time;
+  solver_details.solve_time = work->info->solve_time;
+  solver_details.polish_time = work->info->polish_time;
+  solver_details.run_time = work->info->run_time;
   if (osqp_exitflag) {
     solution_result = SolutionResult::kInvalidInput;
   } else {
@@ -263,17 +303,15 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
       case OSQP_SOLVED_INACCURATE: {
         const Eigen::Map<Eigen::Matrix<c_float, Eigen::Dynamic, 1>> osqp_sol(
             work->solution->x, prog.num_vars());
-        solver_result.set_decision_variable_values(osqp_sol.cast<double>());
-        solver_result.set_optimal_cost(work->info->obj_val +
-                                       constant_cost_term);
+        result->set_x_val(osqp_sol.cast<double>());
+        result->set_optimal_cost(work->info->obj_val + constant_cost_term);
         solution_result = SolutionResult::kSolutionFound;
         break;
       }
       case OSQP_PRIMAL_INFEASIBLE:
       case OSQP_PRIMAL_INFEASIBLE_INACCURATE: {
         solution_result = SolutionResult::kInfeasibleConstraints;
-        solver_result.set_optimal_cost(
-            MathematicalProgram::kGlobalInfeasibleCost);
+        result->set_optimal_cost(MathematicalProgram::kGlobalInfeasibleCost);
         break;
       }
       case OSQP_DUAL_INFEASIBLE:
@@ -288,6 +326,7 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
       default: { solution_result = SolutionResult::kUnknownError; }
     }
   }
+  result->set_solution_result(solution_result);
 
   // Clean workspace.
   osqp_cleanup(work);
@@ -301,9 +340,14 @@ SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
   c_free(data->A);
   c_free(data);
   c_free(settings);
+}
 
+SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
-  return solution_result;
+  return result.get_solution_result();
 }
 }  // namespace solvers
 }  // namespace drake

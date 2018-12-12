@@ -8,7 +8,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.multibody.multibody_tree import MultibodyForces
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.multibody.rigid_body_tree import (FloatingBaseType, RigidBodyTree)
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.controllers import (
@@ -213,7 +213,7 @@ class TestControllers(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        AddModelFromSdfFile(file_name=sdf_path, plant=plant)
+        Parser(plant).AddModelFromFile(sdf_path)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()
@@ -229,7 +229,7 @@ class TestControllers(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        AddModelFromSdfFile(file_name=sdf_path, plant=plant)
+        Parser(plant).AddModelFromFile(sdf_path)
         plant.WeldFrames(plant.world_frame(),
                          plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()

@@ -84,8 +84,8 @@ LcmPlant::LcmPlant(
     iiwa_command_receiver->set_name("iiwa_command_receiver" + suffix);
 
     // Export iiwa command input port.
-    input_port_iiwa_command_.push_back(
-        builder.ExportInput(iiwa_command_receiver->get_input_port(0)));
+    input_port_iiwa_command_.push_back(builder.ExportInput(
+        iiwa_command_receiver->GetInputPort("command_message")));
     builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                     iiwa_and_wsg_plant_->get_input_port_iiwa_state_command(i));
 
@@ -117,8 +117,8 @@ LcmPlant::LcmPlant(
     auto wsg_controller = builder.AddSystem<SchunkWsgController>();
     wsg_controller->set_name("wsg_controller" + suffix);
     builder.Connect(iiwa_and_wsg_plant_->get_output_port_wsg_state(i),
-                    wsg_controller->get_state_input_port());
-    builder.Connect(wsg_controller->get_output_port(0),
+                    wsg_controller->GetInputPort("state"));
+    builder.Connect(wsg_controller->GetOutputPort("force"),
                     iiwa_and_wsg_plant_->get_input_port_wsg_command(i));
 
     auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>();
@@ -142,7 +142,7 @@ LcmPlant::LcmPlant(
 
     // Export WSG command input port.
     input_port_wsg_command_.push_back(
-        builder.ExportInput(wsg_controller->get_command_input_port()));
+        builder.ExportInput(wsg_controller->GetInputPort("command_message")));
   }
 
   // Build the system.

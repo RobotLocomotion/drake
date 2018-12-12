@@ -39,24 +39,22 @@ GTEST_TEST(TypeUtilTest, TypeTags) {
   // Ensure that we can default-construct tags for types that are not
   // default-constructible.
   auto tag_check = type_tag<void>{};
-  EXPECT_TRUE((std::is_same<
-      decltype(tag_check), type_tag<void>>::value));
+  EXPECT_TRUE((std::is_same<decltype(tag_check), type_tag<void>>::value));
   auto pack_check_empty = type_pack<>{};
-  EXPECT_TRUE((std::is_same<
-      decltype(pack_check_empty), type_pack<>>::value));
+  EXPECT_TRUE((std::is_same<decltype(pack_check_empty), type_pack<>>::value));
   auto pack_check = type_pack<void, void>{};
-  EXPECT_TRUE((std::is_same<
-      decltype(pack_check), type_pack<void, void>>::value));
+  EXPECT_TRUE(
+      (std::is_same<decltype(pack_check), type_pack<void, void>>::value));
 }
 
 GTEST_TEST(TypeUtilTest, Bind) {
   using T_0 = Pack::bind<SimpleTemplate>;
-  EXPECT_TRUE((std::is_same<
-      T_0, SimpleTemplate<int, double, char, void>>::value));
+  EXPECT_TRUE(
+      (std::is_same<T_0, SimpleTemplate<int, double, char, void>>::value));
   Pack pack;
   using T_1 = decltype(type_bind<SimpleTemplate>(pack));
-  EXPECT_TRUE((std::is_same<
-      T_1, SimpleTemplate<int, double, char, void>>::value));
+  EXPECT_TRUE(
+      (std::is_same<T_1, SimpleTemplate<int, double, char, void>>::value));
 }
 
 GTEST_TEST(TypeUtilTest, Extract) {
@@ -66,8 +64,8 @@ GTEST_TEST(TypeUtilTest, Extract) {
 }
 
 GTEST_TEST(TypeUtilTest, Visit) {
-  using PackTags = type_pack<
-      type_tag<int>, type_tag<double>, type_tag<char>, type_tag<void>>;
+  using PackTags = type_pack<type_tag<int>, type_tag<double>, type_tag<char>,
+      type_tag<void>>;
   vector<string> names;
   const vector<string> names_expected = {"int", "double", "char", "void"};
 

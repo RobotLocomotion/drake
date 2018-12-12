@@ -190,11 +190,23 @@ class LeafSystem : public System<T> {
     } else {
       xc.SetFromVector(VectorX<T>::Zero(xc.size()));
     }
+
     DiscreteValues<T>& xd = state->get_mutable_discrete_state();
-    for (int i = 0; i < xd.num_groups(); i++) {
-      BasicVector<T>& s = xd.get_mutable_vector(i);
-      s.SetFromVector(VectorX<T>::Zero(s.size()));
+
+    // Check that _if_ we have models, there is one for each group.
+    DRAKE_DEMAND(model_discrete_state_.num_groups() == 0 ||
+        model_discrete_state_.num_groups() == xd.num_groups());
+
+    if (model_discrete_state_.num_groups() > 0) {
+      xd.CopyFrom(model_discrete_state_);
+    } else {
+      // With no model vector, we just zero all the discrete variables.
+      for (int i = 0; i < xd.num_groups(); i++) {
+        BasicVector<T>& s = xd.get_mutable_vector(i);
+        s.SetFromVector(VectorX<T>::Zero(s.size()));
+      }
     }
+
     AbstractValues& xa = state->get_mutable_abstract_state();
     xa.CopyFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
   }
@@ -471,8 +483,8 @@ class LeafSystem : public System<T> {
   /// Returns a ContinuousState used to implement both CreateDefaultContext and
   /// AllocateTimeDerivatives. Allocates the state configured with
   /// DeclareContinuousState, or none by default. Systems with continuous state
-  /// variables may override, but must ensure the ContinuousState vector is
-  /// a subclass of BasicVector.
+  /// variables may override (not recommended), but must ensure the
+  /// ContinuousState vector is a subclass of BasicVector.
   virtual std::unique_ptr<ContinuousState<T>> AllocateContinuousState() const {
     if (model_continuous_state_vector_ != nullptr) {
       return std::make_unique<ContinuousState<T>>(
@@ -483,19 +495,17 @@ class LeafSystem : public System<T> {
   }
 
   /// Reserves the discrete state as required by CreateDefaultContext. By
-  /// default, reserves no state. Systems with discrete state should override.
+  /// default, clones the model values as provided in DeclareDiscreteState()
+  /// calls. Alternatively, systems with discrete state can override this
+  /// method (not recommended).
   virtual std::unique_ptr<DiscreteValues<T>> AllocateDiscreteState() const {
-    if (model_discrete_state_vector_ != nullptr) {
-      return std::make_unique<DiscreteValues<T>>(
-          model_discrete_state_vector_->Clone());
-    }
-    return std::make_unique<DiscreteValues<T>>();
+    return model_discrete_state_.Clone();
   }
 
   /// Reserves the abstract state as required by CreateDefaultContext. By
   /// default, it clones the abstract states declared through
-  /// DeclareAbstractState() calls. Derived systems should override for
-  /// different behaviors.
+  /// DeclareAbstractState() calls. Derived systems may override for
+  /// different behaviors (not recommended).
   virtual std::unique_ptr<AbstractValues> AllocateAbstractState() const {
     return std::make_unique<AbstractValues>(
         std::move(model_abstract_states_.CloneAllModels()));
@@ -725,9 +735,23 @@ class LeafSystem : public System<T> {
     event.AddToComposite(TriggerType::kInitialization, &initialization_events_);
   }
 
+  /// @name          Declare continuous state variables
+  /// Continuous state consists of up to three kinds of variables: generalized
+  /// coordinates q, generalized velocities v, and miscellaneous continuous
+  /// variables z. Methods in this section provide different ways to declare
+  /// these, and offer the ability to provide a `model_vector` to specify the
+  /// initial values for these variables. Model values are useful when you want
+  /// the values of these variables in a default Context to be something other
+  /// than zero.
+  ///
+  /// If multiple calls are made to DeclareContinuousState() methods, only the
+  /// last call has any effect. Also, these methods have no effect if
+  /// AllocateContinuousState() is overridden (not recommended).
+  //@{
+
   /// Declares that this System should reserve continuous state with
   /// @p num_state_variables state variables, which have no second-order
-  /// structure. Has no effect if AllocateContinuousState is overridden.
+  /// structure.
   void DeclareContinuousState(int num_state_variables) {
     const int num_q = 0, num_v = 0;
     DeclareContinuousState(num_q, num_v, num_state_variables);
@@ -735,8 +759,7 @@ class LeafSystem : public System<T> {
 
   /// Declares that this System should reserve continuous state with @p num_q
   /// generalized positions, @p num_v generalized velocities, and @p num_z
-  /// miscellaneous state variables.  Has no effect if AllocateContinuousState
-  /// is overridden.
+  /// miscellaneous state variables.
   void DeclareContinuousState(int num_q, int num_v, int num_z) {
     const int n = num_q + num_v + num_z;
     DeclareContinuousState(BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v,
@@ -745,8 +768,7 @@ class LeafSystem : public System<T> {
 
   /// Declares that this System should reserve continuous state with
   /// @p model_vector.size() miscellaneous state variables, stored in a
-  /// vector Cloned from @p model_vector.  Has no effect if
-  /// AllocateContinuousState is overridden.
+  /// vector cloned from @p model_vector.
   void DeclareContinuousState(const BasicVector<T>& model_vector) {
     const int num_q = 0, num_v = 0;
     const int num_z = model_vector.size();
@@ -755,12 +777,11 @@ class LeafSystem : public System<T> {
 
   /// Declares that this System should reserve continuous state with @p num_q
   /// generalized positions, @p num_v generalized velocities, and @p num_z
-  /// miscellaneous state variables, stored in a vector Cloned from
-  /// @p model_vector. Aborts if @p model_vector has the wrong size. Has no
-  /// effect if AllocateContinuousState is overridden. If the @p model_vector
-  /// declares any VectorBase::CalcInequalityConstraint() constraints, they
-  /// will be re-declared as inequality constraints on this system (see
-  /// DeclareInequalityConstraint()).
+  /// miscellaneous state variables, stored in a vector cloned from
+  /// @p model_vector. Aborts if @p model_vector has the wrong size. If the
+  /// @p model_vector declares any VectorBase::CalcInequalityConstraint()
+  /// constraints, they will be re-declared as inequality constraints on this
+  /// system (see DeclareInequalityConstraint()).
   void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
                               int num_v, int num_z) {
     DRAKE_DEMAND(model_vector.size() == num_q + num_v + num_z);
@@ -775,40 +796,75 @@ class LeafSystem : public System<T> {
           return state.get_vector();
         });
   }
+  //@}
 
-  /// Declares that this System should reserve continuous state with @p num_q
-  /// generalized positions, @p num_v generalized velocities, and @p num_z
-  /// miscellaneous state variables, stored in the a vector Cloned from
-  /// @p model_vector. Aborts if @p model_vector is nullptr or has the wrong
-  /// size. Has no effect if AllocateContinuousState is overridden.
-  DRAKE_DEPRECATED("Use the const-reference model_vector overload instead")
-  void DeclareContinuousState(std::unique_ptr<BasicVector<T>> model_vector,
-                              int num_q, int num_v, int num_z) {
-    DRAKE_DEMAND(model_vector != nullptr);
-    DeclareContinuousState(*model_vector, num_q, num_v, num_z);
-  }
+  /// @name            Declare discrete state variables
+  /// Discrete state consists of any number of discrete state "groups", each
+  /// of which is a vector of discrete state variables. Methods in this section
+  /// provide different ways to declare these, and offer the ability to provide
+  /// a `model_vector` to specify the initial values for each group of
+  /// variables. Model values are useful when you want the values of
+  /// these variables in a default Context to be something other than zero.
+  ///
+  /// Each call to a DeclareDiscreteState() method produces another
+  /// discrete state group, and the group index is returned. These methods have
+  /// no effect if AllocateDiscreteState() is overridden (not recommended).
+  //@{
 
-  /// Declares that this System should reserve discrete state with
-  /// @p num_state_variables state variables. Has no effect if
-  /// AllocateDiscreteState is overridden.
-  // TODO(sherm1) Repeated calls to this should allocate additional discrete
-  // state groups. Currently there is only one.
-  void DeclareDiscreteState(int num_state_variables) {
-    const DiscreteStateIndex index(0);  // Only one implemented currently.
-    model_discrete_state_vector_ =
-        std::make_unique<BasicVector<T>>(num_state_variables);
+  /// Declares a discrete state group with @p model_vector.size() state
+  /// variables, stored in a vector cloned from @p model_vector (preserving the
+  /// concrete type and value).
+  DiscreteStateIndex DeclareDiscreteState(const BasicVector<T>& model_vector) {
+    const DiscreteStateIndex index(model_discrete_state_.num_groups());
+    model_discrete_state_.AppendGroup(model_vector.Clone());
     this->AddDiscreteStateGroup(index);
+    MaybeDeclareVectorBaseInequalityConstraint(
+        "discrete state", model_vector,
+        [index](const Context<T>& context) -> const VectorBase<T>& {
+          const BasicVector<T>& state = context.get_discrete_state(index);
+          return state;
+        });
+    return index;
   }
+
+  /// Declares a discrete state group with @p model_vector.size() state
+  /// variables, stored in a BasicVector initialized with the contents of
+  /// @p model_vector.
+  DiscreteStateIndex DeclareDiscreteState(
+      const Eigen::Ref<const VectorX<T>>& model_vector) {
+    return DeclareDiscreteState(BasicVector<T>(model_vector));
+  }
+
+  /// Declares a discrete state group with @p num_state_variables state
+  /// variables, stored in a BasicVector initialized to be all-zero. If you want
+  /// non-zero initial values, use an alternate DeclareDiscreteState() signature
+  /// that accepts a `model_vector` parameter.
+  /// @pre `num_state_variables` must be non-negative.
+  DiscreteStateIndex DeclareDiscreteState(int num_state_variables) {
+    DRAKE_DEMAND(num_state_variables >= 0);
+    return DeclareDiscreteState(VectorX<T>::Zero(num_state_variables));
+  }
+  //@}
+
+  /// @name            Declare abstract state variables
+  /// Abstract state consists of any number of arbitrarily-typed variables, each
+  /// represented by an AbstractValue. Each call to the DeclareAbstractState()
+  /// method produces another abstract state variable, and the abstract state
+  /// variable index is returned. This method has no effect if
+  /// AllocateAbstractState() is overridden (not recommended).
+  //@{
 
   /// Declares an abstract state.
   /// @param abstract_state The abstract state, its ownership is transferred.
   /// @return index of the declared abstract state.
-  int DeclareAbstractState(std::unique_ptr<AbstractValue> abstract_state) {
+  AbstractStateIndex DeclareAbstractState(
+      std::unique_ptr<AbstractValue> abstract_state) {
     const AbstractStateIndex index(model_abstract_states_.size());
     model_abstract_states_.AddModel(index, std::move(abstract_state));
     this->AddAbstractState(index);
     return index;
   }
+  //@}
 
   // =========================================================================
   /// @name                    Declare input ports
@@ -835,7 +891,8 @@ class LeafSystem : public System<T> {
   ///
   /// @see System::DeclareInputPort() for more information.
   const InputPort<T>& DeclareVectorInputPort(
-      std::string name, const BasicVector<T>& model_vector,
+      variant<std::string, UseDefaultName> name,
+      const BasicVector<T>& model_vector,
       optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
     const int index = this->get_num_input_ports();
@@ -863,7 +920,8 @@ class LeafSystem : public System<T> {
   ///
   /// @see System::DeclareInputPort() for more information.
   const InputPort<T>& DeclareAbstractInputPort(
-      std::string name, const AbstractValue& model_value) {
+      variant<std::string, UseDefaultName> name,
+      const AbstractValue& model_value) {
     const int next_index = this->get_num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());
     return this->DeclareInputPort(NextInputPortName(std::move(name)),
@@ -954,7 +1012,7 @@ class LeafSystem : public System<T> {
   /// arguments will be deduced and do not need to be specified.
   template <class MySystem, typename BasicVectorSubtype>
   const OutputPort<T>& DeclareVectorOutputPort(
-      std::string name,
+      variant<std::string, UseDefaultName> name,
       const BasicVectorSubtype& model_vector,
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -1020,7 +1078,7 @@ class LeafSystem : public System<T> {
   /// the `BasicVectorSubtype` default constructor.
   template <class MySystem, typename BasicVectorSubtype>
   const OutputPort<T>& DeclareVectorOutputPort(
-      std::string name,
+      variant<std::string, UseDefaultName> name,
       void (MySystem::*calc)(const Context<T>&, BasicVectorSubtype*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1042,7 +1100,7 @@ class LeafSystem : public System<T> {
   /// use one of the other signatures.
   /// @see LeafOutputPort::CalcVectorCallback
   const OutputPort<T>& DeclareVectorOutputPort(
-      std::string name,
+      variant<std::string, UseDefaultName> name,
       const BasicVector<T>& model_vector,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -1065,7 +1123,7 @@ class LeafSystem : public System<T> {
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
-      std::string name, const OutputType& model_value,
+      variant<std::string, UseDefaultName> name, const OutputType& model_value,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1103,7 +1161,7 @@ class LeafSystem : public System<T> {
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
-      std::string name,
+      variant<std::string, UseDefaultName> name,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1130,7 +1188,8 @@ class LeafSystem : public System<T> {
   /// @see drake::systems::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
-      std::string name, OutputType (MySystem::*make)() const,
+      variant<std::string, UseDefaultName> name,
+      OutputType (MySystem::*make)() const,
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
@@ -1153,7 +1212,7 @@ class LeafSystem : public System<T> {
   /// If you have a member function available use one of the other signatures.
   /// @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback
   const OutputPort<T>& DeclareAbstractOutputPort(
-      std::string name,
+      variant<std::string, UseDefaultName> name,
       typename LeafOutputPort<T>::AllocCallback alloc_function,
       typename LeafOutputPort<T>::CalcCallback calc_function,
       std::set<DependencyTicket> prerequisites_of_calc = {
@@ -1886,7 +1945,7 @@ class LeafSystem : public System<T> {
   int num_misc_continuous_states_{0};
 
   // A model discrete state to be used during Context allocation.
-  std::unique_ptr<BasicVector<T>> model_discrete_state_vector_;
+  DiscreteValues<T> model_discrete_state_;
 
   // A model abstract state to be used during Context allocation.
   detail::ModelValues model_abstract_states_;

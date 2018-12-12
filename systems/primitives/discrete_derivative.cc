@@ -31,12 +31,15 @@ DiscreteDerivative<T>::DiscreteDerivative(int num_inputs, double time_step)
 }
 
 template <typename T>
-void DiscreteDerivative<T>::set_state(
+void DiscreteDerivative<T>::set_input_history(
     drake::systems::Context<T>* context,
-    const Eigen::Ref<const drake::VectorX<T>>& u) const {
-  DRAKE_DEMAND(u.size() == n_);
+    const Eigen::Ref<const drake::VectorX<T>>& u_n, const Eigen::Ref<const
+    drake::VectorX<T>>& u_n_minus_1) const {
+  DRAKE_DEMAND(u_n.size() == n_);
+  DRAKE_DEMAND(u_n_minus_1.size() == n_);
 
-  context->get_mutable_discrete_state_vector().get_mutable_value() << u, u;
+  context->get_mutable_discrete_state_vector().get_mutable_value()
+    << u_n, u_n_minus_1;
 }
 
 template <typename T>
@@ -90,9 +93,22 @@ template <typename T>
 void StateInterpolatorWithDiscreteDerivative<T>::set_initial_position(
     systems::Context<T>* context,
     const Eigen::Ref<const VectorX<T>>& position) const {
-  derivative_->set_state(
+  derivative_->set_input_history(
       &this->GetMutableSubsystemContext(*derivative_, context), position);
 }
+
+template <typename T>
+void StateInterpolatorWithDiscreteDerivative<T>::set_initial_state(
+    systems::Context<T>* context,
+    const Eigen::Ref<const VectorX<T>>& position, const Eigen::Ref<const
+    VectorX<T>>& velocity) const {
+  // The derivative block implements y(t) = (u[n]-u[n-1])/h, so we want
+  // u[n] = position, u[n-1] = u[n] - h*velocity
+  derivative_->set_input_history(
+      &this->GetMutableSubsystemContext(*derivative_, context), position,
+      position - derivative_->time_step()*velocity);
+}
+
 
 }  // namespace systems
 }  // namespace drake
