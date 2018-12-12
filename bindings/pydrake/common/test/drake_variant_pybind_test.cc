@@ -10,12 +10,15 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/test/test_util_pybind.h"
 
 using std::string;
 
 namespace drake {
 namespace pydrake {
 namespace {
+
+using test::SynchronizeGlobalsForPython3;
 
 string VariantToString(const variant<int, double, string>& value) {
   const bool is_int = holds_alternative<int>(value);
@@ -36,6 +39,7 @@ GTEST_TEST(VariantTest, CheckCasting) {
   py::module m("__main__");
 
   m.def("VariantToString", &VariantToString, py::arg("value"));
+  SynchronizeGlobalsForPython3(m);
   ExpectString("VariantToString(1)", "int(1)");
   ExpectString("VariantToString(0.5)", "double(0.5)");
   ExpectString("VariantToString('foo')", "string(foo)");

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
+
 namespace drake {
 namespace solvers {
 
@@ -80,6 +82,34 @@ GTEST_TEST(SolverOptionsTest, Merge) {
   dut.Merge(foo);
   dut_expected.SetOption(id2, "key1", 1);
   EXPECT_EQ(dut, dut_expected);
+}
+
+GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
+  const SolverId id1("id1");
+  const SolverId id2("id2");
+
+  SolverOptions solver_options;
+  solver_options.SetOption(id1, "key1", 1.2);
+  solver_options.SetOption(id1, "key2", 1);
+  solver_options.SetOption(id1, "key3", "foo");
+
+  // First check a solver id not in solver_options.
+  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id2, {"key1"},
+                                                          {"key2"}, {"key3"}));
+  // Check the solver id in solver_options.
+  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1"},
+                                                          {"key2"}, {"key3"}));
+
+  // Check an option not set for id1.
+  solver_options.SetOption(id1, "key2", 1.3);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
+                                              {"key3"}),
+      std::invalid_argument,
+      "key2 is not allowed in the SolverOptions for id1.");
+
+  EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1", "key2"},
+                                                          {"key2"}, {"key3"}));
 }
 }  // namespace solvers
 }  // namespace drake

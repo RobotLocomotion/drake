@@ -427,9 +427,7 @@ void init_math(py::module m) {
 void init_multibody_plant(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody::multibody_plant;
-  constexpr auto& doc = pydrake_doc.drake.multibody.multibody_plant;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
@@ -758,11 +756,7 @@ void init_multibody_plant(py::module m) {
 void init_parsing(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody::parsing;
   constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
-
-  using multibody_plant::MultibodyPlant;
 
   // Stub in a deprecation shim for the Parser class.
   // TODO(jwnimmer-tri) Remove this stub on or about 2019-01-01.
@@ -794,7 +788,8 @@ void init_parsing(py::module m) {
             "pydrake.multibody.parsing.Parser instead.");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return AddModelFromSdfFile(file_name, model_name, plant, scene_graph);
+        return parsing::AddModelFromSdfFile(
+            file_name, model_name, plant, scene_graph);
 #pragma GCC diagnostic pop
       },
       py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
@@ -808,7 +803,7 @@ void init_parsing(py::module m) {
             "pydrake.multibody.parsing.Parser instead.");
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return AddModelFromSdfFile(file_name, plant, scene_graph);
+        return parsing::AddModelFromSdfFile(file_name, plant, scene_graph);
 #pragma GCC diagnostic pop
       },
       py::arg("file_name"), py::arg("plant"), py::arg("scene_graph") = nullptr,

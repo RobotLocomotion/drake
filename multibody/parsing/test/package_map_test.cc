@@ -12,7 +12,6 @@ using std::string;
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace {
 
 string GetTestDataRoot() {
@@ -153,6 +152,5 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
 }
 
 }  // namespace
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

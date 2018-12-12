@@ -157,11 +157,26 @@ SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
   return SolutionResult::kUnknownError;
 }
 
+template <>
+void MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
+    const MathematicalProgram&, const optional<Eigen::VectorXd>&,
+    const optional<SolverOptions>&, MathematicalProgramResult*) const {
+  DRAKE_ABORT_MSG(
+      "MobyLCPSolver cannot yet be used in a MathematicalProgram "
+      "while templatized as an AutoDiff");
+}
+
 // TODO(edrumwri): Break the following code out into a special
 // MobyLcpMathematicalProgram class.
 template <typename T>
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
+void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
+                             const optional<Eigen::VectorXd>& initial_guess,
+                             const optional<SolverOptions>& solver_options,
+                             MathematicalProgramResult* result) const {
+  *result = {};
+  // Moby doesn't use initial guess or the solver options.
+  unused(initial_guess);
+  unused(solver_options);
   // TODO(ggould-tri) This solver currently imposes restrictions that its
   // problem:
   //
@@ -181,11 +196,11 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   //
   // Restriction 3 could reasonably be relaxed to simply let unbound
   // variables sit at 0.
-
-  DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
-  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
+  if (!AreProgramAttributesSatisfied(prog)) {
+    throw std::invalid_argument(
+        "Moby LCP's capability doesn't satisfy the requirement of the "
+        "program.");
+  }
 
   const auto& bindings = prog.linear_complementarity_constraints();
 
@@ -214,8 +229,7 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
   // implementation but might perform better if the solver were to parallelize
   // internally.
 
-  // We don't actually indicate different results.
-  SolverResult solver_result(MobyLcpSolverId::id());
+  result->set_solver_id(MobyLcpSolverId::id());
 
   Eigen::VectorXd x_sol(prog.num_vars());
   for (const auto& binding : bindings) {
@@ -225,19 +239,28 @@ SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
     bool solved = SolveLcpLemkeRegularized(
         constraint->M(), constraint->q(), &constraint_solution);
     if (!solved) {
-      prog.SetSolverResult(solver_result);
-      return SolutionResult::kUnknownError;
+      result->set_solution_result(SolutionResult::kUnknownError);
+      return;
     }
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
       const int variable_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
       x_sol(variable_index) = constraint_solution(i);
     }
-    solver_result.set_optimal_cost(0.0);
   }
-  solver_result.set_decision_variable_values(x_sol);
+  result->set_optimal_cost(0.0);
+  result->set_x_val(x_sol);
+  result->set_solution_result(SolutionResult::kSolutionFound);
+}
+
+template <typename T>
+// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
+SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
-  return SolutionResult::kSolutionFound;
+  return result.get_solution_result();
 }
 
 template <typename T>

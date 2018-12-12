@@ -4,10 +4,10 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 
 /// Maps ROS package names to their full path on the local file system. It is
 /// used by the SDF and URDF parsers when parsing files that reference ROS
@@ -92,6 +92,14 @@ class PackageMap {
   std::map<std::string, std::string> map_;
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(jwnimmer-tri) Remove this forwarder on or about 2019-03-01.
+namespace parsing {
+using PackageMap
+    DRAKE_DEPRECATED("Spell as drake::multibody::PackageMap instead.")
+    = ::drake::multibody::PackageMap;
 }  // namespace parsing
+#endif
+
 }  // namespace multibody
 }  // namespace drake

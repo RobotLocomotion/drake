@@ -3,12 +3,12 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.eigen_geometry import Isometry3
 from pydrake.examples.manipulation_station import (
     IiwaCollisionModel,
     ManipulationStation,
     ManipulationStationHardwareInterface
 )
+from pydrake.math import RigidTransform
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.multibody_tree import ModelInstanceIndex
 from pydrake.multibody.parsing import Parser
@@ -46,7 +46,7 @@ class TestManipulationStation(unittest.TestCase):
         station.SetWsgVelocity(v, context)
         self.assertEqual(v, station.GetWsgVelocity(context))
 
-        station.get_camera_poses_in_world()["0"]
+        station.GetStaticCameraPosesInWorld()["0"]
         self.assertEqual(len(station.get_camera_names()), 3)
 
     def test_manipulation_station_add_iiwa_and_wsg_explicitly(self):
@@ -60,18 +60,20 @@ class TestManipulationStation(unittest.TestCase):
             "drake/manipulation/models/iiwa_description/iiwa7/"
             "iiwa7_no_collision.sdf")
         iiwa = parser.AddModelFromFile(iiwa_model_file, "iiwa")
-        X_WI = Isometry3.Identity()
+        X_WI = RigidTransform.Identity()
         plant.WeldFrames(plant.world_frame(),
-                         plant.GetFrameByName("iiwa_link_0", iiwa), X_WI)
+                         plant.GetFrameByName("iiwa_link_0", iiwa),
+                         X_WI.GetAsIsometry3())
 
         wsg_model_file = FindResourceOrThrow(
             "drake/manipulation/models/wsg_50_description/sdf/"
             "schunk_wsg_50.sdf")
         wsg = parser.AddModelFromFile(wsg_model_file, "gripper")
-        X_7G = Isometry3.Identity()
+        X_7G = RigidTransform.Identity()
         plant.WeldFrames(
             plant.GetFrameByName("iiwa_link_7", iiwa),
-            plant.GetFrameByName("body", wsg), X_7G)
+            plant.GetFrameByName("body", wsg),
+            X_7G.GetAsIsometry3())
 
         # Register models for the controller.
         station.RegisterIiwaControllerModel(

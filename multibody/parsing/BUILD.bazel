@@ -8,8 +8,6 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
-
 filegroup(
     name = "test_models",
     testonly = 1,
@@ -20,19 +18,24 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.xml",
     ]),
+    visibility = [
+        "//visibility:public",
+    ],
 )
 
 drake_cc_package_library(
     name = "parsing",
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
+        ":detail_misc",
+        ":detail_scene_graph",
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
         ":package_map",
         ":parser",
-        ":parser_common",
-        ":parser_path_utils",
-        ":scene_graph_parser_detail",
         ":sdf_parser",
-        ":sdf_parser_common",
-        ":tinyxml_util",
         ":urdf_parser",
     ],
 )
@@ -45,6 +48,9 @@ drake_cc_library(
     hdrs = [
         "package_map.h",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
         "//common",
         "@spruce",
@@ -54,72 +60,53 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "parser_path_utils",
+    name = "detail_misc",
     srcs = [
-        "parser_path_utils.cc",
+        "detail_common.cc",
+        "detail_ignition.cc",
+        "detail_path_utils.cc",
+        "detail_tinyxml.cc",
     ],
     hdrs = [
-        "parser_path_utils.h",
+        "detail_common.h",
+        "detail_ignition.h",
+        "detail_path_utils.h",
+        "detail_tinyxml.h",
     ],
     visibility = [
         "//attic/multibody/parsers:__pkg__",
     ],
     deps = [
         ":package_map",
-        "//common",
-        "@spruce",
-    ],
-)
-
-drake_cc_library(
-    name = "parser_common",
-    srcs = [
-        "parser_common.cc",
-    ],
-    hdrs = [
-        "parser_common.h",
-    ],
-    deps = [
-        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
-    ],
-)
-
-drake_cc_library(
-    name = "sdf_parser_common",
-    srcs = [
-        "sdf_parser_common.cc",
-    ],
-    hdrs = [
-        "sdf_parser_common.h",
-    ],
-    deps = [
-        ":parser_common",
         "//common:essential",
+        "//math:geometric_transform",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
         "@sdformat",
+        "@spruce",
+        "@tinyxml2",
     ],
 )
 
 drake_cc_library(
-    name = "scene_graph_parser_detail",
+    name = "detail_scene_graph",
     srcs = [
-        "scene_graph_parser_detail.cc",
+        "detail_scene_graph.cc",
     ],
     hdrs = [
-        "scene_graph_parser_detail.h",
+        "detail_scene_graph.h",
     ],
     install_hdrs_exclude = [
         # This header includes `sdformat` directly, which we do not want to
         # expose externally.
-        "scene_graph_parser_detail.h",
+        "detail_scene_graph.h",
     ],
     visibility = [
         "//visibility:private",
     ],
     deps = [
+        ":detail_misc",
         ":package_map",
-        ":parser_path_utils",
-        ":sdf_parser_common",
+        "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//multibody/multibody_tree/multibody_plant:coulomb_friction",
         "@sdformat",
@@ -127,33 +114,32 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "tinyxml_util",
+    name = "sdf_parser",
+    hdrs = [
+        "sdf_parser.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":detail_sdf_parser",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_sdf_parser",
     srcs = [
-        "tinyxml_util.cc",
+        "detail_sdf_parser.cc",
     ],
     hdrs = [
-        "tinyxml_util.h",
+        "detail_sdf_parser.h",
     ],
     visibility = [
         "//visibility:private",
     ],
     deps = [
-        "//math:geometric_transform",
-        "@tinyxml2",
-    ],
-)
-
-drake_cc_library(
-    name = "sdf_parser",
-    srcs = [
-        "sdf_parser.cc",
-    ],
-    hdrs = [
-        "sdf_parser.h",
-    ],
-    deps = [
-        ":scene_graph_parser_detail",
-        ":sdf_parser_common",
+        ":detail_misc",
+        ":detail_scene_graph",
         "//multibody/multibody_tree/multibody_plant",
         "@sdformat",
     ],
@@ -161,19 +147,33 @@ drake_cc_library(
 
 drake_cc_library(
     name = "urdf_parser",
-    srcs = [
-        "urdf_geometry.cc",
-        "urdf_parser.cc",
-    ],
     hdrs = [
-        "urdf_geometry.h",
         "urdf_parser.h",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
+        ":detail_urdf_parser",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_urdf_parser",
+    srcs = [
+        "detail_urdf_geometry.cc",
+        "detail_urdf_parser.cc",
+    ],
+    hdrs = [
+        "detail_urdf_geometry.h",
+        "detail_urdf_parser.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
         ":package_map",
-        ":parser_common",
-        ":parser_path_utils",
-        ":tinyxml_util",
         "//multibody/multibody_tree/multibody_plant",
         "@tinyxml2",
     ],
@@ -187,9 +187,12 @@ drake_cc_library(
     hdrs = [
         "parser.h",
     ],
+    visibility = [
+        "//visibility:public",
+    ],
     deps = [
-        ":sdf_parser",
-        ":urdf_parser",
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
     ],
 )
 
@@ -206,9 +209,9 @@ drake_cc_library(
         "//visibility:private",
     ],
     deps = [
-        ":parser_common",
-        ":sdf_parser",
-        ":urdf_parser",
+        ":detail_misc",
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
         "//common:find_resource",
     ],
 )
@@ -266,21 +269,21 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "sdf_parser_test",
+    name = "detail_sdf_parser_test",
     data = [
         ":test_models",
         "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
-        ":sdf_parser",
+        ":detail_sdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
     ],
 )
 
 drake_cc_googletest(
-    name = "urdf_parser_test",
+    name = "detail_urdf_parser_test",
     data = [
         ":test_models",
         "//examples/atlas:models",
@@ -288,7 +291,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
-        ":urdf_parser",
+        ":detail_urdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
@@ -297,9 +300,9 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "scene_graph_parser_detail_test",
+    name = "detail_scene_graph_test",
     deps = [
-        ":scene_graph_parser_detail",
+        ":detail_scene_graph",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -307,12 +310,12 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "urdf_geometry_test",
+    name = "detail_urdf_geometry_test",
     data = [
         ":test_models",
     ],
     deps = [
-        ":urdf_parser",
+        ":detail_urdf_parser",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -330,20 +333,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "parser_path_utils_test",
-    data = [
-        ":test_models",
-    ],
+    name = "detail_path_utils_test",
     deps = [
-        ":parser_path_utils",
-        "//common/test_utilities:expect_throws_message",
+        ":detail_misc",
+        "//common/test_utilities",
     ],
 )
 
 drake_cc_googletest(
-    name = "tinyxml_util_test",
+    name = "detail_tinyxml_test",
     deps = [
-        ":tinyxml_util",
+        ":detail_misc",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

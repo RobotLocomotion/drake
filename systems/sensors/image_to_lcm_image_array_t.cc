@@ -8,7 +8,6 @@
 #include "robotlocomotion/image_array_t.hpp"
 #include "robotlocomotion/image_t.hpp"
 
-#include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/lcm_image_traits.h"
 
 using std::string;
@@ -158,14 +157,6 @@ ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
   image_array_t_msg_output_port_index_ =
       DeclareAbstractOutputPort(&ImageToLcmImageArrayT::CalcImageArray)
           .get_index();
-}
-
-template <PixelType kPixelType>
-const InputPort<double>& ImageToLcmImageArrayT::DeclareImageInputPort(
-    const std::string& name) {
-  input_port_pixel_type_.push_back(kPixelType);
-  return this->DeclareAbstractInputPort(name,
-                                        systems::Value<Image<kPixelType>>());
 }
 
 const InputPort<double>& ImageToLcmImageArrayT::color_image_input_port() const {

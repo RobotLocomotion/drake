@@ -35,6 +35,8 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.IiwaCollisionModel.kBoxCollision.doc)
       .export_values();
 
+  // TODO(siyuan.feng): Add RegisterRgbdCamera when we have bindings for
+  // creating a geometry::dev::render::DepthCameraProperties struct.
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
           doc.ManipulationStation.ctor.doc_1args)
@@ -81,10 +83,10 @@ PYBIND11_MODULE(manipulation_station, m) {
           doc.ManipulationStation.GetWsgVelocity.doc)
       .def("SetWsgVelocity", &ManipulationStation<T>::SetWsgVelocity,
           doc.ManipulationStation.SetWsgVelocity.doc)
-      .def("get_camera_poses_in_world",
-          &ManipulationStation<T>::get_camera_poses_in_world,
+      .def("GetStaticCameraPosesInWorld",
+          &ManipulationStation<T>::GetStaticCameraPosesInWorld,
           py_reference_internal,
-          doc.ManipulationStation.get_camera_poses_in_world.doc)
+          doc.ManipulationStation.GetStaticCameraPosesInWorld.doc)
       .def("get_camera_names", &ManipulationStation<T>::get_camera_names,
           doc.ManipulationStation.get_camera_names.doc)
       .def("SetWsgGains", &ManipulationStation<T>::SetWsgGains,

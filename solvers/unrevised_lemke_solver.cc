@@ -85,6 +85,15 @@ SolutionResult
 }
 
 template <>
+void UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
+    const MathematicalProgram&, const optional<Eigen::VectorXd>&,
+    const optional<SolverOptions>&, MathematicalProgramResult*) const {
+  DRAKE_ABORT_MSG(
+      "UnrevisedLemkeSolver cannot yet be used in a "
+      "MathematicalProgram while templatized as an AutoDiff");
+}
+
+template <>
 SolutionResult
     UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
     MathematicalProgram&) const {
@@ -93,9 +102,24 @@ SolutionResult
   return SolutionResult::kUnknownError;
 }
 
+template <>
+void UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
+    const MathematicalProgram&, const optional<Eigen::VectorXd>&,
+    const optional<SolverOptions>&, MathematicalProgramResult*) const {
+  DRAKE_ABORT_MSG(
+      "UnrevisedLemkeSolver cannot yet be used in a "
+      "MathematicalProgram while templatized as an AutoDiff");
+}
+
 template <typename T>
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
+void UnrevisedLemkeSolver<T>::Solve(
+    const MathematicalProgram& prog,
+    const optional<Eigen::VectorXd>& initial_guess,
+    const optional<SolverOptions>& solver_options,
+    MathematicalProgramResult* result) const {
+  *result = {};
+  unused(initial_guess);
+  unused(solver_options);
   // This solver imposes restrictions that its problem:
   //
   // (1) Contains only linear complementarity constraints,
@@ -114,11 +138,11 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   //
   // Restriction 3 could reasonably be relaxed to simply let unbound
   // variables sit at 0.
-
-  DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
-  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
+  if (!AreProgramAttributesSatisfied(prog)) {
+    throw std::invalid_argument(
+        "Unrevised LCP's capability doesn't satisfy the requirement of the "
+        "program.");
+  }
 
   const auto& bindings = prog.linear_complementarity_constraints();
 
@@ -142,8 +166,7 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   // variables.
   //
 
-  // We don't actually indicate different results.
-  SolverResult solver_result(UnrevisedLemkeSolverId::id());
+  result->set_solver_id(UnrevisedLemkeSolverId::id());
 
   // Create a dummy variable for the number of pivots used.
   int num_pivots = 0;
@@ -156,17 +179,28 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
     bool solved = SolveLcpLemke(
         constraint->M(), constraint->q(), &constraint_solution, &num_pivots);
     if (!solved) {
-      prog.SetSolverResult(solver_result);
-      return SolutionResult::kUnknownError;
+      result->set_solution_result(SolutionResult::kUnknownError);
+      return;
     }
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
       const int variable_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
       x_sol(variable_index) = constraint_solution(i);
     }
-    solver_result.set_optimal_cost(0.0);
   }
-  return SolutionResult::kSolutionFound;
+  result->set_optimal_cost(0.0);
+  result->set_x_val(x_sol);
+  result->set_solution_result(SolutionResult::kSolutionFound);
+}
+
+template <typename T>
+// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
+SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
+  prog.SetSolverResult(solver_result);
+  return result.get_solution_result();
 }
 
 // Utility function for copying an r-dimensional column vector v (designated by

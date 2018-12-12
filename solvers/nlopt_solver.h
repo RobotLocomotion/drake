@@ -7,6 +7,16 @@
 
 namespace drake {
 namespace solvers {
+/**
+ * The NLopt solver details after calling Solve() function. The users can call
+ * MathematicalProgramResult::get_solver_details().GetValue<NloptSolverDetails>()
+ * to obtain the details.
+ */
+struct NloptSolverDetails {
+  // The return status of NLopt solver. Please refer to
+  // https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
+  int status{};
+};
 
 class NloptSolver : public MathematicalProgramSolverInterface {
  public:
@@ -23,11 +33,10 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-             const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override {
-    throw std::runtime_error("Not implemented yet.");
-  }
+  void Solve(const MathematicalProgram& prog,
+             const optional<Eigen::VectorXd>& initial_guess,
+             const optional<SolverOptions>& solver_options,
+             MathematicalProgramResult* result) const override;
 
   SolverId solver_id() const override;
 
@@ -38,6 +47,18 @@ class NloptSolver : public MathematicalProgramSolverInterface {
       const MathematicalProgram& prog) const override;
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+
+  /** The key name for the double-valued constraint tolerance.*/
+  static std::string ConstraintToleranceName();
+
+  /** The key name for double-valued x relative tolerance.*/
+  static std::string XRelativeToleranceName();
+
+  /** The key name for double-valued x absolute tolerance.*/
+  static std::string XAbsoluteToleranceName();
+
+  /** The key name for int-valued maximum number of evaluations. */
+  static std::string MaxEvalName();
 };
 
 }  // namespace solvers
