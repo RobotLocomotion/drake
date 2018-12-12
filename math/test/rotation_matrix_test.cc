@@ -547,8 +547,8 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   R = RotationMatrix<double>::ProjectToRotationMatrix(m, &quality_factor);
   const RotationMatrix<double> I = R * R.inverse();
   EXPECT_TRUE(I.IsNearlyEqualTo(RotationMatrix<double>(Matrix3d::Identity()),
-                                8.1 * kEpsilon));
-  EXPECT_TRUE(R.inverse().IsNearlyEqualTo(R.transpose(), 8.1 * kEpsilon));
+                                8 * kEpsilon));
+  EXPECT_TRUE(R.inverse().IsNearlyEqualTo(R.transpose(), 8 * kEpsilon));
 }
 
 

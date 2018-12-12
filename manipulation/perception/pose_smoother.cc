@@ -78,6 +78,11 @@ Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
   pose.linear() = quaternion.toRotationMatrix();  // This is not orthonormal!
   pose.translation() = pose_vector.head<3>();
   pose.makeAffine();
+  // TODO(Mitiguy) If this function can or should use a normalized quaternion,
+  // change this function so it instead returns a rigid transform.  The
+  // RigidTransform constructor shown below indirectly normalizes the quaternion
+  // in an efficient way that avoids a square-root.
+  // return math::RigidTransform(quaternion, pose_vector.head<3>());
   return pose;
 }
 
