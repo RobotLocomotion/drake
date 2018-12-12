@@ -8,6 +8,7 @@ from pydrake.multibody.multibody_tree import (
     ForceElementIndex,
     Frame,
     FrameIndex,
+    JacobianWrtVariable,
     Joint,
     JointActuator,
     JointActuatorIndex,
@@ -62,7 +63,7 @@ from pydrake.common.deprecation import (
 )
 from pydrake.util.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
-from pydrake.math import RollPitchYaw
+from pydrake.math import RigidTransform, RollPitchYaw
 
 
 def get_index_class(cls):
@@ -287,6 +288,20 @@ class TestMultibodyTree(unittest.TestCase):
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
 
+        nq = plant.num_positions()
+        nv = plant.num_velocities()
+        wrt_list = [
+            (JacobianWrtVariable.kQDot, nq),
+            (JacobianWrtVariable.kV, nv),
+        ]
+        for wrt, nw in wrt_list:
+            Jw_ABp_E = plant.CalcJacobianSpatialVelocity(
+                context=context, with_respect_to=wrt, frame_B=base_frame,
+                p_BP=np.zeros(3), frame_A=world_frame,
+                frame_E=world_frame)
+            self.assert_sane(Jw_ABp_E)
+            self.assertEqual(Jw_ABp_E.shape, (6, nw))
+
         # Compute body pose.
         self.check_old_spelling_exists(tree.EvalBodyPoseInWorld)
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
@@ -375,6 +390,10 @@ class TestMultibodyTree(unittest.TestCase):
         plant.SetPositionsAndVelocities(context, x0)
         self.assertTrue(np.allclose(
             tree.GetPositionsAndVelocities(context), x0))
+
+        # Test existence of context resetting methods.
+        plant.SetDefaultContext(context)
+        plant.SetDefaultState(context, state=context.get_mutable_state())
 
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
@@ -557,7 +576,9 @@ class TestMultibodyTree(unittest.TestCase):
         context = plant.CreateDefaultContext()
 
         nq = plant.num_positions()
+        nq_iiwa = plant.num_positions(iiwa_model)
         nv = plant.num_velocities()
+        nv_iiwa = plant.num_velocities(iiwa_model)
 
         q_iiwa_desired = np.zeros(7)
         v_iiwa_desired = np.zeros(7)
@@ -577,6 +598,8 @@ class TestMultibodyTree(unittest.TestCase):
 
         x_plant = plant.GetMutablePositionsAndVelocities(context)
         x_plant[:] = x_plant_desired
+        q_plant = plant.GetPositions(context)
+        v_plant = plant.GetVelocities(context)
 
         # Get state from context.
         x = plant.GetPositionsAndVelocities(context)
@@ -588,9 +611,13 @@ class TestMultibodyTree(unittest.TestCase):
         tree = plant.tree()
         self.check_old_spelling_exists(tree.GetPositionsFromArray)
         q_iiwa = plant.GetPositions(context, iiwa_model)
+        q_iiwa_array = plant.GetPositionsFromArray(iiwa_model, q_plant)
+        self.assertTrue(np.allclose(q_iiwa, q_iiwa_array))
         q_gripper = plant.GetPositions(context, gripper_model)
         self.check_old_spelling_exists(tree.GetVelocitiesFromArray)
         v_iiwa = plant.GetVelocities(context, iiwa_model)
+        v_iiwa_array = plant.GetVelocitiesFromArray(iiwa_model, v_plant)
+        self.assertTrue(np.allclose(v_iiwa, v_iiwa_array))
         v_gripper = plant.GetVelocities(context, gripper_model)
 
         # Assert that the `GetPositions` and `GetVelocities` return
@@ -599,6 +626,49 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
         self.assertTrue(np.allclose(q_gripper_desired, q_gripper))
         self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
+
+        # Verify that SetPositionsInArray() and SetVelocitiesInArray() works.
+        plant.SetPositionsInArray(iiwa_model, np.zeros(nq_iiwa), q_plant)
+        self.assertTrue(np.allclose(
+            plant.GetPositionsFromArray(iiwa_model, q_plant),
+            np.zeros(nq_iiwa)))
+        plant.SetVelocitiesInArray(iiwa_model, np.zeros(nv_iiwa), v_plant)
+        self.assertTrue(np.allclose(
+            plant.GetVelocitiesFromArray(iiwa_model, v_plant),
+            np.zeros(nv_iiwa)))
+
+        # Check actuation.
+        nu = plant.num_actuated_dofs()
+        u_plant = np.zeros(nu)
+        u_iiwa = np.arange(nv_iiwa)
+        plant.SetActuationInArray(iiwa_model, u_iiwa, u_plant)
+        self.assertTrue(np.allclose(u_plant[:7], u_iiwa))
+
+    def test_map_qdot_to_v_and_back(self):
+        plant = MultibodyPlant()
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/"
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+        # Use floating base to effectively add a quatnerion in the generalized
+        # quaternion.
+        iiwa_model = Parser(plant=plant).AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        plant.Finalize()
+        context = plant.CreateDefaultContext()
+        # Try mapping velocity to qdot and back.
+        nq = plant.num_positions()
+        nv = plant.num_velocities()
+        q_init = np.linspace(start=1.0, stop=nq, num=nq)
+        plant.SetPositions(context, q_init)
+        # Overwrite the (invalid) base coordinates, wherever in `q` they are.
+        plant.SetFreeBodyPose(
+            context, plant.GetBodyByName("iiwa_link_0"),
+            RigidTransform(RollPitchYaw([0.1, 0.2, 0.3]),
+                           p=[0.4, 0.5, 0.6]).GetAsIsometry3())
+        v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
+        qdot = plant.MapVelocityToQDot(context, v_expected)
+        v_remap = plant.MapQDotToVelocity(context, qdot)
+        self.assertTrue(np.allclose(v_expected, v_remap))
 
     def test_multibody_add_joint(self):
         """
@@ -665,11 +735,19 @@ class TestMultibodyTree(unittest.TestCase):
         self.assert_sane(H)
         self.assertTrue(Cv.shape == (2, ))
         self.assert_sane(Cv, nonzero=False)
-        vd_d = np.zeros(plant.num_velocities())
+        nv = plant.num_velocities()
+        vd_d = np.zeros(nv)
         tau = tree.CalcInverseDynamics(
             context, vd_d, MultibodyForces(tree))
         self.assertEqual(tau.shape, (2,))
         self.assert_sane(tau, nonzero=False)
+
+        self.assertEqual(plant.CalcPotentialEnergy(context), 0)
+        # - Existence check.
+        plant.CalcConservativePower(context)
+        tau_g = plant.CalcGravityGeneralizedForces(context)
+        self.assertEqual(tau_g.shape, (nv,))
+        self.assert_sane(tau_g, nonzero=False)
 
     def test_contact(self):
         # PenetrationAsContactPair
