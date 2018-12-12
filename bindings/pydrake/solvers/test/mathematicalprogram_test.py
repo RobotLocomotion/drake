@@ -259,6 +259,14 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.EvalBindings(prog.GetAllConstraints(), x_expected),
             np.ndarray)
 
+        # Bindings for `Eval`.
+        x_list = (float(1.), AutoDiffXd(1.), sym.Variable("x"))
+        T_y_list = (float, AutoDiffXd, sym.Expression)
+        evaluator = costs[0].evaluator()
+        for x_i, T_y_i in zip(x_list, T_y_list):
+            y_i = evaluator.Eval(x=[x_i])
+            self.assertIsInstance(y_i[0], T_y_i)
+
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 2, "x")
