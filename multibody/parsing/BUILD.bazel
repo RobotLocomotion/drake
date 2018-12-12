@@ -334,6 +334,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_path_utils_test",
+    data = [
+        ":test_models",
+    ],
     deps = [
         ":detail_misc",
         "//common/test_utilities",
