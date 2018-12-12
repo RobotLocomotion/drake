@@ -31,6 +31,7 @@ OrientationConstraint::OrientationConstraint(
 
 void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                    Eigen::VectorXd* y) const {
+  // TODO(avalenzu): Re-work to avoid round-trip through AutoDiffXd (#10205).
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
@@ -81,8 +82,9 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
       R_AbarA_.inverse().matrix() * Jq_V_AbarBbar.topRows<3>();
   const Vector3<double> r_AB{R_AB(1, 2) - R_AB(2, 1), R_AB(2, 0) - R_AB(0, 2),
                              R_AB(0, 1) - R_AB(1, 0)};
-  *y = math::initializeAutoDiffGivenGradientMatrix(Vector1d(R_AB.trace()),
-                                                   r_AB.transpose() * Jq_w_AB);
+  *y = math::initializeAutoDiffGivenGradientMatrix(
+      Vector1d(R_AB.trace()),
+      r_AB.transpose() * Jq_w_AB * math::autoDiffToGradientMatrix(x));
 }
 
 }  // namespace multibody

@@ -38,11 +38,11 @@ class OrientationConstraint : public solvers::Constraint {
    * in frame A̅. The frame B is fixed to a frame B̅, with orientation R_BbarB
    * measured in frame B. We constrain the angle between frame A and B to be
    * less than theta_bound.
-   * @param tree The MultibodyTree on which the constraint is imposed. @p tree
+   * @param plant The MultibodyPlant on which the constraint is imposed. @p plant
    *   should be alive during the lifetime of this constraint.
-   * @param frameAbar_idx The index of frame A̅.
+   * @param frameAbar The frame A̅ in the model to which frame A is fixed.
    * @param R_AbarA The orientation of frame A measured in frame A̅.
-   * @param frameBbar_idx The index of frame B̅.
+   * @param frameBbar The frame B̅ in the model to which frame B is fixed.
    * @param R_BbarB The orientation of frame B measured in frame B̅.
    * @param theta_bound The bound on the angle difference between frame A's
    *   orientation and frame B's orientation. It is denoted as θ_bound in the
