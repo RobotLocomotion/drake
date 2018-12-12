@@ -214,6 +214,15 @@ MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
   return NewSosPolynomial(x);
 }
 
+namespace {
+symbolic::Polynomial NewNonnegativePolynomial(const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis, MathematicalProgram* prog, MatrixXDecisionVariable* Q) {
+  *Q = prog->NewSymmetricContinuousVariables(monomial_basis.size());
+}
+}  // namespace
+symbolic::Polynomial MathematicalProgram::NewSdsosPolynomial(const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  
+}
+
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
     int rows, int cols, const vector<string>& names) {
   MatrixXIndeterminate indeterminates_matrix(rows, cols);

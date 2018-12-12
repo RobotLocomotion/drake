@@ -584,6 +584,9 @@ class MathematicalProgram {
   std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
   NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
 
+  symbolic::Polynomial NewSdsosPolynomial(
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
+
   /**
    * Adds indeterminates, appending them to an internal vector of any
    * existing indeterminates.
