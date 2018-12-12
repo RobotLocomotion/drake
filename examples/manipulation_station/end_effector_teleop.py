@@ -33,7 +33,9 @@ class EndEffectorTeleop(LeafSystem):
         self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
                                       self._DoCalcOutput)
 
-        self._DeclarePeriodicPublish(0.1, 0.0)
+        # Note: This timing affects the keyboard teleop performance. A larger
+        #       time step causes more lag in the response.
+        self._DeclarePeriodicPublish(0.01, 0.0)
 
         self.window = tk.Tk()
         self.window.title("End-Effector TeleOp")
@@ -75,6 +77,31 @@ class EndEffectorTeleop(LeafSystem):
                           orient=tk.HORIZONTAL)
         self.z.pack()
 
+        # The key bindings below provide teleop functionality via the
+        # keyboard, and are somewhat arbitrary (inspired by gaming
+        # conventions). Note that in order for the keyboard bindings to
+        # be active, the teleop slider window must be the active window.
+
+        # Linear motion key bindings.
+        self.window.bind("<Up>", self.PosZCallback)
+        self.window.bind("<Down>", self.NegZCallback)
+        self.window.bind("<a>", self.NegYCallback)
+        self.window.bind("<d>", self.PosYCallback)
+        self.window.bind("<w>", self.PosXCallback)
+        self.window.bind("<s>", self.NegXCallback)
+
+        # Rotational motion key bindings.
+        self.window.bind("<Control-a>", self.NegPitchCallback)
+        self.window.bind("<Control-d>", self.PosPitchCallback)
+        self.window.bind("<Control-w>", self.PosRollCallback)
+        self.window.bind("<Control-s>", self.NegRollCallback)
+        self.window.bind("<Control-Up>", self.PosYawCallback)
+        self.window.bind("<Control-Down>", self.NegYawCallback)
+
+        # Delta displacements for motion via keyboard teleop.
+        self.rotation_delta = 0.05  # rad/s
+        self.position_delta = 0.01  # m
+
     def SetPose(self, pose):
         """
         @param pose is an Isometry3.
@@ -110,6 +137,42 @@ class EndEffectorTeleop(LeafSystem):
         output.SetAtIndex(3, self.x.get())
         output.SetAtIndex(4, self.y.get())
         output.SetAtIndex(5, self.z.get())
+
+    def PosZCallback(self, event):
+        self.z.set(self.z.get() + self.position_delta)
+
+    def NegZCallback(self, event):
+        self.z.set(self.z.get() - self.position_delta)
+
+    def NegYCallback(self, event):
+        self.y.set(self.y.get() - self.position_delta)
+
+    def PosYCallback(self, event):
+        self.y.set(self.y.get() + self.position_delta)
+
+    def NegXCallback(self, event):
+        self.x.set(self.x.get() - self.position_delta)
+
+    def PosXCallback(self, event):
+        self.x.set(self.x.get() + self.position_delta)
+
+    def PosYawCallback(self, event):
+        self.yaw.set(self.yaw.get() + self.rotation_delta)
+
+    def NegYawCallback(self, event):
+        self.yaw.set(self.yaw.get() - self.rotation_delta)
+
+    def PosPitchCallback(self, event):
+        self.pitch.set(self.pitch.get() + self.rotation_delta)
+
+    def NegPitchCallback(self, event):
+        self.pitch.set(self.pitch.get() - self.rotation_delta)
+
+    def PosRollCallback(self, event):
+        self.roll.set(self.roll.get() + self.rotation_delta)
+
+    def NegRollCallback(self, event):
+        self.roll.set(self.roll.get() - self.rotation_delta)
 
 
 # TODO(russt): Clean this up and move it to C++.
