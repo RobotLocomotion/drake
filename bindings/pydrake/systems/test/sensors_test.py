@@ -160,8 +160,8 @@ class TestSensors(unittest.TestCase):
         fov_y = np.pi / 4
         focal_y = height / 2 / np.tan(fov_y / 2)
         focal_x = focal_y
-        center_x = width / 2
-        center_y = height / 2
+        center_x = width / 2 - 0.5
+        center_y = height / 2 - 0.5
         intrinsic_matrix = np.array([
             [focal_x, 0, center_x],
             [0, focal_y, center_y],
