@@ -16,6 +16,9 @@ namespace {
 
 const int kStart = 3;
 const int kEnd = 10;
+// Use a slight perturbation of the default URL.
+// TODO(eric.cousineau): Make this URL be unique to each workspace / test run.
+const char kLcmUrl[] = "udpm://239.255.76.67:7668";
 
 // Converts millisecond timestamp field to second.
 class MilliSecTimeStampMessageToSeconds : public LcmMessageToTimeInterface {
@@ -53,7 +56,7 @@ class DummySys : public systems::LeafSystem<double> {
 // Dummy publish thread. Usleeps so that the dut thread has enough time to
 // process.
 void publish() {
-  ::lcm::LCM lcm;
+  ::lcm::LCM lcm(kLcmUrl);
   lcmt_drake_signal msg;
   msg.dim = 0;
   msg.val.resize(msg.dim);
@@ -78,7 +81,7 @@ void publish() {
 // a DummySys and a SignalLogger. The intended behavior is that every time
 // a new Lcm message arrives, its timestamp will be logged by the SignalLogger.
 GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
-  drake::lcm::DrakeLcm lcm;
+  drake::lcm::DrakeLcm lcm(kLcmUrl);
   DiagramBuilder<double> builder;
 
   // Makes the test system.

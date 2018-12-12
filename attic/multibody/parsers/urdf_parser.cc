@@ -14,8 +14,8 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/material_map.h"
 #include "drake/multibody/parsers/model_instance_id_table.h"
-#include "drake/multibody/parsers/parser_path_utils.h"
 #include "drake/multibody/parsers/xml_util.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/rigid_body_plant/compliant_material.h"
 
 namespace drake {
@@ -44,6 +44,8 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using drake::parsers::ModelInstanceIdTable;
+using drake::multibody::detail::GetFullPath;
+using drake::multibody::detail::ResolveFilename;
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kRollPitchYaw;
 

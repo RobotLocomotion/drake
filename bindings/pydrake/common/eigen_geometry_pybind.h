@@ -51,14 +51,14 @@ struct type_caster_wrapped {
     DRAKE_DEMAND(loaded_);
     return value_;
   }
-  template <typename T> using cast_op_type =
-      py::detail::movable_cast_op_type<T>;
+  template <typename T>
+  using cast_op_type = py::detail::movable_cast_op_type<T>;
   static constexpr auto name = WrappedTypeCaster::props::descriptor;
 
   // C++ to Python.
   template <typename TType>
-  static py::handle cast(TType&& src, py::return_value_policy policy,
-      py::handle parent) {
+  static py::handle cast(
+      TType&& src, py::return_value_policy policy, py::handle parent) {
     if (policy == py::return_value_policy::reference ||
         policy == py::return_value_policy::reference_internal) {
       // N.B. We must declare a local `static constexpr` here to prevent
@@ -68,8 +68,7 @@ struct type_caster_wrapped {
       // example.
       static constexpr auto original_name = Wrapper::original_name;
       throw py::cast_error(
-          std::string("Can only pass ") + original_name.text +
-          " by value.");
+          std::string("Can only pass ") + original_name.text + " by value.");
     }
     return WrappedTypeCaster::cast(
         Wrapper::wrap(std::forward<TType>(src)), policy, parent);
@@ -92,9 +91,7 @@ struct wrapper_eigen_translation {
   static Type unwrap(const WrappedType& arg_wrapped) {
     return Type(arg_wrapped);
   }
-  static WrappedType wrap(const Type& arg) {
-    return arg.vector();
-  }
+  static WrappedType wrap(const Type& arg) { return arg.vector(); }
 };
 
 // N.B. Since `Isometry3<>` and `Eigen::Quaternion<>` have more
@@ -110,7 +107,7 @@ namespace detail {
 template <typename T, int Dim>
 struct type_caster<Eigen::Translation<T, Dim>>
     : public drake::pydrake::detail::type_caster_wrapped<
-        drake::pydrake::detail::wrapper_eigen_translation<T, Dim>> {};
+          drake::pydrake::detail::wrapper_eigen_translation<T, Dim>> {};
 
 }  // namespace detail
 }  // namespace pybind11

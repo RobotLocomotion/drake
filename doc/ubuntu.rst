@@ -4,13 +4,9 @@
 Ubuntu
 ******
 
-Prerequisite setup is automated. For Ubuntu Xenial, simply run::
+Prerequisite setup is automated, simply run::
 
-    sudo ./setup/ubuntu/16.04/install_prereqs.sh
-
-For Ubuntu Bionic, simply run::
-
-    sudo ./setup/ubuntu/18.04/install_prereqs.sh
+    sudo ./setup/ubuntu/install_prereqs.sh
 
 You may need to respond to interactive prompts to confirm that you agree to add
 the appropriate Drake `apt` repository for your release

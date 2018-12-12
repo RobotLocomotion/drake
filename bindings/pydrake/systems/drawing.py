@@ -6,7 +6,6 @@ Note:
     installed.
 """
 
-from sys import maxint
 from tempfile import NamedTemporaryFile
 
 import matplotlib.pyplot as plt
@@ -38,6 +37,6 @@ def plot_graphviz(dot_text):
     return plt.imshow(plt.imread(f.name), aspect="equal")
 
 
-def plot_system_graphviz(system, max_depth=maxint):
+def plot_system_graphviz(system, **kwargs):
     """Renders a System's Graphviz representation in `matplotlib`."""
-    return plot_graphviz(system.GetGraphvizString(max_depth))
+    return plot_graphviz(system.GetGraphvizString(**kwargs))

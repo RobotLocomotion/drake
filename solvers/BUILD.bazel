@@ -101,7 +101,6 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
-        ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
@@ -759,17 +758,6 @@ drake_cc_library(
         ],
     }),
     hdrs = ["snopt_solver.h"],
-    # Some versions of SNOPT's API require passing a `std::string::c_str()`
-    # result of `const char*` to a function taking a `char*`, or passing a
-    # function pointer that receives parameters to a function that takes a
-    # (mismatched) function pointer with no arguments.  We could carefully
-    # craft our snopt_solver_f2c.cc to have appropriate casts depending on the
-    # signatures of the version of SNOPT in use, but choose instead to just
-    # suppress all such warnings until we find some case where they matter.
-    # (The next best step would be to write a sensible C++ SNOPT API wrapper,
-    # and contain the language abuses there, so that the actual logic of our
-    # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
-    copts = ["-fpermissive"],
     deps = select({
         # This is Drake's default flavor; currently f2c.
         "//tools:with_snopt": [
@@ -1045,6 +1033,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1528,6 +1517,7 @@ drake_cc_googletest(
     name = "solver_options_test",
     deps = [
         ":solver_options",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

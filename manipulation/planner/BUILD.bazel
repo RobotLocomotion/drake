@@ -42,7 +42,7 @@ drake_cc_googletest(
         "//attic/multibody/parsers",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
-        "//multibody/multibody_tree/parsing",
+        "//multibody/parsing",
     ],
 )
 

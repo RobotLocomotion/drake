@@ -25,18 +25,106 @@ using systems::DiscreteUpdateEvent;
 // cabinet.
 const double kIiwaLcmStatusPeriod = 0.005;
 
+template <typename T>
+IiwaCommand<T>::IiwaCommand(int num_joints)
+    : systems::BasicVector<T>(num_joints * 2 + 1), num_joints_(num_joints) {
+  this->values().setZero();
+  set_utime(kUnitializedTime);
+}
+
+template <typename T>
+T IiwaCommand<T>::utime() const {
+  return (*this)[0];
+}
+
+template <typename T>
+Eigen::VectorBlock<const VectorX<T>> IiwaCommand<T>::joint_position() const {
+  return this->values().segment(1, num_joints_);
+}
+
+template <typename T>
+Eigen::VectorBlock<const VectorX<T>> IiwaCommand<T>::joint_torque() const {
+  return this->values().tail(num_joints_);
+}
+
+template <typename T>
+void IiwaCommand<T>::set_utime(T utime) {
+  (*this)[0] = utime;
+}
+
+template <typename T>
+void IiwaCommand<T>::set_joint_position(const VectorX<T>& q) {
+  DRAKE_THROW_UNLESS(q.size() == num_joints_);
+  this->values().segment(1, num_joints_) = q;
+}
+
+template <typename T>
+void IiwaCommand<T>::set_joint_torque(const VectorX<T>& torque) {
+  DRAKE_THROW_UNLESS(torque.size() == num_joints_);
+  this->values().tail(num_joints_) = torque;
+}
+
+IiwaCommandTranslator::IiwaCommandTranslator(int num_joints)
+    : systems::lcm::LcmAndVectorBaseTranslator(
+          IiwaCommand<double>(num_joints).size()),
+      num_joints_(num_joints) {}
+
+void IiwaCommandTranslator::Deserialize(
+    const void* lcm_message_bytes, int lcm_message_length,
+    systems::VectorBase<double>* vector_base) const {
+  auto command = dynamic_cast<IiwaCommand<double>*>(vector_base);
+  DRAKE_THROW_UNLESS(command);
+
+  lcmt_iiwa_command msg{};
+  const int length = msg.decode(lcm_message_bytes, 0, lcm_message_length);
+  DRAKE_THROW_UNLESS(length == lcm_message_length);
+
+  const int num_joints = static_cast<int>(msg.joint_position.size());
+  DRAKE_THROW_UNLESS(num_joints == num_joints_);
+  Eigen::VectorXd q(num_joints);
+  for (int i = 0; i < num_joints; i++) q[i] = msg.joint_position[i];
+
+  const int num_torques = static_cast<int>(msg.joint_torque.size());
+  DRAKE_THROW_UNLESS(num_torques == 0 || num_torques == num_joints_);
+  Eigen::VectorXd torque = Eigen::VectorXd::Zero(num_joints_);
+  if (num_torques) {
+    for (int i = 0; i < num_joints_; i++) torque[i] = msg.joint_torque[i];
+  }
+
+  command->set_utime(msg.utime);
+  command->set_joint_position(q);
+  command->set_joint_torque(torque);
+}
+
+void IiwaCommandTranslator::Serialize(double,
+                                      const systems::VectorBase<double>&,
+                                      std::vector<uint8_t>*) const {
+  throw std::runtime_error("Not implemented");
+}
+
+std::unique_ptr<systems::BasicVector<double>>
+IiwaCommandTranslator::AllocateOutputVector() const {
+  return std::make_unique<IiwaCommand<double>>(num_joints_);
+}
+
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
-    : num_joints_(num_joints) {
+    : num_joints_(num_joints), translator_(num_joints) {
+  lcmt_iiwa_command uninitialized_message{};
+  uninitialized_message.utime =
+      static_cast<uint64_t>(IiwaCommand<double>::kUnitializedTime);
+  this->DeclareVectorInputPort("command_vector",
+                               IiwaCommand<double>(num_joints));
   this->DeclareAbstractInputPort(
-      systems::kUseDefaultName,
-      systems::Value<lcmt_iiwa_command>{});
+      "command_message",
+      systems::Value<lcmt_iiwa_command>(uninitialized_message));
+
   this->DeclareVectorOutputPort(
-      systems::BasicVector<double>(num_joints_ * 2),
+      "state", systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
       });
   this->DeclareVectorOutputPort(
-      systems::BasicVector<double>(num_joints_),
+      "feedforward_torque", systems::BasicVector<double>(num_joints_),
       [this](const Context<double>& c, BasicVector<double>* o) {
         this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
       });
@@ -57,35 +145,34 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_iiwa_command>();
+  const IiwaCommand<double>* command =
+      this->template EvalVectorInput<IiwaCommand>(context, 0);
+
+  // If the vector input port is not wired, try the abstract value one.
+  IiwaCommand<double> decoded_command(num_joints_);
+  if (!command) {
+    const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
+    DRAKE_THROW_UNLESS(input != nullptr);
+    const auto& command_msg = input->GetValue<lcmt_iiwa_command>();
+    std::vector<uint8_t> bytes(command_msg.getEncodedSize());
+    command_msg.encode(bytes.data(), 0, bytes.size());
+    translator_.Deserialize(bytes.data(), bytes.size(), &decoded_command);
+    command = &decoded_command;
+  }
+  DRAKE_THROW_UNLESS(command);
 
   BasicVector<double>& state = discrete_state->get_mutable_vector(0);
   auto state_value = state.get_mutable_value();
-  // If we're using a default constructed message (haven't received
-  // a command yet), keep using the initial state.
-  if (command.num_joints != 0) {
-    DRAKE_DEMAND(command.num_joints == num_joints_);
-    VectorX<double> new_positions(num_joints_);
-    for (int i = 0; i < command.num_joints; ++i) {
-      new_positions(i) = command.joint_position[i];
-    }
-
-    state_value.segment(num_joints_, num_joints_) =
-        (new_positions - state_value.head(num_joints_)) / kIiwaLcmStatusPeriod;
-    state_value.head(num_joints_) = new_positions;
+  // Haven't received a legit message yet.
+  if (command->utime() == IiwaCommand<double>::kUnitializedTime) {
+    return;
   }
 
-  // If the message does not contain torque commands, set torque command to
-  // zeros.
-  if (command.num_torques == 0) {
-    state_value.tail(num_joints_).setZero();
-  } else {
-    DRAKE_DEMAND(command.num_torques == num_joints_);
-    for (int i = 0; i < num_joints_; i++)
-      state_value[2 * num_joints_ + i] = command.joint_torque[i];
-  }
+  state_value.segment(num_joints_, num_joints_) =
+      (command->joint_position() - state_value.head(num_joints_)) /
+      kIiwaLcmStatusPeriod;
+  state_value.head(num_joints_) = command->joint_position();
+  state_value.tail(num_joints_) = command->joint_torque();
 }
 
 void IiwaCommandReceiver::CopyStateToOutput(const Context<double>& context,

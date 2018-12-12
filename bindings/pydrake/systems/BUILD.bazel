@@ -60,6 +60,7 @@ drake_pybind_library(
     cc_deps = [
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:drake_variant_pybind",
         "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",
         "//bindings/pydrake/util:eigen_pybind",
@@ -444,5 +445,6 @@ drake_py_binary(
 )
 
 add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
     enable_clang_format_lint = True,
 )

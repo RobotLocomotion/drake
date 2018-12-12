@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -393,6 +394,52 @@ class DiagramContext final : public Context<T> {
 
     clone->Finalize();
     return clone;
+  }
+
+  // Print summary information for the diagram context and recurse into
+  // the (non-empty) subcontexts.
+  std::string do_to_string() const final {
+    std::ostringstream os;
+
+    os << this->GetSystemPathname() << " Context (of a Diagram)\n";
+    os << std::string(this->GetSystemPathname().size() + 24, '-') << "\n";
+    if (this->get_continuous_state().size())
+      os << this->get_continuous_state().size() << " total continuous states\n";
+    if (this->get_num_discrete_state_groups()) {
+      int num_discrete_states = 0;
+      for (int i = 0; i < this->get_num_discrete_state_groups(); i++) {
+        num_discrete_states += this->get_discrete_state(i).size();
+      }
+      os << num_discrete_states << " total discrete states in "
+         << this->get_num_discrete_state_groups() << " groups\n";
+    }
+    if (this->get_num_abstract_states())
+      os << this->get_num_abstract_states() << " total abstract states\n";
+
+    if (this->num_numeric_parameter_groups()) {
+      int num_numeric_parameters = 0;
+      for (int i = 0; i < this->num_numeric_parameter_groups(); i++) {
+        num_numeric_parameters += this->get_numeric_parameter(i).size();
+      }
+      os << num_numeric_parameters << " total numeric parameters in "
+         << this->num_numeric_parameter_groups() << " groups\n";
+    }
+    if (this->num_abstract_parameters())
+      os << this->num_abstract_parameters() << " total abstract parameters\n";
+
+    for (systems::SubsystemIndex i{0}; i < num_subcontexts(); i++) {
+      const Context<T>& subcontext = this->GetSubsystemContext(i);
+      // Only print this context if it has something useful to print.
+      if (subcontext.get_continuous_state_vector().size() ||
+          subcontext.get_num_discrete_state_groups() ||
+          subcontext.get_num_abstract_states() ||
+          subcontext.num_numeric_parameter_groups() ||
+          subcontext.num_abstract_parameters()) {
+        os << "\n" << subcontext.to_string();
+      }
+    }
+
+    return os.str();
   }
 
   // Returns the number of immediate child subcontexts in this DiagramContext.

@@ -38,5 +38,13 @@ bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
                                         solver_capabilities.access());
 }
 
+SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
+  prog.SetSolverResult(solver_result);
+  return result.get_solution_result();
+}
+
 }  // namespace solvers
 }  // namespace drake

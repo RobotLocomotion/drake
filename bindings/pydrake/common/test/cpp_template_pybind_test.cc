@@ -12,6 +12,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/test/test_util_pybind.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
@@ -22,34 +23,29 @@ namespace drake {
 namespace pydrake {
 namespace {
 
-template <typename ... Ts>
+using test::SynchronizeGlobalsForPython3;
+
+template <typename... Ts>
 struct SimpleTemplate {
   vector<string> GetNames() {
     return {NiceTypeName::Get<Ts>()...};
   }
 };
 
-template <typename ... Ts>
+template <typename... Ts>
 py::object BindSimpleTemplate(py::module m) {
   using Class = SimpleTemplate<Ts...>;
   py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
   py_class
       .def(py::init<>())
       .def("GetNames", &Class::GetNames);
-  AddTemplateClass(
-      m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
+  AddTemplateClass(m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
   return py_class;
 }
 
 template <typename T>
 void CheckValue(const string& expr, const T& expected) {
   EXPECT_EQ(py::eval(expr).cast<T>(), expected);
-}
-
-// TODO(eric.cousineau): Figure out why this is necessary.
-// Necessary for Python3.
-void sync(py::module m) {
-  py::globals().attr("update")(m.attr("__dict__"));
 }
 
 GTEST_TEST(CppTemplateTest, TemplateClass) {
@@ -60,14 +56,14 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
 
   CheckValue("DefaultInst().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int]().GetNames()", expected_1);
   CheckValue("SimpleTemplate[int, float]().GetNames()", expected_2);
 
   m.def("simple_func", [](const SimpleTemplate<int>&) {});
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
 
   // Check error message if a function is called with the incorrect arguments.
   // N.B. We use `[^\0]` because C++ regex does not have an equivalent of
@@ -78,7 +74,7 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
       R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate\[int\]\)[^\0]*)");  // NOLINT
 }
 
-template <typename ... Ts>
+template <typename... Ts>
 vector<string> SimpleFunction() {
   return {NiceTypeName::Get<Ts>()...};
 }
@@ -94,13 +90,13 @@ GTEST_TEST(CppTemplateTest, TemplateFunction) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
   CheckValue("SimpleFunction[int]()", expected_1);
   CheckValue("SimpleFunction[int, float]()", expected_2);
 }
 
 struct SimpleType {
-  template <typename ... Ts>
+  template <typename... Ts>
   vector<string> SimpleMethod() {
     return {NiceTypeName::Get<Ts>()...};
   }
@@ -121,7 +117,7 @@ GTEST_TEST(CppTemplateTest, TemplateMethod) {
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
-  sync(m);
+  SynchronizeGlobalsForPython3(m);
   CheckValue("SimpleType().SimpleMethod[int]()", expected_1);
   CheckValue("SimpleType().SimpleMethod[int, float]()", expected_2);
 }

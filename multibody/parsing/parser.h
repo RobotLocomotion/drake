@@ -3,13 +3,13 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 
 /// Parses SDF and URDF input files into a MultibodyPlant and (optionally) a
 /// SceneGraph.
@@ -66,7 +66,15 @@ class Parser final {
   geometry::SceneGraph<double>* const scene_graph_;
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// TODO(jwnimmer-tri) Remove this forwarder on or about 2019-03-01.
+namespace parsing {
+using Parser
+    DRAKE_DEPRECATED("Spell as drake::multibody::Parser instead.")
+    = ::drake::multibody::Parser;
 }  // namespace parsing
+#endif
+
 }  // namespace multibody
 }  // namespace drake
 

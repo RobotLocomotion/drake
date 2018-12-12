@@ -13,6 +13,7 @@ from pydrake.multibody.multibody_tree import (
     JointActuatorIndex,
     JointIndex,
     ModelInstanceIndex,
+    MultibodyForces,
     MultibodyTree,
     RevoluteJoint,
     UniformGravityFieldElement,
@@ -29,6 +30,9 @@ from pydrake.multibody.multibody_tree.multibody_plant import (
 )
 from pydrake.multibody.multibody_tree.parsing import (
     AddModelFromSdfFile,
+    Parser as DeprecatedParser,
+)
+from pydrake.multibody.parsing import (
     Parser,
 )
 from pydrake.multibody.benchmarks.acrobot import (
@@ -48,11 +52,15 @@ from pydrake.systems.framework import DiagramBuilder
 import copy
 import math
 import unittest
+import warnings
 
 from six import text_type as unicode
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.deprecation import (
+    DrakeDeprecationWarning,
+)
 from pydrake.util.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RollPitchYaw
@@ -107,6 +115,11 @@ class TestMultibodyTree(unittest.TestCase):
     def test_type_safe_indices(self):
         self.assertEqual(world_index(), BodyIndex(0))
 
+    def assert_sane(self, x, nonzero=True):
+        self.assertTrue(np.all(np.isfinite(x)))
+        if nonzero:
+            self.assertTrue(not np.all(x == 0), str(x))
+
     def test_multibody_plant_api_via_parsing(self):
         # TODO(eric.cousineau): Decouple this when construction can be done
         # without parsing.
@@ -114,8 +127,7 @@ class TestMultibodyTree(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant(time_step=0.01)
-        model_instance = AddModelFromSdfFile(
-            file_name=file_name, plant=plant)
+        model_instance = Parser(plant).AddModelFromFile(file_name)
         self.assertIsInstance(model_instance, ModelInstanceIndex)
         plant.Finalize()
         benchmark = MakeAcrobotPlant(AcrobotParameters(), True)
@@ -166,13 +178,20 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
         tree = plant.tree()
-        self.assertIsInstance(tree.num_frames(), int)
-        self.assertIsInstance(tree.get_body(body_index=BodyIndex(0)), Body)
-        self.assertIs(shoulder, tree.get_joint(joint_index=JointIndex(0)))
-        self.assertIsInstance(tree.get_joint_actuator(
+        self.check_old_spelling_exists(tree.num_frames)
+        self.assertIsInstance(plant.num_frames(), int)
+        self.check_old_spelling_exists(tree.get_body)
+        self.assertIsInstance(plant.get_body(body_index=BodyIndex(0)), Body)
+        self.check_old_spelling_exists(tree.get_joint)
+        self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
+        self.check_old_spelling_exists(tree.get_joint_actuator)
+        self.assertIsInstance(plant.get_joint_actuator(
             actuator_index=JointActuatorIndex(0)), JointActuator)
-        self.assertIsInstance(tree.get_frame(frame_index=FrameIndex(0)), Frame)
-        self.assertEqual("acrobot", tree.GetModelInstanceName(
+        self.check_old_spelling_exists(tree.get_frame)
+        self.assertIsInstance(
+            plant.get_frame(frame_index=FrameIndex(0)), Frame)
+        self.check_old_spelling_exists(tree.GetModelInstanceName)
+        self.assertEqual("acrobot", plant.GetModelInstanceName(
             model_instance=model_instance))
 
     def _test_multibody_tree_element_mixin(self, element):
@@ -210,69 +229,61 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(joint_actuator.name(), unicode)
         self.assertIsInstance(joint_actuator.joint(), Joint)
 
-    def test_multibody_plant_parsing(self):
-        # Calls every combination of overload spellings for the parser-related
-        # functions and inspects their return type.
+    def test_deprecated_parsing(self):
         sdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-        urdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.urdf")
-        for dut, file_name, model_name, result_type in (
-                (Parser.AddModelFromFile, sdf_file, None, ModelInstanceIndex),
-                (Parser.AddModelFromFile, sdf_file, "", ModelInstanceIndex),
-                (Parser.AddModelFromFile, sdf_file, "a", ModelInstanceIndex),
-                (Parser.AddModelFromFile, urdf_file, None, ModelInstanceIndex),
-                (Parser.AddModelFromFile, urdf_file, "", ModelInstanceIndex),
-                (Parser.AddModelFromFile, urdf_file, "a", ModelInstanceIndex),
-                (Parser.AddAllModelsFromFile, sdf_file, None, list),
-                (Parser.AddAllModelsFromFile, urdf_file, None, list),
-                (AddModelFromSdfFile, sdf_file, None, ModelInstanceIndex),
-                (AddModelFromSdfFile, sdf_file, "", ModelInstanceIndex),
-                (AddModelFromSdfFile, sdf_file, "a", ModelInstanceIndex),
-                ):
-            # Call either the Parser method or the free function.
-            plant = MultibodyPlant(time_step=0.01)
-            if getattr(dut, 'im_self', '') is None:  # Is it a Parser method?
-                parser = Parser(plant=plant)
-                if model_name is None:
-                    result = dut(parser, file_name=file_name)
-                else:
-                    result = dut(parser, file_name=file_name,
-                                 model_name=model_name)
-            else:
-                if model_name is None:
-                    result = dut(file_name=file_name, plant=plant)
-                else:
-                    result = dut(file_name=file_name, plant=plant,
-                                 model_name=model_name)
-            self.assertIsInstance(result, result_type)
-            if result_type is list:
-                self.assertIsInstance(result[0], ModelInstanceIndex)
+
+        plant = MultibodyPlant(time_step=0.01)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default", DrakeDeprecationWarning)
+            result = AddModelFromSdfFile(plant=plant, file_name=sdf_file)
+            self.assertIsInstance(result, ModelInstanceIndex)
+            self.assertEqual(len(w), 1)
+
+        plant = MultibodyPlant(time_step=0.01)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default", DrakeDeprecationWarning)
+            result = DeprecatedParser(plant).AddModelFromFile(sdf_file)
+            self.assertIsInstance(result, ModelInstanceIndex)
+            self.assertEqual(len(w), 1)
+
+        plant = MultibodyPlant(time_step=0.01)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default", DrakeDeprecationWarning)
+            result = DeprecatedParser(plant).AddAllModelsFromFile(sdf_file)
+            self.assertIsInstance(result, list)
+            self.assertEqual(len(w), 1)
+
+    def check_old_spelling_exists(self, value):
+        # Just to make it obvious when this is being tested.
+        self.assertIsNot(value, None)
 
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")
         plant = MultibodyPlant()
-        AddModelFromSdfFile(file_name, plant)
+        Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         context = plant.CreateDefaultContext()
         tree = plant.tree()
         world_frame = plant.world_frame()
         base = plant.GetBodyByName("base")
         base_frame = plant.GetFrameByName("base")
-
-        X_WL = tree.CalcRelativeTransform(
+        self.check_old_spelling_exists(tree.CalcRelativeTransform)
+        X_WL = plant.CalcRelativeTransform(
             context, frame_A=world_frame, frame_B=base_frame)
         self.assertIsInstance(X_WL, Isometry3)
 
-        p_AQi = tree.CalcPointsPositions(
+        self.check_old_spelling_exists(tree.CalcPointsPositions)
+        p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
             p_BQi=np.array([[0, 1, 2], [10, 11, 12]]).T,
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        # Test the "frame" Jacobian.
-        Jv_WL = tree.CalcFrameGeometricJacobianExpressedInWorld(
+        self.check_old_spelling_exists(
+            tree.CalcFrameGeometricJacobianExpressedInWorld)
+        Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
             context=context, frame_B=base_frame,
             p_BoFo_B=[0, 0, 0])
         self.assertTupleEqual(Jv_WL.shape, (6, plant.num_velocities()))
@@ -283,7 +294,8 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTupleEqual(Jp_W.shape, (3, plant.num_velocities()))
 
         # Compute body pose.
-        X_WBase = tree.EvalBodyPoseInWorld(context, base)
+        self.check_old_spelling_exists(tree.EvalBodyPoseInWorld)
+        X_WBase = plant.EvalBodyPoseInWorld(context, base)
         self.assertIsInstance(X_WBase, Isometry3)
 
         # All body poses.
@@ -304,16 +316,19 @@ class TestMultibodyTree(unittest.TestCase):
 
         # Set pose for the base.
         X_WB_desired = Isometry3.Identity()
-        X_WB = tree.CalcRelativeTransform(context, world_frame, base_frame)
-        tree.SetFreeBodyPoseOrThrow(
-            body=base, X_WB=X_WB_desired, context=context)
+        X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
+        self.check_old_spelling_exists(tree.SetFreeBodyPoseOrThrow)
+        plant.SetFreeBodyPose(
+            context=context, body=base, X_WB=X_WB_desired)
         self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
 
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
-        tree.SetFreeBodySpatialVelocityOrThrow(
-            body=base, V_WB=v_WB, context=context)
-        v_base = tree.EvalBodySpatialVelocityInWorld(context, base)
+        self.check_old_spelling_exists(tree.SetFreeBodySpatialVelocityOrThrow)
+        plant.SetFreeBodySpatialVelocity(
+            context=context, body=base, V_WB=v_WB)
+        self.check_old_spelling_exists(tree.EvalBodySpatialVelocityInWorld)
+        v_base = plant.EvalBodySpatialVelocityInWorld(context, base)
         self.assertTrue(np.allclose(v_base.rotational(), v_WB.rotational()))
         self.assertTrue(np.allclose(v_base.translational(),
                                     v_WB.translational()))
@@ -322,7 +337,7 @@ class TestMultibodyTree(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant()
-        AddModelFromSdfFile(file_name, plant)
+        Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         context = plant.CreateDefaultContext()
         tree = plant.tree()
@@ -379,10 +394,11 @@ class TestMultibodyTree(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant()
-        iiwa_model = AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
-        gripper_model = AddModelFromSdfFile(
-            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
+        parser = Parser(plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
         plant.Finalize()
 
         # Test that we can get an actuation input port and a continuous state
@@ -404,11 +420,12 @@ class TestMultibodyTree(unittest.TestCase):
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
         plant = MultibodyPlant()
+        parser = Parser(plant)
 
-        iiwa_model = AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
-        gripper_model = AddModelFromSdfFile(
-            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
 
         # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = Isometry3.Identity()
@@ -533,7 +550,7 @@ class TestMultibodyTree(unittest.TestCase):
             context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
 
     def test_model_instance_state_access_by_array(self):
-        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+                # Create a MultibodyPlant with a kuka arm and a schunk gripper.
         # the arm is welded to the world, the gripper is welded to the
         # arm's end effector.
         wsg50_sdf_path = FindResourceOrThrow(
@@ -543,23 +560,21 @@ class TestMultibodyTree(unittest.TestCase):
             "drake/manipulation/models/" +
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
-        timestep = 0.0002
-        plant = MultibodyPlant(timestep)
+        plant = MultibodyPlant()
+        parser = Parser(plant)
 
-        iiwa_model = AddModelFromSdfFile(
-            file_name=iiwa_sdf_path, model_name='robot', plant=plant)
-        gripper_model = AddModelFromSdfFile(
-            file_name=wsg50_sdf_path, model_name='gripper', plant=plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
 
         # Weld the base of arm and gripper to reduce the number of states.
         X_EeGripper = Isometry3.Identity()
         X_EeGripper.set_translation([0, 0, 0.081])
         X_EeGripper.set_rotation(
-            RollPitchYaw(np.pi / 2, 0, np.pi / 2).
-            ToRotationMatrix().matrix())
-        plant.WeldFrames(
-            A=plant.world_frame(),
-            B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
+            RollPitchYaw(np.pi / 2, 0, np.pi / 2).ToRotationMatrix().matrix())
+        plant.WeldFrames(A=plant.world_frame(),
+                         B=plant.GetFrameByName("iiwa_link_0", iiwa_model))
         plant.WeldFrames(
             A=plant.GetFrameByName("iiwa_link_7", iiwa_model),
             B=plant.GetFrameByName("body", gripper_model),
@@ -574,15 +589,27 @@ class TestMultibodyTree(unittest.TestCase):
         nq = plant.num_positions()
         nv = plant.num_velocities()
 
-        q_iiwa_desired = np.zeros(7)
-        v_iiwa_desired = np.zeros(7)
-        q_gripper_desired = np.zeros(2)
-        v_gripper_desired = np.zeros(2)
+        nq_iiwa = 7
+        nv_iiwa = 7
+        nq_gripper = 2
+        nv_gripper = 2
+        q_iiwa_desired = np.zeros(nq_iiwa)
+        v_iiwa_desired = np.zeros(nv_iiwa)
+        q_gripper_desired = np.zeros(nq_gripper)
+        v_gripper_desired = np.zeros(nv_gripper)
 
         q_iiwa_desired[2] = np.pi/3
         q_gripper_desired[0] = 0.1
         v_iiwa_desired[1] = 5.0
         q_gripper_desired[0] = -0.3
+
+        x_iiwa_desired = np.zeros(nq_iiwa + nv_iiwa)
+        x_iiwa_desired[0:nq_iiwa] = q_iiwa_desired
+        x_iiwa_desired[nq_iiwa:nq_iiwa+nv_iiwa] = v_iiwa_desired
+
+        x_gripper_desired = np.zeros(nq_gripper + nv_gripper)
+        x_gripper_desired[0:nq_gripper] = q_gripper_desired
+        x_gripper_desired[nq_gripper:nq_gripper+nv_gripper] = v_gripper_desired
 
         x_plant_desired = np.zeros(nq + nv)
         x_plant_desired[0:7] = q_iiwa_desired
@@ -590,27 +617,79 @@ class TestMultibodyTree(unittest.TestCase):
         x_plant_desired[nq:nq+7] = v_iiwa_desired
         x_plant_desired[nq+7:nq+nv] = v_gripper_desired
 
-        x_plant = tree.GetMutablePositionsAndVelocities(context)
-        x_plant[:] = x_plant_desired
+        # Check SetPositionsAndVelocities() for each model instance.
+        # Do the iiwa model first.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetVelocities(context, iiwa_model, v_iiwa_desired)
+        self.assertTrue(np.allclose(
+            plant.GetVelocities(context, iiwa_model), v_iiwa_desired))
+        self.assertTrue(np.allclose(plant.GetPositions(
+            context, iiwa_model), np.zeros(nq_iiwa)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, gripper_model), np.zeros(nq_gripper + nv_gripper)))
+        # Do the gripper model.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositionsAndVelocities(
+            context, gripper_model, x_gripper_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositionsAndVelocities(context, gripper_model),
+            x_gripper_desired))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
 
-        # Get state from context.
-        x = tree.GetPositionsAndVelocities(context)
-        q = x[0:nq].copy()
-        v = x[nq:nq+nv].copy()
+        # Check SetPositions() for each model instance.
+        # Do the iiwa model first.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositions(context, iiwa_model, q_iiwa_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositions(context, iiwa_model), q_iiwa_desired))
+        self.assertTrue(np.allclose(plant.GetVelocities(
+            context, iiwa_model), np.zeros(nv_iiwa)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, gripper_model), np.zeros(nq_gripper + nv_gripper)))
+        # Do the gripper model.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetPositions(context, gripper_model, q_gripper_desired)
+        self.assertTrue(np.allclose(
+            plant.GetPositions(context, gripper_model),
+            q_gripper_desired))
+        self.assertTrue(np.allclose(plant.GetVelocities(
+            context, gripper_model), np.zeros(nq_gripper)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
 
-        # Get positions and velocities of specific model instances
-        # from the postion/velocity vector of the plant.
-        q_iiwa = tree.GetPositionsFromArray(iiwa_model, q)
-        q_gripper = tree.GetPositionsFromArray(gripper_model, q)
-        v_iiwa = tree.GetVelocitiesFromArray(iiwa_model, v)
-        v_gripper = tree.GetVelocitiesFromArray(gripper_model, v)
-
-        # Assert that the GetPositionsFromArray return
-        # the desired values set earlier.
-        self.assertTrue(np.allclose(q_iiwa_desired, q_iiwa))
-        self.assertTrue(np.allclose(v_iiwa_desired, v_iiwa))
-        self.assertTrue(np.allclose(q_gripper_desired, q_gripper))
-        self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
+        # Check SetVelocities() for each model instance.
+        # Do the iiwa model first.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetVelocities(context, iiwa_model, v_iiwa_desired)
+        self.assertTrue(np.allclose(
+            plant.GetVelocities(context, iiwa_model), v_iiwa_desired))
+        self.assertTrue(np.allclose(plant.GetPositions(
+            context, iiwa_model), np.zeros(nq_iiwa)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, gripper_model), np.zeros(nq_gripper + nv_gripper)))
+        # Do the gripper model.
+        plant.SetPositionsAndVelocities(context, np.zeros(nq + nv))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(context),
+                                    np.zeros(nq + nv)))
+        plant.SetVelocities(context, gripper_model, v_gripper_desired)
+        self.assertTrue(np.allclose(
+            plant.GetVelocities(context, gripper_model),
+            v_gripper_desired))
+        self.assertTrue(np.allclose(plant.GetPositions(
+            context, gripper_model), np.zeros(nv_gripper)))
+        self.assertTrue(np.allclose(plant.GetPositionsAndVelocities(
+            context, iiwa_model), np.zeros(nq_iiwa + nv_iiwa)))
 
     def test_multibody_add_joint(self):
         """
@@ -624,10 +703,11 @@ class TestMultibodyTree(unittest.TestCase):
         # Python.
         num_joints = 2
         plant = MultibodyPlant()
+        parser = Parser(plant)
         instances = []
         for i in range(num_joints + 1):
-            instance = AddModelFromSdfFile(
-                instance_file, "instance_{}".format(i), plant)
+            instance = parser.AddModelFromFile(
+                instance_file, "instance_{}".format(i))
             instances.append(instance)
         proximal_frame = "base"
         distal_frame = "lower_link"
@@ -662,16 +742,25 @@ class TestMultibodyTree(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant()
-        AddModelFromSdfFile(file_name, plant)
+        Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         context = plant.CreateDefaultContext()
         tree = plant.tree()
 
-        H = tree.CalcMassMatrixViaInverseDynamics(context)
-        Cv = tree.CalcBiasTerm(context)
+        self.check_old_spelling_exists(tree.CalcMassMatrixViaInverseDynamics)
+        H = plant.CalcMassMatrixViaInverseDynamics(context)
+        self.check_old_spelling_exists(tree.CalcBiasTerm)
+        Cv = plant.CalcBiasTerm(context)
 
         self.assertTrue(H.shape == (2, 2))
+        self.assert_sane(H)
         self.assertTrue(Cv.shape == (2, ))
+        self.assert_sane(Cv, nonzero=False)
+        vd_d = np.zeros(plant.num_velocities())
+        tau = tree.CalcInverseDynamics(
+            context, vd_d, MultibodyForces(tree))
+        self.assertEqual(tau.shape, (2,))
+        self.assert_sane(tau, nonzero=False)
 
     def test_contact(self):
         # PenetrationAsContactPair
@@ -707,10 +796,10 @@ class TestMultibodyTree(unittest.TestCase):
     def test_scene_graph_queries(self):
         builder = DiagramBuilder()
         plant, scene_graph = add_plant_and_scene_graph(builder)
-        AddModelFromSdfFile(
+        parser = Parser(plant=plant, scene_graph=scene_graph)
+        parser.AddModelFromFile(
             FindResourceOrThrow(
-                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"),
-            plant, scene_graph)
+                "drake/bindings/pydrake/multibody/test/two_bodies.sdf"))
         plant.Finalize(scene_graph)
         diagram = builder.Build()
         # The model `two_bodies` has two (implicitly) floating bodies that are
