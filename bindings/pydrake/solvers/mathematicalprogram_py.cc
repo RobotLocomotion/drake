@@ -609,12 +609,35 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
 
-  // TODO(eric.cousineau): Expose Eval() in a Python-friendly fashion.
+  // TODO(gizatt): Figure out how to add docstrings to the Eval
+  // methods, which are overloaded with the same argument names.
   py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
       .def("num_outputs", &EvaluatorBase::num_outputs,
           doc.EvaluatorBase.num_outputs.doc)
       .def(
-          "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc);
+          "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc)
+      .def("Eval",
+            [](const EvaluatorBase& self, const Eigen::Ref<const Eigen::VectorXd>& x) {
+            Eigen::VectorXd y;
+            self.Eval(x, &y);
+            return y;
+          },
+          py::arg("x"))
+      .def("Eval",
+            [](const EvaluatorBase& self, const Eigen::Ref<const AutoDiffVecXd>& x) {
+            AutoDiffVecXd y;
+            self.Eval(x, &y);
+            return y;
+          },
+          py::arg("x"))
+      .def("Eval",
+            [](const EvaluatorBase& self,
+               const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
+            VectorX<symbolic::Expression> y;
+            self.Eval(x, &y);
+            return y;
+          },
+          py::arg("x"));
 
   RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase")
       .def(py::init([](py::object binding) {
