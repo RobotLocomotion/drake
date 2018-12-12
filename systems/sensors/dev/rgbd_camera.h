@@ -28,7 +28,7 @@ namespace dev {
  @system{RgbdCamera,
     @input_port{geometry_query},
     @output_port{color_image}
-    @output_port{depth_image}
+    @output_port{depth_image_32f}
     @output_port{depth_image_16u}
     @output_port{label_image}
     @output_port{X_WB}
@@ -59,10 +59,10 @@ namespace dev {
      blue, and alpha. Each channel is represented by a uint8_t.
 
    - The depth image has a depth channel represented by a float. The value
-     stored in the depth channel holds *the Z value in `D`.*  Note that this
-     is different from the range data used by laser range finders (like that
-     provided by DepthSensor) in which the depth value represents the
-     distance from the sensor origin to the object's surface.
+     stored in the depth channel holds *the Z value in `D`*, and the value is in
+     meters. Note that this is different from the range data used by laser range
+     finders (like that provided by DepthSensor) in which the depth value
+     represents the distance from the sensor origin to the object's surface.
 
    - The data is semantically the same as the float depth image except each
      pixel is a 16 bit unsigned short instead of a 32 bit float, and the
