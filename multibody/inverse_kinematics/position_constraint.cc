@@ -27,6 +27,7 @@ PositionConstraint::PositionConstraint(
 
 void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                 Eigen::VectorXd* y) const {
+  // TODO(avalenzu): Re-work to avoid round-trip through AutoDiffXd (#10205).
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
@@ -42,8 +43,8 @@ void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   plant_.tree().CalcJacobianSpatialVelocity(*context_,
                                             JacobianWrtVariable::kQDot, frameB_,
                                             p_BQ_, frameA_, frameA_, &Jq_V_ABq);
-  *y = math::initializeAutoDiffGivenGradientMatrix(p_AQ,
-                                                   Jq_V_ABq.bottomRows<3>());
+  *y = math::initializeAutoDiffGivenGradientMatrix(
+      p_AQ, Jq_V_ABq.bottomRows<3>() * math::autoDiffToGradientMatrix(x));
 }
 
 }  // namespace multibody

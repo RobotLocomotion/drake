@@ -2,12 +2,25 @@
 
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
+using drake::math::RotationMatrixd;
 using drake::multibody::internal::IiwaKinematicConstraintTest;
 using drake::multibody::internal::TwoFreeBodiesConstraintTest;
+using drake::systems::Context;
 
 namespace drake {
 namespace multibody {
 namespace {
+AutoDiffVecXd EvalAngleBetweenVectorsConstraint(
+    const Context<AutoDiffXd>& context, const MultibodyTree<AutoDiffXd>& tree,
+    const Frame<AutoDiffXd>& frameA, const Vector3<double>& n_A,
+    const Frame<AutoDiffXd>& frameB, const Vector3<double>& n_B) {
+  Vector1<AutoDiffXd> y_autodiff;
+  y_autodiff(0) = n_A.normalized().dot(
+      tree.CalcRelativeTransform(context, frameA, frameB).linear() *
+      n_B.normalized());
+  return y_autodiff;
+}
+
 TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
   const Eigen::Vector3d n_A(0.2, -0.3, 0.9);
   const Eigen::Vector3d n_B(1.6, -3.2, 1.2);
@@ -28,22 +41,28 @@ TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
 
   Eigen::VectorXd q(iiwa_autodiff_.tree().num_positions());
   q << 0.2, -0.5, 0.1, 0.25, -0.4, 0.35, 0.24;
-  const AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q);
+  AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q);
   auto mbt_context_autodiff =
       dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get());
   mbt_context_autodiff->get_mutable_positions() = q_autodiff;
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
 
-  Vector1<AutoDiffXd> y_autodiff_expected;
-  y_autodiff_expected(0) = n_A.normalized().dot(
-      iiwa_autodiff_.tree()
-          .CalcRelativeTransform(
-              *context_autodiff_,
-              iiwa_autodiff_.tree().GetFrameByName(frameA.name()),
-              iiwa_autodiff_.tree().GetFrameByName(frameB.name()))
-          .linear() *
-      n_B.normalized());
+  Vector1<AutoDiffXd> y_autodiff_expected = EvalAngleBetweenVectorsConstraint(
+      *context_autodiff_, iiwa_autodiff_.tree(),
+      iiwa_autodiff_.tree().GetFrameByName(frameA.name()), n_A,
+      iiwa_autodiff_.tree().GetFrameByName(frameB.name()), n_B);
+  CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
+
+  // Test with non-identity gradient for q_autodiff.
+  q_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+      q, MatrixX<double>::Ones(q.size(), 2));
+  mbt_context_autodiff->get_mutable_positions() = q_autodiff;
+  constraint.Eval(q_autodiff, &y_autodiff);
+  y_autodiff_expected = EvalAngleBetweenVectorsConstraint(
+      *context_autodiff_, iiwa_autodiff_.tree(),
+      iiwa_autodiff_.tree().GetFrameByName(frameA.name()), n_A,
+      iiwa_autodiff_.tree().GetFrameByName(frameB.name()), n_B);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 }
 

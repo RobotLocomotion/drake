@@ -32,6 +32,7 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
 
 void AngleBetweenVectorsConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
+  // TODO(avalenzu): Re-work to avoid round-trip through AutoDiffXd (#10205).
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
@@ -72,7 +73,8 @@ void AngleBetweenVectorsConstraint::DoEval(
   const Eigen::Vector3d nb_unit_A = R_AB * nb_unit_B_;
   *y = math::initializeAutoDiffGivenGradientMatrix(
       na_unit_A_.transpose() * nb_unit_A,
-      nb_unit_A.cross(na_unit_A_).transpose() * Jq_V_AB.topRows<3>());
+      nb_unit_A.cross(na_unit_A_).transpose() * Jq_V_AB.topRows<3>() *
+          math::autoDiffToGradientMatrix(x));
 }
 }  // namespace multibody
 }  // namespace drake

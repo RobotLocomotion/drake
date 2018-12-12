@@ -36,6 +36,7 @@ GazeTargetConstraint::GazeTargetConstraint(
 
 void GazeTargetConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                                   Eigen::VectorXd* y) const {
+  // TODO(avalenzu): Re-work to avoid round-trip through AutoDiffXd (#10205).
   AutoDiffVecXd y_t;
   Eval(math::initializeAutoDiff(x), &y_t);
   *y = math::autoDiffToValueMatrix(y_t);
