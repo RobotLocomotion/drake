@@ -3,9 +3,10 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
+using drake::multibody::internal::UpdateContextConfiguration;
+
 namespace drake {
 namespace multibody {
-namespace internal {
 OrientationConstraint::OrientationConstraint(
     const multibody_plant::MultibodyPlant<double>& plant,
     const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
@@ -22,8 +23,6 @@ OrientationConstraint::OrientationConstraint(
   frameBbar.HasThisParentTreeOrThrow(&plant_.tree());
   frameAbar.HasThisParentTreeOrThrow(&plant_.tree());
   DRAKE_DEMAND(context);
-  // TODO(avalenzu): Switch to analytical Jacobian and drop nq == nv requirement
-  // when MBT provides the API for computing analytical Jacobian.
   if (theta_bound < 0) {
     throw std::invalid_argument(
         "OrientationConstraint: theta_bound should be non-negative.\n");
@@ -86,6 +85,5 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                                    r_AB.transpose() * Jq_w_AB);
 }
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

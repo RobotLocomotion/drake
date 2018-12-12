@@ -3,9 +3,10 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
+using drake::multibody::internal::UpdateContextConfiguration;
+
 namespace drake {
 namespace multibody {
-namespace internal {
 PositionConstraint::PositionConstraint(
     const multibody_plant::MultibodyPlant<double>& plant,
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
@@ -45,6 +46,5 @@ void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                                    Jq_V_ABq.bottomRows<3>());
 }
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

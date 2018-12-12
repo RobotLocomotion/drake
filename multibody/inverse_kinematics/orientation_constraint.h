@@ -8,7 +8,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 /**
  * Constrains that the angle difference θ between the orientation of frame A
  * and the orientation of frame B to satisfy θ ≤ θ_bound. The angle
@@ -48,11 +47,11 @@ class OrientationConstraint : public solvers::Constraint {
    * @param theta_bound The bound on the angle difference between frame A's
    *   orientation and frame B's orientation. It is denoted as θ_bound in the
    *   class documentation. @p theta_bound is in radians.
-   * @pre angle_bound >= 0.
-   * @throws std::invalid_argument if angle_bound < 0.
    * @param context The Context that has been allocated for this @p tree. We
    *   will update the context when evaluating the constraint. @p context should
    *   be alive during the lifetime of this constraint.
+   * @pre angle_bound >= 0.
+   * @throws std::invalid_argument if angle_bound < 0.
    */
   OrientationConstraint(const multibody_plant::MultibodyPlant<double>& plant,
                         const Frame<double>& frameAbar,
@@ -84,6 +83,5 @@ class OrientationConstraint : public solvers::Constraint {
   const math::RotationMatrix<double>& R_BbarB_;
   systems::Context<double>* const context_;
 };
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

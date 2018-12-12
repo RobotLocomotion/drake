@@ -3,9 +3,11 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
+using drake::multibody::internal::NormalizeVector;
+using drake::multibody::internal::UpdateContextConfiguration;
+
 namespace drake {
 namespace multibody {
-namespace internal {
 AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
     const multibody_plant::MultibodyPlant<double>& plant,
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& na_A,
@@ -48,10 +50,10 @@ void AngleBetweenVectorsConstraint::DoEval(
   // where ω̂_AB is the skew-symmetric, cross-product matrix such that
   // ω̂_AB r = ω_AB × r ∀ r ∈ ℝ³. Applying R_AB to nb_unit_B gives the following
   // triple product
-  //   ġ = na_unit_A ⋅ ω_AB × nb_unit_A,
+  //   ġ = na_unit_A ⋅ (ω_AB × nb_unit_A),
   // which can then be rearranged to yield
-  //   ġ = nb_unit_A ⋅ na_unit_A × ω_AB  (circular shift)
-  //     = nb_unit_A × na_unit_A ⋅ ω_AB  (swap operators).
+  //   ġ =  nb_unit_A ⋅ (na_unit_A × ω_AB)  (circular shift)
+  //     = (nb_unit_A × na_unit_A) ⋅ ω_AB   (swap operators).
   // The angular velocity of B relative to A can be written as
   //   ω_AB = Jq_w_AB(q) q̇,
   // where Jq_w_AB is the Jacobian of ω_AB with respect to q̇. Therefore,
@@ -67,11 +69,10 @@ void AngleBetweenVectorsConstraint::DoEval(
   plant_.tree().CalcJacobianSpatialVelocity(
       *context_, JacobianWrtVariable::kQDot, frameB_,
       Eigen::Vector3d::Zero() /* p_BQ */, frameA_, frameA_, &Jq_V_AB);
-  Eigen::Vector3d nb_unit_A = R_AB * nb_unit_B_;
+  const Eigen::Vector3d nb_unit_A = R_AB * nb_unit_B_;
   *y = math::initializeAutoDiffGivenGradientMatrix(
       na_unit_A_.transpose() * nb_unit_A,
       nb_unit_A.cross(na_unit_A_).transpose() * Jq_V_AB.topRows<3>());
 }
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

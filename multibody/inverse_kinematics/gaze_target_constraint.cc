@@ -5,9 +5,11 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
+using drake::multibody::internal::UpdateContextConfiguration;
+using drake::multibody::internal::NormalizeVector;
+
 namespace drake {
 namespace multibody {
-namespace internal {
 GazeTargetConstraint::GazeTargetConstraint(
     const multibody_plant::MultibodyPlant<double>& plant,
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& p_AS,
@@ -56,7 +58,7 @@ void GazeTargetConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   plant_.tree().CalcJacobianSpatialVelocity(*context_,
                                             JacobianWrtVariable::kQDot, frameB_,
                                             p_BT_, frameA_, frameA_, &Jq_V_ABt);
-  // J_p_q = Jq_v_ABt = ∂p/∂q.
+  // Jq_p = Jq_v_ABt = ∂p/∂q.
   const Matrix3X<double> Jq_p = Jq_V_ABt.bottomRows<3>();
   const Vector3<double> p_ST_A = p_AT - p_AS_;
   const double p_dot_n = p_ST_A.dot(n_A_);
@@ -72,9 +74,9 @@ void GazeTargetConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
        2 * (p_dot_n * n_A_ - cos_cone_half_angle_squared_times_p).transpose())
           .finished();
 
-  *y = math::initializeAutoDiffGivenGradientMatrix(g, Jp_g * Jq_p);
+  *y = math::initializeAutoDiffGivenGradientMatrix(
+      g, Jp_g * Jq_p * math::autoDiffToGradientMatrix(x));
 }
 
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -2,9 +2,12 @@
 
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
+using drake::multibody::internal::IiwaKinematicConstraintTest;
+using drake::multibody::internal::TwoFreeBodiesConstraintTest;
+
 namespace drake {
 namespace multibody {
-namespace internal {
+namespace {
 TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
   const Eigen::Vector3d n_A(0.2, -0.3, 0.9);
   const Eigen::Vector3d n_B(1.6, -3.2, 1.2);
@@ -108,6 +111,6 @@ TEST_F(IiwaKinematicConstraintTest,
                    Eigen::Vector3d::Zero(), 0.1, 1.1 * M_PI, plant_context_),
                std::invalid_argument);
 }
-}  // namespace internal
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

@@ -1,9 +1,15 @@
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
+#include <gtest/gtest.h>
+
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
+
+using drake::multibody::internal::IiwaKinematicConstraintTest;
+using drake::multibody::internal::TwoFreeBodiesConstraintTest;
+
 namespace drake {
 namespace multibody {
-namespace internal {
+namespace {
 TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   const Eigen::Vector3d p_BQ(0.1, 0.2, 0.3);
   const Eigen::Vector3d p_AQ_lower(-0.2, -0.3, -0.4);
@@ -84,6 +90,6 @@ TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }
 }
-}  // namespace internal
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

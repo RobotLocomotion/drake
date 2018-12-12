@@ -1,11 +1,16 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 
 #include "drake/math/rotation_matrix.h"
+#include <gtest/gtest.h>
+
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
+
+using drake::multibody::internal::IiwaKinematicConstraintTest;
+using drake::multibody::internal::TwoFreeBodiesConstraintTest;
 
 namespace drake {
 namespace multibody {
-namespace internal {
+namespace {
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   const double angle_bound{0.1 * M_PI};
   const Frame<double>& frameAbar = plant_->GetFrameByName("iiwa_link_7");
@@ -92,6 +97,6 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraintConstructionError) {
       std::invalid_argument);
 }
 
-}  // namespace internal
+}  // namespace
 }  // namespace multibody
 }  // namespace drake

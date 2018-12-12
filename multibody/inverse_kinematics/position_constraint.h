@@ -8,7 +8,6 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
 /**
  * Constrains the position of a point Q, rigidly attached to a frame B, to be
  * within a bounding box measured and expressed in frame A. Namely
@@ -21,20 +20,18 @@ class PositionConstraint : public solvers::Constraint {
   /**
    * Constructs PositionConstraint object.
    * @param tree The multibody tree on which the constraint is imposed. @p tree
-   * should be alive during the whole lifetime of this constraint.
+   *   should be alive during the whole lifetime of this constraint.
    * @param frameB Frame B.
    * @param p_BQ The position of the point Q, rigidly attached to frame B,
-   * measured and expressed in frame B.
+   *   measured and expressed in frame B.
    * @param frameA_idx Frame A.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and
-   * expressed in frame A.
+   *   expressed in frame A.
    * @param p_AQ_upper The upper bound on the position of point Q, measured and
-   * expressed in frame A.
+   *   expressed in frame A.
    * @param context The Context that has been allocated for this @p tree. We
-   * will update the context when evaluating the constraint. @p context should
-   * be alive during the lifetime of this constraint.
-   * TODO(avalenzu): Switch to analytical Jacobian and drop nq == nv requirement
-   * when MBT provides the API for computing analytical Jacobian.
+   *   will update the context when evaluating the constraint. @p context should
+   *   be alive during the lifetime of this constraint.
    */
   PositionConstraint(const multibody_plant::MultibodyPlant<double>& plant,
                      const Frame<double>& frameB,
@@ -65,6 +62,5 @@ class PositionConstraint : public solvers::Constraint {
   const Eigen::Vector3d p_BQ_;
   systems::Context<double>* const context_;
 };
-}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
