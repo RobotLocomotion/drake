@@ -365,8 +365,8 @@ struct DistanceToPoint {
                   geometry_id(id_in), X_WG(X_WG_in), p_WQ(p_WQ_in) {}
 
   const GeometryId geometry_id;
-  const Isometry3<double>& X_WG;
-  const Vector3d& p_WQ;
+  const Isometry3<double> X_WG;
+  const Vector3d p_WQ;
 
   // Overload for Sphere.
   SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere) {
