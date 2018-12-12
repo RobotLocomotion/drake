@@ -14,7 +14,7 @@ bazel run geometry_inspector -- \
   $HOME/drake/multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
 
 bazel run geometry_inspector -- \
-  $HOME/drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf \
+  $HOME/drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf\
   --package_path=$HOME/drake/manipulation/models/iiwa_description
 """
 
@@ -44,7 +44,7 @@ def main():
     parser.add_argument(
         "--package_path",
         type=str,
-        help="Full path to the root package name for reading in SDF resources.",
+        help="Full path to the root package for reading in SDF resources.",
         default=[])
     position_group = parser.add_mutually_exclusive_group()
     position_group.add_argument(
@@ -94,7 +94,6 @@ def main():
         # Get the package map and populate it using the package path.
         package_map = parser.mutable_package_map()
         package_map.PopulateFromFolder(package_path)
-
 
     # Add the model from the file and finalize the plant.
     parser.AddModelFromFile(args.filename)
