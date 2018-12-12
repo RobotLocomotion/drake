@@ -7,7 +7,6 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -16,153 +15,17 @@
 #include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 
-using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
-using Eigen::Matrix2d;
-using Eigen::Translation3d;
-using Eigen::Vector2d;
-using Eigen::Vector3d;
-using Eigen::VectorXd;
-using math::RigidTransform;
-using math::RollPitchYaw;
-using math::RotationMatrix;
-using multibody::multibody_plant::MultibodyPlant;
-using systems::Context;
-using std::unique_ptr;
-
 namespace multibody {
 namespace multibody_plant {
+
+using test::KukaIiwaModelTests;
+
 namespace {
-
-// Fixture to perform a number of computational tests on a KUKA Iiwa model.
-class KukaIiwaModelTests : public ::testing::Test {
- public:
-  // Creates MultibodyTree for a KUKA Iiwa robot arm.
-  void SetUp() override {
-    const std::string kArmSdfPath = FindResourceOrThrow(
-        "drake/manipulation/models/iiwa_description/sdf/"
-        "iiwa14_no_collision.sdf");
-
-    // Create a model of a Kuka arm. Notice we do not weld the robot's base
-    // to the world and therefore the model is free floating in space. This
-    // makes for a more interesting setup to test the computation of
-    // analytical Jacobians.
-    plant_ = std::make_unique<MultibodyPlant<double>>();
-    Parser parser(plant_.get());
-    parser.AddModelFromFile(kArmSdfPath);
-    // Add a frame H with a fixed pose X_EH in the end effector frame E.
-    end_effector_link_ = &plant_->GetBodyByName("iiwa_link_7");
-    frame_H_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        "H", *end_effector_link_, X_EH_.GetAsIsometry3()));
-    plant_->Finalize();
-
-    context_ = plant_->CreateDefaultContext();
-
-    // Scalar-convert the model and create a default context for it.
-    plant_autodiff_ = std::make_unique<MultibodyPlant<AutoDiffXd>>(*plant_);
-    context_autodiff_ = plant_autodiff_->CreateDefaultContext();
-  }
-
-  void SetArbitraryConfiguration() {
-    // Get an arbitrary set of angles and velocities for each joint.
-    const VectorX<double> x0 = GetArbitraryJointConfiguration();
-
-    EXPECT_EQ(plant_->num_joints(), 7);
-    for (JointIndex joint_index(0); joint_index < plant_->num_joints();
-         ++joint_index) {
-      const RevoluteJoint<double>& joint =
-          dynamic_cast<const RevoluteJoint<double>&>(
-              plant_->tree().get_joint(joint_index));
-      joint.set_angle(context_.get(), x0[joint_index]);
-      joint.set_angular_rate(context_.get(), x0[kNumJoints + joint_index]);
-    }
-
-    // Set an arbitrary (though non-identity) pose of the floating base link.
-    const auto& base_body = plant_->GetBodyByName("iiwa_link_0");
-    const RigidTransform<double> X_WB(
-        RollPitchYaw<double>(M_PI / 3, -M_PI / 2, M_PI / 8),
-        Vector3<double>(0.05, -0.2, 0.05));
-    plant_->SetFreeBodyPoseInAnchoredFrame(
-        context_.get(), plant_->world_frame(), base_body,
-        X_WB.GetAsIsometry3());
-    // Set an arbitrary non-zero spatial velocity of the floating base link.
-    const Vector3<double> w_WB{-1, 1, -1};
-    const Vector3<double> v_WB{1, -1, 1};
-    plant_->tree().SetFreeBodySpatialVelocityOrThrow(base_body, {w_WB, v_WB},
-                                                     context_.get());
-  }
-
-  // Gets an arm state to an arbitrary configuration in which joint angles and
-  // rates are non-zero.
-  VectorX<double> GetArbitraryJointConfiguration() {
-    VectorX<double> x(2 * kNumJoints);
-
-    // A set of values for the joint's angles chosen mainly to avoid in-plane
-    // motions.
-    const double q30 = M_PI / 6, q60 = M_PI / 3;
-    const double qA = q60;
-    const double qB = q30;
-    const double qC = q60;
-    const double qD = q30;
-    const double qE = q60;
-    const double qF = q30;
-    const double qG = q60;
-    // Arbitrary non-zero velocities.
-    const double v_positive = 0.1;   // rad/s
-    const double v_negative = -0.1;  // rad/s
-    const double vA = v_positive;
-    const double vB = v_negative;
-    const double vC = v_positive;
-    const double vD = v_negative;
-    const double vE = v_positive;
-    const double vF = v_negative;
-    const double vG = v_positive;
-    x << qA, qB, qC, qD, qE, qF, qG, vA, vB, vC, vD, vE, vF, vG;
-
-    return x;
-  }
-
-  // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_EPi in the end
-  // effector frame.
-  // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcPointsAnalyticalJacobianExpressedInWorld() for
-  // details.
-  // TODO(amcastro-tri): Rename this method as per issue #10155.
-  template <typename T>
-  void CalcPointsOnEndEffectorAnalyticJacobian(
-      const MultibodyPlant<T>& plant_on_T,
-      const Context<T>& context_on_T,
-      const MatrixX<T>& p_EPi,
-      MatrixX<T>* p_WPi, MatrixX<T>* Jq_WPi) const {
-    const Body<T>& linkG_on_T =
-        plant_on_T.tree().get_variant(*end_effector_link_);
-    plant_on_T.tree().CalcPointsAnalyticalJacobianExpressedInWorld(
-        context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jq_WPi);
-  }
-
- protected:
-  // Problem sizes.
-  const int kNumJoints = 7;
-  const int kNumPositions = 14;
-  const int kNumVelocities = 13;
-
-  std::unique_ptr<MultibodyPlant<double>> plant_;
-  std::unique_ptr<Context<double>> context_;
-  const RigidTransform<double> X_EH_{
-      RollPitchYaw<double>{M_PI_2, 0, M_PI_2}.ToRotationMatrix(),
-      Vector3d{0, 0, 0.081}};
-  const Body<double>* end_effector_link_{nullptr};
-  const Frame<double>* frame_H_{nullptr};
-
-  // AutoDiffXd model to compute automatic derivatives:
-  std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
-  std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
-};
 
 TEST_F(KukaIiwaModelTests, FixtureInvariants) {
   // Sanity check basic invariants.
@@ -288,59 +151,6 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   // one obtained using automatic differentiation.
   EXPECT_TRUE(CompareMatrices(Jq_WEp, Jq_WEp_autodiff, kTolerance,
                               MatrixCompareType::relative));
-}
-
-TEST_F(KukaIiwaModelTests, FramesPoseKinematics) {
-  // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
-  SetArbitraryConfiguration();
-
-  const Isometry3<double> X_WE = end_effector_link_->EvalPoseInWorld(*context_);
-  const Isometry3<double> X_WH = frame_H_->CalcPoseInWorld(*context_);
-  const Isometry3<double> X_WH_expected = X_WE * X_EH_.GetAsIsometry3();
-  EXPECT_TRUE(CompareMatrices(
-      X_WH.matrix(), X_WH_expected.matrix(),
-      kTolerance, MatrixCompareType::relative));
-
-  const Body<double>& link3 = plant_->GetBodyByName("iiwa_link_3");
-  const Isometry3<double> X_HL3 =
-      link3.body_frame().CalcPose(*context_, *frame_H_);
-  const Isometry3<double> X_WL3 = link3.body_frame().CalcPoseInWorld(*context_);
-  const Isometry3<double> X_HL3_expected = X_WH.inverse() * X_WL3;
-  EXPECT_TRUE(CompareMatrices(
-      X_HL3.matrix(), X_HL3_expected.matrix(),
-      kTolerance, MatrixCompareType::relative));
-
-  const SpatialVelocity<double> V_WE =
-      end_effector_link_->EvalSpatialVelocityInWorld(*context_);
-  const SpatialVelocity<double> V_WH =
-      frame_H_->CalcSpatialVelocityInWorld(*context_);
-  const Vector3<double> p_EH =
-      frame_H_->GetFixedPoseInBodyFrame().translation();
-  const Matrix3<double>& R_WE = X_WE.linear();
-  const Vector3<double> p_EH_W = R_WE * p_EH;
-  const SpatialVelocity<double> V_WH_expected = V_WE.Shift(p_EH_W);
-  EXPECT_TRUE(CompareMatrices(
-      V_WH.get_coeffs(), V_WH_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
-
-  // Spatial velocity of link 3 measured in the H frame and expressed in the
-  // end-effector frame E.
-  const SpatialVelocity<double> V_HL3_E =
-      link3.body_frame().CalcSpatialVelocity(
-          *context_, *frame_H_, end_effector_link_->body_frame());
-  // Compute V_HL3_E_expected.
-  const SpatialVelocity<double> V_WH_E = R_WE.transpose() * V_WH;
-  const Matrix3<double> R_EH = frame_H_->GetFixedPoseInBodyFrame().linear();
-  const Vector3<double> p_HL3_E = R_EH * X_HL3.translation();
-  const SpatialVelocity<double> V_WL3_E =
-      R_WE.transpose() * link3.EvalSpatialVelocityInWorld(*context_);
-  // V_WL3_E = V_WH_E.Shift(p_HL3_E) + V_HL3_E
-  const SpatialVelocity<double> V_HL3_E_expected =
-      V_WL3_E - V_WH_E.Shift(p_HL3_E);
-  EXPECT_TRUE(CompareMatrices(
-      V_HL3_E.get_coeffs(), V_HL3_E_expected.get_coeffs(),
-      kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace

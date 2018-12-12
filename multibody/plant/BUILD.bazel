@@ -169,6 +169,24 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "kuka_iiwa_model_tests",
+    testonly = 1,
+    hdrs = ["test/kuka_iiwa_model_tests.h"],
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":plant",
+        "//common:autodiff",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+    ],
+)
+
 drake_cc_googletest(
     name = "multibody_plant_jacobians_test",
     data = [
@@ -176,14 +194,25 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        ":kuka_iiwa_model_tests",
         ":plant",
         "//common:autodiff",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_kinematics_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
