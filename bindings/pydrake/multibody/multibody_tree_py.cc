@@ -30,6 +30,8 @@ namespace {
 using std::string;
 
 using geometry::SceneGraph;
+using systems::Context;
+using systems::State;
 
 // TODO(eric.cousineau): Expose available scalar types.
 using T = double;
@@ -50,12 +52,22 @@ void BindMultibodyTreeElementMixin(PyClass* pcls) {
       .def("model_instance", &Class::model_instance);
 }
 
+int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
+    multibody::JacobianWrtVariable wrt) {
+  switch (wrt) {
+    case multibody::JacobianWrtVariable::kQDot:
+      return plant.num_positions();
+    case multibody::JacobianWrtVariable::kV:
+      return plant.num_velocities();
+    default:
+      DRAKE_ABORT();
+  }
+}
+
 void init_module(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
-
-  using systems::Context;
 
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
@@ -226,32 +238,42 @@ void init_module(py::module m) {
             doc.MultibodyForces.ctor.doc_1args);
   }
 
+  {
+    using Enum = JacobianWrtVariable;
+    constexpr auto& enum_doc = doc.JacobianWrtVariable;
+    py::enum_<Enum> enum_py(m, "JacobianWrtVariable", enum_doc.doc);
+    enum_py  // BR
+        .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
+        .value("kV", Enum::kV, enum_doc.kV.doc);
+  }
+
   // Tree.
   {
     // N.B. Pending a concrete direction on #9366, a minimal subset of the
     // `MultibodyTree` API will be exposed.
     using Class = MultibodyTree<T>;
-    py::class_<Class> cls(m, "MultibodyTree", doc.MultibodyTree.doc);
+    constexpr auto& cls_doc = doc.internal.MultibodyTree;
+    py::class_<Class> cls(m, "MultibodyTree", cls_doc.doc);
 
     cls  // BR
         .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
             py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
-            doc.MultibodyTree.CalcRelativeTransform.doc)
-        .def("num_frames", &Class::num_frames, doc.MultibodyTree.num_frames.doc)
+            cls_doc.CalcRelativeTransform.doc)
+        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
-            py_reference_internal, doc.MultibodyTree.get_body.doc)
+            py_reference_internal, cls_doc.get_body.doc)
         .def("get_joint", &Class::get_joint, py::arg("joint_index"),
-            py_reference_internal, doc.MultibodyTree.get_joint.doc)
+            py_reference_internal, cls_doc.get_joint.doc)
         .def("get_joint_actuator", &Class::get_joint_actuator,
             py::arg("actuator_index"), py_reference_internal,
-            doc.MultibodyTree.get_joint_actuator.doc)
+            cls_doc.get_joint_actuator.doc)
         .def("get_frame", &Class::get_frame, py::arg("frame_index"),
-            py_reference_internal, doc.MultibodyTree.get_frame.doc)
+            py_reference_internal, cls_doc.get_frame.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),
             py::arg("model_instance"), py_reference_internal,
-            doc.MultibodyTree.GetModelInstanceName.doc)
+            cls_doc.GetModelInstanceName.doc)
         .def("GetPositionsAndVelocities",
             [](const MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
@@ -260,7 +282,7 @@ void init_module(py::module m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyTree.GetPositionsAndVelocities.doc_1args)
+            cls_doc.GetPositionsAndVelocities.doc_1args)
         .def("GetMutablePositionsAndVelocities",
             [](const MultibodyTree<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
@@ -269,7 +291,7 @@ void init_module(py::module m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyTree.GetMutablePositionsAndVelocities.doc)
+            cls_doc.GetMutablePositionsAndVelocities.doc)
         .def("CalcPointsPositions",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,
@@ -281,7 +303,7 @@ void init_module(py::module m) {
               return p_AQi;
             },
             py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
-            py::arg("frame_A"), doc.MultibodyTree.CalcPointsPositions.doc)
+            py::arg("frame_A"), cls_doc.CalcPointsPositions.doc)
         .def("CalcFrameGeometricJacobianExpressedInWorld",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
@@ -292,61 +314,59 @@ void init_module(py::module m) {
             },
             py::arg("context"), py::arg("frame_B"),
             py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
-            doc.MultibodyTree.CalcFrameGeometricJacobianExpressedInWorld.doc)
+            cls_doc.CalcFrameGeometricJacobianExpressedInWorld.doc)
         .def("CalcInverseDynamics",
             overload_cast_explicit<VectorX<T>, const Context<T>&,
                 const VectorX<T>&, const MultibodyForces<T>&>(
                 &Class::CalcInverseDynamics),
             py::arg("context"), py::arg("known_vdot"),
-            py::arg("external_forces"),
-            doc.MultibodyTree.CalcInverseDynamics.doc_3args)
+            py::arg("external_forces"), cls_doc.CalcInverseDynamics.doc_3args)
         .def("SetFreeBodyPoseOrThrow",
             overload_cast_explicit<void, const Body<T>&, const Isometry3<T>&,
-                systems::Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
+                Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
             py::arg("body"), py::arg("X_WB"), py::arg("context"),
-            doc.MultibodyTree.SetFreeBodyPoseOrThrow.doc_3args)
+            cls_doc.SetFreeBodyPoseOrThrow.doc_3args)
         .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
             py::arg("model_instance"), py::arg("q_array"),
-            doc.MultibodyTree.get_positions_from_array.doc)
+            cls_doc.get_positions_from_array.doc)
         .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
             py::arg("model_instance"), py::arg("v_array"),
-            doc.MultibodyTree.get_velocities_from_array.doc)
+            cls_doc.get_velocities_from_array.doc)
         .def("SetFreeBodySpatialVelocityOrThrow",
             [](const Class* self, const Body<T>& body,
                 const SpatialVelocity<T>& V_WB, Context<T>* context) {
               self->SetFreeBodySpatialVelocityOrThrow(body, V_WB, context);
             },
             py::arg("body"), py::arg("V_WB"), py::arg("context"),
-            doc.MultibodyTree.SetFreeBodySpatialVelocityOrThrow.doc_3args)
+            cls_doc.SetFreeBodySpatialVelocityOrThrow.doc_3args)
         .def("CalcAllBodySpatialVelocitiesInWorld",
             [](const Class* self, const Context<T>& context) {
               std::vector<SpatialVelocity<T>> V_WB;
               self->CalcAllBodySpatialVelocitiesInWorld(context, &V_WB);
               return V_WB;
             },
-            py::arg("context"),
-            doc.MultibodyTree.CalcAllBodySpatialVelocitiesInWorld.doc)
+            py::arg("context"), cls_doc.CalcAllBodySpatialVelocitiesInWorld.doc)
         .def("EvalBodyPoseInWorld",
             [](const Class* self, const Context<T>& context,
                 const Body<T>& body_B) {
               return self->EvalBodyPoseInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
-            doc.MultibodyTree.EvalBodyPoseInWorld.doc)
+            cls_doc.EvalBodyPoseInWorld.doc)
         .def("EvalBodySpatialVelocityInWorld",
             [](const Class* self, const Context<T>& context,
                 const Body<T>& body_B) {
               return self->EvalBodySpatialVelocityInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
-            doc.MultibodyTree.EvalBodySpatialVelocityInWorld.doc)
+            cls_doc.EvalBodySpatialVelocityInWorld.doc)
         .def("CalcAllBodyPosesInWorld",
             [](const Class* self, const Context<T>& context) {
               std::vector<Isometry3<T>> X_WB;
               self->CalcAllBodyPosesInWorld(context, &X_WB);
               return X_WB;
             },
-            py::arg("context"), doc.MultibodyTree.CalcAllBodyPosesInWorld.doc)
+            py::arg("context"), cls_doc.CalcAllBodyPosesInWorld.doc)
         .def("CalcMassMatrixViaInverseDynamics",
             [](const Class* self, const Context<T>& context) {
               MatrixX<T> H;
@@ -364,7 +384,7 @@ void init_module(py::module m) {
               self->CalcBiasTerm(context, &Cv);
               return Cv;
             },
-            py::arg("context"), doc.MultibodyTree.CalcBiasTerm.doc);
+            py::arg("context"), cls_doc.CalcBiasTerm.doc);
     // Add deprecated methods.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -376,7 +396,7 @@ void init_module(py::module m) {
         py_reference,
         // Keep alive, ownership: `return` keeps `Context` alive.
         py::keep_alive<0, 2>(), py::arg("context"),
-        doc.MultibodyTree.get_multibody_state_vector.doc_1args);
+        cls_doc.get_multibody_state_vector.doc_1args);
     cls.def("get_mutable_multibody_state_vector",
         [](const MultibodyTree<T>* self,
             Context<T>* context) -> Eigen::Ref<VectorX<T>> {
@@ -385,7 +405,7 @@ void init_module(py::module m) {
         py_reference,
         // Keep alive, ownership: `return` keeps `Context` alive.
         py::keep_alive<0, 2>(), py::arg("context"),
-        doc.MultibodyTree.get_mutable_multibody_state_vector.doc);
+        cls_doc.get_mutable_multibody_state_vector.doc);
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
     cls.attr("message_get_mutable_multibody_state_vector") =
         "Please use GetMutablePositionsAndVelocities().";
@@ -427,9 +447,7 @@ void init_math(py::module m) {
 void init_multibody_plant(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody::multibody_plant;
-  constexpr auto& doc = pydrake_doc.drake.multibody.multibody_plant;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
@@ -439,8 +457,6 @@ void init_multibody_plant(py::module m) {
     py::class_<Class, systems::LeafSystem<T>> cls(
         m, "MultibodyPlant", doc.MultibodyPlant.doc);
     // N.B. These are defined as they appear in the class declaration.
-    // TODO(eric.cousineau): Add model-instance based overloads beyond
-    // forwarded methods.
     // Forwarded methods from `MultibodyTree`.
     cls  // BR
         .def(py::init<double>(), py::arg("time_step") = 0.)
@@ -491,8 +507,198 @@ void init_multibody_plant(py::module m) {
             },
             py::arg("force_element"), py_reference_internal,
             doc.MultibodyPlant.AddForceElement.doc);
+    // Mathy bits
+    cls  // BR
+        .def("CalcPointsPositions",
+            [](const Class* self, const Context<T>& context,
+                const Frame<T>& frame_B,
+                const Eigen::Ref<const MatrixX<T>>& p_BQi,
+                const Frame<T>& frame_A) {
+              MatrixX<T> p_AQi(p_BQi.rows(), p_BQi.cols());
+              self->CalcPointsPositions(
+                  context, frame_B, p_BQi, frame_A, &p_AQi);
+              return p_AQi;
+            },
+            py::arg("context"), py::arg("frame_B"), py::arg("p_BQi"),
+            py::arg("frame_A"), doc.MultibodyPlant.CalcPointsPositions.doc)
+        .def("CalcFrameGeometricJacobianExpressedInWorld",
+            [](const Class* self, const Context<T>& context,
+                const Frame<T>& frame_B, const Vector3<T>& p_BoFo_B) {
+              MatrixX<T> Jv_WF(6, self->num_velocities());
+              self->CalcFrameGeometricJacobianExpressedInWorld(
+                  context, frame_B, p_BoFo_B, &Jv_WF);
+              return Jv_WF;
+            },
+            py::arg("context"), py::arg("frame_B"),
+            py::arg("p_BoFo_B") = Vector3<T>::Zero().eval(),
+            doc.MultibodyPlant.CalcFrameGeometricJacobianExpressedInWorld.doc)
+        // TODO(eric.cousineau): Include `CalcInverseDynamics` once there is an
+        // overload that (a) services MBP directly and (b) uses body
+        // association that is less awkward than implicit BodyNodeIndex.
+        .def("SetFreeBodyPose",
+            overload_cast_explicit<void, Context<T>*, const Body<T>&,
+                const Isometry3<T>&>(&Class::SetFreeBodyPose),
+            py::arg("context"), py::arg("body"), py::arg("X_WB"),
+            doc.MultibodyPlant.SetFreeBodyPose.doc_3args)
+        .def("SetActuationInArray",
+            [](const Class* self, multibody::ModelInstanceIndex model_instance,
+                const Eigen::Ref<const VectorX<T>> u_instance,
+                Eigen::Ref<VectorX<T>> u) -> void {
+              self->SetActuationInArray(model_instance, u_instance, &u);
+            },
+            py::arg("model_instance"), py::arg("u_instance"), py::arg("u"),
+            doc.MultibodyPlant.SetActuationInArray.doc)
+        .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
+            py::arg("model_instance"), py::arg("q"),
+            doc.MultibodyPlant.GetPositionsFromArray.doc)
+        .def("SetPositionsInArray",
+            [](const Class* self, multibody::ModelInstanceIndex model_instance,
+                const Eigen::Ref<const VectorX<T>> q_instance,
+                Eigen::Ref<VectorX<T>> q) -> void {
+              self->SetPositionsInArray(model_instance, q_instance, &q);
+            },
+            py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
+            doc.MultibodyPlant.SetPositionsInArray.doc)
+        .def("GetVelocitiesFromArray", &Class::GetPositionsFromArray,
+            py::arg("model_instance"), py::arg("q"),
+            doc.MultibodyPlant.GetPositionsFromArray.doc)
+        .def("SetVelocitiesInArray",
+            [](const Class* self, multibody::ModelInstanceIndex model_instance,
+                const Eigen::Ref<const VectorX<T>> v_instance,
+                Eigen::Ref<VectorX<T>> v) -> void {
+              self->SetVelocitiesInArray(model_instance, v_instance, &v);
+            },
+            py::arg("model_instance"), py::arg("v_instance"), py::arg("v"),
+            doc.MultibodyPlant.SetVelocitiesInArray.doc)
+        // TODO(eric.cousineau): Ensure all of these return either references,
+        // or copies, consistently. At present, `GetX(context)` returns a
+        // reference, while `GetX(context, model_instance)` returns a copy.
+        .def("GetPositions",
+            [](const Class* self, const Context<T>& context) {
+              // Reference. Hack in effective `keep_alive` for Eigen casting.
+              return py::cast(self->GetPositions(context),
+                  py_reference_internal, py::cast(&context, py_reference));
+            },
+            py::arg("context"), doc.MultibodyPlant.GetPositions.doc_1args)
+        .def("GetPositions",
+            [](const Class* self, const Context<T>& context,
+                ModelInstanceIndex model_instance) {
+              // Copy.
+              return self->GetPositions(context, model_instance);
+            },
+            py::arg("context"), py::arg("model_instance"),
+            doc.MultibodyPlant.GetPositions.doc_2args)
+        .def("GetVelocities",
+            [](const Class* self, const Context<T>& context) {
+              // Reference. Hack in effective `keep_alive` for Eigen casting.
+              return py::cast(self->GetVelocities(context),
+                  py_reference_internal, py::cast(&context, py_reference));
+            },
+            py::arg("context"), doc.MultibodyPlant.GetVelocities.doc_1args)
+        .def("GetVelocities",
+            [](const Class* self, const Context<T>& context,
+                ModelInstanceIndex model_instance) {
+              // Copy.
+              return self->GetVelocities(context, model_instance);
+            },
+            py::arg("context"), py::arg("model_instance"),
+            doc.MultibodyPlant.GetVelocities.doc_2args)
+        .def("SetFreeBodySpatialVelocity",
+            [](const Class* self, const Body<T>& body,
+                const SpatialVelocity<T>& V_WB, Context<T>* context) {
+              self->SetFreeBodySpatialVelocity(context, body, V_WB);
+            },
+            py::arg("body"), py::arg("V_WB"), py::arg("context"),
+            doc.MultibodyPlant.SetFreeBodySpatialVelocity.doc_3args)
+        .def("EvalBodyPoseInWorld",
+            [](const Class* self, const Context<T>& context,
+                const Body<T>& body_B) {
+              return self->EvalBodyPoseInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body"),
+            doc.MultibodyPlant.EvalBodyPoseInWorld.doc)
+        .def("EvalBodySpatialVelocityInWorld",
+            [](const Class* self, const Context<T>& context,
+                const Body<T>& body_B) {
+              return self->EvalBodySpatialVelocityInWorld(context, body_B);
+            },
+            py::arg("context"), py::arg("body"),
+            doc.MultibodyPlant.EvalBodySpatialVelocityInWorld.doc)
+        .def("CalcJacobianSpatialVelocity",
+            [](const Class* self, const systems::Context<T>& context,
+                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+                const Eigen::Ref<const Vector3<T>>& p_BP,
+                const Frame<T>& frame_A, const Frame<T>& frame_E) {
+              MatrixX<T> Jw_ABp_E(6, GetVariableSize(*self, with_respect_to));
+              self->CalcJacobianSpatialVelocity(context, with_respect_to,
+                  frame_B, p_BP, frame_A, frame_E, &Jw_ABp_E);
+              return Jw_ABp_E;
+            },
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
+            doc.MultibodyPlant.CalcJacobianSpatialVelocity.doc)
+        .def("CalcPotentialEnergy", &Class::CalcPotentialEnergy,
+            py::arg("context"), doc.MultibodyPlant.CalcPotentialEnergy.doc)
+        .def("CalcConservativePower", &Class::CalcConservativePower,
+            py::arg("context"), doc.MultibodyPlant.CalcConservativePower.doc)
+        .def("CalcMassMatrixViaInverseDynamics",
+            [](const Class* self, const Context<T>& context) {
+              MatrixX<T> H;
+              const int n = self->num_velocities();
+              H.resize(n, n);
+              self->CalcMassMatrixViaInverseDynamics(context, &H);
+              return H;
+            },
+            py::arg("context"))
+        .def("CalcBiasTerm",
+            [](const Class* self, const Context<T>& context) {
+              VectorX<T> Cv(self->num_velocities());
+              self->CalcBiasTerm(context, &Cv);
+              return Cv;
+            },
+            py::arg("context"), doc.MultibodyPlant.CalcBiasTerm.doc)
+        .def("CalcGravityGeneralizedForces",
+            &Class::CalcGravityGeneralizedForces, py::arg("context"),
+            doc.MultibodyPlant.CalcGravityGeneralizedForces.doc)
+        .def("MapVelocityToQDot",
+            [](const Class* self, const Context<T>& context,
+                const Eigen::Ref<const VectorX<T>>& v) {
+              VectorX<T> qdot(self->num_positions());
+              self->MapVelocityToQDot(context, v, &qdot);
+              return qdot;
+            },
+            py::arg("context"), py::arg("v"),
+            doc.MultibodyPlant.MapVelocityToQDot.doc)
+        .def("MapQDotToVelocity",
+            [](const Class* self, const Context<T>& context,
+                const Eigen::Ref<const VectorX<T>>& qdot) {
+              VectorX<T> v(self->num_velocities());
+              self->MapQDotToVelocity(context, qdot, &v);
+              return v;
+            },
+            py::arg("context"), py::arg("qdot"),
+            doc.MultibodyPlant.MapQDotToVelocity.doc)
+        .def("CalcRelativeTransform", &Class::CalcRelativeTransform,
+            py::arg("context"), py::arg("frame_A"), py::arg("frame_B"),
+            doc.MultibodyPlant.CalcRelativeTransform.doc);
     // Topology queries.
     cls  // BR
+        .def(
+            "num_frames", &Class::num_frames, doc.MultibodyPlant.num_frames.doc)
+        .def("get_body", &Class::get_body, py::arg("body_index"),
+            py_reference_internal, doc.MultibodyPlant.get_body.doc)
+        .def("get_joint", &Class::get_joint, py::arg("joint_index"),
+            py_reference_internal, doc.MultibodyPlant.get_joint.doc)
+        .def("get_joint_actuator", &Class::get_joint_actuator,
+            py::arg("actuator_index"), py_reference_internal,
+            doc.MultibodyPlant.get_joint_actuator.doc)
+        .def("get_frame", &Class::get_frame, py::arg("frame_index"),
+            py_reference_internal, doc.MultibodyPlant.get_frame.doc)
+        .def("GetModelInstanceName",
+            overload_cast_explicit<const string&, ModelInstanceIndex>(
+                &Class::GetModelInstanceName),
+            py::arg("model_instance"), py_reference_internal,
+            doc.MultibodyPlant.GetModelInstanceName.doc)
         .def("HasBodyNamed",
             overload_cast_explicit<bool, const string&>(&Class::HasBodyNamed),
             py::arg("name"), doc.MultibodyPlant.HasBodyNamed.doc_1args)
@@ -603,7 +809,7 @@ void init_multibody_plant(py::module m) {
     cls  // BR
         .def("GetMutablePositionsAndVelocities",
             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositionsAndVelocities(context);
             },
             py_reference,
@@ -612,7 +818,7 @@ void init_multibody_plant(py::module m) {
             doc.MultibodyPlant.GetMutablePositionsAndVelocities.doc)
         .def("GetMutablePositions",
             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositions(context);
             },
             py_reference,
@@ -621,7 +827,7 @@ void init_multibody_plant(py::module m) {
             doc.MultibodyPlant.GetMutablePositions.doc)
         .def("GetMutableVelocities",
             [](const MultibodyPlant<T>* self,
-                systems::Context<T>* context) -> Eigen::Ref<VectorX<T>> {
+                Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutableVelocities(context);
             },
             py_reference,
@@ -629,27 +835,24 @@ void init_multibody_plant(py::module m) {
             py::keep_alive<0, 2>(), py::arg("context"),
             doc.MultibodyPlant.GetMutableVelocities.doc)
         .def("GetPositions",
-            [](const MultibodyPlant<T>* self,
-                const systems::Context<T>& context) -> VectorX<T> {
-              return self->GetPositions(context);
-            },
+            [](const MultibodyPlant<T>* self, const Context<T>& context)
+                -> VectorX<T> { return self->GetPositions(context); },
             py_reference, py::arg("context"),
             doc.MultibodyPlant.GetPositions.doc_1args)
         .def("GetPositions",
-            [](const MultibodyPlant<T>* self,
-                const systems::Context<T>& context,
+            [](const MultibodyPlant<T>* self, const Context<T>& context,
                 multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetPositions(context, model_instance);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
             doc.MultibodyPlant.GetPositions.doc_2args)
         .def("SetPositions",
-            [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+            [](const MultibodyPlant<T>* self, Context<T>* context,
                 const VectorX<T>& q) { self->SetPositions(context, q); },
             py_reference, py::arg("context"), py::arg("q"),
             doc.MultibodyPlant.SetPositions.doc_2args)
         .def("SetPositions",
-            [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+            [](const MultibodyPlant<T>* self, Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
                 const VectorX<T>& q) {
               self->SetPositions(context, model_instance, q);
@@ -657,27 +860,24 @@ void init_multibody_plant(py::module m) {
             py_reference, py::arg("context"), py::arg("model_instance"),
             py::arg("q"), doc.MultibodyPlant.SetPositions.doc_2args)
         .def("GetVelocities",
-            [](const MultibodyPlant<T>* self,
-                const systems::Context<T>& context) -> VectorX<T> {
-              return self->GetVelocities(context);
-            },
+            [](const MultibodyPlant<T>* self, const Context<T>& context)
+                -> VectorX<T> { return self->GetVelocities(context); },
             py_reference, py::arg("context"),
             doc.MultibodyPlant.GetVelocities.doc_1args)
         .def("GetVelocities",
-            [](const MultibodyPlant<T>* self,
-                const systems::Context<T>& context,
+            [](const MultibodyPlant<T>* self, const Context<T>& context,
                 multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetVelocities(context, model_instance);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
             doc.MultibodyPlant.GetVelocities.doc_2args)
         .def("SetVelocities",
-            [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+            [](const MultibodyPlant<T>* self, Context<T>* context,
                 const VectorX<T>& v) { self->SetVelocities(context, v); },
             py_reference, py::arg("context"), py::arg("v"),
             doc.MultibodyPlant.SetVelocities.doc_2args)
         .def("SetVelocities",
-            [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+            [](const MultibodyPlant<T>* self, Context<T>* context,
                 ModelInstanceIndex model_instance, const VectorX<T>& v) {
               self->SetVelocities(context, model_instance, v);
             },
@@ -685,35 +885,45 @@ void init_multibody_plant(py::module m) {
             py::arg("v"), doc.MultibodyPlant.SetVelocities.doc_3args)
         .def("GetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self,
-                const systems::Context<T>& context) -> VectorX<T> {
+                const Context<T>& context) -> VectorX<T> {
               return self->GetPositionsAndVelocities(context);
             },
             py_reference, py::arg("context"),
             doc.MultibodyPlant.GetPositionsAndVelocities.doc_1args)
         .def("GetPositionsAndVelocities",
-            [](const MultibodyPlant<T>* self,
-                const systems::Context<T>& context,
+            [](const MultibodyPlant<T>* self, const Context<T>& context,
                 multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetPositionsAndVelocities(context, model_instance);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
             doc.MultibodyPlant.GetPositionsAndVelocities.doc_2args)
         .def("SetPositionsAndVelocities",
-            [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+            [](const MultibodyPlant<T>* self, Context<T>* context,
                 const VectorX<T>& q_v) {
               self->SetPositionsAndVelocities(context, q_v);
             },
             py_reference, py::arg("context"), py::arg("q_v"),
             doc.MultibodyPlant.SetPositionsAndVelocities.doc_2args)
         .def("SetPositionsAndVelocities",
-            [](const MultibodyPlant<T>* self, systems::Context<T>* context,
+            [](const MultibodyPlant<T>* self, Context<T>* context,
                 multibody::ModelInstanceIndex model_instance,
                 const VectorX<T>& q_v) {
               self->SetPositionsAndVelocities(context, model_instance, q_v);
             },
             py_reference, py::arg("context"), py::arg("model_instance"),
             py::arg("q_v"),
-            doc.MultibodyPlant.SetPositionsAndVelocities.doc_3args);
+            doc.MultibodyPlant.SetPositionsAndVelocities.doc_3args)
+        .def("SetDefaultContext",
+            [](const Class* self, Context<T>* context) {
+              self->SetDefaultContext(context);
+            },
+            py::arg("context"), doc.MultibodyPlant.SetDefaultContext.doc)
+        .def("SetDefaultState",
+            [](const Class* self, const Context<T>& context, State<T>* state) {
+              self->SetDefaultState(context, state);
+            },
+            py::arg("context"), py::arg("state"),
+            doc.MultibodyPlant.SetDefaultState.doc);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
@@ -759,8 +969,6 @@ void init_parsing(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
-
-  using multibody_plant::MultibodyPlant;
 
   // Stub in a deprecation shim for the Parser class.
   // TODO(jwnimmer-tri) Remove this stub on or about 2019-01-01.

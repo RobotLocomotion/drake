@@ -61,8 +61,8 @@ constexpr std::array<Size, 2> kSizes = {{kSizeVga, kSizeHd720}};
 void VerifyCameraInfo(const CameraInfo& camera_info, Size size) {
   EXPECT_EQ(size.width, camera_info.width());
   EXPECT_EQ(size.height, camera_info.height());
-  EXPECT_NEAR(size.width * 0.5, camera_info.center_x(), kTolerance);
-  EXPECT_NEAR(size.height * 0.5, camera_info.center_y(), kTolerance);
+  EXPECT_NEAR(size.width * 0.5 - 0.5, camera_info.center_x(), kTolerance);
+  EXPECT_NEAR(size.height * 0.5 - 0.5, camera_info.center_y(), kTolerance);
 
   const double kExpectedFocal = 0.5 * size.height / tan(kFovY / 2);
   EXPECT_NEAR(kExpectedFocal, camera_info.focal_x(), kTolerance);

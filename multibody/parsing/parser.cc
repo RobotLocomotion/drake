@@ -2,15 +2,15 @@
 
 #include <spruce.hh>
 
-#include "drake/multibody/parsing/sdf_parser.h"
-#include "drake/multibody/parsing/urdf_parser.h"
+#include "drake/multibody/parsing/detail_sdf_parser.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 
 namespace drake {
 namespace multibody {
 
-using parsing::detail::AddModelFromSdfFile;
-using parsing::detail::AddModelFromUrdfFile;
-using parsing::detail::AddModelsFromSdfFile;
+using detail::AddModelFromSdfFile;
+using detail::AddModelFromUrdfFile;
+using detail::AddModelsFromSdfFile;
 
 Parser::Parser(
     multibody_plant::MultibodyPlant<double>* plant,

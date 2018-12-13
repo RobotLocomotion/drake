@@ -6,6 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -13,7 +14,6 @@ namespace multibody {
 
 // Forward declarations.
 template <class T> class BodyFrame;
-template <class T> class MultibodyTree;
 template <class T> class RigidBody;
 
 /// %FixedOffsetFrame represents a material frame F whose pose is fixed with

@@ -10,6 +10,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -1132,9 +1134,9 @@ class BoxPenetrationTest : public ::testing::Test {
 
     // Confirm that the poses of the box satisfy the conditions described above.
     for (auto func : {X_WB_1, X_WB_2}) {
-      Isometry3d X_WB = func(p_BoC_B_, p_WC_);
+      const math::RigidTransformd X_WB = func(p_BoC_B_, p_WC_);
       // Confirm that p_BoC_B transforms to p_WC.
-      Vector3d p_WC_test = X_WB * p_BoC_B_;
+      const Vector3d p_WC_test = X_WB * p_BoC_B_;
       EXPECT_TRUE(CompareMatrices(p_WC_test, p_WC_, 1e-15,
                                   MatrixCompareType::absolute));
 
@@ -1142,11 +1144,9 @@ class BoxPenetrationTest : public ::testing::Test {
       for (double x : {-0.5, 0.5}) {
         for (double y : {-0.5, 0.5}) {
           for (double z : {-0.5, 0.5}) {
-            Vector3d p_BoC_B{x, y, z};
-            if (p_BoC_B.isApprox(p_BoC_B_)) {
-              continue;
-            }
-            Vector3d p_WC = X_WB * p_BoC_B;
+            const Vector3d p_BoC_B{x, y, z};
+            if (p_BoC_B.isApprox(p_BoC_B_)) continue;
+            const Vector3d p_WC = X_WB * p_BoC_B;
             EXPECT_GT(p_WC(2), 0);
           }
         }
@@ -1186,7 +1186,7 @@ class BoxPenetrationTest : public ::testing::Test {
   // Perform the collision test against the indicated shape and confirm the
   // results to the given tolerance.
   void TestCollision(TangentShape shape_type, double tolerance,
-                     const Isometry3d& X_WB) {
+                     const math::RigidTransformd& X_WB) {
     GeometryIndex tangent_index(0);
     engine_.AddDynamicGeometry(shape(shape_type), tangent_index);
     GeometryId tangent_id = GeometryId::get_new_id();
@@ -1203,7 +1203,8 @@ class BoxPenetrationTest : public ::testing::Test {
     ASSERT_EQ(engine_.num_dynamic(), 2);
 
     // Update the poses of the geometry.
-    std::vector<Isometry3d> poses{shape_pose(shape_type), X_WB};
+    std::vector<Isometry3d> poses{shape_pose(shape_type),
+                                  X_WB.GetAsIsometry3()};
     std::vector<GeometryIndex> indices(poses.size());
     std::iota(indices.begin(), indices.end(), GeometryIndex(0));
     engine_.UpdateWorldPoses(poses, indices);
@@ -1248,37 +1249,35 @@ class BoxPenetrationTest : public ::testing::Test {
   PenetrationAsPointPair<double> expected_penetration_;
 
   // Produces the X_WB that produces high-quality answers.
-  static Isometry3d X_WB_2(const Vector3d& p_BoC_B, const Vector3d& p_WC) {
+  static math::RigidTransformd X_WB_2(const Vector3d& p_BoC_B,
+                                      const Vector3d& p_WC) {
     // Compute the pose of the colliding box.
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
-    Isometry3d X_WB;
-    X_WB = AngleAxisd(std::atan(M_SQRT2), Vector3d(M_SQRT1_2, -M_SQRT1_2, 0))
-               .toRotationMatrix();
+    const math::RotationMatrixd R_WB(AngleAxisd(std::atan(M_SQRT2),
+                                     Vector3d(M_SQRT1_2, -M_SQRT1_2, 0)));
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).
-    Vector3d p_BoC_W = X_WB.linear() * p_BoC_B;
-    Vector3d p_WB = p_WC - p_BoC_W;
-    X_WB.translation() = p_WB;
-    return X_WB;
+    const Vector3d p_BoC_W = R_WB * p_BoC_B;
+    const Vector3d p_WB = p_WC - p_BoC_W;
+    return math::RigidTransformd(R_WB, p_WB);
   }
 
   // Produces the X_WB that produces low-quality answers.
-  static Isometry3d X_WB_1(const Vector3d& p_BoC_B, const Vector3d& p_WC) {
+  static math::RigidTransformd X_WB_1(const Vector3d& p_BoC_B,
+                                      const Vector3d& p_WC) {
     // Compute the pose of the colliding box.
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
-    Isometry3d X_WB;
-    X_WB = AngleAxisd(-M_PI_4, Vector3d::UnitY()) *
-           AngleAxisd(M_PI_4, Vector3d::UnitX());
+    const math::RotationMatrixd R_WB(AngleAxisd(-M_PI_4, Vector3d::UnitY()) *
+           AngleAxisd(M_PI_4, Vector3d::UnitX()));
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).
-    Vector3d p_BoC_W = X_WB.linear() * p_BoC_B;
-    Vector3d p_WB = p_WC - p_BoC_W;
-    X_WB.translation() = p_WB;
-    return X_WB;
+    const Vector3d p_BoC_W = R_WB * p_BoC_B;
+    const Vector3d p_WB = p_WC - p_BoC_W;
+    return math::RigidTransformd(R_WB, p_WB);
   }
 
   // Map enumeration to string for error messages.

@@ -11,6 +11,8 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/test/test_util_pybind.h"
+
 using std::string;
 
 namespace drake {
@@ -86,8 +88,7 @@ int main(int argc, char** argv) {
   // Define custom class only once here.
   py::class_<CustomCppType>(m, "CustomCppType");
 
-  // For Python3
-  py::globals().attr("update")(m.attr("__dict__"));
+  test::SynchronizeGlobalsForPython3(m);
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

@@ -729,6 +729,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     DRAKE_DEMAND(indices.size() == dynamic_objects_.size());
     for (size_t i = 0; i < indices.size(); ++i) {
       dynamic_objects_[i]->setTransform(convert(X_WG[indices[i]]));
+      dynamic_objects_[i]->computeAABB();
     }
     dynamic_tree_.update();
   }

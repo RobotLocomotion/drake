@@ -1033,6 +1033,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1384,6 +1385,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
         "@spruce",
     ],
 )
@@ -1516,6 +1518,7 @@ drake_cc_googletest(
     name = "solver_options_test",
     deps = [
         ":solver_options",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

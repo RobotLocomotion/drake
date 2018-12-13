@@ -3,6 +3,7 @@ Provides utilities for communicating with the browser-based visualization
 package, Meshcat:
       https://github.com/rdeits/meshcat
 """
+from __future__ import print_function
 import argparse
 import math
 import webbrowser
@@ -55,10 +56,10 @@ class MeshcatVisualizer(LeafSystem):
             default=None,
             help="Enable visualization with meshcat. If no zmq_url is "
                  "specified, a meshcat-server will be started as a "
-                 "subprocess.  Use e.g. zmq_url=tcp://127.0.0.1:6000 to "
+                 "subprocess.  Use e.g. --meshcat=tcp://127.0.0.1:6000 to "
                  "connect to an existing meshcat-server at the specified "
-                 "url.  Use zmq_url=default to connect to the meshcat-server "
-                 "running at the default url.")
+                 "url.  Use --meshcat=default to connect to the "
+                 "meshcat-server running at the default url.")
 
     def __init__(self,
                  scene_graph,

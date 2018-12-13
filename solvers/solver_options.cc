@@ -137,5 +137,49 @@ std::string to_string(const SolverOptions& x) {
   return result.str();
 }
 
+namespace {
+// Check if all the keys in key_value pair key_vals is a subset of
+// allowable_keys, and throw an invalid argument if not.
+template <typename T>
+void CheckOptionKeysForSolverHelper(
+    const std::unordered_map<std::string, T>& key_vals,
+    const std::unordered_set<std::string>& allowable_keys,
+    const std::string& solver_name) {
+  for (const auto& key_val : key_vals) {
+    if (allowable_keys.count(key_val.first) == 0) {
+      throw std::invalid_argument(key_val.first +
+                                  " is not allowed in the SolverOptions for " +
+                                  solver_name + ".");
+    }
+  }
+}
+}  // namespace
+
+void SolverOptions::CheckOptionKeysForSolver(
+    const SolverId& solver_id,
+    const std::unordered_set<std::string>& double_keys,
+    const std::unordered_set<std::string>& int_keys,
+    const std::unordered_set<std::string>& str_keys) const {
+  CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id), double_keys,
+                                 solver_id.name());
+  CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys,
+                                 solver_id.name());
+  CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys,
+                                 solver_id.name());
+}
+
+const std::unordered_map<std::string, double>& SolverOptions::GetOptionsImpl(
+    const SolverId& solver_id, double*) const {
+  return GetOptionsDouble(solver_id);
+}
+const std::unordered_map<std::string, int>& SolverOptions::GetOptionsImpl(
+    const SolverId& solver_id, int*) const {
+  return GetOptionsInt(solver_id);
+}
+const std::unordered_map<std::string, std::string>&
+SolverOptions::GetOptionsImpl(const SolverId& solver_id, std::string*) const {
+  return GetOptionsStr(solver_id);
+}
+
 }  // namespace solvers
 }  // namespace drake

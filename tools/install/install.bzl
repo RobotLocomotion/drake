@@ -698,7 +698,7 @@ def install_py2_duplicates_if_py3(
     Creates a duplicate install, only if Python3 is Bazel's version of Python.
     Otherwise, creates an empty install target.
 
-    For `py_dest`, `@PYTHON_SITE_PACKAGES` will be replaced with
+    For `py_dest`, `@PYTHON_SITE_PACKAGES@` will be replaced with
     `lib/python2.7/site-packages`.
 
     This is presently only used to support Python2-only `drake_visualizer`.

@@ -16,8 +16,8 @@ const int kWidth = 640;
 const int kHeight = 480;
 const double kFx = 554.25625842204079;  // In pixels.
 const double kFy = 579.41125496954282;  // In pixels.
-const double kCx = kWidth * 0.5;
-const double kCy = kHeight * 0.5;
+const double kCx = kWidth * 0.5 - 0.5;
+const double kCy = kHeight * 0.5 - 0.5;
 const double kVerticalFov = 0.78539816339744828;  // 45.0 degrees.
 
 

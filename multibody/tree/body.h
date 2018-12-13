@@ -9,6 +9,7 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -110,9 +111,6 @@ class BodyFrame final : public Frame<T> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
-// Forward declarations for Body<T>.
-template<typename T> class MultibodyTree;
-
 /// @cond
 // Internal implementation details. Users should not access implementations
 // in this namespace.
@@ -134,7 +132,7 @@ class BodyAttorney {
   static BodyFrame<T>& get_mutable_body_frame(Body<T>* body) {
     return body->get_mutable_body_frame();
   }
-  friend class MultibodyTree<T>;
+  friend class internal::MultibodyTree<T>;
 };
 }  // namespace internal
 /// @endcond

@@ -5,6 +5,7 @@
 #include <list>
 #include <set>
 #include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 #include <nlopt.hpp>
@@ -316,21 +317,36 @@ bool IsVectorOfConstraintsSatisfiedAtSolution(
   }
   return true;
 }
+
+template <typename T>
+T GetOptionValueWithDefault(const std::unordered_map<std::string, T>& options,
+                            const std::string& key, const T& default_value) {
+  auto it = options.find(key);
+  if (it == options.end()) {
+    return default_value;
+  }
+  return it->second;
+}
 }  // anonymous namespace
 
 bool NloptSolver::is_available() { return true; }
 
-SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
+void NloptSolver::Solve(const MathematicalProgram& prog,
+                        const optional<Eigen::VectorXd>& initial_guess,
+                        const optional<SolverOptions>& solver_options,
+                        MathematicalProgramResult* result) const {
+  *result = {};
   const int nx = prog.num_vars();
 
   // Load the algo to use and the size.
   nlopt::opt opt(nlopt::LD_SLSQP, nx);
 
-  const Eigen::VectorXd& initial_guess = prog.initial_guess();
-  std::vector<double> x(initial_guess.size());
+  const Eigen::VectorXd& x_init =
+      initial_guess.has_value() ? initial_guess.value() : prog.initial_guess();
+  std::vector<double> x(x_init.size());
   for (size_t i = 0; i < x.size(); i++) {
-    if (!std::isnan(initial_guess[i])) {
-      x[i] = initial_guess[i];
+    if (!std::isnan(x_init[i])) {
+      x[i] = x_init[i];
     } else {
       x[i] = 0.0;
     }
@@ -360,13 +376,23 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
   opt.set_lower_bounds(xlow);
   opt.set_upper_bounds(xupp);
 
-  opt.set_min_objective(EvaluateCosts, &prog);
+  opt.set_min_objective(EvaluateCosts, const_cast<MathematicalProgram*>(&prog));
 
-  // TODO(sam.creasey): All hardcoded tolerances in this function
-  // should be made configurable when #1879 is fixed.
-  const double constraint_tol = 1e-6;
-  const double xtol_rel = 1e-6;
-  const double xtol_abs = 1e-6;
+  SolverOptions merged_solver_options =
+      solver_options.value_or(SolverOptions());
+  merged_solver_options.Merge(prog.solver_options());
+
+  const auto& nlopt_options_double =
+      merged_solver_options.GetOptionsDouble(id());
+  const auto& nlopt_options_int = merged_solver_options.GetOptionsInt(id());
+  const double constraint_tol = GetOptionValueWithDefault(
+      nlopt_options_double, ConstraintToleranceName(), 1e-6);
+  const double xtol_rel = GetOptionValueWithDefault(
+      nlopt_options_double, XRelativeToleranceName(), 1e-6);
+  const double xtol_abs = GetOptionValueWithDefault(
+      nlopt_options_double, XAbsoluteToleranceName(), 1e-6);
+  const int max_eval =
+      GetOptionValueWithDefault(nlopt_options_int, MaxEvalName(), 1000);
 
   std::list<WrappedConstraint> wrapped_vector;
 
@@ -396,40 +422,42 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
 
   opt.set_xtol_rel(xtol_rel);
   opt.set_xtol_abs(xtol_abs);
+  opt.set_maxeval(max_eval);
 
-  SolutionResult result = SolutionResult::kSolutionFound;
+  result->set_solution_result(SolutionResult::kSolutionFound);
+  result->set_solver_id(id());
+
+  NloptSolverDetails& solver_details =
+      result->SetSolverDetailsType<NloptSolverDetails>();
 
   double minf = 0;
   const double kUnboundedTol = -1E30;
-  SolverResult solver_result(id());
   try {
     const nlopt::result nlopt_result = opt.optimize(x, minf);
+    solver_details.status = nlopt_result;
     if (nlopt_result == nlopt::SUCCESS ||
         nlopt_result == nlopt::STOPVAL_REACHED ||
         nlopt_result == nlopt::XTOL_REACHED ||
         nlopt_result == nlopt::FTOL_REACHED ||
         nlopt_result == nlopt::MAXEVAL_REACHED ||
         nlopt_result == nlopt::MAXTIME_REACHED) {
-      solver_result.set_decision_variable_values(
-          Eigen::Map<Eigen::VectorXd>(x.data(), nx));
+      result->set_x_val(Eigen::Map<Eigen::VectorXd>(x.data(), nx));
     }
     switch (nlopt_result) {
       case nlopt::SUCCESS:
       case nlopt::STOPVAL_REACHED: {
-        result = SolutionResult::kSolutionFound;
+        result->set_solution_result(SolutionResult::kSolutionFound);
         break;
       }
       case nlopt::FTOL_REACHED:
       case nlopt::XTOL_REACHED: {
         // Now check if the constraints are violated.
-        // TODO(hongkai.dai) Allow the user to set this tolerance.
         bool all_constraints_satisfied = true;
         auto constraint_test = [&prog, constraint_tol,
                                 &all_constraints_satisfied,
-                                &solver_result](auto constraints) {
+                                result](auto constraints) {
           all_constraints_satisfied &= IsVectorOfConstraintsSatisfiedAtSolution(
-              prog, constraints,
-              solver_result.decision_variable_values().value(), constraint_tol);
+              prog, constraints, result->get_x_val(), constraint_tol);
         };
         constraint_test(prog.generic_constraints());
         constraint_test(prog.bounding_box_constraints());
@@ -439,50 +467,56 @@ SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
         constraint_test(prog.rotated_lorentz_cone_constraints());
 
         if (!all_constraints_satisfied) {
-          result = SolutionResult::kInfeasibleConstraints;
+          result->set_solution_result(SolutionResult::kInfeasibleConstraints);
         }
         break;
       }
       case nlopt::MAXTIME_REACHED:
       case nlopt::MAXEVAL_REACHED: {
-        result = SolutionResult::kIterationLimit;
+        result->set_solution_result(SolutionResult::kIterationLimit);
         break;
       }
       case nlopt::INVALID_ARGS: {
-        result = SolutionResult::kInvalidInput;
+        result->set_solution_result(SolutionResult::kInvalidInput);
         break;
       }
       case nlopt::ROUNDOFF_LIMITED: {
         if (minf < kUnboundedTol) {
-          result = SolutionResult::kUnbounded;
+          result->set_solution_result(SolutionResult::kUnbounded);
           minf = -std::numeric_limits<double>::infinity();
         } else {
-          result = SolutionResult::kUnknownError;
+          result->set_solution_result(SolutionResult::kUnknownError);
         }
         break;
       }
-      default: { result = SolutionResult::kUnknownError; }
+      default: { result->set_solution_result(SolutionResult::kUnknownError); }
     }
   } catch (std::invalid_argument&) {
-    result = SolutionResult::kInvalidInput;
+    result->set_solution_result(SolutionResult::kInvalidInput);
   } catch (std::bad_alloc&) {
-    result = SolutionResult::kUnknownError;
+    result->set_solution_result(SolutionResult::kUnknownError);
   } catch (nlopt::roundoff_limited) {
     if (minf < kUnboundedTol) {
-      result = SolutionResult::kUnbounded;
+      result->set_solution_result(SolutionResult::kUnbounded);
       minf = MathematicalProgram::kUnboundedCost;
     } else {
-      result = SolutionResult::kUnknownError;
+      result->set_solution_result(SolutionResult::kUnknownError);
     }
   } catch (nlopt::forced_stop) {
-    result = SolutionResult::kUnknownError;
+    result->set_solution_result(SolutionResult::kUnknownError);
   } catch (std::runtime_error) {
-    result = SolutionResult::kUnknownError;
+    result->set_solution_result(SolutionResult::kUnknownError);
   }
 
-  solver_result.set_optimal_cost(minf);
+  result->set_optimal_cost(minf);
+}
+
+SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
   prog.SetSolverResult(solver_result);
-  return result;
+  return result.get_solution_result();
 }
 
 }  // namespace solvers

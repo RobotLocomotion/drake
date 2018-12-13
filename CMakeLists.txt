@@ -216,6 +216,12 @@ set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 
 set(BAZEL_ARGS)
 
+if(CMAKE_COLOR_MAKEFILE)
+  list(APPEND BAZEL_ARGS --color=yes)
+else()
+  list(APPEND BAZEL_ARGS --color=no)
+endif()
+
 if(CMAKE_VERBOSE_MAKEFILE)
   list(APPEND BAZEL_ARGS --subcommands)
 endif()
@@ -267,12 +273,32 @@ elseif(WITH_SNOPT)
   list(APPEND BAZEL_ENV "SNOPT_PATH=${SNOPT_PATH}")
 endif()
 
+# N.B. If you are testing the CMake API and making changes to `install.py.in`,
+# you can change this target to something more lightweight, such as
+# `//tools/install/dummy:install`.
 set(BAZEL_TARGETS //:install)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install" CACHE STRING
     "Install path prefix, prepended onto install directories" FORCE
   )
+endif()
+
+set(BAZEL_TARGETS_ARGS "${CMAKE_INSTALL_PREFIX}")
+
+if(CMAKE_VERBOSE_MAKEFILE)
+  list(INSERT BAZEL_TARGETS_ARGS 0 "--verbose")
+endif()
+
+# If we are in debug mode, do not strip symbols.
+if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebugInfo)
+  # SNOPT has restrictions for redistribution given that we are statically
+  # linking it in.
+  if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
+    message(WARNING "SNOPT is enabled, thus symbols will STILL be stripped, even in debug mode.")
+  else()
+    list(INSERT BAZEL_TARGETS_ARGS 0 "--no_strip")
+  endif()
 endif()
 
 include(ExternalProject)
@@ -283,7 +309,7 @@ ExternalProject_Add(drake_cxx_python
   BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} build ${BAZEL_ARGS} ${BAZEL_TARGETS}
   BUILD_IN_SOURCE 1
   BUILD_ALWAYS 1
-  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- "${CMAKE_INSTALL_PREFIX}"
+  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- ${BAZEL_TARGETS_ARGS}
   USES_TERMINAL_BUILD 1
   USES_TERMINAL_INSTALL 1
 )
@@ -320,6 +346,7 @@ if(WITH_MATLAB)
     CMAKE_ARGS
       -DBUILD_TESTING:BOOL=${BUILD_TESTING}
       -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
+      -DCMAKE_COLOR_MAKEFILE:BOOL=${CMAKE_COLOR_MAKEFILE}
       "-DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}"
       "-DCMAKE_CXX_FLAGS:STRING=${CMAKE_CXX_FLAGS}"
       "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_INSTALL_PREFIX}"

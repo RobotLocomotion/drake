@@ -1,3 +1,22 @@
+"""
+Permits calling arbitrary functions and passing some forms of data from C++
+to Python (only one direction) as a server-client pair.
+
+The server in this case is the C++ program, and the client is this binary.
+For an example of C++ usage, see `call_python_server_test.cc`.
+
+Here's an example of running with the C++ test program:
+
+    bazel build //common/proto:call_python_client //common/proto:call_python_server_test  # noqa
+    # Create default pipe file.
+    rm -f /tmp/python_rpc && mkfifo /tmp/python_rpc
+
+    # In Terminal 1, run client.
+    ./bazel-bin/common/proto/call_python_client_cli
+
+    # In Terminal 2, run server (or your C++ program).
+    ./bazel-bin/common/proto/call_python_server_test
+"""
 from __future__ import print_function
 import argparse
 import os
@@ -520,7 +539,9 @@ def _read_next(f, msg):
 
 def main(argv):
     _ensure_sigint_handler()
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--no_wait", action='store_true',
         help="Close client after messages are processed. " +
