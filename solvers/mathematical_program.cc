@@ -212,7 +212,8 @@ MathematicalProgram::NewNonnegativePolynomial(
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(Q);
+      AddScaledDiagonallyDominantMatrixConstraint(
+          Q.cast<symbolic::Expression>());
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
@@ -785,27 +786,52 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
   return Y;
 }
 
+namespace {
+// Add the slack variable for scaled diagonally dominant matrix constraint. This
+// function also adds the rotated Lorentz cone constraint on the slack
+// variables. The only thing left in AddScaledDiagonallyDominantMatrixConstraint
+// is that the diagonal terms in the sdd matrix should match the summation of
+// the diagonally terms in the slack variable.
+template <typename T>
+void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
+    const Eigen::Ref<const MatrixX<T>>& X, MathematicalProgram* prog,
+    Eigen::Matrix<symbolic::Variable, 2, Eigen::Dynamic>* M_ij_diagonal,
+    std::vector<std::vector<Matrix2<T>>>* M) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  // The diagonal terms of M[i][j] are new variables.
+  // M[i][j](0, 0) = M_ij_diagonal(0, k)
+  // M[i][j](1, 1) = M_ij_diagonal(1, k)
+  // where k = (2n - 1) * i / 2 + j - i - 1, namely k is the index of X(i, j)
+  // in the vector X_upper_diagonal, whee X_upper_diagonal is obtained by
+  // stacking each row of the upper diagonal part in X to a row vector.
+  *M_ij_diagonal = prog->NewContinuousVariables<2, Eigen::Dynamic>(
+      2, (n - 1) * n / 2, "sdd_slack_M");
+  int k = 0;
+  M->resize(n);
+  for (int i = 0; i < n; ++i) {
+    (*M)[i].resize(n);
+    for (int j = i + 1; j < n; ++j) {
+      (*M)[i][j](0, 0) = (*M_ij_diagonal)(0, k);
+      (*M)[i][j](1, 1) = (*M_ij_diagonal)(1, k);
+      (*M)[i][j](0, 1) = X(i, j);
+      (*M)[i][j](1, 0) = X(j, i);
+      prog->AddRotatedLorentzConeConstraint(
+          Vector3<T>((*M)[i][j](0, 0), (*M)[i][j](1, 1), (*M)[i][j](0, 1)));
+      ++k;
+    }
+  }
+}
+}  // namespace
+
 std::vector<std::vector<Matrix2<symbolic::Expression>>>
 MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   const int n = X.rows();
-  DRAKE_DEMAND(X.cols() == n);
   std::vector<std::vector<Matrix2<symbolic::Expression>>> M(n);
-  for (int i = 0; i < n; ++i) {
-    M[i].resize(n);
-    for (int j = i + 1; j < n; ++j) {
-      // Since M[i][j](0, 1) = X(i, j), we only need to declare new variables
-      // for the diagonal entries of M[i][j].
-      auto M_ij_diagonal = NewContinuousVariables<2>(
-          "sdd_slack_M[" + std::to_string(i) + "][" + std::to_string(j) + "]");
-      M[i][j](0, 0) = M_ij_diagonal(0);
-      M[i][j](1, 1) = M_ij_diagonal(1);
-      M[i][j](0, 1) = (X(i, j) + X(j, i)) / 2;
-      M[i][j](1, 0) = M[i][j](0, 1);
-      AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
-          M[i][j](0, 0), M[i][j](1, 1), M[i][j](0, 1)));
-    }
-  }
+  Matrix2X<symbolic::Variable> M_ij_diagonal;
+  AddSlackVariableForScaledDiagonallyDominantMatrixConstraint<
+      symbolic::Expression>(X, this, &M_ij_diagonal, &M);
   for (int i = 0; i < n; ++i) {
     symbolic::Expression diagonal_sum = 0;
     for (int j = 0; j < i; ++j) {
@@ -823,40 +849,44 @@ std::vector<std::vector<Matrix2<symbolic::Variable>>>
 MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
   const int n = X.rows();
-  DRAKE_DEMAND(X.cols() == n);
   std::vector<std::vector<Matrix2<symbolic::Variable>>> M(n);
-  for (int i = 0; i < n; ++i) {
-    M[i].resize(n);
-    for (int j = i + 1; j < n; ++j) {
-      // Since M[i][j](0, 1) = X(i, j), we only need to declare new variables
-      // for the diagonal entries of M[i][j].
-      auto M_ij_diagonal = NewContinuousVariables<2>(
-          "sdd_slack_M[" + std::to_string(i) + "][" + std::to_string(j) + "]");
-      M[i][j](0, 0) = M_ij_diagonal(0);
-      M[i][j](1, 1) = M_ij_diagonal(1);
-      M[i][j](0, 1) = X(i, j);
-      M[i][j](1, 0) = X(j, i);
-      AddRotatedLorentzConeConstraint(Vector3<symbolic::Variable>(
-          M_ij_diagonal(0), M_ij_diagonal(1), X(i, j)));
-    }
-  }
+  Matrix2X<symbolic::Variable> M_ij_diagonal;
+  AddSlackVariableForScaledDiagonallyDominantMatrixConstraint<
+      symbolic::Variable>(X, this, &M_ij_diagonal, &M);
+
+  // k is the index of X(i, j) in the vector X_upper_diagonal, whee
+  // X_upper_diagonal is obtained by stacking each row of the upper diagonal
+  // part in X to a row vector.
+  auto ij_to_k = [&n](int i, int j) {
+    return (2 * n - 1 - i) * i / 2 + j - i - 1;
+  };
   // A_diagonal * diagonal_vars = M[0][i](1, 1) + M[1][i](1, 1) + ... +
   // M[i-1][i](1, 1) - X(i, i) + M[i][i+1](0, 0) + M[i][i+2](0, 0) + ... +
   // M[i][n-1](0, 0);
-  Eigen::RowVectorXd A_diagonal_sum(n);
-  VectorXDecisionVariable diagonal_sum_var(n);
-  for (int i = 0; i < n; ++i) {
-    A_diagonal_sum.setOnes();
-    A_diagonal_sum(i) = -1;
-    for (int j = 0; j < i; ++j) {
-      diagonal_sum_var(j) = M[j][i](1, 1);
-    }
-    diagonal_sum_var(i) = X(i, i);
-    for (int j = i + 1; j < n; ++j) {
-      diagonal_sum_var(j) = M[i][j](0, 0);
-    }
-    AddLinearEqualityConstraint(A_diagonal_sum, 0, diagonal_sum_var);
+  const int n_square = n * n;
+  Eigen::MatrixXd A_diagonal_sum(n, n_square);
+  A_diagonal_sum.setZero();
+  VectorXDecisionVariable diagonal_sum_var(n_square);
+  for (int i = 0; i < (n_square - n) / 2; ++i) {
+    diagonal_sum_var.segment<2>(2 * i) = M_ij_diagonal.col(i);
   }
+  for (int i = 0; i < n; ++i) {
+    diagonal_sum_var(n_square - n + i) = X(i, i);
+  }
+  for (int i = 0; i < n; ++i) {
+    // The coefficient for X(i, i)
+    A_diagonal_sum(i, n_square - n + i) = -1;
+    for (int j = 0; j < i; ++j) {
+      // The coefficient for M[j][i](1, 1)
+      A_diagonal_sum(i, 2 * ij_to_k(j, i) + 1) = 1;
+    }
+    for (int j = i + 1; j < n; ++j) {
+      // The coefficient for M[i][j](0, 0)
+      A_diagonal_sum(i, 2 * ij_to_k(i, j)) = 1;
+    }
+  }
+  AddLinearEqualityConstraint(A_diagonal_sum, Eigen::VectorXd::Zero(n),
+                              diagonal_sum_var);
   return M;
 }
 
