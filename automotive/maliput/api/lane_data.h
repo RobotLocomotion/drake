@@ -51,7 +51,7 @@ struct LaneEnd {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
-// TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
+// TODO(Mitiguy) Have calling functions instead use RotationMatrix class.
 /// A 3-dimensional rotation.
 class Rotation {
  public:
