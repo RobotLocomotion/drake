@@ -1,13 +1,48 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/workspace:generate_file.bzl", "generate_file")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load(
+    "@python//:version.bzl",
+    "PYTHON_SITE_PACKAGES_RELPATH",
+    "PYTHON_VERSION",
+)
 
 MESHCAT_SERVER_FILES = [
     "meshcat-server.py",
-    "meshcat-server",
     "test/meshcat-server-install-test.py",
 ]
+
+# Branch install script to ensure that consistent dependencies are used.
+# TODO(eric.cousineau): Generalize this for other binaries.
+generate_file(
+    name = "meshcat-server",
+    # N.B. This is for install. For Bazel, see `meshcat-server.py`.
+    content = """#!/usr/bin/env python{major}
+# -*- coding: utf-8 -*-
+from os.path import abspath, dirname, join
+import sys
+
+
+def main():
+    prefix = dirname(dirname(abspath(__file__)))
+    sys.path.insert(0, join(prefix, '{site_packages}'))
+
+    from meshcat.servers.zmqserver import main as server_main
+
+    server_main()
+
+
+if __name__ == '__main__':
+    main()
+""".format(
+        major = PYTHON_VERSION.split(".")[0],
+        site_packages = PYTHON_SITE_PACKAGES_RELPATH,
+    ),
+    is_executable = 1,
+    visibility = ["//visibility:public"],
+)
 
 exports_files(
     MESHCAT_SERVER_FILES,
@@ -27,4 +62,6 @@ drake_py_unittest(
     deps = ["@meshcat_python//:meshcat-server"],
 )
 
-add_lint_tests(python_lint_extra_srcs = MESHCAT_SERVER_FILES)
+add_lint_tests(
+    python_lint_extra_srcs = MESHCAT_SERVER_FILES + ["meshcat-server"],
+)
