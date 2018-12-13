@@ -1,8 +1,8 @@
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 
-#include "drake/math/rotation_matrix.h"
 #include <gtest/gtest.h>
 
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
 using drake::math::RotationMatrixd;
