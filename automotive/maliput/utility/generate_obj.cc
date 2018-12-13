@@ -366,7 +366,7 @@ void RenderBranchPoint(
     for (const api::GeoPosition& previous_xyz : *previous_centers) {
       const Vector3<double> delta_xyz = previous_xyz.xyz() - center_xyz.xyz();
       const Vector3<double> delta_srh =
-          orientation.matrix().transpose() * delta_xyz;
+          orientation.CalcRotationMatrix().inverse() * delta_xyz;
 
       if ((Vector2<double>(delta_srh.x(), delta_srh.y()).norm() < sr_margin) &&
           (std::abs(delta_srh.z()) < h_margin)) {
