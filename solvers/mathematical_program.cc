@@ -212,8 +212,7 @@ MathematicalProgram::NewNonnegativePolynomial(
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(
-          Q.cast<symbolic::Expression>());
+      AddScaledDiagonallyDominantMatrixConstraint(Q);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
@@ -816,6 +815,47 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
       diagonal_sum += M[i][j](0, 0);
     }
     AddLinearEqualityConstraint(X(i, i) - diagonal_sum, 0);
+  }
+  return M;
+}
+
+std::vector<std::vector<Matrix2<symbolic::Variable>>>
+MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  std::vector<std::vector<Matrix2<symbolic::Variable>>> M(n);
+  for (int i = 0; i < n; ++i) {
+    M[i].resize(n);
+    for (int j = i + 1; j < n; ++j) {
+      // Since M[i][j](0, 1) = X(i, j), we only need to declare new variables
+      // for the diagonal entries of M[i][j].
+      auto M_ij_diagonal = NewContinuousVariables<2>(
+          "sdd_slack_M[" + std::to_string(i) + "][" + std::to_string(j) + "]");
+      M[i][j](0, 0) = M_ij_diagonal(0);
+      M[i][j](1, 1) = M_ij_diagonal(1);
+      M[i][j](0, 1) = X(i, j);
+      M[i][j](1, 0) = X(j, i);
+      AddRotatedLorentzConeConstraint(Vector3<symbolic::Variable>(
+          M_ij_diagonal(0), M_ij_diagonal(1), X(i, j)));
+    }
+  }
+  // A_diagonal * diagonal_vars = M[0][i](1, 1) + M[1][i](1, 1) + ... +
+  // M[i-1][i](1, 1) - X(i, i) + M[i][i+1](0, 0) + M[i][i+2](0, 0) + ... +
+  // M[i][n-1](0, 0);
+  Eigen::RowVectorXd A_diagonal_sum(n);
+  VectorXDecisionVariable diagonal_sum_var(n);
+  for (int i = 0; i < n; ++i) {
+    A_diagonal_sum.setOnes();
+    A_diagonal_sum(i) = -1;
+    for (int j = 0; j < i; ++j) {
+      diagonal_sum_var(j) = M[j][i](1, 1);
+    }
+    diagonal_sum_var(i) = X(i, i);
+    for (int j = i + 1; j < n; ++j) {
+      diagonal_sum_var(j) = M[i][j](0, 0);
+    }
+    AddLinearEqualityConstraint(A_diagonal_sum, 0, diagonal_sum_var);
   }
   return M;
 }

@@ -40,7 +40,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables(nx);
   auto M = prog.AddScaledDiagonallyDominantMatrixConstraint(
-      X.cast<symbolic::Expression>());
+      X);
 
   for (int i = 0; i < nx; ++i) {
     prog.AddBoundingBoxConstraint(X_val.col(i), X_val.col(i), X.col(i));

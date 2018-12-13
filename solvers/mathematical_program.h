@@ -2144,6 +2144,10 @@ class MathematicalProgram {
   AddScaledDiagonallyDominantMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
+  std::vector<std::vector<Matrix2<symbolic::Variable>>>
+  AddScaledDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
