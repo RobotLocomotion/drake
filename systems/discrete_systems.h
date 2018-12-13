@@ -132,6 +132,7 @@ is easy enough to use time to represent the discrete steps n, by the conversion
 `t=n*h` where h is a periodic sampling time. In Figure 1 we've shown the
 conversion to time used by the example above as a second horizontal axis,
 assuming h=0.02 seconds.
+
 However, since Drake simulations advance through _continuous_ time, it must be
 possible to obtain the values of all state variables and outputs at _any_ time
 t, not just at discrete times. So the question arises: what is the value of y(t)
@@ -166,18 +167,20 @@ update function is invoked, while the ● markers show the value _after_ the
 update. In (a), the ○ markers coincide with the original discrete values, while
 in (b), the ● markers do.
 
-Although you might expect that 2(b) is the most natural mapping from the
-discrete system to a continuous one, in practice it is problematic for mixed
-discrete/continuous (hybrid) systems so Drake uses the mapping in 2(a). The
-advantage of 2(a) is that the hybrid update function `xₙ₊₁ = f(t,n,xₙ,u(t))`
-is invoked at time `t=n*h`, while in 2(b) it would be invoked at time
-`t=(n+1)*h`. That would make it difficult to coordinate discrete and continuous
-signals.
+You might expect that 2(b) would be the most natural mapping from the
+discrete system to a continuous one. In practice, however, it is problematic
+for mixed discrete/continuous (hybrid) systems so Drake uses the mapping in
+2(a). The advantage of 2(a) is that the hybrid update function
+`xₙ₊₁ = f(t,n,xₙ,u(t))` is invoked at time `t=n*h`, while in 2(b) it would be
+invoked at time `t=(n+1)*h`. That would make it difficult to coordinate discrete
+and continuous signals.
 
 Drake's choice of 2(a) dictates what value a discrete quantity will have when
-evaluated at times _between_ update times. In particular, a discrete variable
-x has value `x(t) = xₙ` for `t ∈ ((n-1)*h, n*h]`. You can see that clearly
-by inspection of Figure 2(a).
+evaluated at times _between_ update times. In particular, consider a discrete
+variable x evaluated during a simulation from a publish, update, or derivative
+function at times `t ∈ ((n-1)*h, n*h]`. x will be seen to have value
+`x(t) = xₙ` (_not_ `xₙ₋₁`). You can see that clearly by inspection of
+Figure 2(a).
 
 <h3>Timing of publish vs. discrete update events in Drake</h3>
 
