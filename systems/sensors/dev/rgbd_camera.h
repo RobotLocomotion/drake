@@ -63,10 +63,15 @@ namespace dev {
      meters. Note that this is different from the range data used by laser range
      finders (like that provided by DepthSensor) in which the depth value
      represents the distance from the sensor origin to the object's surface.
+     Note that a depth return of 0 and infinity are reserved for measurement
+     being closer or farther than the specified camera depth range, and should
+     be treated as invalid depth returns.
 
    - The data is semantically the same as the float depth image except each
      pixel is a 16 bit unsigned short instead of a 32 bit float, and the
-     measurement is in millimeter.
+     measurement is in millimeter. Similar to the float representation, 0 and
+     65535 are reserved for invalid depth returns. Thus, the maximum valid
+     depth measurement is capped at 65534mm.
 
    - The label image has a single channel represented by a int16_t. The value
      stored in the channel holds a model ID which corresponds to an object
