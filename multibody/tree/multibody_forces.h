@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
 #include "drake/multibody/tree/multibody_tree_forward_decl.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
 
 namespace drake {
 namespace multibody {
@@ -34,10 +35,14 @@ class MultibodyForces {
   /// MultibodyTree::Finalize() or this constructor will abort.
   explicit MultibodyForces(const MultibodyTree<T>& model);
 
-  /// Constructs a force object to store a set of forces to be applied to a
-  /// multibody model with `num_bodies` bodies and `num_velocities` generalized
-  /// velocities.
-  MultibodyForces(int num_bodies, int num_velocities);
+  /// Constructs a force object to store a set of forces to be applied to
+  /// the multibody model for `plant`. Forces are initialized to zero, meaning
+  /// no forces are applied.
+  /// `plant` must have been already finalized with
+  /// MultibodyPlant::Finalize() or this constructor will abort.
+  // TODO(amcastro-tri): replace with MultibodyPlant constructor once MBT
+  // becomes internal.
+  explicit MultibodyForces(const MultibodyTreeSystem<T>& plant);
 
   /// Sets `this` to store zero forces (no applied forces).
   MultibodyForces<T>& SetZero();

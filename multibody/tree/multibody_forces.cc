@@ -14,9 +14,10 @@ MultibodyForces<T>::MultibodyForces(const MultibodyTree<T>& model) {
 }
 
 template <typename T>
-MultibodyForces<T>::MultibodyForces(int num_bodies, int num_velocities) {
-  F_B_W_.resize(num_bodies, SpatialForce<T>::Zero());
-  tau_ = VectorX<T>::Zero(num_velocities);
+MultibodyForces<T>::MultibodyForces(const MultibodyTreeSystem<T>& plant) {
+  DRAKE_DEMAND(plant.tree().topology_is_valid());
+  F_B_W_.resize(plant.tree().num_bodies(), SpatialForce<T>::Zero());
+  tau_ = VectorX<T>::Zero(plant.tree().num_velocities());
 }
 
 template <typename T>

@@ -37,7 +37,7 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   const VectorX<double> vdot = VectorX<double>::LinSpaced(nv, -5.0, 5.0);
 
   // Compute inverse dynamics with an externally applied force.
-  MultibodyForces<double> forces(plant_->num_bodies(), nv);
+  MultibodyForces<double> forces(*plant_);
   end_effector_link_->AddInForce(
       *context_, p_EP, F_Ep_E, end_effector_link_->body_frame(), &forces);
   const VectorX<double> tau_id =
