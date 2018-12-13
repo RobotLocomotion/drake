@@ -6,6 +6,7 @@
 #include <cstring>
 #include <limits>
 #include <map>
+#include <memory>
 #include <set>
 #include <unordered_map>
 #include <utility>
@@ -136,6 +137,15 @@ using Snopt = SnoptImpl<kIsSnopt76>;
 namespace drake {
 namespace solvers {
 namespace {
+
+// TODO(jwnimmer-tri) Add a reusable scope_guard to //common.
+// Make a scope exit guard -- an object that when destroyed runs `func`.
+auto MakeGuard(std::function<void()> func) {
+  // The shared_ptr deleter func is always invoked, even for nullptrs.
+  // http://en.cppreference.com/w/cpp/memory/shared_ptr/%7Eshared_ptr
+  return std::shared_ptr<void>(nullptr, [=](void*) { func(); });
+}
+
 // This class is used for passing additional info to the snopt_userfun, which
 // evaluates the value and gradient of the cost and constraints. Apart from the
 // standard information such as decision variable values, snopt_userfun could
@@ -153,23 +163,24 @@ class SnoptUserFunInfo {
   // Pointers to the parameters ('prog' and 'nonlinear_cost_gradient_indices')
   // are retained internally, so the supplied objects must have lifetimes longer
   // than the SnoptUserFuncInfo object.
-  SnoptUserFunInfo(const MathematicalProgram* prog,
-                   const std::set<int>* nonlinear_cost_gradient_indices)
+  explicit SnoptUserFunInfo(const MathematicalProgram* prog)
       : this_pointer_as_int_array_(MakeThisAsInts()),
-        prog_(*prog),
-        nonlinear_cost_gradient_indices_(*nonlinear_cost_gradient_indices) {}
+        prog_(*prog) {}
 
   const MathematicalProgram& mathematical_program() const { return prog_; }
 
+  std::set<int>& nonlinear_cost_gradient_indices() {
+    return nonlinear_cost_gradient_indices_;
+  }
   const std::set<int>& nonlinear_cost_gradient_indices() const {
     return nonlinear_cost_gradient_indices_;
   }
 
-  // Stores an alias to `this` into the SNOPT workspace, by setting the user
-  // data `int iu[]` pointer to alias our internal int array.
-  void SetInto(int** snopt_problem_iu, int* snopt_problem_leniu) const {
-    *snopt_problem_iu = const_cast<int*>(this_pointer_as_int_array_.data());
-    *snopt_problem_leniu = kIntCount;
+  int* iu() const {
+    return const_cast<int*>(this_pointer_as_int_array_.data());
+  }
+  int leniu() const {
+    return this_pointer_as_int_array_.size();
   }
 
   // Converts the `int iu[]` data back into a reference to this class.
@@ -207,7 +218,40 @@ class SnoptUserFunInfo {
 
   const std::array<int, kIntCount> this_pointer_as_int_array_;
   const MathematicalProgram& prog_;
-  const std::set<int>& nonlinear_cost_gradient_indices_;
+  std::set<int> nonlinear_cost_gradient_indices_;
+};
+
+// Storage that we pass in and out of SNOPT APIs.
+class WorkspaceStorage {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WorkspaceStorage)
+
+  explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
+      : user_info_(user_info) {
+    DRAKE_DEMAND(user_info_ != nullptr);
+    iw_.resize(500);
+    rw_.resize(500);
+  }
+
+  int* iw() { return iw_.data(); }
+  int leniw() const { return iw_.size(); }
+  void resize_iw(int size) { iw_.resize(size); }
+
+  double* rw() { return rw_.data(); }
+  int lenrw() const { return rw_.size(); }
+  void resize_rw(int size) { rw_.resize(size); }
+
+  int* iu() { return user_info_->iu(); }
+  int leniu() const { return user_info_->leniu(); }
+
+  double* ru() { return nullptr; }
+  int lenru() const { return 0; }
+
+ private:
+  std::vector<int> iw_;
+  std::vector<double> rw_;
+
+  const SnoptUserFunInfo* const user_info_;
 };
 
 // Return the number of rows in the nonlinear constraint.
@@ -612,33 +656,24 @@ void SolveWithGivenOptions(
     const std::unordered_map<std::string, double>& snopt_options_double,
     int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val) {
   DRAKE_ASSERT(x_val->rows() == prog.num_vars());
-  const char problem_name[] = "drake_problem";
+
+  SnoptUserFunInfo user_info(&prog);
+  WorkspaceStorage storage(&user_info);
+
   std::string print_file_name;
   const auto print_file_it = snopt_options_string.find("Print file");
   if (print_file_it != snopt_options_string.end()) {
     print_file_name = print_file_it->second;
   }
-  int snopt_problem_leniw = 500;
-  int snopt_problem_lenrw = 500;
-  int* snopt_problem_iw =
-      static_cast<int*>(malloc(sizeof(int) * snopt_problem_leniw));
-  double* snopt_problem_rw =
-      static_cast<double*>(malloc(sizeof(double) * snopt_problem_lenrw));
-  int snopt_problem_leniu = 0;
-  int snopt_problem_lenru = 0;
-  int* snopt_problem_iu = NULL;
-  double* snopt_problem_ru = NULL;
-
   Snopt::sninit(
       print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
-      snopt_problem_iw, snopt_problem_leniw,
-      snopt_problem_rw, snopt_problem_lenrw);
-
-  const std::set<int> nonlinear_cost_gradient_indices =
-      GetAllNonlinearCostNonzeroGradientIndices(prog);
-  const SnoptUserFunInfo snopt_userfun_info(&prog,
-                                            &nonlinear_cost_gradient_indices);
-  snopt_userfun_info.SetInto(&snopt_problem_iu, &snopt_problem_leniu);
+      storage.iw(), storage.leniw(),
+      storage.rw(), storage.lenrw());
+  auto guard = MakeGuard([&storage]() {
+      Snopt::snend(
+          storage.iw(), storage.leniw(),
+          storage.rw(), storage.lenrw());
+  });
 
   int nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
@@ -682,8 +717,10 @@ void SolveWithGivenOptions(
   }
 
   // Update nonlinear constraints.
+  user_info.nonlinear_cost_gradient_indices() =
+      GetAllNonlinearCostNonzeroGradientIndices(prog);
   int num_nonlinear_constraints = 0;
-  int max_num_gradients = nonlinear_cost_gradient_indices.size();
+  int max_num_gradients = user_info.nonlinear_cost_gradient_indices().size();
   UpdateNumNonlinearConstraintsAndGradients(prog.generic_constraints(),
                                             &num_nonlinear_constraints,
                                             &max_num_gradients);
@@ -725,7 +762,8 @@ void SolveWithGivenOptions(
   std::vector<int> iGfun(lenG, 0);
   std::vector<int> jGvar(lenG, 0);
   size_t grad_index = 0;
-  for (const auto cost_gradient_index : nonlinear_cost_gradient_indices) {
+  for (const auto cost_gradient_index :
+         user_info.nonlinear_cost_gradient_indices()) {
     // Fortran is 1-indexed.
     iGfun[grad_index] = 1;
     jGvar[grad_index] = 1 + cost_gradient_index;
@@ -793,8 +831,8 @@ void SolveWithGivenOptions(
     int errors;
     Snopt::snsetr(
         it.first.c_str(), it.first.length(), it.second, &errors,
-        snopt_problem_iw, snopt_problem_leniw,
-        snopt_problem_rw, snopt_problem_lenrw);
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
 
@@ -802,8 +840,8 @@ void SolveWithGivenOptions(
     int errors;
     Snopt::snseti(
         it.first.c_str(), it.first.length(), it.second, &errors,
-        snopt_problem_iw, snopt_problem_leniw,
-        snopt_problem_rw, snopt_problem_lenrw);
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
 
@@ -818,34 +856,31 @@ void SolveWithGivenOptions(
   int miniw, minrw;
   Snopt::snmema(
       snopt_status, nF, nx, lenA, lenG, &miniw, &minrw,
-      snopt_problem_iw, snopt_problem_leniw,
-      snopt_problem_rw, snopt_problem_lenrw);
+      storage.iw(), storage.leniw(),
+      storage.rw(), storage.lenrw());
   // TODO(jwnimmer-tri) Check snopt_status for errors.
-  if (miniw > snopt_problem_leniw) {
-    snopt_problem_leniw = miniw;
-    snopt_problem_iw = static_cast<int*>(
-        realloc(snopt_problem_iw, sizeof(int) * snopt_problem_leniw));
+  if (miniw > storage.leniw()) {
+    storage.resize_iw(miniw);
     const std::string option = "Total int workspace";
     int errors;
     Snopt::snseti(
-        option.c_str(), option.length(), snopt_problem_leniw, &errors,
-        snopt_problem_iw, snopt_problem_leniw,
-        snopt_problem_rw, snopt_problem_lenrw);
+        option.c_str(), option.length(), storage.leniw(), &errors,
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
-  if (minrw > snopt_problem_lenrw) {
-    snopt_problem_lenrw = minrw;
-    snopt_problem_rw = static_cast<double*>(
-        realloc(snopt_problem_rw, sizeof(double) * snopt_problem_lenrw));
+  if (minrw > storage.lenrw()) {
+    storage.resize_rw(minrw);
     const std::string option = "Total real workspace";
     int errors;
     Snopt::snseti(
-        option.c_str(), option.length(), snopt_problem_lenrw, &errors,
-        snopt_problem_iw, snopt_problem_leniw,
-        snopt_problem_rw, snopt_problem_lenrw);
+        option.c_str(), option.length(), storage.lenrw(), &errors,
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   // Actual solve.
+  const char problem_name[] = "drake_problem";
   Snopt::snkera(
       Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
       nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
@@ -858,28 +893,13 @@ void SolveWithGivenOptions(
       F.data(), Fstate.data(), Fmul.data(),
       snopt_status, &nS, &nInf, &sInf,
       &miniw, &minrw,
-      snopt_problem_iu, snopt_problem_leniu,
-      snopt_problem_ru, snopt_problem_lenru,
-      snopt_problem_iw, snopt_problem_leniw,
-      snopt_problem_rw, snopt_problem_lenrw);
+      storage.iu(), storage.leniu(),
+      storage.ru(), storage.lenru(),
+      storage.iw(), storage.leniw(),
+      storage.rw(), storage.lenrw());
+
   *x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
   *objective = F[0];
-
-  // Frees internal memory associated with SNOPT
-  Snopt::snend(
-      snopt_problem_iw, snopt_problem_leniw,
-      snopt_problem_rw, snopt_problem_lenrw);
-  free(snopt_problem_iw);
-  free(snopt_problem_rw);
-  // Sets snopt problem parameters to null or empty.
-  snopt_problem_leniw = 0;
-  snopt_problem_lenrw = 0;
-  snopt_problem_iw = nullptr;
-  snopt_problem_rw = nullptr;
-  snopt_problem_leniu = 0;
-  snopt_problem_lenru = 0;
-  snopt_problem_iu = nullptr;
-  snopt_problem_ru = nullptr;
 }
 
 SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
