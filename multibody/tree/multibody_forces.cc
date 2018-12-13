@@ -14,6 +14,12 @@ MultibodyForces<T>::MultibodyForces(const MultibodyTree<T>& model) {
 }
 
 template <typename T>
+MultibodyForces<T>::MultibodyForces(int num_bodies, int num_velocities) {
+  F_B_W_.resize(num_bodies, SpatialForce<T>::Zero());
+  tau_ = VectorX<T>::Zero(num_velocities);
+}
+
+template <typename T>
 MultibodyForces<T>& MultibodyForces<T>::SetZero() {
   std::fill(F_B_W_.begin(), F_B_W_.end(), SpatialForce<T>::Zero());
   tau_.setZero();

@@ -34,6 +34,11 @@ class MultibodyForces {
   /// MultibodyTree::Finalize() or this constructor will abort.
   explicit MultibodyForces(const MultibodyTree<T>& model);
 
+  /// Constructs a force object to store a set of forces to be applied to a
+  /// multibody model with `num_bodies` bodies and `num_velocities` generalized
+  /// velocities.
+  MultibodyForces(int num_bodies, int num_velocities);
+
   /// Sets `this` to store zero forces (no applied forces).
   MultibodyForces<T>& SetZero();
 
