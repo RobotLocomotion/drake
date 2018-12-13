@@ -2945,7 +2945,8 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   EXPECT_THROW(prog.GetSolution(x(0), result), std::invalid_argument);
 }
 
-void CheckNewNonnegativePolynomial(MathematicalProgram::NonnegativePolynomial type) {
+void CheckNewNonnegativePolynomial(
+    MathematicalProgram::NonnegativePolynomial type) {
   // Check if the newly created nonnegative polynomial can be computed as m' * Q
   // * m.
   MathematicalProgram prog;

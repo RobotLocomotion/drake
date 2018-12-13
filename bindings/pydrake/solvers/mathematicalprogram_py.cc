@@ -256,15 +256,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewFreePolynomial.doc)
       .def("NewSosPolynomial",
-          static_cast<std::pair<Polynomial,
-              MatrixXDecisionVariable> (MathematicalProgram::*)(
+          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::NewSosPolynomial),
           doc.MathematicalProgram.NewSosPolynomial.doc_1args)
       .def("NewSosPolynomial",
-          static_cast<
-              std::pair<Polynomial, MatrixXDecisionVariable> (
-                  MathematicalProgram::*)(const Variables&, int)>(
+          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(const Variables&, int)>(
               &MathematicalProgram::NewSosPolynomial),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
       .def("NewIndeterminates",
