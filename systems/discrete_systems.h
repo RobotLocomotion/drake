@@ -49,48 +49,60 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
-    // Output yₙ using a Drake "publish" event (occurs at the end of step n).
-    DeclarePeriodicPublish(kPeriod, kOffset, &SimpleDiscreteSystem::PrintResult);
-
     // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicDiscreteUpdate(kPeriod, kOffset,
-                                  &SimpleDiscreteSystem::Update);
+                                  &ExampleDiscreteSystem::Update);
+
+    // Present yₙ (=Sₙ) at the output port.
+    DeclareVectorOutputPort("Sn", systems::BasicVector<double>(1),
+                            &ExampleDiscreteSystem::Output);
   }
 
-  static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
-  static constexpr double kOffset = 0.;  // Trigger events at n=0.
+  static constexpr double kPeriod = 1 / 50.;  // Update at 50Hz (h=1/50).
+  static constexpr double kOffset = 0.;       // Trigger events at n=0.
 
  private:
   systems::EventStatus Update(const systems::Context<double>& context,
                               systems::DiscreteValues<double>* xd) const {
-    const double x_n = GetX(context);
+    const double x_n = context.get_discrete_state()[0];
     (*xd)[0] = x_n + 1.;
     return systems::EventStatus::Succeeded();
   }
 
-  // Prints the result of output function yₙ = g(n, xₙ) to cout.
-  systems::EventStatus PrintResult(const systems::Context<double>& context) const {
-    const double t = context.get_time();
-    const int n = static_cast<int>(std::round(t / kPeriod));
-    const double S_n = 10 * GetX(context);  // 10 xₙ[0]
-    std::cout << n << ": " << S_n << " (" << t << ")\n";
-    return systems::EventStatus::Succeeded();
-  }
-
-  double GetX(const Context<double>& context) const {
-    return context.get_discrete_state()[0];
+  void Output(const systems::Context<double>& context,
+              systems::BasicVector<double>* result) const {
+    const double x_n = context.get_discrete_state()[0];
+    const double S_n = 10 * x_n;
+    (*result)[0] = S_n;
   }
 };
 @endcode
 
-Stepping this system forward using the following code fragment:
+The following code fragment can be used to step this system forward:
 @code
-  ExampleDiscreteSystem system;
-  Simulator<double> simulator(system);
+  // Build a Diagram containing the Example system and a data logger that
+  // samples the Sn output port exactly at the update times.
+  DiagramBuilder<double> builder;
+  auto example = builder.AddSystem<ExampleDiscreteSystem>();
+  auto logger = LogOutput(example->GetOutputPort("Sn"), &builder);
+  logger->set_publish_period(ExampleDiscreteSystem::kPeriod);
+  auto diagram = builder.Build();
+
+  // Create a Simulator and use it to advance time until t=3*h.
+  Simulator<double> simulator(*diagram);
+  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
   simulator.StepTo(3 * ExampleDiscreteSystem::kPeriod);
+
+  // Print out the contents of the log.
+  for (int n = 0; n < logger->sample_times().size(); ++n) {
+    const double t = logger->sample_times()[n];
+    std::cout << n << ": " << logger->data()(0, n)
+        << " (" << t << ")\n";
+  }
 @endcode
-yields the following output:
+The above yields the following output:
 ```
     0: 0 (0)
     1: 10 (0.02)

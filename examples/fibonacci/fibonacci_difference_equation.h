@@ -13,6 +13,8 @@ namespace fibonacci {
 /** A pure discrete system that generates the Fibonacci sequence Fₙ using
 a difference equation.
 
+@system{ FibonacciDifferenceEquation, , @output_port{Fn} }
+
 In general, a discrete system has a difference equation (update function),
 output function, and (for simulation) an initial value:
 - _update_ function `xₙ₊₁ = f(n, xₙ, uₙ)`, and
@@ -50,12 +52,8 @@ publishing at `t = n*h` produces the expected result
     Fₙ 0  1  1  2  3  5  8 13 21 ...
 ```
 
-The code required to produce the above sequence (see run_fibonacci.cc) is just
-@code{.cpp}
-  FibonacciDifferenceEquation fibonacci;
-  systems::Simulator<double> simulator(fibonacci);
-  simulator.StepTo(8 * FibonacciDifferenceEquation::kPeriod);
-@endcode
+See run_fibonacci.cc for the code required to output the above sequence.
+
 */
 class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
  public:
@@ -65,19 +63,19 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     // Set default initial conditions to produce the above sequence.
     DeclareDiscreteState(Eigen::Vector2d(0., 1.));
 
-    // Output yₙ using a Drake "publish" event (occurs at the end of step n,
-    // including "step" 0 which is initialization).
-    DeclarePeriodicPublish(kPeriod, 0.,
-                           &FibonacciDifferenceEquation::PrintResult);
-
     // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
-    DeclarePeriodicDiscreteUpdate(kPeriod, 0.,
+    DeclarePeriodicDiscreteUpdate(kPeriod, 0.,  // First update is at t=0.
                                   &FibonacciDifferenceEquation::Update);
+
+    // Present yₙ at the output port. This will be the Fibonacci element Fₙ
+    // if queried at `t=n*h`.
+    DeclareVectorOutputPort("Fn", systems::BasicVector<double>(1),
+                            &FibonacciDifferenceEquation::Output);
   }
 
   /// Update period (in seconds) for the system.
-  static constexpr double kPeriod = 1.;  // Arbitrary, e.g. 0.1234 works too!
+  static constexpr double kPeriod = 0.25;  // Arbitrary, e.g. 0.1234 works too!
 
  private:
   // Update function xₙ₊₁ = f(n, xₙ).
@@ -89,19 +87,12 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     return systems::EventStatus::Succeeded();
   }
 
-  // Print the result of the output function yₙ = g(n, xₙ) to cout.
-  systems::EventStatus PrintResult(
-      const systems::Context<double>& context) const {
-    const double t = context.get_time();
-    // Because of finite floating point precision, t / kPeriod will yield the
-    // desired step (n) plus or minus some error. For example, (3 * 0.7) / 0.7
-    // in double precision evalutes to 2.9999999999999996, but we want int n = 3
-    // (rounded), not n = 2 (truncated). Using round() first ensures that
-    // casting to an int gives the correct step number.
-    const int n = static_cast<int>(std::round(t / kPeriod));
-    const int64_t F_n = context.get_discrete_state()[0];  // xₙ[0]
-    std::cout << n << ": " << F_n << "\n";
-    return systems::EventStatus::Succeeded();
+  // Returns the result of the output function yₙ = g(n, xₙ) when the output
+  // port is evaluated at t=n*h.
+  void Output(const systems::Context<double>& context,
+              systems::BasicVector<double>* result) const {
+    const double F_n = context.get_discrete_state()[0];  // xₙ[0]
+    (*result)[0] = F_n;
   }
 };
 
