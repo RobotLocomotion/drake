@@ -1882,6 +1882,17 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// @}
 
+  /// This method creates an actuation matrix B mapping a vector of actuation
+  /// values u into generalized forces `tau_u = B * u`, where B is a matrix of
+  /// size `nv x nu` with `nu` equal to num_actuators() and `nv` equal to
+  /// num_velocities().
+  /// The vector u of actuation values is of size num_actuators(). For a given
+  /// JointActuator, `u[JointActuator::index()]` stores the value for the
+  /// external actuation corresponding to that actuator. `tau_u` on the other
+  /// hand is indexed by generalized velocity indexes according to
+  /// `Joint::velocity_start()`.
+  MatrixX<T> MakeActuationMatrix() const;
+
   /// Registers `this` plant to serve as a source for an instance of
   /// SceneGraph. This registration allows %MultibodyPlant to
   /// register geometry with `scene_graph` for visualization and/or
