@@ -57,12 +57,16 @@ GTEST_TEST(ResolveUriTest, TestFile) {
   // Use an empty package map.
   PackageMap package_map;
 
-  // file scheme requires an absolute path.
-  const std::string absolute_path = "/drake/multibody/parsing/test/"
-      "package_map_test_packages/package_map_test_package_a/sdf/test_model.sdf";
-
   // Set the root directory - it will not end up being used in ResolveUri().
-  const std::string root_dir = ".";
+  const std::string root_dir = "/no/such/root";
+
+  // An absolute path to a file that definitely exists.
+  const string absolute_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+          "package_map_test_packages/package_map_test_package_a/"
+          "sdf/test_model.sdf");
+  ASSERT_FALSE(absolute_path.empty());
+  ASSERT_EQ(absolute_path[0], '/');
 
   const auto uri = std::string("file://") + absolute_path;
   string path = ResolveUri(uri, package_map, root_dir);
@@ -133,11 +137,7 @@ GTEST_TEST(ResolveUriTest, TestUnsupported) {
   PackageMap package_map;
   const std::string root_dir = ".";
   const string uri = "http://localhost";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ResolveUri(uri, package_map, root_dir),
-      std::runtime_error, "URI specifies an unsupported scheme. Supported "
-          "schemes are 'file://', 'model://', and 'package://'. Provided URI:"
-          ".*");
+  EXPECT_EQ(ResolveUri(uri, package_map, root_dir), "");
 }
 
 }  // namespace
