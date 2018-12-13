@@ -137,6 +137,9 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
+  void SetupBinPickStation(
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
@@ -363,6 +366,9 @@ class ManipulationStation : public systems::Diagram<T> {
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
   // Should only be called from Finalize().
   void MakeIiwaControllerModel();
+
+  void AddDefaultIiwa(const IiwaCollisionModel collision_model);
+  void AddDefaultWsg();
 
   // These are only valid until Finalize() is called.
   std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> owned_plant_;

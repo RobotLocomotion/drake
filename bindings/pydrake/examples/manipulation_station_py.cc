@@ -43,6 +43,9 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupDefaultStation.doc)
+      .def("SetupBinPickStation", &ManipulationStation<T>::SetupBinPickStation,
+          py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
+          doc.ManipulationStation.SetupDefaultStation.doc)
       .def("RegisterIiwaControllerModel",
           &ManipulationStation<T>::RegisterIiwaControllerModel,
           doc.ManipulationStation.RegisterIiwaControllerModel.doc)

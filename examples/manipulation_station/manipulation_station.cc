@@ -182,6 +182,34 @@ ManipulationStation<T>::ManipulationStation(double time_step)
 }
 
 template <typename T>
+void ManipulationStation<T>::SetupBinPickStation(
+    const IiwaCollisionModel collision_model) {
+
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg();
+
+  // Add the bin.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/bin.sdf");
+
+    Isometry3<double> X_WC =
+        RigidTransform<double>(
+            RotationMatrix<double>::MakeZRotation(M_PI_2),
+            Vector3d(-0.145, -0.63, 0.235))
+            .GetAsIsometry3();
+    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
+                                  Vector3d(0.5, -0.1, 0.235))
+               .GetAsIsometry3();
+    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+  }
+}
+
+template <typename T>
 void ManipulationStation<T>::SetupDefaultStation(
     const IiwaCollisionModel collision_model) {
   // Add the table and 80/20 workcell frame.
@@ -223,46 +251,10 @@ void ManipulationStation<T>::SetupDefaultStation(
                                   "cupboard_body", X_WC, plant_);
   }
 
-  // Add default iiwa.
-  {
-    std::string sdf_path;
-    switch (collision_model) {
-      case IiwaCollisionModel::kNoCollision:
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
-            "iiwa7_no_collision.sdf");
-        break;
-      case IiwaCollisionModel::kBoxCollision:
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
-            "iiwa7_with_box_collision.sdf");
-        break;
-      default:
-        DRAKE_ABORT_MSG("Unrecognized collision_model.");
-    }
-    const auto X_WI = RigidTransform<double>::Identity();
-    auto iiwa_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
-        X_WI.GetAsIsometry3(), plant_);
-    RegisterIiwaControllerModel(
-        sdf_path, iiwa_instance, plant_->world_frame(),
-        plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
-  }
 
-  // Add default wsg.
-  {
-    const std::string sdf_path = FindResourceOrThrow(
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-    const multibody::Frame<T>& link7 =
-        plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
-    const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
-                                      Vector3d(0, 0, 0.114));
-    auto wsg_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "gripper", link7, "body", X_7G.GetAsIsometry3(), plant_);
-    RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
-                               plant_->GetFrameByName("body", wsg_instance),
-                               X_7G);
-  }
+  // Add the default iiwa/wsg models.
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg();
 
   // Add default cameras.
   {
@@ -746,6 +738,50 @@ ManipulationStation<T>::GetStaticCameraPosesInWorld() const {
   }
 
   return static_camera_poses;
+}
+
+// Add default iiwa.
+template <typename T>
+void ManipulationStation<T>::AddDefaultIiwa(
+    const IiwaCollisionModel collision_model) {
+  std::string sdf_path;
+  switch (collision_model) {
+    case IiwaCollisionModel::kNoCollision:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_no_collision.sdf");
+      break;
+    case IiwaCollisionModel::kBoxCollision:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_with_box_collision.sdf");
+      break;
+    default:
+      DRAKE_ABORT_MSG("Unrecognized collision_model.");
+  }
+  const auto X_WI = RigidTransform<double>::Identity();
+  auto iiwa_instance = internal::AddAndWeldModelFrom(
+      sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
+      X_WI.GetAsIsometry3(), plant_);
+  RegisterIiwaControllerModel(
+      sdf_path, iiwa_instance, plant_->world_frame(),
+      plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
+}
+
+// Add default wsg.
+template <typename T>
+void ManipulationStation<T>::AddDefaultWsg() {
+  const std::string sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+  const multibody::Frame<T>& link7 =
+      plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
+  const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                    Vector3d(0, 0, 0.114));
+  auto wsg_instance = internal::AddAndWeldModelFrom(
+      sdf_path, "gripper", link7, "body", X_7G.GetAsIsometry3(), plant_);
+  RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
+                             plant_->GetFrameByName("body", wsg_instance),
+                             X_7G);
 }
 
 }  // namespace manipulation_station
