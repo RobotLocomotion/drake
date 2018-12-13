@@ -58,15 +58,22 @@ namespace dev {
    - The RGB image has four channels in the following order: red, green
      blue, and alpha. Each channel is represented by a uint8_t.
 
-   - The depth image has a depth channel represented by a float. The value
+   - The 32f depth image has a depth channel represented by a float. The value
      stored in the depth channel holds *the Z value in `D`*, and the value is in
      meters. Note that this is different from the range data used by laser range
      finders (like that provided by DepthSensor) in which the depth value
      represents the distance from the sensor origin to the object's surface.
+     Note that a depth return of 0 and infinity are reserved for measurement
+     being closer or farther than the specified camera depth range, and should
+     be treated as invalid depth returns.
 
    - The data is semantically the same as the float depth image except each
-     pixel is a 16 bit unsigned short instead of a 32 bit float, and the
-     measurement is in millimeter.
+     pixel is a 16-bit unsigned short instead of a 32-bit float, and the
+     measurement is in millimeter. Similar to the float representation, 0 and
+     65535 are reserved for invalid depth returns. Thus, the maximum valid
+     depth measurement is capped at 65534mm. A depth value of 65535 means the
+     actual measurement is too large to be represented by a 16-bit unsigned
+     short, even if it is under the declared max range of the sensor.
 
    - The label image has a single channel represented by a int16_t. The value
      stored in the channel holds a model ID which corresponds to an object
