@@ -7,7 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot_auto_generated.h"
 #include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
+#include "drake/multibody/test_utilities/spatial_kinematics.h"
 
 namespace drake {
 namespace multibody {

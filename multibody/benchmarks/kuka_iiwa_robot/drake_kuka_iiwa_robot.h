@@ -14,8 +14,8 @@
 #include "drake/multibody/multibody_tree/multibody_forces.h"
 #include "drake/multibody/multibody_tree/multibody_tree.h"
 #include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
 #include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/test_utilities/spatial_kinematics.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

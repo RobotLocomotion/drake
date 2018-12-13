@@ -28,7 +28,7 @@ drake_cc_library(
     deps = [
         "//math:geometric_transform",
         "//multibody/multibody_tree/math:spatial_algebra",
-        "//multibody/multibody_tree/test_utilities:spatial_kinematics",
+        "//multibody/test_utilities:spatial_kinematics",
     ],
 )
 
