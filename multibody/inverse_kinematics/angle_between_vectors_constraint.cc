@@ -9,7 +9,7 @@ using drake::multibody::internal::UpdateContextConfiguration;
 namespace drake {
 namespace multibody {
 AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
-    const multibody_plant::MultibodyPlant<double>* plant,
+    const multibody_plant::MultibodyPlant<double>* const plant,
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& a_A,
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& b_B,
     double angle_lower, double angle_upper, systems::Context<double>* context)
@@ -22,6 +22,7 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
       frameB_index_(frameB.index()),
       b_unit_B_(NormalizeVector(b_B)),
       context_(context) {
+  DRAKE_DEMAND(plant != nullptr);
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
     throw std::invalid_argument(
