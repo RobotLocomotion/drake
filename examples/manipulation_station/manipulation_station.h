@@ -63,6 +63,9 @@ enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 ///   @output_port{<b style="color:orange">geometry_poses</b>}
 /// }
 ///
+/// Each pixel in the output image from `depth_image` is a 16bit unsigned
+/// short in millimeters.
+///
 /// Note that outputs in <b style="color:orange">orange</b> are
 /// available in the simulation, but not on the real robot.  The distinction
 /// between q_measured and v_estimated is because the Kuka FRI reports
