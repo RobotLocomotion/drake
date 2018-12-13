@@ -55,13 +55,14 @@ class TestInstallMeta(unittest.TestCase):
         strip_substr = "-- Symbols will NOT be stripped"
         # - Without.
         text_without = check_output(
-            [self.BINARY, "-v", install_dir], stderr=STDOUT)
+            [self.BINARY, "-v", install_dir], stderr=STDOUT).decode("utf8")
         # N.B. `assertIn` error messages are not great for multiline, so just
         # print and use nominal asserts.
         print(text_without)
         self.assertTrue(strip_substr not in text_without)
         # - With.
         text_with = check_output(
-            [self.BINARY, install_dir, "-v", "--no_strip"], stderr=STDOUT)
+            [self.BINARY, install_dir, "-v", "--no_strip"],
+            stderr=STDOUT).decode("utf8")
         print(text_with)
         self.assertTrue(strip_substr in text_with)
