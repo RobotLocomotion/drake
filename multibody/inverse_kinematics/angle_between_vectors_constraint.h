@@ -7,50 +7,42 @@
 
 namespace drake {
 namespace multibody {
-/**
- * Constrains that the angle between a vector na and another vector nb is
- * between [θ_lower, θ_upper]. na is fixed to a frame A, while nb is fixed
- * to a frame B.
- * Mathematically, if we denote na_unit_A as na expressed in frame A after
- * normalization (na_unit_A has unit length), and nb_unit_B as nb expressed in
- * frame B after normalization, the constraint is
- * cos(θ_upper) ≤ na_unit_Aᵀ * R_AB * nb_unit_B ≤ cos(θ_lower)
- */
+/** Constrains that the angle between a vector `a` and another vector `b` is
+ between [θ_lower, θ_upper]. `a` is fixed to a frame A, while `b` is fixed
+ to a frame B.
+ Mathematically, if we denote a_unit_A as `a` expressed in frame A after
+ normalization (a_unit_A has unit length), and b_unit_B as `b` expressed in
+ frame B after normalization, the constraint is
+ cos(θ_upper) ≤ a_unit_Aᵀ * R_AB * b_unit_B ≤ cos(θ_lower) */
 class AngleBetweenVectorsConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AngleBetweenVectorsConstraint)
 
-  /**
-   * Constructs an AngleBetweenVectorsConstraint.
-   * @param plant The MultibodyPlant on which the constraint is imposed.
-   *   @p plant should be alive during the lifetime of this constraint.
-   * @param frameA The Frame object for frame A.
-   * @param na_A The vector na_A fixed to frame A, expressed in frame A.
-   * @param frameB The Frame object for frame B.
-   * @param nb_B The vector nb fixed to frame B, expressed in frameB.
-   * @param angle_lower The lower bound on the angle between na and nb. It is
-   *   denoted as θ_lower in the class documentation.
-   * @param angle_upper The upper bound on the angle between na and nb. it is
-   *   denoted as θ_upper in the class documentation.
-   * @param context The Context that has been allocated for this @p plant. We
-   *   will update the context when evaluating the constraint. @p context should
-   *   be alive during the lifetime of this constraint.
-   * @pre na_A should be a non-zero vector.
-   * @pre nb_B should be a non-zero vector.
-   * @pre angle_lower >= 0.
-   * @pre angle_lower <= angle_upper <= pi.
-   * @throws std::logic_error if na_A is close to zero.
-   * @throws std::logic_error if nb_B is close to zero.
-   * @throws std::invalid_argument error if angle_lower is negative.
-   * @throws std::invalid_argument if angle_upper is outside the bounds.
-   */
+  /** Constructs an AngleBetweenVectorsConstraint.
+   @param plant The MultibodyPlant on which the constraint is imposed. `plant`
+     should be alive during the lifetime of this constraint.
+   @param frameA The Frame object for frame A.
+   @param a_A The vector `a` fixed to frame A, expressed in frame A.
+   @param frameB The Frame object for frame B.
+   @param b_B The vector `b` fixed to frame B, expressed in frameB.
+   @param angle_lower The lower bound on the angle between `a` and `b`. It is
+     denoted as θ_lower in the class documentation.
+   @param angle_upper The upper bound on the angle between `a` and `b`. it is
+     denoted as θ_upper in the class documentation.
+   @param context The Context that has been allocated for this `plant`. We will
+     update the context when evaluating the constraint. `context` should be
+     alive during the lifetime of this constraint.
+   @pre `frameA` and `frameB` must belong to `plant`.
+   @throws std::invalid_argument if `a_A` is close to zero.
+   @throws std::invalid_argument if `b_B` is close to zero.
+   @throws std::invalid_argument error if `angle_lower` is negative.
+   @throws std::invalid_argument if `angle_upper` ∉ [`angle_lower`, π].*/
   AngleBetweenVectorsConstraint(
-      const multibody_plant::MultibodyPlant<double>& plant,
-      const Frame<double>& frameA,
-      const Eigen::Ref<const Eigen::Vector3d>& na_A,
-      const Frame<double>& frameB,
-      const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
-      double angle_upper, systems::Context<double>* context);
+      const multibody_plant::MultibodyPlant<double>* plant,
+      const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& a_A,
+      const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& b_B,
+      double angle_lower, double angle_upper,
+      systems::Context<double>* context);
 
   ~AngleBetweenVectorsConstraint() override {}
 
@@ -68,10 +60,10 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
         "variables.");
   }
   const multibody_plant::MultibodyPlant<double>& plant_;
-  const Frame<double>& frameA_;
-  const Eigen::Vector3d na_unit_A_;
-  const Frame<double>& frameB_;
-  const Eigen::Vector3d nb_unit_B_;
+  const FrameIndex frameA_index_;
+  const Eigen::Vector3d a_unit_A_;
+  const FrameIndex frameB_index_;
+  const Eigen::Vector3d b_unit_B_;
   systems::Context<double>* const context_;
 };
 }  // namespace multibody

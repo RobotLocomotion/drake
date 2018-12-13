@@ -28,7 +28,7 @@ TEST_F(IiwaKinematicConstraintTest, AngleBetweenVectorsConstraint) {
   const double angle_upper{0.5 * M_PI};
   const Frame<double>& frameA = plant_->GetFrameByName("iiwa_link_3");
   const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_7");
-  AngleBetweenVectorsConstraint constraint(*plant_, frameA, n_A, frameB, n_B,
+  AngleBetweenVectorsConstraint constraint(plant_, frameA, n_A, frameB, n_B,
                                            angle_lower, angle_upper,
                                            plant_context_);
 
@@ -85,7 +85,7 @@ TEST_F(TwoFreeBodiesConstraintTest, AngleBetweenVectorsConstraint) {
       QuaternionToVectorWxyz(body2_quaternion), body2_position;
   {
     AngleBetweenVectorsConstraint good_constraint(
-        *plant_, plant_->tree().get_frame(body1_index_), n_A,
+        plant_, plant_->tree().get_frame(body1_index_), n_A,
         plant_->tree().get_frame(body2_index_), n_B, angle - 0.01, angle + 0.01,
         plant_context_);
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
@@ -93,7 +93,7 @@ TEST_F(TwoFreeBodiesConstraintTest, AngleBetweenVectorsConstraint) {
 
   {
     AngleBetweenVectorsConstraint bad_constraint(
-        *plant_, plant_->tree().get_frame(body1_index_), n_A,
+        plant_, plant_->tree().get_frame(body1_index_), n_A,
         plant_->tree().get_frame(body2_index_), n_B, angle - 0.02, angle - 0.01,
         plant_context_);
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
@@ -106,27 +106,27 @@ TEST_F(IiwaKinematicConstraintTest,
   const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_7");
   // n_A being zero vector.
   EXPECT_THROW(AngleBetweenVectorsConstraint(
-                   *plant_, frameA, Eigen::Vector3d::Zero(), frameB,
+                   plant_, frameA, Eigen::Vector3d::Zero(), frameB,
                    Eigen::Vector3d::Ones(), 0.1, 0.2, plant_context_),
                std::invalid_argument);
   // n_B being zero vector.
   EXPECT_THROW(AngleBetweenVectorsConstraint(
-                   *plant_, frameA, Eigen::Vector3d::Ones(), frameB,
+                   plant_, frameA, Eigen::Vector3d::Ones(), frameB,
                    Eigen::Vector3d::Zero(), 0.1, 0.2, plant_context_),
                std::invalid_argument);
   // angle_lower < 0
   EXPECT_THROW(AngleBetweenVectorsConstraint(
-                   *plant_, frameA, Eigen::Vector3d::Ones(), frameB,
+                   plant_, frameA, Eigen::Vector3d::Ones(), frameB,
                    Eigen::Vector3d::Ones(), -0.1, 0.2, plant_context_),
                std::invalid_argument);
   // angle_upper < angle_lower
   EXPECT_THROW(AngleBetweenVectorsConstraint(
-                   *plant_, frameA, Eigen::Vector3d::Ones(), frameB,
+                   plant_, frameA, Eigen::Vector3d::Ones(), frameB,
                    Eigen::Vector3d::Zero(), 0.1, 0.09, plant_context_),
                std::invalid_argument);
   // angle_upper > pi
   EXPECT_THROW(AngleBetweenVectorsConstraint(
-                   *plant_, frameA, Eigen::Vector3d::Ones(), frameB,
+                   plant_, frameA, Eigen::Vector3d::Ones(), frameB,
                    Eigen::Vector3d::Zero(), 0.1, 1.1 * M_PI, plant_context_),
                std::invalid_argument);
 }
