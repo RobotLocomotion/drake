@@ -1090,7 +1090,7 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
     const double n = times[i];  // Note: period is one so no division necessary.
     // Values for n=0 are a special case, handled here (they're not computed
     // according to the formula in the test - it's just an initial value).
-    if (abs(n) < eps) {
+    if (std::abs(n) < eps) {
       ASSERT_NEAR(y, initial_value, eps);
     } else {
       EXPECT_NEAR(std::sin((times[i] - 1) * sinusoidal_system->kGain), y, eps);
