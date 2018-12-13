@@ -12,7 +12,6 @@ import sys
 import trace
 import unittest
 
-
 if __name__ == '__main__':
     # Obtain the full path for this test case; it looks a bit like this:
     # .../execroot/.../foo_test.runfiles/.../drake_py_unittest_main.py
