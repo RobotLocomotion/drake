@@ -16,7 +16,7 @@ from pydrake.manipulation.simple_ui import SchunkWsgButtons
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters, DoDifferentialInverseKinematics)
 from pydrake.multibody.parsing import Parser
-from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (AbstractValue, BasicVector,
                                        DiagramBuilder, LeafSystem,
@@ -58,19 +58,19 @@ class EndEffectorTeleop(LeafSystem):
                             length=800,
                             orient=tk.HORIZONTAL)
         self.yaw.pack()
-        self.x = tk.Scale(self.window, from_=0.1, to=0.8,
+        self.x = tk.Scale(self.window, from_=-0.6, to=0.8,
                           resolution=-1,
                           label="x",
                           length=800,
                           orient=tk.HORIZONTAL)
         self.x.pack()
-        self.y = tk.Scale(self.window, from_=-0.3, to=0.3,
+        self.y = tk.Scale(self.window, from_=-0.8, to=0.3,
                           resolution=-1,
                           label="y",
                           length=800,
                           orient=tk.HORIZONTAL)
         self.y.pack()
-        self.z = tk.Scale(self.window, from_=0, to=0.8,
+        self.z = tk.Scale(self.window, from_=0, to=1.1,
                           resolution=-1,
                           label="z",
                           length=800,
@@ -260,6 +260,11 @@ parser.add_argument(
          "joint velocity limits. "
          "Note: The pre-defined velocity limits are specified by "
          "iiwa14_velocity_limits, found in this python file.")
+parser.add_argument(
+    '--setup', type=str, default='default',
+    help="The manipulation station setup to simulate. ",
+    choices=['default', 'bin_picking'])
+
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
 
@@ -270,14 +275,14 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.SetupDefaultStation()
-    parser = Parser(station.get_mutable_multibody_plant(),
-                    station.get_mutable_scene_graph())
-    object = parser.AddModelFromFile(FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object")
-    station.Finalize()
 
+    # Initializes the chosen station type.
+    if args.setup == 'default':
+        station.SetupDefaultStation()
+    elif args.setup == 'bin_picking':
+        station.SetupBinPickingStation()
+
+    station.Finalize()
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
     if args.meshcat:
@@ -332,25 +337,7 @@ station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
 if not args.hardware:
-    # Set the initial positions of the IIWA to a comfortable configuration
-    # inside the workspace of the station.
-    q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
-    station.SetIiwaPosition(q0, station_context)
-    station.SetIiwaVelocity(np.zeros(7), station_context)
-
-    # Set the initial configuration of the gripper to open.
-    station.SetWsgPosition(0.1, station_context)
-    station.SetWsgVelocity(0, station_context)
-
-    # Place the object in the middle of the workspace.
-    X_WObject = Isometry3.Identity()
-    X_WObject.set_translation([.6, 0, 0])
-    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-        station.get_multibody_plant().GetBodyByName("base_link",
-                                                    object),
-        X_WObject, station.GetMutableSubsystemContext(
-            station.get_multibody_plant(),
-            station_context))
+    station.SetDefaultContext(station_context)
 
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()
