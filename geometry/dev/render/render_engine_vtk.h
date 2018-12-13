@@ -115,6 +115,9 @@ class RenderEngineVtk final : public RenderEngine,
                              const PerceptionProperties& properties,
                              const Isometry3<double>& X_FG) override;
 
+  /** Inherits RenderEngine::RemoveVisual().  */
+  optional<RenderIndex> RemoveVisual(RenderIndex index) override;
+
   // TODO(SeanCurtis-TRI): I need a super-secret RegisterVisual in which the
   // index is specified.
 

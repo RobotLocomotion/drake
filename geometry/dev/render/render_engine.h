@@ -65,6 +65,13 @@ class RenderEngine : public ShapeReifier {
       const Shape& shape, const PerceptionProperties& properties,
       const Isometry3<double>& X_FG) = 0;
 
+  /** Removes the visual geometry with the indicated index from `this` render
+   engine. The render engine _can_ move another geometry to inherit this newly
+   freed up index. If it does so, it will return the _old_ index of the geometry
+   it moved.
+   @pre `index` must be a valid index.  */
+  virtual optional<RenderIndex> RemoveVisual(RenderIndex index) = 0;
+
   // TODO(SeanCurtis-TRI): I need a super-secret RegisterVisual in which the
   // index is specified.
 

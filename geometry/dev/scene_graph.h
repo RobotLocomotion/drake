@@ -421,6 +421,25 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties);
 
+  /** Removes the indicated `role` from any geometry directly registered to the
+   frame indicated by `frame_id` which has that role.
+   @return The number of geometries affected by the removed role.
+   @throws std::logic_error if 1) the `source_id` is invalid, 2) the `frame_id`
+                            is invalid, 3) `frame_id` does not belong to
+                            `source_id` (unless `frame_id` is the world frame
+                            id), or 4) the context has already been
+                            allocated.  */
+  int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
+
+  /** Removes the indicated `role` from the geometry indicated by `geometry_id`.
+   @returns 1 if the geometry had the role removed and zero if the geometry did
+            not have the role assigned in the first place.
+   @throws std::logic_error if 1) the `source_id` is invalid, 2) the
+                            `geometry_id` is invalid, 3) `geometry_id` does
+                            not belong to `source_id`, or 4) the context has
+                            already been allocated.  */
+  int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
+
   //@}
 
   /** Reports the identifier for the world frame. */
