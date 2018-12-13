@@ -593,14 +593,17 @@ class MathematicalProgram {
   /**
    * Returns a pair of nonnegative polynomial p = mᵀQm and the coefficient
    * matrix Q, where m is the monomial basis, containing all monomials of @p
-   * indeterminates of total order up to @p degree / 2. Depending on the type of
-   * the polynomial, we will impose different constraint on Q.
+   * indeterminates of total order up to @p degree / 2, hence the polynomial p
+   * contains all the monomials of total order up to @p degree, as p is
+   * quadratic in m.
+   * Depending on the type of the polynomial, we will impose different
+   * constraint on Q.
    * if type = kSos, we impose Q being positive semidefinite.
    * if type = kSdsos, we impose Q being scaled diagonally dominant.
    * if type = kDsos, we impose Q being positive diagonally dominant.
    * @param indeterminates All the indeterminates in the polynomial p.
    * @param degree The polynomial p will contain all the monomials up to order
-   * @p degree.
+   * @p degree
    * @param type The type of the nonnegative polynomial.
    * @return (p, Q) The polynomial p and the coefficient matrix Q. Q has been
    * added as decision variables to the program.
@@ -2144,7 +2147,7 @@ class MathematicalProgram {
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
    * monomial_basis. It returns a pair expressing:
    *
-   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
@@ -2158,7 +2161,7 @@ class MathematicalProgram {
    * basis of all indeterminates in the program with degree equal to half the
    * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
    *
-   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
@@ -2171,7 +2174,7 @@ class MathematicalProgram {
    * polynomial with respect to `indeterminates()` in this mathematical
    * program. It returns a pair of constraint bindings expressing:
    *
-   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
@@ -2186,7 +2189,7 @@ class MathematicalProgram {
    * mathematical program. It returns a pair of
    * constraint bindings expressing:
    *
-   *  - The coefficients matrix Q. This matrix should be positive semidefinite.
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
   std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>

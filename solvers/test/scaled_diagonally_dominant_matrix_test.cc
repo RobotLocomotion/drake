@@ -49,6 +49,8 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
   const auto result = prog.Solve();
   if (is_sdd) {
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    // Since X = ∑ᵢⱼ Mⁱʲ according to the definition of scaled diagonally
+    // dominant matrix, we evaluate the summation of M, and compare that with X.
     std::vector<std::vector<Eigen::MatrixXd>> M_val(nx);
     symbolic::Environment env;
     for (int i = 0; i < prog.num_vars(); ++i) {
@@ -69,7 +71,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
         M_sum += M_val[i][j];
       }
     }
-    double tol = 1E-6;
+    const double tol = 1E-6;
     EXPECT_TRUE(CompareMatrices(M_sum, X_val, tol));
   } else {
     EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||

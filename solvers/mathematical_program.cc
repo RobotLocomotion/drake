@@ -185,7 +185,7 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
 }
 
 // This is the utility function for creating new nonnegative polynomials
-// (sos-polynomial, sdsos-polynomial, dsos-polynomial, etc). It creates a
+// (sos-polynomial, sdsos-polynomial, dsos-polynomial). It creates a
 // symmetric matrix Q as decision variables, and return m' * Q * m as the new
 // polynomial, where m is the monomial basis.
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
