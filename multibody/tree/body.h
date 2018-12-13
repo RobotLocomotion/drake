@@ -226,20 +226,21 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
         context, *this);
+  }
 
   void AddInForceInWorld(const systems::Context<T>& context,
                          const SpatialForce<T>& F_Bo_W,
-                         MultibodyForces<T>* forces) {
+                         MultibodyForces<T>* forces) const {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
-    forces->mutable_body_forces()[topology_.body_node] = F_Bo_W;
+    forces->mutable_body_forces()[node_index()] = F_Bo_W;
   }
 
   void AddInForce(
       const systems::Context<T>& context,
       const Vector3<T>& p_BP_E, const SpatialForce<T>& F_Bp_E,
-      const Frame<T>& frame_E, MultibodyForces<T>* forces) {
+      const Frame<T>& frame_E, MultibodyForces<T>* forces) const {
     DRAKE_THROW_UNLESS(forces != nullptr);
     DRAKE_THROW_UNLESS(
         forces->CheckHasRightSizeForModel(this->get_parent_tree()));
