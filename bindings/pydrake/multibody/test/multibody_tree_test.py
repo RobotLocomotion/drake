@@ -44,6 +44,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.geometry import (
     GeometryId,
     PenetrationAsPointPair,
+    SignedDistancePair,
     SceneGraph,
 )
 from pydrake.systems.framework import DiagramBuilder
@@ -394,6 +395,32 @@ class TestMultibodyTree(unittest.TestCase):
         # Test existence of context resetting methods.
         plant.SetDefaultContext(context)
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+    def test_model_instance_port_access(self):
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+        # the arm is welded to the world, the gripper is welded to the
+        # arm's end effector.
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant()
+        parser = Parser(plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
+        plant.Finalize()
+
+        # Test that we can get an actuation input port and a continuous state
+        # output port.
+        self.assertIsInstance(
+            plant.get_actuation_input_port(iiwa_model), InputPort)
+        self.assertIsInstance(
+            plant.get_continuous_state_output_port(gripper_model), OutputPort)
 
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
@@ -798,6 +825,9 @@ class TestMultibodyTree(unittest.TestCase):
         # Implicitly require that this should be size 1.
         point_pair, = query_object.ComputePointPairPenetration()
         self.assertIsInstance(point_pair, PenetrationAsPointPair)
+        signed_distance_pair, = query_object.\
+            ComputeSignedDistancePairwiseClosestPoints()
+        self.assertIsInstance(signed_distance_pair, SignedDistancePair)
         inspector = query_object.inspector()
         bodies = {plant.GetBodyFromFrameId(inspector.GetFrameId(id_))
                   for id_ in [point_pair.id_A, point_pair.id_B]}

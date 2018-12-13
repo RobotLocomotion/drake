@@ -783,11 +783,23 @@ void init_multibody_plant(py::module m) {
                 &Class::get_actuation_input_port),
             py_reference_internal,
             doc.MultibodyPlant.get_actuation_input_port.doc_0args)
+        .def("get_actuation_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_actuation_input_port),
+            py_reference_internal,
+            doc.MultibodyPlant.get_actuation_input_port.doc_1args)
         .def("get_continuous_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_continuous_state_output_port),
             py_reference_internal,
             doc.MultibodyPlant.get_continuous_state_output_port.doc_0args)
+        .def("get_continuous_state_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_continuous_state_output_port),
+            py_reference_internal,
+            doc.MultibodyPlant.get_continuous_state_output_port.doc_1args)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
