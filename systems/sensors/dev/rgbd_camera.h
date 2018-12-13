@@ -66,7 +66,7 @@ namespace dev {
 
    - The data is semantically the same as the float depth image except each
      pixel is a 16 bit unsigned short instead of a 32 bit float, and the
-     measurement is in millimeter.
+     measurement is in millimeter. The maximum depth is capped at 65535 mm.
 
    - The label image has a single channel represented by a int16_t. The value
      stored in the channel holds a model ID which corresponds to an object
