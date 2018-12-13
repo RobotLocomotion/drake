@@ -82,7 +82,7 @@ class EndEffectorTeleop(LeafSystem):
         # be active, the teleop slider window must be the active window.
 
         def update(scale, value):
-            return lambda(event): scale.set(scale.get() + value)
+            return lambda event: scale.set(scale.get() + value)
 
         # Delta displacements for motion via keyboard teleop.
         rotation_delta = 0.05  # rad

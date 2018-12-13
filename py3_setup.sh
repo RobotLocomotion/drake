@@ -11,7 +11,7 @@ py3-setup() { (
     # Install some (if not all) needed dependencies.
     pip install -I \
         pyyaml protobuf==3.6.0 sphinx==1.8.1 sphinx_rtd_theme \
-        numpy==1.14.0 zmq tornado matplotlib
+        numpy==1.14.0 zmq tornado matplotlib pydot
     set -x
     # Reflect system Python; make `python` and `python-config` fall through to
     # system, and use `python{major}-config`.
