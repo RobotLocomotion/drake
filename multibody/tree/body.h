@@ -13,6 +13,7 @@
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -210,6 +211,21 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
+
+  /// Returns the pose `X_WB` of this body B in the world frame W as a function
+  /// of the state of the model stored in `context`.
+  const Isometry3<T>& EvalPoseInWorld(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
+  }
+
+  /// Returns the spatial velocity `V_WB` of this body B in the world frame W
+  /// as a function of the state of the model stored in `context`.
+  const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
+        context, *this);
+  }
 
   /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
   /// type of the new clone to be created. This method is mostly intended to be

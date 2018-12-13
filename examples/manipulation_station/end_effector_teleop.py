@@ -249,6 +249,17 @@ parser.add_argument(
 parser.add_argument(
     "--test", action='store_true',
     help="Disable opening the gui window for testing.")
+parser.add_argument(
+    "--filter_time_const", type=float, default=2.0,
+    help="Time constant for the first order low pass filter applied to"
+         "the teleop commands")
+parser.add_argument(
+    "--velocity_limit_factor", type=float, default=0.15,
+    help="This value, typically between 0 and 1, further limits the iiwa14 "
+         "joint velocities. It multiplies each of the seven pre-defined "
+         "joint velocity limits. "
+         "Note: The pre-defined velocity limits are specified by "
+         "iiwa14_velocity_limits, found in this python file.")
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
 
@@ -285,8 +296,9 @@ params.set_timestep(time_step)
 # decimal)
 iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
 # Stay within a small fraction of those limits for this teleop demo.
-params.set_joint_velocity_limits((-.15*iiwa14_velocity_limits,
-                                  .15*iiwa14_velocity_limits))
+factor = args.velocity_limit_factor
+params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
+                                  factor*iiwa14_velocity_limits))
 
 differential_ik = builder.AddSystem(DifferentialIK(
     robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
@@ -297,8 +309,8 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
 teleop = builder.AddSystem(EndEffectorTeleop())
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
-filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
-                                                   size=6))
+filter = builder.AddSystem(
+    FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
 builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
 builder.Connect(filter.get_output_port(0),
