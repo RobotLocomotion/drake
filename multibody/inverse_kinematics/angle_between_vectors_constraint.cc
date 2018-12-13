@@ -4,6 +4,7 @@
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
 using drake::multibody::internal::NormalizeVector;
+using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
@@ -13,16 +14,15 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& a_A,
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& b_B,
     double angle_lower, double angle_upper, systems::Context<double>* context)
-    : solvers::Constraint(1, plant->num_positions(),
+    : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(std::cos(angle_upper)),
                           Vector1d(std::cos(angle_lower))),
-      plant_(*plant),
+      plant_(RefFromPtrOrThrow(plant)),
       frameA_index_(frameA.index()),
       a_unit_A_(NormalizeVector(a_A)),
       frameB_index_(frameB.index()),
       b_unit_B_(NormalizeVector(b_B)),
       context_(context) {
-  DRAKE_DEMAND(plant != nullptr);
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
     throw std::invalid_argument(

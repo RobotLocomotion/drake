@@ -57,6 +57,14 @@ NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
   }
   return a / a_norm;
 }
+
+/**
+ * If `plant` is not nullptr, return a reference to the MultibodyPlant to which
+ * it points. Otherwise, throw.
+ */
+const multibody_plant::MultibodyPlant<double>& RefFromPtrOrThrow(
+    const multibody_plant::MultibodyPlant<double>* const plant);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

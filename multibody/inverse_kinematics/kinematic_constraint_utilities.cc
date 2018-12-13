@@ -37,6 +37,12 @@ void UpdateContextConfiguration(
   }
 }
 
+const multibody_plant::MultibodyPlant<double>& RefFromPtrOrThrow(
+    const multibody_plant::MultibodyPlant<double>* const plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  return *plant;
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
