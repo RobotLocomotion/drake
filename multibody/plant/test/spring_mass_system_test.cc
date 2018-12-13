@@ -4,10 +4,10 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/linear_spring_damper.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/linear_spring_damper.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 

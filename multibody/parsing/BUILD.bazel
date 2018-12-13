@@ -80,7 +80,7 @@ drake_cc_library(
         ":package_map",
         "//common:essential",
         "//math:geometric_transform",
-        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
+        "//multibody/plant:coulomb_friction",
         "@sdformat",
         "@spruce",
         "@tinyxml2",
@@ -108,7 +108,7 @@ drake_cc_library(
         ":package_map",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
-        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
+        "//multibody/plant:coulomb_friction",
         "@sdformat",
     ],
 )
@@ -140,7 +140,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":detail_scene_graph",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
         "@sdformat",
     ],
 )
@@ -174,7 +174,7 @@ drake_cc_library(
     deps = [
         ":detail_misc",
         ":package_map",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
         "@tinyxml2",
     ],
 )

@@ -11,7 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/math/spatial_algebra.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/rotational_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
 

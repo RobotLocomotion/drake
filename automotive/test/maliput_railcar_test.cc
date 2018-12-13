@@ -17,7 +17,7 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/framework/leaf_context.h"
 #include "drake/systems/framework/system.h"
 

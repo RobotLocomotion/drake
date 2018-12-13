@@ -1,8 +1,8 @@
 #pragma once
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_velocity.h"
 
 namespace drake {
 namespace multibody {

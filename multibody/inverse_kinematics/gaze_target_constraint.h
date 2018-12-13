@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/solvers/constraint.h"
 
 namespace drake {

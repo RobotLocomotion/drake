@@ -52,7 +52,7 @@ drake_cc_library(
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//math:orthonormal_basis",
-        "//multibody/multibody_tree",
+        "//multibody/tree",
         "//systems/framework:leaf_system",
     ],
 )
@@ -68,7 +68,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
-        "//multibody/multibody_tree:multibody_tree_indexes",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 

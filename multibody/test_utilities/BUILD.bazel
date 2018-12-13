@@ -17,7 +17,7 @@ drake_cc_library(
     hdrs = ["spatial_kinematics.h"],
     deps = [
         "//common:essential",
-        "//multibody/multibody_tree/math:spatial_algebra",
+        "//multibody/math:spatial_algebra",
     ],
 )
 

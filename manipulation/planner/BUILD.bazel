@@ -24,7 +24,7 @@ drake_cc_library(
     srcs = ["differential_inverse_kinematics.cc"],
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
         "//solvers:mathematical_program",
     ],
 )

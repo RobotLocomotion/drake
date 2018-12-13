@@ -5,7 +5,7 @@
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {

@@ -150,8 +150,8 @@ drake_cc_googletest(
     deps = [
         ":schunk_wsg_position_controller",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/multibody_tree/multibody_plant",
         "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
     ],
 )

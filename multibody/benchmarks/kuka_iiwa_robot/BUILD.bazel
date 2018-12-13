@@ -31,8 +31,8 @@ drake_cc_library(
     deps = [
         ":make_kuka_iiwa_model",
         "//math:geometric_transform",
-        "//multibody/multibody_tree",
         "//multibody/test_utilities:spatial_kinematics",
+        "//multibody/tree",
     ],
 )
 
@@ -47,7 +47,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//math:geometric_transform",
-        "//multibody/multibody_tree",
+        "//multibody/tree",
     ],
 )
 

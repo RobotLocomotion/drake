@@ -50,7 +50,7 @@ drake_cc_library(
     deps = [
         "//geometry:scene_graph",
         "//math:geometric_transform",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 
