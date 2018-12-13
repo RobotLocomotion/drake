@@ -20,6 +20,9 @@ namespace manipulation_station {
 /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
+/// Determines which manipulation station is simulated.
+enum class Setup {kDefault, kBinPicking};
+
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
 /// @brief Systems related to the "manipulation station" used in the <a
@@ -138,6 +141,9 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
+  void SetupBinPickingStation(
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
@@ -146,6 +152,19 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupDefaultStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
+  /// Sets the pose of a given body in the simulation.
+  /// @param X_WObject The pose of the object
+  /// @param name The name of the body to pose
+  /// @param model_id The model instance id to which the body belongs.
+  /// @param station_context The Context of this manipulation station.
+  void SetBodyPose(const Isometry3<T> &X_WObject, std::string name,
+                   multibody::ModelInstanceIndex model_id,
+                   systems::Context<T>* station_context);
+
+  /// Sets the default context for the chosen setup.
+  /// @param station_context The context of the ManipulationStation.
+  void SetDefaultContext(systems::Context<T>* station_context);
 
   /// Notifies the ManipulationStation that the IIWA robot model instance can
   /// be identified by @p iiwa_instance as well as necessary information to
@@ -411,6 +430,9 @@ class ManipulationStation : public systems::Diagram<T> {
   // Should only be called from Finalize().
   void MakeIiwaControllerModel();
 
+  void AddDefaultIiwa(const IiwaCollisionModel collision_model);
+  void AddDefaultWsg();
+
   // These are only valid until Finalize() is called.
   std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
   std::unique_ptr<geometry::SceneGraph<T>> owned_scene_graph_;
@@ -437,6 +459,14 @@ class ManipulationStation : public systems::Diagram<T> {
   // TODO(siyuan.feng@tri.global): Need to tunes these better.
   double wsg_kp_{200};
   double wsg_kd_{5};
+
+  // Vector of model instances for the objects to be manipulated.
+  std::vector<drake::multibody::ModelInstanceIndex> model_ids_;
+
+  // Represents the manipulation station to simulate. This gets set in the
+  // corresponding station setup function (e.g., SetupDefaultStation()), and
+  // informs how SetDefaultContext() initializes the sim.
+  Setup setup_;
 };
 
 }  // namespace manipulation_station
