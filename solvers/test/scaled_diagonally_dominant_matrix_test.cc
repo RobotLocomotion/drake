@@ -49,6 +49,28 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
   const auto result = prog.Solve();
   if (is_sdd) {
     EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    std::vector<std::vector<Eigen::MatrixXd>> M_val(nx);
+    symbolic::Environment env;
+    for (int i = 0; i < prog.num_vars(); ++i) {
+      env.insert(prog.decision_variable(i),
+                 prog.GetSolution(prog.decision_variable(i)));
+    }
+    Eigen::MatrixXd M_sum(nx, nx);
+    M_sum.setZero();
+    for (int i = 0; i < nx; ++i) {
+      M_val[i].resize(nx);
+      for (int j = 0; j < nx; ++j) {
+        M_val[i][j].resize(nx, nx);
+        M_val[i][j].setZero();
+        M_val[i][j](i, i) = M[i][j](0, 0).Evaluate(env);
+        M_val[i][j](i, j) = M[i][j](0, 1).Evaluate(env);
+        M_val[i][j](j, i) = M_val[i][j](i, j);
+        M_val[i][j](j, j) = M[i][j](1, 1).Evaluate(env);
+        M_sum += M_val[i][j];
+      }
+    }
+    double tol = 1E-6;
+    EXPECT_TRUE(CompareMatrices(M_sum, X_val, tol));
   } else {
     EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
                 result == SolutionResult::kInfeasible_Or_Unbounded);
@@ -175,7 +197,7 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
   // This polynomial is not sdsos, since at x = (0, -1) the polynomial is
   // negative.
   symbolic::Polynomial non_sdsos_poly(
-      1 + x(0) + 4 * x(1) + x(0) * x(0) * x(1) * x(1), symbolic::Variables(x));
+      1 + x(0) + 4 * x(1) + x(0) * x(0) + x(1) * x(1), symbolic::Variables(x));
 
   prog.AddLinearEqualityConstraint(p == non_sdsos_poly);
 
