@@ -1039,6 +1039,9 @@ class SinusoidalHybridSystem : public LeafSystem<double> {
         "y", BasicVector<double>(1), &SinusoidalHybridSystem::CalcOutput);
   }
 
+  const double kGain = 1.234;  // Gain.
+  const double kPeriod = 1.0;  // Update period.
+
  private:
   void DoCalcDiscreteVariableUpdates(
       const Context<double>& context,
@@ -1052,8 +1055,6 @@ class SinusoidalHybridSystem : public LeafSystem<double> {
       const Context<double>& context, BasicVector<double>* output) const {
     (*output)[0] = context.get_discrete_state()[0];  // y = x.
   }
-
-  const double kPeriod = 1.0;
 };
 
 // Tests that sinusoidal hybrid system that is not periodic in the update period
@@ -1069,16 +1070,32 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
 
   // Simulator.
   const double t_final = 10.0;
+  const double initial_value = M_PI;
   Simulator<double> simulator(*diagram);
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] =
+      initial_value;
   simulator.StepTo(t_final);
 
-  // Get the output from the signal logger.
+  // Set a very tight tolerance value.
+  const double eps = 1e-14;
+
+  // Get the output from the signal logger. It will look like this in the signal
+  // logger: initial_value (y0),  0 (y1 = sin(gain * (t-1)),
   const VectorX<double> times = logger->sample_times();
   const MatrixX<double> data = logger->data();
   ASSERT_GT(times.size(), 0);
   ASSERT_EQ(data.rows(), 1);
-  for (int i = 0; i < times.size(); ++i)
-    EXPECT_EQ(std::sin(times[i] * 1.234), data(0, i));
+  for (int i = 0; i < times.size(); ++i) {
+    const double y = data(0, i);
+    const double n = times[i];  // Note: period is one so no division necessary.
+    // Values for n=0 are a special case, handled here (they're not computed
+    // according to the formula in the test - it's just an initial value).
+    if (abs(n) < eps) {
+      ASSERT_NEAR(y, initial_value, eps);
+    } else {
+      EXPECT_NEAR(std::sin((times[i] - 1) * sinusoidal_system->kGain), y, eps);
+    }
+  }
 }
 
 // A continuous system that outputs unity plus time.
