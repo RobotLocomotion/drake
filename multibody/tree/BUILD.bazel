@@ -80,6 +80,7 @@ drake_cc_library(
     srcs = [],
     hdrs = [
         "multibody_tree_element.h",
+        "multibody_tree_forward_decl.h",
     ],
     deps = [
         ":multibody_tree_topology",

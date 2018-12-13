@@ -54,6 +54,8 @@ enum class JacobianWrtVariable {
 #define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 /// @endcond
 
+namespace internal {
+
 /// %MultibodyTree provides a representation for a physical system consisting of
 /// a collection of interconnected rigid and deformable bodies. As such, it owns
 /// and manages each of the elements that belong to this physical system.
@@ -2683,6 +2685,8 @@ class MultibodyTree {
 
   const MultibodyTreeSystem<T>* tree_system_{};
 };
+
+}  // namespace internal
 
 /// @cond
 // Undef macros defined at the top of the file. From the GSG:
