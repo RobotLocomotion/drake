@@ -33,6 +33,7 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/multibody_tree",
         "//multibody/multibody_tree/test_utilities:spatial_kinematics",
+        "//multibody/plant",
     ],
 )
 
