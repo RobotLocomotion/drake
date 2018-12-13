@@ -51,7 +51,6 @@ struct LaneEnd {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
-// TODO(Mitiguy) Have calling functions instead use RotationMatrix class.
 /// A 3-dimensional rotation.
 class Rotation {
  public:
@@ -92,6 +91,9 @@ class Rotation {
   math::RotationMatrix<double> CalcRotationMatrix() const {
     return math::RotationMatrix<double>(quaternion_);
   }
+
+  /// Provides a 3x3 matrix representation of the rotation.
+  Matrix3<double> matrix() const { return CalcRotationMatrix().matrix(); }
 
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
