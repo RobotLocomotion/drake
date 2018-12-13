@@ -23,6 +23,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/signal_logger.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -1022,6 +1023,62 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
                     "1: 10 (0.02)\n"
                     "2: 20 (0.04)\n"
                     "3: 30 (0.06)\n");
+}
+
+// A hybrid discrete-continuous system:
+// x[n+1] = sin(1.234*t)
+// y[n] = x[n]
+class SinusoidalHybridSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalHybridSystem)
+
+  SinusoidalHybridSystem() {
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, 0.0);
+    this->DeclareDiscreteState(1 /* single state variable */);
+    this->DeclareVectorOutputPort(
+        "y", BasicVector<double>(1), &SinusoidalHybridSystem::CalcOutput);
+  }
+
+ private:
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      DiscreteValues<double>* x_next) const override {
+    const double t = context.get_time();
+    (*x_next)[0] = std::sin(1.234 * t);
+  }
+
+  void CalcOutput(
+      const Context<double>& context, BasicVector<double>* output) const {
+    (*output)[0] = context.get_discrete_state()[0];  // y = x.
+  }
+
+  const double kPeriod = 1.0;
+};
+
+// Tests that sinusoidal hybrid system that is not periodic in the update period
+// produces the expected result (a sinusoid).
+GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
+  DiagramBuilder<double> builder;
+
+  // Build the diagram.
+  auto sinusoidal_system = builder.AddSystem<SinusoidalHybridSystem>();
+  auto logger = builder.AddSystem<SignalLogger<double>>(1 /* input size */);
+  builder.Connect(*sinusoidal_system, *logger);
+  auto diagram = builder.Build();
+
+  // Simulator.
+  const double t_final = 10.0;
+  Simulator<double> simulator(*diagram);
+  simulator.StepTo(t_final);
+
+  // Get the output from the signal logger.
+  const VectorX<double> times = logger->sample_times();
+  const MatrixX<double> data = logger->data();
+  ASSERT_GT(times.size(), 0);
+  ASSERT_EQ(data.rows(), 1);
+  for (int i = 0; i < times.size(); ++i)
+    EXPECT_EQ(std::sin(times[i] * 1.234), data(0, i));
 }
 
 // A continuous system that outputs unity plus time.
