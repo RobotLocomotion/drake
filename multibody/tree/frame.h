@@ -106,7 +106,6 @@ class Frame : public FrameBase<T> {
 
   /// Computes and returns the pose `X_WF` of `this` frame F in the world
   /// frame W as a function of the state of the model stored in `context`.
-  /// For `this` frame F, returns `X_WF`.
   /// @note Body::EvalPoseInWorld() provides a more efficient way to obtain
   /// the pose for a body frame.
   Isometry3<T> CalcPoseInWorld(const systems::Context<T>& context) const {
@@ -151,10 +150,9 @@ class Frame : public FrameBase<T> {
     const SpatialVelocity<T> V_WM = frame_M.CalcSpatialVelocityInWorld(context);
     const SpatialVelocity<T> V_WF = this->CalcSpatialVelocityInWorld(context);
     // We obtain V_MF from the composition of spatial velocities:
-    //   V_WF = V_WMf + V_MF = V_WM.Shift(p_MF) + V_MF
     const SpatialVelocity<T> V_MF_W = V_WF - V_WM.Shift(p_MF_W);
     if (frame_E.index() == FrameIndex(0)) return V_MF_W;
-    // If expressed-in frame_E is not the world perform additional
+    // If expressed-in frame_E is not the world, perform additional
     // transformation.
     const Matrix3<T> R_WE = frame_E.CalcPoseInWorld(context).linear();
     return R_WE.transpose() * V_MF_W;
