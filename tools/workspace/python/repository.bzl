@@ -102,7 +102,7 @@ def _repository_python_info(repository_ctx):
         python_config = python_config,
         site_packages_relpath = site_packages_relpath,
         version = version,
-        version_major = version,
+        version_major = version_major,
         os = os_result,
     )
 
