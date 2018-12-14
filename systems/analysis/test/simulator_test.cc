@@ -21,7 +21,9 @@
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/stateless_system.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/signal_logger.h"
 
 using drake::systems::WitnessFunction;
 using drake::systems::Simulator;
@@ -946,8 +948,380 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   EXPECT_EQ(spring_mass.get_update_count(), 30);
 }
 
-// A mock System that requests a single publication at a prespecified time.
-namespace {
+// This is the example from discrete_systems.h. Let's make sure it works
+// as advertised there! The discrete system is:
+//    xₙ₊₁ = xₙ + 1
+//    yₙ   = 10 xₙ
+//    x₀   = 0
+// which should produce 0 10 20 30 ... .
+//
+// Don't change this unit test without making a corresponding change to the
+// doxygen example in the systems/discrete_systems.h module. This class should
+// be copypasta identical to the code there.
+class ExampleDiscreteSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem)
+
+  ExampleDiscreteSystem() {
+    DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
+
+    // Output yₙ using a Drake "publish" event (occurs at the end of step n,
+    // where step 0 is "initialize" and StepTo(kPeriod) yields step 1).
+    DeclarePeriodicEvent(kPeriod, kPublishOffset,
+                         systems::PublishEvent<double>(
+                             [this](const systems::Context<double>& context,
+                                    const systems::PublishEvent<double>&) {
+                               PrintResult(context);
+                             }));
+
+    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs at the
+    // beginning of step n+1).
+    DeclarePeriodicEvent(kPeriod, kPublishOffset,
+                         systems::DiscreteUpdateEvent<double>(
+                             [this](const systems::Context<double>& context,
+                                    const systems::DiscreteUpdateEvent<double>&,
+                                    systems::DiscreteValues<double>* xd) {
+                               Update(context, xd);
+                             }));
+  }
+
+  static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
+  static constexpr double kPublishOffset = 0.;  // Trigger events at n=0.
+
+ private:
+  // Update function xₙ₊₁ = f(n, xₙ).
+  void Update(const systems::Context<double>& context,
+              systems::DiscreteValues<double>* xd) const {
+    const double x_n = GetX(context);
+    (*xd)[0] = x_n + 1.;
+  }
+
+  // Prints the result of output function yₙ = g(n, xₙ) to cout.
+  void PrintResult(const systems::Context<double>& context) const {
+    const double t = context.get_time();
+    const int n = static_cast<int>(std::round(t / kPeriod));
+    const double S_n = 10 * GetX(context);  // 10 xₙ[0]
+    std::cout << n << ": " << S_n << " (" << t << ")\n";
+  }
+
+  double GetX(const Context<double>& context) const {
+    return context.get_discrete_state()[0];
+  }
+};
+
+GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
+  ExampleDiscreteSystem system;
+
+  Simulator<double> simulator(system);
+
+  // Simulate forward.
+  testing::internal::CaptureStdout();
+  simulator.StepTo(3 * ExampleDiscreteSystem::kPeriod);
+  std::string output = testing::internal::GetCapturedStdout();
+
+  EXPECT_EQ(output, "0: 0 (0)\n"
+                    "1: 10 (0.02)\n"
+                    "2: 20 (0.04)\n"
+                    "3: 30 (0.06)\n");
+}
+
+// A hybrid discrete-continuous system:
+//   xₙ₊₁ = sin(1.234*t)
+//   yₙ = xₙ
+// With proper initial conditions, this should produce a one-step-delayed
+// sample of the periodic function, so that yₙ = sin(1.234 * (n-1)*h).
+class SinusoidalDelayHybridSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalDelayHybridSystem)
+
+  SinusoidalDelayHybridSystem() {
+    this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, 0.0);
+    this->DeclareDiscreteState(1 /* single state variable */);
+    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
+                                  &SinusoidalDelayHybridSystem::CalcOutput);
+  }
+
+  static constexpr double kSinusoidalFrequency = 1.234;
+  static constexpr double kUpdatePeriod = 0.25;
+
+ private:
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      DiscreteValues<double>* x_next) const override {
+    const double t = context.get_time();
+    (*x_next)[0] = std::sin(kSinusoidalFrequency * t);
+  }
+
+  void CalcOutput(const Context<double>& context,
+                  BasicVector<double>* output) const {
+    (*output)[0] = context.get_discrete_state()[0];  // y = x.
+  }
+};
+
+// Tests that sinusoidal hybrid system that is not periodic in the update period
+// produces the result from simulating the discrete system:
+//   xₙ₊₁ = sin(f * n * h)
+//   yₙ = xₙ
+//   x₀ = sin(f * -1 * h)
+// where h is the update period and f is the frequency of the sinusoid.
+// This should be a one-step delayed discrete sampling of the sinusoid.
+GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
+  const double h = SinusoidalDelayHybridSystem::kUpdatePeriod;
+  const double f = SinusoidalDelayHybridSystem::kSinusoidalFrequency;
+
+  // Build the diagram.
+  DiagramBuilder<double> builder;
+  auto sinusoidal_system = builder.AddSystem<SinusoidalDelayHybridSystem>();
+  auto logger = builder.AddSystem<SignalLogger<double>>(1 /* input size */);
+  logger->set_publish_period(h);
+  builder.Connect(*sinusoidal_system, *logger);
+  auto diagram = builder.Build();
+
+  // Simulator.
+  const double t_final = 10.0;
+  const double initial_value = std::sin(-f * h);  // = sin(f*-1*h)
+  Simulator<double> simulator(*diagram);
+  simulator.set_publish_at_initialization(false);  // Remove these when #10132
+  simulator.set_publish_every_time_step(false);    // lands.
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] =
+      initial_value;
+  simulator.StepTo(t_final);
+
+  // Set a very tight tolerance value.
+  const double eps = 1e-14;
+
+  // Get the output from the signal logger. It will look like this in the
+  // signal logger:
+  //
+  // y value    n    corresponding time   signal logger value (delayed)
+  // -------   ---   ------------------   -----------------------------
+  // y₀         0    0                    sin(-f h)
+  // y₁         1    t = h                sin(0)
+  // y₂         2    t = 2 h              sin(f h)
+  // y₃         3    t = 3 h              sin(f 2 h)
+  // ...
+  const VectorX<double> times = logger->sample_times();
+  const MatrixX<double> data = logger->data();
+
+  ASSERT_EQ(times.size(), std::round(t_final/h) + 1);
+  ASSERT_EQ(data.rows(), 1);
+  for (int n = 0; n < times.size(); ++n) {
+    const double t_n = times[n];
+    const double y_n = data(0, n);
+    EXPECT_NEAR(t_n, n * h, eps);
+    EXPECT_NEAR(std::sin(f * (n - 1) * h), y_n, eps);
+  }
+}
+
+// A continuous system that outputs unity plus time.
+class ShiftedTimeOutputter : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ShiftedTimeOutputter)
+
+  ShiftedTimeOutputter() {
+    this->DeclareVectorOutputPort("time",
+                                  BasicVector<double>(1),
+                                  &ShiftedTimeOutputter::OutputTime);
+  }
+
+ private:
+  void OutputTime(
+      const Context<double>& context, BasicVector<double>* output) const {
+    (*output)[0] = context.get_time() + 1;
+  }
+};
+
+// A hybrid discrete-continuous system:
+// x[n+1] = x[n] + u(t)
+// x[0] = 0
+class SimpleHybridSystem : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
+
+  explicit SimpleHybridSystem(double offset) {
+    this->DeclarePeriodicDiscreteUpdate(kPeriod, offset);
+    this->DeclareDiscreteState(1 /* single state variable */);
+    this->DeclareVectorInputPort("u", systems::BasicVector<double>(1));
+  }
+
+ private:
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>& context,
+      const std::vector<const DiscreteUpdateEvent<double>*>&,
+      DiscreteValues<double>* x_next) const override {
+    double x = context.get_discrete_state()[0];
+    const BasicVector<double>* input = this->EvalVectorInput(context, 0);
+    DRAKE_DEMAND(input);
+    const double u = input->get_value()[0];
+    (*x_next)[0] = x + u;
+  }
+
+  const double kPeriod = 1.0;
+};
+
+// Tests the update sequence for a simple mixed discrete/continuous system
+// that uses the prescribed updating offset of 0.0.
+GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
+  DiagramBuilder<double> builder;
+  // Connect a system that outputs u(t) = t to the hybrid system
+  // x[n+1] = x[n] + u(t).
+  auto shifted_time_outputter = builder.AddSystem<ShiftedTimeOutputter>();
+  const double updating_offset_time = 0.0;
+  auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(
+      updating_offset_time);
+  builder.Connect(*shifted_time_outputter, *hybrid_system);
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+
+  // Set the initial condition x₀ (the subscript notation reflects the
+  // discrete step number as described in discrete_systems.h).
+  const double initial_condition = 0.0;
+  simulator.get_mutable_context().get_mutable_discrete_state()[0] =
+      initial_condition;
+
+  // Simulate forward. The first update occurs at t=0, meaning StepTo(1) updates
+  // the discrete state to x⁺(0) (i.e., x₁) before updating time to 1.0.
+  simulator.StepTo(1.0);
+
+  // Check that the expected state value was attained. The value should be
+  // x₀ + u(0) since we expect the discrete update to occur at t = 0 when
+  // u(t) = 1.
+  const double u0 = 1;
+  EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
+            initial_condition + u0);
+
+  // Check that the expected number of updates (one) was performed.
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
+}
+
+// A "Delta function" system that outputs zero except at the instant (the spike
+// time) when the output is 1. This function of time is continuous otherwise.
+// We'll verify that the output of this system into a discrete system produces
+// samples at the expected instant in time.
+class DeltaFunction : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeltaFunction)
+
+  explicit DeltaFunction(double spike_time) : spike_time_(spike_time) {
+    this->DeclareVectorOutputPort("spike",
+                                  BasicVector<double>(1),
+                                  &DeltaFunction::Output);
+  }
+
+  // Change the spike time. Be sure to re-initialize after calling this.
+  void set_spike_time(double spike_time) {
+    spike_time_ = spike_time;
+  }
+
+ private:
+  void Output(
+      const Context<double>& context, BasicVector<double>* output) const {
+    (*output)[0] = context.get_time() == spike_time_ ? 1. : 0.;
+  }
+
+  double spike_time_{};
+};
+
+// This is a mixed continuous/discrete system:
+//    xₙ₊₁ = xₙ + u(t)
+//    yₙ   = xₙ
+//    x₀   = 0
+// By plugging interesting things into the input we can test whether we're
+// sampling the continuous input at the appropriate times.
+class DiscreteInputAccumulator : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteInputAccumulator)
+
+  DiscreteInputAccumulator() {
+    DeclareDiscreteState(1);  // Just one state variable, x[0].
+
+    DeclareVectorInputPort("u", BasicVector<double>(1));
+
+    // Set initial condition x₀ = 0, and clear the result.
+    DeclareInitializationEvent(
+        DiscreteUpdateEvent<double>([this](const Context<double>&,
+                                           const DiscreteUpdateEvent<double>&,
+                                           DiscreteValues<double>* x_0) {
+          x_0->get_mutable_vector()[0] = 0.;
+          result_.clear();
+        }));
+
+    // Output yₙ using a Drake "publish" event (occurs at the end of step n).
+    DeclarePeriodicEvent(
+        kPeriod, kPublishOffset,
+        PublishEvent<double>(
+            [this](const Context<double>& context,
+                   const PublishEvent<double>&) {
+              result_.push_back(get_x(context));  // yₙ = xₙ
+            }));
+
+    // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
+    // at the beginning of step n+1).
+    DeclarePeriodicEvent(
+        kPeriod, kPublishOffset,
+        DiscreteUpdateEvent<double>([this](const Context<double>& context,
+                                           const DiscreteUpdateEvent<double>&,
+                                           DiscreteValues<double>* x_np1) {
+          const double x_n = get_x(context);
+          const double u = EvalVectorInput(context, 0)->GetAtIndex(0);
+          x_np1->get_mutable_vector()[0] = x_n + u;  // xₙ₊₁ = xₙ + u(t)
+        }));
+  }
+
+  const std::vector<double>& result() const { return result_; }
+
+  static constexpr double kPeriod = 0.125;
+  static constexpr double kPublishOffset = 0.;
+
+ private:
+  double get_x(const Context<double>& context) const {
+    return context.get_discrete_state()[0];
+  }
+
+  std::vector<double> result_;
+};
+
+// Build a diagram that takes a DeltaFunction input and then simulates this
+// mixed discrete/continuous system:
+//    xₙ₊₁ = xₙ + u(t)
+//    yₙ   = xₙ
+//    x₀   = 0
+// Let tₛ be the chosen "spike time" for the delta function. We expect the
+// output yₙ to be zero for all n unless a sample at k*h occurs exactly at
+// tₛ for some k. In that case yₙ=0, n ≤ k and yₙ=1, n > k. Important cases
+// to check are: tₛ=0, tₛ=k*h for some k>0, and tₛ≠k*h for any k.
+GTEST_TEST(SimulatorTest, SpikeTest) {
+  DiagramBuilder<double> builder;
+
+  auto delta = builder.AddSystem<DeltaFunction>(0.);
+  auto hybrid_system = builder.AddSystem<DiscreteInputAccumulator>();
+  builder.Connect(delta->get_output_port(0), hybrid_system->get_input_port(0));
+  auto diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+
+  // Test with spike time = 0.
+  delta->set_spike_time(0);
+  simulator.Initialize();
+  simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
+  EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 1, 1, 1, 1, 1}));
+
+  // Test with spike time = 3*h.
+  delta->set_spike_time(3 * DiscreteInputAccumulator::kPeriod);
+  simulator.get_mutable_context().set_time(0.);
+  simulator.Initialize();
+  simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
+  EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 1, 1}));
+
+  // Test with spike time not coinciding with a sample time.
+  delta->set_spike_time(2.7 * DiscreteInputAccumulator::kPeriod);
+  simulator.get_mutable_context().set_time(0.);
+  simulator.Initialize();
+  simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
+  EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 0, 0}));
+}
+
+// A mock System that requests a single update at a prespecified time.
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrestrictedUpdater)
@@ -996,7 +1370,6 @@ class UnrestrictedUpdater : public LeafSystem<double> {
       unrestricted_update_callback_{nullptr};
   std::function<void(const Context<double>&)> derivatives_callback_{nullptr};
 };
-}  // namespace
 
 // Tests that the simulator captures an unrestricted update at the exact time
 // (i.e., without accumulating floating point error).
@@ -1219,10 +1592,16 @@ GTEST_TEST(SimulatorTest, DiscreteUpdateAndPublish) {
   });
 
   Simulator<double> simulator(system);
+  simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(0.5);
+
+  // Update occurs at 1000Hz, at the beginning of each step (there is no
+  // discrete event update during initialization nor a final update at the
+  // final time).
   EXPECT_EQ(500, num_disc_updates);
-  // Publication occurs at 400Hz, and also at initialization.
+  // Publication occurs at 400Hz, at the end of initialization and the end
+  // of each step.
   EXPECT_EQ(200 + 1, num_publishes);
 }
 
@@ -1336,10 +1715,9 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
   const double event_t_final = 1.0;
   const double directed_t_final = event_t_final - 0.1;
 
-  // Initialize a fixed step integrator and the simulator.
+  // Initialize a fixed step integrator.
   simulator.reset_integrator<RungeKutta2Integrator<double>>(spring_mass,
       directed_t_final, &simulator.get_mutable_context());
-  simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
   simulator.get_mutable_context().set_time(0);
@@ -1441,7 +1819,6 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   integrator->set_requested_minimum_step_size(req_min_step_size);
   integrator->request_initial_step_size_target(directed_t_final);
   integrator->set_target_accuracy(accuracy);
-  simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
   simulator.get_mutable_context().set_time(0);
@@ -1454,10 +1831,13 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   EXPECT_THROW(simulator.StepTo(expected_t_final), std::runtime_error);
 
   // Now disable exceptions on violating the minimum step size and step again.
+  // Since we are changing the state between successive StepTo(.) calls, it is
+  // wise to call Initialize() prior to the second call.
   simulator.get_mutable_context().set_time(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
   integrator->set_throw_on_minimum_step_size_violation(false);
+  simulator.Initialize();
   simulator.StepTo(expected_t_final);
 
   // Verify that the step size was stretched and that exactly one "step" was
