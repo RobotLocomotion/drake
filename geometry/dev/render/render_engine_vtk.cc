@@ -1,6 +1,7 @@
 #include "drake/geometry/dev/render/render_engine_vtk.h"
 
 #include <limits>
+#include <utility>
 
 #include <vtkCamera.h>
 #include <vtkCubeSource.h>
@@ -236,6 +237,21 @@ RenderIndex RenderEngineVtk::RegisterVisual(
   RegistrationData data{properties, X_FG};
   shape.Reify(this, &data);
   return RenderIndex(static_cast<int>(actors_.size()) - 1);
+}
+
+optional<RenderIndex> RenderEngineVtk::RemoveVisual(RenderIndex index) {
+  DRAKE_DEMAND(index >= 0 && index < actors_.size());
+  for (int i = 0; i < 3; ++i) {
+    pipelines_[i]->renderer->RemoveActor(actors_[index][i]);
+  }
+  optional<RenderIndex> moved_index{};
+  RenderIndex last_index{static_cast<int>(actors_.size()) - 1};
+  if (index < last_index) {
+    moved_index = last_index;
+    std::swap(actors_[index], actors_[last_index]);
+    actors_.pop_back();
+  }
+  return moved_index;
 }
 
 void RenderEngineVtk::UpdateVisualPose(const Eigen::Isometry3d& X_WG,

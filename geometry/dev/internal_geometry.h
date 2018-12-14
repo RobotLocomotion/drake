@@ -232,6 +232,19 @@ class InternalGeometry {
   ProximityIndex proximity_index() const { return proximity_index_; }
   void set_proximity_index(ProximityIndex index) { proximity_index_ = index; }
 
+  /** Removes the illustration role assigned to this geometry -- if there was
+   no illustration role previously, this has no effect.  */
+  void RemoveIllustrationRole() {
+    illustration_props_ = nullopt;
+  }
+
+  /** Removes the perception role assigned to this geometry -- if there was
+   no perception role previously, this has no effect.  */
+  void RemovePerceptionRole() {
+    perception_props_ = nullopt;
+    render_index_ = RenderIndex();
+  }
+
   //@}
 
  private:
