@@ -94,7 +94,7 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
   ~TwoFreeBodiesConstraintTest() override {}
 
  protected:
-  std::unique_ptr<systems::Diagram<double>> diagram_{};
+  std::unique_ptr<systems::Diagram<double>> diagram_;
   multibody_plant::MultibodyPlant<double>* plant_{};
   std::unique_ptr<systems::Context<double>> diagram_context_;
   systems::Context<double>* plant_context_;

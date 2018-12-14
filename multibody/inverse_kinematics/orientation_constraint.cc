@@ -16,14 +16,14 @@ OrientationConstraint::OrientationConstraint(
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(2 * std::cos(theta_bound) + 1), Vector1d(3)),
       plant_{RefFromPtrOrThrow(plant)},
-      frameAbar_{frameAbar},
-      frameBbar_{frameBbar},
+      frameAbar_index_{frameAbar.index()},
+      frameBbar_index_{frameBbar.index()},
       R_AbarA_{R_AbarA},
       R_BbarB_{R_BbarB},
       context_(context) {
+  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   frameBbar.HasThisParentTreeOrThrow(&plant_.tree());
   frameAbar.HasThisParentTreeOrThrow(&plant_.tree());
-  DRAKE_DEMAND(context);
   if (theta_bound < 0) {
     throw std::invalid_argument(
         "OrientationConstraint: theta_bound should be non-negative.\n");
@@ -41,7 +41,7 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                    AutoDiffVecXd* y) const {
   // The constraint function is
-  //  g(q) = tr(R_AB).
+  //  g(q) = tr(R_AB(q)).
   // To derive the Jacobian of g, ∂g/∂q, we first differentiate
   // w.r.t. time to obtain
   //   ġ = tr(Ṙ_AB),
@@ -65,17 +65,19 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   //   ∂g/∂q = r_ABᵀ Jq_w_AB.
   y->resize(1);
   UpdateContextConfiguration(context_, plant_, math::autoDiffToValueMatrix(x));
+  const Frame<double>& frameAbar = plant_.get_frame(frameAbar_index_);
+  const Frame<double>& frameBbar = plant_.get_frame(frameBbar_index_);
   //
   const Matrix3<double> R_AbarBbar =
       plant_.tree()
-          .CalcRelativeTransform(*context_, frameAbar_, frameBbar_)
+          .CalcRelativeTransform(*context_, frameAbar, frameBbar)
           .linear();
   const Matrix3<double> R_AB =
       R_AbarA_.inverse().matrix() * R_AbarBbar * R_BbarB_.matrix();
   Eigen::MatrixXd Jq_V_AbarBbar(6, plant_.num_positions());
   plant_.tree().CalcJacobianSpatialVelocity(
-      *context_, JacobianWrtVariable::kQDot, frameBbar_,
-      Eigen::Vector3d::Zero() /* p_BQ */, frameAbar_, frameAbar_,
+      *context_, JacobianWrtVariable::kQDot, frameBbar,
+      Eigen::Vector3d::Zero() /* p_BQ */, frameAbar, frameAbar,
       &Jq_V_AbarBbar);
   // Since we're only concerned with the rotational portion,
   // Jq_w_AB = Jq_w_AbarBbar_A.

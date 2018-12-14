@@ -34,11 +34,11 @@ class OrientationConstraint : public solvers::Constraint {
 
   /**
    * Constructs an OrientationConstraint object.
-   * The frame A is fixed to a frame A̅, with orientatation R_AbarA measured
-   * in frame A̅. The frame B is fixed to a frame B̅, with orientation R_BbarB
+   * The frame A is fixed to a frame A̅, with orientatation `R_AbarA` measured
+   * in frame A̅. The frame B is fixed to a frame B̅, with orientation `R_BbarB`
    * measured in frame B. We constrain the angle between frame A and B to be
-   * less than theta_bound.
-   * @param plant The MultibodyPlant on which the constraint is imposed. @p plant
+   * less than `theta_bound`.
+   * @param plant The MultibodyPlant on which the constraint is imposed. `plant`
    *   should be alive during the lifetime of this constraint.
    * @param frameAbar The frame A̅ in the model to which frame A is fixed.
    * @param R_AbarA The orientation of frame A measured in frame A̅.
@@ -46,12 +46,15 @@ class OrientationConstraint : public solvers::Constraint {
    * @param R_BbarB The orientation of frame B measured in frame B̅.
    * @param theta_bound The bound on the angle difference between frame A's
    *   orientation and frame B's orientation. It is denoted as θ_bound in the
-   *   class documentation. @p theta_bound is in radians.
-   * @param context The Context that has been allocated for this @p tree. We
-   *   will update the context when evaluating the constraint. @p context should
+   *   class documentation. `theta_bound` is in radians.
+   * @param context The Context that has been allocated for this `tree`. We
+   *   will update the context when evaluating the constraint. `context` should
    *   be alive during the lifetime of this constraint.
-   * @pre angle_bound >= 0.
+   * @throws std::invalid_argument if `plant` is nullptr.
+   * @throws std::logic_error if `frameAbar` or `frameBbar` does not belong to
+   *   `plant`.
    * @throws std::invalid_argument if angle_bound < 0.
+   * @throws std::invalid_argument if `context` is nullptr.
    */
   OrientationConstraint(
       const multibody_plant::MultibodyPlant<double>* const plant,
@@ -78,8 +81,8 @@ class OrientationConstraint : public solvers::Constraint {
   }
 
   const multibody_plant::MultibodyPlant<double>& plant_;
-  const Frame<double>& frameAbar_;
-  const Frame<double>& frameBbar_;
+  const FrameIndex frameAbar_index_;
+  const FrameIndex frameBbar_index_;
   const math::RotationMatrix<double>& R_AbarA_;
   const math::RotationMatrix<double>& R_BbarB_;
   systems::Context<double>* const context_;

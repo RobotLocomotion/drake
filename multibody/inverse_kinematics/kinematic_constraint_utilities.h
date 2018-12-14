@@ -42,9 +42,9 @@ void UpdateContextConfiguration(
     const Eigen::Ref<const VectorX<double>>& q);
 
 /**
- * Normalize an Eigen vector of doubles. Throw a logic error if the vector is
- * close to zero. This function is used in the constructor of some kinematic
- * constraints.
+ * Normalize an Eigen vector of doubles. This function is used in the
+ * constructor of some kinematic constraints.
+ * @throws std::invalid_argument if the vector is close to zero.
  */
 template <typename DerivedA>
 typename std::enable_if<
@@ -60,7 +60,8 @@ NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
 
 /**
  * If `plant` is not nullptr, return a reference to the MultibodyPlant to which
- * it points. Otherwise, throw.
+ * it points.
+ * @throws std::invalid_argument if `plant` is nullptr.
  */
 const multibody_plant::MultibodyPlant<double>& RefFromPtrOrThrow(
     const multibody_plant::MultibodyPlant<double>* const plant);

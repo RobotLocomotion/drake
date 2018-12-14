@@ -10,21 +10,21 @@ namespace drake {
 namespace multibody {
 PositionConstraint::PositionConstraint(
     const multibody_plant::MultibodyPlant<double>* const plant,
-    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+    const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     systems::Context<double>* context)
     : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
                           p_AQ_lower, p_AQ_upper),
       plant_(RefFromPtrOrThrow(plant)),
-      frameB_{frameB},
-      frameA_{frameA},
+      frameA_index_(frameA.index()),
+      frameB_index_(frameB.index()),
       p_BQ_{p_BQ},
       context_{context} {
-  frameB_.HasThisParentTreeOrThrow(&plant_.tree());
-  frameA_.HasThisParentTreeOrThrow(&plant_.tree());
-  DRAKE_DEMAND(context);
+  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+  frameA.HasThisParentTreeOrThrow(&plant_.tree());
+  frameB.HasThisParentTreeOrThrow(&plant_.tree());
 }
 
 void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -39,12 +39,14 @@ void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                 AutoDiffVecXd* y) const {
   y->resize(3);
   UpdateContextConfiguration(context_, plant_, math::autoDiffToValueMatrix(x));
+  const Frame<double>& frameA = plant_.get_frame(frameA_index_);
+  const Frame<double>& frameB = plant_.get_frame(frameB_index_);
   Eigen::Vector3d p_AQ{};
-  plant_.tree().CalcPointsPositions(*context_, frameB_, p_BQ_, frameA_, &p_AQ);
+  plant_.tree().CalcPointsPositions(*context_, frameB, p_BQ_, frameA, &p_AQ);
   Eigen::MatrixXd Jq_V_ABq(6, plant_.num_positions());
   plant_.tree().CalcJacobianSpatialVelocity(*context_,
-                                            JacobianWrtVariable::kQDot, frameB_,
-                                            p_BQ_, frameA_, frameA_, &Jq_V_ABq);
+                                            JacobianWrtVariable::kQDot, frameB,
+                                            p_BQ_, frameA, frameA, &Jq_V_ABq);
   *y = math::initializeAutoDiffGivenGradientMatrix(
       p_AQ, Jq_V_ABq.bottomRows<3>() * math::autoDiffToGradientMatrix(x));
 }

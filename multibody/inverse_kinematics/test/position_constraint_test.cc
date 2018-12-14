@@ -26,8 +26,8 @@ TEST_F(IiwaKinematicConstraintTest, PositionConstraint) {
   const Eigen::Vector3d p_AQ_upper(0.2, 0.3, 0.4);
   const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_7");
   const Frame<double>& frameA = plant_->GetFrameByName("iiwa_link_3");
-  PositionConstraint constraint(plant_, frameB, p_BQ, frameA, p_AQ_lower,
-                                 p_AQ_upper, plant_context_);
+  PositionConstraint constraint(plant_, frameA, p_AQ_lower, p_AQ_upper, frameB,
+                                p_BQ, plant_context_);
 
   EXPECT_EQ(constraint.num_vars(), iiwa_autodiff_.tree().num_positions());
   EXPECT_EQ(constraint.num_constraints(), 3);
@@ -94,18 +94,18 @@ TEST_F(TwoFreeBodiesConstraintTest, PositionConstraint) {
 
   {
     PositionConstraint good_constraint(
-        plant_, plant_->tree().get_frame(body1_index_), p_BQ,
-        plant_->tree().get_frame(body2_index_),
+        plant_, plant_->tree().get_frame(body2_index_),
         p_AQ - Eigen::Vector3d::Constant(0.001),
-        p_AQ + Eigen::Vector3d::Constant(0.001), plant_context_);
+        p_AQ + Eigen::Vector3d::Constant(0.001),
+        plant_->tree().get_frame(body1_index_), p_BQ, plant_context_);
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
   }
   {
     PositionConstraint bad_constraint(
-        plant_, plant_->tree().get_frame(body1_index_), p_BQ,
-        plant_->tree().get_frame(body2_index_),
+        plant_, plant_->tree().get_frame(body2_index_),
         p_AQ - Eigen::Vector3d::Constant(0.002),
-        p_AQ - Eigen::Vector3d::Constant(0.001), plant_context_);
+        p_AQ - Eigen::Vector3d::Constant(0.001),
+        plant_->tree().get_frame(body1_index_), p_BQ, plant_context_);
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }
 }

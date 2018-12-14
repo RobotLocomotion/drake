@@ -19,26 +19,30 @@ class PositionConstraint : public solvers::Constraint {
 
   /**
    * Constructs PositionConstraint object.
-   * @param tree The multibody tree on which the constraint is imposed. @p tree
-   *   should be alive during the whole lifetime of this constraint.
-   * @param frameB Frame B.
-   * @param p_BQ The position of the point Q, rigidly attached to frame B,
-   *   measured and expressed in frame B.
-   * @param frameA_idx Frame A.
+   * @param plant The MultibodyPlant on which the constraint is imposed. `plant`
+   *   should be alive during the lifetime of this constraint.
+   * @param frameA The frame in which point Q's position is measured.
    * @param p_AQ_lower The lower bound on the position of point Q, measured and
    *   expressed in frame A.
    * @param p_AQ_upper The upper bound on the position of point Q, measured and
    *   expressed in frame A.
-   * @param context The Context that has been allocated for this @p tree. We
-   *   will update the context when evaluating the constraint. @p context should
+   * @param frameB The frame to which point Q is rigidly attached.
+   * @param p_BQ The position of the point Q, rigidly attached to frame B,
+   *   measured and expressed in frame B.
+   * @param context The Context that has been allocated for this `plant`. We
+   *   will update the context when evaluating the constraint. `context` should
    *   be alive during the lifetime of this constraint.
+   * @pre `frameA` and `frameB` must belong to `plant`.
+   * @pre p_AQ_lower(i) <= p_AQ_upper(i) for i = 1, 2, 3.
+   * @throws std::invalid_argument if `plant` is nullptr.
+   * @throws std::invalid_argument if `context` is nullptr.
    */
   PositionConstraint(const multibody_plant::MultibodyPlant<double>* const plant,
-                     const Frame<double>& frameB,
-                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                      const Frame<double>& frameA,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
+                     const Frame<double>& frameB,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                      systems::Context<double>* context);
 
   ~PositionConstraint() override {}
@@ -57,8 +61,8 @@ class PositionConstraint : public solvers::Constraint {
   }
 
   const multibody_plant::MultibodyPlant<double>& plant_;
-  const Frame<double>& frameB_;
-  const Frame<double>& frameA_;
+  const FrameIndex frameA_index_;
+  const FrameIndex frameB_index_;
   const Eigen::Vector3d p_BQ_;
   systems::Context<double>* const context_;
 };

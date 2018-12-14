@@ -17,7 +17,7 @@ namespace multibody {
  * falls within a gaze cone, originating from the camera eye.
  *
  * Mathematically the constraint is
- *    p_ST_Aᵀ * n_unit_A   ≥ 0
+ *      p_ST_Aᵀ * n_unit_A ≥ 0
  *   (p_ST_Aᵀ * n_unit_A)² ≥ (cosθ)²p_ST_Aᵀ * p_ST_A
  * where p_ST_A is the vector from S to T, expressed in frame A. n_unit_A is the
  * unit length directional vector representing the center ray of the cone.
@@ -28,7 +28,7 @@ class GazeTargetConstraint : public solvers::Constraint {
 
   /**
    * @param plant The MultibodyPlant on which the constraint is imposed.
-   *   @p plant should be alive during the lifetime of this constraint.
+   *   `plant` should be alive during the lifetime of this constraint.
    * @param frameA The frame to which the gaze cone is fixed.
    * @param p_AS The position of the cone source point S, measured and expressed
    *   in frame A.
@@ -38,14 +38,15 @@ class GazeTargetConstraint : public solvers::Constraint {
    * @param p_BT The position of the target point T, measured and expressed in
    *   frame B.
    * @param cone_half_angle The half angle of the cone. We denote it as θ in the
-   *   class documentation. @p cone_half_angle is in radians.
-   * @param context The Context that has been allocated for this @p plant. We
-   *   will update the context when evaluating the constraint. @p context should
+   *   class documentation. `cone_half_angle` is in radians.
+   * @param context The Context that has been allocated for this `plant`. We
+   *   will update the context when evaluating the constraint. `context` should
    *   be alive during the lifetime of this constraint.
-   * @pre @p n_A cannot be a zero vector.
-   * @pre @p 0 <= cone_half_angle <= pi.
-   * @throws std::invalid_argument is n_A is close to a zero vector.
-   * @throws std::invalid_argument if cone_half_angle is outside of the bound.
+   * @pre `frameA` and `frameB` must belong to `plant`.
+   * @throws std::invalid_argument if `plant` is nullptr.
+   * @throws std::invalid_argument if `n_A` is close to zero.
+   * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π].
+   * @throws std::invalid_argument if `context` is nullptr.
    */
   GazeTargetConstraint(
       const multibody_plant::MultibodyPlant<double>* const plant,
@@ -70,10 +71,10 @@ class GazeTargetConstraint : public solvers::Constraint {
         "GazeTargetConstraint::DoEval() does not work for symbolic variables.");
   }
   const multibody_plant::MultibodyPlant<double>& plant_;
-  const Frame<double>& frameA_;
+  const FrameIndex frameA_index_;
+  const FrameIndex frameB_index_;
   const Eigen::Vector3d p_AS_;
   const Eigen::Vector3d n_A_;
-  const Frame<double>& frameB_;
   const Eigen::Vector3d p_BT_;
   const double cone_half_angle_;
   const double cos_cone_half_angle_;

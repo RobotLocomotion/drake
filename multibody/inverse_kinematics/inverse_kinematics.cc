@@ -42,7 +42,7 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper) {
   auto constraint = std::make_shared<PositionConstraint>(
-      &plant_, frameB, p_BQ, frameA, p_AQ_lower, p_AQ_upper,
+      &plant_, frameA, p_AQ_lower, p_AQ_upper, frameB, p_BQ,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }

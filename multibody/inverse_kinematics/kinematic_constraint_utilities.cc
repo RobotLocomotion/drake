@@ -39,7 +39,7 @@ void UpdateContextConfiguration(
 
 const multibody_plant::MultibodyPlant<double>& RefFromPtrOrThrow(
     const multibody_plant::MultibodyPlant<double>* const plant) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
+  if (plant == nullptr) throw std::invalid_argument("plant is nullptr.");
   return *plant;
 }
 

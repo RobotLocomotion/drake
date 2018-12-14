@@ -19,10 +19,13 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
                           Vector1d(std::cos(angle_lower))),
       plant_(RefFromPtrOrThrow(plant)),
       frameA_index_(frameA.index()),
-      a_unit_A_(NormalizeVector(a_A)),
       frameB_index_(frameB.index()),
+      a_unit_A_(NormalizeVector(a_A)),
       b_unit_B_(NormalizeVector(b_B)),
       context_(context) {
+  if (context == nullptr) throw std::invalid_argument("context is nullptr.");
+  frameA.HasThisParentTreeOrThrow(&plant_.tree());
+  frameB.HasThisParentTreeOrThrow(&plant_.tree());
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
     throw std::invalid_argument(
