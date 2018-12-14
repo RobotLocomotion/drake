@@ -13,8 +13,8 @@
 /// warning that can indicate if something has changed in the system such that
 /// the final system no longer reproduces the expected baseline behavior.
 
-#include <queue>
 #include <memory>
+#include <queue>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>

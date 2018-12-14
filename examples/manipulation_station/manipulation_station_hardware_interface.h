@@ -6,7 +6,7 @@
 
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 

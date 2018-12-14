@@ -1,6 +1,6 @@
 #include "drake/examples/multibody/bouncing_ball/make_bouncing_ball_plant.h"
 
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace examples {
