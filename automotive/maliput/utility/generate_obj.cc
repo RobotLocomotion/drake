@@ -50,9 +50,9 @@ void CoverLaneWithQuads(
   const double linear_tolerance =
     lane->segment()->junction()->road_geometry()->linear_tolerance();
   const double s_max = lane->length();
-  for (double s0 = 0; s0 < s_max - linear_tolerance; s0 += grid_unit) {
-    double s1 = s0 + grid_unit;
-    if (s1 > s_max) { s1 = s_max; }
+  for (double s0 = 0, s1; s0 < s_max; s0 = s1) {
+    s1 = s0 + grid_unit;
+    if (s1 > s_max - linear_tolerance) { s1 = s_max; }
 
     const api::RBounds rb0 = use_driveable_bounds ?
         lane->driveable_bounds(s0) : lane->lane_bounds(s0);
@@ -126,9 +126,9 @@ void StripeLaneBounds(GeoMesh* mesh, const api::Lane* lane,
   const double linear_tolerance =
     lane->segment()->junction()->road_geometry()->linear_tolerance();
   const double s_max = lane->length();
-  for (double s0 = 0; s0 < s_max - linear_tolerance; s0 += grid_unit) {
-    double s1 = s0 + grid_unit;
-    if (s1 > s_max) { s1 = s_max; }
+  for (double s0 = 0, s1; s0 < s_max; s0 = s1) {
+    s1 = s0 + grid_unit;
+    if (s1 > s_max - linear_tolerance) { s1 = s_max; }
 
     api::RBounds rb0 = lane->lane_bounds(s0);
     api::RBounds rb1 = lane->lane_bounds(s1);
