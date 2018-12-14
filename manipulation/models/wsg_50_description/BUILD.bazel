@@ -18,8 +18,9 @@ drake_cc_googletest(
     srcs = ["urdf/test/wsg50_mesh_collision_test.cc"],
     data = [":models"],
     deps = [
-        "//attic/multibody/parsers",
         "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

@@ -315,7 +315,7 @@
   </joint>
   <link name="left_iiwa_link_ee_kuka">
     </link>
-  <joint name="tool0_joint" type="fixed">
+  <joint name="left_iiwa_tool0_joint" type="fixed">
     <parent link="left_iiwa_link_7"/>
     <child link="left_iiwa_link_ee"/>
     <origin rpy="0 -1.570796326794897 0" xyz="0 0 0.045"/>
@@ -724,7 +724,7 @@
   </joint>
   <link name="right_iiwa_link_ee_kuka">
     </link>
-  <joint name="tool0_joint" type="fixed">
+  <joint name="right_iiwa_tool0_joint" type="fixed">
     <parent link="right_iiwa_link_7"/>
     <child link="right_iiwa_link_ee"/>
     <origin rpy="0 -1.570796326794897 0" xyz="0 0 0.045"/>

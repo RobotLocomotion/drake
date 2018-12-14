@@ -1,0 +1,40 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:private"],
+)
+
+drake_cc_googletest(
+    name = "dual_iiwa14_polytope_collision_test",
+    data = ["//manipulation/models/iiwa_description:models"],
+    deps = [
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "jaco_arm_test",
+    data = ["//manipulation/models/jaco_description:models"],
+    deps = [
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wsg_50_mesh_collision_test",
+    data = ["//manipulation/models/wsg_50_description:models"],
+    deps = [
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+    ],
+)
+
+add_lint_tests()
