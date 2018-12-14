@@ -32,7 +32,6 @@
 ///   @defgroup manipulation_systems Manipulation
 ///   @defgroup message_passing Message Passing
 ///   @defgroup perception_systems Perception
-///   @defgroup discrete_systems Discrete Systems
 ///   @defgroup stochastic_systems Stochastic Systems
 ///   @defgroup visualization Visualization
 ///   @defgroup example_systems Examples

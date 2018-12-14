@@ -691,8 +691,7 @@ class LeafSystem : public System<T> {
   /// offset = @p offset_sec. The event does not have a custom callback
   /// function, and its trigger will be set to Event::TriggerType::kPeriodic.
   /// Its attribute will be an Event<T>::PeriodicAttribute of @p offset_sec and
-  /// @p period_sec. Authors are encouraged to read @ref discrete_systems for
-  /// implications of mixing discrete and continuous systems.
+  /// @p period_sec.
   void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
     DeclarePeriodicEvent<DiscreteUpdateEvent<T>>(period_sec, offset_sec);
   }
