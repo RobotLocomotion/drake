@@ -803,8 +803,9 @@ void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
   // M[i][j](0, 0) = M_ij_diagonal(0, k)
   // M[i][j](1, 1) = M_ij_diagonal(1, k)
   // where k = (2n - 1) * i / 2 + j - i - 1, namely k is the index of X(i, j)
-  // in the vector X_upper_diagonal, whee X_upper_diagonal is obtained by
-  // stacking each row of the upper diagonal part in X to a row vector.
+  // in the vector X_upper_diagonal, where X_upper_diagonal is obtained by
+  // stacking each row of the upper diagonal part (not including the diagonal
+  // entries) in X to a row vector.
   *M_ij_diagonal = prog->NewContinuousVariables<2, Eigen::Dynamic>(
       2, (n - 1) * n / 2, "sdd_slack_M");
   int k = 0;
@@ -854,18 +855,14 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   AddSlackVariableForScaledDiagonallyDominantMatrixConstraint<
       symbolic::Variable>(X, this, &M_ij_diagonal, &M);
 
-  // k is the index of X(i, j) in the vector X_upper_diagonal, whee
+  // k is the index of X(i, j) in the vector X_upper_diagonal, where
   // X_upper_diagonal is obtained by stacking each row of the upper diagonal
   // part in X to a row vector.
   auto ij_to_k = [&n](int i, int j) {
     return (2 * n - 1 - i) * i / 2 + j - i - 1;
   };
-  // A_diagonal * diagonal_vars = M[0][i](1, 1) + M[1][i](1, 1) + ... +
-  // M[i-1][i](1, 1) - X(i, i) + M[i][i+1](0, 0) + M[i][i+2](0, 0) + ... +
-  // M[i][n-1](0, 0);
+  // diagonal_sum_var = [M_ij_diagonal(:); X(0, 0); X(1, 1); ...; X(n-1, n-1)]
   const int n_square = n * n;
-  Eigen::MatrixXd A_diagonal_sum(n, n_square);
-  A_diagonal_sum.setZero();
   VectorXDecisionVariable diagonal_sum_var(n_square);
   for (int i = 0; i < (n_square - n) / 2; ++i) {
     diagonal_sum_var.segment<2>(2 * i) = M_ij_diagonal.col(i);
@@ -878,6 +875,11 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   auto rotated_lorentz_cone_constraint =
       std::make_shared<RotatedLorentzConeConstraint>(
           Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero());
+  // A_diagonal_sum.row(i) * diagonal_sum_var = M[0][i](1, 1) + M[1][i](1, 1) +
+  // ... + M[i-1][i](1, 1) - X(i, i) + M[i][i+1](0, 0) + M[i][i+2](0, 0) + ... +
+  // M[i][n-1](0, 0);
+  Eigen::MatrixXd A_diagonal_sum(n, n_square);
+  A_diagonal_sum.setZero();
   for (int i = 0; i < n; ++i) {
     // The coefficient for X(i, i)
     A_diagonal_sum(i, n_square - n + i) = -1;
