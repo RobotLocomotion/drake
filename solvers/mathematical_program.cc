@@ -212,8 +212,7 @@ MathematicalProgram::NewNonnegativePolynomial(
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(
-          Q.cast<symbolic::Expression>());
+      AddScaledDiagonallyDominantMatrixConstraint(Q);
       break;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
