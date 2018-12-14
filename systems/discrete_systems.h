@@ -178,8 +178,8 @@ and continuous signals.
 Drake's choice of 2(a) dictates what value a discrete quantity will have when
 evaluated at times _between_ update times. In particular, consider a discrete
 variable x evaluated during a simulation from a publish, update, or derivative
-function at times `t ∈ ((n-1)*h, n*h]`. x will be seen to have value
-`x(t) = xₙ` (_not_ `xₙ₋₁`). You can see that clearly by inspection of
+function at times `t ∈ (n*h, (n+1)*h]`. x will be seen to have value
+`x(t) = xₙ₊₁` (_not_ `xₙ`). You can see that clearly by inspection of
 Figure 2(a).
 
 <h3>Timing of publish vs. discrete update events in Drake</h3>
@@ -195,13 +195,6 @@ updated. Thus if we have `t = n*h` as in the discussion above, then
 by the scheduling of these updates. For example, evaluating an input u(t) yields
 u⁻(t) before discrete updates, and u⁺(t) afterwards, meaning that the input
 evaluation is carried out using x⁻(t) or x⁺(t), respectively.
-
-For a discrete system, you can think of xₙ⁻(tₙ) as the state's value at
-the end of the nᵗʰ discrete step and the beginning of step n+1. Then discrete
-updates occur, yielding xₙ₊₁⁺, with time unchanged at tₙ. Initialization can
-be considered the 0ᵗʰ "step", so x₀⁻(t₀) is the state at the end of
-initialization, while x₁⁺(t₀) is the state just after the discrete update at
-the start of step 1.
 
 With those distinctions drawn, we can define Drake's state update behavior
 during a time step:
