@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace test {
 
 /// This plant models the free motion of a torque free body in space.
@@ -31,8 +30,7 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class AxiallySymmetricFreeBodyPlant final :
-    public multibody_plant::MultibodyPlant<T> {
+class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant)
 
@@ -100,6 +98,5 @@ class AxiallySymmetricFreeBodyPlant final :
 };
 
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

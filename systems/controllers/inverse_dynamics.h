@@ -76,7 +76,7 @@ class InverseDynamics : public LeafSystem<T> {
 #endif
 
   DRAKE_DEPRECATED("Please use constructor with InverseDynamicsMode.")
-  InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
+  InverseDynamics(const multibody::MultibodyPlant<T>* plant,
                   bool pure_gravity_compensation);
 
   // @TODO(edrumwri) Find a cleaner way of approaching the consideration of
@@ -105,7 +105,7 @@ class InverseDynamics : public LeafSystem<T> {
    * @pre The plant must be finalized (i.e., plant.is_finalized() must return
    * `true`).
    */
-  InverseDynamics(const multibody::multibody_plant::MultibodyPlant<T>* plant,
+  InverseDynamics(const multibody::MultibodyPlant<T>* plant,
                   InverseDynamicsMode mode);
 
   ~InverseDynamics() override;
@@ -151,8 +151,7 @@ class InverseDynamics : public LeafSystem<T> {
   void CalcOutputForce(const Context<T>& context,
                        BasicVector<T>* force) const;
 
-  const multibody::multibody_plant::MultibodyPlant<T>* multibody_plant_{
-      nullptr};
+  const multibody::MultibodyPlant<T>* multibody_plant_{nullptr};
 
   // Mode dictates whether to do inverse dynamics or just gravity compensation.
   const InverseDynamicsMode mode_;

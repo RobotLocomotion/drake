@@ -44,7 +44,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `context` is nullptr.
    */
   AngleBetweenVectorsConstraint(
-      const multibody_plant::MultibodyPlant<double>* const plant,
+      const MultibodyPlant<double>* const plant,
       const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& a_A,
       const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& b_B,
       double angle_lower, double angle_upper,
@@ -65,7 +65,7 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
         "AngleBetweenVectorsConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
-  const multibody_plant::MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>& plant_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d a_unit_A_;

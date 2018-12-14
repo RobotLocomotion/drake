@@ -103,7 +103,7 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
  If a `<surface>` is not found, it returns the coefficients for a
  frictionless surface. If `<surface>` is found, all other nested elements
  are required and an exception is thrown if not present.  */
-multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
+CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
 
 // TODO(sam.creasey) Making this operate specifically on sdf::Visual

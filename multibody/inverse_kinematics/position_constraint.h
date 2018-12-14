@@ -37,7 +37,7 @@ class PositionConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `context` is nullptr.
    */
-  PositionConstraint(const multibody_plant::MultibodyPlant<double>* const plant,
+  PositionConstraint(const MultibodyPlant<double>* const plant,
                      const Frame<double>& frameA,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
                      const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
@@ -60,7 +60,7 @@ class PositionConstraint : public solvers::Constraint {
         "PositionConstraint::DoEval() does not work for symbolic variables.");
   }
 
-  const multibody_plant::MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>& plant_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d p_BQ_;

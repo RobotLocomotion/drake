@@ -21,8 +21,6 @@ namespace detail {
 namespace {
 
 using geometry::GeometryId;
-using multibody_plant::CoulombFriction;
-using multibody_plant::MultibodyPlant;
 
 // Fixture to setup a simple model with both collision and visual geometry,
 // loaded with the SDF parser.

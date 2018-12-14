@@ -29,7 +29,7 @@ void UpdateContextConfiguration(const Eigen::Ref<const VectorX<AutoDiffXd>>& q,
 
 void UpdateContextConfiguration(
     drake::systems::Context<double>* context,
-    const drake::multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const MultibodyPlant<double>& plant,
     const Eigen::Ref<const VectorX<double>>& q) {
   DRAKE_ASSERT(context);
   if (q != plant.GetPositions(*context)) {
@@ -37,8 +37,8 @@ void UpdateContextConfiguration(
   }
 }
 
-const multibody_plant::MultibodyPlant<double>& RefFromPtrOrThrow(
-    const multibody_plant::MultibodyPlant<double>* const plant) {
+const MultibodyPlant<double>& RefFromPtrOrThrow(
+    const MultibodyPlant<double>* const plant) {
   if (plant == nullptr) throw std::invalid_argument("plant is nullptr.");
   return *plant;
 }

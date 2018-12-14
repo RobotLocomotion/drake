@@ -57,7 +57,7 @@ class OrientationConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `context` is nullptr.
    */
   OrientationConstraint(
-      const multibody_plant::MultibodyPlant<double>* const plant,
+      const MultibodyPlant<double>* const plant,
       const Frame<double>& frameAbar,
       const math::RotationMatrix<double>& R_AbarA,
       const Frame<double>& frameBbar,
@@ -80,7 +80,7 @@ class OrientationConstraint : public solvers::Constraint {
         "variables.");
   }
 
-  const multibody_plant::MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>& plant_;
   const FrameIndex frameAbar_index_;
   const FrameIndex frameBbar_index_;
   const math::RotationMatrix<double>& R_AbarA_;

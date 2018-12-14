@@ -21,7 +21,6 @@ using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using multibody_plant::CoulombFriction;
 using std::make_unique;
 
 namespace {

@@ -9,8 +9,7 @@
 
 namespace drake {
 namespace multibody {
-InverseKinematics::InverseKinematics(
-    const multibody_plant::MultibodyPlant<double>& plant)
+InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
       context_(plant_.CreateDefaultContext()),

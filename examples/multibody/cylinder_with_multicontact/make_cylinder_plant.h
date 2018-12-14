@@ -34,10 +34,10 @@ namespace cylinder_with_multicontact {
 ///   multibody plant to be a source for that scene graph and it will also
 ///   register geometry for contact modeling.
 /// @throws std::exception if scene_graph is nullptr.
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeCylinderPlant(
     double radius, double length, double mass,
-    const drake::multibody::multibody_plant::CoulombFriction<double>&
+    const drake::multibody::CoulombFriction<double>&
     surface_friction, const Vector3<double>& gravity_W,
     double dt,
     geometry::SceneGraph<double>* scene_graph = nullptr);

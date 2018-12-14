@@ -29,7 +29,6 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RollPitchYawd;
-using multibody_plant::MultibodyPlant;
 using systems::Context;
 
 // Verifies model instances are correctly created in the plant.

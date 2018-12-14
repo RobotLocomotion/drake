@@ -38,10 +38,10 @@ using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::Joint;
+using multibody::MultibodyPlant;
 using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
-using multibody::multibody_plant::MultibodyPlant;
 
 const int kNumDofIiwa = 7;
 

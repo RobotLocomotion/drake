@@ -24,7 +24,6 @@ using systems::IntegratorBase;
 using systems::Simulator;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // This parameterized fixture allows us to run inclined planes tests using
@@ -225,7 +224,6 @@ INSTANTIATE_TEST_CASE_P(ContinuousAndTimeSteppingTest, InclinedPlaneTest,
                         ::testing::Bool());
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

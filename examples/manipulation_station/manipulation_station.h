@@ -228,13 +228,13 @@ class ManipulationStation : public systems::Diagram<T> {
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() have been
   /// called.
   ///
-  /// @see multibody::multibody_plant::MultibodyPlant<T>::Finalize()
+  /// @see multibody::MultibodyPlant<T>::Finalize()
   void Finalize();
 
   /// Returns a reference to the main plant responsible for the dynamics of
   /// the robot and the environment.  This can be used to, e.g., add
   /// additional elements into the world before calling Finalize().
-  const multibody::multibody_plant::MultibodyPlant<T>& get_multibody_plant()
+  const multibody::MultibodyPlant<T>& get_multibody_plant()
       const {
     return *plant_;
   }
@@ -242,7 +242,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Returns a mutable reference to the main plant responsible for the
   /// dynamics of the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
-  multibody::multibody_plant::MultibodyPlant<T>& get_mutable_multibody_plant() {
+  multibody::MultibodyPlant<T>& get_mutable_multibody_plant() {
     return *plant_;
   }
 
@@ -261,8 +261,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Return a reference to the plant used by the inverse dynamics controller
   /// (which contains only a model of the iiwa + equivalent mass of the
   /// gripper).
-  const multibody::multibody_plant::MultibodyPlant<T>& get_controller_plant()
-      const {
+  const multibody::MultibodyPlant<T>& get_controller_plant() const {
     return *owned_controller_plant_;
   }
 
@@ -365,13 +364,12 @@ class ManipulationStation : public systems::Diagram<T> {
   void MakeIiwaControllerModel();
 
   // These are only valid until Finalize() is called.
-  std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>> owned_plant_;
+  std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
   std::unique_ptr<geometry::SceneGraph<T>> owned_scene_graph_;
 
   // These are valid for the lifetime of this system.
-  std::unique_ptr<multibody::multibody_plant::MultibodyPlant<T>>
-      owned_controller_plant_;
-  multibody::multibody_plant::MultibodyPlant<T>* plant_;
+  std::unique_ptr<multibody::MultibodyPlant<T>> owned_controller_plant_;
+  multibody::MultibodyPlant<T>* plant_;
   geometry::SceneGraph<T>* scene_graph_;
 
   // Populated by RegisterIiwaControllerModel() and

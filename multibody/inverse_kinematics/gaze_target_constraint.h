@@ -49,7 +49,7 @@ class GazeTargetConstraint : public solvers::Constraint {
    * @throws std::invalid_argument if `context` is nullptr.
    */
   GazeTargetConstraint(
-      const multibody_plant::MultibodyPlant<double>* const plant,
+      const MultibodyPlant<double>* const plant,
       const Frame<double>& frameA,
       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
       const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
@@ -70,7 +70,7 @@ class GazeTargetConstraint : public solvers::Constraint {
     throw std::logic_error(
         "GazeTargetConstraint::DoEval() does not work for symbolic variables.");
   }
-  const multibody_plant::MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>& plant_;
   const FrameIndex frameA_index_;
   const FrameIndex frameB_index_;
   const Eigen::Vector3d p_AS_;

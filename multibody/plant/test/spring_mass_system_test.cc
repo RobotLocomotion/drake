@@ -17,7 +17,6 @@ using systems::Context;
 using systems::Simulator;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // Fixture to verify a MultibodyPlant model for a spring-mass system with
@@ -212,7 +211,6 @@ TEST_F(SpringMassSystemTest, OverDampedCase) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

@@ -28,8 +28,6 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
-using multibody_plant::CoulombFriction;
-using multibody_plant::MultibodyPlant;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -354,7 +352,7 @@ std::string LoadSdf(
 void AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
@@ -436,7 +434,7 @@ void AddFramesFromSpecification(
     ModelInstanceIndex model_instance,
     sdf::ElementPtr parent_element,
     const Frame<double>& parent_frame,
-    multibody_plant::MultibodyPlant<double>* plant) {
+    MultibodyPlant<double>* plant) {
   // Per its API documentation, `GetElement(...)` will create a new element if
   // one does not already exist rather than return `nullptr`; use
   // `HasElement(...)` instead.
@@ -470,7 +468,7 @@ void AddFramesFromSpecification(
 ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
@@ -517,7 +515,7 @@ ModelInstanceIndex AddModelFromSpecification(
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name_in,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
@@ -547,7 +545,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());

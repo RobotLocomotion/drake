@@ -32,7 +32,7 @@ namespace detail {
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace detail
