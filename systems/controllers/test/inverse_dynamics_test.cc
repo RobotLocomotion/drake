@@ -21,7 +21,7 @@
 using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
 using std::make_unique;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 namespace drake {
 namespace systems {

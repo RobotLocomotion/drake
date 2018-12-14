@@ -10,7 +10,7 @@ namespace test {
 
 void LoadFromSdf(
     const std::string& base_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   // The empty-string second argument here means that the model_name comes from
   // the "name" attribute of the SDF.  This is a sensible default for the unit
@@ -21,7 +21,7 @@ void LoadFromSdf(
 
 void LoadFromUrdf(
     const std::string& base_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   // The empty-string second argument here means that the model_name comes from
   // the "name" attribute of the URDF.  This is a sensible default for the unit

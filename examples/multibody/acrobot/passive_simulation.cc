@@ -23,7 +23,7 @@ using geometry::SourceId;
 using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::ImplicitEulerIntegrator;
 using systems::RungeKutta3Integrator;

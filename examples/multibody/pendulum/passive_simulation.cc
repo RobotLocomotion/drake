@@ -22,7 +22,7 @@ using geometry::SourceId;
 using lcm::DrakeLcm;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::ImplicitEulerIntegrator;
 using systems::RungeKutta3Integrator;

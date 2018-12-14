@@ -9,7 +9,7 @@ using drake::multibody::internal::UpdateContextConfiguration;
 namespace drake {
 namespace multibody {
 PositionConstraint::PositionConstraint(
-    const multibody_plant::MultibodyPlant<double>* const plant,
+    const MultibodyPlant<double>* const plant,
     const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,

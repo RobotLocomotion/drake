@@ -41,8 +41,8 @@ using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
 using drake::multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::CoulombFriction;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 
 int do_main() {

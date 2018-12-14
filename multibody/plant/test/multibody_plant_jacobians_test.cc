@@ -21,7 +21,6 @@
 namespace drake {
 
 namespace multibody {
-namespace multibody_plant {
 
 using test::KukaIiwaModelTests;
 
@@ -154,6 +153,5 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

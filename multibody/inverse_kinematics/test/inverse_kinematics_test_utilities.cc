@@ -5,7 +5,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::SceneGraph;
-using drake::multibody::multibody_plant::MultibodyPlant;
 
 namespace drake {
 namespace multibody {
@@ -86,17 +85,15 @@ std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
 }
 
 template <typename T>
-std::unique_ptr<multibody_plant::MultibodyPlant<T>>
-ConstructTwoFreeBodiesPlant() {
-  return ConstructTwoFreeBodiesHelper<multibody_plant::MultibodyPlant<T>>();
+std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
+  return ConstructTwoFreeBodiesHelper<MultibodyPlant<T>>();
 }
 
-std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
+std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, double time_step) {
   const std::string file_path =
       "drake/manipulation/models/iiwa_description/sdf/" + iiwa_sdf_name;
-  auto plant =
-      std::make_unique<multibody_plant::MultibodyPlant<double>>(time_step);
+  auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
   Parser(plant.get()).AddModelFromFile(FindResourceOrThrow(file_path));
   plant->WeldFrames(plant->world_frame(),
                     plant->GetFrameByName("iiwa_link_0"));
@@ -112,9 +109,9 @@ template std::unique_ptr<MultibodyTree<double>>
 ConstructTwoFreeBodies<double>();
 template std::unique_ptr<MultibodyTree<AutoDiffXd>>
 ConstructTwoFreeBodies<AutoDiffXd>();
-template std::unique_ptr<multibody_plant::MultibodyPlant<double>>
+template std::unique_ptr<MultibodyPlant<double>>
 ConstructTwoFreeBodiesPlant<double>();
-template std::unique_ptr<multibody_plant::MultibodyPlant<AutoDiffXd>>
+template std::unique_ptr<MultibodyPlant<AutoDiffXd>>
 ConstructTwoFreeBodiesPlant<AutoDiffXd>();
 }  // namespace multibody
 }  // namespace drake

@@ -48,8 +48,8 @@ using systems::RungeKutta3Integrator;
 using systems::SemiExplicitEulerIntegrator;
 
 // "multibody" namespace is ambiguous here without "drake::".
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::CoulombFriction;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::QuaternionFloatingMobilizer;
 

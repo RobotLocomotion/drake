@@ -12,7 +12,7 @@ using drake::multibody::internal::UpdateContextConfiguration;
 namespace drake {
 namespace multibody {
 GazeTargetConstraint::GazeTargetConstraint(
-    const multibody_plant::MultibodyPlant<double>* const plant,
+    const MultibodyPlant<double>* const plant,
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& p_AS,
     const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,

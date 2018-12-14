@@ -6,7 +6,6 @@
 
 using drake::multibody::internal::IiwaKinematicConstraintTest;
 using drake::multibody::internal::TwoFreeBodiesConstraintTest;
-using drake::multibody::multibody_plant::MultibodyPlant;
 using drake::systems::Context;
 
 namespace drake {

@@ -38,7 +38,7 @@ void UpdateContextConfiguration(const Eigen::Ref<const VectorX<AutoDiffXd>>& q,
  */
 void UpdateContextConfiguration(
     drake::systems::Context<double>* context,
-    const multibody_plant::MultibodyPlant<double>& plant,
+    const MultibodyPlant<double>& plant,
     const Eigen::Ref<const VectorX<double>>& q);
 
 /**
@@ -63,8 +63,8 @@ NormalizeVector(const Eigen::MatrixBase<DerivedA>& a) {
  * it points.
  * @throws std::invalid_argument if `plant` is nullptr.
  */
-const multibody_plant::MultibodyPlant<double>& RefFromPtrOrThrow(
-    const multibody_plant::MultibodyPlant<double>* const plant);
+const MultibodyPlant<double>& RefFromPtrOrThrow(
+    const MultibodyPlant<double>* const plant);
 
 }  // namespace internal
 }  // namespace multibody

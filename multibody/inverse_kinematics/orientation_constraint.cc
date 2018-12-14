@@ -9,7 +9,7 @@ using drake::multibody::internal::UpdateContextConfiguration;
 namespace drake {
 namespace multibody {
 OrientationConstraint::OrientationConstraint(
-    const multibody_plant::MultibodyPlant<double>* const plant,
+    const MultibodyPlant<double>* const plant,
     const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
     const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
     double theta_bound, systems::Context<double>* context)

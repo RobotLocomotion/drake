@@ -25,13 +25,12 @@ std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies();
  * Constructs a MultibodyPlant consisting of two free bodies.
  */
 template <typename T>
-std::unique_ptr<multibody_plant::MultibodyPlant<T>>
-ConstructTwoFreeBodiesPlant();
+std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant();
 
 /**
  * Constructs a MultibodyPlant consisting of an Iiwa robot.
  */
-std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
+std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, double time_step);
 
 /**
@@ -74,7 +73,7 @@ class IiwaKinematicConstraintTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<systems::Diagram<double>> diagram_{};
-  multibody_plant::MultibodyPlant<double>* plant_{};
+  MultibodyPlant<double>* plant_{};
   geometry::SceneGraph<double>* scene_graph_{};
   std::unique_ptr<systems::Context<double>> diagram_context_;
   systems::Context<double>* plant_context_;
@@ -95,7 +94,7 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<systems::Diagram<double>> diagram_;
-  multibody_plant::MultibodyPlant<double>* plant_{};
+  MultibodyPlant<double>* plant_{};
   std::unique_ptr<systems::Context<double>> diagram_context_;
   systems::Context<double>* plant_context_;
   MultibodyTreeSystem<AutoDiffXd> two_bodies_autodiff_;

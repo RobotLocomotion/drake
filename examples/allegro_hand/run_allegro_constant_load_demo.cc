@@ -27,7 +27,7 @@ namespace drake {
 namespace examples {
 namespace allegro_hand {
 
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 DEFINE_double(constant_load, 0, "the constant load on each joint, Unit [Nm]."
               "Suggested load is in the order of 0.01 Nm. When input value"

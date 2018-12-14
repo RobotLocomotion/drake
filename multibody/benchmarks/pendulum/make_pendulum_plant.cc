@@ -15,15 +15,8 @@ using geometry::Cylinder;
 using geometry::FrameId;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::RotationalInertia;
-using drake::multibody::SpatialInertia;
-using drake::multibody::UniformGravityFieldElement;
-using drake::multibody::UnitInertia;
 
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<MultibodyPlant<double>>
 MakePendulumPlant(const PendulumParameters& params,
                   SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();

@@ -24,7 +24,7 @@ using geometry::SceneGraph;
 using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::JointActuator;
 using multibody::RevoluteJoint;
