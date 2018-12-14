@@ -1026,21 +1026,23 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 }
 
 // A hybrid discrete-continuous system:
-// x[n+1] = sin(1.234*t)
-// y[n] = x[n]
-class SinusoidalHybridSystem : public LeafSystem<double> {
+//   xₙ₊₁ = sin(1.234*t)
+//   yₙ = xₙ
+// With proper initial conditions, this should produce a one-step-delayed
+// sample of the periodic function, so that yₙ = sin(1.234 * (n-1)*h).
+class SinusoidalDelayHybridSystem : public LeafSystem<double> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalHybridSystem)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalDelayHybridSystem)
 
-  SinusoidalHybridSystem() {
+  SinusoidalDelayHybridSystem() {
     this->DeclarePeriodicDiscreteUpdate(kUpdatePeriod, 0.0);
     this->DeclareDiscreteState(1 /* single state variable */);
-    this->DeclareVectorOutputPort(
-        "y", BasicVector<double>(1), &SinusoidalHybridSystem::CalcOutput);
+    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
+                                  &SinusoidalDelayHybridSystem::CalcOutput);
   }
 
-  const double kSinusoidalFrequency = 1.234;
-  const double kUpdatePeriod = 0.25;
+  static constexpr double kSinusoidalFrequency = 1.234;
+  static constexpr double kUpdatePeriod = 0.25;
 
  private:
   void DoCalcDiscreteVariableUpdates(
@@ -1051,31 +1053,37 @@ class SinusoidalHybridSystem : public LeafSystem<double> {
     (*x_next)[0] = std::sin(kSinusoidalFrequency * t);
   }
 
-  void CalcOutput(
-      const Context<double>& context, BasicVector<double>* output) const {
+  void CalcOutput(const Context<double>& context,
+                  BasicVector<double>* output) const {
     (*output)[0] = context.get_discrete_state()[0];  // y = x.
   }
 };
 
 // Tests that sinusoidal hybrid system that is not periodic in the update period
 // produces the result from simulating the discrete system:
-// xₙ₊₁ = sin(kSinusoidalFrequency * n * h)
-// yₙ = xₙ
-// x₀ = π
-// where h is the update period.
+//   xₙ₊₁ = sin(f * n * h)
+//   yₙ = xₙ
+//   x₀ = sin(f * -1 * h)
+// where h is the update period and f is the frequency of the sinusoid.
+// This should be a one-step delayed discrete sampling of the sinusoid.
 GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
-  DiagramBuilder<double> builder;
+  const double h = SinusoidalDelayHybridSystem::kUpdatePeriod;
+  const double f = SinusoidalDelayHybridSystem::kSinusoidalFrequency;
 
   // Build the diagram.
-  auto sinusoidal_system = builder.AddSystem<SinusoidalHybridSystem>();
+  DiagramBuilder<double> builder;
+  auto sinusoidal_system = builder.AddSystem<SinusoidalDelayHybridSystem>();
   auto logger = builder.AddSystem<SignalLogger<double>>(1 /* input size */);
+  logger->set_publish_period(h);
   builder.Connect(*sinusoidal_system, *logger);
   auto diagram = builder.Build();
 
   // Simulator.
   const double t_final = 10.0;
-  const double initial_value = M_PI;
+  const double initial_value = std::sin(-f * h);  // = sin(f*-1*h)
   Simulator<double> simulator(*diagram);
+  simulator.set_publish_at_initialization(false);  // Remove these when #10132
+  simulator.set_publish_every_time_step(false);    // lands.
   simulator.get_mutable_context().get_mutable_discrete_state()[0] =
       initial_value;
   simulator.StepTo(t_final);
@@ -1083,31 +1091,26 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   // Set a very tight tolerance value.
   const double eps = 1e-14;
 
-  // Get the output from the signal logger. It will look like this in the signal
-  // logger:
+  // Get the output from the signal logger. It will look like this in the
+  // signal logger:
   //
-  // y value    n    corresponding time   signal logger value
-  // --------------------------------------------------------
-  // y₀         0    N/A                  initial value
-  // y₁         1    t = 0                sin(0)
-  // y₂         2    t = period           sin(period * frequency)
-  // y₃         3    t = 2 * period       sin(2 * period * frequency)
+  // y value    n    corresponding time   signal logger value (delayed)
+  // -------   ---   ------------------   -----------------------------
+  // y₀         0    0                    sin(-f h)
+  // y₁         1    t = h                sin(0)
+  // y₂         2    t = 2 h              sin(f h)
+  // y₃         3    t = 3 h              sin(f 2 h)
   // ...
   const VectorX<double> times = logger->sample_times();
   const MatrixX<double> data = logger->data();
-  ASSERT_GT(times.size(), 0);
+
+  ASSERT_EQ(times.size(), std::round(t_final/h) + 1);
   ASSERT_EQ(data.rows(), 1);
-  for (int i = 0; i < times.size(); ++i) {
-    const double y = data(0, i);
-    const double n = std::round(times[i] / sinusoidal_system->kUpdatePeriod);
-    // Values for n = 0 are a special case, handled here (they're not computed
-    // according to the formula in the test - it's just an initial value).
-    if (n == 0.0) {
-      ASSERT_NEAR(y, initial_value, eps);
-    } else {
-      EXPECT_NEAR(std::sin((times[i] - sinusoidal_system->kUpdatePeriod) *
-          sinusoidal_system->kSinusoidalFrequency), y, eps);
-    }
+  for (int n = 0; n < times.size(); ++n) {
+    const double t_n = times[n];
+    const double y_n = data(0, n);
+    EXPECT_NEAR(t_n, n * h, eps);
+    EXPECT_NEAR(std::sin(f * (n - 1) * h), y_n, eps);
   }
 }
 
