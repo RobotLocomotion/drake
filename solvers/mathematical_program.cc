@@ -790,7 +790,8 @@ namespace {
 // function also adds the rotated Lorentz cone constraint on the slack
 // variables. The only thing left in AddScaledDiagonallyDominantMatrixConstraint
 // is that the diagonal terms in the sdd matrix should match the summation of
-// the diagonally terms in the slack variable.
+// the diagonally terms in the slack variable, and the rotated Lorentz cone
+// constraint.
 template <typename T>
 void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<T>>& X, MathematicalProgram* prog,
@@ -815,8 +816,6 @@ void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
       (*M)[i][j](1, 1) = (*M_ij_diagonal)(1, k);
       (*M)[i][j](0, 1) = X(i, j);
       (*M)[i][j](1, 0) = X(j, i);
-      prog->AddRotatedLorentzConeConstraint(
-          Vector3<T>((*M)[i][j](0, 0), (*M)[i][j](1, 1), (*M)[i][j](0, 1)));
       ++k;
     }
   }
@@ -838,6 +837,8 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     }
     for (int j = i + 1; j < n; ++j) {
       diagonal_sum += M[i][j](0, 0);
+      AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
+          M[i][j](0, 0), M[i][j](1, 1), M[i][j](0, 1)));
     }
     AddLinearEqualityConstraint(X(i, i) - diagonal_sum, 0);
   }
@@ -872,6 +873,11 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
   for (int i = 0; i < n; ++i) {
     diagonal_sum_var(n_square - n + i) = X(i, i);
   }
+
+  // Create a RotatedLorentzConeConstraint
+  auto rotated_lorentz_cone_constraint =
+      std::make_shared<RotatedLorentzConeConstraint>(
+          Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero());
   for (int i = 0; i < n; ++i) {
     // The coefficient for X(i, i)
     A_diagonal_sum(i, n_square - n + i) = -1;
@@ -882,6 +888,11 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     for (int j = i + 1; j < n; ++j) {
       // The coefficient for M[i][j](0, 0)
       A_diagonal_sum(i, 2 * ij_to_k(i, j)) = 1;
+      // Bind the rotated Lorentz cone constraint to (M[i][j](0, 0); M[i][j](1,
+      // 1); M[i][j](0, 1))
+      AddConstraint(rotated_lorentz_cone_constraint,
+                    Vector3<symbolic::Variable>(M[i][j](0, 0), M[i][j](1, 1),
+                                                M[i][j](0, 1)));
     }
   }
   AddLinearEqualityConstraint(A_diagonal_sum, Eigen::VectorXd::Zero(n),
