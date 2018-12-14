@@ -335,9 +335,8 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   virtual void set_zero_state(const systems::Context<T>& context,
                               systems::State<T>* state) const = 0;
 
-  /// Sets the state stored in `context` to a _zero configuration_ as defined by
-  /// set_zero_state().
-  /// See set_zero_state() for details.
+  DRAKE_DEPRECATED("Call set_zero_state() directly instead.  This method will "
+                   "be deleted after 3/1/19.")
   void set_zero_configuration(systems::Context<T>* context) const {
     set_zero_state(*context, &context->get_mutable_state());
   }

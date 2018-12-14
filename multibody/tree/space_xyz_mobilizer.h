@@ -32,7 +32,7 @@ namespace multibody {
 /// where `Rx(θ)`, `Ry(θ)` and `Rz(θ)` correspond to the elemental rotations in
 /// amount of θ about the x, y and z axes respectively.
 /// Zero θ₁, θ₂, θ₃ angles define the "zero configuration" which corresponds
-/// to frames F and M being coincident, see set_zero_configuration().
+/// to frames F and M being coincident, see set_zero_state().
 /// Angles θ₁, θ₂, θ₃ are defined to be positive according to the
 /// right-hand-rule with the thumb aligned in the direction of their respective
 /// axes.

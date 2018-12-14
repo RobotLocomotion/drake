@@ -2636,8 +2636,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @}
 
   /// Sets default values in the context. For mobilizers, this method sets them
-  /// to their _zero_ configuration according to
-  /// Mobilizer::set_zero_configuration().
+  /// to their _zero_ state according to Mobilizer::set_zero_state().
   void SetDefaultContext(systems::Context<T>* context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(context != nullptr);
