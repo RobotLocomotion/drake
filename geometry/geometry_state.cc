@@ -202,7 +202,7 @@ const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
 template <typename T>
 GeometryId GeometryState<T>::GetGeometryFromName(
     FrameId frame_id, Role role, const std::string& name) const {
-  const std::string canonical_name = detail::CanonicalizeStringName(name);
+  const std::string canonical_name = internal::CanonicalizeStringName(name);
 
   GeometryId result;
   int count = 0;
@@ -623,7 +623,7 @@ bool GeometryState<T>::IsValidGeometryName(
     return "Given frame id is not valid: " + to_string(frame_id);
   });
   // TODO(SeanCurtis-TRI): Test for uniquness after geometry roles are added.
-  return !detail::CanonicalizeStringName(candidate_name).empty();
+  return !internal::CanonicalizeStringName(candidate_name).empty();
 }
 
 template <typename T>

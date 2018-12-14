@@ -293,6 +293,8 @@ class Convex final : public Shape {
  implementations require.  */
 class ShapeReifier {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
+  ShapeReifier() = default;
   virtual ~ShapeReifier() {}
   virtual void ImplementGeometry(const Sphere& sphere, void* user_data) = 0;
   virtual void ImplementGeometry(const Cylinder& cylinder, void* user_data) = 0;
