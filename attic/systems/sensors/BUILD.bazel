@@ -19,6 +19,8 @@ drake_cc_package_library(
         ":depth_sensor",
         ":depth_sensor_to_lcm_point_cloud_message",
         ":gyroscope",
+        ":rgbd_camera",
+        ":rgbd_renderer",
     ],
 )
 
@@ -132,6 +134,92 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "rgbd_renderer",
+    srcs = [
+        "rgbd_renderer.cc",
+        "rgbd_renderer_ospray.cc",
+        "rgbd_renderer_vtk.cc",
+    ],
+    hdrs = [
+        "depth_shaders.h",
+        "rgbd_renderer.h",
+        "rgbd_renderer_ospray.h",
+        "rgbd_renderer_vtk.h",
+    ],
+    deps = [
+        "//attic/multibody/shapes",
+        "//common",
+        "//systems/sensors:color_palette",
+        "//systems/sensors:image",
+        "//systems/sensors:vtk_util",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
+        "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingSceneGraph",
+    ],
+)
+
+drake_cc_library(
+    name = "rgbd_camera",
+    srcs = ["rgbd_camera.cc"],
+    hdrs = ["rgbd_camera.h"],
+    deps = [
+        ":rgbd_renderer",
+        "//attic/multibody:rigid_body_frame",
+        "//attic/multibody:rigid_body_tree",
+        "//math:geometric_transform",
+        "//systems/framework",
+        "//systems/primitives",
+        "//systems/rendering:pose_vector",
+        "//systems/sensors:camera_info",
+        "//systems/sensors:image",
+        "//systems/sensors:vtk_util",
+        "@eigen",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkCommonTransforms",
+        "@vtk//:vtkFiltersGeneral",
+        "@vtk//:vtkFiltersSources",
+        "@vtk//:vtkIOGeometry",
+        "@vtk//:vtkIOImage",
+        "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
+        "@vtk//:vtkRenderingOpenGL2",
+        "@vtk//:vtkRenderingSceneGraph",
+    ],
+)
+
+drake_cc_binary(
+    name = "rgbd_camera_publish_lcm_example",
+    srcs = [
+        "rgbd_camera_publish_lcm_example.cc",
+    ],
+    deps = [
+        ":rgbd_camera",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
+        "//common:unused",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/lcm:lcm_pubsub_system",
+        "//systems/rendering:pose_stamped_t_pose_vector_translator",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "@gflags",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -180,6 +268,72 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
     ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_camera_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":rgbd_camera",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_library(
+    name = "rgbd_renderer_test_util",
+    testonly = 1,
+    hdrs = ["test/rgbd_renderer_test_util.h"],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_ospray_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_renderer_vtk_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":rgbd_renderer",
+        ":rgbd_renderer_test_util",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+sh_test(
+    name = "rgbd_camera_publish_lcm_test",
+    size = "small",
+    srcs = ["rgbd_camera_publish_lcm_example"],
+    args = [
+        "--sdf_dir=systems/sensors/test/models",
+        "--duration=0.1",
+    ],
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    tags = vtk_test_tags(),
 )
 
 add_lint_tests(

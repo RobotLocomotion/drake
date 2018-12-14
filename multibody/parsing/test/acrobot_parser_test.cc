@@ -13,17 +13,14 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/parsing/test/test_loaders.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
-namespace parsing {
 namespace {
-
-using multibody_plant::MultibodyPlant;
 
 class AcrobotModelTests :
       public testing::TestWithParam<test::ModelLoadFunction> {
@@ -177,6 +174,5 @@ INSTANTIATE_TEST_CASE_P(UrdfAcrobatModelTests,
 
 
 }  // namespace
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

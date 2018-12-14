@@ -37,4 +37,9 @@ drake_py_unittest(
     deps = [":install_test_helper"],
 )
 
+drake_py_unittest(
+    name = "install_meta_test",
+    data = ["//tools/install/dummy:install"],
+)
+
 add_lint_tests()

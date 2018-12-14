@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/pixel_types.h"
 
 namespace drake {
@@ -54,18 +55,20 @@ class ImageToLcmImageArrayT : public systems::LeafSystem<double> {
   /// `Value<robotlocomotion::image_array_t>`.
   const OutputPort<double>& image_array_t_msg_output_port() const;
 
-
   /// Default constructor doesn't declare any ports.  Use the Add*Input()
   /// methods to declare them.
   explicit ImageToLcmImageArrayT(bool do_compress = false);
 
   template <PixelType kPixelType>
-  const InputPort<double>& DeclareImageInputPort(const std::string& name);
+  const InputPort<double>& DeclareImageInputPort(const std::string& name) {
+    input_port_pixel_type_.push_back(kPixelType);
+    return this->DeclareAbstractInputPort(
+        name, systems::Value<Image<kPixelType>>());
+  }
 
  private:
   void CalcImageArray(const systems::Context<double>& context,
                       robotlocomotion::image_array_t* msg) const;
-
 
   int color_image_input_port_index_{-1};
   int depth_image_input_port_index_{-1};

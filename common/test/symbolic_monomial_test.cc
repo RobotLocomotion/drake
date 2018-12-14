@@ -572,9 +572,13 @@ TEST_F(MonomialTest, Pow) {
   EXPECT_EQ(pow(m2, 1), m2);
 
   // pow(m₁, 3) = x³y⁶
-  EXPECT_EQ(pow(m1, 3), Monomial{pow(x_, 3) * pow(y_, 6)});
+  const Monomial m1_cube = pow(m1, 3);
+  EXPECT_EQ(m1_cube, Monomial{pow(x_, 3) * pow(y_, 6)});
+  EXPECT_EQ(m1_cube.total_degree(), 9);
   // pow(m₂, 4) = y⁸z²⁰
-  EXPECT_EQ(pow(m2, 4), Monomial{pow(y_, 8) * pow(z_, 20)});
+  const Monomial m2_4th_power = pow(m2, 4);
+  EXPECT_EQ(m2_4th_power, Monomial{pow(y_, 8) * pow(z_, 20)});
+  EXPECT_EQ(m2_4th_power.total_degree(), 28);
 
   // pow(m₁, -1) throws an exception.
   EXPECT_THROW(pow(m1, -1), runtime_error);
@@ -592,10 +596,12 @@ TEST_F(MonomialTest, PowInPlace) {
   m1.pow_in_place(2);
   EXPECT_NE(m1, m1_copy);
   EXPECT_EQ(m1, Monomial({{var_x_, 2}, {var_y_, 4}}));
+  EXPECT_EQ(m1.total_degree(), 6);
 
   // m₁ gets m₁⁰, which is 1.
   m1.pow_in_place(0);
   EXPECT_EQ(m1, Monomial());
+  EXPECT_EQ(m1.total_degree(), 0);
 }
 
 TEST_F(MonomialTest, Evaluate) {

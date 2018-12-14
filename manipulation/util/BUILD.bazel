@@ -38,11 +38,16 @@ drake_cc_library(
 drake_py_binary(
     name = "geometry_inspector",
     srcs = ["geometry_inspector.py"],
-    add_test_rule = 1,
-    data = ["//multibody/benchmarks/acrobot:acrobot.sdf"],
-    test_rule_args = ["$(location //multibody/benchmarks/acrobot:acrobot.sdf) --test --position 0.1 0.2"],  # noqa
     deps = [
         "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "geometry_inspector_test",
+    data = [
+        ":geometry_inspector",
+        "//multibody/benchmarks/acrobot:models",
     ],
 )
 
@@ -72,9 +77,7 @@ drake_cc_library(
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
-    deps = [
-        "//bindings/pydrake",
-    ],
+    deps = ["//bindings/pydrake"],
 )
 
 drake_py_binary(
@@ -97,6 +100,7 @@ drake_cc_googletest(
     deps = [
         ":trajectory_utils",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -114,8 +118,7 @@ drake_py_unittest(
     name = "show_model_test",
     data = [
         ":show_model",
-        "//examples/acrobot:models",
-        "//examples/pendulum:models",
+        "//multibody/benchmarks/acrobot:models",
     ],
 )
 

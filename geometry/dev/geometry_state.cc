@@ -319,8 +319,11 @@ GeometryState<T>& GeometryState<T>::operator=(
   for (GeometryId geometry_id : ordered_geometry) {
     const geometry::internal::InternalGeometry& geometry =
         tester.geometries().at(geometry_id);
-    const Vector4<double>& diffuse = geometry.visual_material().diffuse();
-    if (diffuse(3) > 0) {
+    // NOTE: Geometry only gets registered into *this* scene graph if it is
+    // "visualizable" (which means has an illustration role in the main
+    // scene graph.
+    if (geometry.has_illustration_role()) {
+      const Vector4<double>& diffuse = geometry.visual_material().diffuse();
       internal::InternalGeometry* parent_geometry = nullptr;
       if (geometry.parent_id()) {
         GeometryId parent_id = *geometry.parent_id();
@@ -1176,7 +1179,8 @@ void GeometryState<T>::RegisterValidGeometry(
     p.AddGroup("label");
     // NOTE: These render labels are *not* being returned and there is currently
     // no meaningful facility for looking up by render label.
-    p.AddProperty("label", "id", render::RenderLabel::new_label());
+    static const auto kNonTerrainLabel = render::RenderLabel::new_label();
+    p.AddProperty("label", "id", kNonTerrainLabel);
     AssignRole(source_id, geometry_id, p);
     IllustrationProperties i;
     i.AddGroup("phong");

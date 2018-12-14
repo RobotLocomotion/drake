@@ -2,15 +2,18 @@
 
 #include <spruce.hh>
 
-#include "drake/multibody/parsing/sdf_parser.h"
-#include "drake/multibody/parsing/urdf_parser.h"
+#include "drake/multibody/parsing/detail_sdf_parser.h"
+#include "drake/multibody/parsing/detail_urdf_parser.h"
 
 namespace drake {
 namespace multibody {
-namespace parsing {
+
+using detail::AddModelFromSdfFile;
+using detail::AddModelFromUrdfFile;
+using detail::AddModelsFromSdfFile;
 
 Parser::Parser(
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph)
     : plant_(plant), scene_graph_(scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -53,6 +56,5 @@ ModelInstanceIndex Parser::AddModelFromFile(
   }
 }
 
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

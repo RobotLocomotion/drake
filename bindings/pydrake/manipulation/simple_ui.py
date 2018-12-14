@@ -3,7 +3,10 @@ Provides a number of tcl/tk-based user interfaces helpful for manipulation (
 and potentially other robotics) applications.
 """
 
-import Tkinter as tk
+try:
+    import tkinter as tk
+except ImportError:
+    import Tkinter as tk
 import numpy as np
 
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant

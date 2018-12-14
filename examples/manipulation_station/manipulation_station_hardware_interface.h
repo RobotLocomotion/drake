@@ -6,7 +6,7 @@
 
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
 
@@ -64,8 +64,7 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
   /// the IIWA arm, with the lumped-mass equivalent spatial inertia of the
   /// Schunk WSG gripper.
   // TODO(russt): Actually add the equivalent mass of the WSG.
-  const multibody::multibody_plant::MultibodyPlant<double>&
-  get_controller_plant() const {
+  const multibody::MultibodyPlant<double>& get_controller_plant() const {
     return *owned_controller_plant_;
   }
 
@@ -74,8 +73,7 @@ class ManipulationStationHardwareInterface : public systems::Diagram<double> {
   }
 
  private:
-  std::unique_ptr<multibody::multibody_plant::MultibodyPlant<double>>
-      owned_controller_plant_;
+  std::unique_ptr<multibody::MultibodyPlant<double>> owned_controller_plant_;
   std::unique_ptr<lcm::DrakeLcm> owned_lcm_;
   systems::lcm::LcmSubscriberSystem* wsg_status_subscriber_;
   systems::lcm::LcmSubscriberSystem* iiwa_status_subscriber_;

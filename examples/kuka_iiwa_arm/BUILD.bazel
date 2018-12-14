@@ -54,6 +54,7 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
         "//systems/framework:leaf_system",
+        "//systems/lcm:translator",
     ],
 )
 

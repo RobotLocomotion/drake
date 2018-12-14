@@ -5,11 +5,14 @@ from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
 import unittest
 
 import numpy as np
-import Tkinter as tk
+try:
+    import tkinter as tk
+except ImportError:
+    import Tkinter as tk
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import BasicVector
 
 
@@ -19,7 +22,7 @@ class TestSimpleUI(unittest.TestCase):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         plant = MultibodyPlant()
-        AddModelFromSdfFile(file_name=file_name, plant=plant)
+        Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
 
         slider = JointSliders(robot=plant, lower_limit=-5., upper_limit=5.,

@@ -15,8 +15,8 @@ namespace cylinder_with_multicontact {
 namespace {
 
 using drake::geometry::SceneGraph;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::CoulombFriction;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using Eigen::Vector3d;

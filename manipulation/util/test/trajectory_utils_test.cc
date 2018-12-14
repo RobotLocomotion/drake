@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace manipulation {
@@ -158,12 +159,10 @@ TEST_F(PiecewiseCartesianTrajectoryTest, TestEndLinearVelocity) {
 // and PiecewiseCubicTrajectory.
 TEST_F(PiecewiseCartesianTrajectoryTest, TestPose) {
   for (double time : test_times_) {
-    Isometry3<double> expected(Isometry3<double>::Identity());
-    expected.linear() = orientation_.orientation(time).toRotationMatrix();
-    expected.translation() = position_.get_position(time);
-
+    math::RigidTransform<double> expected(orientation_.orientation(time),
+                                          position_.get_position(time));
     EXPECT_TRUE(drake::CompareMatrices(dut_.get_pose(time).matrix(),
-                                       expected.matrix(), 1e-12,
+                                       expected.GetAsMatrix4(), 1e-12,
                                        drake::MatrixCompareType::absolute));
   }
 }

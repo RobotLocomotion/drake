@@ -27,8 +27,8 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//math:geometric_transform",
-        "//multibody/multibody_tree/math:spatial_algebra",
-        "//multibody/multibody_tree/test_utilities:spatial_kinematics",
+        "//multibody/math:spatial_algebra",
+        "//multibody/test_utilities:spatial_kinematics",
     ],
 )
 

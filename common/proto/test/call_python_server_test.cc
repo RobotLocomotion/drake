@@ -8,6 +8,9 @@
 
 #include "drake/common/proto/call_python.h"
 
+// N.B. The following flags are used for testing only, and are not necessary if
+// you are writing your own client.
+
 DEFINE_string(file, "/tmp/python_rpc",
               "File written to by this binary, read by client.");
 // This file signals to `call_python_full_test.sh` that a full execution has
@@ -27,6 +30,9 @@ DEFINE_bool(sleep_at_end, false,
 namespace drake {
 namespace common {
 
+// N.B. This is NOT necessary for normal use; it is only done for testing.
+// If you use any `CallPython` calls prior to `CallPythonInit`, then the
+// default pipe will be used.
 GTEST_TEST(TestCallPython, Start) {
   CallPythonInit(FLAGS_file);
   // Tell client to expect a finishing signal.
@@ -162,6 +168,7 @@ GTEST_TEST(TestCallPython, Plot3d) {
   CallPython("eval", "print(len(x) + len(y) + len(Z))");
 }
 
+// N.B. This is NOT necessary for normal use; it is only done for testing.
 GTEST_TEST(TestCallPython, Finish) {
   if (FLAGS_sleep_at_end) {
     // If the Python client closes before this program closes the FIFO pipe,

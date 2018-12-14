@@ -62,6 +62,12 @@ class SolverOptions {
   const std::unordered_map<std::string, std::string>& GetOptionsStr(
       const SolverId& solver_id) const;
 
+  template <typename T>
+  const std::unordered_map<std::string, T>& GetOptions(
+      const SolverId& solver_id) const {
+    return GetOptionsImpl(solver_id, static_cast<T*>(nullptr));
+  }
+
   /** Returns the IDs that have any option set. */
   std::unordered_set<SolverId> GetSolverIds() const;
 
@@ -83,7 +89,31 @@ class SolverOptions {
    */
   bool operator!=(const SolverOptions& other) const;
 
+  /**
+   * Check if for a given solver_id, the option keys are included in
+   * double_keys, int_keys and str_keys.
+   * @param solver_id If this SolverOptions has set options for this solver_id,
+   * then we check if the option keys are a subset of `double_keys`, `int_keys`
+   * and `str_keys`.
+   * @param double_keys The set of allowable keys for double options.
+   * @param int_keys The set of allowable keys for int options.
+   * @param str_keys The set of allowable keys for string options.
+   * @throw invalid_argument if the solver contains un-allowed options.
+   */
+  void CheckOptionKeysForSolver(
+      const SolverId& solver_id,
+      const std::unordered_set<std::string>& allowable_double_keys,
+      const std::unordered_set<std::string>& allowable_int_keys,
+      const std::unordered_set<std::string>& allowable_str_keys) const;
+
  private:
+  const std::unordered_map<std::string, double>& GetOptionsImpl(
+      const SolverId& solver_id, double*) const;
+  const std::unordered_map<std::string, int>& GetOptionsImpl(
+      const SolverId& solver_id, int*) const;
+  const std::unordered_map<std::string, std::string>& GetOptionsImpl(
+      const SolverId& solver_id, std::string*) const;
+
   std::unordered_map<SolverId, std::unordered_map<std::string, double>>
       solver_options_double_{};
   std::unordered_map<SolverId, std::unordered_map<std::string, int>>

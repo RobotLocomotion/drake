@@ -5,12 +5,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-using drake::multibody::multibody_plant::MultibodyPlant;
-
 namespace drake {
 namespace multibody {
-namespace parsing {
-namespace test {
 namespace {
 
 GTEST_TEST(FileParserTest, BasicTest) {
@@ -111,7 +107,5 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace parsing
 }  // namespace multibody
 }  // namespace drake

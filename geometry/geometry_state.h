@@ -38,7 +38,7 @@ class GeometryInstance;
 template <typename T>
 class SceneGraph;
 
-/** @name Structures for maintaining the entity relationships */
+/** @name Structures for maintaining the entity relationships  */
 //@{
 
 /** Collection of unique frame ids.  */
@@ -306,6 +306,17 @@ class GeometryState {
   /** Registers a GeometryInstance with the state. The state takes ownership of
    the geometry and associates it with the given frame and source. Returns the
    new identifier for the successfully registered GeometryInstance.
+
+   Roles will be assigned to the geometry if the corresponding properties have
+   been assigned to the instance.
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    @param source_id    The id of the source to which the frame and geometry
                        belongs.
    @param frame_id     The id of the frame on which the geometry is to hang.
@@ -322,12 +333,26 @@ class GeometryState {
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
+  /** Variant of RegisterGeometry() that assigns _no_ default roles to the
+   geometry.  */
+  GeometryId RegisterGeometryWithoutRole(
+      SourceId source_id, FrameId frame_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** Registers a GeometryInstance with the state. Rather than hanging directly
    from a _frame_, the instance hangs on another geometry instance. The input
    `geometry` instance's pose is assumed to be relative to that parent geometry
    instance. The state takes ownership of the geometry and associates it with
    the given geometry parent (and, ultimately, the parent geometry's frame) and
    source. Returns the new identifier for the successfully registered
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    GeometryInstance.
    @param source_id    The id of the source on which the geometry is being
                        declared.
@@ -346,6 +371,12 @@ class GeometryState {
       SourceId source_id, GeometryId parent_id,
       std::unique_ptr<GeometryInstance> geometry);
 
+  /** Variant of RegisterGeometryWithParent() that assigns _no_ default roles to
+   the geometry.  */
+  GeometryId RegisterGeometryWithParentWithoutRole(
+      SourceId source_id, GeometryId parent_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   // TODO(SeanCurtis-TRI): Consider deprecating this; it's now strictly a
   // wrapper for the more general `RegisterGeometry()`.
   /** Registers a GeometryInstance with the state as anchored geometry. This
@@ -353,6 +384,14 @@ class GeometryState {
    The `geometry`'s pose value is relative to the world frame. The state takes
    ownership of the geometry and associates it with the given source. Returns
    the new identifier for the GeometryInstance.
+
+   @note The geometry will automatically be assigned both proximity and
+   illustration roles, regardless of whether or not the geometry instance has
+   been assigned properties. If properties have been assigned, those
+   properties will be used, otherwise default properties will be used. In the
+   near future, the *WithoutRole() variant of this function will replace this
+   function and no roles will be the normal behavior.
+
    @param source_id    The id of the source on which the geometry is being
                        declared.
    @param geometry     The geometry to get the id for. The state takes
@@ -367,6 +406,12 @@ class GeometryState {
       SourceId source_id,
       std::unique_ptr<GeometryInstance> geometry);
 
+  /** Variant of RegisterAnchoredGeometry() that assigns _no_ default roles to
+   the geometry.  */
+  GeometryId RegisterAnchoredGeometryWithoutRole(
+      SourceId source_id,
+      std::unique_ptr<GeometryInstance> geometry);
+
   /** Removes the given geometry from the the indicated source's geometries. Any
    geometry that was hung from the indicated geometry will _also_ be removed.
    @param source_id     The identifier for the owner geometry source.
@@ -377,7 +422,7 @@ class GeometryState {
                              2. the `geometry_id` does not map to a valid
                              geometry, or
                              3. the `geometry_id` maps to a geometry that does
-                             not belong to the indicated source. */
+                             not belong to the indicated source.  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
   /** Reports whether the canonicalized version of the given candidate geometry
@@ -451,7 +496,7 @@ class GeometryState {
    @returns True if `geometry_id` was registered on `source_id`.
    @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
                              geometry or the identified source is not
-                             registered */
+                             registered  */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
 
   /** Retrieves the frame id on which the given geometry id is registered.
@@ -502,34 +547,17 @@ class GeometryState {
   // TODO(SeanCurtis-TRI): Rename these functions to reflect the larger role
   // in proximity queries _or_ change the scope of the filters.
 
-  /** Excludes geometry pairs from collision evaluation by updating the
-   candidate pair set `C = C - P`, where `P = {(gᵢ, gⱼ)}, ∀ gᵢ, gⱼ ∈ G` and
-   `G = {g₀, g₁, ..., gₘ}` is the input `set` of geometries.
-
-   If the set include geometries which have *not* been assigned a proximity
-   role, those geometries will be ignored.
-
-   @throws std::logic_error if the set includes ids that don't exist in the
-                            scene graph.  */
+  /** Supporting function for SceneGraph::ExcludeCollisionsWithin().  */
   void ExcludeCollisionsWithin(const GeometrySet& set);
 
-  /** Excludes geometry pairs from collision evaluation by updating the
-   candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
-   `A = {a₀, a₁, ..., aₘ}` and `B = {b₀, b₁, ..., bₙ}` are the input sets of
-   geometries `setA` and `setB`, respectively. This does _not_ preclude
-   collisions between members of the _same_ set.
-
-   If the sets include geometries which have *not* been assigned a proximity
-   role, those geometries will be ignored.
-
-   @throws std::logic_error if the groups include ids that don't exist in the
-                            scene graph.   */
+  /** Supporting function for SceneGraph::ExcludeCollisionsBetween().  */
   void ExcludeCollisionsBetween(const GeometrySet& setA,
                                 const GeometrySet& setB);
 
   /** Reports true if the collision pair (id1, id2) has been filtered out.
    @throws std::logic_error if either id does not reference a registered
-                            geometry.  */
+                            geometry or if the geometries do not have
+                            a proximity role.  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const;
 
   //@}
@@ -570,7 +598,7 @@ class GeometryState {
   }
   //@}
 
-  /** @name Scalar conversion */
+  /** @name Scalar conversion  */
   //@{
 
   /** Returns a deep copy of this state using the AutoDiffXd scalar with all

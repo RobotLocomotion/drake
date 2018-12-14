@@ -9,6 +9,7 @@ load(
     "cmake_config",
     "install",
     "install_cmake_config",
+    "install_py2_duplicates_if_py3",
 )
 load(
     "@drake//tools/workspace/lcm:lcm.bzl",
@@ -54,6 +55,14 @@ install_cmake_config(
     versioned = 0,
 )
 
+# For Python2-only `drake_visualizer`.
+install_py2_duplicates_if_py3(
+    name = "install_py2_duplicates_if_py3",
+    targets = [":lcmtypes_robotlocomotion_py"],
+    py_strip_prefix = ["lcmtypes"],
+    visibility = ["//visibility:private"],
+)
+
 install(
     name = "install",
     workspace = CMAKE_PACKAGE,
@@ -68,7 +77,10 @@ install(
     rename = {
         "share/java/liblcmtypes_robotlocomotion_java.jar": "lcmtypes_robotlocomotion.jar",  # noqa
     },
-    deps = [":install_cmake_config"],
+    deps = [
+        ":install_cmake_config",
+        ":install_py2_duplicates_if_py3",
+    ],
 )
 
 # See https://github.com/RobotLocomotion/lcmtypes/issues/2 and

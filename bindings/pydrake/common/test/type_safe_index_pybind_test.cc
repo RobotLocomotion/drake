@@ -11,12 +11,16 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/test/test_util_pybind.h"
+
 using std::string;
 using std::vector;
 
 namespace drake {
 namespace pydrake {
 namespace {
+
+using test::SynchronizeGlobalsForPython3;
 
 template <typename T>
 void CheckValue(const string& expr, const T& expected) {
@@ -34,7 +38,7 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
     EXPECT_EQ(x, 10);
     return x;
   });
-  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
+  SynchronizeGlobalsForPython3(m);
   CheckValue("pass_thru_int(10)", 10);
   CheckValue("pass_thru_int(Index(10))", 10);
   // TypeSafeIndex<> is not implicitly constructible from an int.
@@ -46,7 +50,7 @@ GTEST_TEST(TypeSafeIndexTest, CheckCasting) {
     return x;
   });
 
-  py::globals().attr("update")(m.attr("__dict__"));  // For Python3
+  SynchronizeGlobalsForPython3(m);
 
   // TypeSafeIndex<> is not implicitly constructible from an int.
   // TODO(eric.cousineau): Consider relaxing this to *only* accept `int`s, and

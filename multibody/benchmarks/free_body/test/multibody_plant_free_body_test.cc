@@ -15,10 +15,10 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
-#include "drake/multibody/multibody_tree/body.h"
-#include "drake/multibody/multibody_tree/mobilizer.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/test/floating_body_plant.h"
+#include "drake/multibody/tree/body.h"
+#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/test/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
@@ -31,7 +31,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Quaterniond;
-using multibody::multibody_tree::test::AxiallySymmetricFreeBodyPlant;
+using multibody::test::AxiallySymmetricFreeBodyPlant;
 using systems::Simulator;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();

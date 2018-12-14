@@ -1,7 +1,7 @@
 <sdf version='1.6'>
   <model name='cupboard'>
 
-  <link name="cupboard_body">
+  <link name='cupboard_body'>
   <pose> 0 0 0 0 0 0</pose>
 
   <visual name='right_wall'>
@@ -42,7 +42,7 @@
 
   </link>
 
-  <link name="top_and_bottom">
+  <link name='top_and_bottom'>
   <pose> 0 0 0 0 0 0</pose>
 
   <visual name='bottom'>
@@ -63,7 +63,7 @@
     </geometry>
   </visual>
 
-  <visual name=‘shelf_lower’>
+  <visual name='shelf_lower'>
     <pose> 0 0 -0.13115 0 0 0</pose>
     <geometry>
       <box>
@@ -72,7 +72,7 @@
     </geometry>
   </visual>
 
-  <visual name=‘shelf_upper’>
+  <visual name='shelf_upper'>
     <pose> 0 0 0.13115 0 0 0</pose>
     <geometry>
       <box>
@@ -99,7 +99,7 @@
     </geometry>
   </collision>
 
-  <collision name=‘shelf_lower’>
+  <collision name='shelf_lower'>
     <pose> 0 0 -0.13115 0 0 0</pose>
     <geometry>
       <box>
@@ -108,7 +108,7 @@
     </geometry>
   </collision>
 
-  <collision name=‘shelf_upper’>
+  <collision name='shelf_upper'>
     <pose> 0 0 0.13115 0 0 0</pose>
     <geometry>
       <box>
@@ -121,7 +121,7 @@
 
 
   <!-- joint between bottom_top and world -->
-  <joint name="top_and_bottom_cupboard_body" type="fixed">
+  <joint name='top_and_bottom_cupboard_body' type='fixed'>
     <child>top_and_bottom</child>
     <parent>cupboard_body</parent>
     <pose>0 0 0 0 0 0 </pose>
@@ -129,7 +129,7 @@
 
 
   <!-- joint between cupboard_body and left_door -->
-  <joint name="left_door_hinge" type="revolute">
+  <joint name='left_door_hinge' type='revolute'>
     <child>left_door</child>
     <parent>cupboard_body</parent>
     <pose>-0.008 -0.1395 0 0 0 </pose>
@@ -144,7 +144,7 @@
     </axis>
   </joint>
 
-  <link name="left_door">
+  <link name='left_door'>
   <pose> 0.158 -0.1445 0 0 0 0</pose>
   <inertial>
       <mass>1</mass>
@@ -203,7 +203,7 @@
   </link>
 
   <!-- joint between cupboard_body and left_door -->
-  <joint name="right_door_hinge" type="revolute">
+  <joint name='right_door_hinge' type='revolute'>
     <child>right_door</child>
     <parent>cupboard_body</parent>
     <pose>-0.008 0.1395 0 0 0 </pose>
@@ -218,7 +218,7 @@
     </axis>
   </joint>
 
-  <link name="right_door">
+  <link name='right_door'>
   <pose> 0.158 0.1445 0 0 0 0</pose>
   <inertial>
       <mass>1</mass>

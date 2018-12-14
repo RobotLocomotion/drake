@@ -1,9 +1,13 @@
 # -*- python -*-
+# TODO(jwnimmer-tri) Remove this entire directory on or about 2019-03-01.
 
 load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+    "drake_cc_library_aliases",
+)
+load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -15,6 +19,7 @@ package(
 drake_cc_package_library(
     name = "math",
     deps = [
+        ":forwarding_hdrs",
         ":spatial_acceleration",
         ":spatial_algebra",
         ":spatial_force",
@@ -24,82 +29,32 @@ drake_cc_package_library(
     ],
 )
 
-drake_cc_library(
-    name = "spatial_vector",
-    srcs = [],
-    hdrs = ["spatial_vector.h"],
-    deps = [
-        "//common:essential",
-    ],
+_RELATIVE_LABELS = [
+    ":spatial_vector",
+    ":spatial_velocity",
+    ":spatial_acceleration",
+    ":spatial_force",
+    ":spatial_momentum",
+    ":spatial_algebra",
+]
+
+# Generates header files with the old include paths that include the header
+# with its new include path.
+drake_cc_hdrs_forwarding_library(
+    name = "forwarding_hdrs",
+    actual_subdir = "multibody/math",
+    add_deprecation_warning = True,
+    relative_labels = _RELATIVE_LABELS,
+    visibility = ["//visibility:private"],
 )
 
-drake_cc_library(
-    name = "spatial_velocity",
-    srcs = ["spatial_velocity.cc"],
-    hdrs = ["spatial_velocity.h"],
-    deps = [
-        ":spatial_vector",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "spatial_acceleration",
-    srcs = ["spatial_acceleration.cc"],
-    hdrs = ["spatial_acceleration.h"],
-    deps = [
-        ":spatial_vector",
-        ":spatial_velocity",
-        "//common:default_scalars",
-        "//common:essential",
-        "//math:vector3_util",
-    ],
-)
-
-drake_cc_library(
-    name = "spatial_force",
-    srcs = ["spatial_force.cc"],
-    hdrs = ["spatial_force.h"],
-    deps = [
-        ":spatial_vector",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "spatial_momentum",
-    srcs = ["spatial_momentum.cc"],
-    hdrs = ["spatial_momentum.h"],
-    deps = [
-        ":spatial_vector",
-        "//common:default_scalars",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "spatial_algebra",
-    srcs = [],
-    hdrs = ["spatial_algebra.h"],
-    deps = [
-        ":spatial_acceleration",
-        ":spatial_force",
-        ":spatial_momentum",
-        ":spatial_vector",
-        ":spatial_velocity",
-        "//common:essential",
-    ],
-)
-
-drake_cc_googletest(
-    name = "spatial_algebra_test",
-    deps = [
-        ":spatial_algebra",
-        "//common:autodiff",
-        "//common:symbolic",
-    ],
+# Forwards the bazel labels in this package to alias into the new package.
+drake_cc_library_aliases(
+    actual_subdir = "multibody/math",
+    add_deprecation_warning = True,
+    relative_labels = _RELATIVE_LABELS,
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
+    deps = [":forwarding_hdrs"],
 )
 
 add_lint_tests()

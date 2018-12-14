@@ -41,11 +41,10 @@ drake_cc_library(
         "orientation_constraint.h",
         "position_constraint.h",
     ],
-    visibility = ["//visibility:private"],
     deps = [
         "//math:geometric_transform",
         "//math:gradient",
-        "//multibody/multibody_tree",
+        "//multibody/plant",
         "//solvers:constraint",
     ],
 )
@@ -61,7 +60,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":kinematic_constraint",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
         "//solvers:mathematical_program",
     ],
 )
@@ -81,9 +80,9 @@ drake_cc_library(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//multibody/benchmarks/kuka_iiwa_robot",
-        "//multibody/multibody_tree",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/tree",
         "@gtest//:without_main",
     ],
 )
@@ -101,6 +100,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics_test_utilities",
         ":kinematic_constraint",
+        "//math:geometric_transform",
     ],
 )
 
@@ -129,6 +129,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics_core",
         ":inverse_kinematics_test_utilities",
+        "//math:geometric_transform",
     ],
 )
 

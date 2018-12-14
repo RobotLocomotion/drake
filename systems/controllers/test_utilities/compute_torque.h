@@ -4,12 +4,12 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/kinematics_cache.h"
-#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/position_kinematics_cache.h"
-#include "drake/multibody/multibody_tree/velocity_kinematics_cache.h"
+#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/tree/position_kinematics_cache.h"
+#include "drake/multibody/tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace systems {
@@ -32,7 +32,7 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
 // Computes torque predicted by inverse dynamics for use with inverse dynamics
 // and inverse dynamics controller testing.
 VectorX<double> ComputeTorque(
-    const multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const multibody::MultibodyPlant<double>& plant,
     const VectorX<double>& q,
     const VectorX<double>& v,
     const VectorX<double>& vd_d,

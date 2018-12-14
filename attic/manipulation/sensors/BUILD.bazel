@@ -31,13 +31,13 @@ drake_cc_library(
         "//attic/manipulation/util:world_sim_tree_builder",
         "//attic/multibody/rigid_body_plant",
         "//attic/multibody/rigid_body_plant:frame_visualizer",
+        "//attic/systems/sensors:rgbd_camera",
         "//common",
         "//lcm",
         "//systems/framework:diagram_builder",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
         "//systems/sensors:image_to_lcm_image_array_t",
-        "//systems/sensors:rgbd_camera",
     ],
 )
 

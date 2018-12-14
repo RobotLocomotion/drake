@@ -422,7 +422,7 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
       if (itr != input_source_ids_.end()) {
         const int pose_port = itr->second.pose_port;
         const auto pose_port_value =
-            this->template EvalAbstractInput(context, pose_port);
+            this->EvalAbstractInput(context, pose_port);
         if (pose_port_value) {
           const auto& poses =
               pose_port_value->template GetValue<FramePoseVector<T>>();

@@ -12,7 +12,7 @@ from pydrake.examples.manipulation_station import \
     (ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
@@ -48,11 +48,12 @@ if args.hardware:
     station.Connect(wait_for_cameras=False)
 else:
     station = builder.AddSystem(ManipulationStation())
-    station.AddCupboard()
-    object = AddModelFromSdfFile(FindResourceOrThrow(
+    station.SetupDefaultStation()
+    parser = Parser(station.get_mutable_multibody_plant(),
+                    station.get_mutable_scene_graph())
+    object = parser.AddModelFromFile(FindResourceOrThrow(
         "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object", station.get_mutable_multibody_plant(),
-        station.get_mutable_scene_graph())
+        "object")
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),

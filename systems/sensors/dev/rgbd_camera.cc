@@ -1,5 +1,7 @@
 #include "drake/systems/sensors/dev/rgbd_camera.h"
 
+#include <algorithm>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -7,6 +9,7 @@
 
 #include "drake/geometry/dev/render/camera_properties.h"
 #include "drake/geometry/dev/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/zero_order_hold.h"
@@ -28,16 +31,11 @@ RgbdCamera::RgbdCamera(const std::string& name, const Eigen::Vector3d& p_WB_W,
                        const Eigen::Vector3d& rpy_WB_W,
                        const DepthCameraProperties& properties,
                        bool show_window)
-    : parent_frame_(SceneGraph<double>::world_frame_id()),
-      show_window_(show_window),
-      color_camera_info_(properties.width, properties.height, properties.fov_y),
-      depth_camera_info_(properties.width, properties.height, properties.fov_y),
-      properties_(properties),
-      X_PB_(Eigen::Translation3d(p_WB_W[0], p_WB_W[1], p_WB_W[2]) *
-            Eigen::Isometry3d(math::RollPitchYaw<double>(rpy_WB_W)
-                                  .ToMatrix3ViaRotationMatrix())) {
-  InitPorts(name);
-}
+    : RgbdCamera(name, SceneGraph<double>::world_frame_id(),
+                 math::RigidTransform<double>(
+                     math::RollPitchYaw<double>(rpy_WB_W), p_WB_W)
+                     .GetAsIsometry3(),
+                 properties, show_window) {}
 
 RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
                        const Isometry3<double>& X_PB,
@@ -49,10 +47,6 @@ RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
       depth_camera_info_(properties.width, properties.height, properties.fov_y),
       properties_(properties),
       X_PB_(X_PB) {
-  InitPorts(name);
-}
-
-void RgbdCamera::InitPorts(const std::string& name) {
   this->set_name(name);
 
   query_object_input_port_ = &this->DeclareAbstractInputPort(
@@ -63,10 +57,15 @@ void RgbdCamera::InitPorts(const std::string& name) {
   color_image_port_ = &this->DeclareAbstractOutputPort(
       "color_image", color_image, &RgbdCamera::CalcColorImage);
 
-  ImageDepth32F depth_image(depth_camera_info_.width(),
-                            depth_camera_info_.height());
+  ImageDepth32F depth32(depth_camera_info_.width(),
+                        depth_camera_info_.height());
   depth_image_port_ = &this->DeclareAbstractOutputPort(
-      "depth_image", depth_image, &RgbdCamera::CalcDepthImage);
+      "depth_image_32f", depth32, &RgbdCamera::CalcDepthImage32F);
+
+  ImageDepth16U depth16(depth_camera_info_.width(),
+                        depth_camera_info_.height());
+  this->DeclareAbstractOutputPort("depth_image_16u", depth16,
+                                  &RgbdCamera::CalcDepthImage16U);
 
   ImageLabel16I label_image(color_camera_info_.width(),
                             color_camera_info_.height());
@@ -75,6 +74,15 @@ void RgbdCamera::InitPorts(const std::string& name) {
 
   camera_base_pose_port_ = &this->DeclareVectorOutputPort(
       "X_WB", rendering::PoseVector<double>(), &RgbdCamera::CalcPoseVector);
+
+  const float kMaxValidDepth16UInMM =
+      (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
+  if (properties.z_far > kMaxValidDepth16UInMM) {
+    drake::log()->warn(
+        "Specified max depth is {} > max valid depth for 16 bits {}. "
+        "depth_image_16u might not be able to capture the full depth range.",
+        properties.z_far, kMaxValidDepth16UInMM);
+  }
 }
 
 const InputPort<double>& RgbdCamera::query_object_input_port() const {
@@ -123,11 +131,27 @@ void RgbdCamera::CalcColorImage(const Context<double>& context,
                                 color_image, show_window_);
 }
 
-void RgbdCamera::CalcDepthImage(const Context<double>& context,
-                                ImageDepth32F* depth_image) const {
+void RgbdCamera::CalcDepthImage32F(const Context<double>& context,
+                                   ImageDepth32F* depth_image) const {
   const QueryObject<double>& query_object = get_query_object(context);
   query_object.RenderDepthImage(properties_, parent_frame_, X_PB_ * X_BD_,
                                 depth_image);
+}
+
+void RgbdCamera::CalcDepthImage16U(const Context<double>& context,
+                                   ImageDepth16U* depth_image) const {
+  ImageDepth32F depth32(depth_image->width(), depth_image->height());
+  CalcDepthImage32F(context, &depth32);
+  // Convert to mm and 16bits.
+  const float kDepth16UOverflowDistance =
+      std::numeric_limits<uint16_t>::max() / 1000.;
+  for (int w = 0; w < depth_image->width(); w++) {
+    for (int h = 0; h < depth_image->height(); h++) {
+      const double dist =
+          std::min(depth32.at(w, h)[0], kDepth16UOverflowDistance);
+      depth_image->at(w, h)[0] = static_cast<uint16_t>(dist * 1000);
+    }
+  }
 }
 
 void RgbdCamera::CalcLabelImage(const Context<double>& context,

@@ -4,8 +4,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
 
@@ -21,12 +21,13 @@ using systems::BasicVector;
 
 GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   ManipulationStation<double> station(0.001);
-  station.AddCupboard();
-  multibody::parsing::AddModelFromSdfFile(
+  station.SetupDefaultStation();
+  multibody::Parser parser(&station.get_mutable_multibody_plant(),
+                           &station.get_mutable_scene_graph());
+  parser.AddModelFromFile(
       FindResourceOrThrow("drake/examples/manipulation_station/models"
                           "/061_foam_brick.sdf"),
-      "object", &station.get_mutable_multibody_plant(),
-      &station.get_mutable_scene_graph());
+      "object");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();
@@ -110,6 +111,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
 GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   const double kTimeStep = 0.002;
   ManipulationStation<double> station(kTimeStep);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -205,6 +207,7 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -228,6 +231,7 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
 
 GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
   ManipulationStation<double> station(0.001);
+  station.SetupDefaultStation();
   station.Finalize();
 
   auto context = station.CreateDefaultContext();
@@ -239,7 +243,7 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
                   .size(),
               0);
     EXPECT_GE(station.GetOutputPort("camera_" + name + "_depth_image")
-                  .Eval<systems::sensors::ImageDepth32F>(*context)
+                  .Eval<systems::sensors::ImageDepth16U>(*context)
                   .size(),
               0);
     EXPECT_GE(station.GetOutputPort("camera_" + name + "_label_image")
@@ -250,15 +254,16 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
 }
 
 GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
-  ManipulationStation<double> station1(0.002, IiwaCollisionModel::kNoCollision);
+  ManipulationStation<double> station1(0.002);
+  station1.SetupDefaultStation(IiwaCollisionModel::kNoCollision);
 
   // In this variant, there are collision geometries from the world and the
   // gripper, but not from the iiwa.
   const int num_collisions =
       station1.get_multibody_plant().num_collision_geometries();
 
-  ManipulationStation<double> station2(0.002,
-                                       IiwaCollisionModel::kBoxCollision);
+  ManipulationStation<double> station2(0.002);
+  station2.SetupDefaultStation(IiwaCollisionModel::kBoxCollision);
   // Check for additional collision elements (one for each link, which includes
   // the base).
   EXPECT_EQ(station2.get_multibody_plant().num_collision_geometries(),
@@ -267,6 +272,86 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   // The controlled model does not register with a scene graph, so has zero
   // collisions.
   EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
+}
+
+// Check that making many stations does not exhaust resources.
+GTEST_TEST(ManipulationStationTest, MultipleInstanceTest) {
+  for (int i = 0; i < 20; ++i) {
+    ManipulationStation<double> station;
+    station.SetupDefaultStation();
+    station.Finalize();
+  }
+}
+
+GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
+  {
+    // Test default setup.
+    std::map<std::string, math::RigidTransform<double>> default_poses;
+
+    auto set_default_camera_poses = [&default_poses]() {
+      default_poses.emplace(
+          "0", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(1.69101, 0.176488, 0.432721),
+                   Eigen::Vector3d(-0.233066, -0.451461, 0.466761)));
+
+      default_poses.emplace(
+          "1", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(-1.68974, 0.20245, -0.706783),
+                   Eigen::Vector3d(-0.197236, 0.468471, 0.436499)));
+
+      default_poses.emplace(
+          "2", math::RigidTransform<double>(
+                   math::RollPitchYaw<double>(0.0438918, 1.03776, -3.13612),
+                   Eigen::Vector3d(0.786905, -0.0284378, 1.04287)));
+    };
+
+    ManipulationStation<double> dut;
+    dut.SetupDefaultStation();
+
+    std::map<std::string, math::RigidTransform<double>> camera_poses =
+        dut.GetStaticCameraPosesInWorld();
+    set_default_camera_poses();
+
+    EXPECT_EQ(camera_poses.size(), default_poses.size());
+
+    for (const auto& pair : camera_poses) {
+      auto found = default_poses.find(pair.first);
+      EXPECT_TRUE(found != default_poses.end());
+      EXPECT_TRUE(found->second.IsExactlyEqualTo(pair.second));
+    }
+  }
+
+  {
+    // Test registration to custom frames.
+    ManipulationStation<double> dut;
+    multibody::MultibodyPlant<double>& plant =
+        dut.get_mutable_multibody_plant();
+
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+
+    math::RigidTransform<double> X_WF0(Eigen::Vector3d(0, 0, 0.2));
+    math::RigidTransform<double> X_F0C0(Eigen::Vector3d(0.3, 0.2, 0.0));
+    const auto& frame0 =
+        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "frame0", plant.world_frame(), X_WF0.GetAsIsometry3()));
+    dut.RegisterRgbdCamera("camera0", frame0, X_F0C0, camera_properties);
+
+    math::RigidTransform<double> X_F0F1(Eigen::Vector3d(0, -0.1, 0.2));
+    math::RigidTransform<double> X_F1C1(Eigen::Vector3d(-0.2, 0.2, 0.33));
+    const auto& frame1 =
+        plant.AddFrame(std::make_unique<multibody::FixedOffsetFrame<double>>(
+            "frame1", frame0, X_F0F1.GetAsIsometry3()));
+    dut.RegisterRgbdCamera("camera1", frame1, X_F1C1, camera_properties);
+
+    std::map<std::string, math::RigidTransform<double>> camera_poses =
+        dut.GetStaticCameraPosesInWorld();
+
+    EXPECT_EQ(camera_poses.size(), 2);
+    EXPECT_TRUE(camera_poses.at("camera0").IsExactlyEqualTo(X_WF0 * X_F0C0));
+    EXPECT_TRUE(
+        camera_poses.at("camera1").IsExactlyEqualTo(X_WF0 * X_F0F1 * X_F1C1));
+  }
 }
 
 }  // namespace

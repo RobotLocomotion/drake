@@ -6,7 +6,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/rendering/frame_velocity.h"
 #include "drake/systems/rendering/multibody_position_to_geometry_pose.h"
 #include "drake/systems/rendering/pose_aggregator.h"
@@ -109,7 +109,7 @@ PYBIND11_MODULE(rendering, m) {
   py::class_<MultibodyPositionToGeometryPose<T>, LeafSystem<T>>(m,
       "MultibodyPositionToGeometryPose",
       doc.MultibodyPositionToGeometryPose.doc)
-      .def(py::init<const multibody::multibody_plant::MultibodyPlant<T>&>(),
+      .def(py::init<const multibody::MultibodyPlant<T>&>(),
           doc.MultibodyPositionToGeometryPose.ctor.doc_1args)
       .def("get_input_port",
           &MultibodyPositionToGeometryPose<T>::get_input_port,
