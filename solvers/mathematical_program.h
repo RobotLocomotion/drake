@@ -575,8 +575,9 @@ class MathematicalProgram {
 
   /**
    * Returns a pair of nonnegative polynomial p = mᵀQm and the coefficient
-   * matrix Q, where m is @p monomial_basis. Depending on the type of the
-   * polynomial, we will impose different constraint on Q.
+   * matrix Q, where m is @p monomial_basis. Adds Q as decision variables to the
+   * program. Depending on the type of the polynomial, we will impose different
+   * constraint on Q.
    * if type = kSos, we impose Q being positive semidefinite.
    * if type = kSdsos, we impose Q being scaled diagonally dominant.
    * if type = kDsos, we impose Q being positive diagonally dominant.
@@ -595,7 +596,7 @@ class MathematicalProgram {
    * matrix Q, where m is the monomial basis, containing all monomials of @p
    * indeterminates of total order up to @p degree / 2, hence the polynomial p
    * contains all the monomials of total order up to @p degree, as p is
-   * quadratic in m.
+   * quadratic in m. Adds Q as decision variables to the program.
    * Depending on the type of the polynomial, we will impose different
    * constraint on Q.
    * if type = kSos, we impose Q being positive semidefinite.
@@ -603,10 +604,11 @@ class MathematicalProgram {
    * if type = kDsos, we impose Q being positive diagonally dominant.
    * @param indeterminates All the indeterminates in the polynomial p.
    * @param degree The polynomial p will contain all the monomials up to order
-   * @p degree
+   * @p degree.
    * @param type The type of the nonnegative polynomial.
    * @return (p, Q) The polynomial p and the coefficient matrix Q. Q has been
    * added as decision variables to the program.
+   * @pre @p degree is a positive even number.
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
   NewNonnegativePolynomial(const symbolic::Variables& indeterminates,
