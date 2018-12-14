@@ -42,7 +42,7 @@ namespace benchmarks {
 namespace kuka_iiwa_robot {
 
 using Eigen::Vector3d;
-using multibody_tree::test_utilities::SpatialKinematicsPVA;
+using test_utilities::SpatialKinematicsPVA;
 
 /// Utility struct to assist with returning joint torques/forces.
 /// --------|----------------------------------------------------------

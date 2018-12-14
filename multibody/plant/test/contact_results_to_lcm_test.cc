@@ -18,7 +18,6 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using systems::Value;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // Confirm that an empty multibody plant produces an empty lcm message.
@@ -125,8 +124,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, BasicTest) {
   plant->AddRigidBody("link", SpatialInertia<double>());
   plant->Finalize();
 
-  auto publisher = multibody_plant::ConnectContactResultsToDrakeVisualizer(
-      &builder, *plant);
+  auto publisher = ConnectContactResultsToDrakeVisualizer(&builder, *plant);
 
   // Confirm that we get a non-null result.
   EXPECT_NE(publisher, nullptr);
@@ -151,7 +149,7 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
   systems::DiagramBuilder<double> builder;
   auto interior_diagram = builder.AddSystem(interior_builder.Build());
 
-  auto publisher = multibody_plant::ConnectContactResultsToDrakeVisualizer(
+  auto publisher = ConnectContactResultsToDrakeVisualizer(
       &builder, *plant, interior_diagram->GetOutputPort("contact_results"));
 
   // Confirm that we get a non-null result.
@@ -164,6 +162,5 @@ GTEST_TEST(ConnectContactResultsToDrakeVisualizer, NestedDiagramTest) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

@@ -11,12 +11,6 @@ namespace inclined_plane {
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using multibody_plant::CoulombFriction;
-using multibody::multibody_plant::MultibodyPlant;
-using multibody::RigidBody;
-using multibody::SpatialInertia;
-using multibody::UniformGravityFieldElement;
-using multibody::UnitInertia;
 using Eigen::AngleAxisd;
 
 std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(

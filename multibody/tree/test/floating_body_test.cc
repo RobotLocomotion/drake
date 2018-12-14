@@ -22,7 +22,6 @@ class MultibodyTreeTester {
 };
 }  // namespace internal
 
-namespace multibody_tree {
 namespace test {
 namespace {
 
@@ -323,6 +322,5 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
 
 }  // namespace
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

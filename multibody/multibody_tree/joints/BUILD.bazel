@@ -1,4 +1,5 @@
 # -*- python -*-
+# TODO(jwnimmer-tri) Remove this entire directory on or about 2019-03-01.
 
 load(
     "@drake//tools/skylark:alias.bzl",
@@ -6,16 +7,12 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# TODO(jwnimmer-tri) Set `add_deprecation_warning = True` in all of the below
-# once Drake no longer internally uses any of these labels, and then schedule
-# this package for removal at a specific date.
-
 # Generates header files with the old include paths that include the header
 # with its new include path.
 drake_cc_hdrs_forwarding_library(
     name = "forwarding_hdrs",
     actual_subdir = "multibody/tree",
-    add_deprecation_warning = False,
+    add_deprecation_warning = True,
     relative_labels = [
         ":" + x[:-2]
         for x in [

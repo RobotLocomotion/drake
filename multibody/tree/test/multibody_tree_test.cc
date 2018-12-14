@@ -34,10 +34,10 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RollPitchYaw;
-using multibody_tree::test_utilities::SpatialKinematicsPVA;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
+using test_utilities::SpatialKinematicsPVA;
 
 // Helper method to verify the integrity of a MultibodyTree model of a Kuka iiwa
 // arm.

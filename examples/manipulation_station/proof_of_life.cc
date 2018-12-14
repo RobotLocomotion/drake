@@ -47,7 +47,7 @@ int do_main(int argc, char* argv[]) {
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
                                    station->GetOutputPort("pose_bundle"));
-  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
+  multibody::ConnectContactResultsToDrakeVisualizer(
       &builder, station->get_mutable_multibody_plant(),
       station->GetOutputPort("contact_results"));
 

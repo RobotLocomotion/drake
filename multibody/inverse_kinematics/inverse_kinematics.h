@@ -26,8 +26,7 @@ class InverseKinematics {
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
    */
-  explicit InverseKinematics(
-      const multibody_plant::MultibodyPlant<double>& plant);
+  explicit InverseKinematics(const MultibodyPlant<double>& plant);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -165,7 +164,7 @@ class InverseKinematics {
   }
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
-  const multibody_plant::MultibodyPlant<double>& plant_;
+  const MultibodyPlant<double>& plant_;
   const MultibodyTreeSystem<AutoDiffXd> system_;
   std::unique_ptr<systems::Context<AutoDiffXd>> const context_;
   solvers::VectorXDecisionVariable q_;

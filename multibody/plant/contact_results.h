@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/contact_info.h"
 
@@ -48,7 +49,7 @@ class ContactResults {
 };
 
 #ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Deprecate and then remove this transitional namespace.
+// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
 namespace multibody_plant {
 template <typename T>
 using ContactResults = ::drake::multibody::ContactResults<T>;

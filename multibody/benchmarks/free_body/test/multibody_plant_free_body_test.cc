@@ -31,7 +31,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using Eigen::Quaterniond;
-using multibody::multibody_tree::test::AxiallySymmetricFreeBodyPlant;
+using multibody::test::AxiallySymmetricFreeBodyPlant;
 using systems::Simulator;
 
 const double kEpsilon = std::numeric_limits<double>::epsilon();

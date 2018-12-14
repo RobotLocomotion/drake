@@ -45,7 +45,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
    * @pre @p plant must be finalized.
    */
   explicit MultibodyPositionToGeometryPose(
-      const multibody::multibody_plant::MultibodyPlant<T>& plant);
+      const multibody::MultibodyPlant<T>& plant);
 
   ~MultibodyPositionToGeometryPose() override = default;
 
@@ -64,7 +64,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
 
   void CalcGeometryPose(const Context<T>& context, AbstractValue* poses) const;
 
-  const multibody::multibody_plant::MultibodyPlant<T>& plant_;
+  const multibody::MultibodyPlant<T>& plant_;
 
   // This is a context of the plant_ system, which is only owned here to avoid
   // runtime allocation.  It contains no relevant state.

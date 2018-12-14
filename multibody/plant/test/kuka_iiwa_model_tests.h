@@ -23,12 +23,10 @@ namespace drake {
 using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using multibody::multibody_plant::MultibodyPlant;
 using systems::Context;
 using std::unique_ptr;
 
 namespace multibody {
-namespace multibody_plant {
 namespace test {
 
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
@@ -158,6 +156,5 @@ class KukaIiwaModelTests : public ::testing::Test {
 };
 
 }  // namespace test
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

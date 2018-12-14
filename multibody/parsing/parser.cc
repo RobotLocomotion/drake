@@ -13,7 +13,7 @@ using detail::AddModelFromUrdfFile;
 using detail::AddModelsFromSdfFile;
 
 Parser::Parser(
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph)
     : plant_(plant), scene_graph_(scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);

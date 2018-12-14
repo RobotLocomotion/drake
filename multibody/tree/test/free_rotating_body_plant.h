@@ -12,7 +12,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace test {
 
 /// This plant models the rotational motion of a torque free body in space.
@@ -103,6 +102,5 @@ class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
 };
 
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

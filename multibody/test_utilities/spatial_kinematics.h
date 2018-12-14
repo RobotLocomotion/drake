@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace test_utilities {
 
 /// Utility class containing the transform and spatial velocity/acceleration
@@ -119,6 +118,5 @@ class SpatialKinematicsPVA {
 };
 
 }  // namespace test_utilities
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

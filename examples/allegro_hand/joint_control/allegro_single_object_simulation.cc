@@ -38,7 +38,7 @@ namespace examples {
 namespace allegro_hand {
 namespace {
 
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
               "Desired duration of the simulation in seconds");
@@ -105,8 +105,7 @@ void DoMain() {
                   plant.get_geometry_query_input_port());
 
   // Publish contact results for visualization.
-  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
-      &builder, plant, &lcm);
+  multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;

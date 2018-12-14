@@ -22,7 +22,7 @@ namespace pydrake {
 PYBIND11_MODULE(controllers, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::controllers;
-  using drake::multibody::multibody_plant::MultibodyPlant;
+  using drake::multibody::MultibodyPlant;
   using drake::systems::Diagram;
   using drake::systems::LeafSystem;
   constexpr auto& doc = pydrake_doc.drake.systems.controllers;
@@ -96,7 +96,7 @@ PYBIND11_MODULE(controllers, m) {
   py::class_<InverseDynamics<double>, LeafSystem<double>> idyn(
       m, "InverseDynamics", doc.InverseDynamics.doc);
   idyn  // BR
-      .def(py::init<const multibody::multibody_plant::MultibodyPlant<double>*,
+      .def(py::init<const multibody::MultibodyPlant<double>*,
                InverseDynamics<double>::InverseDynamicsMode>(),
           py::arg("plant"), py::arg("mode"),
           doc.InverseDynamics.ctor.doc_2args_plant_mode)

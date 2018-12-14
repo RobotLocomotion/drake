@@ -7,7 +7,7 @@ namespace allegro_hand {
 const double AllegroHandMotionState::velocity_thresh_ = 0.07;
 
 using drake::multibody::JointIndex;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                 Eigen::VectorXd* Kd) {

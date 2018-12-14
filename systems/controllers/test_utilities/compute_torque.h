@@ -32,7 +32,7 @@ VectorX<double> ComputeTorque(const RigidBodyTree<double>& tree,
 // Computes torque predicted by inverse dynamics for use with inverse dynamics
 // and inverse dynamics controller testing.
 VectorX<double> ComputeTorque(
-    const multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const multibody::MultibodyPlant<double>& plant,
     const VectorX<double>& q,
     const VectorX<double>& v,
     const VectorX<double>& vd_d,

@@ -48,7 +48,7 @@ is included in the external documentation.
 adopted consistently throughout the code. New code uses these concepts and
 older code will be retrofitted over time. The documentation here applies to
 the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
-@ref drake::multibody::multibody_plant::MultibodyPlant "MultibodyPlant"
+@ref drake::multibody::MultibodyPlant "MultibodyPlant"
 family of classes; there are some differences from the earlier `RigidBodyTree`
 family.
 

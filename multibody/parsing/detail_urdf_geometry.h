@@ -52,7 +52,7 @@ geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    multibody_plant::CoulombFriction<double>* friction);
+    CoulombFriction<double>* friction);
 
 }  /// namespace detail
 }  /// namespace multibody

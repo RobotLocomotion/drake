@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace test {
 namespace {
 
@@ -121,6 +120,5 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
 
 }  // namespace
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

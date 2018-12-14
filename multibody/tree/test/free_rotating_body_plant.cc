@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace test {
 
 using Eigen::Vector3d;
@@ -149,9 +148,8 @@ SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }
 
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::multibody_tree::test::FreeRotatingBodyPlant)
+    class ::drake::multibody::test::FreeRotatingBodyPlant)

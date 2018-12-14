@@ -237,7 +237,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
@@ -258,7 +258,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,

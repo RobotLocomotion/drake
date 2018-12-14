@@ -58,7 +58,6 @@ using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
-using multibody::multibody_plant::MultibodyPlant;
 using multibody::Parser;
 using systems::AbstractValue;
 using systems::BasicVector;
@@ -96,7 +95,6 @@ class MultibodyPlantTester {
   }
 };
 
-namespace multibody_plant {
 namespace {
 // This test creates a simple model for an acrobot using MultibodyPlant and
 // verifies a number of invariants such as that body and joint models were
@@ -2252,6 +2250,5 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

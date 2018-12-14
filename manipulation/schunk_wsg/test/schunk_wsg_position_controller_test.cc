@@ -19,7 +19,7 @@ namespace {
 
 using Eigen::Vector4d;
 
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::Parser;
 using systems::BasicVector;
 

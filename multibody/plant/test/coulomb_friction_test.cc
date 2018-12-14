@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // Verifies the default constructor for a frictionless surface model, i.e. both
@@ -142,7 +141,6 @@ GTEST_TEST(CoulombFriction, BothSurfacesAreFrictionless) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

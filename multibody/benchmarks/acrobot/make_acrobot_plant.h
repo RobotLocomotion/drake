@@ -148,7 +148,7 @@ class AcrobotParameters {
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<MultibodyPlant<double>>
 MakeAcrobotPlant(const AcrobotParameters& default_parameters, bool finalize,
                  geometry::SceneGraph<double>* scene_graph = nullptr);
 

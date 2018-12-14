@@ -27,7 +27,6 @@ using systems::IntegratorBase;
 using systems::Simulator;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // This unit test loads a model for a box on a flat plane. The plane is the x-y
@@ -184,7 +183,6 @@ GTEST_TEST(Box, UnderStiction) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

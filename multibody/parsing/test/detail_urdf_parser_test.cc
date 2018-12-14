@@ -14,7 +14,6 @@ namespace {
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
-using multibody_plant::MultibodyPlant;
 
 GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   MultibodyPlant<double> plant;

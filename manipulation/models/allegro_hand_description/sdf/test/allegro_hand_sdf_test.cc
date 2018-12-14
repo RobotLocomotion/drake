@@ -10,7 +10,7 @@ namespace drake {
 namespace manipulation {
 namespace {
 
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::ModelInstanceIndex;
 using multibody::Parser;
 

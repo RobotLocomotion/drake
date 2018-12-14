@@ -11,7 +11,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
-using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
+using test_utilities::SpatialKinematicsPVA;
 
 // Compare Drake's MultibodyTree kinematics with MotionGenesis solution.
 void TestEndEffectorKinematics(const Eigen::Ref<const VectorX<double>>& q,

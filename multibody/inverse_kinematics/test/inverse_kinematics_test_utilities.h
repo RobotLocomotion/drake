@@ -23,13 +23,12 @@ std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies();
  * Constructs a MultibodyPlant consisting of two free bodies.
  */
 template <typename T>
-std::unique_ptr<multibody_plant::MultibodyPlant<T>>
-ConstructTwoFreeBodiesPlant();
+std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant();
 
 /**
  * Constructs a MultibodyPlant consisting of an Iiwa robot.
  */
-std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
+std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, double time_step);
 
 /**

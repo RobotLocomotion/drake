@@ -8,7 +8,7 @@
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
 
 using drake::multibody::MultibodyTree;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 namespace drake {
 namespace systems {

@@ -3142,10 +3142,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 /// @endcond
 
 #ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Deprecate and then remove this transitional namespace.
+// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
 namespace multibody_plant {
 template <typename T>
-using MultibodyPlant = ::drake::multibody::MultibodyPlant<T>;
+using MultibodyPlant
+    DRAKE_DEPRECATED("Spell as drake::multibody::MultibodyPlant instead.")
+    = ::drake::multibody::MultibodyPlant<T>;
 }  // namespace multibody_plant
 #endif  // DRAKE_DOXYGEN_CXX
 

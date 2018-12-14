@@ -11,7 +11,7 @@ namespace rendering {
 
 template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
-    const multibody::multibody_plant::MultibodyPlant<T>& plant)
+    const multibody::MultibodyPlant<T>& plant)
     : plant_(plant),
       plant_context_(
           dynamic_pointer_cast_or_throw<multibody::MultibodyTreeContext<T>>(

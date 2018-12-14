@@ -20,7 +20,6 @@ using multibody::Parser;
 using multibody::UniformGravityFieldElement;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // These unit tests verify the convergence of the joint limits as the time step
@@ -264,7 +263,6 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

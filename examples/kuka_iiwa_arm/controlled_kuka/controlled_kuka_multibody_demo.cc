@@ -30,7 +30,7 @@ DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 using drake::multibody::Parser;
 using drake::multibody::UniformGravityFieldElement;

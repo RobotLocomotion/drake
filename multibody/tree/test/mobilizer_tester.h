@@ -13,7 +13,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 
 // Helper fixture to setup a simple MBT model containing a single body
 // connected to the world by a mobilizer.
@@ -71,6 +70,5 @@ class MobilizerTester : public ::testing::Test {
   MultibodyTree<double>* tree_{nullptr};
 };
 
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

@@ -7,7 +7,7 @@
 #include "drake/multibody/parsing/parser.h"
 
 using drake::geometry::SceneGraph;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 using std::string;
 
 namespace drake {
