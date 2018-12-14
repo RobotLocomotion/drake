@@ -200,12 +200,33 @@ class Simulator {
   Simulator(std::unique_ptr<const System<T>> system,
             std::unique_ptr<Context<T>> context = nullptr);
 
-  /// Prepares the %Simulator for a simulation. If the owned Context does not
-  /// satisfy the System's constraints, an attempt is made to modify the values
-  /// of the continuous state variables to satisfy the constraints. This method
-  /// will throw `std::logic_error` if the combination of options doesn't make
-  /// sense, and `std::runtime_error` if it is unable to find a
-  /// constraint-satisfying initial condition.
+  /// Prepares the %Simulator for a simulation. Initialization events are
+  /// triggered and handled, and time-triggered publish events that are
+  /// scheduled for the initial time are handled also. The active integrator's
+  /// Initialize() method is invoked and statistics are reset. (See the class
+  /// documentation for more information.) We recommend calling Initialize()
+  /// explicitly prior to beginning a simulation so that error conditions
+  /// will be discovered early. However, Initialize() will be called
+  /// automatically by the first StepTo() call if it hasn't already been called.
+  ///
+  /// @note If you make a change to the Context or to Simulator options between
+  /// StepTo() calls you should consider whether to call Initialize() before
+  /// resuming; StepTo() will not do that automatically for you. Whether to do
+  /// so depends on whether you want the above initialization operations
+  /// performed. For example, if you changed the time you will likely want the
+  /// time-triggered events to be recalculated in case one is due at the new
+  /// starting time.
+  ///
+  /// @warning Initialize() does not automatically attempt to satisfy System
+  /// constraints -- it is up to you to make sure that constraints are
+  /// satisifed by the initial conditions.
+  ///
+  /// This method will throw `std::logic_error` if the combination of options
+  /// doesn't make sense. Other failures are possible from the System and
+  /// integrator in use.
+  // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
+  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
+  //              automatically by StepTo() if the Context has changed.
   void Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
@@ -221,11 +242,13 @@ class Simulator {
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
   ///
-  /// @warning You should call Initialize() if you alter the state (including
-  ///          time) in the owned context *between successive StepTo() calls*.
+  /// @warning You should consider calling Initialize() if you alter the
+  /// the Context or Simulator options between successive StepTo() calls. See
+  /// Initialize() for more information.
+  ///
   /// @param boundary_time The time to advance the context to.
-  /// @pre The simulation state is valid (i.e., no discrete updates or state
-  /// projections are necessary) at the present time.
+  /// @pre The internal Context satisfies all System constraints or will after
+  ///      pending Context updates are performed.
   void StepTo(const T& boundary_time);
 
   /// Slow the simulation down to *approximately* synchronize with real time
