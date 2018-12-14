@@ -14,7 +14,7 @@
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_tree.h"
-#include "drake/systems/controllers/test_utilities/compute_torque.h"
+#include "drake/systems/controllers/test/rbt_compute_torque.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 
