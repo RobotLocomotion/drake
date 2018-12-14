@@ -55,30 +55,32 @@ namespace dev {
  see the class documentation of CameraInfo.
 
  Output image format:
-   - The RGB image has four channels in the following order: red, green
-     blue, and alpha. Each channel is represented by a uint8_t.
+   - color_image: The RGB image has four channels in the following order: red,
+     green, blue, and alpha. Each channel is represented by a uint8_t.
 
-   - The 32f depth image has a depth channel represented by a float. The value
-     stored in the depth channel holds *the Z value in `D`*, and the value is in
-     meters. Note that this is different from the range data used by laser range
-     finders (like that provided by DepthSensor) in which the depth value
-     represents the distance from the sensor origin to the object's surface.
-     Note that a depth return of 0 and infinity are reserved for measurement
-     being closer or farther than the specified camera depth range, and should
-     be treated as invalid depth returns.
+   - depth_image_32f: The 32f depth image has a depth channel represented by a
+     float. The value stored in the depth channel holds *the Z value in `D`*,
+     and the value is in meters. Note that this is different from the range
+     data used by laser range finders (like that provided by DepthSensor) in
+     which the depth value represents the distance from the sensor origin to
+     the object's surface. Note that a depth return of 0 and infinity are
+     reserved for measurement being closer or farther than the specified camera
+     depth range, and should be treated as invalid depth returns.
 
-   - The data is semantically the same as the float depth image except each
-     pixel is a 16-bit unsigned short instead of a 32-bit float, and the
-     measurement is in millimeter. Similar to the float representation, 0 and
-     65535 are reserved for invalid depth returns. Thus, the maximum valid
-     depth measurement is capped at 65534mm. A depth value of 65535 means the
-     actual measurement is too large to be represented by a 16-bit unsigned
-     short, even if it is under the declared max range of the sensor.
+   - depth_image_16u: Depth is represented by a 16-bit unsigned short instead
+     of a 32-bit float, and the measurement is in millimeter. The values are
+     computed by multiplying the float measurement by 1000, then truncating
+     down to a 16-bit unsigned short. Similar to the float representation, 0 and
+     65535 are reserved for invalid depth returns. A depth value of 65535 can
+     happen for two reasons:
+     - Measurement exceeds the declared sensor range.
+     - Measurement is too large to be represented by a 16-bit unsigned short,
+       even if it is within the declared range.
 
-   - The label image has a single channel represented by a int16_t. The value
-     stored in the channel holds a model ID which corresponds to an object
-     in the scene. For the pixels corresponding to no body, namely the sky
-     and the flat terrain, we assign RenderLabel::empty_label() and
+   - label_image: The label image has a single channel represented by a int16_t.
+     The value stored in the channel holds a model ID which corresponds to an
+     object in the scene. For the pixels corresponding to no body, namely the
+     sky and the flat terrain, we assign RenderLabel::empty_label() and
      RenderLabel::terrain_label(), respectively.
      <!-- TODO(SeanCurtis-TRI): Update these names based on fixing labels. -->
 
