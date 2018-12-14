@@ -71,6 +71,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     }
     Eigen::MatrixXd M_sum(nx, nx);
     M_sum.setZero();
+    const double tol = 1E-6;
     for (int i = 0; i < nx; ++i) {
       M_val[i].resize(nx);
       for (int j = i + 1; j < nx; ++j) {
@@ -81,9 +82,14 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
         M_val[i][j](j, i) = M_val[i][j](i, j);
         M_val[i][j](j, j) = symbolic::Expression(M[i][j](1, 1)).Evaluate(env);
         M_sum += M_val[i][j];
+        // (M[i][j](0, 0); M[i][j](1, 1); M[i][j](0, 1)) should be in the
+        // rotated Lorentz cone.
+        EXPECT_GE(M_val[i][j](i, i), -tol);
+        EXPECT_GE(M_val[i][j](j, j), -tol);
+        EXPECT_GE(M_val[i][j](i, i) * M_val[i][j](j, j),
+                  std::pow(M_val[i][j](i, j), 2) - tol);
       }
     }
-    const double tol = 1E-6;
     EXPECT_TRUE(CompareMatrices(M_sum, X_val, tol));
   } else {
     EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
