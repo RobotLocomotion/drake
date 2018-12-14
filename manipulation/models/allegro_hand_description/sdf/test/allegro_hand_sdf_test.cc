@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace manipulation {
