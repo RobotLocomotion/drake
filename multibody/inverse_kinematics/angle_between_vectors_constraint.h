@@ -32,9 +32,9 @@ class AngleBetweenVectorsConstraint : public solvers::Constraint {
    *   denoted as θ_lower in the class documentation.
    * @param angle_upper The upper bound on the angle between `a` and `b`. it is
    *   denoted as θ_upper in the class documentation.
-   * @param context The Context that has been allocated for this `plant`. We will
-   *   update the context when evaluating the constraint. `context` should be
-   *   alive during the lifetime of this constraint.
+   * @param context The Context that has been allocated for this `plant`. We
+   *   will update the context when evaluating the constraint. `context` should
+   *   be alive during the lifetime of this constraint.
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `a_A` is close to zero.

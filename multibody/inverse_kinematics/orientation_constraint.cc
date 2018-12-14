@@ -77,8 +77,7 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   Eigen::MatrixXd Jq_V_AbarBbar(6, plant_.num_positions());
   plant_.tree().CalcJacobianSpatialVelocity(
       *context_, JacobianWrtVariable::kQDot, frameBbar,
-      Eigen::Vector3d::Zero() /* p_BQ */, frameAbar, frameAbar,
-      &Jq_V_AbarBbar);
+      Eigen::Vector3d::Zero() /* p_BQ */, frameAbar, frameAbar, &Jq_V_AbarBbar);
   // Since we're only concerned with the rotational portion,
   // Jq_w_AB = Jq_w_AbarBbar_A.
   const Eigen::MatrixXd Jq_w_AB =

@@ -55,8 +55,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
       dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get());
   mbt_context_autodiff->get_mutable_positions() = q_autodiff;
   AutoDiffVecXd y_autodiff_expected = EvalOrientationConstraintAutoDiff(
-      *context_autodiff_,
-      iiwa_autodiff_.tree(),
+      *context_autodiff_, iiwa_autodiff_.tree(),
       iiwa_autodiff_.tree().GetFrameByName(frameAbar.name()), R_AbarA,
       iiwa_autodiff_.tree().GetFrameByName(frameBbar.name()), R_BbarB);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
@@ -67,8 +66,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
   mbt_context_autodiff->get_mutable_positions() = q_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalOrientationConstraintAutoDiff(
-      *context_autodiff_,
-      iiwa_autodiff_.tree(),
+      *context_autodiff_, iiwa_autodiff_.tree(),
       iiwa_autodiff_.tree().GetFrameByName(frameAbar.name()), R_AbarA,
       iiwa_autodiff_.tree().GetFrameByName(frameBbar.name()), R_BbarB);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
