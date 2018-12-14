@@ -1089,9 +1089,9 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   // y value    n    corresponding time   signal logger value
   // --------------------------------------------------------
   // y₀         0    N/A                  initial value
-  // y₁         1    t = 0                sin(0) 
-  // y₂         2    t = period           sin(period)
-  // y₃         3    t = 2 * period       sin(2 * period)
+  // y₁         1    t = 0                sin(0)
+  // y₂         2    t = period           sin(period * frequency)
+  // y₃         3    t = 2 * period       sin(2 * period * frequency)
   // ...
   const VectorX<double> times = logger->sample_times();
   const MatrixX<double> data = logger->data();
@@ -1099,10 +1099,10 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   ASSERT_EQ(data.rows(), 1);
   for (int i = 0; i < times.size(); ++i) {
     const double y = data(0, i);
-    const double n = times[i] / sinusoidal_system->kUpdatePeriod;
+    const double n = std::round(times[i] / sinusoidal_system->kUpdatePeriod);
     // Values for n = 0 are a special case, handled here (they're not computed
     // according to the formula in the test - it's just an initial value).
-    if (std::abs(n) < eps) {
+    if (n == 0.0) {
       ASSERT_NEAR(y, initial_value, eps);
     } else {
       EXPECT_NEAR(std::sin((times[i] - sinusoidal_system->kUpdatePeriod) *
