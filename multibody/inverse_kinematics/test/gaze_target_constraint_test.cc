@@ -36,7 +36,7 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
   const Eigen::Vector3d n_A(-0.1, 0.3, 0.4);
   const Eigen::Vector3d p_BT(0.4, 0.2, -0.3);
   const double cone_half_angle{0.1 * M_PI};
-  GazeTargetConstraint constraint(*plant_, frameA, p_AS, n_A, frameB, p_BT,
+  GazeTargetConstraint constraint(plant_, frameA, p_AS, n_A, frameB, p_BT,
                                   cone_half_angle, plant_context_);
 
   EXPECT_EQ(constraint.num_constraints(), 2);
@@ -101,14 +101,14 @@ TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {
 
   {
     GazeTargetConstraint good_constraint(
-        *plant_, plant_->tree().get_frame(body1_index_), p_AS, n_A,
+        plant_, plant_->tree().get_frame(body1_index_), p_AS, n_A,
         plant_->tree().get_frame(body2_index_), p_BT, angle + 0.01 * M_PI,
         plant_context_);
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
   }
   {
     GazeTargetConstraint bad_constraint(
-        *plant_, plant_->tree().get_frame(body1_index_), p_AS, n_A,
+        plant_, plant_->tree().get_frame(body1_index_), p_AS, n_A,
         plant_->tree().get_frame(body2_index_), p_BT, angle - 0.01 * M_PI,
         plant_context_);
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
@@ -124,13 +124,13 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraintConstructorError) {
   const Frame<double>& frameB = plant_->GetFrameByName("iiwa_link_4");
   // zero n_A
   EXPECT_THROW(
-      GazeTargetConstraint(*plant_, frameA, p_AS, Eigen::Vector3d::Zero(),
+      GazeTargetConstraint(plant_, frameA, p_AS, Eigen::Vector3d::Zero(),
                            frameB, p_BT, 0.1, plant_context_),
       std::invalid_argument);
 
   // wrong cone_half_angle
   EXPECT_THROW(
-      GazeTargetConstraint(*plant_, frameA, p_AS, Eigen::Vector3d::Ones(),
+      GazeTargetConstraint(plant_, frameA, p_AS, Eigen::Vector3d::Ones(),
                            frameB, p_BT, -0.1, plant_context_),
       std::invalid_argument);
 }

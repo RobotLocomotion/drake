@@ -35,7 +35,7 @@ TEST_F(IiwaKinematicConstraintTest, OrientationConstraint) {
       0.2 * M_PI, Eigen::Vector3d(0.2, 0.4, -0.5).normalized()));
   const math::RotationMatrix<double> R_BbarB(Eigen::AngleAxisd(
       -0.4 * M_PI, Eigen::Vector3d(0.1, 1.2, -0.7).normalized()));
-  OrientationConstraint constraint(*plant_, frameAbar, R_AbarA, frameBbar,
+  OrientationConstraint constraint(plant_, frameAbar, R_AbarA, frameBbar,
                                    R_BbarB, angle_bound, plant_context_);
 
   EXPECT_EQ(constraint.num_constraints(), 1);
@@ -96,13 +96,13 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
   const double theta = R_AB.ToAngleAxis().angle();
 
   OrientationConstraint good_constraint(
-      *plant_, plant_->tree().get_frame(body1_index_), R_AbarA,
+      plant_, plant_->tree().get_frame(body1_index_), R_AbarA,
       plant_->tree().get_frame(body2_index_), R_BbarB, theta * 1.01,
       plant_context_);
   EXPECT_TRUE(good_constraint.CheckSatisfied(q));
 
   OrientationConstraint bad_constraint(
-      *plant_, plant_->tree().get_frame(body1_index_), R_AbarA,
+      plant_, plant_->tree().get_frame(body1_index_), R_AbarA,
       plant_->tree().get_frame(body2_index_), R_BbarB, theta * 0.99,
       plant_context_);
   EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
@@ -110,7 +110,7 @@ TEST_F(TwoFreeBodiesConstraintTest, OrientationConstraint) {
 TEST_F(IiwaKinematicConstraintTest, OrientationConstraintConstructionError) {
   // Throws a logic error for negative angle bound.
   EXPECT_THROW(
-      OrientationConstraint(*plant_, plant_->GetFrameByName("iiwa_link_7"),
+      OrientationConstraint(plant_, plant_->GetFrameByName("iiwa_link_7"),
                             math::RotationMatrix<double>::Identity(),
                             plant_->GetFrameByName("iiwa_link_3"),
                             math::RotationMatrix<double>::Identity(), -0.01,

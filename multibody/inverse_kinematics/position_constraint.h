@@ -33,7 +33,7 @@ class PositionConstraint : public solvers::Constraint {
    *   will update the context when evaluating the constraint. @p context should
    *   be alive during the lifetime of this constraint.
    */
-  PositionConstraint(const multibody_plant::MultibodyPlant<double>& plant,
+  PositionConstraint(const multibody_plant::MultibodyPlant<double>* const plant,
                      const Frame<double>& frameB,
                      const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
                      const Frame<double>& frameA,

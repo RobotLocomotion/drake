@@ -3,19 +3,21 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
+using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
 PositionConstraint::PositionConstraint(
-    const multibody_plant::MultibodyPlant<double>& plant,
+    const multibody_plant::MultibodyPlant<double>* const plant,
     const Frame<double>& frameB, const Eigen::Ref<const Eigen::Vector3d>& p_BQ,
     const Frame<double>& frameA,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper,
     systems::Context<double>* context)
-    : solvers::Constraint(3, plant.num_positions(), p_AQ_lower, p_AQ_upper),
-      plant_(plant),
+    : solvers::Constraint(3, RefFromPtrOrThrow(plant).num_positions(),
+                          p_AQ_lower, p_AQ_upper),
+      plant_(RefFromPtrOrThrow(plant)),
       frameB_{frameB},
       frameA_{frameA},
       p_BQ_{p_BQ},

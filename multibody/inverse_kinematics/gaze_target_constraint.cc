@@ -5,21 +5,22 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
-using drake::multibody::internal::UpdateContextConfiguration;
 using drake::multibody::internal::NormalizeVector;
+using drake::multibody::internal::RefFromPtrOrThrow;
+using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
 GazeTargetConstraint::GazeTargetConstraint(
-    const multibody_plant::MultibodyPlant<double>& plant,
+    const multibody_plant::MultibodyPlant<double>* const plant,
     const Frame<double>& frameA, const Eigen::Ref<const Eigen::Vector3d>& p_AS,
     const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
     systems::Context<double>* context)
     : solvers::Constraint(
-          2, plant.num_positions(), Eigen::Vector2d::Zero(),
+          2, RefFromPtrOrThrow(plant).num_positions(), Eigen::Vector2d::Zero(),
           Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())),
-      plant_{plant},
+      plant_{RefFromPtrOrThrow(plant)},
       frameA_{frameA},
       p_AS_{p_AS},
       n_A_{NormalizeVector(n_A)},

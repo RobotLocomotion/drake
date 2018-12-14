@@ -47,14 +47,13 @@ class GazeTargetConstraint : public solvers::Constraint {
    * @throws std::invalid_argument is n_A is close to a zero vector.
    * @throws std::invalid_argument if cone_half_angle is outside of the bound.
    */
-  GazeTargetConstraint(const multibody_plant::MultibodyPlant<double>& plant,
-                       const Frame<double>& frameA,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_AS,
-                       const Eigen::Ref<const Eigen::Vector3d>& n_A,
-                       const Frame<double>& frameB,
-                       const Eigen::Ref<const Eigen::Vector3d>& p_BT,
-                       double cone_half_angle,
-                       systems::Context<double>* context);
+  GazeTargetConstraint(
+      const multibody_plant::MultibodyPlant<double>* const plant,
+      const Frame<double>& frameA,
+      const Eigen::Ref<const Eigen::Vector3d>& p_AS,
+      const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
+      const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle,
+      systems::Context<double>* context);
 
   ~GazeTargetConstraint() override{};
 

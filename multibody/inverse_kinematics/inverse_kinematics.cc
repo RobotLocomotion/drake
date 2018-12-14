@@ -42,7 +42,7 @@ solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_lower,
     const Eigen::Ref<const Eigen::Vector3d>& p_AQ_upper) {
   auto constraint = std::make_shared<PositionConstraint>(
-      plant_, frameB, p_BQ, frameA, p_AQ_lower, p_AQ_upper,
+      &plant_, frameB, p_BQ, frameA, p_AQ_lower, p_AQ_upper,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
@@ -53,7 +53,7 @@ InverseKinematics::AddOrientationConstraint(
     const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
     double angle_bound) {
   auto constraint = std::make_shared<OrientationConstraint>(
-      plant_, frameAbar, R_AbarA, frameBbar, R_BbarB, angle_bound,
+      &plant_, frameAbar, R_AbarA, frameBbar, R_BbarB, angle_bound,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
@@ -64,7 +64,7 @@ InverseKinematics::AddGazeTargetConstraint(
     const Eigen::Ref<const Eigen::Vector3d>& n_A, const Frame<double>& frameB,
     const Eigen::Ref<const Eigen::Vector3d>& p_BT, double cone_half_angle) {
   auto constraint = std::make_shared<GazeTargetConstraint>(
-      plant_, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle,
+      &plant_, frameA, p_AS, n_A, frameB, p_BT, cone_half_angle,
       get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }

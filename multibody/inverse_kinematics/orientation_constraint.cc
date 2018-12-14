@@ -3,18 +3,19 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/inverse_kinematics/kinematic_constraint_utilities.h"
 
+using drake::multibody::internal::RefFromPtrOrThrow;
 using drake::multibody::internal::UpdateContextConfiguration;
 
 namespace drake {
 namespace multibody {
 OrientationConstraint::OrientationConstraint(
-    const multibody_plant::MultibodyPlant<double>& plant,
+    const multibody_plant::MultibodyPlant<double>* const plant,
     const Frame<double>& frameAbar, const math::RotationMatrix<double>& R_AbarA,
     const Frame<double>& frameBbar, const math::RotationMatrix<double>& R_BbarB,
     double theta_bound, systems::Context<double>* context)
-    : solvers::Constraint(1, plant.num_positions(),
+    : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(2 * std::cos(theta_bound) + 1), Vector1d(3)),
-      plant_{plant},
+      plant_{RefFromPtrOrThrow(plant)},
       frameAbar_{frameAbar},
       frameBbar_{frameBbar},
       R_AbarA_{R_AbarA},
