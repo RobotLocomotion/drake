@@ -1971,7 +1971,7 @@ GTEST_TEST(StateSelection, JointHasNoActuator) {
   std::vector<JointIndex> selected_joints;
   selected_joints.push_back(plant.GetJointByName("ShoulderJoint").index());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.tree().MakeActuatorSelectorMatrix(selected_joints),
+      plant.MakeActuatorSelectorMatrix(selected_joints),
       std::logic_error,
       "Joint 'ShoulderJoint' does not have an actuator.");
 }
@@ -2029,11 +2029,11 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 
   // State selector for the arm.
   const MatrixX<double> Sx_arm =
-      plant.tree().MakeStateSelectorMatrix(arm_selected_joints);
+      plant.MakeStateSelectorMatrix(arm_selected_joints);
 
   // Actuation selector for the arm.
   const MatrixX<double> Su_arm =
-      plant.tree().MakeActuatorSelectorMatrix(arm_selected_joints);
+      plant.MakeActuatorSelectorMatrix(arm_selected_joints);
 
   // Verify the sizes (all these joints are revolute with one q and one v).
   const int num_selected_states = 2 * arm_selected_joints.size();
@@ -2082,7 +2082,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
     repeated_joint_indexes.push_back(plant.GetJointByName(joint_name).index());
   }
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.tree().MakeStateSelectorMatrix(repeated_joint_indexes),
+      plant.MakeStateSelectorMatrix(repeated_joint_indexes),
       std::logic_error,
       "Joint named 'iiwa_joint_3' is repeated multiple times.");
 
@@ -2103,11 +2103,11 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 
   // State selector for the griper.
   const MatrixX<double> Sx_gripper =
-      plant.tree().MakeStateSelectorMatrix(gripper_selected_joints);
+      plant.MakeStateSelectorMatrix(gripper_selected_joints);
 
   // Actuation selector for the gripper.
   const MatrixX<double> Su_gripper =
-      plant.tree().MakeActuatorSelectorMatrix(gripper_selected_joints);
+      plant.MakeActuatorSelectorMatrix(gripper_selected_joints);
 
   // Similarly we know the expected value for the gripper's selector matrix.
   MatrixX<double> Sx_gripper_expected =
@@ -2137,20 +2137,26 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   EXPECT_EQ(Sx_from_empty_names.cols(), plant.num_multibody_states());
 
   const MatrixX<double> Sx_from_empty_indexes =
-      plant.tree().MakeStateSelectorMatrix(std::vector<JointIndex>());
+      plant.MakeStateSelectorMatrix(std::vector<JointIndex>());
   EXPECT_EQ(Sx_from_empty_indexes.rows(), 0);
   EXPECT_EQ(Sx_from_empty_indexes.cols(), plant.num_multibody_states());
 
   const MatrixX<double> Su_from_empty_actuators =
-      plant.tree().MakeActuatorSelectorMatrix(
+      plant.MakeActuatorSelectorMatrix(
           std::vector<JointActuatorIndex>());
   EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
   EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
 
   const MatrixX<double> Su_from_empty_joints =
-      plant.tree().MakeActuatorSelectorMatrix(std::vector<JointIndex>());
+      plant.MakeActuatorSelectorMatrix(std::vector<JointIndex>());
   EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
   EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
+
+  // Test old spellings.
+  unused(plant.tree().MakeStateSelectorMatrix(std::vector<JointIndex>()));
+  unused(plant.tree().MakeActuatorSelectorMatrix(std::vector<JointIndex>()));
+  unused(plant.tree().MakeActuatorSelectorMatrix(
+      std::vector<JointActuatorIndex>()));
 }
 
 // This unit test verifies the workings of
