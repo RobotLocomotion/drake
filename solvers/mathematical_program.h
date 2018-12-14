@@ -558,31 +558,86 @@ class MathematicalProgram {
       const symbolic::Variables& indeterminates, int degree,
       const std::string& coeff_name = "a");
 
-  /** Returns a pair of a SOS polynomial p = mᵀQm and a PSD constraint for
-   * a new coefficients matrix Q, where m is the @p monomial basis.
+  /**
+   * Types of non-negative polynomial that can be found through conic
+   * optimization. We currently support SOS, SDSOS and DSOS. For more
+   * information about these polynomial types, please refer to
+   * "DSOS and SDSOS Optimization: More Tractable
+   * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
+   * Ahmadi and Anirudha Majumdar, with arXiv link
+   * https://arxiv.org/abs/1706.02586
+   */
+  enum class NonnegativePolynomial {
+    kSos,    ///< A sum-of-squares polynomial.
+    kSdsos,  ///< A scaled-diagonally dominant sum-of-squares polynomial.
+    kDsos,   ///< A diagonally dominant sum-of-squares polynomial.
+  };
+
+  /**
+   * Returns a pair of nonnegative polynomial p = mᵀQm and the coefficient
+   * matrix Q, where m is @p monomial_basis. Adds Q as decision variables to the
+   * program. Depending on the type of the polynomial, we will impose different
+   * constraint on Q.
+   * if type = kSos, we impose Q being positive semidefinite.
+   * if type = kSdsos, we impose Q being scaled diagonally dominant.
+   * if type = kDsos, we impose Q being positive diagonally dominant.
+   * @param monomial_basis The monomial basis.
+   * @param type The type of the nonnegative polynomial.
+   * @return (p, Q) The polynomial p and the coefficient matrix Q. Q has been
+   * added as decision variables to the program.
+   */
+  std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
+  NewNonnegativePolynomial(
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      NonnegativePolynomial type);
+
+  /**
+   * Returns a pair of nonnegative polynomial p = mᵀQm and the coefficient
+   * matrix Q, where m is the monomial basis, containing all monomials of @p
+   * indeterminates of total order up to @p degree / 2, hence the polynomial p
+   * contains all the monomials of total order up to @p degree, as p is
+   * quadratic in m. Adds Q as decision variables to the program.
+   * Depending on the type of the polynomial, we will impose different
+   * constraint on Q.
+   * if type = kSos, we impose Q being positive semidefinite.
+   * if type = kSdsos, we impose Q being scaled diagonally dominant.
+   * if type = kDsos, we impose Q being positive diagonally dominant.
+   * @param indeterminates All the indeterminates in the polynomial p.
+   * @param degree The polynomial p will contain all the monomials up to order
+   * @p degree.
+   * @param type The type of the nonnegative polynomial.
+   * @return (p, Q) The polynomial p and the coefficient matrix Q. Q has been
+   * added as decision variables to the program.
+   * @pre @p degree is a positive even number.
+   */
+  std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
+  NewNonnegativePolynomial(const symbolic::Variables& indeterminates,
+                           int degree, NonnegativePolynomial type);
+
+  /** Returns a pair of a SOS polynomial p = mᵀQm and the coefficient matrix Q,
+   * where m is the @p monomial basis.
    * For example, `NewSosPolynomial(Vector2<Monomial>{x,y})` returns a
    * polynomial
    *   p = Q₍₀,₀₎x² + 2Q₍₁,₀₎xy + Q₍₁,₁₎y²
-   * and a PSD constraint over Q.
+   * and Q.
    * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
    */
-  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-  NewSosPolynomial(
+  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
 
   /** Returns a pair of a SOS polynomial p = m(x)ᵀQm(x) of degree @p degree
-   * and a PSD constraint for the coefficients matrix Q, where m(x) is the
+   * and the coefficient matrix Q that should be PSD, where m(x) is the
    * result of calling `MonomialBasis(indeterminates, degree/2)`. For example,
    * `NewSosPolynomial({x}, 4)` returns a pair of a polynomial
    *   p = Q₍₀,₀₎x⁴ + 2Q₍₁,₀₎ x³ + (2Q₍₂,₀₎ + Q₍₁,₁₎)x² + 2Q₍₂,₁₎x + Q₍₂,₂₎
-   * and a PSD constraint over Q.
+   * and Q.
    *
    * @throws std::runtime_error if @p degree is not a positive even integer.
    * @see MonomialBasis.
    */
-  std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-  NewSosPolynomial(const symbolic::Variables& indeterminates, int degree);
+  std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
+      const symbolic::Variables& indeterminates, int degree);
 
   /**
    * Adds indeterminates, appending them to an internal vector of any
@@ -2092,13 +2147,12 @@ class MathematicalProgram {
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
-   * monomial_basis. It returns a pair of constraint bindings expressing:
+   * monomial_basis. It returns a pair expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
-  std::pair<Binding<PositiveSemidefiniteConstraint>,
-            Binding<LinearEqualityConstraint>>
+  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
   AddSosConstraint(
       const symbolic::Polynomial& p,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
@@ -2109,11 +2163,10 @@ class MathematicalProgram {
    * basis of all indeterminates in the program with degree equal to half the
    * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
-  std::pair<Binding<PositiveSemidefiniteConstraint>,
-            Binding<LinearEqualityConstraint>>
+  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
@@ -2123,11 +2176,10 @@ class MathematicalProgram {
    * polynomial with respect to `indeterminates()` in this mathematical
    * program. It returns a pair of constraint bindings expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
-  std::pair<Binding<PositiveSemidefiniteConstraint>,
-            Binding<LinearEqualityConstraint>>
+  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
   AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
@@ -2139,11 +2191,10 @@ class MathematicalProgram {
    * mathematical program. It returns a pair of
    * constraint bindings expressing:
    *
-   *  - The coefficients matrix Q is PSD (positive semidefinite).
+   *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
    */
-  std::pair<Binding<PositiveSemidefiniteConstraint>,
-            Binding<LinearEqualityConstraint>>
+  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
   AddSosConstraint(const symbolic::Expression& e);
 
   // template <typename FunctionType>

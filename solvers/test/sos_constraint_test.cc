@@ -39,10 +39,10 @@ class SosConstraintTest : public ::testing::Test {
     }
   }
 
-  void CheckNewSosPolynomial(
-      const symbolic::Polynomial& p,
-      const Binding<PositiveSemidefiniteConstraint>& psd_binding,
-      const Variables& indeterminates, const int degree) {
+  void CheckNewSosPolynomial(const symbolic::Polynomial& p,
+                             const MatrixXDecisionVariable& Q,
+                             const Variables& indeterminates,
+                             const int degree) {
     // p = xᵀ*Q*x.
     // where x = monomial_basis(indeterminates, degree) and
     //       Q is p.s.d.
@@ -54,21 +54,22 @@ class SosConstraintTest : public ::testing::Test {
     EXPECT_EQ(p.decision_variables().size(),
               monomial_basis.size() * (monomial_basis.size() + 1) / 2);
     // Q is the coefficient matrix of p.
-    EXPECT_EQ(p.decision_variables(), Variables(psd_binding.variables()));
+    VectorXDecisionVariable Q_flat(Q.size());
+    for (int i = 0; i < Q.cols(); ++i) {
+      Q_flat.segment(i * Q.rows(), Q.rows()) = Q.col(i);
+    }
+    EXPECT_EQ(p.decision_variables(), Variables(Q_flat));
     prog_.Solve();
-    CheckPsdBinding(psd_binding);
+    CheckPositiveDefiniteMatrix(Q);
   }
 
   // Checks Q has all eigen values as approximately non-negatives.
   // Precondition: prog_.Solve() has been called.
-  void CheckPsdBinding(
-      const Binding<PositiveSemidefiniteConstraint>& psd_binding,
-      const double eps = 1e-07) {
-    const VectorXDecisionVariable& variables{psd_binding.variables()};
-    const auto values = prog_.GetSolution(variables);
-    Eigen::VectorXd eigen_values;
-    psd_binding.evaluator()->Eval(values, &eigen_values);
-    EXPECT_TRUE((eigen_values.array() >= -eps).all());
+  void CheckPositiveDefiniteMatrix(const MatrixXDecisionVariable& Q,
+                       const double eps = 1e-07) {
+    const Eigen::MatrixXd Q_val = prog_.GetSolution(Q);
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q_val);
+    EXPECT_TRUE((es.eigenvalues().array() >= -eps).all());
   }
 
  protected:
@@ -126,8 +127,8 @@ TEST_F(SosConstraintTest, NewSosPolynomialUnivariate1) {
   const int degree{2};
   const auto p = prog_.NewSosPolynomial(indeterminates, degree);
   const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+  const MatrixXDecisionVariable& Q{p.second};
+  CheckNewSosPolynomial(poly, Q, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialUnivariate2) {
@@ -136,8 +137,8 @@ TEST_F(SosConstraintTest, NewSosPolynomialUnivariate2) {
   const int degree{4};
   const auto p = prog_.NewSosPolynomial(indeterminates, degree);
   const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+  const MatrixXDecisionVariable& Q{p.second};
+  CheckNewSosPolynomial(poly, Q, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialMultivariate1) {
@@ -147,8 +148,8 @@ TEST_F(SosConstraintTest, NewSosPolynomialMultivariate1) {
   const int degree{2};
   const auto p = prog_.NewSosPolynomial(indeterminates, degree);
   const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+  const MatrixXDecisionVariable& Q{p.second};
+  CheckNewSosPolynomial(poly, Q, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialMultivariate2) {
@@ -159,8 +160,8 @@ TEST_F(SosConstraintTest, NewSosPolynomialMultivariate2) {
   const int degree{4};
   const auto p = prog_.NewSosPolynomial(indeterminates, degree);
   const symbolic::Polynomial& poly{p.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{p.second};
-  CheckNewSosPolynomial(poly, psd_binding, indeterminates, degree);
+  const MatrixXDecisionVariable& Q{p.second};
+  CheckNewSosPolynomial(poly, Q, indeterminates, degree);
 }
 
 TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
@@ -169,10 +170,11 @@ TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
   Vector2<Monomial> basis{ x0, x1 };
   const auto p = prog_.NewSosPolynomial(basis);
   const symbolic::Polynomial& poly{p.first};
-  const VectorXDecisionVariable& Qvec = p.second.variables();
-  const symbolic::Polynomial expected_poly{ Qvec(0)*x0*x0 + 2*Qvec(1)*x0*x1 +
-                                                Qvec(3)*x1*x1 };
-  EXPECT_TRUE(poly.ToExpression().EqualTo(expected_poly.ToExpression()));
+  const MatrixXDecisionVariable& Q = p.second;
+  const symbolic::Polynomial expected_poly{
+      Q(0, 0) * x0 * x0 + 2 * Q(0, 1) * x0 * x1 + Q(1, 1) * x1 * x1,
+      symbolic::Variables({x0, x1})};
+  EXPECT_TRUE(poly.EqualTo(expected_poly));
 }
 
 // Shows that f(x) = x² + 2x + 1 is SOS.
@@ -181,7 +183,7 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
   const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1);
   const auto result = prog_.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  CheckPsdBinding(binding_pair.first);
+  CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
 // Finds the global minimum of f(x) = x⁶ − 10x⁵ + 51x⁴ − 166x³ + 342x² − 400x +
@@ -197,7 +199,7 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const auto result = prog_.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_LE(prog_.GetSolution(c), 1E-4);
-  CheckPsdBinding(binding_pair.first, 1E-6 /* eps */);
+  CheckPositiveDefiniteMatrix(binding_pair.first, 1E-6 /* eps */);
 }
 
 // Shows that f(x₀, x₁) = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴ is SOS.
@@ -209,7 +211,7 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
                              pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4));
   const auto result = prog_.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  CheckPsdBinding(binding_pair.first);
+  CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
 
@@ -220,7 +222,7 @@ TEST_F(SosConstraintTest, AddSosPolynomialViaMonomialBasis) {
                                                    basis);
   const auto result = prog_.Solve();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  CheckPsdBinding(binding_pair.first);
+  CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
 // Finds the global minimum of the non-convex polynomial f(x₀, x₁) = 4 * x₀² −
@@ -240,7 +242,7 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate2) {
   const auto result = prog_.Solve();
   ASSERT_EQ(result, SolutionResult::kSolutionFound);
   EXPECT_NEAR(prog_.GetSolution(c), -1.0316, 1E-4);
-  CheckPsdBinding(binding_pair.first);
+  CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
 TEST_F(SosConstraintTest, SynthesizeLyapunovFunction) {
