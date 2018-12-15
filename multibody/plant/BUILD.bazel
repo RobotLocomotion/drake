@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":coulomb_friction",
         ":implicit_stribeck_solver",
         ":multibody_plant_core",
+        ":multibody_plant_scene_graph",
     ],
 )
 
@@ -54,6 +55,16 @@ drake_cc_library(
         "//math:orthonormal_basis",
         "//multibody/tree",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_scene_graph",
+    srcs = ["multibody_plant_scene_graph.h"],
+    deps = [
+        ":multibody_plant_core",
+        "//geometry:scene_graph",
+        "//systems/framework:diagram_builder",
     ],
 )
 

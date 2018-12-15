@@ -26,6 +26,7 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant_scene_graph.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -261,13 +262,11 @@ class AcrobotPlantTests : public ::testing::Test {
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
-    scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-    plant_ = builder.AddSystem<MultibodyPlant>();
-    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
     Parser(plant_).AddModelFromFile(full_name);
     // Add gravity to the model.
     plant_->AddForceElement<UniformGravityFieldElement>(
@@ -279,10 +278,6 @@ class AcrobotPlantTests : public ::testing::Test {
     // Ensure that we can access the geometry ports pre-finalize.
     EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
     EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
-
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_continuous_state_output_port(),
@@ -697,10 +692,7 @@ class SphereChainScenario {
       std::function<void(SphereChainScenario*)> apply_filters = nullptr) {
     using std::to_string;
     systems::DiagramBuilder<double> builder;
-    scene_graph_ = builder.AddSystem<SceneGraph<double>>();
-    plant_ = builder.AddSystem<MultibodyPlant<double>>();
-
-    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
 
     // A half-space for the ground geometry.
     ground_id_ = plant_->RegisterCollisionGeometry(
@@ -746,12 +738,6 @@ class SphereChainScenario {
 
     // We are done defining the model.
     plant_->Finalize();
-
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(*plant_->get_source_id()));
-    builder.Connect(scene_graph_->get_query_output_port(),
-                    plant_->get_geometry_query_input_port());
 
     if (apply_filters != nullptr) apply_filters(this);
 
