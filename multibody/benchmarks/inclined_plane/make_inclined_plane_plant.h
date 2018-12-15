@@ -10,8 +10,7 @@ namespace multibody {
 namespace benchmarks {
 namespace inclined_plane {
 
-/// This method makes a MultibodyPlant model for a sphere rolling down an
-/// inclined plane.
+/// This method adds a sphere rolling down an inclined plane.
 ///
 /// @param[in] radius
 ///   The radius in meters of the sphere.
@@ -24,21 +23,33 @@ namespace inclined_plane {
 ///   surface properties for both the inclined plane and the sphere.
 /// @param[in] gravity
 ///   The acceleration of gravity, in m/s². Points in the minus z direction.
-/// @param[in] time_step
-///   If `time_step = 0`, the plant is modeled as a continuous system. Otherwise
-///   when `time_step > 0` the plant is modeled as a discrete system with
-///   periodic updates of period `time_step`. `time_step` must be non-negative.
-/// @param scene_graph
-///   This factory method will register the new multibody plant to be a source
-///   for this geometry system and it will also register geometry for contact
-///   modeling.
-/// @throws std::exception if time_step is negative.
-/// @throws std::exception if scene_graph is nullptr.
-std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
+/// @param[out] plant
+///   Plant to contain the sphere and plane.
+/// @throws std::exception if plant is nullptr.
+/// @pre plant as registered with a scene graph.
+void AddInclinedPlanePlant(
+    double radius, double mass, double slope,
+    const CoulombFriction<double>& surface_friction,
+    double gravity,
+    MultibodyPlant<double>* plant);
+
+// TODO(eric.cousineau): Remove on or about 2018/03/01.
+/// Deprecated method. Use `AddInclinedPlanePlant` instead.
+DRAKE_DEPRECATED("Use `AddInclinedPlanePlant` instead.")
+inline std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
     double radius, double mass, double slope,
     const CoulombFriction<double>& surface_friction,
     double gravity, double time_step,
-    geometry::SceneGraph<double>* scene_graph);
+    geometry::SceneGraph<double>* scene_graph) {
+  DRAKE_DEMAND(scene_graph != nullptr);
+  DRAKE_DEMAND(time_step >= 0);
+  auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
+  plant->RegisterAsSourceForSceneGraph(scene_graph);
+  AddInclinedPlanePlant(
+      radius, mass, slope, surface_friction, gravity, plant.get());
+  plant->Finalize();
+  return plant;
+}
 
 }  // namespace inclined_plane
 }  // namespace benchmarks
