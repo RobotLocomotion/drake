@@ -352,29 +352,34 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 }
 
 // A functor to support DistanceFromPointCallback(). It computes the signed
-// distance to a query point from a supported geometry.  Its constructor takes:
-// @param id_in    the id of the geometry,
-// @param X_WG_in  pose of the geometry in World frame,
-// @param p_WQ_in  position of the query point Q in World frame.
-//
-// Each operator() takes a geometry and returns a SignedDistanceToPoint.
-struct DistanceToPoint {
+// distance to a query point from a supported geometry.
+// Each overload to the call operator reports the signed distance (encoded as
+// SignedDistanceToPoint) between the functor's stored query point and the
+// given geometry argument.
+class DistanceToPoint {
+ public:
+  // Constructor of the functor.
+  // @param id_in    the id of the geometry,
+  // @param X_WG_in  pose of the geometry in World frame,
+  // @param p_WQ_in  position of the query point Q in World frame.
   DistanceToPoint(const GeometryId id_in,
                   const Isometry3<double>& X_WG_in,
                   const Vector3d& p_WQ_in) :
-                  geometry_id(id_in), X_WG(X_WG_in), p_WQ(p_WQ_in) {}
+                  geometry_id_(id_in), X_WG_(X_WG_in), p_WQ_(p_WQ_in) {}
 
-  const GeometryId geometry_id;
-  const Isometry3<double> X_WG;
-  const Vector3d p_WQ;
+ private:
+  const GeometryId geometry_id_;
+  const Isometry3<double> X_WG_;
+  const Vector3d p_WQ_;
 
+ public:
   // Overload for Sphere.
   SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere) {
     // TODO(DamrongGuoy): Move most code of this function into FCL.
     const double radius = sphere.radius;
 
-    const Vector3d& p_WG = X_WG.translation();
-    const Vector3d p_GQ_W = p_WQ - p_WG;
+    const Vector3d& p_WG = X_WG_.translation();
+    const Vector3d p_GQ_W = p_WQ_ - p_WG;
     const double dist_GQ = p_GQ_W.norm();
     const double distance = dist_GQ - radius;
 
@@ -396,16 +401,16 @@ struct DistanceToPoint {
     // Position vector of the nearest point N on G's surface from the query
     // point Q, expressed in G's frame.
     const Vector3d p_WN = p_WG + radius * grad_W;
-    const Vector3d p_GN = X_WG.inverse() * p_WN;
+    const Vector3d p_GN = X_WG_.inverse() * p_WN;
 
-    return SignedDistanceToPoint<double>{geometry_id, p_GN, distance, grad_W};
+    return SignedDistanceToPoint<double>{geometry_id_, p_GN, distance, grad_W};
   }
 
   // Overload for Box.
   SignedDistanceToPoint<double> operator()(const fcl::Boxd& box) {
     // TODO(DamrongGuoy): Move most code of this function into FCL.
     // Express the given query point Q in the frame of the box geometry G.
-    const Vector3d p_GQ_G = X_WG.inverse() * p_WQ;
+    const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
 
     // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
     // centered at the origin, where h(i) is half the size of the box in the
@@ -522,8 +527,8 @@ struct DistanceToPoint {
     }
 
     // Use X_WG.linear() for vectors. Use X_WG for points.
-    Vector3d grad_W = X_WG.linear() * grad_G;
-    return SignedDistanceToPoint<double>{geometry_id, p_GN_G, distance, grad_W};
+    Vector3d grad_W = X_WG_.linear() * grad_G;
+    return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance, grad_W};
   }
 };
 
