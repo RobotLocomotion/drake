@@ -1771,8 +1771,53 @@ T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
 }
 
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant,
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
+  DRAKE_DEMAND(builder != nullptr);
+  if (!plant) {
+    plant = std::make_unique<MultibodyPlant<T>>();
+    plant->set_name("plant");
+  }
+  if (!scene_graph) {
+    scene_graph = std::make_unique<geometry::SceneGraph<T>>();
+    scene_graph->set_name("scene_graph");
+  }
+  auto* plant_ptr = builder->AddSystem(std::move(plant));
+  auto* scene_graph_ptr = builder->AddSystem(std::move(scene_graph));
+  plant_ptr->RegisterAsSourceForSceneGraph(scene_graph_ptr);
+  builder->Connect(
+      plant_ptr->get_geometry_poses_output_port(),
+      scene_graph_ptr->get_source_pose_port(
+          plant_ptr->get_source_id().value()));
+  builder->Connect(
+      scene_graph_ptr->get_query_output_port(),
+      plant_ptr->get_geometry_query_input_port());
+  return {plant_ptr, scene_graph_ptr};
+}
+
+// Add explicit instantiations for `AddMultibodyPlantSceneGraph`.
+template
+AddMultibodyPlantSceneGraphResult<double>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<double>* builder,
+    std::unique_ptr<MultibodyPlant<double>> plant,
+    std::unique_ptr<geometry::SceneGraph<double>> scene_graph);
+
+template
+AddMultibodyPlantSceneGraphResult<AutoDiffXd>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<AutoDiffXd>* builder,
+    std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant,
+    std::unique_ptr<geometry::SceneGraph<AutoDiffXd>> scene_graph);
+
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::MultibodyPlant)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::AddMultibodyPlantSceneGraphResult)
