@@ -24,6 +24,8 @@ namespace internal {
 template<typename T> class BodyNode;
 }
 
+namespace internal {
+
 /// %Mobilizer is a fundamental object within Drake's multibody engine used to
 /// specify the allowed motions between two Frame objects within a
 /// MultibodyTree. Specifying the allowed motions between two Frame objects
@@ -640,6 +642,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   const Frame<T>& outboard_frame_;
   MobilizerTopology topology_;
 };
+
+}  // namespace internal
+
+/// WARNING: Soon to be deprecated alias.
+using internal::Mobilizer;
 
 }  // namespace multibody
 }  // namespace drake

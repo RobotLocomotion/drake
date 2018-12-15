@@ -35,6 +35,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// Data structure to store the topological information associated with a Body.
 struct BodyTopology {
@@ -1031,6 +1032,29 @@ class MultibodyTreeTopology {
   int num_states_{0};
   int num_actuated_dofs_{0};
 };
+
+}  // namespace internal
+
+/// WARNING: Soon to be deprecated alias.
+using internal::BodyTopology;
+
+/// WARNING: Soon to be deprecated alias.
+using internal::FrameTopology;
+
+/// WARNING: Soon to be deprecated alias.
+using internal::MobilizerTopology;
+
+/// WARNING: Soon to be deprecated alias.
+using internal::ForceElementTopology;
+
+/// WARNING: Soon to be deprecated alias.
+using internal::JointActuatorTopology;
+
+/// WARNING: Soon to be deprecated alias.
+using internal::BodyNodeTopology;
+
+/// WARNING: Soon to be deprecated alias.
+using internal::MultibodyTreeTopology;
 
 }  // namespace multibody
 }  // namespace drake

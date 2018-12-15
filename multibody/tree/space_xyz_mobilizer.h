@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This mobilizer models a gimbal joint between an inboard frame F and an
 /// outboard frame M that allows frame M to rotate freely with respect to F (
@@ -288,6 +289,11 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 };
+
+}  // namespace internal
+
+/// WARNING: Soon to be deprecated alias.
+using internal::SpaceXYZMobilizer;
 
 }  // namespace multibody
 }  // namespace drake
