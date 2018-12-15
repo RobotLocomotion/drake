@@ -256,15 +256,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("coeff_name") = "a",
           doc.MathematicalProgram.NewFreePolynomial.doc)
       .def("NewSosPolynomial",
-          static_cast<std::pair<Polynomial,
-              Binding<PositiveSemidefiniteConstraint>> (MathematicalProgram::*)(
+          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::NewSosPolynomial),
           doc.MathematicalProgram.NewSosPolynomial.doc_1args)
       .def("NewSosPolynomial",
-          static_cast<
-              std::pair<Polynomial, Binding<PositiveSemidefiniteConstraint>> (
-                  MathematicalProgram::*)(const Variables&, int)>(
+          static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
+              MathematicalProgram::*)(const Variables&, int)>(
               &MathematicalProgram::NewSosPolynomial),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
       .def("NewIndeterminates",
@@ -423,24 +422,24 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
       .def("AddSosConstraint",
-          static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+          static_cast<std::pair<MatrixXDecisionVariable,
               Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+          static_cast<std::pair<MatrixXDecisionVariable,
               Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
               const Polynomial&)>(&MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
-          static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+          static_cast<std::pair<MatrixXDecisionVariable,
               Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<Binding<PositiveSemidefiniteConstraint>,
+          static_cast<std::pair<MatrixXDecisionVariable,
               Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
