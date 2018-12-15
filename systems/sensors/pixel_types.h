@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
@@ -97,6 +98,8 @@ struct ImageTraits<PixelType::kDepth32F> {
   typedef float ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kDepth;
+  static constexpr float kTooClose = 0.0f;
+  static constexpr float kTooFar = std::numeric_limits<float>::infinity();
 };
 
 template <>
@@ -104,6 +107,8 @@ struct ImageTraits<PixelType::kDepth16U> {
   typedef uint16_t ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kDepth;
+  static constexpr uint16_t kTooClose = 0;
+  static constexpr uint16_t kTooFar = std::numeric_limits<uint16_t>::max();
 };
 
 template <>

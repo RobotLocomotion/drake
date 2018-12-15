@@ -134,7 +134,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
     for (int v = 0; v < depth_image_.height(); ++v) {
       for (int u = 0; u < depth_image_.width(); ++u) {
         const int i = v * depth_image_.width() + u;
-        Eigen::Vector3f actual = actual_point_cloud_.col(i);
+        Eigen::Vector3f actual = actual_point_cloud_.xyzs().col(i);
         ASSERT_EQ(actual(0), systems::sensors::InvalidDepth::kTooFar);
         ASSERT_EQ(actual(1), systems::sensors::InvalidDepth::kTooFar);
         ASSERT_EQ(actual(2), systems::sensors::InvalidDepth::kTooFar);
@@ -151,7 +151,7 @@ class DepthImageToPointCloudConversionTest : public ::testing::Test {
 
   const systems::sensors::CameraInfo camera_info_;
   systems::sensors::ImageDepth32F depth_image_;
-  Eigen::Matrix3Xf actual_point_cloud_;
+  PointCloud actual_point_cloud_;
 };
 
 // Verifies computed point cloud when pixel values in depth image are valid.
@@ -159,7 +159,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
   constexpr float kDepthValue = 1.f;
   Init(kDepthValue);
 
-  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+  DepthImageToPointCloud::Convert(camera_info_, {}, depth_image_, {},
                                   &actual_point_cloud_);
 
   // This tolerance was determined empirically using Drake's supported
@@ -168,7 +168,7 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual = actual_point_cloud_.col(i);
+      Eigen::Vector3f actual = actual_point_cloud_.xyzs().col(i);
 
       const double expected_x = kDepthValue * (u - kDepthWidth * 0.5) / kFocal;
       ASSERT_NEAR(actual(0), expected_x, kDistanceTolerance);
@@ -183,13 +183,13 @@ TEST_F(DepthImageToPointCloudConversionTest, ValidValueTest) {
 TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
   Init(std::numeric_limits<float>::quiet_NaN());
 
-  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+  DepthImageToPointCloud::Convert(camera_info_, {}, depth_image_, {},
                                   &actual_point_cloud_);
 
   for (int v = 0; v < depth_image_.height(); ++v) {
     for (int u = 0; u < depth_image_.width(); ++u) {
       const int i = v * depth_image_.width() + u;
-      Eigen::Vector3f actual = actual_point_cloud_.col(i);
+      Eigen::Vector3f actual = actual_point_cloud_.xyzs().col(i);
       ASSERT_TRUE(std::isnan(actual(0)));
       ASSERT_TRUE(std::isnan(actual(1)));
       ASSERT_TRUE(std::isnan(actual(2)));
@@ -201,7 +201,7 @@ TEST_F(DepthImageToPointCloudConversionTest, NanValueTest) {
 TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
   Init(systems::sensors::InvalidDepth::kTooFar);
 
-  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+  DepthImageToPointCloud::Convert(camera_info_, {}, depth_image_, {},
                                   &actual_point_cloud_);
 
   VerifyTooFarTooClose();
@@ -211,7 +211,7 @@ TEST_F(DepthImageToPointCloudConversionTest, TooFarTest) {
 TEST_F(DepthImageToPointCloudConversionTest, TooCloseTest) {
   Init(systems::sensors::InvalidDepth::kTooClose);
 
-  DepthImageToPointCloud::Convert(depth_image_, camera_info_,
+  DepthImageToPointCloud::Convert(camera_info_, {}, depth_image_, {},
                                   &actual_point_cloud_);
 
   VerifyTooFarTooClose();
