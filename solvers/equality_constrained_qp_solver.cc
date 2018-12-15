@@ -95,6 +95,7 @@ void EqualityConstrainedQPSolver::Solve(
     const optional<Eigen::VectorXd>& initial_guess,
     const optional<SolverOptions>& solver_options,
     MathematicalProgramResult* result) const {
+  *result = {};
   // An equality constrained QP problem has analytical solution. It doesn't
   // depend on the initial guess.
   unused(initial_guess);
