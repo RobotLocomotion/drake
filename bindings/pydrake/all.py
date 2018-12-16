@@ -33,6 +33,7 @@ from .symbolic import *
 from .trajectories import *
 
 # Submodules.
+# - `attic` should not be implicitly imported.
 from .common.all import *
 # - `examples` does not offer public Drake library symbols.
 from .maliput.all import *
