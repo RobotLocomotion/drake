@@ -853,3 +853,8 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+    def test_new_spellings(self):
+        from pydrake.multibody.math import SpatialVelocity
+        from pydrake.multibody.plant import MultibodyPlant
+        from pydrake.multibody.tree import Body
