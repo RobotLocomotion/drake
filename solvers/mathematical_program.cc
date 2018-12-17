@@ -786,12 +786,11 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
 }
 
 namespace {
-// Add the slack variable for scaled diagonally dominant matrix constraint. This
-// function also adds the rotated Lorentz cone constraint on the slack
-// variables. The only thing left in AddScaledDiagonallyDominantMatrixConstraint
+// Add the slack variable for scaled diagonally dominant matrix constraint. The
+// only thing left in AddScaledDiagonallyDominantMatrixConstraint
 // is that the diagonal terms in the sdd matrix should match the summation of
 // the diagonally terms in the slack variable, and the rotated Lorentz cone
-// constraint.
+// constraint on M.
 template <typename T>
 void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<T>>& X, MathematicalProgram* prog,
