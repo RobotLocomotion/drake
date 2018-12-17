@@ -51,9 +51,14 @@ class SceneGraphInspector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector)
 
+  // NOTE: An inspector should never be released into the wild without having
+  // set the state variable. Every query should start by demanding that state_
+  // is defined.
+
   //----------------------------------------------------------------------------
 
   /** @name              Scene-graph wide data  */
+  //@{
 
   /** Reports the *total* number of geometries in the scene graph.  */
   int num_geometries() const {
@@ -73,9 +78,6 @@ class SceneGraphInspector {
   /** @name                Sources and source-related data  */
   //@{
 
-  // NOTE: An inspector should never be released into the wild without having
-  // set the state variable. Every query should start by demanding that state_
-  // is defined.
 
   /** Reports the name for the given source id.
    @throws std::logic_error if the identifier is invalid.  */
@@ -95,13 +97,6 @@ class SceneGraphInspector {
 
   /** @name              Frames and their properties  */
   //@{
-
-  /** Reports the id of the frame to which the given geometry id is registered.
-   @throws std::logic_error if the geometry id is invalid.  */
-  FrameId GetFrameId(GeometryId geometry_id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetFrameId(geometry_id);
-  }
 
   /** Reports the name of the frame indicated by the given id.
    @throws std::logic_error if `frame_id` doesn't refer to a valid frame.  */
@@ -133,11 +128,6 @@ class SceneGraphInspector {
     return state_->GetNumFrameGeometriesWithRole(frame_id, role);
   }
 
-  //@}
-
-  /** @name           Geometries and their properties  */
-  //@{
-
   /** Reports the id of the geometry with the given name, attached to the
    indicated frame with the given role.
    @param frame_id  The frame whose geometry is being queried.
@@ -153,6 +143,18 @@ class SceneGraphInspector {
                                  const std::string& name) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetGeometryFromName(frame_id, role, name);
+  }
+
+  //@}
+
+  /** @name           Geometries and their properties  */
+  //@{
+
+  /** Reports the id of the frame to which the given geometry id is registered.
+   @throws std::logic_error if the geometry id is invalid.  */
+  FrameId GetFrameId(GeometryId geometry_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetFrameId(geometry_id);
   }
 
   /** Reports the name of the geometry indicated by the given id.
