@@ -2,7 +2,8 @@
 
 _dir=$(dirname ${BASH_SOURCE})/..
 
-py3-setup() { (
+if [[ ! -f ${_dir}/build/py3/bin/python3 ]]; then
+(
     set -x
     cd ${_dir}
     python3 -m virtualenv --python python3 build/py3
@@ -18,11 +19,7 @@ py3-setup() { (
     rm build/py3/bin/python
     mv build/py3/bin/{python-config,python3-config}
     sed -i 's#py3/bin/python\b#py3/bin/python3#g' build/py3/bin/python3-config
-) }
-
-if [[ ! -f ${_dir}/build/py3/bin/python3 ]]; then
-    py3-setup
+)
 fi
 
 source ${_dir}/build/py3/bin/activate
-${_dir}/setup/select_python -f $(which python3)
