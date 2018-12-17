@@ -41,5 +41,17 @@ python-tornado
 python-u-msgpack
 python-yaml
 python-zmq
+python3
+python3-lxml
+python3-matplotlib
+python3-numpy
+python3-pydot
+python3-scipy
+python3-six
+python3-tk
+python3-tornado
+python3-u-msgpack
+python3-yaml
+python3-zmq
 qtbase5-dev
 zlib1g
