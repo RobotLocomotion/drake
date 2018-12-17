@@ -259,26 +259,28 @@ class ManipulationStation : public systems::Diagram<T> {
   /// add additional elements into the world before calling Finalize().
   geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
 
-  /// Returns a const pointer to the SceneGraph that's being used to render
+  /// Returns a const reference to the SceneGraph used for rendering
   /// camera images. Since the SceneGraph for rendering is constructed in
-  /// Finalize(), this returns nullptr before Finalize() is called.
+  /// Finalize(), this throws when called before Finalize().
   /// Note: the current implementation of the manipulation station uses a
   /// separate development version of SceneGraph for rendering (as opposed to
   /// the one returned by get_scene_graph() used for contact detection and
   /// visualization). This method will be deprecated soon.
-  const geometry::dev::SceneGraph<T>* get_render_scene_graph() const {
-    return render_scene_graph_;
+  const geometry::dev::SceneGraph<T>& get_render_scene_graph() const {
+    DRAKE_THROW_UNLESS(render_scene_graph_);
+    return *render_scene_graph_;
   }
 
-  /// Returns a mutable pointer to the SceneGraph that's being used to render
+  /// Returns a mutable reference to the SceneGraph used for rendering
   /// camera images. Since the SceneGraph for rendering is constructed in
-  /// Finalize(), this returns nullptr before Finalize() is called.
+  /// Finalize(), this throws when called before Finalize().
   /// Note: the current implementation of the manipulation station uses a
   /// separate development version of SceneGraph for rendering (as opposed to
   /// the one returned by get_scene_graph() used for contact detection and
   /// visualization). This method will be deprecated soon.
-  geometry::dev::SceneGraph<T>* get_mutable_render_scene_graph() {
-    return render_scene_graph_;
+  geometry::dev::SceneGraph<T>& get_mutable_render_scene_graph() {
+    DRAKE_THROW_UNLESS(render_scene_graph_);
+    return *render_scene_graph_;
   }
 
   /// Return a reference to the plant used by the inverse dynamics controller
