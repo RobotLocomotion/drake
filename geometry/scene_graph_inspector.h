@@ -116,14 +116,7 @@ class SceneGraphInspector {
    frame. This count does _not_ include geometries attached to frames that are
    descendants of this frame.
    @throws std::runtime_error if the `frame_id` is invalid.  */
-  int NumFrameGeometries(FrameId frame_id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetNumFrameGeometries(frame_id);
-  }
-
-  /** Reports the number of geometries assigned to the given frame with the
-   given role.  */
-  int NumFrameGeometriesWithRole(FrameId frame_id, Role role) const {
+  int NumGeometriesForFrameWithRole(FrameId frame_id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetNumFrameGeometriesWithRole(frame_id, role);
   }
