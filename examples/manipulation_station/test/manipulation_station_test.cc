@@ -4,8 +4,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/sensors/image.h"
 
@@ -243,7 +243,7 @@ GTEST_TEST(ManipulationStationTest, CheckRGBDOutputs) {
                   .size(),
               0);
     EXPECT_GE(station.GetOutputPort("camera_" + name + "_depth_image")
-                  .Eval<systems::sensors::ImageDepth32F>(*context)
+                  .Eval<systems::sensors::ImageDepth16U>(*context)
                   .size(),
               0);
     EXPECT_GE(station.GetOutputPort("camera_" + name + "_label_image")

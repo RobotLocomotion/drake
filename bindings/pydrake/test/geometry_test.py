@@ -69,3 +69,11 @@ class TestGeometry(unittest.TestCase):
         self.assertTupleEqual(obj.p_WCa.shape, (3,))
         self.assertTupleEqual(obj.p_WCb.shape, (3,))
         self.assertEqual(obj.depth, -1.)
+
+    def test_signed_distance_api(self):
+        obj = mut.SignedDistancePair()
+        self.assertIsInstance(obj.id_A, mut.GeometryId)
+        self.assertIsInstance(obj.id_B, mut.GeometryId)
+        self.assertTupleEqual(obj.p_ACa.shape, (3,))
+        self.assertTupleEqual(obj.p_BCb.shape, (3,))
+        self.assertIsInstance(obj.distance, float)

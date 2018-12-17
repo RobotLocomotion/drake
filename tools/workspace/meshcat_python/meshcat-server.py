@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+from meshcat.servers.zmqserver import main as server_main
+
+# N.B. This is the binary for Bazel. For install, see `meshcat-server`.
 
 
 def main():
-    import meshcat.servers.zmqserver
-
-    meshcat.servers.zmqserver.main()
+    server_main()
 
 
 if __name__ == '__main__':

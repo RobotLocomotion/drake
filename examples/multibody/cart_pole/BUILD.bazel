@@ -34,8 +34,8 @@ drake_cc_binary(
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
-        "//multibody/multibody_tree/multibody_plant",
         "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
@@ -49,8 +49,8 @@ drake_cc_googletest(
         ":cart_pole_params",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/multibody_tree/multibody_plant",
         "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

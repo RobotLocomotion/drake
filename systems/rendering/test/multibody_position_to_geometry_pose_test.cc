@@ -4,8 +4,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace systems {
@@ -13,7 +13,7 @@ namespace rendering {
 namespace {
 
 GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
-  multibody::multibody_plant::MultibodyPlant<double> mbp;
+  multibody::MultibodyPlant<double> mbp;
   geometry::SceneGraph<double> scene_graph;
   mbp.RegisterAsSourceForSceneGraph(&scene_graph);
   multibody::Parser(&mbp).AddModelFromFile(

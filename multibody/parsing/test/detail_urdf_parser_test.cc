@@ -14,7 +14,6 @@ namespace {
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
-using multibody_plant::MultibodyPlant;
 
 // Verifies that the URDF loader with specified package map works as expected.
 GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {

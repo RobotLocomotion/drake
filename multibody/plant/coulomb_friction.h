@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace multibody {
@@ -149,11 +150,13 @@ CoulombFriction<T> CalcContactFrictionFromSurfaceProperties(
 }
 
 #ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Deprecate and then remove this transitional namespace.
+// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
 namespace multibody_plant {
 
-template<typename T>
-using CoulombFriction  = ::drake::multibody::CoulombFriction<T>;
+template <typename T>
+using CoulombFriction
+    DRAKE_DEPRECATED("Spell as drake::multibody::CoulombFriction instead.")
+    = ::drake::multibody::CoulombFriction<T>;
 
 using multibody::CalcContactFrictionFromSurfaceProperties;
 

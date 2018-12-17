@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -14,7 +15,7 @@
 
 namespace drake {
 namespace multibody {
-template <typename T> class MultibodyTree;
+namespace internal {
 
 /** This is a bare Drake System providing just enough functionality to allow
 standalone exercise of a MultibodyTree. MultibodyTree requires a few System
@@ -63,7 +64,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   explicit MultibodyTreeSystem(std::unique_ptr<MultibodyTree<T>> tree,
                                bool is_discrete = false)
       : MultibodyTreeSystem(
-            systems::SystemTypeTag<multibody::MultibodyTreeSystem>{},
+            systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
             false,  // Null tree is not allowed here.
             std::move(tree), is_discrete) {}
 
@@ -132,7 +133,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   Finalize() when done before performing any computations. */
   explicit MultibodyTreeSystem(bool is_discrete = false)
       : MultibodyTreeSystem(
-            systems::SystemTypeTag<multibody::MultibodyTreeSystem>{},
+            systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
             true,  // Null tree is OK.
             nullptr, is_discrete) {}
 
@@ -196,6 +197,11 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // Used to enforce "finalize once" restriction for protected-API users.
   bool already_finalized_{false};
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::MultibodyTreeSystem;
 
 }  // namespace multibody
 }  // namespace drake

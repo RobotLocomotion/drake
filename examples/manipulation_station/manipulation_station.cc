@@ -10,10 +10,10 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -38,10 +38,10 @@ using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::Joint;
+using multibody::MultibodyPlant;
 using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
-using multibody::multibody_plant::MultibodyPlant;
 
 const int kNumDofIiwa = 7;
 
@@ -447,12 +447,12 @@ void ManipulationStation<T>::Finalize() {
                        "iiwa_torque_external");
 
   {  // RGB-D Cameras
-    auto render_scene_graph =
+    render_scene_graph_ =
         builder.template AddSystem<geometry::dev::SceneGraph>(*scene_graph_);
-    render_scene_graph->set_name("dev_scene_graph_for_rendering");
+    render_scene_graph_->set_name("dev_scene_graph_for_rendering");
 
     builder.Connect(plant_->get_geometry_poses_output_port(),
-                    render_scene_graph->get_source_pose_port(
+                    render_scene_graph_->get_source_pose_port(
                         plant_->get_source_id().value()));
 
     for (const auto& info_pair : camera_information_) {
@@ -470,12 +470,12 @@ void ManipulationStation<T>::Finalize() {
           builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
               camera_name, parent_body_id.value(), X_PC, info.properties,
               false);
-      builder.Connect(render_scene_graph->get_query_output_port(),
+      builder.Connect(render_scene_graph_->get_query_output_port(),
                       camera->query_object_input_port());
 
       builder.ExportOutput(camera->color_image_output_port(),
                            camera_name + "_rgb_image");
-      builder.ExportOutput(camera->depth_image_output_port(),
+      builder.ExportOutput(camera->GetOutputPort("depth_image_16u"),
                            camera_name + "_depth_image");
       builder.ExportOutput(camera->label_image_output_port(),
                            camera_name + "_label_image");

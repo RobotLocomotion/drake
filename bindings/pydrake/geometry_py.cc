@@ -76,6 +76,9 @@ PYBIND11_MODULE(geometry, m) {
   py::class_<QueryObject<T>>(m, "QueryObject", doc.QueryObject.doc)
       .def("inspector", &QueryObject<T>::inspector, py_reference_internal,
           doc.QueryObject.inspector.doc)
+      .def("ComputeSignedDistancePairwiseClosestPoints",
+          &QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints,
+          doc.QueryObject.ComputeSignedDistancePairwiseClosestPoints.doc)
       .def("ComputePointPairPenetration",
           &QueryObject<T>::ComputePointPairPenetration,
           doc.QueryObject.ComputePointPairPenetration.doc);
@@ -103,6 +106,20 @@ PYBIND11_MODULE(geometry, m) {
       py_reference, doc.ConnectDrakeVisualizer.doc_4args);
   m.def("DispatchLoadMessage", &DispatchLoadMessage, py::arg("scene_graph"),
       py::arg("lcm"), doc.DispatchLoadMessage.doc);
+
+  // SignedDistancePair
+  py::class_<SignedDistancePair<T>>(m, "SignedDistancePair")
+      .def(py::init<>(), doc.SignedDistancePair.ctor.doc_0args)
+      .def_readwrite(
+          "id_A", &SignedDistancePair<T>::id_A, doc.SignedDistancePair.id_A.doc)
+      .def_readwrite(
+          "id_B", &SignedDistancePair<T>::id_B, doc.SignedDistancePair.id_B.doc)
+      .def_readwrite("p_ACa", &SignedDistancePair<T>::p_ACa,
+          doc.SignedDistancePair.p_ACa.doc)
+      .def_readwrite("p_BCb", &SignedDistancePair<T>::p_BCb,
+          doc.SignedDistancePair.p_BCb.doc)
+      .def_readwrite("distance", &SignedDistancePair<T>::distance,
+          doc.SignedDistancePair.distance.doc);
 
   // PenetrationAsPointPair
   py::class_<PenetrationAsPointPair<T>>(m, "PenetrationAsPointPair")

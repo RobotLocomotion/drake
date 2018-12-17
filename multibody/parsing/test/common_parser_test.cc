@@ -10,9 +10,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/test/test_loaders.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -21,8 +21,6 @@ namespace detail {
 namespace {
 
 using geometry::GeometryId;
-using multibody_plant::CoulombFriction;
-using multibody_plant::MultibodyPlant;
 
 // Fixture to setup a simple model with both collision and visual geometry,
 // loaded with the SDF parser.

@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace multibody {
-
+namespace internal {
 // Friend tester class for accessing MultibodyTree protected/private internals.
 class MultibodyTreeTester {
  public:
@@ -20,8 +20,8 @@ class MultibodyTreeTester {
     return model.GetFreeBodyMobilizerOrThrow(body);
   }
 };
+}  // namespace internal
 
-namespace multibody_tree {
 namespace test {
 namespace {
 
@@ -33,6 +33,7 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using systems::Context;
 using systems::RungeKutta3Integrator;
+using internal::MultibodyTreeTester;
 
 GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
@@ -100,13 +101,14 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   mobilizer.SetFromRotationMatrix(&context, R_WB_test.matrix());
   // Verify we get the right quaternion.
   const Quaterniond q_WB_test = mobilizer.get_quaternion(context);
-  const Quaterniond q_WB_test_expected(R_WB_test.matrix());
+  const Quaterniond q_WB_test_expected = R_WB_test.ToQuaternion();
   EXPECT_TRUE(CompareMatrices(
       q_WB_test.coeffs(), q_WB_test_expected.coeffs(),
       5 * kEpsilon, MatrixCompareType::relative));
 
   // Unit test QuaternionFloatingMobilizer quaternion setters/getters.
-  const Quaterniond q_WB_test2(AngleAxisd(M_PI / 5.0, axis).toRotationMatrix());
+  const math::RotationMatrixd R_WB_test2(AngleAxisd(M_PI / 5.0, axis));
+  const Quaterniond q_WB_test2 = R_WB_test2.ToQuaternion();
   mobilizer.set_quaternion(&context, q_WB_test2);
   EXPECT_TRUE(CompareMatrices(
       mobilizer.get_quaternion(context).coeffs(), q_WB_test2.coeffs(),
@@ -320,6 +322,5 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
 
 }  // namespace
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

@@ -4,13 +4,11 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 
 namespace drake {
 namespace multibody {
-
-// Forward declaration.
-template<typename T> class MultibodyTree;
 
 /// A class to hold a set of forces applied to a MultibodyTree system.
 /// Forces can include generalized forces as well as body spatial forces.

@@ -25,7 +25,7 @@ namespace manipulation_station {
 
 using Eigen::Isometry3d;
 using Eigen::Vector3d;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::Parser;
 using robotlocomotion::image_array_t;
 

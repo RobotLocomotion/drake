@@ -8,14 +8,14 @@
 #include <tinyxml2.h>
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -25,8 +25,6 @@ using Eigen::Isometry3d;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using multibody_plant::CoulombFriction;
-using multibody_plant::MultibodyPlant;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -88,7 +86,7 @@ void ParseBody(const multibody::PackageMap& package_map,
                ModelInstanceIndex model_instance,
                XMLElement* node,
                MaterialMap* materials,
-               multibody_plant::MultibodyPlant<double>* plant,
+               MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph) {
   std::string drake_ignore;
   if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
@@ -238,7 +236,7 @@ const Body<double>& GetBodyForElement(
     const std::string& element_name,
     const std::string& link_name,
     ModelInstanceIndex model_instance,
-    multibody_plant::MultibodyPlant<double>* plant) {
+    MultibodyPlant<double>* plant) {
   if (link_name == kWorldName) {
     return plant->world_body();
   }
@@ -254,7 +252,7 @@ const Body<double>& GetBodyForElement(
 
 void ParseJoint(ModelInstanceIndex model_instance,
                 XMLElement* node,
-                multibody_plant::MultibodyPlant<double>* plant) {
+                MultibodyPlant<double>* plant) {
   std::string drake_ignore;
   if (ParseStringAttribute(node, "drake_ignore", &drake_ignore) &&
       drake_ignore == std::string("true")) {
@@ -326,7 +324,7 @@ void ParseJoint(ModelInstanceIndex model_instance,
 
 void ParseTransmission(ModelInstanceIndex model_instance,
                        XMLElement* node,
-                       multibody_plant::MultibodyPlant<double>* plant) {
+                       MultibodyPlant<double>* plant) {
   // Determines the transmission type.
   std::string type;
   XMLElement* type_node = node->FirstChildElement("type");
@@ -399,7 +397,7 @@ void ParseTransmission(ModelInstanceIndex model_instance,
 
 void ParseFrame(ModelInstanceIndex model_instance,
                 XMLElement* node,
-                multibody_plant::MultibodyPlant<double>* plant) {
+                MultibodyPlant<double>* plant) {
   std::string name;
   if (!ParseStringAttribute(node, "name", &name)) {
     throw std::runtime_error("ERROR parsing frame name.");
@@ -424,7 +422,7 @@ ModelInstanceIndex ParseUrdf(
     const multibody::PackageMap& package_map,
     const std::string& root_dir,
     XMLDocument* xml_doc,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
 
   XMLElement* node = xml_doc->FirstChildElement("robot");
@@ -498,7 +496,7 @@ ModelInstanceIndex ParseUrdf(
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name_in,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   PackageMap package_map;
 
@@ -513,7 +511,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name_in,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
@@ -546,7 +544,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
 
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromUrdfFile(file_name, "", plant, scene_graph);
 }
@@ -554,7 +552,7 @@ ModelInstanceIndex AddModelFromUrdfFile(
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromUrdfFile(file_name, "", package_map, plant, scene_graph);
 }

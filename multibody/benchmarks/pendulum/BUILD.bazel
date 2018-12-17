@@ -28,7 +28,7 @@ drake_cc_library(
     ],
     deps = [
         "//geometry:scene_graph",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 

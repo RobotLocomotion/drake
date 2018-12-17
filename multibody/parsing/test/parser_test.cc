@@ -5,8 +5,6 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-using drake::multibody::multibody_plant::MultibodyPlant;
-
 namespace drake {
 namespace multibody {
 namespace {

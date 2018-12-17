@@ -7,7 +7,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
@@ -22,7 +22,7 @@ using geometry::SourceId;
 using lcm::DrakeLcm;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::RevoluteJoint;
 using systems::ImplicitEulerIntegrator;
 using systems::RungeKutta3Integrator;

@@ -9,14 +9,14 @@
 
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/fixed_offset_frame.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_scene_graph.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -28,8 +28,6 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
-using multibody_plant::CoulombFriction;
-using multibody_plant::MultibodyPlant;
 using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
@@ -350,7 +348,7 @@ std::string LoadSdf(
 void AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
@@ -432,7 +430,7 @@ void AddFramesFromSpecification(
     ModelInstanceIndex model_instance,
     sdf::ElementPtr parent_element,
     const Frame<double>& parent_frame,
-    multibody_plant::MultibodyPlant<double>* plant) {
+    MultibodyPlant<double>* plant) {
   // Per its API documentation, `GetElement(...)` will create a new element if
   // one does not already exist rather than return `nullptr`; use
   // `HasElement(...)` instead.
@@ -466,7 +464,7 @@ void AddFramesFromSpecification(
 ModelInstanceIndex AddModelFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph,
     const PackageMap& package_map,
     const std::string& root_dir) {
@@ -513,7 +511,7 @@ ModelInstanceIndex AddModelFromSpecification(
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name_in,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   PackageMap package_map;
 
@@ -528,7 +526,7 @@ ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name_in,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());
@@ -557,7 +555,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromSdfFile(file_name, "", plant, scene_graph);
 }
@@ -565,14 +563,14 @@ ModelInstanceIndex AddModelFromSdfFile(
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   return AddModelFromSdfFile(file_name, "", package_map, plant, scene_graph);
 }
 
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   PackageMap package_map;
   const std::string full_path = GetFullPath(file_name);
@@ -583,7 +581,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(!plant->is_finalized());

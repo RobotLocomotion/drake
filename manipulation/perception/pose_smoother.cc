@@ -8,6 +8,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/manipulation/util/moving_average_filter.h"
 #include "drake/math/quaternion.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -58,41 +59,44 @@ VectorX<double> ComputeVelocities(const Isometry3d& pose_1,
   }
   return velocities;
 }
+
 // TODO(naveenoid) : Replace the usage of these methods eventually with
 // PoseVector or a similar future variant.
-/*
- * Converts a 7 dimensional VectorX<double> describing a pose (composed by
- * positions in the first 3 dimensions and orientation in quaternions in the
- * next 4) into an Eigen::Isometry3d object.
- */
-Isometry3<double> VectorToIsometry3d(const VectorX<double>& pose_vector) {
+// Sets a pose from a 7-element array whose first 3 elements are position and
+// last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
+Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
+  DRAKE_ASSERT(pose_vector.size() == 7);
+  Quaterniond quaternion(pose_vector(3), pose_vector(4),
+                         pose_vector(5), pose_vector(6));
   Isometry3<double> pose = Isometry3<double>::Identity();
-  pose.linear() = Quaterniond(pose_vector(3), pose_vector(4), pose_vector(5),
-                              pose_vector(6))
-      .toRotationMatrix();
+  // TODO(Mitiguy) Ask Naveen to respond to newly created issue 10167 which
+  // requests documention (or a comment) about the un-normalized quaternion,
+  // which allows for quaternion.toRotationMatrix() to return a non-orthonormal
+  // matrix.  However, manipulation/perception/test/pose_smoother_test.cc fails
+  // (why?) if the next line is uncommented (which makes me question the test).
+  // quaternion = quaternion.normalized();
+  pose.linear() = quaternion.toRotationMatrix();  // This is not orthonormal!
   pose.translation() = pose_vector.head<3>();
   pose.makeAffine();
+  // TODO(Mitiguy) If this function can or should use a normalized quaternion,
+  // change this function so it instead returns a rigid transform.  The
+  // RigidTransform constructor shown below indirectly normalizes the quaternion
+  // in an efficient way that avoids a square-root.
+  // return math::RigidTransform(quaternion, pose_vector.head<3>());
   return pose;
 }
 
-/*
- * Converts a pose specified as an Eigen::Isometry3d into a 7 dimensional
- * VectorX<double> (composed by positions in the first 3 dimensions and
- * orientation in quaternions in the next 4).
- */
-VectorX<double> Isometry3dToVector(const Isometry3<double>& pose) {
+// Convert a pose into a 7 element array whose first 3 elements are position and
+// last 4 elements are a quaternion (w, x, y, z) with w >= 0 (canonical form).
+VectorX<double> RigidTransformdToVector7(const math::RigidTransformd& pose) {
   VectorX<double> pose_vector = VectorX<double>::Zero(7);
   pose_vector.head<3>() = pose.translation();
-  Quaterniond return_quat = Quaterniond(pose.linear());
-  return_quat = math::QuaternionToCanonicalForm(return_quat);
-
-  pose_vector.tail<4>() = (VectorX<double>(4) << return_quat.w(),
-      return_quat.x(), return_quat.y(), return_quat.z())
-      .finished();
-
+  Quaterniond quat(pose.rotation().matrix());
+  quat = math::QuaternionToCanonicalForm(quat);
+  pose_vector.tail<4>() =
+      (VectorX<double>(4) << quat.w(), quat.x(), quat.y(), quat.z()).finished();
   return pose_vector;
 }
-
 }  // namespace
 
 PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
@@ -157,24 +161,20 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
   }
   // If data is below threshold it can be added to the filter.
   if (accept_data_point) {
-    Quaterniond input_quaternion = Quaterniond(input_pose.linear());
+    Quaterniond input_quaternion(input_pose.linear());
+    const math::RotationMatrixd input_R(input_quaternion);
+    math::RigidTransformd corrected_input(input_R, input_pose.translation());
 
-    input_quaternion = math::QuaternionToCanonicalForm(input_quaternion);
-    Isometry3d corrected_input = input_pose;
-    corrected_input.linear() = input_quaternion.toRotationMatrix();
-
-    Isometry3d accepted_pose = Isometry3d::Identity();
+    Isometry3d accepted_pose = corrected_input.GetAsIsometry3();
     // If the smoother is enabled.
     if (is_filter_enabled_) {
-      VectorX<double> temp =
-          internal_state.filter->Update(Isometry3dToVector(corrected_input));
-      accepted_pose = VectorToIsometry3d(temp);
-    } else {
-      accepted_pose = corrected_input;
+      VectorX<double> temp = internal_state.filter->Update(
+          RigidTransformdToVector7(corrected_input));
+      accepted_pose = Vector7ToIsometry3d(temp);
     }
+
     current_velocity = ComputeVelocities(
-        accepted_pose, current_pose, current_time -
-            time_at_last_accepted_pose);
+        accepted_pose, current_pose, current_time - time_at_last_accepted_pose);
     time_at_last_accepted_pose = current_time;
     current_pose = accepted_pose;
   } else {

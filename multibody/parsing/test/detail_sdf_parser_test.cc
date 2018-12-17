@@ -12,7 +12,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -29,7 +29,6 @@ using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RollPitchYawd;
-using multibody_plant::MultibodyPlant;
 using systems::Context;
 
 // Verifies that the SDF loader with specified package map works as expected.

@@ -6,9 +6,9 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
@@ -23,6 +23,8 @@ template<typename T> class Body;
 namespace internal {
 template<typename T> class BodyNode;
 }
+
+namespace internal {
 
 /// %Mobilizer is a fundamental object within Drake's multibody engine used to
 /// specify the allowed motions between two Frame objects within a
@@ -311,33 +313,32 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// @name Methods that define a %Mobilizer
   /// @{
 
-  /// Sets the `state` to what will be considered to be the _zero_ configuration
-  /// for `this` mobilizer. For most mobilizers the _zero_ configuration
-  /// corresponds to the value of generalized positions at which the inboard
-  /// frame F and the outboard frame coincide or, in other words, when
-  /// `X_FM = Id` is the identity pose. In the general case however, the zero
-  /// configuration will correspond to a value of the generalized positions for
-  /// which `X_FM = X_FM_ref` where `X_FM_ref` may generally be different from
-  /// the identity transformation.
+  /// Sets the `state` to what will be considered to be the _zero_ state
+  /// (position and velocity) for `this` mobilizer. For most mobilizers the
+  /// _zero_ position corresponds to the value of generalized positions at
+  /// which the inboard frame F and the outboard frame coincide or, in other
+  /// words, when `X_FM = Id` is the identity pose. In the general case
+  /// however, the zero position will correspond to a value of the
+  /// generalized positions for which `X_FM = X_FM_ref` where `X_FM_ref` may
+  /// generally be different from the identity transformation.
   /// In other words, `X_FM_ref = CalcAcrossMobilizerTransform(ref_context)`
   /// where `ref_context` is a Context storing a State set to the zero
   /// configuration with set_zero_state().
   /// In addition, all generalized velocities are set to zero in the _zero_
-  /// configuration.
+  /// state.
   ///
-  /// Most often the _zero_ configuration will correspond to setting
+  /// Most often the _zero_ position will correspond to setting
   /// the vector of generalized positions related to this mobilizer to zero.
   /// However, in the general case, setting all generalized coordinates to zero
-  /// does not correspond to the _zero_ configuration and it might even not
+  /// does not correspond to the _zero_ position and it might even not
   /// represent a mathematicaly valid one. Consider for instance a quaternion
-  /// mobilizer, for which its _zero_ configuration corresponds to the
-  /// quaternion [1, 0, 0, 0].
+  /// mobilizer, for which its _zero_ position corresponds to the quaternion
+  /// [1, 0, 0, 0].
   virtual void set_zero_state(const systems::Context<T>& context,
                               systems::State<T>* state) const = 0;
 
-  /// Sets the state stored in `context` to a _zero configuration_ as defined by
-  /// set_zero_state().
-  /// See set_zero_state() for details.
+  DRAKE_DEPRECATED("Call set_zero_state() directly instead.  This method will "
+                   "be deleted after 3/1/19.")
   void set_zero_configuration(systems::Context<T>* context) const {
     set_zero_state(*context, &context->get_mutable_state());
   }
@@ -641,6 +642,11 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   const Frame<T>& outboard_frame_;
   MobilizerTopology topology_;
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::Mobilizer;
 
 }  // namespace multibody
 }  // namespace drake

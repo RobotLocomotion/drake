@@ -14,8 +14,6 @@ PYBIND11_MODULE(inverse_kinematics, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  using multibody_plant::MultibodyPlant;
-
   m.doc() = "InverseKinematics module";
 
   py::module::import("pydrake.solvers.mathematicalprogram");

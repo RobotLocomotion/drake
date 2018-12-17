@@ -8,6 +8,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T>
 const T& RevoluteMobilizer<T>::get_angle(
@@ -62,9 +63,9 @@ Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == 1);
-  Isometry3<T> X_FM = Isometry3<T>::Identity();
-  X_FM.linear() = Eigen::AngleAxis<T>(q[0], axis_F_).toRotationMatrix();
-  return X_FM;
+  const Eigen::AngleAxis<T> angle_axis(q[0], axis_F_);
+  const math::RigidTransform<T> X_FM(angle_axis, Vector3<T>::Zero());
+  return X_FM.GetAsIsometry3();
 }
 
 template <typename T>
@@ -159,5 +160,6 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
 template class RevoluteMobilizer<double>;
 template class RevoluteMobilizer<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

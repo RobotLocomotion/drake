@@ -6,8 +6,8 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -24,7 +24,6 @@ using systems::IntegratorBase;
 using systems::Simulator;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // This parameterized fixture allows us to run inclined planes tests using
@@ -225,7 +224,6 @@ INSTANTIATE_TEST_CASE_P(ContinuousAndTimeSteppingTest, InclinedPlaneTest,
                         ::testing::Bool());
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

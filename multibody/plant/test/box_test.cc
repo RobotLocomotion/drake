@@ -6,10 +6,10 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -27,7 +27,6 @@ using systems::IntegratorBase;
 using systems::Simulator;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // This unit test loads a model for a box on a flat plane. The plane is the x-y
@@ -184,7 +183,6 @@ GTEST_TEST(Box, UnderStiction) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

@@ -2,16 +2,15 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
 
-// Forward declaration.
-template<typename T> class MultibodyTree;
-
 namespace internal {
+
 // This is a class used by MultibodyTree internals to create the implementation
 // for a particular joint object.
 template <typename T>
@@ -170,7 +169,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   // MultibodyTree<T> is a natural friend of MultibodyTreeElement objects and
   // therefore it can set the owning parent tree and unique index in that tree.
-  friend class MultibodyTree<T>;
+  friend class internal::MultibodyTree<T>;
 
   const MultibodyTree<T>* parent_tree_{nullptr};
 
