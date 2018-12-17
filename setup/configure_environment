@@ -22,25 +22,6 @@ build --python_path={python_bin}
 """.lstrip()
 
 
-def check_python(python_bin, error):
-    # Checks that the supplied interpreter may not cause issues.
-    # Additional checks are made by `tools/workspace/python/repository.bzl`.
-    prefix = check_output([
-        python_bin, '-c', 'import sys; print(sys.prefix)']).strip() + "/bin/"
-    if not python_bin.startswith(prefix):
-        print((
-            "WARNING: '{}' does not fall under its prefix, '{}'\n"
-            "  This may cause configuration errors.").format(
-                python_bin, prefix),
-            file=sys.stderr)
-    implementation = check_output([
-        python_bin, '-c',
-        'import platform as m; print(m.python_implementation())']).strip()
-    if implementation != "CPython":
-        error(("The implementation of '{}' is '{}', but only 'CPython' is "
-               "supported.").format(python_bin, implementation))
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -60,7 +41,7 @@ def main():
         parser.error("Please specify an absolute path to the binary.")
     if not isfile(python_bin):
         parser.error("File does not exist: {}".format(python_bin))
-    check_python(python_bin, error=parser.error)
+    # N.B. Configuration checks are performed by `tools/python/repository.bzl`.
 
     # Write target configuration file.
     target_abspath = join(workspace_dir, target_relpath)
