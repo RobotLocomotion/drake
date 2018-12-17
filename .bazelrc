@@ -5,4 +5,4 @@ import %workspace%/tools/bazel.rc
 try-import %workspace%/user.bazelrc
 
 # Try importing Python specifics.
-try-import %workspace%/user-python.bazelrc
+try-import %workspace%/setup/gen/user-python.bazelrc

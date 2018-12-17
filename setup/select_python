@@ -1,0 +1,51 @@
+#!/usr/bin/env python2
+
+"""
+Updates drake to use Python3 and produce Python3 bindings.
+
+This generates (or overwrites) `./setup/gen/user-python.bazelrc`.
+"""
+
+import argparse
+import os
+from os.path import abspath, dirname, join, isabs, isfile, isdir
+from subprocess import check_output
+
+TEMPLATE_BAZELRC = """
+build --python_path={python_bin} --action_env=PYTHON_BIN_PATH={python_bin}
+run --python_path={python_bin} --action_env=PYTHON_BIN_PATH={python_bin}
+test --python_path={python_bin} --action_env=PYTHON_BIN_PATH={python_bin}
+""".lstrip()
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "python_bin", type=str, help="Python binary.")
+    parser.add_argument(
+        "-f", "--force", action="store_true",
+        help="Overwrite pre-existing configuration.")
+    args = parser.parse_args()
+
+    cur_dir = dirname(abspath(__file__))
+    target_relpath = "gen/user-python.bazelrc"
+
+    python_bin = args.python_bin
+    if not isabs(python_bin):
+        python_bin = check_output(["which", python_bin]).strip()
+
+    target_abspath = join(cur_dir, target_relpath)
+    if isfile(target_abspath) and not args.force:
+        parser.error(
+            "'{}' already exists, and will not be overwritten without --force."
+            .format(target_relpath))
+    if not isdir(dirname(target_abspath)):
+        os.makedirs(dirname(target_abspath))
+
+    with open(target_abspath, 'w') as f:
+        f.write(TEMPLATE_BAZELRC.format(python_bin=python_bin))
+
+    print("Configured to use: {}".format(python_bin))
+
+
+if __name__ == "__main__":
+    main()

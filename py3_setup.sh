@@ -25,11 +25,5 @@ if [[ ! -f ${_dir}/build/py3/bin/python3 ]]; then
 fi
 
 source ${_dir}/build/py3/bin/activate
-_python_bin=$(which python3)
-_flags="--python_path=${_python_bin} --action_env=PYTHON_BIN_PATH=${_python_bin}"
-
-cat > ${_dir}/user-python.bazelrc <<EOF
-build ${_flags}
-run ${_flags}
-test ${_flags}
-EOF
+_python_bin=
+${_dir}/setup/select_python -f $(which python3)
