@@ -12,9 +12,11 @@ namespace test {
 
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
-  example->prog()->Solve();
-  CheckSolver(*(example->prog()), LinearSystemSolver::id());
-  example->CheckSolution();
+  LinearSystemSolver solver;
+  MathematicalProgramResult result;
+  solver.Solve(*(example->prog()), {}, {}, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  example->CheckSolution(result);
 }
 }  // namespace
 

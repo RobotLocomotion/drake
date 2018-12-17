@@ -854,6 +854,8 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
     error = GRBoptimize(model);
   }
 
+  result->set_solver_id(GurobiSolver::id());
+
   SolutionResult solution_result = SolutionResult::kUnknownError;
 
   GurobiSolverDetails& solver_details =
