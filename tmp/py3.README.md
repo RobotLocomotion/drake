@@ -13,9 +13,7 @@ First, follow the nominal setup instructions:
 In any terminal that you're using:
 
     cd drake
-    source py3_setup.sh
-
-Then, instead of using `bazel`, use the `bazel-py3` alias.
+    source tmp/py3.setup.sh
 
 ## Testing
 

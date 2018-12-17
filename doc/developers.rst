@@ -95,6 +95,8 @@ supported for CMake builds using the "Unix Makefiles" generator.
 macOS Mojave C++ and Python support and macOS and Ubuntu Bionic MATLAB support
 is experimental and untested in continuous integration.
 
+CPython is the only Python implementation supported.
+
 .. _binary-packages:
 
 Binary Packages

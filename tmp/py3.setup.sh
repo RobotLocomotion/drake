@@ -1,6 +1,6 @@
 #!/bin/bash
 
-_dir=$(dirname ${BASH_SOURCE})
+_dir=$(dirname ${BASH_SOURCE})/..
 
 py3-setup() { (
     set -x

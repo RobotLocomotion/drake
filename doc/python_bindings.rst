@@ -61,6 +61,8 @@ As an example:
 
 Please note the additional CMake options which affect the Python bindings:
 
+*   ``-DPYTHON_EXECUTABLE=<path>`` - Use specific Python interpreter (see
+    :ref:`supported-configurations` for available versions).
 *   ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
 *   ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
 *   ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
@@ -81,6 +83,11 @@ As an example, continuing from the code snippets from above:
 
     cd drake-build
     export PYTHONPATH=${PWD}/install/lib/python2.7/site-packages:${PYTHONPATH}
+
+.. note::
+
+    If you are using Python 3.6 on Bionic, change ``lib/python2.7`` to
+    ``lib/python3.6`` in the above path.
 
 .. _using-python-bindings:
 
