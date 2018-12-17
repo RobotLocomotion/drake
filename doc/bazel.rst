@@ -235,6 +235,16 @@ these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
+Python Versions
+===============
+You may select Python versions (within the :ref:`supported-configurations`).
+As an example, to use ``python3`` on Bionic:
+
+    ./setup/user_configure --python_bin /usr/bin/python3
+
+This will update ``./user.bazelrc`` to switch the interpreter used by both
+Bazel and the Python bindings.
+
 Optional Tools
 ==============
 
