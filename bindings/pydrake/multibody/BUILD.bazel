@@ -61,6 +61,11 @@ drake_pybind_library(
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/util:eigen_geometry_py",
     ],
+    py_srcs = [
+        "math.py",
+        "plant.py",
+        "tree.py",
+    ],
 )
 
 # This covers //attic/multibody/parsers.

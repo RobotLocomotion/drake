@@ -70,6 +70,11 @@ void init_module(py::module m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
+  m.doc() =
+      "Bindings for MultibodyTree.\n\n"
+      "Warning:\n   This module will soon be deprecated. Please use "
+      "``pydrake.multibody.tree`` instead.";
+
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
   // TODO(jamiesnape): Extract documentation automatically.
@@ -443,7 +448,10 @@ void init_math(py::module m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  m.doc() = "MultibodyTree math functionality.";
+  m.doc() =
+      "Multibody math functionality.\n\n"
+      "Warning:\n    This module will soon be deprecated. Please use "
+      "``pydrake.multibody.math`` instead.";
 
   {
     using Class = SpatialVelocity<T>;
@@ -473,6 +481,11 @@ void init_multibody_plant(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
+
+  m.doc() =
+      "Multibody plant functionality.\n\n"
+      "Warning:\n   This module will soon be deprecated. Please use "
+      "``pydrake.multibody.plant`` instead.";
 
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
@@ -1021,10 +1034,17 @@ void init_multibody_plant(py::module m) {
   }
 }  // NOLINT(readability/fn_size)
 
-void init_parsing(py::module m) {
+void init_parsing_deprecated(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
+
+  m.doc() =
+      "Multibody parsing functionality.\n\n"
+      "Warning:\n   This module will soon be deprecated. Please use "
+      "``pydrake.multibody.parsing`` instead.";
+
+  // N.B. This module is deprecated; add all new methods to `parsing_py.cc`.
 
   // Stub in a deprecation shim for the Parser class.
   // TODO(jwnimmer-tri) Remove this stub on or about 2019-01-01.
@@ -1085,20 +1105,22 @@ void init_all(py::module m) {
       "from pydrake.multibody.multibody_tree.multibody_plant import *\n"
       "from pydrake.multibody.multibody_tree.parsing import *\n",
       py::globals(), vars);
+  m.doc() =
+      "Warning:\n   ``pydrake.multibody.multibody_tree.all`` will soon "
+      "be deprecated.";
 }
 
 }  // namespace
 
 PYBIND11_MODULE(multibody_tree, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  m.doc() = "MultibodyTree functionality.";
 
   // TODO(eric.cousineau): Split this into separate files. See discussion in
   // #8282 for info relating to the current implementation.
   init_module(m);
   init_math(m.def_submodule("math"));
   init_multibody_plant(m.def_submodule("multibody_plant"));
-  init_parsing(m.def_submodule("parsing"));
+  init_parsing_deprecated(m.def_submodule("parsing"));
   init_all(m.def_submodule("all"));
 }
 

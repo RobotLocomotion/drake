@@ -853,3 +853,13 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+    def test_new_spellings(self):
+        from pydrake.multibody import math
+        math.SpatialVelocity
+        from pydrake.multibody import plant
+        plant.MultibodyPlant
+        from pydrake.multibody import tree
+        tree.Body
+        # Check for soon-to-be deprecated symbols (#9366).
+        self.assertFalse(hasattr(tree, "MultibodyTree"))

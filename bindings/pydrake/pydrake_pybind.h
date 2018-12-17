@@ -27,12 +27,12 @@ classes derived from `pybind11` classes.
 The structure of the bindings generally follow the *directory structure*, not
 the namespace structure. As an example, if in C++  you do:
 
-    #include <drake/multibody/multibody_tree/multibody_plant/{header}.h>
-    using drake::multibody::multibody_plant::{symbol};
+    #include <drake/multibody/plant/{header}.h>
+    using drake::multibody::{symbol};
 
 then in Python you would do:
 
-    from pydrake.multibody.multibody_tree.multibody_plant import {symbol}
+    from pydrake.multibody.plant import {symbol}
 
 Some (but not all) exceptions:
 
