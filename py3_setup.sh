@@ -25,5 +25,4 @@ if [[ ! -f ${_dir}/build/py3/bin/python3 ]]; then
 fi
 
 source ${_dir}/build/py3/bin/activate
-_python_bin=
 ${_dir}/setup/select_python -f $(which python3)
