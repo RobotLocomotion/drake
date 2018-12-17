@@ -469,6 +469,8 @@ class Simulator {
             std::unique_ptr<const System<T>> owned_system,
             std::unique_ptr<Context<T>> context);
 
+  static T GetPreviousNormalizedValue(const T& value);
+
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
@@ -640,10 +642,25 @@ Simulator<T>::Simulator(const System<T>* system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
+template <class T>
+T Simulator<T>::GetPreviousNormalizedValue(const T& value) {
+  using std::nexttoward;
+  using std::abs;
+
+  const long double inf = std::numeric_limits<long double>::infinity();
+  if (abs(value) < std::numeric_limits<double>::min()) {
+    if (value > 0) {
+      return 0;
+    } else {
+      return -std::numeric_limits<double>::min();
+    }
+  } else {
+    return nexttoward(value, -inf);
+  }
+}
+
 template <typename T>
 void Simulator<T>::Initialize() {
-  using std::nexttoward;
-
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
@@ -674,8 +691,9 @@ void Simulator<T>::Initialize() {
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
-  const long double inf = std::numeric_limits<long double>::infinity();
-  context_->set_time(nexttoward(current_time, -inf));
+  const T slightly_before_current_time = GetPreviousNormalizedValue(
+      current_time);
+  context_->set_time(slightly_before_current_time);
 
   // Get the next timed event.
   next_timed_event_time_ =
