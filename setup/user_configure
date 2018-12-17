@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 
 """
-Updates drake to use a specific Python interpreter for both Bazel and the
-Python bindings.
+Helper script to configure drake to use a specific Python interpreter for both
+Bazel and the Python bindings.
 
 This generates (or checks) `./user.bazelrc`.
 """
@@ -22,7 +22,7 @@ import sys
 
 
 class BazelRc(object):
-    # https://docs.bazel.build/versions/master/guide.html#bazelrc-syntax-and-semantics  # noqa
+    # See: https://docs.bazel.build/versions/master/guide.html#bazelrc-syntax-and-semantics  # noqa
     def __init__(self, options):
         self.options = options
 
@@ -48,32 +48,29 @@ class BazelRc(object):
             self.command = command
             self.flag = flag
 
+        def _to_tuple(self):
+            return (self.command, self.flag)
+
         def __hash__(self):
             return hash(self._to_tuple())
 
         def __eq__(self, other):
             return self._to_tuple() == other._to_tuple()
 
-        def _to_tuple(self):
-            return (self.command, self.flag)
-
         def to_line(self):
             return "{} {}".format(self.command, self.flag)
 
         @classmethod
         def list_from_line(cls, text):
-            # Assumes that no strings contain '#'.
-            # Split bazelrc into tokens, strip any and all comments.
-            # Does not do shell lexing.
+            # Primitive lexing, will not catch more complex cases.
             text = text.split("#")[0].strip()
             if len(text) == 0:
                 return None
             words = text.split()
-            assert len(words) > 1, "Invalid syntax"
-            command = words[0]
+            assert len(words) > 1, "Invalid syntax: {}".format(text)
             options = []
             for flag in words[1:]:
-                options.append(cls(command, flag))
+                options.append(cls(words[0], flag))
             return options
 
 
@@ -98,8 +95,7 @@ def main():
     # Write target configuration file.
     target_abspath = join(workspace_dir, target_relpath)
     new_bazelrc = BazelRc([
-        BazelRc.Option(
-            "build", "--action_env=PYTHON_BIN_PATH=" + python_bin),
+        BazelRc.Option("build", "--action_env=PYTHON_BIN_PATH=" + python_bin),
         BazelRc.Option("build", "--python_path=" + python_bin),
     ])
     new_bazelrc_text = new_bazelrc.to_text()
