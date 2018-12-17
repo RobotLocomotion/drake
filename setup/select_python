@@ -32,7 +32,7 @@ def main():
 
     python_bin = args.python_bin
     if not isabs(python_bin):
-        python_bin = check_output(["which", python_bin]).strip()
+        python_bin = check_output(["which", python_bin], env={}).strip()
 
     target_abspath = join(cur_dir, target_relpath)
     if isfile(target_abspath) and not args.force:

@@ -7,5 +7,6 @@ RUN set -eux \
   && rm -rf /var/lib/apt/lists/*
 COPY . .
 RUN set -eux \
-  && bazel build //tools:drake_visualizer //examples/acrobot:run_passive
+  && ./setup/select_python -f python3 \
+  && bazel build //tools:drake_visualizer
 ENTRYPOINT ["drake/setup/ubuntu/docker/entrypoint.sh"]
