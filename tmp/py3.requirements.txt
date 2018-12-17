@@ -1,0 +1,9 @@
+pyyaml
+protobuf==3.6.0
+sphinx==1.8.1
+sphinx_rtd_theme
+numpy==1.14.0
+zmq
+tornado
+matplotlib
+pydot

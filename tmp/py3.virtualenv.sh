@@ -1,25 +1,23 @@
 #!/bin/bash
 
-_dir=$(dirname ${BASH_SOURCE})
-
-if [[ ! -f ${_dir}/virtualenv/bin/python3 ]]; then
+_env_dir=$(cd $(dirname ${BASH_SOURCE}) && pwd)/virtualenv
+if [[ ! -f ${_env_dir}/bin/python3 ]]; then
 (
     set -x
-    cd ${_dir}
-    python3 -m virtualenv --python python3 virtualenv
+    cd $(dirname ${_env_dir})
+    python3 -m virtualenv --python python3 ${_env_dir}
     set +x
-    source virtualenv/bin/activate
+    source ${_env_dir}/bin/activate
     # Install some (if not all) needed dependencies.
-    pip install -I \
-        pyyaml protobuf==3.6.0 sphinx==1.8.1 sphinx_rtd_theme \
-        numpy==1.14.0 zmq tornado matplotlib pydot
+    pip install -r ${_env_dir}/../py3.requirements.txt
     set -x
     # Reflect system Python; make `python` and `python-config` fall through to
     # system, and use `python{major}-config`.
-    rm virtualenv/bin/python
-    mv virtualenv/bin/{python-config,python3-config}
-    sed -i 's#py3/bin/python\b#py3/bin/python3#g' virtualenv/bin/python3-config
+    rm ${_env_dir}/bin/python
+    mv ${_env_dir}/bin/{python-config,python3-config}
+    sed -i 's#/bin/python\b#/bin/python3#g' ${_env_dir}/bin/python3-config
 )
 fi
 
-source ${_dir}/virtualenv/bin/activate
+source ${_env_dir}/bin/activate
+unset _env_dir
