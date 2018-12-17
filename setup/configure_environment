@@ -23,7 +23,8 @@ build --python_path={python_bin}
 
 
 def check_python(python_bin, error):
-    # Check that we're not being lied to about the path.
+    # Checks that the supplied interpreter may not cause issues.
+    # Additional checks are made by `tools/workspace/python/repository.bzl`.
     prefix = check_output([
         python_bin, '-c', 'import sys; print(sys.prefix)']).strip() + "/bin/"
     if not python_bin.startswith(prefix):
