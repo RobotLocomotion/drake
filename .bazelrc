@@ -4,5 +4,5 @@ import %workspace%/tools/bazel.rc
 # Try to import user-specific configuration local to workspace.
 try-import %workspace%/user.bazelrc
 
-# Try importing Python specifics.
-try-import %workspace%/setup/gen/user-python.bazelrc
+# Try importing environment configuration from `./setup/configure_environment`.
+try-import %workspace%/gen/environment.bazelrc

@@ -240,7 +240,7 @@ Python Versions
 You may select Python versions (within the :ref:`supported-configurations`).
 As an example, to use ``python3`` on Bionic:
 
-    ./setup/select_python python3
+    ./setup/configure_environment --python_bin /usr/bin/python3
 
 This will generate a configuration file to switch both Bazel's runfiles and the
 binding's Python interpreter.
