@@ -25,6 +25,7 @@ In any terminal that you're using:
 
 Configure:
 
-    ./setup/configure_environment -f --python_bin $(which python3)
+    rm -f user.bazelrc
+    ./setup/user_configure --python_bin $(which python3)
 
 Now you can use Python3.

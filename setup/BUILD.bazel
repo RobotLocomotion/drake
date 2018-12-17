@@ -32,6 +32,6 @@ install_files(
 
 add_lint_tests(
     python_lint_extra_srcs = [
-        "configure_environment",
+        "user_configure",
     ],
 )
