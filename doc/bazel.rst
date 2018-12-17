@@ -242,8 +242,8 @@ As an example, to use ``python3`` on Bionic:
 
     ./setup/configure_environment --python_bin /usr/bin/python3
 
-This will generate a configuration file to switch both Bazel's runfiles and the
-binding's Python interpreter.
+This will generate a configuration file to switch the interpreter used by both
+Bazel and the Python bindings.
 
 Optional Tools
 ==============
