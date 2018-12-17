@@ -298,6 +298,7 @@ class TestCustom(unittest.TestCase):
         # Test per-step and periodic call backs
         system = TrivialSystem()
         simulator = Simulator(system)
+        # Stepping to 0.99 so that we get exactly one periodic event.
         simulator.StepTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
