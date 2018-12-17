@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import sys
 import install_test_helper
@@ -28,5 +27,5 @@ class TestInstall(unittest.TestCase):
         # Execute the install actions.
         for cmd in lines:
             cmd = cmd.strip()
-            print("+ {}".format(cmd), file=sys.stderr)
+            print("+ {}".format(cmd))
             install_test_helper.check_call([os.path.join(os.getcwd(), cmd)])

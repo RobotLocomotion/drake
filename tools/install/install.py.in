@@ -153,14 +153,14 @@ def install(src, dst):
     dst_full = os.path.join(prefix, dst)
     # Install file, if not up to date.
     if needs_install(src, dst):
-        # print("-- Installing: {}".format(dst_full))
+        print("-- Installing: {}".format(dst_full))
         if os.path.exists(dst_full):
             os.remove(dst_full)
         copy_or_link(src, dst_full)
     else:
         # TODO(eric.cousineau): Unclear how RPath-patched file can be deemed
         # "up-to-date" by comparison?
-        # print("-- Up-to-date: {}".format(dst_full))
+        print("-- Up-to-date: {}".format(dst_full))
         # No need to check patching.
         return
     basename = os.path.basename(dst)
