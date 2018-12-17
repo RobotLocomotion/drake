@@ -8,11 +8,11 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -26,7 +26,7 @@ using geometry::SceneGraph;
 using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::RevoluteJoint;

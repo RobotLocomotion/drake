@@ -156,6 +156,16 @@ drake_cc_library(
 
 # === test/ ===
 
+drake_cc_library(
+    name = "rbt_compute_torque",
+    testonly = 1,
+    hdrs = ["test/rbt_compute_torque.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+    ],
+)
+
 drake_cc_googletest(
     name = "polynomial_encode_decode_test",
     deps = [
@@ -172,6 +182,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        ":rbt_compute_torque",
         ":rbt_inverse_dynamics",
         "//attic/multibody/parsers",
         "//common:find_resource",
@@ -186,6 +197,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        ":rbt_compute_torque",
         ":rbt_inverse_dynamics_controller",
         "//attic/multibody/parsers",
         "//common:find_resource",

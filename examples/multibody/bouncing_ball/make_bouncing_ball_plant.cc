@@ -1,6 +1,6 @@
 #include "drake/examples/multibody/bouncing_ball/make_bouncing_ball_plant.h"
 
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace examples {
@@ -10,14 +10,14 @@ namespace bouncing_ball {
 using geometry::Sphere;
 using geometry::HalfSpace;
 using geometry::SceneGraph;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::CoulombFriction;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
 using drake::multibody::UnitInertia;
 
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeBouncingBallPlant(double radius, double mass,
                       const CoulombFriction<double>& surface_friction,
                       const Vector3<double>& gravity_W,

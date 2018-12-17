@@ -3,14 +3,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace manipulation {
 namespace {
 
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::ModelInstanceIndex;
 using multibody::Parser;
 

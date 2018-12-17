@@ -1,4 +1,5 @@
 # -*- python -*-
+# TODO(jwnimmer-tri) Remove this entire directory on or about 2019-03-01.
 
 load(
     "@drake//tools/skylark:alias.bzl",
@@ -12,10 +13,6 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
-
-# TODO(jwnimmer-tri) Set `add_deprecation_warning = True` in all of the below
-# once Drake no longer internally uses any of these labels, and then schedule
-# this package for removal at a specific date.
 
 # This package is *only* compatibility forwarding rules.
 drake_cc_package_library(
@@ -40,7 +37,7 @@ _RELATIVE_LABELS_RENAME_MAP = {
 drake_cc_hdrs_forwarding_library(
     name = "forwarding_hdrs",
     actual_subdir = "multibody/parsing",
-    add_deprecation_warning = False,
+    add_deprecation_warning = True,
     relative_labels_map = _RELATIVE_LABELS_RENAME_MAP,
     visibility = ["//visibility:private"],
 )
@@ -48,7 +45,7 @@ drake_cc_hdrs_forwarding_library(
 # Forwards the bazel labels in this package to alias into the new package.
 drake_cc_library_aliases(
     actual_subdir = "multibody/parsing",
-    add_deprecation_warning = False,
+    add_deprecation_warning = True,
     relative_labels_map = _RELATIVE_LABELS_RENAME_MAP,
     tags = ["manual"],  # Avoid 'build //...' yelling at us.
     deps = [":forwarding_hdrs"],

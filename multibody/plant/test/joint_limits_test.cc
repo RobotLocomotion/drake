@@ -4,11 +4,11 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
 
@@ -20,7 +20,6 @@ using multibody::Parser;
 using multibody::UniformGravityFieldElement;
 
 namespace multibody {
-namespace multibody_plant {
 namespace {
 
 // These unit tests verify the convergence of the joint limits as the time step
@@ -264,7 +263,6 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake
 

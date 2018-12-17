@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
@@ -39,7 +39,7 @@ namespace detail {
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 /// Parses all `<model>` elements from the SDF file specified by `file_name`
@@ -65,7 +65,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 /// @returns The set of model instance indices for the newly added models.
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace detail

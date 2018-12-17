@@ -10,10 +10,10 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -38,10 +38,10 @@ using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::Joint;
+using multibody::MultibodyPlant;
 using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
-using multibody::multibody_plant::MultibodyPlant;
 
 const int kNumDofIiwa = 7;
 

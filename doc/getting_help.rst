@@ -38,16 +38,6 @@ If you wish to contribute a patch, please see how to :ref:`submit a pull request
 Older Sources
 =============
 
-Some information was previously on the
-:ref:`faq`
-page and a
+Some information was previously on a
 `mailing list <http://mailman.mit.edu/mailman/listinfo/drake-users>`_.
 Please do not use these resources, as they are now inactive.
-
-.. toctree::
-  :hidden:
-
-  faq
-
-..
-    Use a hidden toctree to suppress error about FAQ not being linked.

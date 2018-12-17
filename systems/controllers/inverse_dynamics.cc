@@ -2,7 +2,7 @@
 
 #include <vector>
 
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::VelocityKinematicsCache;
 

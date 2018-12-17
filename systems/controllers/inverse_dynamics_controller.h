@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
@@ -99,7 +99,7 @@ class InverseDynamicsController : public Diagram<T>,
    *    of generalized positions.
    */
   InverseDynamicsController(
-      const multibody::multibody_plant::MultibodyPlant<T>& plant,
+      const multibody::MultibodyPlant<T>& plant,
       const VectorX<double>& kp,
       const VectorX<double>& ki,
       const VectorX<double>& kd,
@@ -167,8 +167,7 @@ class InverseDynamicsController : public Diagram<T>,
   /**
    * Returns a constant pointer to the MultibodyPlant used for control.
    */
-  const multibody::multibody_plant::MultibodyPlant<T>*
-      get_multibody_plant_for_control() const {
+  const multibody::MultibodyPlant<T>* get_multibody_plant_for_control() const {
     return multibody_plant_for_control_;
   }
 
@@ -178,8 +177,7 @@ class InverseDynamicsController : public Diagram<T>,
       const controllers::InverseDynamics<T>& inverse_dynamics,
       DiagramBuilder<T>* diagram_builder);
 
-  const multibody::multibody_plant::MultibodyPlant<T>*
-      multibody_plant_for_control_{nullptr};
+  const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};

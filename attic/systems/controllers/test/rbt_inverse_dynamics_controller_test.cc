@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsers/sdf_parser.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/systems/controllers/test_utilities/compute_torque.h"
+#include "drake/systems/controllers/test/rbt_compute_torque.h"
 
 namespace drake {
 namespace systems {

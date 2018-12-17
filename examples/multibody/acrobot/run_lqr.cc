@@ -9,9 +9,9 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -24,7 +24,7 @@ using geometry::SceneGraph;
 using lcm::DrakeLcm;
 using multibody::benchmarks::acrobot::AcrobotParameters;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::Parser;
 using multibody::JointActuator;
 using multibody::RevoluteJoint;

@@ -6,8 +6,8 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
@@ -103,7 +103,7 @@ Eigen::Isometry3d MakeGeometryPoseFromSdfCollision(
  If a `<surface>` is not found, it returns the coefficients for a
  frictionless surface. If `<surface>` is found, all other nested elements
  are required and an exception is thrown if not present.  */
-multibody_plant::CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
+CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
     const sdf::Collision& sdf_collision);
 
 // TODO(sam.creasey) Making this operate specifically on sdf::Visual

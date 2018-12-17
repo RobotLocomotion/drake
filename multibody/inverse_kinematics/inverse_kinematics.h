@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -26,8 +26,7 @@ class InverseKinematics {
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
    */
-  explicit InverseKinematics(
-      const multibody_plant::MultibodyPlant<double>& plant);
+  explicit InverseKinematics(const MultibodyPlant<double>& plant);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -160,14 +159,11 @@ class InverseKinematics {
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
  private:
-  MultibodyTreeContext<AutoDiffXd>* get_mutable_context() {
-    return dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_.get());
-  }
+  systems::Context<double>* get_mutable_context() { return context_.get(); }
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
-  const multibody_plant::MultibodyPlant<double>& plant_;
-  const MultibodyTreeSystem<AutoDiffXd> system_;
-  std::unique_ptr<systems::Context<AutoDiffXd>> const context_;
+  const MultibodyPlant<double>& plant_;
+  std::unique_ptr<systems::Context<double>> const context_;
   solvers::VectorXDecisionVariable q_;
 };
 }  // namespace multibody

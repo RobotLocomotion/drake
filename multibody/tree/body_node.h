@@ -7,7 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/multibody_tree/math/spatial_algebra.h"
+#include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/body.h"

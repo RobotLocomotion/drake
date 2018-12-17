@@ -19,12 +19,12 @@
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram.h"
@@ -38,7 +38,7 @@ namespace examples {
 namespace allegro_hand {
 namespace {
 
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 DEFINE_double(simulation_time, std::numeric_limits<double>::infinity(),
               "Desired duration of the simulation in seconds");
@@ -105,8 +105,7 @@ void DoMain() {
                   plant.get_geometry_query_input_port());
 
   // Publish contact results for visualization.
-  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
-      &builder, plant, &lcm);
+  multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   // PID controller for position control of the finger joints
   VectorX<double> kp, kd, ki;

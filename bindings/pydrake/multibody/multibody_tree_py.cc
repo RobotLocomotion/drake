@@ -10,18 +10,19 @@
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/math/spatial_vector.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
-#include "drake/multibody/multibody_tree/multibody_forces.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_info.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_vector.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/parsing/sdf_parser.h"
+#include "drake/multibody/plant/contact_info.h"
+#include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_forces.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace pydrake {
@@ -418,6 +419,25 @@ void init_module(py::module m) {
   }
 }
 
+// Binds any child classes of the `SpatialVector` mixin.
+template <typename PyClass>
+void BindSpatialVectorMixin(PyClass* pcls) {
+  constexpr auto& doc = pydrake_doc.drake.multibody;
+  using Class = typename PyClass::type;
+  auto& cls = *pcls;
+  cls  // BR
+      .def("rotational",
+          [](const Class* self) -> const Vector3<T>& {
+            return self->rotational();
+          },
+          py_reference_internal, doc.SpatialVector.rotational.doc)
+      .def("translational",
+          [](const Class* self) -> const Vector3<T>& {
+            return self->translational();
+          },
+          py_reference_internal, doc.SpatialVector.translational.doc);
+}
+
 void init_math(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
@@ -425,23 +445,28 @@ void init_math(py::module m) {
 
   m.doc() = "MultibodyTree math functionality.";
 
-  py::class_<SpatialVector<SpatialVelocity, T>>(
-      m, "SpatialVector", doc.SpatialVector.doc)
-      .def("rotational",
-          [](const SpatialVector<SpatialVelocity, T>* self)
-              -> const Vector3<T>& { return self->rotational(); },
-          py_reference_internal, doc.SpatialVector.rotational.doc)
-      .def("translational",
-          [](const SpatialVector<SpatialVelocity, T>* self)
-              -> const Vector3<T>& { return self->translational(); },
-          py_reference_internal, doc.SpatialVector.translational.doc);
-
-  py::class_<SpatialVelocity<T>, SpatialVector<SpatialVelocity, T>>(
-      m, "SpatialVelocity")
-      .def(py::init(), doc.SpatialVelocity.ctor.doc_3)
-      .def(py::init<const Eigen::Ref<const Vector3<T>>&,
-               const Eigen::Ref<const Vector3<T>>&>(),
-          py::arg("w"), py::arg("v"), doc.SpatialVelocity.ctor.doc_4);
+  {
+    using Class = SpatialVelocity<T>;
+    constexpr auto& cls_doc = doc.SpatialVelocity;
+    py::class_<Class> cls(m, "SpatialVelocity", cls_doc.doc);
+    BindSpatialVectorMixin(&cls);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_3)
+        .def(py::init<const Eigen::Ref<const Vector3<T>>&,
+                 const Eigen::Ref<const Vector3<T>>&>(),
+            py::arg("w"), py::arg("v"), cls_doc.ctor.doc_4);
+  }
+  {
+    using Class = SpatialAcceleration<T>;
+    constexpr auto& cls_doc = doc.SpatialAcceleration;
+    py::class_<Class> cls(m, "SpatialAcceleration", cls_doc.doc);
+    BindSpatialVectorMixin(&cls);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_3)
+        .def(py::init<const Eigen::Ref<const Vector3<T>>&,
+                 const Eigen::Ref<const Vector3<T>>&>(),
+            py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_4);
+  }
 }
 
 void init_multibody_plant(py::module m) {
@@ -637,6 +662,25 @@ void init_multibody_plant(py::module m) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
             doc.MultibodyPlant.CalcJacobianSpatialVelocity.doc)
+        .def("CalcSpatialAccelerationsFromVdot",
+            [](const Class* self, const Context<T>& context,
+                const VectorX<T>& known_vdot) {
+              std::vector<SpatialAcceleration<T>> A_WB_array(
+                  self->num_bodies());
+              self->CalcSpatialAccelerationsFromVdot(
+                  context, known_vdot, &A_WB_array);
+              return A_WB_array;
+            },
+            py::arg("context"), py::arg("known_vdot"),
+            doc.MultibodyPlant.CalcSpatialAccelerationsFromVdot.doc)
+        .def("CalcInverseDynamics", &Class::CalcInverseDynamics,
+            py::arg("context"), py::arg("known_vdot"),
+            py::arg("external_forces"),
+            doc.MultibodyPlant.CalcInverseDynamics.doc)
+        .def("CalcForceElementsContribution",
+            &Class::CalcForceElementsContribution, py::arg("context"),
+            py::arg("forces"),
+            doc.MultibodyPlant.CalcForceElementsContribution.doc)
         .def("CalcPotentialEnergy", &Class::CalcPotentialEnergy,
             py::arg("context"), doc.MultibodyPlant.CalcPotentialEnergy.doc)
         .def("CalcConservativePower", &Class::CalcConservativePower,
@@ -975,7 +1019,7 @@ void init_multibody_plant(py::module m) {
         .def("contact_info", &Class::contact_info, py::arg("i"));
     pysystems::AddValueInstantiation<Class>(m);
   }
-}
+}  // NOLINT(readability/fn_size)
 
 void init_parsing(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.

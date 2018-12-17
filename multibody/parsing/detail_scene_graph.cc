@@ -8,10 +8,10 @@
 #include <sdf/sdf.hh>
 
 #include "drake/geometry/geometry_instance.h"
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
@@ -21,7 +21,6 @@ using Eigen::Isometry3d;
 using Eigen::Vector3d;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using multibody_plant::CoulombFriction;
 using std::make_unique;
 
 namespace {

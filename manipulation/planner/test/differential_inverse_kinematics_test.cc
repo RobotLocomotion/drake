@@ -27,7 +27,7 @@ namespace planner {
 namespace {
 
 using examples::kuka_iiwa_arm::get_iiwa_max_joint_velocities;
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::FixedOffsetFrame;
 using solvers::LinearConstraint;
 
