@@ -25,6 +25,6 @@ In any terminal that you're using:
 
 Configure:
 
-    ./setup/select_python -f $(which python3)
+    ./setup/configure_environment -f --python_bin $(which python3)
 
 Now you can use Python3.
