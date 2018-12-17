@@ -92,7 +92,8 @@ supported for CMake builds using the "Unix Makefiles" generator.
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
 
-CPython is the only Python implementation supported.
+CPython is the only Python implementation supported. On all platforms, Python 2
+is the default version.
 
 The following configurations are presently untested in continuous integration:
 
