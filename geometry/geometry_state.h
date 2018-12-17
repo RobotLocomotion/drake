@@ -92,25 +92,15 @@ class GeometryState {
   /** @name        Scene-graph wide introspection  */
   //@{
 
-  /** Reports the number of registered sources -- whether they have frames or
-   not.  */
+  /** Implementation of SceneGraphInspector::num_sources().  */
   int get_num_sources() const {
     return static_cast<int>(source_frame_id_map_.size());
   }
 
-  /** Reports the total number of frames -- across all sources.  */
+  /** Implementation of SceneGraphInspector::num_frames().  */
   int get_num_frames() const { return static_cast<int>(frames_.size()); }
 
-  /** Provides a range object for all of the frame ids in the scene graph. The
-   order is not generally guaranteed; but it will be consistent as long as there
-   are no changes to the topology. This is intended to be used as:
-   @code
-   for (FrameId id : state.get_frame_ids()) {
-    ...
-   }
-   @endcode
-
-   This will include the id for the world frame.  */
+  /** Implementation of SceneGraphInspector::all_frame_ids().  */
   FrameIdRange get_frame_ids() const {
     return FrameIdRange(&frames_);
   }
@@ -120,10 +110,7 @@ class GeometryState {
     return static_cast<int>(geometries_.size());
   }
 
-  /** The set of all dynamic geometries registered to the world. The order is
-   _not_ guaranteed to have any particular semantic meaning. But the order is
-   guaranteed to remain fixed between topological changes (e.g., removal or
-   addition of geometry/frames).  */
+  /** Implementation of SceneGraphInspector::all_geometry_ids().  */
   const std::vector<GeometryId>& get_geometry_ids() const {
     return geometry_index_to_id_map_;
   }
@@ -131,12 +118,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumGeometriesWithRole().  */
   int GetNumGeometriesWithRole(Role role) const;
 
-  /** Reports the total number of *dynamic* geometries in the scene graph.  */
+  /** Implementation of SceneGraphInspector::GetNumDynamicGeometries().  */
   int GetNumDynamicGeometries() const;
 
-  /** Reports the total number of _anchored_ geometries. This should provide
-   the same answer as calling GetNumFrameGeometries() with the world frame id.
-   */
+  /** Implementation of SceneGraphInspector::GetNumAnchoredGeometries().  */
   int GetNumAnchoredGeometries() const;
 
   //@}
@@ -144,7 +129,7 @@ class GeometryState {
   /** @name          Sources and source-related data  */
   //@{
 
-  /** Reports true if the given `source_id` references a registered source.  */
+  /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
   bool source_is_registered(SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::GetSourceName().  */
@@ -153,11 +138,7 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::NumFramesForSource().  */
   int NumFramesForSource(SourceId source_id) const;
 
-  /** Returns the set of frames registered to the given source.
-   @param source_id     The identifier of the source to query.
-   @return  The set of frames associated with the id.
-   @throws std::logic_error If the `source_id` does _not_ map to a registered
-                            source.  */
+  /** Implementation of SceneGraphInspector::FramesForSource().  */
   const FrameIdSet& GetFramesForSource(SourceId source_id) const;
 
   //@}
@@ -165,22 +146,14 @@ class GeometryState {
   /** @name              Frames and their properties  */
   //@{
 
-  /** Reports if the given frame id was registered to the given source id.
-   @param frame_id      The query frame id.
-   @param source_id     The query source id.
-   @returns True if `frame_id` was registered on `source_id`.
-   @throws std::logic_error  If the `frame_id` does _not_ map to a frame or the
-                             identified source is not registered.  */
+  /** Implementation of SceneGraphInspector::BelongsToSource(FrameId, SourceId).
+   */
   bool BelongsToSource(FrameId frame_id, SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::GetName(FrameId).  */
   const std::string& get_frame_name(FrameId frame_id) const;
 
-  /** Reports the frame group for the given frame.
-   @param frame_id  The identifier of the queried frame.
-   @returns The frame group of the identified frame.
-   @throws std::logic_error if the frame id is not valid.
-   @internal This is equivalent to the old "model instance id".  */
+  /** Implementation of SceneGraphInspector::GetFrameGroup().  */
   int get_frame_group(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::NumGeometriesForFrame().  */
@@ -207,14 +180,8 @@ class GeometryState {
   /** @name           Geometries and their properties  */
   //@{
 
-  /** Reports if the given geometry id was ultimately registered to the given
-   source id.
-   @param geometry_id   The query geometry id.
-   @param source_id     The query source id.
-   @returns True if `geometry_id` was registered on `source_id`.
-   @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
-                             geometry or the identified source is not
-                             registered  */
+  /** Implementation of
+   SceneGraphInspector::BelongsToSource(GeometryId, SourceId).  */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::GetFrameId().  */
@@ -223,21 +190,10 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetName(GeometryId).  */
   const std::string& get_name(GeometryId geometry_id) const;
 
-  /** Reports the pose, relative to the registered _frame_, for the geometry
-   the given identifier refers to.
-   @param geometry_id     The id of the queried geometry.
-   @return The geometry's pose relative to its frame.
-   @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
-                             GeometryInstance.  */
+  /** Implementation of SceneGraphInspector::X_FG().  */
   const Isometry3<double>& GetPoseInFrame(GeometryId geometry_id) const;
 
-  /** Reports the pose of identified dynamic geometry, relative to its
-   registered parent. If the geometry was registered directly to a frame, this
-   _must_ produce the same pose as GetPoseInFrame().
-   @param geometry_id     The id of the queried geometry.
-   @return The geometry's pose relative to its registered parent.
-   @throws std::logic_error  If the `geometry_id` does _not_ map to a valid
-                             GeometryInstance.  */
+  /** Implementation of SceneGraphInspector::X_PG().  */
   const Isometry3<double>& GetPoseInParent(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetProximityProperties().  */
