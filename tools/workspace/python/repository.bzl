@@ -98,8 +98,11 @@ def _repository_python_info(repository_ctx):
         ).format(python, prefix))
     implementation = execute_or_fail(
         repository_ctx,
-        [python, "-c",
-        "import platform as m; print(m.python_implementation())"],
+        [
+            python,
+            "-c",
+            "import platform as m; print(m.python_implementation())",
+        ],
     ).stdout.strip()
     if implementation != "CPython":
         fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
@@ -110,6 +113,7 @@ def _repository_python_info(repository_ctx):
     # ensure that you manually symlink the matching `*-config` binary in your
     # `virtualenv` installation.
     python_config = "{}-config".format(python)
+
     # Check if file exists.
     if which(repository_ctx, python_config) == None:
         fail("Executable does not exist: {}".format(python_config))

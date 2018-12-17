@@ -94,8 +94,7 @@ supported for CMake builds using the "Unix Makefiles" generator.
 
 CPython is the only Python implementation supported.
 
-The following configurations are experimental and untested in continuous
-integration:
+The following configurations are presently untested in continuous integration:
 
 -   macOS Mojave: C++, Python
 -   macOS, Ubuntu Bionic: MATLAB
