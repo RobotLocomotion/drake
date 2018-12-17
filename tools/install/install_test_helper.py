@@ -1,3 +1,4 @@
+from __future__ import print_function
 import errno
 import os
 import signal
@@ -120,6 +121,7 @@ def check_call(args, *extra_args, **kwargs):
     if args[0].endswith('.py'):
         # Ensure that we test with the same Python version that Bazel is using.
         args = [get_python_executable()] + args
+    print(args, file=sys.stderr)
     return subprocess.check_call(args, cwd='/', *extra_args, **kwargs)
 
 
