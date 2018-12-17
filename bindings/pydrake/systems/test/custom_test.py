@@ -183,11 +183,11 @@ class TestCustom(unittest.TestCase):
                 self.called_per_step = False
                 self.called_periodic = False
                 # Ensure we have desired overloads.
-                self._DeclarePeriodicPublish(0.1)
-                self._DeclarePeriodicPublish(0.1, 0)
-                self._DeclarePeriodicPublish(period_sec=0.1, offset_sec=0.)
+                self._DeclarePeriodicPublish(1.0)
+                self._DeclarePeriodicPublish(1.0, 0)
+                self._DeclarePeriodicPublish(period_sec=1.0, offset_sec=0.)
                 self._DeclarePeriodicDiscreteUpdate(
-                    period_sec=0.1, offset_sec=0.)
+                    period_sec=1.0, offset_sec=0.)
                 self._DeclareInitializationEvent(
                     event=PublishEvent(
                         trigger_type=TriggerType.kInitialization,
@@ -197,7 +197,7 @@ class TestCustom(unittest.TestCase):
                         trigger_type=TriggerType.kPerStep,
                         callback=self._on_per_step))
                 self._DeclarePeriodicEvent(
-                    period_sec=0.1,
+                    period_sec=1.0,
                     offset_sec=0.0,
                     event=PublishEvent(
                         trigger_type=TriggerType.kPeriodic,
@@ -262,9 +262,7 @@ class TestCustom(unittest.TestCase):
             def _on_periodic(self, context, event):
                 test.assertIsInstance(context, Context)
                 test.assertIsInstance(event, PublishEvent)
-                # TODO(edrumwri) Re-enable the test below when issue #10244
-                # has been resolved.
-                # test.assertFalse(self.called_periodic)
+                test.assertFalse(self.called_periodic)
                 self.called_periodic = True
 
         system = TrivialSystem()
@@ -280,7 +278,7 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(system.called_continuous)
         self.assertTrue(system.called_discrete)
         self.assertTrue(system.called_initialize)
-        self.assertEqual(results["discrete_next_t"], 0.1)
+        self.assertEqual(results["discrete_next_t"], 1.0)
 
         self.assertFalse(system.HasAnyDirectFeedthrough())
         self.assertFalse(system.HasDirectFeedthrough(output_port=0))
@@ -300,7 +298,7 @@ class TestCustom(unittest.TestCase):
         # Test per-step and periodic call backs
         system = TrivialSystem()
         simulator = Simulator(system)
-        simulator.StepTo(0.1)
+        simulator.StepTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
 
