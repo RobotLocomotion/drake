@@ -7,3 +7,12 @@ Python2
 
 Python3
 
+
+In Bionic Docker:
+
++ all_install_test.py
+    from drake import lcmt_viewer_load_robot
+ImportError: cannot import name 'lcmt_viewer_load_robot'
+
+Seems like just a sandboxing issue, as this is unreproducible from using
+sandbox install.
