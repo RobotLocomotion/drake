@@ -158,8 +158,7 @@ if(APPLE)
   find_program(PYTHON_EXECUTABLE NAMES python2)
 endif()
 
-# TODO(eric.cousineau) Ensure that we can switch between supported versions.
-find_package(PythonInterp 2.7 EXACT MODULE REQUIRED)
+find_package(PythonInterp MODULE REQUIRED)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
   set(BAZEL_COMPILATION_MODE dbg)
