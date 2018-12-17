@@ -219,7 +219,7 @@ void MaliputRailcar<T>::CalcVelocity(const Context<T>& context,
   const Rotation rotation =
       lane_direction.lane->GetOrientation(
           LanePosition(state.s(), params.r(), params.h()));
-  const math::RotationMatrix<T> R_WL = rotation.CalcRotationMatrix();
+  const Eigen::Matrix<T, 3, 3> R_WL = rotation.matrix();
   const Vector3<T> v_WC_W = R_WL * v_LC_L;
 
   // TODO(liang.fok) Add support for non-zero rotational velocity. See #5751.

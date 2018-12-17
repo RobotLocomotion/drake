@@ -180,8 +180,7 @@ const Connection* Builder::Connect(const std::string& id,
       start_heading);
   const Vector3<double> start_reference_position =
       start_lane_position +
-      start_rotation.CalcRotationMatrix() *
-          Vector3<double>(0., -start_lane_offset, 0.);
+      start_rotation.matrix() * Vector3<double>(0., -start_lane_offset, 0.);
 
   // Assigns the start endpoint.
   Endpoint start{
@@ -251,8 +250,7 @@ const Connection* Builder::Connect(const std::string& id,
                                             start_spec.endpoint().z().z()};
   const Vector3<double> start_reference_position =
       start_lane_position +
-      start_rotation.CalcRotationMatrix() *
-          Vector3<double>(0., -start_lane_offset, 0.);
+      start_rotation.matrix() * Vector3<double>(0., -start_lane_offset, 0.);
 
   // Assigns the start endpoint.
   Endpoint start{
@@ -322,12 +320,11 @@ Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
   const Vector3<double> s_hat = Vector3<double>::UnitX();
   switch (end) {
     case api::LaneEnd::kStart: {
-      return -(lane->GetOrientation(
-          {0., -r_offset, 0.}).CalcRotationMatrix() * s_hat);
+      return -(lane->GetOrientation({0., -r_offset, 0.}).matrix() * s_hat);
     }
     case api::LaneEnd::kFinish: {
-      return lane->GetOrientation(
-          {lane->length(), r_offset, 0.}).CalcRotationMatrix() * s_hat;
+      return lane->GetOrientation({lane->length(), r_offset, 0.}).matrix() *
+             s_hat;
     }
     default: { DRAKE_ABORT(); }
   }
