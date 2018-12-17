@@ -4,10 +4,12 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 // Explicitly instantiates on the most common scalar types.
 template class VelocityKinematicsCache<double>;
 template class VelocityKinematicsCache<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

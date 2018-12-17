@@ -77,27 +77,19 @@ void init_module(py::module m) {
 
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
-  // TODO(jamiesnape): Extract documentation automatically.
-  BindTypeSafeIndex<FrameIndex>(m, "FrameIndex",
-      "Type used to identify frames by index in a multibody tree system.");
-  BindTypeSafeIndex<BodyIndex>(m, "BodyIndex",
-      "Type used to identify bodies by index in a multibody tree system.");
-  BindTypeSafeIndex<MobilizerIndex>(m, "MobilizerIndex",
-      "Type used to identify mobilizers by index in a multibody tree system.");
-  BindTypeSafeIndex<BodyNodeIndex>(m, "BodyNodeIndex",
-      "Type used to identify tree nodes by index within a multibody tree "
-      "system.");
-  BindTypeSafeIndex<ForceElementIndex>(m, "ForceElementIndex",
-      "Type used to identify force elements by index within a multibody tree "
-      "system.");
-  BindTypeSafeIndex<JointIndex>(m, "JointIndex",
-      "Type used to identify joints by index within a multibody tree system.");
-  BindTypeSafeIndex<JointActuatorIndex>(m, "JointActuatorIndex",
-      "Type used to identify actuators by index within a multibody tree "
-      "system.");
-  BindTypeSafeIndex<ModelInstanceIndex>(m, "ModelInstanceIndex",
-      "Type used to identify model instances by index within a multibody tree "
-      "system.");
+  BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
+  BindTypeSafeIndex<BodyIndex>(m, "BodyIndex", doc.BodyIndex.doc);
+  BindTypeSafeIndex<MobilizerIndex>(
+      m, "MobilizerIndex", doc.internal.MobilizerIndex.doc);
+  BindTypeSafeIndex<BodyNodeIndex>(
+      m, "BodyNodeIndex", doc.internal.BodyNodeIndex.doc);
+  BindTypeSafeIndex<ForceElementIndex>(
+      m, "ForceElementIndex", doc.ForceElementIndex.doc);
+  BindTypeSafeIndex<JointIndex>(m, "JointIndex", doc.JointIndex.doc);
+  BindTypeSafeIndex<JointActuatorIndex>(
+      m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
+  BindTypeSafeIndex<ModelInstanceIndex>(
+      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
 
   // Frames.
@@ -869,7 +861,7 @@ void init_multibody_plant(py::module m) {
         .def("world_frame", &Class::world_frame, py_reference_internal,
             doc.MultibodyPlant.world_frame.doc)
         .def("tree", &Class::tree, py_reference_internal,
-            pydrake_doc.drake.multibody.MultibodyTreeSystem.tree.doc)
+            pydrake_doc.drake.multibody.internal.MultibodyTreeSystem.tree.doc)
         .def("is_finalized", &Class::is_finalized,
             doc.MultibodyPlant.is_finalized.doc)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
