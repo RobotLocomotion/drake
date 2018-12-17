@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T>
 Vector3<T> SpaceXYZMobilizer<T>::get_angles(
@@ -368,5 +369,6 @@ SpaceXYZMobilizer<T>::DoCloneToScalar(
 template class SpaceXYZMobilizer<double>;
 template class SpaceXYZMobilizer<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

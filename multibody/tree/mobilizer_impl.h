@@ -16,6 +16,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// Base class for specific Mobilizer implementations with the number of
 /// generalized positions and velocities resolved at compile time as template
@@ -208,6 +209,11 @@ class MobilizerImpl : public Mobilizer<T> {
     return this->get_topology().velocities_start;
   }
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::MobilizerImpl;
 
 }  // namespace multibody
 }  // namespace drake

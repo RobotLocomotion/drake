@@ -8,6 +8,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T>
 const T& PrismaticMobilizer<T>::get_translation(
@@ -158,5 +159,6 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> PrismaticMobilizer<T>::DoCloneToScalar(
 template class PrismaticMobilizer<double>;
 template class PrismaticMobilizer<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

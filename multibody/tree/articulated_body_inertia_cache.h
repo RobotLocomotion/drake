@@ -9,6 +9,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This class is one of the cache entries in MultibodyTreeContext. It holds the
 /// results of computations that are used in the recursive implementation of the
@@ -72,6 +73,11 @@ class ArticulatedBodyInertiaCache {
   // Pools.
   ABI_PoolType Pplus_PB_W_{};  // Indexed by BodyNodeIndex.
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::ArticulatedBodyInertiaCache;
 
 }  // namespace multibody
 }  // namespace drake

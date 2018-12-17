@@ -17,6 +17,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 // TODO(sherm1) Remove this class and just use a LeafContext directly.
 /// %MultibodyTreeContext is an object that contains all the information
@@ -194,6 +195,11 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   // stored as continuous state.
   bool is_state_discrete_{false};
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::MultibodyTreeContext;
 
 }  // namespace multibody
 }  // namespace drake

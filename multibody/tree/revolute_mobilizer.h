@@ -14,6 +14,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This Mobilizer allows two frames to rotate relatively to one another around
 /// an axis that is constant when measured in either this mobilizer's inboard or
@@ -198,6 +199,11 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Default joint axis expressed in the inboard frame F.
   Vector3<double> axis_F_;
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::RevoluteMobilizer;
 
 }  // namespace multibody
 }  // namespace drake

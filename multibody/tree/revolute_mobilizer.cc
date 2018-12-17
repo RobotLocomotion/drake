@@ -8,6 +8,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T>
 const T& RevoluteMobilizer<T>::get_angle(
@@ -159,5 +160,6 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
 template class RevoluteMobilizer<double>;
 template class RevoluteMobilizer<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

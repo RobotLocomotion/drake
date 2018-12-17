@@ -14,6 +14,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This mobilizer fixes the relative pose `X_FM` of an outboard frame M in an
 /// inboard frame F as if "welding" them together at this fixed relative pose.
@@ -121,6 +122,11 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // Pose of the outboard frame M in the inboard frame F.
   Isometry3<double> X_FM_;
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::WeldMobilizer;
 
 }  // namespace multibody
 }  // namespace drake

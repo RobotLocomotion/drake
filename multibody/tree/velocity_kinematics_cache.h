@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This class is one of the cache entries in MultibodyTreeContext. It holds the
 /// kinematics results of computations that depend not only on the generalized
@@ -146,6 +147,11 @@ class VelocityKinematicsCache {
   SpatialVelocity_PoolType V_FM_pool_;
   SpatialVelocity_PoolType V_PB_W_pool_;
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::VelocityKinematicsCache;
 
 }  // namespace multibody
 }  // namespace drake

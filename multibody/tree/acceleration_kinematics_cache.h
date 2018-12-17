@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This class is one of the cache entries in MultibodyTreeContext. It holds the
 /// kinematics results of computations that depend not only on the generalized
@@ -118,6 +119,11 @@ class AccelerationKinematicsCache {
   // Number of body nodes in the corresponding MultibodyTree.
   SpatialAcceleration_PoolType A_WB_pool_;   // Indexed by BodyNodeIndex.
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::AccelerationKinematicsCache;
 
 }  // namespace multibody
 }  // namespace drake
