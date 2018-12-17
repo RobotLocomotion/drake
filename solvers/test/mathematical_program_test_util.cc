@@ -13,21 +13,23 @@ void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id) {
   EXPECT_EQ(*solver_id, desired_solver_id);
 }
 
-void RunSolver(const MathematicalProgram& prog,
-               const optional<Eigen::VectorXd>& initial_guess,
-               const MathematicalProgramSolverInterface& solver,
-               MathematicalProgramResult* result) {
+MathematicalProgramResult RunSolver(
+    const MathematicalProgram& prog,
+    const MathematicalProgramSolverInterface& solver,
+    const optional<Eigen::VectorXd>& initial_guess) {
   if (!solver.available()) {
     throw std::runtime_error(
         "Solver " + solver.solver_id().name() + " is not available");
   }
 
-  solver.Solve(prog, initial_guess, {}, result);
-  EXPECT_EQ(result->get_solution_result(), SolutionResult::kSolutionFound);
-  if (result->get_solution_result() != SolutionResult::kSolutionFound) {
+  MathematicalProgramResult result;
+  solver.Solve(prog, initial_guess, {}, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  if (result.get_solution_result() != SolutionResult::kSolutionFound) {
     throw std::runtime_error(
         "Solver " + solver.solver_id().name() + " fails to find the solution");
   }
+  return result;
 }
 }  // namespace test
 }  // namespace solvers

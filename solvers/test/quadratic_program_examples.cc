@@ -423,8 +423,8 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     if (solver.solver_id() == SnoptSolver::id()) {
       initial_guess.emplace(Eigen::VectorXd::Zero(2));
     }
-    MathematicalProgramResult result;
-    RunSolver(prog, initial_guess, solver, &result);
+    const MathematicalProgramResult result =
+        RunSolver(prog, solver, initial_guess);
     const auto& x_value = prog.GetSolution(x, result);
 
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
@@ -443,7 +443,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
 
     prog.SetSolverOption(GurobiSolver::id(), "BarConvTol", 1E-9);
     MathematicalProgramResult result;
-    ASSERT_NO_THROW(RunSolver(prog, {}, solver, &result));
+    ASSERT_NO_THROW(result = RunSolver(prog, solver));
 
     const auto& x_value = prog.GetSolution(x, result);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,

@@ -31,8 +31,7 @@ void TestTrivialSDP(const MathematicalProgramSolverInterface& solver,
   // Min S.trace()
   prog.AddLinearCost(S.cast<symbolic::Expression>().trace());
 
-  MathematicalProgramResult result;
-  RunSolver(prog, {}, solver, &result);
+  const MathematicalProgramResult result = RunSolver(prog, solver);
 
   auto S_value = prog.GetSolution(S, result);
 
@@ -64,8 +63,7 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver,
   auto binding2 = prog.AddPositiveSemidefiniteConstraint(
       -A2.transpose() * P - P * A2 - psd_epsilon * Matrix3d::Identity());
 
-  MathematicalProgramResult result;
-  RunSolver(prog, {}, solver, &result);
+  const MathematicalProgramResult result = RunSolver(prog, solver);
 
   const Matrix3d P_value = prog.GetSolution(P, result);
   const auto Q1_flat_value = prog.GetSolution(binding1.variables(), result);
@@ -126,8 +124,7 @@ void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver,
 
   prog.AddLinearCost(-P.cast<symbolic::Expression>().trace());
 
-  MathematicalProgramResult result;
-  RunSolver(prog, {}, solver, &result);
+  const MathematicalProgramResult result = RunSolver(prog, solver);
 
   const auto P_value = prog.GetSolution(P, result);
   const auto s_value = prog.GetSolution(s, result);
@@ -176,8 +173,7 @@ void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver,
 
   prog.AddLinearCost(z(0));
 
-  MathematicalProgramResult result;
-  RunSolver(prog, {}, solver, &result);
+  const MathematicalProgramResult result = RunSolver(prog, solver);
 
   const double z_value = prog.GetSolution(z(0), result);
   const auto x_value = prog.GetSolution(x, result);

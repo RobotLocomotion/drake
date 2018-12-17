@@ -46,15 +46,15 @@ class OptimizationProgram {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
+  virtual const optional<Eigen::VectorXd>& initial_guess() const {
+    return initial_guess_;
+  }
+
   virtual void CheckSolution(const MathematicalProgramResult& result) const = 0;
 
   double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
 
   void RunProblem(MathematicalProgramSolverInterface* solver);
-
-  virtual const optional<Eigen::VectorXd>& initial_guess() const {
-    return initial_guess_;
-  }
 
  private:
   CostForm cost_form_;

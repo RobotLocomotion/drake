@@ -82,8 +82,7 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
 
 void TestEllipsoidsSeparation::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver, double tol) {
-  MathematicalProgramResult result;
-  RunSolver(prog_, {}, solver, &result);
+  MathematicalProgramResult result = RunSolver(prog_, solver);
 
   // Check the solution.
   // First check if each constraint is satisfied.
@@ -151,7 +150,7 @@ void TestEllipsoidsSeparation::SolveAndCheckSolution(
     prog_intersect.AddLinearEqualityConstraint(A1, x1_, {y, u1});
     prog_intersect.AddLinearEqualityConstraint(A2, x2_, {y, u2});
 
-    RunSolver(prog_intersect, {}, solver, &result);
+    result = RunSolver(prog_intersect, solver);
 
     // Check if the constraints are satisfied
     const auto& u1_value = prog_intersect.GetSolution(u1, result);
@@ -222,7 +221,7 @@ TestQPasSOCP::TestQPasSOCP() {
 void TestQPasSOCP::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver, double tol) {
   MathematicalProgramResult result;
-  RunSolver(prog_socp_, {}, solver, &result);
+  result = RunSolver(prog_socp_, solver);
   const auto& x_socp_value = prog_socp_.GetSolution(x_socp_, result);
   const double objective_value_socp =
       c_.dot(x_socp_value) + prog_socp_.GetSolution(y_, result);
@@ -236,7 +235,7 @@ void TestQPasSOCP::SolveAndCheckSolution(
               (Q_sqrt * x_socp_value).squaredNorm(), tol);
   EXPECT_GE(prog_socp_.GetSolution(y_, result), 0);
 
-  RunSolver(prog_qp_, {}, solver, &result);
+  result = RunSolver(prog_qp_, solver);
   const auto& x_qp_value = prog_qp_.GetSolution(x_qp_, result);
   const Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
   Eigen::VectorXd Q_x_qp = Q_ * x_qp_value;
@@ -302,8 +301,7 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
 
 void TestFindSpringEquilibrium::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver, double tol) {
-  MathematicalProgramResult result;
-  RunSolver(prog_, {}, solver, &result);
+  const MathematicalProgramResult result = RunSolver(prog_, solver);
 
   const optional<SolverId> solver_id = result.get_solver_id();
   ASSERT_TRUE(solver_id);

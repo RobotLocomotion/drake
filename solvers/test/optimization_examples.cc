@@ -67,8 +67,8 @@ void OptimizationProgram::RunProblem(
     MathematicalProgramSolverInterface* solver) {
   if (solver->available()) {
     EXPECT_FALSE(prog_->GetSolverId());
-    MathematicalProgramResult result;
-    RunSolver(*prog_, initial_guess(), *solver, &result);
+    const MathematicalProgramResult result =
+        RunSolver(*prog_, *solver, initial_guess());
     const optional<SolverType> solver_type =
         SolverTypeConverter::IdToType(solver->solver_id());
     ASSERT_TRUE(solver_type != nullopt);
