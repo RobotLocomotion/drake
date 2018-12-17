@@ -642,19 +642,33 @@ Simulator<T>::Simulator(const System<T>* system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
+// This function computes the previous (i.e., that which is one step closer to
+// negative infinity) *normalized* floating-point number from value.
+// nexttoward() provides very similar functionality except for its proclivity
+// for producing denormalized numbers that typically only result from
+// arithmetic underflow and are hence dangerous to use in further floating
+// point operations. Thus, GetPreviousNormalizedValue() acts like nexttoward(.)
+// but without producing denormalized numbers.
 template <class T>
 T Simulator<T>::GetPreviousNormalizedValue(const T& value) {
   using std::nexttoward;
   using std::abs;
 
   const long double inf = std::numeric_limits<long double>::infinity();
-  if (abs(value) < std::numeric_limits<double>::min()) {
+  // Treat numbers equal to or smaller than the smallest normalized number
+  // specially.
+  if (abs(value) <= std::numeric_limits<double>::min()) {
     if (value > 0) {
+      // The normalized value immediately preceding a positive denormalized
+      // number is zero.
       return 0;
     } else {
+      // The normalized value immediately preceding zero is the smallest
+      // normalized number, negated.
       return -std::numeric_limits<double>::min();
     }
   } else {
+    // Number is sufficiently large to avoid concerns about denormalization.
     return nexttoward(value, -inf);
   }
 }

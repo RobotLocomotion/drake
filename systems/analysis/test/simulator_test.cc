@@ -1321,6 +1321,52 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 0, 0}));
 }
 
+// A simple system with periodic updates used to indirectly test
+// Simulator::GetPreviousNormalizedValue().
+class DemoSystem : public drake::systems::LeafSystem<double> {
+ public:
+  DemoSystem() {
+    this->DeclarePeriodicDiscreteUpdate(1.0 /* period */, 0.0 /* offset */);
+  }
+};
+
+GTEST_TEST(SimulatorTest, DemoSystemTest) {
+  DemoSystem sys;
+  Simulator<double> simulator(sys);
+
+  // Set the time to zero and step to the same time. There should be a single
+  // update, at the beginning of StepTo().
+  double initial_time = 0.0;
+  simulator.get_mutable_context().set_time(initial_time);
+  simulator.Initialize();
+  simulator.StepTo(initial_time);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
+
+  // Now set the time to the smallest normalized value and ensure that we still
+  // get an update.
+  initial_time = std::numeric_limits<double>::min();
+  simulator.get_mutable_context().set_time(initial_time);
+  simulator.Initialize();
+  simulator.StepTo(1.5 /* first update will be at time one */);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
+
+  // Now set the time to the negative smallest normalized value and ensure that
+  // we still get an update.
+  initial_time = -std::numeric_limits<double>::min();
+  simulator.get_mutable_context().set_time(initial_time);
+  simulator.Initialize();
+  simulator.StepTo(0.5 /* first update is at time zero */);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
+
+  // Finally, set the time to a normalized positive value and ensure that we
+  // still get an update.
+  initial_time = 1.0;
+  simulator.get_mutable_context().set_time(initial_time);
+  simulator.Initialize();
+  simulator.StepTo(initial_time);
+  EXPECT_EQ(simulator.get_num_discrete_updates(), 1);
+}
+
 // A mock System that requests a single update at a prespecified time.
 class UnrestrictedUpdater : public LeafSystem<double> {
  public:
