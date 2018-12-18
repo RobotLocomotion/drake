@@ -135,6 +135,7 @@ drake_cc_googletest(
         "no_asan",
         "no_memcheck",
         "no_tsan",
+        "requires-network",
     ],
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
