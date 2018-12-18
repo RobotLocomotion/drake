@@ -52,7 +52,25 @@ class SceneGraphInspector {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraphInspector)
 
   //----------------------------------------------------------------------------
-  /** @name                State queries  */
+
+  /** @name              Scene-graph wide data  */
+
+  /** Reports the *total* number of geometries in the scene graph.  */
+  int num_geometries() const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->get_num_geometries();
+  }
+
+  /** Reports the *total* number of geometries in the scene graph with the
+   indicated role.  */
+  int NumGeometriesWithRole(Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetNumGeometriesWithRole(role);
+  }
+
+  //@}
+
+  /** @name                Sources and source-related data  */
   //@{
 
   // NOTE: An inspector should never be released into the wild without having
@@ -66,19 +84,23 @@ class SceneGraphInspector {
     return state_->get_source_name(id);
   }
 
+  /** Reports the number of frames registered to the given source id. Returns
+   zero for unregistered source ids.  */
+  int NumFramesForSource(SourceId source_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->NumFramesForSource(source_id);
+  }
+
+  //@}
+
+  /** @name              Frames and their properties  */
+  //@{
+
   /** Reports the id of the frame to which the given geometry id is registered.
    @throws std::logic_error if the geometry id is invalid.  */
   FrameId GetFrameId(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetFrameId(geometry_id);
-  }
-
-  /** Returns the visual material of the geometry indicated by the given
-   `geometry_id` (if it exists).
-   @throws  std::logic_error if the geometry id is invalid.  */
-  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_visual_material(geometry_id);
   }
 
   /** Reports the name of the frame indicated by the given id.
@@ -88,13 +110,33 @@ class SceneGraphInspector {
     return state_->get_frame_name(frame_id);
   }
 
-  /** Reports the name of the geometry indicated by the given id.
-   @throws std::logic_error if `geometry_id` doesn't refer to a valid geometry.
-  */
-  const std::string& GetName(GeometryId geometry_id) const {
+  /** Reports the number of geometries affixed to the given frame id.
+   @throws std::runtime_error if `frame_id` is invalid.  */
+  int NumGeometriesForFrame(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_name(geometry_id);
+    return state_->GetNumFrameGeometries(frame_id);
   }
+
+  /** Reports the total number of geometries directly registered to the given
+   frame. This count does _not_ include geometries attached to frames that are
+   descendants of this frame.
+   @throws std::runtime_error if the `frame_id` is invalid.  */
+  int NumFrameGeometries(FrameId frame_id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetNumFrameGeometries(frame_id);
+  }
+
+  /** Reports the number of geometries assigned to the given frame with the
+   given role.  */
+  int NumFrameGeometriesWithRole(FrameId frame_id, Role role) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetNumFrameGeometriesWithRole(frame_id, role);
+  }
+
+  //@}
+
+  /** @name           Geometries and their properties  */
+  //@{
 
   /** Reports the id of the geometry with the given name, attached to the
    indicated frame with the given role.
@@ -113,18 +155,20 @@ class SceneGraphInspector {
     return state_->GetGeometryFromName(frame_id, role, name);
   }
 
-  /** Reports the number of frames registered to the given source id. Returns
-   zero for unregistered source ids.  */
-  int NumFramesForSource(SourceId source_id) const {
+  /** Reports the name of the geometry indicated by the given id.
+   @throws std::logic_error if `geometry_id` doesn't refer to a valid geometry.
+  */
+  const std::string& GetName(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->NumFramesForSource(source_id);
+    return state_->get_name(geometry_id);
   }
 
-  /** Reports the number of geometries affixed to the given frame id.
-   @throws std::runtime_error if `frame_id` is invalid.  */
-  int NumGeometriesForFrame(FrameId frame_id) const {
+  /** Returns the visual material of the geometry indicated by the given
+   `geometry_id` (if it exists).
+   @throws  std::logic_error if the geometry id is invalid.  */
+  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
     DRAKE_DEMAND(state_ != nullptr);
-    return state_->GetNumFrameGeometries(frame_id);
+    return state_->get_visual_material(geometry_id);
   }
 
   /** Returns a pointer to the const proximity properties of the geometry
@@ -149,43 +193,14 @@ class SceneGraphInspector {
     return state_->get_illustration_properties(geometry_id);
   }
 
-  /** Reports the *total* number of geometries in the scene graph.  */
-  int num_geometries() const {
-    DRAKE_DEMAND(state_ != nullptr);
-    state_->get_num_geometries();
-  }
-
-  /** Reports the *total* number of geometries in the scene graph with the
-   indicated role.  */
-  int NumGeometriesWithRole(Role role) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    state_->GetNumGeometriesWithRole(role);
-  }
-
-  /** Reports the total number of geometries directly registered to the given
-   frame. This count does _not_ include geometries attached to frames that are
-   descendants of this frame.
-   @throws std::runtime_error if the `frame_id` is invalid.  */
-  int NumFrameGeometries(FrameId frame_id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    state_->GetNumFrameGeometries(frame_id);
-  }
-
-  /** Reports the number of geometries assigned to the given frame with the
-   given role.  */
-  int NumFrameGeometriesWithRole(FrameId frame_id, Role role) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    state_->GetNumFrameGeometriesWithRole(frame_id, role);
-  }
-
-  //@}
-
   /** Reports true if collision between the two indicated geometries has been
    filtered out.  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->CollisionFiltered(id1, id2);
   }
+
+  //@}
 
  private:
   // Only SceneGraph and QueryObject instances can construct

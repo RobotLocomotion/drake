@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
@@ -16,8 +16,6 @@ namespace detail {
 /// adds it to `plant`. The SDF file can only contain a single `<model>`
 /// element. `<world>` elements (used for instance to specify gravity) are
 /// ignored by this method.  A new model instance will be added to @p plant.
-/// This version of AddModelFromSdfFile() should be called when attempting to
-/// load an SDF file outside of the Drake build environment.
 ///
 /// @throws std::runtime_error if the file is not in accordance with the SDF
 /// specification containing a message with a list of errors encountered while
@@ -45,31 +43,7 @@ ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternate version of AddModelFromSdfFile that does not accept a
-/// PackageMap argument (the parser maintains its own PackageMap).
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
-    const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternate version of AddModelFromSdfFile which always uses the "name"
-/// element from the model tag for the name of the newly created model instance.
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
-    const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternate version of AddModelFromSdfFile which always uses the "name"
-/// element from the model tag for the name of the newly created model instance
-/// and does not accept a PackageMap argument.
-ModelInstanceIndex AddModelFromSdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
 /// Parses all `<model>` elements from the SDF file specified by `file_name`
@@ -98,14 +72,7 @@ ModelInstanceIndex AddModelFromSdfFile(
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternative version of AddModelsFromSdfFile() that does not accept a
-/// PackageMap argument.
-std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 }  // namespace detail
 }  // namespace multibody

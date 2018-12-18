@@ -13,8 +13,8 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -223,9 +223,14 @@ struct JointLimitsPenaltyParametersEstimator {
 
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
+    : MultibodyPlant(nullptr, time_step) {}
+
+template <typename T>
+MultibodyPlant<T>::MultibodyPlant(
+    std::unique_ptr<MultibodyTree<T>> tree_in, double time_step)
     : MultibodyTreeSystem<T>(
           systems::SystemTypeTag<multibody::MultibodyPlant>{},
-          nullptr, time_step > 0),
+          std::move(tree_in), time_step > 0),
       time_step_(time_step) {
   DRAKE_THROW_UNLESS(time_step >= 0);
   visual_geometries_.emplace_back();  // Entries for the "world" body.
@@ -443,6 +448,41 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   // Pose of "body" B in the world frame.
   const Isometry3<T> X_WB = X_WP * X_PF * X_FB;
   SetFreeBodyPoseInWorldFrame(context, body, X_WB);
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
+    const systems::Context<T>& context,
+    const VectorX<T>& known_vdot,
+    std::vector<SpatialAcceleration<T>>* A_WB_array) const {
+  DRAKE_THROW_UNLESS(A_WB_array != nullptr);
+  DRAKE_THROW_UNLESS(static_cast<int>(A_WB_array->size()) == num_bodies());
+  tree().CalcSpatialAccelerationsFromVdot(
+      context, tree().EvalPositionKinematics(context),
+      tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
+  // Permute BodyNodeIndex -> BodyIndex.
+  // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
+  // still required dynamic allocation for recording permutation indices.
+  // Can change implementation once MultibodyTree becomes fully internal.
+  std::vector<SpatialAcceleration<T>> A_WB_array_node = *A_WB_array;
+  const MultibodyTreeTopology& topology = tree().get_topology();
+  for (BodyNodeIndex node_index(1);
+       node_index < topology.get_num_body_nodes(); ++node_index) {
+    const BodyIndex body_index = topology.get_body_node(node_index).body;
+    (*A_WB_array)[body_index] = A_WB_array_node[node_index];
+  }
+}
+
+template<typename T>
+void MultibodyPlant<T>::CalcForceElementsContribution(
+      const systems::Context<T>& context,
+      MultibodyForces<T>* forces) const {
+  DRAKE_THROW_UNLESS(forces != nullptr);
+  DRAKE_THROW_UNLESS(forces->CheckHasRightSizeForModel(tree()));
+  tree().CalcForceElementsContribution(
+      context, EvalPositionKinematics(context),
+      EvalVelocityKinematics(context),
+      forces);
 }
 
 template<typename T>

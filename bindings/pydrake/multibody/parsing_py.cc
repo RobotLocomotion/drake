@@ -7,7 +7,7 @@
 #include "drake/multibody/parsing/parser.h"
 
 using drake::geometry::SceneGraph;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 using std::string;
 
 namespace drake {
@@ -49,8 +49,6 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.ctor.doc_2args)
         .def("package_map", &Class::package_map, py_reference_internal,
             cls_doc.package_map.doc)
-        .def("mutable_package_map", &Class::mutable_package_map,
-            py_reference_internal, cls_doc.mutable_package_map.doc)
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
             py::arg("file_name"), cls_doc.AddAllModelsFromFile.doc)
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),

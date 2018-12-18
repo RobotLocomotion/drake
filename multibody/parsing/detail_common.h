@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
@@ -13,8 +13,8 @@ namespace detail {
 // instead of using a static variable.
 /// Default value of the Coulomb's law coefficients of friction for when they
 /// are not specified in the URDF/SDF file.
-inline multibody_plant::CoulombFriction<double> default_friction() {
-  return multibody_plant::CoulombFriction<double>(1.0, 1.0);
+inline CoulombFriction<double> default_friction() {
+  return CoulombFriction<double>(1.0, 1.0);
 }
 
 }  // namespace detail

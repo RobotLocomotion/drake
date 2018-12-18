@@ -22,7 +22,7 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:scene_graph",
         "//math:geometric_transform",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 

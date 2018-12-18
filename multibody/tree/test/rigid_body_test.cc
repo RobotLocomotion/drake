@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace {
 
 using Eigen::Vector3d;
@@ -54,6 +53,5 @@ GTEST_TEST(RigidBody, RigidBodyConstructorWithName) {
 }
 
 }  // namespace
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

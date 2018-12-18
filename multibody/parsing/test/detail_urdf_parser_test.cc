@@ -4,7 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 
 namespace drake {
 namespace multibody {
@@ -14,9 +14,8 @@ namespace {
 using Eigen::Vector3d;
 using geometry::GeometryId;
 using geometry::SceneGraph;
-using multibody_plant::MultibodyPlant;
 
-// Verifies that the URDF loader with specified package map works as expected.
+// Verifies that the URDF loader can leverage a specified package map.
 GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
@@ -34,7 +33,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   package_map.PopulateFromFolder(package_path);
 
   // Read in the URDF file.
-  AddModelFromUrdfFile(full_urdf_filename, package_map, &plant);
+  AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant);
   plant.Finalize();
 
   // Verify the number of model instances.
@@ -46,7 +45,10 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
-  AddModelFromUrdfFile(full_name, "", &plant, &scene_graph);
+  PackageMap package_map;
+  const std::string full_path = detail::GetFullPath(full_name);
+  package_map.PopulateUpstreamToDrake(full_path);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
   const MultibodyTree<double>& tree = plant.tree();
@@ -83,8 +85,11 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
   SceneGraph<double> scene_graph;
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
+  PackageMap package_map;
+  const std::string full_path = detail::GetFullPath(full_name);
+  package_map.PopulateUpstreamToDrake(full_path);
 
-  AddModelFromUrdfFile(full_name, "", &plant, &scene_graph);
+  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
   EXPECT_EQ(plant.num_positions(), 37);
@@ -96,10 +101,13 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
     "drake/multibody/parsing/test/urdf_parser_test/"};
   const std::string model_file = FindResourceOrThrow(
       resource_dir + "zero_dof_robot.urdf");
+  PackageMap package_map;
+  const std::string full_path = detail::GetFullPath(model_file);
+  package_map.PopulateUpstreamToDrake(full_path);
 
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
-  AddModelFromUrdfFile(model_file, "", &plant, &scene_graph);
+  AddModelFromUrdfFile(model_file, "", package_map, &plant, &scene_graph);
   plant.Finalize(&scene_graph);
 
   EXPECT_EQ(plant.num_positions(), 7);
@@ -109,12 +117,15 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
 GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
+  PackageMap package_map;
+  const std::string full_path = detail::GetFullPath(full_name);
+  package_map.PopulateUpstreamToDrake(full_path);
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
     MultibodyPlant<double> plant;
     SceneGraph<double> scene_graph;
-    AddModelFromUrdfFile(full_name, "", &plant, &scene_graph);
+    AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
     plant.Finalize();
     num_visuals_explicit = plant.num_visual_geometries();
   }
@@ -124,7 +135,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
     MultibodyPlant<double> plant;
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    AddModelFromUrdfFile(full_name, "", &plant);
+    AddModelFromUrdfFile(full_name, "", package_map, &plant);
     plant.Finalize();
     EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
   }

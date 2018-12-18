@@ -5,9 +5,9 @@
 
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
@@ -28,14 +28,11 @@ class Parser final {
   ///   geometry registration (either to model visual or contact geometry).
   ///   May be nullptr.
   explicit Parser(
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
-  /// Gets a non-mutable reference to the PackageMap used by this parser.
-  const PackageMap& package_map() const { return package_map_; }
-
   /// Gets a mutable reference to the PackageMap used by this parser.
-  PackageMap& mutable_package_map() { return package_map_; }
+  PackageMap& package_map() { return package_map_; }
 
   /// Parses the SDF or URDF file named in @p file_name and adds all of its
   /// model(s) to @p plant.
@@ -70,7 +67,7 @@ class Parser final {
 
  private:
   PackageMap package_map_;
-  multibody_plant::MultibodyPlant<double>* const plant_;
+  MultibodyPlant<double>* const plant_;
   geometry::SceneGraph<double>* const scene_graph_;
 };
 

@@ -16,6 +16,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 using internal::BodyNode;
 using internal::BodyNodeWelded;
@@ -28,7 +29,6 @@ using internal::BodyNodeWelded;
 // pre-finalize.
 #define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
-namespace internal {
 template <typename T>
 class JointImplementationBuilder {
  public:
@@ -52,7 +52,6 @@ class JointImplementationBuilder {
   typedef typename Joint<T>::BluePrint JointBluePrint;
   typedef typename Joint<T>::JointImplementation JointImplementation;
 };
-}  // namespace internal
 
 template <typename T>
 MultibodyTree<T>::MultibodyTree() {
@@ -308,9 +307,7 @@ void MultibodyTree<T>::CreateModelInstances() {
 
 template <typename T>
 void MultibodyTree<T>::SetDefaultContext(systems::Context<T> *context) const {
-  for (const auto& mobilizer : owned_mobilizers_) {
-    mobilizer->set_zero_configuration(context);
-  }
+  SetDefaultState(*context, &context->get_mutable_state());
 }
 
 template <typename T>
@@ -1545,5 +1542,6 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
 template class MultibodyTree<double>;
 template class MultibodyTree<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

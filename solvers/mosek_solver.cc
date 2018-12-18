@@ -656,6 +656,7 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
                         const optional<Eigen::VectorXd>& initial_guess,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
+  *result = {};
   // TODO(hongkai.dai): support setting initial guess and solver options.
   if (initial_guess.has_value() || solver_options.has_value()) {
     throw std::runtime_error("Not implemented yet.");

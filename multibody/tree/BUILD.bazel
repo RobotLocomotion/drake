@@ -69,8 +69,8 @@ drake_cc_library(
         ":articulated_body_inertia",
         ":multibody_tree_topology",
         "//common:autodiff",
-        "//multibody/multibody_tree/math:spatial_acceleration",
-        "//multibody/multibody_tree/math:spatial_velocity",
+        "//multibody/math:spatial_acceleration",
+        "//multibody/math:spatial_velocity",
         "//systems/framework:leaf_context",
     ],
 )
@@ -80,6 +80,7 @@ drake_cc_library(
     srcs = [],
     hdrs = [
         "multibody_tree_element.h",
+        "multibody_tree_forward_decl.h",
     ],
     deps = [
         ":multibody_tree_topology",
@@ -179,7 +180,7 @@ drake_cc_library(
         "//common:essential",
         "//math:geometric_transform",
         "//math:vector3_util",
-        "//multibody/multibody_tree/math:spatial_algebra",
+        "//multibody/math:spatial_algebra",
     ],
 )
 
@@ -206,7 +207,7 @@ drake_cc_library(
         "//common:nice_type_name",
         "//common:symbolic",
         "//math:vector3_util",
-        "//multibody/multibody_tree/math:spatial_algebra",
+        "//multibody/math:spatial_algebra",
     ],
 )
 
@@ -244,7 +245,7 @@ drake_cc_library(
     hdrs = ["test/floating_body_plant.h"],
     deps = [
         "//common:default_scalars",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 
@@ -361,7 +362,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["test/mobilizer_tester.h"],
     deps = [
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 

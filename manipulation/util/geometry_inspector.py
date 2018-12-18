@@ -6,8 +6,8 @@ the resulting geometry poses to drake_visualizer.
 If you wish to simply load a model and show it in multiple visualizers, see
 `show_model`.
 
-Example usages (each on one line):
-bazel run //bindings/pydrake/multibody:geometry_inspector -- \
+Example usages:
+bazel build //bindings/pydrake/multibody:geometry_inspector -- \
   $HOME/drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
 bazel run geometry_inspector -- \
@@ -77,7 +77,7 @@ def main():
     plant = MultibodyPlant()
     plant.RegisterAsSourceForSceneGraph(scene_graph)
 
-    # Create the parser
+    # Create the parser.
     parser = Parser(plant)
 
     # Get the package pathname.

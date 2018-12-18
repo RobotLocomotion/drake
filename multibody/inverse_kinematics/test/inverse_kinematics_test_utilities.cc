@@ -2,6 +2,10 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/systems/framework/diagram_builder.h"
+
+using drake::geometry::SceneGraph;
+
 namespace drake {
 namespace multibody {
 namespace {
@@ -23,23 +27,73 @@ std::unique_ptr<T> ConstructTwoFreeBodiesHelper() {
   return model;
 }
 }  // namespace
+
+namespace internal {
+IiwaKinematicConstraintTest::IiwaKinematicConstraintTest()
+    : iiwa_autodiff_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<AutoDiffXd>(
+          true /* finalized model. */)),
+      iiwa_double_(benchmarks::kuka_iiwa_robot::MakeKukaIiwaModel<double>(
+          true /* finalized model. */)),
+      context_autodiff_(iiwa_autodiff_.CreateDefaultContext()),
+      context_double_(iiwa_double_.CreateDefaultContext()) {
+  systems::DiagramBuilder<double> builder{};
+  plant_ = builder.AddSystem<MultibodyPlant<double>>();
+  plant_->RegisterAsSourceForSceneGraph(
+      builder.AddSystem<SceneGraph<double>>());
+  multibody::Parser parser{plant_};
+  parser.AddModelFromFile(
+      FindResourceOrThrow("drake/manipulation/models/iiwa_description/sdf/"
+                          "iiwa14_no_collision.sdf"),
+      "iiwa");
+  plant_->WeldFrames(plant_->world_frame(),
+                     plant_->GetFrameByName("iiwa_link_0"));
+  plant_->Finalize();
+
+  drake::log()->info("plant_->num_positions = {}", plant_->num_positions());
+
+  diagram_ = builder.Build();
+  diagram_context_ = diagram_->CreateDefaultContext();
+  plant_context_ =
+      &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
+}
+
+TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest()
+    : two_bodies_autodiff_(ConstructTwoFreeBodies<AutoDiffXd>()),
+      two_bodies_double_(ConstructTwoFreeBodies<double>()),
+      body1_index_(two_bodies_autodiff_.tree()
+                       .GetBodyByName("body1")
+                       .body_frame()
+                       .index()),
+      body2_index_(two_bodies_autodiff_.tree()
+                       .GetBodyByName("body2")
+                       .body_frame()
+                       .index()),
+      context_autodiff_(two_bodies_autodiff_.CreateDefaultContext()),
+      context_double_(two_bodies_double_.CreateDefaultContext()) {
+  systems::DiagramBuilder<double> builder{};
+  plant_ = builder.AddSystem(ConstructTwoFreeBodiesPlant<double>());
+  diagram_ = builder.Build();
+  diagram_context_ = diagram_->CreateDefaultContext();
+  plant_context_ =
+      &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
+}
+}  // namespace internal
+
 template <typename T>
 std::unique_ptr<MultibodyTree<T>> ConstructTwoFreeBodies() {
   return ConstructTwoFreeBodiesHelper<MultibodyTree<T>>();
 }
 
 template <typename T>
-std::unique_ptr<multibody_plant::MultibodyPlant<T>>
-ConstructTwoFreeBodiesPlant() {
-  return ConstructTwoFreeBodiesHelper<multibody_plant::MultibodyPlant<T>>();
+std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
+  return ConstructTwoFreeBodiesHelper<MultibodyPlant<T>>();
 }
 
-std::unique_ptr<multibody_plant::MultibodyPlant<double>> ConstructIiwaPlant(
+std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& iiwa_sdf_name, double time_step) {
   const std::string file_path =
       "drake/manipulation/models/iiwa_description/sdf/" + iiwa_sdf_name;
-  auto plant =
-      std::make_unique<multibody_plant::MultibodyPlant<double>>(time_step);
+  auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
   Parser(plant.get()).AddModelFromFile(FindResourceOrThrow(file_path));
   plant->WeldFrames(plant->world_frame(),
                     plant->GetFrameByName("iiwa_link_0"));
@@ -55,9 +109,9 @@ template std::unique_ptr<MultibodyTree<double>>
 ConstructTwoFreeBodies<double>();
 template std::unique_ptr<MultibodyTree<AutoDiffXd>>
 ConstructTwoFreeBodies<AutoDiffXd>();
-template std::unique_ptr<multibody_plant::MultibodyPlant<double>>
+template std::unique_ptr<MultibodyPlant<double>>
 ConstructTwoFreeBodiesPlant<double>();
-template std::unique_ptr<multibody_plant::MultibodyPlant<AutoDiffXd>>
+template std::unique_ptr<MultibodyPlant<AutoDiffXd>>
 ConstructTwoFreeBodiesPlant<AutoDiffXd>();
 }  // namespace multibody
 }  // namespace drake

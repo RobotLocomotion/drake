@@ -100,7 +100,7 @@ class TestCallPython(unittest.TestCase):
 
     def test_help(self):
         text = subprocess.check_output(
-            [client_bin, "--help"], stderr=subprocess.STDOUT)
+            [client_bin, "--help"], stderr=subprocess.STDOUT).decode("utf8")
         # Print output, since `assertIn` does not provide user-friendly
         # multiline error messages.
         print(text)

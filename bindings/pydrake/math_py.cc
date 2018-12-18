@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
+#include "drake/math/orthonormal_basis.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -32,7 +33,11 @@ PYBIND11_MODULE(math, m) {
 
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
-
+  m.def("ComputeBasisFromAxis",
+      [](int axis_index, const Vector3<T>& axis) {
+        return ComputeBasisFromAxis(axis_index, axis);
+      },
+      py::arg("axis_index"), py::arg("axis_W"), doc.ComputeBasisFromAxis.doc);
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
           doc.BarycentricMesh.ctor.doc_1args)

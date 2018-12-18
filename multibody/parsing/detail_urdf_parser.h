@@ -3,9 +3,9 @@
 #include <string>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/multibody_tree_indexes.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
@@ -34,35 +34,8 @@ ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name,
     const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternate version of AddModelFromUrdfFile that does not accept a
-/// PackageMap argument (the parser maintains its own PackageMap).
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
-    const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternate version of AddModelFromUrdfFile which always uses the "name"
-/// element from the model tag for the name of the newly created model
-/// instance.
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
-    const PackageMap& package_map,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
-/// Alternate version of AddModelFromUrdfFile which always uses the "name"
-/// element from the model tag for the name of the newly created model
-/// instance and does not accept a PackageMap argument (the parser maintains its
-/// own PackageMap).
-ModelInstanceIndex AddModelFromUrdfFile(
-    const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
-
 }  // namespace detail
 }  // namespace multibody
 }  // namespace drake

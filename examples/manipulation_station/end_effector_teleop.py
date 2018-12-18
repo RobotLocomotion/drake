@@ -33,7 +33,9 @@ class EndEffectorTeleop(LeafSystem):
         self._DeclareVectorOutputPort("rpy_xyz", BasicVector(6),
                                       self._DoCalcOutput)
 
-        self._DeclarePeriodicPublish(0.1, 0.0)
+        # Note: This timing affects the keyboard teleop performance. A larger
+        #       time step causes more lag in the response.
+        self._DeclarePeriodicPublish(0.01, 0.0)
 
         self.window = tk.Tk()
         self.window.title("End-Effector TeleOp")
@@ -74,6 +76,34 @@ class EndEffectorTeleop(LeafSystem):
                           length=800,
                           orient=tk.HORIZONTAL)
         self.z.pack()
+
+        # The key bindings below provide teleop functionality via the
+        # keyboard, and are somewhat arbitrary (inspired by gaming
+        # conventions). Note that in order for the keyboard bindings to
+        # be active, the teleop slider window must be the active window.
+
+        def update(scale, value):
+            return lambda event: scale.set(scale.get() + value)
+
+        # Delta displacements for motion via keyboard teleop.
+        rotation_delta = 0.05  # rad
+        position_delta = 0.01  # m
+
+        # Linear motion key bindings.
+        self.window.bind("<Up>", update(self.z, +position_delta))
+        self.window.bind("<Down>", update(self.z, -position_delta))
+        self.window.bind("<d>", update(self.y, +position_delta))
+        self.window.bind("<a>", update(self.y, -position_delta))
+        self.window.bind("<w>", update(self.x, +position_delta))
+        self.window.bind("<s>", update(self.x, -position_delta))
+
+        # Rotational motion key bindings.
+        self.window.bind("<Control-d>", update(self.pitch, +rotation_delta))
+        self.window.bind("<Control-a>", update(self.pitch, -rotation_delta))
+        self.window.bind("<Control-w>", update(self.roll, +rotation_delta))
+        self.window.bind("<Control-s>", update(self.roll, -rotation_delta))
+        self.window.bind("<Control-Up>", update(self.yaw, +rotation_delta))
+        self.window.bind("<Control-Down>", update(self.yaw, -rotation_delta))
 
     def SetPose(self, pose):
         """
@@ -219,6 +249,17 @@ parser.add_argument(
 parser.add_argument(
     "--test", action='store_true',
     help="Disable opening the gui window for testing.")
+parser.add_argument(
+    "--filter_time_const", type=float, default=2.0,
+    help="Time constant for the first order low pass filter applied to"
+         "the teleop commands")
+parser.add_argument(
+    "--velocity_limit_factor", type=float, default=0.15,
+    help="This value, typically between 0 and 1, further limits the iiwa14 "
+         "joint velocities. It multiplies each of the seven pre-defined "
+         "joint velocity limits. "
+         "Note: The pre-defined velocity limits are specified by "
+         "iiwa14_velocity_limits, found in this python file.")
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
 
@@ -255,8 +296,9 @@ params.set_timestep(time_step)
 # decimal)
 iiwa14_velocity_limits = np.array([1.4, 1.4, 1.7, 1.3, 2.2, 2.3, 2.3])
 # Stay within a small fraction of those limits for this teleop demo.
-params.set_joint_velocity_limits((-.15*iiwa14_velocity_limits,
-                                  .15*iiwa14_velocity_limits))
+factor = args.velocity_limit_factor
+params.set_joint_velocity_limits((-factor*iiwa14_velocity_limits,
+                                  factor*iiwa14_velocity_limits))
 
 differential_ik = builder.AddSystem(DifferentialIK(
     robot, robot.GetFrameByName("iiwa_link_7"), params, time_step))
@@ -267,8 +309,8 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
 teleop = builder.AddSystem(EndEffectorTeleop())
 if args.test:
     teleop.window.withdraw()  # Don't display the window when testing.
-filter = builder.AddSystem(FirstOrderLowPassFilter(time_constant=2.0,
-                                                   size=6))
+filter = builder.AddSystem(
+    FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
 builder.Connect(teleop.get_output_port(0), filter.get_input_port(0))
 builder.Connect(filter.get_output_port(0),

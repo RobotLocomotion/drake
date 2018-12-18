@@ -9,9 +9,11 @@
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
@@ -110,9 +112,6 @@ class BodyFrame final : public Frame<T> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
-// Forward declarations for Body<T>.
-template<typename T> class MultibodyTree;
-
 /// @cond
 // Internal implementation details. Users should not access implementations
 // in this namespace.
@@ -134,7 +133,7 @@ class BodyAttorney {
   static BodyFrame<T>& get_mutable_body_frame(Body<T>* body) {
     return body->get_mutable_body_frame();
   }
-  friend class MultibodyTree<T>;
+  friend class internal::MultibodyTree<T>;
 };
 }  // namespace internal
 /// @endcond
@@ -212,6 +211,21 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
       const MultibodyTreeContext<T>& context) const = 0;
+
+  /// Returns the pose `X_WB` of this body B in the world frame W as a function
+  /// of the state of the model stored in `context`.
+  const Isometry3<T>& EvalPoseInWorld(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().EvalBodyPoseInWorld(context, *this);
+  }
+
+  /// Returns the spatial velocity `V_WB` of this body B in the world frame W
+  /// as a function of the state of the model stored in `context`.
+  const SpatialVelocity<T>& EvalSpatialVelocityInWorld(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
+        context, *this);
+  }
 
   /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
   /// type of the new clone to be created. This method is mostly intended to be

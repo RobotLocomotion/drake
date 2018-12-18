@@ -19,12 +19,12 @@ std::string GetFullPath(const std::string& file_name);
 
 /// Resolves the full path of a URI. If @p uri starts with
 /// "package:" or "model:", the ROS packages specified in @p package_map are
-/// searched.  Otherwise, @p filename is appended to the end of @p
+/// searched.  Otherwise, @p uri is appended to the end of @p
 /// root_dir (if it's not already an absolute path) and checked for
 /// existence. If the file does not exist or is not found, a warning
 /// is printed to `std::cerr` and an empty string is returned.
 ///
-/// @param[in] filename The name of the file to find.
+/// @param[in] uri The name of the resource to find.
 ///
 /// @param[in] package_map A map where the keys are ROS package names and the
 /// values are the paths to the packages. This is only used if @p filename

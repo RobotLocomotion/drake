@@ -7,7 +7,6 @@
 #include <spruce.hh>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 
 using std::string;
 
@@ -118,7 +117,7 @@ GTEST_TEST(ResolveUriTest, TestModel) {
   package_map.PopulateUpstreamToDrake(sdf_file_name);
 
   // Set the root directory - it will not end up being used in ResolveUri().
-  const std::string root_dir = "drake/multibody/parsing/test/";
+  const std::string root_dir = "/no/such/root";
 
   // Create the URI.
   const string uri_model =
@@ -136,11 +135,7 @@ GTEST_TEST(ResolveUriTest, TestUnsupported) {
   PackageMap package_map;
   const std::string root_dir = ".";
   const string uri = "http://localhost";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ResolveUri(uri, package_map, root_dir),
-      std::runtime_error, "URI specifies an unsupported scheme. Supported "
-          "schemes are 'file://', 'model://', and 'package://'. Provided URI:"
-          ".*");
+  EXPECT_EQ(ResolveUri(uri, package_map, root_dir), "");
 }
 
 }  // namespace

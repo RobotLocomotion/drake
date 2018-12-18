@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T>
 void WeldMobilizer<T>::set_zero_state(const systems::Context<T>&,
@@ -94,8 +95,9 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> WeldMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::WeldMobilizer)
+    class ::drake::multibody::internal::WeldMobilizer)

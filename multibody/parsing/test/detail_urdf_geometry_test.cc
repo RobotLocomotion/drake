@@ -21,7 +21,6 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 using geometry::GeometryInstance;
-using multibody_plant::CoulombFriction;
 
 class UrdfGeometryTests : public testing::Test {
  public:
@@ -247,7 +246,7 @@ TEST_F(UrdfGeometryTests, TestWrongElementType) {
                           &materials_), std::runtime_error,
       "In link fake_name expected visual element, got material");
 
-  multibody_plant::CoulombFriction<double> friction;
+  CoulombFriction<double> friction;
   DRAKE_EXPECT_THROWS_MESSAGE(
       detail::ParseCollision("fake_name", package_map_, root_dir_,
                              material_node, &friction), std::runtime_error,

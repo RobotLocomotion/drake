@@ -11,10 +11,29 @@ load(
     "@drake//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
 )
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_library_aliases",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
+
+# TODO(jwnimmer-tri) Remove this deprecation shim on or about 2019-02-01.
+drake_cc_library_aliases(
+    actual_subdir = "attic/systems/sensors",
+    add_deprecation_warning = True,
+    relative_labels = [
+        ":rgbd_camera",
+        ":rgbd_renderer",
+    ],
+    tags = [
+        "exclude_from_libdrake",
+        "exclude_from_package",
+        "manual",
+    ],
+)
 
 drake_cc_package_library(
     name = "sensors",
@@ -29,8 +48,6 @@ drake_cc_package_library(
         ":lcm_image_array_to_images",
         ":lcm_image_traits",
         ":optitrack_sender",
-        ":rgbd_camera",
-        ":rgbd_renderer",
         ":rotary_encoders",
         ":vtk_util",
     ],
@@ -174,92 +191,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "rgbd_renderer",
-    srcs = [
-        "rgbd_renderer.cc",
-        "rgbd_renderer_ospray.cc",
-        "rgbd_renderer_vtk.cc",
-    ],
-    hdrs = [
-        "depth_shaders.h",
-        "rgbd_renderer.h",
-        "rgbd_renderer_ospray.h",
-        "rgbd_renderer_vtk.h",
-    ],
-    deps = [
-        ":color_palette",
-        ":image",
-        ":vtk_util",
-        "//attic/multibody/shapes",
-        "//common",
-        "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOSPRay",
-        "@vtk//:vtkRenderingOpenGL2",
-        "@vtk//:vtkRenderingSceneGraph",
-    ],
-)
-
-drake_cc_library(
-    name = "rgbd_camera",
-    srcs = ["rgbd_camera.cc"],
-    hdrs = ["rgbd_camera.h"],
-    deps = [
-        ":camera_info",
-        ":image",
-        ":rgbd_renderer",
-        ":vtk_util",
-        "//attic/multibody:rigid_body_frame",
-        "//attic/multibody:rigid_body_tree",
-        "//math:geometric_transform",
-        "//systems/framework",
-        "//systems/primitives",
-        "//systems/rendering:pose_vector",
-        "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOSPRay",
-        "@vtk//:vtkRenderingOpenGL2",
-        "@vtk//:vtkRenderingSceneGraph",
-    ],
-)
-
-drake_cc_binary(
-    name = "rgbd_camera_publish_lcm_example",
-    srcs = [
-        "rgbd_camera_publish_lcm_example.cc",
-    ],
-    deps = [
-        ":image_to_lcm_image_array_t",
-        ":rgbd_camera",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//common:unused",
-        "//lcm",
-        "//systems/analysis:simulator",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_stamped_t_pose_vector_translator",
-        "@gflags",
-    ],
-)
-
-drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
@@ -348,72 +279,6 @@ drake_cc_googletest(
         "@spruce",
         "@vtk//:vtkIOImage",
     ],
-)
-
-drake_cc_googletest(
-    name = "rgbd_camera_test",
-    data = [
-        ":test_models",
-    ],
-    tags = vtk_test_tags(),
-    deps = [
-        ":rgbd_camera",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_library(
-    name = "rgbd_renderer_test_util",
-    testonly = 1,
-    hdrs = ["test/rgbd_renderer_test_util.h"],
-)
-
-drake_cc_googletest(
-    name = "rgbd_renderer_ospray_test",
-    data = [
-        ":test_models",
-    ],
-    tags = vtk_test_tags(),
-    deps = [
-        ":rgbd_renderer",
-        ":rgbd_renderer_test_util",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rgbd_renderer_vtk_test",
-    data = [
-        ":test_models",
-    ],
-    tags = vtk_test_tags(),
-    deps = [
-        ":rgbd_renderer",
-        ":rgbd_renderer_test_util",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-sh_test(
-    name = "rgbd_camera_publish_lcm_test",
-    size = "small",
-    srcs = ["rgbd_camera_publish_lcm_example"],
-    args = [
-        "--sdf_dir=" + native.package_name() + "/test/models",
-        "--duration=0.1",
-    ],
-    data = [
-        ":test_models",
-    ],
-    tags = vtk_test_tags(),
 )
 
 drake_cc_googletest(

@@ -6,8 +6,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/MG/MG_kuka_iiwa_robot_auto_generated.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/test_utilities/spatial_kinematics.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/test_utilities/spatial_kinematics.h"
 
 namespace drake {
 namespace multibody {
@@ -17,7 +17,7 @@ namespace MG {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
-using multibody_tree::test_utilities::SpatialKinematicsPVA;
+using test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 
