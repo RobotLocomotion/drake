@@ -7,7 +7,10 @@ namespace drake {
 namespace systems {
 
 /**
- This class serves as an in-memory cache of time-dependent vector values.
+ This utility class serves as an in-memory cache of time-dependent vector
+ values. Note that this is a standalone class, not a Drake System. It is
+ primarily intended to support the Drake System primitive SignalLogger, but can
+ be used independently.
 
  @tparam T The vector element type, which must be a valid Eigen scalar.
  */
@@ -23,6 +26,9 @@ class SignalLog {
   */
   explicit SignalLog(int input_size, int batch_allocation_size = 1000);
 
+  /** Returns the number of samples taken since construction or last reset(). */
+  int num_samples() const { return num_samples_; }
+
   /** Accesses the logged time stamps. */
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {
     return const_cast<const VectorX<T>&>(sample_times_).head(num_samples_);
@@ -34,7 +40,7 @@ class SignalLog {
     return const_cast<const MatrixX<T>&>(data_).leftCols(num_samples_);
   }
 
-  /** Reset the logged data. */
+  /** Clears the logged data. */
   void reset() {
     // Resetting num_samples_ is sufficient to have all future writes and
     // reads re-initialized to the beginning of the data.
