@@ -98,9 +98,10 @@ SchunkWsgPositionCommandInterpolator::SchunkWsgPositionCommandInterpolator(
                                     CalcInterpolatedStateCommandOutput);
   this->DeclarePeriodicDiscreteUpdate(time_step);
 
+  // Set the initial dummy trajectory to be at zero.
   TrapezoidTrajAsVector<double> initial_traj;
   initial_traj.set_times_and_knots(Vector3<double>(0, 0.01, 0.02),
-                                   Vector3<double>::Constant(0.05));
+                                   Vector3<double>::Constant(0.0));
 
   this->DeclareDiscreteState(initial_traj);
 }
@@ -125,6 +126,7 @@ void SchunkWsgPositionCommandInterpolator::CalcInterpolatedStateCommandOutput(
 
   double position = trajectory.value(context.get_time())(0, 0);
   double velocity = 0;
+  // Only send velocity when the position setpoint is moving.
   if (context.get_time() > trajectory.start_time() &&
       context.get_time() < trajectory.end_time()) {
     velocity = trajectory.derivative().value(context.get_time())(0, 0);
@@ -137,14 +139,15 @@ void SchunkWsgPositionCommandInterpolator::DoCalcDiscreteVariableUpdates(
     const systems::Context<double>& context,
     const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
     systems::DiscreteValues<double>* discrete_state) const {
+  // New command
   const double desired_position = this->EvalEigenVectorInput(context, 0)[0];
 
+  // Current trajectory
   const auto& traj_vector = dynamic_cast<const TrapezoidTrajAsVector<double>&>(
       context.get_discrete_state(0));
   const double current_target = traj_vector.end_target();
 
-  const double kTargetEpsilon = 0.001;
-
+  // Update when the end goal is different enough.
   if (std::abs(current_target - desired_position) > kTargetEpsilon) {
     drake::systems::BasicVector<double>* vector =
         &discrete_state->get_mutable_vector(0);
