@@ -11,7 +11,7 @@ if [[ "${EUID}" -eq 0 ]]; then
 fi
 
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
-bazelrc="${workspace_dir}/gen/environment.bzl"
+bazelrc="${workspace_dir}/gen/environment.bazelrc"
 codename=$(lsb_release -sc)
 
 mkdir -p "$(dirname "${bazelrc}")"

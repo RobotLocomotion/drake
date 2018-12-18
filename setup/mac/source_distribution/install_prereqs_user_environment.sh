@@ -14,7 +14,7 @@ if [[ "${EUID}" -eq 0 ]]; then
 fi
 
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
-bazelrc="${workspace_dir}/gen/environment.bzl"
+bazelrc="${workspace_dir}/gen/environment.bazelrc"
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
