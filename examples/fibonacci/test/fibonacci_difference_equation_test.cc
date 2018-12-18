@@ -22,8 +22,6 @@ GTEST_TEST(Fibonacci, CheckSequence) {
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);
-  simulator.set_publish_every_time_step(false);
-  simulator.set_publish_at_initialization(false);
 
   // Simulate forward to fibonacci(6): 0 1 1 2 3 5 8
   simulator.StepTo(6 * FibonacciDifferenceEquation::kPeriod);
