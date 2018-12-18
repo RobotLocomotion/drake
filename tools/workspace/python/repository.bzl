@@ -92,7 +92,7 @@ def _repository_python_info(repository_ctx):
         repository_ctx,
         [python, "-c", "import sys; print(sys.prefix)"],
     ).stdout.strip()
-    if not python.startswith(prefix + "/bin/"):
+    if not python.startswith(prefix + "/"):
         print((
             "\n\nWARNING: '{}' does not fall under its prefix, '{}'\n" +
             "  This may cause configuration errors."
