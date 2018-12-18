@@ -24,6 +24,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -859,6 +860,246 @@ struct equal_to<drake::symbolic::Expression> {
 template <>
 struct numeric_limits<drake::symbolic::Expression>
     : public numeric_limits<double> {};
+
+/** Provides std::uniform_real_distribution for symbolic expressions. */
+template <>
+class uniform_real_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  explicit uniform_real_distribution(RealType a, RealType b = 1.0)
+      : a_{std::move(a)}, b_{std::move(b)} {
+    DRAKE_THROW_UNLESS(is_constant(a_));
+    DRAKE_THROW_UNLESS(is_constant(b_));
+    DRAKE_THROW_UNLESS(get_constant_value(a_) <= get_constant_value(b_));
+  }
+
+  uniform_real_distribution() : uniform_real_distribution{0.0} {}
+
+  void reset() {}
+
+  template <class Generator>
+  result_type operator()(Generator&) {
+    // Note that each call to this function should create a new random variable
+    // of type RANDOM_UNIFORM with a unique ID.
+    const drake::symbolic::Variable u{
+        "uniform random", drake::symbolic::Variable::Type::RANDOM_UNIFORM};
+    // Short-circuit the simple (default) case.
+    if (is_zero(a_) && is_one(b_)) {
+      return u;
+    }
+    return a_ + (b_ - a_) * u;
+  }
+
+  RealType a() const { return a_; }
+  RealType b() const { return b_; }
+
+  result_type min() const { return a_; }
+  result_type max() const { return b_; }
+
+ private:
+  const RealType a_;
+  const RealType b_;
+};
+
+inline bool operator==(
+    const uniform_real_distribution<drake::symbolic::Expression>& lhs,
+    const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
+  return lhs.a().EqualTo(rhs.a()) && lhs.b().EqualTo(rhs.b());
+}
+
+inline bool operator!=(
+    const uniform_real_distribution<drake::symbolic::Expression>& lhs,
+    const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const uniform_real_distribution<drake::symbolic::Expression>& d) {
+  return os << d.a() << " " << d.b();
+}
+
+/// Provides std::normal_distribution, N(μ, σ), for symbolic expressions.
+///
+/// When operator() is called, it returns a symbolic expression μ + σ * v where
+/// v is a random Gaussian symbolic-variable.
+///
+/// It keeps a shared pointer to the vector of symbolic random variables that
+/// has been created for the following purposes:
+///
+///  - When `reset()` is called, it rewinds `index_` to zero so that the next
+///    operator (re)-uses the first symbolic random variable.
+///    @code
+///        random_device rd;
+///        RandomGenerator g{rd()};
+///        std::normal_distribution<Expression> d(0.0, 1.0);
+///
+///        const Expression e1{d(g)};
+///        const Expression e2{d(g)};
+///        d.reset();
+///        const Expression e3{d(g)};
+///
+///        EXPECT_FALSE(e1.EqualTo(e2));
+///        EXPECT_TRUE(e1.EqualTo(e3));
+///    @endcode
+///
+///  - When an instance of this class is copied, the original and copied
+///    distributions share the vector of symbolic random variables. We want to
+///    make sure that the two generate identical sequences of elements.
+///    @code
+///        random_device rd;
+///        RandomGenerator g{rd()};
+///
+///        std::normal_distribution<Expression> d1(0.0, 1.0);
+///        std::normal_distribution<Expression> d2(d1);
+///        const Expression e1_1{d1(g)};
+///        const Expression e1_2{d1(g)};
+///
+///        const Expression e2_1{d2(g)};
+///        const Expression e2_2{d2(g)};
+///
+///        EXPECT_TRUE(e1_1.EqualTo(e2_1));
+///        EXPECT_TRUE(e1_2.EqualTo(e2_2));
+///    @endcode
+template <>
+class normal_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  /// Constructs a new distribution object with @p mean and @p stddev.
+  explicit normal_distribution(RealType mean, RealType stddev = 1.0)
+      : mean_{std::move(mean)},
+        stddev_{std::move(stddev)},
+        random_variables_{std::make_shared<std::vector<Variable>>()} {
+    DRAKE_THROW_UNLESS(is_constant(mean_));
+    DRAKE_THROW_UNLESS(is_constant(stddev_) && get_constant_value(stddev_) > 0);
+  }
+
+  /// Constructs a new distribution object with mean = 0.0 and stddev = 1.0.
+  normal_distribution() : normal_distribution{0.0} {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(normal_distribution);
+
+  /// Resets the internal state of the distribution object.
+  void reset() { index_ = 0.0; }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  template <class Generator>
+  result_type operator()(Generator&) {
+    if (random_variables_->size() == index_) {
+      random_variables_->emplace_back(
+          "normal_random" + std::to_string(index_),
+          drake::symbolic::Variable::Type::RANDOM_GAUSSIAN);
+    }
+    const drake::symbolic::Variable& v{(*random_variables_)[index_++]};
+    return mean_ + stddev_ * v;
+  }
+
+  /// Returns the mean μ distribution parameter
+  RealType mean() const { return mean_; }
+  /// Returns the deviation σ distribution parameter.
+  RealType stddev() const { return stddev_; }
+
+  /// Returns the minimum potentially generated value.
+  ///
+  /// @note In libstdc++ std::normal_distribution<> defines min() and max() to
+  /// return -DBL_MAX and DBL_MAX while the one in libc++ returns -INFINITY and
+  /// INFINITY. We follows libc++ and return -INFINITY and INFINITY.
+  result_type min() const { return -std::numeric_limits<double>::infinity(); }
+  /// Returns the maximum potentially generated value.
+  result_type max() const { return std::numeric_limits<double>::infinity(); }
+
+ private:
+  using Variable = drake::symbolic::Variable;
+  RealType mean_;
+  RealType stddev_;
+  std::shared_ptr<std::vector<Variable>> random_variables_;
+  std::vector<Variable>::size_type index_{0};
+
+  friend bool operator==(
+      const normal_distribution<drake::symbolic::Expression>& lhs,
+      const normal_distribution<drake::symbolic::Expression>& rhs) {
+    return lhs.mean().EqualTo(rhs.mean()) &&
+           lhs.stddev().EqualTo(rhs.stddev()) && (lhs.index_ == rhs.index_) &&
+           (lhs.random_variables_ == rhs.random_variables_);
+  }
+};
+
+inline bool operator!=(
+    const normal_distribution<drake::symbolic::Expression>& lhs,
+    const normal_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const normal_distribution<drake::symbolic::Expression>& d) {
+  return os << d.mean() << " " << d.stddev();
+}
+
+/** Provides std::exponential_distribution for symbolic expressions. */
+template <>
+class exponential_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  explicit exponential_distribution(RealType lambda)
+      : lambda_{std::move(lambda)} {
+    DRAKE_THROW_UNLESS(is_constant(lambda_) && get_constant_value(lambda_) > 0);
+  }
+
+  exponential_distribution() : exponential_distribution{1.0} {}
+
+  void reset() {}
+
+  template <class Generator>
+  result_type operator()(Generator&) {
+    // Note that each call to this function should create a new random variable
+    // of type RANDOM_EXPONENTIAL with a unique ID.
+    const drake::symbolic::Variable v{
+        "exponential_random",
+        drake::symbolic::Variable::Type::RANDOM_EXPONENTIAL};
+    // Short-circuit the simple (default) case.
+    if (is_one(lambda_)) {
+      return v;
+    }
+    return v / lambda_;
+  }
+
+  RealType lambda() const { return lambda_; }
+  result_type min() const { return 0.0; }
+
+  // Note that in libstdc++ exponential_distribution<>::max() returns DBL_MAX
+  // while the one in libc++ returns INFINITY. We follows libc++ and return
+  // INFINITY.
+  result_type max() const { return std::numeric_limits<double>::infinity(); }
+
+ private:
+  const RealType lambda_;
+};
+
+inline bool operator==(
+    const exponential_distribution<drake::symbolic::Expression>& lhs,
+    const exponential_distribution<drake::symbolic::Expression>& rhs) {
+  return lhs.lambda().EqualTo(rhs.lambda());
+}
+
+inline bool operator!=(
+    const exponential_distribution<drake::symbolic::Expression>& lhs,
+    const exponential_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const exponential_distribution<drake::symbolic::Expression>& d) {
+  return os << d.lambda();
+}
 
 }  // namespace std
 
