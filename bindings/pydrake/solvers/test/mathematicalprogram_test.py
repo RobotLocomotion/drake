@@ -99,6 +99,13 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = qp.prog
         x = qp.x
 
+        for binding in prog.GetAllCosts():
+            self.assertIsInstance(binding.evaluator(), mp.Cost)
+        for binding in prog.GetLinearConstraints():
+            self.assertIsInstance(binding.evaluator(), mp.Constraint)
+        for binding in prog.GetAllConstraints():
+            self.assertIsInstance(binding.evaluator(), mp.Constraint)
+
         self.assertTrue(prog.linear_costs())
         for (i, binding) in enumerate(prog.linear_costs()):
             cost = binding.evaluator()
@@ -237,6 +244,13 @@ class TestMathematicalProgram(unittest.TestCase):
         for (cost, value_expected) in enum:
             value = prog.EvalBindingAtSolution(cost)
             self.assertTrue(np.allclose(value, value_expected))
+
+        # Existence check.
+        self.assertIsInstance(
+            prog.EvalBinding(costs[0], x_expected), np.ndarray)
+        self.assertIsInstance(
+            prog.EvalBindings(prog.GetAllConstraints(), x_expected),
+            np.ndarray)
 
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
