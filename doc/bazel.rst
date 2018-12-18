@@ -126,6 +126,16 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 .. _buildifier:
 
+Python Versions
+===============
+You may select Python versions (within the :ref:`supported-configurations`).
+As an example, to use ``python3`` on Bionic::
+
+    ./setup/user_configure --python_bin /usr/bin/python3
+
+This will create or check ``./user.bazelrc`` to ensure a specific
+interpreter is used for both Bazel and the Python bindings.
+
 Updating BUILD files
 ====================
 

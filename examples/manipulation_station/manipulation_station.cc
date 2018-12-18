@@ -447,12 +447,12 @@ void ManipulationStation<T>::Finalize() {
                        "iiwa_torque_external");
 
   {  // RGB-D Cameras
-    auto render_scene_graph =
+    render_scene_graph_ =
         builder.template AddSystem<geometry::dev::SceneGraph>(*scene_graph_);
-    render_scene_graph->set_name("dev_scene_graph_for_rendering");
+    render_scene_graph_->set_name("dev_scene_graph_for_rendering");
 
     builder.Connect(plant_->get_geometry_poses_output_port(),
-                    render_scene_graph->get_source_pose_port(
+                    render_scene_graph_->get_source_pose_port(
                         plant_->get_source_id().value()));
 
     for (const auto& info_pair : camera_information_) {
@@ -470,7 +470,7 @@ void ManipulationStation<T>::Finalize() {
           builder.template AddSystem<systems::sensors::dev::RgbdCamera>(
               camera_name, parent_body_id.value(), X_PC, info.properties,
               false);
-      builder.Connect(render_scene_graph->get_query_output_port(),
+      builder.Connect(render_scene_graph_->get_query_output_port(),
                       camera->query_object_input_port());
 
       builder.ExportOutput(camera->color_image_output_port(),

@@ -74,9 +74,12 @@ SKIP_RECURSE_NAMES = [
     'tinyxml2',
 ]
 
-# Exceptions to `SKIP_RECURSE_NAMES`.
+# Exceptions to `SKIP_RECURSE_NAMES`; only one degree of exception is made
+# (i.e., nested symbols are still subject to `SKIP_RECURSE_NAMES`).
 SKIP_RECURSE_EXCEPTIONS = [
-    ('drake', 'multibody', 'internal', 'MultibodyTree'),
+    # TODO(eric.cousineau): Remove once #9366 is complete and all deprecated
+    # symbols are removed.
+    ('drake', 'multibody', 'internal'),
 ]
 
 # Filter based on partial names.
@@ -125,12 +128,7 @@ def is_accepted_cursor(cursor, name_chain):
     """
     name = utf8(cursor.spelling)
     if name in SKIP_RECURSE_NAMES:
-        # Check recurse exceptions.
-        for exc in SKIP_RECURSE_EXCEPTIONS:
-            n = len(name_chain)
-            if n <= len(exc) and name_chain == exc[:n]:
-                break
-        else:
+        if tuple(name_chain) not in SKIP_RECURSE_EXCEPTIONS:
             return False
     for bad in SKIP_PARTIAL_NAMES:
         if bad in name:
