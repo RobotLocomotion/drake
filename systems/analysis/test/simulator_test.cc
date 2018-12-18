@@ -1330,8 +1330,8 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
   const volatile double denorm_num = std::numeric_limits<double>::denorm_min();
   const unsigned MXCSR_DAZ = (1 << 6);
   const unsigned MXCSR_FTZ = (1 << 15);
-  const unsigned mxcsr = __builtin_ia32_stmxcsr();
-  __builtin_ia32_ldmxcsr(mxcsr | MXCSR_DAZ | MXCSR_FTZ);
+  const unsigned mxcsr = __builtin_ia32_stmxcsr() | MXCSR_DAZ | MXCSR_FTZ;
+  __builtin_ia32_ldmxcsr(mxcsr);
 
   // Verify that the flags were set as expected.
   EXPECT_EQ(denorm_num, 0.0);
@@ -1347,14 +1347,17 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
   EXPECT_NEAR(internal::GetPreviousNormalizedValue(1.0), 1.0,
               std::numeric_limits<double>::epsilon());
 
-  // Do the tests without those modes enabled.
+  // Since mxcsr has the flags set, XORing against those flags will set them
+  // to zero.
   #ifdef __x86_64__
-  __builtin_ia32_ldmxcsr(mxcsr);
+  __builtin_ia32_ldmxcsr(mxcsr ^ MXCSR_DAZ ^ MXCSR_FTZ);
 
   // Verify that the flags are set as expected.
   EXPECT_NE(denorm_num, 0.0);
   EXPECT_NE(std::numeric_limits<double>::min() / 2, 0.0);
   #endif
+
+  // Do the tests again now that DAZ and FTZ modes are disabled.
   EXPECT_EQ(internal::GetPreviousNormalizedValue(0.0), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double/2), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double), 0.0);
