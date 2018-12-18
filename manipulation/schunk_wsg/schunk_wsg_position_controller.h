@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 
@@ -108,6 +109,79 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   systems::OutputPortIndex grip_force_output_port_{};
 };
 
+class SchunkWsgPositionCommandInterpolator
+    : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgPositionCommandInterpolator)
+
+  SchunkWsgPositionCommandInterpolator(double time_step);
+
+  void SetConstantTrajectory(systems::Context<double>* context,
+                             double target) const;
+
+  const systems::InputPort<double>& get_position_command_input_port() const {
+    return GetInputPort("position_command");
+  }
+
+  const systems::OutputPort<double>&
+  get_interpolated_state_command_output_port() const {
+    return GetOutputPort("state_command");
+  }
+
+ private:
+  template <typename T>
+  class TrapezoidTrajAsVector : public systems::BasicVector<T> {
+   public:
+    DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrapezoidTrajAsVector)
+    TrapezoidTrajAsVector() : systems::BasicVector<T>(8) {}
+
+    const T end_target() const {
+      return std::isfinite(this->GetAtIndex(3)) ? this->GetAtIndex(7)
+                                                : this->GetAtIndex(6);
+    }
+
+    void set_times_and_knots(const VectorX<T>& times, const VectorX<T>& knots) {
+      DRAKE_THROW_UNLESS(times.size() == 3 || times.size() == 4);
+      DRAKE_THROW_UNLESS(times.size() == knots.size());
+      this->values().segment(0, times.size()) = times;
+      this->values().segment(4, knots.size()) = knots;
+      if (times.size() == 3) {
+        this->values()[3] = std::numeric_limits<T>::infinity();
+        this->values()[7] = std::numeric_limits<T>::infinity();
+      }
+    }
+
+    trajectories::PiecewisePolynomial<T> to_trajectory() const {
+      std::vector<double> times;
+      std::vector<MatrixX<T>> knots;
+      const int size = std::isfinite(this->GetAtIndex(3)) ? 4 : 3;
+      for (int i = 0; i < size; i++) {
+        times.push_back(this->GetAtIndex(i));
+        knots.push_back(Vector1<T>(this->GetAtIndex(i + 4)));
+      }
+      return trajectories::PiecewisePolynomial<T>::FirstOrderHold(times, knots);
+    }
+
+   private:
+    TrapezoidTrajAsVector<T>* DoClone() const override {
+      return new TrapezoidTrajAsVector<T>();
+    }
+  };
+
+  void CalcTrapzoidTrajParams(double time, double cur_position,
+                              double target_position,
+                              TrapezoidTrajAsVector<double>* traj) const;
+
+  void CalcInterpolatedStateCommandOutput(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* output_vector) const;
+
+  void DoCalcDiscreteVariableUpdates(
+      const systems::Context<double>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
+      systems::DiscreteValues<double>* discrete_state) const override;
+};
+
 /// This class implements a controller for a Schunk WSG gripper in position
 /// control mode adding a discrete-derivative to estimate the desired
 /// velocity from the desired position commands.  It is a thin wrapper
@@ -161,8 +235,8 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
   }
 
  private:
-  systems::StateInterpolatorWithDiscreteDerivative<double>*
-      state_interpolator_;
+  // systems::StateInterpolatorWithDiscreteDerivative<double>*
+  SchunkWsgPositionCommandInterpolator* command_interpolator_;
 
   systems::InputPortIndex desired_position_input_port_{};
   systems::InputPortIndex force_limit_input_port_{};
