@@ -8,10 +8,15 @@
 
 set -euo pipefail
 
-workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
-gen_dir="${workspace}/gen"
-mkdir -p "${gen_dir}"
+if [[ "${EUID}" -eq 0 ]]; then
+  echo 'This script must NOT be run as root' >&2
+  exit 1
+fi
 
-echo > "${gen_dir}/environment.bzl" <<EOF
-import %workspace%/setup/mac/source_distribution/environment.bzl
+workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
+bazelrc="${workspace_dir}/gen/environment.bzl"
+
+mkdir -p "$(dirname "${bazelrc}")"
+cat > "${bazelrc}" <<EOF
+import %workspace%/tools/macos.bazelrc
 EOF

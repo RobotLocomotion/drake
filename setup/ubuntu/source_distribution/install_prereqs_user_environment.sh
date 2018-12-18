@@ -3,13 +3,18 @@
 # Write user environment prerequisites for source distributions of Drake on
 # Ubuntu.
 
-set -euo pipefail
+set -euxo pipefail
+
+if [[ "${EUID}" -eq 0 ]]; then
+  echo 'This script must NOT be run as root' >&2
+  exit 1
+fi
 
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
-gen_dir="${workspace}/gen"
-mkdir -p "${gen_dir}"
-
+bazelrc="${workspace_dir}/gen/environment.bzl"
 codename=$(lsb_release -sc)
-echo > "${gen_dir}/environment.bzl" <<EOF
+
+mkdir -p "$(dirname "${bazelrc}")"
+cat > "${bazelrc}" <<EOF
 import %workspace%/tools/ubuntu-${codename}.bazelrc
 EOF
