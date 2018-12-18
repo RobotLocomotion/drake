@@ -8,7 +8,6 @@
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/frame.h"
-#include "googletest/include/gtest/gtest.h"
 
 namespace drake {
 
