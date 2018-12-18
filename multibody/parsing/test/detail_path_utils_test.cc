@@ -58,8 +58,10 @@ GTEST_TEST(ResolveUriTest, TestFile) {
   PackageMap package_map;
 
   // file scheme requires an absolute path.
-  const std::string absolute_path = "/drake/multibody/parsing/test/"
-      "package_map_test_packages/package_map_test_package_a/sdf/test_model.sdf";
+  const string absolute_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+          "package_map_test_packages/package_map_test_package_a/"
+          "sdf/test_model.sdf");
 
   // Set the root directory - it will not end up being used in ResolveUri().
   const std::string root_dir = ".";
@@ -75,12 +77,14 @@ GTEST_TEST(ResolveUriTest, TestAbsolutePath) {
   // Use an empty package map.
   PackageMap package_map;
 
-  const std::string absolute_path = "/dev/null";
+  const string absolute_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/"
+          "package_map_test_packages/package_map_test_package_a/"
+          "sdf/test_model.sdf");
 
   // Set the root directory.
   const std::string root_dir = "/";
 
-  // We can't test for the exact path since it will change on every system.
   string path = ResolveUri(absolute_path, package_map, root_dir);
   EXPECT_EQ(path, absolute_path);
 }
@@ -97,7 +101,6 @@ GTEST_TEST(ResolveUriTest, TestRelativePath) {
   // Set the root directory.
   const std::string root_dir = "multibody/parsing/test/";
 
-  // We can't test for the exact path since it will change on every system.
   string path = ResolveUri(relative_path, package_map, root_dir);
   EXPECT_NE(path, "");
 }

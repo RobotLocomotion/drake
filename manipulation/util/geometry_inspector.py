@@ -35,18 +35,18 @@ from pydrake.systems.rendering import MultibodyPositionToGeometryPose
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
+    args_parser.add_argument(
         "filename", type=str,
         help="Path to an SDF or URDF file.")
-    parser.add_argument(
+    args_parser.add_argument(
         "--package_path",
         type=str,
         help="Full path to the root package for reading in SDF resources.",
         default=[])
-    position_group = parser.add_mutually_exclusive_group()
+    position_group = args_parser.add_mutually_exclusive_group()
     position_group.add_argument(
         "--position", type=float, nargs="+", default=[],
         help="A list of positions which must be the same length as the number "
@@ -60,15 +60,15 @@ def main():
              "of positions ASSOCIATED WITH JOINTS in the sdf model.  This "
              "does not include, e.g., floating-base coordinates, which will "
              "be assigned a default value.")
-    parser.add_argument(
+    args_parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
     # TODO(russt): Add option to weld the base to the world pending the
     # availability of GetUniqueBaseBody requested in #9747.
-    args = parser.parse_args()
+    args = args_parser.parse_args()
     filename = args.filename
     if not os.path.isfile(filename):
-        parser.error("File does not exist: {}".format(filename))
+        args_parser.error("File does not exist: {}".format(filename))
 
     builder = DiagramBuilder()
     scene_graph = builder.AddSystem(SceneGraph())
@@ -83,13 +83,9 @@ def main():
     # Get the package pathname.
     if len(args.package_path):
         # Verify that package.xml is found in the designated path.
-        package_path = args.package_path
-        if package_path[-1] != '/':
-            package_path += '/'
-        full_package_path = package_path + 'package.xml'
-        if not os.path.isfile(full_package_path):
-            print 'package.xml not found at: ' + full_package_path
-            sys.exit(-1)
+        package_path = os.path.abspath(args.package_path)
+        if not os.path.isfile(os.path.join(package_path, "package.xml")):
+            parser.error("package.xml not found at: {}".format(package_path))
 
         # Get the package map and populate it using the package path.
         package_map = parser.mutable_package_map()
