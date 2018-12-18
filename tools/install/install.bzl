@@ -142,7 +142,7 @@ def _install_action(
     )
     file_dest = _rename(file_dest, rename)
 
-    if "/attic/" in file_dest:
+    if "/attic/" in file_dest and not file_dest.startswith("lib/python"):
         fail("Do not expose attic paths to the install tree ({})".format(
             file_dest,
         ))
