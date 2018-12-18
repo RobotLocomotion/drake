@@ -14,6 +14,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -23,6 +24,44 @@
 
 namespace drake {
 namespace systems {
+
+namespace internal {
+#ifndef DRAKE_DOXYGEN_CXX
+// This function computes the previous (i.e., that which is one step closer to
+// negative infinity) *normalized* floating-point number from value.
+// nexttoward() provides very similar functionality except for its proclivity
+// for producing denormalized numbers that typically only result from
+// arithmetic underflow and are hence dangerous to use in further floating
+// point operations. Thus, GetPreviousNormalizedValue() acts like nexttoward(.)
+// but without producing denormalized numbers.
+template <class T>
+T GetPreviousNormalizedValue(const T& value) {
+  using std::nexttoward;
+  using std::abs;
+
+  const long double inf = std::numeric_limits<long double>::infinity();
+  // Treat numbers equal to or smaller than the smallest normalized number
+  // specially.
+  if (abs(value) <= std::numeric_limits<double>::min()) {
+    // If the value is -DBL_MIN, there is no danger of returning a denormalized
+    // number.
+    if (value == -std::numeric_limits<double>::min()) {
+      return nexttoward(value, -inf);
+    } else {
+      // It's conceivable that `value` could be a denormalized number if the
+      // FPU DAZ register has been set (that flushes denormalized numbers to
+      // zero, which can happen when a linked library sets it and does not reset
+      // it!) We want the same behavior regardless of whether DAZ has been
+      // set or not, so we'll always return -DBL_MIN here.
+      return -std::numeric_limits<double>::min();
+    }
+  } else {
+    // Number is sufficiently large to avoid concerns about denormalization.
+    return nexttoward(value, -inf);
+  }
+}
+#endif
+}  // namespace internal
 
 /**
  A class for advancing the state of hybrid dynamic systems, represented by
@@ -469,8 +508,6 @@ class Simulator {
             std::unique_ptr<const System<T>> owned_system,
             std::unique_ptr<Context<T>> context);
 
-  static T GetPreviousNormalizedValue(const T& value);
-
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
@@ -642,37 +679,6 @@ Simulator<T>::Simulator(const System<T>* system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
-// This function computes the previous (i.e., that which is one step closer to
-// negative infinity) *normalized* floating-point number from value.
-// nexttoward() provides very similar functionality except for its proclivity
-// for producing denormalized numbers that typically only result from
-// arithmetic underflow and are hence dangerous to use in further floating
-// point operations. Thus, GetPreviousNormalizedValue() acts like nexttoward(.)
-// but without producing denormalized numbers.
-template <class T>
-T Simulator<T>::GetPreviousNormalizedValue(const T& value) {
-  using std::nexttoward;
-  using std::abs;
-
-  const long double inf = std::numeric_limits<long double>::infinity();
-  // Treat numbers equal to or smaller than the smallest normalized number
-  // specially.
-  if (abs(value) <= std::numeric_limits<double>::min()) {
-    if (value > 0) {
-      // The normalized value immediately preceding a positive denormalized
-      // number is zero.
-      return 0;
-    } else {
-      // The normalized value immediately preceding zero is the smallest
-      // normalized number, negated.
-      return -std::numeric_limits<double>::min();
-    }
-  } else {
-    // Number is sufficiently large to avoid concerns about denormalization.
-    return nexttoward(value, -inf);
-  }
-}
-
 template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
@@ -705,8 +711,12 @@ void Simulator<T>::Initialize() {
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
-  const T slightly_before_current_time = GetPreviousNormalizedValue(
+  const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
       current_time);
+  DRAKE_DEMAND(std::fpclassify(ExtractDoubleOrThrow(
+      slightly_before_current_time)) == FP_NORMAL ||
+      std::fpclassify(ExtractDoubleOrThrow(
+          slightly_before_current_time)) == FP_ZERO);
   context_->set_time(slightly_before_current_time);
 
   // Get the next timed event.
