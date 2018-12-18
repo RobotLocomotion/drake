@@ -98,7 +98,7 @@ def _repository_python_info(repository_ctx):
     if not python.startswith(expected_dir):
         print((
             "\n\nWARNING: '{}' is not in its expected directory, '{}'" +
-            "\n  This may cause configuration errors."
+            "\n  This may cause configuration errors.\n\n"
         ).format(python, expected_dir))
     implementation = execute_or_fail(
         repository_ctx,
