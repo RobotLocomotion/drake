@@ -25,44 +25,6 @@
 namespace drake {
 namespace systems {
 
-namespace internal {
-#ifndef DRAKE_DOXYGEN_CXX
-// This function computes the previous (i.e., that which is one step closer to
-// negative infinity) *normalized* floating-point number from value.
-// nexttoward() provides very similar functionality except for its proclivity
-// for producing denormalized numbers that typically only result from
-// arithmetic underflow and are hence dangerous to use in further floating
-// point operations. Thus, GetPreviousNormalizedValue() acts like nexttoward(.)
-// but without producing denormalized numbers.
-template <class T>
-T GetPreviousNormalizedValue(const T& value) {
-  using std::nexttoward;
-  using std::abs;
-
-  const long double inf = std::numeric_limits<long double>::infinity();
-  // Treat numbers equal to or smaller than the smallest normalized number
-  // specially.
-  if (abs(value) <= std::numeric_limits<double>::min()) {
-    // If the value is -DBL_MIN, there is no danger of returning a denormalized
-    // number.
-    if (value == -std::numeric_limits<double>::min()) {
-      return nexttoward(value, -inf);
-    } else {
-      // It's conceivable that `value` could be a denormalized number if the
-      // FPU DAZ register has been set (that flushes denormalized numbers to
-      // zero, which can happen when a linked library sets it and does not reset
-      // it!) We want the same behavior regardless of whether DAZ has been
-      // set or not, so we'll always return -DBL_MIN here.
-      return -std::numeric_limits<double>::min();
-    }
-  } else {
-    // Number is sufficiently large to avoid concerns about denormalization.
-    return nexttoward(value, -inf);
-  }
-}
-#endif
-}  // namespace internal
-
 /**
  A class for advancing the state of hybrid dynamic systems, represented by
  `System<T>` objects, forward in time. Starting with an initial Context for a
@@ -679,6 +641,55 @@ Simulator<T>::Simulator(const System<T>* system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
+namespace internal {
+#ifndef DRAKE_DOXYGEN_CXX
+// This function computes the previous (i.e., that which is one step closer to
+// negative infinity) *non-denormalized* (i.e., either zero or normalized)
+// floating-point number from `value`. nexttoward() provides very similar
+// functionality except for its proclivity for producing denormalized numbers
+// that typically only result from arithmetic underflow and are hence dangerous
+// to use in further floating point operations. Thus,
+// GetPreviousNormalizedValue() acts like nexttoward(value, -inf) but without
+// producing denormalized numbers.
+// @param value a floating point value that is not infinity or NaN. Denormalized
+//        inputs are treated as zero to attain consistent behavior regardless
+//        of the setting of the FPU "treat denormalized numbers as zero" mode.
+template <class T>
+T GetPreviousNormalizedValue(const T& value) {
+  using std::nexttoward;
+  using std::abs;
+
+  // There are three distinct cases to be handled:
+  //     -∞        -10⁻³⁰⁸  0      10⁻³⁰⁸      ∞
+  //     |-----------|------|------|----------|
+  // (a) ^           ^              ^         ^   [-∞, 10⁻³⁰⁸] ∪ (10³⁰⁸, ∞]
+  // (b)              ^           ^               (-10⁻³⁰⁸, 10⁻³⁰⁸)
+  // (c)                           ^              10⁻³⁰⁸
+
+  // Treat denormalized numbers as zero. This code was designed to produce the
+  // same outputs for `value` regardless of the setting of the FPU's DAZ ("treat
+  // denormalized numbers as zero") mode.
+  const double min_normalized = std::numeric_limits<double>::min();
+  const T& value_mod = (abs(value) < min_normalized) ? 0.0 : value;
+
+  // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf) returns
+  // denormalized number for these two values.
+  if (value_mod == 0.0)
+    return -std::numeric_limits<double>::min();
+  if (value_mod == min_normalized)
+    return 0.0;
+
+  // Case (a) uses nexttoward(.).
+  const long double inf = std::numeric_limits<long double>::infinity();
+  const double prev_value = nexttoward(value, -inf);
+  DRAKE_DEMAND(
+      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
+      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
+  return prev_value;
+}
+#endif
+}  // namespace internal
+
 template <typename T>
 void Simulator<T>::Initialize() {
   // TODO(sherm1) Modify Context to satisfy constraints.
@@ -713,10 +724,6 @@ void Simulator<T>::Initialize() {
   const T current_time = context_->get_time();
   const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
       current_time);
-  DRAKE_DEMAND(std::fpclassify(ExtractDoubleOrThrow(
-      slightly_before_current_time)) == FP_NORMAL ||
-      std::fpclassify(ExtractDoubleOrThrow(
-          slightly_before_current_time)) == FP_ZERO);
   context_->set_time(slightly_before_current_time);
 
   // Get the next timed event.
