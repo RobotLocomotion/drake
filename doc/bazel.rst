@@ -128,11 +128,18 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 Python Versions
 ===============
-By default, Python2 will be used. To use Python3, use ``--config=python3``.
+By default, Python 2 will be used. To use Python 3 for both Bazel and the Python
+bindings, use ``--config=python3``.
 
-As an example to run all lint checks in Python3::
+As an example to run all lint checks in Python 3::
 
     bazel test --config=python3 --config=lint //...
+
+.. note::
+
+    This build configuration relies on setting the environment variable
+    ``PYTHON_BIN_PATH``, which is also used by Tensorflow's Bazel build.
+    For more information, see ``tools/workspace/python/repository.bzl``.
 
 Updating BUILD files
 ====================

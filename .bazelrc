@@ -2,7 +2,9 @@
 import %workspace%/tools/bazel.rc
 
 # Import environment-specific configuration.
-import %workspace%/gen/environment.bzl
+# TODO(eric.cousineau): Make this required once CI is configured to always run
+# `install_prereqs_user_environment`.
+try-import %workspace%/gen/environment.bzl
 
 # Try to import user-specific configuration local to workspace.
 try-import %workspace%/user.bazelrc

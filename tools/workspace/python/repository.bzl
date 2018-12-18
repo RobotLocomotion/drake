@@ -12,6 +12,12 @@ provided. On Linux, these targets are identical.
 The Python distribution is determined by `--action_env=PYTHON_BIN_PATH=<bin>`,
 which should match Bazel's version (via `--python_path=<bin>`).
 
+Note:
+    Because of the current limitations with Bazel, we this redundant
+    environment variable to ensure the bindings can detect the proper version
+    of Python. This was purposely chosen to duplicate Tensorflow's setup:
+    https://git.io/fpp7c
+
 Example:
     WORKSPACE:
         load("@drake//tools/workspace/python:repository.bzl", "python_repository")  # noqa
