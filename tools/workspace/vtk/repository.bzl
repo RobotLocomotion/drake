@@ -21,7 +21,7 @@ Build configuration:
         EMBREE_STACK_PROTECTOR=ON
         EMBREE_TUTORIALS=OFF
 
-    OSPRay (https://git.io/fNR7b):
+    OSPRay (https://git.io/fNR7b applying ospray_no_fast_math.patch):
         BUILD_SHARED_LIBS=ON
         CMAKE_BUILD_TYPE=Release
         OSPRAY_ENABLE_APPS=OFF
@@ -139,11 +139,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64-3.tar.gz"  # noqa
-            sha256 = "7662b1898b92f81d33bb860621892d20da2ea8887ed9cea10f7f708877ca6688"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64-4.tar.gz"  # noqa
+            sha256 = "7f06386c47918da96fd3db384e3d3656f373b781f991e5b077afee648d135f8e"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.5-qt-5.9.5-bionic-x86_64-3.tar.gz"  # noqa
-            sha256 = "aef51c26e5b1c600d57988ec37b87eb4568e415d536ef0d2c0e0b3d77c0ef220"  # noqa
+            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.7-qt-5.9.5-bionic-x86_64-4.tar.gz"  # noqa
+            sha256 = "b21a295ab170fa6e0787e5d4295f0bd8d482bbda16aa783ecd7016382d988437"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
