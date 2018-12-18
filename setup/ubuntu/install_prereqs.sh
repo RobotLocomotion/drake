@@ -29,5 +29,8 @@ source "${BASH_SOURCE%/*}/binary_distribution/install_prereqs.sh"
 
 source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh"
 
+# Configure user environment, executing as user.
+sudo -u $(logname) bash "${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+
 trap : EXIT  # Disable exit reporting.
 echo 'install_prereqs: success'

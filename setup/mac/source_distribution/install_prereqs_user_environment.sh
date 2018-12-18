@@ -8,16 +8,23 @@
 
 set -euo pipefail
 
-# We require that Bazel uses the Python installed by Homebrew.
-# TODO(jamiesnape): Also support a .bazelrc located in the WORKSPACE.
-if [[ ! -f "${HOME}/.bazelrc" ]] || ! /usr/bin/grep -q '^build --python_path=' "${HOME}/.bazelrc"; then
-  echo "We need to add 'build --python_path=/usr/local/bin/python2' to ~/.bazelrc."
-  read -r -p 'Do you want to continue (y/N)? ' reply
-  if [[ "${reply}" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    echo 'build --python_path=/usr/local/bin/python2' >> "${HOME}/.bazelrc"
-  fi
+if [[ "${EUID}" -eq 0 ]]; then
+  echo 'This script must NOT be run as root' >&2
+  exit 1
 fi
 
-if [[ ! -f "${HOME}/.bazelrc" ]] || ! /usr/bin/grep -q '^build --python_path=/usr/local/bin/python2$' "${HOME}/.bazelrc"; then
-  echo 'Using a python other than /usr/local/bin/python2 is NOT supported' >&2
+workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
+bazelrc="${workspace_dir}/gen/environment.bzl"
+
+mkdir -p "$(dirname "${bazelrc}")"
+cat > "${bazelrc}" <<EOF
+import %workspace%/tools/macos.bazelrc
+EOF
+
+if [[ -f "${HOME}/.bazelrc" ]] && /usr/bin/grep -q '^build --python_path=' "${HOME}/.bazelrc"; then
+  cat >&2 <<EOF
+WARNING: Python paths are now specified per workspace for Drake.
+  Please remove lines from ~/.bazelrc that change --python_path so that there
+  are no conflicts with the project configuration.
+EOF
 fi

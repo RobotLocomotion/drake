@@ -1,0 +1,8 @@
+# Use Python2 by default.
+# N.B. For Mac, ensure that we use Homebrew's Python, not the system's.
+build --python_path=/usr/local/bin/python2
+build --action_env=PYTHON_BIN_PATH=/usr/local/bin/python2
+
+# Explicit configuration for Python3.
+build:python3 --python_path=/usr/local/bin/python3
+build:python3 --action_env=PYTHON_BIN_PATH=/usr/local/bin/python3
