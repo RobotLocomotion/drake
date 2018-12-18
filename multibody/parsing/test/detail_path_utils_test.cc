@@ -134,7 +134,7 @@ GTEST_TEST(ResolveUriTest, TestModel) {
 GTEST_TEST(ResolveUriTest, TestUnsupported) {
   PackageMap package_map;
   const std::string root_dir = ".";
-  const string uri = "http://localhost";
+  const string uri = "http://localhost/filename.sdf";
   EXPECT_EQ(ResolveUri(uri, package_map, root_dir), "");
 }
 

@@ -6,16 +6,17 @@ the resulting geometry poses to drake_visualizer.
 If you wish to simply load a model and show it in multiple visualizers, see
 `show_model`.
 
-Example usages:
-bazel build //bindings/pydrake/multibody:geometry_inspector -- \
-  $HOME/drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
+Example usages, all executed from the Drake root directory after geometry
+inspector has been built (using, e.g.,`bazel build :geometry_inspector`):
+./bazel-bin/drake/manipulation/util/geometry_inspector \
+  ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
-bazel run geometry_inspector -- \
-  $HOME/drake/multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
+./bazel-bin/drake/manipulation/util/geometry_inspector \
+  ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
 
-bazel run geometry_inspector -- \
-  $HOME/drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf\
-  --package_path=$HOME/drake/manipulation/models/iiwa_description
+./bazel-bin/drake/manipulation/util/geometry_inspector \
+  ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf \
+  --package_path=./manipulation/models/iiwa_description
 """
 
 import argparse

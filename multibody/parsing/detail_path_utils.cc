@@ -75,7 +75,7 @@ string ResolveUri(const string& uri, const PackageMap& package_map,
 
   // Parse the given URI into pieces.
   static const never_destroyed<std::regex> uri_matcher{
-    "^([a-z0-9+.-]+)://([^/]*)(/*.*)"
+    "^([a-z0-9+.-]+)://([^/]*)(/+.*)"
   };
   std::smatch match;
   if (std::regex_match(uri, match, uri_matcher.access())) {

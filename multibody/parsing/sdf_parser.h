@@ -22,7 +22,7 @@ inline ModelInstanceIndex AddModelFromSdfFile(
     const std::string& model_name,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
-  PackageMap package_map;
+  multibody::PackageMap package_map;
   const std::string full_path = detail::GetFullPath(file_name);
   package_map.PopulateUpstreamToDrake(full_path);
   return detail::AddModelFromSdfFile(
@@ -38,7 +38,7 @@ inline ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
-  PackageMap package_map;
+  multibody::PackageMap package_map;
   const std::string full_path = detail::GetFullPath(file_name);
   package_map.PopulateUpstreamToDrake(full_path);
   return detail::AddModelFromSdfFile(
@@ -52,7 +52,7 @@ inline std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
-  PackageMap package_map;
+  multibody::PackageMap package_map;
   const std::string full_path = detail::GetFullPath(file_name);
   package_map.PopulateUpstreamToDrake(full_path);
   return detail::AddModelsFromSdfFile(
