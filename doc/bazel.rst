@@ -135,12 +135,6 @@ As an example to run all lint checks in Python 3::
 
     bazel test --config=python3 --config=lint //...
 
-.. note::
-
-    This build configuration relies on setting the environment variable
-    ``PYTHON_BIN_PATH``, which is also used by Tensorflow's Bazel build.
-    For more information, see ``tools/workspace/python/repository.bzl``.
-
 Updating BUILD files
 ====================
 

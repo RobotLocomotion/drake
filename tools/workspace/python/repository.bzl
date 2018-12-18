@@ -9,14 +9,9 @@ the "-undefined dynamic_lookup" linker flag, however in the rare cases that
 this would cause an undefined symbol error, a :python_direct_link target is
 provided. On Linux, these targets are identical.
 
-The Python distribution is determined by `--action_env=PYTHON_BIN_PATH=<bin>`,
-which should match Bazel's version (via `--python_path=<bin>`).
-
-Note:
-    Because of the current limitations with Bazel, we this redundant
-    environment variable to ensure the bindings can detect the proper version
-    of Python. This was purposely chosen to duplicate Tensorflow's setup:
-    https://git.io/fpp7c
+The Python distribution is determined by
+`--action_env=DRAKE_PYTHON_BIN_PATH=<bin>`, which should match Bazel's version
+(via `--python_path=<bin>`).
 
 Example:
     WORKSPACE:
@@ -47,7 +42,7 @@ _VERSION_SUPPORT_MATRIX = {
 }
 
 def _repository_python_info(repository_ctx):
-    # Using `PYTHON_BIN_PATH` from the environment, determine:
+    # Using `DRAKE_PYTHON_BIN_PATH` from the environment, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
     # - `site_packages_relpath` - relative to base of FHS
@@ -78,7 +73,7 @@ def _repository_python_info(repository_ctx):
     else:
         python_default = "python{}".format(versions_supported[0])
     python_from_env = repository_ctx.os.environ.get(
-        "PYTHON_BIN_PATH",
+        "DRAKE_PYTHON_BIN_PATH",
         python_default,
     )
     python_path = which(repository_ctx, python_from_env)
@@ -93,15 +88,18 @@ def _repository_python_info(repository_ctx):
     version_major, _ = version.split(".")
 
     # Perform sanity checks on supplied Python binary.
-    prefix = execute_or_fail(
-        repository_ctx,
-        [python, "-c", "import sys; print(sys.prefix)"],
-    ).stdout.strip()
-    if not python.startswith(prefix + "/bin/"):
+    if os_result.is_macos:
+        expected_dir = "/usr/local/bin/"
+    else:
+        expected_dir = execute_or_fail(
+            repository_ctx,
+            [python, "-c", "import sys; print(sys.prefix)"],
+        ).stdout.strip() + "/bin/"
+    if not python.startswith(expected_dir):
         print((
-            "\n\nWARNING: '{}' does not fall under its prefix, '{}'\n" +
-            "  This may cause configuration errors."
-        ).format(python, prefix))
+            "\n\nWARNING: '{}' is not in its expected directory, '{}'" +
+            "\n  This may cause configuration errors.\n\n"
+        ).format(python, expected_dir))
     implementation = execute_or_fail(
         repository_ctx,
         [
@@ -268,7 +266,7 @@ py_library(
 python_repository = repository_rule(
     _impl,
     environ = [
-        "PYTHON_BIN_PATH",
+        "DRAKE_PYTHON_BIN_PATH",
     ],
     local = True,
 )
