@@ -6,7 +6,7 @@ slack aren't using this code.
 
 ## Setup
 
-Follow setup instructions:
+Follow setup instructions, make sure you run `install_prereqs`.
 
     https://drake.mit.edu/from_source.html
 
@@ -21,11 +21,11 @@ In any terminal that you're using:
     cd drake
     source tmp/py3.virtualenv.sh
 
+Update `gen/environment.bzl` to use this Python binary:
+
+    build --python_path=<PYTHON>
+    build --action_env=PYTHON_BIN_PATH=<PYTHON>
+
 ## Python3
 
-Configure:
-
-    rm -f user.bazelrc
-    ./setup/user_configure --python_bin $(which python3)
-
-Now you can use Python3.
+When building, running, or testing, pass `--config=python3`.
