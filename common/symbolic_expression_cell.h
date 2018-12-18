@@ -23,6 +23,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -75,7 +76,8 @@ class ExpressionCell {
   /** Evaluates under a given environment (by default, an empty environment).
    *  @throws std::runtime_error if NaN is detected during evaluation.
    */
-  virtual double Evaluate(const Environment& env) const = 0;
+  virtual double Evaluate(const Environment& env,
+                          RandomGenerator* const random_generator) const = 0;
 
   /** Expands out products and positive integer powers in expression.
    * @throws std::runtime_error if NaN is detected during expansion.
@@ -126,7 +128,8 @@ class UnaryExpressionCell : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   /** Returns the argument. */
   const Expression& get_argument() const { return e_; }
 
@@ -158,7 +161,8 @@ class BinaryExpressionCell : public ExpressionCell {
   Variables GetVariables() const override;
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   /** Returns the first argument. */
   const Expression& get_first_argument() const { return e1_; }
   /** Returns the second argument. */
@@ -201,7 +205,8 @@ class ExpressionVar : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -221,7 +226,8 @@ class ExpressionConstant : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -240,7 +246,8 @@ class ExpressionNaN : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -271,7 +278,8 @@ class ExpressionAdd : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -374,7 +382,8 @@ class ExpressionMul : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -773,7 +782,8 @@ class ExpressionIfThenElse : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;
@@ -805,7 +815,8 @@ class ExpressionUninterpretedFunction : public ExpressionCell {
   bool EqualTo(const ExpressionCell& e) const override;
   bool Less(const ExpressionCell& e) const override;
   Polynomiald ToPolynomial() const override;
-  double Evaluate(const Environment& env) const override;
+  double Evaluate(const Environment& env,
+                  RandomGenerator* const random_generator) const override;
   Expression Expand() const override;
   Expression Substitute(const Substitution& s) const override;
   Expression Differentiate(const Variable& x) const override;

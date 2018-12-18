@@ -159,9 +159,10 @@ Polynomiald Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
-double Expression::Evaluate(const Environment& env) const {
+double Expression::Evaluate(const Environment& env,
+                            RandomGenerator* const random_generator) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Evaluate(env);
+  return ptr_->Evaluate(env, random_generator);
 }
 
 Expression Expression::EvaluatePartial(const Environment& env) const {

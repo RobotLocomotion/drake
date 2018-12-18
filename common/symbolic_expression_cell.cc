@@ -228,8 +228,9 @@ bool UnaryExpressionCell::Less(const ExpressionCell& e) const {
   return e_.Less(unary_e.e_);
 }
 
-double UnaryExpressionCell::Evaluate(const Environment& env) const {
-  const double v{e_.Evaluate(env)};
+double UnaryExpressionCell::Evaluate(
+    const Environment& env, RandomGenerator* const random_generator) const {
+  const double v{e_.Evaluate(env, random_generator)};
   return DoEvaluate(v);
 }
 
@@ -273,9 +274,10 @@ bool BinaryExpressionCell::Less(const ExpressionCell& e) const {
   return e2_.Less(binary_e.e2_);
 }
 
-double BinaryExpressionCell::Evaluate(const Environment& env) const {
-  const double v1{e1_.Evaluate(env)};
-  const double v2{e2_.Evaluate(env)};
+double BinaryExpressionCell::Evaluate(
+    const Environment& env, RandomGenerator* const random_generator) const {
+  const double v1{e1_.Evaluate(env, random_generator)};
+  const double v2{e2_.Evaluate(env, random_generator)};
   return DoEvaluate(v1, v2);
 }
 
@@ -315,18 +317,50 @@ Polynomiald ExpressionVar::ToPolynomial() const {
   return Polynomiald(1.0, var_.get_id());
 }
 
-double ExpressionVar::Evaluate(const Environment& env) const {
-  Environment::const_iterator const it{env.find(var_)};
-  if (it != env.cend()) {
-    DRAKE_ASSERT(!std::isnan(it->second));
-    return it->second;
+double ExpressionVar::Evaluate(const Environment& env,
+                               std::mt19937* const random_generator) const {
+  switch (var_.get_type()) {
+    case Variable::Type::CONTINUOUS:
+    case Variable::Type::INTEGER:
+    case Variable::Type::BOOLEAN:
+    case Variable::Type::BINARY: {
+      Environment::const_iterator const it{env.find(var_)};
+      if (it != env.cend()) {
+        DRAKE_ASSERT(!std::isnan(it->second));
+        return it->second;
+      }
+      ostringstream oss;
+      oss << "The following environment does not have an entry for the "
+             "variable "
+          << var_ << endl;
+      oss << env << endl;
+      throw runtime_error{oss.str()};
+    }
+    case Variable::Type::RANDOM_UNIFORM:
+      if (!random_generator) {
+        throw runtime_error{
+            "A random uniform variable is detected during evaluation but a "
+            "random number generator is not provided."};
+      }
+      return std::uniform_real_distribution<double>{0.0,
+                                                    1.0}(*random_generator);
+    case Variable::Type::RANDOM_GAUSSIAN:
+      if (!random_generator) {
+        throw runtime_error{
+            "A random Gaussian variable is detected during evaluation but a "
+            "random number generator is not provided."};
+      }
+      return std::normal_distribution<double>{0.0, 1.0}(*random_generator);
+    case Variable::Type::RANDOM_EXPONENTIAL:
+      if (!random_generator) {
+        throw runtime_error{
+            "A random exponential variable is detected during evaluation but a "
+            "random number generator is not provided."};
+      }
+      return std::exponential_distribution<double>{1.0}(*random_generator);
   }
-  ostringstream oss;
-  oss << "The following environment does not have an entry for the "
-         "variable "
-      << var_ << endl;
-  oss << env << endl;
-  throw runtime_error(oss.str());
+  // Should be unreachable.
+  DRAKE_ABORT();
 }
 
 Expression ExpressionVar::Expand() const { return Expression{var_}; }
@@ -374,7 +408,8 @@ bool ExpressionConstant::Less(const ExpressionCell& e) const {
 
 Polynomiald ExpressionConstant::ToPolynomial() const { return Polynomiald(v_); }
 
-double ExpressionConstant::Evaluate(const Environment&) const {
+double ExpressionConstant::Evaluate(const Environment&,
+                                    RandomGenerator* const) const {
   DRAKE_DEMAND(!std::isnan(v_));
   return v_;
 }
@@ -414,7 +449,8 @@ Polynomiald ExpressionNaN::ToPolynomial() const {
   throw runtime_error("NaN is detected while converting to Polynomial.");
 }
 
-double ExpressionNaN::Evaluate(const Environment&) const {
+double ExpressionNaN::Evaluate(const Environment&,
+                               RandomGenerator* const) const {
   throw runtime_error("NaN is detected during Symbolic computation.");
 }
 
@@ -513,11 +549,13 @@ Polynomiald ExpressionAdd::ToPolynomial() const {
       });
 }
 
-double ExpressionAdd::Evaluate(const Environment& env) const {
+double ExpressionAdd::Evaluate(const Environment& env,
+                               RandomGenerator* const random_generator) const {
   return accumulate(
       expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), constant_,
-      [&env](const double init, const pair<Expression, double>& p) {
-        return init + p.first.Evaluate(env) * p.second;
+      [&env, &random_generator](const double init,
+                                const pair<Expression, double>& p) {
+        return init + p.first.Evaluate(env, random_generator) * p.second;
       });
 }
 
@@ -777,11 +815,14 @@ Polynomiald ExpressionMul::ToPolynomial() const {
       });
 }
 
-double ExpressionMul::Evaluate(const Environment& env) const {
+double ExpressionMul::Evaluate(const Environment& env,
+                               RandomGenerator* const random_generator) const {
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(), constant_,
-      [&env](const double init, const pair<Expression, Expression>& p) {
-        return init * std::pow(p.first.Evaluate(env), p.second.Evaluate(env));
+      [&env, &random_generator](const double init,
+                                const pair<Expression, Expression>& p) {
+        return init * std::pow(p.first.Evaluate(env, random_generator),
+                               p.second.Evaluate(env, random_generator));
       });
 }
 
@@ -1867,11 +1908,12 @@ Polynomiald ExpressionIfThenElse::ToPolynomial() const {
   throw runtime_error("IfThenElse expression is not polynomial-convertible.");
 }
 
-double ExpressionIfThenElse::Evaluate(const Environment& env) const {
-  if (f_cond_.Evaluate(env)) {
-    return e_then_.Evaluate(env);
+double ExpressionIfThenElse::Evaluate(
+    const Environment& env, RandomGenerator* const random_generator) const {
+  if (f_cond_.Evaluate(env, random_generator)) {
+    return e_then_.Evaluate(env, random_generator);
   }
-  return e_else_.Evaluate(env);
+  return e_else_.Evaluate(env, random_generator);
 }
 
 Expression ExpressionIfThenElse::Expand() const {
@@ -1958,7 +2000,8 @@ Polynomiald ExpressionUninterpretedFunction::ToPolynomial() const {
       "Uninterpreted-function expression is not polynomial-convertible.");
 }
 
-double ExpressionUninterpretedFunction::Evaluate(const Environment&) const {
+double ExpressionUninterpretedFunction::Evaluate(const Environment&,
+                                                 RandomGenerator* const) const {
   throw runtime_error("Uninterpreted-function expression cannot be evaluated.");
 }
 
