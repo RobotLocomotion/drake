@@ -128,13 +128,11 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 Python Versions
 ===============
-You may select Python versions (within the :ref:`supported-configurations`).
-As an example, to use ``python3`` on Bionic::
+By default, Python2 will be used. To use Python3, use ``--config=python3``.
 
-    ./setup/user_configure --python_bin /usr/bin/python3
+As an example to run all lint checks in Python3::
 
-This will create or check ``./user.bazelrc`` to ensure a specific
-interpreter is used for both Bazel and the Python bindings.
+    bazel test --config=python3 --config=lint //...
 
 Updating BUILD files
 ====================
@@ -244,16 +242,6 @@ The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
-
-Python Versions
-===============
-You may select Python versions (within the :ref:`supported-configurations`).
-As an example, to use ``python3`` on Bionic:
-
-    ./setup/user_configure --python_bin /usr/bin/python3
-
-This will update ``./user.bazelrc`` to switch the interpreter used by both
-Bazel and the Python bindings.
 
 Optional Tools
 ==============

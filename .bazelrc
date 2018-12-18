@@ -1,7 +1,7 @@
 # Import legacy .bazelrc file.
 import %workspace%/tools/bazel.rc
 
-# Import configuration.
+# Import environment-specific configuration.
 import %workspace%/gen/environment.bzl
 
 # Try to import user-specific configuration local to workspace.
