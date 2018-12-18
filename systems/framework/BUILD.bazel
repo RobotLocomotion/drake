@@ -258,6 +258,7 @@ drake_cc_library(
     ],
     deps = [
         ":framework_common",
+        "//common:random",
     ],
 )
 
@@ -391,6 +392,7 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:pointer_cast",
+        "//common:random",
         "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",

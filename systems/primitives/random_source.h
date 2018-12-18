@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/random.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -14,12 +15,12 @@ namespace systems {
 
 namespace internal {
 
-template <typename Generator = std::mt19937>
+template <typename Generator = RandomGenerator>
 typename Generator::result_type generate_unique_seed();
 
 /// State for a given random distribution and generator. This owns both the
 /// distribution and the generator.
-template <typename Distribution, typename Generator = std::mt19937>
+template <typename Distribution, typename Generator = RandomGenerator>
 class RandomState {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomState)
@@ -62,7 +63,7 @@ class RandomState {
 /// ExponentialRandomSource.
 ///
 /// @ingroup primitive_systems
-template <typename Distribution, typename Generator = std::mt19937>
+template <typename Distribution, typename Generator = RandomGenerator>
 class RandomSource : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)

@@ -13,7 +13,7 @@ typename Generator::result_type generate_unique_seed() {
   return seed.access()++;
 }
 
-template std::mt19937::result_type generate_unique_seed<std::mt19937>();
+template RandomGenerator::result_type generate_unique_seed<RandomGenerator>();
 
 }  // namespace internal
 
