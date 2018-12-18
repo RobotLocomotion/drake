@@ -100,12 +100,12 @@ TEST_F(GenerateObjTest, NoEpsilonSampling) {
   // Construct road.
   const double kArcLength = 25.;
   const double kArcRadius = 40.;
-  const auto& street1 = rb->Connect(
+  const auto street1 = rb->Connect(
       "street1", lane_layout,
       multi::StartReference().at(kRoadOrigin, multi::Direction::kForward),
       multi::ArcOffset(kArcLength, -kArcRadius / kArcLength),
       multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
-  const auto& street2 = rb->Connect(
+  const auto street2 = rb->Connect(
       "street2", lane_layout,
       multi::StartReference().at(*street1, api::LaneEnd::kFinish,
                                  multi::Direction::kForward),
