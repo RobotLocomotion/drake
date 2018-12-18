@@ -641,8 +641,8 @@ Simulator<T>::Simulator(const System<T>* system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
-namespace internal {
 #ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
 // This function computes the previous (i.e., that which is one step closer to
 // negative infinity) *non-denormalized* (i.e., either zero or normalized)
 // floating-point number from `value`. nexttoward() provides very similar
@@ -653,7 +653,9 @@ namespace internal {
 // producing denormalized numbers.
 // @param value a floating point value that is not infinity or NaN. Denormalized
 //        inputs are treated as zero to attain consistent behavior regardless
-//        of the setting of the FPU "treat denormalized numbers as zero" mode.
+//        of the setting of the FPU "treat denormalized numbers as zero" mode
+//        (which can be activated through linking with shared libraries that
+//        use gcc's -ffast-math option).
 template <class T>
 T GetPreviousNormalizedValue(const T& value) {
   using std::nexttoward;
@@ -666,7 +668,7 @@ T GetPreviousNormalizedValue(const T& value) {
   // (b)              ^           ^               (-10⁻³⁰⁸, 10⁻³⁰⁸)
   // (c)                           ^              10⁻³⁰⁸
 
-  // Treat denormalized numbers as zero. This code was designed to produce the
+  // Treat denormalized numbers as zero. This code is designed to produce the
   // same outputs for `value` regardless of the setting of the FPU's DAZ ("treat
   // denormalized numbers as zero") mode.
   const double min_normalized = std::numeric_limits<double>::min();
@@ -687,8 +689,8 @@ T GetPreviousNormalizedValue(const T& value) {
       std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
   return prev_value;
 }
-#endif
 }  // namespace internal
+#endif
 
 template <typename T>
 void Simulator<T>::Initialize() {

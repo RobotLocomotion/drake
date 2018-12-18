@@ -1341,7 +1341,7 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
   EXPECT_EQ(internal::GetPreviousNormalizedValue(0.0), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double/2), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double), 0.0);
-  EXPECT_LE(internal::GetPreviousNormalizedValue(-min_double/2), -min_double);
+  EXPECT_EQ(internal::GetPreviousNormalizedValue(-min_double/2), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(-min_double), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(1.0), 1.0);
   EXPECT_NEAR(internal::GetPreviousNormalizedValue(1.0), 1.0,
@@ -1350,11 +1350,15 @@ GTEST_TEST(SimulatorTest, PreviousNormalizedValueTest) {
   // Do the tests without those modes enabled.
   #ifdef __x86_64__
   __builtin_ia32_ldmxcsr(mxcsr);
+
+  // Verify that the flags are set as expected.
+  EXPECT_NE(denorm_num, 0.0);
+  EXPECT_NE(std::numeric_limits<double>::min() / 2, 0.0);
   #endif
   EXPECT_EQ(internal::GetPreviousNormalizedValue(0.0), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double/2), -min_double);
   EXPECT_EQ(internal::GetPreviousNormalizedValue(min_double), 0.0);
-  EXPECT_LE(internal::GetPreviousNormalizedValue(-min_double/2), -min_double);
+  EXPECT_EQ(internal::GetPreviousNormalizedValue(-min_double/2), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(-min_double), -min_double);
   EXPECT_LE(internal::GetPreviousNormalizedValue(1.0), 1.0);
   EXPECT_NEAR(internal::GetPreviousNormalizedValue(1.0), 1.0,
