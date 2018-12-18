@@ -6,12 +6,13 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This class is one of the cache entries in MultibodyTreeContext. It holds the
 /// kinematics results of computations that depend not only on the generalized
@@ -146,6 +147,11 @@ class VelocityKinematicsCache {
   SpatialVelocity_PoolType V_FM_pool_;
   SpatialVelocity_PoolType V_PB_W_pool_;
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::VelocityKinematicsCache;
 
 }  // namespace multibody
 }  // namespace drake

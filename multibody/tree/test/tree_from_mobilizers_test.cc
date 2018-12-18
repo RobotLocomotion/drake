@@ -855,7 +855,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
   // Test mobilizer's setter/getters.
   shoulder_mobilizer_->set_angle(context_.get(), M_PI);
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), M_PI);
-  shoulder_mobilizer_->set_zero_configuration(context_.get());
+  shoulder_mobilizer_->set_zero_state(*context_,
+                                      &context_->get_mutable_state());
   EXPECT_EQ(shoulder_mobilizer_->get_angle(*context_), 0.0);
 
   PositionKinematicsCache<double> pc(tree().get_topology());

@@ -1670,35 +1670,9 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       AccelerationKinematicsCache<T>* ac) const;
 
-  /// Given the state of `this` %MultibodyTree in `context` and a known vector
-  /// of generalized accelerations `known_vdot`, this method computes the
-  /// spatial acceleration `A_WB` for each body as measured and expressed in the
-  /// world frame W.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
-  /// @param[in] pc
-  ///   A position kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] known_vdot
-  ///   A vector with the generalized accelerations for the full %MultibodyTree
-  ///   model.
-  /// @param[out] A_WB_array
-  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
-  ///   containing the spatial acceleration `A_WB` for each body. It must be of
-  ///   size equal to the number of bodies in the MultibodyTree. This method
-  ///   will abort if the the pointer is null or if `A_WB_array` is not of size
-  ///   `num_bodies()`. On output, entries will be ordered by BodyNodeIndex.
-  ///   These accelerations can be read in the proper order with
-  ///   Body::get_from_spatial_acceleration_array().
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
+  /// See MultibodyPlant method.
+  /// @warning The output parameter `A_WB_array` is indexed by BodyNodeIndex,
+  /// while MultibodyPlant's method returns accelerations indexed by BodyIndex.
   void CalcSpatialAccelerationsFromVdot(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1706,44 +1680,7 @@ class MultibodyTree {
       const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
-  /// Given the state of `this` %MultibodyTree in `context` and a known vector
-  /// of generalized accelerations `vdot`, this method computes the
-  /// set of generalized forces `tau` that would need to be applied in order to
-  /// attain the specified generalized accelerations.
-  /// Mathematically, this method computes: <pre>
-  ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
-  /// </pre>
-  /// where `M(q)` is the %MultibodyTree mass matrix, `C(q, v)v` is the bias
-  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
-  /// of a vector applied generalized forces. The last term is a summation over
-  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
-  /// body B at `Bo` which gets projected into the space of generalized forces
-  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
-  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
-  /// This method does not compute explicit expressions for the mass matrix nor
-  /// for the bias term, which would be of at least `O(n²)` complexity, but it
-  /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
-  /// number of bodies in the %MultibodyTree. The explicit formation of the
-  /// mass matrix `M(q)` would require the calculation of `O(n²)` entries while
-  /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
-  /// operations (see [Featherstone 1987, §4]), depending on the implementation.
-  /// The recursive Newton-Euler algorithm is the most efficient currently known
-  /// general method for solving inverse dynamics [Featherstone 2008].
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the model.
-  /// @param[in] known_vdot
-  ///   A vector with the known generalized accelerations `vdot` for the full
-  ///   %MultibodyTree model. Use the provided Joint APIs in order to access
-  ///   entries into this array.
-  /// @param[in] external_forces
-  ///   A set of forces to be applied to the system either as body spatial
-  ///   forces `Fapp_Bo_W` or generalized forces `tau_app`, see MultibodyForces
-  ///   for details.
-  ///
-  /// @returns the vector of generalized forces that would need to be applied to
-  /// the mechanical system in order to achieve the desired acceleration given
-  /// by `known_vdot`.
+  /// See MultibodyPlant method.
   VectorX<T> CalcInverseDynamics(
       const systems::Context<T>& context,
       const VectorX<T>& known_vdot,
@@ -1865,35 +1802,7 @@ class MultibodyTree {
       std::vector<SpatialForce<T>>* F_BMo_W_array,
       EigenPtr<VectorX<T>> tau_array) const;
 
-  /// Computes the combined force contribution of ForceElement objects in the
-  /// model. A ForceElement can apply forces as a spatial force per body or as
-  /// generalized forces, depending on the ForceElement model. Therefore this
-  /// method provides outputs for both spatial forces per body (with
-  /// `F_Bo_W_array`) and generalized forces (with `tau_array`).
-  /// ForceElement contributions are a function of the state and time only.
-  /// The output from this method can immediately be used as input to
-  /// CalcInverseDynamics() to include the effect of applied forces by force
-  /// elements.
-  ///
-  /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
-  /// @param[in] pc
-  ///   A position kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[in] vc
-  ///   A velocity kinematics cache object already updated to be in sync with
-  ///   `context`.
-  /// @param[out] forces
-  ///   A pointer to a valid, non nullptr, multibody forces object. On output
-  ///   `forces` will store the forces exerted by all the ForceElement
-  ///   objects in the model. This method will abort if the `forces` pointer is
-  ///   null or if the forces object is not compatible with `this`
-  ///   %MultibodyTree, see MultibodyForces::CheckInvariants().
-  ///
-  /// @pre The position kinematics `pc` must have been previously updated with a
-  /// call to CalcPositionKinematicsCache().
-  /// @pre The velocity kinematics `vc` must have been previously updated with a
-  /// call to CalcVelocityKinematicsCache().
+  /// See MultibodyPlant method.
   void CalcForceElementsContribution(
       const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
@@ -1958,29 +1867,7 @@ class MultibodyTree {
   /// @}
   // Closes "Computational methods" Doxygen section.
 
-  /// This method allows users to map the state of `this` model, x, into a
-  /// vector of selected state xₛ with a given preferred ordering.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
-  /// than the size of the full state x. That is, a user might be interested in
-  /// only a given portion of the full state x.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
-  /// The selected state is built such that selected positions are followed
-  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
-  /// The positions in qₛ are a concatenation of the positions for each joint
-  /// in the order they appear in `user_to_joint_index_map`. That is, the
-  /// positions for `user_to_joint_index_map[0]` are first, followed by the
-  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
-  /// selected velocities vₛ.
-  ///
-  /// @throws std::logic_error if there are repeated indexes in
-  /// `user_to_joint_index_map`.
-  // TODO(amcastro-tri): consider having an extra `free_body_index_map`
-  // so that users could also re-order free bodies if they wanted to.
+  /// See MultibodyPlant method.
   MatrixX<double> MakeStateSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 
@@ -2004,35 +1891,11 @@ class MultibodyTree {
   MatrixX<double> MakeStateSelectorMatrixFromJointNames(
       const std::vector<std::string>& selected_joints) const;
 
-  /// This method allows user to map a vector `uₛ` containing the actuation
-  /// for a set of selected actuators into the vector u containing the actuation
-  /// values for `this` full model.
-  /// The mapping, or selection, is returned in the form of a selector matrix
-  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
-  /// than the size of the full vector of actuation values u. That is, a user
-  /// might be interested in only a given subset of actuators in the model.
-  ///
-  /// This selection matrix is particularly useful when adding PID control
-  /// on a portion of the state, see systems::controllers::PidController.
-  ///
-  /// A user specifies the preferred order in uₛ via
-  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
-  /// concatenation of the values for each actuator in the order they appear in
-  /// `user_to_actuator_index_map`.
-  /// The full vector of actuation values u is ordered by JointActuatorIndex.
+  /// See MultibodyPlant method.
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const;
 
-  /// Alternative signature to build an actuation selector matrix `Su` such
-  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
-  /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
-  /// values for the actuators acting on the joints listed by
-  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
-  /// `user_to_joint_index_map` are actuated.
-  /// See MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
-  /// details.
-  /// @throws std::logic_error if any of the joints in
-  /// `user_to_joint_index_map` does not have an actuator.
+  /// See MultibodyPlant method.
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 

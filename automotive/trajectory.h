@@ -10,7 +10,7 @@
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 
 namespace drake {
 namespace automotive {

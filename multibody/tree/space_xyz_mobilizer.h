@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This mobilizer models a gimbal joint between an inboard frame F and an
 /// outboard frame M that allows frame M to rotate freely with respect to F (
@@ -32,7 +33,7 @@ namespace multibody {
 /// where `Rx(θ)`, `Ry(θ)` and `Rz(θ)` correspond to the elemental rotations in
 /// amount of θ about the x, y and z axes respectively.
 /// Zero θ₁, θ₂, θ₃ angles define the "zero configuration" which corresponds
-/// to frames F and M being coincident, see set_zero_configuration().
+/// to frames F and M being coincident, see set_zero_state().
 /// Angles θ₁, θ₂, θ₃ are defined to be positive according to the
 /// right-hand-rule with the thumb aligned in the direction of their respective
 /// axes.
@@ -288,6 +289,11 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 };
+
+}  // namespace internal
+
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::SpaceXYZMobilizer;
 
 }  // namespace multibody
 }  // namespace drake

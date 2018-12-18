@@ -82,12 +82,13 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/inverse_kinematics",
     "//multibody/math",
     "//multibody/multibody_tree",
-    "//multibody/multibody_tree/implicit_stribeck:implicit_stribeck_solver",  # unpackaged  # noqa
+    "//multibody/multibody_tree/implicit_stribeck",
     "//multibody/multibody_tree/math",
     "//multibody/multibody_tree/multibody_plant",
-    "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",  # unpackaged  # noqa
     "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
+    "//multibody/plant",
+    "//multibody/plant:contact_results_to_lcm",  # unpackaged
     "//multibody/tree",
     "//perception",
     "//solvers",

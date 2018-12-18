@@ -1,8 +1,8 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -17,15 +17,8 @@ using geometry::FrameId;
 using geometry::SceneGraph;
 using geometry::Sphere;
 using drake::math::RigidTransformd;
-using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::RotationalInertia;
-using drake::multibody::SpatialInertia;
-using drake::multibody::UniformGravityFieldElement;
-using drake::multibody::UnitInertia;
 
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<MultibodyPlant<double>>
 MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
                  SceneGraph<double>* scene_graph) {
   auto plant = std::make_unique<MultibodyPlant<double>>();

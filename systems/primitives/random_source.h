@@ -136,7 +136,7 @@ class RandomSource : public LeafSystem<double> {
 
 }  // namespace internal
 
-/// Generates uniformly distributed random numbers in the interval [0,1].
+/// Generates uniformly distributed random numbers in the interval [0.0, 1.0).
 ///
 /// @see internal::RandomSource
 /// @ingroup primitive_systems

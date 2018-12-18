@@ -7,8 +7,8 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -19,7 +19,7 @@ namespace {
 
 using Eigen::Vector4d;
 
-using multibody::multibody_plant::MultibodyPlant;
+using multibody::MultibodyPlant;
 using multibody::Parser;
 using systems::BasicVector;
 

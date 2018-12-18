@@ -5,6 +5,16 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+
+/// Type used to identify mobilizers by index in a multibody tree system.
+using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
+
+/// Type used to identify tree nodes by index within a multibody tree system.
+using BodyNodeIndex = TypeSafeIndex<class BodyNodeTag>;
+
+}  // namespace internal
+
 // N.B. To simplify checking binding coverage, please ensure these symbols
 // are defined in `multibody_tree_py.cc` in the same order.
 
@@ -14,11 +24,11 @@ using FrameIndex = TypeSafeIndex<class FrameTag>;
 /// Type used to identify bodies by index in a multibody tree system.
 using BodyIndex = TypeSafeIndex<class BodyTag>;
 
-/// Type used to identify mobilizers by index in a multibody tree system.
-using MobilizerIndex = TypeSafeIndex<class MobilizerTag>;
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::MobilizerIndex;
 
-/// Type used to identify tree nodes by index within a multibody tree system.
-using BodyNodeIndex = TypeSafeIndex<class BodyNodeTag>;
+/// WARNING: This alias will be deprecated on or around 2018/12/20.
+using internal::BodyNodeIndex;
 
 /// Type used to identify force elements by index within a multibody tree
 /// system.

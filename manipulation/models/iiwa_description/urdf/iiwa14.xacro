@@ -501,7 +501,7 @@
 
     <link name="${robot_name}_link_ee_kuka">
     </link>
-    <joint name="tool0_joint" type="fixed">
+    <joint name="${robot_name}_tool0_joint" type="fixed">
       <parent link="${robot_name}_link_7"/>
       <child link="${robot_name}_link_ee"/>
       <origin rpy="0 -1.570796326794897 0" xyz="0 0 0.045"/>

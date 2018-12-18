@@ -641,7 +641,7 @@ Formula Polynomial::operator!=(const Polynomial& p) const {
 
 Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
-  CheckInvariant();
+  DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
 

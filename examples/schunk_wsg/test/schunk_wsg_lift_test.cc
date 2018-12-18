@@ -13,8 +13,8 @@
 /// warning that can indicate if something has changed in the system such that
 /// the final system no longer reproduces the expected baseline behavior.
 
-#include <queue>
 #include <memory>
+#include <queue>
 
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -187,7 +187,9 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   int lifter_instance_id{};
   int gripper_instance_id{};
 
-  const double timestep = (GetParam()) ? 5e-3 : 0.0;
+  // Note: 5e-3 yields a simulation right on the edge of stability. We back off
+  // to 2.5e-3 to balance between test runtime and simulation stability.
+  const double timestep = (GetParam()) ? 2.5e-3 : 0.0;
   systems::RigidBodyPlant<double>* plant =
       builder.AddSystem<systems::RigidBodyPlant<double>>(
           BuildLiftTestTree(&lifter_instance_id, &gripper_instance_id),

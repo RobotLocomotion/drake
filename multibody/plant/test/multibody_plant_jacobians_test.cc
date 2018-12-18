@@ -11,17 +11,16 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 
 namespace multibody {
-namespace multibody_plant {
 
 using test::KukaIiwaModelTests;
 
@@ -154,6 +153,5 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
 }
 
 }  // namespace
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

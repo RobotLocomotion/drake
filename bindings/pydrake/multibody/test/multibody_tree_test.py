@@ -22,6 +22,7 @@ from pydrake.multibody.multibody_tree import (
     world_index,
 )
 from pydrake.multibody.multibody_tree.math import (
+    SpatialAcceleration,
     SpatialVelocity,
 )
 from pydrake.multibody.multibody_tree.multibody_plant import (
@@ -44,6 +45,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 from pydrake.geometry import (
     GeometryId,
     PenetrationAsPointPair,
+    SignedDistancePair,
     SceneGraph,
 )
 from pydrake.systems.framework import DiagramBuilder
@@ -96,19 +98,28 @@ def add_plant_and_scene_graph(builder):
 
 
 class TestMultibodyTreeMath(unittest.TestCase):
-    def test_spatial_velocity(self):
-        velocity = SpatialVelocity()
+    def check_spatial_vector(self, cls, rotation_name, translation_name):
+        vec = cls()
         # - Accessors.
-        self.assertTrue(isinstance(velocity.rotational(), np.ndarray))
-        self.assertTrue(isinstance(velocity.translational(), np.ndarray))
-        self.assertEqual(velocity.rotational().shape, (3,))
-        self.assertEqual(velocity.translational().shape, (3,))
+        self.assertTrue(isinstance(vec.rotational(), np.ndarray))
+        self.assertTrue(isinstance(vec.translational(), np.ndarray))
+        self.assertEqual(vec.rotational().shape, (3,))
+        self.assertEqual(vec.translational().shape, (3,))
         # - Fully-parameterized constructor.
-        w = [0.1, 0.3, 0.5]
-        v = [0., 1., 2.]
-        velocity1 = SpatialVelocity(w=w, v=v)
-        self.assertTrue(np.allclose(velocity1.rotational(), w))
-        self.assertTrue(np.allclose(velocity1.translational(), v))
+        rotation_expected = [0.1, 0.3, 0.5]
+        translation_expected = [0., 1., 2.]
+        kwargs = {
+            rotation_name: rotation_expected,
+            translation_name: translation_expected,
+        }
+        vec1 = cls(**kwargs)
+        self.assertTrue(np.allclose(vec1.rotational(), rotation_expected))
+        self.assertTrue(
+            np.allclose(vec1.translational(), translation_expected))
+
+    def test_spatial_vector_types(self):
+        self.check_spatial_vector(SpatialVelocity, 'w', 'v')
+        self.check_spatial_vector(SpatialAcceleration, 'alpha', 'a')
 
 
 class TestMultibodyTree(unittest.TestCase):
@@ -342,6 +353,12 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_base.translational(),
                                     v_WB.translational()))
 
+        # Compute accelerations.
+        vdot = np.zeros(nv)
+        A_WB_array = plant.CalcSpatialAccelerationsFromVdot(
+            context=context, known_vdot=vdot)
+        self.assertEqual(len(A_WB_array), plant.num_bodies())
+
     def test_multibody_state_access(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
@@ -394,6 +411,32 @@ class TestMultibodyTree(unittest.TestCase):
         # Test existence of context resetting methods.
         plant.SetDefaultContext(context)
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+    def test_model_instance_port_access(self):
+        # Create a MultibodyPlant with a kuka arm and a schunk gripper.
+        # the arm is welded to the world, the gripper is welded to the
+        # arm's end effector.
+        wsg50_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "wsg_50_description/sdf/schunk_wsg_50.sdf")
+        iiwa_sdf_path = FindResourceOrThrow(
+            "drake/manipulation/models/" +
+            "iiwa_description/sdf/iiwa14_no_collision.sdf")
+
+        plant = MultibodyPlant()
+        parser = Parser(plant)
+        iiwa_model = parser.AddModelFromFile(
+            file_name=iiwa_sdf_path, model_name='robot')
+        gripper_model = parser.AddModelFromFile(
+            file_name=wsg50_sdf_path, model_name='gripper')
+        plant.Finalize()
+
+        # Test that we can get an actuation input port and a continuous state
+        # output port.
+        self.assertIsInstance(
+            plant.get_actuation_input_port(iiwa_model), InputPort)
+        self.assertIsInstance(
+            plant.get_continuous_state_output_port(gripper_model), OutputPort)
 
     def test_model_instance_state_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
@@ -737,17 +780,20 @@ class TestMultibodyTree(unittest.TestCase):
         self.assert_sane(Cv, nonzero=False)
         nv = plant.num_velocities()
         vd_d = np.zeros(nv)
-        tau = tree.CalcInverseDynamics(
+        self.check_old_spelling_exists(tree.CalcInverseDynamics)
+        tau = plant.CalcInverseDynamics(
             context, vd_d, MultibodyForces(tree))
         self.assertEqual(tau.shape, (2,))
         self.assert_sane(tau, nonzero=False)
-
+        # - Existence checks.
         self.assertEqual(plant.CalcPotentialEnergy(context), 0)
-        # - Existence check.
         plant.CalcConservativePower(context)
         tau_g = plant.CalcGravityGeneralizedForces(context)
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=False)
+
+        forces = MultibodyForces(tree)
+        plant.CalcForceElementsContribution(context=context, forces=forces)
 
     def test_contact(self):
         # PenetrationAsContactPair
@@ -798,9 +844,22 @@ class TestMultibodyTree(unittest.TestCase):
         # Implicitly require that this should be size 1.
         point_pair, = query_object.ComputePointPairPenetration()
         self.assertIsInstance(point_pair, PenetrationAsPointPair)
+        signed_distance_pair, = query_object.\
+            ComputeSignedDistancePairwiseClosestPoints()
+        self.assertIsInstance(signed_distance_pair, SignedDistancePair)
         inspector = query_object.inspector()
         bodies = {plant.GetBodyFromFrameId(inspector.GetFrameId(id_))
                   for id_ in [point_pair.id_A, point_pair.id_B]}
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+    def test_new_spellings(self):
+        from pydrake.multibody import math
+        math.SpatialVelocity
+        from pydrake.multibody import plant
+        plant.MultibodyPlant
+        from pydrake.multibody import tree
+        tree.Body
+        # Check for soon-to-be deprecated symbols (#9366).
+        self.assertFalse(hasattr(tree, "MultibodyTree"))
