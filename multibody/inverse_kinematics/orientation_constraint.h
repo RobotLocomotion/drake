@@ -83,8 +83,8 @@ class OrientationConstraint : public solvers::Constraint {
   const MultibodyPlant<double>& plant_;
   const FrameIndex frameAbar_index_;
   const FrameIndex frameBbar_index_;
-  const math::RotationMatrix<double>& R_AbarA_;
-  const math::RotationMatrix<double>& R_BbarB_;
+  const math::RotationMatrix<double> R_AbarA_;
+  const math::RotationMatrix<double> R_BbarB_;
   systems::Context<double>* const context_;
 };
 }  // namespace multibody
