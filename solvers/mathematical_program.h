@@ -2134,7 +2134,7 @@ class MathematicalProgram {
    */
   //@{
   /**
-   * This is an overloaded variance of @ref addsdd 
+   * This is an overloaded variant of @ref addsdd
    * "scaled diagonally dominant matrix constraint"
    * @param X The matrix X to be constrained scaled diagonally dominant.
    * X.
@@ -2153,7 +2153,7 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
-   * This is an overloaded variance of @ref addsdd
+   * This is an overloaded variant of @ref addsdd
    * "scaled diagonally dominant matrix constraint"
    * @param X The symmetric matrix X to be constrained scaled diagonally
    * dominant.
