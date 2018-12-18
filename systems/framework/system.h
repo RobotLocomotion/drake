@@ -20,6 +20,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/pointer_cast.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
@@ -63,14 +64,6 @@ class SystemImpl {
   }
 };
 #endif  // DRAKE_DOXYGEN_CXX
-
-// TODO(russt): As discussed with sammy-tri, we could replace this with a
-// a templated class that exposes the required methods from the concept.
-/// Defines the implementation of the stdc++ concept UniformRandomBitGenerator
-/// to be used by the Systems classes.  This is provided as a work-around to
-/// enable the use of the generator in virtual methods (which cannot be
-/// templated on the generator type).
-typedef std::mt19937 RandomGenerator;
 
 /// Base class for all System functionality that is dependent on the templatized
 /// scalar type T for input, state, parameters, and outputs.
