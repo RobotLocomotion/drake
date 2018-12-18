@@ -24,7 +24,7 @@ In any terminal that you're using:
 Update `gen/environment.bzl` to use this Python binary:
 
     build --python_path=<PYTHON>
-    build --action_env=PYTHON_BIN_PATH=<PYTHON>
+    build --action_env=DRAKE_PYTHON_BIN_PATH=<PYTHON>
 
 ## Python3
 

@@ -7,7 +7,7 @@
 
 # N.B. Please keep these alphabetized.
 
-build --action_env=PYTHON_BIN_PATH=@PYTHON_EXECUTABLE@
+build --action_env=DRAKE_PYTHON_BIN_PATH=@PYTHON_EXECUTABLE@
 build --compilation_mode=@BAZEL_COMPILATION_MODE@
 build --python_path=@PYTHON_EXECUTABLE@
 build --symlink_prefix=/

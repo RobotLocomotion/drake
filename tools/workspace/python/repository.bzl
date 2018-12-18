@@ -9,8 +9,9 @@ the "-undefined dynamic_lookup" linker flag, however in the rare cases that
 this would cause an undefined symbol error, a :python_direct_link target is
 provided. On Linux, these targets are identical.
 
-The Python distribution is determined by `--action_env=PYTHON_BIN_PATH=<bin>`,
-which should match Bazel's version (via `--python_path=<bin>`).
+The Python distribution is determined by
+`--action_env=DRAKE_PYTHON_BIN_PATH=<bin>`, which should match Bazel's version
+(via `--python_path=<bin>`).
 
 Note:
     Because of the current limitations with Bazel, we this redundant
@@ -47,7 +48,7 @@ _VERSION_SUPPORT_MATRIX = {
 }
 
 def _repository_python_info(repository_ctx):
-    # Using `PYTHON_BIN_PATH` from the environment, determine:
+    # Using `DRAKE_PYTHON_BIN_PATH` from the environment, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
     # - `site_packages_relpath` - relative to base of FHS
@@ -78,7 +79,7 @@ def _repository_python_info(repository_ctx):
     else:
         python_default = "python{}".format(versions_supported[0])
     python_from_env = repository_ctx.os.environ.get(
-        "PYTHON_BIN_PATH",
+        "DRAKE_PYTHON_BIN_PATH",
         python_default,
     )
     python_path = which(repository_ctx, python_from_env)
@@ -268,7 +269,7 @@ py_library(
 python_repository = repository_rule(
     _impl,
     environ = [
-        "PYTHON_BIN_PATH",
+        "DRAKE_PYTHON_BIN_PATH",
     ],
     local = True,
 )
