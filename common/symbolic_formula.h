@@ -19,6 +19,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -161,12 +162,22 @@ class Formula {
    * std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
 
-  /** Evaluates under a given environment (by default, an empty environment).
+  /** Evaluates using a given environment (by default, an empty environment) and
+   * a random number generator.
    *
    * @throws std::runtime_error if a variable `v` is needed for an evaluation
-   * but not provided by @p env.
+   *                            but not provided by @p env.
+   * @throws std::runtime_error if a random variable is detected while @p
+   *                            random_generator is `nullptr`.
    */
-  bool Evaluate(const Environment& env = Environment{}) const;
+  bool Evaluate(const Environment& env = Environment{},
+                RandomGenerator* random_generator = nullptr) const;
+
+  /** Evaluates using an empty environment and a random number generator.
+   *
+   * See the above overload for the exceptions that it might throw.
+   */
+  bool Evaluate(RandomGenerator* random_generator) const;
 
   /** Returns a copy of this formula replacing all occurrences of @p var
    * with @p e.
