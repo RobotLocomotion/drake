@@ -235,7 +235,9 @@ void init_module(py::module m) {
     py::class_<Class> cls(m, "MultibodyForces", doc.MultibodyForces.doc);
     cls  // BR
         .def(py::init<MultibodyTree<double>&>(), py::arg("model"),
-            doc.MultibodyForces.ctor.doc_1args);
+            doc.MultibodyForces.ctor.doc_1args_model)
+        .def(py::init<MultibodyTreeSystem<double>&>(), py::arg("plant"),
+            doc.MultibodyForces.ctor.doc_1args_plant);
   }
 
   {
