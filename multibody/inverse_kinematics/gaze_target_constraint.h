@@ -45,7 +45,7 @@ class GazeTargetConstraint : public solvers::Constraint {
    * @pre `frameA` and `frameB` must belong to `plant`.
    * @throws std::invalid_argument if `plant` is nullptr.
    * @throws std::invalid_argument if `n_A` is close to zero.
-   * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π].
+   * @throws std::invalid_argument if `cone_half_angle` ∉ [0, π/2].
    * @throws std::invalid_argument if `context` is nullptr.
    */
   GazeTargetConstraint(

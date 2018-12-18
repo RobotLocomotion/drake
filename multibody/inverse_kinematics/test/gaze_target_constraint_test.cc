@@ -127,10 +127,16 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraintConstructorError) {
                            frameB, p_BT, 0.1, plant_context_),
       std::invalid_argument);
 
-  // wrong cone_half_angle
+  // cone_half_angle < 0
   EXPECT_THROW(
       GazeTargetConstraint(plant_, frameA, p_AS, Eigen::Vector3d::Ones(),
                            frameB, p_BT, -0.1, plant_context_),
+      std::invalid_argument);
+
+  // cone_half_angle > π/2
+  EXPECT_THROW(
+      GazeTargetConstraint(plant_, frameA, p_AS, Eigen::Vector3d::Ones(),
+                           frameB, p_BT, 1.6, plant_context_),
       std::invalid_argument);
 }
 
