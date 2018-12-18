@@ -2150,6 +2150,25 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   EXPECT_EQ(Su_from_empty_actuators.rows(), plant.num_actuators());
   EXPECT_EQ(Su_from_empty_actuators.cols(), 0);
 
+  // Verify we can make an actuation matrix for this model.
+  const int nv = plant.num_velocities();
+  const int nu = plant.num_actuators();
+  ASSERT_EQ(nv, 15);  // 6 free dofs + 7 kuka joints + 2 wsg fingers.
+  ASSERT_EQ(nu, 9);   // 7 kuka joints + 2 wsg fingers.
+  const MatrixX<double> B = plant.MakeActuationMatrix();
+  ASSERT_EQ(B.rows(), nv);
+  ASSERT_EQ(B.cols(), nu);
+  MatrixX<double> B_expected = MatrixX<double>::Zero(nv, nu);
+  auto B_iiwa = B_expected.block(
+      6 /* skip floating base */, 0,
+      7 /* iiwa joints */, 7 /* iiwa actuators */);
+  auto B_wsg = B_expected.block(
+      13 /* skip iiwa dofs */, 7 /* skip iiwa actuators */,
+      2 /* wsg joints */, 2 /* wsg actuators */);
+  B_iiwa.setIdentity();
+  B_wsg.setIdentity();
+  EXPECT_TRUE(CompareMatrices(B, B_expected, 0.0, MatrixCompareType::absolute));
+
   // Test old spellings.
   unused(plant.tree().MakeStateSelectorMatrix(std::vector<JointIndex>()));
   unused(plant.tree().MakeActuatorSelectorMatrix(std::vector<JointIndex>()));
