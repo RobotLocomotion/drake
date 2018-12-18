@@ -8,6 +8,7 @@
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/frame.h"
+#include "googletest/include/gtest/gtest.h"
 
 namespace drake {
 
@@ -19,8 +20,6 @@ using test::KukaIiwaModelTests;
 namespace {
 
 TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
-  // Numerical tolerance used to verify numerical results.
-  const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
   SetArbitraryConfiguration();
 
   // An arbitrary point on the end effector frame E.
@@ -62,6 +61,10 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   VectorX<double> tau_id_expected =
       M * vdot + C - Jv_WEp.transpose() * F_Ep_W.get_coeffs();
 
+  // Numerical tolerance used to verify numerical results.
+  // Error loss is expected in both forward kinematics and inverse dynamics
+  // computations since errors accumulate during inboard/outboard passes.
+  const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(
       tau_id, tau_id_expected,
       kTolerance, MatrixCompareType::relative));
