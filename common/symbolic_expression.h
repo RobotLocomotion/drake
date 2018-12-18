@@ -24,6 +24,7 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -853,6 +854,181 @@ struct equal_to<drake::symbolic::Expression> {
 template <>
 struct numeric_limits<drake::symbolic::Expression>
     : public numeric_limits<double> {};
+
+/* Provides std::uniform_real_distribution for symbolic expressions. */
+template <>
+class uniform_real_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  explicit uniform_real_distribution(RealType a, RealType b = 1.0)
+      : a_{std::move(a)}, b_{std::move(b)} {
+    DRAKE_THROW_UNLESS(is_constant(a_));
+    DRAKE_THROW_UNLESS(is_constant(b_));
+    DRAKE_THROW_UNLESS(get_constant_value(a_) <= get_constant_value(b_));
+  }
+
+  uniform_real_distribution() : uniform_real_distribution{0.0} {}
+
+  void reset() {}
+
+  template <class Generator>
+  result_type operator()(Generator&) {
+    // Note that each call to this function should create a new random variable
+    // of type RANDOM_UNIFORM with a unique ID.
+    const drake::symbolic::Variable u{
+        "uniform random", drake::symbolic::Variable::Type::RANDOM_UNIFORM};
+    // Short-circuit the simple (default) case.
+    if (is_zero(a_) && is_one(b_)) {
+      return result_type{u};
+    }
+    return a_ + (b_ - a_) * result_type{u};
+  }
+
+  RealType a() const { return a_; }
+  RealType b() const { return b_; }
+
+  result_type min() const { return a_; }
+  result_type max() const { return b_; }
+
+ private:
+  const RealType a_;
+  const RealType b_;
+};
+
+inline bool operator==(
+    const uniform_real_distribution<drake::symbolic::Expression>& lhs,
+    const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
+  return lhs.a().EqualTo(rhs.a()) && lhs.b().EqualTo(rhs.b());
+}
+
+inline bool operator!=(
+    const uniform_real_distribution<drake::symbolic::Expression>& lhs,
+    const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const uniform_real_distribution<drake::symbolic::Expression>& d) {
+  return os << d.a() << " " << d.b();
+}
+
+/* Provides std::normal_distribution for symbolic expressions. */
+template <>
+class normal_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  normal_distribution() : normal_distribution{0.0} {}
+
+  explicit normal_distribution(RealType mean, RealType stddev = 1.0)
+      : mean_{std::move(mean)}, stddev_{std::move(stddev)} {
+    DRAKE_THROW_UNLESS(is_constant(mean_));
+    DRAKE_THROW_UNLESS(is_constant(stddev_) && get_constant_value(stddev_) > 0);
+  }
+
+  void reset() {}
+
+  template <class Generator>
+  result_type operator()(Generator&) {
+    // Note that each call to this function should create a new random variable
+    // of type RANDOM_GAUSSIAN with a unique ID.
+    const drake::symbolic::Variable v{
+        "normal_random", drake::symbolic::Variable::Type::RANDOM_GAUSSIAN};
+    // Short-circuit the simple (default) case.
+    if (is_zero(mean_) && is_one(stddev_)) {
+      return result_type{v};
+    }
+    return stddev_ * v + mean_;
+  }
+
+  RealType mean() const { return mean_; }
+  RealType stddev() const { return stddev_; }
+
+  result_type min() const { return -std::numeric_limits<double>::max(); }
+  result_type max() const { return std::numeric_limits<double>::max(); }
+
+ private:
+  const RealType mean_;
+  const RealType stddev_;
+};
+
+inline bool operator==(
+    const normal_distribution<drake::symbolic::Expression>& lhs,
+    const normal_distribution<drake::symbolic::Expression>& rhs) {
+  return lhs.mean().EqualTo(rhs.mean()) && lhs.stddev().EqualTo(rhs.stddev());
+}
+
+inline bool operator!=(
+    const normal_distribution<drake::symbolic::Expression>& lhs,
+    const normal_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const normal_distribution<drake::symbolic::Expression>& d) {
+  return os << d.mean() << " " << d.stddev();
+}
+
+/* Provides std::exponential_distribution for symbolic expressions. */
+template <>
+class exponential_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  explicit exponential_distribution(RealType lambda)
+      : lambda_{std::move(lambda)} {
+    DRAKE_THROW_UNLESS(is_constant(lambda_) && get_constant_value(lambda_) > 0);
+  }
+
+  exponential_distribution() : exponential_distribution{1.0} {}
+
+  void reset() {}
+
+  template <class Generator>
+  result_type operator()(Generator&) {
+    // Note that each call to this function should create a new random variable
+    // of type RANDOM_EXPONENTIAL with a unique ID.
+    const drake::symbolic::Variable v{
+        "exponential_random",
+        drake::symbolic::Variable::Type::RANDOM_EXPONENTIAL};
+    // Short-circuit the simple (default) case.
+    if (is_one(lambda_)) {
+      return result_type{v};
+    }
+    return lambda_ * pow(v, lambda_);
+  }
+
+  RealType lambda() const { return lambda_; }
+  result_type min() const { return 0.0; }
+  result_type max() const { return std::numeric_limits<double>::max(); }
+
+ private:
+  const RealType lambda_;
+};
+
+inline bool operator==(
+    const exponential_distribution<drake::symbolic::Expression>& lhs,
+    const exponential_distribution<drake::symbolic::Expression>& rhs) {
+  return lhs.lambda().EqualTo(rhs.lambda());
+}
+
+inline bool operator!=(
+    const exponential_distribution<drake::symbolic::Expression>& lhs,
+    const exponential_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const exponential_distribution<drake::symbolic::Expression>& d) {
+  return os << d.lambda();
+}
 
 }  // namespace std
 
