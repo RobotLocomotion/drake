@@ -78,7 +78,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--python_bin", type=str, required=True,
-        help="Python binary. Must be an absolut path.")
+        help="Python binary. Must be an absolute path.")
     args = parser.parse_args()
 
     workspace_dir = dirname(dirname(abspath(__file__)))
