@@ -8,13 +8,13 @@ If you wish to simply load a model and show it in multiple visualizers, see
 
 Example usages, all executed from the Drake root directory after geometry
 inspector has been built (using, e.g.,`bazel build :geometry_inspector`):
-./bazel-bin/drake/manipulation/util/geometry_inspector \
+./bazel-bin/manipulation/util/geometry_inspector \
   ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
-./bazel-bin/drake/manipulation/util/geometry_inspector \
+./bazel-bin/manipulation/util/geometry_inspector \
   ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
 
-./bazel-bin/drake/manipulation/util/geometry_inspector \
+./bazel-bin/manipulation/util/geometry_inspector \
   ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf \
   --package_path=./manipulation/models/iiwa_description
 """
@@ -93,7 +93,7 @@ def main():
         package_map.PopulateFromFolder(package_path)
 
     # Add the model from the file and finalize the plant.
-    parser.AddModelFromFile(args.filename)
+    parser.AddModelFromFile(filename)
     plant.Finalize(scene_graph)
 
     # Add sliders to set positions of the joints.
