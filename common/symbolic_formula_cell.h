@@ -21,6 +21,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/hash.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
