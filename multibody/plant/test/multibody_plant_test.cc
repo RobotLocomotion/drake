@@ -2161,9 +2161,9 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   MatrixX<double> B_expected = MatrixX<double>::Zero(nv, nu);
   auto B_iiwa = B_expected.block(
       6 /* skip floating base */, 0,
-      7 /* wsg joints */, 7 /* wsg actuators */);
+      7 /* iiwa joints */, 7 /* iiwa actuators */);
   auto B_wsg = B_expected.block(
-      13 /* skip kuka joints */, 7 /* skip kuka actuators */,
+      13 /* skip iiwa dofs */, 7 /* skip iiwa actuators */,
       2 /* wsg joints */, 2 /* wsg actuators */);
   B_iiwa.setIdentity();
   B_wsg.setIdentity();

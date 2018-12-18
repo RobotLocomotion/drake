@@ -2039,6 +2039,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// external actuation corresponding to that actuator. `tau_u` on the other
   /// hand is indexed by generalized velocity indexes according to
   /// `Joint::velocity_start()`.
+  /// @warning B is a permutation matrix. While making a permutation has
+  /// `O(n)` complexity, making a full B matrix has `O(n²)` complexity. For most
+  /// applications this cost can be neglected but it could become significant
+  /// for very large systems.
   MatrixX<T> MakeActuationMatrix() const;
 
   /// Registers `this` plant to serve as a source for an instance of
