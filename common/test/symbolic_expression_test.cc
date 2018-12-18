@@ -3,6 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <random>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -25,6 +26,7 @@ using std::equal_to;
 using std::map;
 using std::ostringstream;
 using std::pair;
+using std::random_device;
 using std::runtime_error;
 using std::set;
 using std::string;
@@ -2099,6 +2101,277 @@ TEST_F(SymbolicExpressionTest, TaylorExpandPartialEnv2) {
   for (const auto& test_env : test_envs) {
     EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
   }
+}
+
+// Tests std::uniform_real_distribution<drake::symbolic::Expression>.
+TEST_F(SymbolicExpressionTest, UniformRealDistribution) {
+  using std::uniform_real_distribution;
+  {
+    // Constructor with zero arguments.
+    uniform_real_distribution<double> double_distribution{};
+    uniform_real_distribution<Expression> symbolic_distribution{};
+    EXPECT_EQ(double_distribution.a(), symbolic_distribution.a().Evaluate());
+    EXPECT_EQ(double_distribution.b(), symbolic_distribution.b().Evaluate());
+  }
+  {
+    // Constructor with a single argument.
+    uniform_real_distribution<double> double_distribution{-10};
+    uniform_real_distribution<Expression> symbolic_distribution{-10};
+    EXPECT_EQ(double_distribution.a(), symbolic_distribution.a().Evaluate());
+    EXPECT_EQ(double_distribution.b(), symbolic_distribution.b().Evaluate());
+  }
+
+  // Constructor with two arguments.
+  uniform_real_distribution<double> double_distribution{-10, 10};
+  uniform_real_distribution<Expression> symbolic_distribution{-10, 10};
+  EXPECT_EQ(double_distribution.a(), symbolic_distribution.a().Evaluate());
+  EXPECT_EQ(double_distribution.b(), symbolic_distribution.b().Evaluate());
+
+  // Exceptions at construction.
+  {
+    EXPECT_THROW(uniform_real_distribution<Expression>(x_, y_), std::exception);
+    EXPECT_THROW(uniform_real_distribution<Expression>(x_, 1.0),
+                 std::exception);
+    EXPECT_THROW(uniform_real_distribution<Expression>(0.0, y_),
+                 std::exception);
+    EXPECT_THROW(uniform_real_distribution<Expression>(1.0, 0.0),
+                 std::exception);
+  }
+
+  // reset() is no-op and shouldn't throw.
+  EXPECT_NO_THROW(symbolic_distribution.reset());
+
+  // The two distributions show the same behavior when the same random number
+  // generator is passed.
+  random_device rd;
+  RandomGenerator generator{rd()};
+  RandomGenerator generator_copy{generator};
+  const double value{symbolic_distribution(generator).Evaluate(&generator)};
+  const double expected{double_distribution(generator_copy)};
+  EXPECT_EQ(value, expected);
+
+  // min() and max().
+  EXPECT_EQ(double_distribution.min(), symbolic_distribution.min().Evaluate());
+  EXPECT_EQ(double_distribution.max(), symbolic_distribution.max().Evaluate());
+
+  // operator==
+  EXPECT_TRUE(uniform_real_distribution<Expression>(0.0, 1.0) ==
+              uniform_real_distribution<Expression>(0.0, 1.0));
+  EXPECT_FALSE(uniform_real_distribution<Expression>(0.0, 1.0) ==
+               uniform_real_distribution<Expression>(-1.0, 1.0));
+  EXPECT_FALSE(uniform_real_distribution<Expression>(0.0, 1.0) ==
+               uniform_real_distribution<Expression>(0.0, 2.0));
+  EXPECT_FALSE(uniform_real_distribution<Expression>(0.0, 1.0) ==
+               uniform_real_distribution<Expression>(-1.0, 2.0));
+
+  // operator!=
+  EXPECT_FALSE(uniform_real_distribution<Expression>(0.0, 1.0) !=
+               uniform_real_distribution<Expression>(0.0, 1.0));
+  EXPECT_TRUE(uniform_real_distribution<Expression>(0.0, 1.0) !=
+              uniform_real_distribution<Expression>(-1.0, 1.0));
+  EXPECT_TRUE(uniform_real_distribution<Expression>(0.0, 1.0) !=
+              uniform_real_distribution<Expression>(0.0, 2.0));
+  EXPECT_TRUE(uniform_real_distribution<Expression>(0.0, 1.0) !=
+              uniform_real_distribution<Expression>(-1.0, 2.0));
+
+  // operator<<
+  ostringstream oss;
+  oss << symbolic_distribution;
+  EXPECT_EQ(oss.str(), "-10 10");
+}
+
+// Tests std::normal_distribution<drake::symbolic::Expression>.
+TEST_F(SymbolicExpressionTest, NormalDistribution) {
+  using std::normal_distribution;
+  {
+    // Constructor with zero arguments.
+    normal_distribution<double> double_distribution{};
+    normal_distribution<Expression> symbolic_distribution{};
+    EXPECT_EQ(double_distribution.mean(),
+              symbolic_distribution.mean().Evaluate());
+    EXPECT_EQ(double_distribution.stddev(),
+              symbolic_distribution.stddev().Evaluate());
+  }
+  {
+    // Constructor with a single argument.
+    normal_distribution<double> double_distribution{-10};
+    normal_distribution<Expression> symbolic_distribution{-10};
+    EXPECT_EQ(double_distribution.mean(),
+              symbolic_distribution.mean().Evaluate());
+    EXPECT_EQ(double_distribution.stddev(),
+              symbolic_distribution.stddev().Evaluate());
+  }
+
+  // Constructor with two arguments.
+  normal_distribution<double> double_distribution{5, 10};
+  normal_distribution<Expression> symbolic_distribution{5, 10};
+  EXPECT_EQ(double_distribution.mean(),
+            symbolic_distribution.mean().Evaluate());
+  EXPECT_EQ(double_distribution.stddev(),
+            symbolic_distribution.stddev().Evaluate());
+
+  // Exceptions at construction.
+  {
+    EXPECT_THROW(normal_distribution<Expression>(x_, y_), std::exception);
+    EXPECT_THROW(normal_distribution<Expression>(x_, 1.0), std::exception);
+    EXPECT_THROW(normal_distribution<Expression>(0.0, y_), std::exception);
+    EXPECT_THROW(normal_distribution<Expression>(1.0, -1.0), std::exception);
+  }
+
+  random_device rd;
+  RandomGenerator generator{rd()};
+  RandomGenerator generator_copy{generator};
+
+  // After reset(), it should reuses the symbolic random variables that it has
+  // created.
+  {
+    std::normal_distribution<Expression> d(0.0, 1.0);
+
+    const Expression e1{d(generator)};
+    const Expression e2{d(generator)};
+    d.reset();
+    const Expression e3{d(generator)};
+    const Expression e4{d(generator)};
+
+    EXPECT_FALSE(e1.EqualTo(e2));
+    EXPECT_TRUE(e1.EqualTo(e3));
+    EXPECT_TRUE(e2.EqualTo(e4));
+  }
+
+  // The two distributions show the same behavior when the same random number
+  // generator is passed.
+  const double value{symbolic_distribution(generator).Evaluate(&generator)};
+  const double expected{double_distribution(generator_copy)};
+  EXPECT_EQ(value, expected);
+
+  // min() and max().
+  EXPECT_EQ(symbolic_distribution.min().Evaluate(),
+            -std::numeric_limits<double>::infinity());
+  EXPECT_EQ(symbolic_distribution.max().Evaluate(),
+            +std::numeric_limits<double>::infinity());
+
+  // operator== and operator!=.
+  {
+    std::normal_distribution<Expression> d1(0.0, 1.0);
+    std::normal_distribution<Expression> d2(d1);
+
+    // d1 and d2 have the same parameters and the same internal states.
+    EXPECT_TRUE(d1 == d2);
+    EXPECT_FALSE(d1 != d2);
+
+    const Expression e1_1{d1(generator)};
+    const Expression e1_2{d1(generator)};
+
+    // The internal states of d1 has changed.
+    EXPECT_FALSE(d1 == d2);
+    EXPECT_TRUE(d1 != d2);
+
+    const Expression e2_1{d2(generator)};
+    const Expression e2_2{d2(generator)};
+
+    // Now d1 and d2 have the same internal states.
+    EXPECT_TRUE(d1 == d2);
+    EXPECT_FALSE(d1 != d2);
+
+    // Note that {e1_1, e1_2} and {e2_1, e2_2} are the same.
+    EXPECT_TRUE(e1_1.EqualTo(e2_1));
+    EXPECT_TRUE(e1_2.EqualTo(e2_2));
+
+    // After resetting d2, d1 and d2 are not the same anymore.
+    d2.reset();
+    EXPECT_FALSE(d1 == d2);
+    EXPECT_TRUE(d1 != d2);
+
+    // After resetting d1 as well, d1 and d2 are identical.
+    d1.reset();
+    EXPECT_TRUE(d1 == d2);
+    EXPECT_FALSE(d1 != d2);
+
+    // Note that the two newly created distributions have the same parameters,
+    // however, they are considered NOT identical.
+    EXPECT_FALSE(normal_distribution<Expression>(0.0, 1.0) ==
+                 normal_distribution<Expression>(0.0, 1.0));
+    EXPECT_TRUE(normal_distribution<Expression>(0.0, 1.0) !=
+                normal_distribution<Expression>(0.0, 1.0));
+  }
+
+  // operator<<
+  ostringstream oss;
+  oss << symbolic_distribution;
+  EXPECT_EQ(oss.str(), "5 10");
+}
+
+// Tests std::exponential_distribution<drake::symbolic::Expression>.
+TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
+  using std::exponential_distribution;
+  {
+    // Constructor with zero arguments.
+    exponential_distribution<double> double_distribution{};
+    exponential_distribution<Expression> symbolic_distribution{};
+    EXPECT_EQ(double_distribution.lambda(),
+              symbolic_distribution.lambda().Evaluate());
+  }
+
+  // Constructor with a single argument.
+  exponential_distribution<double> double_distribution{5.0};
+  exponential_distribution<Expression> symbolic_distribution{5.0};
+  EXPECT_EQ(double_distribution.lambda(),
+            symbolic_distribution.lambda().Evaluate());
+
+  // Exceptions at construction.
+  {
+    EXPECT_THROW(exponential_distribution<Expression>(+x_), std::exception);
+    EXPECT_THROW(exponential_distribution<Expression>(-3.0), std::exception);
+  }
+
+  // reset() is no-op and shouldn't throw.
+  EXPECT_NO_THROW(symbolic_distribution.reset());
+
+  // The two distributions show the same behavior when the same random number
+  // generator is passed.
+  random_device rd;
+  RandomGenerator generator{rd()};
+  RandomGenerator generator_copy{generator};
+  const double value{symbolic_distribution(generator).Evaluate(&generator)};
+  const double expected{double_distribution(generator_copy)};
+  EXPECT_EQ(value, expected);
+
+  // min() and max().
+  EXPECT_EQ(symbolic_distribution.min().Evaluate(), 0.0);
+  EXPECT_EQ(symbolic_distribution.max().Evaluate(),
+            +std::numeric_limits<double>::infinity());
+
+  // operator==
+  EXPECT_TRUE(exponential_distribution<Expression>(2.0) ==
+              exponential_distribution<Expression>(2.0));
+  EXPECT_FALSE(exponential_distribution<Expression>(2.0) ==
+               exponential_distribution<Expression>(3.0));
+
+  // operator!=
+  EXPECT_FALSE(exponential_distribution<Expression>(2.0) !=
+               exponential_distribution<Expression>(2.0));
+  EXPECT_TRUE(exponential_distribution<Expression>(2.0) !=
+              exponential_distribution<Expression>(3.0));
+
+  // operator<<
+  ostringstream oss;
+  oss << symbolic_distribution;
+  EXPECT_EQ(oss.str(), "5");
+}
+
+TEST_F(SymbolicExpressionTest, EvaluateExpressionsIncludingRandomVariables) {
+  using std::normal_distribution;
+  random_device rd;
+  RandomGenerator generator{rd()};
+  std::normal_distribution<Expression> d(3.0, 4.0);
+
+  const Expression e1{d(generator)};
+  const Expression e2{x_ * e1 - y_ * e1};
+  Environment env1{{{var_x_, 1.0}, {var_y_, 1.0}}};
+
+  // Since x_ and y_ are 1.0, e2 should be reduced to e1 - e1, then zero
+  // eventually.
+  EXPECT_EQ(e2.Evaluate(env1, &generator), 0.0);
 }
 
 }  // namespace
