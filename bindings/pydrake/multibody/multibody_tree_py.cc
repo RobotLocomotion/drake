@@ -10,18 +10,19 @@
 #include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
 #include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/math/spatial_vector.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
-#include "drake/multibody/multibody_tree/multibody_forces.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_info.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/math/spatial_vector.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/parsing/sdf_parser.h"
+#include "drake/multibody/plant/contact_info.h"
+#include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_forces.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
 namespace pydrake {
@@ -69,29 +70,26 @@ void init_module(py::module m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
+  m.doc() =
+      "Bindings for MultibodyTree.\n\n"
+      "Warning:\n   This module will soon be deprecated. Please use "
+      "``pydrake.multibody.tree`` instead.";
+
   // To simplify checking binding coverage, these are defined in the same order
   // as `multibody_tree_indexes.h`.
-  // TODO(jamiesnape): Extract documentation automatically.
-  BindTypeSafeIndex<FrameIndex>(m, "FrameIndex",
-      "Type used to identify frames by index in a multibody tree system.");
-  BindTypeSafeIndex<BodyIndex>(m, "BodyIndex",
-      "Type used to identify bodies by index in a multibody tree system.");
-  BindTypeSafeIndex<MobilizerIndex>(m, "MobilizerIndex",
-      "Type used to identify mobilizers by index in a multibody tree system.");
-  BindTypeSafeIndex<BodyNodeIndex>(m, "BodyNodeIndex",
-      "Type used to identify tree nodes by index within a multibody tree "
-      "system.");
-  BindTypeSafeIndex<ForceElementIndex>(m, "ForceElementIndex",
-      "Type used to identify force elements by index within a multibody tree "
-      "system.");
-  BindTypeSafeIndex<JointIndex>(m, "JointIndex",
-      "Type used to identify joints by index within a multibody tree system.");
-  BindTypeSafeIndex<JointActuatorIndex>(m, "JointActuatorIndex",
-      "Type used to identify actuators by index within a multibody tree "
-      "system.");
-  BindTypeSafeIndex<ModelInstanceIndex>(m, "ModelInstanceIndex",
-      "Type used to identify model instances by index within a multibody tree "
-      "system.");
+  BindTypeSafeIndex<FrameIndex>(m, "FrameIndex", doc.FrameIndex.doc);
+  BindTypeSafeIndex<BodyIndex>(m, "BodyIndex", doc.BodyIndex.doc);
+  BindTypeSafeIndex<MobilizerIndex>(
+      m, "MobilizerIndex", doc.internal.MobilizerIndex.doc);
+  BindTypeSafeIndex<BodyNodeIndex>(
+      m, "BodyNodeIndex", doc.internal.BodyNodeIndex.doc);
+  BindTypeSafeIndex<ForceElementIndex>(
+      m, "ForceElementIndex", doc.ForceElementIndex.doc);
+  BindTypeSafeIndex<JointIndex>(m, "JointIndex", doc.JointIndex.doc);
+  BindTypeSafeIndex<JointActuatorIndex>(
+      m, "JointActuatorIndex", doc.JointActuatorIndex.doc);
+  BindTypeSafeIndex<ModelInstanceIndex>(
+      m, "ModelInstanceIndex", doc.ModelInstanceIndex.doc);
   m.def("world_index", &world_index, doc.world_index.doc);
 
   // Frames.
@@ -418,36 +416,68 @@ void init_module(py::module m) {
   }
 }
 
+// Binds any child classes of the `SpatialVector` mixin.
+template <typename PyClass>
+void BindSpatialVectorMixin(PyClass* pcls) {
+  constexpr auto& doc = pydrake_doc.drake.multibody;
+  using Class = typename PyClass::type;
+  auto& cls = *pcls;
+  cls  // BR
+      .def("rotational",
+          [](const Class* self) -> const Vector3<T>& {
+            return self->rotational();
+          },
+          py_reference_internal, doc.SpatialVector.rotational.doc)
+      .def("translational",
+          [](const Class* self) -> const Vector3<T>& {
+            return self->translational();
+          },
+          py_reference_internal, doc.SpatialVector.translational.doc);
+}
+
 void init_math(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  m.doc() = "MultibodyTree math functionality.";
+  m.doc() =
+      "Multibody math functionality.\n\n"
+      "Warning:\n    This module will soon be deprecated. Please use "
+      "``pydrake.multibody.math`` instead.";
 
-  py::class_<SpatialVector<SpatialVelocity, T>>(
-      m, "SpatialVector", doc.SpatialVector.doc)
-      .def("rotational",
-          [](const SpatialVector<SpatialVelocity, T>* self)
-              -> const Vector3<T>& { return self->rotational(); },
-          py_reference_internal, doc.SpatialVector.rotational.doc)
-      .def("translational",
-          [](const SpatialVector<SpatialVelocity, T>* self)
-              -> const Vector3<T>& { return self->translational(); },
-          py_reference_internal, doc.SpatialVector.translational.doc);
-
-  py::class_<SpatialVelocity<T>, SpatialVector<SpatialVelocity, T>>(
-      m, "SpatialVelocity")
-      .def(py::init(), doc.SpatialVelocity.ctor.doc_3)
-      .def(py::init<const Eigen::Ref<const Vector3<T>>&,
-               const Eigen::Ref<const Vector3<T>>&>(),
-          py::arg("w"), py::arg("v"), doc.SpatialVelocity.ctor.doc_4);
+  {
+    using Class = SpatialVelocity<T>;
+    constexpr auto& cls_doc = doc.SpatialVelocity;
+    py::class_<Class> cls(m, "SpatialVelocity", cls_doc.doc);
+    BindSpatialVectorMixin(&cls);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_3)
+        .def(py::init<const Eigen::Ref<const Vector3<T>>&,
+                 const Eigen::Ref<const Vector3<T>>&>(),
+            py::arg("w"), py::arg("v"), cls_doc.ctor.doc_4);
+  }
+  {
+    using Class = SpatialAcceleration<T>;
+    constexpr auto& cls_doc = doc.SpatialAcceleration;
+    py::class_<Class> cls(m, "SpatialAcceleration", cls_doc.doc);
+    BindSpatialVectorMixin(&cls);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_3)
+        .def(py::init<const Eigen::Ref<const Vector3<T>>&,
+                 const Eigen::Ref<const Vector3<T>>&>(),
+            py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_4);
+  }
 }
 
 void init_multibody_plant(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
+
+  m.doc() =
+      "Multibody plant functionality.\n\n"
+      "Warning:\n   This module will soon be deprecated. Please use "
+      "``pydrake.multibody.plant`` instead.";
 
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
@@ -637,6 +667,25 @@ void init_multibody_plant(py::module m) {
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
             doc.MultibodyPlant.CalcJacobianSpatialVelocity.doc)
+        .def("CalcSpatialAccelerationsFromVdot",
+            [](const Class* self, const Context<T>& context,
+                const VectorX<T>& known_vdot) {
+              std::vector<SpatialAcceleration<T>> A_WB_array(
+                  self->num_bodies());
+              self->CalcSpatialAccelerationsFromVdot(
+                  context, known_vdot, &A_WB_array);
+              return A_WB_array;
+            },
+            py::arg("context"), py::arg("known_vdot"),
+            doc.MultibodyPlant.CalcSpatialAccelerationsFromVdot.doc)
+        .def("CalcInverseDynamics", &Class::CalcInverseDynamics,
+            py::arg("context"), py::arg("known_vdot"),
+            py::arg("external_forces"),
+            doc.MultibodyPlant.CalcInverseDynamics.doc)
+        .def("CalcForceElementsContribution",
+            &Class::CalcForceElementsContribution, py::arg("context"),
+            py::arg("forces"),
+            doc.MultibodyPlant.CalcForceElementsContribution.doc)
         .def("CalcPotentialEnergy", &Class::CalcPotentialEnergy,
             py::arg("context"), doc.MultibodyPlant.CalcPotentialEnergy.doc)
         .def("CalcConservativePower", &Class::CalcConservativePower,
@@ -812,7 +861,7 @@ void init_multibody_plant(py::module m) {
         .def("world_frame", &Class::world_frame, py_reference_internal,
             doc.MultibodyPlant.world_frame.doc)
         .def("tree", &Class::tree, py_reference_internal,
-            pydrake_doc.drake.multibody.MultibodyTreeSystem.tree.doc)
+            pydrake_doc.drake.multibody.internal.MultibodyTreeSystem.tree.doc)
         .def("is_finalized", &Class::is_finalized,
             doc.MultibodyPlant.is_finalized.doc)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
@@ -975,12 +1024,19 @@ void init_multibody_plant(py::module m) {
         .def("contact_info", &Class::contact_info, py::arg("i"));
     pysystems::AddValueInstantiation<Class>(m);
   }
-}
+}  // NOLINT(readability/fn_size)
 
-void init_parsing(py::module m) {
+void init_parsing_deprecated(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody.parsing;
+
+  m.doc() =
+      "Multibody parsing functionality.\n\n"
+      "Warning:\n   This module will soon be deprecated. Please use "
+      "``pydrake.multibody.parsing`` instead.";
+
+  // N.B. This module is deprecated; add all new methods to `parsing_py.cc`.
 
   // Stub in a deprecation shim for the Parser class.
   // TODO(jwnimmer-tri) Remove this stub on or about 2019-01-01.
@@ -1041,20 +1097,22 @@ void init_all(py::module m) {
       "from pydrake.multibody.multibody_tree.multibody_plant import *\n"
       "from pydrake.multibody.multibody_tree.parsing import *\n",
       py::globals(), vars);
+  m.doc() =
+      "Warning:\n   ``pydrake.multibody.multibody_tree.all`` will soon "
+      "be deprecated.";
 }
 
 }  // namespace
 
 PYBIND11_MODULE(multibody_tree, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
-  m.doc() = "MultibodyTree functionality.";
 
   // TODO(eric.cousineau): Split this into separate files. See discussion in
   // #8282 for info relating to the current implementation.
   init_module(m);
   init_math(m.def_submodule("math"));
   init_multibody_plant(m.def_submodule("multibody_plant"));
-  init_parsing(m.def_submodule("parsing"));
+  init_parsing_deprecated(m.def_submodule("parsing"));
   init_all(m.def_submodule("all"));
 }
 

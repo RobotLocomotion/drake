@@ -7,10 +7,8 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace test {
 
-using drake::multibody::multibody_plant::MultibodyPlant;
 using Eigen::Vector3d;
 
 template<typename T>
@@ -97,10 +95,8 @@ AxiallySymmetricFreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }
 
 }  // namespace test
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::multibody_tree::test::
-    AxiallySymmetricFreeBodyPlant)
+    class ::drake::multibody::test::AxiallySymmetricFreeBodyPlant)

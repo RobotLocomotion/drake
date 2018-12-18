@@ -13,7 +13,6 @@
 
 namespace drake {
 namespace multibody {
-namespace multibody_tree {
 namespace {
 
 using Eigen::Matrix3d;
@@ -100,6 +99,5 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
 }
 
 }  // namespace
-}  // namespace multibody_tree
 }  // namespace multibody
 }  // namespace drake

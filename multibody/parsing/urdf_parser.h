@@ -18,7 +18,7 @@ DRAKE_DEPRECATED(
 inline ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
   return detail::AddModelFromUrdfFile(
       file_name, model_name, plant, scene_graph);
@@ -29,7 +29,7 @@ DRAKE_DEPRECATED(
     "drake::multibody::Parser instead.")
 inline ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
-    multibody_plant::MultibodyPlant<double>* plant,
+    MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
   return detail::AddModelFromUrdfFile(
       file_name, "", plant, scene_graph);

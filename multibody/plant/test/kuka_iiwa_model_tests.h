@@ -12,10 +12,10 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -23,12 +23,10 @@ namespace drake {
 using math::RigidTransform;
 using math::RollPitchYaw;
 using math::RotationMatrix;
-using multibody::multibody_plant::MultibodyPlant;
 using systems::Context;
 using std::unique_ptr;
 
 namespace multibody {
-namespace multibody_plant {
 namespace test {
 
 // Fixture to perform a number of computational tests on a KUKA Iiwa model.
@@ -158,6 +156,5 @@ class KukaIiwaModelTests : public ::testing::Test {
 };
 
 }  // namespace test
-}  // namespace multibody_plant
 }  // namespace multibody
 }  // namespace drake

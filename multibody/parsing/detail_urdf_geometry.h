@@ -9,8 +9,8 @@
 #include <tinyxml2.h>
 
 #include "drake/geometry/geometry_instance.h"
-#include "drake/multibody/multibody_tree/multibody_plant/coulomb_friction.h"
 #include "drake/multibody/parsing/package_map.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 
 namespace drake {
 namespace multibody {
@@ -52,7 +52,7 @@ geometry::GeometryInstance ParseCollision(
     const std::string& parent_element_name,
     const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
-    multibody_plant::CoulombFriction<double>* friction);
+    CoulombFriction<double>* friction);
 
 }  /// namespace detail
 }  /// namespace multibody

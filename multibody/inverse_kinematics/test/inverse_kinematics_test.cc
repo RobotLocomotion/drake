@@ -47,7 +47,7 @@ class TwoFreeBodiesTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<multibody_plant::MultibodyPlant<double>> two_bodies_plant_;
+  std::unique_ptr<MultibodyPlant<double>> two_bodies_plant_;
   const Frame<double>& body1_frame_;
   const Frame<double>& body2_frame_;
   InverseKinematics ik_;

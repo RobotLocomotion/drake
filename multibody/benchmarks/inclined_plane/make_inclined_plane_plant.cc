@@ -1,7 +1,7 @@
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -11,12 +11,6 @@ namespace inclined_plane {
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using multibody_plant::CoulombFriction;
-using multibody::multibody_plant::MultibodyPlant;
-using multibody::RigidBody;
-using multibody::SpatialInertia;
-using multibody::UniformGravityFieldElement;
-using multibody::UnitInertia;
 using Eigen::AngleAxisd;
 
 std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(

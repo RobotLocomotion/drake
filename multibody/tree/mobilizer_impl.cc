@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T, int  nq, int nv>
 std::unique_ptr<internal::BodyNode<T>> MobilizerImpl<T, nq, nv>::CreateBodyNode(
@@ -30,16 +31,17 @@ class MobilizerImpl3x3 : public MobilizerImpl<T, 3, 3> {};
 template <typename T>
 class MobilizerImpl7x6 : public MobilizerImpl<T, 7, 6> {};
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MobilizerImpl0x0)
+    class ::drake::multibody::internal::MobilizerImpl0x0)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MobilizerImpl1x1)
+    class ::drake::multibody::internal::MobilizerImpl1x1)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MobilizerImpl2x2)
+    class ::drake::multibody::internal::MobilizerImpl2x2)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MobilizerImpl3x3)
+    class ::drake::multibody::internal::MobilizerImpl3x3)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::MobilizerImpl7x6)
+    class ::drake::multibody::internal::MobilizerImpl7x6)

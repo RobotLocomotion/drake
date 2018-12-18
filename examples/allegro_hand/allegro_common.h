@@ -7,7 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_allegro_status.hpp"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace examples {
@@ -33,7 +33,7 @@ void SetPositionControlledGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
 /// @param Sy the matrix to match the output torque for the hand joint
 /// actuators in the desired order into the input actuation of the plant.
 void GetControlPortMapping(
-    const multibody::multibody_plant::MultibodyPlant<double>& plant,
+    const multibody::MultibodyPlant<double>& plant,
     MatrixX<double>* Sx, MatrixX<double>* Sy);
 
 /// Defines the desired ordering of the finger joints by name. The fingers are

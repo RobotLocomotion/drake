@@ -11,7 +11,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
-using drake::multibody::multibody_tree::test_utilities::SpatialKinematicsPVA;
+using test_utilities::SpatialKinematicsPVA;
 using SpatialForced = SpatialForce<double>;
 using Vector7d = Eigen::Matrix<double, 7, 1>;
 

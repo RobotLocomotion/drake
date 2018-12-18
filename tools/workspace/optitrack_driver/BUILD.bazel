@@ -12,6 +12,8 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# N.B. We do not need to branch on Python3 since we have Python2 lcmtypes
+# available.
 install_files(
     name = "install_optitrack_client",
     dest = "bin",

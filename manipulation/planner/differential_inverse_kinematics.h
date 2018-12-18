@@ -13,7 +13,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -341,7 +341,7 @@ inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * be set to v, otherwise it will be nullopt.
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::multibody_plant::MultibodyPlant<double>& robot,
+    const multibody::MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
@@ -365,7 +365,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * be set to v, otherwise it will be nullopt.
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::multibody_plant::MultibodyPlant<double>& robot,
+    const multibody::MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,

@@ -10,7 +10,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 namespace drake {
 namespace systems {

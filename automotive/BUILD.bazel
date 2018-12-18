@@ -103,7 +103,7 @@ drake_cc_library(
         "//common/trajectories:piecewise_polynomial",
         "//common/trajectories:piecewise_quaternion",
         "//math:geometric_transform",
-        "//multibody/multibody_tree/math:spatial_velocity",
+        "//multibody/math:spatial_velocity",
     ],
 )
 

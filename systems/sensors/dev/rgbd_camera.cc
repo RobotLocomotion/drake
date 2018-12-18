@@ -1,5 +1,6 @@
 #include "drake/systems/sensors/dev/rgbd_camera.h"
 
+#include <algorithm>
 #include <limits>
 #include <string>
 #include <utility>
@@ -74,12 +75,13 @@ RgbdCamera::RgbdCamera(const std::string& name, FrameId parent_frame,
   camera_base_pose_port_ = &this->DeclareVectorOutputPort(
       "X_WB", rendering::PoseVector<double>(), &RgbdCamera::CalcPoseVector);
 
-  const double kDepth16UOverflowDistance =
-      std::numeric_limits<uint16_t>::max() / 1000.;
-  if (properties.z_far > kDepth16UOverflowDistance) {
+  const float kMaxValidDepth16UInMM =
+      (std::numeric_limits<uint16_t>::max() - 1) / 1000.;
+  if (properties.z_far > kMaxValidDepth16UInMM) {
     drake::log()->warn(
-        "Max depth is {}, larger than {}, depth_image_16u output will overflow",
-        properties.z_far, kDepth16UOverflowDistance);
+        "Specified max depth is {} > max valid depth for 16 bits {}. "
+        "depth_image_16u might not be able to capture the full depth range.",
+        properties.z_far, kMaxValidDepth16UInMM);
   }
 }
 
@@ -141,10 +143,13 @@ void RgbdCamera::CalcDepthImage16U(const Context<double>& context,
   ImageDepth32F depth32(depth_image->width(), depth_image->height());
   CalcDepthImage32F(context, &depth32);
   // Convert to mm and 16bits.
+  const float kDepth16UOverflowDistance =
+      std::numeric_limits<uint16_t>::max() / 1000.;
   for (int w = 0; w < depth_image->width(); w++) {
     for (int h = 0; h < depth_image->height(); h++) {
-      depth_image->at(w, h)[0] =
-          static_cast<uint16_t>(depth32.at(w, h)[0] * 1000);
+      const double dist =
+          std::min(depth32.at(w, h)[0], kDepth16UOverflowDistance);
+      depth_image->at(w, h)[0] = static_cast<uint16_t>(dist * 1000);
     }
   }
 }

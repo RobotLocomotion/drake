@@ -22,6 +22,7 @@ from pydrake.multibody.multibody_tree import (
     world_index,
 )
 from pydrake.multibody.multibody_tree.math import (
+    SpatialAcceleration,
     SpatialVelocity,
 )
 from pydrake.multibody.multibody_tree.multibody_plant import (
@@ -97,19 +98,28 @@ def add_plant_and_scene_graph(builder):
 
 
 class TestMultibodyTreeMath(unittest.TestCase):
-    def test_spatial_velocity(self):
-        velocity = SpatialVelocity()
+    def check_spatial_vector(self, cls, rotation_name, translation_name):
+        vec = cls()
         # - Accessors.
-        self.assertTrue(isinstance(velocity.rotational(), np.ndarray))
-        self.assertTrue(isinstance(velocity.translational(), np.ndarray))
-        self.assertEqual(velocity.rotational().shape, (3,))
-        self.assertEqual(velocity.translational().shape, (3,))
+        self.assertTrue(isinstance(vec.rotational(), np.ndarray))
+        self.assertTrue(isinstance(vec.translational(), np.ndarray))
+        self.assertEqual(vec.rotational().shape, (3,))
+        self.assertEqual(vec.translational().shape, (3,))
         # - Fully-parameterized constructor.
-        w = [0.1, 0.3, 0.5]
-        v = [0., 1., 2.]
-        velocity1 = SpatialVelocity(w=w, v=v)
-        self.assertTrue(np.allclose(velocity1.rotational(), w))
-        self.assertTrue(np.allclose(velocity1.translational(), v))
+        rotation_expected = [0.1, 0.3, 0.5]
+        translation_expected = [0., 1., 2.]
+        kwargs = {
+            rotation_name: rotation_expected,
+            translation_name: translation_expected,
+        }
+        vec1 = cls(**kwargs)
+        self.assertTrue(np.allclose(vec1.rotational(), rotation_expected))
+        self.assertTrue(
+            np.allclose(vec1.translational(), translation_expected))
+
+    def test_spatial_vector_types(self):
+        self.check_spatial_vector(SpatialVelocity, 'w', 'v')
+        self.check_spatial_vector(SpatialAcceleration, 'alpha', 'a')
 
 
 class TestMultibodyTree(unittest.TestCase):
@@ -342,6 +352,12 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_base.rotational(), v_WB.rotational()))
         self.assertTrue(np.allclose(v_base.translational(),
                                     v_WB.translational()))
+
+        # Compute accelerations.
+        vdot = np.zeros(nv)
+        A_WB_array = plant.CalcSpatialAccelerationsFromVdot(
+            context=context, known_vdot=vdot)
+        self.assertEqual(len(A_WB_array), plant.num_bodies())
 
     def test_multibody_state_access(self):
         file_name = FindResourceOrThrow(
@@ -764,17 +780,20 @@ class TestMultibodyTree(unittest.TestCase):
         self.assert_sane(Cv, nonzero=False)
         nv = plant.num_velocities()
         vd_d = np.zeros(nv)
-        tau = tree.CalcInverseDynamics(
+        self.check_old_spelling_exists(tree.CalcInverseDynamics)
+        tau = plant.CalcInverseDynamics(
             context, vd_d, MultibodyForces(tree))
         self.assertEqual(tau.shape, (2,))
         self.assert_sane(tau, nonzero=False)
-
+        # - Existence checks.
         self.assertEqual(plant.CalcPotentialEnergy(context), 0)
-        # - Existence check.
         plant.CalcConservativePower(context)
         tau_g = plant.CalcGravityGeneralizedForces(context)
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=False)
+
+        forces = MultibodyForces(tree)
+        plant.CalcForceElementsContribution(context=context, forces=forces)
 
     def test_contact(self):
         # PenetrationAsContactPair
@@ -834,3 +853,13 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
+
+    def test_new_spellings(self):
+        from pydrake.multibody import math
+        math.SpatialVelocity
+        from pydrake.multibody import plant
+        plant.MultibodyPlant
+        from pydrake.multibody import tree
+        tree.Body
+        # Check for soon-to-be deprecated symbols (#9366).
+        self.assertFalse(hasattr(tree, "MultibodyTree"))

@@ -12,15 +12,15 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/force_element.h"
-#include "drake/multibody/multibody_tree/joints/weld_joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/multibody_tree_system.h"
-#include "drake/multibody/multibody_tree/rigid_body.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/implicit_stribeck_solver.h"
+#include "drake/multibody/tree/force_element.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -1097,7 +1097,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @}
 
   /// @name Model instance accessors
-  /// Many functions on %MultibodyTree expect vectors of tree state or
+  /// Many of this class's methods expect vectors of tree state or
   /// joint actuator inputs which encompass the entire tree.  Methods
   /// in this section are convenience accessors for the portion of
   /// those vectors which apply to a single model instance only.
@@ -1105,14 +1105,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Given the actuation values `u_instance` for all actuators in
   /// `model_instance`, this method sets the actuation vector u for the entire
-  /// MultibodyTree model to which this actuator belongs to. This method throws
+  /// model to which this actuator belongs to. This method throws
   /// an exception if the size of `u_instance` is not equal to the number of
   /// degrees of freedom of all of the actuated joints in `model_instance`.
   /// @param[in] u_instance Actuation values for the actuators. It must be of
   ///   size equal to the number of degrees of freedom of all of the actuated
   ///   joints in `model_instance`.
   /// @param[out] u
-  ///   The vector containing the actuation values for the entire MultibodyTree.
+  ///   The vector containing the actuation values for the entire model.
   void SetActuationInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
@@ -1121,9 +1121,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Returns a vector of generalized positions for `model_instance` from a
-  /// vector `q_array` of generalized positions for the entire MultibodyTree
+  /// vector `q_array` of generalized positions for the entire model
   /// model.  This method throws an exception if `q` is not of size
-  /// MultibodyTree::num_positions().
+  /// MultibodyPlant::num_positions().
   VectorX<T> GetPositionsFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q) const {
@@ -1133,8 +1133,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Sets the vector of generalized positions for `model_instance` in
   /// `q` using `q_instance`, leaving all other elements in the array
   /// untouched. This method throws an exception if `q` is not of size
-  /// MultibodyTree::num_positions() or `q_instance` is not of size
-  /// `MultibodyTree::num_positions(model_instance)`.
+  /// MultibodyPlant::num_positions() or `q_instance` is not of size
+  /// `MultibodyPlant::num_positions(model_instance)`.
   void SetPositionsInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_instance,
@@ -1143,9 +1143,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Returns a vector of generalized velocities for `model_instance` from a
-  /// vector `v` of generalized velocities for the entire MultibodyTree
+  /// vector `v` of generalized velocities for the entire MultibodyPlant
   /// model.  This method throws an exception if the input array is not of size
-  /// MultibodyTree::num_velocities().
+  /// MultibodyPlant::num_velocities().
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v_array) const {
@@ -1155,8 +1155,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Sets the vector of generalized velocities for `model_instance` in
   /// `v` using `v_instance`, leaving all other elements in the array
   /// untouched. This method throws an exception if `v` is not of size
-  /// MultibodyTree::num_velocities() or `v_instance` is not of size
-  /// `MultibodyTree::num_positions(model_instance)`.
+  /// MultibodyPlant::num_velocities() or `v_instance` is not of size
+  /// `MultibodyPlant::num_positions(model_instance)`.
   void SetVelocitiesInArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& model_v,
@@ -1205,8 +1205,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// and expressed in frame B using the transformation `p_AQ = X_AB⋅p_BQ`.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q of the model.
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
   /// @param[in] frame_A
   ///   The target frame A in the computed relative transform `X_AB`.
   /// @param[in] frame_B
@@ -1226,8 +1226,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// as a function of the generalized positions q of the model.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q of the model.
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q of the model.
   /// @param[in] frame_B
   ///   The frame B in which the positions `p_BQi` of a set of points `Qi` are
   ///   given.
@@ -1260,7 +1260,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Evaluate the pose `X_WB` of a body B in the world frame W.
   /// @param[in] context
-  ///   The context storing the state of the %MultibodyTree model.
+  ///   The context storing the state of the model.
   /// @param[in] body_B
   ///   The body B for which the pose is requested.
   /// @retval X_WB
@@ -1275,7 +1275,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Evaluate the spatial velocity `V_WB` of a body B in the world frame W.
   /// @param[in] context
-  ///   The context storing the state of the %MultibodyTree model.
+  ///   The context storing the state of the model.
   /// @param[in] body_B
   ///   The body B for which the spatial velocity is requested.
   /// @returns V_WB
@@ -1710,10 +1710,94 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
   }
 
+  /// Given the state of this model in `context` and a known vector
+  /// of generalized accelerations `known_vdot`, this method computes the
+  /// spatial acceleration `A_WB` for each body as measured and expressed in the
+  /// world frame W.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of this model.
+  /// @param[in] known_vdot
+  ///   A vector with the generalized accelerations for the full model.
+  /// @param[out] A_WB_array
+  ///   A pointer to a valid, non nullptr, vector of spatial accelerations
+  ///   containing the spatial acceleration `A_WB` for each body. It must be of
+  ///   size equal to the number of bodies in the model. On output,
+  ///   entries will be ordered by BodyIndex.
+  /// @throws std::exception if A_WB_array is not of size `num_bodies()`.
+  void CalcSpatialAccelerationsFromVdot(
+      const systems::Context<T>& context,
+      const VectorX<T>& known_vdot,
+      std::vector<SpatialAcceleration<T>>* A_WB_array) const;
+
+  /// Given the state of this model in `context` and a known vector
+  /// of generalized accelerations `vdot`, this method computes the
+  /// set of generalized forces `tau` that would need to be applied in order to
+  /// attain the specified generalized accelerations.
+  /// Mathematically, this method computes: <pre>
+  ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
+  /// </pre>
+  /// where `M(q)` is the model's mass matrix, `C(q, v)v` is the bias
+  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
+  /// of a vector applied generalized forces. The last term is a summation over
+  /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
+  /// body B at `Bo` which gets projected into the space of generalized forces
+  /// with the geometric Jacobian `J_WB(q)` which maps generalized velocities
+  /// into body B spatial velocity as `V_WB = J_WB(q)v`.
+  /// This method does not compute explicit expressions for the mass matrix nor
+  /// for the bias term, which would be of at least `O(n²)` complexity, but it
+  /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
+  /// number of bodies in the model. The explicit formation of the
+  /// mass matrix `M(q)` would require the calculation of `O(n²)` entries while
+  /// explicitly forming the product `C(q, v) * v` could require up to `O(n³)`
+  /// operations (see [Featherstone 1987, §4]), depending on the implementation.
+  /// The recursive Newton-Euler algorithm is the most efficient currently known
+  /// general method for solving inverse dynamics [Featherstone 2008].
+  ///
+  /// @param[in] context
+  ///   The context containing the state of the model.
+  /// @param[in] known_vdot
+  ///   A vector with the known generalized accelerations `vdot` for the full
+  ///   model. Use the provided Joint APIs in order to access entries into this
+  ///   array.
+  /// @param[in] external_forces
+  ///   A set of forces to be applied to the system either as body spatial
+  ///   forces `Fapp_Bo_W` or generalized forces `tau_app`, see MultibodyForces
+  ///   for details.
+  ///
+  /// @returns the vector of generalized forces that would need to be applied to
+  /// the mechanical system in order to achieve the desired acceleration given
+  /// by `known_vdot`.
+  VectorX<T> CalcInverseDynamics(
+      const systems::Context<T>& context,
+      const VectorX<T>& known_vdot,
+      const MultibodyForces<T>& external_forces) const {
+    return tree().CalcInverseDynamics(context, known_vdot, external_forces);
+  }
+
+  /// Computes the combined force contribution of ForceElement objects in the
+  /// model. A ForceElement can apply forces as a spatial force per body or as
+  /// generalized forces, depending on the ForceElement model.
+  /// ForceElement contributions are a function of the state and time only.
+  /// The output from this method can immediately be used as input to
+  /// CalcInverseDynamics() to include the effect of applied forces by force
+  /// elements.
+  ///
+  /// @param[in] context
+  ///   The context containing the state of this model.
+  /// @param[out] forces
+  ///   A pointer to a valid, non nullptr, multibody forces object. On output
+  ///   `forces` will store the forces exerted by all the ForceElement
+  ///   objects in the model.
+  /// @throws std::exception if `forces` is null or not compatible with this
+  ///   model, per MultibodyForces::CheckInvariants().
+  void CalcForceElementsContribution(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   /// Computes and returns the total potential energy stored in `this` multibody
   /// model for the configuration given by `context`.
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
+  ///   The context containing the state of the model.
   /// @returns The total potential energy stored in `this` multibody model.
   T CalcPotentialEnergy(const systems::Context<T>& context) const {
     return tree().CalcPotentialEnergy(context);
@@ -1742,8 +1826,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// into body B spatial velocity as `V_WB = J_WB(q)v`.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model. It stores
-  ///   the generalized positions q and the generalized velocities v.
+  ///   The context containing the state of the model. It stores the
+  ///   generalized positions q and the generalized velocities v.
   /// @param[out] Cv
   ///   On output, `Cv` will contain the product `C(q, v)v`. It must be a valid
   ///   (non-null) pointer to a column vector in `ℛⁿ` with n the number of
@@ -1767,7 +1851,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// system.
   ///
   /// @param[in] context
-  ///   The context storing the state of the multibody model.
+  ///   The context storing the state of the model.
   /// @returns tau_g
   ///   A vector containing the generalized forces due to gravity.
   ///   The generalized forces are consistent with the vector of
@@ -1792,13 +1876,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// calculates `q̇ = N(q)⋅v`.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
+  ///   The context containing the state of the model.
   /// @param[in] v
-  ///   A vector of of generalized velocities for `this` %MultibodyTree model.
+  ///   A vector of of generalized velocities for this model.
   ///   This method aborts if v is not of size num_velocities().
   /// @param[out] qdot
   ///   A valid (non-null) pointer to a vector in `ℝⁿ` with n being the number
-  ///   of generalized positions in `this` %MultibodyTree model,
+  ///   of generalized positions in this model,
   ///   given by `num_positions()`. This method aborts if `qdot` is nullptr
   ///   or if it is not of size num_positions().
   ///
@@ -1825,7 +1909,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// calculates `v = N⁺(q)⋅q̇`.
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
+  ///   The context containing the state of the model.
   /// @param[in] qdot
   ///   A vector containing the time derivatives of the generalized positions.
   ///   This method aborts if `qdot` is not of size num_positions().
@@ -1843,12 +1927,76 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     tree().MapQDotToVelocity(context, qdot, v);
   }
 
+  /// This method allows users to map the state of `this` model, x, into a
+  /// vector of selected state xₛ with a given preferred ordering.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Sx such that `xₛ = Sx⋅x`. The size nₛ of xₛ is always smaller or equal
+  /// than the size of the full state x. That is, a user might be interested in
+  /// only a given portion of the full state x.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in xₛ via `user_to_joint_index_map`.
+  /// The selected state is built such that selected positions are followed
+  /// by selected velocities, as in `xₛ = [qₛ, vₛ]`.
+  /// The positions in qₛ are a concatenation of the positions for each joint
+  /// in the order they appear in `user_to_joint_index_map`. That is, the
+  /// positions for `user_to_joint_index_map[0]` are first, followed by the
+  /// positions for `user_to_joint_index_map[1]`, etc. Similarly for the
+  /// selected velocities vₛ.
+  ///
+  /// @throws std::logic_error if there are repeated indexes in
+  /// `user_to_joint_index_map`.
+  // TODO(amcastro-tri): consider having an extra `free_body_index_map`
+  // so that users could also re-order free bodies if they wanted to.
+  MatrixX<double> MakeStateSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    return tree().MakeStateSelectorMatrix(user_to_joint_index_map);
+  }
+
+  /// This method allows user to map a vector `uₛ` containing the actuation
+  /// for a set of selected actuators into the vector u containing the actuation
+  /// values for `this` full model.
+  /// The mapping, or selection, is returned in the form of a selector matrix
+  /// Su such that `u = Su⋅uₛ`. The size nₛ of uₛ is always smaller or equal
+  /// than the size of the full vector of actuation values u. That is, a user
+  /// might be interested in only a given subset of actuators in the model.
+  ///
+  /// This selection matrix is particularly useful when adding PID control
+  /// on a portion of the state, see systems::controllers::PidController.
+  ///
+  /// A user specifies the preferred order in uₛ via
+  /// `user_to_actuator_index_map`. The actuation values in uₛ are a
+  /// concatenation of the values for each actuator in the order they appear in
+  /// `user_to_actuator_index_map`.
+  /// The full vector of actuation values u is ordered by JointActuatorIndex.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointActuatorIndex>& user_to_actuator_index_map) const {
+    return tree().MakeActuatorSelectorMatrix(user_to_actuator_index_map);
+  }
+
+  /// Alternative signature to build an actuation selector matrix `Su` such
+  /// that `u = Su⋅uₛ`, where u is the vector of actuation values for the full
+  /// model (ordered by JointActuatorIndex) and uₛ is a vector of actuation
+  /// values for the actuators acting on the joints listed by
+  /// `user_to_joint_index_map`. It is assumed that all joints referenced by
+  /// `user_to_joint_index_map` are actuated.
+  /// See MakeActuatorSelectorMatrix(const std::vector<JointActuatorIndex>&) for
+  /// details.
+  /// @throws std::logic_error if any of the joints in
+  /// `user_to_joint_index_map` does not have an actuator.
+  MatrixX<double> MakeActuatorSelectorMatrix(
+      const std::vector<JointIndex>& user_to_joint_index_map) const {
+    return tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
+  }
+
   /// Performs the computation of the mass matrix `M(q)` of the model using
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().
   ///
   /// @param[in] context
-  ///   The context containing the state of the %MultibodyTree model.
+  ///   The context containing the state of the model.
   /// @param[out] H
   ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
   ///   number of generalized velocities (num_velocities()) of the model.
@@ -2499,8 +2647,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @}
 
   /// Sets default values in the context. For mobilizers, this method sets them
-  /// to their _zero_ configuration according to
-  /// Mobilizer::set_zero_configuration().
+  /// to their _zero_ state according to Mobilizer::set_zero_state().
   void SetDefaultContext(systems::Context<T>* context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(context != nullptr);
@@ -2529,6 +2676,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
+
+  // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
+  // WARNING: This may *not* result in a plant with a valid state. Use
+  // sparingly to test forwarding methods when the overhead is high to
+  // reproduce the testing (e.g. benchmarks).
+  explicit MultibodyPlant(
+      std::unique_ptr<MultibodyTree<T>> tree_in, double time_step = 0);
 
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
@@ -2998,10 +3152,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 /// @endcond
 
 #ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Deprecate and then remove this transitional namespace.
+// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
 namespace multibody_plant {
 template <typename T>
-using MultibodyPlant = ::drake::multibody::MultibodyPlant<T>;
+using MultibodyPlant
+    DRAKE_DEPRECATED("Spell as drake::multibody::MultibodyPlant instead.")
+    = ::drake::multibody::MultibodyPlant<T>;
 }  // namespace multibody_plant
 #endif  // DRAKE_DOXYGEN_CXX
 
