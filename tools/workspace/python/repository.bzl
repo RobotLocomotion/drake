@@ -88,15 +88,18 @@ def _repository_python_info(repository_ctx):
     version_major, _ = version.split(".")
 
     # Perform sanity checks on supplied Python binary.
-    prefix = execute_or_fail(
-        repository_ctx,
-        [python, "-c", "import sys; print(sys.prefix)"],
-    ).stdout.strip()
-    if not python.startswith(prefix + "/"):
+    if os_result.is_macos:
+        expected_dir = "/usr/local/bin/"
+    else:
+        expected_dir = execute_or_fail(
+            repository_ctx,
+            [python, "-c", "import sys; print(sys.prefix)"],
+        ).stdout.strip() + "/bin/"
+    if not python.startswith(expected_dir):
         print((
-            "\n\nWARNING: '{}' does not fall under its prefix, '{}'\n" +
-            "  This may cause configuration errors."
-        ).format(python, prefix))
+            "\n\nWARNING: '{}' is not in its expected directory, '{}'" +
+            "\n  This may cause configuration errors."
+        ).format(python, expected_dir))
     implementation = execute_or_fail(
         repository_ctx,
         [
