@@ -23,6 +23,9 @@ class SignalLog {
   */
   explicit SignalLog(int input_size, int batch_allocation_size = 1000);
 
+  /** Returns the number of samples taken since construction or last reset(). */
+  int num_samples() const { return num_samples_; }
+
   /** Accesses the logged time stamps. */
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {
     return const_cast<const VectorX<T>&>(sample_times_).head(num_samples_);

@@ -1012,8 +1012,6 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 
   // Create a Simulator and use it to advance time until t=3*h.
   Simulator<double> simulator(*diagram);
-  simulator.set_publish_every_time_step(false);
-  simulator.set_publish_at_initialization(false);
   simulator.StepTo(3 * ExampleDiscreteSystem::kPeriod);
 
   testing::internal::CaptureStdout();  // Not in example.
@@ -1090,10 +1088,6 @@ GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
   const double t_final = 10.0;
   const double initial_value = std::sin(-f * h);  // = sin(f*-1*h)
   Simulator<double> simulator(*diagram);
-
-  // TODO(sherm1) Remove these when #10269 lands (fix to SignalLogger).
-  simulator.set_publish_at_initialization(false);
-  simulator.set_publish_every_time_step(false);
 
   simulator.get_mutable_context().get_mutable_discrete_state()[0] =
       initial_value;
