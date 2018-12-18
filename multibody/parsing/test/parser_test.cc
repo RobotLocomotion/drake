@@ -106,6 +106,29 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
       ".*does not exist.*");
 }
 
+GTEST_TEST(FileParserTest, PackageMapTest) {
+  // We start with the world and default model instances (model_instance.h
+  // explains why there are two).
+  MultibodyPlant<double> plant;
+  Parser parser(&plant);
+  ASSERT_EQ(plant.num_model_instances(), 2);
+
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/automotive/models/prius/prius.sdf");
+  const std::string package_path = FindResourceOrThrow(
+      "drake/automotive/models/prius");
+
+  // Attempt to read in the SDF file without setting the package map first.
+  parser.AddModelFromFile(full_sdf_filename);
+
+  // Try again.
+  parser.package_map().PopulateFromFolder(package_path);
+  parser.AddModelFromFile(full_sdf_filename);
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant.num_model_instances(), 3);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

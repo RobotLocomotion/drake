@@ -35,6 +35,9 @@ inline ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr) {
+  PackageMap package_map;
+  const std::string full_path = detail::GetFullPath(file_name);
+  package_map.PopulateUpstreamToDrake(full_path);
   return detail::AddModelFromUrdfFile(
       file_name, "", package_map, plant, scene_graph);
 }
