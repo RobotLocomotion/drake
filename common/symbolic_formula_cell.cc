@@ -139,7 +139,9 @@ bool FormulaTrue::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaTrue::Evaluate(const Environment&) const { return true; }
+bool FormulaTrue::Evaluate(const Environment&, RandomGenerator* const) const {
+  return true;
+}
 
 Formula FormulaTrue::Substitute(const Substitution&) const {
   return Formula::True();
@@ -166,7 +168,9 @@ bool FormulaFalse::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaFalse::Evaluate(const Environment&) const { return false; }
+bool FormulaFalse::Evaluate(const Environment&, RandomGenerator* const) const {
+  return false;
+}
 
 Formula FormulaFalse::Substitute(const Substitution&) const {
   return Formula::False();
@@ -204,7 +208,10 @@ bool FormulaVar::Less(const FormulaCell& f) const {
   return var_.less(f_var.var_);
 }
 
-bool FormulaVar::Evaluate(const Environment& env) const {
+bool FormulaVar::Evaluate(const Environment& env,
+                          RandomGenerator* const) const {
+  // Note that all the random variables should have a double value so we do not
+  // handle them here.
   const Environment::const_iterator it{env.find(var_)};
   if (it != env.cend()) {
     return static_cast<bool>(it->second);
@@ -231,9 +238,10 @@ const Variable& FormulaVar::get_variable() const { return var_; }
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
 
-bool FormulaEq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) ==
-         get_rhs_expression().Evaluate(env);
+bool FormulaEq::Evaluate(const Environment& env,
+                         RandomGenerator* const random_generator) const {
+  return get_lhs_expression().Evaluate(env, random_generator) ==
+         get_rhs_expression().Evaluate(env, random_generator);
 }
 
 Formula FormulaEq::Substitute(const Substitution& s) const {
@@ -249,9 +257,10 @@ ostream& FormulaEq::Display(ostream& os) const {
 FormulaNeq::FormulaNeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Neq, e1, e2} {}
 
-bool FormulaNeq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) !=
-         get_rhs_expression().Evaluate(env);
+bool FormulaNeq::Evaluate(const Environment& env,
+                          RandomGenerator* const random_generator) const {
+  return get_lhs_expression().Evaluate(env, random_generator) !=
+         get_rhs_expression().Evaluate(env, random_generator);
 }
 
 Formula FormulaNeq::Substitute(const Substitution& s) const {
@@ -267,9 +276,10 @@ ostream& FormulaNeq::Display(ostream& os) const {
 FormulaGt::FormulaGt(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Gt, e1, e2} {}
 
-bool FormulaGt::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) >
-         get_rhs_expression().Evaluate(env);
+bool FormulaGt::Evaluate(const Environment& env,
+                         RandomGenerator* const random_generator) const {
+  return get_lhs_expression().Evaluate(env, random_generator) >
+         get_rhs_expression().Evaluate(env, random_generator);
 }
 
 Formula FormulaGt::Substitute(const Substitution& s) const {
@@ -285,9 +295,10 @@ ostream& FormulaGt::Display(ostream& os) const {
 FormulaGeq::FormulaGeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Geq, e1, e2} {}
 
-bool FormulaGeq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) >=
-         get_rhs_expression().Evaluate(env);
+bool FormulaGeq::Evaluate(const Environment& env,
+                          RandomGenerator* const random_generator) const {
+  return get_lhs_expression().Evaluate(env, random_generator) >=
+         get_rhs_expression().Evaluate(env, random_generator);
 }
 
 Formula FormulaGeq::Substitute(const Substitution& s) const {
@@ -303,9 +314,10 @@ ostream& FormulaGeq::Display(ostream& os) const {
 FormulaLt::FormulaLt(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Lt, e1, e2} {}
 
-bool FormulaLt::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) <
-         get_rhs_expression().Evaluate(env);
+bool FormulaLt::Evaluate(const Environment& env,
+                         RandomGenerator* const random_generator) const {
+  return get_lhs_expression().Evaluate(env, random_generator) <
+         get_rhs_expression().Evaluate(env, random_generator);
 }
 
 Formula FormulaLt::Substitute(const Substitution& s) const {
@@ -321,9 +333,10 @@ ostream& FormulaLt::Display(ostream& os) const {
 FormulaLeq::FormulaLeq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Leq, e1, e2} {}
 
-bool FormulaLeq::Evaluate(const Environment& env) const {
-  return get_lhs_expression().Evaluate(env) <=
-         get_rhs_expression().Evaluate(env);
+bool FormulaLeq::Evaluate(const Environment& env,
+                          RandomGenerator* const random_generator) const {
+  return get_lhs_expression().Evaluate(env, random_generator) <=
+         get_rhs_expression().Evaluate(env, random_generator);
 }
 
 Formula FormulaLeq::Substitute(const Substitution& s) const {
@@ -344,9 +357,10 @@ FormulaAnd::FormulaAnd(const set<Formula>& formulas)
 FormulaAnd::FormulaAnd(const Formula& f1, const Formula& f2)
     : NaryFormulaCell{FormulaKind::And, set<Formula>{f1, f2}} {}
 
-bool FormulaAnd::Evaluate(const Environment& env) const {
+bool FormulaAnd::Evaluate(const Environment& env,
+                          RandomGenerator* const random_generator) const {
   for (const auto& f : get_operands()) {
-    if (!f.Evaluate(env)) {
+    if (!f.Evaluate(env, random_generator)) {
       return false;
     }
   }
@@ -377,9 +391,10 @@ FormulaOr::FormulaOr(const set<Formula>& formulas)
 FormulaOr::FormulaOr(const Formula& f1, const Formula& f2)
     : NaryFormulaCell{FormulaKind::Or, set<Formula>{f1, f2}} {}
 
-bool FormulaOr::Evaluate(const Environment& env) const {
+bool FormulaOr::Evaluate(const Environment& env,
+                         RandomGenerator* const random_generator) const {
   for (const auto& f : get_operands()) {
-    if (f.Evaluate(env)) {
+    if (f.Evaluate(env, random_generator)) {
       return true;
     }
   }
@@ -427,8 +442,9 @@ bool FormulaNot::Less(const FormulaCell& f) const {
   return f_.Less(not_f.f_);
 }
 
-bool FormulaNot::Evaluate(const Environment& env) const {
-  return !f_.Evaluate(env);
+bool FormulaNot::Evaluate(const Environment& env,
+                          RandomGenerator* const random_generator) const {
+  return !f_.Evaluate(env, random_generator);
 }
 
 Formula FormulaNot::Substitute(const Substitution& s) const {
@@ -473,7 +489,7 @@ bool FormulaForall::Less(const FormulaCell& f) const {
   return this->f_.Less(forall_f.f_);
 }
 
-bool FormulaForall::Evaluate(const Environment&) const {
+bool FormulaForall::Evaluate(const Environment&, RandomGenerator* const) const {
   // Given ∀ x1, ..., xn. F, check if there is a counterexample satisfying
   // ¬F. If exists, it returns false. Otherwise, return true.
   // That is, it returns !check(∃ x1, ..., xn. ¬F)
@@ -521,9 +537,10 @@ bool FormulaIsnan::Less(const FormulaCell& f) const {
   return e_.Less(f_isnan.e_);
 }
 
-bool FormulaIsnan::Evaluate(const Environment& env) const {
+bool FormulaIsnan::Evaluate(const Environment& env,
+                            RandomGenerator* const random_generator) const {
   // Note that it throws std::runtime_error if it detects NaN during evaluation.
-  return std::isnan(e_.Evaluate(env));
+  return std::isnan(e_.Evaluate(env, random_generator));
 }
 
 Formula FormulaIsnan::Substitute(const Substitution& s) const {
@@ -621,7 +638,8 @@ bool FormulaPositiveSemidefinite::Less(const FormulaCell& f) const {
   // clang-format on
 }
 
-bool FormulaPositiveSemidefinite::Evaluate(const Environment&) const {
+bool FormulaPositiveSemidefinite::Evaluate(const Environment&,
+                                           RandomGenerator* const) const {
   // Need to check if xᵀ m x ≥ * 0 for all vector x ∈ ℝⁿ.
   // TODO(Soonho): implement this when we have SMT/delta-SMT support.
   throw runtime_error(

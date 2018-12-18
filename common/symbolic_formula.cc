@@ -76,9 +76,10 @@ bool Formula::Less(const Formula& f) const {
   return ptr_->Less(*(f.ptr_));
 }
 
-bool Formula::Evaluate(const Environment& env) const {
+bool Formula::Evaluate(const Environment& env,
+                       RandomGenerator* const random_generator) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Evaluate(env);
+  return ptr_->Evaluate(env, random_generator);
 }
 
 Formula Formula::Substitute(const Variable& var, const Expression& e) const {
