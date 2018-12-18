@@ -3,6 +3,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <random>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -2099,6 +2100,36 @@ TEST_F(SymbolicExpressionTest, TaylorExpandPartialEnv2) {
   for (const auto& test_env : test_envs) {
     EXPECT_NEAR((expanded - expected).Evaluate(test_env), 0.0, 1e-10);
   }
+}
+
+// NOTE: These tests are for a spike-test. I will add more in the next push.
+TEST_F(SymbolicExpressionTest, RandomVariables) {
+  std::random_device rd;
+  std::mt19937 generator{rd()};
+
+  const Variable u1{"u1", Variable::Type::RANDOM_UNIFORM};
+  const Variable u2{"u2", Variable::Type::RANDOM_UNIFORM};
+
+  const Variable g1{"u1", Variable::Type::RANDOM_GAUSSIAN};
+
+  const Variable exp1{"e1", Variable::Type::RANDOM_EXPONENTIAL};
+
+  std::cerr << (u1 + u2).Evaluate(Environment{}, &generator) << "\n";
+  std::cerr << (g1 * exp1).Evaluate(Environment{}, &generator) << "\n";
+
+  // u1 and u2 should be canceled away.
+  EXPECT_EQ((u1 + u2 - u1 - u2).Evaluate(Environment{}, &generator), 0.0);
+}
+
+TEST_F(SymbolicExpressionTest, RandomDistribution) {
+  std::random_device rd;
+  std::mt19937 generator{rd()};
+
+  std::uniform_real_distribution<Expression> d{5.0, 10.0};
+  const Expression e{d(generator)};
+  const double v{e.Evaluate(Environment{}, &generator)};
+
+  EXPECT_TRUE(5.0 <= v && v < 10.0);
 }
 
 }  // namespace
