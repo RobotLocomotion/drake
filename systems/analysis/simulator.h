@@ -672,8 +672,8 @@ T GetPreviousNormalizedValue(const T& value) {
   const double min_normalized = std::numeric_limits<double>::min();
   const T& value_mod = (abs(value) < min_normalized) ? 0.0 : value;
 
-  // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf) returns
-  // denormalized number for these two values.
+  // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf)
+  // returns denormalized numbers for these two values.
   if (value_mod == 0.0)
     return -std::numeric_limits<double>::min();
   if (value_mod == min_normalized)
