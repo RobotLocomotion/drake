@@ -163,8 +163,6 @@ drake_cc_googletest(
     name = "valkyrie_simulation_test",
     srcs = ["test/valkyrie_simulation_test.cc"],
     data = [":models"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    flaky = 1,
     deps = [":valkyrie_simulator"],
 )
 

@@ -133,8 +133,6 @@ drake_cc_binary(
     # causes timeouts in kcov.
     tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.01"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    test_rule_flaky = 1,
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -159,8 +157,6 @@ drake_cc_binary(
     # causes timeouts in kcov.
     tags = ["no_kcov"],
     test_rule_args = ["--simulation_sec=0.1 --target_realtime_rate=0.0"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    test_rule_flaky = 1,
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
@@ -279,8 +275,6 @@ sh_test(
     data = [
         ":dual_iiwa14_polytope_collision.urdf",
     ],
-    # Flaky because LCM self-test can fail (PR #7311)
-    flaky = 1,
     # TODO(kyle.edwards@kitware.com): Re-enable this test when it no longer
     # causes timeouts in kcov.
     tags = ["no_kcov"],

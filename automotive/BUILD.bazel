@@ -533,8 +533,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "automotive_simulator_test",
     data = ["//automotive/models:prod_models"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    flaky = 1,
     deps = [
         "//automotive:automotive_simulator",
         "//automotive:create_trajectory_params",
@@ -757,7 +755,6 @@ drake_cc_googletest(
 
 drake_py_unittest(
     name = "steering_command_driver_test",
-    flaky = 1,
     deps = [
         ":steering_command_driver",
         "@lcm//:lcm-python",
