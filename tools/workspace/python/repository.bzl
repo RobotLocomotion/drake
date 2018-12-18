@@ -63,22 +63,27 @@ def _repository_python_info(repository_ctx):
     # does in `python_configure.bzl` (https://git.io/fx4Pp).
     # N.B. Unfortunately, it does not seem possible to get Bazel's Python
     # interpreter during a repository rule, thus we can only catch mismatch
-    # issues via `//tools/workspace/python:py/python_bin_test`.
-    if os_result.is_macos:
-        version_supported_major, _ = versions_supported[0].split(".")
-
-        # N.B. On Mac, `which python{major}.{minor}` may refer to the system
-        # Python, not Homebrew Python.
-        python_default = "python{}".format(version_supported_major)
-    else:
-        python_default = "python{}".format(versions_supported[0])
-    python_from_env = repository_ctx.os.environ.get(
-        "DRAKE_PYTHON_BIN_PATH",
-        python_default,
-    )
-    python_path = which(repository_ctx, python_from_env)
+    # issues vi `//tools/workspace/python:py/python_bin_test`.
+    # TODO(eric.cousineau): Make this an error once `.bazelrc` stops using
+    # `try-import` for configuration.
+    python_path = repository_ctx.os.environ.get("DRAKE_PYTHON_BIN_PATH")
     if python_path == None:
-        fail("Executable does not exist: {}".format(python_from_env))
+        print(
+            "\n\nWARNING: `--action_env=DRAKE_PYTHON_BIN_PATH` is not set.\n" +
+            "  Please rerun `install_prereqs` in this workspace.\n" +
+            "  This will be required after 2018/01/03.\n\n",
+        )
+        if os_result.is_macos:
+            python_path = "/usr/local/bin/python{}".format(
+                versions_supported[0],
+            )
+        else:
+            python_path = "/usr/bin/python{}".format(versions_supported[0])
+    if not python_path.startswith("/"):
+        fail("`--action_env=DRAKE_PYTHON_BIN_PATH` must provide an " +
+             "absolute path.")
+    if which(repository_ctx, python_path) == None:
+        fail("Executable does not exist: {}".format(python_path))
     python = str(python_path)
     version = execute_or_fail(
         repository_ctx,
@@ -88,18 +93,6 @@ def _repository_python_info(repository_ctx):
     version_major, _ = version.split(".")
 
     # Perform sanity checks on supplied Python binary.
-    if os_result.is_macos:
-        expected_dir = "/usr/local/bin/"
-    else:
-        expected_dir = execute_or_fail(
-            repository_ctx,
-            [python, "-c", "import sys; print(sys.prefix)"],
-        ).stdout.strip() + "/bin/"
-    if not python.startswith(expected_dir):
-        print((
-            "\n\nWARNING: '{}' is not in its expected directory, '{}'" +
-            "\n  This may cause configuration errors.\n\n"
-        ).format(python, expected_dir))
     implementation = execute_or_fail(
         repository_ctx,
         [
@@ -118,9 +111,12 @@ def _repository_python_info(repository_ctx):
     # `virtualenv` installation.
     python_config = "{}-config".format(python)
 
-    # Check if file exists.
+    # Check if neighboring config binary exists.
     if which(repository_ctx, python_config) == None:
-        fail("Executable does not exist: {}".format(python_config))
+        fail((
+            "Cannot find neighboring config executable: {}\n" +
+            "  For interpreter: {}"
+        ).format(python_config, python_path))
 
     # Warn if we do not the correct platform support.
     if version not in versions_supported:
