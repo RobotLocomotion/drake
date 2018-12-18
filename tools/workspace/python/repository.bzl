@@ -12,6 +12,12 @@ provided. On Linux, these targets are identical.
 The Python distribution is determined by `--action_env=PYTHON_BIN_PATH=<bin>`,
 which should match Bazel's version (via `--python_path=<bin>`).
 
+Note:
+    Because of the current limitations with Bazel, we this redundant
+    environment variable to ensure the bindings can detect the proper version
+    of Python. This was purposely chosen to duplicate Tensorflow's setup:
+    https://git.io/fpp7c
+
 Example:
     WORKSPACE:
         load("@drake//tools/workspace/python:repository.bzl", "python_repository")  # noqa
@@ -35,7 +41,7 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:16.04": ["2.7"],
-    "ubuntu:18.04": ["2.7"],
+    "ubuntu:18.04": ["2.7", "3.6"],
     "macos:10.13": ["2.7"],
     "macos:10.14": ["2.7"],
 }
@@ -75,7 +81,10 @@ def _repository_python_info(repository_ctx):
         "PYTHON_BIN_PATH",
         python_default,
     )
-    python = str(which(repository_ctx, python_from_env))
+    python_path = which(repository_ctx, python_from_env)
+    if python_path == None:
+        fail("Executable does not exist: {}".format(python_from_env))
+    python = str(python_path)
     version = execute_or_fail(
         repository_ctx,
         [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
@@ -83,11 +92,37 @@ def _repository_python_info(repository_ctx):
     ).stdout.strip()
     version_major, _ = version.split(".")
 
+    # Perform sanity checks on supplied Python binary.
+    prefix = execute_or_fail(
+        repository_ctx,
+        [python, "-c", "import sys; print(sys.prefix)"],
+    ).stdout.strip()
+    if not python.startswith(prefix + "/bin/"):
+        print((
+            "\n\nWARNING: '{}' does not fall under its prefix, '{}'\n" +
+            "  This may cause configuration errors."
+        ).format(python, prefix))
+    implementation = execute_or_fail(
+        repository_ctx,
+        [
+            python,
+            "-c",
+            "import platform as m; print(m.python_implementation())",
+        ],
+    ).stdout.strip()
+    if implementation != "CPython":
+        fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
+              "supported.").format(python, implementation))
+
     # Development Note: This should generally be the correct configuration. If
     # you are hacking with `virtualenv` (which is officially unsupported),
     # ensure that you manually symlink the matching `*-config` binary in your
     # `virtualenv` installation.
     python_config = "{}-config".format(python)
+
+    # Check if file exists.
+    if which(repository_ctx, python_config) == None:
+        fail("Executable does not exist: {}".format(python_config))
 
     # Warn if we do not the correct platform support.
     if version not in versions_supported:
