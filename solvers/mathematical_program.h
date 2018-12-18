@@ -2114,21 +2114,29 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
+   * @anchor addsdd 
+   * @name     scaled diagonally dominant matrix constraint
    * Adds the constraint that a symmetric matrix is scaled diagonally dominant
    * (sdd). A matrix X is sdd if there exists a diagonal matrix D, such that
    * the product DXD is diagonally dominant with non-negative diagonal entries,
    * namely
    * d(i)X(i, i) ≥ ∑ⱼ |d(j)X(i, j)| ∀ j ≠ i
    * where d(i) = D(i, i).
-   * X being sdd is equivalent to the existence of symmetric matrices Mⁱʲ∈ ℝⁿˣⁿ
+   * X being sdd is equivalent to the existence of symmetric matrices Mⁱʲ∈ ℝⁿˣⁿ,
    * i < j, such that all entries in Mⁱʲ are 0, except Mⁱʲ(i, i), Mⁱʲ(i, j),
    * Mⁱʲ(j, j). (Mⁱʲ(i, i), Mⁱʲ(j, j), Mⁱʲ(i, j)) is in the rotated
-   * Lorentz cone, and X = ∑ᵢⱼ Mⁱʲ
+   * Lorentz cone, and X = ∑ᵢⱼ Mⁱʲ.
+   *
    * The users can refer to "DSOS and SDSOS Optimization: More Tractable
    * Alternatives to Sum of Squares and Semidefinite Optimization" by Amir Ali
    * Ahmadi and Anirudha Majumdar, with arXiv link
    * https://arxiv.org/abs/1706.02586.
-   * @param X The matrix X. We will use 0.5(X+Xᵀ) as the "symmetric version" of
+   */
+  //@{
+  /**
+   * This is an overloaded variant of @ref addsdd
+   * "scaled diagonally dominant matrix constraint"
+   * @param X The matrix X to be constrained scaled diagonally dominant.
    * X.
    * @pre X(i, j) should be a linear expression of decision variables.
    * @return M A vector of vectors of 2 x 2 symmetric matrices M. For i < j,
@@ -2143,6 +2151,20 @@ class MathematicalProgram {
   std::vector<std::vector<Matrix2<symbolic::Expression>>>
   AddScaledDiagonallyDominantMatrixConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
+   * This is an overloaded variant of @ref addsdd
+   * "scaled diagonally dominant matrix constraint"
+   * @param X The symmetric matrix X to be constrained scaled diagonally
+   * dominant.
+   * @return M For i < j M[i][j] contains the slack variables, mentioned in
+   * @ref addsdd "scaled diagonally dominant matrix constraint". For i >= j,
+   * M[i][j] contains dummy variables.
+   */
+  std::vector<std::vector<Matrix2<symbolic::Variable>>>
+  AddScaledDiagonallyDominantMatrixConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Variable>>& X);
+  //@}
 
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
