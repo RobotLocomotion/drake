@@ -110,23 +110,23 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
   MultibodyPlant<double> plant;
-  Parser parser(&plant);
+  geometry::SceneGraph<double> scene_graph;
+  Parser parser(&plant, &scene_graph);
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_sdf_filename = FindResourceOrThrow(
-      "drake/automotive/models/prius/prius.sdf");
+      "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
   const std::string package_path = FindResourceOrThrow(
-      "drake/automotive/models/prius");
+      "drake/multibody/parsing/test/box_package");
 
   // Attempt to read in the SDF file without setting the package map first.
-  parser.AddModelFromFile(full_sdf_filename);
+  DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModelFromFile(full_sdf_filename),
+      std::runtime_error,
+      ".*ERROR: Mesh file name could not be resolved from the provided uri.*");
 
   // Try again.
   parser.package_map().PopulateFromFolder(package_path);
-  parser.AddModelFromFile(full_sdf_filename);
-
-  // Verify the number of model instances.
-  EXPECT_EQ(plant.num_model_instances(), 3);
+  parser.AddModelFromFile(full_sdf_filename, "dummy" /* model name */);
 }
 
 }  // namespace

@@ -55,7 +55,7 @@ ModelInstanceIndex Parser::AddModelFromFile(
     const std::string& model_name) {
   // Always search for a package.xml file, starting the crawl upward from
   // the file's path.
-  package_map_.PopulateUpstreamToDrake(file_name);
+  //package_map_.PopulateUpstreamToDrake(file_name);
   const FileType type = DetermineFileType(file_name);
   if (type == FileType::kSdf) {
     return AddModelFromSdfFile(file_name, model_name, package_map_,

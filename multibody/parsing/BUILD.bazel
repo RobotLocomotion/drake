@@ -259,7 +259,6 @@ drake_cc_googletest(
     name = "parser_test",
     data = [
         ":test_models",
-        "//automotive/models:prod_models",
         "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
