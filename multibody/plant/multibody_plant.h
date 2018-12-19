@@ -3258,16 +3258,13 @@ struct AddMultibodyPlantSceneGraphResult final {
  private:
   // Deter external usage by hiding construction.
   friend AddMultibodyPlantSceneGraphResult AddMultibodyPlantSceneGraph<T>(
-    systems::DiagramBuilder<T>* builder,
-    std::unique_ptr<MultibodyPlant<T>> plant,
+    systems::DiagramBuilder<T>*, std::unique_ptr<MultibodyPlant<T>>,
     std::unique_ptr<geometry::SceneGraph<T>>);
 
-#ifndef DRAKE_DOXYGEN_CXX
   AddMultibodyPlantSceneGraphResult(
       MultibodyPlant<T>* plant_in, geometry::SceneGraph<T>* scene_graph_in)
       : plant(*plant_in), scene_graph(*scene_graph_in),
         plant_ptr(plant_in), scene_graph_ptr(scene_graph_in) {}
-#endif
 
   // Pointers to enable implicit casts for `std::tie()` assignments using
   // `T*&`.
