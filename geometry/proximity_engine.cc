@@ -282,6 +282,64 @@ struct CollisionData {
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
 
+
+// Helps DistanceCallback(). Do it in closed forms for spheres.
+// Otherwise, use FCL GJK/EPA.
+void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
+                              const fcl::CollisionObjectd* b,
+                              const fcl::DistanceRequestd& request,
+                              fcl::DistanceResultd* result) {
+  const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
+  const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
+
+  if ((a_geometry->getNodeType() != fcl::GEOM_SPHERE) ||
+      (b_geometry->getNodeType() != fcl::GEOM_SPHERE)) {
+    fcl::distance(a, b, request, *result);
+  } else {
+    const auto X_WA = a->getTransform();
+    const auto X_WB = b->getTransform();
+    // Positions of the centers of A and B.
+    const Vector3d p_WAo = a->getTranslation();
+    const Vector3d p_WBo = b->getTranslation();
+
+    const fcl::Sphered& a_sphere =
+        *static_cast<const fcl::Sphered*>(a_geometry);
+    const fcl::Sphered& b_sphere =
+        *static_cast<const fcl::Sphered*>(b_geometry);
+    const double r_a = a_sphere.radius;
+    const double r_b = b_sphere.radius;
+
+    const double dist_AB = (p_WAo - p_WBo).norm();
+    const double distance = dist_AB - r_a - r_b;
+
+    // We will treat A and B as concentric if their centers are within a
+    // tolerance.
+    const double kTolerance = 1e-14 * std::max({r_a, r_b, 1.});
+    const bool are_concentric = (dist_AB < kTolerance);
+
+    // Position of center of B in A's frame.
+    const Vector3d p_ABo_A = X_WA.inverse() * p_WBo;
+    // Unit vector in x-direction in A's frame.
+    const Vector3d Ax(1., 0., 0.);
+    // Unit vector in A's frame through the nearest point on A.
+    const Vector3d v_A = (are_concentric)? Ax : p_ABo_A / dist_AB;
+    const auto R_WA = X_WA.rotation();
+    const auto R_WB = X_WB.rotation();
+    // Unit vector in B's frame through the nearest point on B.
+    const Vector3d v_B = - R_WB.inverse() * R_WA * v_A;
+
+    // Na = point on boundary of A nearest to B.
+    const Vector3d p_ANa_A = r_a * v_A;
+    const Vector3d p_WNa = X_WA * p_ANa_A;
+
+    // Nb = point of boundary of B nearest to A.
+    const Vector3d p_BNb_B = r_b * v_B;
+    const Vector3d p_WNb = X_WB * p_BNb_B;
+
+    result->update(distance, a_geometry, b_geometry, -1, -1, p_WNa, p_WNb);
+  }
+}
+
 // The callback function in fcl::distance request. The final unnamed parameter
 // is `dist`, which is used in fcl::distance, that if the distance between two
 // geometries is proved to be greater than `dist` (for example, the smallest
@@ -321,8 +379,7 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 
     fcl::DistanceResultd result;
 
-    // Perform nearphase distance computation.
-    fcl::distance(&fcl_object_A, &fcl_object_B, request, result);
+    ComputeNearphaseDistance(&fcl_object_A, &fcl_object_B, request, &result);
 
     SignedDistancePair<double> nearest_pair;
     nearest_pair.id_A = EncodedData(fcl_object_A).id(geometry_map);
