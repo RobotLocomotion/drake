@@ -1,9 +1,18 @@
+"""
+Ensures that `build --python_path=` and
+`build --action_env=DRAKE_PYTHON_BIN_PATH=` are consistent.
+"""
+
+from __future__ import print_function
 import os
 import sys
 import subprocess
-import unittest
 
-from bazel_python_actionenv import PYTHON_BIN_PATH
+from _bazel_python_actionenv import PYTHON_BIN_PATH
+
+
+def indent(indent, text):
+    return "\n".join([indent + line for line in text.split("\n")])
 
 
 def get_interpreter_info(python):
@@ -17,23 +26,28 @@ def get_interpreter_info(python):
         ".format(sys.prefix, sys.version_info))"]).decode("utf8")
 
 
-class TestPythonBin(unittest.TestCase):
-    def test_bazel_and_env(self):
-        """Ensures that we are supplying consistent options to Bazel.
-        """
-        python_bazel = sys.executable
-        info_bazel = get_interpreter_info(python_bazel)
-        python_actionenv = PYTHON_BIN_PATH
-        info_actionenv = get_interpreter_info(python_actionenv)
-        if info_bazel != info_actionenv:
-            message = (
-                "\n\nMismatch in Python executables:\n"
-                "  bazel --python_path={}\n"
-                "  bazel --action_env=DRAKE_PYTHON_BIN_PATH={}\n"
-                "If you specify one of these, please ensure that you "
-                "specify both.").format(python_bazel, python_actionenv)
-            # In Python2, providing a longMessage will override the useful text
-            # comparison; as a workaround, we'll print out our debugging
-            # message beforehand.
-            print(message)
-            self.assertMultiLineEqual(info_bazel, info_actionenv)
+def main():
+    python_bazel = sys.executable
+    python_actionenv = PYTHON_BIN_PATH
+    info_bazel = get_interpreter_info(python_bazel)
+    info_actionenv = get_interpreter_info(python_actionenv)
+    if info_bazel != info_actionenv:
+        info = dict(
+            python_bazel=python_bazel,
+            info_bazel=indent(4*" ", info_bazel.strip()),
+            python_actionenv=python_actionenv,
+            info_actionenv=indent(4*" ", info_actionenv.strip()),
+        )
+        print("""
+Mismatch in Python executables specified to Bazel:
+  build --python_path={python_bazel}
+{info_bazel}
+  build --action_env=DRAKE_PYTHON_BIN_PATH={python_actionenv}
+{info_actionenv}
+Please rereun `install_prereqs.sh`.
+""".format(**info), file=sys.stderr)
+        sys.exit(1)
+
+
+assert __name__ == "__main__"
+main()

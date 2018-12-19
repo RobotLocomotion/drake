@@ -197,8 +197,12 @@ PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
         content = skylark_content,
         executable = False,
     )
+    repository_ctx.symlink(
+        Label("@drake//tools/workspace/python:test/python_bin_test.py"),
+        "_python_bin_test.py",
+    )
     repository_ctx.file(
-        "bazel_python_actionenv.py",
+        "_bazel_python_actionenv.py",
         content = skylark_content,
         executable = False,
     )
@@ -220,6 +224,9 @@ headers = glob(
 
 cc_library(
     name = "python_headers",
+    # Inject `genrule` test as a dependency for anything that wishes to
+    # generate bindings. See `genrule` below for more information.
+    data = [":python_bin_test_data"],
     hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
@@ -239,14 +246,28 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-py_library(
-    name = "bazel_python_actionenv",
-    srcs = ["bazel_python_actionenv.py"],
+# See `genrule` below.
+py_binary(
+    name = "python_bin_test",
+    main = "_python_bin_test.py",
+    srcs = [
+        "_python_bin_test.py",
+        "_bazel_python_actionenv.py",
+    ],
     imports = ["."],
-    visibility = ["//visibility:public"],
-    testonly = 1,
+    visibility = ["//visibility:private"],
 )
-    """.format(includes, linkopts, linkopts_direct_link)
+
+# Place this test as a `genrule` to (a) test at build time and (b) be able to
+# access Bazel's Python interpreter from a `py_binary` used in `tools`.
+genrule(
+    name = "python_bin_test_data",
+    outs = [".python_bin_test_data"],
+    cmd = "$(location :python_bin_test) > $@",
+    tools = [":python_bin_test"],
+    visibility = ["//visibility:private"],
+)
+""".format(includes, linkopts, linkopts_direct_link)
 
     repository_ctx.file(
         "BUILD.bazel",

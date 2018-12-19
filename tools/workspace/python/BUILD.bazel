@@ -4,11 +4,11 @@
 # neighboring *.bzl file can be loaded elsewhere.
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
-drake_py_unittest(
-    name = "python_bin_test",
-    deps = ["@python//:bazel_python_actionenv"],
+add_lint_tests(
+    python_lint_extra_srcs = [
+        # This test is run as a `genrule` in `repository.bzl` so that it can
+        # check for Python interpreter consistency at build time.
+        "test/python_bin_test.py",
+    ],
 )
-
-add_lint_tests()
