@@ -150,6 +150,8 @@ class Image {
   std::vector<T> data_;
 };
 
+// TODO(jwnimmer-tri) Deprecate these float-only constants; code should be
+// using ImageTraits exclusively (i.e., based on the pixel type).
 /// Set of constants used to represent invalid depth values.
 /// Note that in the case that a depth is not measurable, the constants defined
 /// here are not used. Instead we set the depth to NaN.
@@ -157,7 +159,8 @@ class InvalidDepth {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InvalidDepth)
   /// The depth value when the max sensing range is exceeded.
-  static constexpr float kTooFar{std::numeric_limits<float>::infinity()};
+  static constexpr float kTooFar =
+      ImageTraits<PixelType::kDepth32F>::kTooFar;
 
   /// The depth value when the min sensing range is violated because the
   /// object being sensed is too close. Note that this
@@ -166,7 +169,8 @@ class InvalidDepth {
   /// it results in less devastating bugs when users fail to check for the
   /// lower limit being hit and using negative infinity does not prevent users
   /// from writing bad code.
-  static constexpr float kTooClose{0.f};
+  static constexpr float kTooClose =
+      ImageTraits<PixelType::kDepth32F>::kTooClose;
 };
 
 /// Set of labels used for label image.

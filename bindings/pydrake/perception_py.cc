@@ -55,6 +55,7 @@ void init_perception(py::module m) {
 
   using systems::LeafSystem;
   using systems::sensors::CameraInfo;
+  using systems::sensors::PixelType;
 
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.sensors");
@@ -122,8 +123,10 @@ void init_perception(py::module m) {
     constexpr auto& cls_doc = doc.DepthImageToPointCloud;
     py::class_<Class, LeafSystem<double>>(
         m, "DepthImageToPointCloud", cls_doc.doc)
-        .def(py::init<const CameraInfo&>(), py::arg("camera_info"),
-            cls_doc.ctor.doc_1args)
+        .def(py::init<const CameraInfo&, PixelType, float>(),
+            py::arg("camera_info"),
+            py::arg("pixel_type") = PixelType::kDepth32F,
+            py::arg("scale") = 1.0, cls_doc.ctor.doc_3args)
         .def("depth_image_input_port", &Class::depth_image_input_port,
             py_reference_internal, cls_doc.depth_image_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,
