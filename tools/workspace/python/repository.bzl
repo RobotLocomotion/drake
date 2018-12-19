@@ -9,8 +9,9 @@ the "-undefined dynamic_lookup" linker flag, however in the rare cases that
 this would cause an undefined symbol error, a :python_direct_link target is
 provided. On Linux, these targets are identical.
 
-The Python distribution is determined by `--action_env=PYTHON_BIN_PATH=<bin>`,
-which should match Bazel's version (via `--python_path=<bin>`).
+The Python distribution is determined by
+`--action_env=DRAKE_PYTHON_BIN_PATH=<bin>`, which should match Bazel's version
+(via `--python_path=<bin>`).
 
 Example:
     WORKSPACE:
@@ -35,13 +36,13 @@ load("@drake//tools/workspace:os.bzl", "determine_os")
 
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:16.04": ["2.7"],
-    "ubuntu:18.04": ["2.7"],
+    "ubuntu:18.04": ["2.7", "3.6"],
     "macos:10.13": ["2.7"],
     "macos:10.14": ["2.7"],
 }
 
 def _repository_python_info(repository_ctx):
-    # Using `PYTHON_BIN_PATH` from the environment, determine:
+    # Using `DRAKE_PYTHON_BIN_PATH` from the environment, determine:
     # - `python` - binary path
     # - `python_config` - configuration binary path
     # - `site_packages_relpath` - relative to base of FHS
@@ -63,19 +64,22 @@ def _repository_python_info(repository_ctx):
     # N.B. Unfortunately, it does not seem possible to get Bazel's Python
     # interpreter during a repository rule, thus we can only catch mismatch
     # issues via `//tools/workspace/python:py/python_bin_test`.
-    if os_result.is_macos:
-        version_supported_major, _ = versions_supported[0].split(".")
-
-        # N.B. On Mac, `which python{major}.{minor}` may refer to the system
-        # Python, not Homebrew Python.
-        python_default = "python{}".format(version_supported_major)
-    else:
-        python_default = "python{}".format(versions_supported[0])
-    python_from_env = repository_ctx.os.environ.get(
-        "PYTHON_BIN_PATH",
-        python_default,
-    )
-    python = str(which(repository_ctx, python_from_env))
+    # TODO(eric.cousineau): Make this an error once `.bazelrc` stops using
+    # `try-import` for configuration.
+    python_path = repository_ctx.os.environ.get("DRAKE_PYTHON_BIN_PATH")
+    if python_path == None:
+        if os_result.is_macos:
+            python_path = "/usr/local/bin/python{}".format(
+                versions_supported[0],
+            )
+        else:
+            python_path = "/usr/bin/python{}".format(versions_supported[0])
+    if not python_path.startswith("/"):
+        fail("`--action_env=DRAKE_PYTHON_BIN_PATH` must provide an " +
+             "absolute path.")
+    if which(repository_ctx, python_path) == None:
+        fail("Executable does not exist: {}".format(python_path))
+    python = str(python_path)
     version = execute_or_fail(
         repository_ctx,
         [python, "-c", "from sys import version_info as v; print(\"{}.{}\"" +
@@ -83,11 +87,31 @@ def _repository_python_info(repository_ctx):
     ).stdout.strip()
     version_major, _ = version.split(".")
 
+    # Perform sanity checks on supplied Python binary.
+    implementation = execute_or_fail(
+        repository_ctx,
+        [
+            python,
+            "-c",
+            "import platform as m; print(m.python_implementation())",
+        ],
+    ).stdout.strip()
+    if implementation != "CPython":
+        fail(("The implementation of '{}' is '{}', but only 'CPython' is " +
+              "supported.").format(python, implementation))
+
     # Development Note: This should generally be the correct configuration. If
     # you are hacking with `virtualenv` (which is officially unsupported),
     # ensure that you manually symlink the matching `*-config` binary in your
     # `virtualenv` installation.
     python_config = "{}-config".format(python)
+
+    # Check if config binary exists.
+    if which(repository_ctx, python_config) == None:
+        fail((
+            "Cannot find corresponding config executable: {}\n" +
+            "  For interpreter: {}"
+        ).format(python_config, python_path))
 
     # Warn if we do not the correct platform support.
     if version not in versions_supported:
@@ -233,7 +257,7 @@ py_library(
 python_repository = repository_rule(
     _impl,
     environ = [
-        "PYTHON_BIN_PATH",
+        "DRAKE_PYTHON_BIN_PATH",
     ],
     local = True,
 )

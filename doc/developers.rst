@@ -84,16 +84,22 @@ supported for CMake builds using the "Unix Makefiles" generator.
 |                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 | Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
-|                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   |        |
-+----------------------------------+-----------------+-----------------+------------+                   |        |
-| macOS High Sierra (10.13)        | | Bazel 0.19.2  | Apple LLVM 10.0 | Oracle 11  |                   |        |
+|                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   | 3.6.7  |
++----------------------------------+-----------------+-----------------+------------+                   +--------+
+| macOS High Sierra (10.13)        | | Bazel 0.19.2  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
 +----------------------------------+ | CMake 3.13.0  |                 |            |                   |        |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
 
-macOS Mojave C++ and Python support and macOS and Ubuntu Bionic MATLAB support
-is experimental and untested in continuous integration.
+CPython is the only Python implementation supported. On all platforms, Python 2
+is the default version.
+
+The following configurations are presently untested in continuous integration:
+
+-   macOS Mojave: C++, Python
+-   macOS, Ubuntu Bionic: MATLAB
+-   Ubuntu Bionic: Python 3
 
 .. _binary-packages:
 
