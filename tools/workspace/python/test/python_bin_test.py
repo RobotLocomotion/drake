@@ -29,7 +29,7 @@ class TestPythonBin(unittest.TestCase):
             message = (
                 "\n\nMismatch in Python executables:\n"
                 "  bazel --python_path={}\n"
-                "  bazel --action_env=PYTHON_BIN_PATH={}\n"
+                "  bazel --action_env=DRAKE_PYTHON_BIN_PATH={}\n"
                 "If you specify one of these, please ensure that you "
                 "specify both.").format(python_bazel, python_actionenv)
             # In Python2, providing a longMessage will override the useful text
