@@ -1,83 +1,62 @@
 #include "drake/perception/depth_image_to_point_cloud.h"
 
-#include "drake/math/rigid_transform.h"
+#include <limits>
+
+#include "drake/common/drake_optional.h"
+#include "drake/common/drake_throw.h"
+#include "drake/common/never_destroyed.h"
+
+using Eigen::Isometry3f;
+using Eigen::Matrix3Xf;
+using Eigen::Vector3f;
+using drake::math::RigidTransformd;
+using drake::systems::sensors::CameraInfo;
+using drake::systems::sensors::PixelType;
+using drake::systems::sensors::Image;
+using drake::systems::sensors::ImageDepth16U;
+using drake::systems::sensors::ImageDepth32F;
+using drake::systems::sensors::ImageTraits;
+using drake::systems::sensors::InvalidDepth;
+using drake::systems::AbstractValue;
+using drake::systems::Value;
 
 namespace drake {
 namespace perception {
+namespace {
 
-DepthImageToPointCloud::DepthImageToPointCloud(
-    const systems::sensors::CameraInfo& camera_info)
-    : camera_info_(camera_info) {
-  // Input port for depth image.
-  depth_image_input_port_ = this->DeclareAbstractInputPort(
-      "depth_image",
-      systems::Value<systems::sensors::ImageDepth32F>{}).get_index();
-
-  // Optional input port for camera pose.
-  camera_pose_input_port_ = this->DeclareAbstractInputPort("camera_pose",
-      systems::Value<math::RigidTransformd>{}).get_index();
-
-  // Output port for filtered point cloud.
-  this->DeclareAbstractOutputPort(
-      &DepthImageToPointCloud::MakeOutputPointCloud,
-      &DepthImageToPointCloud::ConvertDepthImageToPointCloud);
-}
-
-PointCloud DepthImageToPointCloud::MakeOutputPointCloud() const {
-  PointCloud cloud(0);
-  return cloud;
-}
-
-void DepthImageToPointCloud::ConvertDepthImageToPointCloud(
-    const systems::Context<double>& context, PointCloud* output) const {
-  const systems::AbstractValue* input_depth_image_ptr =
-      this->EvalAbstractInput(context, depth_image_input_port_);
-  DRAKE_ASSERT(input_depth_image_ptr != nullptr);
-  const auto& input_image =
-      input_depth_image_ptr->GetValue<systems::sensors::ImageDepth32F>();
-
-  Eigen::Matrix3Xf point_cloud;
-  Convert(input_image, camera_info_, &point_cloud);
-
-  const systems::AbstractValue* camera_pose_ptr = this->EvalAbstractInput
-      (context, camera_pose_input_port_);
-  // Setup camera pose in parent frame:
-  Eigen::Isometry3f X_PC = Eigen::Isometry3f::Identity();
-  if (camera_pose_ptr) {
-    X_PC = camera_pose_ptr->GetValue<math::RigidTransformd>()
-                          .GetAsIsometry3()
-                          .cast<float>();
+// Given a PixelType, return a Value<Image<PixelType>> dummy.
+const AbstractValue& GetModelValue(PixelType pixel_type) {
+  if (pixel_type == PixelType::kDepth32F) {
+    static const never_destroyed<Value<ImageDepth32F>> image32f;
+    return image32f.access();
   }
-
-  const int kNumCols = point_cloud.cols();
-  output->resize(kNumCols);
-  output->mutable_xyzs() = X_PC * point_cloud;
-
-  // Special case for the non-finite points; just pass them through.
-  // Note that currently x,y, and z are all non-finite if the depth value is
-  // kTooClose or kTooFar.
-  for (int i = 0; i < kNumCols; i++) {
-    if (!std::isfinite(point_cloud(2, i))) {
-      output->mutable_xyz(i) = point_cloud.col(i);
-    }
+  if (pixel_type == PixelType::kDepth16U) {
+    static const never_destroyed<Value<ImageDepth16U>> image16u;
+    return image16u.access();
   }
+  throw std::logic_error("Unsupported pixel_type in DepthImageToPointCloud");
 }
 
-// Note that if `depth_image` holds any pixels that have NaN, the converted
-// points will also become NaN.
 // TODO(russt): Consider dropping NaN/kTooClose/kTooFar points from the point
 // cloud output? (This would require adding support for colored point clouds,
 // because current implementation assume that an RGB image will still line up).
-void DepthImageToPointCloud::Convert(
-    const systems::sensors::ImageDepth32F& depth_image,
-    const systems::sensors::CameraInfo& camera_info,
-    Eigen::Matrix3Xf* point_cloud) {
-  DRAKE_DEMAND(point_cloud != nullptr);
-  using InvalidDepth = systems::sensors::InvalidDepth;
+template <PixelType pixel_type>
+void DoConvert(
+    const CameraInfo& camera_info,
+    const RigidTransformd* const camera_pose,
+    const Image<pixel_type>& depth_image,
+    const float scale,
+    PointCloud* output) {
+  // If the output has the wrong set of channels, we cannot proceed; the
+  // PointCloud class offers no way to change channels after construction.
+  DRAKE_THROW_UNLESS(output->fields() == pc_flags::kXYZs);
 
-  if (depth_image.size() != point_cloud->cols()) {
-    point_cloud->resize(3, depth_image.size());
+  // Reset the output size, if necessary.
+  if (output->size() != depth_image.size()) {
+    const bool skip_initialize = true;
+    output->resize(depth_image.size(), skip_initialize);
   }
+  Eigen::Ref<Matrix3Xf> output_xyz = output->mutable_xyzs();
 
   const int height = depth_image.height();
   const int width = depth_image.width();
@@ -85,23 +64,91 @@ void DepthImageToPointCloud::Convert(
   const float cy = camera_info.center_y();
   const float fx_inv = 1.f / camera_info.focal_x();
   const float fy_inv = 1.f / camera_info.focal_y();
-
-  Eigen::Matrix3Xf& pc = *point_cloud;
-  pc = Eigen::Matrix3Xf::Constant(3, height * width, InvalidDepth::kTooFar);
+  const Isometry3f X_PC = camera_pose ?
+      camera_pose->GetAsIsometry3().cast<float>() :
+      Isometry3f::Identity();
 
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
-      const float z = depth_image.at(u, v)[0];
-      if (z != InvalidDepth::kTooClose &&
-          z != InvalidDepth::kTooFar) {
-        const int col = v * width + u;
-        pc(0, col) = z * (u - cx) * fx_inv;
-        pc(1, col) = z * (v - cy) * fy_inv;
-        pc(2, col) = z;
+      const int col = v * width + u;
+      const auto z = depth_image.at(u, v)[0];
+      if ((z == ImageTraits<pixel_type>::kTooClose) ||
+          (z == ImageTraits<pixel_type>::kTooFar)) {
+        output_xyz.col(col).array() = std::numeric_limits<float>::infinity();
+      } else {
+        // N.B. This clause handles both true depths *and* NaNs.
+        output_xyz.col(col) = X_PC * Vector3f(
+            scale * z * (u - cx) * fx_inv,
+            scale * z * (v - cy) * fy_inv,
+            scale * z);
       }
     }
   }
 }
+
+}  // namespace
+
+DepthImageToPointCloud::DepthImageToPointCloud(
+    const CameraInfo& camera_info, PixelType pixel_type, float scale)
+    : camera_info_(camera_info),
+      pixel_type_(pixel_type),
+      scale_(scale) {
+  // Input port for depth image.
+  depth_image_input_port_ = this->DeclareAbstractInputPort(
+      "depth_image", GetModelValue(pixel_type)).get_index();
+
+  // Optional input port for camera pose.
+  camera_pose_input_port_ = this->DeclareAbstractInputPort(
+      "camera_pose", Value<RigidTransformd>{}).get_index();
+
+  // Output port for filtered point cloud.
+  this->DeclareAbstractOutputPort(
+      "point_cloud", PointCloud{},
+      (pixel_type_ == PixelType::kDepth32F) ?
+          &DepthImageToPointCloud::CalcOutput32F :
+          &DepthImageToPointCloud::CalcOutput16U);
+}
+
+void DepthImageToPointCloud::Convert(
+      const systems::sensors::CameraInfo& camera_info,
+      const optional<math::RigidTransformd>& camera_pose,
+      const systems::sensors::ImageDepth32F& depth_image,
+      const optional<float>& scale,
+      PointCloud* output) {
+  DoConvert(camera_info, camera_pose ? &*camera_pose : nullptr,
+            depth_image, scale.value_or(1.0f), output);
+}
+
+void DepthImageToPointCloud::Convert(
+      const systems::sensors::CameraInfo& camera_info,
+      const optional<math::RigidTransformd>& camera_pose,
+      const systems::sensors::ImageDepth16U& depth_image,
+      const optional<float>& scale,
+      PointCloud* output) {
+  DoConvert(camera_info, camera_pose ? &*camera_pose : nullptr,
+            depth_image, scale.value_or(1.0f), output);
+}
+
+void DepthImageToPointCloud::CalcOutput32F(
+    const systems::Context<double>& context, PointCloud* output) const {
+  const auto* const image = this->EvalInputValue<ImageDepth32F>(
+      context, depth_image_input_port_);
+  const auto* const pose_or_null = this->EvalInputValue<RigidTransformd>(
+      context, camera_pose_input_port_);
+  DRAKE_THROW_UNLESS(image != nullptr);
+  DoConvert(camera_info_, pose_or_null, *image, scale_, output);
+}
+
+void DepthImageToPointCloud::CalcOutput16U(
+    const systems::Context<double>& context, PointCloud* output) const {
+  const auto* const image = this->EvalInputValue<ImageDepth16U>(
+      context, depth_image_input_port_);
+  const auto* const pose_or_null = this->EvalInputValue<RigidTransformd>(
+      context, camera_pose_input_port_);
+  DRAKE_THROW_UNLESS(image != nullptr);
+  DoConvert(camera_info_, pose_or_null, *image, scale_, output);
+}
+
 
 }  // namespace perception
 }  // namespace drake
