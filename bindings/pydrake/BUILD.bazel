@@ -235,6 +235,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":perception_py",
     ":symbolic_py",
     ":trajectories_py",
+    "//bindings/pydrake/attic",
     "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/maliput",

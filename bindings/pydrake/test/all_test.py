@@ -62,6 +62,9 @@ class TestAll(unittest.TestCase):
         expected_symbols = (
             # __init__
             "getDrakePath",
+            # attic
+            # - solvers
+            "RigidBodyConstraint",
             # autodiffutils
             "AutoDiffXd",
             # automotive
