@@ -126,6 +126,15 @@ For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 .. _buildifier:
 
+Python Versions
+===============
+By default, Python 2 will be used. To use Python 3 for both Bazel and the Python
+bindings, use ``--config=python3``.
+
+As an example to run all lint checks in Python 3::
+
+    bazel test --config=python3 --config=lint //...
+
 Updating BUILD files
 ====================
 

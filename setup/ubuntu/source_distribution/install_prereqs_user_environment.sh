@@ -1,10 +1,7 @@
 #!/bin/bash
 #
 # Write user environment prerequisites for source distributions of Drake on
-# macOS.
-
-# N.B. Ensure that this is synchronized with the install instructions regarding
-# Homebrew Python in `doc/python_bindings.rst`.
+# Ubuntu.
 
 set -euo pipefail
 
@@ -15,8 +12,9 @@ fi
 
 workspace_dir="$(cd "$(dirname "${BASH_SOURCE}")/../../.." && pwd)"
 bazelrc="${workspace_dir}/gen/environment.bazelrc"
+codename=$(lsb_release -sc)
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
-import %workspace%/tools/macos.bazelrc
+import %workspace%/tools/ubuntu-${codename}.bazelrc
 EOF
