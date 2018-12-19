@@ -359,7 +359,7 @@ sdf::Visual ResolveVisualUri(const sdf::Visual& original,
       if (uri_element) {
         const std::string uri = uri_element->Get<std::string>();
         const std::string resolved_name =
-            ResolveFilename(uri, package_map, root_dir);
+            ResolveUri(uri, package_map, root_dir);
         if (!resolved_name.empty()) {
           uri_element->Set(resolved_name);
         } else {

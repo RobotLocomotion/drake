@@ -12,6 +12,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 
@@ -31,22 +32,51 @@ using math::RollPitchYaw;
 using math::RollPitchYawd;
 using systems::Context;
 
+// Verifies that the SDF loader can leverage a specified package map.
+GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
+  // We start with the world and default model instances (model_instance.h
+  // explains why there are two).
+  MultibodyPlant<double> plant;
+  geometry::SceneGraph<double> scene_graph;
+  ASSERT_EQ(plant.num_model_instances(), 2);
+
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
+  const std::string package_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package");
+
+  // Construct the PackageMap.
+  PackageMap package_map;
+  package_map.PopulateFromFolder(package_path);
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
+  plant.Finalize();
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant.num_model_instances(), 3);
+}
+
 // Verifies model instances are correctly created in the plant.
 GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
-  // We start with the world and default model instances.
+  // We start with the world and default model instances (model_instance.h
+  // explains why there are two).
   MultibodyPlant<double> plant;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
 
   ModelInstanceIndex instance1 =
-      AddModelFromSdfFile(full_name, "instance1", &plant);
+      AddModelFromSdfFile(full_name, "instance1", package_map, &plant);
 
   // Check that a duplicate model names are not allowed.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromSdfFile(full_name, "instance1", &plant), std::logic_error,
+      AddModelFromSdfFile(full_name, "instance1", package_map, &plant),
+      std::logic_error,
       "This model already contains a model instance named 'instance1'. "
       "Model instance names must be unique within a given model.");
 
@@ -54,15 +84,15 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
   const std::string acrobot_sdf_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   ModelInstanceIndex acrobot1 =
-      AddModelFromSdfFile(acrobot_sdf_name, "", &plant);
+      AddModelFromSdfFile(acrobot_sdf_name, "", package_map, &plant);
 
   // Loading the model again without specifying a different model name should
   // throw.
-  EXPECT_THROW(AddModelFromSdfFile(acrobot_sdf_name, "", &plant),
+  EXPECT_THROW(AddModelFromSdfFile(acrobot_sdf_name, "", package_map, &plant),
                std::logic_error);
 
   ModelInstanceIndex acrobot2 =
-      AddModelFromSdfFile(acrobot_sdf_name, "acrobot2", &plant);
+      AddModelFromSdfFile(acrobot_sdf_name, "acrobot2", package_map, &plant);
 
   // We are done adding models.
   plant.Finalize();
@@ -173,11 +203,13 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 // Verify that our SDF parser throws an exception when a user specifies a joint
 // with negative damping.
 GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
-  const std::string sdf_file_path =
-      "drake/multibody/parsing/test/negative_damping_joint.sdf";
+  const std::string sdf_file_path = FindResourceOrThrow(
+      "drake/multibody/parsing/test/negative_damping_joint.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(sdf_file_path);
   MultibodyPlant<double> plant;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromSdfFile(FindResourceOrThrow(sdf_file_path), "", &plant),
+      AddModelFromSdfFile(sdf_file_path, "", package_map, &plant),
       std::runtime_error,
       /* Verify this method is throwing for the right reasons. */
       "Joint damping is negative for joint '.*'. "
@@ -195,8 +227,11 @@ GTEST_TEST(SdfParser, IncludeTags) {
   ASSERT_EQ(plant.num_bodies(), 1);
   ASSERT_EQ(plant.num_joints(), 0);
 
-  AddModelsFromSdfFile(FindResourceOrThrow(
-        sdf_file_path + "/include_models.sdf"), &plant);
+  PackageMap package_map;
+  const std::string full_name = FindResourceOrThrow(
+      sdf_file_path + "/include_models.sdf");
+  package_map.PopulateUpstreamToDrake(full_name);
+  AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
   // We should have loaded 3 more models.
@@ -249,12 +284,15 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
     MultibodyPlant<double> plant;
     SceneGraph<double> scene_graph;
-    AddModelsFromSdfFile(full_name, &plant, &scene_graph);
+    AddModelsFromSdfFile(full_name, package_map, &plant, &scene_graph);
     plant.Finalize();
     num_visuals_explicit = plant.num_visual_geometries();
   }
@@ -264,7 +302,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
     MultibodyPlant<double> plant;
     SceneGraph<double> scene_graph;
     plant.RegisterAsSourceForSceneGraph(&scene_graph);
-    AddModelsFromSdfFile(full_name, &plant);
+    AddModelsFromSdfFile(full_name, package_map, &plant);
     plant.Finalize();
     EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
   }

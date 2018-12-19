@@ -210,8 +210,7 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
-        ":detail_sdf_parser",
-        ":detail_urdf_parser",
+        ":parser",
         "//common:find_resource",
     ],
 )
@@ -272,6 +271,7 @@ drake_cc_googletest(
     name = "detail_sdf_parser_test",
     data = [
         ":test_models",
+        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
@@ -286,6 +286,7 @@ drake_cc_googletest(
     data = [
         ":test_models",
         "//examples/atlas:models",
+        "//manipulation/models/iiwa_description:models",
         "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
@@ -332,8 +333,12 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "detail_path_utils_test",
+    data = [
+        ":test_models",
+    ],
     deps = [
         ":detail_misc",
+        "//common/test_utilities",
     ],
 )
 

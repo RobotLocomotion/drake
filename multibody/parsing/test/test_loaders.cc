@@ -1,8 +1,7 @@
 #include "drake/multibody/parsing/test/test_loaders.h"
 
 #include "drake/common/find_resource.h"
-#include "drake/multibody/parsing/detail_sdf_parser.h"
-#include "drake/multibody/parsing/detail_urdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
 
 namespace drake {
 namespace multibody {
@@ -12,11 +11,12 @@ void LoadFromSdf(
     const std::string& base_name,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
+  const std::string sdf_path = FindResourceOrThrow(base_name + ".sdf");
   // The empty-string second argument here means that the model_name comes from
   // the "name" attribute of the SDF.  This is a sensible default for the unit
   // tests that call us.
-  const std::string sdf_path = FindResourceOrThrow(base_name + ".sdf");
-  detail::AddModelFromSdfFile(sdf_path, "", plant, scene_graph);
+  Parser parser(plant, scene_graph);
+  parser.AddModelFromFile(sdf_path, "");
 }
 
 void LoadFromUrdf(
@@ -27,7 +27,8 @@ void LoadFromUrdf(
   // the "name" attribute of the URDF.  This is a sensible default for the unit
   // tests that call us.
   const std::string urdf_path = FindResourceOrThrow(base_name + ".urdf");
-  detail::AddModelFromUrdfFile(urdf_path, "", plant, scene_graph);
+  Parser parser(plant, scene_graph);
+  parser.AddModelFromFile(urdf_path, "");
 }
 
 }  // namespace test

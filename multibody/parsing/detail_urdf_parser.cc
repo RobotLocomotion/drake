@@ -496,6 +496,7 @@ ModelInstanceIndex ParseUrdf(
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name_in,
+    const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -518,10 +519,6 @@ ModelInstanceIndex AddModelFromUrdfFile(
   if (found != std::string::npos) {
     root_dir = full_path.substr(0, found);
   }
-
-  multibody::PackageMap package_map;
-  // TODO(sam.creasey) Add support for using an existing package map.
-  package_map.PopulateUpstreamToDrake(full_path);
 
   if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
