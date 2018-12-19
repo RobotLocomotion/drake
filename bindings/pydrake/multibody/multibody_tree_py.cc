@@ -233,7 +233,13 @@ void init_module(py::module m) {
     py::class_<Class> cls(m, "MultibodyForces", doc.MultibodyForces.doc);
     cls  // BR
         .def(py::init<MultibodyTree<double>&>(), py::arg("model"),
-            doc.MultibodyForces.ctor.doc_1args);
+            doc.MultibodyForces.ctor.doc_1args_model)
+        // Custom constructor so that in Python we can take a MultibodyPlant
+        // instead of a MultibodyTreeSystem.
+        .def(py::init([](const MultibodyPlant<T>& plant) {
+          return std::make_unique<MultibodyForces<T>>(plant);
+        }),
+            py::arg("plant"), doc.MultibodyForces.ctor.doc_1args_plant);
   }
 
   {

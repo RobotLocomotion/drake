@@ -782,7 +782,7 @@ class TestMultibodyTree(unittest.TestCase):
         vd_d = np.zeros(nv)
         self.check_old_spelling_exists(tree.CalcInverseDynamics)
         tau = plant.CalcInverseDynamics(
-            context, vd_d, MultibodyForces(tree))
+            context, vd_d, MultibodyForces(plant))
         self.assertEqual(tau.shape, (2,))
         self.assert_sane(tau, nonzero=False)
         # - Existence checks.

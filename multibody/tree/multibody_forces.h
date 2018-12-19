@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/tree/multibody_tree_forward_decl.h"
+#include "drake/multibody/tree/multibody_tree_system.h"
 
 namespace drake {
 namespace multibody {
@@ -34,6 +35,15 @@ class MultibodyForces {
   /// MultibodyTree::Finalize() or this constructor will abort.
   explicit MultibodyForces(const MultibodyTree<T>& model);
 
+  /// Constructs a force object to store a set of forces to be applied to
+  /// the multibody model for `plant`. Forces are initialized to zero, meaning
+  /// no forces are applied.
+  /// `plant` must have been already finalized with
+  /// MultibodyPlant::Finalize() or this constructor will abort.
+  // TODO(amcastro-tri): replace with MultibodyPlant constructor once MBT
+  // becomes internal.
+  explicit MultibodyForces(const MultibodyTreeSystem<T>& plant);
+
   /// Sets `this` to store zero forces (no applied forces).
   MultibodyForces<T>& SetZero();
 
@@ -51,26 +61,26 @@ class MultibodyForces {
     return static_cast<int>(tau_.size());
   }
 
-  /// Returns a constant reference to the vector of generalized forces stored by
-  /// `this` forces object.
+  /// (Advanced) Returns a constant reference to the vector of generalized
+  /// forces stored by `this` forces object.
   const VectorX<T>& generalized_forces() const {
     return tau_;
   }
 
-  /// Mutable version of generalized_forces().
+  /// (Advanced) Mutable version of generalized_forces().
   VectorX<T>& mutable_generalized_forces() {
     return tau_;
   }
 
-  /// Returns a constant reference to the vector of spatial body forces
-  /// `F_BBo_W` on each body B in the model, at the body's frame origin `Bo`,
-  /// expressed in the world frame W.
+  /// (Advanced) Returns a constant reference to the vector of spatial body
+  /// forces `F_BBo_W` on each body B in the model, at the body's frame
+  /// origin `Bo`, expressed in the world frame W.
   /// @note Entries are ordered by BodyNodeIndex.
   const std::vector<SpatialForce<T>>& body_forces() const {
     return F_B_W_;
   }
 
-  /// Mutable version of body_forces().
+  /// (Advanced) Mutable version of body_forces().
   std::vector<SpatialForce<T>>& mutable_body_forces() {
     return F_B_W_;
   }

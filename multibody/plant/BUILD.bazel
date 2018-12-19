@@ -217,6 +217,17 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "external_forces_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
     name = "box_test",
     timeout = "moderate",
     data = ["test/box.sdf"],

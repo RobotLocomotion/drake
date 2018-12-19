@@ -8,6 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -225,6 +226,46 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
       const systems::Context<T>& context) const {
     return this->get_parent_tree().EvalBodySpatialVelocityInWorld(
         context, *this);
+  }
+
+  /// Adds the spatial force on `this` body B, applied at body B's origin Bo and
+  /// expressed in the world frame W into `forces`.
+  void AddInForceInWorld(const systems::Context<T>& context,
+                         const SpatialForce<T>& F_Bo_W,
+                         MultibodyForces<T>* forces) const {
+    DRAKE_THROW_UNLESS(forces != nullptr);
+    DRAKE_THROW_UNLESS(
+        forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    forces->mutable_body_forces()[node_index()] = F_Bo_W;
+  }
+
+  /// Adds the spatial force on `this` body B, applied at point P and
+  /// expressed in a frame E into `forces`.
+  /// @param[in] context
+  ///   The context containing the current state of the model.
+  /// @param[in] p_BP_E
+  ///   The position of point P in B, expressed in a frame E.
+  /// @param[in] F_Bp_E
+  ///   The spatial force to be applied on body B at point P, expressed in
+  ///   frame E.
+  /// @param[in] frame_E
+  ///   The expressed-in frame E.
+  /// @param[out] forces
+  ///   A multibody forces objects that on output will have `F_Bp_E` added.
+  /// @throws std::exception if `forces` is nullptr or if it is not consistent
+  /// with the model to which `this` body belongs.
+  void AddInForce(
+      const systems::Context<T>& context,
+      const Vector3<T>& p_BP_E, const SpatialForce<T>& F_Bp_E,
+      const Frame<T>& frame_E, MultibodyForces<T>* forces) const {
+    DRAKE_THROW_UNLESS(forces != nullptr);
+    DRAKE_THROW_UNLESS(
+        forces->CheckHasRightSizeForModel(this->get_parent_tree()));
+    const Isometry3<T> X_WE = frame_E.CalcPoseInWorld(context);
+    const Matrix3<T>& R_WE = X_WE.linear();
+    const Vector3<T> p_PB_W = -R_WE * p_BP_E;
+    const SpatialForce<T> F_Bo_W = (R_WE * F_Bp_E).Shift(p_PB_W);
+    AddInForceInWorld(context, F_Bo_W, forces);
   }
 
   /// NVI (Non-Virtual Interface) to DoCloneToScalar() templated on the scalar
