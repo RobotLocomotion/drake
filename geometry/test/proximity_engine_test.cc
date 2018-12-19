@@ -818,7 +818,8 @@ class SimplePenetrationTest : public ::testing::Test {
     // against that tolerance, when the PR
     // https://github.com/flexible-collision-library/fcl/pull/314 is merged into
     // FCL upstream.
-    CompareSignedDistancePair(distance, expected_distance, 2e-3);
+    CompareSignedDistancePair(distance, expected_distance,
+        std::numeric_limits<double>::epsilon());
   }
 
   // The two spheres collides, but are ignored due to the setting in the
@@ -868,7 +869,8 @@ class SimplePenetrationTest : public ::testing::Test {
     expected_distance.p_ACa = origin_is_A ? p_OCo : p_CCc;
     expected_distance.p_BCb = origin_is_A ? p_CCc : p_OCo;
 
-    CompareSignedDistancePair(distance, expected_distance, 2e-3);
+    CompareSignedDistancePair(distance, expected_distance,
+        std::numeric_limits<double>::epsilon());
   }
 
   ProximityEngine<double> engine_;
@@ -1152,6 +1154,54 @@ TEST_F(SimplePenetrationTest, ExcludeCollisionsBetween) {
   std::unique_ptr<ProximityEngine<AutoDiffXd>> ad_engine =
       engine_.ToAutoDiffXd();
   ExpectIgnoredPenetration(origin_id, collide_id, ad_engine.get());
+}
+
+// Test ComputeSignedDistancePairwiseClosestPoints in a special case when
+// two spheres are concentric.
+GTEST_TEST(ComputeSignedDistancePairwiseClosestPointsTest, ConcentricSpheres) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  double radius1 = 1.0;
+  Sphere sphere1{radius1};
+  Isometry3<double> X_W1 =
+      RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI), Vector3d(1., 2., 3.))
+          .GetAsIsometry3();
+  engine.AddAnchoredGeometry(sphere1, X_W1, GeometryIndex(0));
+  GeometryId sphere1_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere1_id);
+
+  double radius2 = 2.0;
+  Sphere sphere2{radius2};
+  engine.AddDynamicGeometry(sphere2, GeometryIndex(1));
+  GeometryId sphere2_id = GeometryId::get_new_id();
+  geometry_map.push_back(sphere2_id);
+
+  Isometry3<double> X_W2 =
+      RigidTransformd(RollPitchYawd(M_PI, M_PI/6., M_PI), Vector3d(1., 2., 3.))
+          .GetAsIsometry3();
+  engine.UpdateWorldPoses({X_W2}, {GeometryIndex(0)});
+
+  auto result = engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map);
+  ASSERT_EQ(result.size(), 1);
+  ASSERT_TRUE((result[0].id_A == sphere1_id && result[0].id_B == sphere2_id) ||
+              (result[0].id_A == sphere2_id && result[0].id_B == sphere1_id));
+
+  EXPECT_NEAR(result[0].distance, -radius1-radius2,
+              std::numeric_limits<double>::epsilon());
+
+  // Check that distance between the two contact points Ca and Cb is the same
+  // as the signed distance with the sign switched.  We need a tolerance of
+  // 10*epsilon for this example due to rotations.
+  Vector3d p_ACa = result[0].p_ACa;
+  Vector3d p_BCb = result[0].p_BCb;
+  Isometry3<double> X_WA = (result[0].id_A == sphere1_id)? X_W1 : X_W2;
+  Isometry3<double> X_WB = (result[0].id_B == sphere2_id)? X_W2 : X_W1;
+  Vector3d p_WCa = X_WA * p_ACa;
+  Vector3d p_WCb = X_WB * p_BCb;
+  double dist_Ca_Cb = (p_WCa - p_WCb).norm();
+  EXPECT_NEAR(dist_Ca_Cb, -result[0].distance,
+              10.*std::numeric_limits<double>::epsilon());
 }
 
 // Given a sphere S and box B. The box's height and depth are large (much larger

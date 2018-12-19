@@ -282,77 +282,8 @@ struct CollisionData {
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
 
-// The callback function in fcl::distance request. The final unnamed parameter
-// is `dist`, which is used in fcl::distance, that if the distance between two
-// geometries is proved to be greater than `dist` (for example, the smallest
-// distance between the bounding boxes containing object A and object B is
-// greater than `dist`), then fcl::distance will skip this callback. In our
-// case, as we want to compute the distance between any pair of geometries, we
-// leave `dist` unchanged as its default value (max_double). So the last
-// parameter is merely a placeholder, and not being used or updated in the
-// callback.
-bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
-                      fcl::CollisionObjectd* fcl_object_B_ptr,
-                      // NOLINTNEXTLINE
-                      void* callback_data, double&) {
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We insure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
-
-  auto& collision_data = *static_cast<DistanceData*>(callback_data);
-
-  // Extract the collision filter keys from the fcl collision objects. These
-  // keys will also be used to map the fcl collision object back to the Drake
-  // GeometryId for colliding geometries.
-  EncodedData encoding_A(fcl_object_A);
-  EncodedData encoding_B(fcl_object_B);
-
-  const bool can_collide = collision_data.collision_filter.CanCollideWith(
-      encoding_A.encoded_data(), encoding_B.encoded_data());
-
-  if (can_collide) {
-    // Unpack the callback data
-    auto& distance_data = *static_cast<DistanceData*>(callback_data);
-    const fcl::DistanceRequestd& request = distance_data.request;
-    const std::vector<GeometryId> geometry_map = distance_data.geometry_map;
-
-    fcl::DistanceResultd result;
-
-    // Perform nearphase distance computation.
-    fcl::distance(&fcl_object_A, &fcl_object_B, request, result);
-
-    SignedDistancePair<double> nearest_pair;
-    nearest_pair.id_A = EncodedData(fcl_object_A).id(geometry_map);
-    nearest_pair.id_B = EncodedData(fcl_object_B).id(geometry_map);
-
-    // Note: The result of FCL's distance query is in the *world* frame, the
-    // SignedDistancePair reports in geometry frame.
-    nearest_pair.p_ACa =
-        fcl_object_A.getTransform().inverse() * result.nearest_points[0];
-    nearest_pair.p_BCb =
-        fcl_object_B.getTransform().inverse() * result.nearest_points[1];
-    nearest_pair.distance = result.min_distance;
-    // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-    // surfaces and then flip the normal.
-    if (nearest_pair.id_B < nearest_pair.id_A) {
-      std::swap(nearest_pair.id_A, nearest_pair.id_B);
-      std::swap(nearest_pair.p_ACa, nearest_pair.p_BCb);
-    }
-
-    distance_data.nearest_pairs->emplace_back(std::move(nearest_pair));
-  }
-
-  // Returning true would tell the broadphase manager to terminate early. Since
-  // we want to find all the signed distance present in the model's current
-  // configuration, we return false.
-  return false;
-}
-
-// A functor to support DistanceFromPointCallback(). It computes the signed
-// distance to a query point from a supported geometry.
+// A functor to support DistanceFromPointCallback(), ComputeNearphaseDistance().
+// It computes the signed distance to a query point from a supported geometry.
 // Each overload to the call operator reports the signed distance (encoded as
 // SignedDistanceToPoint) between the functor's stored query point and the
 // given geometry argument.
@@ -368,7 +299,7 @@ class DistanceToPoint {
   DistanceToPoint(const GeometryId id,
                   const Isometry3<double>& X_WG,
                   const Vector3d& p_WQ) :
-                  geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
+      geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
 
   // Overload for Sphere.
   SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere) {
@@ -460,8 +391,8 @@ class DistanceToPoint {
       DRAKE_DEMAND(distance != 0.);
       grad_G = p_NQ_G / distance;
     } else if ((locations(0) == Location::kBoundary)||
-               (locations(1) == Location::kBoundary)||
-               (locations(2) == Location::kBoundary)) {
+        (locations(1) == Location::kBoundary)||
+        (locations(2) == Location::kBoundary)) {
       // Q is on the boundary of the box.
       distance = 0.0;
       // A point on a face, on an edge, or on a vertex of the box has one, two,
@@ -531,6 +462,139 @@ class DistanceToPoint {
   // The position of the query point Q in World frame.
   const Vector3d p_WQ_;
 };
+
+// Helps DistanceCallback(). Do it in closed forms for spheres.
+// Otherwise, use FCL GJK/EPA.
+void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
+                              const fcl::CollisionObjectd* b,
+                              const fcl::DistanceRequestd& request,
+                              fcl::DistanceResultd* result) {
+  const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
+  const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
+
+  if ((a_geometry->getNodeType() != fcl::GEOM_SPHERE) ||
+      (b_geometry->getNodeType() != fcl::GEOM_SPHERE)) {
+    fcl::distance(a, b, request, *result);
+  } else {
+    const auto X_WA = a->getTransform();
+    const auto X_WB = b->getTransform();
+
+    // Position of the center of the sphere A expressed in World frame.
+    const Vector3d p_WAo = a->getTranslation();
+    // Radius of the sphere A.
+    const double radius_a =
+        static_cast<const fcl::Sphered*>(a_geometry)->radius;
+
+    // Sphere B.
+    const auto& b_sphere = *static_cast<const fcl::Sphered*>(b_geometry);
+
+    // We use the default GeometryId() because we don't have `geometry_map`.
+    SignedDistanceToPoint<double> sphere_B_to_point_Ao =
+        DistanceToPoint{GeometryId(), X_WB, p_WAo}(b_sphere);
+
+    const double signed_distance = sphere_B_to_point_Ao.distance - radius_a;
+
+    // Nb is the witness point on B.
+    const Vector3d p_BNb = sphere_B_to_point_Ao.p_GN;
+    const Vector3d p_WNb = X_WB * p_BNb;
+
+    // Next we will calculate Na the witness point on A with the invariance
+    // that the Euclidean distance between Na and Nb equals the absoluate value
+    // of the signed distance between the two spheres.
+    //        |Na - Nb| = |signed_distance|
+    // The invariance is true whether the two spheres overlap, one sphere
+    // covers another, or the two spheres are concentric.
+    //
+    // Let gradA (gradB) be the gradient vector of the signed distance function
+    // from the sphere A (sphere B) evaluated at the center Bo (center Ao).
+    // Notice that Na is in the direction of gradA from the center Ao, and
+    // gradA is in the direction opposite to gradB.  These observations will
+    // help us calculate Na.
+    //
+    // Notation:
+    // gradB_W = gradB expressed in World frame.
+    // gradB_A = gradB expressed in A's frame.
+    // gradA_A = gradA expressed in A's frame.
+    const auto gradB_W = sphere_B_to_point_Ao.grad_W;
+    const auto R_WA = X_WA.rotation();
+    const auto R_AW = R_WA.inverse();
+    const auto gradB_A = R_AW * gradB_W;
+    const auto gradA_A = -gradB_A;
+    const Vector3d p_ANa = radius_a * gradA_A;
+    const Vector3d p_WNa = X_WA * p_ANa;
+
+    result->update(signed_distance, a_geometry, b_geometry, -1, -1, p_WNa,
+                   p_WNb);
+  }
+}
+
+// The callback function in fcl::distance request. The final unnamed parameter
+// is `dist`, which is used in fcl::distance, that if the distance between two
+// geometries is proved to be greater than `dist` (for example, the smallest
+// distance between the bounding boxes containing object A and object B is
+// greater than `dist`), then fcl::distance will skip this callback. In our
+// case, as we want to compute the distance between any pair of geometries, we
+// leave `dist` unchanged as its default value (max_double). So the last
+// parameter is merely a placeholder, and not being used or updated in the
+// callback.
+bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
+                      fcl::CollisionObjectd* fcl_object_B_ptr,
+                      // NOLINTNEXTLINE
+                      void* callback_data, double&) {
+  // NOTE: Although this function *takes* non-const pointers to satisfy the
+  // fcl api, it should not exploit the non-constness to modify the collision
+  // objects. We insure this by immediately assigning to a const version and
+  // not directly using the provided parameters.
+  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
+  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
+
+  auto& collision_data = *static_cast<DistanceData*>(callback_data);
+
+  // Extract the collision filter keys from the fcl collision objects. These
+  // keys will also be used to map the fcl collision object back to the Drake
+  // GeometryId for colliding geometries.
+  EncodedData encoding_A(fcl_object_A);
+  EncodedData encoding_B(fcl_object_B);
+
+  const bool can_collide = collision_data.collision_filter.CanCollideWith(
+      encoding_A.encoded_data(), encoding_B.encoded_data());
+
+  if (can_collide) {
+    // Unpack the callback data
+    auto& distance_data = *static_cast<DistanceData*>(callback_data);
+    const fcl::DistanceRequestd& request = distance_data.request;
+    const std::vector<GeometryId> geometry_map = distance_data.geometry_map;
+
+    fcl::DistanceResultd result;
+
+    ComputeNearphaseDistance(&fcl_object_A, &fcl_object_B, request, &result);
+
+    SignedDistancePair<double> nearest_pair;
+    nearest_pair.id_A = EncodedData(fcl_object_A).id(geometry_map);
+    nearest_pair.id_B = EncodedData(fcl_object_B).id(geometry_map);
+
+    // Note: The result of FCL's distance query is in the *world* frame, the
+    // SignedDistancePair reports in geometry frame.
+    nearest_pair.p_ACa =
+        fcl_object_A.getTransform().inverse() * result.nearest_points[0];
+    nearest_pair.p_BCb =
+        fcl_object_B.getTransform().inverse() * result.nearest_points[1];
+    nearest_pair.distance = result.min_distance;
+    // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
+    // surfaces and then flip the normal.
+    if (nearest_pair.id_B < nearest_pair.id_A) {
+      std::swap(nearest_pair.id_A, nearest_pair.id_B);
+      std::swap(nearest_pair.p_ACa, nearest_pair.p_BCb);
+    }
+
+    distance_data.nearest_pairs->emplace_back(std::move(nearest_pair));
+  }
+
+  // Returning true would tell the broadphase manager to terminate early. Since
+  // we want to find all the signed distance present in the model's current
+  // configuration, we return false.
+  return false;
+}
 
 // Callback function from fcl::distance to help ComputeSignedDistanceToPoint.
 bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
