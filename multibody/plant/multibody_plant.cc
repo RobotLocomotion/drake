@@ -610,6 +610,20 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
 }
 
 template <typename T>
+MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
+  MatrixX<T> B = MatrixX<T>::Zero(num_velocities(), num_actuated_dofs());
+  for (JointActuatorIndex actuator_index(0);
+       actuator_index < num_actuators(); ++actuator_index) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    // This method assumes actuators on single dof joints. Assert this
+    // condition.
+    DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
+    B(actuator.joint().velocity_start(), actuator.index()) = 1;
+  }
+  return B;
+}
+
+template <typename T>
 void MultibodyPlant<T>::CheckUserProvidedSceneGraph(
     const geometry::SceneGraph<T>* scene_graph) const {
   if (scene_graph != nullptr) {
