@@ -68,11 +68,6 @@ def _repository_python_info(repository_ctx):
     # `try-import` for configuration.
     python_path = repository_ctx.os.environ.get("DRAKE_PYTHON_BIN_PATH")
     if python_path == None:
-        print(
-            "\n\nWARNING: `--action_env=DRAKE_PYTHON_BIN_PATH` is not set.\n" +
-            "  Please rerun `install_prereqs` in this workspace.\n" +
-            "  This will be required after 2018/01/03.\n\n",
-        )
         if os_result.is_macos:
             python_path = "/usr/local/bin/python{}".format(
                 versions_supported[0],
