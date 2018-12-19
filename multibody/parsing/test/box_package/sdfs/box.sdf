@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
   <!-- Note: This is an SDF file used for testing Parser package path
-       functionality. It relies upon tri_cube.obj. 
+       functionality. It relies upon ../meshes/box.obj. 
   -->
   <model name='box'>
     <!-- The model for a solid box of uniform density. -->

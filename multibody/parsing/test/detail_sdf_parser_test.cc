@@ -37,20 +37,20 @@ GTEST_TEST(MultibodyPlantSdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
   MultibodyPlant<double> plant;
+  geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_sdf_filename = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/"
-          "sdf/iiwa14_no_collision.sdf");
+      "drake/multibody/parsing/test/box_package/sdfs/box.sdf");
   const std::string package_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description");
+      "drake/multibody/parsing/test/box_package");
 
   // Construct the PackageMap.
   PackageMap package_map;
   package_map.PopulateFromFolder(package_path);
 
   // Read in the SDF file.
-  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant);
+  AddModelFromSdfFile(full_sdf_filename, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
   // Verify the number of model instances.
@@ -205,9 +205,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
   const std::string sdf_file_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/negative_damping_joint.sdf");
-  const std::string full_path = detail::GetFullPath(sdf_file_path);
   PackageMap package_map;
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(sdf_file_path);
   MultibodyPlant<double> plant;
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromSdfFile(sdf_file_path, "", package_map, &plant),
@@ -231,8 +230,7 @@ GTEST_TEST(SdfParser, IncludeTags) {
   PackageMap package_map;
   const std::string full_name = FindResourceOrThrow(
       sdf_file_path + "/include_models.sdf");
-  const std::string full_path = detail::GetFullPath(full_name);
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(full_name);
   AddModelsFromSdfFile(full_name, package_map, &plant);
   plant.Finalize();
 
@@ -287,8 +285,7 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
       "drake/multibody/parsing/test/"
       "links_with_visuals_and_collisions.sdf");
   PackageMap package_map;
-  const std::string full_path = detail::GetFullPath(full_name);
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(full_name);
 
   int num_visuals_explicit{};
   {

@@ -11,12 +11,15 @@ inspector has been built (using, e.g.,`bazel build :geometry_inspector`):
 ./bazel-bin/manipulation/util/geometry_inspector \
   ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
-./bazel-bin/manipulation/util/geometry_inspector \
+bazel-bin/manipulation/util/geometry_inspector \
   ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
 
+rosrun xacro xacro.py \
+    /path/to/ros/pr2_description/robots/pr2.urdf.xacro >
+    /path/to/ros/pr2_description/robots/pr2.urdf
 ./bazel-bin/manipulation/util/geometry_inspector \
-  ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf \
-  --package_path=./manipulation/models/iiwa_description
+  --package_path=/path/to/ros/pr2_description \
+  /path/to/ros/pr2_description/robots/pr2.urdf
 """
 
 import argparse
@@ -45,8 +48,8 @@ def main():
     args_parser.add_argument(
         "--package_path",
         type=str,
-        help="Full path to the root package for reading in SDF resources.",
-        default=[])
+        default=None,
+        help="Full path to the root package for reading in SDF resources.")
     position_group = args_parser.add_mutually_exclusive_group()
     position_group.add_argument(
         "--position", type=float, nargs="+", default=[],
@@ -82,14 +85,14 @@ def main():
     parser = Parser(plant)
 
     # Get the package pathname.
-    if len(args.package_path):
+    if args.package_path:
         # Verify that package.xml is found in the designated path.
         package_path = os.path.abspath(args.package_path)
         if not os.path.isfile(os.path.join(package_path, "package.xml")):
             parser.error("package.xml not found at: {}".format(package_path))
 
         # Get the package map and populate it using the package path.
-        package_map = parser.mutable_package_map()
+        package_map = parser.package_map()
         package_map.PopulateFromFolder(package_path)
 
     # Add the model from the file and finalize the plant.

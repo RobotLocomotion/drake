@@ -20,20 +20,21 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, PackageMapSpecified) {
   // We start with the world and default model instances (model_instance.h
   // explains why there are two).
   MultibodyPlant<double> plant;
+  geometry::SceneGraph<double> scene_graph;
   ASSERT_EQ(plant.num_model_instances(), 2);
 
   const std::string full_urdf_filename = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/"
-          "urdf/iiwa14_no_collision.urdf");
+      "drake/multibody/parsing/test/box_package/urdfs/box.urdf");
   const std::string package_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description");
+      "drake/multibody/parsing/test/box_package");
 
   // Construct the PackageMap.
   PackageMap package_map;
   package_map.PopulateFromFolder(package_path);
 
   // Read in the URDF file.
-  AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant);
+  AddModelFromUrdfFile(full_urdf_filename, "", package_map, &plant,
+      &scene_graph);
   plant.Finalize();
 
   // Verify the number of model instances.
@@ -46,8 +47,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   std::string full_name = FindResourceOrThrow(
       "drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
   PackageMap package_map;
-  const std::string full_path = detail::GetFullPath(full_name);
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(full_name);
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
@@ -86,8 +86,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAtlasMinimalContact) {
   std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
-  const std::string full_path = detail::GetFullPath(full_name);
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(full_name);
 
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
@@ -102,8 +101,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestAddWithQuaternionFloatingDof) {
   const std::string model_file = FindResourceOrThrow(
       resource_dir + "zero_dof_robot.urdf");
   PackageMap package_map;
-  const std::string full_path = detail::GetFullPath(model_file);
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(model_file);
 
   MultibodyPlant<double> plant;
   SceneGraph<double> scene_graph;
@@ -118,8 +116,7 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
   const std::string full_name = FindResourceOrThrow(
       "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
   PackageMap package_map;
-  const std::string full_path = detail::GetFullPath(full_name);
-  package_map.PopulateUpstreamToDrake(full_path);
+  package_map.PopulateUpstreamToDrake(full_name);
   int num_visuals_explicit{};
   {
     // Test explicitly specifying `scene_graph`.
