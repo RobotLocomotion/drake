@@ -106,10 +106,10 @@ def _repository_python_info(repository_ctx):
     # `virtualenv` installation.
     python_config = "{}-config".format(python)
 
-    # Check if neighboring config binary exists.
+    # Check if config binary exists.
     if which(repository_ctx, python_config) == None:
         fail((
-            "Cannot find neighboring config executable: {}\n" +
+            "Cannot find corresponding config executable: {}\n" +
             "  For interpreter: {}"
         ).format(python_config, python_path))
 
