@@ -63,7 +63,7 @@ def _repository_python_info(repository_ctx):
     # does in `python_configure.bzl` (https://git.io/fx4Pp).
     # N.B. Unfortunately, it does not seem possible to get Bazel's Python
     # interpreter during a repository rule, thus we can only catch mismatch
-    # issues via `//tools/workspace/python:py/python_bin_test`.
+    # issues via `//tools/workspace/python:py/check_bazel_python`.
     # TODO(eric.cousineau): Make this an error once `.bazelrc` stops using
     # `try-import` for configuration.
     python_path = repository_ctx.os.environ.get("DRAKE_PYTHON_BIN_PATH")
@@ -197,8 +197,12 @@ PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
         content = skylark_content,
         executable = False,
     )
+    repository_ctx.symlink(
+        Label("@drake//tools/workspace/python:test/check_bazel_python.py"),
+        "_check_bazel_python.py",
+    )
     repository_ctx.file(
-        "bazel_python_actionenv.py",
+        "_bazel_python_actionenv.py",
         content = skylark_content,
         executable = False,
     )
@@ -220,6 +224,9 @@ headers = glob(
 
 cc_library(
     name = "python_headers",
+    # Depend on a Python configuration sanity check for anything that wishes to
+    # generate bindings. See `genrule` below for more information.
+    data = [":bazel_python_is_valid"],
     hdrs = headers,
     includes = {},
     visibility = ["//visibility:private"],
@@ -239,14 +246,28 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-py_library(
-    name = "bazel_python_actionenv",
-    srcs = ["bazel_python_actionenv.py"],
+# See `genrule` below.
+py_binary(
+    name = "check_bazel_python",
+    main = "_check_bazel_python.py",
+    srcs = [
+        "_check_bazel_python.py",
+        "_bazel_python_actionenv.py",
+    ],
     imports = ["."],
-    visibility = ["//visibility:public"],
-    testonly = 1,
+    visibility = ["//visibility:private"],
 )
-    """.format(includes, linkopts, linkopts_direct_link)
+
+# Place this test as a `genrule` to (a) test at build time and (b) be able to
+# access Bazel's Python interpreter from a `py_binary` used in `tools`.
+genrule(
+    name = "bazel_python_is_valid",
+    outs = [".bazel_python_is_valid"],
+    cmd = "$(location :check_bazel_python) > $@",
+    tools = [":check_bazel_python"],
+    visibility = ["//visibility:private"],
+)
+""".format(includes, linkopts, linkopts_direct_link)
 
     repository_ctx.file(
         "BUILD.bazel",
