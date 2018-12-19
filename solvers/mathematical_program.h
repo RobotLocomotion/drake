@@ -2447,9 +2447,9 @@ class MathematicalProgram {
   }
 
   /**
-   * Getter returning all costs (for now linear costs appended to
-   * generic costs, then quadratic costs appended to
-   * generic costs).
+   * Getter returning all costs.
+   * @returns Vector of all cost bindings.
+   * @note The group ordering may change as more cost types are added.
    */
   std::vector<Binding<Cost>> GetAllCosts() const {
     auto costlist = generic_costs_;
@@ -2462,11 +2462,32 @@ class MathematicalProgram {
   /**
    * Getter returning all linear constraints (both linear equality and
    * inequality constraints).
+   * @returns Vector of all linear constraint bindings.
    */
   std::vector<Binding<LinearConstraint>> GetAllLinearConstraints() const {
     std::vector<Binding<LinearConstraint>> conlist = linear_constraints_;
     conlist.insert(conlist.end(), linear_equality_constraints_.begin(),
                    linear_equality_constraints_.end());
+    return conlist;
+  }
+
+  /**
+   * Getter for returning all constraints.
+   * @returns Vector of all constraint bindings.
+   * @note The group ordering may change as more constraint types are added.
+   */
+  std::vector<Binding<Constraint>> GetAllConstraints() const {
+    std::vector<Binding<Constraint>> conlist = generic_constraints_;
+    auto extend = [&conlist](auto container) {
+      conlist.insert(conlist.end(), container.begin(), container.end());
+    };
+    extend(linear_constraints_);
+    extend(linear_equality_constraints_);
+    extend(bbox_constraints_);
+    extend(lorentz_cone_constraint_);
+    extend(rotated_lorentz_cone_constraint_);
+    extend(linear_matrix_inequality_constraint_);
+    extend(linear_complementarity_constraints_);
     return conlist;
   }
 
@@ -2640,7 +2661,7 @@ class MathematicalProgram {
    * program.
    * @param prog_var_vals The value of all the decision variables in this
    * program.
-   * @throws std::logic_error if the size does not match.
+   * @throws std::logic_error if the size of `prog_var_vals` is invalid.
    */
   template <typename C, typename DerivedX>
   typename std::enable_if<is_eigen_vector<DerivedX>::value,
@@ -2663,6 +2684,39 @@ class MathematicalProgram {
     }
     binding.evaluator()->Eval(binding_x, &binding_y);
     return binding_y;
+  }
+
+  /**
+   * Evaluates a set of bindings (plural version of `EvalBinding`).
+   * @param bindings List of bindings.
+   * @param prog
+   * @param prog_var_vals The value of all the decision variables in this
+   * program.
+   * @return All binding values, concatenated into a single vector.
+   * @throws std::logic_error if the size of `prog_var_vals` is invalid.
+   */
+  template <typename C, typename DerivedX>
+  typename std::enable_if<is_eigen_vector<DerivedX>::value,
+                          VectorX<typename DerivedX::Scalar>>::type
+  EvalBindings(
+      const std::vector<Binding<C>>& bindings,
+      const Eigen::MatrixBase<DerivedX>& prog_var_vals) const {
+    // TODO(eric.cousineau): Minimize memory allocations when it becomes a
+    // major performance bottleneck.
+    using Scalar = typename DerivedX::Scalar;
+    int num_y{};
+    for (auto& binding : bindings) {
+      num_y += binding.evaluator()->num_outputs();
+    }
+    VectorX<Scalar> y(num_y);
+    int offset_y{};
+    for (auto& binding : bindings) {
+      VectorX<Scalar> binding_y = EvalBinding(binding, prog_var_vals);
+      y.segment(offset_y, binding_y.size()) = binding_y;
+      offset_y += binding_y.size();
+    }
+    DRAKE_DEMAND(offset_y == num_y);
+    return y;
   }
 
   /** Evaluates all visualization callbacks registered with the

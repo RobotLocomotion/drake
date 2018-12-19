@@ -71,25 +71,24 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
  * @param name Name of the Cost / Constraint class.
  */
 template <typename C>
-auto RegisterBinding(py::handle* pscope,
-    py::class_<MathematicalProgram>* pprog_cls, const string& name) {
-  auto& scope = *pscope;
-  auto& prog_cls = *pprog_cls;
+auto RegisterBinding(py::handle* scope, const string& name) {
+  constexpr auto& cls_doc = pydrake_doc.drake.solvers.Binding;
   typedef Binding<C> B;
   string pyname = "Binding_" + name;
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
-  auto binding_cls = py::class_<B>(scope, pyname.c_str())
-                         .def("evaluator", &B::evaluator)
-                         .def("constraint", &B::evaluator)
-                         .def("variables", &B::variables);
-  // Deprecate `constraint`.
+  py::class_<B> binding_cls(*scope, pyname.c_str());
+  binding_cls  // BR
+      .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
+      .def("variables", &B::variables, cls_doc.variables.doc);
+  if (!std::is_same<C, EvaluatorBase>::value) {
+    // This is required for implicit argument conversion. See below for
+    // `EvaluatorBase`'s generic constructor for attempting downcasting.
+    // TODO(eric.cousineau): See if there is a more elegant mechanism for this.
+    py::implicitly_convertible<B, Binding<EvaluatorBase>>();
+  }
+  // Add deprecated `constraint`.
+  binding_cls.def("constraint", &B::evaluator, cls_doc.constraint.doc);
   DeprecateAttribute(binding_cls, "constraint",
       "`constraint` is deprecated; please use `evaluator` instead.");
-  // Register overloads for MathematicalProgram class
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
-  prog_cls.def("EvalBindingAtSolution",
-      static_cast<Eigen::VectorXd (MathematicalProgram::*)(const B&) const>(
-          &MathematicalProgram::EvalBindingAtSolution));
   return binding_cls;
 }
 
@@ -465,6 +464,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           doc.MathematicalProgram.linear_costs.doc)
       .def("quadratic_costs", &MathematicalProgram::quadratic_costs,
           doc.MathematicalProgram.quadratic_costs.doc)
+      .def("GetAllCosts", &MathematicalProgram::GetAllCosts,
+          doc.MathematicalProgram.GetAllCosts.doc)
+      .def("GetLinearConstraints",
+          &MathematicalProgram::GetAllLinearConstraints,
+          doc.MathematicalProgram.GetAllLinearConstraints.doc)
+      .def("GetAllConstraints", &MathematicalProgram::GetAllConstraints,
+          doc.MathematicalProgram.GetAllConstraints.doc)
       .def("FindDecisionVariableIndex",
           &MathematicalProgram::FindDecisionVariableIndex,
           doc.MathematicalProgram.FindDecisionVariableIndex.doc)
@@ -499,6 +505,25 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             return prog.SubstituteSolution(p);
           },
           doc.MathematicalProgram.SubstituteSolution.doc_1args_p)
+      .def("EvalBinding",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding,
+              const VectorX<double>& prog_var_vals) {
+            return prog.EvalBinding(binding, prog_var_vals);
+          },
+          py::arg("binding"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBinding.doc)
+      .def("EvalBindings",
+          [](const MathematicalProgram& prog,
+              const std::vector<Binding<EvaluatorBase>>& binding,
+              const VectorX<double>& prog_var_vals) {
+            return prog.EvalBindings(binding, prog_var_vals);
+          },
+          py::arg("bindings"), py::arg("prog_var_vals"),
+          doc.MathematicalProgram.EvalBindings.doc)
+      .def("EvalBindingAtSolution",
+          &MathematicalProgram::EvalBindingAtSolution<EvaluatorBase>,
+          py::arg("binding"), doc.MathematicalProgram.EvalBindingAtSolution.doc)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
@@ -580,6 +605,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def(
           "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc);
 
+  RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase")
+      .def(py::init([](py::object binding) {
+        // Define a type-erased downcast to mirror the implicit
+        // "downcast-ability" of Binding<> types.
+        return std::make_unique<Binding<EvaluatorBase>>(
+            binding.attr("evaluator")().cast<std::shared_ptr<EvaluatorBase>>(),
+            binding.attr("variables")().cast<VectorXDecisionVariable>());
+      }));
+
   py::class_<Constraint, EvaluatorBase, std::shared_ptr<Constraint>>(
       m, "Constraint", doc.Constraint.doc)
       .def("num_constraints", &Constraint::num_constraints,
@@ -644,21 +678,19 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       "LinearComplementarityConstraint",
       doc.LinearComplementarityConstraint.doc);
 
-  RegisterBinding<Constraint>(&m, &prog_cls, "Constraint");
-  RegisterBinding<LinearConstraint>(&m, &prog_cls, "LinearConstraint");
-  RegisterBinding<LorentzConeConstraint>(
-      &m, &prog_cls, "LorentzConeConstraint");
-  RegisterBinding<LinearEqualityConstraint>(
-      &m, &prog_cls, "LinearEqualityConstraint");
-  RegisterBinding<BoundingBoxConstraint>(
-      &m, &prog_cls, "BoundingBoxConstraint");
+  RegisterBinding<Constraint>(&m, "Constraint");
+  RegisterBinding<LinearConstraint>(&m, "LinearConstraint");
+  RegisterBinding<LorentzConeConstraint>(&m, "LorentzConeConstraint");
+  RegisterBinding<LinearEqualityConstraint>(&m, "LinearEqualityConstraint");
+  RegisterBinding<BoundingBoxConstraint>(&m, "BoundingBoxConstraint");
   RegisterBinding<PositiveSemidefiniteConstraint>(
-      &m, &prog_cls, "PositiveSemidefiniteConstraint");
+      &m, "PositiveSemidefiniteConstraint");
   RegisterBinding<LinearComplementarityConstraint>(
-      &m, &prog_cls, "LinearComplementarityConstraint");
+      &m, "LinearComplementarityConstraint");
 
   // Mirror procedure for costs
-  py::class_<Cost, std::shared_ptr<Cost>> cost(m, "Cost", doc.Cost.doc);
+  py::class_<Cost, EvaluatorBase, std::shared_ptr<Cost>> cost(
+      m, "Cost", doc.Cost.doc);
 
   py::class_<LinearCost, Cost, std::shared_ptr<LinearCost>>(
       m, "LinearCost", doc.LinearCost.doc)
@@ -683,16 +715,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0,
           doc.QuadraticCost.UpdateCoefficients.doc);
 
-  RegisterBinding<Cost>(&m, &prog_cls, "Cost");
-  RegisterBinding<LinearCost>(&m, &prog_cls, "LinearCost");
-  RegisterBinding<QuadraticCost>(&m, &prog_cls, "QuadraticCost");
+  RegisterBinding<Cost>(&m, "Cost");
+  RegisterBinding<LinearCost>(&m, "LinearCost");
+  RegisterBinding<QuadraticCost>(&m, "QuadraticCost");
 
   py::class_<VisualizationCallback, EvaluatorBase,
       std::shared_ptr<VisualizationCallback>>(
       m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
-  RegisterBinding<VisualizationCallback>(
-      &m, &prog_cls, "VisualizationCallback");
+  RegisterBinding<VisualizationCallback>(&m, "VisualizationCallback");
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

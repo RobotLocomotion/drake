@@ -2760,6 +2760,13 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
   EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_cost, x_val),
                               Vector1d(7), 1E-15, MatrixCompareType::absolute));
 
+  EXPECT_TRUE(CompareMatrices(
+      prog.EvalBindings(prog.GetAllConstraints(), x_val),
+      Vector2d(30, 5), 1E-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      prog.EvalBindings(prog.GetAllCosts(), x_val),
+      Vector1d(7), 1E-15, MatrixCompareType::absolute));
+
   // Pass in an incorrect size input.
   EXPECT_THROW(prog.EvalBinding(linear_constraint, Eigen::Vector2d::Zero()),
                std::logic_error);
