@@ -219,18 +219,19 @@ class QueryObject {
    @note For a sphere, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
    surface has the same distance to the center.  In this case, we will assign
-   an arbitrary vector (1,0,0) as its gradient vector.
+   ∇φᵢ(p) a vector in World frame that is equivalent to (1,0,0) in G's frame.
 
    @note For a box, at a point p on an edge or a corner of the box, the signed
    distance function φᵢ(p) has an undefined gradient vector.  In this case, we
    will assign a unit vector in the direction of the average of the outward
    face normals of the incident faces of the edge or the corner.
 
-   @note For a box, if a point p is inside the box, and it is equidistant to
+   @note For a box B, if a point p is inside the box, and it is equidistant to
    to multiple nearest faces, the signed distance function φᵢ(p) at p will have
-   an undefined gradient vector. There is a nearest point candidate
-   associated with each nearest face. We pick the point associated with the
-   box face in the following priority order: +x,-x,+y,-y,+z,-z.
+   an undefined gradient vector. There is a nearest point candidate associated
+   with each nearest face. In this case, we arbitrarily pick the point Nᵢ
+   associated with one of the nearest faces.  Please note that, due to rounding
+   errors, applying a pose X_WG to B may perturb Nᵢ to another nearest point.
 
    @note The signed distance function is a continuous function with respect to
    the position of the query point, but its gradient vector field may

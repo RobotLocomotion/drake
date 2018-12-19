@@ -377,10 +377,8 @@ class DistanceToPoint {
   SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere) {
     // TODO(DamrongGuoy): Move most code of this function into FCL.
     const double radius = sphere.radius;
-
-    const Vector3d& p_WG = X_WG_.translation();
-    const Vector3d p_GQ_W = p_WQ_ - p_WG;
-    const double dist_GQ = p_GQ_W.norm();
+    const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
+    const double dist_GQ = p_GQ_G.norm();
     const double distance = dist_GQ - radius;
 
     // The gradient is always in the direction from the center of the sphere to
@@ -388,22 +386,21 @@ class DistanceToPoint {
     // the sphere G.  The gradient is undefined if the query point Q is at the
     // center of the sphere G.
     //
-    // If the query point Q is at the center of the sphere G, we arbitrarily set
-    // the gradient vector to (1,0,0) as documented in query_object.h
-    // (QueryObject::ComputeSignedDistanceToPoint).
-    //
-    // TODO(DamrongGuoy): Set up tolerance, so that very near the center of the
-    // sphere, we consistently set the gradient vector in the direction (1,0,0)
-    // instead of a noisy direction.
-    Vector3d grad_W = (dist_GQ != 0.0) ? p_GQ_W / dist_GQ
-                                       : Vector3d{1.0, 0.0, 0.0};
+    // If the query point Q is near the center of the sphere G within a
+    // tolerance, we arbitrarily set the gradient vector as documented in
+    // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
+    const double kTolerance = 1e-14 * std::max(1., radius);
+    Vector3d grad_G = (dist_GQ > kTolerance) ? p_GQ_G / dist_GQ
+                                             : Vector3d{1.0, 0.0, 0.0};
 
     // Position vector of the nearest point N on G's surface from the query
     // point Q, expressed in G's frame.
-    const Vector3d p_WN = p_WG + radius * grad_W;
-    const Vector3d p_GN = X_WG_.inverse() * p_WN;
+    const Vector3d p_GN_G = radius * grad_G;
+    // Gradient vector expressed in World frame.
+    const Vector3d grad_W = X_WG_.rotation() * grad_G;
 
-    return SignedDistanceToPoint<double>{geometry_id_, p_GN, distance, grad_W};
+    return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
+                                         grad_W};
   }
 
   // Overload for Box.
@@ -417,94 +414,88 @@ class DistanceToPoint {
     // i-th coordinate.
     const Vector3d half_size = box.side / 2.0;
 
-    // For a given i-th coordinate `coord` of the position of the query point Q
-    // expressed in the frame of the box, we clamp it within the bound
-    // ±half_size(i). If the `coord` is beyond or exactly on the bound, we set
-    // `is_clamp` to true. If the `coord` is strictly within the bound, we
-    // set `is_clamp` to false.
+    // We need to classify Q as inside, outside, or on the boundary of B.
+    // This helper function takes the i-th coordinate `coord` of p_GQ_G.
+    // It returns the clamped value of `coord` within ±h(i). It also returns
+    // two booleans `is_outside` and `on_bound` to indicate whether the
+    // i-th coordinate is outside the interval [-h(i),+h(i)] or on the
+    // bounded value ±h(i) respectively. The decision also depends on a
+    // tolerance.
     //
-    // It will help us check whether Q is outside B, on the boundary ∂B, or
-    // inside B.
+    // Later we can use is_outside(i) and on_bound(i) to classify Q like this:
+    // if (is_outside(0) || is_outside(1) || is_outside(2))
+    //   // Q is outside B
+    // else if (on_bound(0) || on_bound(1) || on_bound(2))
+    //   // Q is on the boundary ∂B.
+    // else
+    //   // Q is inside B.
     //
-    // TODO(DamrongGuoy): Use tolerance to check `coord` against ±half_size(i).
-    // If `coord` is within a tolerance of ±half_size(i), we will treat it as
-    // being on ∂B; therefore, setting `is_clamp` to true. We will probably
-    // need another bool `on_bound` to distinguish the `coord` that is beyond
-    // the tolerance from ±half_size(i) and the `coord` that is within the
-    // tolerance. After that, we can use `is_clamp` and `on_bound` together
-    // to decide whether the query point is outside B, within the tolerance of
-    // ∂B, or inside B.
+    // TODO(DamrongGuoy): Make tolerance available to users.
     auto clamping = [&half_size](const int i, const double coord,
-                                 bool* is_clamp) {
-      *is_clamp = true;
-      if (coord >= half_size(i)) return half_size(i);
-      if (coord <= -half_size(i)) return -half_size(i);
-      *is_clamp = false;
+                                 bool* is_outside, bool* on_bound) {
+      const double kTolerance = 1e-14 * std::max(1., half_size(i));
+      *is_outside = true;
+      *on_bound = true;
+      if (coord > half_size(i) + kTolerance) {
+        *on_bound = false;
+        return half_size(i);
+      }
+      if (coord >= half_size(i) - kTolerance) {
+        *is_outside = false;
+        return half_size(i);
+      }
+      if (coord < -half_size(i) - kTolerance) {
+        *on_bound = false;
+        return -half_size(i);
+      }
+      if (coord <= -half_size(i) + kTolerance) {
+        *is_outside = false;
+        return -half_size(i);
+      }
+      *is_outside = false;
+      *on_bound = false;
       return coord;
     };
 
     // The clamping point C has coordinates of Q clamping onto the box.
     // Note that:
-    // 1. C is the nearest point to Q on ∂B iff Q is outside B or on ∂B.
-    // 2. C is at the same position as Q iff Q is inside B or on ∂B.
-    // 3. At least one of is_clamp(i) is true iff Q is outside B or on ∂B.
+    // 1. C is the nearest point to Q on ∂B if Q is classified as outside B.
+    // 2. C is at the same position as Q if Q is classified as inside B.
+    // 3. C is within a tolerance from ∂B, otherwise.
     Vector3d p_GC_G;
-    Vector3<bool> is_clamp;
+    Vector3<bool> is_outside, on_bound;
     for (int i = 0; i < 3; ++i)
-      p_GC_G(i) = clamping(i, p_GQ_G(i), &is_clamp(i));
+      p_GC_G(i) = clamping(i, p_GQ_G(i), &is_outside(i), &on_bound(i));
 
     // Initialize the position of the nearest point N on ∂B as that of C.
     Vector3d p_GN_G = p_GC_G;
     double distance;
     Vector3d grad_G{0., 0., 0.};
 
-    // For a query point Q and the box B with boundary ∂B, after clamping above,
-    // we have the following results for the clamping point C and the three
-    // booleans `is_clamp(i)`, depending on whether Q is outside B, on ∂B, or
-    // inside B.
-    //----------------------------------------------------------
-    //                | C    | is_clamp
-    //----------------|------|---------------------------------
-    // Q is outside B | ≠ Q  | at least one is_clamp(i) is true
-    // Q is on ∂B     | = Q  | at least one is_clamp(i) is true
-    // Q is inside B  | = Q  | none of is_clamp(i) is true
-    //----------------------------------------------------------
-    //-----------------------------------------
-    //                | C                     |
-    //----------------|-----------------------|
-    // Q is outside B | = nearest point on ∂B |
-    // Q is on ∂B     | = nearest point on ∂B |
-    // Q is inside B  | ≠ nearest point on ∂B |
-    //-----------------------------------------
-    //
-    // TODO(DamrongGuoy): Use tolerance. See the above TODO for clamping().
-    // Instead of checking C = Q then checking is_clamp(i), we will check
-    // `is_clamp` and `on_bound` to distinguish the three cases.
-    if (p_GC_G != p_GQ_G) {
+    if (is_outside(0) || is_outside(1) || is_outside(2)) {
       // Q is outside the box.
       Vector3d p_NQ_G = p_GQ_G - p_GN_G;
       distance = p_NQ_G.norm();
       DRAKE_DEMAND(distance != 0.);
       grad_G = p_NQ_G / distance;
-    } else if (is_clamp(0) || is_clamp(1) || is_clamp(2)) {
+    } else if (on_bound(0) || on_bound(1) || on_bound(2)) {
       // Q is on the boundary of the box.
       distance = 0.0;
       // A point on a face, on an edge, or on a vertex of the box has one, two,
-      // or three of the is_clamp(i) equals true respectively.  The gradient
+      // or three of the on_bound(i) equals true respectively.  The gradient
       // at a point on an edge or a vertex of the box is undefined. Here, the
       // calculation is equivalent to averaging outward normals of the faces
-      // that contain the point.  We do not use weighted averaging because we
-      // want to make the decision locally independent of the shape of the box.
+      // that contain the point.
       for (int i = 0; i < 3; ++i) {
-        if (is_clamp(i)) grad_G(i) = (p_GC_G(i) >= 0.)? 1. : -1.;
+        if (on_bound(i)) grad_G(i) = (p_GC_G(i) >= 0.)? 1. : -1.;
       }
       grad_G.normalize();
     } else {
       // Q is inside the box.
       // We pick the axis whose coordinate is closest to the boundary value
       // ±half_size(i). If Q is equidistant to multiple faces of the box, we
-      // prioritize according to an arbitrary ordering: +x,-x,+y,-y,+z,-z as
-      // described in QueryObject::ComputeSignedDistanceToPoint.
+      // prioritize according to an arbitrary ordering: +x,-x,+y,-y,+z,-z in
+      // G's frame.
       auto extremal_axis = [&half_size](const Vector3d& p_GQ) {
         double min_diff = std::numeric_limits<double>::infinity();
         int axis = 0;
@@ -526,9 +517,10 @@ class DistanceToPoint {
       distance = std::abs(p_GQ_G(axis)) - half_size(axis);
     }
 
-    // Use X_WG.linear() for vectors. Use X_WG for points.
-    Vector3d grad_W = X_WG_.linear() * grad_G;
-    return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance, grad_W};
+    // Use X_WG.rotation() for vectors. Use X_WG for points.
+    Vector3d grad_W = X_WG_.rotation() * grad_G;
+    return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
+                                         grad_W};
   }
 };
 
