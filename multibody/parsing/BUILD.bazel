@@ -210,8 +210,7 @@ drake_cc_library(
     ],
     deps = [
         ":detail_misc",
-        ":detail_sdf_parser",
-        ":detail_urdf_parser",
+        ":parser",
         "//common:find_resource",
     ],
 )
