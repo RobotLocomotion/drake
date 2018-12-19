@@ -15,7 +15,7 @@
 namespace drake {
 
 using geometry::SceneGraph;
-using multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
+using multibody::benchmarks::inclined_plane::AddInclinedPlaneToPlant;
 using systems::BasicVector;
 using systems::Context;
 using systems::Diagram;
@@ -73,9 +73,6 @@ class InclinedPlaneTest : public ::testing::TestWithParam<bool> {
 TEST_P(InclinedPlaneTest, RollingSphereTest) {
   DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-
   // The target accuracy determines the size of the actual time steps taken
   // whenever a variable time step integrator is used.
   const double target_accuracy = 1.0e-6;
@@ -91,26 +88,19 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const CoulombFriction<double> surface_friction(
       1.0 /* static friction */, 0.5 /* dynamic friction */);
 
-  MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
-      radius, mass, slope, surface_friction, g, time_step_, &scene_graph));
-  const MultibodyTree<double>& tree = plant.tree();
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
+      &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
+  AddInclinedPlaneToPlant(
+      radius, mass, slope, surface_friction, g, &plant);
+  plant.Finalize();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance_);
   plant.set_stiction_tolerance(stiction_tolerance_);
-  const RigidBody<double>& ball = tree.GetRigidBodyByName("Ball");
+  const RigidBody<double>& ball = plant.GetRigidBodyByName("Ball");
 
   // Sanity check for the model's size.
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
-
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(!!plant.get_source_id());
-
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
 
   // And build the Diagram:
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
@@ -124,7 +114,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   // This will set a default initial condition with the sphere located at
   // p_WBcm = (0; 0; 0) and zero spatial velocity.
-  tree.SetDefaultContext(&plant_context);
+  plant.SetDefaultContext(&plant_context);
 
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   IntegratorBase<double>* integrator = simulator.get_mutable_integrator();
@@ -135,10 +125,10 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   // Compute the kinetic energy of B (in frame W) from V_WB.
   const SpatialVelocity<double>& V_WB =
-      tree.EvalBodySpatialVelocityInWorld(plant_context, ball);
+      plant.EvalBodySpatialVelocityInWorld(plant_context, ball);
   const SpatialInertia<double> M_BBo_B = ball.default_spatial_inertia();
   const Isometry3<double>& X_WB =
-      tree.EvalBodyPoseInWorld(plant_context, ball);
+      plant.EvalBodyPoseInWorld(plant_context, ball);
   const drake::math::RotationMatrix<double> R_WB(X_WB.linear());
   const SpatialInertia<double> M_BBo_W = M_BBo_B.ReExpress(R_WB);
   const double ke_WB = 0.5 * V_WB.dot(M_BBo_W * V_WB);
@@ -158,7 +148,7 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
   const double angular_velocity_expected = speed_expected / radius;
 
   // Verify the plant's potential energy matches the analytical calculation.
-  const double Ve = tree.CalcPotentialEnergy(plant_context);
+  const double Ve = plant.CalcPotentialEnergy(plant_context);
   EXPECT_NEAR(-Ve, ke_WB_expected, std::numeric_limits<double>::epsilon());
 
   // Verify the relative errors. For the continuous model of the plant errors

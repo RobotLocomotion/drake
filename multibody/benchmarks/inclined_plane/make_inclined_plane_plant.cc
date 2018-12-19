@@ -13,22 +13,16 @@ using geometry::SceneGraph;
 using geometry::Sphere;
 using Eigen::AngleAxisd;
 
-std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
+void AddInclinedPlaneToPlant(
     double radius, double mass, double slope,
     const CoulombFriction<double>& surface_friction, double gravity,
-    double time_step,
-    SceneGraph<double>* scene_graph) {
-  DRAKE_THROW_UNLESS(scene_graph != nullptr);
-  DRAKE_THROW_UNLESS(time_step >= 0);
-
-  auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
+    MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
 
   const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
-
-  plant->RegisterAsSourceForSceneGraph(scene_graph);
 
   // Orientation of a plane frame P with its z axis normal to the plane and its
   // x axis pointing down the plane.
@@ -89,11 +83,6 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
       -gravity * Vector3<double>::UnitZ());
-
-  // We are done creating the plant.
-  plant->Finalize();
-
-  return plant;
 }
 
 }  // namespace inclined_plane
