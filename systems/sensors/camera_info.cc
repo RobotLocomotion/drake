@@ -16,8 +16,8 @@ CameraInfo::CameraInfo(int width, int height, double focal_x, double focal_y,
   DRAKE_ASSERT(height > 0);
   DRAKE_ASSERT(focal_x > 0);
   DRAKE_ASSERT(focal_y > 0);
-  DRAKE_ASSERT(center_x > 0 && center_x < static_cast<double>(width));
-  DRAKE_ASSERT(center_y > 0 && center_y < static_cast<double>(height));
+  DRAKE_ASSERT(center_x >= 0 && center_x < static_cast<double>(width));
+  DRAKE_ASSERT(center_y >= 0 && center_y < static_cast<double>(height));
 }
 
 CameraInfo::CameraInfo(int width, int height, double vertical_fov_rad)

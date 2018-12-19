@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
@@ -60,7 +61,15 @@ enum class PixelFormat {
   kExpr,
 };
 
-/// Traits class for Image.
+/// Traits class for Image, specialized by PixelType.
+///
+/// All traits specialization should offer at least these two constants:
+/// - kNumChannels: The number of channels.
+/// - kPixelFormat: The meaning and/or layout of the channels.
+///
+/// Specializations for kDepth... should also provide the following constants:
+/// - kTooNear: The depth value when the min sensing range is exceeded.
+/// - kTooFar: The depth value when the max sensing range is exceeded.
 template <PixelType>
 struct ImageTraits;
 
@@ -97,6 +106,8 @@ struct ImageTraits<PixelType::kDepth32F> {
   typedef float ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kDepth;
+  static constexpr float kTooClose = 0.0f;
+  static constexpr float kTooFar = std::numeric_limits<float>::infinity();
 };
 
 template <>
@@ -104,6 +115,8 @@ struct ImageTraits<PixelType::kDepth16U> {
   typedef uint16_t ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kDepth;
+  static constexpr uint16_t kTooClose = 0;
+  static constexpr uint16_t kTooFar = std::numeric_limits<uint16_t>::max();
 };
 
 template <>
