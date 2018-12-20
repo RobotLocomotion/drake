@@ -56,9 +56,9 @@ namespace sensors {
 ///
 // TODO(kunimatsu-tri) Add camera distortion parameters and other parameters as
 // needed.
-class CameraInfo {
+class CameraInfo final {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CameraInfo)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CameraInfo)
 
   /// Constructor that directly sets the image size, center, and focal lengths.
   ///
@@ -118,12 +118,12 @@ class CameraInfo {
   }
 
  private:
-  const int width_{};
-  const int height_{};
+  int width_{};
+  int height_{};
   // Camera intrinsic parameter matrix. For the detail, see
   // http://docs.opencv.org/2.4/modules/calib3d/doc/
   // camera_calibration_and_3d_reconstruction.html
-  const Eigen::Matrix3d intrinsic_matrix_;
+  Eigen::Matrix3d intrinsic_matrix_;
 };
 
 }  // namespace sensors
