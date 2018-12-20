@@ -58,7 +58,7 @@ random parameters, System classes may override the methods
 System<T>::SetRandomState() and System<T>::SetRandomParameters().
 Algorithms written for systems may call System<T>::SetRandomContext()
 (which calls both of these).  These methods must be deterministic
-functions of their input arguments -- a (mutable) systems::RandomGenerator is
+functions of their input arguments -- a (mutable) drake::RandomGenerator is
 passed in and must be the only source of "randomness". Their implementations
 are expected to draw samples from random distributions satisfying the C++
 Standard Library <a href=
@@ -74,7 +74,7 @@ a different number of objects generated in the environment for each random
 simulation.  APIs to support this functionality use a
 systems::analysis::SimulatorFactory method which constructs the random
 System and its simulation parameters as a deterministic function
-of the systems::RandomGenerator.
+of the drake::RandomGenerator.
 
 @see systems::analysis::MonteCarloSimulation
 @ingroup systems
