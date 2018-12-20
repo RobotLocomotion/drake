@@ -56,13 +56,14 @@ PYBIND11_MODULE(sensors, m) {
     py::enum_<PixelType> pixel_type(m, "PixelType");
     vector<string> enum_names = {
         "kRgba8U",
+        "kDepth16U",
         "kDepth32F",
         "kLabel16I",
     };
-
-    using ParamList = constant_pack<  // BR
+    using ParamList = constant_pack<  // This list should match enum_names.
         PixelType,                    //
         PixelType::kRgba8U,           //
+        PixelType::kDepth16U,         //
         PixelType::kDepth32F,         //
         PixelType::kLabel16I>;
 

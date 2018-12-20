@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 
-from pydrake.systems.sensors import CameraInfo, ImageDepth32F
+from pydrake.systems.sensors import CameraInfo, PixelType
 from pydrake.systems.framework import (
     AbstractValue, InputPort, OutputPort, Value)
 
@@ -81,3 +81,7 @@ class TestPerception(unittest.TestCase):
         dut = mut.DepthImageToPointCloud(camera_info=camera_info)
         self.assertIsInstance(dut.depth_image_input_port(), InputPort)
         self.assertIsInstance(dut.point_cloud_output_port(), OutputPort)
+        dut = mut.DepthImageToPointCloud(
+            camera_info=camera_info,
+            pixel_type=PixelType.kDepth16U,
+            scale=0.001)
