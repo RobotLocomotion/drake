@@ -63,8 +63,8 @@ using DummyList = bool[];
 
 template <typename T>
 struct assert_default_constructible {
-  static_assert(std::is_default_constructible<T>::value,
-                "Must be default constructible");
+  static_assert(
+      std::is_default_constructible<T>::value, "Must be default constructible");
 };
 
 }  // namespace detail
@@ -164,17 +164,17 @@ struct type_check_different_from {
 /// @tparam Predicate Predicate operating on the type dictated by `VisitWith`.
 /// @param visitor Lambda or functor for visiting a type.
 template <class VisitWith = type_visit_with_default,
-          template <typename> class Predicate = type_check_always_true,
-          typename Visitor = void,
-          typename ... Ts>
-void type_visit(
-    Visitor&& visitor, type_pack<Ts...> = {},
+    template <typename> class Predicate = type_check_always_true,
+    typename Visitor = void, typename... Ts>
+void type_visit(Visitor&& visitor, type_pack<Ts...> = {},
     template_single_tag<Predicate> = {}) {
+  // clang-format off
   (void)detail::DummyList{(
       detail::type_visit_impl<VisitWith, Visitor>::
           template runner<Ts, Predicate<Ts>::value>::
               run(std::forward<Visitor>(visitor)),
       true)...};
+  // clang-format on
 }
 
 /// Provides short-hand for hashing a type.

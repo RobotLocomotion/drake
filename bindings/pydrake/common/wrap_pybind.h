@@ -24,8 +24,7 @@ class MirrorDef {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MirrorDef);
 
-  MirrorDef(A* a, B* b)
-      : a_(a), b_(b) {}
+  MirrorDef(A* a, B* b) : a_(a), b_(b) {}
 
   /// Calls `def` for both `a` and `b`.
   template <typename... Args>
@@ -46,8 +45,8 @@ template <typename T, typename = void>
 struct wrap_ref_ptr : public wrap_arg_default<T> {};
 
 template <typename T>
-using is_generic_pybind =
-  std::is_base_of<py::detail::type_caster_generic, py::detail::make_caster<T>>;
+using is_generic_pybind = std::is_base_of<py::detail::type_caster_generic,
+    py::detail::make_caster<T>>;
 
 template <typename T>
 struct wrap_ref_ptr<T&, std::enable_if_t<is_generic_pybind<T>::value>> {
@@ -94,12 +93,11 @@ template <typename PyClass, typename Class, typename T>
 void DefReadWriteKeepAlive(PyClass* cls, const char* name, T Class::*member) {
   auto getter = [member](const Class* obj) { return obj->*member; };
   auto setter = [member](Class* obj, const T& value) { obj->*member = value; };
-  cls->def_property(
-    name,
-    py::cpp_function(getter),
-    py::cpp_function(setter,
-                     // Keep alive, reference: `self` keeps `value` alive.
-                     py::keep_alive<1, 2>()));
+  cls->def_property(name,  // BR
+      py::cpp_function(getter),
+      py::cpp_function(setter,
+          // Keep alive, reference: `self` keeps `value` alive.
+          py::keep_alive<1, 2>()));
 }
 
 }  // namespace pydrake
