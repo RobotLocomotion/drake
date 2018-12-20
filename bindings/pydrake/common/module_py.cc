@@ -4,11 +4,11 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_assertion_error.h"
 #include "drake/common/drake_path.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/random.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/text_logging.h"
 
