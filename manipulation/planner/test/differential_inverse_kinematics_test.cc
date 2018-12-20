@@ -51,21 +51,36 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     frame_E_ = &plant_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
         plant_->GetBodyByName("iiwa_link_7").body_frame(), X_7E));
     plant_->Finalize();
-    context_ = plant_->CreateDefaultContext();
+    owned_context_ = plant_->CreateDefaultContext();
+    context_ = dynamic_cast<multibody::MultibodyTreeContext<double>*>(
+        owned_context_.get());
+    DRAKE_THROW_UNLESS(context_);
 
     // Configure the Diff IK.
     params_ = std::make_unique<DifferentialInverseKinematicsParameters>(
         plant_->num_positions(), plant_->num_velocities());
-    plant_->SetDefaultContext(context_.get());
-    params_->set_nominal_joint_position(plant_->GetPositions(*context_));
+    const int num_joints = plant_->num_positions();
+    plant_->SetDefaultContext(context_);
+    params_->set_nominal_joint_position(VectorX<double>::Zero(num_joints));
     params_->set_unconstrained_degrees_of_freedom_velocity_limit(0.6);
     params_->set_timestep(1e-3);
-    // The position limits are copied from the SDF file. Please make sure the
-    // values are in sync with the SDF file.
-    VectorXd pos_limits(7);
-    pos_limits << 2.96706, 2.0944, 2.96706, 2.0944, 2.96706, 2.0944, 3.05433;
+
+    // Get position and velocity limits.
+    VectorXd pos_upper_limits(num_joints), pos_lower_limits(num_joints);
+    int joint_index = 0;
+    for (int i = 0; i < plant_->num_joints(); i++) {
+      const multibody::Joint<double>& joint =
+          plant_->get_joint(multibody::JointIndex(i));
+      DRAKE_THROW_UNLESS(joint.num_positions() >= 0);
+      if (joint.num_positions() > 0) {
+        pos_lower_limits[joint_index] = joint.lower_limits()[0];
+        pos_upper_limits[joint_index++] = joint.upper_limits()[0];
+      }
+    }
+    DRAKE_THROW_UNLESS(joint_index == num_joints);
+
     VectorXd vel_limits = get_iiwa_max_joint_velocities();
-    params_->set_joint_position_limits({-pos_limits, pos_limits});
+    params_->set_joint_position_limits({pos_lower_limits, pos_upper_limits});
     params_->set_joint_velocity_limits({-vel_limits, vel_limits});
 
     // Set the initial plant state.  These values were randomly generated.
@@ -78,8 +93,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         -1.7690706666250044509780536827747710049152374267578125,
         -2.209570171225335943887557732523418962955474853515625).finished();
     const VectorXd v = VectorXd::Zero(plant_->num_velocities());
-    plant_->SetPositions(context_.get(), q);
-    plant_->SetVelocities(context_.get(), v);
+    plant_->SetPositions(context_, q);
+    plant_->SetVelocities(context_, v);
   }
 
   template <typename Vector6OrIsometry3>
@@ -100,11 +115,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     plant_->SetPositions(temp_context.get(), q);
     plant_->SetVelocities(temp_context.get(), result.joint_velocities.value());
 
-    const multibody::SpatialVelocity<double> V_WE_actual;
-#if 0
-    V_WE_actual = plant_->EvalBodySpatialVelocityInWorld(
-        *temp_context, *frame_E_);
-#endif
+    const multibody::SpatialVelocity<double> V_WE_actual =
+        frame_E_->CalcSpatialVelocityInWorld(*temp_context);
     drake::log()->info(
         "V_WE_actual = {}", V_WE_actual.get_coeffs().transpose());
     drake::log()->info("V_WE = {}", V_WE.transpose());
@@ -126,7 +138,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
   std::unique_ptr<MultibodyPlant<double>> plant_;
   const FixedOffsetFrame<double>* frame_E_{};
-  std::unique_ptr<systems::Context<double>> context_;
+  std::unique_ptr<systems::Context<double>> owned_context_;
+  drake::multibody::MultibodyTreeContext<double>* context_{};
   std::unique_ptr<DifferentialInverseKinematicsParameters> params_;
 };
 
@@ -167,12 +180,11 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   const VectorXd q = plant_->GetPositions(*context_);
 
-  const Isometry3d X_WE;
-  const MatrixX<double> J;
-#if 0
-  X_WE = plant_->EvalBodyPoseInWorldFrame(*context_, *frame_E_);
-  J = tree_->CalcFrameSpatialVelocityJacobianInWorldFrame(*cache_, *frame_E_);
-#endif
+  const Isometry3d X_WE = frame_E_->CalcPoseInWorld(*context_);
+  MatrixX<double> J(6, plant_->num_velocities());
+  plant_->CalcFrameGeometricJacobianExpressedInWorld(
+      *context_, *frame_E_, Vector3<double>::Zero(), &J);
+
   Vector6d V_WE, V_WE_desired, V_WE_E, V_WE_E_desired;
   V_WE_desired << 0.1, -0.2, 0.3, -0.3, 0.2, -0.1;
   V_WE_desired /= 2.;
@@ -185,10 +197,11 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     auto result = DoDiffIK(V_WE_desired);
     ASSERT_TRUE(result.joint_velocities != nullopt);
 
-#if 0
     // Transform the resulting end effector frame's velocity into body frame.
-    *cache_ = tree_->doKinematics(q, result.joint_velocities.value());
-    V_WE = tree_->CalcFrameSpatialVelocityInWorldFrame(*cache_, *frame_E_);
+    context_->get_mutable_positions() = q;
+    context_->get_mutable_velocities() = result.joint_velocities.value();
+
+    V_WE = frame_E_->CalcSpatialVelocityInWorld(*context_).get_coeffs();
     V_WE_E.head<3>() = X_WE.linear().transpose() * V_WE.head<3>();
     V_WE_E.tail<3>() = X_WE.linear().transpose() * V_WE.tail<3>();
 
@@ -204,10 +217,8 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
         EXPECT_NEAR(V_WE_E(j), V_WE_E_desired(j), 5e-3);
       }
     }
-#endif
   }
 
-#if 0
   // All Cartesian tracking has been disabled, the resulting velocity should be
   // tracking q_nominal only.
   const auto& v_bounds = *(params_->get_joint_velocity_limits());
@@ -217,17 +228,13 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     v_desired(i) = std::max(v_desired(i), v_bounds.first(i));
     v_desired(i) = std::min(v_desired(i), v_bounds.second(i));
   }
-  EXPECT_TRUE(CompareMatrices(cache_->getV(), v_desired, 5e-5,
+  EXPECT_TRUE(CompareMatrices(context_->get_velocities(), v_desired, 5e-5,
                               MatrixCompareType::absolute));
-#endif
 }
 
 // Use the solver to track a fixed end effector pose.
 TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
-  Isometry3d X_WE;
-#if 0
-  X_WE = plant_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
-#endif
+  Isometry3d X_WE = frame_E_->CalcPoseInWorld(*context_);
   Isometry3d X_WE_desired = Translation3d(Vector3d(-0.02, -0.01, -0.03)) * X_WE;
   for (int iteration = 0; iteration < 900; ++iteration) {
     const auto result = DoDiffIK(X_WE_desired);
@@ -237,11 +244,9 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
     const VectorXd q = plant_->GetPositions(*context_);
     const VectorXd v = result.joint_velocities.value();
     const double dt = params_->get_timestep();
-    plant_->SetPositions(context_.get(), q + v * dt);
+    plant_->SetPositions(context_, q + v * dt);
   }
-#if 0
-  X_WE = plant_->CalcFramePoseInWorldFrame(*cache_, *frame_E_);
-#endif
+  X_WE = frame_E_->CalcPoseInWorld(*context_);
   EXPECT_TRUE(CompareMatrices(X_WE.matrix(), X_WE_desired.matrix(), 1e-5,
                               MatrixCompareType::absolute));
 }
