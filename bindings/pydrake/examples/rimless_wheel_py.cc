@@ -28,7 +28,7 @@ PYBIND11_MODULE(rimless_wheel, m) {
 
   py::class_<RimlessWheel<T>, LeafSystem<T>>(
       m, "RimlessWheel", doc.RimlessWheel.doc)
-      .def(py::init<>(), doc.RimlessWheel.ctor.doc_3);
+      .def(py::init<>(), doc.RimlessWheel.ctor.doc_0args);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(

@@ -150,7 +150,7 @@ PYBIND11_MODULE(automotive, m) {
 
   py::class_<PurePursuitController<T>, LeafSystem<T>>(
       m, "PurePursuitController", doc.PurePursuitController.doc)
-      .def(py::init<>(), doc.PurePursuitController.ctor.doc_4)
+      .def(py::init<>(), doc.PurePursuitController.ctor.doc_0args)
       .def("ego_pose_input", &PurePursuitController<T>::ego_pose_input,
           py_reference_internal, doc.PurePursuitController.ego_pose_input.doc)
       .def("lane_input", &PurePursuitController<T>::lane_input,
@@ -178,7 +178,7 @@ PYBIND11_MODULE(automotive, m) {
           doc.SimpleCarState.set_velocity.doc);
 
   py::class_<SimpleCar<T>, LeafSystem<T>>(m, "SimpleCar", doc.SimpleCar.doc)
-      .def(py::init<>(), doc.SimpleCar.ctor.doc_4)
+      .def(py::init<>(), doc.SimpleCar.ctor.doc_0args)
       .def("state_output", &SimpleCar<T>::state_output, py_reference_internal,
           doc.SimpleCar.state_output.doc)
       .def("pose_output", &SimpleCar<T>::pose_output, py_reference_internal,

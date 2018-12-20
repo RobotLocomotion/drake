@@ -27,9 +27,13 @@ class AbstractValues {
   explicit AbstractValues(std::vector<std::unique_ptr<AbstractValue>>&& data);
 
   /// Constructs an AbstractValues that does not own the underlying data.
+  ///
+  /// @no_pydrake
   explicit AbstractValues(const std::vector<AbstractValue*>& data);
 
   /// Constructs an AbstractValues that owns a single @p datum.
+  ///
+  /// @no_pydrake
   explicit AbstractValues(std::unique_ptr<AbstractValue> datum);
 
   virtual ~AbstractValues();

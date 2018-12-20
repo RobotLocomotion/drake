@@ -40,7 +40,7 @@ PYBIND11_MODULE(math, m) {
       py::arg("axis_index"), py::arg("axis_W"), doc.ComputeBasisFromAxis.doc);
   py::class_<BarycentricMesh<T>>(m, "BarycentricMesh", doc.BarycentricMesh.doc)
       .def(py::init<BarycentricMesh<T>::MeshGrid>(),
-          doc.BarycentricMesh.ctor.doc_1args)
+          doc.BarycentricMesh.ctor.doc)
       .def("get_input_grid", &BarycentricMesh<T>::get_input_grid,
           doc.BarycentricMesh.get_input_grid.doc)
       .def("get_input_size", &BarycentricMesh<T>::get_input_size,

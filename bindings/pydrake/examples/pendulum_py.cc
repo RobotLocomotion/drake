@@ -33,7 +33,7 @@ PYBIND11_MODULE(pendulum, m) {
 
   py::class_<PendulumPlant<T>, LeafSystem<T>>(
       m, "PendulumPlant", doc.PendulumPlant.doc)
-      .def(py::init<>(), doc.PendulumPlant.ctor.doc_3);
+      .def(py::init<>(), doc.PendulumPlant.ctor.doc_0args);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<PendulumInput<T>, BasicVector<T>>(

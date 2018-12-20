@@ -60,7 +60,7 @@ PYBIND11_MODULE(geometry, m) {
           py::arg("geometry_id"), doc.SceneGraphInspector.GetFrameId.doc);
 
   py::class_<SceneGraph<T>, LeafSystem<T>>(m, "SceneGraph", doc.SceneGraph.doc)
-      .def(py::init<>(), doc.SceneGraph.ctor.doc_4)
+      .def(py::init<>(), doc.SceneGraph.ctor.doc_0args)
       .def("get_source_pose_port", &SceneGraph<T>::get_source_pose_port,
           py_reference_internal, doc.SceneGraph.get_source_pose_port.doc)
       .def("get_pose_bundle_output_port",

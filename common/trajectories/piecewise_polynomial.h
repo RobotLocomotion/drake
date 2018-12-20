@@ -57,10 +57,10 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   typedef MatrixX<T> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
-  // default constructor; just leaves segment_times and polynomials empty
+  /// Default constructor; just leaves segment_times and polynomials empty.
   PiecewisePolynomial() = default;
 
-  // single segment and/or constant value constructor
+  /// Single segment and/or constant value constructor.
   template <typename Derived>
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& value)
       : PiecewiseTrajectory<T>(std::vector<double>(
@@ -68,11 +68,15 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
     polynomials_.push_back(value.template cast<PolynomialType>());
   }
 
-  // Matrix constructor
+  /// Matrix constructor
+  ///
+  /// @no_pydrake
   PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials,
                       std::vector<double> const& breaks);
 
-  // Scalar constructor
+  /// Scalar constructor
+  ///
+  /// @no_pydrake
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& breaks);
 
@@ -102,6 +106,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *   knots.cols() == breaks.size().
    *
    * @overload PiecewisePolynomial<T> ZeroOrderHold(breaks, knots)
+   *
+   * @no_pydrake
    */
   static PiecewisePolynomial<T> ZeroOrderHold(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -126,6 +132,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *   knots.cols() == breaks.size().
    *
    * @overload PiecewisePolynomial<T> FirstOrderHold(breaks, knots)
+   *
+   * @no_pydrake
    */
   static PiecewisePolynomial<T> FirstOrderHold(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -179,12 +187,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @overload PiecewisePolynomial<T> Pchip(breaks, knots,
    * zero_end_point_derivatives)
+   *
+   * @no_pydrake
    */
   static PiecewisePolynomial<T> Pchip(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& knots,
       bool zero_end_point_derivatives = false);
-
 
   /**
    * Constructs a third order PiecewisePolynomial from `breaks` and `knots`.
@@ -214,6 +223,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @overload PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot_start,
    * knots_dot_end)
+   *
+   * @no_pydrake
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -246,6 +257,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *   knots.cols() == knots_dot.cols() == breaks.size().
    *
    * @overload PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot)
+   *
+   * @no_pydrake
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -294,13 +307,13 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * as a knot point and  knots.cols() == breaks.size().
    *
    * @overload PiecewisePolynomial<T> Cubic(breaks, knots)
+   *
+   * @no_pydrake
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
       const Eigen::Ref<const MatrixX<T>>& knots,
       bool periodic_end_condition = false);
-
-
 
   /// Takes the derivative of this PiecewisePolynomial.
   /**
