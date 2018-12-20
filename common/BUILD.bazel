@@ -218,6 +218,7 @@ drake_cc_library(
         ":extract_double",
         ":hash",
         ":polynomial",
+        ":random",
         "//math:matrix_util",
     ],
 )

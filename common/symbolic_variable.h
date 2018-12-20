@@ -20,7 +20,16 @@
 namespace drake {
 namespace symbolic {
 
-/** Represents a symbolic variable. */
+/** Represents a symbolic variable.
+ *
+ * @note Expression::Evaluate and Formula::Evaluate methods take a symbolic
+ * environment (Variable → double) and a random number generator. When an
+ * expression or a formula includes random variables, `Evaluate` methods use the
+ * random number generator to draw a number for a random variable from the given
+ * distribution. Then this numeric value is used to substitute all the
+ * occurrences of the corresponding random variable in an expression or a
+ * formula.
+ */
 class Variable {
  public:
   typedef size_t Id;
@@ -28,10 +37,16 @@ class Variable {
   /** Supported types of symbolic variables. */
   // TODO(soonho-tri): refines the following descriptions.
   enum class Type {
-    CONTINUOUS,  ///< A CONTINUOUS variable takes a `double` value.
-    INTEGER,     ///< An INTEGER variable takes an `int` value.
-    BINARY,      ///< A BINARY variable takes an integer value from {0, 1}.
-    BOOLEAN,     ///< A BOOLEAN variable takes a `bool` value.
+    CONTINUOUS,       ///< A CONTINUOUS variable takes a `double` value.
+    INTEGER,          ///< An INTEGER variable takes an `int` value.
+    BINARY,           ///< A BINARY variable takes an integer value from {0, 1}.
+    BOOLEAN,          ///< A BOOLEAN variable takes a `bool` value.
+    RANDOM_UNIFORM,   ///< A random variable whose value will be drawn from
+                      ///< uniform real distributed ∈ [0,1).
+    RANDOM_GAUSSIAN,  ///< A random variable whose value will be drawn from
+                      ///< mean-zero, unit-variance normal.
+    RANDOM_EXPONENTIAL,  ///< A random variable whose value will be drawn from
+                         ///< exponential distribution with λ=1.
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)

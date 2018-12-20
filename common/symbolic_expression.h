@@ -12,6 +12,7 @@
 #include <map>
 #include <memory>
 #include <ostream>
+#include <random>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -28,6 +29,7 @@
 #include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -232,10 +234,24 @@ class Expression {
    */
   Polynomiald ToPolynomial() const;
 
-  /** Evaluates under a given environment (by default, an empty environment).
-   *  @throws std::runtime_error if NaN is detected during evaluation.
+  /** Evaluates using a given environment (by default, an empty environment) and
+   * a random number generator.
+   *
+   * @throws std::runtime_error if there exists a non-random variable in this
+   *                            expression whose assignment is not provided by
+   *                            @p env.
+   * @throws std::runtime_error if a random variable is detected while @p
+   *                            random_generator is `nullptr`.
+   * @throws std::runtime_error if NaN is detected during evaluation.
    */
-  double Evaluate(const Environment& env = Environment{}) const;
+  double Evaluate(const Environment& env = Environment{},
+                  RandomGenerator* random_generator = nullptr) const;
+
+  /** Evaluates using an empty environment and a random number generator.
+   *
+   * See the above overload for the exceptions that it might throw.
+   */
+  double Evaluate(RandomGenerator* random_generator) const;
 
   /** Partially evaluates this expression using an environment @p
    * env. Internally, this method promotes @p env into a substitution

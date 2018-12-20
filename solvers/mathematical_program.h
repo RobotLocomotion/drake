@@ -2888,6 +2888,16 @@ class MathematicalProgram {
       case VarType::BOOLEAN:
         throw std::runtime_error(
             "MathematicalProgram does not support Boolean variables.");
+      case VarType::RANDOM_UNIFORM:
+        throw std::runtime_error(
+            "MathematicalProgram does not support random uniform variables.");
+      case VarType::RANDOM_GAUSSIAN:
+        throw std::runtime_error(
+            "MathematicalProgram does not support random Gaussian variables.");
+      case VarType::RANDOM_EXPONENTIAL:
+        throw std::runtime_error(
+            "MathematicalProgram does not support random exponential "
+            "variables.");
     }
     int rows = decision_variable_matrix.rows();
     int cols = decision_variable_matrix.cols();

@@ -326,7 +326,7 @@ double ExpressionVar::Evaluate(const Environment& env) const {
          "variable "
       << var_ << endl;
   oss << env << endl;
-  throw runtime_error(oss.str());
+  throw runtime_error{oss.str()};
 }
 
 Expression ExpressionVar::Expand() const { return Expression{var_}; }
