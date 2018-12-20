@@ -53,6 +53,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:orthonormal_basis",
         "//multibody/tree",
+        "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
     ],
 )

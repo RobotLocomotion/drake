@@ -26,6 +26,7 @@ from pydrake.multibody.multibody_tree.math import (
     SpatialVelocity,
 )
 from pydrake.multibody.multibody_tree.multibody_plant import (
+    AddMultibodyPlantSceneGraph,
     ContactResults,
     MultibodyPlant,
     PointPairContactInfo,
@@ -81,20 +82,6 @@ def get_index_class(cls):
         if issubclass(cls, key_cls):
             return index_cls
     raise RuntimeError("Unknown class: {}".format(cls))
-
-
-def add_plant_and_scene_graph(builder):
-    # TODO(eric.cousineau): Hoist to C++.
-    plant = builder.AddSystem(MultibodyPlant())
-    scene_graph = builder.AddSystem(SceneGraph())
-    plant.RegisterAsSourceForSceneGraph(scene_graph)
-    builder.Connect(
-        scene_graph.get_query_output_port(),
-        plant.get_geometry_query_input_port())
-    builder.Connect(
-        plant.get_geometry_poses_output_port(),
-        scene_graph.get_source_pose_port(plant.get_source_id()))
-    return plant, scene_graph
 
 
 class TestMultibodyTreeMath(unittest.TestCase):
@@ -828,7 +815,7 @@ class TestMultibodyTree(unittest.TestCase):
 
     def test_scene_graph_queries(self):
         builder = DiagramBuilder()
-        plant, scene_graph = add_plant_and_scene_graph(builder)
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
         parser = Parser(plant=plant, scene_graph=scene_graph)
         parser.AddModelFromFile(
             FindResourceOrThrow(

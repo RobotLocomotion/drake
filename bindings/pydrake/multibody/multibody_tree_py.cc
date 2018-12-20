@@ -1030,6 +1030,25 @@ void init_multibody_plant(py::module m) {
         .def("contact_info", &Class::contact_info, py::arg("i"));
     pysystems::AddValueInstantiation<Class>(m);
   }
+
+  m.def("AddMultibodyPlantSceneGraph",
+      [](systems::DiagramBuilder<T>* builder,
+          std::unique_ptr<MultibodyPlant<T>> plant,
+          std::unique_ptr<SceneGraph<T>> scene_graph) {
+        auto pair = AddMultibodyPlantSceneGraph(
+            builder, std::move(plant), std::move(scene_graph));
+        // Must do manual keep alive to dig into tuple.
+        py::object builder_py = py::cast(builder, py_reference);
+        // Keep alive, ownership: `plant` keeps `builder` alive.
+        py::object plant_py =
+            py::cast(pair.plant, py_reference_internal, builder_py);
+        // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+        py::object scene_graph_py =
+            py::cast(pair.scene_graph, py_reference_internal, builder_py);
+        return py::make_tuple(plant_py, scene_graph_py);
+      },
+      py::arg("builder"), py::arg("plant") = nullptr,
+      py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
 }  // NOLINT(readability/fn_size)
 
 void init_parsing_deprecated(py::module m) {
