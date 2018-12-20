@@ -358,9 +358,9 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
 // given geometry argument.
 class DistanceToPoint {
  public:
-  // Constructor of the functor.
-  // @param id_in    the id of the geometry,
-  // @param X_WG_in  pose of the geometry in World frame,
+  // Constructs the functor DistanceToPoint.
+  // @param id_in    the id of the geometry G,
+  // @param X_WG_in  pose of the geometry G in World frame,
   // @param p_WQ_in  position of the query point Q in World frame.
   DistanceToPoint(const GeometryId id_in,
                   const Isometry3<double>& X_WG_in,
@@ -368,8 +368,11 @@ class DistanceToPoint {
                   geometry_id_(id_in), X_WG_(X_WG_in), p_WQ_(p_WQ_in) {}
 
  private:
+  // The id of the geometry G.
   const GeometryId geometry_id_;
+  // The pose of the geometry G in World frame.
   const Isometry3<double> X_WG_;
+  // The position of the query point Q in World frame.
   const Vector3d p_WQ_;
 
  public:
@@ -390,8 +393,10 @@ class DistanceToPoint {
     // tolerance, we arbitrarily set the gradient vector as documented in
     // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
     const double kTolerance = 1e-14 * std::max(1., radius);
-    Vector3d grad_G = (dist_GQ > kTolerance) ? p_GQ_G / dist_GQ
-                                             : Vector3d{1.0, 0.0, 0.0};
+    // Unit vector in x-direction of G's frame.
+    const Vector3d Gx = Vector3d(1., 0., 0.);
+    // Gradient vector expressed in G's frame.
+    Vector3d grad_G = (dist_GQ > kTolerance) ? p_GQ_G / dist_GQ : Gx;
 
     // Position vector of the nearest point N on G's surface from the query
     // point Q, expressed in G's frame.
