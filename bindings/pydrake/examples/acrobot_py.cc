@@ -33,7 +33,7 @@ PYBIND11_MODULE(acrobot, m) {
 
   py::class_<AcrobotPlant<T>, LeafSystem<T>>(
       m, "AcrobotPlant", doc.AcrobotPlant.doc)
-      .def(py::init<>(), doc.AcrobotPlant.ctor.doc_3)
+      .def(py::init<>(), doc.AcrobotPlant.ctor.doc_0args)
       .def("CalcPotentialEnergy", &AcrobotPlant<T>::CalcPotentialEnergy,
           doc.AcrobotPlant.DoCalcPotentialEnergy.doc)
       .def("CalcKineticEnergy", &AcrobotPlant<T>::CalcKineticEnergy,

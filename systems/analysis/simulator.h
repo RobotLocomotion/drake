@@ -71,14 +71,14 @@ introduced in the @ref discrete_systems module; please look there first before
 proceeding.
 
 As pictured in @ref discrete_systems, when a continuous-time system has
-discrete events, the state x can have two significant values at the event 
+discrete events, the state x can have two significant values at the event
 time t. These are
- - x⁻(t), the value of x _before_ the discrete update occurs (○ markers), and 
+ - x⁻(t), the value of x _before_ the discrete update occurs (○ markers), and
  - x⁺(t), the value of x _after_ the discrete update occurs (● markers).
 
-Thus the value of the Context, which contains both time and state, advances 
-from {t, x⁻(t)} to {t, x⁺(t)} as a result of the update. While those Context 
-values are user-visible, the details of stepping here require an intermediate 
+Thus the value of the Context, which contains both time and state, advances
+from {t, x⁻(t)} to {t, x⁺(t)} as a result of the update. While those Context
+values are user-visible, the details of stepping here require an intermediate
 value which we'll denote {t, x*(t)}.
 
 Recall that Drake's state x is partitioned into continuous, discrete, and
@@ -198,6 +198,7 @@ class Simulator {
                      std::unique_ptr<Context<T>> context = nullptr);
 
   /// Create a %Simulator which additionally maintains ownership of the System.
+  /// @no_pydrake
   Simulator(std::unique_ptr<const System<T>> system,
             std::unique_ptr<Context<T>> context = nullptr);
 

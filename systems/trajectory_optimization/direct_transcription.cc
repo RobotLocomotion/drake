@@ -131,24 +131,25 @@ DirectTranscription::DirectTranscription(const System<double>* system,
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
-DirectTranscription::DirectTranscription(const LinearSystem<double>* system,
-                                         const Context<double>& context,
-                                         int num_time_samples)
-    : MultipleShooting(system->get_num_total_inputs(),
+DirectTranscription::DirectTranscription(
+    const LinearSystem<double>* linear_system,
+    const Context<double>& context,
+    int num_time_samples)
+    : MultipleShooting(linear_system->get_num_total_inputs(),
                        context.get_num_total_states(), num_time_samples,
-                       std::max(system->time_period(),
+                       std::max(linear_system->time_period(),
                                 std::numeric_limits<double>::epsilon())
                        /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
-  ValidateSystem(*system, context);
+  ValidateSystem(*linear_system, context);
 
   for (int i = 0; i < N() - 1; i++) {
     AddLinearEqualityConstraint(
         state(i+1).cast<symbolic::Expression>() ==
-        system->A() * state(i).cast<symbolic::Expression>() +
-        system->B() * input(i).cast<symbolic::Expression>());
+        linear_system->A() * state(i).cast<symbolic::Expression>() +
+        linear_system->B() * input(i).cast<symbolic::Expression>());
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
 }

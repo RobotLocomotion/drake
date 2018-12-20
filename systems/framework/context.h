@@ -540,6 +540,8 @@ class Context : public ContextBase {
   /// mislead users to believe that they can retain an alias of `vec` to mutate
   /// the fixed value during a simulation.  Callers should prefer to use one of
   /// the other overloads instead.
+  ///
+  /// @no_pydrake
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<BasicVector<T>> vec) {
     DRAKE_THROW_UNLESS(vec.get() != nullptr);

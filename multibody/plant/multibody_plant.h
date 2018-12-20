@@ -784,8 +784,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         std::forward<Args>(args)...);
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
+  /// @no_pydrake
   template <template <typename Scalar> class ForceElementType, typename... Args>
   typename std::enable_if<
       std::is_same<ForceElementType<T>, UniformGravityFieldElement<T>>::value,
@@ -800,6 +802,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
                               std::forward<Args>(args)...);
     return *gravity_field_.value();
   }
+#endif
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
   /// `joint`.

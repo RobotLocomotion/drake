@@ -658,6 +658,8 @@ class MathematicalProgram {
    *
    * The name of the indeterminates is only used for the user in order to ease
    * readability.
+   *
+   * @no_pydrake
    */
   template <int rows, int cols>
   MatrixIndeterminate<rows, cols> NewIndeterminates(
@@ -686,6 +688,8 @@ class MathematicalProgram {
    *
    * The name of the indeterminates is only used for the user in order to ease
    * readability.
+   *
+   * @no_pydrake
    */
   template <int rows>
   VectorIndeterminate<rows> NewIndeterminates(
@@ -711,6 +715,8 @@ class MathematicalProgram {
    *
    * The name of the indeterminates is only used for the user in order to ease
    * readability.
+   *
+   * @no_pydrake
    */
   template <int rows, int cols>
   MatrixIndeterminate<rows, cols> NewIndeterminates(
@@ -730,6 +736,8 @@ class MathematicalProgram {
    * The name for all newly added indeterminates are set to @p name. The default
    * name is "x"
    * @see NewIndeterminates(const std::array<std::string, rows>& names)
+   *
+   * @no_pydrake
    */
   template <int rows>
   VectorIndeterminate<rows> NewIndeterminates(const std::string& name = "x") {
@@ -745,6 +753,8 @@ class MathematicalProgram {
    * Adds indeterminates to this MathematicalProgram.
    * @see NewIndeterminates(int rows, int cols, const
    * std::vector<std::string>& names);
+   *
+   * @no_pydrake
    */
   VectorXIndeterminate NewIndeterminates(int rows,
                                          const std::vector<std::string>& names);
@@ -777,6 +787,8 @@ class MathematicalProgram {
    *
    * The name of the variable is only used for the user in order to ease
    * readability.
+   *
+   * @no_pydrake
    */
   MatrixXIndeterminate NewIndeterminates(int rows, int cols,
                                          const std::vector<std::string>& names);
@@ -835,6 +847,8 @@ class MathematicalProgram {
    * @param callback a std::function that accepts an Eigen::Vector of doubles
    * representing the for the bound decision variables.
    * @param vars the decision variables that should be passed to the callback.
+   *
+   * @no_pydrake
    */
   Binding<VisualizationCallback> AddVisualizationCallback(
       const VisualizationCallback::CallbackFunction& callback,
@@ -1026,6 +1040,8 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x.
    * Applied to subset of the variables.
+   *
+   * @no_pydrake
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -1036,6 +1052,8 @@ class MathematicalProgram {
   /**
    * Adds a cost term of the form 0.5*x'*Q*x + b'x + c
    * Applied to subset of the variables.
+   *
+   * @no_pydrake
    */
   Binding<QuadraticCost> AddQuadraticCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -1104,6 +1122,8 @@ class MathematicalProgram {
    *
    * @overload Binding<Constraint> AddConstraint(const symbolic::Expression& e,
    *    double lb, double ub)
+   *
+   * @no_pydrake
    */
   Binding<Constraint> AddConstraint(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& v,
@@ -1165,6 +1185,8 @@ class MathematicalProgram {
    * @overload Binding<Constraint> AddConstraint(const symbolic::Formula& f)
    *
    * @tparam Derived An Eigen Array type of Formula.
+   *
+   * @no_pydrake
    */
   template <typename Derived>
   typename std::enable_if<
@@ -1179,6 +1201,8 @@ class MathematicalProgram {
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
+   *
+   * @no_pydrake
    */
   template <typename C>
   auto AddConstraint(std::shared_ptr<C> con, const VariableRefList& vars) {
@@ -1190,6 +1214,8 @@ class MathematicalProgram {
    * only be used if a more specific type of constraint is not
    * available, as it may require the use of a significantly more
    * expensive solver.
+   *
+   * @no_pydrake
    */
   template <typename C>
   auto AddConstraint(std::shared_ptr<C> con,
@@ -1200,6 +1226,8 @@ class MathematicalProgram {
   /**
    * Adds linear constraints referencing potentially a subset
    * of the decision variables (defined in the vars parameter).
+   *
+   * @no_pydrake
    */
   Binding<LinearConstraint> AddConstraint(
       const Binding<LinearConstraint>& binding);
@@ -1357,6 +1385,8 @@ class MathematicalProgram {
   /**
    * Adds linear equality constraints referencing potentially a
    * subset of the decision variables.
+   *
+   * @no_pydrake
    */
   Binding<LinearEqualityConstraint> AddConstraint(
       const Binding<LinearEqualityConstraint>& binding);
@@ -1405,6 +1435,8 @@ class MathematicalProgram {
    * @param b A vector of doubles.
    * @return The newly added linear equality constraint, together with the
    * bound variables.
+   *
+   * @no_pydrake
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
@@ -1433,6 +1465,8 @@ class MathematicalProgram {
    * false.
    * @return The newly added linear equality constraint, together with the
    * bound variables.
+   *
+   * @no_pydrake
    */
   template <typename DerivedV, typename DerivedB>
   typename std::enable_if<
@@ -1464,6 +1498,8 @@ class MathematicalProgram {
    * The code above imposes constraints
    * @f[-x(2) + 2x(5) = 1 @f]
    * @f[ x(2) +  x(5) = 3 @f]
+   *
+   * @no_pydrake
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& Aeq,
@@ -1506,6 +1542,8 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars The decision variables on which the constraint is imposed.
+   *
+   * @no_pydrake
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
@@ -1523,6 +1561,8 @@ class MathematicalProgram {
    * @param a A row vector.
    * @param beq A scalar.
    * @param vars The decision variables on which the constraint is imposed.
+   *
+   * @no_pydrake
    */
   Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
       const Eigen::Ref<const Eigen::RowVectorXd>& a, double beq,
@@ -1537,6 +1577,8 @@ class MathematicalProgram {
    * such that
    * binding.evaluator()->lower_bound()(i) <= binding.variables()(i)
    *                   <= binding.evaluator().upper_bound()(i)
+   *
+   * @no_pydrake
    */
   Binding<BoundingBoxConstraint> AddConstraint(
       const Binding<BoundingBoxConstraint>& binding);
@@ -1558,6 +1600,8 @@ class MathematicalProgram {
    * // 2 ≤ y    ≤ 3
    * prog.AddBoundingBoxConstraint(lb, ub, {x, y});
    * \endcode
+   *
+   * @no_pydrake
    */
   Binding<BoundingBoxConstraint> AddBoundingBoxConstraint(
       const Eigen::Ref<const Eigen::VectorXd>& lb,
@@ -1596,6 +1640,8 @@ class MathematicalProgram {
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
+   *
+   * @no_pydrake
    */
   Binding<BoundingBoxConstraint> AddBoundingBoxConstraint(
       double lb, double ub, const VariableRefList& vars) {
@@ -1609,6 +1655,8 @@ class MathematicalProgram {
    * @param lb Lower bound.
    * @param ub Upper bound.
    * @param vars The decision variables.
+   *
+   * @no_pydrake
    */
   template <typename Derived>
   typename std::enable_if<
@@ -1666,6 +1714,8 @@ class MathematicalProgram {
    * @f[
    * z_0 \ge \sqrt{z_1^2 + ... + z_{n-1}^2}
    * @f]
+   *
+   * @no_pydrake
    */
   Binding<LorentzConeConstraint> AddConstraint(
       const Binding<LorentzConeConstraint>& binding);
@@ -1711,6 +1761,8 @@ class MathematicalProgram {
    *  y = R * x + d
    * </pre>
    * while (R, d) satisfies y'*y = x'*Q*x + b'*x + a
+   *
+   * @no_pydrake
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Expression& linear_expression,
@@ -1733,6 +1785,8 @@ class MathematicalProgram {
    * size of the decision variables.
    * @param vars The list of @f$ m @f$ decision variables.
    * @return The newly added Lorentz cone constraint.
+   *
+   * @no_pydrake
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1757,6 +1811,8 @@ class MathematicalProgram {
    * size of the decision variables.
    * @param vars The Eigen vector of @f$ m @f$ decision variables.
    * @return The newly added Lorentz cone constraint.
+   *
+   * @no_pydrake
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -1773,6 +1829,8 @@ class MathematicalProgram {
    * <-->
    * @param vars The stacked column of vars should lie within the Lorentz cone.
    * @return The newly added Lorentz cone constraint.
+   *
+   * @no_pydrake
    */
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const VariableRefList& vars) {
@@ -1789,6 +1847,8 @@ class MathematicalProgram {
    * <-->
    * @param vars The stacked column of vars should lie within the Lorentz cone.
    * @return The newly added Lorentz cone constraint.
+   *
+   * @no_pydrake
    */
   template <int rows>
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
@@ -1811,6 +1871,8 @@ class MathematicalProgram {
    * @f[
    * z_0z_1 \ge z_2^2 + ... + z_{n-1}^2
    * @f]
+   *
+   * @no_pydrake
    */
   Binding<RotatedLorentzConeConstraint> AddConstraint(
       const Binding<RotatedLorentzConeConstraint>& binding);
@@ -1957,6 +2019,8 @@ class MathematicalProgram {
   /**
    * Adds a linear complementarity constraints referencing a subset of
    * the decision variables.
+   *
+   * @no_pydrake
    */
   Binding<LinearComplementarityConstraint> AddConstraint(
       const Binding<LinearComplementarityConstraint>& binding);
@@ -2006,12 +2070,16 @@ class MathematicalProgram {
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
+   *
+   * @no_pydrake
    */
   Binding<PositiveSemidefiniteConstraint> AddConstraint(
       const Binding<PositiveSemidefiniteConstraint>& binding);
 
   /**
    * Adds a positive semidefinite constraint on a symmetric matrix.
+   *
+   * @no_pydrake
    */
   Binding<PositiveSemidefiniteConstraint> AddConstraint(
       std::shared_ptr<PositiveSemidefiniteConstraint> con,
@@ -2066,6 +2134,8 @@ class MathematicalProgram {
 
   /**
    * Adds a linear matrix inequality constraint to the program.
+   *
+   * @no_pydrake
    */
   Binding<LinearMatrixInequalityConstraint> AddConstraint(
       const Binding<LinearMatrixInequalityConstraint>& binding);
@@ -2114,7 +2184,7 @@ class MathematicalProgram {
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
-   * @anchor addsdd 
+   * @anchor addsdd
    * @name     scaled diagonally dominant matrix constraint
    * Adds the constraint that a symmetric matrix is scaled diagonally dominant
    * (sdd). A matrix X is sdd if there exists a diagonal matrix D, such that

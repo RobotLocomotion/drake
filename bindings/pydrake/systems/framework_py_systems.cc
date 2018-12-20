@@ -350,12 +350,12 @@ struct Impl {
         // Scalar types.
         .def("ToAutoDiffXd",
             [](const System<T>& self) { return self.ToAutoDiffXd(); },
-            doc.System.ToAutoDiffXd.doc)
+            doc.System.ToAutoDiffXd.doc_0args)
         .def("ToAutoDiffXdMaybe", &System<T>::ToAutoDiffXdMaybe,
             doc.System.ToAutoDiffXdMaybe.doc)
         .def("ToSymbolic",
             [](const System<T>& self) { return self.ToSymbolic(); },
-            doc.System.ToSymbolic.doc)
+            doc.System.ToSymbolic.doc_0args)
         .def("ToSymbolicMaybe", &System<T>::ToSymbolicMaybe,
             doc.System.ToSymbolicMaybe.doc);
 
@@ -391,7 +391,7 @@ struct Impl {
               return self->DeclareAbstractInputPort(name, model_value);
             },
             py_reference_internal, py::arg("name"),
-            doc.System.DeclareAbstractInputPort.doc_1args)
+            doc.System.DeclareAbstractInputPort.doc)
         .def("_DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               AllocCallback arg1,
@@ -406,7 +406,10 @@ struct Impl {
               return self->DeclareAbstractOutputPort(arg1, arg2);
             }),
             py_reference_internal, py::arg("alloc"), py::arg("calc"),
-            doc.LeafSystem.DeclareAbstractOutputPort.doc)
+            doc.LeafSystem
+                .DeclareAbstractOutputPort
+                // NOLINTNEXTLINE(whitespace/line_length)
+                .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
         .def("_DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
                 const BasicVector<T>& model_vector,
@@ -431,7 +434,11 @@ struct Impl {
                               CalcVectorCallback arg2) -> const OutputPort<T>& {
               return self->DeclareVectorOutputPort(arg1, arg2);
             }),
-            py_reference_internal, doc.LeafSystem.DeclareVectorOutputPort.doc)
+            py_reference_internal,
+            doc.LeafSystem
+                .DeclareVectorOutputPort
+                // NOLINTNEXTLINE(whitespace/line_length)
+                .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc)
         .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
             doc.LeafSystem.DeclarePeriodicPublish.doc)
@@ -447,7 +454,7 @@ struct Impl {
               self->DeclarePeriodicEvent(period_sec, offset_sec, event);
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
-            doc.LeafSystem.DeclarePeriodicEvent.doc_2)
+            doc.LeafSystem.DeclarePeriodicEvent.doc_3args)
         .def("_DeclarePerStepEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclarePerStepEvent(event);
@@ -487,15 +494,17 @@ struct Impl {
         .def("_DeclareDiscreteState",
             py::overload_cast<const BasicVector<T>&>(
                 &LeafSystemPublic::DeclareDiscreteState),
-            py::arg("model_vector"), doc.LeafSystem.DeclareDiscreteState.doc)
+            py::arg("model_vector"),
+            doc.LeafSystem.DeclareDiscreteState.doc_1args_model_vector)
         .def("_DeclareDiscreteState",
             py::overload_cast<const Eigen::Ref<const VectorX<T>>&>(
                 &LeafSystemPublic::DeclareDiscreteState),
-            py::arg("model_vector"), doc.LeafSystem.DeclareDiscreteState.doc_2)
+            py::arg("vector"),
+            doc.LeafSystem.DeclareDiscreteState.doc_1args_vector)
         .def("_DeclareDiscreteState",
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
-            doc.LeafSystem.DeclareDiscreteState.doc_3)
+            doc.LeafSystem.DeclareDiscreteState.doc_1args_num_state_variables)
         .def("_DeclarePeriodicDiscreteUpdate",
             &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
             py::arg("period_sec"), py::arg("offset_sec") = 0.,
@@ -511,7 +520,7 @@ struct Impl {
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
-        .def(py::init<>(), doc.Diagram.ctor.doc_4)
+        .def(py::init<>(), doc.Diagram.ctor.doc_0args)
         .def("GetMutableSubsystemState",
             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
                 &Diagram<T>::GetMutableSubsystemState),

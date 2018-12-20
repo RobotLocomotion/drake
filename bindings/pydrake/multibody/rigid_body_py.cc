@@ -19,7 +19,7 @@ PYBIND11_MODULE(rigid_body, m) {
   py::module::import("pydrake.multibody.joints");
 
   py::class_<RigidBody<double> >(m, "RigidBody", doc.RigidBody.doc)
-      .def(py::init(), doc.RigidBody.ctor.doc)
+      .def(py::init(), doc.RigidBody.ctor.doc_0args)
       .def("get_body_index", &RigidBody<double>::get_body_index,
           doc.RigidBody.get_body_index.doc)
       .def("get_center_of_mass", &RigidBody<double>::get_center_of_mass,

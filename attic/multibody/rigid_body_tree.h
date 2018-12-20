@@ -1836,6 +1836,7 @@ class RigidBodyTree {
 };
 
 // This template method specialization is defined in the cc file.
+/// @no_pydrake
 template <>
 std::unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const;
 
@@ -1843,6 +1844,7 @@ std::unique_ptr<RigidBodyTree<double>> RigidBodyTree<double>::Clone() const;
 // To mitigate compilation time, only one `*.o` file will instantiate the
 // methods of RigidBodyTree that are templated only on `T` (and not on, e.g.,
 // `Scalar`).  Refer to the the rigid_body_tree.cc comments for details.
+/// @no_pydrake
 extern template class RigidBodyTree<double>;
 
 typedef RigidBodyTree<double> RigidBodyTreed;

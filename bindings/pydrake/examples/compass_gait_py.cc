@@ -28,7 +28,7 @@ PYBIND11_MODULE(compass_gait, m) {
 
   py::class_<CompassGait<T>, LeafSystem<T>>(
       m, "CompassGait", doc.CompassGait.doc)
-      .def(py::init<>(), doc.CompassGait.ctor.doc_3);
+      .def(py::init<>(), doc.CompassGait.ctor.doc_0args);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<CompassGaitParams<T>, BasicVector<T>>(

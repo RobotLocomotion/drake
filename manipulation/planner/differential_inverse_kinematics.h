@@ -299,6 +299,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DRAKE_DEPRECATED(
     "DiffIK for RigidBodyTree no longer uses this file; for new "
     "instructions, see https://github.com/RobotLocomotion/drake/pull/10047")
+/// @no_pydrake
 inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>&, const KinematicsCache<double>&,
     const Vector6<double>&, const RigidBodyFrame<double>&,
@@ -312,6 +313,7 @@ inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 DRAKE_DEPRECATED(
     "DiffIK for RigidBodyTree no longer uses this file; for new "
     "instructions, see https://github.com/RobotLocomotion/drake/pull/10047")
+/// @no_pydrake
 inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const RigidBodyTree<double>&, const KinematicsCache<double>&,
     const Isometry3<double>&, const RigidBodyFrame<double>&,
@@ -371,10 +373,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
- * Deprecated: Please use the MultibodyPlant version.
- */
 DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
+/// @no_pydrake
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyTree<double>& robot,
     const systems::Context<double>& context,
@@ -382,10 +382,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
- * Deprecated: Please use the MultibodyPlant version.
- */
 DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
+/// @no_pydrake
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyTree<double>& robot,
     const systems::Context<double>& context,

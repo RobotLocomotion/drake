@@ -50,7 +50,7 @@ PYBIND11_MODULE(shapes, m) {
             self->getBoundingBoxPoints(pts);
             return pts;
           },
-          doc.Geometry.getBoundingBoxPoints.doc_1args);
+          doc.Geometry.getBoundingBoxPoints.doc);
 
   py::class_<Box, Geometry>(m, "Box", doc.Box.doc)
       .def(
