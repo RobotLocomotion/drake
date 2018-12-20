@@ -1571,13 +1571,6 @@ class MultibodyTree {
       EigenPtr<MatrixX<T>> Jv_WFp) const;
 
   /// See MultibodyPlant method.
-  void CalcRelativeFrameJacobianWrtV(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Jv_ABp_E) const;
-
-  /// See MultibodyPlant method.
   Vector6<T> CalcBiasForFrameJacobianWrtVExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const;
@@ -1585,7 +1578,7 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   void CalcJacobianSpatialVelocity(
       const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
+      const JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jw_ABp_E) const;

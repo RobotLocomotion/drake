@@ -1644,24 +1644,16 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if `J_ABp` is nullptr or if it is not of size
   ///   `6 x nv`.
-  void CalcRelativeFrameJacobianWrtV(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
-      const Frame<T>& frame_A, const Frame<T>& frame_E,
-      EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-    return tree().CalcRelativeFrameJacobianWrtV(
-        context, frame_B, p_BP, frame_A, frame_E, Jv_ABp_E);
-  }
-
-  DRAKE_DEPRECATED("Use CalcRelativeFrameJacobianWrtV() as per issue #10155. "
+  DRAKE_DEPRECATED("Use CalcJacobianSpatialVelocity() as per issue #10155. "
                    "Code will be deleted after March 1, 2019.")
   void CalcRelativeFrameGeometricJacobian(
       const systems::Context<T>& context,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-    return tree().CalcRelativeFrameJacobianWrtV(context, frame_B, p_BP, frame_A,
-                                                frame_E, Jv_ABp_E);
+    return CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV,
+                                       frame_B, p_BP, frame_A, frame_E,
+                                       Jv_ABp_E);
   }
 
   /// Given a frame `Fp` defined by shifting a frame F from its origin `Fo` to
@@ -1720,8 +1712,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// </pre>
   /// where w represents
   ///   * the time derivative of the generalized position vector q̇, if
-  ///     `with_respect_to` is JacobianWrtVariable::kQDot.
-  ///   * the generalized velocity vector v, if `with_respect_to` is
+  ///     `wrt_variables` is JacobianWrtVariable::kQDot.
+  ///   * the generalized velocity vector v, if `wrt_variables` is
   ///     JacobianWrtVariable::kV.
   ///
   /// This method computes `Jw_ABp_E(q)`.
@@ -1729,9 +1721,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @param[in] context
   ///   The context containing the state of the model. It stores the
   ///   generalized positions q.
-  /// @param[in] with_respect_to
-  ///   Enum indicating whether `Jw_ABp_E` converts generalized velocities or
-  ///   time-derivatives of generalized positions to spatial velocities.
+  /// @param[in] wrt_variables
+  ///   Enum indicating whether the Jacobian's partial derivatives are with
+  ///   respect to v (generalized velocities) or q̇ (time-derivatives of
+  ///   generalized positions).  In other words, wrt_variables indicates whether
+  ///   `Jw_ABp_E` converts v or q̇ to spatial velocities.
   /// @param[in] frame_B
   ///   The position `p_BP` of point P is measured and expressed in this frame.
   /// @param[in] p_BP
@@ -1765,12 +1759,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///   `6 x nz`.
   void CalcJacobianSpatialVelocity(
       const systems::Context<T>& context,
-      JacobianWrtVariable with_respect_to,
+      const JacobianWrtVariable wrt_variables,
       const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
       EigenPtr<MatrixX<T>> Jw_ABp_E) const {
     return tree().CalcJacobianSpatialVelocity(
-        context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
+        context, wrt_variables, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
   }
 
   /// Given the state of this model in `context` and a known vector
