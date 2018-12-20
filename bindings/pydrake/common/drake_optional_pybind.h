@@ -19,7 +19,7 @@ struct type_caster<stx::optional<T>>
     : public optional_caster<stx::optional<T>> {};
 
 template <>
-struct type_caster<stx::nullopt_t>
+struct type_caster<stx::nullopt_t>  // BR
     : public void_caster<stx::nullopt_t> {};
 
 }  // namespace detail

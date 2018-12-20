@@ -65,6 +65,8 @@ drake_cc_library(
     name = "type_pack",
     hdrs = ["type_pack.h"],
     declare_installed_headers = 0,
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    tags = ["nolint_clang_format"],
     visibility = ["//visibility:public"],
 )
 
@@ -72,6 +74,8 @@ drake_cc_library(
     name = "wrap_function",
     hdrs = ["wrap_function.h"],
     declare_installed_headers = 0,
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    tags = ["nolint_clang_format"],
     visibility = ["//visibility:public"],
 )
 
@@ -79,6 +83,8 @@ drake_cc_library(
     name = "wrap_pybind",
     hdrs = ["wrap_pybind.h"],
     declare_installed_headers = 0,
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    tags = ["nolint_clang_format"],
     visibility = ["//visibility:public"],
     deps = [":wrap_function"],
 )
@@ -165,6 +171,8 @@ drake_cc_library(
     srcs = [],
     hdrs = ["cpp_template_pybind.h"],
     declare_installed_headers = 0,
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    tags = ["nolint_clang_format"],
     visibility = ["//visibility:public"],
     deps = [
         ":cpp_param_pybind",
@@ -363,6 +371,8 @@ drake_pybind_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ],
     py_deps = [":cpp_template_py"],
+    # TODO(jwnimmer-tri) We should enable this eventually.
+    tags = ["nolint_clang_format"],
 )
 
 drake_pybind_cc_googletest(
@@ -441,6 +451,5 @@ drake_py_unittest(
 
 add_lint_tests(
     cpplint_data = ["//bindings/pydrake:.clang-format"],
-    # TODO(jwnimmer-tri) We should enable this eventually.
-    enable_clang_format_lint = False,
+    enable_clang_format_lint = True,
 )
