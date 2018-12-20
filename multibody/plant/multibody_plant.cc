@@ -597,11 +597,10 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
     implicit_stribeck_solver_ =
-        std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(
-            num_velocities());
+        std::make_unique<ImplicitStribeckSolver<T>>(num_velocities());
     // Set the stiction tolerance according to the values set by users with
     // set_stiction_tolerance().
-    implicit_stribeck::Parameters solver_parameters;
+    ImplicitStribeckSolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
         stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
@@ -1216,7 +1215,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
+ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
     const VectorX<T>& minus_tau,
@@ -1230,8 +1229,8 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
   VectorX<T> phi0_substep = phi0;
 
   // Initialize info to an unsuccessful result.
-  implicit_stribeck::ComputationInfo info{
-      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+  ImplicitStribeckSolverResult info{
+      ImplicitStribeckSolverResult::kMaxIterationsReached};
 
   for (int substep = 0; substep < num_substeps; ++substep) {
     // Discrete update before applying friction forces.
@@ -1249,7 +1248,7 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
                                                      v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
-    if (info != implicit_stribeck::Success) break;
+    if (info != ImplicitStribeckSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
     v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
@@ -1370,10 +1369,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       num_contacts, penalty_method_contact_parameters_.damping);
 
   // Solve for v and the contact forces.
-  implicit_stribeck::ComputationInfo info{
-      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+  ImplicitStribeckSolverResult info{
+      ImplicitStribeckSolverResult::kMaxIterationsReached};
 
-  implicit_stribeck::Parameters params =
+  ImplicitStribeckSolverParameters params =
       implicit_stribeck_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
@@ -1393,10 +1392,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     ++num_substeps;
     info = SolveUsingSubStepping(
         num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
-  } while (info != implicit_stribeck::Success &&
-      num_substeps < kNumMaxSubTimeSteps);
+  } while (info != ImplicitStribeckSolverResult::kSuccess &&
+           num_substeps < kNumMaxSubTimeSteps);
 
-  DRAKE_DEMAND(info == implicit_stribeck::Success);
+  DRAKE_DEMAND(info == ImplicitStribeckSolverResult::kSuccess);
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.

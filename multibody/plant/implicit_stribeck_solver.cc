@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace multibody {
-namespace implicit_stribeck {
 namespace internal {
 template <typename T>
 T DirectionChangeLimiter<T>::CalcAlpha(
@@ -601,7 +600,7 @@ T ImplicitStribeckSolver<T>::CalcAlpha(
 }
 
 template <typename T>
-ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
+ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
     double dt, const VectorX<T>& v_guess) const {
   DRAKE_THROW_UNLESS(v_guess.size() == nv_);
 
@@ -622,7 +621,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
     v = M.ldlt().solve(p_star);
     // "One iteration" with exactly "zero" vt_error.
     statistics_.Update(0.0);
-    return ComputationInfo::Success;
+    return ImplicitStribeckSolverResult::kSuccess;
   }
 
   // Solver parameters.
@@ -695,7 +694,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       // Update generalized forces and return.
       tau_f = Jt.transpose() * ft;
       tau = tau_f + Jn.transpose() * fn;
-      return ComputationInfo::Success;
+      return ImplicitStribeckSolverResult::kSuccess;
     }
 
     // Newton-Raphson residual.
@@ -722,7 +721,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
       auto& J_ldlt = fixed_size_workspace_.mutable_J_ldlt();
       J_ldlt.compute(J);  // Update factorization.
       if (J_ldlt.info() != Eigen::Success) {
-        return ComputationInfo::LinearSolverFailed;
+        return ImplicitStribeckSolverResult::kLinearSolverFailed;
       }
       Delta_v = J_ldlt.solve(-residual);
     }
@@ -757,7 +756,7 @@ ComputationInfo ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // If we are here is because we reached the maximum number of iterations
   // without converging to the specified tolerance.
-  return ComputationInfo::MaxIterationsReached;
+  return ImplicitStribeckSolverResult::kMaxIterationsReached;
 }
 
 template <typename T>
@@ -781,14 +780,12 @@ T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
   }
 }
 
-}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake
 
 // Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    struct
-    ::drake::multibody::implicit_stribeck::internal::DirectionChangeLimiter)
+    struct ::drake::multibody::internal::DirectionChangeLimiter)
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::implicit_stribeck::ImplicitStribeckSolver)
+    class ::drake::multibody::ImplicitStribeckSolver)

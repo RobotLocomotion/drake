@@ -8,13 +8,10 @@
 
 #include <memory>
 
-#include <gtest/gtest.h>
-
 #include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace multibody {
-namespace implicit_stribeck {
 namespace test {
 
 // Computes the normal force as a function of the signed penetration depth x
@@ -197,7 +194,6 @@ MatrixX<double> CalcOneWayCoupledJacobianWithAutoDiff(
 }
 
 }  // namespace test
-}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake
 

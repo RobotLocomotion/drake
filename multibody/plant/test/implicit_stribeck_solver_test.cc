@@ -9,7 +9,6 @@
 
 namespace drake {
 namespace multibody {
-namespace implicit_stribeck {
 
 // This class has friend access to ImplicitStribeckSolver so that we can test
 // its internals.
@@ -524,17 +523,17 @@ TEST_F(PizzaSaver, SmallAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  Parameters parameters;  // Default parameters.
+  ImplicitStribeckSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
+  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
-  const IterationStats& stats = solver_.get_iteration_statistics();
+  const auto& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       // Dimensionless relative (to the stiction tolerance) tolerance.
@@ -626,17 +625,17 @@ TEST_F(PizzaSaver, LargeAppliedMoment) {
 
   SetProblem(v0, tau, mu, theta, dt);
 
-  Parameters parameters;  // Default parameters.
+  ImplicitStribeckSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   parameters.relative_tolerance = 1.0e-4;
   solver_.set_solver_parameters(parameters);
 
-  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
+  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
-  const IterationStats& stats = solver_.get_iteration_statistics();
+  const auto& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       // Dimensionless relative (to the stiction tolerance) tolerance.
@@ -723,12 +722,12 @@ TEST_F(PizzaSaver, NoContact) {
 
   SetNoContactProblem(v0, tau, dt);
 
-  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
+  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
 
   EXPECT_EQ(solver_.get_generalized_friction_forces(), Vector3<double>::Zero());
 
-  const IterationStats& stats = solver_.get_iteration_statistics();
+  const auto& stats = solver_.get_iteration_statistics();
   EXPECT_EQ(stats.vt_residual(), 0);
   EXPECT_EQ(stats.num_iterations, 1);
 
@@ -927,16 +926,16 @@ TEST_F(RollingCylinder, StictionAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  Parameters parameters;  // Default parameters.
+  ImplicitStribeckSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
+  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
-  const IterationStats& stats = solver_.get_iteration_statistics();
+  const auto& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       solver_.get_solver_parameters().relative_tolerance *
@@ -1017,16 +1016,16 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 
   SetImpactProblem(v0, tau, mu, h0, dt);
 
-  Parameters parameters;  // Default parameters.
+  ImplicitStribeckSolverParameters parameters;  // Default parameters.
   parameters.stiction_tolerance = 1.0e-6;
   solver_.set_solver_parameters(parameters);
 
-  ComputationInfo info = solver_.SolveWithGuess(dt, v0);
-  ASSERT_EQ(info, ComputationInfo::Success);
+  ImplicitStribeckSolverResult info = solver_.SolveWithGuess(dt, v0);
+  ASSERT_EQ(info, ImplicitStribeckSolverResult::kSuccess);
 
   VectorX<double> tau_f = solver_.get_generalized_friction_forces();
 
-  const IterationStats& stats = solver_.get_iteration_statistics();
+  const auto& stats = solver_.get_iteration_statistics();
 
   const double vt_tolerance =
       solver_.get_solver_parameters().relative_tolerance *
@@ -1082,7 +1081,6 @@ TEST_F(RollingCylinder, SlidingAfterImpact) {
 }
 
 }  // namespace
-}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake
 
