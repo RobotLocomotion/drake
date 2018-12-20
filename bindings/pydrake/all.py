@@ -20,7 +20,10 @@ To see example usages, please see `doc/python_bindings.rst`.
 
 from __future__ import absolute_import
 
-# This module.
+# Legacy / soon-to-be-deprecated symbols.
+from .attic.all import *
+
+# Normal symbols.
 from . import getDrakePath
 from .autodiffutils import *
 from .automotive import *
