@@ -1587,8 +1587,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         context, frame_F, p_FP, Jv_WFp);
   }
 
-  DRAKE_DEPRECATED("Use CalcFrameJacobianWrtVExpressedInWorld() as per "
-                   "issue #10155. Code will be deleted after March 1, 2019.")
+  // TODO(Mitiguy) Deprecate this method after hearing back from Eric Cousineau.
+  // DRAKE_DEPRECATED("Use CalcFrameJacobianWrtVExpressedInWorld() as per "
+  //                 "issue #10155. Code will be deleted after March 1, 2019.")
   void CalcFrameGeometricJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
