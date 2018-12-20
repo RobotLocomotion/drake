@@ -50,46 +50,8 @@ SchunkWsgPdController::SchunkWsgPdController(double kp_command,
 
   this->set_name("wsg_controller");
 
-  /*
-  systems::BasicVector<double> initial_integrator_value(1);
-  initial_integrator_value.SetAtIndex(0, 0);
-  this->DeclareDiscreteState(initial_integrator_value);
-  this->DeclarePeriodicDiscreteUpdate(2e-3);
-  */
   this->DeclareContinuousState(1);
 }
-
-/*
-void SchunkWsgPdController::DoCalcDiscreteVariableUpdates(
-    const systems::Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-    systems::DiscreteValues<double>* discrete_state) const {
-  // Read the input ports.
-  const auto& desired_state =
-      this->EvalEigenVectorInput(context, desired_state_input_port_);
-  const double force_limit =
-      this->EvalEigenVectorInput(context, force_limit_input_port_)[0];
-  // TODO(russt): Declare a proper input constraint.
-  DRAKE_DEMAND(force_limit > 0);
-  const auto& state = this->EvalEigenVectorInput(context, state_input_port_);
-
-  // No cap.
-  const double err = desired_state[0] + state[0] - state[1];
-  const double cap = force_limit / ki_command_;
-  double integral_error = context.get_discrete_state(0).GetAtIndex(0);
-  double delta = 80 * err;
-
-  if (integral_error * desired_state[1] < 0 &&
-      std::fabs(integral_error) / cap > 0.3) {
-    drake::log()->info("RESETING INT at {}, {}, {}", context.get_time(), integral_error, desired_state[1]);
-    integral_error = 0;
-  } else {
-    integral_error = math::saturate(integral_error + delta * 2e-3, -cap, cap);
-  }
-  drake::log()->info("delta {} {}", delta, integral_error);
-  discrete_state->get_mutable_vector(0).SetAtIndex(0, integral_error);
-}
-*/
 
 void SchunkWsgPdController::DoCalcTimeDerivatives(
       const systems::Context<double>& context,
@@ -103,14 +65,19 @@ void SchunkWsgPdController::DoCalcTimeDerivatives(
   DRAKE_DEMAND(force_limit > 0);
   const auto& state = this->EvalEigenVectorInput(context, state_input_port_);
 
-  // No cap.
   const double err = desired_state[0] + state[0] - state[1];
+  // Assuming all the force_limit is going to come from the integral term,
+  // this is how big the integrator needs to be.
   const double cap = force_limit / ki_command_;
+
+  // Don't integrator pass cap.
   if (context.get_continuous_state_vector()[0] > cap && err > 0) {
     (*derivatives)[0] = 0;
   } else if (context.get_continuous_state_vector()[0] < -cap && err < 0) {
     (*derivatives)[0] = 0;
   } else {
+    // I need to make the integrator crank up faster. This is also dependent
+    // on desired_state[0]'s trajectory..
     (*derivatives)[0] = 30 * err;
   }
 }
@@ -132,8 +99,6 @@ Vector2d SchunkWsgPdController::CalcGeneralizedForce(
 
   // -f₀+f₁ = sat(kp_command*(q_d + q₀ - q₁) + kd_command*(v_d + v₀ - v₁)).
   const double integrator = context.get_continuous_state()[0];
-  drake::log()->info("t: {}, {}", context.get_time(), integrator);
-
   const double neg_f0_plus_f1 =
       math::saturate(kp_command_ * (desired_state[0] + state[0] - state[1]) +
                          kd_command_ * (desired_state[1] + state[2] - state[3]) +

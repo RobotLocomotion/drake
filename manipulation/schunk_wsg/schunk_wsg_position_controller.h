@@ -88,12 +88,6 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   }
 
  private:
-  /*
-  void DoCalcDiscreteVariableUpdates(
-      const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
-      systems::DiscreteValues<double>* discrete_state) const override;
-  */
   void DoCalcTimeDerivatives(
       const systems::Context<double>& context,
       systems::ContinuousState<double>* derivatives) const override;
