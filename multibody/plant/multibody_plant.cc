@@ -724,17 +724,16 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // midpoint (or any other point between Ac and Bc for that matter) since,
     // in the limit to rigid contact, Ac = Bc.
 
-    // Geometric Jacobian for the velocity of the contact point C as moving with
-    // body A, s.t.: v_WAc = Jv_WAc * v
-    // where v is the vector of generalized velocities.
+    // Jacobian with respect to generalized velocities v for the velocity of the
+    // contact point C as moving with body A, such that `v_WAc = Jv_WAc * v`.
     MatrixX<T> Jv_WAc(3, this->num_velocities());
-    tree().CalcPointsGeometricJacobianExpressedInWorld(
+    tree().CalcPointsJacobianWrtVExpressedInWorld(
         context, bodyA.body_frame(), p_WCa, &Jv_WAc);
 
-    // Geometric Jacobian for the velocity of the contact point C as moving with
-    // body B, s.t.: v_WBc = Jv_WBc * v.
+    // Jacobian with respect to generalized velocities v for the velocity of the
+    // contact point C as moving with body B, such that `v_WBc = Jv_WBc * v`.
     MatrixX<T> Jv_WBc(3, this->num_velocities());
-    tree().CalcPointsGeometricJacobianExpressedInWorld(
+    tree().CalcPointsJacobianWrtVExpressedInWorld(
         context, bodyB.body_frame(), p_WCb, &Jv_WBc);
 
     // Computation of the normal separation velocities Jacobian Jn:

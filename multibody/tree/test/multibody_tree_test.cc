@@ -397,50 +397,49 @@ class KukaIiwaModelTests : public ::testing::Test {
     return p_WE;
   }
 
-  // Computes the geometric Jacobian Jv_WPi for a set of points Pi moving with
+  // Computes the Jacobian Jv_WPi for a set of points Pi moving with
   // the end effector frame E, given their (fixed) position p_WPi in the end
   // effector frame.
-  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
+  // See MultibodyTree::CalcPointsJacobianWrtVExpressedInWorld() for
   // details.
   template <typename T>
-  void CalcPointsOnEndEffectorGeometricJacobian(
+  void CalcPointsOnEndEffectorJacobianWrtV(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const MatrixX<T>& p_EPi,
       MatrixX<T>* p_WPi, MatrixX<T>* Jv_WPi) const {
     const Body<T>& linkG_on_T = model_on_T.get_variant(*end_effector_link_);
-    model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
+    model_on_T.CalcPointsJacobianWrtVExpressedInWorld(
         context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jv_WPi);
   }
 
-  // Computes the geometric Jacobian Jv_WHp for a set of points Pi moving with
-  // frame H with fixed pose X_GH in the end effector frame G, given their
-  // (fixed) position p_HPi.
-  // See MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld() for
+  // Computes the Jacobian Jv_WHp with respect to generalized velocities v for a
+  // set of points Pi moving with frame H with fixed pose X_GH in the end
+  // effector frame G, given their (fixed) position p_HPi.
+  // See MultibodyTree::CalcPointsJacobianWrtVExpressedInWorld() for
   // details.
   template <typename T>
-  void CalcPointsOnFrameHGeometricJacobian(
+  void CalcPointsOnFrameHJacobianWrtV(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const MatrixX<T>& p_HPi,
       MatrixX<T>* p_WPi, MatrixX<T>* Jv_WHp) const {
     const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
-    model_on_T.CalcPointsGeometricJacobianExpressedInWorld(
+    model_on_T.CalcPointsJacobianWrtVExpressedInWorld(
         context_on_T, frameH_on_T, p_HPi, p_WPi, Jv_WHp);
   }
 
-  // Computes the frame geometric Jacobian Jv_WHp for frame Hp which is the
+  // Computes the frame Jacobian Jv_WHp for frame Hp which is the
   // frame H (attached to the end effector, see test fixture docs) shifted to
   // have its origin at Po. Po's position p_HPo is specified in frame H.
-  // See MultibodyTree::CalcFrameGeometricJacobianExpressedInWorld() for
-  // details.
+  // See MultibodyTree::CalcFrameJacobianWrtVExpressedInWorld() for details.
   template <typename T>
   void CalcFrameHpGeometricJacobian(
       const MultibodyTree<T>& model_on_T,
       const Context<T>& context_on_T,
       const Vector3<T>& p_HPo, MatrixX<T>* Jv_WHp) const {
     const Frame<T>& frameH_on_T = model_on_T.get_variant(*frame_H_);
-    model_on_T.CalcFrameGeometricJacobianExpressedInWorld(
+    model_on_T.CalcFrameJacobianWrtVExpressedInWorld(
         context_on_T, frameH_on_T, p_HPo, Jv_WHp);
   }
 
@@ -482,10 +481,10 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
 }
 
 // This test is used to verify the correctness of the method
-// MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
-// The test computes the end effector geometric Jacobian Jv_WE (in the world
+// MultibodyTree::CalcPointsJacobianWrtVExpressedInWorld().
+// The test computes the end effector Jacobian Jv_WE (in the world
 // frame W) using two methods:
-// 1. Calling MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
+// 1. Calling MultibodyTree::CalcPointsJacobianWrtVExpressedInWorld().
 // 2. Using AutoDiffXd to compute the partial derivative of v_WE(q, v) with
 //    respect to v.
 // By comparing the two results we verify the correctness of the MultibodyTree
@@ -493,7 +492,7 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
 // In addition, we are testing methods:
 // - MultibodyTree::CalcPointsPositions()
 // - MultibodyTree::CalcAllBodySpatialVelocitiesInWorld()
-TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
+TEST_F(KukaIiwaModelTests, CalcPointsJacobianWrtVExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -554,7 +553,7 @@ TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
   Matrix3X<double> Jv_WE(3, tree().num_velocities());
   // The end effector (G) Jacobian is computed by asking the Jacobian for a
   // point P with position p_GP = 0 in the G frame.
-  tree().CalcPointsGeometricJacobianExpressedInWorld(
+  tree().CalcPointsJacobianWrtVExpressedInWorld(
       *context_, end_effector_link_->body_frame(),
       Vector3<double>::Zero(), &p_WE, &Jv_WE);
 
@@ -596,10 +595,10 @@ TEST_F(KukaIiwaModelTests, CalcPointsGeometricJacobianExpressedInWorld) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-// Unit tests MBT::CalcBiasForPointsGeometricJacobianExpressedInWorld() using
-// AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
-// reference solution.
-TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
+// Unit tests MBT::CalcBiasForPointsJacobianWrtVExpressedInWorld() using
+// AutoDiffXd to compute time derivatives of the Jacobian with respect to q̇ to
+// obtain a reference solution.
+TEST_F(KukaIiwaModelTests, CalcBiasForPointsJacobianWrtVExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
 
@@ -658,7 +657,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
   MatrixX<AutoDiffXd> Jv_WHp_autodiff(3 * kNumPoints, kNumPositions);
 
   // Compute J̇_WHp using AutoDiffXd.
-  CalcPointsOnFrameHGeometricJacobian(
+  CalcPointsOnFrameHJacobianWrtV(
       tree_autodiff(), *context_autodiff_, p_HPi_autodiff,
       &p_WPi_autodiff, &Jv_WHp_autodiff);
 
@@ -671,9 +670,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
   // computed with AutoDiffXd.
   const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
 
-  // Compute points geometric Jacobian bias.
+  // Compute points Jacobian bias (with respect to generalized velocities).
   const VectorX<double> Ab_WHp =
-      tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
+      tree().CalcBiasForPointsJacobianWrtVExpressedInWorld(
       *context_, *frame_H_, p_HPi);
 
   // Ab_WHp is of size 3⋅kNumPoints x num_velocities. CompareMatrices() below
@@ -681,12 +680,12 @@ TEST_F(KukaIiwaModelTests, CalcBiasForPointsGeometricJacobianExpressedInWorld) {
   EXPECT_TRUE(CompareMatrices(Ab_WHp, Ab_WHp_expected,
                               kTolerance, MatrixCompareType::relative));
 
-  // Verify CalcBiasForPointsGeometricJacobianExpressedInWorld() throws an
+  // Verify CalcBiasForPointsJacobianWrtVExpressedInWorld() throws an
   // exception if the input set of points is not represented as a matrix with
   // three rows.
   MatrixX<double> p_HQi(5, kNumPoints);  // an invalid size input set.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcBiasForPointsGeometricJacobianExpressedInWorld(
+      tree().CalcBiasForPointsJacobianWrtVExpressedInWorld(
           *context_, *frame_H_, p_HQi),
       std::exception,
       ".* condition '.*.rows\\(\\) == 3' failed.");
@@ -725,9 +724,9 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   MatrixX<double> p_WPi(3, kNumPoints);
   MatrixX<double> Jq_WPi(3 * kNumPoints, kNumPositions);
 
-  // Since for the Kuka iiwa arm v = q̇, the analytic Jacobian Jq_WPi equals the
-  // geometric Jacobian Jv_Wpi.
-  CalcPointsOnEndEffectorGeometricJacobian(
+  // Since for the Kuka iiwa arm v = q̇, the Jacobian Jq_WPi equals the
+  // Jacobian Jv_Wpi.
+  CalcPointsOnEndEffectorJacobianWrtV(
       tree(), *context_, p_EPi, &p_WPi, &Jq_WPi);
 
   // Alternatively, compute the analytic Jacobian by taking the gradient of
@@ -745,7 +744,7 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
   MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, kNumPositions);
 
-  CalcPointsOnEndEffectorGeometricJacobian(
+  CalcPointsOnEndEffectorJacobianWrtV(
       tree_autodiff(), *context_autodiff_,
       p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 
@@ -765,8 +764,8 @@ TEST_F(KukaIiwaModelTests, AnalyticJacobian) {
   EXPECT_EQ(p_WPi_derivs.cols(), kNumPositions);
 
   // Verify the computed Jacobian Jq_WPi matches the one obtained using
-  // automatic differentiation.
-  // In this case analytic and geometric Jacobians are equal since v = q.
+  // automatic differentiation.  In this case the Jacobian with respect to q̇
+  // and the Jacobian with respect to v are equal since q̇ = v.
   EXPECT_TRUE(CompareMatrices(Jq_WPi, p_WPi_derivs,
                               kTolerance, MatrixCompareType::relative));
 }
@@ -811,7 +810,7 @@ TEST_F(KukaIiwaModelTests, EvalPoseAndSpatialVelocity) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
+TEST_F(KukaIiwaModelTests, CalcFrameJacobianWrtVExpressedInWorld) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -862,7 +861,7 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   MatrixX<double> Jv_WF(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
-  tree().CalcFrameGeometricJacobianExpressedInWorld(
+  tree().CalcFrameJacobianWrtVExpressedInWorld(
       *context_,
       end_effector_link_->body_frame(), p_EoFo_E, &Jv_WF);
 
@@ -872,10 +871,10 @@ TEST_F(KukaIiwaModelTests, CalcFrameGeometricJacobianExpressedInWorld) {
   EXPECT_TRUE(Jv_WF_times_v.IsApprox(V_WEf, kTolerance));
 }
 
-// Unit tests MBT::CalcBiasForFrameGeometricJacobianExpressedInWorld() using
-// AutoDiffXd to compute time derivatives of the geometric Jacobian to obtain a
-// reference solution.
-TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
+// Unit tests MBT::CalcBiasForFrameJacobianWrtVExpressedInWorld() using
+// AutoDiffXd to compute time derivatives of the Jacobian with respect to
+// generalized velocities v to obtain a reference solution.
+TEST_F(KukaIiwaModelTests, CalcBiasForFrameJacobianWrtVExpressedInWorld) {
   // The number of generalized velocities in the Kuka iiwa robot arm model.
   const int kNumVelocities = tree().num_velocities();
 
@@ -925,7 +924,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
   // frame H from Ho to Po.
   Vector3<double> p_HPo(0.1, -0.05, 0.02);
 
-  // Frame geometric Jacobian for frame H shifted to frame Hp.
+  // Frame Jacobian with respect to v for frame H shifted to frame Hp.
   MatrixX<double> Jv_WHp(6, kNumVelocities);
 
   const Vector3<AutoDiffXd> p_HPo_autodiff = p_HPo;
@@ -944,9 +943,9 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
   // computed with AutoDiffXd.
   const VectorX<double> Ab_WHp_expected = Jv_WHp_derivs * v;
 
-  // Compute frame Hp geometric Jacobian bias.
+  // Compute frame Hp Jacobian (with respect to v) bias.
   const VectorX<double> Ab_WHp =
-      tree().CalcBiasForFrameGeometricJacobianExpressedInWorld(
+      tree().CalcBiasForFrameJacobianWrtVExpressedInWorld(
           *context_, *frame_H_, p_HPo);
 
   // Ab_WHp is of size 6 x num_velocities. CompareMatrices() below
@@ -960,7 +959,7 @@ TEST_F(KukaIiwaModelTests, CalcBiasForFrameGeometricJacobianExpressedInWorld) {
 // yield the following results:
 //  a) p_WP_set = p_BP_set, since in this case B = W and,
 //  b) J_WP is exactly zero, since the world does not move.
-TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
+TEST_F(KukaIiwaModelTests, PointsJacobianWrtVForTheWorldFrame) {
   // We choose an arbitrary set of non-zero points in the world body. The actual
   // value does not matter for this test. What matters is that we **always** get
   // a zero Jacobian for the world body.
@@ -970,7 +969,7 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   const int npoints = p_WP_set.cols();
 
   // We set the output arrays to garbage so that upon returning from
-  // CalcPointsGeometricJacobianExpressedInWorld() we can verify they were
+  // CalcPointsJacobianWrtVExpressedInWorld() we can verify they were
   // properly set.
   Matrix3X<double> p_WP_out = Matrix3X<double>::Constant(3, npoints, M_PI);
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(3 * npoints, nv, M_E);
@@ -978,7 +977,7 @@ TEST_F(KukaIiwaModelTests, PointsGeometricJacobianForTheWorldFrame) {
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
 
-  tree().CalcPointsGeometricJacobianExpressedInWorld(
+  tree().CalcPointsJacobianWrtVExpressedInWorld(
       *context_, tree().world_body().body_frame(), p_WP_set,
       &p_WP_out, &Jv_WP);
 
@@ -1001,14 +1000,14 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   const int nv = tree().num_velocities();
 
   // We set the output Jacobian to garbage so that upon returning from
-  // CalcFrameGeometricJacobianExpressedInWorld() we can verify it was
+  // CalcFrameJacobianWrtVExpressedInWorld() we can verify it was
   // properly set to zero.
   MatrixX<double> Jv_WP = MatrixX<double>::Constant(6, nv, M_E);
 
   // The state stored in the context should not affect the result of this test.
   // Therefore we do not set it.
 
-  tree().CalcFrameGeometricJacobianExpressedInWorld(
+  tree().CalcFrameJacobianWrtVExpressedInWorld(
       *context_, tree().world_body().body_frame(), p_WP, &Jv_WP);
 
   // Since in this case we are querying for the world frame, the Jacobian should
@@ -1016,7 +1015,7 @@ TEST_F(KukaIiwaModelTests, FrameGeometricJacobianForTheWorldFrame) {
   EXPECT_EQ(Jv_WP, MatrixX<double>::Zero(6, nv));
 }
 
-TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
+TEST_F(KukaIiwaModelTests, CalcRelativeFrameJacobianWrtV) {
   // The number of generalized positions in the Kuka iiwa robot arm model.
   const int kNumPositions = tree().num_positions();
   const int kNumStates = tree().num_states();
@@ -1089,39 +1088,39 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   MatrixX<double> Jv_L3L7q_L5(6, tree().num_velocities());
   // Compute the Jacobian Jv_WF for that relate the generalized velocities with
   // the spatial velocity of frame F.
-  tree().CalcRelativeFrameGeometricJacobian(
-      *context_, link7.body_frame(), p_L7Q,
-      link3.body_frame(), link5.body_frame(), &Jv_L3L7q_L5);
+  tree().CalcRelativeFrameJacobianWrtV(*context_, link7.body_frame(), p_L7Q,
+                                       link3.body_frame(), link5.body_frame(),
+                                       &Jv_L3L7q_L5);
 
   // Verify that V_L3L7q = Jv_L3L7q * v:
   const SpatialVelocity<double> Jv_L3L7q_L5_times_v(Jv_L3L7q_L5 * v);
 
   EXPECT_TRUE(Jv_L3L7q_L5_times_v.IsApprox(V_L3L7q_L5, kTolerance));
 
-  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // Unit test that CalcRelativeFrameJacobianWrtV throws an exception when
   // the input Jacobian is nullptr.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcRelativeFrameGeometricJacobian(
-          *context_, link7.body_frame(), p_L7Q,
-          link3.body_frame(), link5.body_frame(), nullptr),
+      tree().CalcRelativeFrameJacobianWrtV(*context_, link7.body_frame(), p_L7Q,
+                                           link3.body_frame(),
+                                           link5.body_frame(), nullptr),
       std::exception, ".*'Jw_V_ABp_E != nullptr'.*");
 
-  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // Unit test that CalcRelativeFrameJacobianWrtV throws an exception when
   // the input Jacobian has the wrong number of rows.
   MatrixX<double> Jv_wrong_size;
   Jv_wrong_size.resize(9, tree().num_velocities());
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcRelativeFrameGeometricJacobian(
-          *context_, link7.body_frame(), p_L7Q,
+      tree().CalcRelativeFrameJacobianWrtV(
+          *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
       std::exception, ".*'Jw_V_ABp_E->rows\\(\\) == 6'.*");
 
-  // Unit test that CalcRelativeFrameGeometricJacobian throws an exception when
+  // Unit test that CalcRelativeFrameJacobianWrtV throws an exception when
   // the input Jacobian has the wrong number of columns.
   Jv_wrong_size.resize(6, 23);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      tree().CalcRelativeFrameGeometricJacobian(
-          *context_, link7.body_frame(), p_L7Q,
+      tree().CalcRelativeFrameJacobianWrtV(
+          *context_, JacobianWrtVariable::kV, link7.body_frame(), p_L7Q,
           link3.body_frame(), link5.body_frame(), &Jv_wrong_size),
       std::exception, ".*'Jw_V_ABp_E->cols\\(\\) == num_columns'.*");
 }

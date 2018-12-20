@@ -138,7 +138,7 @@ void MultibodyTreeSystem<T>::Finalize() {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& H_PB_W_cache =
             cache_value->GetMutableValue<std::vector<Vector6<T>>>();
-        tree->CalcAcrossNodeGeometricJacobianExpressedInWorld(
+        tree->CalcAcrossNodeJacobianWrtVExpressedInWorld(
             context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },
       {this->cache_entry_ticket(position_kinematics_cache_index_)});

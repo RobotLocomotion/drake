@@ -40,8 +40,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     // Create a model of a Kuka arm. Notice we do not weld the robot's base
     // to the world and therefore the model is free floating in space. This
-    // makes for a more interesting setup to test the computation of
-    // analytical Jacobians.
+    // makes for a more interesting setup to test calculating Jacobians.
     plant_ = std::make_unique<MultibodyPlant<double>>();
     Parser parser(plant_.get());
     parser.AddModelFromFile(kArmSdfPath);
@@ -117,22 +116,20 @@ class KukaIiwaModelTests : public ::testing::Test {
     return x;
   }
 
-  // Computes the analytical Jacobian Jq_WPi for a set of points Pi moving with
-  // the end effector frame E, given their (fixed) position p_EPi in the end
-  // effector frame.
+  // Computes Jq_WPi (the Jacobian with respect to q̇) for a set of points Pi
+  // moving with the end effector frame E, given their (fixed) position p_EPi
+  // in the end effector frame.
   // This templated helper method allows us to use automatic differentiation.
-  // See MultibodyTree::CalcPointsAnalyticalJacobianExpressedInWorld() for
-  // details.
-  // TODO(amcastro-tri): Rename this method as per issue #10155.
+  // See MultibodyTree::CalcPointsJacobianWrtQDotExpressedInWorld() for details.
   template <typename T>
-  void CalcPointsOnEndEffectorAnalyticJacobian(
+  void CalcPointsOnEndEffectorJacobianWrtQDot(
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T,
       const MatrixX<T>& p_EPi,
       MatrixX<T>* p_WPi, MatrixX<T>* Jq_WPi) const {
     const Body<T>& linkG_on_T =
         plant_on_T.tree().get_variant(*end_effector_link_);
-    plant_on_T.tree().CalcPointsAnalyticalJacobianExpressedInWorld(
+    plant_on_T.tree().CalcPointsJacobianWrtQDotExpressedInWorld(
         context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jq_WPi);
   }
 

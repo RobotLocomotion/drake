@@ -767,25 +767,25 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// Returns the topology information for this body node.
   const BodyNodeTopology& get_topology() const { return topology_; }
 
-  /// Computes the geometric Jacobian `H_PB_W` which relates to the spatial
-  /// velocity of a body B in its parent body P by `V_PB_W = H_PB_W(q)⋅v_B`,
-  /// where v_B denotes the generalized velocities associated with body B's
-  /// node. `H_PB_W ∈ ℝ⁶ˣⁿᵐ` where `nm` is the number of mobilities associated
-  /// with body B's node. `H_PB_W(q)` is a function of the model's generalized
-  /// positions q only.
+  /// Computes the Jacobian `H_PB_W` with respect to generalized velocities
+  /// which relates to the spatial velocity of a body B in its parent body P by
+  /// `V_PB_W = H_PB_W(q)⋅v_B`, where v_B denotes the generalized velocities
+  /// associated with body B's node. `H_PB_W ∈ ℝ⁶ˣⁿᵐ` where `nm` is the number
+  /// of mobilities associated with body B's node. `H_PB_W(q)` is a function of
+  /// the model's generalized positions q only.
   ///
   /// @param[in] context
   ///   The context with the state of the MultibodyTree model.
   /// @param[in] pc
   ///   An already updated position kinematics cache in sync with `context`.
   /// @param[out] H_PB_W
-  ///   The geometric Jacobian which relates the velocity `V_PB_W` of this
-  ///   node's body B in its parent body P, expressed in W, by
-  ///   `V_PB_W = H_PB_W⋅v_B`.
+  ///   The Jacobian with respect to generalized velocities which relates the
+  ///   velocity `V_PB_W` of this node's body B in its parent body P,
+  ///   expressed in W, by `V_PB_W = H_PB_W⋅v_B`.
   ///
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
-  void CalcAcrossNodeGeometricJacobianExpressedInWorld(
+  void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const MultibodyTreeContext<T>& context,
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {

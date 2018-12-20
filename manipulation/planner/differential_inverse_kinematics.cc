@@ -246,7 +246,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   const Isometry3<double> X_WE =
       robot.CalcRelativeTransform(context, robot.world_frame(), frame_E);
   MatrixX<double> J_WE(6, robot.num_velocities());
-  robot.CalcFrameGeometricJacobianExpressedInWorld(
+  robot.CalcFrameJacobianWrtVExpressedInWorld(
       context, frame_E, Vector3<double>::Zero(), &J_WE);
 
   const auto& mbt_context =
@@ -282,7 +282,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   const Isometry3<double> X_WE =
       robot.CalcRelativeTransform(context, robot.world_frame(), frame_E);
   MatrixX<double> J_WE(6, robot.num_velocities());
-  robot.CalcFrameGeometricJacobianExpressedInWorld(
+  robot.CalcFrameJacobianWrtVExpressedInWorld(
       context, frame_E, Vector3<double>::Zero(), &J_WE);
 
   const auto& mbt_context =

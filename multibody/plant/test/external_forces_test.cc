@@ -49,7 +49,7 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
 
   // Frame Jacobian for point p_EP.
   MatrixX<double> Jv_WEp(6, nv);
-  plant_->CalcFrameGeometricJacobianExpressedInWorld(
+  plant_->CalcFrameJacobianWrtVExpressedInWorld(
       *context_, end_effector_link_->body_frame(), p_EP, &Jv_WEp);
 
   // Compute the expected value of inverse dynamics when external forcing is

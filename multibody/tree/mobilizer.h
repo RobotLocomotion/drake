@@ -89,7 +89,7 @@ namespace internal {
 ///     inboard frame F, as a function of the mobilizer's generalized positions.
 ///     This pose is computed by CalcAcrossMobilizerTransform().
 /// - H_FM(q):
-///     the geometric Jacobian matrix describing the relationship between
+///     the Jacobian with respect to generalized velocities v relates
 ///     generalized velocities `v  ∈ ℝⁿᵛ` and the spatial velocity `V_FM  ∈ M⁶`.
 ///     This Jacobian can be thought of as the application:
 ///     `v ∈ ℝⁿᵛ → M⁶: V_FM(q, v) = H_FM(q) * v`, where M⁶ is the vector space
@@ -98,7 +98,7 @@ namespace internal {
 ///     vectors as in Featherstone's book). A %Mobilizer implements this
 ///     operator in the method CalcAcrossMobilizerSpatialVelocity().
 /// - H_FMᵀ(q):
-///     The transpose of the geometric Jacobian `H_FM(q)` describing the
+///     The transpose of the Jacobian `H_FM(q)` with respect to v describing the
 ///     relationship between the spatial force `F_Mo_F ∈ F⁶` and the generalized
 ///     forces `tau ∈ ℝⁿᵛ`, where F⁶ is the vector space of "force vectors"
 ///     (be aware that while F⁶ is introduced in [Featherstone 2008, Ch. 2]
@@ -146,9 +146,8 @@ namespace internal {
 ///
 /// %Mobilizer is an abstract base class defining the minimum functionality that
 /// derived %Mobilizer objects must implement in order to fully define the
-/// kinematic relationship between the two frames they connect. Geometric and
-/// analytical Jacobian matrices in the context of differential kinematics are
-/// described in [Sciavicco 2000].
+/// kinematic relationship between the two frames they connect. Jacobians
+/// in the context of differential kinematics are described in [Sciavicco 2000].
 ///
 /// <h4>Relation between the analytical and geometric Jacobians</h4>
 ///

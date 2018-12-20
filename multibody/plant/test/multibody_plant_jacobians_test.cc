@@ -34,8 +34,7 @@ TEST_F(KukaIiwaModelTests, FixtureInvariants) {
   EXPECT_EQ(plant_->num_velocities(), kNumVelocities);
 }
 
-// TODO(amcastro-tri): Rename this test as per issue #10155.
-TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
+TEST_F(KukaIiwaModelTests, CalcPointsJacobianWrtQDotExpressedInWorld) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
@@ -50,13 +49,12 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
   MatrixX<double> p_WPi(3, kNumPoints);
   MatrixX<double> Jq_WPi(3 * kNumPoints, plant_->num_positions());
 
-  CalcPointsOnEndEffectorAnalyticJacobian(
+  CalcPointsOnEndEffectorJacobianWrtQDot(
       *plant_, *context_, p_EPi, &p_WPi, &Jq_WPi);
 
-  // Alternatively, compute the analytic Jacobian by taking the gradient of
-  // the positions p_WPi(q) with respect to the generalized positions. We do
-  // that with the steps below.
-
+  // Alternatively, compute the Jacobian with respect to q̇ by taking the
+  // gradient of the positions p_WPi(q) with respect to the generalized
+  // positions. We do that with the steps below.
   // Initialize q to have values qvalue and so that it is the independent
   // variable of the problem.
   VectorX<AutoDiffXd> q_autodiff(plant_->num_positions());
@@ -68,7 +66,7 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
   MatrixX<AutoDiffXd> p_WPi_autodiff(3, kNumPoints);
   MatrixX<AutoDiffXd> Jq_WPi_autodiff(3 * kNumPoints, plant_->num_positions());
 
-  CalcPointsOnEndEffectorAnalyticJacobian(
+  CalcPointsOnEndEffectorJacobianWrtQDot(
       *plant_autodiff_, *context_autodiff_,
       p_EPi_autodiff, &p_WPi_autodiff, &Jq_WPi_autodiff);
 

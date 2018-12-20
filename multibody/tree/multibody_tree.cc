@@ -490,7 +490,7 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   // corresponding to flexible bodies.
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
+      tree_system_->EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
   // Performs a base-to-tip recursion computing body velocities.
   // This skips the world, depth = 0.
@@ -870,7 +870,7 @@ const SpatialVelocity<T>& MultibodyTree<T>::EvalBodySpatialVelocityInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
     const systems::Context<T>& context,
     const PositionKinematicsCache<T>& pc,
     std::vector<Vector6<T>>* H_PB_W_cache) const {
@@ -893,13 +893,13 @@ void MultibodyTree<T>::CalcAcrossNodeGeometricJacobianExpressedInWorld(
     Eigen::Map<MatrixUpTo6<T>> H_PB_W =
         node.GetMutableJacobianFromArray(H_PB_W_cache);
 
-    node.CalcAcrossNodeGeometricJacobianExpressedInWorld(
+    node.CalcAcrossNodeJacobianWrtVExpressedInWorld(
         mbt_context, pc, &H_PB_W);
   }
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcPointsJacobianWrtVExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
     EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jv_WFp) const {
@@ -916,12 +916,12 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
                       frame_F, p_FP_list,        /* From frame B */
                       world_frame(), p_WP_list); /* To world frame W */
 
-  CalcPointsGeometricJacobianExpressedInWorld(
+  CalcPointsJacobianWrtVExpressedInWorld(
       context, frame_F, *p_WP_list, Jv_WFp);
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcPointsJacobianWrtQDotExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_FP_list,
     EigenPtr<MatrixX<T>> p_WP_list, EigenPtr<MatrixX<T>> Jq_WFp) const {
@@ -945,7 +945,7 @@ void MultibodyTree<T>::CalcPointsAnalyticalJacobianExpressedInWorld(
 }
 
 template <typename T>
-VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
+VectorX<T> MultibodyTree<T>::CalcBiasForPointsJacobianWrtVExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F,
     const Eigen::Ref<const MatrixX<T>>& p_FP_list) const {
@@ -958,11 +958,11 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
   // acceleration of the frame F shifted to frame Fp with origin at point P
   // fixed in frame F, can be computed as:
   //   A_WFp = Jv_WFp⋅v̇ + Ab_WFp,
-  // where Jv_WFp is the geometric Jacobian of frame Fp and Ab_WFp is the bias
-  // term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v. The bias terms
-  // contains the Coriolis and centrifugal contributions to the total spatial
-  // acceleration due to non-zero velocities. Therefore, the bias term for
-  // Jv_WFp is the spatial acceleration of Fp when v̇ = 0, that is:
+  // where Jv_WFp is the Jacobian for generalized positions v of frame Fp and
+  // Ab_WFp is the bias term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v.
+  // The bias terms contains the Coriolis and centrifugal contributions to the
+  // total spatial acceleration due to non-zero velocities. Therefore, the bias
+  // term for Jv_WFp is the spatial acceleration of Fp when v̇ = 0, that is:
   //   Ab_WFp = A_WFp(q, v, v̇ = 0)
   // Given the position p_BP_W of point P on body frame B, we can compute the
   // spatial acceleration Ab_WFp from the body spatial acceleration A_WB by
@@ -1016,7 +1016,7 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcPointsJacobianWrtVExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F, const Eigen::Ref<const MatrixX<T>>& p_WP_list,
     EigenPtr<MatrixX<T>> Jv_WFp) const {
@@ -1032,7 +1032,7 @@ void MultibodyTree<T>::CalcPointsGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
+void MultibodyTree<T>::CalcFrameJacobianWrtVExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP,
     EigenPtr<MatrixX<T>> Jv_WFp) const {
@@ -1055,12 +1055,12 @@ void MultibodyTree<T>::CalcFrameGeometricJacobianExpressedInWorld(
 }
 
 template <typename T>
-void MultibodyTree<T>::CalcRelativeFrameGeometricJacobian(
+void MultibodyTree<T>::CalcRelativeFrameJacobianWrtV(
     const systems::Context<T>& context,
     const Frame<T>& frame_B, const Eigen::Ref<const Vector3<T>>& p_BP,
     const Frame<T>& frame_A, const Frame<T>& frame_E,
     EigenPtr<MatrixX<T>> Jv_ABp_E) const {
-  CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kV, frame_B, p_BP,
+  CalcJacobianSpatialVelocity(context, wrt_variables, frame_B, p_BP,
                               frame_A, frame_E, Jv_ABp_E);
 }
 
@@ -1133,7 +1133,7 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
 }
 
 template <typename T>
-Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
+Vector6<T> MultibodyTree<T>::CalcBiasForFrameJacobianWrtVExpressedInWorld(
     const systems::Context<T>& context,
     const Frame<T>& frame_F, const Eigen::Ref<const Vector3<T>>& p_FP) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
@@ -1143,7 +1143,7 @@ Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
   // acceleration of the frame F shifted to frame Fp with origin at point P
   // fixed in frame F, can be computed as:
   //   A_WFp = Jv_WFp⋅v̇ + Ab_WFp,
-  // where Jv_WFp is the frame geometric Jacobian for frame Fp and Ab_WFp is the
+  // where Jv_WFp is the frame Jacobian for frame Fp and Ab_WFp is the
   // bias term for that Jacobian, defined as Ab_WFp = J̇v_WFp⋅v. The bias term
   // contains the Coriolis and centrifugal contributions to the total spatial
   // acceleration due to non-zero velocities. Therefore, the bias term for
@@ -1232,7 +1232,7 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
+      tree_system_->EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
   // A statically allocated matrix with a maximum number of rows and columns.
   Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, 0, 6, 7> Nplus;
@@ -1293,11 +1293,11 @@ void MultibodyTree<T>::CalcFrameJacobianExpressedInWorld(
 
     if (Jt_WFq) {
       // Output block corresponding to mobilities in the current node.
-      // This correspond to the geometric Jacobian to compute the translational
-      // velocity of frame Fq (same as that of point Q) measured in the inboard
-      // body frame P and expressed in world. That is, v_PQ_W = v_PFq_W =
-      // Jv_PFq_W * v(B), with v(B) the mobilities that correspond to the
-      // current node.
+      // This corresponds to the Jacobian (with respect to generalized
+      // velocities v) to compute the translational velocity of frame Fq
+      // (same as that of point Q) measured in the inboard body frame P and
+      // expressed in world. That is, v_PQ_W = v_PFq_W = Jv_PFq_W * v(B),
+      // with v(B) the mobilities that correspond to the current node.
       auto Jv_PFq_W =
           Jt_WFq->block(0, start_index, Jt_nrows, mobilizer_jacobian_ncols);
 
@@ -1404,7 +1404,7 @@ void MultibodyTree<T>::CalcArticulatedBodyInertiaCache(
       dynamic_cast<const MultibodyTreeContext<T>&>(context);
 
   const std::vector<Vector6<T>>& H_PB_W_cache =
-      tree_system_->EvalAcrossNodeGeometricJacobianExpressedInWorld(context);
+      tree_system_->EvalAcrossNodeJacobianWrtVExpressedInWorld(context);
 
   // Perform tip-to-base recursion, skipping the world.
   for (int depth = tree_height() - 1; depth > 0; depth--) {
