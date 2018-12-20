@@ -194,12 +194,13 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Expression& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          py::arg("env") = Environment::map{}, doc.Expression.Evaluate.doc)
+          py::arg("env") = Environment::map{},
+          doc.Expression.Evaluate.doc_2args)
       .def("Evaluate",
           [](const Expression& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          doc.Expression.Evaluate.doc)
+          doc.Expression.Evaluate.doc_2args)
       .def("EvaluatePartial",
           [](const Expression& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
@@ -358,7 +359,7 @@ PYBIND11_MODULE(symbolic, m) {
           [](const Formula& self, const Environment::map& env) {
             return self.Evaluate(Environment{env});
           },
-          doc.Formula.Evaluate.doc)
+          doc.Formula.Evaluate.doc_2args)
       .def("Substitute",
           [](const Formula& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);

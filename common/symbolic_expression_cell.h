@@ -23,6 +23,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
