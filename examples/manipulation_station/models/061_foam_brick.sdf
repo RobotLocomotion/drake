@@ -17,7 +17,7 @@
     <visual name='base_link'>
       <pose frame=''>0 0 0.025 0 0 0</pose>
       <geometry>
-        <box> 
+        <box>
           <size>0.075 0.05 0.05</size>
         </box>
       </geometry>
@@ -41,7 +41,7 @@
     <collision name='box_collision'>
       <pose>0 0 0.025 0 0 0</pose>
       <geometry>
-        <box> 
+        <box>
           <size>0.074 0.049 0.049</size>
         </box>
       </geometry>

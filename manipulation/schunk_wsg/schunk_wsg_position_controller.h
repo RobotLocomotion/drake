@@ -88,6 +88,16 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
   }
 
  private:
+  /*
+  void DoCalcDiscreteVariableUpdates(
+      const systems::Context<double>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
+      systems::DiscreteValues<double>* discrete_state) const override;
+  */
+  void DoCalcTimeDerivatives(
+      const systems::Context<double>& context,
+      systems::ContinuousState<double>* derivatives) const override;
+
   Eigen::Vector2d CalcGeneralizedForce(
       const systems::Context<double>& context) const;
 
@@ -100,6 +110,7 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
 
   const double kp_command_;
   const double kd_command_;
+  const double ki_command_;
   const double kp_constraint_;
   const double kd_constraint_;
 
@@ -119,10 +130,10 @@ class SchunkWsgPdController : public systems::LeafSystem<double> {
  *
  * The `position_command` input port is a scalar, and the 'state_command'
  * output is a vector of 2. This system is modeled as a discrete time system.
- * The output is computed by interpolating a trajectory stored in the 
- * discrete state. During discrete update, this trajectory will be 
+ * The output is computed by interpolating a trajectory stored in the
+ * discrete state. During discrete update, this trajectory will be
  * regenerated when the latest input is sufficiently different from the end
- * point in the current trajectory. 
+ * point in the current trajectory.
  *
  * This trajectory follows a trapezoid profile. Depending on the distance that
  * needs to be covered, it can be either one of:
