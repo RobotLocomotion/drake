@@ -331,6 +331,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
 using std::make_shared;
 using std::shared_ptr;
 
+// Parameter for the value-parameterized test fixture SignedDistanceToPointTest.
 struct SignedDistanceToPointTestData {
   SignedDistanceToPointTestData(shared_ptr<Shape> geometry_in,
                                 const RigidTransformd& X_WG_in,
@@ -341,11 +342,8 @@ struct SignedDistanceToPointTestData {
         p_WQ(p_WQ_in),
         expect(expect_in) {}
 
-  shared_ptr<Shape> geometry;
-  const RigidTransformd X_WG;
-  const Vector3d p_WQ;
-  const SignedDistanceToPoint<double> expect;
-
+  // Google Test uses this operator to report the test data in the log file
+  // when a test fails.
   friend std::ostream& operator<<(std::ostream& os,
                                   const SignedDistanceToPointTestData& obj) {
     return os << std::endl
@@ -361,6 +359,11 @@ struct SignedDistanceToPointTestData {
               << "expect.grad_W: \n"
               << obj.expect.grad_W << std::endl;
   }
+
+  shared_ptr<Shape> geometry;
+  const RigidTransformd X_WG;
+  const Vector3d p_WQ;
+  const SignedDistanceToPoint<double> expect;
 };
 
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
@@ -598,29 +601,36 @@ INSTANTIATE_TEST_CASE_P(
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
 
 // Tests the threshold.
-GTEST_TEST(SignedDistanceToPointTest, Threshold) {
-  ProximityEngine<double> engine;
-  std::vector<GeometryId> geometry_map;
+// Another test fixture inherited from SignedDistanceToPointTest without
+// additional members.  It allows us to define a TEST_P() to test the threshold.
+// We could have added the same TEST_P() directly to the parent class; however,
+// it would have double the number of tests.  Instead, this "empty" test
+// fixture helps us instantiate a selected subset of the test data.
+struct SignedDistanceToPointTestThreshold : public SignedDistanceToPointTest {};
 
-  Sphere sphere{0.7};
-  Isometry3<double> pose = Isometry3<double>::Identity();
-  engine.AddAnchoredGeometry(sphere, pose, GeometryIndex(0));
-  GeometryId sphere_id = GeometryId::get_new_id();
-  geometry_map.push_back(sphere_id);
+TEST_P(SignedDistanceToPointTestThreshold, SingleQueryPoint) {
+  auto data = GetParam();
 
-  Vector3d query{2.0, 3.0, 6.0};
-  const double large_threshold = 6.3 + 0.01;
+  const double large_threshold = data.expect.distance + 0.01;
   auto results =
-      engine.ComputeSignedDistanceToPoint(query, geometry_map, large_threshold);
+      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
+                                          large_threshold);
   // The large threshold allows one object in the results.
   EXPECT_EQ(results.size(), 1);
 
-  const double small_threshold = 6.3 - 0.01;
+  const double small_threshold = data.expect.distance - 0.01;
   results =
-      engine.ComputeSignedDistanceToPoint(query, geometry_map, small_threshold);
+      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
+                                                small_threshold);
   // The small threshold skips all objects.
   EXPECT_EQ(results.size(), 0);
 }
+
+INSTANTIATE_TEST_CASE_P(SphereThreshold, SignedDistanceToPointTestThreshold,
+                        testing::ValuesIn(GenDistanceTestDataSphere()));
+INSTANTIATE_TEST_CASE_P(OutsideBoxThreshold, SignedDistanceToPointTestThreshold,
+                        testing::ValuesIn(GenDistanceTestDataOutsideBox()));
+
 
 // Penetration tests -- testing data flow; not testing the value of the query.
 
