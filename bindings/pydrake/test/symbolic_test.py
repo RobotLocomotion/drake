@@ -99,8 +99,14 @@ class TestSymbolicVariable(SymbolicTestCase):
         self.assertEqual(str(x == y), "(x == y)")
         self.assertEqual(str(x != y), "(x != y)")
 
+    def test_get_type(self):
+        i = sym.Variable('i', sym.Variable.Type.INTEGER)
+        self.assertEqual(i.get_type(), sym.Variable.Type.INTEGER)
+        g = sym.Variable('g', sym.Variable.Type.RANDOM_GAUSSIAN)
+        self.assertEqual(g.get_type(), sym.Variable.Type.RANDOM_GAUSSIAN)
+
     def test_repr(self):
-        self.assertEqual(repr(x), "Variable('x')")
+        self.assertEqual(repr(x), "Variable('x', Continuous)")
 
     def test_simplify(self):
         self.assertEqual(str(0 * (x + y)), "0")
@@ -168,8 +174,8 @@ class TestSymbolicVariable(SymbolicTestCase):
     def test_array_str(self):
         # Addresses #8729.
         value = str(np.array([x, y]))
-        self.assertIn("Variable('x')", value)
-        self.assertIn("Variable('y')", value)
+        self.assertIn("Variable('x', Continuous)", value)
+        self.assertIn("Variable('y', Continuous)", value)
 
 
 class TestSymbolicVariables(SymbolicTestCase):

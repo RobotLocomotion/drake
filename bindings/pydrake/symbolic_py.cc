@@ -41,12 +41,30 @@ PYBIND11_MODULE(symbolic, m) {
 
   // TODO(m-chaturvedi) Add Pybind11 documentation for operator overloads, etc.
   py::class_<Variable> var_cls(m, "Variable", doc.Variable.doc);
-  var_cls.def(py::init<const string&>(), doc.Variable.ctor.doc_1args)
+  py::enum_<Variable::Type>(var_cls, "Type")
+      .value("CONTINUOUS", Variable::Type::CONTINUOUS,
+          doc.Variable.Type.CONTINUOUS.doc)
+      .value("INTEGER", Variable::Type::INTEGER, doc.Variable.Type.INTEGER.doc)
+      .value("BINARY", Variable::Type::BINARY, doc.Variable.Type.BINARY.doc)
+      .value("BOOLEAN", Variable::Type::BOOLEAN, doc.Variable.Type.BOOLEAN.doc)
+      .value("RANDOM_UNIFORM", Variable::Type::RANDOM_UNIFORM,
+          doc.Variable.Type.RANDOM_UNIFORM.doc)
+      .value("RANDOM_GAUSSIAN", Variable::Type::RANDOM_GAUSSIAN,
+          doc.Variable.Type.RANDOM_GAUSSIAN.doc)
+      .value("RANDOM_EXPONENTIAL", Variable::Type::RANDOM_EXPONENTIAL,
+          doc.Variable.Type.RANDOM_EXPONENTIAL.doc);
+
+  var_cls
+      .def(py::init<const string&, Variable::Type>(), py::arg("name"),
+          py::arg("type") = Variable::Type::CONTINUOUS,
+          doc.Variable.ctor.doc_2args)
       .def("get_id", &Variable::get_id, doc.Variable.get_id.doc)
+      .def("get_type", &Variable::get_type, doc.Variable.get_type.doc)
       .def("__str__", &Variable::to_string, doc.Variable.to_string.doc)
       .def("__repr__",
           [](const Variable& self) {
-            return fmt::format("Variable('{}')", self.to_string());
+            return fmt::format(
+                "Variable('{}', {})", self.to_string(), self.get_type());
           })
       .def("__hash__",
           [](const Variable& self) { return std::hash<Variable>{}(self); })
