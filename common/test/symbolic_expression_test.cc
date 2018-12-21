@@ -26,7 +26,6 @@ using std::equal_to;
 using std::map;
 using std::ostringstream;
 using std::pair;
-using std::random_device;
 using std::runtime_error;
 using std::set;
 using std::string;
@@ -2133,8 +2132,7 @@ TEST_F(SymbolicExpressionTest, UniformRealDistribution) {
                  runtime_error);
   }
 
-  random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
 
   // The standard case U(0, 1) should generate an expression `0.0 + (1.0 - 0.0)
@@ -2284,8 +2282,7 @@ TEST_F(SymbolicExpressionTest, NormalDistribution) {
   // Exceptions at construction.
   { EXPECT_THROW(normal_distribution<Expression>(1.0, -1.0), runtime_error); }
 
-  random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
 
   // The standard case N(0, 1) should generate an expression `0.0 + 1.0 * v`
@@ -2424,8 +2421,7 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
   // Exceptions at construction.
   { EXPECT_THROW(exponential_distribution<Expression>(-3.0), runtime_error); }
 
-  random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
 
   // The standard case Exp(1) should generate an expression `v / 1` which is
@@ -2609,8 +2605,7 @@ TEST_F(SymbolicExpressionTest, EvaluateExpressionsIncludingRandomVariables) {
       {{{var_x_, 2.0}, {var_y_, -2.0}}},
   };
 
-  random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   for (const Expression& e : expressions) {
     for (const Environment& env : environments) {
       EXPECT_TRUE(CheckExpressionWithRandomVariables(e, env, &generator));

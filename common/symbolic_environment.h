@@ -137,9 +137,8 @@ class Environment {
   map map_;
 };
 
-/** Populates the environment @p env by sampling values for @p variables using
-    @p random_generator.
- */
+/** Populates the environment @p env by sampling values for the unassigned
+ *  random variables in @p variables using @p random_generator. */
 Environment PopulateRandomVariables(Environment env, const Variables& variables,
                                     RandomGenerator* random_generator);
 

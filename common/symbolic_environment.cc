@@ -120,6 +120,11 @@ Environment PopulateRandomVariables(Environment env, const Variables& variables,
                                     RandomGenerator* const random_generator) {
   DRAKE_DEMAND(random_generator != nullptr);
   for (const Variable& var : variables) {
+    const auto it = env.find(var);
+    if (it != env.end()) {
+      // The variable is already assigned by env, no need to sample.
+      continue;
+    }
     switch (var.get_type()) {
       case Variable::Type::CONTINUOUS:
       case Variable::Type::BINARY:
