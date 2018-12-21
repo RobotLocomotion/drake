@@ -782,14 +782,25 @@ auto operator*(
   return t1.template cast<Expression>() * t2;
 }
 
-/// Evaluates a symbolic matrix `m` using the `env` by evaluating each element.
+/// Evaluates a symbolic matrix `m` using @p env and @p random_generator.
+///
+/// When @p random_generator is non-null, it extends `env` by sampling values
+/// for the random variables in `m`. Then it uses this extended environment to
+/// evaluate all the expressions in `m`. This makes sure that one value is used
+/// to substitute all the occurrences of the corresponding random variable in
+/// `m`.
+///
 /// @returns a matrix of double whose size is the size of `m`.
 /// @throws std::runtime_error if NaN is detected during evaluation.
+/// @throws std::runtime_error if `m` includes random variables but
+///                               `random_generator` is `nullptr`.
 template <typename Derived>
-auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
+auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env,
+              RandomGenerator* random_generator = nullptr) {
   static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
                 "Evaluate only accepts a symbolic matrix.");
-  // Without the trailing `.eval()`, it returns an Eigen Expression (of type
+  // Note that in both return statements, we have `.eval()` at the end. Without
+  // the trailing `.eval()`, it returns an Eigen Expression (of type
   // CwiseUnaryOp) and `symbolic::Expression::Evaluate` is only called when a
   // value is needed (i.e. lazy-evaluation). We add the trailing `.eval()` call
   // to enforce eager-evaluation and provide a fully evaluated matrix (of
@@ -797,8 +808,27 @@ auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
   //
   // Please refer to https://eigen.tuxfamily.org/dox/TopicPitfalls.html for more
   // information.
-  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); })
-      .eval();
+  if (random_generator == nullptr) {
+    return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); })
+        .eval();
+  } else {
+    // Collect all the variables in `m`.
+    Variables variables{};
+    for (int i = 0; i < m.rows(); ++i) {
+      for (int j = 0; j < m.cols(); ++j) {
+        variables += m(i, j).GetVariables();
+      }
+    }
+    // Construct an environment by extending `env` by sampling values for the
+    // random variables in `m`.
+    const Environment env_with_random_variables{
+        PopulateRandomVariables(env, variables, random_generator)};
+    return m
+        .unaryExpr([&env_with_random_variables](const Expression& e) {
+          return e.Evaluate(env_with_random_variables);
+        })
+        .eval();
+  }
 }
 
 }  // namespace symbolic
