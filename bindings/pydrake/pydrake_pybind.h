@@ -190,8 +190,11 @@ For more detail:
 - The docstring for an overloaded symbol will be `.doc_something` instead of
 just `.doc`, where the `_something` suffix conveys some information about the
 overload.  Browse the documentation_pybind.h (described above) for details.
-- Constructors are accessible as `{symbol}.ctor.doc`, `{symbol}.ctor.doc_2`,
 etc.
+- To suppress a Doxygen comment from mkdoc, add `@exclude_from_pydrake_mkdoc`
+to the comment text.  (This is useful to help dismiss unbound overloads, so
+that mkdoc's choice of `_something` name suffix is simpler for the remaining
+overloads.)
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior

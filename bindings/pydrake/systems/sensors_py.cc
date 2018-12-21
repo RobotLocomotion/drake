@@ -127,7 +127,7 @@ PYBIND11_MODULE(sensors, m) {
                 return pixel;
               },
               py::arg("x"), py::arg("y"), py_reference_internal,
-              doc.Image.at.doc)
+              doc.Image.at.doc_2args_x_y_nonconst)
           // Non-C++ properties. Make them Pythonic.
           .def_property_readonly("shape", get_shape)
           .def_property_readonly("data", get_data, py_reference_internal)
@@ -227,7 +227,7 @@ PYBIND11_MODULE(sensors, m) {
           py::arg("period") = double{RgbdCameraDiscrete::kDefaultPeriod},
           py::arg("render_label_image") = true,
           // Keep alive, ownership: `RgbdCamera` keeps `this` alive.
-          py::keep_alive<2, 1>(), doc.RgbdCameraDiscrete.ctor.doc_3args)
+          py::keep_alive<2, 1>(), doc.RgbdCameraDiscrete.ctor.doc)
       // N.B. Since `camera` is already connected, we do not need additional
       // `keep_alive`s.
       .def("camera", &RgbdCameraDiscrete::camera,

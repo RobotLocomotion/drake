@@ -91,8 +91,7 @@ class Fields {
 
   /// @throws std::runtime_error if `base_fields` is not composed of valid
   /// `BaseField`s.
-  // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Fields(BaseFieldT base_fields)
+  Fields(BaseFieldT base_fields)  // NOLINT(runtime/explicit)
       : base_fields_(base_fields) {
     if (base_fields < 0 || base_fields >= (internal::kMaxBitInUse << 1))
       throw std::runtime_error("Invalid BaseField specified.");

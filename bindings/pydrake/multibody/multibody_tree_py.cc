@@ -197,8 +197,7 @@ void init_module(py::module m) {
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Isometry3<double>&>(),
             py::arg("name"), py::arg("parent_frame_P"),
-            py::arg("child_frame_C"), py::arg("X_PC"),
-            doc.WeldJoint.ctor.doc_4args);
+            py::arg("child_frame_C"), py::arg("X_PC"), doc.WeldJoint.ctor.doc);
   }
 
   // Actuators.
@@ -224,7 +223,7 @@ void init_module(py::module m) {
     py::class_<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", doc.UniformGravityFieldElement.doc)
         .def(py::init<Vector3<double>>(), py::arg("g_W"),
-            doc.UniformGravityFieldElement.ctor.doc_1args);
+            doc.UniformGravityFieldElement.ctor.doc);
   }
 
   // MultibodyForces
@@ -329,7 +328,7 @@ void init_module(py::module m) {
             overload_cast_explicit<void, const Body<T>&, const Isometry3<T>&,
                 Context<T>*>(&Class::SetFreeBodyPoseOrThrow),
             py::arg("body"), py::arg("X_WB"), py::arg("context"),
-            cls_doc.SetFreeBodyPoseOrThrow.doc_3args)
+            cls_doc.SetFreeBodyPoseOrThrow.doc)
         .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
             py::arg("model_instance"), py::arg("q_array"),
             cls_doc.get_positions_from_array.doc)
@@ -400,7 +399,7 @@ void init_module(py::module m) {
         py_reference,
         // Keep alive, ownership: `return` keeps `Context` alive.
         py::keep_alive<0, 2>(), py::arg("context"),
-        cls_doc.get_multibody_state_vector.doc_1args);
+        cls_doc.get_multibody_state_vector.doc);
     cls.def("get_mutable_multibody_state_vector",
         [](const MultibodyTree<T>* self,
             Context<T>* context) -> Eigen::Ref<VectorX<T>> {
@@ -433,12 +432,13 @@ void BindSpatialVectorMixin(PyClass* pcls) {
           [](const Class* self) -> const Vector3<T>& {
             return self->rotational();
           },
-          py_reference_internal, doc.SpatialVector.rotational.doc)
+          py_reference_internal, doc.SpatialVector.rotational.doc_0args_const)
       .def("translational",
           [](const Class* self) -> const Vector3<T>& {
             return self->translational();
           },
-          py_reference_internal, doc.SpatialVector.translational.doc);
+          py_reference_internal,
+          doc.SpatialVector.translational.doc_0args_const);
 }
 
 void init_math(py::module m) {
@@ -457,10 +457,10 @@ void init_math(py::module m) {
     py::class_<Class> cls(m, "SpatialVelocity", cls_doc.doc);
     BindSpatialVectorMixin(&cls);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_3)
+        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
-            py::arg("w"), py::arg("v"), cls_doc.ctor.doc_4);
+            py::arg("w"), py::arg("v"), cls_doc.ctor.doc_2args);
   }
   {
     using Class = SpatialAcceleration<T>;
@@ -468,10 +468,10 @@ void init_math(py::module m) {
     py::class_<Class> cls(m, "SpatialAcceleration", cls_doc.doc);
     BindSpatialVectorMixin(&cls);
     cls  // BR
-        .def(py::init(), cls_doc.ctor.doc_3)
+        .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Vector3<T>>&,
                  const Eigen::Ref<const Vector3<T>>&>(),
-            py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_4);
+            py::arg("alpha"), py::arg("a"), cls_doc.ctor.doc_2args);
   }
 }
 
@@ -531,7 +531,7 @@ void init_multibody_plant(py::module m) {
               return self->AddJoint(std::move(joint));
             },
             py::arg("joint"), py_reference_internal,
-            doc.MultibodyPlant.AddJoint.doc)
+            doc.MultibodyPlant.AddJoint.doc_1args)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
             py::arg("X_AB") = Isometry3<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
@@ -795,14 +795,14 @@ void init_multibody_plant(py::module m) {
               return self->GetJointByName(name);
             },
             py::arg("name"), py_reference_internal,
-            doc.MultibodyPlant.GetJointByName.doc)
+            doc.MultibodyPlant.GetJointByName.doc_1args_name)
         .def("GetJointByName",
             [](const Class* self, const string& name,
                 ModelInstanceIndex model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
-            doc.MultibodyPlant.GetJointByName.doc_2)
+            doc.MultibodyPlant.GetJointByName.doc_2args_name_model_instance)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(
                 &Class::GetJointActuatorByName),
@@ -1098,7 +1098,7 @@ void init_parsing_deprecated(py::module m) {
 #pragma GCC diagnostic pop
       },
       py::arg("file_name"), py::arg("model_name"), py::arg("plant"),
-      py::arg("scene_graph") = nullptr, doc.AddModelFromSdfFile.doc_4args);
+      py::arg("scene_graph") = nullptr, doc.AddModelFromSdfFile.doc);
   m.def("AddModelFromSdfFile",
       [](const string& file_name, MultibodyPlant<double>* plant,
           SceneGraph<double>* scene_graph) {
@@ -1111,7 +1111,7 @@ void init_parsing_deprecated(py::module m) {
 #pragma GCC diagnostic pop
       },
       py::arg("file_name"), py::arg("plant"), py::arg("scene_graph") = nullptr,
-      doc.AddModelFromSdfFile.doc_3args);
+      doc.AddModelFromSdfFile.doc);
 }
 
 void init_all(py::module m) {

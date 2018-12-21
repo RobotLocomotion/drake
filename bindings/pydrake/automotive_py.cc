@@ -94,7 +94,7 @@ PYBIND11_MODULE(automotive, m) {
   // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<DrivingCommand<T>, BasicVector<T>>(
       m, "DrivingCommand", doc.DrivingCommand.doc)
-      .def(py::init<>(), doc.DrivingCommand.ctor.doc_0args)
+      .def(py::init<>(), doc.DrivingCommand.ctor.doc)
       .def("steering_angle", &DrivingCommand<T>::steering_angle,
           doc.DrivingCommand.steering_angle.doc)
       .def("acceleration", &DrivingCommand<T>::acceleration,
@@ -110,7 +110,7 @@ PYBIND11_MODULE(automotive, m) {
                RoadPositionStrategy, double>(),
           py::arg("road"), py::arg("path_or_branches"),
           py::arg("road_position_strategy"), py::arg("period_sec"),
-          doc.IdmController.ctor.doc_4args)
+          doc.IdmController.ctor.doc)
       .def("ego_pose_input", &IdmController<T>::ego_pose_input,
           py_reference_internal, doc.IdmController.ego_pose_input.doc)
       .def("ego_velocity_input", &IdmController<T>::ego_velocity_input,
@@ -150,7 +150,7 @@ PYBIND11_MODULE(automotive, m) {
 
   py::class_<PurePursuitController<T>, LeafSystem<T>>(
       m, "PurePursuitController", doc.PurePursuitController.doc)
-      .def(py::init<>(), doc.PurePursuitController.ctor.doc_4)
+      .def(py::init<>(), doc.PurePursuitController.ctor.doc)
       .def("ego_pose_input", &PurePursuitController<T>::ego_pose_input,
           py_reference_internal, doc.PurePursuitController.ego_pose_input.doc)
       .def("lane_input", &PurePursuitController<T>::lane_input,
@@ -163,7 +163,7 @@ PYBIND11_MODULE(automotive, m) {
   // TODO(eric.cousineau) Bind this named vector automatically (see #8096).
   py::class_<SimpleCarState<T>, BasicVector<T>>(
       m, "SimpleCarState", doc.SimpleCarState.doc)
-      .def(py::init<>(), doc.SimpleCarState.ctor.doc_0args)
+      .def(py::init<>(), doc.SimpleCarState.ctor.doc)
       .def("x", &SimpleCarState<T>::x, doc.SimpleCarState.x.doc)
       .def("y", &SimpleCarState<T>::y, doc.SimpleCarState.y.doc)
       .def("heading", &SimpleCarState<T>::heading,
@@ -178,7 +178,7 @@ PYBIND11_MODULE(automotive, m) {
           doc.SimpleCarState.set_velocity.doc);
 
   py::class_<SimpleCar<T>, LeafSystem<T>>(m, "SimpleCar", doc.SimpleCar.doc)
-      .def(py::init<>(), doc.SimpleCar.ctor.doc_4)
+      .def(py::init<>(), doc.SimpleCar.ctor.doc)
       .def("state_output", &SimpleCar<T>::state_output, py_reference_internal,
           doc.SimpleCar.state_output.doc)
       .def("pose_output", &SimpleCar<T>::pose_output, py_reference_internal,

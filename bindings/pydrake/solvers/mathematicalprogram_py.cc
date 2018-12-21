@@ -216,32 +216,32 @@ PYBIND11_MODULE(mathematicalprogram, m) {
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
-  prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc_0args)
+  prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc)
       .def("NewContinuousVariables",
           // NOLINTNEXTLINE(whitespace/parens)
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
               int, const std::string&)>(
               &MathematicalProgram::NewContinuousVariables),
           py::arg("rows"), py::arg("name") = "x",
-          doc.MathematicalProgram.NewContinuousVariables.doc)
+          doc.MathematicalProgram.NewContinuousVariables.doc_2args)
       .def("NewContinuousVariables",
           // NOLINTNEXTLINE(whitespace/parens)
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               int, int, const std::string&)>(
               &MathematicalProgram::NewContinuousVariables),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "x",
-          doc.MathematicalProgram.NewContinuousVariables.doc_2)
+          doc.MathematicalProgram.NewContinuousVariables.doc_3args)
       .def("NewBinaryVariables",
           // NOLINTNEXTLINE(whitespace/parens)
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(int,
               const std::string&)>(&MathematicalProgram::NewBinaryVariables),
           py::arg("rows"), py::arg("name") = "b",
-          doc.MathematicalProgram.NewBinaryVariables.doc)
+          doc.MathematicalProgram.NewBinaryVariables.doc_2args)
       .def("NewBinaryVariables",
           py::overload_cast<int, int, const string&>(
               &MathematicalProgram::NewBinaryVariables<Dynamic, Dynamic>),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "b",
-          doc.MathematicalProgram.NewBinaryVariables.doc_2)
+          doc.MathematicalProgram.NewBinaryVariables.doc_3args)
       .def("NewSymmetricContinuousVariables",
           // `py::overload_cast` and `overload_cast_explict` struggle with
           // overloads that compete with templated methods.
@@ -270,31 +270,32 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           static_cast<VectorXIndeterminate (MathematicalProgram::*)(int,
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("name") = "x",
-          doc.MathematicalProgram.NewIndeterminates.doc)
+          doc.MathematicalProgram.NewIndeterminates.doc_2args)
       .def("NewIndeterminates",
           // NOLINTNEXTLINE(whitespace/parens)
           static_cast<MatrixXIndeterminate (MathematicalProgram::*)(int, int,
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "X",
-          doc.MathematicalProgram.NewIndeterminates.doc_2)
+          doc.MathematicalProgram.NewIndeterminates.doc_3args)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddBoundingBoxConstraint),
-          doc.MathematicalProgram.AddBoundingBoxConstraint.doc)
+          doc.MathematicalProgram.AddBoundingBoxConstraint.doc_3args_lb_ub_vars)
       .def("AddBoundingBoxConstraint",
           static_cast<Binding<BoundingBoxConstraint> (MathematicalProgram::*)(
               double, double, const symbolic::Variable&)>(
               &MathematicalProgram::AddBoundingBoxConstraint),
-          doc.MathematicalProgram.AddBoundingBoxConstraint.doc_3)
+          doc.MathematicalProgram.AddBoundingBoxConstraint.doc_3args_lb_ub_var)
       .def("AddBoundingBoxConstraint",
           [](MathematicalProgram* self, double lb, double ub,
               const Eigen::Ref<const MatrixX<symbolic::Variable>>& vars) {
             return self->AddBoundingBoxConstraint(lb, ub, vars);
           },
-          doc.MathematicalProgram.AddBoundingBoxConstraint.doc_4)
+          doc.MathematicalProgram.AddBoundingBoxConstraint
+              .doc_3args_double_double_constEigenMatrixBase)
       .def("AddConstraint",
           [](MathematicalProgram* self, py::function func,
               const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
@@ -307,16 +308,16 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("func"), py::arg("vars"), py::arg("lb"), py::arg("ub"),
           py::arg("description") = "",
-          doc.MathematicalProgram.AddConstraint.doc_3)
+          doc.MathematicalProgram.AddConstraint.doc_1args_binding)
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
               &MathematicalProgram::AddConstraint),
-          doc.MathematicalProgram.AddConstraint.doc_2)
+          doc.MathematicalProgram.AddConstraint.doc_3args_e_lb_ub)
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddConstraint),
-          doc.MathematicalProgram.AddConstraint.doc_5)
+          doc.MathematicalProgram.AddConstraint.doc_1args_f)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -324,33 +325,33 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearConstraint),
-          doc.MathematicalProgram.AddLinearConstraint.doc)
+          doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
               &MathematicalProgram::AddLinearConstraint),
-          doc.MathematicalProgram.AddLinearConstraint.doc_5)
+          doc.MathematicalProgram.AddLinearConstraint.doc_3args_e_lb_ub)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddLinearConstraint),
-          doc.MathematicalProgram.AddLinearConstraint.doc_7)
+          doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_7)
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_3args)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Expression&, double)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc)
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_2args)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Formula&)>(
               &MathematicalProgram::AddLinearEqualityConstraint),
-          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_2)
+          doc.MathematicalProgram.AddLinearEqualityConstraint.doc_1args)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&)>(
@@ -361,7 +362,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const MatrixXDecisionVariable>& vars) {
             return self->AddPositiveSemidefiniteConstraint(vars);
           },
-          doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args)
+          doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
+              .doc_1args_symmetric_matrix_var)
       .def("AddLinearComplementarityConstraint",
           static_cast<Binding<LinearComplementarityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -374,7 +376,8 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const MatrixX<Expression>>& e) {
             return self->AddPositiveSemidefiniteConstraint(e);
           },
-          doc.MathematicalProgram.AddPositiveSemidefiniteConstraint.doc_1args)
+          doc.MathematicalProgram.AddPositiveSemidefiniteConstraint
+              .doc_1args_constEigenMatrixBase)
       .def("AddCost",
           [](MathematicalProgram* self, py::function func,
               const Eigen::Ref<const VectorXDecisionVariable>& vars,
@@ -384,26 +387,30 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                 vars);
           },
           py::arg("func"), py::arg("vars"), py::arg("description") = "",
-          doc.MathematicalProgram.AddCost.doc)
+          // N.B. There is no corresponding C++ method, so the docstring here
+          // is a literal, not a reference to documentation_pybind.h
+          "Adds a cost function")
       .def("AddCost",
           static_cast<Binding<Cost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddCost),
-          doc.MathematicalProgram.AddCost.doc)
+          // N.B. There is no corresponding C++ method, so the docstring here
+          // is a literal, not a reference to documentation_pybind.h
+          "Adds a cost expression")
       .def("AddLinearCost",
           static_cast<Binding<LinearCost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddLinearCost),
-          doc.MathematicalProgram.AddLinearCost.doc)
+          doc.MathematicalProgram.AddLinearCost.doc_1args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddQuadraticCost),
-          doc.MathematicalProgram.AddQuadraticCost.doc)
+          doc.MathematicalProgram.AddQuadraticCost.doc_3args)
       .def("AddQuadraticCost",
           static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddQuadraticCost),
-          doc.MathematicalProgram.AddQuadraticCost.doc)
+          doc.MathematicalProgram.AddQuadraticCost.doc_1args)
       .def("AddQuadraticErrorCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -482,19 +489,19 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           [](const MathematicalProgram& prog, const Variable& var) {
             return prog.GetSolution(var);
           },
-          doc.MathematicalProgram.GetSolution.doc)
+          doc.MathematicalProgram.GetSolution.doc_1args_var)
       .def("GetSolution",
           [](const MathematicalProgram& prog,
               const VectorXDecisionVariable& var) {
             return prog.GetSolution(var);
           },
-          doc.MathematicalProgram.GetSolution.doc)
+          doc.MathematicalProgram.GetSolution.doc_1args_constEigenMatrixBase)
       .def("GetSolution",
           [](const MathematicalProgram& prog,
               const MatrixXDecisionVariable& var) {
             return prog.GetSolution(var);
           },
-          doc.MathematicalProgram.GetSolution.doc)
+          doc.MathematicalProgram.GetSolution.doc_1args_constEigenMatrixBase)
       .def("SubstituteSolution",
           [](const MathematicalProgram& prog, const symbolic::Expression& e) {
             return prog.SubstituteSolution(e);
@@ -529,33 +536,37 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const symbolic::Variable& decision_variable) {
             return prog.GetInitialGuess(decision_variable);
           },
-          doc.MathematicalProgram.GetInitialGuess.doc_1args)
+          doc.MathematicalProgram.GetInitialGuess.doc_1args_decision_variable)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const VectorXDecisionVariable& decision_variables) {
             return prog.GetInitialGuess(decision_variables);
           },
-          doc.MathematicalProgram.GetInitialGuess.doc_0args)
+          doc.MathematicalProgram.GetInitialGuess
+              .doc_1args_constEigenMatrixBase)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const MatrixXDecisionVariable& decision_variables) {
             return prog.GetInitialGuess(decision_variables);
           },
-          doc.MathematicalProgram.GetInitialGuess.doc_0args)
+          doc.MathematicalProgram.GetInitialGuess
+              .doc_1args_constEigenMatrixBase)
       .def("SetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable,
               double variable_guess_value) {
             prog.SetInitialGuess(decision_variable, variable_guess_value);
           },
-          doc.MathematicalProgram.SetInitialGuess.doc_2args)
+          doc.MathematicalProgram.SetInitialGuess
+              .doc_2args_decision_variable_variable_guess_value)
       .def("SetInitialGuess",
           [](MathematicalProgram& prog,
               const MatrixXDecisionVariable& decision_variable_mat,
               const Eigen::MatrixXd& x0) {
             prog.SetInitialGuess(decision_variable_mat, x0);
           },
-          doc.MathematicalProgram.SetInitialGuess.doc_0args)
+          doc.MathematicalProgram.SetInitialGuess
+              .doc_2args_constEigenMatrixBase_constEigenMatrixBase)
       .def("SetInitialGuessForAllVariables",
           [](MathematicalProgram& prog, const Eigen::VectorXd& x0) {
             prog.SetInitialGuessForAllVariables(x0);
@@ -564,9 +575,9 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
-          doc.MathematicalProgram.SetSolverOption.doc_2)
+          doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<string>,
-          doc.MathematicalProgram.SetSolverOption.doc_3)
+          doc.MathematicalProgram.SetSolverOption.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("GetSolverOptions",
           [](MathematicalProgram& prog, SolverType solver_type) {

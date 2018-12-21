@@ -54,6 +54,8 @@ namespace systems {
 class CompliantMaterial {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CompliantMaterial)
+
+  /** Constructs a default material. */
   CompliantMaterial() = default;
 
   /** Constructs fully specified material. Will throw an exception in any of the
