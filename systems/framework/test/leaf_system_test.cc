@@ -2019,9 +2019,12 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
-  EXPECT_EQ(dut.DeclareInequalityConstraint(
-                &ConstraintTestSystem::CalcStateConstraint, 2, "x"),
-            1);
+  EXPECT_EQ(
+      dut.DeclareInequalityConstraint(
+          &ConstraintTestSystem::CalcStateConstraint, Eigen::Vector2d::Zero(),
+          Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
+          "x"),
+      1);
   EXPECT_EQ(dut.get_num_constraints(), 2);
 
   auto context = dut.CreateDefaultContext();
@@ -2059,7 +2062,10 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(calc, 1, "x1"), 0);
+  EXPECT_EQ(dut.DeclareInequalityConstraint(
+                calc, Vector1d::Zero(),
+                Vector1d(std::numeric_limits<double>::infinity()), "x1"),
+            0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
   auto context = dut.CreateDefaultContext();

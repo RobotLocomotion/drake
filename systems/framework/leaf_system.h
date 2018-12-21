@@ -1524,19 +1524,20 @@ class LeafSystem : public System<T> {
   SystemConstraintIndex DeclareEqualityConstraint(
       typename SystemConstraint<T>::CalcCallback calc, int count,
       const std::string& description) {
-    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, count, SystemConstraintType::kEquality, description));
+    return this->AddConstraint(
+        std::make_unique<SystemConstraint<T>>(calc, count, description));
   }
 
   /// Declares a system constraint of the form
-  ///   f(context) ≥ 0
+  ///   lower_bound <= f(context) <= upper_bound
   /// by specifying a member function to use to calculate the (VectorX)
   /// constraint value with a signature:
   /// @code
   /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
   /// @endcode
   ///
-  /// @param count is the dimension of the VectorX output.
+  /// @param lower_bound The lower bound of the constraint.
+  /// @param upper_bound The upper bound of the constraint.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   /// Template arguments will be deduced and do not need to be specified.
@@ -1546,7 +1547,9 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareInequalityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      int count, const std::string& description) {
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const std::string& description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareInequalityConstraint(
@@ -1554,28 +1557,31 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(value != nullptr);
           (this_ptr->*calc)(context, value);
         },
-        count, description);
+        lower_bound, upper_bound, description);
   }
 
   /// Declares a system constraint of the form
-  ///   f(context) ≥ 0
+  ///   lower_bound <= f(context) <= upper_bound
   /// by specifying a std::function to use to calculate the (Vector) constraint
   /// value with a signature:
   /// @code
   /// void CalcConstraint(const Context<T>&, VectorX<T>*);
   /// @endcode
   ///
-  /// @param count is the dimension of the VectorX output.
+  /// @param lower_bound The lower bound of the constraint.
+  /// @param upper_bound The upper bound of the constraint.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   ///
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
   SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc, int count,
+      typename SystemConstraint<T>::CalcCallback calc,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
       const std::string& description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, count, SystemConstraintType::kInequality, description));
+        calc, lower_bound, upper_bound, description));
   }
 
   /// Derived-class event handler for all simultaneous publish events
@@ -1905,14 +1911,15 @@ class LeafSystem : public System<T> {
   // If @p model_vector's CalcInequalityConstraint provides any constraints,
   // then declares inequality constraints on `this` using a calc function that
   // obtains a VectorBase from a Context using @p get_vector_from_context and
-  // then delegates to the VectorBase::CalcInequalityConstraint.  Note that the
-  // model vector is only used to determine how many constraints will appear;
-  // it is not part of the ongoing constraint computations.
+  // then delegates to the VectorBase::CalcInequalityConstraint.
+  // The inequality constraint is imposed as
+  // model_vector.CalcInequalityConstraint() >= 0
   void MaybeDeclareVectorBaseInequalityConstraint(
-      const std::string& kind,
-      const VectorBase<T>& model_vector,
+      const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
-        get_vector_from_context) {
+          get_vector_from_context,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
     VectorX<T> dummy_value;
     model_vector.CalcInequalityConstraint(&dummy_value);
     const int count = dummy_value.size();
@@ -1923,7 +1930,9 @@ class LeafSystem : public System<T> {
         [get_vector_from_context](const Context<T>& con, VectorX<T>* value) {
           get_vector_from_context(con).CalcInequalityConstraint(value);
         },
-        count,
+        Eigen::VectorXd::Zero(count),
+        Eigen::VectorXd::Constant(count,
+                                  std::numeric_limits<double>::infinity()),
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 

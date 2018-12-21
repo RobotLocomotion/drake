@@ -36,11 +36,12 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
   const double tol = 1e-6;
 
   // Test equality constraint.
-  SystemConstraint<double> equality_constraint(
-      calc, 1, SystemConstraintType::kEquality, "equality constraint");
+  SystemConstraint<double> equality_constraint(calc, 1, "equality constraint");
   context->get_mutable_continuous_state_vector().SetAtIndex(1, 5.0);
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 5.0);
+  EXPECT_TRUE(CompareMatrices(equality_constraint.lower_bound(), Vector1d(0)));
+  EXPECT_TRUE(CompareMatrices(equality_constraint.upper_bound(), Vector1d(0)));
   EXPECT_FALSE(equality_constraint.CheckSatisfied(*context, tol));
 
   context->get_mutable_continuous_state_vector().SetAtIndex(1, 0.0);
@@ -52,8 +53,13 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
   EXPECT_EQ(equality_constraint.description(), "equality constraint");
 
   // Test inequality constraint.
-  SystemConstraint<double> inequality_constraint(
-      calc2, 2, SystemConstraintType::kInequality, "inequality constraint");
+  SystemConstraint<double> inequality_constraint(calc2, Eigen::Vector2d::Ones(),
+                                                 Eigen::Vector2d(4, 6),
+                                                 "inequality constraint");
+  EXPECT_TRUE(CompareMatrices(inequality_constraint.lower_bound(),
+                              Eigen::Vector2d::Ones()));
+  EXPECT_TRUE(CompareMatrices(inequality_constraint.upper_bound(),
+                              Eigen::Vector2d(4, 6)));
   context->get_mutable_continuous_state_vector().SetAtIndex(0, 3.0);
   context->get_mutable_continuous_state_vector().SetAtIndex(1, 5.0);
   inequality_constraint.Calc(*context, &value);
