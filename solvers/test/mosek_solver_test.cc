@@ -129,7 +129,7 @@ GTEST_TEST(MosekTest, TestLogFile) {
   const auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
-  const std::string log_file = temp_directory() + "mosek.log";
+  const std::string log_file = temp_directory() + "/mosek.log";
   EXPECT_FALSE(spruce::path(log_file).exists());
   MosekSolver solver;
   solver.Solve(prog);
