@@ -345,19 +345,22 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Set the position gains for the IIWA controller.
   /// @throws exception if Finalize() has been called.
   void SetIiwaPositionGains(const VectorX<double>& kp) {
-    SetIiwaGains(kp, &iiwa_kp_);
+    DRAKE_THROW_UNLESS(!plant_->is_finalized());
+    iiwa_kp_ = kp;
   }
 
   /// Set the velocity gains for the IIWA controller.
   /// @throws exception if Finalize() has been called.
   void SetIiwaVelocityGains(const VectorX<double>& kd) {
-    SetIiwaGains(kd, &iiwa_kd_);
+    DRAKE_THROW_UNLESS(!plant_->is_finalized());
+    iiwa_kd_ = kd;
   }
 
   /// Set the integral gains for the IIWA controller.
   /// @throws exception if Finalize() has been called.
   void SetIiwaIntegralGains(const VectorX<double>& ki) {
-    SetIiwaGains(ki, &iiwa_ki_);
+    DRAKE_THROW_UNLESS(!plant_->is_finalized());
+    iiwa_ki_ = ki;
   }
 
  private:
@@ -377,12 +380,6 @@ class ManipulationStation : public systems::Diagram<T> {
     geometry::dev::render::DepthCameraProperties properties{
         0, 0, 0, geometry::dev::render::Fidelity::kLow, 0, 0};
   };
-
-  // @param gains is supposed to be one of iiwa_kp_, iiwa_kd_ or iiwa_ki_. The
-  // only purpose of this function is to check for invalid inputs then set one
-  // of those member fields.
-  void SetIiwaGains(const VectorX<double>& new_gains,
-                    VectorX<double>* gains) const;
 
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
   // Should only be called from Finalize().

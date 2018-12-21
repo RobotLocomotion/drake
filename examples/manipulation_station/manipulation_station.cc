@@ -43,8 +43,6 @@ using multibody::PrismaticJoint;
 using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
 
-const int kNumDofIiwa = 7;
-
 namespace internal {
 
 // TODO(amcastro-tri): Refactor this into schunk_wsg directory, and cover it
@@ -157,15 +155,6 @@ ManipulationStation<T>::ManipulationStation(double time_step)
     : owned_plant_(std::make_unique<MultibodyPlant<T>>(time_step)),
       owned_scene_graph_(std::make_unique<SceneGraph<T>>()),
       owned_controller_plant_(std::make_unique<MultibodyPlant<T>>()) {
-  // Set default gains.
-  iiwa_kp_ = VectorXd::Constant(kNumDofIiwa, 100);
-  iiwa_ki_ = VectorXd::Constant(kNumDofIiwa, 1);
-  iiwa_kd_.resize(kNumDofIiwa);
-  for (int i = 0; i < kNumDofIiwa; i++) {
-    // Critical damping gains.
-    iiwa_kd_[i] = 2 * std::sqrt(iiwa_kp_[i]);
-  }
-
   // This class holds the unique_ptrs explicitly for plant and scene_graph
   // until Finalize() is called (when they are moved into the Diagram). Grab
   // the raw pointers, which should stay valid for the lifetime of the Diagram.
@@ -351,9 +340,13 @@ void ManipulationStation<T>::Finalize() {
   builder.Connect(scene_graph_->get_query_output_port(),
                   plant_->get_geometry_query_input_port());
 
+  const int num_iiwa_positions =
+      plant_->num_positions(iiwa_model_.model_instance);
+  DRAKE_THROW_UNLESS(num_iiwa_positions ==
+                     plant_->num_velocities(iiwa_model_.model_instance));
   // Export the commanded positions via a PassThrough.
   auto iiwa_position =
-      builder.template AddSystem<systems::PassThrough>(kNumDofIiwa);
+      builder.template AddSystem<systems::PassThrough>(num_iiwa_positions);
   builder.ExportInput(iiwa_position->get_input_port(), "iiwa_position");
   builder.ExportOutput(iiwa_position->get_output_port(),
                        "iiwa_position_commanded");
@@ -361,7 +354,7 @@ void ManipulationStation<T>::Finalize() {
   // Export iiwa "state" outputs.
   {
     auto demux = builder.template AddSystem<systems::Demultiplexer>(
-        2 * kNumDofIiwa, kNumDofIiwa);
+        2 * num_iiwa_positions, num_iiwa_positions);
     builder.Connect(
         plant_->get_continuous_state_output_port(iiwa_model_.model_instance),
         demux->get_input_port(0));
@@ -377,6 +370,30 @@ void ManipulationStation<T>::Finalize() {
   {
     owned_controller_plant_->Finalize();
 
+    auto check_gains = [](const VectorX<double>& gains, int size) {
+      return (gains.size() == size) && (gains.array() >= 0).all();
+    };
+
+    // Set default gains if.
+    if (iiwa_kp_.size() == 0) {
+      iiwa_kp_ = VectorXd::Constant(num_iiwa_positions, 100);
+    }
+    DRAKE_THROW_UNLESS(check_gains(iiwa_kp_, num_iiwa_positions));
+
+    if (iiwa_kd_.size() == 0) {
+      iiwa_kd_.resize(num_iiwa_positions);
+      for (int i = 0; i < num_iiwa_positions; i++) {
+        // Critical damping gains.
+        iiwa_kd_[i] = 2 * std::sqrt(iiwa_kp_[i]);
+      }
+    }
+    DRAKE_THROW_UNLESS(check_gains(iiwa_kd_, num_iiwa_positions));
+
+    if (iiwa_ki_.size() == 0) {
+      iiwa_ki_ = VectorXd::Constant(num_iiwa_positions, 1);
+    }
+    DRAKE_THROW_UNLESS(check_gains(iiwa_ki_, num_iiwa_positions));
+
     // Add the inverse dynamics controller.
     auto iiwa_controller = builder.template AddSystem<
         systems::controllers::InverseDynamicsController>(
@@ -387,7 +404,8 @@ void ManipulationStation<T>::Finalize() {
         iiwa_controller->get_input_port_estimated_state());
 
     // Add in feedforward torque.
-    auto adder = builder.template AddSystem<systems::Adder>(2, kNumDofIiwa);
+    auto adder =
+        builder.template AddSystem<systems::Adder>(2, num_iiwa_positions);
     builder.Connect(iiwa_controller->get_output_port_control(),
                     adder->get_input_port(0));
     builder.ExportInput(adder->get_input_port(1), "iiwa_feedforward_torque");
@@ -398,7 +416,7 @@ void ManipulationStation<T>::Finalize() {
     // Approximate desired state command from a discrete derivative of the
     // position command input port.
     auto desired_state_from_position = builder.template AddSystem<
-        systems::StateInterpolatorWithDiscreteDerivative>(kNumDofIiwa,
+        systems::StateInterpolatorWithDiscreteDerivative>(num_iiwa_positions,
                                                           plant_->time_step());
     desired_state_from_position->set_name("desired_state_from_position");
     builder.Connect(desired_state_from_position->get_output_port(),
@@ -500,32 +518,20 @@ VectorX<T> ManipulationStation<T>::GetIiwaPosition(
     const systems::Context<T>& station_context) const {
   const auto& plant_context =
       this->GetSubsystemContext(*plant_, station_context);
-  // TODO(russt): update upon resolution of #9623.
-  VectorX<T> q(kNumDofIiwa);
-  for (int i = 0; i < kNumDofIiwa; i++) {
-    q(i) = plant_
-               ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
-                                                        std::to_string(i + 1))
-               .get_angle(plant_context);
-  }
-  return q;
+  return plant_->GetPositions(plant_context, iiwa_model_.model_instance);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaPosition(
     const Eigen::Ref<const drake::VectorX<T>>& q,
     drake::systems::Context<T>* station_context) const {
+  const int num_iiwa_positions =
+      plant_->num_positions(iiwa_model_.model_instance);
   DRAKE_DEMAND(station_context != nullptr);
-  DRAKE_DEMAND(q.size() == kNumDofIiwa);
+  DRAKE_DEMAND(q.size() == num_iiwa_positions);
   auto& plant_context =
       this->GetMutableSubsystemContext(*plant_, station_context);
-  // TODO(russt): update upon resolution of #9623.
-  for (int i = 0; i < kNumDofIiwa; i++) {
-    plant_
-        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
-                                                 std::to_string(i + 1))
-        .set_angle(&plant_context, q(i));
-  }
+  plant_->SetPositions(&plant_context, iiwa_model_.model_instance, q);
 
   // Set the position history in the state interpolator to match.
   const auto& state_from_position =
@@ -542,32 +548,20 @@ VectorX<T> ManipulationStation<T>::GetIiwaVelocity(
     const systems::Context<T>& station_context) const {
   const auto& plant_context =
       this->GetSubsystemContext(*plant_, station_context);
-  VectorX<T> v(kNumDofIiwa);
-  // TODO(russt): update upon resolution of #9623.
-  for (int i = 0; i < kNumDofIiwa; i++) {
-    v(i) = plant_
-               ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
-                                                        std::to_string(i + 1))
-               .get_angular_rate(plant_context);
-  }
-  return v;
+  return plant_->GetVelocities(plant_context, iiwa_model_.model_instance);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaVelocity(
     const Eigen::Ref<const drake::VectorX<T>>& v,
     drake::systems::Context<T>* station_context) const {
+  const int num_iiwa_velocities =
+      plant_->num_velocities(iiwa_model_.model_instance);
   DRAKE_DEMAND(station_context != nullptr);
-  DRAKE_DEMAND(v.size() == kNumDofIiwa);
+  DRAKE_DEMAND(v.size() == num_iiwa_velocities);
   auto& plant_context =
       this->GetMutableSubsystemContext(*plant_, station_context);
-  // TODO(russt): update upon resolution of #9623.
-  for (int i = 0; i < kNumDofIiwa; i++) {
-    plant_
-        ->template GetJointByName<RevoluteJoint>("iiwa_joint_" +
-                                                 std::to_string(i + 1))
-        .set_angular_rate(&plant_context, v(i));
-  }
+  plant_->SetVelocities(&plant_context, iiwa_model_.model_instance, v);
 }
 
 template <typename T>
@@ -661,15 +655,6 @@ void ManipulationStation<T>::SetWsgGains(const double kp, const double kd) {
   DRAKE_THROW_UNLESS(kp >= 0 && kd >= 0);
   wsg_kp_ = kp;
   wsg_kd_ = kd;
-}
-
-template <typename T>
-void ManipulationStation<T>::SetIiwaGains(const VectorX<double>& new_gains,
-                                          VectorX<double>* gains) const {
-  DRAKE_THROW_UNLESS(!plant_->is_finalized());
-  DRAKE_THROW_UNLESS(new_gains.size() == gains->size());
-  DRAKE_THROW_UNLESS((new_gains.array() >= 0).all());
-  *gains = new_gains;
 }
 
 template <typename T>
