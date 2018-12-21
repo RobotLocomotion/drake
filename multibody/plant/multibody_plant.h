@@ -1993,6 +1993,24 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
   }
 
+  /// Returns a vector containing the lower position limits for all joints.
+  /// Any unbounded or unspecified limits are -inf.
+  /// @returns concatenation of each joint's limits, ordered by its
+  /// `JointIndex`.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetPositionUpperLimits() const {
+    return tree().GetPositionUpperLimits();
+  }
+
+  /// Returns a vector containing the upper position limits for all joints.
+  /// Any unbounded or unspecified limits are +inf.
+  /// @returns concatenation of each joint's limits, ordered by its
+  /// `JointIndex`.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetPositionLowerLimits() const {
+    return tree().GetPositionLowerLimits();
+  }
+
   /// Performs the computation of the mass matrix `M(q)` of the model using
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().
