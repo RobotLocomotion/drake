@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <utility>
+#include <limits>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
@@ -1537,6 +1538,43 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
 
   return MakeActuatorSelectorMatrix(user_to_actuator_index_map);
 }
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::MakeConfigurationLimitLower() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  // Initialize the bound to -inf. A free floating body
+  // does not increment `num_joints()` (A single free floating body has
+  // num_joints() = 0), but has 7 generalized positions for each free floating
+  // body. The initialization below guarantees proper bounds on the
+  // generalized positions for the free floating body.
+  Eigen::VectorXd q_lower = Eigen::VectorXd::Constant(
+      num_positions(), -std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    q_lower.segment(joint.position_start(), joint.num_positions()) =
+        joint.lower_limits();
+  }
+  return q_lower;
+}
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::MakeConfigurationLimitUpper() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  // Initialize the bounds to inf. A free floating body
+  // does not increment `num_joints()` (A single free floating body has
+  // num_joints() = 0), but has 7 generalized positions for each free floating
+  // body. The initialization below guarantees proper bounds on the
+  // generalized positions for the free floating body.
+  Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
+      num_positions(), std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    q_upper.segment(joint.position_start(), joint.num_positions()) =
+        joint.upper_limits();
+  }
+  return q_upper;
+}
+
 
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;

@@ -230,6 +230,12 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
                 std::numeric_limits<double>::epsilon());
   }
 
+  // Verify that plant.MakeConfigurationLimitLower/Upper correctly parse
+  EXPECT_TRUE(CompareMatrices(lower_limits,
+                              plant.MakeConfigurationLimitLower()));
+  EXPECT_TRUE(CompareMatrices(upper_limits,
+                              plant.MakeConfigurationLimitUpper()));
+
   Simulator<double> simulator(plant);
   Context<double>& context = simulator.get_mutable_context();
 

@@ -1993,6 +1993,22 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().MakeActuatorSelectorMatrix(user_to_joint_index_map);
   }
 
+  /// This method generates a vector containing the lower configuration limit,
+  /// where `q` must be greater than this lower limit. Limit is constructed
+  /// by looping over all joints, and assembling those joint limits.  Mobilizers
+  /// that are not joints (free floating bodies are assumed to be unlimited 
+  VectorX<double> MakeConfigurationLimitLower() const {
+    return tree().MakeConfigurationLimitLower();
+  }
+
+  /// This method generates a vector containing the upper configuration limit,
+  /// where `q` must be less than than this upper limit. Limit is constructed
+  /// by looping over all joints, and assembling those joint limits.  Mobilizers
+  /// that are not joints (free floating bodies are assumed to be unlimited 
+  VectorX<double> MakeConfigurationLimitUpper() const {
+    return tree().MakeConfigurationLimitUpper();
+  }
+
   /// Performs the computation of the mass matrix `M(q)` of the model using
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().
