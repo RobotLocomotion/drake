@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -21,6 +22,9 @@ using multibody::UniformGravityFieldElement;
 
 namespace multibody {
 namespace {
+
+const char kIiwaFilePath[] =
+    "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf";
 
 // These unit tests verify the convergence of the joint limits as the time step
 // is decreased. A constant force is applied at the joint to drive its state to
@@ -178,6 +182,13 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
   }
 }
 
+VectorX<double> KukaPositionLowerLimits() {
+  VectorX<double> lower_limits(7);
+  lower_limits
+      << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
+  return lower_limits;
+}
+
 // We test joint limits for the case of a Kuka arm model. In order to reach
 // the joint limits we drive the joints by applying a constant torque for a
 // given length of simulation time.
@@ -200,34 +211,33 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   // between what we want to test and the computational cost of this unit test.
   const double kRelativePositionTolerance = 0.055;
 
-  const std::string file_path =
-      "drake/manipulation/models/iiwa_description/sdf/"
-          "iiwa14_no_collision.sdf";
   MultibodyPlant<double> plant(time_step);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(file_path));
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("iiwa_link_0"));
   plant.Finalize();
 
   // Some sanity check on model sizes.
-  ASSERT_EQ(plant.num_velocities(), 7);
-  ASSERT_EQ(plant.num_actuators(), 7);
-  ASSERT_EQ(plant.num_actuated_dofs(), 7);
+  const int nq = plant.num_positions();
+  ASSERT_EQ(plant.num_positions(), nq);
+  ASSERT_EQ(plant.num_velocities(), nq);
+  ASSERT_EQ(plant.num_actuators(), nq);
+  ASSERT_EQ(plant.num_actuated_dofs(), nq);
 
   // Verify the joint limits were correctly parsed.
-  VectorX<double> lower_limits(7);
-  lower_limits
-      << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
-  VectorX<double> upper_limits(7);
-  upper_limits = -lower_limits;
-
-  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
-    const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
+  VectorX<double> lower_limits_expected = KukaPositionLowerLimits();
+  VectorX<double> upper_limits_expected = -lower_limits_expected;
+  EXPECT_TRUE(CompareMatrices(lower_limits_expected,
+                              plant.GetPositionLowerLimits()));
+  EXPECT_TRUE(CompareMatrices(upper_limits_expected,
+                              plant.GetPositionUpperLimits()));
+  // Duplicate checks for `GetPositions*Limits`, but using joint names.
+  const double eps = std::numeric_limits<double>::epsilon();
+  for (int i = 0; i < nq; ++i) {
+    const std::string joint_name = "iiwa_joint_" + std::to_string(i + 1);
     const auto& joint = plant.tree().GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_NEAR(joint.lower_limit(), lower_limits(joint_number-1),
-                std::numeric_limits<double>::epsilon());
-    EXPECT_NEAR(joint.upper_limit(), upper_limits(joint_number-1),
-                std::numeric_limits<double>::epsilon());
+    EXPECT_NEAR(joint.lower_limit(), lower_limits_expected(i), eps);
+    EXPECT_NEAR(joint.upper_limit(), upper_limits_expected(i), eps);
   }
 
   Simulator<double> simulator(plant);
@@ -238,8 +248,8 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
-  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
-    const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
+  for (int i = 0; i < nq; ++i) {
+    const std::string joint_name = "iiwa_joint_" + std::to_string(i + 1);
     const auto& joint = plant.tree().GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_LT(std::abs(
         (joint.get_angle(context)-joint.upper_limit())/joint.upper_limit()),
@@ -252,14 +262,34 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   plant.SetDefaultContext(&context);
   context.set_time(0.0);
   simulator.StepTo(simulation_time);
-  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
-    const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
+  for (int i = 0; i < nq; ++i) {
+    const std::string joint_name = "iiwa_joint_" + std::to_string(i + 1);
     const auto& joint = plant.tree().GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_LT(std::abs(
         (joint.get_angle(context)-joint.lower_limit())/joint.lower_limit()),
               kRelativePositionTolerance);
     EXPECT_NEAR(joint.get_angular_rate(context), 0.0, kVelocityTolerance);
   }
+}
+
+GTEST_TEST(JointLimitsTest, KukaArmFloating) {
+  // Check limits for a model with a floating base.
+  MultibodyPlant<double> plant;
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
+  plant.Finalize();
+  const int nq = 14;
+  const int nq_floating = 7;
+  const int nq_arm = 7;
+  EXPECT_EQ(plant.num_positions(), nq);
+  VectorX<double> lower_limits_expected(nq);
+  const double inf = std::numeric_limits<double>::infinity();
+  lower_limits_expected.head(nq_floating).setConstant(-inf);
+  lower_limits_expected.tail(nq_arm) = KukaPositionLowerLimits();
+  VectorX<double> upper_limits_expected = -lower_limits_expected;
+  EXPECT_TRUE(CompareMatrices(lower_limits_expected,
+                              plant.GetPositionLowerLimits()));
+  EXPECT_TRUE(CompareMatrices(upper_limits_expected,
+                              plant.GetPositionUpperLimits()));
 }
 
 }  // namespace
