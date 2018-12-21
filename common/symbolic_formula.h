@@ -163,12 +163,15 @@ class Formula {
   bool Less(const Formula& f) const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
-   * a random number generator.
+   * a random number generator. If there is a random variable in this formula
+   * which is unassigned in @p env, it uses @p random_generator to sample a
+   * value and use it to substitute all occurrences of the random variable in
+   * this formula.
    *
    * @throws std::runtime_error if a variable `v` is needed for an evaluation
    *                            but not provided by @p env.
-   * @throws std::runtime_error if a random variable is detected while @p
-   *                            random_generator is `nullptr`.
+   * @throws std::runtime_error if an unassigned random variable is detected
+   *                            while @p random_generator is `nullptr`.
    */
   bool Evaluate(const Environment& env = Environment{},
                 RandomGenerator* random_generator = nullptr) const;

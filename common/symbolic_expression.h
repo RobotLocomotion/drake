@@ -236,19 +236,24 @@ class Expression {
   Polynomiald ToPolynomial() const;
 
   /** Evaluates using a given environment (by default, an empty environment) and
-   * a random number generator.
+   * a random number generator. If there is a random variable in this expression
+   * which is unassigned in @p env, this method uses @p random_generator to
+   * sample a value and use the value to substitute all occurrences of the
+   * variable in this expression.
    *
    * @throws std::runtime_error if there exists a non-random variable in this
    *                            expression whose assignment is not provided by
    *                            @p env.
-   * @throws std::runtime_error if a random variable is detected while @p
-   *                            random_generator is `nullptr`.
+   * @throws std::runtime_error if an unassigned random variable is detected
+   *                            while @p random_generator is `nullptr`.
    * @throws std::runtime_error if NaN is detected during evaluation.
    */
   double Evaluate(const Environment& env = Environment{},
                   RandomGenerator* random_generator = nullptr) const;
 
-  /** Evaluates using an empty environment and a random number generator.
+  /** Evaluates using an empty environment and a random number generator. It
+   * uses @p random_generator to sample values for the random variables in this
+   * expression.
    *
    * See the above overload for the exceptions that it might throw.
    */
