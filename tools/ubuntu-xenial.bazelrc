@@ -5,3 +5,6 @@ build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python2
 # Explicit configuration for Python 3.
 build:python3 --python_path=/usr/bin/python3
 build:python3 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/bin/python3
+
+# Configure ${PATH for actions (#10304).
+--action_env=PATH=/usr/bin:/bin
