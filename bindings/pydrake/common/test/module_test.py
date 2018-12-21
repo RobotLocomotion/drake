@@ -47,3 +47,10 @@ class TestCommon(unittest.TestCase):
 
     def test_logging_enabled(self):
         self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
+
+    def test_random_generator(self):
+        # Simply check if we can create instances and use their operator().
+        g1 = pydrake.common.RandomGenerator()
+        g1()
+        g2 = pydrake.common.RandomGenerator(10)
+        g2()

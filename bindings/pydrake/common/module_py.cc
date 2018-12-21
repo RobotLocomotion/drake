@@ -87,6 +87,17 @@ PYBIND11_MODULE(_module_py, m) {
       "Set Drake's assertion failure mechanism to be exceptions");
   m.def("trigger_an_assertion_failure", &trigger_an_assertion_failure,
       "Trigger a Drake C++ assertion failure");
+
+  // Adds a binding for drake::RandomGenerator.
+  py::class_<RandomGenerator> random_generator_cls(m, "RandomGenerator");
+  random_generator_cls
+      .def(py::init<>(),
+          "Default constructor. Seeds the engine with the default_seed.")
+      .def(py::init<RandomGenerator::result_type>(),
+          "Constructs the engine and initializes the state with a given "
+          "value.")
+      .def("__call__", [](RandomGenerator& self) { return self(); },
+          "Generates a pseudo-random value.");
 }
 
 }  // namespace pydrake
