@@ -29,29 +29,30 @@ def add_lint_tests(
     - python_lint.bzl
 
     """
-    existing_rules = native.existing_rules().values()
-    cpplint(
-        existing_rules = existing_rules,
-        data = cpplint_data,
-        extra_srcs = cpplint_extra_srcs,
-        enable_clang_format_lint = enable_clang_format_lint,
-    )
-    python_lint(
-        existing_rules = existing_rules,
-        ignore = python_lint_ignore,
-        exclude = python_lint_exclude,
-        extra_srcs = python_lint_extra_srcs,
-    )
-    bazel_lint(
-        ignore = bazel_lint_ignore,
-        extra_srcs = bazel_lint_extra_srcs,
-        exclude = bazel_lint_exclude,
-    )
-    if enable_install_lint:
-        install_lint(
-            existing_rules = existing_rules,
-        )
-    if enable_library_lint:
-        library_lint(
-            existing_rules = existing_rules,
-        )
+    pass
+    # existing_rules = native.existing_rules().values()
+    # cpplint(
+    #     existing_rules = existing_rules,
+    #     data = cpplint_data,
+    #     extra_srcs = cpplint_extra_srcs,
+    #     enable_clang_format_lint = enable_clang_format_lint,
+    # )
+    # python_lint(
+    #     existing_rules = existing_rules,
+    #     ignore = python_lint_ignore,
+    #     exclude = python_lint_exclude,
+    #     extra_srcs = python_lint_extra_srcs,
+    # )
+    # bazel_lint(
+    #     ignore = bazel_lint_ignore,
+    #     extra_srcs = bazel_lint_extra_srcs,
+    #     exclude = bazel_lint_exclude,
+    # )
+    # if enable_install_lint:
+    #     install_lint(
+    #         existing_rules = existing_rules,
+    #     )
+    # if enable_library_lint:
+    #     library_lint(
+    #         existing_rules = existing_rules,
+    #     )
