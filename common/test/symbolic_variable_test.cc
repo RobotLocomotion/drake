@@ -378,8 +378,7 @@ TEST_F(VariableTest, MakeMatrixIntegerVariable) {
 // [0, 1) show the same behavior when the same random number generator is
 // passed.
 TEST_F(VariableTest, RandomUniform) {
-  std::random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
 
   const Variable v{"v", Variable::Type::RANDOM_UNIFORM};
@@ -395,8 +394,7 @@ TEST_F(VariableTest, RandomUniform) {
 // = 0.0, stddev = 1.0) show the same behavior when the same random number
 // generator is passed.
 TEST_F(VariableTest, RandomGaussian) {
-  std::random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
 
   const Variable v{"v", Variable::Type::RANDOM_GAUSSIAN};
@@ -412,8 +410,7 @@ TEST_F(VariableTest, RandomGaussian) {
 // with lambda = 1.0 show the same behavior when the same random number
 // generator is passed.
 TEST_F(VariableTest, RandomExponential) {
-  std::random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
 
   const Variable v{"v", Variable::Type::RANDOM_EXPONENTIAL};

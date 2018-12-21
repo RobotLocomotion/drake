@@ -28,7 +28,6 @@ namespace symbolic {
 namespace {
 
 using std::map;
-using std::random_device;
 using std::runtime_error;
 using std::set;
 using std::transform;
@@ -1413,8 +1412,7 @@ TEST_F(SymbolicFormulaTest, EvaluateFormulasIncludingRandomVariables) {
       {{{var_x_, 2.0}, {var_y_, -2.0}}},
   };
 
-  random_device rd;
-  RandomGenerator generator{rd()};
+  RandomGenerator generator{};
   for (const Formula& f : formulas) {
     for (const Environment& env : environments) {
       EXPECT_TRUE(CheckFormulaWithRandomVariables(f, env, &generator));
