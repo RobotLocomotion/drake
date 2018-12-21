@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -220,6 +221,11 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
       << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
   VectorX<double> upper_limits(7);
   upper_limits = -lower_limits;
+
+  EXPECT_TRUE(CompareMatrices(lower_limits,
+                              plant.GetPositionLowerLimits()));
+  EXPECT_TRUE(CompareMatrices(upper_limits,
+                              plant.GetPositionUpperLimits()));
 
   for (int joint_number = 1; joint_number <= 7; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
