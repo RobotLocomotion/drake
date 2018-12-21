@@ -109,9 +109,10 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
+  IiwaCommandTranslator iiwa_cmd_to_vec(num_joints);
   auto command_sub = base_builder->AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+      std::make_unique<systems::lcm::LcmSubscriberSystem>(
+          "IIWA_COMMAND", iiwa_cmd_to_vec, &lcm));
   command_sub->set_name("command_subscriber");
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
@@ -122,10 +123,9 @@ int DoMain() {
       base_builder->AddSystem<IiwaContactResultsToExternalTorque>(
           tree, iiwa_instances);
   auto status_pub = base_builder->AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   status_pub->set_name("status_publisher");
-  status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
   status_sender->set_name("status_sender");
 

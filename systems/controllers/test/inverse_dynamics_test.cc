@@ -11,9 +11,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/math/spatial_acceleration.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/math/spatial_acceleration.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/controllers/test_utilities/compute_torque.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
@@ -21,7 +21,7 @@
 using Eigen::AutoDiffScalar;
 using Eigen::VectorXd;
 using std::make_unique;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 
 namespace drake {
 namespace systems {
@@ -149,7 +149,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>();
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
+  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -167,7 +167,7 @@ TEST_F(InverseDynamicsTest, GravityCompensationTest) {
 
   // Re-initialize the model so we can add gravity.
   mbp = std::make_unique<MultibodyPlant<double>>();
-  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
+  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 
@@ -190,7 +190,7 @@ TEST_F(InverseDynamicsTest, InverseDynamicsTest) {
   auto mbp = std::make_unique<MultibodyPlant<double>>();
   const std::string full_name = drake::FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
-  multibody::parsing::AddModelFromSdfFile(full_name, mbp.get());
+  multibody::Parser(mbp.get()).AddModelFromFile(full_name);
   mbp->WeldFrames(mbp->world_frame(),
                   mbp->GetFrameByName("iiwa_link_0"));
 

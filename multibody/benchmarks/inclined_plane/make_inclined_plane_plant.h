@@ -3,15 +3,14 @@
 #include <memory>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace multibody {
 namespace benchmarks {
 namespace inclined_plane {
 
-/// This method makes a MultibodyPlant model for a sphere rolling down an
-/// inclined plane.
+/// This method adds a sphere rolling down an inclined plane.
 ///
 /// @param[in] radius
 ///   The radius in meters of the sphere.
@@ -24,21 +23,15 @@ namespace inclined_plane {
 ///   surface properties for both the inclined plane and the sphere.
 /// @param[in] gravity
 ///   The acceleration of gravity, in m/s². Points in the minus z direction.
-/// @param[in] time_step
-///   If `time_step = 0`, the plant is modeled as a continuous system. Otherwise
-///   when `time_step > 0` the plant is modeled as a discrete system with
-///   periodic updates of period `time_step`. `time_step` must be non-negative.
-/// @param scene_graph
-///   This factory method will register the new multibody plant to be a source
-///   for this geometry system and it will also register geometry for contact
-///   modeling.
-/// @throws std::exception if time_step is negative.
-/// @throws std::exception if scene_graph is nullptr.
-std::unique_ptr<multibody_plant::MultibodyPlant<double>> MakeInclinedPlanePlant(
+/// @param[out] plant
+///   Plant to contain the sphere and plane.
+/// @throws std::exception if plant is nullptr.
+/// @pre plant must be registered with a scene graph.
+void AddInclinedPlaneToPlant(
     double radius, double mass, double slope,
-    const multibody_plant::CoulombFriction<double>& surface_friction,
-    double gravity, double time_step,
-    geometry::SceneGraph<double>* scene_graph);
+    const CoulombFriction<double>& surface_friction,
+    double gravity,
+    MultibodyPlant<double>* plant);
 
 }  // namespace inclined_plane
 }  // namespace benchmarks

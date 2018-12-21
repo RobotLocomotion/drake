@@ -34,6 +34,13 @@ test --test_env=GRB_LICENSE_FILE
 # caching performance.
 test --test_env=MOSEKLM_LICENSE_FILE
 
+# Prevent LCM messages from leaking outside of tests.
+# See documentation: https://lcm-proj.github.io/group__LcmC__lcm__t.html#gaf29963ef43edadf45296d5ad82c18d4b  # noqa
+# WARNING: If your LCM test depends on communication between separate LCM
+# instances (and you cannot easily mock the LCM instances), make sure that each
+# instance has a consistent, but non-default, LCM URL.
+test --test_env=LCM_DEFAULT_URL=memq://
+
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set
 # -- to the location of the Gurobi license key file. On Ubuntu, the GUROBI_PATH
@@ -62,6 +69,8 @@ build:mosek --define=WITH_MOSEK=ON
 # -- To run tests that require SNOPT, also specify a set of test_tag_filters
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
+build:snopt_fortran --define=WITH_SNOPT_FORTRAN=ON
+build:snopt_f2c --define=WITH_SNOPT_F2C=ON
 
 ### A configuration that enables all optional dependencies. ###
 test:everything --test_tag_filters=-no_everything

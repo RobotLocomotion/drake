@@ -1,9 +1,13 @@
 # -*- python -*-
+# TODO(jwnimmer-tri) Remove this entire directory on or about 2019-03-01.
 
 load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+    "drake_cc_library_aliases",
+)
+load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -16,8 +20,8 @@ drake_cc_package_library(
     name = "multibody_tree",
     deps = [
         ":articulated_body_inertia",
+        ":forwarding_hdrs",
         ":multibody_tree_context",
-        ":multibody_tree_core",
         ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
@@ -27,411 +31,72 @@ drake_cc_package_library(
     ],
 )
 
-drake_cc_library(
-    name = "multibody_tree_indexes",
-    srcs = [],
-    hdrs = [
-        "multibody_tree_indexes.h",
-    ],
-    deps = [
-        "//common:type_safe_index",
-    ],
-)
+# Each of these aliases both `cc_library(name = "foo")` and `foo.h`.
+_RELATIVE_LABELS = [
+    ":articulated_body_inertia",
+    ":multibody_tree_context",
+    ":multibody_tree_element",
+    ":multibody_tree_indexes",
+    ":multibody_tree_topology",
+    ":rotational_inertia",
+    ":spatial_inertia",
+    ":unit_inertia",
+]
 
-drake_cc_library(
-    name = "multibody_tree_topology",
-    srcs = [],
-    hdrs = [
-        "multibody_tree_topology.h",
-    ],
-    deps = [
-        ":multibody_tree_indexes",
-    ],
-)
+# Each of these aliases only `foo.h`, without a similarly-named cc_library.
+_EXTRA_TREE_HDRS = [
+    "acceleration_kinematics_cache.h",
+    "articulated_body_inertia_cache.h",
+    "body.h",
+    "body_node.h",
+    "body_node_impl.h",
+    "body_node_welded.h",
+    "fixed_offset_frame.h",
+    "force_element.h",
+    "frame.h",
+    "frame_base.h",
+    "joint_actuator.h",
+    "linear_spring_damper.h",
+    "mobilizer.h",
+    "mobilizer_impl.h",
+    "model_instance.h",
+    "multibody_forces.h",
+    "multibody_tree.h",
+    "multibody_tree_system.h",
+    "position_kinematics_cache.h",
+    "prismatic_mobilizer.h",
+    "quaternion_floating_mobilizer.h",
+    "revolute_mobilizer.h",
+    "rigid_body.h",
+    "space_xyz_mobilizer.h",
+    "uniform_gravity_field_element.h",
+    "velocity_kinematics_cache.h",
+    "weld_mobilizer.h",
+]
 
-drake_cc_library(
-    name = "multibody_tree_context",
-    srcs = [
-        "acceleration_kinematics_cache.cc",
-        "articulated_body_inertia_cache.cc",
-        "multibody_tree_context.cc",
-        "position_kinematics_cache.cc",
-        "velocity_kinematics_cache.cc",
+# Generates header files with the old include paths that include the header
+# with its new include path.
+drake_cc_hdrs_forwarding_library(
+    name = "forwarding_hdrs",
+    actual_subdir = "multibody/tree",
+    add_deprecation_warning = True,
+    relative_labels = _RELATIVE_LABELS + [
+        ":" + x[:-2]
+        for x in _EXTRA_TREE_HDRS
     ],
-    hdrs = [
-        "acceleration_kinematics_cache.h",
-        "articulated_body_inertia_cache.h",
-        "multibody_tree_context.h",
-        "position_kinematics_cache.h",
-        "velocity_kinematics_cache.h",
-    ],
-    deps = [
-        ":articulated_body_inertia",
-        ":multibody_tree_topology",
-        "//common:autodiff",
-        "//multibody/multibody_tree/math:spatial_acceleration",
-        "//multibody/multibody_tree/math:spatial_velocity",
-        "//systems/framework:leaf_context",
-    ],
-)
-
-drake_cc_library(
-    name = "multibody_tree_element",
-    srcs = [],
-    hdrs = [
-        "multibody_tree_element.h",
-    ],
-    deps = [
-        ":multibody_tree_topology",
-    ],
-)
-
-drake_cc_library(
-    name = "multibody_tree_core",
-    srcs = [
-        "body.cc",
-        "body_node_impl.cc",
-        "fixed_offset_frame.cc",
-        "joint_actuator.cc",
-        "joints/prismatic_joint.cc",
-        "joints/revolute_joint.cc",
-        "joints/weld_joint.cc",
-        "linear_spring_damper.cc",
-        "mobilizer_impl.cc",
-        "model_instance.cc",
-        "multibody_forces.cc",
-        "multibody_tree.cc",
-        "multibody_tree_system.cc",
-        "prismatic_mobilizer.cc",
-        "quaternion_floating_mobilizer.cc",
-        "revolute_mobilizer.cc",
-        "rigid_body.cc",
-        "space_xyz_mobilizer.cc",
-        "uniform_gravity_field_element.cc",
-        "weld_mobilizer.cc",
-    ],
-    hdrs = [
-        "body.h",
-        "body_node.h",
-        "body_node_impl.h",
-        "body_node_welded.h",
-        "fixed_offset_frame.h",
-        "force_element.h",
-        "frame.h",
-        "frame_base.h",
-        "joint_actuator.h",
-        "joints/joint.h",
-        "joints/prismatic_joint.h",
-        "joints/revolute_joint.h",
-        "joints/weld_joint.h",
-        "linear_spring_damper.h",
-        "mobilizer.h",
-        "mobilizer_impl.h",
-        "model_instance.h",
-        "multibody_forces.h",
-        "multibody_tree.h",
-        "multibody_tree_system.h",
-        "prismatic_mobilizer.h",
-        "quaternion_floating_mobilizer.h",
-        "revolute_mobilizer.h",
-        "rigid_body.h",
-        "space_xyz_mobilizer.h",
-        "uniform_gravity_field_element.h",
-        "weld_mobilizer.h",
-    ],
-    # Hide this library outside of this package; users should depend on
-    # ":multibody_tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
+    deps = ["//multibody/multibody_tree/joints:forwarding_hdrs"],
+)
+
+# Forwards the bazel labels in this package to alias into the new package.
+drake_cc_library_aliases(
+    actual_subdir = "multibody/tree",
+    add_deprecation_warning = True,
+    relative_labels = _RELATIVE_LABELS,
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
     deps = [
-        ":multibody_tree_context",
-        ":multibody_tree_element",
-        ":multibody_tree_indexes",
-        ":spatial_inertia",
-        "//common:autodiff",
-        "//common:nice_type_name",
-        "//math:geometric_transform",
-        "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "rotational_inertia",
-    srcs = ["rotational_inertia.cc"],
-    hdrs = ["rotational_inertia.h"],
-    deps = [
-        "//common:default_scalars",
-        "//common:drake_bool",
-        "//common:essential",
-        "//common:extract_double",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "spatial_inertia",
-    srcs = ["spatial_inertia.cc"],
-    hdrs = ["spatial_inertia.h"],
-    deps = [
-        ":rotational_inertia",
-        ":unit_inertia",
-        "//common:default_scalars",
-        "//common:drake_bool",
-        "//common:essential",
-        "//math:geometric_transform",
-        "//math:vector3_util",
-        "//multibody/multibody_tree/math:spatial_algebra",
-    ],
-)
-
-drake_cc_library(
-    name = "unit_inertia",
-    srcs = ["unit_inertia.cc"],
-    hdrs = ["unit_inertia.h"],
-    deps = [
-        ":rotational_inertia",
-        "//common:default_scalars",
-        "//common:essential",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
-    name = "articulated_body_inertia",
-    srcs = ["articulated_body_inertia.cc"],
-    hdrs = ["articulated_body_inertia.h"],
-    deps = [
-        ":spatial_inertia",
-        "//common:default_scalars",
-        "//common:essential",
-        "//common:nice_type_name",
-        "//common:symbolic",
-        "//math:vector3_util",
-        "//multibody/multibody_tree/math:spatial_algebra",
-    ],
-)
-
-# === test/ ===
-
-drake_cc_library(
-    name = "free_rotating_body_plant",
-    testonly = 1,
-    srcs = ["test/free_rotating_body_plant.cc"],
-    hdrs = ["test/free_rotating_body_plant.h"],
-    deps = [
-        "//common:default_scalars",
-        "//multibody/multibody_tree",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_googletest(
-    name = "free_rotating_body_test",
-    srcs = [
-        "test/free_rotating_body_test.cc",
-    ],
-    deps = [
-        ":free_rotating_body_plant",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/free_body",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_library(
-    name = "floating_body_plant",
-    testonly = 1,
-    srcs = ["test/floating_body_plant.cc"],
-    hdrs = ["test/floating_body_plant.h"],
-    deps = [
-        "//common:default_scalars",
-        "//multibody/multibody_tree/multibody_plant",
-    ],
-)
-
-drake_cc_googletest(
-    name = "floating_body_test",
-    timeout = "moderate",
-    srcs = [
-        "test/floating_body_test.cc",
-    ],
-    deps = [
-        ":floating_body_plant",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/free_body",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "tree_from_mobilizers_test",
-    # Test timeout increased to not timeout in debug and when run with
-    # Valgrind.
-    timeout = "moderate",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:autodiff",
-        "//math:gradient",
-        "//multibody/benchmarks/acrobot:analytical_acrobot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "tree_from_joints_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/acrobot:analytical_acrobot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "frames_test",
-    deps = [":multibody_tree"],
-)
-
-drake_cc_googletest(
-    name = "model_instance_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_forces_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_tree_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities",
-        "//math:gradient",
-        "//multibody/benchmarks/kuka_iiwa_robot",
-        "//multibody/benchmarks/kuka_iiwa_robot/MG:MG_kuka_robot_lib",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_tree_creation_test",
-    deps = [":multibody_tree"],
-)
-
-drake_cc_googletest(
-    name = "multibody_tree_indexes_test",
-    deps = [":multibody_tree_indexes"],
-)
-
-drake_cc_googletest(
-    name = "rotational_inertia_test",
-    deps = [
-        ":rotational_inertia",
-        "//common:autodiff",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-        "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "spatial_inertia_test",
-    deps = [
-        ":spatial_inertia",
-        "//math:geometric_transform",
-        "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "unit_inertia_test",
-    deps = [
-        ":unit_inertia",
-        "//math:geometric_transform",
-        "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "prismatic_mobilizer_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "weld_mobilizer_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "rigid_body_test",
-    deps = [
-        ":multibody_tree",
-    ],
-)
-
-drake_cc_googletest(
-    name = "articulated_body_inertia_test",
-    deps = [
-        ":articulated_body_inertia",
-        ":multibody_tree",
-        ":rotational_inertia",
-        ":unit_inertia",
-        "//math:autodiff",
-        "//math:gradient",
-    ],
-)
-
-drake_cc_googletest(
-    name = "articulated_body_algorithm_test",
-    deps = [
-        ":articulated_body_inertia",
-        ":multibody_tree",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_spring_damper_test",
-    deps = [
-        ":multibody_tree",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//systems/framework:context",
-    ],
-)
-
-# === joints/test/ ===
-
-drake_cc_googletest(
-    name = "revolute_joint_test",
-    srcs = ["joints/test/revolute_joint_test.cc"],
-    deps = [
-        ":multibody_tree",
-    ],
-)
-
-drake_cc_googletest(
-    name = "prismatic_joint_test",
-    srcs = ["joints/test/prismatic_joint_test.cc"],
-    deps = [
-        ":multibody_tree",
-    ],
-)
-
-drake_cc_googletest(
-    name = "weld_joint_test",
-    srcs = ["joints/test/weld_joint_test.cc"],
-    deps = [
-        ":multibody_tree",
+        ":forwarding_hdrs",
+        "//multibody/tree",
     ],
 )
 

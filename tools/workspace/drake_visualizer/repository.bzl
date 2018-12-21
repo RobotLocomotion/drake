@@ -51,14 +51,14 @@ def _impl(repository_ctx):
         fail(os_result.error)
 
     if os_result.is_macos:
-        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.15-qt-5.11.2-vtk-8.1.1-mac-x86_64.tar.gz"  # noqa
-        sha256 = "be9dbe2dc5b75f8bb91183d15d24592f9251fed7ba0c3e68f3b701bca84c91ea"  # noqa
+        archive = "dv-0.1.0-318-gd10dfa9-python-2.7.15-qt-5.12.0-vtk-8.1.1-mac-x86_64.tar.gz"  # noqa
+        sha256 = "74a3532512829b7ca5accad7fb27a366131d5363cbda6c6794cac7599150a548"  # noqa
     elif os_result.ubuntu_release == "16.04":
-        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.12-qt-5.5.1-vtk-8.1.1-xenial-x86_64.tar.gz"  # noqa
-        sha256 = "f31848d4e348cf56dee59597a21176574ea199a47284a88bc9e16812e96c57a3"  # noqa
+        archive = "dv-0.1.0-318-gd10dfa9-python-2.7.12-qt-5.5.1-vtk-8.1.1-xenial-x86_64.tar.gz"  # noqa
+        sha256 = "818f049ce43f1fcbb0552cfe152a43aae4f990179092689e6215176ca216b00a"  # noqa
     elif os_result.ubuntu_release == "18.04":
-        archive = "dv-0.1.0-316-g1c1d42b-python-2.7.15-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
-        sha256 = "b9462f9d2a1ab1b33c3725290e42cd8da2f04c5d80dce7fe3f9d98dbe6865a63"  # noqa
+        archive = "dv-0.1.0-318-gd10dfa9-python-2.7.15-qt-5.9.5-vtk-8.1.1-bionic-x86_64.tar.gz"  # noqa
+        sha256 = "fb1a36196eefea1879b5cd9c75338add1baef880727475f44f0453887ccc1b2f"  # noqa
     else:
         fail("Operating system is NOT supported", attr = os_result)
 

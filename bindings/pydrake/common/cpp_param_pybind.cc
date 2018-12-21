@@ -39,6 +39,7 @@ void RegisterCommon(py::module m, py::object param_aliases) {
   RegisterType<float>(m, param_aliases, "np.float32");
   RegisterType<int>(m, param_aliases, "int");
   RegisterType<uint8_t>(m, param_aliases, "np.uint8");
+  RegisterType<uint16_t>(m, param_aliases, "np.uint16");
   RegisterType<int16_t>(m, param_aliases, "np.int16");
   RegisterType<uint32_t>(m, param_aliases, "np.uint32");
   RegisterType<int64_t>(m, param_aliases, "np.int64");
@@ -75,8 +76,7 @@ py::object GetPyParamScalarImpl(const std::type_info& tinfo) {
       // once simpler dependencies are used (or something else is used to
       // justify linking in `libdrake.so`).
       const std::string name = tinfo.name();
-      throw std::runtime_error(
-          "C++ type is not registered in pybind: " + name);
+      throw std::runtime_error("C++ type is not registered in pybind: " + name);
     }
     py::handle h(reinterpret_cast<PyObject*>(info->type));
     return py::reinterpret_borrow<py::object>(h);

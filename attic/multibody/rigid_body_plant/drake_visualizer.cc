@@ -122,7 +122,6 @@ void DrakeVisualizer::PlaybackTrajectory(
 void DrakeVisualizer::DoPublish(
     const Context<double>& context,
     const std::vector<const PublishEvent<double>*>& events) const {
-
   // This event handler is called to handle initialization, periodic, and
   // forced events (at least). The clean way to handle this variety of event
   // types would be to establish a handler for each type, rather than the pseudo
@@ -134,16 +133,19 @@ void DrakeVisualizer::DoPublish(
   for (int i = 0; i < static_cast<int>(events.size()); ++i) {
     if (events[i]->get_trigger_type() ==
         Event<double>::TriggerType::kInitialization) {
+      // We expect no more than one initialization event.
       DRAKE_DEMAND(++num_initialization_events == 1);
       PublishLoadRobot();
     }
   }
 
-  // If there is at least one non-initialization event (it's conceivable
-  // multiple periodic events triggered at the same time), do the
-  // non-initial behavior.
-  if (static_cast<int>(events.size()) - num_initialization_events == 0)
+  // If events are all initialization events, return now.
+  if (static_cast<int>(events.size()) == num_initialization_events)
     return;
+
+  // There is at least one non-initialization event (it's conceivable
+  // multiple periodic events triggered at the same time), so we do the
+  // non-initial behavior.
 
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.

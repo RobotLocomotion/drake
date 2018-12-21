@@ -21,14 +21,10 @@ namespace systems {
 ///   x₀[0] and x₁[0] are initialized in the Context (default is zeros).
 /// </pre>
 ///
-/// Note: The reason for this specific implementation is a little subtle.
-/// Since drake systems do not control the evaluation time of their output
-/// ports, a downstream system may ask for the output at any continuous time.
-/// The estimate y(t) = (u(t) - u[n])/(t-n*h), which is a more
-/// continuous-time derivative, would require fewer state variables, and
-/// introduce less delay.  But the inconsistent time interval (which could be
-/// arbitrarily close to zero) makes it numerically unreliable.  Prefer the
-/// discrete-time derivative implemented here.
+/// @note For dynamical systems, a derivative should not be computed in
+/// continuous-time, i.e. `y(t) = (u(t) - u[n])/(t-n*h)`. This is numerically
+/// unstable since the time interval `t-n*h` could be arbitrarily close to
+/// zero. Prefer the discrete-time implementation for robustness.
 ///
 /// @system{ DiscreteDerivative, @input_port{u}, @output_port{dudt} }
 ///
@@ -55,18 +51,29 @@ class DiscreteDerivative final : public LeafSystem<T> {
       : DiscreteDerivative<T>(other.get_input_port().size(),
                               other.time_step()) {}
 
+  /// Set the input history so that the initial output is fully specified.
+  /// This is useful during initialization to avoid large derivative outputs if
+  /// u[0] ≠ 0.  @p u_n and @ u_n_minus_1 must be the same size as the
+  /// input/output ports.
+  void set_input_history(systems::Context<T>* context,
+                         const Eigen::Ref<const VectorX<T>>& u_n,
+                         const Eigen::Ref<const VectorX<T>>& u_n_minus_1) const;
+
   /// Convenience method to set the entire input history to a constant
   /// vector value (x₀ = x₁ = u,resulting in a derivative = 0).  This is
   /// useful during initialization to avoid large derivative outputs if
   /// u[0] ≠ 0.  @p u must be the same size as the input/output ports.
-  void set_state(systems::Context<T>* context,
-                 const Eigen::Ref<const VectorX<T>>& u) const;
+  void set_input_history(systems::Context<T>* context,
+                         const Eigen::Ref<const VectorX<T>>& u) const {
+    set_input_history(context, u, u);
+  }
 
-  DRAKE_DEPRECATED("Use set_state(context, u) instead.  Will be deleted "
-                   "after 2/15/2019.")
+  DRAKE_DEPRECATED(
+      "Use set_input_history(context, u) instead.  Will be deleted "
+      "after 2/15/2019.")
   void set_state(const Eigen::Ref<const VectorX<T>>& u,
                  systems::Context<T>* context) const {
-    set_state(context, u);
+    set_input_history(context, u);
   }
 
   const systems::InputPort<T>& get_input_port() const {
@@ -78,6 +85,11 @@ class DiscreteDerivative final : public LeafSystem<T> {
   }
 
   double time_step() const { return time_step_; }
+
+ protected:
+  optional<bool> DoHasDirectFeedthrough(int, int) const {
+    return false;
+  }
 
  private:
   void DoCalcDiscreteVariableUpdates(
@@ -142,6 +154,15 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
   /// size as the input/output ports.
   void set_initial_position(systems::Context<T>* context,
                             const Eigen::Ref<const VectorX<T>>& position) const;
+
+  /// Convenience method to set the entire position history for the
+  /// discrete-time derivative as if the most recent input was @p position,
+  /// and the input before that was whatever was required to produce the
+  /// output velocity @p velocity.  @p position and @p velocity must be the
+  /// same size as the input/output ports.
+  void set_initial_state(systems::Context<T>* context,
+                         const Eigen::Ref<const VectorX<T>>& position,
+                         const Eigen::Ref<const VectorX<T>>& velocity) const;
 
  private:
   DiscreteDerivative<T>* derivative_;

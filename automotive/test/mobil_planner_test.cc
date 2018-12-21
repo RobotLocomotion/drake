@@ -187,7 +187,7 @@ TEST_P(MobilPlannerTest, MutableParameterAccessors) {
   InitializeDragway(2 /* num_lanes */);
   InitializeMobilPlanner(true /* initial_with_s */);
 
-  ASSERT_EQ(2, context_->num_numeric_parameters());
+  ASSERT_EQ(2, context_->num_numeric_parameter_groups());
   const auto mobil = dynamic_cast<const MobilPlanner<double>*>(dut_.get());
 
   auto& mobil_params = mobil->get_mutable_mobil_params(context_.get());

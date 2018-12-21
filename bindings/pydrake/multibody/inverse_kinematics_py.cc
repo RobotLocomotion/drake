@@ -14,40 +14,38 @@ PYBIND11_MODULE(inverse_kinematics, m) {
   using namespace drake::multibody;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
-  using multibody_plant::MultibodyPlant;
-
   m.doc() = "InverseKinematics module";
 
   py::module::import("pydrake.solvers.mathematicalprogram");
   py::module::import("pydrake.math");
 
-  py::class_<InverseKinematics> ik_cls(m, "InverseKinematics",
-                                       doc.InverseKinematics.doc);
+  py::class_<InverseKinematics> ik_cls(
+      m, "InverseKinematics", doc.InverseKinematics.doc);
   ik_cls.def(py::init<const MultibodyPlant<double>&>(), py::arg("plant"))
       .def("AddPositionConstraint", &InverseKinematics::AddPositionConstraint,
-           py::arg("frameB"), py::arg("p_BQ"), py::arg("frameA"),
-           py::arg("p_AQ_lower"), py::arg("p_AQ_upper"),
-           doc.InverseKinematics.AddPositionConstraint.doc)
+          py::arg("frameB"), py::arg("p_BQ"), py::arg("frameA"),
+          py::arg("p_AQ_lower"), py::arg("p_AQ_upper"),
+          doc.InverseKinematics.AddPositionConstraint.doc)
       .def("AddOrientationConstraint",
-           &InverseKinematics::AddOrientationConstraint, py::arg("frameAbar"),
-           py::arg("R_AbarA"), py::arg("frameBbar"), py::arg("R_BbarB"),
-           py::arg("theta_bound"),
-           doc.InverseKinematics.AddOrientationConstraint.doc)
+          &InverseKinematics::AddOrientationConstraint, py::arg("frameAbar"),
+          py::arg("R_AbarA"), py::arg("frameBbar"), py::arg("R_BbarB"),
+          py::arg("theta_bound"),
+          doc.InverseKinematics.AddOrientationConstraint.doc)
       .def("AddGazeTargetConstraint",
-           &InverseKinematics::AddGazeTargetConstraint, py::arg("frameA"),
-           py::arg("p_AS"), py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
-           py::arg("cone_half_angle"),
-           doc.InverseKinematics.AddGazeTargetConstraint.doc)
+          &InverseKinematics::AddGazeTargetConstraint, py::arg("frameA"),
+          py::arg("p_AS"), py::arg("n_A"), py::arg("frameB"), py::arg("p_BT"),
+          py::arg("cone_half_angle"),
+          doc.InverseKinematics.AddGazeTargetConstraint.doc)
       .def("AddAngleBetweenVectorsConstraint",
-           &InverseKinematics::AddAngleBetweenVectorsConstraint,
-           py::arg("frameA"), py::arg("na_A"), py::arg("frameB"),
-           py::arg("nb_B"), py::arg("angle_lower"), py::arg("angle_upper"),
-           doc.InverseKinematics.AddAngleBetweenVectorsConstraint.doc)
+          &InverseKinematics::AddAngleBetweenVectorsConstraint,
+          py::arg("frameA"), py::arg("na_A"), py::arg("frameB"),
+          py::arg("nb_B"), py::arg("angle_lower"), py::arg("angle_upper"),
+          doc.InverseKinematics.AddAngleBetweenVectorsConstraint.doc)
       .def("q", &InverseKinematics::q, doc.InverseKinematics.q.doc)
       .def("prog", &InverseKinematics::prog, py_reference_internal,
-           doc.InverseKinematics.prog.doc)
+          doc.InverseKinematics.prog.doc)
       .def("get_mutable_prog", &InverseKinematics::get_mutable_prog,
-           py_reference_internal, doc.InverseKinematics.get_mutable_prog.doc);
+          py_reference_internal, doc.InverseKinematics.get_mutable_prog.doc);
 }
 
 }  // namespace pydrake

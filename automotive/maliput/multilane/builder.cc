@@ -320,12 +320,11 @@ Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
   const Vector3<double> s_hat = Vector3<double>::UnitX();
   switch (end) {
     case api::LaneEnd::kStart: {
-      return -lane->GetOrientation(
-          {0., -r_offset, 0.}).matrix() * s_hat;
+      return -(lane->GetOrientation({0., -r_offset, 0.}).matrix() * s_hat);
     }
     case api::LaneEnd::kFinish: {
-      return lane->GetOrientation(
-          {lane->length(), r_offset, 0.}).matrix() * s_hat;
+      return lane->GetOrientation({lane->length(), r_offset, 0.}).matrix() *
+             s_hat;
     }
     default: { DRAKE_ABORT(); }
   }

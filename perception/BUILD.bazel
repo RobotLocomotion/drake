@@ -46,8 +46,10 @@ drake_cc_library(
     deps = [
         ":point_cloud",
         "//common:essential",
+        "//math:geometric_transform",
         "//systems/framework",
-        "//systems/sensors",
+        "//systems/sensors:camera_info",
+        "//systems/sensors:image",
     ],
 )
 

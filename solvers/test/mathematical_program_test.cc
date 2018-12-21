@@ -2760,6 +2760,13 @@ GTEST_TEST(testMathematicalProgram, testEvalBinding) {
   EXPECT_TRUE(CompareMatrices(prog.EvalBinding(quadratic_cost, x_val),
                               Vector1d(7), 1E-15, MatrixCompareType::absolute));
 
+  EXPECT_TRUE(CompareMatrices(
+      prog.EvalBindings(prog.GetAllConstraints(), x_val),
+      Vector2d(30, 5), 1E-15, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(
+      prog.EvalBindings(prog.GetAllCosts(), x_val),
+      Vector1d(7), 1E-15, MatrixCompareType::absolute));
+
   // Pass in an incorrect size input.
   EXPECT_THROW(prog.EvalBinding(linear_constraint, Eigen::Vector2d::Zero()),
                std::logic_error);
@@ -2943,6 +2950,37 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   // If result.get_x_val has wrong dimension, expect to throw an error.
   result.set_x_val(Eigen::Vector3d::Zero());
   EXPECT_THROW(prog.GetSolution(x(0), result), std::invalid_argument);
+}
+
+void CheckNewNonnegativePolynomial(
+    MathematicalProgram::NonnegativePolynomial type) {
+  // Check if the newly created nonnegative polynomial can be computed as m' * Q
+  // * m.
+  MathematicalProgram prog;
+  auto t = prog.NewIndeterminates<4>();
+  const auto m = symbolic::MonomialBasis<4, 2>(symbolic::Variables(t));
+  const auto pair = prog.NewNonnegativePolynomial(m, type);
+  const symbolic::Polynomial& p = pair.first;
+  const MatrixXDecisionVariable& Q = pair.second;
+  MatrixX<symbolic::Polynomial> Q_poly(m.rows(), m.rows());
+  const symbolic::Monomial monomial_one{};
+  for (int i = 0; i < Q_poly.rows(); ++i) {
+    for (int j = 0; j < Q_poly.cols(); ++j) {
+      Q_poly(i, j) =
+          symbolic::Polynomial({{monomial_one, Q(j * Q_poly.rows() + i)}});
+    }
+  }
+  const symbolic::Polynomial p_expected(m.dot(Q_poly * m));
+  EXPECT_TRUE(p.EqualTo(p_expected));
+}
+
+GTEST_TEST(testMathematicalProgram, NewNonnegativePolynomial) {
+  CheckNewNonnegativePolynomial(
+      MathematicalProgram::NonnegativePolynomial::kSos);
+  CheckNewNonnegativePolynomial(
+      MathematicalProgram::NonnegativePolynomial::kSdsos);
+  CheckNewNonnegativePolynomial(
+      MathematicalProgram::NonnegativePolynomial::kDsos);
 }
 }  // namespace test
 }  // namespace solvers

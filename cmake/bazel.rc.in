@@ -5,6 +5,9 @@
 # To use this file directly with Bazel call:
 #     bazel --bazelrc=@CMAKE_CURRENT_BINARY_DIR@/bazel.rc <command> <options>
 
+# N.B. Please keep these alphabetized.
+
+build --action_env=DRAKE_PYTHON_BIN_PATH=@PYTHON_EXECUTABLE@
 build --compilation_mode=@BAZEL_COMPILATION_MODE@
 build --python_path=@PYTHON_EXECUTABLE@
 build --symlink_prefix=/

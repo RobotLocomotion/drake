@@ -56,16 +56,32 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
+        ":parsing_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/util:eigen_geometry_py",
     ],
+    py_srcs = [
+        "math.py",
+        "plant.py",
+        "tree.py",
+    ],
 )
 
-drake_pybind_library(
+# This covers //attic/multibody/parsers.
+drake_py_library(
     name = "parsers_py",
+    srcs = ["parsers.py"],
+    deps = [
+        ":parsing_py",
+    ],
+)
+
+# This covers //multibody/parsing.
+drake_pybind_library(
+    name = "parsing_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_srcs = ["parsers_py.cc"],
+    cc_srcs = ["parsing_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
@@ -179,7 +195,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":inverse_kinematics_py",
     ":joints_py",
     ":multibody_tree_py",
-    ":parsers_py",
+    ":parsing_py",
     ":rigid_body_py",
     ":rigid_body_plant_py",
     ":rigid_body_tree_py",
@@ -188,6 +204,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 
 PY_LIBRARIES = [
     ":module_py",
+    ":parsers_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -257,6 +274,18 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "parsing_test",
+    data = [
+        "//examples/atlas:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":multibody_tree_py",
+        ":parsing_py",
+    ],
+)
+
+drake_py_unittest(
     name = "multibody_tree_test",
     data = [
         ":models",
@@ -283,5 +312,6 @@ drake_py_unittest(
 )
 
 add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
     enable_clang_format_lint = True,
 )

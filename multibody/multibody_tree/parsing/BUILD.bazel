@@ -1,317 +1,63 @@
 # -*- python -*-
+# TODO(jwnimmer-tri) Remove this entire directory on or about 2019-03-01.
 
 load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+    "drake_cc_library_aliases",
+)
+load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_googletest",
-    "drake_cc_library",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-filegroup(
-    name = "test_models",
-    testonly = 1,
-    srcs = glob([
-        "test/**/*.config",
-        "test/**/*.obj",
-        "test/**/*.sdf",
-        "test/**/*.urdf",
-        "test/**/*.xml",
-    ]),
-)
-
+# This package is *only* compatibility forwarding rules.
 drake_cc_package_library(
     name = "parsing",
     deps = [
+        ":forwarding_hdrs",
         ":multibody_plant_sdf_parser",
         ":multibody_plant_urdf_parser",
         ":package_map",
-        ":parser_common",
-        ":parser_path_utils",
-        ":scene_graph_parser_detail",
-        ":sdf_parser_common",
-        ":tinyxml_util",
     ],
 )
 
-drake_cc_library(
-    name = "package_map",
-    srcs = [
-        "package_map.cc",
-    ],
-    hdrs = [
-        "package_map.h",
-    ],
-    deps = [
-        "//common",
-        "@spruce",
-        "@tinydir",
-        "@tinyxml2",
-    ],
+# The component names in this package vs their names in the new package.
+_RELATIVE_LABELS_RENAME_MAP = {
+    ":multibody_plant_sdf_parser": ":sdf_parser",
+    ":multibody_plant_urdf_parser": ":urdf_parser",
+    ":package_map": ":package_map",
+}
+
+# Generates header files with the old include paths that include the header
+# with its new include path.
+drake_cc_hdrs_forwarding_library(
+    name = "forwarding_hdrs",
+    actual_subdir = "multibody/parsing",
+    add_deprecation_warning = True,
+    relative_labels_map = _RELATIVE_LABELS_RENAME_MAP,
+    visibility = ["//visibility:private"],
 )
 
-drake_cc_library(
-    name = "parser_path_utils",
-    srcs = [
-        "parser_path_utils.cc",
-    ],
-    hdrs = [
-        "parser_path_utils.h",
-    ],
-    visibility = [
-        "//attic:__subpackages__",
-    ],
-    deps = [
-        ":package_map",
-        "//common",
-        "@spruce",
-    ],
+# Forwards the bazel labels in this package to alias into the new package.
+drake_cc_library_aliases(
+    actual_subdir = "multibody/parsing",
+    add_deprecation_warning = True,
+    relative_labels_map = _RELATIVE_LABELS_RENAME_MAP,
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
+    deps = [":forwarding_hdrs"],
 )
 
-drake_cc_library(
-    name = "parser_common",
-    srcs = [
-        "parser_common.cc",
-    ],
-    hdrs = [
-        "parser_common.h",
-    ],
-    deps = [
-        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
-    ],
-)
-
-drake_cc_library(
-    name = "sdf_parser_common",
-    srcs = [
-        "sdf_parser_common.cc",
-    ],
-    hdrs = [
-        "sdf_parser_common.h",
-    ],
-    deps = [
-        ":parser_common",
-        "//common:essential",
-        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
-        "@sdformat",
-    ],
-)
-
-drake_cc_library(
-    name = "scene_graph_parser_detail",
-    srcs = [
-        "scene_graph_parser_detail.cc",
-    ],
-    hdrs = [
-        "scene_graph_parser_detail.h",
-    ],
-    install_hdrs_exclude = [
-        # This header includes `sdformat` directly, which we do not want to
-        # expose externally.
-        "scene_graph_parser_detail.h",
-    ],
-    visibility = [
-        "//visibility:private",
-    ],
-    deps = [
-        ":package_map",
-        ":parser_path_utils",
-        ":sdf_parser_common",
-        "//geometry:scene_graph",
-        "//multibody/multibody_tree/multibody_plant:coulomb_friction",
-        "@sdformat",
-    ],
-)
-
-drake_cc_library(
-    name = "tinyxml_util",
-    srcs = [
-        "tinyxml_util.cc",
-    ],
-    hdrs = [
-        "tinyxml_util.h",
-    ],
-    visibility = [
-        "//visibility:private",
-    ],
-    deps = [
-        "//math:geometric_transform",
-        "@tinyxml2",
-    ],
-)
-
-drake_cc_library(
-    name = "multibody_plant_sdf_parser",
-    srcs = [
-        "multibody_plant_sdf_parser.cc",
-    ],
-    hdrs = [
-        "multibody_plant_sdf_parser.h",
-    ],
-    deps = [
-        ":scene_graph_parser_detail",
-        ":sdf_parser_common",
-        "//multibody/multibody_tree/multibody_plant",
-        "@sdformat",
-    ],
-)
-
-drake_cc_library(
-    name = "multibody_plant_urdf_parser",
-    srcs = [
-        "multibody_plant_urdf_parser.cc",
-        "urdf_geometry.cc",
-    ],
-    hdrs = [
-        "multibody_plant_urdf_parser.h",
-        "urdf_geometry.h",
-    ],
-    deps = [
-        ":package_map",
-        ":parser_common",
-        ":parser_path_utils",
-        ":tinyxml_util",
-        "//multibody/multibody_tree/multibody_plant",
-        "@tinyxml2",
-    ],
-)
-
-drake_cc_library(
-    name = "test_loaders",
+# Gives a helpful warning, but doesn't provide any files (the using-code has to
+# update its hard-coded resource paths anyway).
+filegroup(
+    name = "test_models",
     testonly = 1,
-    srcs = [
-        "test/test_loaders.cc",
-    ],
-    hdrs = [
-        "test/test_loaders.h",
-    ],
-    visibility = [
-        "//visibility:private",
-    ],
-    deps = [
-        ":multibody_plant_sdf_parser",
-        ":multibody_plant_urdf_parser",
-        ":parser_common",
-        "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "acrobot_parser_test",
-    data = [
-        ":test_models",
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    # TODO(sam.creasey) Write a printer function (or another
-    # workaround) for ModelLoadFunction so that gtest won't trigger
-    # memcheck.  Related to
-    # https://github.com/google/googletest/issues/1610
-    tags = [
-        "no_memcheck",
-    ],
-    deps = [
-        ":test_loaders",
-        "//common/test_utilities",
-        "//multibody/benchmarks/acrobot",
-        "//multibody/benchmarks/acrobot:make_acrobot_plant",
-    ],
-)
-
-drake_cc_googletest(
-    name = "common_parser_test",
-    data = [
-        ":test_models",
-    ],
-    # TODO(sam.creasey) Write a printer function (or another
-    # workaround) for ModelLoadFunction so that gtest won't trigger
-    # memcheck.  Related to
-    # https://github.com/google/googletest/issues/1610
-    tags = [
-        "no_memcheck",
-    ],
-    deps = [
-        ":test_loaders",
-        "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_plant_sdf_parser_test",
-    data = [
-        ":test_models",
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    deps = [
-        ":multibody_plant_sdf_parser",
-        "//common:find_resource",
-        "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "multibody_plant_urdf_parser_test",
-    data = [
-        ":test_models",
-        "//examples/atlas:models",
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    deps = [
-        ":multibody_plant_urdf_parser",
-        "//common:find_resource",
-        "//common/test_utilities",
-        "//multibody/benchmarks/acrobot",
-        "//multibody/benchmarks/acrobot:make_acrobot_plant",
-    ],
-)
-
-drake_cc_googletest(
-    name = "scene_graph_parser_detail_test",
-    deps = [
-        ":scene_graph_parser_detail",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_googletest(
-    name = "urdf_geometry_test",
-    data = [
-        ":test_models",
-    ],
-    deps = [
-        ":multibody_plant_urdf_parser",
-        "//common:find_resource",
-        "//common/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "package_map_test",
-    data = [
-        ":test_models",
-    ],
-    deps = [
-        ":package_map",
-        "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "parser_path_utils_test",
-    deps = [
-        ":parser_path_utils",
-    ],
-)
-
-drake_cc_googletest(
-    name = "tinyxml_util_test",
-    deps = [
-        ":tinyxml_util",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
+    deprecation = "Use the label //multibody/parsing:test_models",
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
 )
 
 add_lint_tests()

@@ -31,6 +31,8 @@
 ///   @defgroup automotive_systems Automotive Systems
 ///   @defgroup manipulation_systems Manipulation
 ///   @defgroup message_passing Message Passing
+///   @defgroup perception_systems Perception
+///   @defgroup discrete_systems Discrete Systems
 ///   @defgroup stochastic_systems Stochastic Systems
 ///   @defgroup visualization Visualization
 ///   @defgroup example_systems Examples
@@ -73,6 +75,12 @@
 /// @}
 // TODO(russt): Add pointers to / recommendations for connecting to ROS.
 // TODO(russt): Add ZMQ.
+
+/// @addtogroup perception_systems
+/// @{
+/// @brief Systems for dealing with perception data and/or wrapping basic
+/// perception algorithms.
+/// @}
 
 /// @addtogroup visualization
 /// @{

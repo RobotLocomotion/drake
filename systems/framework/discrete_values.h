@@ -64,10 +64,21 @@ class DiscreteValues {
   /// Constructs a one-group %DiscreteValues object that owns a single @p datum
   /// vector which may not be null.
   explicit DiscreteValues(std::unique_ptr<BasicVector<T>> datum) {
-    if (datum == nullptr)
-      throw std::logic_error("DiscreteValues: null groups not allowed");
+    AppendGroup(std::move(datum));
+  }
+
+  /// Adds an additional group that owns the given @p datum, which must be
+  /// non-null. Returns the assigned group number, counting up from 0 for the
+  /// first group.
+  int AppendGroup(std::unique_ptr<BasicVector<T>> datum) {
+    if (datum == nullptr) {
+      throw std::logic_error(
+          "DiscreteValues::AppendGroup(): null groups not allowed");
+    }
+    const int group_num = static_cast<int>(data_.size());
     data_.push_back(datum.get());
     owned_data_.push_back(std::move(datum));
+    return group_num;
   }
 
   virtual ~DiscreteValues() {}

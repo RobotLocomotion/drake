@@ -17,9 +17,9 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_urdf_parser.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -30,9 +30,9 @@ DEFINE_double(simulation_sec, 0.1, "Number of seconds to simulate.");
 using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyTree;
-using drake::multibody::parsing::AddModelFromUrdfFile;
+using drake::multibody::Parser;
 using drake::multibody::UniformGravityFieldElement;
 
 namespace drake {
@@ -53,8 +53,8 @@ int DoMain() {
 
   // Make and add the kuka robot model.
   MultibodyPlant<double>& kuka_plant = *builder.AddSystem<MultibodyPlant>();
-  AddModelFromUrdfFile(
-      FindResourceOrThrow(kUrdfPath), &kuka_plant, &scene_graph);
+  Parser(&kuka_plant, &scene_graph).AddModelFromFile(
+      FindResourceOrThrow(kUrdfPath));
   kuka_plant.WeldFrames(kuka_plant.world_frame(),
                         kuka_plant.GetFrameByName("base"));
 

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
 
 namespace drake {
@@ -27,6 +28,16 @@ class SolverId {
   explicit SolverId(std::string name);
 
   const std::string& name() const { return name_; }
+
+  /// Implements the @ref hash_append concept.
+  template <class HashAlgorithm>
+  friend void hash_append(HashAlgorithm& hasher,
+                          const SolverId& item) noexcept {
+    using drake::hash_append;
+    hash_append(hasher, int{item.id_});
+    // We do not send the name_ to the hasher, because the id_ is already
+    // unique across all instances.
+  }
 
  private:
   friend bool operator==(const SolverId&, const SolverId&);
@@ -53,4 +64,7 @@ struct less<drake::solvers::SolverId> {
     return lhs.id_ < rhs.id_;
   }
 };
+/* Provides std::hash<drake::solvers::SolverId>. */
+template <>
+struct hash<drake::solvers::SolverId> : public drake::DefaultHash {};
 }  // namespace std

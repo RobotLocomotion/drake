@@ -78,7 +78,7 @@ drake_cc_library(
     hdrs = ["frame_velocity.h"],
     deps = [
         "//common:default_scalars",
-        "//multibody/multibody_tree/math:spatial_velocity",
+        "//multibody/math:spatial_velocity",
         "//systems/framework:vector",
     ],
 )
@@ -101,7 +101,7 @@ drake_cc_library(
     deps = [
         "//common:pointer_cast",
         "//geometry:frame_kinematics",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
         "//systems/framework:leaf_system",
     ],
 )
@@ -164,7 +164,7 @@ drake_cc_googletest(
         ":multibody_position_to_geometry_pose",
         "//common:find_resource",
         "//common/test_utilities",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
         "//systems/framework/test_utilities",
     ],
 )

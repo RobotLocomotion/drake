@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <memory>
 #include <string>
@@ -37,7 +38,7 @@ namespace perception {
 /// This point cloud class provides the following fields:
 ///
 /// - xyz - Cartesian XYZ coordinates (float[3]).
-/// - descriptor - An descriptor that is run-time defined (float[X]).
+/// - descriptor - A descriptor that is run-time defined (float[X]).
 ///
 /// @note "contiguous" here means contiguous in memory. This was chosen to
 /// avoid ambiguity between PCL and Eigen, where in PCL "dense" implies that
@@ -69,11 +70,15 @@ class PointCloud final {
   /// Geometric scalar type.
   using T = float;
 
+  /// Color channel scalar type.
+  using C = uint8_t;
+
   /// Descriptor scalar type.
   using D = T;
 
   /// Represents an invalid or uninitialized value.
   static constexpr T kDefaultValue = std::numeric_limits<T>::quiet_NaN();
+  static constexpr C kDefaultColor{};
   static inline bool IsDefaultValue(T value) { return std::isnan(value); }
   static inline bool IsInvalidValue(T value) { return !std::isfinite(value); }
 
@@ -131,8 +136,7 @@ class PointCloud final {
   ///    Do not default-initialize new values.
   void resize(int new_size, bool skip_initialize = false);
 
-
-  /// @name Geometric Descriptors
+  /// @name Geometric Descriptors - XYZs
   /// @{
 
   /// Returns if this cloud provides XYZ values.
@@ -146,17 +150,69 @@ class PointCloud final {
   /// @pre `has_xyzs()` must be true.
   Eigen::Ref<Matrix3X<T>> mutable_xyzs();
 
-  /// Returns access to a XYZ values.
+  /// Returns access to an XYZ value.
   /// @pre `has_xyzs()` must be true.
   Vector3<T> xyz(int i) const { return xyzs().col(i); }
 
-  /// Returns mutable access to a XYZ values.
+  /// Returns mutable access to an XYZ value.
   /// @pre `has_xyzs()` must be true.
   Eigen::Ref<Vector3<T>> mutable_xyz(int i) {
     return mutable_xyzs().col(i);
   }
 
-  ///@}
+  /// @}  // Geometric Descriptors - XYZs
+
+  /// @name Geometric Descriptors - Normals
+  /// @{
+
+  /// Returns if this cloud provides normals.
+  bool has_normals() const;
+
+  /// Returns access to normals.
+  /// @pre `has_normals()` must be true.
+  Eigen::Ref<const Matrix3X<T>> normals() const;
+
+  /// Returns mutable access to normals.
+  /// @pre `has_normals()` must be true.
+  Eigen::Ref<Matrix3X<T>> mutable_normals();
+
+  /// Returns access to a normal.
+  /// @pre `has_normals()` must be true.
+  Vector3<T> normal(int i) const { return normals().col(i); }
+
+  /// Returns mutable access to a normal.
+  /// @pre `has_normals()` must be true.
+  Eigen::Ref<Vector3<T>> mutable_normal(int i) {
+    return mutable_normals().col(i);
+  }
+
+  /// @}  // Geometric Descriptors - Normals
+
+  /// @name Geometric Descriptors - RGBs
+  /// @{
+
+  /// Returns if this cloud provides RGB colors.
+  bool has_rgbs() const;
+
+  /// Returns access to RGB colors.
+  /// @pre `has_rgbs()` must be true.
+  Eigen::Ref<const Matrix3X<C>> rgbs() const;
+
+  /// Returns mutable access to RGB colors.
+  /// @pre `has_rgbs()` must be true.
+  Eigen::Ref<Matrix3X<C>> mutable_rgbs();
+
+  /// Returns access to an RGB color.
+  /// @pre `has_rgbs()` must be true.
+  Vector3<C> rgb(int i) const { return rgbs().col(i); }
+
+  /// Returns mutable access to an RGB color.
+  /// @pre `has_rgbs()` must be true.
+  Eigen::Ref<Vector3<C>> mutable_rgb(int i) {
+    return mutable_rgbs().col(i);
+  }
+
+  /// @}  // Geometric Descriptors - RGBs
 
   /// @name Run-Time Descriptors
   /// @{
@@ -180,11 +236,11 @@ class PointCloud final {
   /// @pre `has_descriptors()` must be true.
   Eigen::Ref<MatrixX<D>> mutable_descriptors();
 
-  /// Returns access to a descriptor values.
+  /// Returns access to a descriptor value.
   /// @pre `has_descriptors()` must be true.
   VectorX<T> descriptor(int i) const { return descriptors().col(i); }
 
-  /// Returns mutable access to a descriptor values.
+  /// Returns mutable access to a descriptor value.
   /// @pre `has_descriptors()` must be true.
   Eigen::Ref<VectorX<T>> mutable_descriptor(int i) {
     return mutable_descriptors().col(i);

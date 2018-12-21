@@ -1,0 +1,28 @@
+# -*- python -*-
+# TODO(jwnimmer-tri) Remove this entire directory on or about 2019-03-01.
+
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# Generates header files with the old include paths that include the header
+# with its new include path.
+drake_cc_hdrs_forwarding_library(
+    name = "forwarding_hdrs",
+    actual_subdir = "multibody/tree",
+    add_deprecation_warning = True,
+    relative_labels = [
+        ":" + x[:-2]
+        for x in [
+            "joint.h",
+            "prismatic_joint.h",
+            "revolute_joint.h",
+            "weld_joint.h",
+        ]
+    ],
+    visibility = ["//multibody/multibody_tree:__pkg__"],
+)
+
+add_lint_tests()

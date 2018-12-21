@@ -75,12 +75,12 @@ int DoMain(void) {
   // Add LCM publishers.
   auto iiwa_plan_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<robotlocomotion::robot_plan_t>(
-          "COMMITTED_ROBOT_PLAN" + suffix, &lcm));
-  iiwa_plan_pub->set_publish_period(planner_configuration.period_sec);
+          "COMMITTED_ROBOT_PLAN" + suffix, &lcm,
+          planner_configuration.period_sec /* publish period */));
   auto wsg_command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_command>(
-          "SCHUNK_WSG_COMMAND" + suffix, &lcm));
-  wsg_command_pub->set_publish_period(planner_configuration.period_sec);
+          "SCHUNK_WSG_COMMAND" + suffix, &lcm,
+          planner_configuration.period_sec /* publish period */));
 
   // Connect subscribers to planner input ports.
   builder.Connect(wsg_status_sub->get_output_port(),

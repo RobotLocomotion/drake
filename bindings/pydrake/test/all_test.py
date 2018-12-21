@@ -62,6 +62,9 @@ class TestAll(unittest.TestCase):
         expected_symbols = (
             # __init__
             "getDrakePath",
+            # attic
+            # - solvers
+            "RigidBodyConstraint",
             # autodiffutils
             "AutoDiffXd",
             # automotive
@@ -103,6 +106,8 @@ class TestAll(unittest.TestCase):
             # - multibody_tree
             "MultibodyPlant",
             "SpatialVelocity",
+            # - parsing
+            "Parser",
             # - parsers
             "PackageMap",
             # - rigid_body_plant

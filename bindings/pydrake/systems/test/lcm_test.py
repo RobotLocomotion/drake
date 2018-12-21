@@ -72,12 +72,12 @@ class TestSystemsLcm(unittest.TestCase):
     def test_publisher(self):
         lcm = DrakeMockLcm()
         dut = mut.LcmPublisherSystem.Make(
-            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
+            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
+            publish_period=0.1)
         model = self._model_message()
-        dut.set_publish_period(period=0.1)
         context = dut.CreateDefaultContext()
         context.FixInputPort(0, AbstractValue.Make(model))
-        dut.Publish(context)
+        dut.PublishInputAsLcmMessage(context)
         raw = lcm.get_last_published_message("TEST_CHANNEL")
         value = quaternion_t.decode(raw)
         self.assert_lcm_equal(value, model)

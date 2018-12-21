@@ -61,6 +61,8 @@ xcode
 .cproject
 .project
 .settings
+.clwb/
 
 external/
 /user.bazelrc
+/gen/

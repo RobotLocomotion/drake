@@ -1,7 +1,7 @@
 #include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
 
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
@@ -11,31 +11,18 @@ namespace inclined_plane {
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using geometry::VisualMaterial;
-using multibody_plant::CoulombFriction;
-using multibody::multibody_plant::MultibodyPlant;
-using multibody::RigidBody;
-using multibody::SpatialInertia;
-using multibody::UniformGravityFieldElement;
-using multibody::UnitInertia;
 using Eigen::AngleAxisd;
 
-std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
+void AddInclinedPlaneToPlant(
     double radius, double mass, double slope,
     const CoulombFriction<double>& surface_friction, double gravity,
-    double time_step,
-    SceneGraph<double>* scene_graph) {
-  DRAKE_THROW_UNLESS(scene_graph != nullptr);
-  DRAKE_THROW_UNLESS(time_step >= 0);
-
-  auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
+    MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
 
   UnitInertia<double> G_Bcm = UnitInertia<double>::SolidSphere(radius);
   SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
 
   const RigidBody<double>& ball = plant->AddRigidBody("Ball", M_Bcm);
-
-  plant->RegisterAsSourceForSceneGraph(scene_graph);
 
   // Orientation of a plane frame P with its z axis normal to the plane and its
   // x axis pointing down the plane.
@@ -65,13 +52,13 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
       surface_friction);
 
   // Visual for the ball.
-  const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
+  const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
   plant->RegisterVisualGeometry(
       ball,
       X_BG.GetAsIsometry3(), Sphere(radius), "visual1", orange);
 
-  // Add little spherical spokes to highlight the sphere's rotation.
-  const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+  // Adds little spherical spokes to highlight the sphere's rotation.
+  const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
   plant->RegisterVisualGeometry(
       ball,
       // Pose of 1st spoke frame in the ball frame B.
@@ -96,11 +83,6 @@ std::unique_ptr<MultibodyPlant<double>> MakeInclinedPlanePlant(
   // Gravity acting in the -z direction.
   plant->AddForceElement<UniformGravityFieldElement>(
       -gravity * Vector3<double>::UnitZ());
-
-  // We are done creating the plant.
-  plant->Finalize();
-
-  return plant;
 }
 
 }  // namespace inclined_plane

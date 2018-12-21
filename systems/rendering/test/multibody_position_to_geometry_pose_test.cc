@@ -4,8 +4,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace systems {
@@ -13,13 +13,12 @@ namespace rendering {
 namespace {
 
 GTEST_TEST(MultibodyPositionToGeometryPoseTest, InputOutput) {
-  multibody::multibody_plant::MultibodyPlant<double> mbp;
+  multibody::MultibodyPlant<double> mbp;
   geometry::SceneGraph<double> scene_graph;
   mbp.RegisterAsSourceForSceneGraph(&scene_graph);
-  multibody::parsing::AddModelFromSdfFile(
+  multibody::Parser(&mbp).AddModelFromFile(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/iiwa7"
-                          "/iiwa7_no_collision.sdf"),
-      &mbp);
+                          "/iiwa7_no_collision.sdf"));
   mbp.Finalize(&scene_graph);
 
   const MultibodyPositionToGeometryPose<double> dut(mbp);

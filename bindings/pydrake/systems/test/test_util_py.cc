@@ -106,7 +106,7 @@ PYBIND11_MODULE(test_util, m) {
       .def(py::init<const Eigen::Vector2d&>(), py::arg("data"));
 
   m.def("make_unknown_abstract_value",
-        []() { return AbstractValue::Make(UnknownType{}); });
+      []() { return AbstractValue::Make(UnknownType{}); });
 
   // Call overrides to ensure a custom Python class can override these methods.
 
@@ -122,6 +122,7 @@ PYBIND11_MODULE(test_util, m) {
     auto context = system.AllocateContext();
     {
       // Leverage simulator to call initialization events.
+      // TODO(eric.cousineau): Simplify as part of #10015.
       Simulator<T> simulator(system);
       // Do not publish at initialization because we want to track publishes
       // from only events of trigger type `kInitialization`.
@@ -160,32 +161,32 @@ PYBIND11_MODULE(test_util, m) {
     return results;
   });
 
-  m.def("call_vector_system_overrides", [clone_vector](
-                                            const VectorSystem<T>& system,
-                                            Context<T>* context,
-                                            bool is_discrete, double dt) {
-    // While this is not convention, update state first to ensure that our
-    // output incorporates it correctly, for testing purposes.
-    // TODO(eric.cousineau): Add (Continuous|Discrete)State::Clone().
-    if (is_discrete) {
-      auto& state = context->get_mutable_discrete_state();
-      DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
-      system.CalcDiscreteVariableUpdates(*context, &state_copy);
-      state.SetFrom(state_copy);
-    } else {
-      auto& state = context->get_mutable_continuous_state();
-      ContinuousState<T> state_dot(clone_vector(state.get_vector()),
-                                   state.get_generalized_position().size(),
-                                   state.get_generalized_velocity().size(),
-                                   state.get_misc_continuous_state().size());
-      system.CalcTimeDerivatives(*context, &state_dot);
-      state.SetFromVector(state.CopyToVector() + dt * state_dot.CopyToVector());
-    }
-    // Calculate output.
-    auto output = system.AllocateOutput();
-    system.CalcOutput(*context, output.get());
-    return output;
-  });
+  m.def("call_vector_system_overrides",
+      [clone_vector](const VectorSystem<T>& system, Context<T>* context,
+          bool is_discrete, double dt) {
+        // While this is not convention, update state first to ensure that our
+        // output incorporates it correctly, for testing purposes.
+        // TODO(eric.cousineau): Add (Continuous|Discrete)State::Clone().
+        if (is_discrete) {
+          auto& state = context->get_mutable_discrete_state();
+          DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
+          system.CalcDiscreteVariableUpdates(*context, &state_copy);
+          state.SetFrom(state_copy);
+        } else {
+          auto& state = context->get_mutable_continuous_state();
+          ContinuousState<T> state_dot(clone_vector(state.get_vector()),
+              state.get_generalized_position().size(),
+              state.get_generalized_velocity().size(),
+              state.get_misc_continuous_state().size());
+          system.CalcTimeDerivatives(*context, &state_dot);
+          state.SetFromVector(
+              state.CopyToVector() + dt * state_dot.CopyToVector());
+        }
+        // Calculate output.
+        auto output = system.AllocateOutput();
+        system.CalcOutput(*context, output.get());
+        return output;
+      });
 }
 
 }  // namespace pydrake

@@ -52,14 +52,20 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
     to 1 from cc_test rules or rules that are boil down to cc_test rules.
     """
-    extra_gcc_flags = []
-    if cc_test:
-        extra_gcc_flags = GCC_CC_TEST_FLAGS
     if COMPILER_ID.endswith("Clang"):
-        return CLANG_FLAGS + rule_copts + rule_clang_copts
-    if COMPILER_ID == "GNU":
-        return GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-    return rule_copts
+        result = CLANG_FLAGS + rule_copts + rule_clang_copts
+    elif COMPILER_ID == "GNU":
+        extra_gcc_flags = GCC_CC_TEST_FLAGS if cc_test else []
+        result = GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
+    else:
+        result = rule_copts
+    return select({
+        "//tools:drake_werror": result,
+        "//conditions:default": [
+            x.replace("-Werror=", "-W")
+            for x in result
+        ],
+    })
 
 def _dsym_command(name):
     """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""

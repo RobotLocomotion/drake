@@ -8,7 +8,7 @@ load(
     "join_paths",
     "output_path",
 )
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH", "PYTHON_VERSION")
 
 InstallInfo = provider()
 
@@ -142,7 +142,7 @@ def _install_action(
     )
     file_dest = _rename(file_dest, rename)
 
-    if "/attic/" in file_dest:
+    if "/attic/" in file_dest and not file_dest.startswith("lib/python"):
         fail("Do not expose attic paths to the install tree ({})".format(
             file_dest,
         ))
@@ -688,6 +688,40 @@ Args:
         guess).
     allowed_externals: List of external packages whose files may be installed.
 """
+
+def install_py2_duplicates_if_py3(
+        name,
+        targets = None,
+        py_dest = "@PYTHON_SITE_PACKAGES@",
+        **kwargs):
+    """
+    Creates a duplicate install, only if Python3 is Bazel's version of Python.
+    Otherwise, creates an empty install target.
+
+    For `py_dest`, `@PYTHON_SITE_PACKAGES@` will be replaced with
+    `lib/python2.7/site-packages`.
+
+    This is presently only used to support Python2-only `drake_visualizer`.
+    """
+    cur_major, _ = PYTHON_VERSION.split(".")
+    if cur_major == "3":
+        py2_targets = targets
+    else:
+        py2_targets = []
+
+    # Assuming that we will only have one supported major-minor version of
+    # Python2.
+    py2_major_minor = "2.7"
+    py2_dest = py_dest.replace(
+        "@PYTHON_SITE_PACKAGES@",
+        "lib/python{}/site-packages".format(py2_major_minor),
+    )
+    install(
+        name = name,
+        targets = py2_targets,
+        py_dest = py2_dest,
+        **kwargs
+    )
 
 #------------------------------------------------------------------------------
 # Generate information to install files to specified destination.

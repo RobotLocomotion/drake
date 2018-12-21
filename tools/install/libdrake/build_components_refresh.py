@@ -48,7 +48,7 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
       ))
     )
     except("//lcmtypes/...")
-    except("//tools/install/libdrake:*")
+    except("//tools/install/...")
     except(attr(tags, "exclude_from_libdrake", //...))
 """
     # First, find the drake_cc_package_library targets within that query.
@@ -90,20 +90,13 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-f", "--force", action="store_true",
-        help="Overwrite existing `build_components.bzl`, rather than write " +
-             "to `build_components.bzl.new`.")
+        "-o", "--output", type=argparse.FileType("w"), default=None,
+        help="Output to a given file, instead of `build_components.bzl`.")
     args = parser.parse_args()
 
     mydir = os.path.abspath(os.path.dirname(sys.argv[0]))
     original_basename = "build_components.bzl"
     original_name = os.path.join(mydir, original_basename)
-
-    if not args.force:
-        new_basename = original_basename + ".new"
-    else:
-        new_basename = original_basename
-    new_name = os.path.join(mydir, new_basename)
 
     # Read the original version.
     with open(original_name, "r") as original:
@@ -136,7 +129,10 @@ def main():
     component_labels = _find_libdrake_components()
 
     # Write the new version.
-    with open(new_name, "w") as new:
+    new = args.output
+    if new is None:
+        new = open(original_name, "w")
+    with new:
         for one_line in header_lines:
             new.write(one_line)
         for one_label in component_labels:

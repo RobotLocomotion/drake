@@ -33,7 +33,7 @@
 
 namespace Eigen {
 
-/// Overloads round to mimic std::nexttoward from <cmath>.
+/// Overloads nexttoward to mimic std::nexttoward from <cmath>.
 template <typename DerType>
 double nexttoward(const Eigen::AutoDiffScalar<DerType>& from, long double to) {
   using std::nexttoward;

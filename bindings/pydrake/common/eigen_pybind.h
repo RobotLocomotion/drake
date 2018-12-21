@@ -23,8 +23,8 @@ py::object ToArray(T* ptr, int size, py::tuple shape) {
   // Create flat array to be reshaped in numpy.
   using Vector = VectorX<T>;
   Eigen::Map<Vector> data(ptr, size);
-  return py::cast(
-      Eigen::Ref<Vector>(data), py_reference).attr("reshape")(shape);
+  return py::cast(Eigen::Ref<Vector>(data), py_reference)
+      .attr("reshape")(shape);
 }
 
 /// Converts a raw array to a numpy array (`const` variant).
@@ -33,8 +33,8 @@ py::object ToArray(const T* ptr, int size, py::tuple shape) {
   // Create flat array to be reshaped in numpy.
   using Vector = const VectorX<T>;
   Eigen::Map<Vector> data(ptr, size);
-  return py::cast(
-      Eigen::Ref<Vector>(data), py_reference).attr("reshape")(shape);
+  return py::cast(Eigen::Ref<Vector>(data), py_reference)
+      .attr("reshape")(shape);
 }
 
 }  // namespace pydrake

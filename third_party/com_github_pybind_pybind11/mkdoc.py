@@ -64,7 +64,8 @@ CPP_OPERATORS = {
 CPP_OPERATORS = OrderedDict(
     sorted(CPP_OPERATORS.items(), key=lambda t: -len(t[0])))
 
-SKIP_FULL_NAMES = [
+# 'Broadphase' culling; do not recurse inside these symbols.
+SKIP_RECURSE_NAMES = [
     'Eigen',
     'detail',
     'google',
@@ -73,6 +74,15 @@ SKIP_FULL_NAMES = [
     'tinyxml2',
 ]
 
+# Exceptions to `SKIP_RECURSE_NAMES`; only one degree of exception is made
+# (i.e., nested symbols are still subject to `SKIP_RECURSE_NAMES`).
+SKIP_RECURSE_EXCEPTIONS = [
+    # TODO(eric.cousineau): Remove once #9366 is complete and all deprecated
+    # symbols are removed.
+    ('drake', 'multibody', 'internal'),
+]
+
+# Filter based on partial names.
 SKIP_PARTIAL_NAMES = [
     'operator new',
     'operator delete',
@@ -82,6 +92,7 @@ SKIP_PARTIAL_NAMES = [
     'operator>>',
 ]
 
+# Filter based on access.
 SKIP_ACCESS = [
     AccessSpecifier.PRIVATE,
 ]
@@ -111,13 +122,14 @@ def eprint(*args):
     print(*args, file=sys.stderr)
 
 
-def is_accepted_cursor(cursor):
+def is_accepted_cursor(cursor, name_chain):
     """
     Determines if a symbol should be visited or not.
     """
     name = utf8(cursor.spelling)
-    if name in SKIP_FULL_NAMES:
-        return False
+    if name in SKIP_RECURSE_NAMES:
+        if tuple(name_chain) not in SKIP_RECURSE_EXCEPTIONS:
+            return False
     for bad in SKIP_PARTIAL_NAMES:
         if bad in name:
             return False
@@ -125,7 +137,10 @@ def is_accepted_cursor(cursor):
         return False
     # TODO(eric.cousineau): Remove `cursor.is_default_method()`? May make
     # things unstable.
-    # TODO(eric.cousineau): Figure out how to strip forward declarations.
+    if cursor.kind in CLASS_KINDS and not cursor.is_definition():
+        # Don't process forward declarations.  If we did, we'd define the class
+        # overview documentation twice; both cursors have a .raw_comment value.
+        return False
     return True
 
 
@@ -571,7 +586,7 @@ def get_name_chain(cursor):
     """
     name_chain = [utf8(cursor.spelling)]
     p = cursor.semantic_parent
-    while p.kind != CursorKind.TRANSLATION_UNIT:
+    while p and p.kind != CursorKind.TRANSLATION_UNIT:
         piece = utf8(p.spelling)
         name_chain.insert(0, piece)
         p = p.semantic_parent
@@ -630,26 +645,26 @@ def extract(include_file_map, cursor, symbol_tree):
     line = cursor.location.line
     if include is None:
         return
-    if not is_accepted_cursor(cursor):
+    name_chain = get_name_chain(cursor)
+    if not is_accepted_cursor(cursor, name_chain):
         return
-    name_chain = None
+    node = None
 
     def get_node():
-        name_chain = get_name_chain(cursor)
         node = symbol_tree.get_node(name_chain)
         if node.first_symbol is None:
             node.first_symbol = Symbol(
                 cursor, name_chain, include, line, None)
-        return name_chain, node
+        return node
 
     if cursor.kind in RECURSE_LIST:
-        if name_chain is None:
-            name_chain, node = get_node()
+        if node is None:
+            node = get_node()
         for i in cursor.get_children():
             extract(include_file_map, i, symbol_tree)
     if cursor.kind in PRINT_LIST:
-        if name_chain is None:
-            name_chain, node = get_node()
+        if node is None:
+            node = get_node()
         if len(cursor.spelling) > 0:
             comment = utf8(
                 cursor.raw_comment) if cursor.raw_comment is not None else ''
@@ -683,8 +698,22 @@ def choose_doc_var_names(symbols):
 
     # The argument count might be sufficient to disambiguate.
     # TODO(jwnimmer-tri) Methods with enable_if sometimes report as 0args.
-    args = [list(x.cursor.get_arguments()) for x in symbols]
-    result = ["doc_{}args".format(len(x)) for x in args]
+    each_args = [list(x.cursor.get_arguments()) for x in symbols]
+    result = ["doc_{}args".format(len(args)) for args in each_args]
+    specialize_well_known_doc_var_names()
+    if len(result) == len(set(result)):
+        return result
+
+    # The argument names might be sufficient to disambiguate.
+    for i, args in enumerate(each_args):
+        if len(args) == 0:
+            continue
+        arg_names = []
+        for arg in args:
+            arg_name = utf8(arg.spelling) or \
+                sanitize_name(utf8(arg.type.spelling)).replace("_", "")
+            arg_names.append(arg_name)
+        result[i] = result[i] + "_" + "_".join(arg_names)
     specialize_well_known_doc_var_names()
     if len(result) == len(set(result)):
         return result

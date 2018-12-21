@@ -184,31 +184,68 @@ symbolic::Polynomial MathematicalProgram::NewFreePolynomial(
   return p;
 }
 
-std::pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-MathematicalProgram::NewSosPolynomial(
-    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
-  const MatrixXDecisionVariable Q{
-      NewSymmetricContinuousVariables(monomial_basis.size())};
-  const auto psd_binding = AddPositiveSemidefiniteConstraint(Q);
-  // Constructs a coefficient matrix of Polynomials Q_poly from Q. In the
-  // process, we make sure that each Q_poly(i, j) is treated as a decision
-  // variable, not an indeterminate.
-  const drake::MatrixX<symbolic::Polynomial> Q_poly{
-      Q.unaryExpr([](const Variable& q_i_j) {
-        return symbolic::Polynomial{q_i_j /* coeff */, {} /* Monomial */};
-      })};
-  // p = mᵀ * Q_poly * m.
-  const symbolic::Polynomial p{monomial_basis.dot(Q_poly * monomial_basis)};
-  return make_pair(p, psd_binding);
+// This is the utility function for creating new nonnegative polynomials
+// (sos-polynomial, sdsos-polynomial, dsos-polynomial). It creates a
+// symmetric matrix Q as decision variables, and return m' * Q * m as the new
+// polynomial, where m is the monomial basis.
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewNonnegativePolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+    NonnegativePolynomial type) {
+  const MatrixXDecisionVariable Q =
+      NewSymmetricContinuousVariables(monomial_basis.size());
+  // TODO(hongkai.dai & soonho.kong): ideally we should compute p in one line as
+  // monomial_basis.dot(Q * monomial_basis). But as explained in #10200, this
+  // one line version is too slow, so we use this double for loop to compute
+  // the matrix product by hand. I will revert to the one line version when it
+  // is fast.
+  symbolic::Polynomial p{};
+  for (int i = 0; i < Q.rows(); ++i) {
+    p.AddProduct(Q(i, i), pow(monomial_basis(i), 2));
+    for (int j = i + 1; j < Q.cols(); ++j) {
+      p.AddProduct(2 * Q(i, j), monomial_basis(i) * monomial_basis(j));
+    }
+  }
+  switch (type) {
+    case MathematicalProgram::NonnegativePolynomial::kSos: {
+      AddPositiveSemidefiniteConstraint(Q);
+      break;
+    }
+    case MathematicalProgram::NonnegativePolynomial::kSdsos: {
+      AddScaledDiagonallyDominantMatrixConstraint(Q);
+      break;
+    }
+    case MathematicalProgram::NonnegativePolynomial::kDsos: {
+      AddPositiveDiagonallyDominantMatrixConstraint(
+          Q.cast<symbolic::Expression>());
+      break;
+    }
+  }
+  return std::make_pair(p, Q);
 }
 
-pair<symbolic::Polynomial, Binding<PositiveSemidefiniteConstraint>>
-MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
-                                      const int degree) {
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewNonnegativePolynomial(
+    const symbolic::Variables& indeterminates, int degree,
+    NonnegativePolynomial type) {
   DRAKE_DEMAND(degree > 0 && degree % 2 == 0);
   const drake::VectorX<symbolic::Monomial> x{
       MonomialBasis(indeterminates, degree / 2)};
-  return NewSosPolynomial(x);
+  return NewNonnegativePolynomial(x, type);
+}
+
+std::pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewSosPolynomial(
+    const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
+  return NewNonnegativePolynomial(
+      monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos);
+}
+
+pair<symbolic::Polynomial, MatrixXDecisionVariable>
+MathematicalProgram::NewSosPolynomial(const Variables& indeterminates,
+                                      const int degree) {
+  return NewNonnegativePolynomial(
+      indeterminates, degree, MathematicalProgram::NonnegativePolynomial::kSos);
 }
 
 MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
@@ -748,27 +785,51 @@ MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
   return Y;
 }
 
+namespace {
+// Add the slack variable for scaled diagonally dominant matrix constraint. In
+// AddScaledDiagonallyDominantMatrixConstraint, we should add the constraint
+// that the diagonal terms in the sdd matrix should match the summation of
+// the diagonally terms in the slack variable, and the upper diagonal corner
+// in M[i][j] should satisfy the rotated Lorentz cone constraint.
+template <typename T>
+void AddSlackVariableForScaledDiagonallyDominantMatrixConstraint(
+    const Eigen::Ref<const MatrixX<T>>& X, MathematicalProgram* prog,
+    Eigen::Matrix<symbolic::Variable, 2, Eigen::Dynamic>* M_ij_diagonal,
+    std::vector<std::vector<Matrix2<T>>>* M) {
+  const int n = X.rows();
+  DRAKE_DEMAND(X.cols() == n);
+  // The diagonal terms of M[i][j] are new variables.
+  // M[i][j](0, 0) = M_ij_diagonal(0, k)
+  // M[i][j](1, 1) = M_ij_diagonal(1, k)
+  // where k = (2n - 1) * i / 2 + j - i - 1, namely k is the index of X(i, j)
+  // in the vector X_upper_diagonal, where X_upper_diagonal is obtained by
+  // stacking each row of the upper diagonal part (not including the diagonal
+  // entries) in X to a row vector.
+  *M_ij_diagonal = prog->NewContinuousVariables<2, Eigen::Dynamic>(
+      2, (n - 1) * n / 2, "sdd_slack_M");
+  int k = 0;
+  M->resize(n);
+  for (int i = 0; i < n; ++i) {
+    (*M)[i].resize(n);
+    for (int j = i + 1; j < n; ++j) {
+      (*M)[i][j](0, 0) = (*M_ij_diagonal)(0, k);
+      (*M)[i][j](1, 1) = (*M_ij_diagonal)(1, k);
+      (*M)[i][j](0, 1) = X(i, j);
+      (*M)[i][j](1, 0) = X(j, i);
+      ++k;
+    }
+  }
+}
+}  // namespace
+
 std::vector<std::vector<Matrix2<symbolic::Expression>>>
 MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
   const int n = X.rows();
-  DRAKE_DEMAND(X.cols() == n);
   std::vector<std::vector<Matrix2<symbolic::Expression>>> M(n);
-  for (int i = 0; i < n; ++i) {
-    M[i].resize(n);
-    for (int j = i + 1; j < n; ++j) {
-      // Since M[i][j](0, 1) = X(i, j), we only need to declare new variables
-      // for the diagonal entries of M[i][j].
-      auto M_ij_diagonal = NewContinuousVariables<2>(
-          "sdd_slack_M[" + std::to_string(i) + "][" + std::to_string(j) + "]");
-      M[i][j](0, 0) = M_ij_diagonal(0);
-      M[i][j](1, 1) = M_ij_diagonal(1);
-      M[i][j](0, 1) = (X(i, j) + X(j, i)) / 2;
-      M[i][j](1, 0) = M[i][j](0, 1);
-      AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
-          M[i][j](0, 0), M[i][j](1, 1), M[i][j](0, 1)));
-    }
-  }
+  Matrix2X<symbolic::Variable> M_ij_diagonal;
+  AddSlackVariableForScaledDiagonallyDominantMatrixConstraint<
+      symbolic::Expression>(X, this, &M_ij_diagonal, &M);
   for (int i = 0; i < n; ++i) {
     symbolic::Expression diagonal_sum = 0;
     for (int j = 0; j < i; ++j) {
@@ -776,9 +837,67 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
     }
     for (int j = i + 1; j < n; ++j) {
       diagonal_sum += M[i][j](0, 0);
+      AddRotatedLorentzConeConstraint(Vector3<symbolic::Expression>(
+          M[i][j](0, 0), M[i][j](1, 1), M[i][j](0, 1)));
     }
     AddLinearEqualityConstraint(X(i, i) - diagonal_sum, 0);
   }
+  return M;
+}
+
+std::vector<std::vector<Matrix2<symbolic::Variable>>>
+MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Variable>>& X) {
+  const int n = X.rows();
+  std::vector<std::vector<Matrix2<symbolic::Variable>>> M(n);
+  Matrix2X<symbolic::Variable> M_ij_diagonal;
+  AddSlackVariableForScaledDiagonallyDominantMatrixConstraint<
+      symbolic::Variable>(X, this, &M_ij_diagonal, &M);
+
+  // k is the index of X(i, j) in the vector X_upper_diagonal, where
+  // X_upper_diagonal is obtained by stacking each row of the upper diagonal
+  // part in X to a row vector.
+  auto ij_to_k = [&n](int i, int j) {
+    return (2 * n - 1 - i) * i / 2 + j - i - 1;
+  };
+  // diagonal_sum_var = [M_ij_diagonal(:); X(0, 0); X(1, 1); ...; X(n-1, n-1)]
+  const int n_square = n * n;
+  VectorXDecisionVariable diagonal_sum_var(n_square);
+  for (int i = 0; i < (n_square - n) / 2; ++i) {
+    diagonal_sum_var.segment<2>(2 * i) = M_ij_diagonal.col(i);
+  }
+  for (int i = 0; i < n; ++i) {
+    diagonal_sum_var(n_square - n + i) = X(i, i);
+  }
+
+  // Create a RotatedLorentzConeConstraint
+  auto rotated_lorentz_cone_constraint =
+      std::make_shared<RotatedLorentzConeConstraint>(
+          Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero());
+  // A_diagonal_sum.row(i) * diagonal_sum_var = M[0][i](1, 1) + M[1][i](1, 1) +
+  // ... + M[i-1][i](1, 1) - X(i, i) + M[i][i+1](0, 0) + M[i][i+2](0, 0) + ... +
+  // M[i][n-1](0, 0);
+  Eigen::MatrixXd A_diagonal_sum(n, n_square);
+  A_diagonal_sum.setZero();
+  for (int i = 0; i < n; ++i) {
+    // The coefficient for X(i, i)
+    A_diagonal_sum(i, n_square - n + i) = -1;
+    for (int j = 0; j < i; ++j) {
+      // The coefficient for M[j][i](1, 1)
+      A_diagonal_sum(i, 2 * ij_to_k(j, i) + 1) = 1;
+    }
+    for (int j = i + 1; j < n; ++j) {
+      // The coefficient for M[i][j](0, 0)
+      A_diagonal_sum(i, 2 * ij_to_k(i, j)) = 1;
+      // Bind the rotated Lorentz cone constraint to (M[i][j](0, 0); M[i][j](1,
+      // 1); M[i][j](0, 1))
+      AddConstraint(rotated_lorentz_cone_constraint,
+                    Vector3<symbolic::Variable>(M[i][j](0, 0), M[i][j](1, 1),
+                                                M[i][j](0, 1)));
+    }
+  }
+  AddLinearEqualityConstraint(A_diagonal_sum, Eigen::VectorXd::Zero(n),
+                              diagonal_sum_var);
   return M;
 }
 
@@ -788,24 +907,24 @@ MathematicalProgram::AddScaledDiagonallyDominantMatrixConstraint(
 // Note that FindIndeterminateIndex is implemented in
 // mathematical_program_api.cc instead of this file.
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   const auto pair = NewSosPolynomial(monomial_basis);
   const symbolic::Polynomial& sos_poly{pair.first};
-  const Binding<PositiveSemidefiniteConstraint>& psd_binding{pair.second};
+  const MatrixXDecisionVariable& Q{pair.second};
   const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
-  return make_pair(psd_binding, leq_binding);
+  return make_pair(Q, leq_binding);
 }
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
   return AddSosConstraint(
       p, ConstructMonomialBasis(p));
 }
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
@@ -814,7 +933,7 @@ MathematicalProgram::AddSosConstraint(
       monomial_basis);
 }
 
-pair<Binding<PositiveSemidefiniteConstraint>, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
 MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});

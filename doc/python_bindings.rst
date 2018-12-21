@@ -263,6 +263,56 @@ Additionally, you may convert an instance (if the conversion is available) using
     >>> print(adder.ToSymbolic())
     <pydrake.systems.primitives.Adder_[Expression] object at 0x...>
 
+Debugging with the Python Bindings
+----------------------------------
+
+You may encounter issues with the Python Bindings that may arise from the
+underlying C++ code, and it may not always be obvious what the root cause is.
+
+The first step to debugging is to consider running your code using the
+``trace`` module. It is best practice to always have a ``main()`` function, and
+have a ``if __name__ == "__main__"`` clause. If you do this, then it is easy to
+trace. As an example:
+
+.. code-block:: python
+
+    def main():
+        insert_awesome_code_here()
+
+    if __name__ == "__main__":
+        # main()  # This is what you would have, but the following is useful:
+
+        # These are temporary, for debugging, so meh for programming style.
+        import sys, trace
+
+        # If there are segfaults, it's a good idea to always use stderr as it
+        # always prints to the screen, so you should get as much output as
+        # possible.
+        sys.stdout = sys.stderr
+
+        # Now trace execution:
+        tracer = trace.Trace(trace=1, count=0, ignoredirs=["/usr", sys.prefix])
+        tracer.run('main()')
+
+.. note::
+
+    If you are developing in Drake and are using the ``drake_py_unittest``
+    macro, you can specify the argument ``--trace=user`` to get the same
+    behavior.
+
+This generally should help you trace where the code is dying. However, if you
+still need to dig in, you can build the bindings in debug mode, without symbol
+stripping, so you can debug with ``gdb`` or ``lldb``:
+
+.. code-block:: shell
+
+    cmake -DCMAKE_BUILD_TYPE=Debug ../drake
+
+.. warning::
+
+    If you have SNOPT enabled (either ``-DWITH_SNOPT=ON`` or
+    ``-DWITH_ROBOTLOCOMOTION_SNOPT=ON``), symbols will *still* be stripped.
+
 For Developers
 --------------
 

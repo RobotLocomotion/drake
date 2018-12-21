@@ -101,7 +101,6 @@ drake_cc_library(
     srcs = ["choose_best_solver.cc"],
     hdrs = ["choose_best_solver.h"],
     deps = [
-        ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
@@ -233,6 +232,7 @@ drake_cc_library(
     hdrs = ["solver_id.h"],
     deps = [
         "//common:essential",
+        "//common:hash",
         "//common:reset_after_move",
     ],
 )
@@ -727,39 +727,57 @@ drake_cc_library(
     }),
 )
 
-# If --config snopt is used, this target builds object code that satisfies
-# MathematicalProgramSolverInterface by calling SNOPT. Otherwise, this target
-# builds dummy object code that fails at runtime.
+# If --config snopt (or one of --config snopt_{fortran,f2c}) is used, this
+# target builds object code that satisfies MathematicalProgramSolverInterface
+# by calling SNOPT. Otherwise, this target builds dummy object code that fails
+# at runtime.
 drake_cc_library(
     name = "snopt_solver",
     srcs = select({
+        # For now `--config snopt` ("Use the default SNOPT flavor") is a
+        # synonym for `--config snopt_f2c` ("Use the f2c SNOPT flavor").
+        # In the future, the default will change to be the Fortran flavor.
         "//tools:with_snopt": [
             "snopt_solver_f2c.cc",
             "snopt_solver_common.cc",
         ],
+        # This is always the Fortran flavor.
+        "//tools:with_snopt_fortran": [
+            "snopt_solver.cc",
+            "snopt_solver_common.cc",
+        ],
+        # This is always the f2c flavor.
+        "//tools:with_snopt_f2c": [
+            "snopt_solver_f2c.cc",
+            "snopt_solver_common.cc",
+        ],
+        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             "no_snopt.cc",
             "snopt_solver_common.cc",
         ],
     }),
     hdrs = ["snopt_solver.h"],
-    # Some versions of SNOPT's API require passing a `std::string::c_str()`
-    # result of `const char*` to a function taking a `char*`, or passing a
-    # function pointer that receives parameters to a function that takes a
-    # (mismatched) function pointer with no arguments.  We could carefully
-    # craft our snopt_solver_f2c.cc to have appropriate casts depending on the
-    # signatures of the version of SNOPT in use, but choose instead to just
-    # suppress all such warnings until we find some case where they matter.
-    # (The next best step would be to write a sensible C++ SNOPT API wrapper,
-    # and contain the language abuses there, so that the actual logic of our
-    # snopt_wrapper.cc could still have full `-pedantic` checks enabled.)
-    copts = ["-fpermissive"],
     deps = select({
+        # This is Drake's default flavor; currently f2c.
         "//tools:with_snopt": [
             ":mathematical_program_api",
             "//math:autodiff",
             "@snopt//:snopt_c",
         ],
+        # This is always the Fortran flavor.
+        "//tools:with_snopt_fortran": [
+            ":mathematical_program_api",
+            "//math:autodiff",
+            "@snopt//:snopt_cwrap",
+        ],
+        # This is always the f2c flavor.
+        "//tools:with_snopt_f2c": [
+            ":mathematical_program_api",
+            "//math:autodiff",
+            "@snopt//:snopt_c",
+        ],
+        # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             ":mathematical_program_api",
         ],
@@ -1015,6 +1033,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1366,6 +1385,7 @@ drake_cc_googletest(
         ":quadratic_program_examples",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
         "@spruce",
     ],
 )
@@ -1494,6 +1514,14 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "solver_options_test",
+    deps = [
+        ":solver_options",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
 # The extra_srcs are required here because add_lint_tests() doesn't understand
 # how to extract labels from select() functions yet.
 add_lint_tests(cpplint_extra_srcs = [
@@ -1523,7 +1551,8 @@ add_lint_tests(cpplint_extra_srcs = [
     "qp.cc",
     "scs_solver.cc",
     "scs_solver_common.cc",
-    "snopt_solver_f2c.cc",
+    "snopt_solver.cc",
     "snopt_solver.h",
     "snopt_solver_common.cc",
+    "snopt_solver_f2c.cc",
 ])

@@ -7,7 +7,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -28,12 +28,9 @@ Isometry3<double> ExtractOptitrackPose(
   // normalized for use in double precision.
   q_wxyz.normalize();
   // Pose of rigid body frame `B` in Optitrack frame `O`.
-  Isometry3<double> X_OB;
-  X_OB.linear() = q_wxyz.toRotationMatrix();
-  X_OB.translation() =
-      Eigen::Vector3d(body.xyz[0], body.xyz[1], body.xyz[2]);
-  X_OB.makeAffine();
-  return X_OB;
+  const Eigen::Vector3d position(body.xyz[0], body.xyz[1], body.xyz[2]);
+  const math::RigidTransform<double> X_OB(q_wxyz, position);
+  return X_OB.GetAsIsometry3();
 }
 
 std::map<int, Isometry3<double>> ExtractOptitrackPoses(

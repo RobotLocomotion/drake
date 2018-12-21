@@ -14,23 +14,12 @@ package(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "allegro_hand_urdf_test",
-    srcs = ["urdf/test/allegro_hand_urdf_test.cc"],
-    data = [":models"],
-    deps = [
-        "//attic/multibody/parsers",
-        "//common:find_resource",
-    ],
-)
-
-drake_cc_googletest(
-    name = "allegro_hand_sdf_test",
-    srcs = ["sdf/test/allegro_hand_sdf_test.cc"],
+    name = "parse_test",
     data = [":models"],
     deps = [
         "//common:find_resource",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

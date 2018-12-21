@@ -5,11 +5,12 @@
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/geometry_visualization.h"
-#include "drake/multibody/multibody_tree/multibody_plant/contact_results_to_lcm.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 
 namespace drake {
 namespace examples {
@@ -35,19 +36,39 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->AddCupboard();
-  auto object = multibody::parsing::AddModelFromSdfFile(
+  station->SetupDefaultStation();
+  multibody::Parser parser(&station->get_mutable_multibody_plant(),
+                           &station->get_mutable_scene_graph());
+  auto object = parser.AddModelFromFile(
       FindResourceOrThrow(
           "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-      "object", &station->get_mutable_multibody_plant(),
-      &station->get_mutable_scene_graph());
+      "object");
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
                                    station->GetOutputPort("pose_bundle"));
-  multibody::multibody_plant::ConnectContactResultsToDrakeVisualizer(
+  multibody::ConnectContactResultsToDrakeVisualizer(
       &builder, station->get_mutable_multibody_plant(),
       station->GetOutputPort("contact_results"));
+
+  auto image_to_lcm_image_array =
+      builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();
+  image_to_lcm_image_array->set_name("converter");
+  for (const auto& name : station->get_camera_names()) {
+    const auto& cam_port =
+        image_to_lcm_image_array
+            ->DeclareImageInputPort<systems::sensors::PixelType::kRgba8U>(
+                "camera_" + name);
+    builder.Connect(station->GetOutputPort("camera_" + name + "_rgb_image"),
+                    cam_port);
+  }
+  auto image_array_lcm_publisher = builder.template AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
+          "DRAKE_RGBD_CAMERA_IMAGES", nullptr,
+          1.0 / 10 /* 10 fps publish period */));
+  image_array_lcm_publisher->set_name("rgbd_publisher");
+  builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
+                  image_array_lcm_publisher->get_input_port());
 
   auto diagram = builder.Build();
 
@@ -84,13 +105,11 @@ int do_main(int argc, char* argv[]) {
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.translation() = Eigen::Vector3d(.6, 0, 0);
   station->get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-      station->get_multibody_plant().GetBodyByName("base_link",
-                                                           object),
-      pose, &station->GetMutableSubsystemContext(
-          station->get_multibody_plant(), &station_context));
+      station->get_multibody_plant().GetBodyByName("base_link", object), pose,
+      &station->GetMutableSubsystemContext(station->get_multibody_plant(),
+                                           &station_context));
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.Initialize();
   simulator.StepTo(FLAGS_duration);
 
   // Check that the arm is (very roughly) in the commanded position.

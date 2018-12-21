@@ -1,6 +1,6 @@
 #include "drake/examples/multibody/cylinder_with_multicontact/make_cylinder_plant.h"
 
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace examples {
@@ -11,9 +11,8 @@ using geometry::Cylinder;
 using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
-using geometry::VisualMaterial;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
+using drake::multibody::CoulombFriction;
+using drake::multibody::MultibodyPlant;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::UniformGravityFieldElement;
@@ -24,8 +23,8 @@ void AddCylinderWithMultiContact(
     MultibodyPlant<double>* plant, const RigidBody<double>& body,
     double radius, double length, const CoulombFriction<double>& friction,
     double contact_spheres_radius, int num_contacts) {
-  const VisualMaterial orange(Vector4<double>(1.0, 0.55, 0.0, 1.0));
-  const VisualMaterial red(Vector4<double>(1.0, 0.0, 0.0, 1.0));
+  const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
+  const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
 
   // Visual for the Cylinder
   plant->RegisterVisualGeometry(
@@ -67,7 +66,7 @@ void AddCylinderWithMultiContact(
   }
 }
 
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeCylinderPlant(double radius, double length, double mass,
                   const CoulombFriction<double>& surface_friction,
                   const Vector3<double>& gravity_W, double dt,

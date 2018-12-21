@@ -26,7 +26,6 @@ drake_cc_library(
     name = "interface",
     hdrs = [
         "drake_lcm_interface.h",
-        "drake_lcm_message_handler_interface.h",
     ],
     deps = [
         "//common:essential",
@@ -109,8 +108,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
-    # Flaky because LCM self-test can fail (PR #7311)
-    flaky = 1,
     deps = [
         ":lcmt_drake_signal_utils",
         ":real",

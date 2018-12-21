@@ -54,13 +54,17 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm) {
+      drake::lcm::DrakeLcmInterface* lcm,
+      double publish_period = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
-        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
+        publish_period);
   }
 
   /**
@@ -77,10 +81,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
    */
   LcmPublisherSystem(const std::string& channel,
                      std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   /**
    * A constructor for an %LcmPublisherSystem that takes vector data on its sole
@@ -97,10 +104,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   /**
    * Constructor that passes a unique_ptr of the LcmAndVectorBaseTranslator,
@@ -115,11 +125,14 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
    */
   LcmPublisherSystem(
       const std::string& channel,
       std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
-      drake::lcm::DrakeLcmInterface* lcm);
+      drake::lcm::DrakeLcmInterface* lcm,
+      double publish_period = 0.0);
 
   /**
    * Constructor that returns a publisher System that takes vector data on
@@ -136,10 +149,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   ~LcmPublisherSystem() override;
 
@@ -173,18 +189,20 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   static std::string make_name(const std::string& channel);
 
-  /**
-   * Sets this system to do a per-step publish.
-   * See LeafSystem::DeclarePerStepEvent() for a description of per-step events.
-   */
-  void activate_per_step_publish();
-
-  /**
-   * Sets the publishing period of this system. See
-   * LeafSystem::DeclarePeriodicPublish() for details about the semantics of
-   * parameter `period`.
-   */
-  void set_publish_period(double period);
+  DRAKE_DEPRECATED("Pass publish period to constructor instead. This method "
+                       "will be removed after 5/20/19.")
+  void set_publish_period(double period) {
+    const double offset = 0.0;
+    this->DeclarePeriodicEvent(period, offset, systems::PublishEvent<double>(
+        [this](const systems::Context<double>& context,
+               const systems::PublishEvent<double>&) {
+          // If multiple events occur simultaneously (for example, due to
+          // occasional synchronization of periods from different periodic
+          // events), we still only want to publish the input port values once,
+          // so we don't care if there are more events.
+          this->PublishInputAsLcmMessage(context);
+        }));
+  }
 
   /**
    * Returns the translator used by this publisher. This can be used to convert
@@ -224,7 +242,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
   void get_output_port(int) = delete;
 
   /// Takes the VectorBase from the input port of the context and publishes
-  /// it onto an LCM channel.
+  /// it onto an LCM channel. This function is called automatically, as
+  /// necessary, at the requisite publishing period (if set_publish_period() was
+  /// called) or per a simulation step (if activate_per_step_publish() was
+  /// called). This function has been made public so that LCM messages can be
+  /// published manually, as desired.
   void PublishInputAsLcmMessage(const Context<double>& context) const;
 
  private:
@@ -235,7 +257,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
                      std::unique_ptr<const LcmAndVectorBaseTranslator>
                          owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   // The channel on which to publish LCM messages.
   const std::string channel_;

@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -33,7 +34,7 @@ LcmPublisherSystem::LcmPublisherSystem(
     const LcmAndVectorBaseTranslator* translator,
     std::unique_ptr<const LcmAndVectorBaseTranslator> owned_translator,
     std::unique_ptr<SerializerInterface> serializer,
-    DrakeLcmInterface* lcm)
+    DrakeLcmInterface* lcm, double publish_period)
     : channel_(channel),
       translator_(owned_translator ? owned_translator.get() : translator),
       owned_translator_(std::move(owned_translator)),
@@ -51,35 +52,58 @@ LcmPublisherSystem::LcmPublisherSystem(
   }
 
   set_name(make_name(channel_));
+
+  // Set the publish period, if nonzero.
+  auto publish_function = [this](const systems::Context<double>& context,
+                                 const systems::PublishEvent<double>&) {
+    // If multiple events occur simultaneously (for example, due to
+    // occasional synchronization of periods from different periodic
+    // events), we still only want to publish the input port values once,
+    // so we don't care if there are more events.
+    this->PublishInputAsLcmMessage(context);
+  };
+
+  if (publish_period > 0.0) {
+    const double offset = 0.0;
+    this->DeclarePeriodicEvent(publish_period, offset,
+                               systems::PublishEvent<double>(publish_function));
+  } else {
+    this->DeclarePerStepEvent(systems::PublishEvent<double>(publish_function));
+  }
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
-    drake::lcm::DrakeLcmInterface* lcm)
+    drake::lcm::DrakeLcmInterface* lcm,
+    double publish_period)
     : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
-                         lcm) {}
+                         lcm, publish_period) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator,
-    drake::lcm::DrakeLcmInterface* lcm)
-    : LcmPublisherSystem(channel, &translator, nullptr, nullptr, lcm) {}
+    drake::lcm::DrakeLcmInterface* lcm,
+    double publish_period)
+    : LcmPublisherSystem(channel, &translator, nullptr, nullptr,
+                         lcm, publish_period) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
-    drake::lcm::DrakeLcmInterface* lcm)
+    drake::lcm::DrakeLcmInterface* lcm,
+    double publish_period)
     : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
-                         lcm) {}
+                         lcm, publish_period) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
-    DrakeLcmInterface* lcm)
+    DrakeLcmInterface* lcm,
+    double publish_period)
     : LcmPublisherSystem(
           channel,
           translator_dictionary.GetTranslator(channel),
-          lcm) {}
+          lcm, publish_period) {}
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
@@ -103,31 +127,6 @@ std::string LcmPublisherSystem::make_name(const std::string& channel) {
 
 const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
-}
-
-void LcmPublisherSystem::activate_per_step_publish() {
-  this->DeclarePerStepEvent(systems::PublishEvent<double>(
-      [this](const systems::Context<double>& context,
-             const systems::PublishEvent<double>&) {
-        // If multiple events occur simultaneously (for example, due to
-        // occasional synchronization of periods from different periodic
-        // events), we still only want to publish the input port values once,
-        // so we don't care if there are more events.
-        this->PublishInputAsLcmMessage(context);
-      }));
-}
-
-void LcmPublisherSystem::set_publish_period(double period) {
-  const double offset = 0.0;
-  this->DeclarePeriodicEvent(period, offset, systems::PublishEvent<double>(
-      [this](const systems::Context<double>& context,
-             const systems::PublishEvent<double>&) {
-        // If multiple events occur simultaneously (for example, due to
-        // occasional synchronization of periods from different periodic
-        // events), we still only want to publish the input port values once,
-        // so we don't care if there are more events.
-        this->PublishInputAsLcmMessage(context);
-      }));
 }
 
 void LcmPublisherSystem::PublishInputAsLcmMessage(

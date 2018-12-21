@@ -26,12 +26,12 @@ filegroup(
 drake_cc_package_library(
     name = "free_body",
     deps = [
-        ":everything",
+        ":free_body_only",
     ],
 )
 
 drake_cc_library(
-    name = "everything",
+    name = "free_body_only",
     srcs = [
         "free_body.cc",
     ],
@@ -47,20 +47,14 @@ drake_cc_library(
 # === test/ ===
 
 drake_cc_googletest(
-    name = "rigid_body_plant_free_body_test",
+    name = "multibody_plant_free_body_test",
     timeout = "moderate",
     data = [":models"],
     deps = [
         ":free_body",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//math:autodiff",
-        "//systems/analysis:runge_kutta3_integrator",
-        "//systems/framework:diagram",
-        "//systems/framework:diagram_builder",
-        "//systems/primitives:constant_vector_source",
+        "//multibody/tree:floating_body_plant",
+        "//systems/analysis",
     ],
 )
 

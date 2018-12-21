@@ -14,6 +14,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -46,7 +47,7 @@ namespace systems {
    constraints (position and velocity level),
  - a time-of-next-update method that can be used to adjust the integrator
    step size in preparation for a discrete update,
- - a method that can update discrete variables when their update time is
+ - methods that can update discrete variables when their update time is
    reached,
  - witness (guard) functions for event isolation,
  - event handlers (reset functions) for making appropriate changes to state
@@ -57,62 +58,115 @@ integrator. Different integrators have different properties; you can choose
 the one that is most appropriate for your application or use the default
 which is adequate for most systems.
 
-<h2>How the simulation is stepped: simulation mechanics for authors of
-  hybrid or discrete systems (Advanced)</h2>
-This documentation is targeted toward users who have created a LeafSystem
-implementing a hybrid or discrete system. For authors of such systems, it is
-useful to understand the simulation mechanics in order to attain the desired
-state behavior over time. This behavior is dependent on the ordering in
-which events are processed.
+<h3>How the simulation is stepped: simulation mechanics for authors of discrete
+and hybrid systems</h3>
 
-The pseudocode for the algorithm that the simulator uses to step the state
-from time and state `{ t0, xc(t0), xd(t0⁻), xa(t0⁻) }` forward in time
-by length _no greater_ than Δt will be presented shortly. We will make use
-of the notation `xd(t⁻)` to denote a variable before any instantaneous
-(unrestricted or discrete) updates, `xd(t*)` to denote the same variable
-after an unrestricted update, and `xd(t⁺)` to denote the same variable after
-a discrete update. The pseudocode follows:
-@verbatim
-procedure Step(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻), Δt)
+This section is targeted toward users who have created a LeafSystem implementing
+a discrete or hybrid system. For authors of such systems, it can be useful to
+understand the simulation details in order to attain the desired state behavior
+over time. This behavior is dependent on the ordering in which discrete events
+and continuous updates are processed. (By "discrete events" we mean to include
+any of Drake's event handlers.) The basic issues and terminology are
+introduced in the @ref discrete_systems module; please look there first before
+proceeding.
 
-// Update any variables (no restrictions).
-{ xc(t0*), xd(t0*), xa(t0⁺) } ←
-    DoAnyUnrestrictedUpdates(t0, xc(t0⁻), xd(t0⁻), xa(t0⁻))
+As pictured in @ref discrete_systems, when a continuous-time system has
+discrete events, the state x can have two significant values at the event 
+time t. These are
+ - x⁻(t), the value of x _before_ the discrete update occurs (○ markers), and 
+ - x⁺(t), the value of x _after_ the discrete update occurs (● markers).
 
-// Update discrete variables.
-xd(t0⁺) ← DoAnyDiscreteUpdates(t0,  xc(t0*), xd(t0*), xa(t0⁺))
+Thus the value of the Context, which contains both time and state, advances 
+from {t, x⁻(t)} to {t, x⁺(t)} as a result of the update. While those Context 
+values are user-visible, the details of stepping here require an intermediate 
+value which we'll denote {t, x*(t)}.
 
-// See how far it is safe to integrate without missing any events.
-tₑ ← NextEventTime(t0, xc(t0*), xd(t0⁺), xa(t0⁺))
+Recall that Drake's state x is partitioned into continuous, discrete, and
+abstract partitions xc, xd, and xa, so `x = { xc, xd, xa }`. Within a single
+step, these are updated in three stages:
+  -# Unrestricted update (can change x)
+  -# Discrete update (can change only xd)
+  -# Continuous update (changes t and xc)
 
-// Integrate continuous variables forward in time.
-h ← min(tₑ - t0, Δt)
-{ t₁, xc(t₁⁻) } ← Integrate(t0, xc(t0*), xd(t0⁺), xa(t0*), h)
+Where needed, we extend the above notation to xc⁻, xa⁺, etc. to indicate the
+value of an individual partition at a particular stage of the stepping
+algorithm.
 
-// Hold discrete and abstract variables values from t0* and t0⁺ to t₁⁻.
-xd(t₁⁻) ← xd(t0⁺)
-xa(t₁⁻) ← xa(t0*)
+The following pseudocode uses the above notation to describe the algorithm that
+the %Simulator uses to advance the system by a single time step, and to clarify
+the effects on time and state of each of the update stages above. This algorithm
+is given a starting Context value `{tₛ, x⁻(tₛ)}` and returns an end Context
+value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ.
 
-DoAnyPublishes(t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻))
+```
+// Advance time and state from start value {tₛ, x⁻(tₛ)} to an end value
+// {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
+procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
 
-return { t₁, xc(t₁⁻), xd(t₁⁻), xa(t₁⁻) }
-@endverbatim
+  // Update any variables (no restrictions).
+  x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x⁻(tₛ))
 
-We can use this algorithm to examine the Initialize() and StepTo() functions,
-which we shall now do in reverse order. StepTo() can be outlined as:
-@verbatim
-procedure StepTo(t_final)
-t ← current_time
-while t ≠ t_final
-  { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) } ←
-        Step(t, xc(t⁻), xd(t⁻), xa(t⁻), t_final - t)
-  { t, xc(t⁻), xd(t⁻), xa(t⁻) } ← { tnew, xc(tnew⁻), xd(tnew⁻), xa(tnew⁻) }
-endwhile
-@endverbatim
-Initialize() is equivalent to Step() with `t0 = initial_time - ε`
-(for `ε ≪ 1`) and `Δt = 0`.
+  // ----------------------------------
+  // Time and state are at {tₛ, x*(tₛ)}
+  // ----------------------------------
+
+  // Update discrete variables.
+  xd⁺(tₛ) ← DoAnyDiscreteUpdates(tₛ, x*(tₛ))
+
+  xc⁺(tₛ) ← xc*(tₛ)  // These values carry over from x*(tₛ).
+  xa⁺(tₛ) ← xa*(tₛ)
+
+  // ----------------------------------
+  // Time and state are at {tₛ, x⁺(tₛ)}
+  // ----------------------------------
+
+  // See how far it is safe to integrate without missing any events.
+  tₑᵥₑₙₜ ← CalcNextEventTime(tₛ, x⁺(tₛ))
+
+  // Integrate continuous variables forward in time. Integration may terminate
+  // before reaching tₛₜₒₚ due to witnessed events.
+  tₛₜₒₚ ← min(tₑᵥₑₙₜ, tₘₐₓ)
+  tₑ, xc⁻(tₑ) ← Integrate(tₛ, x⁺(tₛ), tₛₜₒₚ)
+
+  xd⁻(tₑ) ← xd⁺(tₛ)  // Discrete values are held from x⁺(tₛ).
+  xa⁻(tₑ) ← xa⁺(tₛ)
+
+  // ----------------------------------
+  // Time and state are at {tₑ, x⁻(tₑ)}
+  // ----------------------------------
+
+  DoAnyPublishes(tₑ, x⁻(tₑ))
+
+  return {tₑ, x⁻(tₑ)}
+```
+
+We can use the notation and pseudocode to flesh out the StepTo() and
+Initialize() functions:
+```
+// Advance the simulation until time tₘₐₓ.
+procedure StepTo(tₘₐₓ)
+  t ← current_time
+  while t < tₘₐₓ
+    {tₑ, x⁻(tₑ)} ← Step(t, x⁻(t), tₘₐₓ)
+    {t, x⁻(t)} ← {tₑ, x⁻(tₑ)}
+  endwhile
+
+// Update time and state to {t₀, x⁻(t₀)}, the value the Context should contain
+// at the start of the first simulation step.
+procedure Initialize(t₀, x₀)
+  x⁻(t₀) ← DoAnyUpdates as in Step()
+
+  // ----------------------------------
+  // Time and state are at {t₀, x⁻(t₀)}
+  // ----------------------------------
+
+  DoAnyPublishes(t₀, x⁻(t₀))
+```
+Thus Initialize() performs initialization updates, does no integration, and
+processes any publish events that trigger at t₀.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
+
 Instantiated templates for the following kinds of T's are provided and
 available to link against in the containing library:
  - double
@@ -143,14 +197,37 @@ class Simulator {
   explicit Simulator(const System<T>& system,
                      std::unique_ptr<Context<T>> context = nullptr);
 
-  /// Prepares the %Simulator for a simulation. If the owned Context does not
-  /// satisfy the System's constraints, an attempt is made to modify the values
-  /// of the continuous state variables to satisfy the constraints. This method
-  /// will throw `std::logic_error` if the combination of options doesn't make
-  /// sense, and `std::runtime_error` if it is unable to find a
-  /// constraint-satisfying initial condition.
-  /// @warning You should call this method if you alter the state (including
-  ///          time) in the owned context *before calling StepTo()*.
+  /// Create a %Simulator which additionally maintains ownership of the System.
+  Simulator(std::unique_ptr<const System<T>> system,
+            std::unique_ptr<Context<T>> context = nullptr);
+
+  /// Prepares the %Simulator for a simulation. Initialization events are
+  /// triggered and handled, and time-triggered publish events that are
+  /// scheduled for the initial time are handled also. The active integrator's
+  /// Initialize() method is invoked and statistics are reset. (See the class
+  /// documentation for more information.) We recommend calling Initialize()
+  /// explicitly prior to beginning a simulation so that error conditions
+  /// will be discovered early. However, Initialize() will be called
+  /// automatically by the first StepTo() call if it hasn't already been called.
+  ///
+  /// @note If you make a change to the Context or to Simulator options between
+  /// StepTo() calls you should consider whether to call Initialize() before
+  /// resuming; StepTo() will not do that automatically for you. Whether to do
+  /// so depends on whether you want the above initialization operations
+  /// performed. For example, if you changed the time you will likely want the
+  /// time-triggered events to be recalculated in case one is due at the new
+  /// starting time.
+  ///
+  /// @warning Initialize() does not automatically attempt to satisfy System
+  /// constraints -- it is up to you to make sure that constraints are
+  /// satisifed by the initial conditions.
+  ///
+  /// This method will throw `std::logic_error` if the combination of options
+  /// doesn't make sense. Other failures are possible from the System and
+  /// integrator in use.
+  // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
+  // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
+  //              automatically by StepTo() if the Context has changed.
   void Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
@@ -160,15 +237,19 @@ class Simulator {
   /// computations. Be sure to enclose your simulation in a `try-catch` block
   /// and display the `what()` message.
   ///
-  /// We recommend that you call `Initialize()` prior to making the first call
-  /// to `StepTo()`. However, if you don't it will be called for you the first
+  /// We recommend that you call Initialize() prior to making the first call
+  /// to StepTo(). However, if you don't it will be called for you the first
   /// time that you attempt a step, possibly resulting in unexpected error
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
   ///
+  /// @warning You should consider calling Initialize() if you alter the
+  /// the Context or Simulator options between successive StepTo() calls. See
+  /// Initialize() for more information.
+  ///
   /// @param boundary_time The time to advance the context to.
-  /// @pre The simulation state is valid (i.e., no discrete updates or state
-  /// projections are necessary) at the present time.
+  /// @pre The internal Context satisfies all System constraints or will after
+  ///      pending Context updates are performed.
   void StepTo(const T& boundary_time);
 
   /// Slow the simulation down to *approximately* synchronize with real time
@@ -384,6 +465,11 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
+  // All constructors delegate to here.
+  Simulator(const System<T>* system,
+            std::unique_ptr<const System<T>> owned_system,
+            std::unique_ptr<Context<T>> context);
+
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
@@ -393,10 +479,10 @@ class Simulator {
   void HandlePublish(const EventCollection<PublishEvent<T>>& events);
 
   bool IntegrateContinuousState(const T& next_publish_dt,
-      const T& next_update_dt,
-      const T& next_timed_event_time,
-      const T& boundary_dt,
-      CompositeEventCollection<T>* events);
+                                const T& next_update_dt,
+                                const T& time_of_next_timed_event,
+                                const T& boundary_dt,
+                                CompositeEventCollection<T>* events);
 
   void IsolateWitnessTriggers(
       const std::vector<const WitnessFunction<T>*>& witnesses,
@@ -427,6 +513,11 @@ class Simulator {
 
   static constexpr double kDefaultAccuracy = 1e-3;  // 1/10 of 1%.
   static constexpr double kDefaultInitialStepSizeAttempt = 1e-3;
+
+  // Do not use this.  This is valid iff the constructor is passed a
+  // unique_ptr (allowing the Simulator to maintain ownership).  Use the
+  // system_ variable instead, which is valid always.
+  const std::unique_ptr<const System<T>> owned_system_;
 
   const System<T>& system_;              // Just a reference; not owned.
   std::unique_ptr<Context<T>> context_;  // The trajectory Context.
@@ -469,25 +560,25 @@ class Simulator {
   bool redetermine_active_witnesses_{true};
 
   // Per step events that are to be handled on every "major time step" (i.e.,
-  // every successful completion of a step). This collection is set within
-  // Initialize().
+  // every successful completion of a step). This collection is constructed
+  // within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
   // Timed events can be triggered either at a particular time (like an alarm)
-  // or periodically. This collection is set within Initialize().
+  // or periodically. This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> timed_events_;
 
   // Witnessed events are triggered as a witness function crosses zero during
-  // StepTo(). This collection is set within Initialize().
+  // StepTo(). This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next
-  // call to StepTo() or StepInPlace().
+  // call to StepTo().
   bool timed_or_witnessed_event_triggered_{false};
 
   // The time that the next timed event is to be handled. This value is set in
   // both Initialize() and StepTo().
-  T next_timed_event_time_{-1};
+  T next_timed_event_time_{std::numeric_limits<double>::quiet_NaN()};
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
@@ -507,7 +598,20 @@ class Simulator {
 template <typename T>
 Simulator<T>::Simulator(const System<T>& system,
                         std::unique_ptr<Context<T>> context)
-    : system_(system), context_(std::move(context)) {
+    : Simulator(&system, nullptr, std::move(context)) {}
+
+template <typename T>
+Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
+                        std::unique_ptr<Context<T>> context) :
+    Simulator(nullptr, std::move(owned_system), std::move(context)) {}
+
+template <typename T>
+Simulator<T>::Simulator(const System<T>* system,
+                        std::unique_ptr<const System<T>> owned_system,
+                        std::unique_ptr<Context<T>> context)
+    : owned_system_(std::move(owned_system)),
+      system_(owned_system_ ? *owned_system_ : *system),
+      context_(std::move(context)) {
   // Setup defaults that should be generally reasonable.
   const double max_step_size = 0.1;
   const double initial_step_size = 1e-4;
@@ -537,10 +641,59 @@ Simulator<T>::Simulator(const System<T>& system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+// This function computes the previous (i.e., that which is one step closer to
+// negative infinity) *non-denormalized* (i.e., either zero or normalized)
+// floating-point number from `value`. nexttoward() provides very similar
+// functionality except for its proclivity for producing denormalized numbers
+// that typically only result from arithmetic underflow and are hence dangerous
+// to use in further floating point operations. Thus,
+// GetPreviousNormalizedValue() acts like nexttoward(value, -inf) but without
+// producing denormalized numbers.
+// @param value a floating point value that is not infinity or NaN. Denormalized
+//        inputs are treated as zero to attain consistent behavior regardless
+//        of the setting of the FPU "treat denormalized numbers as zero" mode
+//        (which can be activated through linking with shared libraries that
+//        use gcc's -ffast-math option).
+template <class T>
+T GetPreviousNormalizedValue(const T& value) {
+  using std::nexttoward;
+  using std::abs;
+
+  // There are three distinct cases to be handled:
+  //     -∞        -10⁻³⁰⁸  0      10⁻³⁰⁸      ∞
+  //     |-----------|------|------|----------|
+  // (a) ^           ^              ^         ^   [-∞, 10⁻³⁰⁸] ∪ (10³⁰⁸, ∞]
+  // (b)              ^           ^               (-10⁻³⁰⁸, 10⁻³⁰⁸)
+  // (c)                           ^              10⁻³⁰⁸
+
+  // Treat denormalized numbers as zero. This code is designed to produce the
+  // same outputs for `value` regardless of the setting of the FPU's DAZ ("treat
+  // denormalized numbers as zero") mode.
+  const double min_normalized = std::numeric_limits<double>::min();
+  const T& value_mod = (abs(value) < min_normalized) ? 0.0 : value;
+
+  // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf)
+  // returns denormalized numbers for these two values.
+  if (value_mod == 0.0)
+    return -std::numeric_limits<double>::min();
+  if (value_mod == min_normalized)
+    return 0.0;
+
+  // Case (a) uses nexttoward(.).
+  const long double inf = std::numeric_limits<long double>::infinity();
+  const double prev_value = nexttoward(value, -inf);
+  DRAKE_DEMAND(
+      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
+      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
+  return prev_value;
+}
+}  // namespace internal
+#endif
+
 template <typename T>
 void Simulator<T>::Initialize() {
-  using std::nexttoward;
-
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
@@ -564,15 +717,18 @@ void Simulator<T>::Initialize() {
   DRAKE_DEMAND(per_step_events_ != nullptr);
   system_.GetPerStepEvents(*context_, per_step_events_.get());
 
+  // Allocate timed events collection.
+  timed_events_ = system_.AllocateCompositeEventCollection();
+  DRAKE_DEMAND(timed_events_ != nullptr);
+
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
-  const long double inf = std::numeric_limits<long double>::infinity();
-  context_->set_time(nexttoward(current_time, -inf));
+  const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
+      current_time);
+  context_->set_time(slightly_before_current_time);
 
   // Get the next timed event.
-  timed_events_ = system_.AllocateCompositeEventCollection();
-  DRAKE_DEMAND(timed_events_ != nullptr);
   next_timed_event_time_ =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
@@ -587,9 +743,11 @@ void Simulator<T>::Initialize() {
   witnessed_events_ = system_.AllocateCompositeEventCollection();
 
   // Do any publishes last. Merge the initialization events with current_time
-  // timed events (if any).
-  if (timed_or_witnessed_event_triggered_)
+  // timed events (if any). We expect all initialization events to precede
+  // any timed events in the merged collection.
+  if (timed_or_witnessed_event_triggered_) {
     init_events->Merge(*timed_events_);
+  }
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
@@ -911,7 +1069,7 @@ void Simulator<T>::IsolateWitnessTriggers(
 // @param next_publish_dt the *time step* at which the next publish event
 //        occurs.
 // @param next_update_dt the *time step* at which the next update event occurs.
-// @param next_timed_event_time the *time* at which the next timed event occurs.
+// @param time_of_next_event the *time* at which the next timed event occurs.
 // @param boundary_dt the maximum time step to take.
 // @param events a non-null collection of events, which the method will clear
 //        on entry.
@@ -919,10 +1077,8 @@ void Simulator<T>::IsolateWitnessTriggers(
 //          that an event needs to be handled at the state on return.
 template <class T>
 bool Simulator<T>::IntegrateContinuousState(
-    const T& next_publish_dt,
-    const T& next_update_dt,
-    const T& next_timed_event_time,
-    const T& boundary_dt,
+    const T& next_publish_dt, const T& next_update_dt,
+    const T& time_of_next_timed_event, const T& boundary_dt,
     CompositeEventCollection<T>* events) {
   using std::abs;
 
@@ -936,16 +1092,16 @@ bool Simulator<T>::IntegrateContinuousState(
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
 
   // Note: this function is only called in one place and under the conditions
-  // that (1) t0 + next_update_dt equals *either* next_timed_event_time *or*
+  // that (1) t0 + next_update_dt equals *either* time_of_next_timed_event *or*
   // infinity and (2) t0 + next_publish_dt equals *either*
-  // next_timed_event_time or infinity. This function should work without
+  // time_of_next_timed_event or infinity. This function should work without
   // these assumptions being valid but might benefit from additional review.
   const double inf = std::numeric_limits<double>::infinity();
   const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
   DRAKE_ASSERT(next_update_dt == inf ||
-      abs(t0 + next_update_dt - next_timed_event_time) < zero_tol);
+      abs(t0 + next_update_dt - time_of_next_timed_event) < zero_tol);
   DRAKE_ASSERT(next_publish_dt == inf ||
-      abs(t0 + next_publish_dt - next_timed_event_time) < zero_tol);
+      abs(t0 + next_publish_dt - time_of_next_timed_event) < zero_tol);
 
   // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
@@ -1048,7 +1204,7 @@ bool Simulator<T>::IntegrateContinuousState(
     case IntegratorBase<T>::kReachedPublishTime:
       // Next line sets the time to the exact event time rather than
       // introducing rounding error by summing the context time + dt.
-      context_->set_time(next_timed_event_time);
+      context_->set_time(time_of_next_timed_event);
       return true;            // Timed event hit.
       break;
 

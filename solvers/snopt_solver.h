@@ -23,11 +23,10 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-             const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override {
-    throw std::runtime_error("Not implemented yet.");
-  }
+  void Solve(const MathematicalProgram& prog,
+             const optional<Eigen::VectorXd>& initial_guess,
+             const optional<SolverOptions>& solver_options,
+             MathematicalProgramResult* result) const override;
 
   SolverId solver_id() const override;
 
@@ -38,6 +37,14 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
       const MathematicalProgram& prog) const override;
 
   static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+
+  /// @return if the solver is thread safe. SNOPT f2c interface uses global
+  /// variables, hence it is not thread safe. SNOPT fortran interface is thread
+  /// safe.
+  static bool is_thread_safe();
+
+  /// For some reason, SNOPT 7.4 fails to detect a simple LP being unbounded.
+  static bool is_bounded_lp_broken();
 };
 
 }  // namespace solvers

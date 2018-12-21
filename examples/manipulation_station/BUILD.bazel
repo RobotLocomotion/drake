@@ -33,8 +33,8 @@ drake_cc_library(
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
         "//systems/sensors/dev:rgbd_camera",
@@ -59,8 +59,8 @@ drake_cc_library(
         "//examples/kuka_iiwa_arm:iiwa_lcm",
         "//lcm",
         "//manipulation/schunk_wsg:schunk_wsg_lcm",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/framework",
         "//systems/lcm",
         "//systems/primitives",
@@ -100,8 +100,9 @@ drake_cc_binary(
     deps = [
         ":manipulation_station",
         "//geometry:geometry_visualization",
-        "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",
+        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
+        "//systems/sensors:image_to_lcm_image_array_t",
         "@gflags",
     ],
 )
@@ -152,6 +153,15 @@ drake_py_binary(
     tags = vtk_test_tags(),
     test_rule_args = ["--test --target_realtime_rate=0.0 --duration=0.1"],
     test_rule_timeout = "moderate",  # Frequently exceeds short timeout in dbg.
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "print_station_context",
+    srcs = ["print_station_context.py"],
+    add_test_rule = 1,
     deps = [
         "//bindings/pydrake",
     ],

@@ -1,6 +1,6 @@
 #include <gflags/gflags.h>
 
-#include "drake/examples/fibonacci/fibonacci.h"
+#include "drake/examples/fibonacci/fibonacci_difference_equation.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
@@ -17,11 +17,8 @@ int DoMain() {
 
   systems::Simulator<double> simulator(fibonacci);
 
-  // Set the initial conditions.
-  fibonacci.Initialize(&simulator.get_mutable_context());
-
   // Simulate forward until t=h*steps.
-  simulator.StepTo(FibonacciDifferenceEquation::kPeriod * FLAGS_steps);
+  simulator.StepTo(FLAGS_steps * FibonacciDifferenceEquation::kPeriod);
 
   return 0;
 }

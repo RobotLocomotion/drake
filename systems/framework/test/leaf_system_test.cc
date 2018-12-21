@@ -3,6 +3,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <typeinfo>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
@@ -535,10 +536,11 @@ TEST_F(LeafSystemTest, NumericParameters) {
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
 
-  EXPECT_EQ(system_.num_numeric_parameters(), 1);
+  EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
   const DependencyTracker& pn_tracker =
       context->get_tracker(system_.pn_ticket());
-  for (NumericParameterIndex i(0); i < system_.num_numeric_parameters(); ++i) {
+  for (NumericParameterIndex i(0);
+       i < system_.num_numeric_parameter_groups(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(system_.numeric_parameter_ticket(i));
     EXPECT_TRUE(pn_tracker.HasPrerequisite(tracker));
@@ -1048,13 +1050,72 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
 GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
-  ASSERT_EQ(context->num_numeric_parameters(), 1);
+  ASSERT_EQ(context->num_numeric_parameter_groups(), 1);
   const BasicVector<double>& param = context->get_numeric_parameter(0);
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
   EXPECT_EQ(1.1, param.GetAtIndex(0));
   EXPECT_EQ(2.2, param.GetAtIndex(1));
+}
+
+// Tests that various DeclareDiscreteState() signatures work correctly and
+// that the model values get used in SetDefaultContext().
+GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
+  class DeclaredModelDiscreteStateSystem : public LeafSystem<double> {
+   public:
+    // This should produce three discrete variable groups.
+    DeclaredModelDiscreteStateSystem() {
+      // Takes a BasicVector.
+      indexes_.push_back(
+          DeclareDiscreteState(MyVector2d(Eigen::Vector2d(1., 2.))));
+      // Takes an Eigen vector.
+      indexes_.push_back(DeclareDiscreteState(Eigen::Vector3d(3., 4., 5.)));
+      // Four state variables, initialized to zero.
+      indexes_.push_back(DeclareDiscreteState(4));
+    }
+    std::vector<DiscreteStateIndex> indexes_;
+  };
+
+  DeclaredModelDiscreteStateSystem dut;
+  EXPECT_EQ(dut.num_discrete_state_groups(), 3);
+  for (int i=0; i < static_cast<int>(dut.indexes_.size()); ++i)
+    EXPECT_TRUE(dut.indexes_[i] == i);
+
+  auto context = dut.CreateDefaultContext();
+  DiscreteValues<double>& xd = context->get_mutable_discrete_state();
+  EXPECT_EQ(xd.num_groups(), 3);
+
+  // Concrete type and value should have been preserved.
+  BasicVector<double>& xd0 = xd.get_mutable_vector(0);
+  EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+
+  // Eigen vector should have been stored in a BasicVector-type object.
+  BasicVector<double>& xd1 = xd.get_mutable_vector(1);
+  EXPECT_EQ(typeid(xd1), typeid(BasicVector<double>));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+
+  // Discrete state with no model should act as though it were given an
+  // all-zero Eigen vector model.
+  BasicVector<double>& xd2 = xd.get_mutable_vector(2);
+  EXPECT_EQ(typeid(xd2), typeid(BasicVector<double>));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
+
+  // Now make changes, then see if SetDefaultContext() puts them back.
+  xd0.SetFromVector(Eigen::Vector2d(9., 10.));
+  xd1.SetFromVector(Eigen::Vector3d(11., 12., 13.));
+  xd2.SetFromVector(Eigen::Vector4d(1., 2., 3., 4.));
+
+  // Of course that had to work, but let's just prove it ...
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(9., 10.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(11., 12., 13.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(1., 2., 3., 4.));
+
+  dut.SetDefaultContext(&*context);
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
 }
 
 // Tests that DeclareAbstractState works expectedly.
@@ -1914,6 +1975,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
 
   // Expose some protected methods for testing.
   using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareDiscreteState;
   using LeafSystem<double>::DeclareEqualityConstraint;
   using LeafSystem<double>::DeclareInequalityConstraint;
   using LeafSystem<double>::DeclareNumericParameter;
@@ -2068,6 +2130,16 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   EXPECT_FALSE(constraint3.is_equality_constraint());
   EXPECT_THAT(constraint3.description(), ::testing::ContainsRegex(
       "^output 0 of type .*ConstraintBasicVector<double,44>$"));
+
+  // Declaring constrained model discrete state should add constraints.
+  // We want `vec[0] >= 55` on the state vector.
+  using DiscreteStateVector = ConstraintBasicVector<double, 55>;
+  dut.DeclareDiscreteState(DiscreteStateVector{});
+  EXPECT_EQ(dut.get_num_constraints(), 5);
+  const SystemConstraint<double>& constraint4 = dut.get_constraint(Index{4});
+  EXPECT_FALSE(constraint4.is_equality_constraint());
+  EXPECT_THAT(constraint4.description(), ::testing::ContainsRegex(
+      "^discrete state of type .*ConstraintBasicVector<double,55>$"));
 
   // We'll work through the Calc results all at the end, so that we don't
   // change the shape of the System and Context while we're Calc'ing.

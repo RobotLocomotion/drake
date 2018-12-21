@@ -23,10 +23,10 @@ FreeBody::CalculateExactRotationalSolutionABInitiallyAligned(
   const double J = get_J();
 
   // Initial values of wx, wy, wz.
-  const Vector3d& w_NB_B_initial = get_w_NB_B_initial();
-  const double wx0 = w_NB_B_initial[0];
-  const double wy0 = w_NB_B_initial[1];
-  const double wz0 = w_NB_B_initial[2];
+  const Vector3d& initial_w_NB_B = get_initial_w_NB_B();
+  const double wx0 = initial_w_NB_B[0];
+  const double wy0 = initial_w_NB_B[1];
+  const double wz0 = initial_w_NB_B[2];
 
   // Intermediate calculations for quaternion solution.
   const double p =
@@ -54,14 +54,15 @@ FreeBody::CalculateExactRotationalSolutionABInitiallyAligned(
   const double wx = wx0 * std::cos(s * t) + wy0 * std::sin(s * t);
   const double wy = -wx0 * std::sin(s * t) + wy0 * std::cos(s * t);
   const double wz = wz0;
+  const Vector3d w_NB_B(wx, wy, wz);
 
   // Analytical solution for time-derivatives of wx, wy, wz.
   const double wxDt = (1 - J / I) * wy * wz;
   const double wyDt = (-1 + J / I) * wx * wz;
   const double wzDt = 0.0;
+  const Vector3d wDt_NB_B(wxDt, wyDt, wzDt);  // Same as alf_NB_B.
 
-  return std::make_tuple(
-      quat_AB, Vector3d(wx, wy, wz), Vector3d(wxDt, wyDt, wzDt));
+  return std::make_tuple(quat_AB, w_NB_B, wDt_NB_B);
 }
 
 std::tuple<Quaterniond, Vector4d, Vector3d, Vector3d>
@@ -78,9 +79,9 @@ FreeBody::CalculateExactRotationalSolutionNB(const double t) const {
   // Multiply (Hamilton product) the quaternions quat_NA * quat_AB to produce
   // quat_NB, which is analogous to multiplying rotation matrices R_NA * R_AB
   // to produce the rotation matrix R_NB.
-  // In other words, account for quat_NB_initial (which is quat_NA) to calculate
+  // In other words, account for initial_quat_NB (which is quat_NA) to calculate
   // the quaternion quat_NB that is analogous to the R_NB rotation matrix.
-  const Quaterniond& quat_NA = get_quat_NB_initial();
+  const Quaterniond& quat_NA = get_initial_quat_NB();
   const Quaterniond quat_NB = quat_NA * quat_AB;
 
   // Analytical solution for time-derivative quaternion in B.
@@ -101,42 +102,30 @@ FreeBody::CalculateExactRotationalSolutionNB(const double t) const {
 std::tuple<Vector3d, Vector3d, Vector3d>
 FreeBody::CalculateExactTranslationalSolution(const double t) const {
   // Initial values of x, y, z and ẋ, ẏ, ż.
-  const Vector3d& xyz_initial = get_p_NoBcm_N_initial();
-  const Vector3d& xyzDt_initial =
-      GetInitialVelocityOfBcmInWorldExpressedInWorld();
-  const double x0 = xyz_initial[0];
-  const double y0 = xyz_initial[1];
-  const double z0 = xyz_initial[2];
-  const double xDt0 = xyzDt_initial[0];
-  const double yDt0 = xyzDt_initial[1];
-  const double zDt0 = xyzDt_initial[2];
+  const Vector3d& initial_xyz = get_initial_p_NoBcm_N();
+  const Vector3d& initial_xyzDt = CalcInitial_v_NBcm_N();
 
-  // Analytical solution for ẋ, ẏ, z̈ (only gravitational forces on body).
-  const Vector3d& gravity = get_uniform_gravity_expressed_in_world();
-  const double x_acceleration = gravity[0];
-  const double y_acceleration = gravity[1];
-  const double z_acceleration = gravity[2];
-
-  // Analytical solution for ẋ, ẏ, ż (since acceleration is constant).
-  const double xDt = xDt0 + x_acceleration * t;
-  const double yDt = yDt0 + y_acceleration * t;
-  const double zDt = zDt0 + z_acceleration * t;
-
-  // Analytical solution for x, y, z (since acceleration is constant).
-  const double x = x0 + xDt0 * t + 0.5 * x_acceleration * t * t;
-  const double y = y0 + yDt0 * t + 0.5 * y_acceleration * t * t;
-  const double z = z0 + zDt0 * t + 0.5 * z_acceleration * t * t;
-
-  // Create a tuple to package for returning.
+  // Create a tuple to package for returning the results.
   std::tuple<Vector3d, Vector3d, Vector3d> returned_tuple;
   Vector3d& xyz = std::get<0>(returned_tuple);
   Vector3d& xyzDt = std::get<1>(returned_tuple);
   Vector3d& xyzDDt = std::get<2>(returned_tuple);
 
-  // Fill returned_tuple with results.
-  xyz << x, y, z;
-  xyzDt << xDt, yDt, zDt;
-  xyzDDt << x_acceleration, y_acceleration, z_acceleration;
+  // Analytical solution for ẍ, ÿ, z̈ (only gravitational forces on body).
+  const Vector3d& gravity = get_uniform_gravity_expressed_in_world();
+  xyzDDt << gravity;
+
+  // Analytical solution for ẋ, ẏ, ż (since acceleration is constant).
+  // ẋ = ẋ(0) + ẍ * t,   where ẍ = 0.
+  // ẏ = ẏ(0) + ÿ * t,   where ÿ = 0.
+  // ż = ż(0) + z̈ * t,   where z̈ = gravity.
+  xyzDt << initial_xyzDt + t * gravity;
+
+  // Analytical solution for x, y, z (since acceleration is constant).
+  // x = x(0) + ẋ(0) * t + 1/2 * ẍ * t^2,   where ẍ = 0.
+  // y = y(0) + ẏ(0) * t + 1/2 * ÿ * t^2,   where ÿ = 0.
+  // z = z(0) + ż(0) * t + 1/2 * z̈ * t^2,   where z̈ = gravity.
+  xyz << initial_xyz + t * initial_xyzDt + 0.5 * t * t * gravity;
 
   return returned_tuple;
 }

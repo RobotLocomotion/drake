@@ -1,0 +1,23 @@
+<?xml version='1.0'?>
+<!-- Note: This is a URDF file used for testing Parser package path
+
+     functionality. It relies upon ../meshes/box.obj. 
+-->
+<robot name='box'>
+  <!-- The model for a solid box of uniform density. -->
+  <link name='box'>
+    <inertial>
+      <mass value="1.0" />
+    </inertial>
+    <visual name='visual'>
+      <geometry>
+        <mesh filename="package://box_model/meshes/box.obj" />
+      </geometry>
+    </visual>
+    <collision name='collision'>
+      <geometry>
+        <mesh filename="package://box_model/meshes/box.obj" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

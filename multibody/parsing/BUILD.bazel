@@ -1,0 +1,353 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.config",
+        "test/**/*.obj",
+        "test/**/*.sdf",
+        "test/**/*.urdf",
+        "test/**/*.xml",
+    ]),
+    visibility = [
+        "//visibility:public",
+    ],
+)
+
+drake_cc_package_library(
+    name = "parsing",
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":detail_misc",
+        ":detail_scene_graph",
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
+        ":package_map",
+        ":parser",
+        ":sdf_parser",
+        ":urdf_parser",
+    ],
+)
+
+drake_cc_library(
+    name = "package_map",
+    srcs = [
+        "package_map.cc",
+    ],
+    hdrs = [
+        "package_map.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        "//common",
+        "@spruce",
+        "@tinydir",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_misc",
+    srcs = [
+        "detail_common.cc",
+        "detail_ignition.cc",
+        "detail_path_utils.cc",
+        "detail_tinyxml.cc",
+    ],
+    hdrs = [
+        "detail_common.h",
+        "detail_ignition.h",
+        "detail_path_utils.h",
+        "detail_tinyxml.h",
+    ],
+    visibility = [
+        "//attic/multibody/parsers:__pkg__",
+    ],
+    deps = [
+        ":package_map",
+        "//common:essential",
+        "//math:geometric_transform",
+        "//multibody/plant:coulomb_friction",
+        "@sdformat",
+        "@spruce",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_scene_graph",
+    srcs = [
+        "detail_scene_graph.cc",
+    ],
+    hdrs = [
+        "detail_scene_graph.h",
+    ],
+    install_hdrs_exclude = [
+        # This header includes `sdformat` directly, which we do not want to
+        # expose externally.
+        "detail_scene_graph.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
+        ":package_map",
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//multibody/plant:coulomb_friction",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
+    name = "sdf_parser",
+    hdrs = [
+        "sdf_parser.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":detail_sdf_parser",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_sdf_parser",
+    srcs = [
+        "detail_sdf_parser.cc",
+    ],
+    hdrs = [
+        "detail_sdf_parser.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
+        ":detail_scene_graph",
+        "//multibody/plant",
+        "@sdformat",
+    ],
+)
+
+drake_cc_library(
+    name = "urdf_parser",
+    hdrs = [
+        "urdf_parser.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":detail_urdf_parser",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_urdf_parser",
+    srcs = [
+        "detail_urdf_geometry.cc",
+        "detail_urdf_parser.cc",
+    ],
+    hdrs = [
+        "detail_urdf_geometry.h",
+        "detail_urdf_parser.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
+        ":package_map",
+        "//multibody/plant",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "parser",
+    srcs = [
+        "parser.cc",
+    ],
+    hdrs = [
+        "parser.h",
+    ],
+    visibility = [
+        "//visibility:public",
+    ],
+    deps = [
+        ":detail_sdf_parser",
+        ":detail_urdf_parser",
+    ],
+)
+
+drake_cc_library(
+    name = "test_loaders",
+    testonly = 1,
+    srcs = [
+        "test/test_loaders.cc",
+    ],
+    hdrs = [
+        "test/test_loaders.h",
+    ],
+    visibility = [
+        "//visibility:private",
+    ],
+    deps = [
+        ":detail_misc",
+        ":parser",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "acrobot_parser_test",
+    data = [
+        ":test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    # TODO(sam.creasey) Write a printer function (or another
+    # workaround) for ModelLoadFunction so that gtest won't trigger
+    # memcheck.  Related to
+    # https://github.com/google/googletest/issues/1610
+    tags = [
+        "no_memcheck",
+    ],
+    deps = [
+        ":test_loaders",
+        "//common/test_utilities",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "common_parser_test",
+    data = [
+        ":test_models",
+    ],
+    # TODO(sam.creasey) Write a printer function (or another
+    # workaround) for ModelLoadFunction so that gtest won't trigger
+    # memcheck.  Related to
+    # https://github.com/google/googletest/issues/1610
+    tags = [
+        "no_memcheck",
+    ],
+    deps = [
+        ":test_loaders",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "parser_test",
+    data = [
+        ":test_models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":parser",
+        "//common:find_resource",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_sdf_parser_test",
+    data = [
+        ":test_models",
+        "//manipulation/models/iiwa_description:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":detail_sdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_urdf_parser_test",
+    data = [
+        ":test_models",
+        "//examples/atlas:models",
+        "//manipulation/models/iiwa_description:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":detail_urdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_scene_graph_test",
+    deps = [
+        ":detail_scene_graph",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_urdf_geometry_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":detail_urdf_parser",
+        "//common:find_resource",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "package_map_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":package_map",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_path_utils_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":detail_misc",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_tinyxml_test",
+    deps = [
+        ":detail_misc",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

@@ -51,7 +51,6 @@ struct LaneEnd {
 /// text-logging. It is not intended for serialization.
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
-// TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
 /// A 3-dimensional rotation.
 class Rotation {
  public:
@@ -88,8 +87,10 @@ class Rotation {
     quaternion_ = quaternion.normalized();
   }
 
-  /// Provides a rotation matrix representation of the rotation.
-  Matrix3<double> matrix() const { return quaternion_.toRotationMatrix(); }
+  /// Provides a 3x3 rotation matrix representation of "this" rotation.
+  Matrix3<double> matrix() const {
+    return math::RotationMatrix<double>(quaternion_).matrix();
+  }
 
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).

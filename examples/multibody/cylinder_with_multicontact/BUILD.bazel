@@ -22,7 +22,7 @@ drake_cc_library(
         "//geometry:geometry_ids",
         "//geometry:scene_graph",
         "//math:geometric_transform",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 
@@ -31,7 +31,7 @@ drake_cc_googletest(
     deps = [
         ":make_cylinder_plant",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/multibody_tree/multibody_plant",
+        "//multibody/plant",
     ],
 )
 
@@ -60,7 +60,7 @@ drake_cc_binary(
         ":make_cylinder_plant",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
-        "//multibody/multibody_tree/multibody_plant:contact_results_to_lcm",
+        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/lcm:lcm_pubsub_system",

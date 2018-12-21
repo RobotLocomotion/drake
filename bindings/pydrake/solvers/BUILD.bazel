@@ -19,6 +19,10 @@ load(
     "drake_py_test",
     "drake_py_unittest",
 )
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_py_library_aliases",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -35,18 +39,6 @@ drake_py_library(
     deps = [
         "//bindings/pydrake:module_py",
     ],
-)
-
-# TODO(eric.cousineau): Move this into `multibody`.
-drake_pybind_library(
-    name = "ik_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_srcs = ["ik_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
-    ],
-    py_srcs = ["_ik_extra.py"],
 )
 
 # TODO(eric.cousineau): Rename `mathematicalprogram` to
@@ -100,16 +92,24 @@ drake_pybind_library(
     py_deps = [":mathematicalprogram_py"],
 )
 
+PY_LIBRARIES_ATTIC_ALIASES = [
+    ":ik_py",
+]
+
+drake_py_library_aliases(
+    actual_subdir = "bindings/pydrake/attic/solvers",
+    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
-    ":ik_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mosek_py",
     ":osqp_py",
 ]
 
-PY_LIBRARIES = [
+PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
     ":module_py",
 ]
 
@@ -186,5 +186,6 @@ drake_py_unittest(
 )
 
 add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
     enable_clang_format_lint = True,
 )

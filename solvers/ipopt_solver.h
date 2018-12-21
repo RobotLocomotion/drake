@@ -1,12 +1,44 @@
 #pragma once
 
+#include <ostream>
 #include <string>
+
+#include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 
 namespace drake {
 namespace solvers {
+
+/**
+ * The details of IPOPT solvers after calling Solve function. The users can get
+ * the details by
+ * MathematicalProgramResult::get_solver_details().GetValue<IpoptSolverDetails>();
+ */
+struct IpoptSolverDetails {
+  /**
+   * The final status of the solver. Please refer to section 6 in
+   * Introduction to Ipopt: A tutorial for downloading, installing, and using
+   * Ipopt.
+   * You could also find the meaning of the status as Ipopt::SolverReturn
+   * defined in IpAlgTypes.hpp
+   */
+  int status{};
+  /// The final value for the lower bound multiplier.
+  Eigen::VectorXd z_L;
+  /// The final value for the upper bound multiplier.
+  Eigen::VectorXd z_U;
+  /// The final value for the constraint function.
+  Eigen::VectorXd g;
+  /// The final value for the constraint multiplier.
+  Eigen::VectorXd lambda;
+
+  /** Convert status field to string. This function is useful if you want to
+   * interpret the meaning of status.
+   */
+  const char* ConvertStatusToString() const;
+};
 
 class IpoptSolver : public MathematicalProgramSolverInterface {
  public:
@@ -23,11 +55,10 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
 
   SolutionResult Solve(MathematicalProgram& prog) const override;
 
-  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-             const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override {
-    throw std::runtime_error("Not implemented yet.");
-  }
+  void Solve(const MathematicalProgram& prog,
+             const optional<Eigen::VectorXd>& initial_guess,
+             const optional<SolverOptions>& solver_options,
+             MathematicalProgramResult* result) const override;
 
   SolverId solver_id() const override;
 

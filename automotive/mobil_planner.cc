@@ -121,7 +121,7 @@ void MobilPlanner<T>::CalcLaneDirection(const systems::Context<T>& context,
 
   // Obtain the state if we've allocated it.
   RoadPosition ego_rp;
-  if (context.template get_state().get_abstract_state().size() != 0) {
+  if (context.get_state().get_abstract_state().size() != 0) {
     DRAKE_ASSERT(context.get_num_abstract_states() == 1);
     ego_rp = context.template get_abstract_state<RoadPosition>(0);
   }

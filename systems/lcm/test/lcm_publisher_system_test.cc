@@ -218,8 +218,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   LcmtDrakeSignalTranslator translator(kDim);
 
   // Instantiates the "device under test".
-  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm);
-  dut->set_publish_period(kPublishPeriod);
+  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm,
+                                             kPublishPeriod);
   unique_ptr<Context<double>> context = dut->AllocateContext();
 
   context->FixInputPort(kPortNumber,

@@ -419,34 +419,19 @@ optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
 bool DrealSolver::is_available() { return true; }
 
 namespace {
-
-// Extracts double value of @p option_name from @p prog. If not specified,
+// Extracts value of @p key from @p solver_options. If not specified,
 // returns @p default_value.
-double GetDoubleOption(MathematicalProgram* const prog,
-                       const string& option_name, const double default_value) {
-  double value{default_value};
-  const std::unordered_map<string, double>& double_options{
-      prog->GetSolverOptionsDouble(DrealSolver::id())};
-  const auto it = double_options.find(option_name);
-  if (it != double_options.end()) {
-    value = it->second;
+template <typename T>
+T GetOptionWithDefaultValue(const SolverOptions& solver_options,
+                            const std::string& key, const T& default_value) {
+  const auto& options = solver_options.GetOptions<T>(DrealSolver::id());
+  const auto it = options.find(key);
+  if (it != options.end()) {
+    return it->second;
   }
-  return value;
+  return default_value;
 }
 
-// Extracts integer value of @p option_name from @p prog. If not specified,
-// returns @p default_value.
-int GetIntOption(MathematicalProgram* const prog, const string& option_name,
-                 const int default_value) {
-  int value{default_value};
-  const std::unordered_map<string, int>& int_options{
-      prog->GetSolverOptionsInt(DrealSolver::id())};
-  const auto it = int_options.find(option_name);
-  if (it != int_options.end()) {
-    value = it->second;
-  }
-  return value;
-}
 
 template <typename T>
 symbolic::Formula ExtractConstraints(const vector<Binding<T>>& bindings) {
@@ -534,17 +519,15 @@ void ExtractQuadraticCosts(const MathematicalProgram& prog,
 
 }  // namespace
 
-SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
-  if (!prog.positive_semidefinite_constraints().empty()) {
-    throw logic_error(
-        "DrealSolver does not support positive-semidefinite constraints.");
-  }
-  if (!prog.linear_matrix_inequality_constraints().empty()) {
-    throw logic_error(
-        "DrealSolver does not support linear-matrix-inequality constraints.");
-  }
-  if (!prog.generic_costs().empty()) {
-    throw logic_error("DrealSolver does not support generic costs.");
+void DrealSolver::Solve(const MathematicalProgram& prog,
+                        const optional<Eigen::VectorXd>& initial_guess,
+                        const optional<SolverOptions>& solver_options,
+                        MathematicalProgramResult* result) const {
+  *result = {};
+  unused(initial_guess);
+  if (!AreProgramAttributesSatisfied(prog)) {
+    throw std::invalid_argument(
+        "dReal's capability doesn't satisfy the requirement of the program.");
   }
 
   // 1. Extracts the constraints from @p prog and constructs an equivalent
@@ -567,47 +550,58 @@ SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
 
   // TODO(soonho): Support other dReal options. For now, we only support
   // "--preicision" and "--local-optimization".
-  const double precision{
-      GetDoubleOption(&prog, "precision", 0.001 /* default */)};
+
+  SolverOptions merged_solver_options =
+      solver_options.has_value() ? solver_options.value() : SolverOptions();
+  merged_solver_options.Merge(prog.solver_options());
+
+  const double precision{GetOptionWithDefaultValue(
+      merged_solver_options, "precision", 0.001 /* default */)};
   const LocalOptimization local_optimization{
-      GetIntOption(&prog, "use_local_optimization", 1 /* default */) > 0
+      GetOptionWithDefaultValue<int>(
+          merged_solver_options, "use_local_optimization", 1 /* default */) > 0
           ? LocalOptimization::kUse
           : LocalOptimization::kNotUse};
-  optional<IntervalBox> result;
+  optional<IntervalBox> dreal_result;
   if (costs.size() == 0) {
     // No cost functions in the problem. Call Checksatisfiability.
-    result = CheckSatisfiability(constraints, precision);
+    dreal_result = CheckSatisfiability(constraints, precision);
   } else {
     // Call Minimize with cost = ∑ᵢ costs(i).
-    result = Minimize(
+    dreal_result = Minimize(
         accumulate(costs.begin(), costs.end(), symbolic::Expression::Zero(),
                    std::plus<symbolic::Expression>{}),
         constraints, precision, local_optimization);
   }
 
   // 4. Sets up SolverResult and SolutionResult.
-  SolutionResult solution_result{SolutionResult::kUnknownError};
-  SolverResult solver_result{id()};
-  if (result) {
+  result->set_solution_result(SolutionResult::kUnknownError);
+  result->set_solver_id(id());
+  if (dreal_result) {
     // 4.1. delta-SAT case.
     const int num_vars{prog.num_vars()};
     Eigen::VectorXd solution_vector(num_vars);
     // dReal returns an interval box instead of a point as a solution. We pick
     // the mid-point from a returned box and assign it to the SolverResult.
-    for (const auto& item : *result) {
+    for (const auto& item : *dreal_result) {
       const symbolic::Variable& var{item.first};
       const double v{item.second.mid()};
       solution_vector(prog.FindDecisionVariableIndex(var)) = v;
     }
-    solution_result = SolutionResult::kSolutionFound;
-    solver_result.set_decision_variable_values(solution_vector);
+    result->set_solution_result(SolutionResult::kSolutionFound);
+    result->set_x_val(solution_vector);
   } else {
     // 4.2. UNSAT case
-    solution_result = SolutionResult::kInfeasibleConstraints;
+    result->set_solution_result(SolutionResult::kInfeasibleConstraints);
   }
-  prog.SetSolverResult(solver_result);
-  return solution_result;
 }
 
+SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
+  MathematicalProgramResult result;
+  Solve(prog, {}, {}, &result);
+  const SolverResult solver_result = result.ConvertToSolverResult();
+  prog.SetSolverResult(solver_result);
+  return result.get_solution_result();
+}
 }  // namespace solvers
 }  // namespace drake
