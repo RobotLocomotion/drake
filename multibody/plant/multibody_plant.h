@@ -2643,7 +2643,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     // parameter. Pre-Finalize the solver is not yet created and therefore we
     // check for nullptr.
     if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
-      implicit_stribeck::Parameters solver_parameters =
+      ImplicitStribeckSolverParameters solver_parameters =
           implicit_stribeck_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
           stribeck_model_.stiction_tolerance();
@@ -2789,7 +2789,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // to perform the update using a step size dt_substep = dt/num_substeps.
   // During the time span dt the problem data M, Jn, Jt and minus_tau, are
   // approximated to be constant, a first order approximation.
-  implicit_stribeck::ComputationInfo SolveUsingSubStepping(
+  ImplicitStribeckSolverResult SolveUsingSubStepping(
       int num_substeps,
       const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
       const VectorX<T>& minus_tau,
@@ -3137,8 +3137,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   double time_step_{0};
 
   // The solver used when the plant is modeled as a discrete system.
-  std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
-      implicit_stribeck_solver_;
+  std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
 
   // TODO(sherm1) Add CacheIndex members here for cache entries that belong to
   //              MBPlant, not MBTree.
