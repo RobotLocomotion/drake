@@ -39,7 +39,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   // creating a geometry::dev::render::DepthCameraProperties struct.
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
-          doc.ManipulationStation.ctor.doc_1args)
+          doc.ManipulationStation.ctor.doc)
       .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupDefaultStation.doc)
@@ -105,7 +105,7 @@ PYBIND11_MODULE(manipulation_station, m) {
       m, "ManipulationStationHardwareInterface")
       .def(py::init<const std::vector<std::string>>(),
           py::arg("camera_names") = std::vector<std::string>{},
-          doc.ManipulationStationHardwareInterface.ctor.doc_1args)
+          doc.ManipulationStationHardwareInterface.ctor.doc)
       .def("Connect", &ManipulationStationHardwareInterface::Connect,
           py::arg("wait_for_cameras") = true,
           doc.ManipulationStationHardwareInterface.Connect.doc)

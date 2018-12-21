@@ -39,6 +39,8 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   /// and equals the supplied @p source_value at all times.
   /// @param source_value the constant value of the output so that
   /// `y = source_value` at all times.
+  ///
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit ConstantVectorSource(const T& source_value);
 
   /// Constructs a system with a vector output that is constant, has the type of
@@ -46,6 +48,8 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   ///
   /// @note Objects created using this constructor overload do not support
   /// system scalar conversion.  See @ref system_scalar_conversion.
+  ///
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit ConstantVectorSource(const BasicVector<T>& source_value);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

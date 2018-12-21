@@ -89,7 +89,7 @@ void func(int* param);
 /// @param[in,out] param Begin input/output parameter. Morbi enim nunc faucibus
 /// a pellentesque sit. End input/output parameter.
 template <typename T>
-void func(T);
+void func(T tee);
 
 /// @class Class
 /// Class. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
@@ -228,6 +228,12 @@ class Class {
   /// This one takes a non-primitive type.
   void overloaded_method(const std::string&);
 
+  /// Overloaded only by its const-ness.
+  void get_foo();
+
+  /// The const one.
+  void get_foo() const;
+
  protected:
   /// @protected
   /// Protected method. **Bold**. Nibh sed pulvinar proin gravida hendrerit.
@@ -293,12 +299,35 @@ struct Struct {
 template <typename T>
 class TemplateClass {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TemplateClass)
+
   /// Default constructor. Condimentum mattis pellentesque id nibh tortor id.
   /// Nisl rhoncus mattis rhoncus urna neque.
   /// @remarks Begin remarks. Ante metus dictum at tempor commodo. Nec feugiat
   /// in fermentum posuere urna nec. End remarks.
-  TemplateClass() {}
+  TemplateClass();
+
+  /// Single argument int constructor.
+  explicit TemplateClass(int i);
+
+  /// Scalar-converting copy constructor.
+  template <typename U>
+  explicit TemplateClass(const TemplateClass<U>&);
 };
+
+// Out-of-line definition.
+template <typename T>
+TemplateClass<T>::TemplateClass() {}
+
+// Out-of-line definition.
+template <typename T>
+TemplateClass<T>::TemplateClass(int i) {}
+
+// Out-of-line definition.
+template <typename T>
+template <typename U>
+TemplateClass<T>::TemplateClass(const TemplateClass<U>&)
+    : TemplateClass<T>() {}
 
 /// Specialize. Nisl pretium fusce id velit ut tortor pretium viverra. Quis
 /// ipsum suspendisse ultrices gravida dictum fusce ut.

@@ -83,6 +83,9 @@ class DiagramBuilder {
   ///
   ///
   /// @tparam S The type of System to construct. Must subclass System<T>.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
+  /// specifying <T> doesn't make sense for that language.}
   template<class S, typename... Args>
   S* AddSystem(Args&&... args) {
     return AddSystem(std::make_unique<S>(std::forward<Args>(args)...));
@@ -110,6 +113,9 @@ class DiagramBuilder {
   ///
   /// @tparam S A template for the type of System to construct. The template
   /// will be specialized on the scalar type T of this builder.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
+  /// specifying <T> doesn't make sense for that language.}
   template<template<typename Scalar> class S, typename... Args>
   S<T>* AddSystem(Args&&... args) {
     return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
@@ -177,6 +183,8 @@ class DiagramBuilder {
   /// @throws std::exception if the sole-port precondition is not met (i.e.,
   /// if @p dest has no input ports, or @p dest has more than one input port,
   /// or @p src has no output ports, or @p src has more than one output port).
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
   void Connect(const System<T>& src, const System<T>& dest) {
     DRAKE_THROW_UNLESS(src.get_num_output_ports() == 1);
     DRAKE_THROW_UNLESS(dest.get_num_input_ports() == 1);

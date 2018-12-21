@@ -7,6 +7,15 @@ def _read(filename):
     with open(filename) as f:
         return f.read()
 
+# To replace the expected header file with the most recent build's generated
+# header file, use this command ...
+#
+# cp \
+#  bazel-genfiles/tools/workspace/pybind11/test/sample_header_documentation.h \
+#  tools/workspace/pybind11/test/sample_header_documentation.expected.h
+#
+# ... and then manually put back the "SCRUBBED" change.
+
 
 class TestDocumentation(unittest.TestCase):
     def setUp(self):
