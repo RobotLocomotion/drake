@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/solver_type_converter.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Vector4d;
@@ -61,8 +62,9 @@ LinearFeasibilityProgram::LinearFeasibilityProgram(
   }
 }
 
-void LinearFeasibilityProgram::CheckSolution(SolverType) const {
-  auto x_val = prog()->GetSolution(x_);
+void LinearFeasibilityProgram::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  auto x_val = prog()->GetSolution(x_, result);
   Vector3d A_times_x(x_val(0) + 2 * x_val(1) + 3 * x_val(2),
                      x_val(1) - 2 * x_val(2), 0);
   EXPECT_GE(A_times_x(0), 0 - 1e-10);
@@ -70,7 +72,7 @@ void LinearFeasibilityProgram::CheckSolution(SolverType) const {
   EXPECT_LE(A_times_x(1), 3 + 1E-10);
   EXPECT_LE(A_times_x(2), 0 + 1E-10);
   EXPECT_GE(A_times_x(2), 0 - 1E-10);
-  EXPECT_GE(prog()->GetSolution(x_(1)), 1 - 1E-10);
+  EXPECT_GE(prog()->GetSolution(x_(1), result), 1 - 1E-10);
 }
 
 LinearProgram0::LinearProgram0(CostForm cost_form,
@@ -130,11 +132,13 @@ LinearProgram0::LinearProgram0(CostForm cost_form,
   }
 }
 
-void LinearProgram0::CheckSolution(SolverType solver_type) const {
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+void LinearProgram0::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const double tol = GetSolverSolutionDefaultCompareTolerance(
+      SolverTypeConverter::IdToType(result.get_solver_id()).value());
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 LinearProgram1::LinearProgram1(CostForm cost_form,
@@ -171,11 +175,13 @@ LinearProgram1::LinearProgram1(CostForm cost_form,
   }
 }
 
-void LinearProgram1::CheckSolution(SolverType solver_type) const {
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+void LinearProgram1::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const double tol = GetSolverSolutionDefaultCompareTolerance(
+      SolverTypeConverter::IdToType(result.get_solver_id()).value());
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 LinearProgram2::LinearProgram2(CostForm cost_form,
@@ -259,11 +265,13 @@ LinearProgram2::LinearProgram2(CostForm cost_form,
   }
 }
 
-void LinearProgram2::CheckSolution(SolverType solver_type) const {
-  double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+void LinearProgram2::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const double tol = GetSolverSolutionDefaultCompareTolerance(
+      SolverTypeConverter::IdToType(result.get_solver_id()).value());
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 LinearProgram3::LinearProgram3(CostForm cost_form,
@@ -331,8 +339,11 @@ LinearProgram3::LinearProgram3(CostForm cost_form,
   }
 }
 
-void LinearProgram3::CheckSolution(SolverType solver_type) const {
+void LinearProgram3::CheckSolution(
+    const MathematicalProgramResult& result) const {
   // Mosek has a looser tolerance.
+  const SolverType solver_type =
+      SolverTypeConverter::IdToType(result.get_solver_id()).value();
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kMosek) {
     tol = 1E-6;
@@ -342,9 +353,9 @@ void LinearProgram3::CheckSolution(SolverType solver_type) const {
   if (solver_type == SolverType::kIpopt) {
     cost_tol = 1E-5;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), cost_tol);
+  ExpectSolutionCostAccurate(*prog(), result, cost_tol);
 }
 
 LinearProgramTest::LinearProgramTest() {

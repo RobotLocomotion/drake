@@ -82,24 +82,25 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
 
 void TestEllipsoidsSeparation::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver, double tol) {
-  RunSolver(&prog_, solver);
+  MathematicalProgramResult result = RunSolver(prog_, solver);
 
   // Check the solution.
   // First check if each constraint is satisfied.
-  const auto& a_value = prog_.GetSolution(a_);
+  const auto& a_value = prog_.GetSolution(a_, result);
   const auto& R1a_value = R1_.transpose() * a_value;
   const auto& R2a_value = R2_.transpose() * a_value;
-  EXPECT_NEAR(prog_.GetSolution((t_(0))), R1a_value.norm(), 100 * tol);
-  EXPECT_NEAR(prog_.GetSolution((t_(1))), R2a_value.norm(), 100 * tol);
+  EXPECT_NEAR(prog_.GetSolution(t_(0), result), R1a_value.norm(), 100 * tol);
+  EXPECT_NEAR(prog_.GetSolution(t_(1), result), R2a_value.norm(), 100 * tol);
   EXPECT_NEAR((x2_ - x1_).dot(a_value), 1.0, tol);
 
   // Now check if the solution is meaningful, that it really finds a separating
   // hyperplane.
   // The separating hyperplane exists if and only if p* <= 1
-  const double p_star = prog_.GetSolution(t_(0)) + prog_.GetSolution(t_(1));
+  const double p_star =
+      prog_.GetSolution(t_(0), result) + prog_.GetSolution(t_(1), result);
   const bool is_separated = p_star <= 1.0;
-  const double t1 = prog_.GetSolution(t_(0));
-  const double t2 = prog_.GetSolution(t_(1));
+  const double t1 = prog_.GetSolution(t_(0), result);
+  const double t2 = prog_.GetSolution(t_(1), result);
   if (is_separated) {
     // Then the hyperplane a' * x = 0.5 * (a'*x1 + t1 + a'*x2 - t2)
     const double b1 = a_value.dot(x1_) + t1;
@@ -149,14 +150,14 @@ void TestEllipsoidsSeparation::SolveAndCheckSolution(
     prog_intersect.AddLinearEqualityConstraint(A1, x1_, {y, u1});
     prog_intersect.AddLinearEqualityConstraint(A2, x2_, {y, u2});
 
-    RunSolver(&prog_intersect, solver);
+    result = RunSolver(prog_intersect, solver);
 
     // Check if the constraints are satisfied
-    const auto& u1_value = prog_intersect.GetSolution(u1);
-    const auto& u2_value = prog_intersect.GetSolution(u2);
+    const auto& u1_value = prog_intersect.GetSolution(u1, result);
+    const auto& u2_value = prog_intersect.GetSolution(u2, result);
     EXPECT_LE(u1_value.norm(), 1);
     EXPECT_LE(u2_value.norm(), 1);
-    const auto& y_value = prog_intersect.GetSolution(y);
+    const auto& y_value = prog_intersect.GetSolution(y, result);
     EXPECT_TRUE(CompareMatrices(y_value, x1_ + R1_ * u1_value, tol,
                                 MatrixCompareType::absolute));
     EXPECT_TRUE(CompareMatrices(y_value, x2_ + R2_ * u2_value, tol,
@@ -219,22 +220,23 @@ TestQPasSOCP::TestQPasSOCP() {
 
 void TestQPasSOCP::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver, double tol) {
-  RunSolver(&prog_socp_, solver);
-  const auto& x_socp_value = prog_socp_.GetSolution(x_socp_);
+  MathematicalProgramResult result;
+  result = RunSolver(prog_socp_, solver);
+  const auto& x_socp_value = prog_socp_.GetSolution(x_socp_, result);
   const double objective_value_socp =
-      c_.dot(x_socp_value) + prog_socp_.GetSolution(y_);
+      c_.dot(x_socp_value) + prog_socp_.GetSolution(y_, result);
 
   // Check the solution
   const int kXdim = Q_.rows();
   const Eigen::MatrixXd Q_symmetric = 0.5 * (Q_ + Q_.transpose());
   const Eigen::LLT<Eigen::MatrixXd, Eigen::Upper> lltOfQ(Q_symmetric);
   const Eigen::MatrixXd Q_sqrt = lltOfQ.matrixU();
-  EXPECT_NEAR(2 * prog_socp_.GetSolution(y_),
+  EXPECT_NEAR(2 * prog_socp_.GetSolution(y_, result),
               (Q_sqrt * x_socp_value).squaredNorm(), tol);
-  EXPECT_GE(prog_socp_.GetSolution(y_), 0);
+  EXPECT_GE(prog_socp_.GetSolution(y_, result), 0);
 
-  RunSolver(&prog_qp_, solver);
-  const auto& x_qp_value = prog_qp_.GetSolution(x_qp_);
+  result = RunSolver(prog_qp_, solver);
+  const auto& x_qp_value = prog_qp_.GetSolution(x_qp_, result);
   const Eigen::RowVectorXd x_qp_transpose = x_qp_value.transpose();
   Eigen::VectorXd Q_x_qp = Q_ * x_qp_value;
   double objective_value_qp = c_.dot(x_qp_value);
@@ -299,30 +301,32 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
 
 void TestFindSpringEquilibrium::SolveAndCheckSolution(
     const MathematicalProgramSolverInterface& solver, double tol) {
-  RunSolver(&prog_, solver);
+  const MathematicalProgramResult result = RunSolver(prog_, solver);
 
-  const optional<SolverId> solver_id = prog_.GetSolverId();
+  const optional<SolverId> solver_id = result.get_solver_id();
   ASSERT_TRUE(solver_id);
   const int num_nodes = weight_.rows();
   for (int i = 0; i < num_nodes - 1; ++i) {
     Eigen::Vector2d spring(
-        prog_.GetSolution(x_(i + 1)) - prog_.GetSolution(x_(i)),
-        prog_.GetSolution(y_(i + 1)) - prog_.GetSolution(y_(i)));
+        prog_.GetSolution(x_(i + 1), result) - prog_.GetSolution(x_(i), result),
+        prog_.GetSolution(y_(i + 1), result) -
+            prog_.GetSolution(y_(i), result));
     if (spring.norm() < spring_rest_length_) {
-      EXPECT_LE(prog_.GetSolution(t_(i)), 1E-3);
-      EXPECT_GE(prog_.GetSolution(t_(i)), 0 - 1E-10);
+      EXPECT_LE(prog_.GetSolution(t_(i), result), 1E-3);
+      EXPECT_GE(prog_.GetSolution(t_(i), result), 0 - 1E-10);
     } else {
       EXPECT_TRUE(std::abs(spring.norm() - spring_rest_length_ -
-                           prog_.GetSolution(t_(i))) < 1E-3);
+                           prog_.GetSolution(t_(i), result)) < 1E-3);
     }
   }
-  const auto& t_value = prog_.GetSolution(t_);
-  EXPECT_NEAR(prog_.GetSolution(z_), t_value.squaredNorm(), 1E-3);
+  const auto& t_value = prog_.GetSolution(t_, result);
+  EXPECT_NEAR(prog_.GetSolution(z_, result), t_value.squaredNorm(), 1E-3);
   // Now test equilibrium.
   for (int i = 1; i < num_nodes - 1; i++) {
     Eigen::Vector2d left_spring(
-        prog_.GetSolution(x_(i - 1)) - prog_.GetSolution(x_(i)),
-        prog_.GetSolution(y_(i - 1)) - prog_.GetSolution(y_(i)));
+        prog_.GetSolution(x_(i - 1), result) - prog_.GetSolution(x_(i), result),
+        prog_.GetSolution(y_(i - 1), result) -
+            prog_.GetSolution(y_(i), result));
     Eigen::Vector2d left_spring_force;
     double left_spring_length = left_spring.norm();
     if (left_spring_length < spring_rest_length_) {
@@ -332,8 +336,9 @@ void TestFindSpringEquilibrium::SolveAndCheckSolution(
                           spring_stiffness_ * left_spring / left_spring_length;
     }
     Eigen::Vector2d right_spring(
-        prog_.GetSolution(x_(i + 1)) - prog_.GetSolution(x_(i)),
-        prog_.GetSolution(y_(i + 1)) - prog_.GetSolution(y_(i)));
+        prog_.GetSolution(x_(i + 1), result) - prog_.GetSolution(x_(i), result),
+        prog_.GetSolution(y_(i + 1), result) -
+            prog_.GetSolution(y_(i), result));
     Eigen::Vector2d right_spring_force;
     double right_spring_length = right_spring.norm();
     if (right_spring_length < spring_rest_length_) {
