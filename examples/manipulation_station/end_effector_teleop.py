@@ -263,7 +263,7 @@ parser.add_argument(
 parser.add_argument(
     '--setup', type=str, default='default',
     help="The manipulation station setup to simulate. ",
-    choices=['default', 'bin_picking'])
+    choices=['default', 'clutter_clearing'])
 
 MeshcatVisualizer.add_argparse_argument(parser)
 args = parser.parse_args()
@@ -279,8 +279,8 @@ else:
     # Initializes the chosen station type.
     if args.setup == 'default':
         station.SetupDefaultStation()
-    elif args.setup == 'bin_picking':
-        station.SetupBinPickingStation()
+    elif args.setup == 'clutter_clearing':
+        station.SetupClutterClearingStation()
 
     station.Finalize()
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
