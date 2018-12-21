@@ -54,8 +54,10 @@ class RigidTransform {
   /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
   /// Bo.  Hence, the constructed %RigidTransform contains an identity
   /// RotationMatrix and a zero position vector.
-  // @internal The default RotationMatrix constructor is an identity matrix.
-  RigidTransform() { set_translation(Vector3<T>::Zero()); }
+  RigidTransform() {
+    // @internal The default RotationMatrix constructor is an identity matrix.
+    set_translation(Vector3<T>::Zero());
+  }
 
   /// Constructs a %RigidTransform from a rotation matrix and a position vector.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
@@ -165,8 +167,8 @@ class RigidTransform {
   /// unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with Bo.
   /// Hence, the returned %RigidTransform contains a 3x3 identity matrix and a
   /// zero position vector.
-  // @internal This method's name was chosen to mimic Eigen's Identity().
   static const RigidTransform<T>& Identity() {
+    // @internal This method's name was chosen to mimic Eigen's Identity().
     static const never_destroyed<RigidTransform<T>> kIdentity;
     return kIdentity.access();
   }
@@ -267,8 +269,8 @@ class RigidTransform {
   /// @note: The square-root of a %RigidTransform's condition number is roughly
   /// the magnitude of the position vector.  The accuracy of the calculation for
   /// the inverse of a %RigidTransform drops off with the sqrt condition number.
-  // @internal This method's name was chosen to mimic Eigen's inverse().
   RigidTransform<T> inverse() const {
+    // @internal This method's name was chosen to mimic Eigen's inverse().
     const RotationMatrix<T> R_BA = R_AB_.inverse();
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }

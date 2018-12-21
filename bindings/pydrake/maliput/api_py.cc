@@ -26,7 +26,7 @@ PYBIND11_MODULE(api, m) {
 
   // TODO(m-chaturvedi) Add doc when typedefs are parsed (#9599)
   py::class_<RoadGeometryId>(m, "RoadGeometryId")
-      .def(py::init<std::string>(), doc.RoadGeometry.ctor.doc_0args)
+      .def(py::init<std::string>(), doc.RoadGeometry.ctor.doc)
       .def("string", &RoadGeometryId::string, py_reference_internal);
 
   py::class_<GeoPosition>(m, "GeoPosition", doc.GeoPositionT.doc)

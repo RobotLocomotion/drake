@@ -89,7 +89,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
     using Class = ContactResults<T>;
     py::class_<Class> cls(m, "ContactResults", doc.ContactResults.doc);
     cls  // BR
-        .def(py::init<>(), doc.ContactResults.ctor.doc_0args)
+        .def(py::init<>(), doc.ContactResults.ctor.doc)
         .def("get_num_contacts", &Class::get_num_contacts,
             doc.ContactResults.get_num_contacts.doc)
         .def("get_contact_info", &Class::get_contact_info,
@@ -170,7 +170,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         m, "RigidBodyPlant", doc.RigidBodyPlant.doc)
         .def(py::init<unique_ptr<const RigidBodyTree<T>>, double>(),
             py::arg("tree"), py::arg("timestep") = 0.0,
-            doc.RigidBodyPlant.ctor.doc_2args)
+            doc.RigidBodyPlant.ctor.doc)
         .def("set_contact_model_parameters",
             &Class::set_contact_model_parameters,
             doc.RigidBodyPlant.set_contact_model_parameters.doc)
@@ -218,11 +218,11 @@ PYBIND11_MODULE(rigid_body_plant, m) {
         .def("set_state_vector",
             overload_cast_explicit<void, Context<T>*,
                 const Eigen::Ref<const VectorX<T>>>(&Class::set_state_vector),
-            doc.RigidBodyPlant.set_state_vector.doc_2args_context_x)
+            doc.RigidBodyPlant.set_state_vector.doc)
         .def("set_state_vector",
             overload_cast_explicit<void, State<T>*,
                 const Eigen::Ref<const VectorX<T>>>(&Class::set_state_vector),
-            doc.RigidBodyPlant.set_state_vector.doc_2args_state_x)
+            doc.RigidBodyPlant.set_state_vector.doc)
         .def("SetDefaultState", &Class::SetDefaultState,
             doc.RigidBodyPlant.SetDefaultState.doc)
         .def("FindInstancePositionIndexFromWorldIndex",
@@ -280,7 +280,7 @@ PYBIND11_MODULE(rigid_body_plant, m) {
             // Keep alive, reference: `this` keeps `tree` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `this` keeps `lcm` alive.
-            py::keep_alive<1, 3>(), doc.DrakeVisualizer.ctor.doc_3args)
+            py::keep_alive<1, 3>(), doc.DrakeVisualizer.ctor.doc)
         .def("set_publish_period", &Class::set_publish_period,
             py::arg("period"), doc.DrakeVisualizer.set_publish_period.doc)
         .def("ReplayCachedSimulation", &Class::ReplayCachedSimulation,
