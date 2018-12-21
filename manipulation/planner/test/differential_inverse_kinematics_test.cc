@@ -52,8 +52,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
         plant_->GetBodyByName("iiwa_link_7").body_frame(), X_7E));
     plant_->Finalize();
     owned_context_ = plant_->CreateDefaultContext();
-    context_ = dynamic_cast<multibody::MultibodyTreeContext<double>*>(
-        owned_context_.get());
+    context_ = owned_context_.get();
     DRAKE_THROW_UNLESS(context_);
 
     // Configure the Diff IK.
@@ -85,13 +84,13 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
     // Set the initial plant state.  These values were randomly generated.
     const VectorXd q = (VectorXd(7) <<
-        0.15518406198937828577300024335272610187530517578125,
-        1.4015714126391092264611870632506906986236572265625,
-        2.230260142950035717746004593209363520145416259765625,
-        0.902511993417089097846428558113984763622283935546875,
-        1.416899102195978255025465841754339635372161865234375,
-        -1.7690706666250044509780536827747710049152374267578125,
-        -2.209570171225335943887557732523418962955474853515625).finished();
+        0.155184061989378285773000,
+        1.401571412639109226461187,
+        2.230260142950035717746004,
+        0.902511993417089097846428,
+        1.416899102195978255025465,
+        -1.76907066662500445097805,
+        -2.20957017122533594388755).finished();
     const VectorXd v = VectorXd::Zero(plant_->num_velocities());
     plant_->SetPositions(context_, q);
     plant_->SetVelocities(context_, v);
@@ -139,7 +138,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
   std::unique_ptr<MultibodyPlant<double>> plant_;
   const FixedOffsetFrame<double>* frame_E_{};
   std::unique_ptr<systems::Context<double>> owned_context_;
-  drake::multibody::MultibodyTreeContext<double>* context_{};
+  systems::Context<double>* context_{};
   std::unique_ptr<DifferentialInverseKinematicsParameters> params_;
 };
 
@@ -198,8 +197,8 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     ASSERT_TRUE(result.joint_velocities != nullopt);
 
     // Transform the resulting end effector frame's velocity into body frame.
-    context_->get_mutable_positions() = q;
-    context_->get_mutable_velocities() = result.joint_velocities.value();
+    plant_->SetPositions(context_, q);
+    plant_->SetVelocities(context_, result.joint_velocities.value());
 
     V_WE = frame_E_->CalcSpatialVelocityInWorld(*context_).get_coeffs();
     V_WE_E.head<3>() = X_WE.linear().transpose() * V_WE.head<3>();
@@ -228,8 +227,8 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     v_desired(i) = std::max(v_desired(i), v_bounds.first(i));
     v_desired(i) = std::min(v_desired(i), v_bounds.second(i));
   }
-  EXPECT_TRUE(CompareMatrices(context_->get_velocities(), v_desired, 5e-5,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(plant_->GetVelocities(*context_), v_desired,
+                              5e-5, MatrixCompareType::absolute));
 }
 
 // Use the solver to track a fixed end effector pose.
