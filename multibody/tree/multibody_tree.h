@@ -1382,9 +1382,6 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
-  void SetDefaultContext(systems::Context<T>* context) const;
-
-  /// See MultibodyPlant method.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
 

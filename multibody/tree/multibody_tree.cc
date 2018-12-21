@@ -306,11 +306,6 @@ void MultibodyTree<T>::CreateModelInstances() {
 }
 
 template <typename T>
-void MultibodyTree<T>::SetDefaultContext(systems::Context<T> *context) const {
-  SetDefaultState(*context, &context->get_mutable_state());
-}
-
-template <typename T>
 void MultibodyTree<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   for (const auto& mobilizer : owned_mobilizers_) {
