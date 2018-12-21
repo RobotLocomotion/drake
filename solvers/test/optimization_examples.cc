@@ -109,14 +109,14 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
 LinearSystemExample1::LinearSystemExample1()
     : prog_(std::make_unique<MathematicalProgram>()),
       x_{},
-      x_init_{},
+      initial_guess_{},
       b_{},
       con_{} {
   x_ = prog_->NewContinuousVariables<4>();
   b_ = Vector4d::Random();
   con_ = prog_->AddLinearEqualityConstraint(Matrix4d::Identity(), b_, x_)
               .evaluator();
-  x_init_.setZero();
+  initial_guess_.setZero();
 }
 
 void LinearSystemExample1::CheckSolution(
@@ -216,7 +216,7 @@ NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,
   x_expected_ << 1, 1, 0, 1, 0;
 }
 
-Eigen::Matrix<double, 5, 1> NonConvexQPproblem1::x_init() const {
+Eigen::Matrix<double, 5, 1> NonConvexQPproblem1::initial_guess() const {
   return (Eigen::Matrix<double, 5, 1>() << 1.01, 1.02, -0.02, 1.03, -0.05)
       .finished();
 }

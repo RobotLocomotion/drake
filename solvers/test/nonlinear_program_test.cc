@@ -99,7 +99,8 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
 GTEST_TEST(testNonlinearProgram, trivialLinearSystem) {
   LinearSystemExample1 example1{};
   MathematicalProgramResult result;
-  RunNonlinearProgram(*(example1.prog()), Eigen::VectorXd(example1.x_init()),
+  RunNonlinearProgram(*(example1.prog()),
+                      Eigen::VectorXd(example1.initial_guess()),
                       [&]() { example1.CheckSolution(result); }, &result);
 
   LinearSystemExample2 example2{};
@@ -177,7 +178,7 @@ GTEST_TEST(testNonlinearProgram, testNonConvexQPproblem1) {
       NonConvexQPproblem1 prob(cost_form, constraint_form);
       MathematicalProgramResult result;
       // Initialize decision variable close to the solution.
-      RunNonlinearProgram(*(prob.prog()), Eigen::VectorXd(prob.x_init()),
+      RunNonlinearProgram(*(prob.prog()), Eigen::VectorXd(prob.initial_guess()),
                           [&]() { prob.CheckSolution(result); }, &result);
     }
   }

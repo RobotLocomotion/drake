@@ -79,7 +79,7 @@ class LinearSystemExample1 {
 
   const Eigen::Vector4d b() const { return b_; }
 
-  const Eigen::Vector4d& x_init() const { return x_init_; }
+  const Eigen::Vector4d& initial_guess() const { return initial_guess_; }
 
   std::shared_ptr<LinearEqualityConstraint> con() const { return con_; }
 
@@ -91,7 +91,7 @@ class LinearSystemExample1 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<4> x_;
-  Eigen::Vector4d x_init_;
+  Eigen::Vector4d initial_guess_;
   Eigen::Vector4d b_;
   std::shared_ptr<LinearEqualityConstraint> con_;
 };
@@ -184,7 +184,7 @@ class NonConvexQPproblem1 {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  Eigen::Matrix<double, 5, 1> x_init() const;
+  Eigen::Matrix<double, 5, 1> initial_guess() const;
 
   void CheckSolution(const MathematicalProgramResult& result) const;
 
