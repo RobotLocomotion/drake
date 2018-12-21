@@ -40,8 +40,8 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, std::numeric_limits<double>::infinity(),
               "Simulation duration.");
-DEFINE_string(type, "default", "Manipulation station type to simulate. "
-                               "Can be {default, bin_picking}");
+DEFINE_string(setup, "default", "Manipulation station type to simulate. "
+                               "Can be {default, clutter_clearing}");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -50,13 +50,13 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  if (FLAGS_type == "default") {
+  if (FLAGS_setup == "default") {
     station->SetupDefaultStation();
-  } else if (FLAGS_type == "bin_picking") {
-    station->SetupBinPickingStation();
+  } else if (FLAGS_setup == "clutter_clearing") {
+    station->SetupClutterClearingStation();
   } else {
     DRAKE_ABORT_MSG("Unrecognized station type. Options are "
-                    "{default, bin_picking}.");
+                    "{default, clutter_clearing}.");
   }
   multibody::Parser parser(&station->get_mutable_multibody_plant(),
                            &station->get_mutable_scene_graph());
@@ -149,7 +149,6 @@ int do_main(int argc, char* argv[]) {
   auto& context = simulator.get_mutable_context();
   auto& station_context =
       diagram->GetMutableSubsystemContext(*station, &context);
-  station->SetDefaultContext(&station_context);
 
   // Get the initial Iiwa pose and initialize the iiwa_command to match.
   auto& plant = station->get_multibody_plant();
