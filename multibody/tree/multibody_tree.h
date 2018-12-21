@@ -1941,6 +1941,12 @@ class MultibodyTree {
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
 
+  /// See MultibodyPlant method.
+  VectorX<double> GetPositionLowerLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetPositionUpperLimits() const;
+
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an
