@@ -980,11 +980,6 @@ void init_multibody_plant(py::module m) {
             py_reference, py::arg("context"), py::arg("model_instance"),
             py::arg("q_v"),
             doc.MultibodyPlant.SetPositionsAndVelocities.doc_3args)
-        .def("SetDefaultContext",
-            [](const Class* self, Context<T>* context) {
-              self->SetDefaultContext(context);
-            },
-            py::arg("context"), doc.MultibodyPlant.SetDefaultContext.doc)
         .def("SetDefaultState",
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);

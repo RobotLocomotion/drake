@@ -396,7 +396,6 @@ class TestMultibodyTree(unittest.TestCase):
             tree.GetPositionsAndVelocities(context), x0))
 
         # Test existence of context resetting methods.
-        plant.SetDefaultContext(context)
         plant.SetDefaultState(context, state=context.get_mutable_state())
 
     def test_model_instance_port_access(self):
