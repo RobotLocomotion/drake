@@ -13,9 +13,7 @@ template <typename T>
 MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
     const multibody::MultibodyPlant<T>& plant)
     : plant_(plant),
-      plant_context_(
-          dynamic_pointer_cast_or_throw<multibody::MultibodyTreeContext<T>>(
-              plant.CreateDefaultContext())) {
+      plant_context_(plant.CreateDefaultContext()) {
   DRAKE_DEMAND(plant.is_finalized());
   DRAKE_DEMAND(plant.geometry_source_is_registered());
 
@@ -39,7 +37,9 @@ void MultibodyPositionToGeometryPose<T>::CalcGeometryPose(
     const Context<T>& context, AbstractValue* output) const {
   // Set the positions in the owned (mutable) context so that we can ask the
   // MultibodyPlant to compute the outputs.
-  plant_context_->get_mutable_positions() =
+  // TODO(eric.cousineau): Place `plant_context_` in the cache of `context`,
+  // and remove mutable member.
+  plant_.GetMutablePositions(plant_context_.get()) =
       this->EvalEigenVectorInput(context, 0);
 
   // Evaluate the plant's output port.

@@ -85,10 +85,10 @@ class BodyFrame final : public Frame<T> {
  protected:
   // Frame<T>::DoCloneToScalar() overrides.
   std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyTree<double>& tree_clone) const override;
 
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
@@ -110,7 +110,7 @@ class BodyFrame final : public Frame<T> {
   // DoCloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
 /// @cond
@@ -180,9 +180,9 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
     return body_frame_;
   }
 
-  /// Returns the index of the node in the underlying tree structure of
-  /// the parent MultibodyTree to which this body belongs.
-  BodyNodeIndex node_index() const {
+  /// (Advanced) Returns the index of the node in the underlying tree structure
+  /// of the parent MultibodyTree to which this body belongs.
+  internal::BodyNodeIndex node_index() const {
     return topology_.body_node;
   }
 
@@ -193,25 +193,26 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// the mass parameter in the context.
   double get_default_mass() const { return default_mass_; }
 
-  /// Returns the mass of this body stored in `context`.
-  virtual T get_mass(const MultibodyTreeContext<T> &context) const = 0;
+  /// (Advanced) Returns the mass of this body stored in `context`.
+  virtual T get_mass(
+      const internal::MultibodyTreeContext<T> &context)const = 0;
 
-  /// Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short) of this
-  /// body measured from this body's frame origin `Bo` and expressed in the body
-  /// frame B.
+  /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
+  /// of this body measured from this body's frame origin `Bo` and expressed in
+  /// the body frame B.
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const MultibodyTreeContext<T>& context) const = 0;
+      const internal::MultibodyTreeContext<T>& context) const = 0;
 
-  /// Computes the SpatialInertia `I_BBo_B` of `this` body about its frame
-  /// origin `Bo` (not necessarily its center of mass) and expressed in its body
-  /// frame `B`.
+  /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
+  /// frame origin `Bo` (not necessarily its center of mass) and expressed in
+  /// its body frame `B`.
   /// In general, the spatial inertia of a body is a function of state.
   /// Consider for instance the case of a flexible body for which its spatial
   /// inertia in the body frame depends on the generalized coordinates
   /// describing its state of deformation. As a particular case, the spatial
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const MultibodyTreeContext<T>& context) const = 0;
+      const internal::MultibodyTreeContext<T>& context) const = 0;
 
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.
@@ -276,7 +277,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> CloneToScalar(
-  const MultibodyTree<ToScalar>& tree_clone) const {
+  const internal::MultibodyTree<ToScalar>& tree_clone) const {
     return DoCloneToScalar(tree_clone);
   }
 
@@ -298,11 +299,11 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   /// Clones this %Body (templated on T) to a body templated on `double`.
   virtual std::unique_ptr<Body<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyTree<double>& tree_clone) const = 0;
 
   /// Clones this %Body (templated on T) to a body templated on AutoDiffXd.
   virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
   /// @}
 
@@ -314,7 +315,8 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each body retrieves its topology
   // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
+  void DoSetTopology(
+      const internal::MultibodyTreeTopology& tree_topology) final {
     topology_ = tree_topology.get_body(this->index());
     body_frame_.SetTopology(tree_topology);
   }
@@ -339,7 +341,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   double default_mass_{0.0};
 
   // The internal bookkeeping topology struct used by MultibodyTree.
-  BodyTopology topology_;
+  internal::BodyTopology topology_;
 };
 
 }  // namespace multibody

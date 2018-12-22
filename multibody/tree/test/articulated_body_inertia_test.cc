@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 namespace {
 
 using Eigen::Vector3d;
@@ -193,5 +194,6 @@ GTEST_TEST(ArticulatedBodyInertia, Symbolic) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

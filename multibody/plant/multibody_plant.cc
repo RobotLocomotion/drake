@@ -226,8 +226,8 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
 
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(
-    std::unique_ptr<MultibodyTree<T>> tree_in, double time_step)
-    : MultibodyTreeSystem<T>(
+    std::unique_ptr<internal::MultibodyTree<T>> tree_in, double time_step)
+    : internal::MultibodyTreeSystem<T>(
           systems::SystemTypeTag<multibody::MultibodyPlant>{},
           std::move(tree_in), time_step > 0),
       time_step_(time_step) {
@@ -370,7 +370,7 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
   // sped up by either (a) caching these results at finalization and store a
   // mapping from body to a subgraph or (b) starting the search from the query
   // body.
-  auto sub_graphs = tree().get_topology().CreateListOfWeldedBodies();
+  auto sub_graphs = internal_tree().get_topology().CreateListOfWeldedBodies();
   // Find subgraph that contains this body.
   auto predicate = [&body](auto& sub_graph) {
     return sub_graph.count(body.index()) > 0;
@@ -381,7 +381,7 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
   // Map body indices to pointers.
   std::vector<const Body<T>*> sub_graph_bodies;
   for (BodyIndex sub_graph_body_index : *sub_graph_iter) {
-    sub_graph_bodies.push_back(&tree().get_body(sub_graph_body_index));
+    sub_graph_bodies.push_back(&internal_tree().get_body(sub_graph_body_index));
   }
   return sub_graph_bodies;
 }
@@ -425,7 +425,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
     const Body<T>& body, const Isometry3<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+  internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
 template<typename T>
@@ -435,7 +435,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
     const Isometry3<T>& X_FB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
-  if (!tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
+  if (!internal_tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
     throw std::logic_error(
         "Frame '" + frame_F.name() + "' must be anchored to the world frame.");
   }
@@ -456,16 +456,17 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
   DRAKE_THROW_UNLESS(static_cast<int>(A_WB_array->size()) == num_bodies());
-  tree().CalcSpatialAccelerationsFromVdot(
-      context, tree().EvalPositionKinematics(context),
-      tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
+  internal_tree().CalcSpatialAccelerationsFromVdot(
+      context, internal_tree().EvalPositionKinematics(context),
+      internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
   // Permute BodyNodeIndex -> BodyIndex.
   // TODO(eric.cousineau): Remove dynamic allocations. Making this in-place
   // still required dynamic allocation for recording permutation indices.
   // Can change implementation once MultibodyTree becomes fully internal.
   std::vector<SpatialAcceleration<T>> A_WB_array_node = *A_WB_array;
-  const MultibodyTreeTopology& topology = tree().get_topology();
-  for (BodyNodeIndex node_index(1);
+  const internal::MultibodyTreeTopology& topology =
+      internal_tree().get_topology();
+  for (internal::BodyNodeIndex node_index(1);
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyIndex body_index = topology.get_body_node(node_index).body;
     (*A_WB_array)[body_index] = A_WB_array_node[node_index];
@@ -477,8 +478,8 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
       const systems::Context<T>& context,
       MultibodyForces<T>* forces) const {
   DRAKE_THROW_UNLESS(forces != nullptr);
-  DRAKE_THROW_UNLESS(forces->CheckHasRightSizeForModel(tree()));
-  tree().CalcForceElementsContribution(
+  DRAKE_THROW_UNLESS(forces->CheckHasRightSizeForModel(internal_tree()));
+  internal_tree().CalcForceElementsContribution(
       context, EvalPositionKinematics(context),
       EvalVelocityKinematics(context),
       forces);
@@ -498,7 +499,7 @@ void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
 
 template<typename T>
 void MultibodyPlant<T>::SetUpJointLimitsParameters() {
-  for (JointIndex joint_index(0); joint_index < tree().num_joints();
+  for (JointIndex joint_index(0); joint_index < internal_tree().num_joints();
        ++joint_index) {
     // Currently MultibodyPlant applies these "compliant" joint limit forces
     // using an explicit Euler strategy. Stability analysis of the explicit
@@ -510,7 +511,7 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     // the time stepping scheme is updated to be implicit in the joint limits.
     const double kAlpha = 20 * M_PI;
 
-    const Joint<T>& joint = tree().get_joint(joint_index);
+    const Joint<T>& joint = internal_tree().get_joint(joint_index);
     auto revolute_joint = dynamic_cast<const RevoluteJoint<T>*>(&joint);
     auto prismatic_joint = dynamic_cast<const PrismaticJoint<T>*>(&joint);
     // Currently MBP only supports limits for prismatic and revolute joints.
@@ -576,7 +577,7 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
           throw std::logic_error(
               "Currently MultibodyPlant does not handle joint limits for "
               "continuous models. However a limit was specified for joint `"
-              "`" + tree().get_joint(index).name() + "`.");
+              "`" + internal_tree().get_joint(index).name() + "`.");
         }
       }
     }
@@ -647,8 +648,8 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
   DRAKE_DEMAND(geometry_source_is_registered());
   // Disallow collisions between adjacent bodies. Adjacency is implied by the
   // existence of a joint between bodies.
-  for (JointIndex j{0}; j < tree().num_joints(); ++j) {
-    const Joint<T>& joint = tree().get_joint(j);
+  for (JointIndex j{0}; j < internal_tree().num_joints(); ++j) {
+    const Joint<T>& joint = internal_tree().get_joint(j);
     const Body<T>& child = joint.child_body();
     const Body<T>& parent = joint.parent_body();
     // TODO(SeanCurtis-TRI): Determine the correct action for a body
@@ -708,9 +709,9 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const GeometryId geometryB_id = point_pair.id_B;
 
     BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
-    const Body<T>& bodyA = tree().get_body(bodyA_index);
+    const Body<T>& bodyA = internal_tree().get_body(bodyA_index);
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
-    const Body<T>& bodyB = tree().get_body(bodyB_index);
+    const Body<T>& bodyB = internal_tree().get_body(bodyB_index);
 
     // Penetration depth, > 0 if bodies interpenetrate.
     const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
@@ -726,13 +727,13 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // body A, s.t.: v_WAc = Jv_WAc * v
     // where v is the vector of generalized velocities.
     MatrixX<T> Jv_WAc(3, this->num_velocities());
-    tree().CalcPointsGeometricJacobianExpressedInWorld(
+    internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyA.body_frame(), p_WCa, &Jv_WAc);
 
     // Geometric Jacobian for the velocity of the contact point C as moving with
     // body B, s.t.: v_WBc = Jv_WBc * v.
     MatrixX<T> Jv_WBc(3, this->num_velocities());
-    tree().CalcPointsGeometricJacobianExpressedInWorld(
+    internal_tree().CalcPointsGeometricJacobianExpressedInWorld(
         context, bodyB.body_frame(), p_WCb, &Jv_WBc);
 
     // Computation of the normal separation velocities Jacobian Jn:
@@ -790,7 +791,7 @@ void MultibodyPlant<T>::set_penetration_allowance(
   // system.
   double mass = 0.0;
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
-    const Body<T>& body = tree().get_body(body_index);
+    const Body<T>& body = internal_tree().get_body(body_index);
     mass = std::max(mass, body.get_default_mass());
   }
 
@@ -947,8 +948,8 @@ void MultibodyPlant<T>::CalcContactResults(
 template<typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>&,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc,
+    const internal::PositionKinematicsCache<T>& pc,
+    const internal::VelocityKinematicsCache<T>& vc,
     const std::vector<PenetrationAsPointPair<T>>& point_pairs,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   if (num_collision_geometries() == 0) return;
@@ -964,10 +965,10 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     BodyIndex bodyA_index = geometry_id_to_body_index_.at(geometryA_id);
     BodyIndex bodyB_index = geometry_id_to_body_index_.at(geometryB_id);
 
-    BodyNodeIndex bodyA_node_index =
-        tree().get_body(bodyA_index).node_index();
-    BodyNodeIndex bodyB_node_index =
-        tree().get_body(bodyB_index).node_index();
+    internal::BodyNodeIndex bodyA_node_index =
+        internal_tree().get_body(bodyA_index).node_index();
+    internal::BodyNodeIndex bodyB_node_index =
+        internal_tree().get_body(bodyB_index).node_index();
 
     // Penetration depth, > 0 during pair.
     const T& x = pair.depth;
@@ -1062,7 +1063,7 @@ void MultibodyPlant<T>::AddJointActuationForces(
     for (JointActuatorIndex actuator_index(0);
          actuator_index < num_actuators(); ++actuator_index) {
       const JointActuator<T>& actuator =
-          tree().get_joint_actuator(actuator_index);
+          internal_tree().get_joint_actuator(actuator_index);
       // We only support actuators on single dof joints for now.
       DRAKE_DEMAND(actuator.joint().num_velocities() == 1);
       for (int joint_dof = 0;
@@ -1108,7 +1109,7 @@ void MultibodyPlant<T>::AddJointLimitsPenaltyForces(
     const double upper_limit = joint_limits_parameters_.upper_limit[index];
     const double stiffness = joint_limits_parameters_.stiffness[index];
     const double damping = joint_limits_parameters_.damping[index];
-    const Joint<T>& joint = tree().get_joint(joint_index);
+    const Joint<T>& joint = internal_tree().get_joint(joint_index);
 
     const T& q = joint.GetOnePosition(context);
     const T& v = joint.GetOneVelocity(context);
@@ -1129,7 +1130,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs =
-        tree().num_actuated_dofs(model_instance_index);
+        internal_tree().num_actuated_dofs(model_instance_index);
     if (instance_num_dofs == 0) {
       continue;
     }
@@ -1159,23 +1160,25 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // Mass matrix.
   MatrixX<T> M(nv, nv);
   // Forces.
-  MultibodyForces<T> forces(tree());
+  MultibodyForces<T> forces(internal_tree());
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(tree().num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
 
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const VelocityKinematicsCache<T>& vc = EvalVelocityKinematics(context);
+  const internal::PositionKinematicsCache<T>& pc =
+      EvalPositionKinematics(context);
+  const internal::VelocityKinematicsCache<T>& vc =
+      EvalVelocityKinematics(context);
 
   // Compute forces applied through force elements. This effectively resets
   // the forces to zero and adds in contributions due to force elements.
-  tree().CalcForceElementsContribution(context, pc, vc, &forces);
+  internal_tree().CalcForceElementsContribution(context, pc, vc, &forces);
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
 
-  tree().CalcMassMatrixViaInverseDynamics(context, &M);
+  internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
   // as output arrays. This means that both the array of applied body forces and
@@ -1196,7 +1199,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
         context, pc, vc, point_pairs, &F_BBo_W_array);
   }
 
-  tree().CalcInverseDynamics(
+  internal_tree().CalcInverseDynamics(
       context, pc, vc, vdot,
       F_BBo_W_array, tau_array,
       &A_WB_array,
@@ -1208,7 +1211,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   auto v = x.bottomRows(nv);
   VectorX<T> xdot(this->num_multibody_states());
   VectorX<T> qdot(this->num_positions());
-  tree().MapVelocityToQDot(context, v, &qdot);
+  internal_tree().MapVelocityToQDot(context, v, &qdot);
   xdot << qdot, vdot;
   derivatives->SetFromVector(xdot);
 }
@@ -1284,17 +1287,19 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Mass matrix and its factorization.
   MatrixX<T> M0(nv, nv);
-  tree().CalcMassMatrixViaInverseDynamics(context0, &M0);
+  internal_tree().CalcMassMatrixViaInverseDynamics(context0, &M0);
   auto M0_ldlt = M0.ldlt();
 
   // Forces at the previous time step.
-  MultibodyForces<T> forces0(tree());
+  MultibodyForces<T> forces0(internal_tree());
 
-  const PositionKinematicsCache<T>& pc0 = EvalPositionKinematics(context0);
-  const VelocityKinematicsCache<T>& vc0 = EvalVelocityKinematics(context0);
+  const internal::PositionKinematicsCache<T>& pc0 =
+      EvalPositionKinematics(context0);
+  const internal::VelocityKinematicsCache<T>& vc0 =
+      EvalVelocityKinematics(context0);
 
   // Compute forces applied through force elements.
-  tree().CalcForceElementsContribution(context0, pc0, vc0, &forces0);
+  internal_tree().CalcForceElementsContribution(context0, pc0, vc0, &forces0);
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
@@ -1307,7 +1312,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
-  std::vector<SpatialAcceleration<T>> A_WB_array(tree().num_bodies());
+  std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
   // Generalized accelerations.
   VectorX<T> vdot = VectorX<T>::Zero(nv);
   // Body forces (alias to forces0).
@@ -1316,7 +1321,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // With vdot = 0, this computes:
   //   -tau = C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W.
   VectorX<T>& minus_tau = forces0.mutable_generalized_forces();
-  tree().CalcInverseDynamics(
+  internal_tree().CalcInverseDynamics(
       context0, pc0, vc0, vdot,
       F_BBo_W_array, minus_tau,
       &A_WB_array,
@@ -1403,7 +1408,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> v_next = implicit_stribeck_solver_->get_generalized_velocities();
 
   VectorX<T> qdot_next(this->num_positions());
-  tree().MapVelocityToQDot(context0, v_next, &qdot_next);
+  internal_tree().MapVelocityToQDot(context0, v_next, &qdot_next);
   VectorX<T> q_next = q0 + dt * qdot_next;
 
   VectorX<T> x_next(this->num_multibody_states());
@@ -1422,15 +1427,15 @@ void MultibodyPlant<T>::DoMapQDotToVelocity(
     const Eigen::Ref<const VectorX<T>>& qdot,
     systems::VectorBase<T>* generalized_velocity) const {
   if (is_discrete()) return;
-  const int nq = tree().num_positions();
-  const int nv = tree().num_velocities();
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
 
   DRAKE_ASSERT(qdot.size() == nq);
   DRAKE_DEMAND(generalized_velocity != nullptr);
   DRAKE_DEMAND(generalized_velocity->size() == nv);
 
   VectorX<T> v(nv);
-  tree().MapQDotToVelocity(context, qdot, &v);
+  internal_tree().MapQDotToVelocity(context, qdot, &v);
   generalized_velocity->SetFromVector(v);
 }
 
@@ -1440,15 +1445,15 @@ void MultibodyPlant<T>::DoMapVelocityToQDot(
     const Eigen::Ref<const VectorX<T>>& generalized_velocity,
     systems::VectorBase<T>* positions_derivative) const {
   if (is_discrete()) return;
-  const int nq = tree().num_positions();
-  const int nv = tree().num_velocities();
+  const int nq = internal_tree().num_positions();
+  const int nv = internal_tree().num_velocities();
 
   DRAKE_ASSERT(generalized_velocity.size() == nv);
   DRAKE_DEMAND(positions_derivative != nullptr);
   DRAKE_DEMAND(positions_derivative->size() == nq);
 
   VectorX<T> qdot(nq);
-  tree().MapVelocityToQDot(context, generalized_velocity, &qdot);
+  internal_tree().MapVelocityToQDot(context, generalized_velocity, &qdot);
   positions_derivative->SetFromVector(qdot);
 }
 
@@ -1470,7 +1475,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs =
-        tree().num_actuated_dofs(model_instance_index);
+        internal_tree().num_actuated_dofs(model_instance_index);
     if (instance_num_dofs == 0) {
       continue;
     }
@@ -1478,7 +1483,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     last_actuated_instance = model_instance_index;
     instance_actuation_ports_[model_instance_index] =
         this->DeclareVectorInputPort(
-                tree().GetModelInstanceName(model_instance_index) +
+                internal_tree().GetModelInstanceName(model_instance_index) +
                     "_actuation",
                 systems::BasicVector<T>(instance_num_dofs))
             .get_index();
@@ -1500,7 +1505,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_states =
-        tree().num_states(model_instance_index);
+        internal_tree().num_states(model_instance_index);
     if (instance_num_states == 0) {
       continue;
     }
@@ -1511,7 +1516,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     };
     instance_continuous_state_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-                tree().GetModelInstanceName(model_instance_index) +
+                internal_tree().GetModelInstanceName(model_instance_index) +
                     "_continuous_state",
                 BasicVector<T>(instance_num_states), calc)
             .get_index();
@@ -1523,7 +1528,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_velocities =
-        tree().num_velocities(model_instance_index);
+        internal_tree().num_velocities(model_instance_index);
     if (instance_num_velocities == 0) {
       continue;
     }
@@ -1534,7 +1539,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     };
     instance_generalized_contact_forces_output_ports_[model_instance_index] =
         this->DeclareVectorOutputPort(
-                tree().GetModelInstanceName(model_instance_index) +
+                internal_tree().GetModelInstanceName(model_instance_index) +
                     "_generalized_contact_forces",
                 BasicVector<T>(instance_num_velocities), calc)
             .get_index();
@@ -1572,7 +1577,7 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
   VectorX<T> instance_state_vector =
-      tree().GetPositionsAndVelocities(context, model_instance);
+      internal_tree().GetPositionsAndVelocities(context, model_instance);
   state_vector->SetFromVector(instance_state_vector);
 }
 
@@ -1594,7 +1599,7 @@ void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
   // Generalized velocities and generalized forces are ordered in the same way.
   // Thus we can call get_velocities_from_array().
   const VectorX<T> instance_tau_contact =
-      tree().GetVelocitiesFromArray(model_instance, tau_contact);
+      internal_tree().GetVelocitiesFromArray(model_instance, tau_contact);
 
   tau_vector->set_value(instance_tau_contact);
 }
@@ -1634,7 +1639,7 @@ MultibodyPlant<T>::get_continuous_state_output_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  DRAKE_THROW_UNLESS(tree().num_states(model_instance) > 0);
+  DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);
   return this->get_output_port(
       instance_continuous_state_output_ports_.at(model_instance));
 }
@@ -1647,7 +1652,7 @@ MultibodyPlant<T>::get_generalized_contact_forces_output_port(
   DRAKE_THROW_UNLESS(is_discrete());
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  DRAKE_THROW_UNLESS(tree().num_states(model_instance) > 0);
+  DRAKE_THROW_UNLESS(internal_tree().num_states(model_instance) > 0);
   return this->get_output_port(
       instance_generalized_contact_forces_output_ports_.at(model_instance));
 }
@@ -1696,7 +1701,8 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   // frames do.
   DRAKE_ASSERT(
       poses->size() == static_cast<int>(body_index_to_frame_id_.size() - 1));
-  const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
+  const internal::PositionKinematicsCache<T>& pc =
+      EvalPositionKinematics(context);
 
   // TODO(amcastro-tri): Make use of Body::EvalPoseInWorld(context) once caching
   // lands.
@@ -1704,7 +1710,7 @@ void MultibodyPlant<T>::CalcFramePoseOutput(
   for (const auto it : body_index_to_frame_id_) {
     const BodyIndex body_index = it.first;
     if (body_index == world_index()) continue;
-    const Body<T>& body = tree().get_body(body_index);
+    const Body<T>& body = internal_tree().get_body(body_index);
 
     // NOTE: The GeometryFrames for each body were registered in the world
     // frame, so we report poses in the world frame.

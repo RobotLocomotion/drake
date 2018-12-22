@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -208,8 +209,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::MultibodyTreeContext;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using MultibodyTreeContext
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::MultibodyTreeContext<T>;
 
 }  // namespace multibody
 }  // namespace drake

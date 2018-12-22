@@ -31,7 +31,6 @@ using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::multibody::Body;
 using drake::multibody::MultibodyPlant;
-using drake::multibody::MultibodyTree;
 using drake::multibody::Parser;
 using drake::multibody::UniformGravityFieldElement;
 

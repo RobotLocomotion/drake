@@ -28,7 +28,7 @@ class RevoluteJointTest : public ::testing::Test {
     const SpatialInertia<double> M_B;  // Default construction is ok for this.
 
     // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
+    auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add some bodies so we can add joints between them:
     body1_ = &model->AddBody<RigidBody>(M_B);
@@ -44,14 +44,17 @@ class RevoluteJointTest : public ::testing::Test {
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
+        std::move(model));
     context_ = system_->CreateDefaultContext();
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
+  const internal::MultibodyTree<double>& tree() const {
+    return internal::GetInternalTree(*system_);
+  }
 
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
+  std::unique_ptr<internal::MultibodyTreeSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
 
   const RigidBody<double>* body1_{nullptr};

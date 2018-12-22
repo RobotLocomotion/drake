@@ -281,7 +281,7 @@ int do_main() {
   // supports it.
 
   // The mass of the gripper in simple_gripper.sdf.
-  // TODO(amcastro-tri): we should call MultibodyTree::CalcMass() here.
+  // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
   const double mass = 1.0890;  // kg.
   const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
   const double x0 = FLAGS_amplitude;  // meters.
@@ -325,10 +325,10 @@ int do_main() {
   const Body<double>& mug = plant.GetBodyByName("main_body");
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  std::vector<Isometry3d> X_WB_all;
-  plant.tree().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
-  const Vector3d& p_WBr = X_WB_all[right_finger.index()].translation();
-  const Vector3d& p_WBl = X_WB_all[left_finger.index()].translation();
+  const Vector3d& p_WBr = plant.EvalBodyPoseInWorld(
+      plant_context, right_finger).translation();
+  const Vector3d& p_WBl = plant.EvalBodyPoseInWorld(
+      plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
   Isometry3d X_WM;
@@ -337,7 +337,7 @@ int do_main() {
                (FLAGS_rz * M_PI / 180) + M_PI);
   X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
   X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
-  plant.tree().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
+  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation

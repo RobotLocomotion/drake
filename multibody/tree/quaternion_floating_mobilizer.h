@@ -13,6 +13,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This Mobilizer allows two frames to move freely relatively to one another.
 /// To fully specify this mobilizer a user must provide an inboard frame F and
@@ -260,6 +261,15 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 };
+
+}  // namespace internal
+
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using QuaternionFloatingMobilizer
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::QuaternionFloatingMobilizer<T>;
 
 }  // namespace multibody
 }  // namespace drake
