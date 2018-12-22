@@ -67,7 +67,7 @@ class KukaIiwaModelTests : public ::testing::Test {
          ++joint_index) {
       const RevoluteJoint<double>& joint =
           dynamic_cast<const RevoluteJoint<double>&>(
-              plant_->tree().get_joint(joint_index));
+              plant_->get_joint(joint_index));
       joint.set_angle(context_.get(), x0[joint_index]);
       joint.set_angular_rate(context_.get(), x0[kNumJoints + joint_index]);
     }
@@ -83,8 +83,8 @@ class KukaIiwaModelTests : public ::testing::Test {
     // Set an arbitrary non-zero spatial velocity of the floating base link.
     const Vector3<double> w_WB{-1, 1, -1};
     const Vector3<double> v_WB{1, -1, 1};
-    plant_->tree().SetFreeBodySpatialVelocityOrThrow(base_body, {w_WB, v_WB},
-                                                     context_.get());
+    plant_->SetFreeBodySpatialVelocity(
+        context_.get(), base_body, {w_WB, v_WB});
   }
 
   // Gets an arm state to an arbitrary configuration in which joint angles and
@@ -131,8 +131,8 @@ class KukaIiwaModelTests : public ::testing::Test {
       const MatrixX<T>& p_EPi,
       MatrixX<T>* p_WPi, MatrixX<T>* Jq_WPi) const {
     const Body<T>& linkG_on_T =
-        plant_on_T.tree().get_variant(*end_effector_link_);
-    plant_on_T.tree().CalcPointsAnalyticalJacobianExpressedInWorld(
+        plant_on_T.get_body(end_effector_link_->index());
+    plant_on_T.CalcPointsAnalyticalJacobianExpressedInWorld(
         context_on_T, linkG_on_T.body_frame(), p_EPi, p_WPi, Jq_WPi);
   }
 

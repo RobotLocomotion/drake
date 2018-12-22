@@ -182,7 +182,7 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
     const Frame<double>& frame = plant.GetFrameByName(name, instance1);
     const Frame<double>& parent_frame =
         plant.GetFrameByName(parent_name, instance1);
-    const Isometry3d X_PF = plant.tree().CalcRelativeTransform(
+    const Isometry3d X_PF = plant.CalcRelativeTransform(
         *context, parent_frame, frame);
     EXPECT_TRUE(CompareMatrices(X_PF_expected.matrix(), X_PF.matrix(), eps))
         << name;

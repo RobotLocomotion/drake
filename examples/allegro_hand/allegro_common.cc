@@ -60,8 +60,8 @@ void GetControlPortMapping(
     joint_index_mapping.push_back(plant.GetJointByName(joint_name).index());
   }
 
-  *Sx = plant.tree().MakeStateSelectorMatrix(joint_index_mapping);
-  *Sy = plant.tree().MakeActuatorSelectorMatrix(joint_index_mapping);
+  *Sx = plant.MakeStateSelectorMatrix(joint_index_mapping);
+  *Sy = plant.MakeActuatorSelectorMatrix(joint_index_mapping);
 }
 
 AllegroHandMotionState::AllegroHandMotionState()

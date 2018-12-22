@@ -23,8 +23,8 @@ InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
       plant_.num_positions(), -std::numeric_limits<double>::infinity());
   Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
       plant_.num_positions(), std::numeric_limits<double>::infinity());
-  for (JointIndex i{0}; i < plant_.tree().num_joints(); ++i) {
-    const auto& joint = plant_.tree().get_joint(i);
+  for (JointIndex i{0}; i < plant_.num_joints(); ++i) {
+    const auto& joint = plant_.get_joint(i);
     q_lower.segment(joint.position_start(), joint.num_positions()) =
         joint.lower_limits();
     q_upper.segment(joint.position_start(), joint.num_positions()) =

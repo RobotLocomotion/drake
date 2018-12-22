@@ -38,7 +38,7 @@ class MultibodyForcesTests : public ::testing::Test {
     model_.Finalize();
   }
  protected:
-  MultibodyTree<double> model_;
+  internal::MultibodyTree<double> model_;
 };
 
 // Test constructor that sets forces to zero.

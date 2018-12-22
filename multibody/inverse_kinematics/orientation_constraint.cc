@@ -22,8 +22,6 @@ OrientationConstraint::OrientationConstraint(
       R_BbarB_{R_BbarB},
       context_(context) {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
-  frameBbar.HasThisParentTreeOrThrow(&plant_.tree());
-  frameAbar.HasThisParentTreeOrThrow(&plant_.tree());
   if (theta_bound < 0) {
     throw std::invalid_argument(
         "OrientationConstraint: theta_bound should be non-negative.\n");
@@ -69,13 +67,11 @@ void OrientationConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   const Frame<double>& frameBbar = plant_.get_frame(frameBbar_index_);
   //
   const Matrix3<double> R_AbarBbar =
-      plant_.tree()
-          .CalcRelativeTransform(*context_, frameAbar, frameBbar)
-          .linear();
+      plant_.CalcRelativeTransform(*context_, frameAbar, frameBbar).linear();
   const Matrix3<double> R_AB =
       R_AbarA_.inverse().matrix() * R_AbarBbar * R_BbarB_.matrix();
   Eigen::MatrixXd Jq_V_AbarBbar(6, plant_.num_positions());
-  plant_.tree().CalcJacobianSpatialVelocity(
+  plant_.CalcJacobianSpatialVelocity(
       *context_, JacobianWrtVariable::kQDot, frameBbar,
       Eigen::Vector3d::Zero() /* p_BQ */, frameAbar, frameAbar, &Jq_V_AbarBbar);
   // Since we're only concerned with the rotational portion,

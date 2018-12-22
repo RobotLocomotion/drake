@@ -104,12 +104,13 @@ if not args.hardware:
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()
     X_WObject.set_translation([.6, 0, 0])
-    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+    station.get_multibody_plant().SetFreeBodyPose(
+        station.GetMutableSubsystemContext(
+            station.get_multibody_plant(),
+            station_context),
         station.get_multibody_plant().GetBodyByName("base_link",
                                                     object),
-        X_WObject, station.GetMutableSubsystemContext(
-            station.get_multibody_plant(),
-            station_context))
+        X_WObject)
 
 # Eval the output port once to read the initial positions of the IIWA.
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(

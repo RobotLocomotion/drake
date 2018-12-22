@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 template <typename T>
 Quaternion<T> QuaternionFloatingMobilizer<T>::get_quaternion(
@@ -397,5 +398,6 @@ QuaternionFloatingMobilizer<T>::DoCloneToScalar(
 template class QuaternionFloatingMobilizer<double>;
 template class QuaternionFloatingMobilizer<AutoDiffXd>;
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

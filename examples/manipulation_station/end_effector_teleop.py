@@ -174,7 +174,7 @@ class DifferentialIK(LeafSystem):
         # methods.
         self.robot_context = robot.CreateDefaultContext()
         # Confirm that all velocities are zero (they will not be reset below).
-        assert not self.robot.tree().GetPositionsAndVelocities(
+        assert not self.robot.GetPositionsAndVelocities(
             self.robot_context)[-robot.num_velocities():].any()
 
         # Store the robot positions as state.
@@ -193,10 +193,10 @@ class DifferentialIK(LeafSystem):
         context.get_mutable_discrete_state(0).SetFromVector(q)
 
     def ForwardKinematics(self, q):
-        x = self.robot.tree().GetMutablePositionsAndVelocities(
+        x = self.robot.GetMutablePositionsAndVelocities(
             self.robot_context)
         x[:robot.num_positions()] = q
-        return self.robot.tree().EvalBodyPoseInWorld(
+        return self.robot.EvalBodyPoseInWorld(
             self.robot_context, self.frame_E.body())
 
     def CalcPoseError(self, X_WE_desired, q):
@@ -215,7 +215,7 @@ class DifferentialIK(LeafSystem):
                                       rpy_xyz_desired[-3:]).GetAsIsometry3()
         q_last = context.get_discrete_state_vector().get_value()
 
-        x = self.robot.tree().GetMutablePositionsAndVelocities(
+        x = self.robot.GetMutablePositionsAndVelocities(
             self.robot_context)
         x[:robot.num_positions()] = q_last
         result = DoDifferentialInverseKinematics(self.robot,
@@ -345,12 +345,13 @@ if not args.hardware:
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()
     X_WObject.set_translation([.6, 0, 0])
-    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
+    station.get_multibody_plant().SetFreeBodyPose(
+        station.GetMutableSubsystemContext(
+            station.get_multibody_plant(),
+            station_context),
         station.get_multibody_plant().GetBodyByName("base_link",
                                                     object),
-        X_WObject, station.GetMutableSubsystemContext(
-            station.get_multibody_plant(),
-            station_context))
+        X_WObject)
 
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
     station_context).get_value()

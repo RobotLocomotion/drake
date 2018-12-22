@@ -59,9 +59,9 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   plant.Finalize();
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
   const auto& gripper_body =
-      plant.tree().GetRigidBodyByName(frame.body().name());
-  const auto& left_finger = plant.tree().GetRigidBodyByName("left_finger");
-  const auto& right_finger = plant.tree().GetRigidBodyByName("right_finger");
+      plant.GetRigidBodyByName(frame.body().name());
+  const auto& left_finger = plant.GetRigidBodyByName("left_finger");
+  const auto& right_finger = plant.GetRigidBodyByName("right_finger");
   const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
   const auto& right_slider = plant.GetJointByName("right_finger_sliding_joint");
   const SpatialInertia<double>& M_GGo_G =

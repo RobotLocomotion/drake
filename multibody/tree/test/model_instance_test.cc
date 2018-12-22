@@ -14,8 +14,8 @@ namespace {
 GTEST_TEST(ModelInstance, ModelInstanceTest) {
   // Create a tree with enough bodies to make two models, one with a
   // welded base and one free.
-  auto tree_pointer = std::make_unique<MultibodyTree<double>>();
-  MultibodyTree<double>& tree = *tree_pointer;
+  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
+  internal::MultibodyTree<double>& tree = *tree_pointer;
 
   const ModelInstanceIndex instance1 = tree.AddModelInstance("instance1");
 
@@ -111,7 +111,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   EXPECT_TRUE(CompareMatrices(instance2_vel, instance2_vel_expected));
 
   // Create a MultibodyTreeSystem so that we can get a context.
-  MultibodyTreeSystem<double> mb_system(std::move(tree_pointer));
+  internal::MultibodyTreeSystem<double> mb_system(std::move(tree_pointer));
   std::unique_ptr<systems::Context<double>> context = mb_system.
       CreateDefaultContext();
 
@@ -135,7 +135,7 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
   EXPECT_TRUE(CompareMatrices(instance1_vel, instance1_vel_from_array));
 
   // Test that scalar conversion produces properly shaped results.
-  std::unique_ptr<MultibodyTree<AutoDiffXd>> tree_ad =
+  std::unique_ptr<internal::MultibodyTree<AutoDiffXd>> tree_ad =
       tree.CloneToScalar<AutoDiffXd>();
 
   EXPECT_EQ(tree_ad->num_positions(instance1), 2);

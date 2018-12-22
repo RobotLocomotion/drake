@@ -84,7 +84,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// method is a properly initialized %MultibodyTreeElement with a
   /// valid MultibodyTree parent. @see RigidBody::Create() for an example of a
   /// `Create()` method.
-  const MultibodyTree<T>& get_parent_tree() const {
+  const internal::MultibodyTree<T>& get_parent_tree() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return *parent_tree_;
   }
@@ -124,7 +124,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
 
   /// Checks whether this MultibodyTreeElement belongs to the provided
   /// MultibodyTree `tree`. If not, it throws a std::logic_error.
-  void HasThisParentTreeOrThrow(const MultibodyTree<T>* tree) const {
+  void HasThisParentTreeOrThrow(const internal::MultibodyTree<T>* tree) const {
     DRAKE_ASSERT(tree != nullptr);
     if (parent_tree_ != tree) {
       throw std::logic_error("This multibody component does not belong to the "
@@ -148,17 +148,17 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   /// Gives MultibodyTree elements the opportunity to retrieve their topology
   /// when MultibodyTree::Finalize() is invoked.
   /// NVI to pure virtual method DoSetTopology().
-  void SetTopology(const MultibodyTreeTopology& tree) {
+  void SetTopology(const internal::MultibodyTreeTopology& tree) {
     DoSetTopology(tree);
   }
 
   /// Implementation of the NVI SetTopology(). For advanced use only for
   /// developers implementing new MultibodyTree components.
-  virtual void DoSetTopology(const MultibodyTreeTopology& tree) = 0;
+  virtual void DoSetTopology(const internal::MultibodyTreeTopology& tree) = 0;
 
  private:
   void set_parent_tree(
-      const MultibodyTree<T>* tree, ElementIndexType index) {
+      const internal::MultibodyTree<T>* tree, ElementIndexType index) {
     index_ = index;
     parent_tree_ = tree;
   }
@@ -171,7 +171,7 @@ class MultibodyTreeElement<ElementType<T>, ElementIndexType> {
   // therefore it can set the owning parent tree and unique index in that tree.
   friend class internal::MultibodyTree<T>;
 
-  const MultibodyTree<T>* parent_tree_{nullptr};
+  const internal::MultibodyTree<T>* parent_tree_{nullptr};
 
   // The default index value is *invalid*. This must be set to a valid index
   // value before the element is released to the wild.
