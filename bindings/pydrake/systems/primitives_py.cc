@@ -47,7 +47,7 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<Adder<T>, LeafSystem<T>>(
         m, "Adder", GetPyParam<T>(), doc.Adder.doc)
         .def(py::init<int, int>(), py::arg("num_inputs"), py::arg("size"),
-            doc.Adder.ctor.doc_2args);
+            doc.Adder.ctor.doc);
 
     DefineTemplateClassWithDefault<AffineSystem<T>, LeafSystem<T>>(
         m, "AffineSystem", GetPyParam<T>(), doc.AffineSystem.doc)
@@ -65,35 +65,34 @@ PYBIND11_MODULE(primitives, m) {
         .def("A", overload_cast_explicit<const MatrixXd&>(&AffineSystem<T>::A),
             doc.AffineSystem.A.doc_0args)
         .def("B", overload_cast_explicit<const MatrixXd&>(&AffineSystem<T>::B),
-            doc.AffineSystem.B.doc_0args)
+            doc.AffineSystem.B.doc)
         .def("f0",
             overload_cast_explicit<const VectorXd&>(&AffineSystem<T>::f0),
-            doc.AffineSystem.f0.doc_0args)
+            doc.AffineSystem.f0.doc)
         .def("C", overload_cast_explicit<const MatrixXd&>(&AffineSystem<T>::C),
-            doc.AffineSystem.C.doc_0args)
+            doc.AffineSystem.C.doc)
         .def("D", overload_cast_explicit<const MatrixXd&>(&AffineSystem<T>::D),
-            doc.AffineSystem.D.doc_0args)
+            doc.AffineSystem.D.doc)
         .def("y0",
             overload_cast_explicit<const VectorXd&>(&AffineSystem<T>::y0),
-            doc.AffineSystem.y0.doc_0args)
+            doc.AffineSystem.y0.doc)
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
         .def(py::init<const AbstractValue&>(), py::arg("value"),
-            doc.ConstantValueSource.ctor.doc_3);
+            doc.ConstantValueSource.ctor.doc);
 
     DefineTemplateClassWithDefault<ConstantVectorSource<T>, LeafSystem<T>>(
         m, "ConstantVectorSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
         .def(py::init<VectorX<T>>(), py::arg("source_value"),
-            doc.ConstantValueSource.ctor.doc_3);
+            doc.ConstantValueSource.ctor.doc);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
         .def(py::init<int, int>(), py::arg("size"),
-            py::arg("output_ports_sizes") = 1,
-            doc.Demultiplexer.ctor.doc_2args);
+            py::arg("output_ports_sizes") = 1, doc.Demultiplexer.ctor.doc);
 
     DefineTemplateClassWithDefault<                  // BR
         FirstOrderLowPassFilter<T>, LeafSystem<T>>(  //
@@ -116,13 +115,13 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<Gain<T>, LeafSystem<T>>(
         m, "Gain", GetPyParam<T>(), doc.Gain.doc)
         .def(py::init<double, int>(), py::arg("k"), py::arg("size"),
-            doc.Gain.ctor.doc)
+            doc.Gain.ctor.doc_2args)
         .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("k"),
-            doc.Gain.ctor.doc_3);
+            doc.Gain.ctor.doc_1args);
 
     DefineTemplateClassWithDefault<Integrator<T>, LeafSystem<T>>(
         m, "Integrator", GetPyParam<T>(), doc.Integrator.doc)
-        .def(py::init<int>(), doc.Integrator.ctor.doc_0args);
+        .def(py::init<int>(), doc.Integrator.ctor.doc);
 
     DefineTemplateClassWithDefault<LinearSystem<T>, AffineSystem<T>>(
         m, "LinearSystem", GetPyParam<T>(), doc.LinearSystem.doc)
@@ -145,12 +144,13 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<std::vector<int>>(), py::arg("input_sizes"),
             doc.Multiplexer.ctor.doc_1args_input_sizes)
         .def(py::init<const BasicVector<T>&>(), py::arg("model_vector"),
-            doc.Multiplexer.ctor.doc_0args);
+            doc.Multiplexer.ctor.doc_1args_model_vector);
 
     DefineTemplateClassWithDefault<PassThrough<T>, LeafSystem<T>>(
         m, "PassThrough", GetPyParam<T>(), doc.PassThrough.doc)
-        .def(py::init<int>(), doc.PassThrough.ctor.doc_4)
-        .def(py::init<const AbstractValue&>(), doc.PassThrough.ctor.doc_5);
+        .def(py::init<int>(), doc.PassThrough.ctor.doc_1args_vector_size)
+        .def(py::init<const AbstractValue&>(),
+            doc.PassThrough.ctor.doc_1args_abstract_model_value);
 
     DefineTemplateClassWithDefault<Saturation<T>, LeafSystem<T>>(
         m, "Saturation", GetPyParam<T>(), doc.Saturation.doc)
@@ -161,8 +161,7 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<SignalLogger<T>, LeafSystem<T>>(
         m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
         .def(py::init<int, int>(), py::arg("input_size"),
-            py::arg("batch_allocation_size") = 1000,
-            doc.SignalLogger.ctor.doc_2args)
+            py::arg("batch_allocation_size") = 1000, doc.SignalLogger.ctor.doc)
         .def("sample_times", &SignalLogger<T>::sample_times,
             doc.SignalLogger.sample_times.doc)
         .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
@@ -170,16 +169,18 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
-        .def(py::init<int>(), doc.WrapToSystem.ctor.doc_1args)
+        .def(py::init<int>(), doc.WrapToSystem.ctor.doc)
         .def("set_interval", &WrapToSystem<T>::set_interval,
             doc.WrapToSystem.set_interval.doc);
 
     DefineTemplateClassWithDefault<ZeroOrderHold<T>, LeafSystem<T>>(
         m, "ZeroOrderHold", GetPyParam<T>(), doc.ZeroOrderHold.doc)
         .def(py::init<double, int>(), py::arg("period_sec"),
-            py::arg("vector_size"), doc.ZeroOrderHold.ctor.doc_4)
+            py::arg("vector_size"),
+            doc.ZeroOrderHold.ctor.doc_2args_period_sec_vector_size)
         .def(py::init<double, const AbstractValue&>(), py::arg("period_sec"),
-            py::arg("abstract_model_value"), doc.ZeroOrderHold.ctor.doc_5);
+            py::arg("abstract_model_value"),
+            doc.ZeroOrderHold.ctor.doc_2args_period_sec_abstract_model_value);
   };
   type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
 
@@ -187,7 +188,7 @@ PYBIND11_MODULE(primitives, m) {
       m, "BarycentricMeshSystem", doc.BarycentricMeshSystem.doc)
       .def(py::init<math::BarycentricMesh<double>,
                const Eigen::Ref<const MatrixX<double>>&>(),
-          doc.BarycentricMeshSystem.ctor.doc_2args)
+          doc.BarycentricMeshSystem.ctor.doc)
       .def("get_mesh", &BarycentricMeshSystem<double>::get_mesh,
           doc.BarycentricMeshSystem.get_mesh.doc)
       .def("get_output_values",
@@ -216,7 +217,7 @@ PYBIND11_MODULE(primitives, m) {
       .def(py::init<const trajectories::Trajectory<double>&, int, bool>(),
           py::arg("trajectory"), py::arg("output_derivative_order") = 0,
           py::arg("zero_derivatives_beyond_limits") = true,
-          doc.TrajectorySource.ctor.doc_3args);
+          doc.TrajectorySource.ctor.doc);
 
   m.def("AddRandomInputs", &AddRandomInputs, py::arg("sampling_interval_sec"),
       py::arg("builder"), doc.AddRandomInputs.doc);

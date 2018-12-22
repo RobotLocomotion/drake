@@ -28,12 +28,12 @@ PYBIND11_MODULE(rimless_wheel, m) {
 
   py::class_<RimlessWheel<T>, LeafSystem<T>>(
       m, "RimlessWheel", doc.RimlessWheel.doc)
-      .def(py::init<>(), doc.RimlessWheel.ctor.doc_3);
+      .def(py::init<>(), doc.RimlessWheel.ctor.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<RimlessWheelParams<T>, BasicVector<T>>(
       m, "RimlessWheelParams", doc.RimlessWheelParams.doc)
-      .def(py::init<>(), doc.RimlessWheelParams.ctor.doc_0args)
+      .def(py::init<>(), doc.RimlessWheelParams.ctor.doc)
       .def(
           "mass", &RimlessWheelParams<T>::mass, doc.RimlessWheelParams.mass.doc)
       .def("length", &RimlessWheelParams<T>::length,
@@ -57,7 +57,7 @@ PYBIND11_MODULE(rimless_wheel, m) {
 
   py::class_<RimlessWheelContinuousState<T>, BasicVector<T>>(
       m, "RimlessWheelContinuousState", doc.RimlessWheelContinuousState.doc)
-      .def(py::init<>(), doc.RimlessWheelContinuousState.ctor.doc_0args)
+      .def(py::init<>(), doc.RimlessWheelContinuousState.ctor.doc)
       .def("theta", &RimlessWheelContinuousState<T>::theta,
           doc.RimlessWheelContinuousState.theta.doc)
       .def("thetadot", &RimlessWheelContinuousState<T>::thetadot,

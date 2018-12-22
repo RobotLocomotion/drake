@@ -178,9 +178,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// Note: Derived classes will need to type
   ///    using MultipleShooting::AddFinalCost;
   /// to "unhide" this method.
-  void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
-    DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
-    AddFinalCost(e(0, 0));
+  void AddFinalCost(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& matrix) {
+    DRAKE_DEMAND(matrix.rows() == 1 && matrix.cols() == 1);
+    AddFinalCost(matrix(0, 0));
   }
 
   typedef std::function<
