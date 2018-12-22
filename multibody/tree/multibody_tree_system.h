@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
@@ -76,10 +77,9 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   bool is_discrete() const { return is_discrete_; }
 
-  /** Returns a const reference to the MultibodyTree owned by this class. */
-  const MultibodyTree<T>& tree() const {
-    DRAKE_ASSERT(tree_ != nullptr);
-    return *tree_;
+  DRAKE_DEPRECATED("Please use MultibodyPlant methods directly.")
+  const internal::MultibodyTree<T>& tree() const {
+    return internal_tree();
   }
 
   /** Returns a reference to the up to date PositionKinematicsCache in the
@@ -151,6 +151,16 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       : MultibodyTreeSystem(converter, true,  // Null tree is OK here.
                             std::move(tree), is_discrete) {}
 
+  template <typename U>
+  friend const MultibodyTree<U>& GetInternalTree(
+      const MultibodyTreeSystem<U>&);
+
+  /** Returns a const reference to the MultibodyTree owned by this class. */
+  const MultibodyTree<T>& internal_tree() const {
+    DRAKE_ASSERT(tree_ != nullptr);
+    return *tree_;
+  }
+
   /** Returns a mutable reference to the MultibodyTree owned by this class. */
   MultibodyTree<T>& mutable_tree() const;
 
@@ -187,7 +197,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   // Use continuous state variables by default.
   bool is_discrete_{false};
 
-  std::unique_ptr<drake::multibody::MultibodyTree<T>> tree_;
+  std::unique_ptr<drake::multibody::internal::MultibodyTree<T>> tree_;
   systems::CacheIndex position_kinematics_cache_index_;
   systems::CacheIndex velocity_kinematics_cache_index_;
   systems::CacheIndex H_PB_W_cache_index_;
@@ -196,10 +206,20 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   bool already_finalized_{false};
 };
 
+/// Access internal tree outside of MultibodyTreeSystem.
+template <typename T>
+const MultibodyTree<T>& GetInternalTree(const MultibodyTreeSystem<T>& system) {
+  return system.internal_tree();
+}
+
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::MultibodyTreeSystem;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using MultibodyTreeSystem
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::MultibodyTreeSystem<T>;
 
 }  // namespace multibody
 }  // namespace drake
@@ -210,7 +230,7 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 template <>
-struct Traits<drake::multibody::MultibodyTreeSystem> :
+struct Traits<drake::multibody::internal::MultibodyTreeSystem> :
     public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems

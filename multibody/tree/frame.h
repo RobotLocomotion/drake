@@ -158,15 +158,15 @@ class Frame : public FrameBase<T> {
     return R_WE.transpose() * V_MF_W;
   }
 
-  /// NVI to DoCloneToScalar() templated on the scalar type of the new clone to
-  /// be created. This method is mostly intended to be called by
+  /// (Advanced) NVI to DoCloneToScalar() templated on the scalar type of the
+  /// new clone to be created. This method is mostly intended to be called by
   /// MultibodyTree::CloneToScalar(). Most users should not call this clone
   /// method directly but rather clone the entire parent MultibodyTree if
   /// needed.
   /// @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
   std::unique_ptr<Frame<ToScalar>> CloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const {
+      const internal::MultibodyTree<ToScalar>& tree_clone) const {
     return DoCloneToScalar(tree_clone);
   }
 
@@ -198,16 +198,17 @@ class Frame : public FrameBase<T> {
 
   /// Clones this %Frame (templated on T) to a frame templated on `double`.
   virtual std::unique_ptr<Frame<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const = 0;
+      const internal::MultibodyTree<double>& tree_clone) const = 0;
 
   /// Clones this %Frame (templated on T) to a frame templated on AutoDiffXd.
   virtual std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
   /// @}
 
  private:
   // Implementation for MultibodyTreeElement::DoSetTopology().
-  void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
+  void DoSetTopology(const internal::MultibodyTreeTopology& tree_topology)
+  final {
     topology_ = tree_topology.get_frame(this->index());
     DRAKE_ASSERT(topology_.index == this->index());
   }
@@ -218,7 +219,7 @@ class Frame : public FrameBase<T> {
   const Body<T>& body_;
 
   // The internal bookkeeping topology struct used by MultibodyTree.
-  FrameTopology topology_;
+  internal::FrameTopology topology_;
 };
 
 }  // namespace multibody

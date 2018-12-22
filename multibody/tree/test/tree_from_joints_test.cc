@@ -102,7 +102,7 @@ class DoublePendulumModel {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DoublePendulumModel)
 
   DoublePendulumModel() {
-    auto model = std::make_unique<MultibodyTree<double>>();
+    auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Position of L1's COM measured in L1, expressed in L1.
     Vector3d p_L1oL1cm = Vector3d::Zero();  // L1 is at the link's COM.
@@ -171,7 +171,8 @@ class DoublePendulumModel {
             Vector3d(0.0, -acceleration_of_gravity_, 0.0));
 
     // We are done adding modeling elements.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
+        std::move(model));
   }
 
   double mass1() const { return mass1_; }
@@ -193,14 +194,16 @@ class DoublePendulumModel {
     return *gravity_element_;
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
+  const internal::MultibodyTree<double>& tree() const {
+    return internal::GetInternalTree(*system_);
+  }
 
   std::unique_ptr<Context<double>> CreateDefaultContext() const {
     return system_->CreateDefaultContext();
   }
 
  private:
-  std::unique_ptr<MultibodyTreeSystem<T>> system_;
+  std::unique_ptr<internal::MultibodyTreeSystem<T>> system_;
 
   const Body<T>* world_body_{nullptr};
   // Bodies:
@@ -317,8 +320,8 @@ class PendulumTests : public ::testing::Test {
     pendulum_.shoulder().set_angular_rate(context_.get(), theta1dot);
     pendulum_.elbow().set_angular_rate(context_.get(), theta2dot);
 
-    PositionKinematicsCache<double> pc(tree().get_topology());
-    VelocityKinematicsCache<double> vc(tree().get_topology());
+    internal::PositionKinematicsCache<double> pc(tree().get_topology());
+    internal::VelocityKinematicsCache<double> vc(tree().get_topology());
     tree().CalcPositionKinematicsCache(*context_, &pc);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
 
@@ -360,7 +363,9 @@ class PendulumTests : public ::testing::Test {
         tau_id2, rhs, kTolerance, MatrixCompareType::relative));
   }
 
-  const MultibodyTree<double>& tree() const { return pendulum_.tree(); }
+  const internal::MultibodyTree<double>& tree() const {
+    return pendulum_.tree();
+  }
 
  protected:
   // The MultibodyTree model under test.

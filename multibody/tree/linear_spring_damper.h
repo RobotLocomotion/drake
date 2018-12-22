@@ -93,37 +93,37 @@ class LinearSpringDamper final : public ForceElement<T> {
   double damping() const { return damping_; }
 
   T CalcPotentialEnergy(
-      const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc) const override;
+      const internal::MultibodyTreeContext<T>& context,
+      const internal::PositionKinematicsCache<T>& pc) const override;
 
   T CalcConservativePower(
-      const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc) const override;
+      const internal::MultibodyTreeContext<T>& context,
+      const internal::PositionKinematicsCache<T>& pc,
+      const internal::VelocityKinematicsCache<T>& vc) const override;
 
   T CalcNonConservativePower(
-      const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc) const override;
+      const internal::MultibodyTreeContext<T>& context,
+      const internal::PositionKinematicsCache<T>& pc,
+      const internal::VelocityKinematicsCache<T>& vc) const override;
 
  protected:
   void DoCalcAndAddForceContribution(
-      const MultibodyTreeContext<T>& context,
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc,
+      const internal::MultibodyTreeContext<T>& context,
+      const internal::PositionKinematicsCache<T>& pc,
+      const internal::VelocityKinematicsCache<T>& vc,
       MultibodyForces<T>* forces) const override;
 
   std::unique_ptr<ForceElement<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyTree<double>& tree_clone) const override;
 
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
   // To avoid a division by zero when computing a normalized vector from point P
   // on body A to point Q on body B as length of the spring approaches zero,
@@ -139,8 +139,8 @@ class LinearSpringDamper final : public ForceElement<T> {
   // Helper method to compute the rate of change of the separation length
   // between the two endpoints for this spring-damper.
   T CalcLengthTimeDerivative(
-      const PositionKinematicsCache<T>& pc,
-      const VelocityKinematicsCache<T>& vc) const;
+      const internal::PositionKinematicsCache<T>& pc,
+      const internal::VelocityKinematicsCache<T>& vc) const;
 
   const Body<T>& bodyA_;
   const Vector3<double> p_AP_;

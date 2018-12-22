@@ -29,20 +29,20 @@ class MultibodyForces {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
 
-  /// Constructs a force object to store a set of forces to be applied to
-  /// `model`. Forces are initialized to zero, meaning no forces are applied to
-  /// `model`. `model` must have been already finalized with
-  /// MultibodyTree::Finalize() or this constructor will abort.
-  explicit MultibodyForces(const MultibodyTree<T>& model);
+  // TODO(amcastro-tri): replace with MultibodyPlant once dependency becomes
+  // logical.
+  template <typename U>
+  using MultibodyPlantSurrogate = internal::MultibodyTreeSystem<U>;
 
   /// Constructs a force object to store a set of forces to be applied to
   /// the multibody model for `plant`. Forces are initialized to zero, meaning
   /// no forces are applied.
   /// `plant` must have been already finalized with
   /// MultibodyPlant::Finalize() or this constructor will abort.
-  // TODO(amcastro-tri): replace with MultibodyPlant constructor once MBT
-  // becomes internal.
-  explicit MultibodyForces(const MultibodyTreeSystem<T>& plant);
+  explicit MultibodyForces(const MultibodyPlantSurrogate<T>& plant);
+
+  /// (Advanced) Tree overload.
+  explicit MultibodyForces(const internal::MultibodyTree<T>& model);
 
   /// Sets `this` to store zero forces (no applied forces).
   MultibodyForces<T>& SetZero();
@@ -89,10 +89,13 @@ class MultibodyForces {
   void AddInForces(const MultibodyForces<T>& addend);
 
   /// Utility that checks that the forces stored by `this` object have the
-  /// proper sizes to represent the set of forces for the given `model`.
+  /// proper sizes to represent the set of forces for the given `plant`.
   /// @returns true if `this` forces object has the proper sizes for the given
-  /// `model`.
-  bool CheckHasRightSizeForModel(const MultibodyTree<T>& model) const;
+  /// `plant`.
+  bool CheckHasRightSizeForModel(const MultibodyPlantSurrogate<T>& plant) const;
+
+  /// (Advanced) Tree overload.
+  bool CheckHasRightSizeForModel(const internal::MultibodyTree<T>& model) const;
 
  private:
   // Vector holding, for each body in the MultibodyTree, the externally applied

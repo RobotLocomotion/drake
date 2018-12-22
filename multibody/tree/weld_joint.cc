@@ -12,7 +12,7 @@ template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Joint<ToScalar>>
 WeldJoint<T>::TemplatedDoCloneToScalar(
-    const MultibodyTree<ToScalar>& tree_clone) const {
+    const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& frame_on_parent_body_clone =
       tree_clone.get_variant(this->frame_on_parent());
   const Frame<ToScalar>& frame_on_child_body_clone =
@@ -28,13 +28,13 @@ WeldJoint<T>::TemplatedDoCloneToScalar(
 
 template <typename T>
 std::unique_ptr<Joint<double>> WeldJoint<T>::DoCloneToScalar(
-    const MultibodyTree<double>& tree_clone) const {
+    const internal::MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
 std::unique_ptr<Joint<AutoDiffXd>> WeldJoint<T>::DoCloneToScalar(
-    const MultibodyTree<AutoDiffXd>& tree_clone) const {
+    const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
@@ -46,7 +46,7 @@ std::unique_ptr<typename Joint<T>::BluePrint>
 WeldJoint<T>::MakeImplementationBlueprint() const {
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   blue_print->mobilizers_.push_back(
-      std::make_unique<WeldMobilizer<T>>(
+      std::make_unique<internal::WeldMobilizer<T>>(
           this->frame_on_parent(), this->frame_on_child(), X_PC_));
   return std::move(blue_print);
 }

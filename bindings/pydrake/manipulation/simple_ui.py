@@ -81,12 +81,12 @@ class JointSliders(VectorSystem):
         self._slider = []
         self._slider_position_start = []
         context = robot.CreateDefaultContext()
-        state = robot.tree().GetPositionsAndVelocities(context)
+        state = robot.GetPositionsAndVelocities(context)
         self._default_position = state[:robot.num_positions()]
 
         k = 0
         for i in range(0, robot.num_joints()):
-            joint = robot.tree().get_joint(JointIndex(i))
+            joint = robot.get_joint(JointIndex(i))
             low = joint.lower_limits()
             upp = joint.upper_limits()
             for j in range(0, joint.num_positions()):

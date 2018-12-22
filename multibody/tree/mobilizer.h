@@ -6,6 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/random.h"
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_force.h"
@@ -21,11 +22,10 @@ namespace multibody {
 
 // Forward declarations.
 template<typename T> class Body;
-namespace internal {
-template<typename T> class BodyNode;
-}
 
 namespace internal {
+
+template<typename T> class BodyNode;
 
 /// %Mobilizer is a fundamental object within Drake's multibody engine used to
 /// specify the allowed motions between two Frame objects within a
@@ -659,8 +659,12 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
 
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::Mobilizer;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using Mobilizer
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::Mobilizer<T>;
 
 }  // namespace multibody
 }  // namespace drake

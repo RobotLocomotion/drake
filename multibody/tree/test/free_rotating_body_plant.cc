@@ -13,7 +13,7 @@ using Eigen::Vector3d;
 
 template<typename T>
 FreeRotatingBodyPlant<T>::FreeRotatingBodyPlant(double I, double J) :
-    MultibodyTreeSystem<T>(), I_(I), J_(J) {
+    internal::MultibodyTreeSystem<T>(), I_(I), J_(J) {
   BuildMultibodyTreeModel();
   DRAKE_DEMAND(tree().num_positions() == 3);
   DRAKE_DEMAND(tree().num_velocities() == 3);
@@ -33,10 +33,11 @@ void FreeRotatingBodyPlant<T>::BuildMultibodyTreeModel() {
   SpatialInertia<double> M_Bcm(kMass, Vector3<double>::Zero(), G_Bcm);
 
   body_ = &this->mutable_tree().template AddBody<RigidBody>(M_Bcm);
-  mobilizer_ = &this->mutable_tree().template AddMobilizer<SpaceXYZMobilizer>(
-      tree().world_frame(), body_->body_frame());
+  mobilizer_ = &this->mutable_tree().template AddMobilizer<
+      internal::SpaceXYZMobilizer>(
+          tree().world_frame(), body_->body_frame());
 
-  MultibodyTreeSystem<T>::Finalize();
+  internal::MultibodyTreeSystem<T>::Finalize();
 }
 
 template<typename T>
@@ -115,7 +116,7 @@ template<typename T>
 void FreeRotatingBodyPlant<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  MultibodyTreeSystem<T>::SetDefaultState(context, &*state);
+  internal::MultibodyTreeSystem<T>::SetDefaultState(context, state);
 
   mobilizer_->set_angular_velocity(
       context, get_default_initial_angular_velocity(), state);

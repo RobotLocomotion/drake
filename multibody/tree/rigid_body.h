@@ -139,17 +139,17 @@ class RigidBody : public Body<T> {
     return default_spatial_inertia_;
   }
 
-  T get_mass(const MultibodyTreeContext<T>&) const final {
+  T get_mass(const internal::MultibodyTreeContext<T>&) const final {
     return default_spatial_inertia_.get_mass();
   }
 
   const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const MultibodyTreeContext<T>&) const final {
+      const internal::MultibodyTreeContext<T>&) const final {
     return default_com().template cast<T>();
   }
 
   SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const MultibodyTreeContext<T>&) const override {
+      const internal::MultibodyTreeContext<T>&) const override {
     return default_spatial_inertia_.cast<T>();
   }
 
@@ -158,32 +158,34 @@ class RigidBody : public Body<T> {
   /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
 
-  /// Extract this body's pose in world (from the position kinematics).
+  /// (Advanced) Extract this body's pose in world (from the position
+  /// kinematics).
   /// @param[in] pc position kinematics cache.
   /// @retval X_WB pose of rigid body B in world frame W.
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_pose_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
   const Isometry3<T>& get_pose_in_world(
-      const PositionKinematicsCache<T>& pc) const {
+      const internal::PositionKinematicsCache<T>& pc) const {
     return pc.get_X_WB(this->node_index());
   }
 
-  /// Extract the rotation matrix relating the world frame to this body's frame.
+  /// (Advanced) Extract the rotation matrix relating the world frame to this
+  /// body's frame.
   /// @param[in] pc position kinematics cache.
   /// @retval R_WB rotation matrix relating rigid body B in world frame W.
   const Matrix3<T> get_body_orientation_in_world(
-      const PositionKinematicsCache<T>& pc) const {
+      const internal::PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).linear();
   }
 
-  /// Extract the position vector from world origin to this body's origin,
-  /// expressed in world.
+  /// (Advanced) Extract the position vector from world origin to this body's
+  /// origin, expressed in world.
   /// @param[in] pc position kinematics cache.
   /// @retval p_WoBo_W position vector from Wo (world origin) to
   ///         Bo (this body's origin) expressed in W (world).
   const Vector3<T> get_origin_position_in_world(
-      const PositionKinematicsCache<T>& pc) const {
+      const internal::PositionKinematicsCache<T>& pc) const {
     return get_pose_in_world(pc).translation();
   }
   ///@}
@@ -193,30 +195,33 @@ class RigidBody : public Body<T> {
   /// context.  These method's APIs will be deprecated when caching arrives.
   ///@{
 
-  /// Extract this body spatial velocity in world, expressed in world.
+  /// (Advanced) Extract this body spatial velocity in world, expressed in
+  /// world.
   /// @param[in] vc velocity kinematics cache.
   /// @retval V_WB_W rigid body B's spatial velocity in world W, expressed in W.
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_velocity_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
   const SpatialVelocity<T>& get_spatial_velocity_in_world(
-      const VelocityKinematicsCache<T>& vc) const {
+      const internal::VelocityKinematicsCache<T>& vc) const {
     return vc.get_V_WB(this->node_index());
   }
 
-  /// Extract this body angular velocity in world, expressed in world.
+  /// (Advanced) Extract this body angular velocity in world, expressed in
+  /// world.
   /// @param[in] vc velocity kinematics cache.
   /// @retval w_WB_W rigid body B's angular velocity in world W, expressed in W.
   const Vector3<T>& get_angular_velocity_in_world(
-      const VelocityKinematicsCache<T>& vc) const {
+      const internal::VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).rotational();
   }
 
-  /// Extract the velocity of this body's origin in world, expressed in world.
+  /// (Advanced) Extract the velocity of this body's origin in world, expressed
+  /// in world.
   /// @param[in] vc velocity kinematics cache.
   /// @retval v_WBo_W velocity of Bo (body origin) in world W, expressed in W.
   const Vector3<T>& get_origin_velocity_in_world(
-      const VelocityKinematicsCache<T>& vc) const {
+      const internal::VelocityKinematicsCache<T>& vc) const {
     return get_spatial_velocity_in_world(vc).translational();
   }
   ///@}
@@ -226,42 +231,45 @@ class RigidBody : public Body<T> {
   /// with context.  These method APIs will be deprecated when caching arrives.
   ///@{
 
-  /// Extract this body spatial acceleration in world, expressed in world.
+  /// (Advanced) Extract this body spatial acceleration in world, expressed in
+  /// world.
   /// @param[in] ac acceleration kinematics cache.
   /// @retval A_WB_W body B's spatial acceleration in world W, expressed in W.
   // TODO(amcastro-tri) When cache entries are in the context, replace this
   // method by Body<T>::get_spatial_acceleration_in_world(const Context<T>&).
   //----------------------------------------------------------------------------
   const SpatialAcceleration<T>& get_spatial_acceleration_in_world(
-      const AccelerationKinematicsCache<T>& ac) const {
+      const internal::AccelerationKinematicsCache<T>& ac) const {
     return ac.get_A_WB(this->node_index());
   }
 
-  /// Extract this body's angular acceleration in world, expressed in world.
+  /// (Advanced) Extract this body's angular acceleration in world, expressed
+  /// in world.
   /// @param[in] ac velocity kinematics cache.
   /// @retval alpha_WB_W B's angular acceleration in world W, expressed in W.
   const Vector3<T>& get_angular_acceleration_in_world(
-      const AccelerationKinematicsCache<T>& ac) const {
+      const internal::AccelerationKinematicsCache<T>& ac) const {
     return get_spatial_acceleration_in_world(ac).rotational();
   }
 
-  /// Extract acceleration of this body's origin in world, expressed in world.
+  /// (Advanced) Extract acceleration of this body's origin in world, expressed
+  /// in world.
   /// @param[in] vc velocity kinematics cache.
   /// @retval a_WBo_W acceleration of body origin Bo in world W, expressed in W.
   const Vector3<T>& get_origin_acceleration_in_world(
-      const AccelerationKinematicsCache<T>& ac) const {
+      const internal::AccelerationKinematicsCache<T>& ac) const {
     return get_spatial_acceleration_in_world(ac).translational();
   }
   ///@}
 
  protected:
   std::unique_ptr<Body<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final {
+      const internal::MultibodyTree<double>& tree_clone) const final {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
   std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final {
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
@@ -269,7 +277,7 @@ class RigidBody : public Body<T> {
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const {
+      const internal::MultibodyTree<ToScalar>& tree_clone) const {
     unused(tree_clone);
     return std::make_unique<RigidBody<ToScalar>>(
         this->name(), default_spatial_inertia_);

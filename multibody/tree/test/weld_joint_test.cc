@@ -26,7 +26,7 @@ class WeldJointTest : public ::testing::Test {
     const SpatialInertia<double> M_B;
 
     // Create an empty model.
-    auto model = std::make_unique<MultibodyTree<double>>();
+    auto model = std::make_unique<internal::MultibodyTree<double>>();
 
     // Add a body so we can add joint to it.
     body_ = &model->AddBody<RigidBody>(M_B);
@@ -40,13 +40,16 @@ class WeldJointTest : public ::testing::Test {
 
     // We are done adding modeling elements. Transfer tree to system for
     // computation.
-    system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
+    system_ = std::make_unique<internal::MultibodyTreeSystem<double>>(
+        std::move(model));
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
+  const internal::MultibodyTree<double>& tree() const {
+    return internal::GetInternalTree(*system_);
+  }
 
  protected:
-  std::unique_ptr<MultibodyTreeSystem<double>> system_;
+  std::unique_ptr<internal::MultibodyTreeSystem<double>> system_;
 
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};

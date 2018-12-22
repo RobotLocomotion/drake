@@ -61,7 +61,6 @@ using lcm::DrakeLcm;
 using drake::multibody::CoulombFriction;
 using drake::multibody::ConnectContactResultsToDrakeVisualizer;
 using drake::multibody::MultibodyPlant;
-using drake::multibody::MultibodyTree;
 using drake::multibody::SpatialVelocity;
 
 int do_main() {
@@ -82,7 +81,6 @@ int do_main() {
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeCylinderPlant(
       radius, length, mass, coulomb_friction, -g * Vector3d::UnitZ(),
       FLAGS_time_step, &scene_graph));
-  const MultibodyTree<double>& tree = plant.tree();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
@@ -118,14 +116,13 @@ int do_main() {
   // Set at height z0.
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.translation() = Vector3d(0.0, 0.0, FLAGS_z0);
-  const auto& cylinder = tree.GetBodyByName("Cylinder");
-  tree.SetFreeBodyPoseOrThrow(
-      cylinder, X_WB, &plant_context);
-  tree.SetFreeBodySpatialVelocityOrThrow(
-      cylinder,
+  const auto& cylinder = plant.GetBodyByName("Cylinder");
+  plant.SetFreeBodyPose(&plant_context, cylinder, X_WB);
+  plant.SetFreeBodySpatialVelocity(
+      &plant_context, cylinder,
       SpatialVelocity<double>(
           Vector3<double>(FLAGS_wx0, 0.0, 0.0),
-          Vector3<double>(FLAGS_vx0, 0.0, 0.0)), &plant_context);
+          Vector3<double>(FLAGS_vx0, 0.0, 0.0)));
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 

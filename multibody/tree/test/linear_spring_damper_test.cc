@@ -20,6 +20,7 @@ namespace drake {
 using systems::Context;
 
 namespace multibody {
+namespace internal {
 namespace {
 
 constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
@@ -101,7 +102,9 @@ class SpringDamperTester : public ::testing::Test {
     return forces_->body_forces().at(bodyB_->node_index());
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
+  const MultibodyTree<double>& tree() const {
+    return GetInternalTree(*system_);
+  }
 
  protected:
   std::unique_ptr<MultibodyTreeSystem<double>> system_;
@@ -279,5 +282,6 @@ TEST_F(SpringDamperTester, Power) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

@@ -23,8 +23,6 @@ PositionConstraint::PositionConstraint(
       p_BQ_{p_BQ},
       context_{context} {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
-  frameA.HasThisParentTreeOrThrow(&plant_.tree());
-  frameB.HasThisParentTreeOrThrow(&plant_.tree());
 }
 
 void PositionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -42,11 +40,11 @@ void PositionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
   const Frame<double>& frameA = plant_.get_frame(frameA_index_);
   const Frame<double>& frameB = plant_.get_frame(frameB_index_);
   Eigen::Vector3d p_AQ{};
-  plant_.tree().CalcPointsPositions(*context_, frameB, p_BQ_, frameA, &p_AQ);
+  plant_.CalcPointsPositions(*context_, frameB, p_BQ_, frameA, &p_AQ);
   Eigen::MatrixXd Jq_V_ABq(6, plant_.num_positions());
-  plant_.tree().CalcJacobianSpatialVelocity(*context_,
-                                            JacobianWrtVariable::kQDot, frameB,
-                                            p_BQ_, frameA, frameA, &Jq_V_ABq);
+  plant_.CalcJacobianSpatialVelocity(*context_,
+                                     JacobianWrtVariable::kQDot, frameB,
+                                     p_BQ_, frameA, frameA, &Jq_V_ABq);
   *y = math::initializeAutoDiffGivenGradientMatrix(
       p_AQ, Jq_V_ABq.bottomRows<3>() * math::autoDiffToGradientMatrix(x));
 }

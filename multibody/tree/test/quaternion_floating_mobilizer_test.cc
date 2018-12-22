@@ -14,6 +14,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 namespace {
 
 using Eigen::Quaterniond;
@@ -158,5 +159,6 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
