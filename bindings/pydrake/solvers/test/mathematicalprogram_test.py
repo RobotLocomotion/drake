@@ -169,6 +169,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         # Test deprecated method.
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('once', DrakeDeprecationWarning)
             c = binding.constraint()
             self.assertEqual(len(w), 1)
 

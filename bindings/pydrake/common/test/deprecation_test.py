@@ -135,10 +135,9 @@ class TestDeprecation(unittest.TestCase):
         # At this point, no other deprecations should have been thrown, so we
         # will test with the default `once` filter.
         with warnings.catch_warnings(record=True) as w:
-            if six.PY3:
-                # Recreate warning environment.
-                warnings.simplefilter('ignore', DeprecationWarning)
-                warnings.simplefilter('once', DrakeDeprecationWarning)
+            # Recreate warning environment.
+            warnings.simplefilter('ignore', DeprecationWarning)
+            warnings.simplefilter('once', DrakeDeprecationWarning)
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
@@ -210,6 +209,7 @@ class TestDeprecation(unittest.TestCase):
         """Test C++ usage in `deprecation_pybind.h`."""
         from deprecation_example.cc_module import ExampleCppClass
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("once", DrakeDeprecationWarning)
             # This is a descriptor, so it will trigger on class access.
             ExampleCppClass.DeprecatedMethod
             self.assertEqual(len(w), 1)

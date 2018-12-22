@@ -10,8 +10,8 @@ class TestAll(unittest.TestCase):
     def test_import_warnings(self):
         """Prints if we encounter any warnings (primarily from `pybind11`) when
         importing `pydrake.all`."""
-        # Ensure that we haven't imported anything from `pydrake`.
-        self.assertTrue("pydrake" not in sys.modules)
+        # Ensure that we haven't yet imported `pydrake.all`.
+        self.assertTrue("pydrake.all" not in sys.modules)
         # - While this may be redundant, let's do it for good measure.
         self.assertTrue("pydrake.all" not in sys.modules)
         # Enable *all* warnings, and ensure that we don't trigger them.
