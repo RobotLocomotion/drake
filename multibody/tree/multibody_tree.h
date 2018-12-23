@@ -1150,59 +1150,43 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
-  const Joint<T>& GetJointByName(const std::string& name) const {
-    return get_joint(
-        GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
-  }
-
-  /// See MultibodyPlant method.
-  const Joint<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
-    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-    const auto range = joint_name_to_index_.equal_range(name);
-    for (auto it = range.first; it != range.second; ++it) {
-      const Joint<T>& joint = get_joint(it->second);
-      if (joint.model_instance() == model_instance) {
-        return joint;
-      }
-    }
-    throw std::logic_error(
-        "There is no joint named '" + name + "' in model instance '" +
-        instance_index_to_name_.at(model_instance) + "'.");
-  }
-
-  /// See MultibodyPlant method.
-  template <template<typename> class JointType>
-  const JointType<T>& GetJointByName(const std::string& name) const {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    const JointType<T>* joint =
-        dynamic_cast<const JointType<T>*>(&GetJointByName(name));
-    if (joint == nullptr) {
-      throw std::logic_error("Joint '" + name + "' is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(GetJointByName(name)) + "'.");
-    }
-    return *joint;
-  }
-
-  /// See MultibodyPlant method.
-  template <template<typename> class JointType>
+  template <template<typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
+      const std::string& name, ModelInstanceIndex model_instance =
+          ModelInstanceIndex{}) const {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
-    const JointType<T>* joint =
-        dynamic_cast<const JointType<T>*>(
-            &GetJointByName(name, model_instance));
-    if (joint == nullptr) {
+
+    const Joint<T>* joint = nullptr;
+    if (model_instance.is_valid()) {
+      DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+      const auto range = joint_name_to_index_.equal_range(name);
+      for (auto it = range.first; it != range.second; ++it) {
+        const Joint<T>& this_joint = get_joint(it->second);
+        if (this_joint.model_instance() == model_instance) {
+          joint = &this_joint;
+        }
+      }
+      if (joint == nullptr) {
+        throw std::logic_error(
+            "There is no joint named '" + name + "' in model instance '" +
+            instance_index_to_name_.at(model_instance) + "'.");
+      }
+    } else {
+      joint = &get_joint(
+          GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
+    }
+
+    const JointType<T>* typed_joint =
+        dynamic_cast<const JointType<T>*>(joint);
+    if (typed_joint == nullptr) {
       throw std::logic_error(
           "Joint '" + name + "' in model instance " +
           instance_index_to_name_.at(model_instance) + " is not of type '" +
           NiceTypeName::Get<JointType<T>>() + "' but of type '" +
           NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
-    return *joint;
+    return *typed_joint;
   }
 
   /// See MultibodyPlant method.
