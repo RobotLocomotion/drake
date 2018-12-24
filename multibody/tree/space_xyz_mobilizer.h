@@ -180,11 +180,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
-  /// Sets `state` to store zero space x-y-z angles θ₁, θ₂, θ₃ and zero across
-  /// mobilizer angular velocity `w_FM`.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const override;
-
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the space x-y-z angles
   /// θ₁, θ₂, θ₃ stored in `context`.

@@ -53,6 +53,12 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int num_velocities() const final { return kNv;}
 
+  void set_zero_state(const systems::Context<T>& context,
+                      systems::State<T>* state) const final {
+    get_mutable_positions(context, state) = get_zero_position();
+    get_mutable_velocities(context, state).setZero();
+  };
+
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
@@ -64,6 +70,10 @@ class MobilizerImpl : public Mobilizer<T> {
   // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {
     kNq = compile_time_num_positions, kNv = compile_time_num_velocities};
+
+  virtual Eigen::Matrix<T, kNq, 1> get_zero_position() const {
+    return Eigen::Matrix<T, kNq, 1>::Zero();
+  }
 
   /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
@@ -175,17 +185,6 @@ class MobilizerImpl : public Mobilizer<T> {
                              "drake::multibody::MultibodyTreeContext.");
     }
     return *mbt_context;
-  }
-
-  /// Helper to set `state` to a default zero state with all generalized
-  /// positions and generalized velocities related to this mobilizer to zero.
-  /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclasses (for instance for unit quaternions)
-  /// must override this method for correctness.
-  void set_default_zero_state(const systems::Context<T>& context,
-                              systems::State<T>* state) const {
-    get_mutable_positions(context, state).setZero();
-    get_mutable_velocities(context, state).setZero();
   }
 
  private:
