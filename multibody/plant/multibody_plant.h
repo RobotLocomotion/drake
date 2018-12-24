@@ -1025,7 +1025,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       const std::string& name,
-      ModelInstanceIndex model_instance = ModelInstanceIndex{}) const {
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
     return tree().template GetJointByName<JointType>(name, model_instance);
   }
 

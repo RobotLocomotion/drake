@@ -792,10 +792,10 @@ void init_multibody_plant(py::module m) {
             doc.MultibodyPlant.GetBodyByName.doc_2args)
         .def("GetJointByName",
             [](const Class* self, const string& name,
-                ModelInstanceIndex model_instance) -> auto& {
+                optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
-            py::arg("name"), py::arg("model_instance") = ModelInstanceIndex{},
+            py::arg("name"), py::arg("model_instance") = nullopt,
             py_reference_internal, doc.MultibodyPlant.GetJointByName.doc)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(
