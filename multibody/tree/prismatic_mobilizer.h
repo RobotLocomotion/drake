@@ -104,10 +104,6 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   const PrismaticMobilizer<T>& set_translation_rate(
       systems::Context<T> *context, const T& translation_dot) const;
 
-  /// Sets `state` to store a zero translation and translational rate.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const final;
-
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the translation distance
   /// along this mobilizer's axis (see translation_axis().)

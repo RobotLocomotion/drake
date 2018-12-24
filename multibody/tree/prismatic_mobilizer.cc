@@ -53,13 +53,6 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation_rate(
 }
 
 template <typename T>
-void PrismaticMobilizer<T>::set_zero_state(const systems::Context<T>& context,
-                                          systems::State<T>* state) const {
-  // The default Mobilizer state of zero positions and velocities is used.
-  this->set_default_zero_state(context, state);
-}
-
-template <typename T>
 Isometry3<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   return Isometry3<T>(

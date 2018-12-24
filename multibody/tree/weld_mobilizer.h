@@ -46,11 +46,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   /// @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const Isometry3<double>& get_X_FM() const { return X_FM_; }
 
-  /// This override is a no-op for this mobilizer since it has no state
-  /// associated with it.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const final;
-
   /// Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   /// is independent of the state stored in `context`.
   Isometry3<T> CalcAcrossMobilizerTransform(
