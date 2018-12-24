@@ -15,6 +15,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
+#include "drake/common/random.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/body_node.h"
@@ -929,6 +930,12 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  Joint<T>& get_mutable_joint(JointIndex joint_index) {
+    DRAKE_THROW_UNLESS(joint_index < num_joints());
+    return *owned_joints_[joint_index];
+  }
+
+  /// See MultibodyPlant method.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
     DRAKE_THROW_UNLESS(actuator_index < num_actuators());
@@ -1189,6 +1196,21 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  template <template <typename> class JointType = Joint>
+  JointType<T>& GetMutableJointByName(
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) {
+    const JointType<T>& const_joint =
+        GetJointByName<JointType>(name, model_instance);
+
+    // Note: Using the const method to implement this non-const one
+    // relies on the fact (true today) that no lower-level MultibodyTree code
+    // needs to know we're obtaining mutable access here. For example,
+    // this wouldn't work if a stored computation needed to be invalidated.
+    return const_cast<JointType<T>&>(const_joint);
+  }
+
+  /// See MultibodyPlant method.
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
     return get_joint_actuator(
@@ -1367,6 +1389,11 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
+
+  /// See MultibodyPlant method.
+  void SetRandomState(const systems::Context<T>& context,
+                      systems::State<T>* state,
+                      RandomGenerator* generator) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).

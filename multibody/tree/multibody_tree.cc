@@ -314,6 +314,15 @@ void MultibodyTree<T>::SetDefaultState(
 }
 
 template <typename T>
+void MultibodyTree<T>::SetRandomState(const systems::Context<T>& context,
+                                      systems::State<T>* state,
+                                      RandomGenerator* generator) const {
+  for (const auto& mobilizer : owned_mobilizers_) {
+    mobilizer->set_random_state(context, state, generator);
+  }
+}
+
+template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::GetPositionsAndVelocities(
     const systems::Context<T>& context) const {

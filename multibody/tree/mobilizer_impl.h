@@ -6,6 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/random.h"
+#include "drake/common/symbolic.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_context.h"
@@ -58,6 +60,51 @@ class MobilizerImpl : public Mobilizer<T> {
     get_mutable_positions(context, state) = get_zero_position();
     get_mutable_velocities(context, state).setZero();
   };
+
+  void set_random_state(const systems::Context<T>& context,
+                        systems::State<T>* state,
+                        RandomGenerator* generator) const override {
+    if (random_state_distribution_.size() > 0) {
+      const Eigen::VectorXd sample = Evaluate(
+          random_state_distribution_, symbolic::Environment{}, generator);
+      get_mutable_positions(context, state) = sample.head(num_positions());
+      get_mutable_velocities(context, state) = sample.tail(num_velocities());
+    } else {
+      set_zero_state(context, state);
+    }
+  }
+
+  /// Defines the distribution used to draw random samples from this
+  /// mobilizer, using a symbolic::Expression that contains random variables.
+  void set_random_position_distribution(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& position) {
+    DRAKE_DEMAND(position.size() == num_positions());
+    if (random_state_distribution_.size() == 0) {
+      random_state_distribution_.resize(num_positions() + num_velocities());
+      // Note that that there is no `get_zero_velocity()`, since the zero
+      // velocity is simply zero for all mobilizers.  Setting the velocity
+      // elements of the distribution to zero here therefore maintains the
+      // default behavior for velocity.
+      random_state_distribution_.tail(num_velocities()).setZero();
+    }
+
+    random_state_distribution_.head(num_positions()) = position;
+  }
+
+  /// Defines the distribution used to draw random samples from this
+  /// mobilizer, using a symbolic::Expression that contains random variables.
+  void set_random_velocity_distribution(const Eigen::Ref<const
+  VectorX<symbolic::Expression>>& velocity) {
+    DRAKE_DEMAND(velocity.size() == num_velocities());
+    if (random_state_distribution_.size() == 0) {
+      random_state_distribution_.resize(num_positions() + num_velocities());
+      // Maintain the default behavior for position.
+      random_state_distribution_.head(num_positions()) = get_zero_position();
+    }
+
+    random_state_distribution_.tail(num_velocities()) = velocity;
+  }
+
 
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
@@ -207,6 +254,11 @@ class MobilizerImpl : public Mobilizer<T> {
   int get_velocities_start() const {
     return this->get_topology().velocities_start;
   }
+
+  // Note: this is maintained as a concatenated vector so that the evaluation
+  // method can share the sampled values of any random variables that are
+  // shared between position and velocity.
+  VectorX<symbolic::Expression> random_state_distribution_{};
 };
 
 }  // namespace internal
