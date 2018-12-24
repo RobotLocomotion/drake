@@ -1152,25 +1152,26 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   template <template<typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance =
-          ModelInstanceIndex{}) const {
+      const std::string& name, optional<ModelInstanceIndex> model_instance =
+          nullopt) const {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
 
     const Joint<T>* joint = nullptr;
-    if (model_instance.is_valid()) {
-      DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    if (model_instance.has_value()) {
+      DRAKE_THROW_UNLESS(model_instance.value() <
+                         instance_name_to_index_.size());
       const auto range = joint_name_to_index_.equal_range(name);
       for (auto it = range.first; it != range.second; ++it) {
         const Joint<T>& this_joint = get_joint(it->second);
-        if (this_joint.model_instance() == model_instance) {
+        if (this_joint.model_instance() == model_instance.value()) {
           joint = &this_joint;
         }
       }
       if (joint == nullptr) {
         throw std::logic_error(
             "There is no joint named '" + name + "' in model instance '" +
-            instance_index_to_name_.at(model_instance) + "'.");
+            instance_index_to_name_.at(model_instance.value()) + "'.");
       }
     } else {
       joint = &get_joint(
@@ -1182,9 +1183,9 @@ class MultibodyTree {
     if (typed_joint == nullptr) {
       throw std::logic_error(
           "Joint '" + name + "' in model instance " +
-          instance_index_to_name_.at(model_instance) + " is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(GetJointByName(name)) + "'.");
+          instance_index_to_name_.at(model_instance.value()) +
+          " is not of type '" + NiceTypeName::Get<JointType<T>>() +
+          "' but of type '" + NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
     return *typed_joint;
   }
