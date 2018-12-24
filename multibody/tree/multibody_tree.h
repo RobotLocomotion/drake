@@ -15,6 +15,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
+#include "drake/common/random.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/body_node.h"
@@ -929,6 +930,12 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  Joint<T>& get_mutable_joint(JointIndex joint_index) {
+    DRAKE_THROW_UNLESS(joint_index < num_joints());
+    return *owned_joints_[joint_index];
+  }
+
+  /// See MultibodyPlant method.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
     DRAKE_THROW_UNLESS(actuator_index < num_actuators());
@@ -1189,6 +1196,45 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  template <template <typename> class JointType = Joint>
+  JointType<T>& GetMutableJointByName(
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) {
+    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
+                  "JointType<T> must be a sub-class of Joint<T>.");
+
+    Joint<T>* joint = nullptr;
+    if (model_instance) {
+      DRAKE_THROW_UNLESS(*model_instance < instance_name_to_index_.size());
+      const auto range = joint_name_to_index_.equal_range(name);
+      for (auto it = range.first; it != range.second; ++it) {
+        Joint<T>& this_joint = get_mutable_joint(it->second);
+        if (this_joint.model_instance() == *model_instance) {
+          joint = &this_joint;
+        }
+      }
+      if (joint == nullptr) {
+        throw std::logic_error(
+            "There is no joint named '" + name + "' in model instance '" +
+            instance_index_to_name_.at(*model_instance) + "'.");
+      }
+    } else {
+      joint = &get_mutable_joint(
+          GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
+    }
+
+    JointType<T>* typed_joint = dynamic_cast<JointType<T>*>(joint);
+    if (typed_joint == nullptr) {
+      throw std::logic_error(
+          "Joint '" + name + "' in model instance " +
+          instance_index_to_name_.at(*model_instance) + " is not of type '" +
+          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
+          NiceTypeName::Get(GetJointByName(name)) + "'.");
+    }
+    return *typed_joint;
+  }
+
+  /// See MultibodyPlant method.
   const JointActuator<T>& GetJointActuatorByName(
       const std::string& name) const {
     return get_joint_actuator(
@@ -1367,6 +1413,11 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
+
+  /// See MultibodyPlant method.
+  void SetRandomState(const systems::Context<T>& context,
+                      systems::State<T>* state,
+                      RandomGenerator* generator) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
