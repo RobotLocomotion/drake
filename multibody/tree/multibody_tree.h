@@ -1954,6 +1954,14 @@ class MultibodyTree {
     return get_mobilizer_variant(element);
   }
 
+  /// SFINAE overload for Mobilizer<T> elements.
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
+      MultibodyElement<T>&> get_mutable_variant(
+      const MultibodyElement<Scalar>& element) {
+    return get_mutable_mobilizer_variant(element);
+  }
+
   /// SFINAE overload for Joint<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Joint<T>, MultibodyElement<T>>::value,
@@ -2373,7 +2381,7 @@ class MultibodyTree {
   template <typename FromScalar>
   Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
     JointIndex joint_index = joint.index();
-    auto joint_clone = joint.CloneToScalar(*this);
+    auto joint_clone = joint.CloneToScalar(this);
     joint_clone->set_parent_tree(this, joint_index);
     joint_clone->set_model_instance(joint.model_instance());
     owned_joints_.push_back(std::move(joint_clone));
@@ -2442,6 +2450,24 @@ class MultibodyTree {
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =
         dynamic_cast<const MobilizerType<T>*>(
+            owned_mobilizers_[mobilizer_index].get());
+    DRAKE_DEMAND(mobilizer_variant != nullptr);
+    return *mobilizer_variant;
+  }
+
+  // TODO(russt): Add mutable accessors for other variants as needed.
+  template <template <typename> class MobilizerType, typename Scalar>
+  MobilizerType<T>& get_mutable_mobilizer_variant(
+      const MobilizerType<Scalar>& mobilizer) {
+    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    MobilizerIndex mobilizer_index = mobilizer.index();
+    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
+    MobilizerType<T>* mobilizer_variant =
+        dynamic_cast<MobilizerType<T>*>(
             owned_mobilizers_[mobilizer_index].get());
     DRAKE_DEMAND(mobilizer_variant != nullptr);
     return *mobilizer_variant;

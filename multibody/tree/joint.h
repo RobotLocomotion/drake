@@ -268,8 +268,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const {
-    std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(tree_clone);
+      MultibodyTree<ToScalar>* tree_clone) const {
+    std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
 
     std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
         implementation_clone =
@@ -323,12 +323,12 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     // implementation to the appropriate scalar type.
     template <typename ToScalar>
     std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
-    CloneToScalar(const MultibodyTree<ToScalar>& tree_clone) const {
+    CloneToScalar(MultibodyTree<ToScalar>* tree_clone) const {
       auto implementation_clone =
           std::make_unique<typename Joint<ToScalar>::JointImplementation>();
       for (const Mobilizer<T>* mobilizer : mobilizers_) {
-        const Mobilizer<ToScalar>* mobilizer_clone =
-            &tree_clone.get_variant(*mobilizer);
+        Mobilizer<ToScalar>* mobilizer_clone =
+            &tree_clone->get_mutable_variant(*mobilizer);
         implementation_clone->mobilizers_.push_back(mobilizer_clone);
       }
       return std::move(implementation_clone);
@@ -338,7 +338,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
     /// References (raw pointers) to the mobilizers that make part of this
     /// implementation.
-    std::vector<const Mobilizer<T>*> mobilizers_;
+    std::vector<Mobilizer<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 
