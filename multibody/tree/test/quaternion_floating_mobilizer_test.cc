@@ -76,6 +76,58 @@ TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
+  RandomGenerator generator;
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+
+  QuaternionFloatingMobilizer<double>* mutable_mobilizer =
+      &mutable_tree().get_mutable_variant(*mobilizer_);
+
+  // Default behavior is to set to zero.
+  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+                                      &generator);
+  EXPECT_TRUE(
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
+          .IsExactlyIdentity());
+  EXPECT_TRUE(mobilizer_->get_position(*mbt_context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_angular_velocity(*mbt_context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_translational_velocity(*mbt_context_).isZero());
+
+  Eigen::Matrix<symbolic::Expression, 7, 1> position_distribution;
+  Eigen::Matrix<symbolic::Expression, 6, 1> velocity_distribution;
+  for (int i = 0; i < 7; i++) {
+    position_distribution[i] = uniform(generator) + i + 1.0;
+  }
+  for (int i = 0; i < 6; i++) {
+    velocity_distribution[i] = uniform(generator) - i - 1.0;
+  }
+
+  // Set position to be random, but not velocity (yet).
+  // Note that the raw setter does not enforce the unit length quaternion
+  // constraint (the user facing methods will provide that guarantee).
+  mutable_mobilizer->set_random_position_distribution(position_distribution);
+  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+                                      &generator);
+  EXPECT_FALSE(
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
+          .IsExactlyIdentity());
+  EXPECT_FALSE(mobilizer_->get_position(*mbt_context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_angular_velocity(*mbt_context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_translational_velocity(*mbt_context_).isZero());
+
+  // Set the velocity distribution.  Now both should be random.
+  mutable_mobilizer->set_random_velocity_distribution(velocity_distribution);
+  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+                                      &generator);
+  EXPECT_FALSE(
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
+          .IsExactlyIdentity());
+  EXPECT_FALSE(mobilizer_->get_position(*mbt_context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_angular_velocity(*mbt_context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_translational_velocity(*mbt_context_).isZero());
+}
+
+
 // For an arbitrary state verify that the computed Nplus(q) matrix is the
 // left pseudoinverse of N(q).
 TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {

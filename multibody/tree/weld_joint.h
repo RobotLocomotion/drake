@@ -114,6 +114,15 @@ class WeldJoint final : public Joint<T> {
     return mobilizer;
   }
 
+  WeldMobilizer<T>* get_mutable_mobilizer() {
+    // This implementation should only have one mobilizer.
+    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
+    WeldMobilizer<T>* mobilizer = dynamic_cast<WeldMobilizer<T>*>(
+        this->get_implementation().mobilizers_[0]);
+    DRAKE_DEMAND(mobilizer != nullptr);
+    return mobilizer;
+  }
+
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(

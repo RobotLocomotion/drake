@@ -209,7 +209,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       plant->GetJointByName(parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.name(), parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.model_instance(), default_model_instance());
-    const Joint<double>& elbow_joint =
+  Joint<double>& mutable_shoulder_joint =
+      plant->GetMutableJointByName(parameters.shoulder_joint_name());
+  EXPECT_EQ(&mutable_shoulder_joint, &shoulder_joint);
+  const Joint<double>& elbow_joint =
       plant->GetJointByName(parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.name(), parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.model_instance(), default_model_instance());
@@ -312,9 +315,9 @@ class AcrobotPlantTests : public ::testing::Test {
 
     link1_ = &plant_->GetBodyByName(parameters_.link1_name());
     link2_ = &plant_->GetBodyByName(parameters_.link2_name());
-    shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
+    shoulder_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.shoulder_joint_name());
-    elbow_ = &plant_->GetJointByName<RevoluteJoint>(
+    elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
     context_ = plant_->CreateDefaultContext();
@@ -495,8 +498,8 @@ class AcrobotPlantTests : public ::testing::Test {
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
-  const RevoluteJoint<double>* shoulder_{nullptr};
-  const RevoluteJoint<double>* elbow_{nullptr};
+  RevoluteJoint<double>* shoulder_{nullptr};
+  RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
   systems::FixedInputPortValue* input_port_{nullptr};
 
@@ -639,6 +642,37 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       plant_->GetBodyFrameIdIfExists(world_index());
   EXPECT_EQ(undefined_id, nullopt);
 #endif
+}
+
+TEST_F(AcrobotPlantTests, SetRandomState) {
+  RandomGenerator generator;
+  auto random_context = plant_->CreateDefaultContext();
+
+  // Calling SetRandomContext before setting the distribution results in the
+  // zero state.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_mutable_continuous_state_vector().CopyToVector(),
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+
+  // Setup distribution for random initial conditions.
+  std::normal_distribution<symbolic::Expression> gaussian;
+  shoulder_->set_random_angle_distribution(M_PI + 0.02*gaussian(generator));
+  elbow_->set_random_angle_distribution(0.05*gaussian(generator));
+
+  // This call should change the context.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_FALSE(CompareMatrices(
+      context_->get_mutable_continuous_state_vector().CopyToVector(),
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+
+  const Eigen::VectorXd first_random_state =
+      random_context->get_mutable_continuous_state_vector().CopyToVector();
+  // And every call should return something different.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_FALSE(CompareMatrices(
+      first_random_state,
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
 }
 
 // Verifies that the right errors get invoked upon finalization.
@@ -1725,7 +1759,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
   for (JointIndex joint_index(0);
        joint_index < plant.num_joints() - 1 /* Skip "weld" joint. */;
        ++joint_index) {
-    const Joint<double>& joint = plant.tree().get_joint(joint_index);
+    const Joint<double>& joint = plant.get_joint(joint_index);
     // Start index in the vector q of generalized positions.
     const int expected_q_start = joint_index;
     // Start index in the vector v of generalized velocities.
@@ -1736,6 +1770,10 @@ GTEST_TEST(KukaModel, JointIndexes) {
     EXPECT_EQ(joint.position_start(), expected_q_start);
     EXPECT_EQ(joint.num_velocities(), expected_num_v);
     EXPECT_EQ(joint.velocity_start(), expected_v_start);
+
+    // Confirm that the mutable accessor returns the same object.
+    Joint<double>& mutable_joint = plant.get_mutable_joint(joint_index);
+    EXPECT_EQ(&mutable_joint, &joint);
   }
 
   // Verify that the indexes above point to the right entries in the state

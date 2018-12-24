@@ -11,6 +11,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/random.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/contact_results.h"
@@ -1027,6 +1028,16 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const std::string& name,
       optional<ModelInstanceIndex> model_instance = nullopt) const {
     return tree().template GetJointByName<JointType>(name, model_instance);
+  }
+
+  /// A version of GetJointByName that returns a mutable reference.
+  /// @see GetJointByName.
+  template <template <typename> class JointType = Joint>
+  JointType<T>& GetMutableJointByName(
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) {
+    return this->mutable_tree().template GetMutableJointByName<JointType>(
+        name, model_instance);
   }
 
   /// Returns a constant reference to an actuator that is identified
@@ -2398,6 +2409,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().get_joint(joint_index);
   }
 
+  /// Returns a mutable reference to the joint with unique index `joint_index`.
+  /// @throws std::runtime_error when `joint_index` does not correspond to a
+  /// joint in this model.
+  Joint<T>& get_mutable_joint(JointIndex joint_index) {
+    return this->mutable_tree().get_mutable_joint(joint_index);
+  }
+
   /// Returns a constant reference to the joint actuator with unique index
   /// `actuator_index`.
   /// @throws std::exception if `actuator_index` does not correspond to a joint
@@ -2624,6 +2642,20 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(state != nullptr);
     tree().SetDefaultState(context, state);
+  }
+
+  /// Assigns random values to all elements of the state, by drawing samples
+  /// independently for each joint/floating-base (coming soon: and then
+  /// solving a mathematical program to "project" these samples onto the
+  /// registered system constraints).
+  ///
+  /// @see @ref stochastic_systems
+  void SetRandomState(const systems::Context<T>& context,
+                      systems::State<T>* state,
+                      RandomGenerator* generator) const override {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(state != nullptr);
+    tree().SetRandomState(context, state, generator);
   }
 
   using MultibodyTreeSystem<T>::is_discrete;

@@ -798,32 +798,26 @@ auto operator*(
 /// @throws std::runtime_error if @p m includes unassigned random variables but
 ///                               @p random_generator is `nullptr`.
 template <typename Derived>
-auto Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env,
-              RandomGenerator* random_generator = nullptr) {
+Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
+              Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>
+Evaluate(const Eigen::MatrixBase<Derived>& m,
+         const Environment& env = Environment{},
+         RandomGenerator* random_generator = nullptr) {
   static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
                 "Evaluate only accepts a symbolic matrix.");
-  // Note that in both return statements, we have `.eval()` at the end. Without
-  // the trailing `.eval()`, it returns an Eigen Expression (of type
-  // CwiseUnaryOp) and `symbolic::Expression::Evaluate` is only called when a
-  // value is needed (i.e. lazy-evaluation). We add the trailing `.eval()` call
-  // to enforce eager-evaluation and provide a fully evaluated matrix (of
-  // double) to a caller.
-  //
-  // Please refer to https://eigen.tuxfamily.org/dox/TopicPitfalls.html for more
-  // information.
+  // Note that the return type is written out explicitly to help gcc 5 (on
+  // ubuntu).  Previously the implementation used `auto`, and placed  an `
+  // .eval()` at the end to prevent lazy evaluation.
   if (random_generator == nullptr) {
-    return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); })
-        .eval();
+    return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
   } else {
     // Construct an environment by extending `env` by sampling values for the
     // random variables in `m` which are unassigned in `env`.
     const Environment env_with_random_variables{PopulateRandomVariables(
         env, GetDistinctVariables(m), random_generator)};
-    return m
-        .unaryExpr([&env_with_random_variables](const Expression& e) {
-          return e.Evaluate(env_with_random_variables);
-        })
-        .eval();
+    return m.unaryExpr([&env_with_random_variables](const Expression& e) {
+      return e.Evaluate(env_with_random_variables);
+    });
   }
 }
 

@@ -55,6 +55,7 @@ class MobilizerTester : public ::testing::Test {
   }
 
   const MultibodyTree<double>& tree() const { return *tree_; }
+  MultibodyTree<double>& mutable_tree() { return *tree_; }
 
  protected:
   std::unique_ptr<MultibodyTreeSystem<double>> system_;
