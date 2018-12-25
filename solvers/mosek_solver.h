@@ -20,8 +20,9 @@ struct MosekSolverDetails {
   // response code.
   int rescode{};
   // The solution status after solving the problem. Check
-  // https://docs.mosek.com/8.1/capi/accessing-solution.html for the meaning on
-  // the solution status.
+  // https://docs.mosek.com/8.1/capi/accessing-solution.html and
+  // https://docs.mosek.com/8.1/capi/constants.html#mosek.solsta for the meaning
+  // on the solution status.
   int solution_status{};
 };
 

@@ -144,6 +144,33 @@ GTEST_TEST(MosekTest, TestLogFile) {
   solver.Solve(prog);
   EXPECT_TRUE(spruce::path(log_file).exists());
 }
+
+GTEST_TEST(MosekTest, SolverOptionsTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) >= 0);
+  prog.AddLinearConstraint(x(1) <= 1);
+  prog.AddLinearConstraint(x(0) <= 1);
+  // The Hessian of the quadratic cost has an eigen value -1e-8, so it is not
+  // positive semidefinite. By adjusting Mosek's tolerance on the semidefinite
+  // matrix, we expect the solver to give different result.
+  prog.AddQuadraticCost(x(0) * x(0) - 1E-8 * x(1) * x(1));
+
+  SolverOptions solver_options;
+  // First try a big positive semidefinite matrix tolerance.
+  solver_options.SetOption(MosekSolver::id(),
+                           "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-6);
+  MathematicalProgramResult result;
+  MosekSolver mosek_solver;
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+
+  // Now try a small positive semidefinite matrix tolerance.
+  solver_options.SetOption(MosekSolver::id(),
+                           "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-10);
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_NE(result.get_solution_result(), SolutionResult::kSolutionFound);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

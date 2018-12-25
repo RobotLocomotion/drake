@@ -662,8 +662,11 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
   *result = {};
+  SolverOptions merged_solver_options =
+      solver_options.value_or(SolverOptions());
+  merged_solver_options.Merge(prog.solver_options());
   // TODO(hongkai.dai): support setting initial guess and solver options.
-  if (initial_guess.has_value() || solver_options.has_value()) {
+  if (initial_guess.has_value()) {
     throw std::runtime_error("Not implemented yet.");
   }
   const int num_vars = prog.num_vars();
@@ -737,6 +740,28 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
     } else {
       rescode =
           MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);
+    }
+  }
+
+  if (rescode == MSK_RES_OK) {
+    for (const auto& double_options :
+         merged_solver_options.GetOptionsDouble(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnadouparam(task, double_options.first.c_str(),
+                                    double_options.second);
+      }
+    }
+    for (const auto& int_options : merged_solver_options.GetOptionsInt(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnaintparam(task, int_options.first.c_str(),
+                                    int_options.second);
+      }
+    }
+    for (const auto& str_options : merged_solver_options.GetOptionsStr(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnastrparam(task, str_options.first.c_str(),
+                                    str_options.second.c_str());
+      }
     }
   }
 
