@@ -1012,46 +1012,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Returns a constant reference to a joint that is identified
-  /// by the string `name` in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no joint with the requested name.
-  /// @throws std::logic_error if the joint name occurs in multiple model
-  /// instances.
-  /// @see HasJointNamed() to query if there exists a joint in `this`
-  /// %MultibodyPlant with a given specified name.
-  const Joint<T>& GetJointByName(const std::string& name) const {
-    return tree().GetJointByName(name);
-  }
-
-  /// Returns a constant reference to the joint that is uniquely identified
-  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no joint with the requested name.
-  /// @throws std::exception if @p model_instance is not valid for this model.
-  /// @see HasJointNamed() to query if there exists a joint in `this`
-  /// %MultibodyPlant with a given specified name.
-  const Joint<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
-    return tree().GetJointByName(name, model_instance);
-  }
-
-  /// A templated version of GetJointByName() to return a constant reference of
-  /// the specified type `JointType` in place of the base Joint class. See
-  /// GetJointByName() for details.
-  /// @tparam JointType The specific type of the Joint to be retrieved. It must
-  /// be a subclass of Joint.
-  /// @throws std::logic_error if the named joint is not of type `JointType` or
-  /// if there is no Joint with that name.
-  /// @throws std::logic_error if the joint name occurs in multiple model
-  /// instances.
-  /// @see HasJointNamed() to query if there exists a joint in `this`
-  /// %MultibodyPlant with a given specified name.
-  template <template<typename> class JointType>
-  const JointType<T>& GetJointByName(const std::string& name) const {
-    return tree().template GetJointByName<JointType>(name);
-  }
-
-  /// A templated version of GetJointByName() to return a constant reference of
-  /// the specified type `JointType` in place of the base Joint class. See
-  /// GetJointByName() for details.
+  /// by the string `name` in `this` %MultibodyPlant.  If the optional
+  /// template argument is supplied, then the returned value is downcast to
+  /// the specified `JointType`.
   /// @tparam JointType The specific type of the Joint to be retrieved. It must
   /// be a subclass of Joint.
   /// @throws std::logic_error if the named joint is not of type `JointType` or
@@ -1059,9 +1022,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
-  template <template<typename> class JointType>
+  template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
     return tree().template GetJointByName<JointType>(name, model_instance);
   }
 
