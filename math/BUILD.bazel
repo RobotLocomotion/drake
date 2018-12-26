@@ -374,6 +374,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "random_rotation_test",
+    deps = [
+        ":geometric_transform",
+        "//common:symbolic",
+    ],
+)
+
+drake_cc_googletest(
     name = "roll_pitch_yaw_test",
     deps = [
         ":geometric_transform",
