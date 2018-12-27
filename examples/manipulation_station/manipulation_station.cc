@@ -171,8 +171,66 @@ ManipulationStation<T>::ManipulationStation(double time_step)
 }
 
 template <typename T>
+void ManipulationStation<T>::SetupClutterClearingStation(
+    const IiwaCollisionModel collision_model) {
+
+  setup_ = Setup::kClutterClearing;
+
+  // Add the bin.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/bin.sdf");
+
+    Isometry3<double> X_WC =
+        RigidTransform<double>(
+            RotationMatrix<double>::MakeZRotation(M_PI_2),
+            Vector3d(-0.145, -0.63, 0.235))
+            .GetAsIsometry3();
+    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
+                                  Vector3d(0.5, -0.1, 0.235))
+               .GetAsIsometry3();
+    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+  }
+
+  // Add the objects.
+  {
+    multibody::Parser parser(plant_);
+    parser.AddModelFromFile(
+        FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
+        "object_1");
+    parser.AddModelFromFile(
+        FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/cylinder.sdf"),
+        "object_2");
+    parser.AddModelFromFile(
+        FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/thin_cylinder.sdf"),
+        "object_3");
+    parser.AddModelFromFile(
+        FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/thin_box.sdf"),
+        "object_4");
+    parser.AddModelFromFile(
+        FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/sphere.sdf"),
+        "object_5");
+  }
+
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg();
+}
+
+template <typename T>
 void ManipulationStation<T>::SetupDefaultStation(
     const IiwaCollisionModel collision_model) {
+
+  setup_ = Setup::kDefault;
+
   // Add the table and 80/20 workcell frame.
   {
     const double dx_table_center_to_robot_base = 0.3257;
@@ -212,46 +270,18 @@ void ManipulationStation<T>::SetupDefaultStation(
                                   "cupboard_body", X_WC, plant_);
   }
 
-  // Add default iiwa.
+  // Add the object.
   {
-    std::string sdf_path;
-    switch (collision_model) {
-      case IiwaCollisionModel::kNoCollision:
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
-            "iiwa7_no_collision.sdf");
-        break;
-      case IiwaCollisionModel::kBoxCollision:
-        sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/iiwa_description/iiwa7/"
-            "iiwa7_with_box_collision.sdf");
-        break;
-      default:
-        DRAKE_ABORT_MSG("Unrecognized collision_model.");
-    }
-    const auto X_WI = RigidTransform<double>::Identity();
-    auto iiwa_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
-        X_WI.GetAsIsometry3(), plant_);
-    RegisterIiwaControllerModel(
-        sdf_path, iiwa_instance, plant_->world_frame(),
-        plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
+    multibody::Parser parser(plant_);
+    parser.AddModelFromFile(
+        FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
+        "object_1");
   }
 
-  // Add default wsg.
-  {
-    const std::string sdf_path = FindResourceOrThrow(
-        "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
-    const multibody::Frame<T>& link7 =
-        plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
-    const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
-                                      Vector3d(0, 0, 0.114));
-    auto wsg_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "gripper", link7, "body", X_7G.GetAsIsometry3(), plant_);
-    RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
-                               plant_->GetFrameByName("body", wsg_instance),
-                               X_7G);
-  }
+  // Add the default iiwa/wsg models.
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg();
 
   // Add default cameras.
   {
@@ -278,6 +308,137 @@ void ManipulationStation<T>::SetupDefaultStation(
                          camera_pair.second, camera_properties);
     }
   }
+}
+
+template <typename T>
+void ManipulationStation<T>::SetDefaultIiwaGripperState(
+    VectorX<T> q0_iiwa, VectorX<T> q0_gripper, EigenPtr<VectorX<T>> plant_q,
+    EigenPtr<VectorX<T>> plant_qdot) const {
+  plant_->SetPositionsInArray(plant_->GetModelInstanceByName("iiwa"), q0_iiwa,
+                              plant_q);
+  plant_->SetVelocitiesInArray(plant_->GetModelInstanceByName("iiwa"),
+                               Eigen::VectorXd::Zero(num_iiwa_joints()),
+                               plant_qdot);
+  plant_->SetPositionsInArray(plant_->GetModelInstanceByName("gripper"),
+                              q0_gripper, plant_q);
+  plant_->SetVelocitiesInArray(plant_->GetModelInstanceByName("gripper"),
+                               Eigen::Vector2d(0, 0), plant_qdot);
+}
+
+template <typename T>
+void ManipulationStation<T>::SetDefaultObjectState(
+    const math::RigidTransform<T>& X_WObject, std::string name,
+    EigenPtr<VectorX<T>> plant_q, EigenPtr<VectorX<T>> plant_qdot) const {
+  Eigen::VectorXd q0_object(7);  // Floating base q's.
+  q0_object.head(4) = X_WObject.rotation().ToQuaternionAsVector4();
+  q0_object.tail(3) = X_WObject.translation();
+
+  multibody::ModelInstanceIndex object_model_instance =
+      plant_->GetModelInstanceByName(name);
+
+  plant_->SetPositionsInArray(object_model_instance, q0_object, plant_q);
+  plant_->SetVelocitiesInArray(object_model_instance, Eigen::VectorXd::Zero(6),
+                               plant_qdot);
+}
+
+template <typename T>
+void ManipulationStation<T>::SetDefaultState(const systems::Context<T>& context,
+                                             systems::State<T>* state) const {
+  // Call the base class method, to initialize all systems in this diagram.
+  systems::Diagram<T>::SetDefaultState(context, state);
+
+  VectorX<T> q0_iiwa(num_iiwa_joints());
+  Vector2<T> q0_gripper(-0.01, 0.01);
+  RigidTransform<T> X_WObject;
+
+  systems::SubsystemIndex plant_sys_index = this->GetSystemIndexOrAbort(plant_);
+
+  auto diagram_state = dynamic_cast<systems::DiagramState<T>*>(state);
+  DRAKE_DEMAND(diagram_state != nullptr);
+
+  Eigen::VectorBlock<VectorX<T>> plant_xd =
+      diagram_state->get_mutable_substate(plant_sys_index)
+          .get_mutable_discrete_state()
+          .get_mutable_vector()
+          .get_mutable_value();
+
+  // The complete MBP generalized position and velocity vectors.
+  auto plant_q =
+      plant_xd.head(plant_->num_positions());
+  auto plant_qdot =
+      plant_xd.tail(plant_->num_velocities());
+
+  switch (setup_) {
+    case Setup::kDefault:
+      // Set the initial positions of the IIWA to a comfortable configuration
+      // inside the workspace of the station.
+      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+
+      // Set the initial pose of the object.
+      X_WObject.set_translation(Eigen::Vector3d(0.6, 0, 0));
+      X_WObject.set_rotation(RotationMatrix<T>::Identity());
+      SetDefaultObjectState(X_WObject, "object_1", &plant_q, &plant_qdot);
+      break;
+    case Setup::kClutterClearing:
+      // Set the initial positions of the IIWA to a configuration right above
+      // the picking bin.
+      q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+
+      // Place the box.
+      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.7, 0.25));
+      X_WObject.set_rotation(RotationMatrix<T>::Identity());
+      SetDefaultObjectState(X_WObject, "object_1", &plant_q, &plant_qdot);
+
+      // Place the cylinder.
+      X_WObject.set_translation(Eigen::Vector3d(-0.2, -0.6, 0.30));
+      X_WObject.set_rotation(RotationMatrix<T>::Identity());
+      SetDefaultObjectState(X_WObject, "object_2", &plant_q, &plant_qdot);
+
+      // Place the thin cylinder.
+      X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.25));
+      X_WObject.set_rotation(RotationMatrix<T>::Identity());
+      SetDefaultObjectState(X_WObject, "object_3", &plant_q, &plant_qdot);
+
+      // Place the thin box.
+      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.25));
+      X_WObject.set_rotation(RotationMatrix<T>::Identity());
+      SetDefaultObjectState(X_WObject, "object_4", &plant_q, &plant_qdot);
+
+      // Place the sphere.
+      X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.31));
+      X_WObject.set_rotation(RotationMatrix<T>::Identity());
+      SetDefaultObjectState(X_WObject, "object_5", &plant_q, &plant_qdot);
+      break;
+  }
+
+  SetDefaultIiwaGripperState(q0_iiwa, q0_gripper, &plant_q, &plant_qdot);
+
+  // Sets the position history for the iiwa state interpolator.
+  const auto& iiwa_state_from_position =
+      dynamic_cast<
+          const systems::StateInterpolatorWithDiscreteDerivative<double>&>(this
+          ->GetSubsystemByName("desired_state_from_position"));
+  systems::SubsystemIndex state_from_position_index =
+      this->GetSystemIndexOrAbort(&iiwa_state_from_position);
+  Eigen::VectorBlock<VectorX<T>> iiwa_interp_xd =
+      diagram_state->get_mutable_substate(state_from_position_index)
+          .get_mutable_discrete_state()
+          .get_mutable_vector()
+          .get_mutable_value();
+  iiwa_interp_xd << q0_iiwa , q0_iiwa;
+
+  // Set the position history in the wsg controller.
+  const auto& wsg_controller = dynamic_cast<
+      const manipulation::schunk_wsg::SchunkWsgPositionController&>(
+      this->GetSubsystemByName("wsg_controller"));
+  systems::SubsystemIndex wsg_controller_index =
+      this->GetSystemIndexOrAbort(&wsg_controller);
+  Eigen::VectorBlock<VectorX<T>> wsg_controller_xd =
+      diagram_state->get_mutable_substate(wsg_controller_index)
+          .get_mutable_discrete_state()
+          .get_mutable_vector()
+          .get_mutable_value();
+  wsg_controller_xd << q0_gripper, q0_gripper;
 }
 
 template <typename T>
@@ -731,6 +892,50 @@ ManipulationStation<T>::GetStaticCameraPosesInWorld() const {
   }
 
   return static_camera_poses;
+}
+
+// Add default iiwa.
+template <typename T>
+void ManipulationStation<T>::AddDefaultIiwa(
+    const IiwaCollisionModel collision_model) {
+  std::string sdf_path;
+  switch (collision_model) {
+    case IiwaCollisionModel::kNoCollision:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_no_collision.sdf");
+      break;
+    case IiwaCollisionModel::kBoxCollision:
+      sdf_path = FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/iiwa7/"
+          "iiwa7_with_box_collision.sdf");
+      break;
+    default:
+      DRAKE_ABORT_MSG("Unrecognized collision_model.");
+  }
+  const auto X_WI = RigidTransform<double>::Identity();
+  auto iiwa_instance = internal::AddAndWeldModelFrom(
+      sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0",
+      X_WI.GetAsIsometry3(), plant_);
+  RegisterIiwaControllerModel(
+      sdf_path, iiwa_instance, plant_->world_frame(),
+      plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
+}
+
+// Add default wsg.
+template <typename T>
+void ManipulationStation<T>::AddDefaultWsg() {
+  const std::string sdf_path = FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf");
+  const multibody::Frame<T>& link7 =
+      plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
+  const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
+                                    Vector3d(0, 0, 0.114));
+  auto wsg_instance = internal::AddAndWeldModelFrom(
+      sdf_path, "gripper", link7, "body", X_7G.GetAsIsometry3(), plant_);
+  RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
+                             plant_->GetFrameByName("body", wsg_instance),
+                             X_7G);
 }
 
 }  // namespace manipulation_station

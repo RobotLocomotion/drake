@@ -20,6 +20,9 @@ namespace manipulation_station {
 /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
+/// Determines which manipulation station is simulated.
+enum class Setup {kDefault, kClutterClearing};
+
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
 /// @brief Systems related to the "manipulation station" used in the <a
@@ -138,6 +141,14 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
+  /// Adds a default iiwa, wsg, two bins, and object clutter, then calls
+  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
+  /// the appropriate arguments.
+  /// Must be called before Finalize().
+  /// @param collision_model Determines which sdf is loaded for the IIWA.
+  void SetupClutterClearingStation(
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
@@ -146,6 +157,33 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupDefaultStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
+  /// Sets the pose of a body from a given transform, and sets its velocities to
+  /// zero.
+  /// @param X_WObject The pose of the object
+  /// @param name The name of the body to pose
+  /// @param plant_q The full generalized position vector of the MBP
+  /// @param plant_qdot The full generalized velocity vector of the MBP
+  void SetDefaultObjectState(const math::RigidTransform<T>& X_WObject,
+                             std::string name, EigenPtr<VectorX<T>> plant_q,
+                             EigenPtr<VectorX<T>> plant_qdot) const;
+
+
+  /// Sets the default state of the Iiwa and gripper. Initial positions
+  /// are specified, and initial velocities are set to zero.
+  /// @param q0_iiwa The initial generalized positions of the Iiwa.
+  /// @param q0_gripper The initial generalized positions of the gripper.
+  /// @param plant_q The complete generalized position vector of the MBP.
+  /// @param plant_qdot The complete generalized velocity vector of the MBP.
+  void SetDefaultIiwaGripperState(VectorX<T> q0_iiwa, VectorX<T> q0_gripper,
+                                  EigenPtr<VectorX<T>> plant_q,
+                                  EigenPtr<VectorX<T>> plant_qdot) const;
+
+  /// Sets the default State for the chosen setup.
+  /// @param context A const reference to the ManipulationStation context.
+  /// @param state A pointer to the State of the ManipulationStation system.
+  void SetDefaultState(const systems::Context<T>& context,
+                       systems::State<T>* state) const override;
 
   /// Notifies the ManipulationStation that the IIWA robot model instance can
   /// be identified by @p iiwa_instance as well as necessary information to
@@ -411,6 +449,9 @@ class ManipulationStation : public systems::Diagram<T> {
   // Should only be called from Finalize().
   void MakeIiwaControllerModel();
 
+  void AddDefaultIiwa(const IiwaCollisionModel collision_model);
+  void AddDefaultWsg();
+
   // These are only valid until Finalize() is called.
   std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant_;
   std::unique_ptr<geometry::SceneGraph<T>> owned_scene_graph_;
@@ -437,6 +478,11 @@ class ManipulationStation : public systems::Diagram<T> {
   // TODO(siyuan.feng@tri.global): Need to tunes these better.
   double wsg_kp_{200};
   double wsg_kd_{5};
+
+  // Represents the manipulation station to simulate. This gets set in the
+  // corresponding station setup function (e.g., SetupDefaultStation()), and
+  // informs how SetDefaultContext() initializes the sim.
+  Setup setup_;
 };
 
 }  // namespace manipulation_station
