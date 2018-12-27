@@ -81,9 +81,9 @@ int do_main(int argc, char* argv[]) {
   const int kNumDofIiwa = 7;
   VectorXd q0(kNumDofIiwa);
   q0 << 0, 0.6, 0, -1.75, 0, 1.0, 0;
-  station->SetIiwaPosition(q0, &station_context);
+  station->SetIiwaPosition(&station_context, q0);
   const VectorXd qdot0 = VectorXd::Zero(kNumDofIiwa);
-  station->SetIiwaVelocity(qdot0, &station_context);
+  station->SetIiwaVelocity(&station_context, qdot0);
 
   // Position command should hold the arm at the initial state.
   station_context.FixInputPort(
