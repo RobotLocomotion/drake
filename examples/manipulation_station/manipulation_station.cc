@@ -523,8 +523,8 @@ VectorX<T> ManipulationStation<T>::GetIiwaPosition(
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaPosition(
-    const Eigen::Ref<const drake::VectorX<T>>& q,
-    drake::systems::Context<T>* station_context) const {
+    drake::systems::Context<T>* station_context,
+    const Eigen::Ref<const drake::VectorX<T>>& q) const {
   const int num_iiwa_positions =
       plant_->num_positions(iiwa_model_.model_instance);
   DRAKE_DEMAND(station_context != nullptr);
@@ -553,8 +553,8 @@ VectorX<T> ManipulationStation<T>::GetIiwaVelocity(
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaVelocity(
-    const Eigen::Ref<const drake::VectorX<T>>& v,
-    drake::systems::Context<T>* station_context) const {
+    drake::systems::Context<T>* station_context,
+    const Eigen::Ref<const drake::VectorX<T>>& v) const {
   const int num_iiwa_velocities =
       plant_->num_velocities(iiwa_model_.model_instance);
   DRAKE_DEMAND(station_context != nullptr);
@@ -600,7 +600,7 @@ T ManipulationStation<T>::GetWsgVelocity(
 
 template <typename T>
 void ManipulationStation<T>::SetWsgPosition(
-    const T& q, drake::systems::Context<T>* station_context) const {
+    drake::systems::Context<T>* station_context, const T& q) const {
   auto& plant_context =
       this->GetMutableSubsystemContext(*plant_, station_context);
 
@@ -624,7 +624,7 @@ void ManipulationStation<T>::SetWsgPosition(
 
 template <typename T>
 void ManipulationStation<T>::SetWsgVelocity(
-    const T& v, drake::systems::Context<T>* station_context) const {
+    drake::systems::Context<T>* station_context, const T& v) const {
   auto& plant_context =
       this->GetMutableSubsystemContext(*plant_, station_context);
 

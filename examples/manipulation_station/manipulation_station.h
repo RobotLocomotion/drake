@@ -301,8 +301,15 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting all of the joint angles of the Kuka IIWA.
   /// Also sets the position history in the velocity command generator.
   /// @p q must have size num_iiwa_joints().
+  void SetIiwaPosition(systems::Context<T>* station_context,
+                       const Eigen::Ref<const VectorX<T>>& q) const;
+
+  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
+                   "This method will be deleted after 2019-04-01.")
   void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
-                       systems::Context<T>* station_context) const;
+                       systems::Context<T>* station_context) const {
+    SetIiwaPosition(station_context, q);
+  }
 
   /// Convenience method for getting all of the joint velocities of the Kuka
   // IIWA.  This does not include the gripper.
@@ -310,8 +317,15 @@ class ManipulationStation : public systems::Diagram<T> {
 
   /// Convenience method for setting all of the joint velocities of the Kuka
   /// IIWA. @v must have size num_iiwa_joints().
+  void SetIiwaVelocity(systems::Context<T>* station_context,
+                       const Eigen::Ref<const VectorX<T>>& v) const;
+
+  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
+                   "This method will be deleted after 2019-04-01.")
   void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
-                       systems::Context<T>* station_context) const;
+                       systems::Context<T>* station_context) const {
+    SetIiwaVelocity(station_context, v);
+  }
 
   /// Convenience method for getting the position of the Schunk WSG. Note
   /// that the WSG position is the signed distance between the two fingers
@@ -325,10 +339,22 @@ class ManipulationStation : public systems::Diagram<T> {
   /// sets the position history in the velocity interpolator.  Note that the
   /// WSG position is the signed distance between the two fingers (not the
   /// state of the fingers individually).
-  void SetWsgPosition(const T& q, systems::Context<T>* station_context) const;
+  void SetWsgPosition(systems::Context<T>* station_context, const T& q) const;
+
+  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
+                   "This method will be deleted after 2019-04-01.")
+  void SetWsgPosition(const T& q, systems::Context<T>* station_context) const {
+    SetWsgPosition(station_context, q);
+  }
 
   /// Convenience method for setting the velocity of the Schunk WSG.
-  void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const;
+  void SetWsgVelocity(systems::Context<T>* station_context, const T& v) const;
+
+  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
+                   "This method will be deleted after 2019-04-01.")
+  void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const {
+    SetWsgVelocity(station_context, v);
+  }
 
   /// Returns a map from camera name to X_WCameraBody for all the static
   /// (rigidly attached to the world body) cameras that have been registered.

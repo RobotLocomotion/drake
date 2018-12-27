@@ -41,7 +41,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
            tau_ff = VectorXd::LinSpaced(7, 3.1, 3.7);
 
   // Set positions and read them back out, multiple ways.
-  station.SetIiwaPosition(q, context.get());
+  station.SetIiwaPosition(context.get(), q);
   EXPECT_TRUE(CompareMatrices(q, station.GetIiwaPosition(*context)));
   EXPECT_TRUE(CompareMatrices(q, station.GetOutputPort("iiwa_position_measured")
                                      .Eval<BasicVector<double>>(*context)
@@ -54,7 +54,7 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   }
 
   // Set velocities and read them back out, multiple ways.
-  station.SetIiwaVelocity(v, context.get());
+  station.SetIiwaVelocity(context.get(), v);
   EXPECT_TRUE(CompareMatrices(v, station.GetIiwaVelocity(*context)));
   EXPECT_TRUE(
       CompareMatrices(v, station.GetOutputPort("iiwa_velocity_estimated")
@@ -215,10 +215,10 @@ GTEST_TEST(ManipulationStationTest, CheckWsg) {
   const double q = 0.023;
   const double v = 0.12;
 
-  station.SetWsgPosition(q, context.get());
+  station.SetWsgPosition(context.get(), q);
   EXPECT_EQ(station.GetWsgPosition(*context), q);
 
-  station.SetWsgVelocity(v, context.get());
+  station.SetWsgVelocity(context.get(), v);
   EXPECT_EQ(station.GetWsgVelocity(*context), v);
 
   EXPECT_TRUE(CompareMatrices(station.GetOutputPort("wsg_state_measured")
