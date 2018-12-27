@@ -166,6 +166,11 @@ class RevoluteJoint final : public Joint<T> {
     return *this;
   }
 
+  void set_random_angle_distribution(const symbolic::Expression& angle) {
+    get_mutable_mobilizer()->set_random_position_distribution(
+        Vector1<symbolic::Expression>{angle});
+  }
+
   /// Gets the rate of change, in radians per second, of `this` joint's
   /// angle (see get_angle()) from `context`.
   /// @param[in] context
@@ -298,6 +303,15 @@ class RevoluteJoint final : public Joint<T> {
     const RevoluteMobilizer<T>* mobilizer =
         dynamic_cast<const RevoluteMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);
+    DRAKE_DEMAND(mobilizer != nullptr);
+    return mobilizer;
+  }
+
+  RevoluteMobilizer<T>* get_mutable_mobilizer() {
+    // This implementation should only have one mobilizer.
+    DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
+    RevoluteMobilizer<T>* mobilizer = dynamic_cast<RevoluteMobilizer<T>*>(
+        this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }

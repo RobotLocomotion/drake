@@ -263,9 +263,7 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
 GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
   // Create the internal tree and finalize the MBSystem correctly.
   BadDerivedMBSystem finalized(false);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      finalized.mutable_tree(), std::logic_error,
-      ".*mutable_tree().*MultibodyTree.*finalized.*already.*");
+  EXPECT_NO_THROW(finalized.mutable_tree());
 
   // Make the MBSystem behave badly.
   DRAKE_EXPECT_THROWS_MESSAGE(BadDerivedMBSystem(true), std::logic_error,
