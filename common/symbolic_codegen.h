@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -107,6 +108,101 @@ class CodeGenVisitor {
 std::string CodeGen(const std::string& function_name,
                     const std::vector<Variable>& parameters,
                     const Expression& e);
+
+/// For a given symbolic dense matrix @p M, generates two C functions,
+/// `<function_name>` and `<function_name>_meta`. The generated
+/// `<function_name>` takes two parameters:
+///
+///  - const double* p : An array of doubles for input parameters.
+///  - double* m : An array of doubles to store the evaluation result.
+///
+/// `<function_name>_meta()` returns a nested struct from which a caller can
+/// obtain the following information:
+///  - `.p.size`: the size of input parameters.
+///  - `.m.rows`: the number of rows in the matrix.
+///  - `.m.cols`: the number of columns in the matrix.
+///
+/// Please consider the following example:
+///
+/// @code
+/// Eigen::Matrix<symbolic::Expression, 2, 2, Eigen::ColMajor> M;
+/// M(0, 0) = 1.0;
+/// M(1, 0) = 3 + x + y;
+/// M(0, 1) = 4 * y;
+/// M(1, 1) = sin(x);
+/// CodeGen("f", {x, y}, M);
+/// @endcode
+///
+/// When executed, the last line of the above example generates the following
+/// code:
+///
+/// @code
+/// void f(const double* p, double* m) {
+///   m[0] = 1.000000;
+///   m[1] = (3 + p[0] + p[1]);
+///   m[2] = (4 * p[1]);
+///   m[3] = sin(p[0]);
+/// }
+/// typedef struct {
+///   /* p: input, vector */
+///   struct {
+///     int size;
+///   } p;
+///   /* m: output, matrix */
+///   struct {
+///     int rows;
+///     int cols;
+///   } m;
+/// } f_meta_t;
+/// f_meta_t f_meta() { return {{2}, {2, 2}}; }
+/// @endcode
+///
+/// Note that in this example, the matrix `M` is stored in column-major order
+/// and the `CodeGen` function respects the storage order in the generated code.
+/// If `M` were stored in row-major order, `CodeGen` would return the following:
+///
+/// @code
+/// void f(const double* p, double* m) {
+///     m[0] = 1.000000;
+///     m[1] = (4 * p[1]);
+///     m[2] = (3 + p[0] + p[1]);
+///     m[3] = sin(p[0]);
+/// }
+/// @endcode
+template <typename Derived>
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Eigen::PlainObjectBase<Derived>& M) {
+  std::ostringstream oss;
+  // Add header for the main function.
+  oss << "void " << function_name << "(const double* p, double* m) {\n";
+  // Codegen the matrix.
+  // Build a map from Variable::Id to index (in parameters).
+  CodeGenVisitor::IdToIndexMap id_to_idx_map;
+  for (std::vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
+    id_to_idx_map.emplace(parameters[i].get_id(), i);
+  }
+  const CodeGenVisitor visitor{id_to_idx_map};
+  for (int i = 0; i < M.cols() * M.rows(); ++i) {
+    oss << "    "
+        << "m[" << i << "] = " << visitor.CodeGen(M.data()[i]) << ";\n";
+  }
+  // Add footer for the main function.
+  oss << "}\n";
+  // <function_name>_meta_t type.
+  oss << "typedef struct {\n"
+         "    /* p: input, vector */\n"
+         "    struct { int size; } p;\n"
+         "    /* m: output, matrix */\n"
+         "    struct { int rows; int cols; } m;\n"
+         "} "
+      << function_name << "_meta_t;\n";
+  // <function_name>_meta().
+  oss << function_name << "_meta_t " << function_name << "_meta() { return {{"
+      << parameters.size() << "}, {" << M.rows() << ", " << M.cols()
+      << "}}; }\n";
+  return oss.str();
+}
 /// @} End of codegen group.
 
 }  // namespace symbolic
