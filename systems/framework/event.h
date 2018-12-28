@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/event_status.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -323,7 +324,7 @@ class Event {
 
   // Note: Users should not be calling this.
   #if !defined(DRAKE_DOXYGEN_CXX)
-  /// Constructs an Event with the specified @p trigger.
+  // Constructs an Event with the specified @p trigger.
   explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
   #endif
 
@@ -346,8 +347,10 @@ class Event {
   std::unique_ptr<EventData> event_data_{nullptr};
 };
 
-/// Structure for comparing two PeriodicEventData objects for use in a map
-/// container, using an arbitrary comparison method.
+/**
+ * Structure for comparing two PeriodicEventData objects for use in a map
+ * container, using an arbitrary comparison method.
+ */
 struct PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
     const PeriodicEventData& b) const {

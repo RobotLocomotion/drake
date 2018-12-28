@@ -163,6 +163,7 @@ drake_cc_library(
     hdrs = [
         "event.h",
         "event_collection.h",
+        "event_status.h",
     ],
     deps = [
         ":abstract_values",
@@ -697,6 +698,13 @@ drake_cc_googletest(
     deps = [
         ":context_base",
         "//common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "event_status_test",
+    deps = [
+        ":event_collection",
     ],
 )
 
