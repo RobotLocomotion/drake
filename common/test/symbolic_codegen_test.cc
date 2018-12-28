@@ -17,12 +17,17 @@ string MakeScalarFunctionCode(const string& function_name, const int n,
                               const string& e) {
   // Note that fmtlib requires to escape "{'" and "}" using "{{" and "}}".
   return fmt::format(
-      R"""(double {}(const double* p) {{
-    return {};
+      R"""(double {0}(const double* p) {{
+    return {1};
 }}
-int {}_in() {{
-    return {};
-}}
+typedef struct {{
+    /* p: input, vector */
+    struct {{ int size; }} p;
+}} {0}_meta_t;
+{0}_meta_t {0}_meta() {{ return {{{{{2}}}}}; }}
+)""",
+      function_name, e, n);
+}
 )""",
       function_name, e, function_name, n);
 }
