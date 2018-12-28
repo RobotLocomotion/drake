@@ -185,10 +185,15 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
   oss << "    return " << CodeGenVisitor(id_to_idx_map).CodeGen(e) << ";\n";
   // Add footer for the main function.
   oss << "}\n";
-  /// Handle `function_name_in`.
-  oss << "int " << function_name << "_in() {\n"
-      << "    return " << parameters.size() << ";\n"
-      << "}\n";
+  // <function_name>_meta_t type.
+  oss << "typedef struct {\n"
+         "    /* p: input, vector */\n"
+         "    struct { int size; } p;\n"
+         "} "
+      << function_name << "_meta_t;\n";
+  // <function_name>_meta().
+  oss << function_name << "_meta_t " << function_name << "_meta() { return {{"
+      << parameters.size() << "}}; }\n";
   return oss.str();
 }
 
