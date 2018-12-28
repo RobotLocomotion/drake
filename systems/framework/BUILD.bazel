@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":diagram_output_port",
         ":discrete_values",
         ":event_collection",
+        ":event_status",
         ":framework_common",
         ":input_port",
         ":input_port_base",
@@ -156,6 +157,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "event_status",
+    hdrs = [
+        "event_status.h",
+    ],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "event_collection",
     srcs = [
         "event_collection.cc",
@@ -167,6 +178,7 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":context",
+        ":event_status",
         ":value",
         "//common:autodiff",
         "//common:default_scalars",
@@ -697,6 +709,13 @@ drake_cc_googletest(
     deps = [
         ":context_base",
         "//common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "event_status_test",
+    deps = [
+        ":event_status",
     ],
 )
 
