@@ -1,4 +1,6 @@
 #include <iostream>
+#include <sstream>
+#include <vector>
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -9,7 +11,9 @@ namespace drake {
 namespace symbolic {
 namespace {
 
+using std::ostringstream;
 using std::string;
+using std::vector;
 
 // Helper function to combine the function name @p function_name and an
 // expression @p e with the proper function header and footer.
@@ -28,8 +32,34 @@ typedef struct {{
 )""",
       function_name, e, n);
 }
+
+// Helper function to generate expected codegen outcome for a dense matrix @p
+// M. It combines the function name @p function_name, the number of input
+// parameters @p in, the number of rows in M, @p rows, the number of columns in
+// M, @p cols, and the expected code for the entries in M, @p expressions.
+string MakeDenseMatrixFunctionCode(const string& function_name, const int in,
+                                   const int rows, const int cols,
+                                   const vector<string>& expressions) {
+  ostringstream oss;
+  // Main function f.
+  oss << fmt::format("void {0}(const double* p, double* m) {{\n",
+                     function_name);
+  for (size_t i{0}; i < expressions.size(); ++i) {
+    oss << fmt::format("    m[{0}] = {1};\n", i, expressions[i]);
+  }
+  oss << "}\n";
+  // f_meta_t.
+  oss << fmt::format(
+      R"""(typedef struct {{
+    /* p: input, vector */
+    struct {{ int size; }} p;
+    /* m: output, matrix */
+    struct {{ int rows; int cols; }} m;
+}} {0}_meta_t;
+{0}_meta_t {0}_meta() {{ return {{{{{1}}}, {{{2}, {3}}}}}; }}
 )""",
-      function_name, e, function_name, n);
+      function_name, in, rows, cols);
+  return oss.str();
 }
 
 class SymbolicCodeGenTest : public ::testing::Test {
@@ -37,6 +67,7 @@ class SymbolicCodeGenTest : public ::testing::Test {
   const Variable x_{"x"};
   const Variable y_{"y"};
   const Variable z_{"z"};
+  const Variable w_{"w"};
 };
 
 TEST_F(SymbolicCodeGenTest, Variable) {
@@ -174,6 +205,84 @@ TEST_F(SymbolicCodeGenTest, UninterpretedFunction) {
 TEST_F(SymbolicCodeGenTest, ScalarExampleInDocumentation) {
   EXPECT_EQ(CodeGen("f", {x_, y_}, 1 + sin(x_) + cos(y_)),
             MakeScalarFunctionCode("f", 2, "(1 + sin(p[0]) + cos(p[1]))"));
+}
+
+TEST_F(SymbolicCodeGenTest, DenseMatrixRowMajor) {
+  Eigen::Matrix<symbolic::Expression, 3, 2, Eigen::RowMajor> M;
+  vector<string> expected;
+
+  M(0, 0) = 3 + 2 * x_ + y_;
+  expected.push_back("(3 + (2 * p[0]) + p[1])");
+
+  M(0, 1) = 2 * pow(x_, 2) * pow(y_, 3);
+  expected.push_back("(2 * pow(p[0], 2.000000) * pow(p[1], 3.000000))");
+
+  M(1, 0) = 5 + sin(x_) + cos(z_);
+  expected.push_back("(5 + sin(p[0]) + cos(p[2]))");
+
+  M(1, 1) = 3 * min(x_, w_);
+  expected.push_back("(3 * fmin(p[0], p[3]))");
+
+  M(2, 0) = (x_ + 2) / (y_ - 2);
+  expected.push_back("((2 + p[0]) / (-2 + p[1]))");
+
+  M(2, 1) = atan2(w_ + 3, y_ + 4);
+  expected.push_back("atan2((3 + p[3]), (4 + p[1]))");
+
+  EXPECT_EQ(CodeGen("f", {x_, y_, z_, w_}, M),
+            MakeDenseMatrixFunctionCode("f", 4 /* number of input parameters */,
+                                        3 /* number of rows */,
+                                        2 /* number of columns */, expected));
+}
+
+TEST_F(SymbolicCodeGenTest, DenseMatrixColMajor) {
+  Eigen::Matrix<symbolic::Expression, 3, 2, Eigen::ColMajor> M;
+  vector<string> expected;
+
+  M(0, 0) = 3 + 2 * x_ + y_;
+  expected.push_back("(3 + (2 * p[0]) + p[1])");
+
+  M(1, 0) = 5 + sin(x_) + cos(z_);
+  expected.push_back("(5 + sin(p[0]) + cos(p[2]))");
+
+  M(2, 0) = (x_ + 2) / (y_ - 2);
+  expected.push_back("((2 + p[0]) / (-2 + p[1]))");
+
+  M(0, 1) = 2 * pow(x_, 2) * pow(y_, 3);
+  expected.push_back("(2 * pow(p[0], 2.000000) * pow(p[1], 3.000000))");
+
+  M(1, 1) = 3 * min(x_, w_);
+  expected.push_back("(3 * fmin(p[0], p[3]))");
+
+  M(2, 1) = atan2(w_ + 3, y_ + 4);
+  expected.push_back("atan2((3 + p[3]), (4 + p[1]))");
+
+  EXPECT_EQ(CodeGen("f", {x_, y_, z_, w_}, M),
+            MakeDenseMatrixFunctionCode("f", 4 /* number of input parameters */,
+                                        3 /* number of rows */,
+                                        2 /* number of columns */, expected));
+}
+
+TEST_F(SymbolicCodeGenTest, DenseMatrixExampleInDocumentation) {
+  Eigen::Matrix<symbolic::Expression, 2, 2, Eigen::ColMajor> M;
+  vector<string> expected;
+
+  M(0, 0) = 1.0;
+  expected.push_back("1.000000");
+
+  M(1, 0) = 3 + x_ + y_;
+  expected.push_back("(3 + p[0] + p[1])");
+
+  M(0, 1) = 4 * y_;
+  expected.push_back("(4 * p[1])");
+
+  M(1, 1) = sin(x_);
+  expected.push_back("sin(p[0])");
+
+  EXPECT_EQ(CodeGen("f", {x_, y_}, M),
+            MakeDenseMatrixFunctionCode("f", 2 /* number of input parameters */,
+                                        2 /* number of rows */,
+                                        2 /* number of columns */, expected));
 }
 
 }  // namespace
