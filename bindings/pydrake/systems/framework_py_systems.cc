@@ -432,22 +432,27 @@ struct Impl {
               return self->DeclareVectorOutputPort(arg1, arg2);
             }),
             py_reference_internal, doc.LeafSystem.DeclareVectorOutputPort.doc)
-        .def("_DeclarePeriodicPublish", &PyLeafSystem::DeclarePeriodicPublish,
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicPublish.doc)
+
         .def("_DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclareInitializationEvent(event);
             },
             py::arg("event"), doc.LeafSystem.DeclareInitializationEvent.doc)
-        // Binding the *second* signature; first has no Event argument.
+        .def("_DeclarePeriodicPublish",
+            &LeafSystemPublic::DeclarePeriodicPublish, py::arg("period_sec"),
+            py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicPublish.doc)
+        .def("_DeclarePeriodicDiscreteUpdate",
+            &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
+            py::arg("period_sec"), py::arg("offset_sec") = 0.,
+            doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
         .def("_DeclarePeriodicEvent",
             [](PyLeafSystem* self, double period_sec, double offset_sec,
                 const Event<T>& event) {
               self->DeclarePeriodicEvent(period_sec, offset_sec, event);
             },
             py::arg("period_sec"), py::arg("offset_sec"), py::arg("event"),
-            doc.LeafSystem.DeclarePeriodicEvent.doc_2)
+            doc.LeafSystem.DeclarePeriodicEvent.doc)
         .def("_DeclarePerStepEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
               self->DeclarePerStepEvent(event);
@@ -496,10 +501,6 @@ struct Impl {
             py::overload_cast<int>(&LeafSystemPublic::DeclareDiscreteState),
             py::arg("num_state_variables"),
             doc.LeafSystem.DeclareDiscreteState.doc_3)
-        .def("_DeclarePeriodicDiscreteUpdate",
-            &LeafSystemPublic::DeclarePeriodicDiscreteUpdate,
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc)
         .def("_DoCalcTimeDerivatives", &LeafSystemPublic::DoCalcTimeDerivatives)
         .def("_DoCalcDiscreteVariableUpdates",
             &LeafSystemPublic::DoCalcDiscreteVariableUpdates,
