@@ -10,6 +10,7 @@ using std::ostringstream;
 using std::runtime_error;
 using std::string;
 using std::to_string;
+using std::vector;
 
 CodeGenVisitor::CodeGenVisitor(const IdToIndexMap& id_to_idx_map)
     : id_to_idx_map_{id_to_idx_map} {}
@@ -168,6 +169,27 @@ string CodeGenVisitor::VisitIfThenElse(const Expression&) const {
 
 string CodeGenVisitor::VisitUninterpretedFunction(const Expression&) const {
   throw runtime_error("Codegen does not support uninterpreted functions.");
+}
+
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Expression& e) {
+  ostringstream oss;
+  // Add header for the main function.
+  oss << "double " << function_name << "(const double* p) {\n";
+  // Codegen the expression.
+  // Build a map from Variable::Id to index (in parameters).
+  CodeGenVisitor::IdToIndexMap id_to_idx_map;
+  for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
+    id_to_idx_map.emplace(parameters[i].get_id(), i);
+  }
+  oss << "    return " << CodeGenVisitor(id_to_idx_map).CodeGen(e) << ";\n";
+  // Add footer for the main function.
+  oss << "}\n";
+  /// Handle `function_name_in`.
+  oss << "int " << function_name << "_in() {\n"
+      << "    return " << parameters.size() << ";\n"
+      << "}\n";
+  return oss.str();
 }
 
 }  // namespace symbolic
