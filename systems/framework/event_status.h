@@ -1,0 +1,93 @@
+#pragma once
+
+#include <string>
+#include <utility>
+
+#include "drake/common/drake_assert.h"
+#include "drake/common/drake_copyable.h"
+
+namespace drake {
+namespace systems {
+
+class SystemBase;
+
+/** Holds the return status from execution of an event handler function, or the
+effective status after calling a series of such functions due to the occurrence
+of simultaneous events. Drake API users will typically use only the four factory
+methods below to return status, and optionally a human-readable message, from
+their event handlers. Event dispatchers (normally provided by the framework)
+take care of processing the returned statuses appropriately.
+
+(Advanced) In case you are writing an event dispatcher, the dispatcher's return
+status should be the returned status of highest severity in a series of event
+handlers invoked for simultaneous events. In case of multiple returns at the
+same severity, the first one should win. Simultaneous event handler execution
+should continue until either (a) all event handlers have executed, or (b) an
+event handler returns the most-severe status, EventStatus::kFailed. */
+class EventStatus {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventStatus)
+
+  /** The numerical values are ordered, with
+  did_nothing < success < terminate < fatal. */
+  enum Severity {
+    /** Nothing happened; no state update needed. */
+    kDidNothing = 0,
+    /** Handler executed successfully. */
+    kSucceeded = 1,
+    /** Handler succeeded but detected a termination condition (has message). */
+    kReachedTermination = 2,
+    /** Handler was unable to perform its job (has message). */
+    kFailed = 3
+  };
+
+  /** Sets this status to "did nothing", with no message. */
+  static EventStatus DidNothing() { return EventStatus(kDidNothing); }
+
+  /** Sets this status to "succeeded" with no message. */
+  static EventStatus Succeeded() { return EventStatus(kSucceeded); }
+
+  /** Sets this status to "reached termination" with a message
+  explaining why. */
+  static EventStatus ReachedTermination(const SystemBase* system,
+                                        std::string message) {
+    return EventStatus(kReachedTermination, system, message);
+  }
+
+  /** Sets this status to "failed" with a message explaining why. */
+  static EventStatus Failed(const SystemBase* system, std::string message) {
+    return EventStatus(kFailed, system, message);
+  }
+
+  /** Returns the severity of the current status. */
+  Severity severity() const { return severity_; }
+
+  /** Returns the optionally-provided subsystem that generated a status
+  return that includes a message (reached termination or failed). */
+  const SystemBase* system() const { return system_; }
+
+  /** Returns the optionally-provided human-readable message supplied by the
+  event handler that produced the current status. */
+  const std::string& message() const { return message_; }
+
+  /** (Advanced) Replaces the contents of `this` with the more-severe status
+  if `candidate` is a more severe status than `this` one. This is for use in
+  event dispatchers for accumulating status returns from a series of event
+  handlers for a set of simultaneous events. */
+  EventStatus& KeepMoreSevere(EventStatus candidate) {
+    if (candidate.severity() > severity()) *this = candidate;
+    return *this;
+  }
+
+ private:
+  explicit EventStatus(Severity severity) : severity_(severity) {}
+  EventStatus(Severity severity, const SystemBase* system, std::string message)
+      : severity_(severity), system_(system), message_(std::move(message)) {}
+
+  Severity severity_{kFailed};
+  const SystemBase* system_{nullptr};
+  std::string message_;
+};
+
+}  // namespace systems
+}  // namespace drake
