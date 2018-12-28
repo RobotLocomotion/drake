@@ -66,5 +66,37 @@ class CodeGenVisitor {
   const IdToIndexMap& id_to_idx_map_;
 };
 
+/// For a given symbolic expression @p e, generates two C functions, @p
+/// function_name and `function_name_in`. The generated `function_name` takes an
+/// array of doubles for parameters and returns an evaluation
+/// result. `function_name_in` returns the length of @p parameters.
+///
+/// @param[in] function_name Name of the generated C function.
+/// @param[in] parameters    Vector of variables provide the ordering of
+///                          symbolic variables.
+/// @param[in] e             Symbolic expression to codegen.
+///
+/// For example, `Codegen("f", {x, y}, 1 + sin(x) + cos(y))` generates the
+/// following string.
+///
+/// <pre>
+/// double f(const double* p) {
+///     return (1 + sin(p[0]) + cos(p[1]));
+/// }
+/// int f_in() {
+///     return 2;  // size of `{x, y}`.
+/// }
+/// </pre>
+///
+/// Note that in this example `x` and `y` are mapped to `p[0]` and `p[1]`
+/// respectively because we passed `{x, y}` to `Codegen`.
+///
+/// Note that generated code does not include any headers while it may use math
+/// functions defined in `<math.h>` such as sin, cos, exp, and log. A user of
+/// generated code is responsible to include `<math.h>` if needed to compile
+/// generated code.
+std::string CodeGen(const std::string& function_name,
+                    const std::vector<Variable>& parameters,
+                    const Expression& e);
 }  // namespace symbolic
 }  // namespace drake
