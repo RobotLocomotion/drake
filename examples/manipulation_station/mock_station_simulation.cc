@@ -58,8 +58,6 @@ int do_main(int argc, char* argv[]) {
     DRAKE_ABORT_MSG("Unrecognized station type. Options are "
                     "{default, clutter_clearing}.");
   }
-  multibody::Parser parser(&station->get_mutable_multibody_plant(),
-                           &station->get_mutable_scene_graph());
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.
   station->Finalize();
@@ -151,11 +149,7 @@ int do_main(int argc, char* argv[]) {
       diagram->GetMutableSubsystemContext(*station, &context);
 
   // Get the initial Iiwa pose and initialize the iiwa_command to match.
-  auto& plant = station->get_multibody_plant();
-  DRAKE_THROW_UNLESS(plant.HasModelInstanceNamed("iiwa"));
-  auto plant_context = &station->GetSubsystemContext(plant, station_context);
-  VectorXd q0 = station->get_multibody_plant().GetPositions(
-      *plant_context, plant.GetModelInstanceByName("iiwa"));
+  VectorXd q0 = station->GetIiwaPosition(station_context);
   iiwa_command->set_initial_position(
       &diagram->GetMutableSubsystemContext(*iiwa_command, &context), q0);
 

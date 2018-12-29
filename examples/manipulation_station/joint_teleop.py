@@ -49,11 +49,6 @@ if args.hardware:
 else:
     station = builder.AddSystem(ManipulationStation())
     station.SetupDefaultStation()
-    parser = Parser(station.get_mutable_multibody_plant(),
-                    station.get_mutable_scene_graph())
-    object = parser.AddModelFromFile(FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object")
     station.Finalize()
 
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
@@ -89,27 +84,6 @@ station_context = diagram.GetMutableSubsystemContext(
 
 station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
-
-if not args.hardware:
-    # Set the initial positions of the IIWA to a comfortable configuration
-    # inside the workspace of the station.
-    q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
-    station.SetIiwaPosition(station_context, q0)
-    station.SetIiwaVelocity(station_context, np.zeros(7))
-
-    # Set the initial configuration of the gripper to open.
-    station.SetWsgPosition(station_context, 0.1)
-    station.SetWsgVelocity(station_context, 0)
-
-    # Place the object in the middle of the workspace.
-    X_WObject = Isometry3.Identity()
-    X_WObject.set_translation([.6, 0, 0])
-    station.get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-        station.get_multibody_plant().GetBodyByName("base_link",
-                                                    object),
-        X_WObject, station.GetMutableSubsystemContext(
-            station.get_multibody_plant(),
-            station_context))
 
 # Eval the output port once to read the initial positions of the IIWA.
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(

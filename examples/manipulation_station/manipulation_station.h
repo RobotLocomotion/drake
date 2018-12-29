@@ -21,7 +21,7 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup {kDefault, kClutterClearing};
+enum class Setup { kNone, kDefault, kClutterClearing };
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -36,9 +36,8 @@ enum class Setup {kDefault, kClutterClearing};
 /// and anything a user might want to load into the model.
 /// SetupDefaultStation() provides the setup that is used in the MIT
 /// Intelligent Robot Manipulation class, which includes the supporting
-/// structure for IIWA and several RGBD cameras.
-///
-/// @{
+/// structure for IIWA and several RGBD cameras.  Alternative Setup___()
+/// methods are provided, as well.
 ///
 /// @system{ ManipulationStation,
 ///   @input_port{iiwa_position}
@@ -128,7 +127,6 @@ enum class Setup {kDefault, kClutterClearing};
 ///   - double
 ///
 /// @ingroup manipulation_station_systems
-/// @}
 template <typename T>
 class ManipulationStation : public systems::Diagram<T> {
  public:
@@ -144,7 +142,8 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Adds a default iiwa, wsg, two bins, and object clutter, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   /// the appropriate arguments.
-  /// Must be called before Finalize().
+  /// @note Must be called before Finalize().
+  /// @note Only one of the `Setup___()` methods should be called.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupClutterClearingStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
@@ -153,36 +152,18 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   /// the appropriate arguments.
-  /// Must be called before Finalize().
+  /// @note Must be called before Finalize().
+  /// @note Only one of the `Setup___()` methods should be called.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupDefaultStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  /// Sets the pose of a body from a given transform, and sets its velocities to
-  /// zero.
-  /// @param X_WObject The pose of the object
-  /// @param name The name of the body to pose
-  /// @param plant_q The full generalized position vector of the MBP
-  /// @param plant_qdot The full generalized velocity vector of the MBP
-  void SetDefaultObjectState(const math::RigidTransform<T>& X_WObject,
-                             std::string name, EigenPtr<VectorX<T>> plant_q,
-                             EigenPtr<VectorX<T>> plant_qdot) const;
-
-
-  /// Sets the default state of the Iiwa and gripper. Initial positions
-  /// are specified, and initial velocities are set to zero.
-  /// @param q0_iiwa The initial generalized positions of the Iiwa.
-  /// @param q0_gripper The initial generalized positions of the gripper.
-  /// @param plant_q The complete generalized position vector of the MBP.
-  /// @param plant_qdot The complete generalized velocity vector of the MBP.
-  void SetDefaultIiwaGripperState(VectorX<T> q0_iiwa, VectorX<T> q0_gripper,
-                                  EigenPtr<VectorX<T>> plant_q,
-                                  EigenPtr<VectorX<T>> plant_qdot) const;
-
   /// Sets the default State for the chosen setup.
   /// @param context A const reference to the ManipulationStation context.
   /// @param state A pointer to the State of the ManipulationStation system.
-  void SetDefaultState(const systems::Context<T>& context,
+  /// @pre `state` must be the systems::State<T> object contained in
+  /// `station_context`.
+  void SetDefaultState(const systems::Context<T>& station_context,
                        systems::State<T>* state) const override;
 
   /// Notifies the ManipulationStation that the IIWA robot model instance can
@@ -273,8 +254,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Returns a reference to the main plant responsible for the dynamics of
   /// the robot and the environment.  This can be used to, e.g., add
   /// additional elements into the world before calling Finalize().
-  const multibody::MultibodyPlant<T>& get_multibody_plant()
-      const {
+  const multibody::MultibodyPlant<T>& get_multibody_plant() const {
     return *plant_;
   }
 
@@ -339,11 +319,23 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting all of the joint angles of the Kuka IIWA.
   /// Also sets the position history in the velocity command generator.
   /// @p q must have size num_iiwa_joints().
-  void SetIiwaPosition(systems::Context<T>* station_context,
+  /// @pre `state` must be the systems::State<T> object contained in
+  /// `station_context`.
+  void SetIiwaPosition(const systems::Context<T>& station_context,
+                       systems::State<T>* state,
                        const Eigen::Ref<const VectorX<T>>& q) const;
 
-  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
-                   "This method will be deleted after 2019-04-01.")
+  /// Convenience method for setting all of the joint angles of the Kuka IIWA.
+  /// Also sets the position history in the velocity command generator.
+  /// @p q must have size num_iiwa_joints().
+  void SetIiwaPosition(systems::Context<T>* station_context,
+                       const Eigen::Ref<const VectorX<T>>& q) const {
+    SetIiwaPosition(*station_context, &station_context->get_mutable_state(), q);
+  }
+
+  DRAKE_DEPRECATED(
+      "Prefer the version with the Context as the first argument."
+      "This method will be deleted after 2019-04-01.")
   void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
                        systems::Context<T>* station_context) const {
     SetIiwaPosition(station_context, q);
@@ -355,11 +347,22 @@ class ManipulationStation : public systems::Diagram<T> {
 
   /// Convenience method for setting all of the joint velocities of the Kuka
   /// IIWA. @v must have size num_iiwa_joints().
-  void SetIiwaVelocity(systems::Context<T>* station_context,
+  /// @pre `state` must be the systems::State<T> object contained in
+  /// `station_context`.
+  void SetIiwaVelocity(const systems::Context<T>& station_context,
+                       systems::State<T>* state,
                        const Eigen::Ref<const VectorX<T>>& v) const;
 
-  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
-                   "This method will be deleted after 2019-04-01.")
+  /// Convenience method for setting all of the joint velocities of the Kuka
+  /// IIWA. @v must have size num_iiwa_joints().
+  void SetIiwaVelocity(systems::Context<T>* station_context,
+                       const Eigen::Ref<const VectorX<T>>& v) const {
+    SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
+  }
+
+  DRAKE_DEPRECATED(
+      "Prefer the version with the Context as the first argument."
+      "This method will be deleted after 2019-04-01.")
   void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
                        systems::Context<T>* station_context) const {
     SetIiwaVelocity(station_context, v);
@@ -377,19 +380,40 @@ class ManipulationStation : public systems::Diagram<T> {
   /// sets the position history in the velocity interpolator.  Note that the
   /// WSG position is the signed distance between the two fingers (not the
   /// state of the fingers individually).
-  void SetWsgPosition(systems::Context<T>* station_context, const T& q) const;
+  /// @pre `state` must be the systems::State<T> object contained in
+  /// `station_context`.
+  void SetWsgPosition(const systems::Context<T>& station_context,
+                      systems::State<T>* state, const T& q) const;
 
-  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
-                   "This method will be deleted after 2019-04-01.")
+  /// Convenience method for setting the position of the Schunk WSG. Also
+  /// sets the position history in the velocity interpolator.  Note that the
+  /// WSG position is the signed distance between the two fingers (not the
+  /// state of the fingers individually).
+  void SetWsgPosition(systems::Context<T>* station_context, const T& q) const {
+    SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
+  }
+
+  DRAKE_DEPRECATED(
+      "Prefer the version with the Context as the first argument."
+      "This method will be deleted after 2019-04-01.")
   void SetWsgPosition(const T& q, systems::Context<T>* station_context) const {
     SetWsgPosition(station_context, q);
   }
 
   /// Convenience method for setting the velocity of the Schunk WSG.
-  void SetWsgVelocity(systems::Context<T>* station_context, const T& v) const;
+  /// @pre `state` must be the systems::State<T> object contained in
+  /// `station_context`.
+  void SetWsgVelocity(const systems::Context<T>& station_context,
+                      systems::State<T>* state, const T& v) const;
 
-  DRAKE_DEPRECATED("Prefer the version with the Context as the first argument."
-                   "This method will be deleted after 2019-04-01.")
+  /// Convenience method for setting the velocity of the Schunk WSG.
+  void SetWsgVelocity(systems::Context<T>* station_context, const T& v) const {
+    SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
+  }
+
+  DRAKE_DEPRECATED(
+      "Prefer the version with the Context as the first argument."
+      "This method will be deleted after 2019-04-01.")
   void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const {
     SetWsgVelocity(station_context, v);
   }
@@ -481,8 +505,8 @@ class ManipulationStation : public systems::Diagram<T> {
 
   // Represents the manipulation station to simulate. This gets set in the
   // corresponding station setup function (e.g., SetupDefaultStation()), and
-  // informs how SetDefaultContext() initializes the sim.
-  Setup setup_;
+  // informs how SetDefaultState() initializes the sim.
+  Setup setup_{Setup::kNone};
 };
 
 }  // namespace manipulation_station
