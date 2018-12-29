@@ -1913,14 +1913,12 @@ class LeafSystem : public System<T> {
   // obtains a VectorBase from a Context using @p get_vector_from_context and
   // then delegates to the VectorBase::CalcInequalityConstraint.
   // The inequality constraint is imposed as
-  // model_vector.CalcInequalityConstraint() >= 0
+  // lower_bounds <= model_vector.CalcInequalityConstraint() <= upper_bounds
   void MaybeDeclareVectorBaseInequalityConstraint(
       const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
           get_vector_from_context) {
-    VectorX<T> dummy_value;
-    model_vector.CalcInequalityConstraint(&dummy_value);
-    const int count = dummy_value.size();
+    const int count = model_vector.inequality_constraint_lower_bound().size();
     if (count == 0) {
       return;
     }
@@ -1928,9 +1926,8 @@ class LeafSystem : public System<T> {
         [get_vector_from_context](const Context<T>& con, VectorX<T>* value) {
           get_vector_from_context(con).CalcInequalityConstraint(value);
         },
-        Eigen::VectorXd::Zero(count),
-        Eigen::VectorXd::Constant(count,
-                                  std::numeric_limits<double>::infinity()),
+        model_vector.inequality_constraint_lower_bound(),
+        model_vector.inequality_constraint_upper_bound(),
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 

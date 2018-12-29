@@ -135,6 +135,16 @@ DEFAULT_CTOR_CUSTOM_END = """
 DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
+APPEND_INEQUALITY_CONSTRAINT_LOWER_BOUND = """
+    this->AppendInequalityConstraintLowerBound(%(min_value)s);
+"""
+APPEND_INEQUALITY_CONSTRAINT_UPPER_BOUND = """
+    this->AppendInequalityConstraintUpperBound(%(max_value)s);
+"""
+APPEND_INEQUALITY_CONSTRAINT_BOUND = """
+    this->AppendInequalityConstraintBound(%(min_value)s, %(max_value)s);
+"""
+
 
 def generate_default_ctor(hh, caller_context, fields):
     put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
@@ -160,6 +170,21 @@ def generate_default_ctor(hh, caller_context, fields):
             default_value = "drake::dummy_value<T>::get()"
         context.update(default_value=default_value)
         put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
+    for field in fields:
+        field_context = dict(caller_context)
+        if field["min_value"] or field["max_value"]:
+            if field["min_value"]:
+                field_context.update(min_value=field["min_value"])
+            if field["max_value"]:
+                field_context.update(max_value=field["max_value"])
+            if not field["min_value"]:
+                put(hh, APPEND_INEQUALITY_CONSTRAINT_UPPER_BOUND %
+                    field_context, 1)
+            elif not field["max_value"]:
+                put(hh, APPEND_INEQUALITY_CONSTRAINT_LOWER_BOUND %
+                    field_context, 1)
+            else:
+                put(hh, APPEND_INEQUALITY_CONSTRAINT_BOUND % field_context, 1)
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
 
 
@@ -334,11 +359,8 @@ CALC_INEQUALITY_CONSTRAINT_BEGIN = """
   void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
     value->resize(%(num_constraints)d);
 """
-CALC_INEQUALITY_CONSTRAINT_MIN_VALUE = """
-    (*value)[%(constraint_index)d] = %(field)s() - T(%(min_value)s);
-"""
-CALC_INEQUALITY_CONSTRAINT_MAX_VALUE = """
-    (*value)[%(constraint_index)d] = T(%(max_value)s) - %(field)s();
+CALC_INEQUALITY_CONSTRAINT = """
+    (*value)[%(constraint_index)d] = %(field)s();
 """
 CALC_INEQUALITY_CONSTRAINT_END = """
   }
@@ -348,9 +370,7 @@ CALC_INEQUALITY_CONSTRAINT_END = """
 def generate_calc_inequality_constraint(hh, caller_context, fields):
     num_constraints = 0
     for field in fields:
-        if field['min_value']:
-            num_constraints += 1
-        if field['max_value']:
+        if field['min_value'] or field['max_value']:
             num_constraints += 1
     if num_constraints == 0:
         return
@@ -361,15 +381,9 @@ def generate_calc_inequality_constraint(hh, caller_context, fields):
     for field in fields:
         field_context = dict(caller_context)
         field_context.update(field=field['name'])
-        if field['min_value']:
+        if field['min_value'] or field['max_value']:
             field_context.update(constraint_index=constraint_index)
-            field_context.update(min_value=field['min_value'])
-            put(hh, CALC_INEQUALITY_CONSTRAINT_MIN_VALUE % field_context, 1)
-            constraint_index += 1
-        if field['max_value']:
-            field_context.update(constraint_index=constraint_index)
-            field_context.update(max_value=field['max_value'])
-            put(hh, CALC_INEQUALITY_CONSTRAINT_MAX_VALUE % field_context, 1)
+            put(hh, CALC_INEQUALITY_CONSTRAINT % field_context, 1)
             constraint_index += 1
     assert constraint_index == num_constraints
     put(hh, CALC_INEQUALITY_CONSTRAINT_END % context, 2)

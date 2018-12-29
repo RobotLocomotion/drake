@@ -63,6 +63,8 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_two_word(0.0);
     this->set_absone(0.0);
     this->set_unset(drake::dummy_value<T>::get());
+    this->AppendInequalityConstraintLowerBound(0.0);
+    this->AppendInequalityConstraintBound(-1.0, 1.0);
   }
 
   // Note: It's safe to implement copy and move because this class is final.
@@ -199,10 +201,9 @@ class Sample final : public drake::systems::BasicVector<T> {
 
   // VectorBase override.
   void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(3);
-    (*value)[0] = x() - T(0.0);
-    (*value)[1] = absone() - T(-1.0);
-    (*value)[2] = T(1.0) - absone();
+    value->resize(2);
+    (*value)[0] = x();
+    (*value)[1] = absone();
   }
 
  private:

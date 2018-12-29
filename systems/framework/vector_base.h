@@ -173,15 +173,34 @@ class VectorBase {
 
   /// Populates a vector @p value suitable for a SystemConstraint inequality
   /// constraint. For all indices `i` in the result vector, the validity
-  /// constraint is `result[i] >= 0`. For a given subclass type, the size of
-  /// the result must not vary over time. The %VectorBase default
+  /// constraint is `inequality_constraint_lower_bound()[i] <= result[i] <=
+  /// inequality_constraint_upper_bound()[i]`. For a given subclass type, the
+  /// size of the result must not vary over time. The %VectorBase default
   /// implementation sets the @p value to be empty (no constraints).
   virtual void CalcInequalityConstraint(VectorX<T>* value) const {
     value->resize(0);
   }
 
+  /// The lower bound of the inequality constraint lower_bound <=
+  /// CalcInequalityConstraint <= upper_bound
+  const Eigen::VectorXd& inequality_constraint_lower_bound() const {
+    return inequality_constraint_lower_bound_;
+  }
+
+  /// The lower bound of the inequality constraint lower_bound <=
+  /// CalcInequalityConstraint <= upper_bound
+  const Eigen::VectorXd& inequality_constraint_upper_bound() const {
+    return inequality_constraint_upper_bound_;
+  }
+
+  void SetInequalityConstraintBounds(
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound);
+
  protected:
-  VectorBase() {}
+  VectorBase()
+      : inequality_constraint_lower_bound_{0},
+        inequality_constraint_upper_bound_{0} {}
 
   /// Adds in multiple scaled vectors to this vector. All vectors
   /// are guaranteed to be the same size.
@@ -204,6 +223,16 @@ class VectorBase {
       SetAtIndex(i, GetAtIndex(i) + value);
     }
   }
+
+  void AppendInequalityConstraintBound(double lower_bound, double upper_bound);
+
+  void AppendInequalityConstraintUpperBound(double upper_bound);
+
+  void AppendInequalityConstraintLowerBound(double lower_bound);
+
+ private:
+  Eigen::VectorXd inequality_constraint_lower_bound_;
+  Eigen::VectorXd inequality_constraint_upper_bound_;
 };
 
 // Allows a VectorBase<T> to be streamed into a string. This is useful for

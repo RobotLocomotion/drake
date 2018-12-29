@@ -1960,7 +1960,9 @@ template <typename T, int bias>
 class ConstraintBasicVector final : public BasicVector<T> {
  public:
   static constexpr int kSize = 3;
-  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
+  ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {
+    this->AppendInequalityConstraintLowerBound(0);
+  }
   BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
 
   // Declare a single constraint `this[0] >= bias`.

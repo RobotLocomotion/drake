@@ -255,6 +255,13 @@ GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
   EXPECT_EQ(value.size(), 0);
 }
 
+// Tests the default lower and upper bounds for inequality constraints (empty).
+GTEST_TEST(BasicVectorTest, DefaultInequalityConstraintBounds) {
+  BasicVector<double> vec(1);
+  EXPECT_EQ(vec.inequality_constraint_lower_bound().size(), 0);
+  EXPECT_EQ(vec.inequality_constraint_upper_bound().size(), 0);
+}
+
 // Tests the protected `::values()` methods.
 GTEST_TEST(BasicVectorTest, ValuesAccess) {
   MyVector<2, double> dut;
