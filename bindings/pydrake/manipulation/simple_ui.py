@@ -194,6 +194,8 @@ class SchunkWsgButtons(LeafSystem):
         self._closed_position = closed_position
         self._force_limit = force_limit
 
+        self.window.bind("<space>", self._space_callback)
+
     def open(self):
         """
         Output a command that will open the gripper.
@@ -209,6 +211,12 @@ class SchunkWsgButtons(LeafSystem):
         self._open_state = False
         self._open_button.configure(state=tk.NORMAL)
         self._close_button.configure(state=tk.DISABLED)
+
+    def _space_callback(self, event):
+        if (self._open_state):
+            self.close()
+        else:
+            self.open()
 
     def _DoPublish(self, context, event):
         self.window.update_idletasks()
