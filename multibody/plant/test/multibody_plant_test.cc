@@ -204,6 +204,19 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // an exception.
   EXPECT_THROW(plant->GetBodyByName(kInvalidName), std::logic_error);
 
+  // Get body indices by model_instance.
+  const std::vector<BodyIndex> acrobot_indices =
+      plant->GetBodyIndices(default_model_instance());
+  EXPECT_EQ(acrobot_indices.size(), 2);
+  EXPECT_EQ(acrobot_indices[0], link1.index());
+  EXPECT_EQ(acrobot_indices[1], link2.index());
+
+  const std::vector<BodyIndex> pendulum_indices =
+      plant->GetBodyIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_indices.size(), 2);
+  EXPECT_EQ(pendulum_indices[0], upper.index());
+  EXPECT_EQ(pendulum_indices[1], lower.index());
+
   // Get joints by name.
   const Joint<double>& shoulder_joint =
       plant->GetJointByName(parameters.shoulder_joint_name());

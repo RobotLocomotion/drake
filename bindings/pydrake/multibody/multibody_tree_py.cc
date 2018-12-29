@@ -790,6 +790,8 @@ void init_multibody_plant(py::module m) {
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
             doc.MultibodyPlant.GetBodyByName.doc_2args)
+        .def("GetBodyIndices", &Class::GetBodyIndices,
+            py::arg("model_instance"), doc.MultibodyPlant.GetBodyIndices.doc)
         .def("GetJointByName",
             [](const Class* self, const string& name,
                 optional<ModelInstanceIndex> model_instance) -> auto& {

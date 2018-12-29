@@ -163,6 +163,7 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIs(
             plant.GetBodyByName(name="Link1"),
             plant.GetBodyByName(name="Link1", model_instance=model_instance))
+        self.assertEqual(len(plant.GetBodyIndices(model_instance)), 2)
         self._test_frame_api(plant.GetFrameByName(name="Link1"))
         self.assertIs(
             plant.GetFrameByName(name="Link1"),
