@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 
+#include <locale>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -110,6 +112,33 @@ GTEST_TEST(TinyxmlUtilTest, ThreeVectorAttributeTest) {
   EXPECT_TRUE(CompareMatrices(out, Eigen::Vector3d(4, 5, 6)));
 
   EXPECT_FALSE(detail::ParseThreeVectorAttribute(element, "meh", &out));
+}
+
+GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
+  const std::string test_xml = "<element oneAndHalf=\"1.5\"/>";
+
+  struct CommaDecimalPointFacet : std::numpunct<char> {
+    char do_decimal_point() const {
+      return ',';
+    }
+  };
+
+  // Set a global locale in which the decimal separator is the comma
+  std::locale original_global_locale =
+    std::locale::global(std::locale(std::locale::classic(),
+                                    new CommaDecimalPointFacet));
+
+  XMLDocument xml_doc;
+  xml_doc.Parse(test_xml.c_str());
+  XMLElement* element = xml_doc.FirstChildElement("element");
+  ASSERT_TRUE(element != nullptr);
+
+  double scalar = 0.0;
+  EXPECT_TRUE(detail::ParseScalarAttribute(element, "oneAndHalf", &scalar));
+  EXPECT_EQ(scalar, 1.5);
+
+  // Restore the original global locale
+  std::locale::global(original_global_locale);
 }
 
 }  // namespace
