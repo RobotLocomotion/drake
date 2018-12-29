@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 
+#include <locale>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -14,6 +15,7 @@ namespace detail {
 namespace {
 std::vector<double> ConvertToDoubles(const std::string& str) {
   std::istringstream ss(str);
+  ss.imbue(std::locale::classic());
 
   double val{};
   std::vector<double> out;
