@@ -173,7 +173,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
 template <typename T>
 void ManipulationStation<T>::SetupClutterClearingStation(
     const IiwaCollisionModel collision_model) {
-
+  DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kClutterClearing;
 
   // Add the bin.
@@ -182,9 +182,8 @@ void ManipulationStation<T>::SetupClutterClearingStation(
         "drake/examples/manipulation_station/models/bin.sdf");
 
     Isometry3<double> X_WC =
-        RigidTransform<double>(
-            RotationMatrix<double>::MakeZRotation(M_PI_2),
-            Vector3d(-0.145, -0.63, 0.235))
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
+                               Vector3d(-0.145, -0.63, 0.235))
             .GetAsIsometry3();
     internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
@@ -228,7 +227,7 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 template <typename T>
 void ManipulationStation<T>::SetupDefaultStation(
     const IiwaCollisionModel collision_model) {
-
+  DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kDefault;
 
   // Add the table and 80/20 workcell frame.
@@ -311,64 +310,33 @@ void ManipulationStation<T>::SetupDefaultStation(
 }
 
 template <typename T>
-void ManipulationStation<T>::SetDefaultIiwaGripperState(
-    VectorX<T> q0_iiwa, VectorX<T> q0_gripper, EigenPtr<VectorX<T>> plant_q,
-    EigenPtr<VectorX<T>> plant_qdot) const {
-  plant_->SetPositionsInArray(plant_->GetModelInstanceByName("iiwa"), q0_iiwa,
-                              plant_q);
-  plant_->SetVelocitiesInArray(plant_->GetModelInstanceByName("iiwa"),
-                               Eigen::VectorXd::Zero(num_iiwa_joints()),
-                               plant_qdot);
-  plant_->SetPositionsInArray(plant_->GetModelInstanceByName("gripper"),
-                              q0_gripper, plant_q);
-  plant_->SetVelocitiesInArray(plant_->GetModelInstanceByName("gripper"),
-                               Eigen::Vector2d(0, 0), plant_qdot);
-}
-
-template <typename T>
-void ManipulationStation<T>::SetDefaultObjectState(
-    const math::RigidTransform<T>& X_WObject, std::string name,
-    EigenPtr<VectorX<T>> plant_q, EigenPtr<VectorX<T>> plant_qdot) const {
-  Eigen::VectorXd q0_object(7);  // Floating base q's.
-  q0_object.head(4) = X_WObject.rotation().ToQuaternionAsVector4();
-  q0_object.tail(3) = X_WObject.translation();
-
-  multibody::ModelInstanceIndex object_model_instance =
-      plant_->GetModelInstanceByName(name);
-
-  plant_->SetPositionsInArray(object_model_instance, q0_object, plant_q);
-  plant_->SetVelocitiesInArray(object_model_instance, Eigen::VectorXd::Zero(6),
-                               plant_qdot);
-}
-
-template <typename T>
-void ManipulationStation<T>::SetDefaultState(const systems::Context<T>& context,
-                                             systems::State<T>* state) const {
+void ManipulationStation<T>::SetDefaultState(
+    const systems::Context<T>& station_context,
+    systems::State<T>* state) const {
   // Call the base class method, to initialize all systems in this diagram.
-  systems::Diagram<T>::SetDefaultState(context, state);
+  systems::Diagram<T>::SetDefaultState(station_context, state);
 
   VectorX<T> q0_iiwa(num_iiwa_joints());
-  Vector2<T> q0_gripper(-0.01, 0.01);
+  T q0_gripper{0.1};
+
+  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
+
+  auto set_object_pose = [&](std::string object_name,
+                             const RigidTransform<T>& X_WObject) {
+    const auto indices =
+        plant_->GetBodyIndices(plant_->GetModelInstanceByName(object_name));
+    DRAKE_DEMAND(indices.size() == 1);
+    plant_->SetFreeBodyPose(plant_context, &plant_state,
+                            plant_->get_body(indices[0]),
+                            X_WObject.GetAsIsometry3());
+  };
+
   RigidTransform<T> X_WObject;
-
-  systems::SubsystemIndex plant_sys_index = this->GetSystemIndexOrAbort(plant_);
-
-  auto diagram_state = dynamic_cast<systems::DiagramState<T>*>(state);
-  DRAKE_DEMAND(diagram_state != nullptr);
-
-  Eigen::VectorBlock<VectorX<T>> plant_xd =
-      diagram_state->get_mutable_substate(plant_sys_index)
-          .get_mutable_discrete_state()
-          .get_mutable_vector()
-          .get_mutable_value();
-
-  // The complete MBP generalized position and velocity vectors.
-  auto plant_q =
-      plant_xd.head(plant_->num_positions());
-  auto plant_qdot =
-      plant_xd.tail(plant_->num_velocities());
-
   switch (setup_) {
+    case Setup::kNone:
+      // No additional setup required.
+      break;
     case Setup::kDefault:
       // Set the initial positions of the IIWA to a comfortable configuration
       // inside the workspace of the station.
@@ -377,7 +345,8 @@ void ManipulationStation<T>::SetDefaultState(const systems::Context<T>& context,
       // Set the initial pose of the object.
       X_WObject.set_translation(Eigen::Vector3d(0.6, 0, 0));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      SetDefaultObjectState(X_WObject, "object_1", &plant_q, &plant_qdot);
+      set_object_pose("object_1", X_WObject);
+
       break;
     case Setup::kClutterClearing:
       // Set the initial positions of the IIWA to a configuration right above
@@ -387,58 +356,35 @@ void ManipulationStation<T>::SetDefaultState(const systems::Context<T>& context,
       // Place the box.
       X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.7, 0.25));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      SetDefaultObjectState(X_WObject, "object_1", &plant_q, &plant_qdot);
+      set_object_pose("object_1", X_WObject);
 
       // Place the cylinder.
       X_WObject.set_translation(Eigen::Vector3d(-0.2, -0.6, 0.30));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      SetDefaultObjectState(X_WObject, "object_2", &plant_q, &plant_qdot);
+      set_object_pose("object_2", X_WObject);
 
       // Place the thin cylinder.
       X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.25));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      SetDefaultObjectState(X_WObject, "object_3", &plant_q, &plant_qdot);
+      set_object_pose("object_3", X_WObject);
 
       // Place the thin box.
       X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.25));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      SetDefaultObjectState(X_WObject, "object_4", &plant_q, &plant_qdot);
+      set_object_pose("object_4", X_WObject);
 
       // Place the sphere.
       X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.31));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      SetDefaultObjectState(X_WObject, "object_5", &plant_q, &plant_qdot);
+      set_object_pose("object_5", X_WObject);
+
       break;
   }
 
-  SetDefaultIiwaGripperState(q0_iiwa, q0_gripper, &plant_q, &plant_qdot);
-
-  // Sets the position history for the iiwa state interpolator.
-  const auto& iiwa_state_from_position =
-      dynamic_cast<
-          const systems::StateInterpolatorWithDiscreteDerivative<double>&>(this
-          ->GetSubsystemByName("desired_state_from_position"));
-  systems::SubsystemIndex state_from_position_index =
-      this->GetSystemIndexOrAbort(&iiwa_state_from_position);
-  Eigen::VectorBlock<VectorX<T>> iiwa_interp_xd =
-      diagram_state->get_mutable_substate(state_from_position_index)
-          .get_mutable_discrete_state()
-          .get_mutable_vector()
-          .get_mutable_value();
-  iiwa_interp_xd << q0_iiwa , q0_iiwa;
-
-  // Set the position history in the wsg controller.
-  const auto& wsg_controller = dynamic_cast<
-      const manipulation::schunk_wsg::SchunkWsgPositionController&>(
-      this->GetSubsystemByName("wsg_controller"));
-  systems::SubsystemIndex wsg_controller_index =
-      this->GetSystemIndexOrAbort(&wsg_controller);
-  Eigen::VectorBlock<VectorX<T>> wsg_controller_xd =
-      diagram_state->get_mutable_substate(wsg_controller_index)
-          .get_mutable_discrete_state()
-          .get_mutable_vector()
-          .get_mutable_value();
-  wsg_controller_xd << q0_gripper, q0_gripper;
+  SetIiwaPosition(station_context, state, q0_iiwa);
+  SetIiwaVelocity(station_context, state, VectorX<T>::Zero(num_iiwa_joints()));
+  SetWsgPosition(station_context, state, q0_gripper);
+  SetWsgVelocity(station_context, state, 0);
 }
 
 template <typename T>
@@ -570,9 +516,8 @@ void ManipulationStation<T>::Finalize() {
     builder.Connect(iiwa_controller->get_output_port_control(),
                     adder->get_input_port(0));
     builder.ExportInput(adder->get_input_port(1), "iiwa_feedforward_torque");
-    builder.Connect(
-        adder->get_output_port(),
-        plant_->get_actuation_input_port(iiwa_model_.model_instance));
+    builder.Connect(adder->get_output_port(), plant_->get_actuation_input_port(
+                                                  iiwa_model_.model_instance));
 
     // Approximate desired state command from a discrete derivative of the
     // position command input port.
@@ -684,24 +629,23 @@ VectorX<T> ManipulationStation<T>::GetIiwaPosition(
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaPosition(
-    drake::systems::Context<T>* station_context,
+    const drake::systems::Context<T>& station_context, systems::State<T>* state,
     const Eigen::Ref<const drake::VectorX<T>>& q) const {
   const int num_iiwa_positions =
       plant_->num_positions(iiwa_model_.model_instance);
-  DRAKE_DEMAND(station_context != nullptr);
+  DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(q.size() == num_iiwa_positions);
-  auto& plant_context =
-      this->GetMutableSubsystemContext(*plant_, station_context);
-  plant_->SetPositions(&plant_context, iiwa_model_.model_instance, q);
+  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
+  plant_->SetPositions(plant_context, &plant_state, iiwa_model_.model_instance,
+                       q);
 
   // Set the position history in the state interpolator to match.
-  const auto& state_from_position =
-      dynamic_cast<
-          const systems::StateInterpolatorWithDiscreteDerivative<double>&>(this
-          ->GetSubsystemByName("desired_state_from_position"));
+  const auto& state_from_position = dynamic_cast<
+      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
+      this->GetSubsystemByName("desired_state_from_position"));
   state_from_position.set_initial_position(
-      &this->GetMutableSubsystemContext(state_from_position, station_context),
-      q);
+      &this->GetMutableSubsystemState(state_from_position, state), q);
 }
 
 template <typename T>
@@ -714,15 +658,16 @@ VectorX<T> ManipulationStation<T>::GetIiwaVelocity(
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaVelocity(
-    drake::systems::Context<T>* station_context,
+    const drake::systems::Context<T>& station_context, systems::State<T>* state,
     const Eigen::Ref<const drake::VectorX<T>>& v) const {
   const int num_iiwa_velocities =
       plant_->num_velocities(iiwa_model_.model_instance);
-  DRAKE_DEMAND(station_context != nullptr);
+  DRAKE_DEMAND(state != nullptr);
   DRAKE_DEMAND(v.size() == num_iiwa_velocities);
-  auto& plant_context =
-      this->GetMutableSubsystemContext(*plant_, station_context);
-  plant_->SetVelocities(&plant_context, iiwa_model_.model_instance, v);
+  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
+  plant_->SetVelocities(plant_context, &plant_state, iiwa_model_.model_instance,
+                        v);
 }
 
 template <typename T>
@@ -731,15 +676,9 @@ T ManipulationStation<T>::GetWsgPosition(
   const auto& plant_context =
       this->GetSubsystemContext(*plant_, station_context);
 
-  // TODO(russt): update upon resolution of #9623.
-  return plant_
-             ->template GetJointByName<PrismaticJoint>(
-                 "right_finger_sliding_joint", wsg_model_.model_instance)
-             .get_translation(plant_context) -
-         plant_
-             ->template GetJointByName<PrismaticJoint>(
-                 "left_finger_sliding_joint", wsg_model_.model_instance)
-             .get_translation(plant_context);
+  Vector2<T> positions =
+      plant_->GetPositions(plant_context, wsg_model_.model_instance);
+  return positions(1) - positions(0);
 }
 
 template <typename T>
@@ -748,56 +687,42 @@ T ManipulationStation<T>::GetWsgVelocity(
   const auto& plant_context =
       this->GetSubsystemContext(*plant_, station_context);
 
-  // TODO(russt): update upon resolution of #9623.
-  return plant_
-             ->template GetJointByName<PrismaticJoint>(
-                 "right_finger_sliding_joint", wsg_model_.model_instance)
-             .get_translation_rate(plant_context) -
-         plant_
-             ->template GetJointByName<PrismaticJoint>(
-                 "left_finger_sliding_joint", wsg_model_.model_instance)
-             .get_translation_rate(plant_context);
+  Vector2<T> velocities =
+      plant_->GetVelocities(plant_context, wsg_model_.model_instance);
+  return velocities(1) - velocities(0);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetWsgPosition(
-    drake::systems::Context<T>* station_context, const T& q) const {
-  auto& plant_context =
-      this->GetMutableSubsystemContext(*plant_, station_context);
+    const drake::systems::Context<T>& station_context, systems::State<T>* state,
+    const T& q) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
 
-  // TODO(russt): update upon resolution of #9623.
-  plant_
-      ->template GetJointByName<PrismaticJoint>("right_finger_sliding_joint",
-                                                wsg_model_.model_instance)
-      .set_translation(&plant_context, q / 2);
-  plant_
-      ->template GetJointByName<PrismaticJoint>("left_finger_sliding_joint",
-                                                wsg_model_.model_instance)
-      .set_translation(&plant_context, -q / 2);
+  const Vector2<T> positions(-q / 2, q / 2);
+  plant_->SetPositions(plant_context, &plant_state, wsg_model_.model_instance,
+                       positions);
 
   // Set the position history in the state interpolator to match.
   const auto& wsg_controller = dynamic_cast<
       const manipulation::schunk_wsg::SchunkWsgPositionController&>(
       this->GetSubsystemByName("wsg_controller"));
   wsg_controller.set_initial_position(
-      &this->GetMutableSubsystemContext(wsg_controller, station_context), q);
+      &this->GetMutableSubsystemState(wsg_controller, state), q);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetWsgVelocity(
-    drake::systems::Context<T>* station_context, const T& v) const {
-  auto& plant_context =
-      this->GetMutableSubsystemContext(*plant_, station_context);
+    const drake::systems::Context<T>& station_context, systems::State<T>* state,
+    const T& v) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
 
-  // TODO(russt): update upon resolution of #9623.
-  plant_
-      ->template GetJointByName<PrismaticJoint>("right_finger_sliding_joint",
-                                                wsg_model_.model_instance)
-      .set_translation_rate(&plant_context, v / 2);
-  plant_
-      ->template GetJointByName<PrismaticJoint>("left_finger_sliding_joint",
-                                                wsg_model_.model_instance)
-      .set_translation_rate(&plant_context, -v / 2);
+  const Vector2<T> velocities(-v / 2, v / 2);
+  plant_->SetVelocities(plant_context, &plant_state, wsg_model_.model_instance,
+                        velocities);
 }
 
 template <typename T>

@@ -250,7 +250,7 @@ parser.add_argument(
     "--test", action='store_true',
     help="Disable opening the gui window for testing.")
 parser.add_argument(
-    "--filter_time_const", type=float, default=2.0,
+    "--filter_time_const", type=float, default=0.1,
     help="Time constant for the first order low pass filter applied to"
          "the teleop commands")
 parser.add_argument(
