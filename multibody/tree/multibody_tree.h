@@ -1467,8 +1467,17 @@ class MultibodyTree {
   /// correspond to the context for a multibody model.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @pre `state` must be the systems::State<T> owned by the `context`.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-      systems::Context<T>* context) const;
+      const systems::Context<T>& context, systems::State<T>* state) const;
+
+  /// See GetMutablePositionsAndVelocities(context, state) above.
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
+      systems::Context<T>* context) const {
+    return GetMutablePositionsAndVelocities(*context,
+        &context->get_mutable_state());
+  }
+
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).

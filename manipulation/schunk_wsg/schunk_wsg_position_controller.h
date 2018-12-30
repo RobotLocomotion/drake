@@ -137,8 +137,15 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
 
   // The controller stores the last commanded desired position as state.
   // This is a helper method to reset that state.
+  void set_initial_position(systems::State<double>* state,
+                            double desired_position) const;
+
+  // The controller stores the last commanded desired position as state.
+  // This is a helper method to reset that state.
   void set_initial_position(systems::Context<double>* context,
-                                    double desired_position) const;
+                            double desired_position) const {
+    set_initial_position(&context->get_mutable_state(), desired_position);
+  }
 
   const systems::InputPort<double>& get_desired_position_input_port() const {
     return get_input_port(desired_position_input_port_);
@@ -161,8 +168,7 @@ class SchunkWsgPositionController : public systems::Diagram<double> {
   }
 
  private:
-  systems::StateInterpolatorWithDiscreteDerivative<double>*
-      state_interpolator_;
+  systems::StateInterpolatorWithDiscreteDerivative<double>* state_interpolator_;
 
   systems::InputPortIndex desired_position_input_port_{};
   systems::InputPortIndex force_limit_input_port_{};
