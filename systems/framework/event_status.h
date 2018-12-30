@@ -12,18 +12,22 @@ namespace systems {
 class SystemBase;
 
 /** Holds the return status from execution of an event handler function, or the
-effective status after calling a series of such functions due to the occurrence
-of simultaneous events. Drake API users will typically use only the four factory
+effective status after a series of handler executions due to dispatching of
+simultaneous events. Drake API users will typically use only the four factory
 methods below to return status, and optionally a human-readable message, from
 their event handlers. Event dispatchers (normally provided by the framework)
-take care of processing the returned statuses appropriately.
+take care of processing the returned statuses appropriately. */
 
-(Advanced) In case you are writing an event dispatcher, the dispatcher's return
+// TODO(sherm1) Add the following text to the above doxygen comment when
+// EventStatus is propagated up from the handlers.
+/* (Advanced) In case you are writing an event dispatcher (that is, you are
+overriding LeafSystem::DoPublish(), LeafSystem::DoCalcDiscreteVariableUpdates(),
+or LeafSystem::DoCalcUnrestrictedUpdate()), the dispatcher's return
 status should be the returned status of highest severity in a series of event
 handlers invoked for simultaneous events. In case of multiple returns at the
-same severity, the first one should win. Simultaneous event handler execution
-should continue until either (a) all event handlers have executed, or (b) an
-event handler returns the most-severe status, EventStatus::kFailed. */
+same severity, the first one should win. Simultaneous event handler dispatching
+should only return early (without processing all events), if an event handler
+returns EventStatus::kFailed. */
 class EventStatus {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EventStatus)
@@ -31,9 +35,9 @@ class EventStatus {
   /** The numerical values are ordered, with
   did_nothing < success < terminate < fatal. */
   enum Severity {
-    /** Nothing happened; no state update needed. */
+    /** Successful, but nothing happened; no state update needed. */
     kDidNothing = 0,
-    /** Handler executed successfully. */
+    /** Handler executed successfully; state may have been updated. */
     kSucceeded = 1,
     /** Handler succeeded but detected a termination condition (has message). */
     kReachedTermination = 2,
@@ -63,16 +67,18 @@ class EventStatus {
   Severity severity() const { return severity_; }
 
   /** Returns the optionally-provided subsystem that generated a status
-  return that includes a message (reached termination or failed). */
+  return that can include a message (reached termination or failed). Returns
+  nullptr if no subsystem was provided. */
   const SystemBase* system() const { return system_; }
 
   /** Returns the optionally-provided human-readable message supplied by the
-  event handler that produced the current status. */
+  event handler that produced the current status. Returns an empty string if
+  no message was provided. */
   const std::string& message() const { return message_; }
 
   /** (Advanced) Replaces the contents of `this` with the more-severe status
-  if `candidate` is a more severe status than `this` one. This is for use in
-  event dispatchers for accumulating status returns from a series of event
+  if `candidate` is a more severe status than `this` one. This method is for use
+  in event dispatchers for accumulating status returns from a series of event
   handlers for a set of simultaneous events. */
   EventStatus& KeepMoreSevere(EventStatus candidate) {
     if (candidate.severity() > severity()) *this = candidate;

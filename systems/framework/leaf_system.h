@@ -371,7 +371,7 @@ class LeafSystem : public System<T> {
   /// scalar types that are arithmetic, or aborts for scalar types that are not
   /// arithmetic. Subclasses that require aperiodic events should override, but
   /// be sure to invoke the parent class implementation at the start of the
-  /// override if you want periodic events to be handled.
+  /// override if you want periodic events to continue to be handled.
   ///
   /// @post `time` is set to a value greater than or equal to
   ///       `context.get_time()` on return.
