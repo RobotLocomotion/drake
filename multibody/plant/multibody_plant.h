@@ -964,6 +964,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetBodyByName(name, model_instance);
   }
 
+  /// Returns a list of body indices associated with `model_instance`.
+  std::vector<BodyIndex> GetBodyIndices(ModelInstanceIndex model_instance)
+  const {
+    return tree().GetBodyIndices(model_instance);
+  }
+
   /// Returns a constant reference to a frame that is identified by the
   /// string `name` in `this` model.
   /// @throws std::logic_error if there is no frame with the requested name.

@@ -1110,6 +1110,19 @@ class MultibodyTree {
         instance_index_to_name_.at(model_instance) + "'.");
   }
 
+  /// Returns a list of body indices associated with `model_instance`.
+  std::vector<BodyIndex> GetBodyIndices(ModelInstanceIndex model_instance)
+  const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    std::vector<BodyIndex> indices;
+    for (auto& body : owned_bodies_) {
+      if (body->model_instance() == model_instance) {
+        indices.emplace_back(body->index());
+      }
+    }
+    return indices;
+  }
+
   /// See MultibodyPlant method.
   const Frame<T>& GetFrameByName(const std::string& name) const {
     return get_frame(
