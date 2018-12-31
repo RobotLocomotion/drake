@@ -355,6 +355,17 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetMutablePositionsAndVelocities(context);
   }
 
+  /// Gets the pose of a given `body` in the world frame W.
+  /// @note In general getting the pose of a body in the model would involve
+  /// solving the kinematics. This method allows us to simplify this process
+  /// when we know the body is free in space.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  math::RigidTransform<T> GetFreeBodyPose(const systems::Context<T>& context,
+                                          const Body<T>& body) const {
+    return tree().GetFreeBodyPoseOrThrow(context, body);
+  }
+
   /// Sets `context` to store the pose `X_WB` of a given `body` B in the world
   /// frame W.
   /// @note In general setting the pose and/or velocity of a body in the model
@@ -405,6 +416,26 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const SpatialVelocity<T>& V_WB) const {
     tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context, state);
+  }
+
+  /// Sets the distribution used by SetRandomState() to populate the
+  /// x-y-z `position` component of the floating-base state.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyRandomPositionDistribution(
+      const Body<T>& body, const Vector3<symbolic::Expression>& position) {
+    this->mutable_tree().SetFreeBodyRandomPositionDistributionOrThrow(body,
+                                                                      position);
+  }
+
+  /// Sets the distribution used by SetRandomState() to populate the
+  /// rotation component of the floating-base state using uniformly random
+  /// rotations.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyRandomRotationDistributionToUniform(const Body<T>& body) {
+    this->mutable_tree().SetFreeBodyRandomRotationDistributionToUniformOrThrow(
+        body);
   }
 
   /// Sets all generalized positions and velocities from the given vector
