@@ -80,15 +80,16 @@ class MobilizerImpl : public Mobilizer<T> {
       const Eigen::Ref<const VectorX<symbolic::Expression>>& position) {
     DRAKE_DEMAND(position.size() == num_positions());
     if (random_state_distribution_.size() == 0) {
-      random_state_distribution_.resize(num_positions() + num_velocities());
+      random_state_distribution_.resize(num_positions() +
+                                                 num_velocities());
       // Note that that there is no `get_zero_velocity()`, since the zero
       // velocity is simply zero for all mobilizers.  Setting the velocity
       // elements of the distribution to zero here therefore maintains the
       // default behavior for velocity.
-      random_state_distribution_.tail(num_velocities()).setZero();
+      random_state_distribution_.template tail<kNv>().setZero();
     }
 
-    random_state_distribution_.head(num_positions()) = position;
+    random_state_distribution_.template head<kNq>() = position;
   }
 
   /// Defines the distribution used to draw random samples from this
@@ -99,10 +100,10 @@ class MobilizerImpl : public Mobilizer<T> {
     if (random_state_distribution_.size() == 0) {
       random_state_distribution_.resize(num_positions() + num_velocities());
       // Maintain the default behavior for position.
-      random_state_distribution_.head(num_positions()) = get_zero_position();
+      random_state_distribution_.template head<kNq>() = get_zero_position();
     }
 
-    random_state_distribution_.tail(num_velocities()) = velocity;
+    random_state_distribution_.template tail<kNv>() = velocity;
   }
 
 
@@ -118,10 +119,16 @@ class MobilizerImpl : public Mobilizer<T> {
   enum : int {
     kNq = compile_time_num_positions, kNv = compile_time_num_velocities};
 
-  virtual Eigen::Matrix<T, kNq, 1> get_zero_position() const {
-    return Eigen::Matrix<T, kNq, 1>::Zero();
+  /// Returns the zero configuration for the mobilizer.
+  virtual Eigen::Matrix<double, kNq, 1> get_zero_position() const {
+    return Eigen::Matrix<double, kNq, 1>::Zero();
   }
 
+  /// Returns the current distribution governing the random samples drawn
+  /// for this mobilizer.
+  const VectorX<symbolic::Expression>& get_random_state_distribution() const {
+    return random_state_distribution_;
+  }
   /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
