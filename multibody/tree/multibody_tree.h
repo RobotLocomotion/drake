@@ -1503,6 +1503,10 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& instance_state,
       systems::Context<T>* context) const;
 
+  /// See MultibodyPlant::GetFreeBodyPose.
+  math::RigidTransform<T> GetFreeBodyPoseOrThrow(
+      const systems::Context<T>& context, const Body<T>& body) const;
+
   /// See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(
       const Body<T>& body, const Isometry3<T>& X_WB,
@@ -1518,10 +1522,19 @@ class MultibodyTree {
       const Body<T>& body, const Isometry3<T>& X_WB,
       const systems::Context<T>& context, systems::State<T>* state) const;
 
-  /// See MutibodyPlant::SetFreeBodySpatialVelocity.
+  /// See MultibodyPlant::SetFreeBodySpatialVelocity.
   void SetFreeBodySpatialVelocityOrThrow(
       const Body<T>& body, const SpatialVelocity<T>& V_WB,
       const systems::Context<T>& context, systems::State<T>* state) const;
+
+  /// See MultibodyPlant::SetFreeBodyRandomPositionDistribution.
+  void SetFreeBodyRandomPositionDistributionOrThrow(
+      const Body<T>& body,
+      const Vector3<symbolic::Expression>& position);
+
+  /// See MultibodyPlant::SetFreeBodyRandomRotationDistributionToUniform.
+  void SetFreeBodyRandomRotationDistributionToUniformOrThrow(
+      const Body<T>& body);
 
   /// @name Kinematic computations
   /// Kinematics computations are concerned with the motion of bodies in the

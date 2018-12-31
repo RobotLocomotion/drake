@@ -382,6 +382,16 @@ void MultibodyTree<T>::SetPositionsAndVelocities(
 }
 
 template <typename T>
+math::RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
+    const systems::Context<T>& context, const Body<T>& body) const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  const QuaternionFloatingMobilizer<T>& mobilizer =
+      GetFreeBodyMobilizerOrThrow(body);
+  return math::RigidTransform<T>(mobilizer.get_quaternion(context),
+                                 mobilizer.get_position(context));
+}
+
+template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const Isometry3<T>& X_WB,
     systems::Context<T>* context) const {
@@ -418,6 +428,24 @@ void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
       GetFreeBodyMobilizerOrThrow(body);
   mobilizer.set_angular_velocity(context, V_WB.rotational(), state);
   mobilizer.set_translational_velocity(context, V_WB.translational(), state);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyRandomPositionDistributionOrThrow(
+    const Body<T>& body, const Vector3<symbolic::Expression>& position) {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  QuaternionFloatingMobilizer<T>& mobilizer =
+      get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
+  mobilizer.set_random_position_distribution(position);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionToUniformOrThrow(
+    const Body<T>& body) {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  QuaternionFloatingMobilizer<T>& mobilizer =
+      get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
+  mobilizer.set_random_quaternion_distribution_to_uniform();
 }
 
 template <typename T>
