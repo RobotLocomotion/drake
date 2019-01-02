@@ -176,26 +176,23 @@ class VectorBase {
   /// constraint is `inequality_constraint_lower_bound()[i] <= result[i] <=
   /// inequality_constraint_upper_bound()[i]`. For a given subclass type, the
   /// size of the result must not vary over time. The %VectorBase default
-  /// implementation sets the @p value to be empty (no constraints).
+  /// implementation sets the @p value to the same size as the bounds (which
+  /// defaults to empty bounds, and hence value is default to empty).
   virtual void CalcInequalityConstraint(VectorX<T>* value) const {
-    value->resize(0);
+    value->resize(inequality_constraint_lower_bound_.size());
   }
 
   /// The lower bound of the inequality constraint lower_bound <=
   /// CalcInequalityConstraint <= upper_bound
-  const Eigen::VectorXd& inequality_constraint_lower_bound() const {
+  const VectorX<T>& inequality_constraint_lower_bound() const {
     return inequality_constraint_lower_bound_;
   }
 
   /// The lower bound of the inequality constraint lower_bound <=
   /// CalcInequalityConstraint <= upper_bound
-  const Eigen::VectorXd& inequality_constraint_upper_bound() const {
+  const VectorX<T>& inequality_constraint_upper_bound() const {
     return inequality_constraint_upper_bound_;
   }
-
-  void SetInequalityConstraintBounds(
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound);
 
  protected:
   VectorBase()
@@ -224,15 +221,25 @@ class VectorBase {
     }
   }
 
-  void AppendInequalityConstraintBound(double lower_bound, double upper_bound);
+  /// Append one row of inequality bounds.
+  /// Remember that CalcInequalityConstraint needs to append a row also, so that
+  /// the result of CalcInequalityConstraint matches the size of the bounds.
+  void AppendInequalityConstraintBounds(const T& lower_bound,
+                                        const T& upper_bound);
 
-  void AppendInequalityConstraintUpperBound(double upper_bound);
+  /// Append one row of inequality bounds. The lower bound is set to -inf
+  /// Remember that CalcInequalityConstraint needs to append a row also, so that
+  /// the result of CalcInequalityConstraint matches the size of the bounds.
+  void AppendInequalityConstraintUpperBound(const T& upper_bound);
 
-  void AppendInequalityConstraintLowerBound(double lower_bound);
+  /// Append one row of inequality bounds. The upper bound is set to inf
+  /// Remember that CalcInequalityConstraint needs to append a row also, so that
+  /// the result of CalcInequalityConstraint matches the size of the bounds.
+  void AppendInequalityConstraintLowerBound(const T& lower_bound);
 
  private:
-  Eigen::VectorXd inequality_constraint_lower_bound_;
-  Eigen::VectorXd inequality_constraint_upper_bound_;
+  VectorX<T> inequality_constraint_lower_bound_;
+  VectorX<T> inequality_constraint_upper_bound_;
 };
 
 // Allows a VectorBase<T> to be streamed into a string. This is useful for

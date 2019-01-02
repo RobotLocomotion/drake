@@ -67,14 +67,14 @@ SimpleCar<T>::SimpleCar()
 
   const double kInf = std::numeric_limits<double>::infinity();
   this->DeclareInequalityConstraint(
-      &SimpleCar::CalcSteeringAngleConstraint, Eigen::Vector2d::Zero(),
-      Eigen::Vector2d::Constant(kInf), "steering angle limit");
+      &SimpleCar::CalcSteeringAngleConstraint, Vector2<T>::Zero(),
+      Vector2<T>::Constant(kInf), "steering angle limit");
   this->DeclareInequalityConstraint(
-      &SimpleCar::CalcAccelerationConstraint, Eigen::Vector2d::Zero(),
-      Eigen::Vector2d::Constant(kInf), "acceleration limit");
+      &SimpleCar::CalcAccelerationConstraint, Vector2<T>::Zero(),
+      Vector2<T>::Constant(kInf), "acceleration limit");
   this->DeclareInequalityConstraint(
-      &SimpleCar::CalcVelocityConstraint, Eigen::Vector2d::Zero(),
-      Eigen::Vector2d::Constant(kInf), "velocity limit");
+      &SimpleCar::CalcVelocityConstraint, Vector2<T>::Zero(),
+      Vector2<T>::Constant(kInf), "velocity limit");
 }
 
 template <typename T>

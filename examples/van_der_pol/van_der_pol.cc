@@ -35,7 +35,7 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
         *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
       };
   this->DeclareInequalityConstraint(
-      mu, Vector1d(0), Vector1d(std::numeric_limits<double>::infinity()),
+      mu, Vector1<T>(0), Vector1<T>(std::numeric_limits<double>::infinity()),
       "mu ≥ 0");
 }
 

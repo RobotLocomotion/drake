@@ -1547,8 +1547,8 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareInequalityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const Eigen::Ref<const VectorX<T>>& lower_bound,
+      const Eigen::Ref<const VectorX<T>>& upper_bound,
       const std::string& description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
@@ -1577,8 +1577,8 @@ class LeafSystem : public System<T> {
   /// these constraints.
   SystemConstraintIndex DeclareInequalityConstraint(
       typename SystemConstraint<T>::CalcCallback calc,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const Eigen::Ref<const VectorX<T>>& lower_bound,
+      const Eigen::Ref<const VectorX<T>>& upper_bound,
       const std::string& description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
         calc, lower_bound, upper_bound, description));

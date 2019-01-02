@@ -136,13 +136,13 @@ DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 APPEND_INEQUALITY_CONSTRAINT_LOWER_BOUND = """
-    this->AppendInequalityConstraintLowerBound(%(min_value)s);
+    this->AppendInequalityConstraintLowerBound(T(%(min_value)s));
 """
 APPEND_INEQUALITY_CONSTRAINT_UPPER_BOUND = """
-    this->AppendInequalityConstraintUpperBound(%(max_value)s);
+    this->AppendInequalityConstraintUpperBound(T(%(max_value)s));
 """
 APPEND_INEQUALITY_CONSTRAINT_BOUND = """
-    this->AppendInequalityConstraintBound(%(min_value)s, %(max_value)s);
+    this->AppendInequalityConstraintBounds(T(%(min_value)s), T(%(max_value)s));
 """
 
 

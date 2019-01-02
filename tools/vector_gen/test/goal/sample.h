@@ -63,8 +63,9 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_two_word(0.0);
     this->set_absone(0.0);
     this->set_unset(drake::dummy_value<T>::get());
-    this->AppendInequalityConstraintLowerBound(0.0);
-    this->AppendInequalityConstraintBound(-1.0, 1.0);
+    this->AppendInequalityConstraintLowerBound(T(0.0));
+    this->AppendInequalityConstraintUpperBound(T(2.0));
+    this->AppendInequalityConstraintBounds(T(-1.0), T(1.0));
   }
 
   // Note: It's safe to implement copy and move because this class is final.
@@ -124,6 +125,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// A very long documentation string that will certainly flow across multiple
   /// lines of C++
+  /// @note @c two_word has a limited domain of [-Inf, 2.0].
   const T& two_word() const {
     ThrowIfEmpty();
     return this->GetAtIndex(K::kTwoWord);
@@ -192,6 +194,7 @@ class Sample final : public drake::systems::BasicVector<T> {
     result = result && !isnan(x());
     result = result && (x() >= T(0.0));
     result = result && !isnan(two_word());
+    result = result && (two_word() <= T(2.0));
     result = result && !isnan(absone());
     result = result && (absone() >= T(-1.0));
     result = result && (absone() <= T(1.0));
@@ -201,9 +204,10 @@ class Sample final : public drake::systems::BasicVector<T> {
 
   // VectorBase override.
   void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(2);
+    value->resize(3);
     (*value)[0] = x();
-    (*value)[1] = absone();
+    (*value)[1] = two_word();
+    (*value)[2] = absone();
   }
 
  private:

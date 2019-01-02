@@ -79,8 +79,8 @@ class SystemConstraint {
                    const std::string& description)
       : calc_function_(std::move(calc_function)),
         count_(count),
-        lower_bound_(Eigen::VectorXd::Zero(count_)),
-        upper_bound_(Eigen::VectorXd::Zero(count_)),
+        lower_bound_(VectorX<T>::Zero(count_)),
+        upper_bound_(VectorX<T>::Zero(count_)),
         type_(SystemConstraintType::kEquality),
         description_(description) {
     DRAKE_DEMAND(count_ >= 0);
@@ -89,8 +89,8 @@ class SystemConstraint {
   /// Constructs a SystemConstraint with inequality constraint lower_bound <=
   /// f(x) <= upper_bound
   SystemConstraint(CalcCallback calc_function,
-                   const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-                   const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+                   const Eigen::Ref<const VectorX<T>>& lower_bound,
+                   const Eigen::Ref<const VectorX<T>>& upper_bound,
                    const std::string& description)
       : calc_function_(std::move(calc_function)),
         count_(lower_bound.rows()),
@@ -146,15 +146,15 @@ class SystemConstraint {
   bool is_equality_constraint() const {
     return (type_ == SystemConstraintType::kEquality);
   }
-  const Eigen::VectorXd& lower_bound() const { return lower_bound_; }
-  const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
+  const VectorX<T>& lower_bound() const { return lower_bound_; }
+  const VectorX<T>& upper_bound() const { return upper_bound_; }
   const std::string& description() const { return description_; }
 
  private:
   const CalcCallback calc_function_;
   const int count_{0};
-  const Eigen::VectorXd lower_bound_;
-  const Eigen::VectorXd upper_bound_;
+  const VectorX<T> lower_bound_;
+  const VectorX<T> upper_bound_;
   const SystemConstraintType type_;
   const std::string description_;
 };
