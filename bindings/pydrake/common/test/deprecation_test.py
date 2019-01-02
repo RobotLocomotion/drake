@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-from pydrake.common.deprecation import DrakeDeprecationWarning
-
 import pydoc
 import unittest
 import rlcompleter
@@ -10,7 +8,7 @@ import sys
 from types import ModuleType
 import warnings
 
-import pydrake
+import pydrake.common.deprecation as mut
 
 
 class TestDeprecation(unittest.TestCase):
@@ -119,10 +117,10 @@ class TestDeprecation(unittest.TestCase):
         self.assertSetEqual(set(candidates), set(candidates_expected))
 
     def _check_warning(
-            self, item, message_expected, type=DrakeDeprecationWarning):
+            self, item, message_expected, type=mut.DrakeDeprecationWarning):
         self.assertEqual(item.category, type)
-        if type == DrakeDeprecationWarning:
-            message_expected += DrakeDeprecationWarning.addendum
+        if type == mut.DrakeDeprecationWarning:
+            message_expected += mut.DrakeDeprecationWarning.addendum
         self.assertEqual(str(item.message), message_expected)
 
     def test_member_deprecation(self):
@@ -138,7 +136,7 @@ class TestDeprecation(unittest.TestCase):
             if six.PY3:
                 # Recreate warning environment.
                 warnings.simplefilter('ignore', DeprecationWarning)
-                warnings.simplefilter('once', DrakeDeprecationWarning)
+                warnings.simplefilter('once', mut.DrakeDeprecationWarning)
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
@@ -192,7 +190,7 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", DeprecationWarning)
             else:
                 # See above notes for why we have to set this.
-                warnings.simplefilter("default", DrakeDeprecationWarning)
+                warnings.simplefilter("default", mut.DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
                 method = ExampleClass.deprecated_method
@@ -200,11 +198,10 @@ class TestDeprecation(unittest.TestCase):
                 prop = ExampleClass.deprecated_prop
                 prop_extra = ExampleClass.deprecated_prop
             # N.B. `help(<module>)` is super verbose.
-            print("Help text:\n{}".format(
-                pydoc.getdoc(pydrake.common.deprecation)))
+            print("Help text:\n{}".format(pydoc.getdoc(mut)))
             # Manually set this back to `once`.
             warnings.simplefilter("ignored", DeprecationWarning)
-            warnings.simplefilter("once", DrakeDeprecationWarning)
+            warnings.simplefilter("once", mut.DrakeDeprecationWarning)
 
     def test_deprecation_pybind(self):
         """Test C++ usage in `deprecation_pybind.h`."""
