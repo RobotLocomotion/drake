@@ -89,6 +89,31 @@ class GeometryStateTester {
     state_->SetFramePoses(poses);
   }
 
+  // Returns the internal index for the geometry with the given index; if there
+  // is a geometry that *has* that render index.
+  optional<InternalIndex> InternalIndexFromRenderIndex(
+      RenderIndex index) const {
+    if (state_->X_WG_perception_.count(index) > 0) {
+      // It's dynamic and we have a mapping.
+      InternalIndex internal_index = state_->X_WG_perception_[index];
+      // Confirm that it is internally consistent.
+      EXPECT_EQ(
+          state_->geometries_[state_->geometry_index_id_map_[internal_index]]
+              .render_index(),
+          index);
+      return internal_index;
+    } else {
+      // It's apparently anchored geometry.
+      for (auto& pair : state_->geometries_) {
+        if (pair.second.has_perception_role() &&
+            pair.second.render_index() == index) {
+          return pair.second.internal_index();
+        }
+      }
+    }
+    return {};
+  }
+
   void FinalizePoseUpdate() {
     state_->FinalizePoseUpdate();
   }
@@ -1634,6 +1659,258 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
                                  IllustrationProperties()),
       std::logic_error,
       "Geometry already has illustration role assigned");
+}
+
+// Tests that GeometryState's bookkeeping is consistent after removal of the
+// illustration role from a _single_ geometry. This test is responsible for
+// also covering the general conditions:
+//   - removing unassigned or proximity roles.
+TEST_F(GeometryStateTest, RemoveIllustrationFromGeometry) {
+  SetUpSingleSourceTree();
+
+  int expected_count = single_tree_total_geometry_count();
+
+  // Relies on all geometries having illustration properties.
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+
+  // Case: asking to remove unassigned has no affect.
+  EXPECT_EQ(
+      geometry_state_.RemoveRole(source_id_, geometries_[0], Role::kUnassigned),
+      0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+
+  // Case: asking to remove proximity has no affect.
+  EXPECT_EQ(
+      geometry_state_.RemoveRole(source_id_, geometries_[0], Role::kProximity),
+      0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+
+  // Case: removing illustration from a single geometry reports removal.
+  const InternalGeometry* geometry = gs_tester_.GetGeometry(geometries_[0]);
+  EXPECT_TRUE(geometry->has_illustration_role());
+  EXPECT_EQ(geometry_state_.RemoveRole(source_id_, geometries_[0],
+                                       Role::kIllustration),
+            1);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            --expected_count);
+  EXPECT_FALSE(geometry->has_illustration_role());
+
+  // Case: attempting to remove illustration from a geometry that has none has
+  // no effect.
+  EXPECT_EQ(geometry_state_.RemoveRole(source_id_, geometries_[0],
+                                       Role::kIllustration),
+            0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+  EXPECT_FALSE(geometry->has_illustration_role());
+}
+
+// Tests that GeometryState's bookkeeping is consistent after removal of the
+// illustration role from a _frame_. This test is used to test the
+// common functionality for removing _any_ role, i.e., handling the world frame.
+TEST_F(GeometryStateTest, RemoveIllustrationFromFrame) {
+  SetUpSingleSourceTree();
+
+  // NOTE: Do not re-order these tests; they have an accumulatative effect.
+  int expected_count = single_tree_total_geometry_count();
+
+  // In each test, we confirm the number of geometries with illustration role
+  // have advanced as expected but the total number of geometries haven't.
+
+  // Relies on all geometries having illustration properties.
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+
+  // Case: asking to remove unassigned has no affect.
+  EXPECT_EQ(
+      geometry_state_.RemoveRole(source_id_, frames_[0], Role::kUnassigned),
+      0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+
+  // Case: asking to remove proximity has no affect.
+  EXPECT_EQ(
+      geometry_state_.RemoveRole(source_id_, frames_[0], Role::kProximity),
+      0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+
+  // Case: removing illustration from the frame reports both geometries changed.
+  const InternalGeometry* geometry1 = gs_tester_.GetGeometry(geometries_[0]);
+  EXPECT_TRUE(geometry1->has_illustration_role());
+  const InternalGeometry* geometry2 = gs_tester_.GetGeometry(geometries_[1]);
+  EXPECT_TRUE(geometry2->has_illustration_role());
+  EXPECT_EQ(geometry_state_.RemoveRole(source_id_, frames_[0],
+                                       Role::kIllustration),
+            2);
+  expected_count -= 2;
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+  EXPECT_FALSE(geometry1->has_illustration_role());
+  EXPECT_FALSE(geometry2->has_illustration_role());
+
+  // Case: attempting to remove illustration from the frame that has no
+  // geometries with the role has no effect.
+  EXPECT_EQ(geometry_state_.RemoveRole(source_id_, frames_[0],
+                                       Role::kIllustration),
+            0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+  EXPECT_FALSE(geometry1->has_illustration_role());
+  EXPECT_FALSE(geometry2->has_illustration_role());
+
+  // Case: Remove from frame when one frame has the role and one frame does not.
+  //    - Removes the role from one child geometry.
+  geometry_state_.RemoveRole(source_id_, geometries_[2], Role::kIllustration);
+  EXPECT_FALSE(gs_tester_.GetGeometry(geometries_[2])->has_illustration_role());
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            --expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+
+  //    - Invokes remove on the frame - only the single remaining geometry
+  //      should be affected.
+  EXPECT_TRUE(gs_tester_.GetGeometry(geometries_[3])->has_illustration_role());
+  EXPECT_EQ(geometry_state_.RemoveRole(source_id_, frames_[1],
+                                       Role::kIllustration),
+            1);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            --expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+  EXPECT_FALSE(gs_tester_.GetGeometry(geometries_[3])->has_illustration_role());
+
+  // Case: Operate on the world frame with a source that has no anchored
+  // geometry. Should change nothing with no complaints.
+  SourceId source_id_2 = geometry_state_.RegisterNewSource("source2");
+  EXPECT_EQ(geometry_state_.RemoveRole(
+      source_id_2, InternalFrame::world_frame_id(), Role::kIllustration),
+            0);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+
+  // Case: Operate on the world frame with a source that *does* have anchored
+  // geometry. Should remove the role from the single geometry.
+  EXPECT_EQ(geometry_state_.RemoveRole(
+      source_id_, InternalFrame::world_frame_id(), Role::kIllustration),
+            1);
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kIllustration),
+            --expected_count);
+  EXPECT_EQ(geometry_state_.get_num_geometries(),
+            single_tree_total_geometry_count());
+}
+
+// Tests that GeometryState's bookkeeping is consistent after removal of the
+// perception role from a _single_ geometry. Similar to the removal of
+// the illustration role, but must also confirm coordination of render index
+// values. This doesn't test the frame version because the frame-to-geometry
+// logic was already tested in RemoveIllustrationFromFrame.
+TEST_F(GeometryStateTest, RemovePerceptionFromGeometry) {
+  SetUpSingleSourceTree();
+
+  int expected_count = single_tree_total_geometry_count();
+  // Relies on all geometries having perception properties.
+  EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
+            expected_count);
+
+  // Case: Remove perception causes *anchored* geometry to be moved.
+  {
+    const GeometryId id = geometries_[0];
+    const InternalGeometry* geometry = gs_tester_.GetGeometry(id);
+    EXPECT_TRUE(geometry->has_perception_role());
+    RenderIndex target_index = geometry->render_index();
+    EXPECT_EQ(geometry_state_.RemoveRole(source_id_, id, Role::kPerception), 1);
+    EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
+              --expected_count);
+    EXPECT_FALSE(geometry->has_perception_role());
+    EXPECT_EQ(gs_tester_.GetGeometry(anchored_geometry_)->render_index(),
+              target_index);
+  }
+
+  // Case: Remove perception causes *dynamic* geometry to be moved.
+  {
+    const GeometryId id = geometries_[1];
+    const InternalGeometry* geometry = gs_tester_.GetGeometry(id);
+    EXPECT_TRUE(geometry->has_perception_role());
+    RenderIndex target_index = geometry->render_index();
+    // The second to last geometry added was the last dynamic geometry (i.e.,
+    // the last id stored in geometries_. It should *now* have the render index
+    // of the removed geometry.
+    const InternalGeometry* last_geometry =
+        gs_tester_.GetGeometry(geometries_.back());
+    // These will ultimately be tested for equality; confirm they don't start
+    // equal.
+    EXPECT_NE(last_geometry->render_index(), target_index);
+    EXPECT_EQ(geometry_state_.RemoveRole(source_id_, id, Role::kPerception), 1);
+    EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
+              --expected_count);
+    EXPECT_FALSE(geometry->has_perception_role());
+    EXPECT_EQ(last_geometry->render_index(), target_index);
+  }
+
+  // Case: Removing role from a geometry that does not have that role has no
+  // effect.
+  {
+    const GeometryId id = geometries_[0];
+    EXPECT_EQ(geometry_state_.RemoveRole(source_id_, id, Role::kPerception), 0);
+    EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
+              expected_count);
+    EXPECT_FALSE(gs_tester_.GetGeometry(id)->has_perception_role());
+  }
+}
+
+// Tests that exceptions are thrown under the documented circumstances for
+// removing roles.
+TEST_F(GeometryStateTest, RemoveRoleExceptions) {
+  SetUpSingleSourceTree();
+
+  const SourceId invalid_source_id = SourceId::get_new_id();
+  const FrameId invalid_frame_id = FrameId::get_new_id();
+  const GeometryId invalid_geometry_id = GeometryId::get_new_id();
+
+  // Case: Invalid source id (frame/geometry id and role don't matter).
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveRole(invalid_source_id, invalid_frame_id,
+                                 Role::kUnassigned),
+      std::logic_error, "Referenced geometry source \\d+ is not registered.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveRole(invalid_source_id, invalid_geometry_id,
+                                 Role::kUnassigned),
+      std::logic_error, "Referenced geometry source \\d+ is not registered.");
+
+  // Case: valid source id, but invalid frame/geometry id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveRole(source_id_, invalid_frame_id,
+                                 Role::kUnassigned),
+      std::logic_error, "Referenced .* frame doesn't belong to the source.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveRole(source_id_, invalid_geometry_id,
+                                 Role::kUnassigned),
+      std::logic_error, "Referenced geometry \\d+ has not been registered.");
+
+  // Case: frame/geometry id belongs to a different source.
+  SourceId source_id_2 = geometry_state_.RegisterNewSource("second_source");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveRole(source_id_2, frames_[0],
+                                 Role::kUnassigned),
+      std::logic_error, "Referenced .* frame doesn't belong to the source.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.RemoveRole(source_id_2, geometries_[0],
+                                 Role::kUnassigned),
+      std::logic_error, ".*the geometry doesn't belong to that source.");
 }
 
 // Tests the functionality that counts the number of children geometry a frame
