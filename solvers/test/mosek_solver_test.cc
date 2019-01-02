@@ -153,7 +153,7 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   prog.AddLinearConstraint(x(0) <= 1);
   // The Hessian of the quadratic cost has an eigen value -1e-8, so it is not
   // positive semidefinite. By adjusting Mosek's tolerance on the semidefinite
-  // matrix, we expect the solver to give different result.
+  // matrix, we expect the solver to give a different result.
   prog.AddQuadraticCost(x(0) * x(0) - 1E-8 * x(1) * x(1));
 
   SolverOptions solver_options;
