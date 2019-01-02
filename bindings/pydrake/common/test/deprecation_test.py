@@ -1,17 +1,18 @@
 from __future__ import print_function
 
-import pydoc
-import unittest
 import rlcompleter
 import six
 import sys
 from types import ModuleType
+import unittest
 import warnings
 
-import pydrake.common.deprecation as mut
+from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 def get_completion_suffixes(namespace, prefix, max_count=1000):
+    # Gets all completions for a given namespace and prefix, stripping the
+    # prefix from the results.
     completer = rlcompleter.Completer(namespace)
     suffixes = []
     for i in range(max_count):
@@ -124,7 +125,7 @@ class TestDeprecation(unittest.TestCase):
             ]
             # For Bionic, the behavior of autocompletion seems to constrain
             # behavior depending on underscore prefixes.
-            if suffixes_expected[0] not in suffixes:
+            if "__init__(" not in suffixes:
                 suffixes_expected += ["__init_subclass__("]
                 under = get_completion_suffixes(
                     locals(), prefix="deprecation_example._")
@@ -135,10 +136,10 @@ class TestDeprecation(unittest.TestCase):
         self.assertSetEqual(set(suffixes), set(suffixes_expected))
 
     def _check_warning(
-            self, item, message_expected, type=mut.DrakeDeprecationWarning):
+            self, item, message_expected, type=DrakeDeprecationWarning):
         self.assertEqual(item.category, type)
-        if type == mut.DrakeDeprecationWarning:
-            message_expected += mut.DrakeDeprecationWarning.addendum
+        if type == DrakeDeprecationWarning:
+            message_expected += DrakeDeprecationWarning.addendum
         self.assertEqual(str(item.message), message_expected)
 
     def test_member_deprecation(self):
@@ -154,7 +155,7 @@ class TestDeprecation(unittest.TestCase):
             if six.PY3:
                 # Recreate warning environment.
                 warnings.simplefilter('ignore', DeprecationWarning)
-                warnings.simplefilter('once', mut.DrakeDeprecationWarning)
+                warnings.simplefilter('once', DrakeDeprecationWarning)
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
@@ -208,18 +209,16 @@ class TestDeprecation(unittest.TestCase):
                 warnings.simplefilter("default", DeprecationWarning)
             else:
                 # See above notes for why we have to set this.
-                warnings.simplefilter("default", mut.DrakeDeprecationWarning)
+                warnings.simplefilter("default", DrakeDeprecationWarning)
             for _ in range(3):
                 base_deprecation()
                 method = ExampleClass.deprecated_method
                 method_extra = ExampleClass.deprecated_method
                 prop = ExampleClass.deprecated_prop
                 prop_extra = ExampleClass.deprecated_prop
-            # N.B. `help(<module>)` is super verbose.
-            print("Help text:\n{}".format(pydoc.getdoc(mut)))
             # Manually set this back to `once`.
-            warnings.simplefilter("ignored", DeprecationWarning)
-            warnings.simplefilter("once", mut.DrakeDeprecationWarning)
+            warnings.simplefilter("ignore", DeprecationWarning)
+            warnings.simplefilter("once", DrakeDeprecationWarning)
 
     def test_deprecation_pybind(self):
         """Test C++ usage in `deprecation_pybind.h`."""
