@@ -18,8 +18,10 @@ def get_completion_suffixes(namespace, prefix, max_count=1000):
         candidate = completer.complete(prefix, i)
         if candidate is None:
             break
-        assert candidate.startswith(prefix), (candidate, prefix)
+        assert candidate.startswith(prefix), (prefix, candidate)
         suffixes.append(candidate[len(prefix):])
+    else:
+        raise RuntimeError("Exceeded max count!")
     return suffixes
 
 
