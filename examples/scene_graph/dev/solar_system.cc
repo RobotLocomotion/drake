@@ -38,7 +38,7 @@ using std::unique_ptr;
 template <typename Shape, typename... ShapeArgs>
 unique_ptr<GeometryInstance> MakeShape(const Isometry3<double>& pose,
                             const std::string& name,
-                            const Vector4<double> diffuse,
+                            const Vector4<double>& diffuse,
                             ShapeArgs&&... args) {
   auto instance = make_unique<GeometryInstance>(
       pose, make_unique<Shape>(std::forward<ShapeArgs>(args)...),
