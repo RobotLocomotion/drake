@@ -665,7 +665,7 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
   SolverOptions merged_solver_options =
       solver_options.value_or(SolverOptions());
   merged_solver_options.Merge(prog.solver_options());
-  // TODO(hongkai.dai): support setting initial guess and solver options.
+  // TODO(hongkai.dai): support setting initial guess.
   if (initial_guess.has_value()) {
     throw std::runtime_error("Not implemented yet.");
   }

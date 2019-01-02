@@ -171,6 +171,29 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   mosek_solver.Solve(prog, {}, solver_options, &result);
   EXPECT_NE(result.get_solution_result(), SolutionResult::kSolutionFound);
 }
+
+GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
+  // Set a non-existing option. Mosek should report error.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) >= 0);
+
+  MathematicalProgramResult result;
+  MosekSolver mosek_solver;
+  SolverOptions solver_options;
+  solver_options.SetOption(MosekSolver::id(), "non-existing options", 42);
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  const MosekSolverDetails solver_details =
+      result.get_solver_details().GetValue<MosekSolverDetails>();
+  // This response code is defined in
+  // https://docs.mosek.com/8.1/capi/response-codes.html#mosek.rescode
+  const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
+  EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
+  // This problem status is defined in
+  // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
+  const int MSK_PRO_STA_UNKNOWN = 0;
+  EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
