@@ -45,7 +45,7 @@ using tinyxml2::XMLElement;
 
 using drake::parsers::ModelInstanceIdTable;
 using drake::multibody::detail::GetFullPath;
-using drake::multibody::detail::ResolveFilename;
+using drake::multibody::detail::ResolveUri;
 using drake::multibody::joints::FloatingBaseType;
 using drake::multibody::joints::kRollPitchYaw;
 
@@ -281,7 +281,7 @@ bool ParseGeometry(XMLElement* node, const PackageMap& package_map,
     // This method will return an empty string if the file is not found or
     // resolved within a ROS package.
     string resolved_filename =
-        ResolveFilename(filename, package_map, root_dir);
+        ResolveUri(filename, package_map, root_dir);
 
     if (resolved_filename.empty()) {
       throw runtime_error(string(__FILE__) + ": " + __func__ + ": ERROR: "

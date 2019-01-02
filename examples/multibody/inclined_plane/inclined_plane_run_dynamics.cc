@@ -14,7 +14,7 @@
 namespace drake {
 namespace examples {
 namespace multibody {
-namespace bouncing_ball {
+namespace inclined_plane {
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
@@ -40,16 +40,13 @@ using geometry::SourceId;
 using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
-using drake::multibody::benchmarks::inclined_plane::MakeInclinedPlanePlant;
+using drake::multibody::benchmarks::inclined_plane::AddInclinedPlaneToPlant;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::MultibodyTree;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
-
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
 
   // Plant's parameters.
   const double radius = 0.05;   // m
@@ -60,9 +57,13 @@ int do_main() {
                                                  FLAGS_dynamic_friction);
 
   DRAKE_DEMAND(FLAGS_time_step >= 0);
-  MultibodyPlant<double>& plant = *builder.AddSystem(MakeInclinedPlanePlant(
-      radius, mass, slope, surface_friction, g, FLAGS_time_step, &scene_graph));
-  const MultibodyTree<double>& tree = plant.tree();
+
+  auto pair = AddMultibodyPlantSceneGraph(
+      &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
+  MultibodyPlant<double>& plant = pair.plant;
+  AddInclinedPlaneToPlant(
+      radius, mass, slope, surface_friction, g, &plant);
+  plant.Finalize();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(1.0e-5);
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
@@ -70,17 +71,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
-  // Sanity check on the availability of the optional source id before using it.
-  DRAKE_DEMAND(!!plant.get_source_id());
-
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
-
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-
-  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  geometry::ConnectDrakeVisualizer(&builder, pair.scene_graph);
   auto diagram = builder.Build();
 
   // Create a context for this system:
@@ -92,7 +83,7 @@ int do_main() {
 
   // This will set a default initial condition with the sphere located at
   // p_WBcm = (0; 0; 0) and zero spatial velocity.
-  tree.SetDefaultContext(&plant_context);
+  plant.SetDefaultContext(&plant_context);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -109,7 +100,7 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace bouncing_ball
+}  // namespace inclined_plane
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
@@ -121,5 +112,5 @@ int main(int argc, char* argv[]) {
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
-  return drake::examples::multibody::bouncing_ball::do_main();
+  return drake::examples::multibody::inclined_plane::do_main();
 }

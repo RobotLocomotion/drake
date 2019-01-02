@@ -1,0 +1,38 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <!-- Note: This is an SDF file used for testing Parser package path
+       functionality. It relies upon ../meshes/box.obj. 
+  -->
+  <model name='box'>
+    <!-- The model for a solid box of uniform density. -->
+    <link name='box'>
+      <pose>0 0 0.5 0 0 0</pose>
+      <inertial>
+        <mass>1.0</mass>
+        <inertia>
+          <ixx>0.166666666666667</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.166666666666667</iyy>
+          <iyz>0</iyz>
+          <izz>0.166666666666667</izz>
+        </inertia>
+      </inertial>
+      <visual name='visual'>
+        <geometry>
+          <mesh>
+            <uri>package://box_model/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+
+      <collision name='collision'>
+        <geometry>
+          <mesh>
+            <uri>package://box_model/meshes/box.obj</uri>
+          </mesh>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

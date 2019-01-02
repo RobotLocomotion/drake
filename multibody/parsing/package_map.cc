@@ -161,7 +161,11 @@ void PackageMap::PopulateUpstreamToDrake(const string& model_file) {
   string extension = spruce_path.extension();
   std::transform(extension.begin(), extension.end(), extension.begin(),
                  ::tolower);
-  DRAKE_DEMAND(extension == ".urdf" || extension == ".sdf");
+  if (extension != ".urdf" && extension != ".sdf") {
+    throw std::runtime_error(fmt::format(
+        "The file type '{}' is not supported for '{}'",
+        extension, model_file));
+  }
   const string model_dir = spruce_path.root();
 
   // Bail out if the model file is not part of Drake.

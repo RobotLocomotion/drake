@@ -39,6 +39,7 @@ drake_cc_package_library(
         ":nice_type_name",
         ":pointer_cast",
         ":polynomial",
+        ":random",
         ":reset_after_move",
         ":reset_on_copy",
         ":scoped_singleton",
@@ -217,6 +218,7 @@ drake_cc_library(
         ":extract_double",
         ":hash",
         ":polynomial",
+        ":random",
         "//math:matrix_util",
     ],
 )
@@ -358,6 +360,11 @@ drake_cc_library(
     name = "copyable_unique_ptr",
     hdrs = ["copyable_unique_ptr.h"],
     deps = [":is_cloneable"],
+)
+
+drake_cc_library(
+    name = "random",
+    hdrs = ["random.h"],
 )
 
 drake_cc_library(

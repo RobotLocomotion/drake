@@ -8,12 +8,8 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
-// TODO(#9314) Remove `namespace implicit_stribeck` from this file; that name
-// no longer matches any directory (package) name.
-
 namespace drake {
 namespace multibody {
-namespace implicit_stribeck {
 namespace internal {
 
 /// This struct implements an internal (thus within `internal::`) detail of the
@@ -171,22 +167,22 @@ struct DirectionChangeLimiter {
 
 /// The result from ImplicitStribeckSolver::SolveWithGuess() used to report the
 /// success or failure of the solver.
-enum ComputationInfo {
+enum class ImplicitStribeckSolverResult {
   /// Successful computation.
-  Success = 0,
+  kSuccess = 0,
 
   /// The maximum number of iterations was reached.
-  MaxIterationsReached = 1,
+  kMaxIterationsReached = 1,
 
   /// The linear solver used within the Newton-Raphson loop failed.
   /// This might be caused by a divergent iteration that led to an invalid
   /// Jacobian matrix.
-  LinearSolverFailed = 2
+  kLinearSolverFailed = 2
 };
 
 /// These are the parameters controlling the iteration process of the
 /// ImplicitStribeckSolver solver.
-struct Parameters {
+struct ImplicitStribeckSolverParameters {
   /// The stiction tolerance vₛ for the slip velocity in the Stribeck
   /// function, in m/s. Roughly, for an externally applied tangential forcing
   /// fₜ and normal force fₙ, under "stiction", the slip velocity will be
@@ -235,7 +231,7 @@ struct Parameters {
 
 /// Struct used to store information about the iteration process performed by
 /// ImplicitStribeckSolver.
-struct IterationStats {
+struct ImplicitStribeckSolverIterationStats {
   /// (Internal) Used by ImplicitStribeckSolver to reset statistics.
   void Reset() {
     num_iterations = 0;
@@ -615,11 +611,11 @@ class ImplicitStribeckSolver {
   /// either Eq. (3) when one-way coupling is used or Eq. (10) when two-way
   /// coupling is used. See this class's documentation for further details.
   /// To retrieve the solution, please refer to @ref retrieving_the_solution.
-  /// @returns ComputationInfo::Success if the iteration converges. All other
-  /// values of ComputationInfo report different failure modes.
+  /// @returns kSuccess if the iteration converges. All other values of
+  /// ImplicitStribeckSolverResult report different failure modes.
   /// Uses `this` solver accessors to retrieve the last computed solution.
-  /// @warning Always perform the check on the returned ComputationInfo for the
-  /// success of the solver before retrieving the computed solution.
+  /// @warning Always verify that the return value indicates success before
+  /// retrieving the computed solution.
   ///
   /// @param[in] dt The time step used advance the solution in time.
   /// @param[in] v_guess The initial guess used in by the Newton-Raphson
@@ -627,7 +623,8 @@ class ImplicitStribeckSolver {
   ///
   /// @throws std::logic_error if `v_guess` is not of size `nv`, the number of
   /// generalized velocities specified at construction.
-  ComputationInfo SolveWithGuess(double dt, const VectorX<T>& v_guess) const;
+  ImplicitStribeckSolverResult SolveWithGuess(
+      double dt, const VectorX<T>& v_guess) const;
 
   /// @anchor retrieving_the_solution
   /// @name Retrieving the solution
@@ -687,19 +684,20 @@ class ImplicitStribeckSolver {
 
   /// Returns statistics recorded during the last call to SolveWithGuess().
   /// See IterationStats for details.
-  const IterationStats& get_iteration_statistics() const {
+  const ImplicitStribeckSolverIterationStats& get_iteration_statistics() const {
     return statistics_;
   }
 
   /// Returns the current set of parameters controlling the iteration process.
   /// See Parameters for details.
-  const Parameters& get_solver_parameters() const {
+  const ImplicitStribeckSolverParameters& get_solver_parameters() const {
     return parameters_;
   }
 
   /// Sets the parameters to be used by the solver.
   /// See Parameters for details.
-  void set_solver_parameters(const Parameters parameters) {
+  void set_solver_parameters(
+      const ImplicitStribeckSolverParameters& parameters) {
     // cos_theta_max must be updated consistently with the new value of
     // theta_max.
     cos_theta_max_ = std::cos(parameters.theta_max);
@@ -1142,7 +1140,7 @@ class ImplicitStribeckSolver {
   int nc_;  // Number of contact points.
 
   // The parameters of the solver controlling the iteration strategy.
-  Parameters parameters_;
+  ImplicitStribeckSolverParameters parameters_;
   ProblemDataAliases problem_data_aliases_;
   mutable FixedSizeWorkspace fixed_size_workspace_;
   mutable VariableSizeWorkspace variable_size_workspace_;
@@ -1152,9 +1150,8 @@ class ImplicitStribeckSolver {
 
   // We save solver statistics such as number of iterations and residuals so
   // that we can report them if requested.
-  mutable IterationStats statistics_;
+  mutable ImplicitStribeckSolverIterationStats statistics_;
 };
 
-}  // namespace implicit_stribeck
 }  // namespace multibody
 }  // namespace drake

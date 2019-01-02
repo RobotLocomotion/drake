@@ -8,6 +8,7 @@ namespace drake {
 namespace symbolic {
 namespace {
 
+using test::ExprEqual;
 using test::FormulaEqual;
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
@@ -465,6 +466,47 @@ TEST_F(SymbolicExpressionMatrixTest, Evaluate) {
   // clang-format on
   DRAKE_EXPECT_THROWS_MESSAGE(Evaluate(C, env), std::runtime_error,
                               "NaN is detected during Symbolic computation.");
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {
+  RandomGenerator g{};
+
+  const Variable uni{"uni", Variable::Type::RANDOM_UNIFORM};
+  const Variable gau{"gau", Variable::Type::RANDOM_GAUSSIAN};
+  const Variable exp{"exp", Variable::Type::RANDOM_EXPONENTIAL};
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
+
+  // 1. A_ is a fixed-size matrix (3 x 2) = [x               uni * gau + exp]
+  //                                        [uni * gau + exp              -1]
+  //                                        [z                      3.141592]
+  Eigen::Matrix<Expression, 3, 2> A;
+  // clang-format off
+  A << x_,              uni * gau + exp,
+       uni * gau + exp,              -1,
+       z_,                     3.141592;
+  // clang-format on
+
+  // A(1,0) and A(0, 1) are the same symbolic expressions. Therefore, they
+  // should be evaluated to the same value regardless of sampled values for the
+  // random variables in A.
+  const Eigen::Matrix<double, 3, 2> A_eval{Evaluate(A, env, &g)};
+  EXPECT_PRED2(ExprEqual, A(1, 0), A(0, 1));
+  EXPECT_EQ(A_eval(1, 0), A_eval(0, 1));
+
+  // 2. B is a dynamic-size matrix (2 x 2) = [uni + gau + exp                x]
+  //                                         [y                uni + gau + exp]
+  MatrixX<Expression> B(2, 2);
+  // clang-format off
+  B << uni + gau + exp,              x_,
+       y_,              uni + gau + exp;
+  // clang-format on
+
+  // B(0, 0) and B(1, 1) are the same symbolic expressions. Therefore, they
+  // should be evaluated to the same value regardless of sampled values for the
+  // random variables in B.
+  const Eigen::Matrix<double, 2, 2> B_eval{Evaluate(B, env, &g)};
+  EXPECT_PRED2(ExprEqual, B(0, 0), B(1, 1));
+  EXPECT_EQ(B_eval(0, 0), B_eval(1, 1));
 }
 }  // namespace
 }  // namespace symbolic

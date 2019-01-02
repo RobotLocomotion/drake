@@ -585,6 +585,11 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
         throw std::runtime_error(
             "Boolean variables should not be used with Mosek solver.");
       }
+      case MathematicalProgram::VarType::RANDOM_UNIFORM:
+      case MathematicalProgram::VarType::RANDOM_GAUSSIAN:
+      case MathematicalProgram::VarType::RANDOM_EXPONENTIAL:
+        throw std::runtime_error(
+            "Random variables should not be used with Mosek solver.");
     }
   }
   return rescode;

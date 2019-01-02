@@ -335,12 +335,12 @@ if not args.hardware:
     # Set the initial positions of the IIWA to a comfortable configuration
     # inside the workspace of the station.
     q0 = [0, 0.6, 0, -1.75, 0, 1.0, 0]
-    station.SetIiwaPosition(q0, station_context)
-    station.SetIiwaVelocity(np.zeros(7), station_context)
+    station.SetIiwaPosition(station_context, q0)
+    station.SetIiwaVelocity(station_context, np.zeros(7))
 
     # Set the initial configuration of the gripper to open.
-    station.SetWsgPosition(0.1, station_context)
-    station.SetWsgVelocity(0, station_context)
+    station.SetWsgPosition(station_context, 0.1)
+    station.SetWsgVelocity(station_context, 0)
 
     # Place the object in the middle of the workspace.
     X_WObject = Isometry3.Identity()

@@ -41,7 +41,6 @@ using systems::State;
 
 using drake::multibody::MultibodyForces;
 using drake::multibody::MultibodyTree;
-using drake::multibody::MultibodyTreeContext;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -597,11 +596,10 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
   // Make a contact solver when the plant is modeled as a discrete system.
   if (is_discrete()) {
     implicit_stribeck_solver_ =
-        std::make_unique<implicit_stribeck::ImplicitStribeckSolver<T>>(
-            num_velocities());
+        std::make_unique<ImplicitStribeckSolver<T>>(num_velocities());
     // Set the stiction tolerance according to the values set by users with
     // set_stiction_tolerance().
-    implicit_stribeck::Parameters solver_parameters;
+    ImplicitStribeckSolverParameters solver_parameters;
     solver_parameters.stiction_tolerance =
         stribeck_model_.stiction_tolerance();
     implicit_stribeck_solver_->set_solver_parameters(solver_parameters);
@@ -1216,7 +1214,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 }
 
 template<typename T>
-implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
+ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
     int num_substeps,
     const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
     const VectorX<T>& minus_tau,
@@ -1230,8 +1228,8 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
   VectorX<T> phi0_substep = phi0;
 
   // Initialize info to an unsuccessful result.
-  implicit_stribeck::ComputationInfo info{
-      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+  ImplicitStribeckSolverResult info{
+      ImplicitStribeckSolverResult::kMaxIterationsReached};
 
   for (int substep = 0; substep < num_substeps; ++substep) {
     // Discrete update before applying friction forces.
@@ -1249,7 +1247,7 @@ implicit_stribeck::ComputationInfo MultibodyPlant<T>::SolveUsingSubStepping(
                                                      v0_substep);
 
     // Break the sub-stepping loop on failure and return the info result.
-    if (info != implicit_stribeck::Success) break;
+    if (info != ImplicitStribeckSolverResult::kSuccess) break;
 
     // Update previous time step to new solution.
     v0_substep = implicit_stribeck_solver_->get_generalized_velocities();
@@ -1370,10 +1368,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       num_contacts, penalty_method_contact_parameters_.damping);
 
   // Solve for v and the contact forces.
-  implicit_stribeck::ComputationInfo info{
-      implicit_stribeck::ComputationInfo::MaxIterationsReached};
+  ImplicitStribeckSolverResult info{
+      ImplicitStribeckSolverResult::kMaxIterationsReached};
 
-  implicit_stribeck::Parameters params =
+  ImplicitStribeckSolverParameters params =
       implicit_stribeck_solver_->get_solver_parameters();
   // A nicely converged NR iteration should not take more than 20 iterations.
   // Otherwise we attempt a smaller time step.
@@ -1393,10 +1391,10 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     ++num_substeps;
     info = SolveUsingSubStepping(
         num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
-  } while (info != implicit_stribeck::Success &&
-      num_substeps < kNumMaxSubTimeSteps);
+  } while (info != ImplicitStribeckSolverResult::kSuccess &&
+           num_substeps < kNumMaxSubTimeSteps);
 
-  DRAKE_DEMAND(info == implicit_stribeck::Success);
+  DRAKE_DEMAND(info == ImplicitStribeckSolverResult::kSuccess);
 
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
@@ -1771,8 +1769,53 @@ T MultibodyPlant<T>::StribeckModel::step5(const T& x) {
   return x3 * (10 + x * (6 * x - 15));  // 10x³ - 15x⁴ + 6x⁵
 }
 
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant,
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
+  DRAKE_DEMAND(builder != nullptr);
+  if (!plant) {
+    plant = std::make_unique<MultibodyPlant<T>>();
+    plant->set_name("plant");
+  }
+  if (!scene_graph) {
+    scene_graph = std::make_unique<geometry::SceneGraph<T>>();
+    scene_graph->set_name("scene_graph");
+  }
+  auto* plant_ptr = builder->AddSystem(std::move(plant));
+  auto* scene_graph_ptr = builder->AddSystem(std::move(scene_graph));
+  plant_ptr->RegisterAsSourceForSceneGraph(scene_graph_ptr);
+  builder->Connect(
+      plant_ptr->get_geometry_poses_output_port(),
+      scene_graph_ptr->get_source_pose_port(
+          plant_ptr->get_source_id().value()));
+  builder->Connect(
+      scene_graph_ptr->get_query_output_port(),
+      plant_ptr->get_geometry_query_input_port());
+  return {plant_ptr, scene_graph_ptr};
+}
+
+// Add explicit instantiations for `AddMultibodyPlantSceneGraph`.
+template
+AddMultibodyPlantSceneGraphResult<double>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<double>* builder,
+    std::unique_ptr<MultibodyPlant<double>> plant,
+    std::unique_ptr<geometry::SceneGraph<double>> scene_graph);
+
+template
+AddMultibodyPlantSceneGraphResult<AutoDiffXd>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<AutoDiffXd>* builder,
+    std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant,
+    std::unique_ptr<geometry::SceneGraph<AutoDiffXd>> scene_graph);
+
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::MultibodyPlant)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    struct drake::multibody::AddMultibodyPlantSceneGraphResult)

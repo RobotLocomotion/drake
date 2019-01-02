@@ -27,16 +27,14 @@ using test::SynchronizeGlobalsForPython3;
 
 template <typename... Ts>
 struct SimpleTemplate {
-  vector<string> GetNames() {
-    return {NiceTypeName::Get<Ts>()...};
-  }
+  vector<string> GetNames() { return {NiceTypeName::Get<Ts>()...}; }
 };
 
 template <typename... Ts>
 py::object BindSimpleTemplate(py::module m) {
   using Class = SimpleTemplate<Ts...>;
   py::class_<Class> py_class(m, TemporaryClassName<Class>().c_str());
-  py_class
+  py_class  // BR
       .def(py::init<>())
       .def("GetNames", &Class::GetNames);
   AddTemplateClass(m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
@@ -69,8 +67,8 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   // N.B. We use `[^\0]` because C++ regex does not have an equivalent of
   // Python re's DOTALL flag. `[\s\S]` *should* work, but Apple LLVM 10.0.0
   // does not work with it.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      py::eval("simple_func('incorrect value')"), std::runtime_error,
+  DRAKE_EXPECT_THROWS_MESSAGE(py::eval("simple_func('incorrect value')"),
+      std::runtime_error,
       R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate\[int\]\)[^\0]*)");  // NOLINT
 }
 
@@ -82,11 +80,10 @@ vector<string> SimpleFunction() {
 GTEST_TEST(CppTemplateTest, TemplateFunction) {
   py::module m("__main__");
 
-  AddTemplateFunction(
-      m, "SimpleFunction", &SimpleFunction<int>, GetPyParam<int>());
-  AddTemplateFunction(
-      m, "SimpleFunction", &SimpleFunction<int, double>,
-      GetPyParam<int, double>());
+  AddTemplateFunction(m, "SimpleFunction",  // BR
+      &SimpleFunction<int>, GetPyParam<int>());
+  AddTemplateFunction(m, "SimpleFunction",  // BR
+      &SimpleFunction<int, double>, GetPyParam<int, double>());
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};
@@ -106,14 +103,12 @@ GTEST_TEST(CppTemplateTest, TemplateMethod) {
   py::module m("__main__");
 
   py::class_<SimpleType> py_class(m, "SimpleType");
-  py_class
+  py_class  // BR
       .def(py::init<>());
-  AddTemplateMethod(
-      py_class, "SimpleMethod", &SimpleType::SimpleMethod<int>,
+  AddTemplateMethod(py_class, "SimpleMethod", &SimpleType::SimpleMethod<int>,
       GetPyParam<int>());
-  AddTemplateMethod(
-      py_class, "SimpleMethod", &SimpleType::SimpleMethod<int, double>,
-      GetPyParam<int, double>());
+  AddTemplateMethod(py_class, "SimpleMethod",
+      &SimpleType::SimpleMethod<int, double>, GetPyParam<int, double>());
 
   const vector<string> expected_1 = {"int"};
   const vector<string> expected_2 = {"int", "double"};

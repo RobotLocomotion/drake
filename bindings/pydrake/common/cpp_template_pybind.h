@@ -20,9 +20,9 @@ namespace internal {
 // Please see that function for common parameters.
 // @param template_cls_name Name of the template class in `cpp_template`,
 // resolves to class to be passed as `template_cls`.
-inline py::object GetOrInitTemplate(
+inline py::object GetOrInitTemplate(  // BR
     py::handle scope, const std::string& name,
-    const std::string& template_cls_name,
+    const std::string& template_cls_name,  // BR
     py::tuple args = py::tuple(), py::dict kwargs = py::dict()) {
   const char module_name[] = "pydrake.common.cpp_template";
   py::handle m = py::module::import(module_name);
@@ -59,9 +59,9 @@ std::string TemporaryClassName(const std::string& name = "TemporaryName") {
 /// names, consider constructing the class binding as
 /// `py::class_<Class, ...>(m, TemporaryClassName<Class>().c_str())`.
 /// @param param Parameters for the instantiation.
-inline py::object AddTemplateClass(
-    py::handle scope, const std::string& name,
-    py::handle py_class, py::tuple param) {
+inline py::object AddTemplateClass(  // BR
+    py::handle scope, const std::string& name, py::handle py_class,
+    py::tuple param) {
   py::object py_template =
       internal::GetOrInitTemplate(scope, name, "TemplateClass");
   internal::AddInstantiation(py_template, py_class, param);
@@ -74,7 +74,7 @@ inline py::object AddTemplateClass(
 /// named `default_name + template_suffix`.
 /// @return pybind11 class
 template <typename Class, typename... Options>
-py::class_<Class, Options...> DefineTemplateClassWithDefault(
+py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
     py::handle scope, const std::string& default_name, py::tuple param,
     const char* doc_string = "", const std::string& template_suffix = "_") {
   const std::string template_name = default_name + template_suffix;
@@ -101,9 +101,9 @@ py::object AddTemplateFunction(
   // TODO(eric.cousineau): Use `py::sibling` if overloads are needed.
   py::object py_template =
       internal::GetOrInitTemplate(scope, name, "TemplateFunction");
-  py::object py_func = py::cpp_function(
-        std::forward<Func>(func),
-        py::name(internal::GetInstantiationName(py_template, param).c_str()));
+  py::object py_func = py::cpp_function(  // BR
+      std::forward<Func>(func),
+      py::name(internal::GetInstantiationName(py_template, param).c_str()));
   internal::AddInstantiation(py_template, py_func, param);
   return py_template;
 }
@@ -114,12 +114,12 @@ py::object AddTemplateFunction(
 /// @param method Method to be added.
 /// @param param Parameters for the instantiation.
 template <typename Method>
-py::object AddTemplateMethod(
+py::object AddTemplateMethod(  // BR
     py::handle scope, const std::string& name, Method&& method,
     py::tuple param) {
   py::object py_template = internal::GetOrInitTemplate(
       scope, name, "TemplateMethod", py::make_tuple(scope));
-  py::object py_func = py::cpp_function(
+  py::object py_func = py::cpp_function(  // BR
       std::forward<Method>(method),
       py::name(internal::GetInstantiationName(py_template, param).c_str()),
       py::is_method(scope));

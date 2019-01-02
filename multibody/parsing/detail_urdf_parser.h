@@ -3,6 +3,7 @@
 #include <string>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -32,9 +33,9 @@ namespace detail {
 ModelInstanceIndex AddModelFromUrdfFile(
     const std::string& file_name,
     const std::string& model_name,
+    const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
-
 }  // namespace detail
 }  // namespace multibody
 }  // namespace drake

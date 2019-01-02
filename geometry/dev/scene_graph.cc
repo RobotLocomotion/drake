@@ -281,6 +281,19 @@ void SceneGraph<T>::AssignRole(SourceId source_id,
 }
 
 template <typename T>
+int SceneGraph<T>::RemoveRole(SourceId source_id, FrameId frame_id, Role role) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return initial_state_->RemoveRole(source_id, frame_id, role);
+}
+
+template <typename T>
+int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
+                              Role role) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return initial_state_->RemoveRole(source_id, geometry_id, role);
+}
+
+template <typename T>
 const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return model_inspector_;

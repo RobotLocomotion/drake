@@ -220,12 +220,13 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
       solver.AddMipNodeCallback(mip_node_callback_function_wrapper);
       solver.AddMipSolCallback(mip_sol_callback_function_wrapper);
 
-      SolutionResult result = solver.Solve(prog);
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
-      const auto& x_value = prog.GetSolution(x);
+      MathematicalProgramResult result;
+      solver.Solve(prog, {}, {}, &result);
+      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+      const auto& x_value = prog.GetSolution(x, result);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
-      ExpectSolutionCostAccurate(prog, 1E-6);
+      ExpectSolutionCostAccurate(prog, result, 1E-6);
       EXPECT_TRUE(cb_info.mip_sol_callback_called);
       EXPECT_TRUE(cb_info.mip_node_callback_called);
     }

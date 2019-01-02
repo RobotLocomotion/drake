@@ -12,6 +12,7 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -204,12 +205,28 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // an exception.
   EXPECT_THROW(plant->GetBodyByName(kInvalidName), std::logic_error);
 
+  // Get body indices by model_instance.
+  const std::vector<BodyIndex> acrobot_indices =
+      plant->GetBodyIndices(default_model_instance());
+  EXPECT_EQ(acrobot_indices.size(), 2);
+  EXPECT_EQ(acrobot_indices[0], link1.index());
+  EXPECT_EQ(acrobot_indices[1], link2.index());
+
+  const std::vector<BodyIndex> pendulum_indices =
+      plant->GetBodyIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_indices.size(), 2);
+  EXPECT_EQ(pendulum_indices[0], upper.index());
+  EXPECT_EQ(pendulum_indices[1], lower.index());
+
   // Get joints by name.
   const Joint<double>& shoulder_joint =
       plant->GetJointByName(parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.name(), parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.model_instance(), default_model_instance());
-    const Joint<double>& elbow_joint =
+  Joint<double>& mutable_shoulder_joint =
+      plant->GetMutableJointByName(parameters.shoulder_joint_name());
+  EXPECT_EQ(&mutable_shoulder_joint, &shoulder_joint);
+  const Joint<double>& elbow_joint =
       plant->GetJointByName(parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.name(), parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.model_instance(), default_model_instance());
@@ -255,19 +272,36 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // type throws an exception. We need another joint type to do so.
 }
 
+GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
+  systems::DiagramBuilder<double> builder;
+  auto pair = AddMultibodyPlantSceneGraph(&builder);
+
+  MultibodyPlant<double>* plant{};
+  geometry::SceneGraph<double>* scene_graph{};
+  // Check `tie` assignment.
+  std::tie(plant, scene_graph) = pair;
+  EXPECT_NE(plant, nullptr);
+  EXPECT_NE(scene_graph, nullptr);
+  // Check referencing.
+  MultibodyPlant<double>& plant_ref = pair;
+  EXPECT_EQ(&plant_ref, plant);
+
+  // These should fail:
+  // AddMultibodyPlantSceneGraphResult<double> extra(plant, scene_graph);
+  // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
+}
+
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
  public:
   // Creates MultibodyPlant for an acrobot model.
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
-    scene_graph_ = builder.AddSystem<SceneGraph>();
     // Make a non-finalized plant so that we can tests methods with pre/post
     // Finalize() conditions.
     const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-    plant_ = builder.AddSystem<MultibodyPlant>();
-    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
     Parser(plant_).AddModelFromFile(full_name);
     // Add gravity to the model.
     plant_->AddForceElement<UniformGravityFieldElement>(
@@ -279,10 +313,6 @@ class AcrobotPlantTests : public ::testing::Test {
     // Ensure that we can access the geometry ports pre-finalize.
     EXPECT_NO_THROW(plant_->get_geometry_query_input_port());
     EXPECT_NO_THROW(plant_->get_geometry_poses_output_port());
-
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(plant_->get_source_id().value()));
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         plant_->get_continuous_state_output_port(),
@@ -299,9 +329,9 @@ class AcrobotPlantTests : public ::testing::Test {
 
     link1_ = &plant_->GetBodyByName(parameters_.link1_name());
     link2_ = &plant_->GetBodyByName(parameters_.link2_name());
-    shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
+    shoulder_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.shoulder_joint_name());
-    elbow_ = &plant_->GetJointByName<RevoluteJoint>(
+    elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
     context_ = plant_->CreateDefaultContext();
@@ -482,8 +512,8 @@ class AcrobotPlantTests : public ::testing::Test {
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
-  const RevoluteJoint<double>* shoulder_{nullptr};
-  const RevoluteJoint<double>* elbow_{nullptr};
+  RevoluteJoint<double>* shoulder_{nullptr};
+  RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
   systems::FixedInputPortValue* input_port_{nullptr};
 
@@ -628,6 +658,37 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 #endif
 }
 
+TEST_F(AcrobotPlantTests, SetRandomState) {
+  RandomGenerator generator;
+  auto random_context = plant_->CreateDefaultContext();
+
+  // Calling SetRandomContext before setting the distribution results in the
+  // zero state.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_mutable_continuous_state_vector().CopyToVector(),
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+
+  // Setup distribution for random initial conditions.
+  std::normal_distribution<symbolic::Expression> gaussian;
+  shoulder_->set_random_angle_distribution(M_PI + 0.02*gaussian(generator));
+  elbow_->set_random_angle_distribution(0.05*gaussian(generator));
+
+  // This call should change the context.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_FALSE(CompareMatrices(
+      context_->get_mutable_continuous_state_vector().CopyToVector(),
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+
+  const Eigen::VectorXd first_random_state =
+      random_context->get_mutable_continuous_state_vector().CopyToVector();
+  // And every call should return something different.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_FALSE(CompareMatrices(
+      first_random_state,
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+}
+
 // Verifies that the right errors get invoked upon finalization.
 GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodiesSourceErrors) {
   SceneGraph<double> scene_graph;
@@ -697,10 +758,7 @@ class SphereChainScenario {
       std::function<void(SphereChainScenario*)> apply_filters = nullptr) {
     using std::to_string;
     systems::DiagramBuilder<double> builder;
-    scene_graph_ = builder.AddSystem<SceneGraph<double>>();
-    plant_ = builder.AddSystem<MultibodyPlant<double>>();
-
-    plant_->RegisterAsSourceForSceneGraph(scene_graph_);
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder);
 
     // A half-space for the ground geometry.
     ground_id_ = plant_->RegisterCollisionGeometry(
@@ -746,12 +804,6 @@ class SphereChainScenario {
 
     // We are done defining the model.
     plant_->Finalize();
-
-    builder.Connect(
-        plant_->get_geometry_poses_output_port(),
-        scene_graph_->get_source_pose_port(*plant_->get_source_id()));
-    builder.Connect(scene_graph_->get_query_output_port(),
-                    plant_->get_geometry_query_input_port());
 
     if (apply_filters != nullptr) apply_filters(this);
 
@@ -1721,7 +1773,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
   for (JointIndex joint_index(0);
        joint_index < plant.num_joints() - 1 /* Skip "weld" joint. */;
        ++joint_index) {
-    const Joint<double>& joint = plant.tree().get_joint(joint_index);
+    const Joint<double>& joint = plant.get_joint(joint_index);
     // Start index in the vector q of generalized positions.
     const int expected_q_start = joint_index;
     // Start index in the vector v of generalized velocities.
@@ -1732,6 +1784,10 @@ GTEST_TEST(KukaModel, JointIndexes) {
     EXPECT_EQ(joint.position_start(), expected_q_start);
     EXPECT_EQ(joint.num_velocities(), expected_num_v);
     EXPECT_EQ(joint.velocity_start(), expected_v_start);
+
+    // Confirm that the mutable accessor returns the same object.
+    Joint<double>& mutable_joint = plant.get_mutable_joint(joint_index);
+    EXPECT_EQ(&mutable_joint, &joint);
   }
 
   // Verify that the indexes above point to the right entries in the state
@@ -2266,6 +2322,52 @@ GTEST_TEST(StateSelection, FloatingBodies) {
           context.get(), end_effector_frame, mug, X_OM),
       std::logic_error,
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
+}
+
+GTEST_TEST(SetRandomTest, FloatingBodies) {
+  // Create a model that contains a single body.
+  MultibodyPlant<double> plant;
+  const Body<double>& body =
+      plant.AddRigidBody("LoneBody", SpatialInertia<double>());
+  plant.Finalize();
+
+  RandomGenerator generator;
+
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+  Vector3<symbolic::Expression> xyz(1.0 + uniform(generator),
+                                    2.0 + uniform(generator),
+                                    3.0 + uniform(generator));
+
+  plant.SetFreeBodyRandomPositionDistribution(body, xyz);
+  plant.SetFreeBodyRandomRotationDistributionToUniform(body);
+
+  auto context = plant.CreateDefaultContext();
+
+  const math::RigidTransform<double> X_WB_default =
+      plant.GetFreeBodyPose(*context, body);
+
+  plant.SetRandomContext(context.get(), &generator);
+  const math::RigidTransform<double> X_WB =
+      plant.GetFreeBodyPose(*context, body);
+
+  // Just make sure that the rotation matrices have changed. (Testing that
+  // the quaternion is unit norm would be good, but is not possible here
+  // because the RigidTransform class scales the quaternion before it is
+  // returned).
+  EXPECT_FALSE(CompareMatrices(X_WB_default.rotation().matrix(),
+                               X_WB.rotation().matrix()));
+
+  // x is drawn from [1, 2).
+  EXPECT_GE(X_WB.translation()[0], 1.0);
+  EXPECT_LT(X_WB.translation()[0], 2.0);
+
+  // y is drawn from [2, 3).
+  EXPECT_GE(X_WB.translation()[1], 2.0);
+  EXPECT_LT(X_WB.translation()[1], 3.0);
+
+  // z is drawn from [3, 4).
+  EXPECT_GE(X_WB.translation()[2], 3.0);
+  EXPECT_LT(X_WB.translation()[2], 4.0);
 }
 
 }  // namespace

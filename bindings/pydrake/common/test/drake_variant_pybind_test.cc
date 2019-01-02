@@ -24,11 +24,10 @@ string VariantToString(const variant<int, double, string>& value) {
   const bool is_int = holds_alternative<int>(value);
   const bool is_double = holds_alternative<double>(value);
   const bool is_string = holds_alternative<string>(value);
-  return
-      is_int ? fmt::format("int({})", get<int>(value)) :
-      is_double ? fmt::format("double({})", get<double>(value)) :
-      is_string ? fmt::format("string({})", get<string>(value)) :
-      "FAILED";
+  if (is_int) return fmt::format("int({})", get<int>(value));
+  if (is_double) return fmt::format("double({})", get<double>(value));
+  if (is_string) return fmt::format("string({})", get<string>(value));
+  return "FAILED";
 }
 
 void ExpectString(const string& expr, const string& expected) {

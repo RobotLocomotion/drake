@@ -64,7 +64,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   ///   The context storing the state of the MultibodyTree this mobilizer
   ///   belongs to.
   /// @retval q_FM
-  ///   The quaternion representing the orientaiton of frame M in F.
+  ///   The quaternion representing the orientation of frame M in F.
   Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
   /// Returns the position `p_FM` of the outboard frame M's origin as measured
@@ -94,6 +94,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>& context,
       const Quaternion<T>& q_FM, systems::State<T>* state) const;
 
+  /// Specifies that random samples for the rotation elements of the state
+  /// should be drawn as uniformly random quaternions.
+  void set_random_quaternion_distribution_to_uniform();
+
   /// Sets `context` to store the position `p_FM` of frame M's origin `Mo`
   /// measured and expressed in frame F.
   /// @param[out] context
@@ -110,6 +114,11 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   const QuaternionFloatingMobilizer<T>& set_position(
       const systems::Context<T>& context, const Vector3<T>& p_FM,
       systems::State<T>* state) const;
+
+  /// Sets the distribution governing the random samples of the position
+  /// component of the mobilizer state.
+  void set_random_position_distribution(const Vector3<symbolic::Expression>&
+      position);
 
   /// Sets `context` to store the quaternion `q_FM` which represents the same
   /// orientation of M in F as given by the rotation matrix `R_FM`.
@@ -169,12 +178,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>&, const Vector3<T>& v_FM,
       systems::State<T>* state) const;
 
-
-  /// Sets `state` to store a configuration in which M coincides with F (i.e.
-  /// q_FM is the identity quaternion) and the spatial velocity V_FM of M in F
-  /// is zero.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const override;
   /// @}
   // End of Doxygen section on methods to get/set from a context.
 
@@ -209,6 +212,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @}
 
  protected:
+  /// Sets `state` to store a configuration in which M coincides with F (i.e.
+  /// q_FM is the identity quaternion).
+  Eigen::Matrix<double, 7, 1> get_zero_position() const override;
+
   void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 

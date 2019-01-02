@@ -295,7 +295,7 @@ void init_module(py::module m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            cls_doc.GetMutablePositionsAndVelocities.doc)
+            cls_doc.GetMutablePositionsAndVelocities.doc_1args)
         .def("CalcPointsPositions",
             [](const Class* self, const Context<T>& context,
                 const Frame<T>& frame_B,
@@ -790,19 +790,15 @@ void init_multibody_plant(py::module m) {
                 ModelInstanceIndex>(&Class::GetBodyByName),
             py::arg("name"), py::arg("model_instance"), py_reference_internal,
             doc.MultibodyPlant.GetBodyByName.doc_2args)
-        .def("GetJointByName",
-            [](const Class* self, const string& name) -> auto& {
-              return self->GetJointByName(name);
-            },
-            py::arg("name"), py_reference_internal,
-            doc.MultibodyPlant.GetJointByName.doc)
+        .def("GetBodyIndices", &Class::GetBodyIndices,
+            py::arg("model_instance"), doc.MultibodyPlant.GetBodyIndices.doc)
         .def("GetJointByName",
             [](const Class* self, const string& name,
-                ModelInstanceIndex model_instance) -> auto& {
+                optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetJointByName(name, model_instance);
             },
-            py::arg("name"), py::arg("model_instance"), py_reference_internal,
-            doc.MultibodyPlant.GetJointByName.doc_2)
+            py::arg("name"), py::arg("model_instance") = nullopt,
+            py_reference_internal, doc.MultibodyPlant.GetJointByName.doc)
         .def("GetJointActuatorByName",
             overload_cast_explicit<const JointActuator<T>&, const string&>(
                 &Class::GetJointActuatorByName),
@@ -891,7 +887,7 @@ void init_multibody_plant(py::module m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyPlant.GetMutablePositions.doc)
+            doc.MultibodyPlant.GetMutablePositions.doc_1args)
         .def("GetMutableVelocities",
             [](const MultibodyPlant<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
@@ -900,7 +896,7 @@ void init_multibody_plant(py::module m) {
             py_reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), py::arg("context"),
-            doc.MultibodyPlant.GetMutableVelocities.doc)
+            doc.MultibodyPlant.GetMutableVelocities.doc_1args)
         .def("GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context)
                 -> VectorX<T> { return self->GetPositions(context); },
@@ -980,11 +976,6 @@ void init_multibody_plant(py::module m) {
             py_reference, py::arg("context"), py::arg("model_instance"),
             py::arg("q_v"),
             doc.MultibodyPlant.SetPositionsAndVelocities.doc_3args)
-        .def("SetDefaultContext",
-            [](const Class* self, Context<T>* context) {
-              self->SetDefaultContext(context);
-            },
-            py::arg("context"), doc.MultibodyPlant.SetDefaultContext.doc)
         .def("SetDefaultState",
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);
@@ -1030,6 +1021,25 @@ void init_multibody_plant(py::module m) {
         .def("contact_info", &Class::contact_info, py::arg("i"));
     pysystems::AddValueInstantiation<Class>(m);
   }
+
+  m.def("AddMultibodyPlantSceneGraph",
+      [](systems::DiagramBuilder<T>* builder,
+          std::unique_ptr<MultibodyPlant<T>> plant,
+          std::unique_ptr<SceneGraph<T>> scene_graph) {
+        auto pair = AddMultibodyPlantSceneGraph(
+            builder, std::move(plant), std::move(scene_graph));
+        // Must do manual keep alive to dig into tuple.
+        py::object builder_py = py::cast(builder, py_reference);
+        // Keep alive, ownership: `plant` keeps `builder` alive.
+        py::object plant_py =
+            py::cast(pair.plant, py_reference_internal, builder_py);
+        // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+        py::object scene_graph_py =
+            py::cast(pair.scene_graph, py_reference_internal, builder_py);
+        return py::make_tuple(plant_py, scene_graph_py);
+      },
+      py::arg("builder"), py::arg("plant") = nullptr,
+      py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
 }  // NOLINT(readability/fn_size)
 
 void init_parsing_deprecated(py::module m) {

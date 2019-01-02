@@ -61,10 +61,6 @@ MultibodyTreeSystem<T>::~MultibodyTreeSystem() = default;
 template <typename T>
 MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
   DRAKE_DEMAND(tree_ != nullptr);
-  if (tree_->topology_is_valid())
-    throw std::logic_error(
-        "MultibodyTreeSystem::mutable_tree(): "
-        "the contained MultibodyTree is finalized already.");\
   return *tree_;
 }
 

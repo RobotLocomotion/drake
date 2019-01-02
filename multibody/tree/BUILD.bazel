@@ -150,6 +150,7 @@ drake_cc_library(
         ":spatial_inertia",
         "//common:autodiff",
         "//common:nice_type_name",
+        "//common:symbolic",
         "//math:geometric_transform",
         "//systems/framework:leaf_system",
     ],

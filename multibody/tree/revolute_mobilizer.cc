@@ -53,12 +53,6 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
 }
 
 template <typename T>
-void RevoluteMobilizer<T>::set_zero_state(const systems::Context<T>& context,
-                                          systems::State<T>* state) const {
-  this->set_default_zero_state(context, state);
-}
-
-template <typename T>
 Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const MultibodyTreeContext<T>& context) const {
   const auto& q = this->get_positions(context);

@@ -17,8 +17,10 @@ void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id);
 /// not find a solution, stop immediately via an exception.  (Were we to
 /// continue, testing statements that examine the results would be likely to
 /// fail with confusing messages, so best to avoid them entirely.)
-void RunSolver(MathematicalProgram* prog,
-               const MathematicalProgramSolverInterface& solver);
+MathematicalProgramResult RunSolver(
+    const MathematicalProgram& prog,
+    const MathematicalProgramSolverInterface& solver,
+    const optional<Eigen::VectorXd>& initial_guess = {});
 
 /// Determine if two bindings are the same. Two bindings are the same if
 ///

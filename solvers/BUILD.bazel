@@ -1130,6 +1130,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mathematical_program_test_util",
         ":optimization_examples",
+        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

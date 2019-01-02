@@ -259,7 +259,7 @@ def drake_pybind_cc_googletest(
             "@python//:python_direct_link",
         ],
         # Add 'manual', because we only want to run it with Python present.
-        tags = ["manual"],
+        tags = ["manual"] + tags,
         visibility = visibility,
     )
 

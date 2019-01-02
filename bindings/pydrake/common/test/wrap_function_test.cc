@@ -33,9 +33,11 @@ int IntToInt(int value) {
 
 GTEST_TEST(WrapFunction, FunctionPointer) {
   int value{0};
+  // clang-format off
   WrapIdentity(Void)();
   WrapIdentity(&Void)();  // Test pointer style.
   WrapIdentity(IntToVoid)(value);
+  // clang-format on
   EXPECT_EQ(WrapIdentity(ReturnInt)(), 1);
   EXPECT_EQ(WrapIdentity(IntToInt)(value), value);
 }
@@ -177,7 +179,6 @@ using wrap_change_t = detail::wrap_function_impl<wrap_change>::wrap_type_t<T>;
 template <typename T>
 struct wrap_change<const T*, std::enable_if_t<!std::is_same<T, int>::value>> {
   static const_ptr<T> wrap(const T* arg) { return {arg}; }
-
   static const T* unwrap(const_ptr<T> arg_wrapped) { return arg_wrapped.value; }
 };
 
@@ -234,18 +235,17 @@ void check_type() {
 }
 
 // Checks signature of a generic functor.
-template <typename ReturnExpected, typename... ArgsExpected>
+template <typename RetExpected, typename... ArgsExpected>
 struct check_signature {
   template <typename FuncActual>
   static void run(const FuncActual& func) {
     run_impl(detail::infer_function_info(func));
   }
 
-  template <typename ReturnActual, typename... ArgsActual, typename FuncActual>
+  template <typename RetActual, typename... ArgsActual, typename FuncActual>
   static void run_impl(
-      const detail::function_info<FuncActual, ReturnActual, ArgsActual...>&
-          info) {
-    check_type<ReturnActual, ReturnExpected>();
+      const detail::function_info<FuncActual, RetActual, ArgsActual...>& info) {
+    check_type<RetActual, RetExpected>();
     using Dummy = int[];
     (void)Dummy{(check_type<ArgsActual, ArgsExpected>(), 0)...};
   }
@@ -293,9 +293,17 @@ class MyClassChange {
  public:
   double* ChangeComprehensive(
       // double (general case)
-      double, double*, double&, const double*, const double&,
+      double,
+      // ... mutable double ptr/ref
+      double*, double&,
+      // ... const double ptr/ref
+      const double*, const double&,
       // int (special case)
-      int, int*, int&, const int*, const int&) {
+      int,
+      // ... mutable int ptr/ref
+      int*, int&,
+      // ... const int ptr/ref
+      const int*, const int&) {
     return nullptr;
   }
 };
@@ -308,9 +316,17 @@ GTEST_TEST(WrapFunction, ChangeComprehensive) {
       // self
       ptr<MyClassChange>,
       // double (general case)
-      double, ptr<double>, ptr<double>, const_ptr<double>, const_ptr<double>,
+      double,
+      // ... mutable double ptr/ref
+      ptr<double>, ptr<double>,
+      // ... const double ptr/ref
+      const_ptr<double>, const_ptr<double>,
       // int (special case)
-      int, ptr<int>, ptr<int>, const int*, const int*>;
+      int,
+      // ... mutable int ptr/ref
+      ptr<int>, ptr<int>,
+      // ... const int ptr/ref
+      const int*, const int*>;
   check_expected::run(wrapped);
 }
 

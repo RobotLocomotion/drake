@@ -28,7 +28,9 @@ enum class ConstraintForm {
   kFormula = 3,
 };
 
-void ExpectSolutionCostAccurate(const MathematicalProgram &prog, double tol);
+void ExpectSolutionCostAccurate(const MathematicalProgram& prog,
+                                const MathematicalProgramResult& result,
+                                double tol);
 
 class OptimizationProgram {
  public:
@@ -44,7 +46,11 @@ class OptimizationProgram {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  virtual void CheckSolution(SolverType solver_type) const = 0;
+  virtual const optional<Eigen::VectorXd>& initial_guess() const {
+    return initial_guess_;
+  }
+
+  virtual void CheckSolution(const MathematicalProgramResult& result) const = 0;
 
   double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
 
@@ -54,6 +60,7 @@ class OptimizationProgram {
   CostForm cost_form_;
   ConstraintForm constraint_form_;
   std::unique_ptr<MathematicalProgram> prog_;
+  optional<Eigen::VectorXd> initial_guess_;
 };
 
 /**
@@ -72,9 +79,11 @@ class LinearSystemExample1 {
 
   const Eigen::Vector4d b() const { return b_; }
 
+  const Eigen::Vector4d& initial_guess() const { return initial_guess_; }
+
   std::shared_ptr<LinearEqualityConstraint> con() const { return con_; }
 
-  virtual void CheckSolution() const;
+  virtual void CheckSolution(const MathematicalProgramResult& result) const;
 
  protected:
   double tol() const { return 1E-10; }
@@ -82,6 +91,7 @@ class LinearSystemExample1 {
  private:
   std::unique_ptr<MathematicalProgram> prog_;
   VectorDecisionVariable<4> x_;
+  Eigen::Vector4d initial_guess_;
   Eigen::Vector4d b_;
   std::shared_ptr<LinearEqualityConstraint> con_;
 };
@@ -99,9 +109,11 @@ class LinearSystemExample2 : public LinearSystemExample1 {
   LinearSystemExample2();
   ~LinearSystemExample2() override {}
 
+  Vector6<double> initial_guess() const { return Vector6<double>::Zero(); }
+
   VectorDecisionVariable<2> y() const { return y_; }
 
-  void CheckSolution() const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 
  private:
   VectorDecisionVariable<2> y_;
@@ -120,7 +132,7 @@ class LinearSystemExample3 : public LinearSystemExample2 {
   LinearSystemExample3();
   ~LinearSystemExample3() override {}
 
-  void CheckSolution() const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 };
 
 
@@ -172,7 +184,9 @@ class NonConvexQPproblem1 {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  void CheckSolution() const;
+  Eigen::Matrix<double, 5, 1> initial_guess() const;
+
+  void CheckSolution(const MathematicalProgramResult& result) const;
 
  private:
   class TestProblem1Cost {
@@ -228,7 +242,9 @@ class NonConvexQPproblem2 {
 
   NonConvexQPproblem2(CostForm cost_form, ConstraintForm constraint_form);
 
-  void CheckSolution() const;
+  Vector6<double> initial_guess() const;
+
+  void CheckSolution(const MathematicalProgramResult& result) const;
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -281,13 +297,13 @@ class LowerBoundedProblem {
 
   explicit LowerBoundedProblem(ConstraintForm constraint_form);
 
-  void CheckSolution() const;
+  void CheckSolution(const MathematicalProgramResult& result) const;
 
   MathematicalProgram* prog() { return prog_.get(); }
 
-  void SetInitialGuess1();
+  Vector6<double> initial_guess1() const;
 
-  void SetInitialGuess2();
+  Vector6<double> initial_guess2() const;
 
  private:
   class LowerBoundTestCost {
@@ -393,7 +409,9 @@ class GloptiPolyConstrainedMinimizationProblem {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  void CheckSolution() const;
+  void CheckSolution(const MathematicalProgramResult& result) const;
+
+  Vector6<double> initial_guess() const;
 
  private:
   class GloptipolyConstrainedExampleCost {
@@ -514,9 +532,12 @@ class MinDistanceFromPlaneToOrigin {
     return prog_rotated_lorentz_.get();
   }
 
-  void SetInitialGuess();
+  Eigen::VectorXd prog_lorentz_initial_guess() const;
 
-  void CheckSolution(bool is_rotated_cone) const;
+  Eigen::VectorXd prog_rotated_lorentz_initial_guess() const;
+
+  void CheckSolution(const MathematicalProgramResult& result,
+                     bool is_rotated_cone) const;
 
  private:
   void AddNonSymbolicConstraint();
@@ -548,7 +569,7 @@ class ConvexCubicProgramExample : public MathematicalProgram {
 
   ~ConvexCubicProgramExample() override {};
 
-  void CheckSolution() const;
+  void CheckSolution(const MathematicalProgramResult& result) const;
 
  private:
   VectorDecisionVariable<1> x_;
@@ -569,7 +590,8 @@ class UnitLengthProgramExample : public MathematicalProgram {
 
   ~UnitLengthProgramExample() override {};
 
-  void CheckSolution(double tolerance) const;
+  void CheckSolution(const MathematicalProgramResult& result,
+                     double tolerance) const;
 
  private:
   VectorDecisionVariable<4> x_;

@@ -708,6 +708,11 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
       case MathematicalProgram::VarType::BOOLEAN:
         throw std::runtime_error(
             "Boolean variables should not be used with Gurobi solver.");
+      case MathematicalProgram::VarType::RANDOM_UNIFORM:
+      case MathematicalProgram::VarType::RANDOM_GAUSSIAN:
+      case MathematicalProgram::VarType::RANDOM_EXPONENTIAL:
+        throw std::runtime_error(
+            "Random variables should not be used with Gurobi solver.");
     }
   }
 
@@ -853,6 +858,8 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
   if (!error) {
     error = GRBoptimize(model);
   }
+
+  result->set_solver_id(GurobiSolver::id());
 
   SolutionResult solution_result = SolutionResult::kUnknownError;
 
