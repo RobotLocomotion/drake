@@ -1,11 +1,14 @@
 #include "drake/multibody/parsing/detail_path_utils.h"
 
+#include <regex>
 #include <string>
 #include <vector>
 
 #include <spruce.hh>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -52,82 +55,71 @@ string GetFullPath(const string& file_name) {
 }
 
 namespace {
-// Searches for key package in package_map. If the key exists, this saves the
-// associated value in the string pointed to by package_path and then returns
-// true. It returns false otherwise.
-bool GetPackagePath(const string& package,
-                    const PackageMap& package_map,
-                    string* package_path) {
+// Searches for key package in package_map. If the key exists, returns the
+// associated value; else prints a warning and returns nullopt.
+optional<string> GetPackagePath(
+    const string& package, const PackageMap& package_map) {
   if (package_map.Contains(package)) {
-    *package_path = package_map.GetPath(package);
-    return true;
+    return package_map.GetPath(package);
   } else {
     drake::log()->warn("Couldn't find package '{}' in the supplied package"
                        "path.", package);
-    return false;
+    return nullopt;
   }
 }
 }  // namespace
 
-string ResolveFilename(const string& filename,
-                       const PackageMap& package_map,
-                       const string& root_dir) {
-  spruce::path full_filename_spruce;
-  spruce::path raw_filename_spruce(filename);
-  const std::vector<string> split_filename = raw_filename_spruce.split();
+string ResolveUri(const string& uri, const PackageMap& package_map,
+                  const string& root_dir) {
+  spruce::path result;
 
-  if (IsAbsolutePath(filename)) {
-    if (!raw_filename_spruce.exists()) {
-      drake::log()->warn("File {} could not be found.", filename);
-      return string();
-    }
-    return filename;
-  } else if (split_filename.front() == "package:") {
-    // A correctly formatted filename is:
-    //
-    //   package://package_name/bar/baz/model.xyz
-    //
-    // Thus, index 0 contains "package", index 1 contains "", and index 2
-    // contains the package name. Furthermore, since the model file must follow
-    // the package name, there must be at least 4 tokens.
-    const int kMinNumTokens = 4;
-    const int kPackageNameIndex = 2;
-    DRAKE_DEMAND(split_filename.size() >= kMinNumTokens);
-
-    string package_path_string;
-    if (GetPackagePath(split_filename.at(kPackageNameIndex), package_map,
-        &package_path_string)) {
-      full_filename_spruce = spruce::path(package_path_string);
-
-      // The following loop starts at index 3 to skip the "package", "", and
-      // [package name] tokens as described above.
-      for (int i = kPackageNameIndex + 1;
-          i < static_cast<int>(split_filename.size()); ++i) {
-        full_filename_spruce.append(split_filename.at(i));
-      }
+  // Parse the given URI into pieces.
+  static const never_destroyed<std::regex> uri_matcher{
+    "^([a-z0-9+.-]+)://([^/]*)(/+.*)"
+  };
+  std::smatch match;
+  if (std::regex_match(uri, match, uri_matcher.access())) {
+    // The `uri` was actually a URI (not a bare filename).
+    DRAKE_DEMAND(match.size() == 4);
+    const auto& uri_scheme = match[1];
+    const auto& uri_package = match[2];
+    const auto& uri_path = match[3];  // This includes the leading '/' (if any).
+    if (uri_scheme == "file") {
+      result = uri_path.str();
+    } else if ((uri_scheme == "model") || (uri_scheme == "package")) {
+      optional<string> package_path =
+          GetPackagePath(uri_package, package_map);
+      if (!package_path) { return {}; }
+      result = spruce::path(*package_path);
+      result.append(uri_path.str());
     } else {
-      return string();
+      drake::log()->warn(
+          "URI '{}' specifies an unsupported scheme; supported schemes are "
+          "'file://', 'model://', and 'package://'.", uri);
+      return {};
     }
   } else {
-    const string normalized_root_dir = spruce::path(root_dir).getStr();
-
-    // If root_dir is a relative path, convert it to an absolute path.
-    if (!IsAbsolutePath(normalized_root_dir)) {
-      full_filename_spruce = spruce::dir::getcwd();
-      full_filename_spruce.append(normalized_root_dir);
+    // Strictly speaking a URI should not just be a bare filename, but we allow
+    // this for backward compatibility and user convenience.
+    const string& filename = uri;
+    if (IsAbsolutePath(filename)) {
+      result = filename;
+    } else if (IsAbsolutePath(root_dir)) {
+      result = root_dir;
+      result.append(filename);
     } else {
-      full_filename_spruce = spruce::path(normalized_root_dir);
+      result = spruce::dir::getcwd();
+      result.append(root_dir);
+      result.append(filename);
     }
-
-    full_filename_spruce.append(filename);
   }
 
-  if (!full_filename_spruce.exists()) {
-    drake::log()->warn("File {} resolved to {} and could not be found.",
-                       filename, full_filename_spruce.getStr());
-    return string();
+  if (!result.exists()) {
+    drake::log()->warn("URI '{}' resolved to '{}' which could not be found.",
+                       uri, result.getStr());
+    return {};
   }
-  return full_filename_spruce.getStr();
+  return result.getStr();
 }
 
 }  // namespace detail

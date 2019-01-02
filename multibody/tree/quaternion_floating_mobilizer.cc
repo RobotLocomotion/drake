@@ -160,12 +160,13 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
 }
 
 template <typename T>
-void QuaternionFloatingMobilizer<T>::set_zero_state(
-    const systems::Context<T>& context, systems::State<T>* state) const {
-  set_quaternion(context, Quaternion<T>::Identity(), state);
-  set_position(context, Vector3<T>::Zero(), state);
-  set_angular_velocity(context, Vector3<T>::Zero(), state);
-  set_translational_velocity(context, Vector3<T>::Zero(), state);
+Eigen::Matrix<T, 7, 1> QuaternionFloatingMobilizer<T>::get_zero_position()
+    const {
+  Eigen::Matrix<T, 7, 1> q = Eigen::Matrix<T, 7, 1>::Zero();
+  const Quaternion<T> quaternion = Quaternion<T>::Identity();
+  q[0] = quaternion.w();
+  q.template segment<3>(1) = quaternion.vec();
+  return q;
 }
 
 template <typename T>

@@ -121,3 +121,63 @@ def drake_cc_library_aliases(
             name = stub_relative_label[1:] + ".installed_headers",
             actual = actual_full_label + ".installed_headers",
         )
+
+_PY_TEMPLATE_NOT_DEPRECATED = r'''"""
+Warning:
+    This module is an alias that will soon be deprecated.
+    Please use ``{module}`` instead.
+"""
+from {module} import *
+'''
+
+_PY_TEMPLATE_DEPRECATED = r'''"""
+Warning:
+    This module is deprecated.
+    Please use ``{module}`` instead.
+"""
+from pydrake.common.deprecation import _warn_deprecated
+from {module} import *
+
+_warn_deprecated(
+    "This module is deprecated; please use '{module}' instead.")
+'''
+
+def _strip_py_suffix(label):
+    if not label.endswith("_py"):
+        fail("'{}' must end with '_py'".format(label))
+    return label[1:-len("_py")]
+
+def drake_py_library_aliases(
+        relative_labels = [],
+        relative_labels_map = {},
+        actual_subdir = "",
+        add_deprecation_warning = False,
+        tags = [],
+        **kwargs):
+    actual_subdir or fail("Missing required actual_subdir")
+    subdir_prefix = "bindings/pydrake/"
+    if not actual_subdir.startswith(subdir_prefix):
+        fail("'{}' must start with '{}'".format(actual_subdir, subdir_prefix))
+    if actual_subdir.endswith("/"):
+        fail("'{}' must not end with '/'".format(actual_subdir))
+    actual_package = actual_subdir[len("bindings/"):].replace("/", ".")
+    mapping = _combine_relative_labels(relative_labels, relative_labels_map)
+    for stub_relative_label, actual_relative_label in mapping.items():
+        stub_file = _strip_py_suffix(stub_relative_label) + ".py"
+        actual_name = _strip_py_suffix(actual_relative_label)
+        actual_module = actual_package + "." + actual_name
+        if add_deprecation_warning:
+            template = _PY_TEMPLATE_DEPRECATED
+        else:
+            template = _PY_TEMPLATE_NOT_DEPRECATED
+        generate_file(
+            name = stub_file,
+            content = template.format(module = actual_module),
+        )
+        actual_full_label = "//" + actual_subdir + actual_relative_label
+        native.py_library(
+            name = stub_relative_label[1:],
+            deps = [actual_full_label],
+            srcs = [stub_file],
+            tags = tags + ["nolint"],
+        )

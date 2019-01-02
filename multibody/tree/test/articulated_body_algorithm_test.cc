@@ -41,12 +41,6 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
              0, 0;
   }
 
-  void set_zero_state(
-      const systems::Context<T>& context,
-      systems::State<T>* state) const override {
-    this->set_default_zero_state(context, state);
-  }
-
   const FeatherstoneMobilizer<T>& set_angles(
       systems::Context<T>* context,
       const Vector2<T>& angles) const {

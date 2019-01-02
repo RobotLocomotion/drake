@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solver_type_converter.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::Vector4d;
@@ -114,7 +115,10 @@ QuadraticProgram0::QuadraticProgram0(CostForm cost_form,
   }
 }
 
-void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
+void QuadraticProgram0::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const SolverType solver_type =
+      SolverTypeConverter::IdToType(result.get_solver_id()).value();
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kGurobi) {
     tol = 1E-8;
@@ -124,9 +128,9 @@ void QuadraticProgram0::CheckSolution(SolverType solver_type) const {
     // MSK_DPARAM_INTPNT_QO_REL_TOL_GAP to 1E-10 to improve the accuracy.
     tol = 3E-5;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
@@ -202,16 +206,19 @@ QuadraticProgram1::QuadraticProgram1(CostForm cost_form,
   }
 }
 
-void QuadraticProgram1::CheckSolution(SolverType solver_type) const {
+void QuadraticProgram1::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const SolverType solver_type =
+      SolverTypeConverter::IdToType(result.get_solver_id()).value();
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kGurobi) {
     tol = 1E-8;
   } else if (solver_type == SolverType::kMosek) {
     tol = 1E-7;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
@@ -242,16 +249,19 @@ QuadraticProgram2::QuadraticProgram2(CostForm cost_form,
   x_expected_ = -Q_symmetric.llt().solve(b);
 }
 
-void QuadraticProgram2::CheckSolution(SolverType solver_type) const {
+void QuadraticProgram2::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const SolverType solver_type =
+      SolverTypeConverter::IdToType(result.get_solver_id()).value();
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   } else if (solver_type == SolverType::kSnopt) {
     tol = 1E-6;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
@@ -300,14 +310,17 @@ QuadraticProgram3::QuadraticProgram3(CostForm cost_form,
   x_expected_ = -Q_symmetric.llt().solve(b);
 }
 
-void QuadraticProgram3::CheckSolution(SolverType solver_type) const {
+void QuadraticProgram3::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const SolverType solver_type =
+      SolverTypeConverter::IdToType(result.get_solver_id()).value();
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
@@ -352,14 +365,17 @@ QuadraticProgram4::QuadraticProgram4(CostForm cost_form,
   }
 }
 
-void QuadraticProgram4::CheckSolution(SolverType solver_type) const {
+void QuadraticProgram4::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  const SolverType solver_type =
+      SolverTypeConverter::IdToType(result.get_solver_id()).value();
   double tol = GetSolverSolutionDefaultCompareTolerance(solver_type);
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
                               MatrixCompareType::absolute));
-  ExpectSolutionCostAccurate(*prog(), tol);
+  ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
 void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
@@ -403,11 +419,13 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
           (x_desired(0) + x_desired(1) + 1.0) / 2.0;
     }
 
+    optional<Eigen::VectorXd> initial_guess;
     if (solver.solver_id() == SnoptSolver::id()) {
-      prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+      initial_guess.emplace(Eigen::VectorXd::Zero(2));
     }
-    RunSolver(&prog, solver);
-    const auto& x_value = prog.GetSolution(x);
+    const MathematicalProgramResult result =
+        RunSolver(prog, solver, initial_guess);
+    const auto& x_value = prog.GetSolution(x, result);
 
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
                                 MatrixCompareType::absolute));
@@ -424,12 +442,13 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     x_expected << 2.0 / 3.0, 1.0 / 3.0;
 
     prog.SetSolverOption(GurobiSolver::id(), "BarConvTol", 1E-9);
-    ASSERT_NO_THROW(RunSolver(&prog, solver));
+    MathematicalProgramResult result;
+    ASSERT_NO_THROW(result = RunSolver(prog, solver));
 
-    const auto& x_value = prog.GetSolution(x);
+    const auto& x_value = prog.GetSolution(x, result);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
-    ExpectSolutionCostAccurate(prog, 1E-5);
+    ExpectSolutionCostAccurate(prog, result, 1E-5);
   }
 }
 }  // namespace test

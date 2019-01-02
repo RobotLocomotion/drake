@@ -205,18 +205,17 @@ TYPED_TEST(GeoPositionTest, EqualityInequalityOperators) {
 const double kRotationTolerance = 1e-15;
 
 #define CHECK_ALL_ROTATION_ACCESSORS(dut, _w, _x, _y, _z, _ro, _pi, _ya, _ma) \
-  do {                                                                  \
-    EXPECT_TRUE(CompareMatrices(dut.quat().coeffs(),                    \
-                                Vector4<double>(_x, _y, _z, _w),        \
-                                kRotationTolerance));                   \
-    EXPECT_TRUE(CompareMatrices(dut.rpy().vector(),                     \
-                                Vector3<double>(_ro, _pi, _ya),         \
-                                kRotationTolerance));                   \
-    EXPECT_NEAR(dut.roll(), _ro, kRotationTolerance);                   \
-    EXPECT_NEAR(dut.pitch(), _pi, kRotationTolerance);                  \
-    EXPECT_NEAR(dut.yaw(), _ya, kRotationTolerance);                    \
-    EXPECT_TRUE(CompareMatrices(dut.matrix(), _ma,                      \
-                                kRotationTolerance));                   \
+  do {                                                                    \
+    EXPECT_TRUE(CompareMatrices(dut.quat().coeffs(),                      \
+                                Vector4<double>(_x, _y, _z, _w),          \
+                                kRotationTolerance));                     \
+    EXPECT_TRUE(CompareMatrices(dut.rpy().vector(),                       \
+                                Vector3<double>(_ro, _pi, _ya),           \
+                                kRotationTolerance));                     \
+    EXPECT_NEAR(dut.roll(), _ro, kRotationTolerance);                     \
+    EXPECT_NEAR(dut.pitch(), _pi, kRotationTolerance);                    \
+    EXPECT_NEAR(dut.yaw(), _ya, kRotationTolerance);                      \
+    EXPECT_TRUE(CompareMatrices(dut.matrix(), _ma, kRotationTolerance));  \
   } while (0)
 
 

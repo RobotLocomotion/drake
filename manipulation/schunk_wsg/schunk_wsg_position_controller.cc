@@ -119,9 +119,9 @@ SchunkWsgPositionController::SchunkWsgPositionController(double time_step,
 }
 
 void SchunkWsgPositionController::set_initial_position(
-    drake::systems::Context<double>* context, double desired_position) const {
+    drake::systems::State<double>* state, double desired_position) const {
   state_interpolator_->set_initial_position(
-      &this->GetMutableSubsystemContext(*state_interpolator_, context),
+      &this->GetMutableSubsystemState(*state_interpolator_, state),
       Vector1d(desired_position));
 }
 

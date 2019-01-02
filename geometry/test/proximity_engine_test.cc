@@ -1271,7 +1271,7 @@ class BoxPenetrationTest : public ::testing::Test {
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
     const math::RotationMatrixd R_WB(AngleAxisd(-M_PI_4, Vector3d::UnitY()) *
-           AngleAxisd(M_PI_4, Vector3d::UnitX()));
+                                     AngleAxisd(M_PI_4, Vector3d::UnitX()));
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).

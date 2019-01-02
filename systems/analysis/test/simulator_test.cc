@@ -35,6 +35,9 @@ using Eigen::AutoDiffScalar;
 using Eigen::NumTraits;
 using std::complex;
 
+// N.B. internal::GetPreviousNormalizedValue() is tested separately in
+// simulator_denorm_test.cc.
+
 namespace drake {
 namespace systems {
 namespace {

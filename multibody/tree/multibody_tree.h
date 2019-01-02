@@ -15,6 +15,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
+#include "drake/common/random.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/body_node.h"
@@ -929,6 +930,12 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
+  Joint<T>& get_mutable_joint(JointIndex joint_index) {
+    DRAKE_THROW_UNLESS(joint_index < num_joints());
+    return *owned_joints_[joint_index];
+  }
+
+  /// See MultibodyPlant method.
   const JointActuator<T>& get_joint_actuator(
       JointActuatorIndex actuator_index) const {
     DRAKE_THROW_UNLESS(actuator_index < num_actuators());
@@ -1103,6 +1110,19 @@ class MultibodyTree {
         instance_index_to_name_.at(model_instance) + "'.");
   }
 
+  /// Returns a list of body indices associated with `model_instance`.
+  std::vector<BodyIndex> GetBodyIndices(ModelInstanceIndex model_instance)
+  const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    std::vector<BodyIndex> indices;
+    for (auto& body : owned_bodies_) {
+      if (body->model_instance() == model_instance) {
+        indices.emplace_back(body->index());
+      }
+    }
+    return indices;
+  }
+
   /// See MultibodyPlant method.
   const Frame<T>& GetFrameByName(const std::string& name) const {
     return get_frame(
@@ -1150,59 +1170,57 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
-  const Joint<T>& GetJointByName(const std::string& name) const {
-    return get_joint(
-        GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
-  }
-
-  /// See MultibodyPlant method.
-  const Joint<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
-    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
-    const auto range = joint_name_to_index_.equal_range(name);
-    for (auto it = range.first; it != range.second; ++it) {
-      const Joint<T>& joint = get_joint(it->second);
-      if (joint.model_instance() == model_instance) {
-        return joint;
-      }
-    }
-    throw std::logic_error(
-        "There is no joint named '" + name + "' in model instance '" +
-        instance_index_to_name_.at(model_instance) + "'.");
-  }
-
-  /// See MultibodyPlant method.
-  template <template<typename> class JointType>
-  const JointType<T>& GetJointByName(const std::string& name) const {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    const JointType<T>* joint =
-        dynamic_cast<const JointType<T>*>(&GetJointByName(name));
-    if (joint == nullptr) {
-      throw std::logic_error("Joint '" + name + "' is not of type '" +
-          NiceTypeName::Get<JointType<T>>() + "' but of type '" +
-          NiceTypeName::Get(GetJointByName(name)) + "'.");
-    }
-    return *joint;
-  }
-
-  /// See MultibodyPlant method.
-  template <template<typename> class JointType>
+  template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
     static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
                   "JointType<T> must be a sub-class of Joint<T>.");
-    const JointType<T>* joint =
-        dynamic_cast<const JointType<T>*>(
-            &GetJointByName(name, model_instance));
-    if (joint == nullptr) {
+
+    const Joint<T>* joint = nullptr;
+    if (model_instance) {
+      DRAKE_THROW_UNLESS(*model_instance < instance_name_to_index_.size());
+      const auto range = joint_name_to_index_.equal_range(name);
+      for (auto it = range.first; it != range.second; ++it) {
+        const Joint<T>& this_joint = get_joint(it->second);
+        if (this_joint.model_instance() == *model_instance) {
+          joint = &this_joint;
+        }
+      }
+      if (joint == nullptr) {
+        throw std::logic_error(
+            "There is no joint named '" + name + "' in model instance '" +
+            instance_index_to_name_.at(*model_instance) + "'.");
+      }
+    } else {
+      joint = &get_joint(
+          GetElementIndex<JointIndex>(name, "Joint", joint_name_to_index_));
+    }
+
+    const JointType<T>* typed_joint = dynamic_cast<const JointType<T>*>(joint);
+    if (typed_joint == nullptr) {
       throw std::logic_error(
           "Joint '" + name + "' in model instance " +
-          instance_index_to_name_.at(model_instance) + " is not of type '" +
+          instance_index_to_name_.at(*model_instance) + " is not of type '" +
           NiceTypeName::Get<JointType<T>>() + "' but of type '" +
           NiceTypeName::Get(GetJointByName(name)) + "'.");
     }
-    return *joint;
+    return *typed_joint;
+  }
+
+  /// See MultibodyPlant method.
+  template <template <typename> class JointType = Joint>
+  JointType<T>& GetMutableJointByName(
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) {
+    const JointType<T>& const_joint =
+        GetJointByName<JointType>(name, model_instance);
+
+    // Note: Using the const method to implement this non-const one
+    // relies on the fact (true today) that no lower-level MultibodyTree code
+    // needs to know we're obtaining mutable access here. For example,
+    // this wouldn't work if a stored computation needed to be invalidated.
+    return const_cast<JointType<T>&>(const_joint);
   }
 
   /// See MultibodyPlant method.
@@ -1382,11 +1400,13 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
-  void SetDefaultContext(systems::Context<T>* context) const;
-
-  /// See MultibodyPlant method.
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const;
+
+  /// See MultibodyPlant method.
+  void SetRandomState(const systems::Context<T>& context,
+                      systems::State<T>* state,
+                      RandomGenerator* generator) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
@@ -1447,8 +1467,17 @@ class MultibodyTree {
   /// correspond to the context for a multibody model.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @pre `state` must be the systems::State<T> owned by the `context`.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-      systems::Context<T>* context) const;
+      const systems::Context<T>& context, systems::State<T>* state) const;
+
+  /// See GetMutablePositionsAndVelocities(context, state) above.
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
+      systems::Context<T>* context) const {
+    return GetMutablePositionsAndVelocities(*context,
+        &context->get_mutable_state());
+  }
+
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
@@ -1957,6 +1986,14 @@ class MultibodyTree {
     return get_mobilizer_variant(element);
   }
 
+  /// SFINAE overload for Mobilizer<T> elements.
+  template <template <typename> class MultibodyElement, typename Scalar>
+  std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
+      MultibodyElement<T>&> get_mutable_variant(
+      const MultibodyElement<Scalar>& element) {
+    return get_mutable_mobilizer_variant(element);
+  }
+
   /// SFINAE overload for Joint<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Joint<T>, MultibodyElement<T>>::value,
@@ -2376,7 +2413,7 @@ class MultibodyTree {
   template <typename FromScalar>
   Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
     JointIndex joint_index = joint.index();
-    auto joint_clone = joint.CloneToScalar(*this);
+    auto joint_clone = joint.CloneToScalar(this);
     joint_clone->set_parent_tree(this, joint_index);
     joint_clone->set_model_instance(joint.model_instance());
     owned_joints_.push_back(std::move(joint_clone));
@@ -2445,6 +2482,24 @@ class MultibodyTree {
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =
         dynamic_cast<const MobilizerType<T>*>(
+            owned_mobilizers_[mobilizer_index].get());
+    DRAKE_DEMAND(mobilizer_variant != nullptr);
+    return *mobilizer_variant;
+  }
+
+  // TODO(russt): Add mutable accessors for other variants as needed.
+  template <template <typename> class MobilizerType, typename Scalar>
+  MobilizerType<T>& get_mutable_mobilizer_variant(
+      const MobilizerType<Scalar>& mobilizer) {
+    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
+                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    MobilizerIndex mobilizer_index = mobilizer.index();
+    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
+    MobilizerType<T>* mobilizer_variant =
+        dynamic_cast<MobilizerType<T>*>(
             owned_mobilizers_[mobilizer_index].get());
     DRAKE_DEMAND(mobilizer_variant != nullptr);
     return *mobilizer_variant;

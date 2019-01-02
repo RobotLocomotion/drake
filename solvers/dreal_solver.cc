@@ -120,6 +120,11 @@ dreal::Variable::Type convert_type(const symbolic::Variable::Type type) {
       return dreal::Variable::Type::BINARY;
     case symbolic::Variable::Type::BOOLEAN:
       return dreal::Variable::Type::BOOLEAN;
+    case symbolic::Variable::Type::RANDOM_UNIFORM:
+    case symbolic::Variable::Type::RANDOM_GAUSSIAN:
+    case symbolic::Variable::Type::RANDOM_EXPONENTIAL:
+      throw runtime_error(
+          "Random variables are not supported in dReal solver.");
   }
   throw runtime_error("Should be unreachable.");  // LCOV_EXCL_LINE
 }
@@ -431,7 +436,6 @@ T GetOptionWithDefaultValue(const SolverOptions& solver_options,
   }
   return default_value;
 }
-
 
 template <typename T>
 symbolic::Formula ExtractConstraints(const vector<Binding<T>>& bindings) {

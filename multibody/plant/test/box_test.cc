@@ -38,9 +38,6 @@ namespace {
 GTEST_TEST(Box, UnderStiction) {
   DiagramBuilder<double> builder;
 
-  SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
-  scene_graph.set_name("scene_graph");
-
   // Length of the simulation, in seconds.
   const double simulation_time = 2.0;
 
@@ -66,8 +63,9 @@ GTEST_TEST(Box, UnderStiction) {
 
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/plant/test/box.sdf");
-  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>(time_step);
-  Parser(&plant, &scene_graph).AddModelFromFile(full_name);
+  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
+      &builder, std::make_unique<MultibodyPlant<double>>(time_step));
+  Parser(&plant).AddModelFromFile(full_name);
 
   // Add gravity to the model.
   plant.AddForceElement<UniformGravityFieldElement>(
@@ -75,7 +73,6 @@ GTEST_TEST(Box, UnderStiction) {
 
   plant.Finalize();  // Done creating the model.
 
-  const MultibodyTree<double>& tree = plant.tree();
   // Set contact parameters.
   plant.set_penetration_allowance(penetration_allowance);
   plant.set_stiction_tolerance(stiction_tolerance);
@@ -88,16 +85,6 @@ GTEST_TEST(Box, UnderStiction) {
 
   // Two input ports: actuation + geometric queries.
   EXPECT_EQ(plant.get_num_input_ports(), 2);
-
-  // Sanity check on the availability of the optional source id before using it.
-  ASSERT_TRUE(!!plant.get_source_id());
-
-  // Wire up MultibodyPlant with SceneGraph.
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
 
   // And build the Diagram:
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
@@ -135,8 +122,8 @@ GTEST_TEST(Box, UnderStiction) {
       contact_results.contact_info(0);
 
   // Verify the bodies referenced by the contact info.
-  const RigidBody<double>& ground = tree.GetRigidBodyByName("ground");
-  const RigidBody<double>& box = tree.GetRigidBodyByName("box");
+  const Body<double>& ground = plant.GetBodyByName("ground");
+  const Body<double>& box = plant.GetBodyByName("box");
   EXPECT_TRUE(
       (contact_info.bodyA_index() == box.index() &&
        contact_info.bodyB_index() == ground.index()) ||

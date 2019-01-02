@@ -306,15 +306,19 @@ void MultibodyTree<T>::CreateModelInstances() {
 }
 
 template <typename T>
-void MultibodyTree<T>::SetDefaultContext(systems::Context<T> *context) const {
-  SetDefaultState(*context, &context->get_mutable_state());
-}
-
-template <typename T>
 void MultibodyTree<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   for (const auto& mobilizer : owned_mobilizers_) {
     mobilizer->set_zero_state(context, state);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::SetRandomState(const systems::Context<T>& context,
+                                      systems::State<T>* state,
+                                      RandomGenerator* generator) const {
+  for (const auto& mobilizer : owned_mobilizers_) {
+    mobilizer->set_random_state(context, state, generator);
   }
 }
 
@@ -350,14 +354,14 @@ VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
 template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::GetMutablePositionsAndVelocities(
-    systems::Context<T>* context) const {
-  DRAKE_DEMAND(context != nullptr);
-  auto* mbt_context = dynamic_cast<MultibodyTreeContext<T>*>(context);
+    const systems::Context<T>& context, systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto* mbt_context = dynamic_cast<const MultibodyTreeContext<T>*>(&context);
   if (mbt_context == nullptr) {
     throw std::runtime_error(
         "The context provided is not compatible with a multibody model.");
   }
-  return mbt_context->get_mutable_state_vector();
+  return mbt_context->get_mutable_state_vector(state);
 }
 
 template <typename T>

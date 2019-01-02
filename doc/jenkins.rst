@@ -49,7 +49,8 @@ For example:
 Alternatively, to schedule a build of an open pull request or arbitrary commit
 in the ``RobotLocomotion/drake`` repository:
 
-1. Log in to `Jenkins <https://drake-jenkins.csail.mit.edu/>`_ using GitHub OAuth.
+1. **Log in** to `Jenkins <https://drake-jenkins.csail.mit.edu/>`_ using GitHub OAuth.
+   (Make sure that you see your name the upper-right corner, *not* the words "Log in".)
 2. Go to the `list of experimental builds <https://drake-jenkins.csail.mit.edu/view/Experimental/>`_.
 3. Click on the specific build you want to schedule.
 4. Click on "Build with Parameters" in the left menu.

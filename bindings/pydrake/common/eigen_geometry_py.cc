@@ -87,7 +87,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
   {
     using Class = Isometry3<T>;
     py::class_<Class> py_class(m, "Isometry3");
-    py_class
+    py_class  // BR
         .def(py::init([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(py::init([](const Matrix4<T>& matrix) {
@@ -175,7 +175,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
     py_class.attr("__doc__") =
         "Provides a unit quaternion binding of Eigen::Quaternion<>.";
     py::object py_class_obj = py_class;
-    py_class
+    py_class  // BR
         .def(py::init([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(py::init([](const Vector4<T>& wxyz) {
@@ -261,7 +261,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
     py::class_<Class> py_class(m, "AngleAxis");
     py_class.attr("__doc__") = "Bindings for Eigen::AngleAxis<>.";
     py::object py_class_obj = py_class;
-    py_class
+    py_class  // BR
         .def(py::init([]() { return Class::Identity(); }))
         .def_static("Identity", []() { return Class::Identity(); })
         .def(py::init([](const T& angle, const Vector3<T>& axis) {

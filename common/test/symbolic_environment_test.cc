@@ -123,6 +123,34 @@ TEST_F(EnvironmentTest, LookupOperator) {
   EXPECT_THROW(const_env[var_dummy_], runtime_error);
 }
 
+TEST_F(EnvironmentTest, PopulateRandomVariables) {
+  const Variable uni{"uni", Variable::Type::RANDOM_UNIFORM};
+  const Variable gau{"gau", Variable::Type::RANDOM_GAUSSIAN};
+  const Variable exp{"exp", Variable::Type::RANDOM_EXPONENTIAL};
+  const Environment env1{{var_x_, 2}};
+  RandomGenerator g{};
+
+  // PopulateRandomVariables should add entries for the three random variables.
+  const Environment env2{
+      PopulateRandomVariables(env1, {var_x_, uni, gau, exp}, &g)};
+  EXPECT_EQ(env2.size(), 4);
+  EXPECT_TRUE(env2.find(uni) != env1.end());
+  EXPECT_TRUE(env2.find(gau) != env1.end());
+  EXPECT_TRUE(env2.find(exp) != env1.end());
+
+  // PopulateRandomVariables should add entries for the unassigned random
+  // variables, gau and exp. But it should keep the original assignment `uni ↦
+  // 10.0`.
+  const Environment env3{{var_x_, 2}, {uni, 10.0}};
+  const Environment env4{
+      PopulateRandomVariables(env3, {var_x_, uni, gau, exp}, &g)};
+  EXPECT_EQ(env4.size(), 4);
+  EXPECT_TRUE(env4.find(uni) != env1.end());
+  EXPECT_TRUE(env4.find(gau) != env1.end());
+  EXPECT_TRUE(env4.find(exp) != env1.end());
+  EXPECT_EQ(env4[uni], 10.0);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/random.h"
 
 namespace drake {
 namespace systems {

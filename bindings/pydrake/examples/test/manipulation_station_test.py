@@ -34,16 +34,16 @@ class TestManipulationStation(unittest.TestCase):
         context = station.CreateDefaultContext()
         q = np.linspace(0.04, 0.6, num=7)
         v = np.linspace(-2.3, 0.5, num=7)
-        station.SetIiwaPosition(q, context)
+        station.SetIiwaPosition(context, q)
         np.testing.assert_array_equal(q, station.GetIiwaPosition(context))
-        station.SetIiwaVelocity(v, context)
+        station.SetIiwaVelocity(context, v)
         np.testing.assert_array_equal(v, station.GetIiwaVelocity(context))
 
         q = 4.23
         v = 8.51
-        station.SetWsgPosition(q, context)
+        station.SetWsgPosition(context, q)
         self.assertEqual(q, station.GetWsgPosition(context))
-        station.SetWsgVelocity(v, context)
+        station.SetWsgVelocity(context, v)
         self.assertEqual(v, station.GetWsgVelocity(context))
 
         station.GetStaticCameraPosesInWorld()["0"]

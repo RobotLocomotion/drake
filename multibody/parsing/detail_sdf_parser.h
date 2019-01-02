@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -29,6 +30,8 @@ namespace detail {
 /// @param model_name
 ///   The name given to the newly created instance of this model.  If
 ///   empty, the "name" attribute from the model tag will be used.
+/// @param package_map
+///   An object that maps ROS packages to their full pathnames.
 /// @param plant
 ///   A pointer to a mutable MultibodyPlant object to which the model will be
 ///   added.
@@ -39,6 +42,7 @@ namespace detail {
 ModelInstanceIndex AddModelFromSdfFile(
     const std::string& file_name,
     const std::string& model_name,
+    const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 
@@ -59,15 +63,17 @@ ModelInstanceIndex AddModelFromSdfFile(
 /// @param plant
 ///   A pointer to a mutable MultibodyPlant object to which the model will be
 ///   added.
+/// @param package_map
+///   An object that maps ROS packages to their full pathnames.
 /// @param scene_graph
 ///   A pointer to a mutable SceneGraph object used for geometry registration
 ///   (either to model visual or contact geometry).  May be nullptr.
 /// @returns The set of model instance indices for the newly added models.
 std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
     const std::string& file_name,
+    const PackageMap& package_map,
     MultibodyPlant<double>* plant,
     geometry::SceneGraph<double>* scene_graph = nullptr);
-
 }  // namespace detail
 }  // namespace multibody
 }  // namespace drake

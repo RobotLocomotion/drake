@@ -151,9 +151,9 @@ int do_main(int argc, char* argv[]) {
   q0 << 0, 0.6, 0, -1.75, 0, 1.0, 0;
   iiwa_command->set_initial_position(
       &diagram->GetMutableSubsystemContext(*iiwa_command, &context), q0);
-  station->SetIiwaPosition(q0, &station_context);
+  station->SetIiwaPosition(&station_context, q0);
   const VectorXd qdot0 = VectorXd::Zero(7);
-  station->SetIiwaVelocity(qdot0, &station_context);
+  station->SetIiwaVelocity(&station_context, qdot0);
 
   // Place the object in the center of the table in front of the robot.
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();

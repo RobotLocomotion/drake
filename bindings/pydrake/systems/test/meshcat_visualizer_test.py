@@ -5,7 +5,8 @@ import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.multibody_tree import UniformGravityFieldElement
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.multibody_tree.multibody_plant import (
+    AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
@@ -19,17 +20,11 @@ class TestMeshcat(unittest.TestCase):
             "drake/examples/multibody/cart_pole/cart_pole.sdf")
 
         builder = DiagramBuilder()
-        scene_graph = builder.AddSystem(SceneGraph())
-        cart_pole = builder.AddSystem(MultibodyPlant())
-        parser = Parser(plant=cart_pole, scene_graph=scene_graph)
-        parser.AddModelFromFile(file_name)
+        cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant=cart_pole).AddModelFromFile(file_name)
         cart_pole.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
-        cart_pole.Finalize(scene_graph)
+        cart_pole.Finalize()
         assert cart_pole.geometry_source_is_registered()
-
-        builder.Connect(
-            cart_pole.get_geometry_poses_output_port(),
-            scene_graph.get_source_pose_port(cart_pole.get_source_id()))
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
                                                          zmq_url=None,
@@ -61,17 +56,10 @@ class TestMeshcat(unittest.TestCase):
             "drake/manipulation/models/iiwa_description/sdf/"
             "iiwa14_no_collision.sdf")
         builder = DiagramBuilder()
-        scene_graph = builder.AddSystem(SceneGraph())
-        kuka = builder.AddSystem(MultibodyPlant())
-        parser = Parser(plant=kuka, scene_graph=scene_graph)
-        parser.AddModelFromFile(file_name)
+        kuka, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant=kuka).AddModelFromFile(file_name)
         kuka.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
-        kuka.Finalize(scene_graph)
-        assert kuka.geometry_source_is_registered()
-
-        builder.Connect(
-            kuka.get_geometry_poses_output_port(),
-            scene_graph.get_source_pose_port(kuka.get_source_id()))
+        kuka.Finalize()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
                                                          zmq_url=None,

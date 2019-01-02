@@ -131,6 +131,9 @@ def cpplint(
         if "nolint" in rule.get("tags"):
             # Disable linting when requested (e.g., for generated code).
             continue
+        use_clang_lint = enable_clang_format_lint and (
+            "nolint_clang_format" not in rule.get("tags")
+        )
 
         # Extract the list of C++ source code labels and convert to filenames.
         candidate_labels = (
@@ -151,7 +154,7 @@ def cpplint(
                 source_filenames,
                 name = rule["name"],
                 data = data,
-                enable_clang_format_lint = enable_clang_format_lint,
+                enable_clang_format_lint = use_clang_lint,
             )
 
     # Lint all of the extra_srcs separately in a single rule.

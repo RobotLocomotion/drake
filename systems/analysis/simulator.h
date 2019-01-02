@@ -14,6 +14,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -640,10 +641,59 @@ Simulator<T>::Simulator(const System<T>* system,
   event_handler_xc_ = system_.AllocateTimeDerivatives();
 }
 
+#ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
+// This function computes the previous (i.e., that which is one step closer to
+// negative infinity) *non-denormalized* (i.e., either zero or normalized)
+// floating-point number from `value`. nexttoward() provides very similar
+// functionality except for its proclivity for producing denormalized numbers
+// that typically only result from arithmetic underflow and are hence dangerous
+// to use in further floating point operations. Thus,
+// GetPreviousNormalizedValue() acts like nexttoward(value, -inf) but without
+// producing denormalized numbers.
+// @param value a floating point value that is not infinity or NaN. Denormalized
+//        inputs are treated as zero to attain consistent behavior regardless
+//        of the setting of the FPU "treat denormalized numbers as zero" mode
+//        (which can be activated through linking with shared libraries that
+//        use gcc's -ffast-math option).
+template <class T>
+T GetPreviousNormalizedValue(const T& value) {
+  using std::nexttoward;
+  using std::abs;
+
+  // There are three distinct cases to be handled:
+  //     -∞        -10⁻³⁰⁸  0      10⁻³⁰⁸      ∞
+  //     |-----------|------|------|----------|
+  // (a) ^           ^              ^         ^   [-∞, 10⁻³⁰⁸] ∪ (10³⁰⁸, ∞]
+  // (b)              ^           ^               (-10⁻³⁰⁸, 10⁻³⁰⁸)
+  // (c)                           ^              10⁻³⁰⁸
+
+  // Treat denormalized numbers as zero. This code is designed to produce the
+  // same outputs for `value` regardless of the setting of the FPU's DAZ ("treat
+  // denormalized numbers as zero") mode.
+  const double min_normalized = std::numeric_limits<double>::min();
+  const T& value_mod = (abs(value) < min_normalized) ? 0.0 : value;
+
+  // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf)
+  // returns denormalized numbers for these two values.
+  if (value_mod == 0.0)
+    return -std::numeric_limits<double>::min();
+  if (value_mod == min_normalized)
+    return 0.0;
+
+  // Case (a) uses nexttoward(.).
+  const long double inf = std::numeric_limits<long double>::infinity();
+  const double prev_value = nexttoward(value, -inf);
+  DRAKE_DEMAND(
+      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
+      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
+  return prev_value;
+}
+}  // namespace internal
+#endif
+
 template <typename T>
 void Simulator<T>::Initialize() {
-  using std::nexttoward;
-
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
 
@@ -674,8 +724,9 @@ void Simulator<T>::Initialize() {
   // Ensure that CalcNextUpdateTime() can return the current time by perturbing
   // current time as slightly toward negative infinity as we can allow.
   const T current_time = context_->get_time();
-  const long double inf = std::numeric_limits<long double>::infinity();
-  context_->set_time(nexttoward(current_time, -inf));
+  const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
+      current_time);
+  context_->set_time(slightly_before_current_time);
 
   // Get the next timed event.
   next_timed_event_time_ =

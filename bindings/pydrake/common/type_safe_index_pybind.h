@@ -16,7 +16,7 @@ template <typename Type>
 auto BindTypeSafeIndex(
     py::module m, const std::string& name, const std::string& class_doc = "") {
   py::class_<Type> cls(m, name.c_str(), class_doc.c_str());
-  cls
+  cls  // BR
       .def(py::init<int>(), pydrake_doc.drake.TypeSafeIndex.ctor.doc_2)
       .def("__int__", &Type::operator int)
       .def("__eq__",

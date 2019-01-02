@@ -22,6 +22,9 @@ namespace {
 // Simple example which simulates the Acrobot, started near the upright, with an
 // LQR controller designed to stabilize the unstable fixed point.  Run
 // drake-visualizer to see the animated result.
+//
+// Note: See also examples/multibody/acrobot for an almost identical test
+// using the MultibodyPlant version of the Acrobot dynamics.
 
 DEFINE_double(simulation_sec, 10.0,
               "Number of seconds to simulate.");

@@ -42,7 +42,7 @@ class PackageMap {
   void PopulateFromFolder(const std::string& path);
 
   /// Obtains one or more paths from environment variable
-  /// @p environment_variable. Crawls downard through the directory tree(s)
+  /// @p environment_variable. Crawls downward through the directory tree(s)
   /// starting from the path(s) searching for `package.xml` files. For each of
   /// these files, this method adds a new entry into this PackageMap where the
   /// key is the package name as specified within `package.xml` and the value is

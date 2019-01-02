@@ -151,9 +151,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       : MultibodyTreeSystem(converter, true,  // Null tree is OK here.
                             std::move(tree), is_discrete) {}
 
-  /** Returns a mutable reference to the MultibodyTree owned by this class.
-  The tree must _not_ have been finalized.
-  @throws std::logic_error if the tree has already been finalized. */
+  /** Returns a mutable reference to the MultibodyTree owned by this class. */
   MultibodyTree<T>& mutable_tree() const;
 
   /** Finalize the tree if that hasn't already been done, complete System

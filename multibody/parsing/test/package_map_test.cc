@@ -71,7 +71,9 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
         "package_map_test_package_c/"},
     {"package_map_test_package_d", root_path +
         "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_d/"}
+        "package_map_test_package_d/"},
+    {"box_model", root_path +
+        "box_package/"},
   };
 
   VerifyMatch(package_map, expected_packages);
@@ -95,7 +97,9 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
         "package_map_test_package_c/"},
     {"package_map_test_package_d", root_path +
         "package_map_test_packages/package_map_test_package_set/"
-        "package_map_test_package_d/"}
+        "package_map_test_package_d/"},
+    {"box_model", root_path +
+        "box_package/"},
   };
 
   VerifyMatch(package_map, expected_packages);

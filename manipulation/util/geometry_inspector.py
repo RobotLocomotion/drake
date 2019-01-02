@@ -6,28 +6,25 @@ the resulting geometry poses to drake_visualizer.
 If you wish to simply load a model and show it in multiple visualizers, see
 `show_model`.
 
-Examples:
+Example usages, all executed from the Drake root directory after geometry
+inspector has been built (using, e.g.,`bazel build :geometry_inspector`):
+./bazel-bin/manipulation/util/geometry_inspector \
+  ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
 
-    # Build everything necessary.
-    bazel build //tools:drake_visualizer //manipulation/util:geometry_inspector
+bazel-bin/manipulation/util/geometry_inspector \
+  ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
 
-    # Terminal 1 - Visualizer.
-    ./bazel-bin/tools/drake_visualizer
-
-    # Terminal 2 - Show IIWA.
-    ./bazel-bin/manipulation/util/geometry_inspector \
-        ./manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf
-    # - Ctrl+C, then show acrobot.
-    ./bazel-bin/manipulation/util/geometry_inspector \
-        ./multibody/benchmarks/acrobot/acrobot.sdf --position 0.1 0.2
-
-NOTE: If you use `bazel run`, it is highly encouraged that you use absolute
-paths, as certain models may not be prerequisites of this binary.
+rosrun xacro xacro.py \
+    /path/to/ros/pr2_description/robots/pr2.urdf.xacro >
+    /path/to/ros/pr2_description/robots/pr2.urdf
+./bazel-bin/manipulation/util/geometry_inspector \
+  --package_path=/path/to/ros/pr2_description \
+  /path/to/ros/pr2_description/robots/pr2.urdf
 """
 
-from __future__ import print_function
 import argparse
 import os
+import sys
 
 import numpy as np
 
@@ -35,19 +32,25 @@ from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.manipulation.simple_ui import JointSliders
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.parsing import PackageMap
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
 
 
 def main():
-    parser = argparse.ArgumentParser(
+    args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument(
+    args_parser.add_argument(
         "filename", type=str,
         help="Path to an SDF or URDF file.")
-    position_group = parser.add_mutually_exclusive_group()
+    args_parser.add_argument(
+        "--package_path",
+        type=str,
+        default=None,
+        help="Full path to the root package for reading in SDF resources.")
+    position_group = args_parser.add_mutually_exclusive_group()
     position_group.add_argument(
         "--position", type=float, nargs="+", default=[],
         help="A list of positions which must be the same length as the number "
@@ -61,23 +64,39 @@ def main():
              "of positions ASSOCIATED WITH JOINTS in the sdf model.  This "
              "does not include, e.g., floating-base coordinates, which will "
              "be assigned a default value.")
-    parser.add_argument(
+    args_parser.add_argument(
         "--test", action='store_true',
         help="Disable opening the gui window for testing.")
     # TODO(russt): Add option to weld the base to the world pending the
     # availability of GetUniqueBaseBody requested in #9747.
-    args = parser.parse_args()
+    args = args_parser.parse_args()
     filename = args.filename
     if not os.path.isfile(filename):
-        parser.error("File does not exist: {}".format(filename))
+        args_parser.error("File does not exist: {}".format(filename))
 
     builder = DiagramBuilder()
     scene_graph = builder.AddSystem(SceneGraph())
 
-    # Construct a MultibodyPlant and load the SDF into it.
+    # Construct a MultibodyPlant.
     plant = MultibodyPlant()
     plant.RegisterAsSourceForSceneGraph(scene_graph)
-    Parser(plant).AddModelFromFile(filename)
+
+    # Create the parser.
+    parser = Parser(plant)
+
+    # Get the package pathname.
+    if args.package_path:
+        # Verify that package.xml is found in the designated path.
+        package_path = os.path.abspath(args.package_path)
+        if not os.path.isfile(os.path.join(package_path, "package.xml")):
+            parser.error("package.xml not found at: {}".format(package_path))
+
+        # Get the package map and populate it using the package path.
+        package_map = parser.package_map()
+        package_map.PopulateFromFolder(package_path)
+
+    # Add the model from the file and finalize the plant.
+    parser.AddModelFromFile(filename)
     plant.Finalize(scene_graph)
 
     # Add sliders to set positions of the joints.

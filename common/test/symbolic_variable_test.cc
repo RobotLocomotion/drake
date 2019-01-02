@@ -374,6 +374,54 @@ TEST_F(VariableTest, MakeMatrixIntegerVariable) {
   EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::INTEGER);
 }
 
+// Shows that a random uniform variable and std::uniform_real_distribution with
+// [0, 1) show the same behavior when the same random number generator is
+// passed.
+TEST_F(VariableTest, RandomUniform) {
+  RandomGenerator generator{};
+  RandomGenerator generator_copy{generator};
+
+  const Variable v{"v", Variable::Type::RANDOM_UNIFORM};
+  const double sample{Expression{v}.Evaluate(&generator)};
+
+  std::uniform_real_distribution<double> d(0.0, 1.0);  // [0, 1).
+  const double expected{d(generator_copy)};
+
+  EXPECT_EQ(sample, expected);
+}
+
+// Shows that a random Gaussian variable and std::normal_distribution with (mean
+// = 0.0, stddev = 1.0) show the same behavior when the same random number
+// generator is passed.
+TEST_F(VariableTest, RandomGaussian) {
+  RandomGenerator generator{};
+  RandomGenerator generator_copy{generator};
+
+  const Variable v{"v", Variable::Type::RANDOM_GAUSSIAN};
+  const double sample{Expression{v}.Evaluate(&generator)};
+
+  std::normal_distribution<double> d(0.0, 1.0);  // mean = 0, stddev = 1.0.
+  const double expected{d(generator_copy)};
+
+  EXPECT_EQ(sample, expected);
+}
+
+// Shows that a random exponential variable and std::exponential_distribution
+// with lambda = 1.0 show the same behavior when the same random number
+// generator is passed.
+TEST_F(VariableTest, RandomExponential) {
+  RandomGenerator generator{};
+  RandomGenerator generator_copy{generator};
+
+  const Variable v{"v", Variable::Type::RANDOM_EXPONENTIAL};
+  const double sample{Expression{v}.Evaluate(&generator)};
+
+  std::exponential_distribution<double> d(1.0);  // lambda = 1.0.
+  const double expected{d(generator_copy)};
+
+  EXPECT_EQ(sample, expected);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

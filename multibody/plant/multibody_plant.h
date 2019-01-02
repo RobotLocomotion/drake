@@ -3,6 +3,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -10,6 +11,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
+#include "drake/common/random.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/contact_results.h"
@@ -21,6 +23,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -472,6 +475,27 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         head(num_positions());
   }
 
+  /// (Advanced) Returns a mutable vector reference containing the vector
+  /// of generalized positions (**see warning**).
+  /// @note This method returns a reference to existing data, exhibits constant
+  ///       i.e., O(1) time complexity, and runs very quickly.
+  /// @warning You should use SetPositions() instead of this method
+  ///          unless you are fully aware of the possible interactions with the
+  ///          caching mechanism (see @ref dangerous_get_mutable).
+  /// @throws std::exception if the `state` is nullptr or if the context does
+  ///         not correspond to the context for a multibody model.
+  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
+      const systems::Context<T>& context, systems::State<T>* state) const {
+    // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
+    // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
+    // we can call head() on it.
+    return tree()
+        .GetMutablePositionsAndVelocities(context, state)
+        .nestedExpression()
+        .head(num_positions());
+  }
+
   /// Sets all generalized positions from the given vector.
   /// @throws std::exception if the `context` is nullptr, if the context does
   /// not correspond to the context for a multibody model, or if the length of
@@ -489,6 +513,19 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       systems::Context<T>* context,
       ModelInstanceIndex model_instance, const VectorX<T>& q_instance) const {
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context);
+    tree().SetPositionsInArray(model_instance, q_instance, &q);
+  }
+
+  /// Sets the positions for a particular model instance from the given vector.
+  /// @throws std::exception if the `state` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, if the model instance
+  /// index is invalid, or if the length of `q_instance` is not equal to
+  /// `num_positions(model_instance)`.
+  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  void SetPositions(const systems::Context<T>& context,
+                    systems::State<T>* state, ModelInstanceIndex model_instance,
+                    const VectorX<T>& q_instance) const {
+    Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
     tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
@@ -526,13 +563,22 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///          caching mechanism (see @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or the context does
   /// not correspond to the context for a multibody model.
+  /// @pre `state` must be the systems::State<T> owned by the `context`.
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
-      systems::Context<T>* context) const {
+      const systems::Context<T>& context, systems::State<T>* state) const {
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
     // we can call tail() on it.
-    return GetMutablePositionsAndVelocities(context).nestedExpression().
-        tail(num_velocities());
+    return tree()
+        .GetMutablePositionsAndVelocities(context, state)
+        .nestedExpression()
+        .tail(num_velocities());
+  }
+
+  /// See GetMutableVelocities() method above.
+  Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
+      systems::Context<T>* context) const {
+    return GetMutableVelocities(*context, &context->get_mutable_state());
   }
 
   /// Sets all generalized velocities from the given vector.
@@ -541,6 +587,20 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// `v` is not equal to `num_velocities()`.
   void SetVelocities(systems::Context<T>* context, const VectorX<T>& v) const {
     GetMutableVelocities(context) = v;
+  }
+
+  /// Sets the generalized velocities for a particular model instance from the
+  /// given vector.
+  /// @throws std::exception if the `context` is nullptr, if the context does
+  /// not correspond to the context for a multibody model, if the model instance
+  /// index is invalid, or if the length of `v_instance` is not equal to
+  /// `num_velocities(model_instance)`.
+  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  void SetVelocities(
+      const systems::Context<T>& context, systems::State<T>* state,
+      ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
+    tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
 
   /// Sets the generalized velocities for a particular model instance from the
@@ -961,6 +1021,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().GetBodyByName(name, model_instance);
   }
 
+  /// Returns a list of body indices associated with `model_instance`.
+  std::vector<BodyIndex> GetBodyIndices(ModelInstanceIndex model_instance)
+  const {
+    return tree().GetBodyIndices(model_instance);
+  }
+
   /// Returns a constant reference to a frame that is identified by the
   /// string `name` in `this` model.
   /// @throws std::logic_error if there is no frame with the requested name.
@@ -1010,46 +1076,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Returns a constant reference to a joint that is identified
-  /// by the string `name` in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no joint with the requested name.
-  /// @throws std::logic_error if the joint name occurs in multiple model
-  /// instances.
-  /// @see HasJointNamed() to query if there exists a joint in `this`
-  /// %MultibodyPlant with a given specified name.
-  const Joint<T>& GetJointByName(const std::string& name) const {
-    return tree().GetJointByName(name);
-  }
-
-  /// Returns a constant reference to the joint that is uniquely identified
-  /// by the string `name` and @p model_instance in `this` %MultibodyPlant.
-  /// @throws std::logic_error if there is no joint with the requested name.
-  /// @throws std::exception if @p model_instance is not valid for this model.
-  /// @see HasJointNamed() to query if there exists a joint in `this`
-  /// %MultibodyPlant with a given specified name.
-  const Joint<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
-    return tree().GetJointByName(name, model_instance);
-  }
-
-  /// A templated version of GetJointByName() to return a constant reference of
-  /// the specified type `JointType` in place of the base Joint class. See
-  /// GetJointByName() for details.
-  /// @tparam JointType The specific type of the Joint to be retrieved. It must
-  /// be a subclass of Joint.
-  /// @throws std::logic_error if the named joint is not of type `JointType` or
-  /// if there is no Joint with that name.
-  /// @throws std::logic_error if the joint name occurs in multiple model
-  /// instances.
-  /// @see HasJointNamed() to query if there exists a joint in `this`
-  /// %MultibodyPlant with a given specified name.
-  template <template<typename> class JointType>
-  const JointType<T>& GetJointByName(const std::string& name) const {
-    return tree().template GetJointByName<JointType>(name);
-  }
-
-  /// A templated version of GetJointByName() to return a constant reference of
-  /// the specified type `JointType` in place of the base Joint class. See
-  /// GetJointByName() for details.
+  /// by the string `name` in `this` %MultibodyPlant.  If the optional
+  /// template argument is supplied, then the returned value is downcast to
+  /// the specified `JointType`.
   /// @tparam JointType The specific type of the Joint to be retrieved. It must
   /// be a subclass of Joint.
   /// @throws std::logic_error if the named joint is not of type `JointType` or
@@ -1057,10 +1086,21 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @throws std::exception if @p model_instance is not valid for this model.
   /// @see HasJointNamed() to query if there exists a joint in `this`
   /// %MultibodyPlant with a given specified name.
-  template <template<typename> class JointType>
+  template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
-      const std::string& name, ModelInstanceIndex model_instance) const {
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
     return tree().template GetJointByName<JointType>(name, model_instance);
+  }
+
+  /// A version of GetJointByName that returns a mutable reference.
+  /// @see GetJointByName.
+  template <template <typename> class JointType = Joint>
+  JointType<T>& GetMutableJointByName(
+      const std::string& name,
+      optional<ModelInstanceIndex> model_instance = nullopt) {
+    return this->mutable_tree().template GetMutableJointByName<JointType>(
+        name, model_instance);
   }
 
   /// Returns a constant reference to an actuator that is identified
@@ -2432,6 +2472,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return tree().get_joint(joint_index);
   }
 
+  /// Returns a mutable reference to the joint with unique index `joint_index`.
+  /// @throws std::runtime_error when `joint_index` does not correspond to a
+  /// joint in this model.
+  Joint<T>& get_mutable_joint(JointIndex joint_index) {
+    return this->mutable_tree().get_mutable_joint(joint_index);
+  }
+
   /// Returns a constant reference to the joint actuator with unique index
   /// `actuator_index`.
   /// @throws std::exception if `actuator_index` does not correspond to a joint
@@ -2641,7 +2688,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     // parameter. Pre-Finalize the solver is not yet created and therefore we
     // check for nullptr.
     if (is_discrete() && implicit_stribeck_solver_ != nullptr) {
-      implicit_stribeck::Parameters solver_parameters =
+      ImplicitStribeckSolverParameters solver_parameters =
           implicit_stribeck_solver_->get_solver_parameters();
       solver_parameters.stiction_tolerance =
           stribeck_model_.stiction_tolerance();
@@ -2649,14 +2696,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     }
   }
   /// @}
-
-  /// Sets default values in the context. For mobilizers, this method sets them
-  /// to their _zero_ state according to Mobilizer::set_zero_state().
-  void SetDefaultContext(systems::Context<T>* context) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_DEMAND(context != nullptr);
-    tree().SetDefaultContext(context);
-  }
 
   /// Sets the state in `context` so that generalized positions and velocities
   /// are zero.
@@ -2666,6 +2705,20 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     DRAKE_DEMAND(state != nullptr);
     tree().SetDefaultState(context, state);
+  }
+
+  /// Assigns random values to all elements of the state, by drawing samples
+  /// independently for each joint/floating-base (coming soon: and then
+  /// solving a mathematical program to "project" these samples onto the
+  /// registered system constraints).
+  ///
+  /// @see @ref stochastic_systems
+  void SetRandomState(const systems::Context<T>& context,
+                      systems::State<T>* state,
+                      RandomGenerator* generator) const override {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_DEMAND(state != nullptr);
+    tree().SetRandomState(context, state, generator);
   }
 
   using MultibodyTreeSystem<T>::is_discrete;
@@ -2787,7 +2840,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // to perform the update using a step size dt_substep = dt/num_substeps.
   // During the time span dt the problem data M, Jn, Jt and minus_tau, are
   // approximated to be constant, a first order approximation.
-  implicit_stribeck::ComputationInfo SolveUsingSubStepping(
+  ImplicitStribeckSolverResult SolveUsingSubStepping(
       int num_substeps,
       const MatrixX<T>& M0, const MatrixX<T>& Jn, const MatrixX<T>& Jt,
       const VectorX<T>& minus_tau,
@@ -3135,8 +3188,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   double time_step_{0};
 
   // The solver used when the plant is modeled as a discrete system.
-  std::unique_ptr<implicit_stribeck::ImplicitStribeckSolver<T>>
-      implicit_stribeck_solver_;
+  std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
 
   // TODO(sherm1) Add CacheIndex members here for cache entries that belong to
   //              MBPlant, not MBTree.
@@ -3164,6 +3216,111 @@ using MultibodyPlant
     = ::drake::multibody::MultibodyPlant<T>;
 }  // namespace multibody_plant
 #endif  // DRAKE_DOXYGEN_CXX
+
+// Forward declare to permit exclusive friendship for construction.
+template <typename T>
+struct AddMultibodyPlantSceneGraphResult;
+
+/// Adds a MultibodyPlant and a SceneGraph instance to a diagram builder,
+/// connecting the geometry ports.
+/// @param[in,out] builder
+///   Builder to add to.
+/// @param[in] plant (optional)
+///   Constructed plant (e.g. for using a discrete plant). By default, a
+///   continuous plant is used.
+/// @param[in] scene_graph (optional)
+///   Constructed scene graph. If none is provided, one will be created and
+///   used.
+/// @return Pair of the registered plant and scene graph.
+/// @pre `builder` must be non-null.
+///
+/// Recommended usages:
+///
+/// Assign to a MultibodyPlant reference (ignoring the SceneGraph):
+/// @code
+///   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder);
+///   plant.DoFoo(...);
+/// @endcode
+/// This flavor is the simplest, when the SceneGraph is not explicitly needed.
+/// (It can always be retrieved later via GetSubsystemByName("scene_graph").)
+///
+/// Assign to auto, and use the named public fields:
+/// @code
+///   auto items = AddMultibodyPlantSceneGraph(&builder);
+///   items.plant.DoFoo(...);
+///   items.scene_graph.DoBar(...);
+/// @endcode
+/// or
+/// @code
+///   auto items = AddMultibodyPlantSceneGraph(&builder);
+///   MultibodyPlant<double>& plant = items.plant;
+///   SceneGraph<double>& scene_graph = items.scene_graph;
+///   ...
+///   plant.DoFoo(...);
+///   scene_graph.DoBar(...);
+/// @endcode
+/// This is the easiest way to use both the plant and scene_graph.
+///
+/// Assign to already-declared pointer variables:
+/// @code
+///   MultibodyPlant<double>* plant{};
+///   SceneGraph<double>* scene_graph{};
+///   std::tie(plant, scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+///   plant->DoFoo(...);
+///   scene_graph->DoBar(...);
+/// @endcode
+/// This flavor is most useful when the pointers are class member fields
+/// (and so perhaps cannot be references).
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T>
+AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,
+    std::unique_ptr<MultibodyPlant<T>> plant = nullptr,
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
+
+/// Temporary result from `AddMultibodyPlantSceneGraph`. This cannot be
+/// constructed outside of this method.
+/// @warning Do NOT use this as a function argument or member variable. The
+/// lifetime of this object should be as short as possible.
+template <typename T>
+struct AddMultibodyPlantSceneGraphResult final {
+  MultibodyPlant<T>& plant;
+  geometry::SceneGraph<T>& scene_graph;
+
+  /// For assignment to a plant reference (ignoring the scene graph).
+  operator MultibodyPlant<T>&() { return plant; }
+
+  /// For assignment to a std::tie of pointers.
+  operator std::tuple<MultibodyPlant<T>*&, geometry::SceneGraph<T>*&>() {
+    return std::tie(plant_ptr, scene_graph_ptr);
+  }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // Only the move constructor is enabled; copy/assign/move-assign are deleted.
+  AddMultibodyPlantSceneGraphResult(
+      AddMultibodyPlantSceneGraphResult&&) = default;
+  AddMultibodyPlantSceneGraphResult(
+      const AddMultibodyPlantSceneGraphResult&) = delete;
+  void operator=(const AddMultibodyPlantSceneGraphResult&) = delete;
+  void operator=(AddMultibodyPlantSceneGraphResult&&) = delete;
+#endif
+
+ private:
+  // Deter external usage by hiding construction.
+  friend AddMultibodyPlantSceneGraphResult AddMultibodyPlantSceneGraph<T>(
+    systems::DiagramBuilder<T>*, std::unique_ptr<MultibodyPlant<T>>,
+    std::unique_ptr<geometry::SceneGraph<T>>);
+
+  AddMultibodyPlantSceneGraphResult(
+      MultibodyPlant<T>* plant_in, geometry::SceneGraph<T>* scene_graph_in)
+      : plant(*plant_in), scene_graph(*scene_graph_in),
+        plant_ptr(plant_in), scene_graph_ptr(scene_graph_in) {}
+
+  // Pointers to enable implicit casts for `std::tie()` assignments using
+  // `T*&`.
+  MultibodyPlant<T>* plant_ptr{};
+  geometry::SceneGraph<T>* scene_graph_ptr{};
+};
 
 }  // namespace multibody
 }  // namespace drake

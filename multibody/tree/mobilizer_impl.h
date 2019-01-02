@@ -6,6 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/random.h"
+#include "drake/common/symbolic.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_context.h"
@@ -53,6 +55,57 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int num_velocities() const final { return kNv;}
 
+  void set_zero_state(const systems::Context<T>& context,
+                      systems::State<T>* state) const final {
+    get_mutable_positions(context, state) = get_zero_position();
+    get_mutable_velocities(context, state).setZero();
+  };
+
+  void set_random_state(const systems::Context<T>& context,
+                        systems::State<T>* state,
+                        RandomGenerator* generator) const override {
+    if (random_state_distribution_.size() > 0) {
+      const Eigen::VectorXd sample = Evaluate(
+          random_state_distribution_, symbolic::Environment{}, generator);
+      get_mutable_positions(context, state) = sample.head(num_positions());
+      get_mutable_velocities(context, state) = sample.tail(num_velocities());
+    } else {
+      set_zero_state(context, state);
+    }
+  }
+
+  /// Defines the distribution used to draw random samples from this
+  /// mobilizer, using a symbolic::Expression that contains random variables.
+  void set_random_position_distribution(
+      const Eigen::Ref<const VectorX<symbolic::Expression>>& position) {
+    DRAKE_DEMAND(position.size() == num_positions());
+    if (random_state_distribution_.size() == 0) {
+      random_state_distribution_.resize(num_positions() + num_velocities());
+      // Note that that there is no `get_zero_velocity()`, since the zero
+      // velocity is simply zero for all mobilizers.  Setting the velocity
+      // elements of the distribution to zero here therefore maintains the
+      // default behavior for velocity.
+      random_state_distribution_.tail(num_velocities()).setZero();
+    }
+
+    random_state_distribution_.head(num_positions()) = position;
+  }
+
+  /// Defines the distribution used to draw random samples from this
+  /// mobilizer, using a symbolic::Expression that contains random variables.
+  void set_random_velocity_distribution(const Eigen::Ref<const
+  VectorX<symbolic::Expression>>& velocity) {
+    DRAKE_DEMAND(velocity.size() == num_velocities());
+    if (random_state_distribution_.size() == 0) {
+      random_state_distribution_.resize(num_positions() + num_velocities());
+      // Maintain the default behavior for position.
+      random_state_distribution_.head(num_positions()) = get_zero_position();
+    }
+
+    random_state_distribution_.tail(num_velocities()) = velocity;
+  }
+
+
   /// For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
@@ -64,6 +117,10 @@ class MobilizerImpl : public Mobilizer<T> {
   // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
   enum : int {
     kNq = compile_time_num_positions, kNv = compile_time_num_velocities};
+
+  virtual Eigen::Matrix<T, kNq, 1> get_zero_position() const {
+    return Eigen::Matrix<T, kNq, 1>::Zero();
+  }
 
   /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
@@ -177,17 +234,6 @@ class MobilizerImpl : public Mobilizer<T> {
     return *mbt_context;
   }
 
-  /// Helper to set `state` to a default zero state with all generalized
-  /// positions and generalized velocities related to this mobilizer to zero.
-  /// Be aware however that this default does not apply in general to all
-  /// mobilizers and specific subclasses (for instance for unit quaternions)
-  /// must override this method for correctness.
-  void set_default_zero_state(const systems::Context<T>& context,
-                              systems::State<T>* state) const {
-    get_mutable_positions(context, state).setZero();
-    get_mutable_velocities(context, state).setZero();
-  }
-
  private:
   /// Helper that returns `true` if the state of the multibody system is stored
   /// as discrete state.
@@ -208,6 +254,11 @@ class MobilizerImpl : public Mobilizer<T> {
   int get_velocities_start() const {
     return this->get_topology().velocities_start;
   }
+
+  // Note: this is maintained as a concatenated vector so that the evaluation
+  // method can share the sampled values of any random variables that are
+  // shared between position and velocity.
+  VectorX<symbolic::Expression> random_state_distribution_{};
 };
 
 }  // namespace internal

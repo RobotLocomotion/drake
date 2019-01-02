@@ -175,7 +175,7 @@ std::unique_ptr<geometry::Shape> ParseMesh(
   }
 
   const std::string resolved_filename =
-      ResolveFilename(filename, package_map, root_dir);
+      ResolveUri(filename, package_map, root_dir);
   if (resolved_filename.empty()) {
     throw std::runtime_error(
         "Mesh file name could not be resolved from the provided uri \"" +

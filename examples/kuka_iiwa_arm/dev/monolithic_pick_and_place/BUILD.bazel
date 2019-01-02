@@ -45,8 +45,6 @@ drake_cc_binary(
         "no_tsan",
     ],
     test_rule_args = ["--quick"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    test_rule_flaky = 1,
     deps = [
         ":kuka_pick_and_place_monolithic",
         "//common:find_resource",

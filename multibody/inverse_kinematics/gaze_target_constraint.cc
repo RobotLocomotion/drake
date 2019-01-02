@@ -32,9 +32,9 @@ GazeTargetConstraint::GazeTargetConstraint(
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
   frameA.HasThisParentTreeOrThrow(&plant_.tree());
   frameB.HasThisParentTreeOrThrow(&plant_.tree());
-  if (cone_half_angle < 0 || cone_half_angle > M_PI) {
+  if (cone_half_angle < 0 || cone_half_angle > M_PI_2) {
     throw std::invalid_argument(
-        "GazeTargetConstraint: cone_half_angle should be within [0, pi]");
+        "GazeTargetConstraint: cone_half_angle should be within [0, pi/2]");
   }
 }
 
