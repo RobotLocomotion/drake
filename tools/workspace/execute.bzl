@@ -4,6 +4,9 @@ def path(repo_ctx, additional_search_paths = []):
     """Return the value of the PATH environment variable that would be used by
     the which() command."""
     search_paths = additional_search_paths
+
+    # N.B. Ensure ${PATH} in each platform `tools/*.bazelrc` matches these
+    # paths.
     if repo_ctx.os.name == "mac os x":
         search_paths = search_paths + ["/usr/local/bin"]
     search_paths = search_paths + ["/usr/bin", "/bin"]
