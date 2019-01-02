@@ -193,6 +193,8 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
   const int MSK_PRO_STA_UNKNOWN = 0;
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
+
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
 }
 }  // namespace test
 }  // namespace solvers
