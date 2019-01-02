@@ -173,15 +173,6 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 }
 
 template <typename T>
-GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
-    SourceId source_id, FrameId frame_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  return initial_state_->RegisterGeometryWithoutRole(
-      source_id, frame_id, std::move(geometry));
-}
-
-template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -191,31 +182,12 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 }
 
 template <typename T>
-GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
-    Context<T>* context, SourceId source_id, FrameId frame_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
-  return g_state.RegisterGeometryWithoutRole(source_id, frame_id,
-                                             std::move(geometry));
-}
-
-template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterGeometryWithParent(source_id, geometry_id,
                                                     std::move(geometry));
-}
-
-template <typename T>
-GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
-    SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  return initial_state_->RegisterGeometryWithParentWithoutRole(
-      source_id, geometry_id, std::move(geometry));
 }
 
 template <typename T>
@@ -229,29 +201,11 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 }
 
 template <typename T>
-GeometryId SceneGraph<T>::RegisterGeometryWithoutRole(
-    Context<T>* context, SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-  auto* g_context = static_cast<GeometryContext<T>*>(context);
-  auto& g_state = g_context->get_mutable_geometry_state();
-  return g_state.RegisterGeometryWithParentWithoutRole(
-      source_id, geometry_id, std::move(geometry));
-}
-
-template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterAnchoredGeometry(source_id,
                                                   std::move(geometry));
-}
-
-template <typename T>
-GeometryId SceneGraph<T>::RegisterAnchoredGeometryWithoutRole(
-    SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
-  GS_THROW_IF_CONTEXT_ALLOCATED
-  return initial_state_->RegisterAnchoredGeometryWithoutRole(
-      source_id, std::move(geometry));
 }
 
 template <typename T>
