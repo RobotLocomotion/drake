@@ -184,7 +184,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
   plant_->CalcFrameGeometricJacobianExpressedInWorld(
       *context_, *frame_E_, Vector3<double>::Zero(), &J);
 
-  Vector6d V_WE, V_WE_desired, V_WE_E, V_WE_E_desired;
+  Vector6d V_WE_W, V_WE_desired, V_WE_E, V_WE_E_desired;
   V_WE_desired << 0.1, -0.2, 0.3, -0.3, 0.2, -0.1;
   V_WE_desired /= 2.;
 
@@ -200,9 +200,10 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
     plant_->SetPositions(context_, q);
     plant_->SetVelocities(context_, result.joint_velocities.value());
 
-    V_WE = frame_E_->CalcSpatialVelocityInWorld(*context_).get_coeffs();
-    V_WE_E.head<3>() = X_WE.linear().transpose() * V_WE.head<3>();
-    V_WE_E.tail<3>() = X_WE.linear().transpose() * V_WE.tail<3>();
+    V_WE_W = frame_E_->CalcSpatialVelocityInWorld(*context_).get_coeffs();
+    auto R_EW = X_WE.linear().transpose().eval();  // Rotation matrix inverse.
+    V_WE_E.head<3>() = R_EW * V_WE_W.head<3>();
+    V_WE_E.tail<3>() = R_EW * V_WE_W.tail<3>();
 
     // Transform the desired end effector velocity into body frame.
     V_WE_E_desired.head<3>() =
