@@ -12,6 +12,7 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -2321,6 +2322,52 @@ GTEST_TEST(StateSelection, FloatingBodies) {
           context.get(), end_effector_frame, mug, X_OM),
       std::logic_error,
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
+}
+
+GTEST_TEST(SetRandomTest, FloatingBodies) {
+  // Create a model that contains a single body.
+  MultibodyPlant<double> plant;
+  const Body<double>& body =
+      plant.AddRigidBody("LoneBody", SpatialInertia<double>());
+  plant.Finalize();
+
+  RandomGenerator generator;
+
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+  Vector3<symbolic::Expression> xyz(1.0 + uniform(generator),
+                                    2.0 + uniform(generator),
+                                    3.0 + uniform(generator));
+
+  plant.SetFreeBodyRandomPositionDistribution(body, xyz);
+  plant.SetFreeBodyRandomRotationDistributionToUniform(body);
+
+  auto context = plant.CreateDefaultContext();
+
+  const math::RigidTransform<double> X_WB_default =
+      plant.GetFreeBodyPose(*context, body);
+
+  plant.SetRandomContext(context.get(), &generator);
+  const math::RigidTransform<double> X_WB =
+      plant.GetFreeBodyPose(*context, body);
+
+  // Just make sure that the rotation matrices have changed. (Testing that
+  // the quaternion is unit norm would be good, but is not possible here
+  // because the RigidTransform class scales the quaternion before it is
+  // returned).
+  EXPECT_FALSE(CompareMatrices(X_WB_default.rotation().matrix(),
+                               X_WB.rotation().matrix()));
+
+  // x is drawn from [1, 2).
+  EXPECT_GE(X_WB.translation()[0], 1.0);
+  EXPECT_LT(X_WB.translation()[0], 2.0);
+
+  // y is drawn from [2, 3).
+  EXPECT_GE(X_WB.translation()[1], 2.0);
+  EXPECT_LT(X_WB.translation()[1], 3.0);
+
+  // z is drawn from [3, 4).
+  EXPECT_GE(X_WB.translation()[2], 3.0);
+  EXPECT_LT(X_WB.translation()[2], 4.0);
 }
 
 }  // namespace
