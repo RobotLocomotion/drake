@@ -38,8 +38,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":differential_inverse_kinematics",
-        "//attic/manipulation/planner:rbt_differential_inverse_kinematics",
-        "//attic/multibody/parsers",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//multibody/parsing",
