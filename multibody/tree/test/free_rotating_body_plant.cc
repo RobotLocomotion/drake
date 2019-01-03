@@ -119,7 +119,7 @@ void FreeRotatingBodyPlant<T>::SetDefaultState(
   internal::MultibodyTreeSystem<T>::SetDefaultState(context, state);
 
   mobilizer_->set_angular_velocity(
-      context, get_default_initial_angular_velocity(), state);
+      state, get_default_initial_angular_velocity());
 }
 
 template<typename T>

@@ -75,7 +75,7 @@ TEST_F(RevoluteMobilizerTest, ZeroState) {
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // zero position and velocity.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->set_zero_state(&context_->get_mutable_state());
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 }
@@ -88,7 +88,7 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
       &mutable_tree().get_mutable_variant(*mobilizer_);
 
   // Default behavior is to set to zero.
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
@@ -96,7 +96,7 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
   // Set position to be random, but not velocity (yet).
   mutable_mobilizer->set_random_position_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 2.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 2.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
@@ -104,7 +104,7 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
   // Set the velocity distribution.  Now both should be random.
   mutable_mobilizer->set_random_velocity_distribution(
       Vector1<symbolic::Expression>(uniform(generator) - 2.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 2.0);
   EXPECT_LE(mobilizer_->get_angular_rate(*context_), -1.0);
@@ -112,7 +112,7 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
   // Check that they change on a second draw from the distribution.
   const double last_angle = mobilizer_->get_angle(*context_);
   const double last_angular_rate = mobilizer_->get_angular_rate(*context_);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_NE(mobilizer_->get_angle(*context_), last_angle);
   EXPECT_NE(mobilizer_->get_angular_rate(*context_), last_angular_rate);

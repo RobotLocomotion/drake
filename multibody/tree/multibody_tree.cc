@@ -306,19 +306,17 @@ void MultibodyTree<T>::CreateModelInstances() {
 }
 
 template <typename T>
-void MultibodyTree<T>::SetDefaultState(
-    const systems::Context<T>& context, systems::State<T>* state) const {
+void MultibodyTree<T>::SetDefaultState(systems::State<T>* state) const {
   for (const auto& mobilizer : owned_mobilizers_) {
-    mobilizer->set_zero_state(context, state);
+    mobilizer->set_zero_state(state);
   }
 }
 
 template <typename T>
-void MultibodyTree<T>::SetRandomState(const systems::Context<T>& context,
-                                      systems::State<T>* state,
-                                      RandomGenerator* generator) const {
+void MultibodyTree<T>::SetRandomState(
+    systems::State<T>* state, RandomGenerator* generator) const {
   for (const auto& mobilizer : owned_mobilizers_) {
-    mobilizer->set_random_state(context, state, generator);
+    mobilizer->set_random_state(state, generator);
   }
 }
 
@@ -354,14 +352,9 @@ VectorX<T> MultibodyTree<T>::GetPositionsAndVelocities(
 template <typename T>
 Eigen::VectorBlock<VectorX<T>>
 MultibodyTree<T>::GetMutablePositionsAndVelocities(
-    const systems::Context<T>& context, systems::State<T>* state) const {
+    systems::State<T>* state) const {
   DRAKE_DEMAND(state != nullptr);
-  auto* mbt_context = dynamic_cast<const MultibodyTreeContext<T>*>(&context);
-  if (mbt_context == nullptr) {
-    throw std::runtime_error(
-        "The context provided is not compatible with a multibody model.");
-  }
-  return mbt_context->get_mutable_state_vector(state);
+  return MultibodyTreeContext<T>::get_mutable_state_vector(state);
 }
 
 template <typename T>
@@ -396,7 +389,7 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const Isometry3<T>& X_WB,
     systems::Context<T>* context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  SetFreeBodyPoseOrThrow(body, X_WB, *context, &context->get_mutable_state());
+  SetFreeBodyPoseOrThrow(body, X_WB, &context->get_mutable_state());
 }
 
 template <typename T>
@@ -405,29 +398,29 @@ void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
     systems::Context<T>* context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   SetFreeBodySpatialVelocityOrThrow(
-      body, V_WB, *context, &context->get_mutable_state());
+      body, V_WB, &context->get_mutable_state());
 }
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const Isometry3<T>& X_WB,
-    const systems::Context<T>& context, systems::State<T>* state) const {
+    systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
-  mobilizer.set_quaternion(context, Quaternion<T>(X_WB.linear()), state);
-  mobilizer.set_position(context, X_WB.translation(), state);
+  mobilizer.set_quaternion(state, Quaternion<T>(X_WB.linear()));
+  mobilizer.set_position(state, X_WB.translation());
 }
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
     const Body<T>& body, const SpatialVelocity<T>& V_WB,
-    const systems::Context<T>& context, systems::State<T>* state) const {
+    systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
       GetFreeBodyMobilizerOrThrow(body);
-  mobilizer.set_angular_velocity(context, V_WB.rotational(), state);
-  mobilizer.set_translational_velocity(context, V_WB.translational(), state);
+  mobilizer.set_angular_velocity(state, V_WB.rotational());
+  mobilizer.set_translational_velocity(state, V_WB.translational());
 }
 
 template <typename T>

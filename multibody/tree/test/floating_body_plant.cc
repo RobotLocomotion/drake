@@ -60,7 +60,7 @@ void AxiallySymmetricFreeBodyPlant<T>::SetDefaultState(
   const SpatialVelocity<T> V_WB(
       get_default_initial_angular_velocity().template cast<T>(),
       get_default_initial_translational_velocity().template cast<T>());
-  this->tree().SetFreeBodySpatialVelocityOrThrow(body(), V_WB, context, state);
+  this->tree().SetFreeBodySpatialVelocityOrThrow(body(), V_WB, state);
 }
 
 template<typename T>

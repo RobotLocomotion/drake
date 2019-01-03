@@ -44,22 +44,10 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeContext)
 
   /// Instantiates a %MultibodyTreeContext for a MultibodyTree with a given
-  /// `topology`. The stored state is continuous.
-  explicit MultibodyTreeContext(const MultibodyTreeTopology& topology) :
-      MultibodyTreeContext(topology, false) {}
-
-  /// Instantiates a %MultibodyTreeContext for a MultibodyTree with a given
   /// `topology`.
-  /// @param[in] discrete_state
-  ///   `true` if the state is to be stored as discrete state. Otherwise the
-  ///   state is stored as continuous state. `false` if the state is to be
-  ///   stored as continuous state.
-  MultibodyTreeContext(
-      const MultibodyTreeTopology& topology, bool discrete_state) :
-      systems::LeafContext<T>(),
-      topology_(topology),
-      is_state_discrete_(discrete_state) {
-  }
+  explicit MultibodyTreeContext(const MultibodyTreeTopology& topology)
+      : systems::LeafContext<T>(),
+        topology_(topology) {}
 
   /// Returns the size of the generalized positions vector.
   int num_positions() const {
@@ -71,18 +59,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return topology_.num_velocities();
   }
 
-  /// Returns `true` if the state is discrete and `false` if the state is
-  /// continuous.
-  bool is_state_discrete() const {
-    return is_state_discrete_;
-  }
-
   /// Returns a const reference to the state vector stored in `this` context as
   /// an `Eigen::VectorBlock<const VectorX<T>>`.
   Eigen::VectorBlock<const VectorX<T>> get_state_vector() const {
     DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
     const systems::BasicVector<T>& state_vector =
-        (is_state_discrete()) ? this->get_discrete_state(0) :
+        is_state_discrete(this->get_state()) ? this->get_discrete_state(0) :
         dynamic_cast<const systems::BasicVector<T>&>(
             this->get_continuous_state().get_vector());
     return state_vector.get_value();
@@ -94,16 +76,14 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return get_mutable_state_vector(&this->get_mutable_state());
   }
 
-  /// Returns a mutable reference to the state vector stored in `state` which
-  /// must be the state associated with `this` context, as an
+  /// Returns a mutable reference to the state vector stored in `state` as an
   /// `Eigen::VectorBlock<VectorX<T>>`.
-  /// @pre `state` must be the systems::State<T> owned by this context.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
-      systems::State<T>* state) const {
-    DRAKE_ASSERT(&this->get_state() == state);
-    DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
+  /// @pre `state` comes from some MultibodyTreeSystem.
+  static Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
+      systems::State<T>* state) {
+    DRAKE_ASSERT(state != nullptr);
     systems::BasicVector<T>& state_vector =
-        (is_state_discrete()) ? state->get_mutable_discrete_state(0) :
+        is_state_discrete(*state) ? state->get_mutable_discrete_state(0) :
         dynamic_cast<systems::BasicVector<T>&>(
             state->get_mutable_continuous_state().get_mutable_vector());
     return state_vector.get_mutable_value();
@@ -200,11 +180,18 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
  private:
-  const MultibodyTreeTopology topology_;
+  // Returns `true` if the state is discrete and `false` if the state is
+  // continuous.
+  static bool is_state_discrete(const systems::State<T>& state) {
+    const int num_discrete_groups = state.get_discrete_state().num_groups();
+    DRAKE_ASSERT(num_discrete_groups <= 1);
+    DRAKE_ASSERT(
+        (num_discrete_groups == 0) ||
+        (state.get_continuous_state().size() == 0));
+    return (num_discrete_groups > 0);
+  }
 
-  // If `true`, this context stores a discrete state. If `false` the state is
-  // stored as continuous state.
-  bool is_state_discrete_{false};
+  const MultibodyTreeTopology topology_;
 };
 
 }  // namespace internal

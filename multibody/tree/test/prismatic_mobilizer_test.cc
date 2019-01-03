@@ -76,7 +76,7 @@ TEST_F(PrismaticMobilizerTest, ZeroState) {
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // zero position and velocity.
-  slider_->set_zero_state(*context_, &context_->get_mutable_state());
+  slider_->set_zero_state(&context_->get_mutable_state());
   EXPECT_EQ(slider_->get_translation(*context_), 0);
   EXPECT_EQ(slider_->get_translation_rate(*context_), 0);
 }

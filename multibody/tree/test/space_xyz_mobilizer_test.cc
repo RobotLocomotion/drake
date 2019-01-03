@@ -64,7 +64,7 @@ TEST_F(SpaceXYZMobilizerTest, ZeroState) {
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // an identity rigid transform.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->set_zero_state(&context_->get_mutable_state());
   const RigidTransformd X_WB(
       mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());

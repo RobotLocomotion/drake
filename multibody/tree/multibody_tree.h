@@ -1400,13 +1400,10 @@ class MultibodyTree {
   }
 
   /// See MultibodyPlant method.
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const;
+  void SetDefaultState(systems::State<T>*) const;
 
   /// See MultibodyPlant method.
-  void SetRandomState(const systems::Context<T>& context,
-                      systems::State<T>* state,
-                      RandomGenerator* generator) const;
+  void SetRandomState(systems::State<T>*, RandomGenerator*) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
@@ -1463,19 +1460,17 @@ class MultibodyTree {
   /// Returns a mutable Eigen vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
   /// vector of generalized velocities.
-  /// @throws std::exception if the `context` is nullptr or if it does not
-  /// correspond to the context for a multibody model.
+  /// @throws std::exception if the `state` is nullptr.
   /// @note This method returns a reference to existing data, exhibits constant
   ///       i.e., O(1) time complexity, and runs very quickly.
-  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  /// @pre `state` comes from some MultibodyTreeSystem.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-      const systems::Context<T>& context, systems::State<T>* state) const;
+      systems::State<T>* state) const;
 
   /// See GetMutablePositionsAndVelocities(context, state) above.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
       systems::Context<T>* context) const {
-    return GetMutablePositionsAndVelocities(*context,
-        &context->get_mutable_state());
+    return GetMutablePositionsAndVelocities(&context->get_mutable_state());
   }
 
 
@@ -1520,12 +1515,12 @@ class MultibodyTree {
   /// See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(
       const Body<T>& body, const Isometry3<T>& X_WB,
-      const systems::Context<T>& context, systems::State<T>* state) const;
+      systems::State<T>* state) const;
 
   /// See MultibodyPlant::SetFreeBodySpatialVelocity.
   void SetFreeBodySpatialVelocityOrThrow(
       const Body<T>& body, const SpatialVelocity<T>& V_WB,
-      const systems::Context<T>& context, systems::State<T>* state) const;
+      systems::State<T>* state) const;
 
   /// See MultibodyPlant::SetFreeBodyRandomPositionDistribution.
   void SetFreeBodyRandomPositionDistributionOrThrow(

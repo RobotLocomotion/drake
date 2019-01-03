@@ -54,7 +54,7 @@ template <typename T>
 void MultibodyTreeSystem<T>::SetDefaultState(const Context<T>& context,
                                              State<T>* state) const {
   LeafSystem<T>::SetDefaultState(context, state);
-  tree_->SetDefaultState(context, state);
+  tree_->SetDefaultState(state);
 }
 
 template <typename T>
@@ -150,8 +150,7 @@ void MultibodyTreeSystem<T>::Finalize() {
 template <typename T>
 std::unique_ptr<systems::LeafContext<T>>
 MultibodyTreeSystem<T>::DoMakeLeafContext() const {
-  return std::make_unique<MultibodyTreeContext<T>>(tree_->get_topology(),
-                                                   is_discrete_);
+  return std::make_unique<MultibodyTreeContext<T>>(tree_->get_topology());
 }
 
 // Instantiate supported conversion methods.

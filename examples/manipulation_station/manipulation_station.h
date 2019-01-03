@@ -161,9 +161,8 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Sets the default State for the chosen setup.
   /// @param context A const reference to the ManipulationStation context.
   /// @param state A pointer to the State of the ManipulationStation system.
-  /// @pre `state` must be the systems::State<T> object contained in
-  /// `station_context`.
-  void SetDefaultState(const systems::Context<T>& station_context,
+  /// @pre `state` must be the systems::State<T> object contained in `context`.
+  void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override;
 
   /// Notifies the ManipulationStation that the IIWA robot model instance can
@@ -319,10 +318,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// Convenience method for setting all of the joint angles of the Kuka IIWA.
   /// Also sets the position history in the velocity command generator.
   /// @p q must have size num_iiwa_joints().
-  /// @pre `state` must be the systems::State<T> object contained in
-  /// `station_context`.
-  void SetIiwaPosition(const systems::Context<T>& station_context,
-                       systems::State<T>* state,
+  void SetIiwaPosition(systems::State<T>* station_state,
                        const Eigen::Ref<const VectorX<T>>& q) const;
 
   /// Convenience method for setting all of the joint angles of the Kuka IIWA.
@@ -330,7 +326,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @p q must have size num_iiwa_joints().
   void SetIiwaPosition(systems::Context<T>* station_context,
                        const Eigen::Ref<const VectorX<T>>& q) const {
-    SetIiwaPosition(*station_context, &station_context->get_mutable_state(), q);
+    SetIiwaPosition(&station_context->get_mutable_state(), q);
   }
 
   DRAKE_DEPRECATED(
@@ -347,17 +343,14 @@ class ManipulationStation : public systems::Diagram<T> {
 
   /// Convenience method for setting all of the joint velocities of the Kuka
   /// IIWA. @v must have size num_iiwa_joints().
-  /// @pre `state` must be the systems::State<T> object contained in
-  /// `station_context`.
-  void SetIiwaVelocity(const systems::Context<T>& station_context,
-                       systems::State<T>* state,
+  void SetIiwaVelocity(systems::State<T>* station_state,
                        const Eigen::Ref<const VectorX<T>>& v) const;
 
   /// Convenience method for setting all of the joint velocities of the Kuka
   /// IIWA. @v must have size num_iiwa_joints().
   void SetIiwaVelocity(systems::Context<T>* station_context,
                        const Eigen::Ref<const VectorX<T>>& v) const {
-    SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
+    SetIiwaVelocity(&station_context->get_mutable_state(), v);
   }
 
   DRAKE_DEPRECATED(
@@ -380,17 +373,14 @@ class ManipulationStation : public systems::Diagram<T> {
   /// sets the position history in the velocity interpolator.  Note that the
   /// WSG position is the signed distance between the two fingers (not the
   /// state of the fingers individually).
-  /// @pre `state` must be the systems::State<T> object contained in
-  /// `station_context`.
-  void SetWsgPosition(const systems::Context<T>& station_context,
-                      systems::State<T>* state, const T& q) const;
+  void SetWsgPosition(systems::State<T>* station_state, const T& q) const;
 
   /// Convenience method for setting the position of the Schunk WSG. Also
   /// sets the position history in the velocity interpolator.  Note that the
   /// WSG position is the signed distance between the two fingers (not the
   /// state of the fingers individually).
   void SetWsgPosition(systems::Context<T>* station_context, const T& q) const {
-    SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
+    SetWsgPosition(&station_context->get_mutable_state(), q);
   }
 
   DRAKE_DEPRECATED(
@@ -401,14 +391,11 @@ class ManipulationStation : public systems::Diagram<T> {
   }
 
   /// Convenience method for setting the velocity of the Schunk WSG.
-  /// @pre `state` must be the systems::State<T> object contained in
-  /// `station_context`.
-  void SetWsgVelocity(const systems::Context<T>& station_context,
-                      systems::State<T>* state, const T& v) const;
+  void SetWsgVelocity(systems::State<T>* station_state, const T& v) const;
 
   /// Convenience method for setting the velocity of the Schunk WSG.
   void SetWsgVelocity(systems::Context<T>* station_context, const T& v) const {
-    SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
+    SetWsgVelocity(&station_context->get_mutable_state(), v);
   }
 
   DRAKE_DEPRECATED(

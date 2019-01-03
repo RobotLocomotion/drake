@@ -71,7 +71,7 @@ TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
 
   // Set the "zero state" for this mobilizer, which does happen to be that of
   // an identity rigid transform.
-  mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
+  mobilizer_->set_zero_state(&context_->get_mutable_state());
   const RigidTransformd X_WB(
       mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
@@ -85,7 +85,7 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
       &mutable_tree().get_mutable_variant(*mobilizer_);
 
   // Default behavior is to set to zero.
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_TRUE(
       RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
@@ -102,7 +102,7 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   // Set position to be random, but not velocity (yet).
   mutable_mobilizer->set_random_quaternion_distribution_to_uniform();
   mutable_mobilizer->set_random_position_distribution(position_distribution);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_FALSE(
       RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
@@ -117,7 +117,7 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
     velocity_distribution[i] = uniform(generator) - i - 1.0;
   }
   mutable_mobilizer->set_random_velocity_distribution(velocity_distribution);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
+  mutable_mobilizer->set_random_state(&context_->get_mutable_state(),
                                       &generator);
   EXPECT_FALSE(
       RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))

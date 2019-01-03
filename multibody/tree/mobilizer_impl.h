@@ -56,22 +56,20 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int num_velocities() const final { return kNv;}
 
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const final {
-    get_mutable_positions(context, state) = get_zero_position();
-    get_mutable_velocities(context, state).setZero();
+  void set_zero_state(systems::State<T>* state) const final {
+    get_mutable_positions(state) = get_zero_position();
+    get_mutable_velocities(state).setZero();
   };
 
-  void set_random_state(const systems::Context<T>& context,
-                        systems::State<T>* state,
+  void set_random_state(systems::State<T>* state,
                         RandomGenerator* generator) const override {
     if (random_state_distribution_) {
       const Vector<double, kNx> sample = Evaluate(
           *random_state_distribution_, symbolic::Environment{}, generator);
-      get_mutable_positions(context, state) = sample.template head<kNq>();
-      get_mutable_velocities(context, state) = sample.template tail<kNv>();
+      get_mutable_positions(state) = sample.template head<kNq>();
+      get_mutable_velocities(state) = sample.template tail<kNv>();
     } else {
-      set_zero_state(context, state);
+      set_zero_state(state);
     }
   }
 
@@ -151,25 +149,13 @@ class MobilizerImpl : public Mobilizer<T> {
         this->get_positions_start());
   }
 
-  /// Returns a mutable reference to the state vector stored in `state` as an
-  /// Eigen::VectorBlock<VectorX<T>>.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
-      const systems::Context<T>& context, systems::State<T>* state) const {
-    systems::BasicVector<T>& state_vector =
-        is_state_discrete(context) ?
-        state->get_mutable_discrete_state().get_mutable_vector() :
-        dynamic_cast<systems::BasicVector<T>&>(
-            state->get_mutable_continuous_state().get_mutable_vector());
-    return state_vector.get_mutable_value();
-  }
-
   /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// positions.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
-      const systems::Context<T>& context, systems::State<T>* state) const {
+      systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
-        get_mutable_state_vector(context, state);
+        MultibodyTreeContext<T>::get_mutable_state_vector(state);
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -182,9 +168,9 @@ class MobilizerImpl : public Mobilizer<T> {
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// velocities.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
-      const systems::Context<T>& context, systems::State<T>* state) const {
+      systems::State<T>* state) const {
     Eigen::VectorBlock<VectorX<T>> xc =
-        get_mutable_state_vector(context, state);
+        MultibodyTreeContext<T>::get_mutable_state_vector(state);
     // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
     // state is a BasicVector.
     // If we do return xc.segment() directly, we would instead get a
@@ -246,12 +232,6 @@ class MobilizerImpl : public Mobilizer<T> {
   }
 
  private:
-  /// Helper that returns `true` if the state of the multibody system is stored
-  /// as discrete state.
-  static bool is_state_discrete(const systems::Context<T>& context) {
-    return GetMultibodyTreeContextOrThrow(context).is_state_discrete();
-  }
-
   // Returns the index in the global array of generalized coordinates in the
   // MultibodyTree model to the first component of the generalized coordinates
   // vector that corresponds to this mobilizer.

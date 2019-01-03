@@ -335,13 +335,12 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// represent a mathematicaly valid one. Consider for instance a quaternion
   /// mobilizer, for which its _zero_ position corresponds to the quaternion
   /// [1, 0, 0, 0].
-  virtual void set_zero_state(const systems::Context<T>& context,
-                              systems::State<T>* state) const = 0;
+  virtual void set_zero_state(systems::State<T>* state) const = 0;
 
   DRAKE_DEPRECATED("Call set_zero_state() directly instead.  This method will "
                    "be deleted after 3/1/19.")
   void set_zero_configuration(systems::Context<T>* context) const {
-    set_zero_state(*context, &context->get_mutable_state());
+    set_zero_state(&context->get_mutable_state());
   }
 
   /// Sets the `state` to a (potentially) random position and velocity, by
@@ -353,8 +352,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// the independent samples returned from this sample as an initial guess,
   /// but may change the value in order to "project" it onto a constraint
   /// manifold.
-  virtual void set_random_state(const systems::Context<T>& context,
-                                systems::State<T>* state,
+  virtual void set_random_state(systems::State<T>* state,
                                 RandomGenerator* generator) const = 0;
 
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard

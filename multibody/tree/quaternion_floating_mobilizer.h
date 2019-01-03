@@ -92,8 +92,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// Alternative signature to set_quaternion(context, q_FM) to set `state` to
   /// store the orientation of M in F given by the equaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
-      const systems::Context<T>& context,
-      const Quaternion<T>& q_FM, systems::State<T>* state) const;
+      systems::State<T>* state, const Quaternion<T>& q_FM) const;
 
   /// Specifies that random samples for the rotation elements of the state
   /// should be drawn as uniformly random quaternions.
@@ -113,8 +112,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// Alternative signature to set_position(context, p_FM) to set `state` to
   /// store the position `p_FM` of M in F.
   const QuaternionFloatingMobilizer<T>& set_position(
-      const systems::Context<T>& context, const Vector3<T>& p_FM,
-      systems::State<T>* state) const;
+      systems::State<T>* state, const Vector3<T>& p_FM) const;
 
   /// Sets the distribution governing the random samples of the position
   /// component of the mobilizer state.
@@ -150,8 +148,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// Alternative signature to set_angular_velocity(context, w_FM) to set
   /// `state` to store the angular velocity `w_FM` of M in F.
   const QuaternionFloatingMobilizer<T>& set_angular_velocity(
-      const systems::Context<T>&, const Vector3<T>& w_FM,
-      systems::State<T>* state) const;
+      systems::State<T>* state, const Vector3<T>& w_FM) const;
 
   /// Retrieves and returns from `context` the translational velocity `v_FM` of
   /// frame M's origin as measured and expressed in frame F.
@@ -176,8 +173,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// Alternative signature to set_translational_velocity(context, v_FM) to set
   /// `state` to store the translational velocity `v_FM` of M in F.
   const QuaternionFloatingMobilizer<T>& set_translational_velocity(
-      const systems::Context<T>&, const Vector3<T>& v_FM,
-      systems::State<T>* state) const;
+      systems::State<T>* state, const Vector3<T>& v_FM) const;
 
   /// @}
   // End of Doxygen section on methods to get/set from a context.

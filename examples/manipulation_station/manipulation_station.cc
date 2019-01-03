@@ -311,15 +311,14 @@ void ManipulationStation<T>::SetupDefaultStation(
 
 template <typename T>
 void ManipulationStation<T>::SetDefaultState(
-    const systems::Context<T>& station_context,
+    const systems::Context<T>& context,
     systems::State<T>* state) const {
   // Call the base class method, to initialize all systems in this diagram.
-  systems::Diagram<T>::SetDefaultState(station_context, state);
+  systems::Diagram<T>::SetDefaultState(context, state);
 
   VectorX<T> q0_iiwa(num_iiwa_joints());
   T q0_gripper{0.1};
 
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
   auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
 
   auto set_object_pose = [&](std::string object_name,
@@ -327,8 +326,7 @@ void ManipulationStation<T>::SetDefaultState(
     const auto indices =
         plant_->GetBodyIndices(plant_->GetModelInstanceByName(object_name));
     DRAKE_DEMAND(indices.size() == 1);
-    plant_->SetFreeBodyPose(plant_context, &plant_state,
-                            plant_->get_body(indices[0]),
+    plant_->SetFreeBodyPose(&plant_state, plant_->get_body(indices[0]),
                             X_WObject.GetAsIsometry3());
   };
 
@@ -381,10 +379,10 @@ void ManipulationStation<T>::SetDefaultState(
       break;
   }
 
-  SetIiwaPosition(station_context, state, q0_iiwa);
-  SetIiwaVelocity(station_context, state, VectorX<T>::Zero(num_iiwa_joints()));
-  SetWsgPosition(station_context, state, q0_gripper);
-  SetWsgVelocity(station_context, state, 0);
+  SetIiwaPosition(state, q0_iiwa);
+  SetIiwaVelocity(state, VectorX<T>::Zero(num_iiwa_joints()));
+  SetWsgPosition(state, q0_gripper);
+  SetWsgVelocity(state, 0);
 }
 
 template <typename T>
@@ -629,23 +627,21 @@ VectorX<T> ManipulationStation<T>::GetIiwaPosition(
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaPosition(
-    const drake::systems::Context<T>& station_context, systems::State<T>* state,
+    systems::State<T>* station_state,
     const Eigen::Ref<const drake::VectorX<T>>& q) const {
   const int num_iiwa_positions =
       plant_->num_positions(iiwa_model_.model_instance);
-  DRAKE_DEMAND(state != nullptr);
+  DRAKE_DEMAND(station_state != nullptr);
   DRAKE_DEMAND(q.size() == num_iiwa_positions);
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
-  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
-  plant_->SetPositions(plant_context, &plant_state, iiwa_model_.model_instance,
-                       q);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, station_state);
+  plant_->SetPositions(&plant_state, iiwa_model_.model_instance, q);
 
   // Set the position history in the state interpolator to match.
   const auto& state_from_position = dynamic_cast<
       const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
       this->GetSubsystemByName("desired_state_from_position"));
   state_from_position.set_initial_position(
-      &this->GetMutableSubsystemState(state_from_position, state), q);
+      &this->GetMutableSubsystemState(state_from_position, station_state), q);
 }
 
 template <typename T>
@@ -658,16 +654,14 @@ VectorX<T> ManipulationStation<T>::GetIiwaVelocity(
 
 template <typename T>
 void ManipulationStation<T>::SetIiwaVelocity(
-    const drake::systems::Context<T>& station_context, systems::State<T>* state,
+    systems::State<T>* station_state,
     const Eigen::Ref<const drake::VectorX<T>>& v) const {
   const int num_iiwa_velocities =
       plant_->num_velocities(iiwa_model_.model_instance);
-  DRAKE_DEMAND(state != nullptr);
+  DRAKE_DEMAND(station_state != nullptr);
   DRAKE_DEMAND(v.size() == num_iiwa_velocities);
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
-  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
-  plant_->SetVelocities(plant_context, &plant_state, iiwa_model_.model_instance,
-                        v);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, station_state);
+  plant_->SetVelocities(&plant_state, iiwa_model_.model_instance, v);
 }
 
 template <typename T>
@@ -694,35 +688,29 @@ T ManipulationStation<T>::GetWsgVelocity(
 
 template <typename T>
 void ManipulationStation<T>::SetWsgPosition(
-    const drake::systems::Context<T>& station_context, systems::State<T>* state,
-    const T& q) const {
-  DRAKE_DEMAND(state != nullptr);
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
-  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
+    systems::State<T>* station_state, const T& q) const {
+  DRAKE_DEMAND(station_state != nullptr);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, station_state);
 
   const Vector2<T> positions(-q / 2, q / 2);
-  plant_->SetPositions(plant_context, &plant_state, wsg_model_.model_instance,
-                       positions);
+  plant_->SetPositions(&plant_state, wsg_model_.model_instance, positions);
 
   // Set the position history in the state interpolator to match.
   const auto& wsg_controller = dynamic_cast<
       const manipulation::schunk_wsg::SchunkWsgPositionController&>(
       this->GetSubsystemByName("wsg_controller"));
   wsg_controller.set_initial_position(
-      &this->GetMutableSubsystemState(wsg_controller, state), q);
+      &this->GetMutableSubsystemState(wsg_controller, station_state), q);
 }
 
 template <typename T>
 void ManipulationStation<T>::SetWsgVelocity(
-    const drake::systems::Context<T>& station_context, systems::State<T>* state,
-    const T& v) const {
-  DRAKE_DEMAND(state != nullptr);
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
-  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
+    systems::State<T>* station_state, const T& v) const {
+  DRAKE_DEMAND(station_state != nullptr);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, station_state);
 
   const Vector2<T> velocities(-v / 2, v / 2);
-  plant_->SetVelocities(plant_context, &plant_state, wsg_model_.model_instance,
-                        velocities);
+  plant_->SetVelocities(&plant_state, wsg_model_.model_instance, velocities);
 }
 
 template <typename T>
