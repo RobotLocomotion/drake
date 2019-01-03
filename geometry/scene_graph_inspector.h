@@ -87,7 +87,8 @@ class SceneGraphInspector {
   }
 
   /** Reports the number of frames registered to the given source id. Returns
-   zero for unregistered source ids.  */
+   zero for unregistered source ids.
+   @throws std::logic_error if `source_id` is invalid.  */
   int NumFramesForSource(SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->NumFramesForSource(source_id);
@@ -105,7 +106,9 @@ class SceneGraphInspector {
     return state_->get_frame_name(frame_id);
   }
 
-  /** Reports the number of geometries affixed to the given frame id.
+  /** Reports the number of geometries affixed to the given frame id. This count
+   does _not_ include geometries attached to frames that are descendants of this
+   frame.
    @throws std::runtime_error if `frame_id` is invalid.  */
   int NumGeometriesForFrame(FrameId frame_id) const {
     DRAKE_DEMAND(state_ != nullptr);
@@ -150,7 +153,9 @@ class SceneGraphInspector {
     return state_->GetFrameId(geometry_id);
   }
 
-  /** Reports the name of the geometry indicated by the given id.
+  /** Reports the stored, canonical name of the geometry indicated by the given
+   `id` (see  @ref canonicalized_geometry_names "GeometryInstance" for details).
+   Reports the name of the geometry indicated by the given id.
    @throws std::logic_error if `geometry_id` doesn't refer to a valid geometry.
   */
   const std::string& GetName(GeometryId geometry_id) const {
@@ -180,8 +185,10 @@ class SceneGraphInspector {
     return state_->get_illustration_properties(geometry_id);
   }
 
-  /** Reports true if collision between the two indicated geometries has been
-   filtered out.  */
+  /** Reports true if the collision pair (id1, id2) has been filtered out.
+   @throws std::logic_error if either id does not reference a registered
+                            geometry or if any of the geometries do not have
+                            a proximity role.  */
   bool CollisionFiltered(GeometryId id1, GeometryId id2) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->CollisionFiltered(id1, id2);
