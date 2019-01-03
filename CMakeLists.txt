@@ -286,8 +286,8 @@ endif()
 
 set(BAZEL_TARGETS_ARGS "${CMAKE_INSTALL_PREFIX}")
 
-if(CMAKE_VERBOSE_MAKEFILE)
-  list(INSERT BAZEL_TARGETS_ARGS 0 "--verbose")
+if(CMAKE_COLOR_MAKEFILE)
+  list(INSERT BAZEL_TARGETS_ARGS 0 "--color")
 endif()
 
 # If we are in debug mode, do not strip symbols.
