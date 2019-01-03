@@ -18,12 +18,11 @@ ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
     : systems::LeafSystem<T>() {
   DRAKE_DEMAND(plant.is_finalized());
   const int body_count = plant.num_bodies();
-  const MultibodyTree<T>& model = plant.tree();
 
   body_names_.reserve(body_count);
   using std::to_string;
   for (BodyIndex i{0}; i < body_count; ++i) {
-    const Body<T>& body = model.get_body(i);
+    const Body<T>& body = plant.get_body(i);
     body_names_.push_back(body.name() + "(" + to_string(body.model_instance()) +
                           ")");
   }

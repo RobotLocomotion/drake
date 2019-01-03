@@ -1,16 +1,29 @@
 from __future__ import print_function
 
-from pydrake.common.deprecation import DrakeDeprecationWarning
-
-import pydoc
-import unittest
 import rlcompleter
 import six
 import sys
 from types import ModuleType
+import unittest
 import warnings
 
-import pydrake
+from pydrake.common.deprecation import DrakeDeprecationWarning
+
+
+def get_completion_suffixes(namespace, prefix, max_count=1000):
+    # Gets all completions for a given namespace and prefix, stripping the
+    # prefix from the results.
+    completer = rlcompleter.Completer(namespace)
+    suffixes = []
+    for i in range(max_count):
+        candidate = completer.complete(prefix, i)
+        if candidate is None:
+            break
+        assert candidate.startswith(prefix), (prefix, candidate)
+        suffixes.append(candidate[len(prefix):])
+    else:
+        raise RuntimeError("Exceeded max count!")
+    return suffixes
 
 
 class TestDeprecation(unittest.TestCase):
@@ -72,51 +85,56 @@ class TestDeprecation(unittest.TestCase):
         # Without `__dir__` being implemented, it'll only return `install` as a
         # non-private autocomplete candidate.
         import deprecation_example
-        namespace = locals()
-        completer = rlcompleter.Completer(namespace)
-        candidates = []
-        for i in range(1000):
-            candidate = completer.complete("deprecation_example.", i)
-            if candidate is None:
-                break
-            candidates.append(candidate)
-        candidates_expected = [
+        suffixes = get_completion_suffixes(
+            locals(), prefix="deprecation_example.")
+        suffixes_expected = [
             # Injection from `Completer.attr_matches`, via `get_class_members`.
-            "deprecation_example.__class__(",
-            "deprecation_example.__delattr__(",
-            "deprecation_example.__dict__",
-            "deprecation_example.__dir__(",
-            "deprecation_example.__doc__",
-            "deprecation_example.__format__(",
-            "deprecation_example.__getattr__(",
-            "deprecation_example.__getattribute__(",
-            "deprecation_example.__hash__(",
-            "deprecation_example.__init__(",
-            "deprecation_example.__module__",
-            "deprecation_example.__new__(",
-            "deprecation_example.__reduce__(",
-            "deprecation_example.__reduce_ex__(",
-            "deprecation_example.__repr__(",
-            "deprecation_example.__setattr__(",
-            "deprecation_example.__sizeof__(",
-            "deprecation_example.__str__(",
-            "deprecation_example.__subclasshook__(",
-            "deprecation_example.__weakref__",
-            "deprecation_example._install(",
+            "__class__(",
+            "__delattr__(",
+            "__dict__",
+            "__dir__(",
+            "__doc__",
+            "__format__(",
+            "__getattr__(",
+            "__getattribute__(",
+            "__hash__(",
+            "__init__(",
+            "__module__",
+            "__new__(",
+            "__reduce__(",
+            "__reduce_ex__(",
+            "__repr__(",
+            "__setattr__(",
+            "__sizeof__(",
+            "__str__(",
+            "__subclasshook__(",
+            "__weakref__",
+            "_install(",
             # Intended completions via `__all__`.
-            "deprecation_example.sub_module",
-            "deprecation_example.value",
+            "sub_module",
+            "value",
         ]
         if six.PY3:
-            candidates_expected += [
-                'deprecation_example.__ge__(',
-                'deprecation_example.__eq__(',
-                'deprecation_example.__le__(',
-                'deprecation_example.__lt__(',
-                'deprecation_example.__gt__(',
-                'deprecation_example.__ne__(',
+            suffixes_expected += [
+                "__ge__(",
+                "__eq__(",
+                "__le__(",
+                "__lt__(",
+                "__gt__(",
+                "__ne__(",
             ]
-        self.assertSetEqual(set(candidates), set(candidates_expected))
+            if hasattr(deprecation_example, "__init_subclass__"):
+                suffixes_expected.append("__init_subclass__(")
+            # For Bionic Python3, the behavior of autocompletion seems to
+            # constrain behavior depending on underscore prefixes.
+            if "__init__(" not in suffixes:
+                under = get_completion_suffixes(
+                    locals(), prefix="deprecation_example._")
+                suffixes += ["_" + s for s in under]
+                dunder = get_completion_suffixes(
+                    locals(), prefix="deprecation_example.__")
+                suffixes += ["__" + s for s in dunder]
+        self.assertSetEqual(set(suffixes), set(suffixes_expected))
 
     def _check_warning(
             self, item, message_expected, type=DrakeDeprecationWarning):
@@ -135,10 +153,9 @@ class TestDeprecation(unittest.TestCase):
         # At this point, no other deprecations should have been thrown, so we
         # will test with the default `once` filter.
         with warnings.catch_warnings(record=True) as w:
-            if six.PY3:
-                # Recreate warning environment.
-                warnings.simplefilter('ignore', DeprecationWarning)
-                warnings.simplefilter('once', DrakeDeprecationWarning)
+            # Recreate warning environment.
+            warnings.simplefilter('ignore', DeprecationWarning)
+            warnings.simplefilter('once', DrakeDeprecationWarning)
             # TODO(eric.cousineau): Also different behavior here...
             # Is `unittest` setting a non-standard warning filter???
             base_deprecation()  # Should not appear.
@@ -199,17 +216,15 @@ class TestDeprecation(unittest.TestCase):
                 method_extra = ExampleClass.deprecated_method
                 prop = ExampleClass.deprecated_prop
                 prop_extra = ExampleClass.deprecated_prop
-            # N.B. `help(<module>)` is super verbose.
-            print("Help text:\n{}".format(
-                pydoc.getdoc(pydrake.common.deprecation)))
             # Manually set this back to `once`.
-            warnings.simplefilter("ignored", DeprecationWarning)
+            warnings.simplefilter("ignore", DeprecationWarning)
             warnings.simplefilter("once", DrakeDeprecationWarning)
 
     def test_deprecation_pybind(self):
         """Test C++ usage in `deprecation_pybind.h`."""
         from deprecation_example.cc_module import ExampleCppClass
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("once", DrakeDeprecationWarning)
             # This is a descriptor, so it will trigger on class access.
             ExampleCppClass.DeprecatedMethod
             self.assertEqual(len(w), 1)

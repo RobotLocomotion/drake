@@ -863,7 +863,7 @@ class GeometryState {
                              std::unique_ptr<Shape> shape,
                              const std::string& name,
                              const Isometry3<double>& X_PG,
-                             const Vector4<double>& diffuse,
+                             const IllustrationProperties& properties,
                              internal::InternalGeometry* parent_geometry);
 
   // The GeometryState gets its own source so it can own entities (such as the

@@ -163,14 +163,6 @@ class SceneGraphInspector {
     return state_->get_name(geometry_id);
   }
 
-  /** Returns the visual material of the geometry indicated by the given
-   `geometry_id` (if it exists).
-   @throws  std::logic_error if the geometry id is invalid.  */
-  const VisualMaterial& GetVisualMaterial(GeometryId geometry_id) const {
-    DRAKE_DEMAND(state_ != nullptr);
-    return state_->get_visual_material(geometry_id);
-  }
-
   /** Returns a pointer to the const proximity properties of the geometry
    identified by `geometry_id`.
    @param geometry_id   The identifier for the queried geometry.

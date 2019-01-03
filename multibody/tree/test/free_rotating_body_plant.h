@@ -29,7 +29,7 @@ namespace test {
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
 template<typename T>
-class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
+class FreeRotatingBodyPlant final : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeRotatingBodyPlant)
 
@@ -74,9 +74,11 @@ class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
   /// SetDefaultState(). Currently a non-zero value.
   Vector3<double> get_default_initial_angular_velocity() const;
 
-  using MultibodyTreeSystem<T>::tree;
-
  private:
+  const internal::MultibodyTree<T>& tree() const {
+    return internal::GetInternalTree(*this);
+  }
+
   void DoCalcTimeDerivatives(
       const systems::Context<T> &context,
       systems::ContinuousState<T> *derivatives) const override;
@@ -98,7 +100,7 @@ class FreeRotatingBodyPlant final : public MultibodyTreeSystem<T> {
   double J_{0};
 
   const RigidBody<T>* body_{nullptr};
-  const SpaceXYZMobilizer<T>* mobilizer_{nullptr};
+  const internal::SpaceXYZMobilizer<T>* mobilizer_{nullptr};
 };
 
 }  // namespace test

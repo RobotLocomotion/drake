@@ -51,18 +51,18 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
   AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
   plant.Finalize();
 
-  const MultibodyTree<double>& tree = plant.tree();
-  EXPECT_EQ(tree.num_bodies(), 4);
-  EXPECT_EQ(tree.num_frames(), 10);
+  EXPECT_EQ(plant.num_bodies(), 4);
+  EXPECT_EQ(plant.num_frames(), 10);
 
-  ASSERT_TRUE(tree.HasFrameNamed("frame_on_link1"));
-  ASSERT_TRUE(tree.HasFrameNamed("frame_on_link2"));
-  ASSERT_TRUE(tree.HasFrameNamed("link1_com"));
-  ASSERT_TRUE(tree.HasFrameNamed("link2_com"));
+  ASSERT_TRUE(plant.HasFrameNamed("frame_on_link1"));
+  ASSERT_TRUE(plant.HasFrameNamed("frame_on_link2"));
+  ASSERT_TRUE(plant.HasFrameNamed("link1_com"));
+  ASSERT_TRUE(plant.HasFrameNamed("link2_com"));
 
   // Sample a couple of frames.
-  const Frame<double>& frame_on_link1 = tree.GetFrameByName("frame_on_link1");
-  EXPECT_EQ(frame_on_link1.body().index(), tree.GetBodyByName("link1").index());
+  const Frame<double>& frame_on_link1 = plant.GetFrameByName("frame_on_link1");
+  EXPECT_EQ(
+      frame_on_link1.body().index(), plant.GetBodyByName("link1").index());
 
   math::RollPitchYaw<double> rpy_expected(-1, 0.1, 0.2);
   Vector3d xyz_expected(0.8, -0.2, 0.3);
@@ -73,8 +73,8 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, DoublePendulum) {
       frame_on_link1.GetFixedPoseInBodyFrame().matrix(),
       X_BF_expected.GetAsMatrix4(), 1e-10));
 
-  const Frame<double>& link2_com = tree.GetFrameByName("link2_com");
-  EXPECT_EQ(link2_com.body().index(), tree.GetBodyByName("link2").index());
+  const Frame<double>& link2_com = plant.GetFrameByName("link2_com");
+  EXPECT_EQ(link2_com.body().index(), plant.GetBodyByName("link2").index());
 }
 
 // This test verifies that we're able to successfully look up meshes using the

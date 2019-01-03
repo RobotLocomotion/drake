@@ -352,12 +352,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
    geometry is defined in a fixed pose relative to F (i.e., `X_FG`).
    Returns the corresponding unique geometry id.
 
-   @note The geometry will automatically be assigned both proximity and
-   illustration roles, regardless of whether or not the geometry instance has
-   been assigned properties. If properties have been assigned, those
-   properties will be used, otherwise default properties will be used. In the
-   near future, the *WithoutRole() variant of this function will replace this
-   function and no roles will be the normal behavior.
+   Roles will be assigned to the geometry if the corresponding properties have
+   been assigned to the instance.
 
    @param source_id   The id for the source registering the geometry.
    @param frame_id    The id for the frame F to hang the geometry on.
@@ -373,10 +369,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(SourceId source_id, FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
-  GeometryId RegisterGeometryWithoutRole(
-      SourceId source_id, FrameId frame_id,
-      std::unique_ptr<GeometryInstance> geometry);
-
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
@@ -384,22 +376,14 @@ class SceneGraph final : public systems::LeafSystem<T> {
                               FrameId frame_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
-  GeometryId RegisterGeometryWithoutRole(
-      systems::Context<T>* context, SourceId source_id, FrameId frame_id,
-      std::unique_ptr<GeometryInstance> geometry);
-
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered geometry P (indicated by `geometry_id`). The pose of
    the geometry is defined in a fixed pose relative to geometry P (i.e.,
    `X_PG`). By induction, this geometry is effectively rigidly affixed to the
    frame that P is affixed to. Returns the corresponding unique geometry id.
 
-   @note The geometry will automatically be assigned both proximity and
-   illustration roles, regardless of whether or not the geometry instance has
-   been assigned properties. If properties have been assigned, those
-   properties will be used, otherwise default properties will be used. In the
-   near future, the *WithoutRole() variant of this function will replace this
-   function and no roles will be the normal behavior.
+   Roles will be assigned to the geometry if the corresponding properties have
+   been assigned to the instance.
 
    @param source_id    The id for the source registering the geometry.
    @param geometry_id  The id for the parent geometry P.
@@ -415,10 +399,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
   GeometryId RegisterGeometry(SourceId source_id, GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
-  GeometryId RegisterGeometryWithoutRole(
-      SourceId source_id, GeometryId geometry_id,
-      std::unique_ptr<GeometryInstance> geometry);
-
   /** systems::Context-modifying variant of RegisterGeometry(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
@@ -426,20 +406,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
                               GeometryId geometry_id,
                               std::unique_ptr<GeometryInstance> geometry);
 
-  GeometryId RegisterGeometryWithoutRole(
-      systems::Context<T>* context, SourceId source_id, GeometryId geometry_id,
-      std::unique_ptr<GeometryInstance> geometry);
-
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
    Returns the corresponding unique geometry id.
 
-   @note The geometry will automatically be assigned both proximity and
-   illustration roles, regardless of whether or not the geometry instance has
-   been assigned properties. If properties have been assigned, those
-   properties will be used, otherwise default properties will be used. In the
-   near future, the *WithoutRole() variant of this function will replace this
-   function and no roles will be the normal behavior.
+   Roles will be assigned to the geometry if the corresponding properties have
+   been assigned to the instance.
 
    @param source_id     The id for the source registering the frame.
    @param geometry      The anchored geometry G to add to the world.
@@ -450,9 +422,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
                              3. the geometry's name doesn't satisfy the
                              requirements outlined in GeometryInstance.  */
   GeometryId RegisterAnchoredGeometry(
-      SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
-
-  GeometryId RegisterAnchoredGeometryWithoutRole(
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   /** Removes the given geometry G (indicated by `geometry_id`) from the given

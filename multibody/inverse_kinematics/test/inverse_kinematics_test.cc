@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
@@ -61,7 +62,11 @@ class TwoFreeBodiesTest : public ::testing::Test {
 GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   // Constructs an inverse kinematics problem for IIWA robot, make sure that
   // the joint limits are imposed.
-  auto plant = ConstructIiwaPlant("iiwa14_no_collision.sdf", 0.01);
+  auto plant = ConstructIiwaPlant(
+      FindResourceOrThrow(
+          "drake/manipulation/models/iiwa_description/sdf/"
+          "iiwa14_no_collision.sdf"),
+      0.01);
 
   InverseKinematics ik(*plant);
   // Now check the joint limits.

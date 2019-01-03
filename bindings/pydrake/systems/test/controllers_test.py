@@ -292,13 +292,13 @@ class TestControllers(unittest.TestCase):
 
         # Set the plant's context.
         plant_context = plant.CreateDefaultContext()
-        x_plant = plant.tree().GetMutablePositionsAndVelocities(plant_context)
+        x_plant = plant.GetMutablePositionsAndVelocities(plant_context)
         x_plant[:] = x
 
         # Compute the expected value of the generalized forces using
         # inverse dynamics.
-        tau_id = plant.tree().CalcInverseDynamics(
-            plant_context, vd_d, MultibodyForces(plant.tree()))
+        tau_id = plant.CalcInverseDynamics(
+            plant_context, vd_d, MultibodyForces(plant))
 
         # Verify the result.
         controller.CalcOutput(context, output)

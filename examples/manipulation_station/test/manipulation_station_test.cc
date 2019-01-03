@@ -108,7 +108,9 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   EXPECT_NO_THROW(station.GetOutputPort("plant_continuous_state"));
 }
 
-GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
+// Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
+// by setting the right side to zero and confirming that vdot ≈ 0.
+GTEST_TEST(ManipulationStationTest, CheckDynamics) {
   const double kTimeStep = 0.002;
   ManipulationStation<double> station(kTimeStep);
   station.SetupDefaultStation();
@@ -124,64 +126,34 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
   EXPECT_EQ(context->get_continuous_state().size(), 7);
 
   const auto& plant = station.get_multibody_plant();
-  const auto& position_to_state = dynamic_cast<
-      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
-      station.GetSubsystemByName("desired_state_from_position"));
 
-  auto& plant_context =
-      station.GetMutableSubsystemContext(plant, context.get());
-  auto& position_to_state_context =
-      station.GetMutableSubsystemContext(position_to_state, context.get());
+  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.735, 0.983);
+  const VectorXd iiwa_velocity = VectorXd::LinSpaced(7, -1.23, 0.456);
+  station.SetIiwaPosition(context.get(), iiwa_position);
+  station.SetIiwaVelocity(context.get(), iiwa_velocity);
 
-  const VectorXd iiwa_position = VectorXd::LinSpaced(7, 0.43, 0.7);
   context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
                         iiwa_position);
   context->FixInputPort(
       station.GetInputPort("iiwa_feedforward_torque").get_index(),
       VectorXd::Zero(7));
+  double wsg_position = station.GetWsgPosition(*context);
   context->FixInputPort(station.GetInputPort("wsg_position").get_index(),
-                        Vector1d(0.05));
+                        Vector1d(wsg_position));
   context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
                         Vector1d(40));
-  plant_context.get_mutable_discrete_state_vector().SetZero();
-  position_to_state.set_initial_position(&position_to_state_context,
-                                         VectorXd::Zero(7));
-
-  auto next_state = station.AllocateDiscreteVariables();
-  station.CalcDiscreteVariableUpdates(*context, next_state.get());
-
-  // Partially check M(q)vdot ≈ Mₑ(q)vdot_desired + τ_feedforward + τ_external
-  // by setting the right side to zero and confirming that vdot ≈ 0.
-
-  // Make up some state (with zeros for non-iiwa states).
-  VectorXd arbitrary_plant_state = VectorXd::Zero(plant.num_multibody_states());
-  const auto& base_joint =
-      plant.GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");
-  const int iiwa_position_start = base_joint.position_start();
-  const int iiwa_velocity_start =
-      plant.num_positions() + base_joint.velocity_start();
-  arbitrary_plant_state.segment<7>(iiwa_position_start) =
-      VectorXd::LinSpaced(7, 0.735, 0.983);
-  arbitrary_plant_state.segment<7>(iiwa_velocity_start) =
-      VectorXd::LinSpaced(7, -1.23, 0.456);
-  plant_context.get_mutable_discrete_state_vector().SetFromVector(
-      arbitrary_plant_state);
 
   // Set desired position to actual position and the desired velocity to the
   // actual velocity.
-  context->FixInputPort(station.GetInputPort("iiwa_position").get_index(),
-                        arbitrary_plant_state.segment<7>(iiwa_position_start));
-  position_to_state.set_initial_state(
-      &position_to_state_context,
-      arbitrary_plant_state.segment<7>(iiwa_position_start),
-      arbitrary_plant_state.segment<7>(iiwa_velocity_start));
-  // Set integral terms to zero.
+  const auto& position_to_state = dynamic_cast<
+      const systems::StateInterpolatorWithDiscreteDerivative<double>&>(
+      station.GetSubsystemByName("desired_state_from_position"));
+  auto& position_to_state_context =
+      station.GetMutableSubsystemContext(position_to_state, context.get());
+  position_to_state.set_initial_state(&position_to_state_context, iiwa_position,
+                                      iiwa_velocity);
+  // Ensure that integral terms are zero.
   context->get_mutable_continuous_state_vector().SetZero();
-
-  // Ensure that the feedforward torque is zero.
-  context->FixInputPort(
-      station.GetInputPort("iiwa_feedforward_torque").get_index(),
-      VectorXd::Zero(7));
 
   // Check that iiwa_torque_external == 0 (no contact).
   EXPECT_TRUE(station.GetOutputPort("iiwa_torque_external")
@@ -189,9 +161,14 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
                   .get_value()
                   .isZero());
 
+  auto next_state = station.AllocateDiscreteVariables();
   station.CalcDiscreteVariableUpdates(*context, next_state.get());
 
   // Check that vdot ≈ 0 by checking that next velocity ≈ velocity.
+  const auto& base_joint =
+      plant.GetJointByName<multibody::RevoluteJoint>("iiwa_joint_1");
+  const int iiwa_velocity_start =
+      plant.num_positions() + base_joint.velocity_start();
   VectorXd next_velocity =
       station.GetSubsystemDiscreteValues(plant, *next_state)
           .get_vector()
@@ -200,9 +177,7 @@ GTEST_TEST(ManipulationStationTest, CheckStateFromPosition) {
 
   // Note: This tolerance could be much smaller if the wsg was not attached.
   const double kTolerance = 1e-4;  // rad/sec.
-  EXPECT_TRUE(
-      CompareMatrices(arbitrary_plant_state.segment<7>(iiwa_velocity_start),
-                      next_velocity, kTolerance));
+  EXPECT_TRUE(CompareMatrices(iiwa_velocity, next_velocity, kTolerance));
 }
 
 GTEST_TEST(ManipulationStationTest, CheckWsg) {
@@ -272,6 +247,19 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   // The controlled model does not register with a scene graph, so has zero
   // collisions.
   EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
+}
+
+GTEST_TEST(ManipulationStationTest, SetupClutterClearingStation) {
+  ManipulationStation<double> station(0.002);
+  station.SetupClutterClearingStation(IiwaCollisionModel::kNoCollision);
+  station.Finalize();
+
+  // Make sure we get through the setup and initialization.
+  auto context = station.CreateDefaultContext();
+
+  // Check that domain randomization works.
+  RandomGenerator generator;
+  station.SetRandomContext(context.get(), &generator);
 }
 
 // Check that making many stations does not exhaust resources.

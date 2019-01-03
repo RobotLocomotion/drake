@@ -43,7 +43,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   const float g = 0.5f;
   const float b = 0.25f;
   const float a = 0.125f;
-  GeometryId sphere_id = scene_graph.RegisterGeometryWithoutRole(
+  GeometryId sphere_id = scene_graph.RegisterGeometry(
       source_id, frame_id,
       make_unique<GeometryInstance>(Isometry3d::Identity(),
                                     make_unique<Sphere>(radius), "sphere"));
@@ -55,7 +55,7 @@ GTEST_TEST(GeometryVisualization, SimpleScene) {
   // should not impact the result.
   FrameId collision_frame_id = scene_graph.RegisterFrame(
       source_id, GeometryFrame("collision frame", Isometry3d::Identity()));
-  GeometryId collision_id = scene_graph.RegisterGeometryWithoutRole(
+  GeometryId collision_id = scene_graph.RegisterGeometry(
       source_id, collision_frame_id,
       make_unique<GeometryInstance>(Isometry3d::Identity(),
       make_unique<Sphere>(radius), "sphere_collision"));

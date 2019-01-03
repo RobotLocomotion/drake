@@ -112,7 +112,7 @@ class JointActuator final
   // MultibodyTree::CloneToScalar().
   template <typename ToScalar>
   std::unique_ptr<JointActuator<ToScalar>> CloneToScalar(
-  const MultibodyTree<ToScalar>& cloned_tree) const {
+  const internal::MultibodyTree<ToScalar>& cloned_tree) const {
     return DoCloneToScalar(cloned_tree);
   }
   /// @endcond
@@ -129,17 +129,17 @@ class JointActuator final
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `double`.
   std::unique_ptr<JointActuator<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const;
+      const internal::MultibodyTree<double>& tree_clone) const;
 
   // Helper to clone an actuator (templated on T) to an actuator templated on
   // `AutoDiffXd`.
   std::unique_ptr<JointActuator<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const;
 
   // Implementation for MultibodyTreeElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each actuator retrieves its topology
   // from the parent MultibodyTree.
-  void DoSetTopology(const MultibodyTreeTopology&) final;
+  void DoSetTopology(const internal::MultibodyTreeTopology&) final;
 
   // The actuator's unique name in the MultibodyTree model
   std::string name_;
@@ -148,7 +148,7 @@ class JointActuator final
   JointIndex joint_index_;
 
   // The topology of this actuator. Only valid post- MultibodyTree::Finalize().
-  JointActuatorTopology topology_;
+  internal::JointActuatorTopology topology_;
 };
 
 }  // namespace multibody

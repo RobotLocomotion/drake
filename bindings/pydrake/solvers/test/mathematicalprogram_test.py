@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 
 import pydrake
+from pydrake.common.deprecation import DrakeDeprecationWarning
 import pydrake.symbolic as sym
 
 
@@ -169,6 +170,7 @@ class TestMathematicalProgram(unittest.TestCase):
 
         # Test deprecated method.
         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('once', DrakeDeprecationWarning)
             c = binding.constraint()
             self.assertEqual(len(w), 1)
 

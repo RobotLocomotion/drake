@@ -237,16 +237,16 @@ class PrismaticJoint final : public Joint<T> {
   MakeImplementationBlueprint() const final {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     blue_print->mobilizers_.push_back(
-        std::make_unique<PrismaticMobilizer<T>>(
+        std::make_unique<internal::PrismaticMobilizer<T>>(
             this->frame_on_parent(), this->frame_on_child(), axis_));
     return std::move(blue_print);
   }
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const final;
+      const internal::MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   // Make PrismaticJoint templated on every other scalar type a friend of
   // PrismaticJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -259,30 +259,29 @@ class PrismaticJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const PrismaticMobilizer<T>* get_mobilizer() const {
+  const internal::PrismaticMobilizer<T>* get_mobilizer() const {
     // This implementation should only have one mobilizer.
     DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
-    const PrismaticMobilizer<T>* mobilizer =
-        dynamic_cast<const PrismaticMobilizer<T>*>(
+    const internal::PrismaticMobilizer<T>* mobilizer =
+        dynamic_cast<const internal::PrismaticMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }
 
-  PrismaticMobilizer<T>* get_mutable_mobilizer() {
+  internal::PrismaticMobilizer<T>* get_mutable_mobilizer() {
     // This implementation should only have one mobilizer.
     DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
-    PrismaticMobilizer<T>* mobilizer = dynamic_cast<PrismaticMobilizer<T>*>(
+    auto* mobilizer = dynamic_cast<internal::PrismaticMobilizer<T>*>(
         this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
   }
 
-
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Joint<ToScalar>> TemplatedDoCloneToScalar(
-      const MultibodyTree<ToScalar>& tree_clone) const;
+      const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
   // This is the joint's axis expressed in either M or F since axis_M = axis_F.
   // It is a unit vector.

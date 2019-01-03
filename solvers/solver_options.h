@@ -37,6 +37,9 @@ namespace solvers {
  * SCS header file https://github.com/cvxgrp/scs/blob/master/include/scs.h
  * Note that the SCS code on github master might be more up-to-date than the
  * version used in Drake.
+ *
+ * "MOSEK" -- Parameter name and values as spedified in Mosek Reference
+ * https://docs.mosek.com/8.0/capi/parameters.html
  */
 class SolverOptions {
  public:

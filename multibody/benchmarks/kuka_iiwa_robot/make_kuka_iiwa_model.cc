@@ -31,7 +31,7 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const Body<T>& A,
     const Vector3<double>& q123A, const Vector3<double>& xyzA,
     const Body<T>& B, const Vector3<double>& revolute_unit_vector,
-    MultibodyTree<T>* model) {
+    multibody::internal::MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
   const math::RollPitchYaw<double> rpy(q123A);
   const math::RotationMatrix<double> R_AAb(rpy);
@@ -46,10 +46,11 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
 }
 
 template <typename T>
-unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
+unique_ptr<multibody::internal::MultibodyTree<T>>
+KukaIiwaModelBuilder<T>::Build() const {
   // Create a mostly empty MultibodyTree (it has a built-in "world" body).
   // Newtonian reference frame (linkN) is the world body.
-  auto model = make_unique<MultibodyTree<T>>();
+  auto model = make_unique<multibody::internal::MultibodyTree<T>>();
 
   // Create SpatialInertia for each link in this robot. M_Bo_B designates a
   // rigid body B's spatial inertia about Bo (B's origin), expressed in B.
@@ -155,11 +156,11 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
   if (finalize_model_) model->Finalize();
   return model;
 }
-}  // namespace internal
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class internal::KukaIiwaModelBuilder);
 
+}  // namespace internal
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody

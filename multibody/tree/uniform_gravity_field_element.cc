@@ -17,14 +17,14 @@ UniformGravityFieldElement<T>::UniformGravityFieldElement(Vector3<double> g_W)
 template <typename T>
 VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
     const systems::Context<T>& context) const {
-  const MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const auto& mbt_context =
-      dynamic_cast<const MultibodyTreeContext<T>&>(context);
+      dynamic_cast<const internal::MultibodyTreeContext<T>&>(context);
 
   // TODO(amcastro-tri): Get these from the cache.
-  PositionKinematicsCache<T> pc(model.get_topology());
+  internal::PositionKinematicsCache<T> pc(model.get_topology());
   model.CalcPositionKinematicsCache(context, &pc);
-  VelocityKinematicsCache<T> vc(model.get_topology());
+  internal::VelocityKinematicsCache<T> vc(model.get_topology());
   vc.InitializeToZero();
 
   // Create a multibody forces initialized by default to zero forces.
@@ -65,21 +65,21 @@ VectorX<T> UniformGravityFieldElement<T>::CalcGravityGeneralizedForces(
 
 template <typename T>
 void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
-    const MultibodyTreeContext<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>&,
+    const internal::MultibodyTreeContext<T>& context,
+    const internal::PositionKinematicsCache<T>& pc,
+    const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
   // Alias to the array of applied body forces:
   std::vector<SpatialForce<T>>& F_Bo_W_array = forces->mutable_body_forces();
 
   // Add the force of gravity contribution for each body in the model.
   // Skip the world.
-  const MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.num_bodies();
   // Skip the "world" body.
   for (BodyIndex body_index(1); body_index < num_bodies; ++body_index) {
     const Body<T>& body = model.get_body(body_index);
-    BodyNodeIndex node_index = body.node_index();
+    internal::BodyNodeIndex node_index = body.node_index();
 
     // TODO(amcastro-tri): Replace this CalcXXX() calls by GetXXX() calls once
     // caching is in place.
@@ -97,11 +97,11 @@ void UniformGravityFieldElement<T>::DoCalcAndAddForceContribution(
 
 template <typename T>
 T UniformGravityFieldElement<T>::CalcPotentialEnergy(
-    const MultibodyTreeContext<T>& context,
-    const PositionKinematicsCache<T>& pc) const {
+    const internal::MultibodyTreeContext<T>& context,
+    const internal::PositionKinematicsCache<T>& pc) const {
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
-  const MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.num_bodies();
   T TotalPotentialEnergy = 0.0;
   // Skip the "world" body.
@@ -126,12 +126,12 @@ T UniformGravityFieldElement<T>::CalcPotentialEnergy(
 
 template <typename T>
 T UniformGravityFieldElement<T>::CalcConservativePower(
-    const MultibodyTreeContext<T>& context,
-    const PositionKinematicsCache<T>& pc,
-    const VelocityKinematicsCache<T>& vc) const {
+    const internal::MultibodyTreeContext<T>& context,
+    const internal::PositionKinematicsCache<T>& pc,
+    const internal::VelocityKinematicsCache<T>& vc) const {
   // Add the potential energy due to gravity for each body in the model.
   // Skip the world.
-  const MultibodyTree<T>& model = this->get_parent_tree();
+  const internal::MultibodyTree<T>& model = this->get_parent_tree();
   const int num_bodies = model.num_bodies();
   T TotalConservativePower = 0.0;
   // Skip the "world" body.
@@ -160,9 +160,9 @@ T UniformGravityFieldElement<T>::CalcConservativePower(
 
 template <typename T>
 T UniformGravityFieldElement<T>::CalcNonConservativePower(
-    const MultibodyTreeContext<T>&,
-    const PositionKinematicsCache<T>&,
-    const VelocityKinematicsCache<T>&) const {
+    const internal::MultibodyTreeContext<T>&,
+    const internal::PositionKinematicsCache<T>&,
+    const internal::VelocityKinematicsCache<T>&) const {
   // A uniform gravity field is conservative. Therefore return zero power.
   return 0.0;
 }
@@ -170,14 +170,14 @@ T UniformGravityFieldElement<T>::CalcNonConservativePower(
 template <typename T>
 std::unique_ptr<ForceElement<double>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const MultibodyTree<double>&) const {
+    const internal::MultibodyTree<double>&) const {
   return std::make_unique<UniformGravityFieldElement<double>>(gravity_vector());
 }
 
 template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 UniformGravityFieldElement<T>::DoCloneToScalar(
-    const MultibodyTree<AutoDiffXd>&) const {
+    const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::make_unique<UniformGravityFieldElement<AutoDiffXd>>(
       gravity_vector());
 }
