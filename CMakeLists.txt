@@ -290,6 +290,17 @@ if(CMAKE_COLOR_MAKEFILE)
   list(INSERT BAZEL_TARGETS_ARGS 0 "--color")
 endif()
 
+if(CMAKE_INSTALL_NAME_TOOL)
+  list(INSERT BAZEL_TARGETS_ARGS 0
+    "--install_name_tool"
+    "${CMAKE_INSTALL_NAME_TOOL}"
+  )
+endif()
+
+if(CMAKE_STRIP)
+  list(INSERT BAZEL_TARGETS_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
+endif()
+
 # If we are in debug mode, do not strip symbols.
 if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebugInfo)
   # SNOPT has restrictions for redistribution given that we are statically
