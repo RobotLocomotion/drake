@@ -40,6 +40,7 @@ def _make_lcm_subscriber(cls, channel, lcm_type, lcm):
     serializer = PySerializer(lcm_type)
     return cls(channel, serializer, lcm)
 
+
 @classmethod
 def _make_lcm_publisher(cls, channel, lcm_type, lcm, publish_period=0.0):
     """Convenience to create an LCM system with a concrete type.

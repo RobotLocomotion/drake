@@ -440,9 +440,9 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 
   simulator->Start();
 
-  // Takes two steps to trigger the publishing of an LCM draw message.
-  simulator->StepBy(0.005);
-  simulator->StepBy(0.005);
+  // LCM draw messages are published every 1/60s (starting at time zero).
+  const double step_size = 1.0/60;
+  simulator->StepBy(step_size);
 
   const double initial_x = 0.0;
 
@@ -455,8 +455,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 
   // Sets the commanded acceleration to be zero.
   simulator->SetMaliputRailcarAccelerationCommand(id, 0);
-  simulator->StepBy(0.005);
-  simulator->StepBy(0.005);
+  simulator->StepBy(step_size);
 
   // Verifies that the vehicle hasn't moved yet. This is expected since the
   // commanded acceleration is zero.
@@ -469,8 +468,7 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
   simulator->SetMaliputRailcarAccelerationCommand(id, 10);
 
   // Advances the simulation to allow the MaliputRailcar to begin accelerating.
-  simulator->StepBy(0.005);
-  simulator->StepBy(0.005);
+  simulator->StepBy(step_size);
 
   // Verifies that the MaliputRailcar has moved forward relative to prior to
   // the nonzero acceleration command being issued.

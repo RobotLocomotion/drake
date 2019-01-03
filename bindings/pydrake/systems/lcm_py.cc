@@ -93,10 +93,12 @@ PYBIND11_MODULE(lcm, m) {
         .def("PublishInputAsLcmMessage", &Class::PublishInputAsLcmMessage,
             py::arg("context"),
             doc.LcmPublisherSystem.PublishInputAsLcmMessage.doc);
-//        .def("set_publish_period", &Class::set_publish_period,
-//            py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc);
-//    cls.attr("publish_period") = "Use constructor instead";
-//    DeprecateAttribute(cls, "set_publish_period", cls.attr("publish_period"));
+    //        .def("set_publish_period", &Class::set_publish_period,
+    //            py::arg("period"),
+    //            doc.LcmPublisherSystem.set_publish_period.doc);
+    //    cls.attr("publish_period") = "Use constructor instead";
+    //    DeprecateAttribute(cls, "set_publish_period",
+    //    cls.attr("publish_period"));
   }
 
   {
