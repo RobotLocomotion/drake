@@ -221,6 +221,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SceneGraph)
 
+  /** Constructs a default (empty) scene graph. */
   SceneGraph();
 
   /** Constructor used for scalar conversions. It should only be used to convert

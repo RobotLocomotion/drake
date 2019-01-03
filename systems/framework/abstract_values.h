@@ -20,16 +20,22 @@ class AbstractValues {
   // AbstractState is not copyable or moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValues)
 
-  // Constructs an empty AbstractValues.
+  /// Constructs an empty AbstractValues.
   AbstractValues();
 
   /// Constructs an AbstractValues that owns the underlying data.
+  ///
+  /// @exclude_from_pydrake_mkdoc{The next overload's docstring is better, and
+  /// we only need one of the two -- overloading on ownership doesn't make
+  /// sense for pydrake.}
   explicit AbstractValues(std::vector<std::unique_ptr<AbstractValue>>&& data);
 
   /// Constructs an AbstractValues that does not own the underlying data.
   explicit AbstractValues(const std::vector<AbstractValue*>& data);
 
   /// Constructs an AbstractValues that owns a single @p datum.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
   explicit AbstractValues(std::unique_ptr<AbstractValue> datum);
 
   virtual ~AbstractValues();

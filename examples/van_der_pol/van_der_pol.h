@@ -32,6 +32,7 @@ class VanDerPolOscillator final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VanDerPolOscillator)
 
+  /// Constructs a default oscillator.
   VanDerPolOscillator();
 
   /// Scalar-converting copy constructor.

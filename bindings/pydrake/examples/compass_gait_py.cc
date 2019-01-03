@@ -28,12 +28,12 @@ PYBIND11_MODULE(compass_gait, m) {
 
   py::class_<CompassGait<T>, LeafSystem<T>>(
       m, "CompassGait", doc.CompassGait.doc)
-      .def(py::init<>(), doc.CompassGait.ctor.doc_3);
+      .def(py::init<>(), doc.CompassGait.ctor.doc);
 
   // TODO(russt): Remove custom bindings once #8096 is resolved.
   py::class_<CompassGaitParams<T>, BasicVector<T>>(
       m, "CompassGaitParams", doc.CompassGaitParams.doc)
-      .def(py::init<>(), doc.CompassGaitParams.ctor.doc_0args)
+      .def(py::init<>(), doc.CompassGaitParams.ctor.doc)
       .def("mass_hip", &CompassGaitParams<T>::mass_hip,
           doc.CompassGaitParams.mass_hip.doc)
       .def("mass_leg", &CompassGaitParams<T>::mass_leg,
@@ -62,7 +62,7 @@ PYBIND11_MODULE(compass_gait, m) {
 
   py::class_<CompassGaitContinuousState<T>, BasicVector<T>>(
       m, "CompassGaitContinuousState", doc.CompassGaitContinuousState.doc)
-      .def(py::init<>(), doc.CompassGaitContinuousState.ctor.doc_0args)
+      .def(py::init<>(), doc.CompassGaitContinuousState.ctor.doc)
       .def("stance", &CompassGaitContinuousState<T>::stance,
           doc.CompassGaitContinuousState.stance.doc)
       .def("swing", &CompassGaitContinuousState<T>::swing,

@@ -154,10 +154,13 @@ An example of incorporating docstrings:
           .def(py::init(), doc.ExampleClass.ctor.doc_0args)
           ...
           .def(py::init<const RotationMatrix<T>&>(), py::arg("R"),
-               doc.RigidTransform.ctor.doc_1args)
+              doc.RigidTransform.ctor.doc_1args)
+          .def(py::init<const Eigen::Quaternion<T>&, const Vector3<T>&>(),
+              py::arg("quaternion"), py::arg("p"),
+              doc.RigidTransform.ctor.doc_2args_quaternion_p)
           ...
           .def("set_rotation", &RigidTransform<T>::set_rotation, py::arg("R"),
-               doc.RigidTransform.set_rotation.doc)
+              doc.RigidTransform.set_rotation.doc)
       ...
     }
 
@@ -169,14 +172,16 @@ To view the documentation rendered in Sphinx:
 is suggested to preview documentation using this platform. Other platforms may
 have slightly different generated documentation.
 
-To see what indices are present, generate and open the docstring header:
+To browse the generated documentation strings that are available for use (or
+especially, to find out the names for overloaded functions' documentation),
+generate and open the docstring header:
 
     bazel build //bindings/pydrake:generate_pybind_documentation_header
     $EDITOR bazel-genfiles/bindings/pydrake/documentation_pybind.h
 
-You can search for the symbol you want, e.g.
-`drake::math::RigidTransform::RigidTransform<T>`, and view the include file
-and line corresponding to the symbol that the docstring was pulled from.
+Search the comments for the symbol of interest, e.g.,
+`drake::math::RigidTransform::RigidTransform<T>`, and view the include file and
+line corresponding to the symbol that the docstring was pulled from.
 
 @note This file may be large, on the order of ~100K lines; be sure to use an
 efficient editor!
@@ -190,8 +195,13 @@ For more detail:
 - The docstring for an overloaded symbol will be `.doc_something` instead of
 just `.doc`, where the `_something` suffix conveys some information about the
 overload.  Browse the documentation_pybind.h (described above) for details.
-- Constructors are accessible as `{symbol}.ctor.doc`, `{symbol}.ctor.doc_2`,
-etc.
+Most commonly, the names will be `doc_1args`, `doc_3args`, etc.  Be sure that
+the pydrake binding's signature is consistent with the docstring argument
+count.
+- To suppress a Doxygen comment from mkdoc, add the custom Doxygen command
+`@exclude_from_pydrake_mkdoc{Explanatory text.}` to the API comment text.
+(This is useful to help dismiss unbound overloads, so that mkdoc's choice of
+`_something` name suffix is simpler for the remaining overloads.)
 
 @anchor PydrakeKeepAlive
 ## Keep Alive Behavior

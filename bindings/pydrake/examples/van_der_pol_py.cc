@@ -25,7 +25,7 @@ PYBIND11_MODULE(van_der_pol, m) {
 
   py::class_<VanDerPolOscillator<T>, LeafSystem<T>>(
       m, "VanDerPolOscillator", doc.VanDerPolOscillator.doc)
-      .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc_3);
+      .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc);
 }
 
 }  // namespace pydrake

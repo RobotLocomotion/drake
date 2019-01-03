@@ -31,6 +31,8 @@ class ConstantValueSource : public LeafSystem<T> {
 
   // TODO(eric.cousineau): Deprecate public access on 12/15/2018.
   /// @param value The constant value which will be owned by this system.
+  /// @exclude_from_pydrake_mkdoc{This overload is scheduled to be deprecated
+  /// and is not bound in pydrake.}
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.

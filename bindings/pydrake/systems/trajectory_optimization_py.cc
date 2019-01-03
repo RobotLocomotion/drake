@@ -66,13 +66,13 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           [](MultipleShooting& prog, const symbolic::Expression& g) {
             prog.AddRunningCost(g);
           },
-          doc.MultipleShooting.AddRunningCost.doc_1args)
+          doc.MultipleShooting.AddRunningCost.doc_1args_g)
       .def("AddRunningCost",
           [](MultipleShooting& prog,
               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
             prog.AddRunningCost(g);
           },
-          doc.MultipleShooting.AddRunningCost.doc_0args)
+          doc.MultipleShooting.AddRunningCost.doc_1args_constEigenMatrixBase)
       .def("AddConstraintToAllKnotPoints",
           &MultipleShooting::AddConstraintToAllKnotPoints,
           doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
@@ -86,12 +86,12 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("AddFinalCost",
           py::overload_cast<const symbolic::Expression&>(
               &MultipleShooting::AddFinalCost),
-          doc.MultipleShooting.AddFinalCost.doc)
+          doc.MultipleShooting.AddFinalCost.doc_1args_e)
       .def("AddFinalCost",
           py::overload_cast<
               const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
               &MultipleShooting::AddFinalCost),
-          doc.MultipleShooting.AddFinalCost.doc_2)
+          doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
       .def("AddInputTrajectoryCallback",
           &MultipleShooting::AddInputTrajectoryCallback,
           doc.MultipleShooting.AddInputTrajectoryCallback.doc)
@@ -121,7 +121,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
                const systems::Context<double>&, int, double, double>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
           py::arg("minimum_timestep"), py::arg("maximum_timestep"),
-          doc.DirectCollocation.ctor.doc_5args)
+          doc.DirectCollocation.ctor.doc)
       .def("ReconstructInputTrajectory",
           &DirectCollocation::ReconstructInputTrajectory,
           doc.DirectCollocation.ReconstructInputTrajectory.doc)
@@ -134,7 +134,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       m, "DirectCollocationConstraint", doc.DirectCollocationConstraint.doc)
       .def(py::init<const systems::System<double>&,
                const systems::Context<double>&>(),
-          doc.DirectCollocationConstraint.ctor.doc_2args);
+          doc.DirectCollocationConstraint.ctor.doc);
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
       py::arg("constraint"), py::arg("timestep"), py::arg("state"),
@@ -146,11 +146,14 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def(py::init<const systems::System<double>*,
                const systems::Context<double>&, int>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor.doc_3)
+          doc.DirectTranscription.ctor
+              .doc_3args_system_context_num_time_samples)
       .def(py::init<const systems::LinearSystem<double>*,
                const systems::Context<double>&, int>(),
-          py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          doc.DirectTranscription.ctor.doc_4)
+          py::arg("linear_system"), py::arg("context"),
+          py::arg("num_time_samples"),
+          doc.DirectTranscription.ctor
+              .doc_3args_linear_system_context_num_time_samples)
       // TODO(russt): Add this once TimeVaryingLinearSystem is bound.
       //      .def(py::init<const TimeVaryingLinearSystem<double>*,
       //                    const Context<double>&, int>())

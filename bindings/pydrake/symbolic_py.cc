@@ -155,7 +155,7 @@ PYBIND11_MODULE(symbolic, m) {
           doc.Variables.insert.doc_1args_var)
       .def("insert",
           [](Variables& self, const Variables& vars) { self.insert(vars); },
-          doc.Variables.insert.doc_0args)
+          doc.Variables.insert.doc_1args_vars)
       .def("erase",
           [](Variables& self, const Variable& key) { return self.erase(key); },
           doc.Variables.erase.doc_1args_key)

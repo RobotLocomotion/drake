@@ -60,7 +60,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `System` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `Context` alive.
-            py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc_3args);
+            py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc);
 
     DefineTemplateClassWithDefault<RungeKutta3Integrator<T>, IntegratorBase<T>>(
         m, "RungeKutta3Integrator", GetPyParam<T>(),
@@ -70,7 +70,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `System` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `Context` alive.
-            py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc_2args);
+            py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
     DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc)
@@ -79,7 +79,7 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `System` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, ownership: `Context` keeps `self` alive.
-            py::keep_alive<3, 1>(), doc.Simulator.ctor.doc_3)
+            py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc)
         .def("StepTo", &Simulator<T>::StepTo, doc.Simulator.StepTo.doc)
@@ -97,7 +97,8 @@ PYBIND11_MODULE(analysis, m) {
               return self->reset_integrator(std::move(integrator));
             },
             // Keep alive, ownership: 'Integrator' keeps 'self' alive.
-            py::keep_alive<2, 1>(), doc.Simulator.reset_integrator.doc)
+            py::keep_alive<2, 1>(),
+            doc.Simulator.reset_integrator.doc_1args_stduniqueptr)
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step,
             doc.Simulator.set_publish_every_time_step.doc)
