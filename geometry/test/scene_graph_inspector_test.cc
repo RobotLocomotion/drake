@@ -11,7 +11,7 @@ namespace drake {
 namespace geometry {
 
 // Helper class for testing the SceneGraphInspector; specifically to create
-// a geometry state with interesting data and instantiate the inspector.
+// a geometry state and instantiate the inspector.
 class SceneGraphInspectorTester {
  public:
   SceneGraphInspectorTester() { inspector_.set(&state_); }
@@ -32,7 +32,9 @@ using std::make_unique;
 // Simply exercises all the methods to confirm there's no build or execution
 // problems. NOTE: All methods on SceneGraphInspector should be invoked here.
 // Because these are thin wrappers of GeometryState methods, the *correctness*
-// of these methods is left to be tested directly on GeometryState.
+// of these methods is left to be tested directly on GeometryState. NOTE: if
+// SceneGraphInspector adds methods that actually have meaningful internal
+// logic, they should be tested explicitly for correctness of that logic.
 GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   SceneGraphInspectorTester tester;
   const SceneGraphInspector<double>& inspector = tester.inspector();

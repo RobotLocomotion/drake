@@ -159,8 +159,8 @@ const std::string& GeometryState<T>::get_source_name(SourceId id) const {
 
 template <typename T>
 int GeometryState<T>::NumFramesForSource(SourceId source_id) const {
-  if (source_frame_id_map_.count(source_id) == 0) return 0;
-  return static_cast<int>(source_frame_id_map_.at(source_id).size());
+  const auto& frame_set = GetValueOrThrow(source_id, source_frame_id_map_);
+  return static_cast<int>(frame_set.size());
 }
 
 template <typename T>
