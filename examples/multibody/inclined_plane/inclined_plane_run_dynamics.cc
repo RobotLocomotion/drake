@@ -43,7 +43,6 @@ using lcm::DrakeLcm;
 using drake::multibody::benchmarks::inclined_plane::AddInclinedPlaneToPlant;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
-using drake::multibody::MultibodyTree;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;

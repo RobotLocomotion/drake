@@ -29,8 +29,9 @@ class MultibodyPlantTester {
 
   // Use private constructor to create an MBP from an MBT.
   template <typename T>
-  static std::unique_ptr<MultibodyPlant<T>> CreateMultibodyPlantFromTree(
-      std::unique_ptr<MultibodyTree<T>> tree, double time_step = 0.) {
+  static std::unique_ptr<MultibodyPlant<T>>
+  CreateMultibodyPlantFromTree(
+      std::unique_ptr<internal::MultibodyTree<T>> tree, double time_step = 0.) {
     // Do not use `make_unique` for the private constructor, as it would have
     // to be a friend of MultibodyPlant.
     return std::unique_ptr<MultibodyPlant<T>>(
@@ -145,8 +146,8 @@ class DrakeKukaIIwaRobot {
 
     // For each body, set the pose and spatial velocity in the position,
     // velocity, and acceleration caches with specified values for testing.
-    PositionKinematicsCache<T> pc(tree().get_topology());
-    VelocityKinematicsCache<T> vc(tree().get_topology());
+    multibody::internal::PositionKinematicsCache<T> pc(tree().get_topology());
+    multibody::internal::VelocityKinematicsCache<T> vc(tree().get_topology());
 
     // Retrieve end-effector pose from position kinematics cache.
     tree().CalcPositionKinematicsCache(*context_, &pc);
@@ -192,15 +193,16 @@ class DrakeKukaIIwaRobot {
     SetJointAnglesAnd1stDerivatives(q.data(), qDt.data());
 
     // Get the position, velocity, and acceleration cache from the context.
-    PositionKinematicsCache<T> pc(tree().get_topology());
-    VelocityKinematicsCache<T> vc(tree().get_topology());
-    AccelerationKinematicsCache<T> ac(tree().get_topology());
+    multibody::internal::PositionKinematicsCache<T> pc(tree().get_topology());
+    multibody::internal::VelocityKinematicsCache<T> vc(tree().get_topology());
+    multibody::internal::AccelerationKinematicsCache<T> ac(
+        tree().get_topology());
     tree().CalcPositionKinematicsCache(*context_, &pc);
     tree().CalcVelocityKinematicsCache(*context_, pc, &vc);
     tree().CalcAccelerationKinematicsCache(*context_, pc, vc, qDDt, &ac);
 
     // Applied forces:
-    MultibodyForces<T> forces(tree());
+    MultibodyForces<T> forces(plant());
 
     // Adds the previously included effect of gravity into forces.
     tree().CalcForceElementsContribution(*context_, pc, vc, &forces);
@@ -242,7 +244,9 @@ class DrakeKukaIIwaRobot {
     return reaction_forces;
   }
 
-  const MultibodyTree<T>& tree() const { return plant_->tree(); }
+  const multibody::internal::MultibodyTree<T>& tree() const {
+    return multibody::internal::GetInternalTree(*plant_);
+  }
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:

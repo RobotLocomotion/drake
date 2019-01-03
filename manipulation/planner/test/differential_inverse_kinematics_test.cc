@@ -86,22 +86,13 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     // For the MBT version.
     mbp_ = BuildMultibodyPlant();
     frame_E_mbt_ = &mbp_->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-        mbp_->tree().GetBodyByName("iiwa_link_7").body_frame(),
+        mbp_->GetBodyByName("iiwa_link_7").body_frame(),
         frame_E_->get_transform_to_body()));
     mbp_->Finalize();
 
     context_ = mbp_->CreateDefaultContext();
-
-    SetMBTState(q, v);
-  }
-
-  void SetMBTState(const VectorX<double>& q, const VectorX<double>& v) {
-    DRAKE_DEMAND(q.size() == mbp_->num_positions());
-    DRAKE_DEMAND(v.size() == mbp_->num_velocities());
-    auto context =
-        dynamic_cast<multibody::MultibodyTreeContext<double>*>(context_.get());
-    context->get_mutable_positions() = q;
-    context->get_mutable_velocities() = v;
+    mbp_->SetPositions(context_.get(), q);
+    mbp_->SetVelocities(context_.get(), v);
   }
 
   void CheckPositiveResult(const Vector6<double>& V_WE,
@@ -207,8 +198,9 @@ TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
 // Test MBP and MBT version gives the same answer.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const auto& tree = mbp_->tree();
   DifferentialInverseKinematicsResult mbt_result =
-      DoDifferentialInverseKinematics(mbp_->tree(), *context_, V_WE,
+      DoDifferentialInverseKinematics(tree, *context_, V_WE,
                                       *frame_E_mbt_, *params_);
   EXPECT_TRUE(CompareMatrices(mbp_result.joint_velocities.value(),
                               mbt_result.joint_velocities.value(), eps));
@@ -229,7 +221,7 @@ TEST_F(DifferentialInverseKinematicsTest, MultiBodyTreeTest) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   mbt_result = DoDifferentialInverseKinematics(
-      mbp_->tree(), *context_, X_WE_desired, *frame_E_mbt_, *params_);
+      tree, *context_, X_WE_desired, *frame_E_mbt_, *params_);
   EXPECT_TRUE(CompareMatrices(mbp_result.joint_velocities.value(),
                               mbt_result.joint_velocities.value(), eps));
 #pragma GCC diagnostic pop  // pop -Wdeprecated-declarations

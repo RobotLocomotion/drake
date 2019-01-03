@@ -12,12 +12,12 @@ namespace drake {
 namespace multibody {
 namespace {
 AutoDiffVecXd EvalGazeTargetConstraintAutoDiff(
-    const MultibodyTree<AutoDiffXd>& tree, const Frame<AutoDiffXd>& frameA,
+    const MultibodyPlant<AutoDiffXd>& plant, const Frame<AutoDiffXd>& frameA,
     const Vector3<double>& p_AS, const Vector3<double>& n_A,
     const Frame<AutoDiffXd>& frameB, const Vector3<double>& p_BT,
     double cone_half_angle, const Context<AutoDiffXd>& context) {
   Vector3<AutoDiffXd> p_AT;
-  tree.CalcPointsPositions(context, frameB, p_BT.cast<AutoDiffXd>(), frameA,
+  plant.CalcPointsPositions(context, frameB, p_BT.cast<AutoDiffXd>(), frameA,
                            &p_AT);
   const Vector3<AutoDiffXd> p_ST_A = p_AT - p_AS;
   Vector2<AutoDiffXd> y_autodiff;
@@ -39,40 +39,40 @@ TEST_F(IiwaKinematicConstraintTest, GazeTargetConstraint) {
                                   cone_half_angle, plant_context_);
 
   EXPECT_EQ(constraint.num_constraints(), 2);
-  EXPECT_EQ(constraint.num_vars(), iiwa_autodiff_.tree().num_positions());
+  EXPECT_EQ(constraint.num_vars(), plant_autodiff_->num_positions());
   EXPECT_TRUE(
       CompareMatrices(constraint.lower_bound(), Eigen::Vector2d::Zero()));
   EXPECT_TRUE(CompareMatrices(
       constraint.upper_bound(),
       Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity())));
 
-  Eigen::VectorXd q(iiwa_autodiff_.tree().num_positions());
+  Eigen::VectorXd q(plant_autodiff_->num_positions());
   // arbitrary joint configuration.
   q << 0.1, 0.2, -0.3, 0.5, -0.2, -0.05, 0.34;
   AutoDiffVecXd q_autodiff = math::initializeAutoDiff(q);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
 
-  auto mbt_context_autodiff =
-      dynamic_cast<MultibodyTreeContext<AutoDiffXd>*>(context_autodiff_.get());
-  mbt_context_autodiff->get_mutable_positions() = q_autodiff;
+  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
+      q_autodiff;
   Vector2<AutoDiffXd> y_autodiff_expected = EvalGazeTargetConstraintAutoDiff(
-      iiwa_autodiff_.tree(),
-      iiwa_autodiff_.tree().GetFrameByName(frameA.name()), p_AS, n_A,
-      iiwa_autodiff_.tree().GetFrameByName(frameB.name()), p_BT,
-      cone_half_angle, *context_autodiff_);
+      *plant_autodiff_,
+      plant_autodiff_->GetFrameByName(frameA.name()), p_AS, n_A,
+      plant_autodiff_->GetFrameByName(frameB.name()), p_BT,
+      cone_half_angle, *plant_context_autodiff_);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 
   // Test with non-identity gradient for q_autodiff.
   q_autodiff = math::initializeAutoDiffGivenGradientMatrix(
       q, MatrixX<double>::Ones(q.size(), 2));
-  mbt_context_autodiff->get_mutable_positions() = q_autodiff;
+  plant_autodiff_->GetMutablePositions(plant_context_autodiff_.get()) =
+      q_autodiff;
   constraint.Eval(q_autodiff, &y_autodiff);
   y_autodiff_expected = EvalGazeTargetConstraintAutoDiff(
-      iiwa_autodiff_.tree(),
-      iiwa_autodiff_.tree().GetFrameByName(frameA.name()), p_AS, n_A,
-      iiwa_autodiff_.tree().GetFrameByName(frameB.name()), p_BT,
-      cone_half_angle, *context_autodiff_);
+      *plant_autodiff_,
+      plant_autodiff_->GetFrameByName(frameA.name()), p_AS, n_A,
+      plant_autodiff_->GetFrameByName(frameB.name()), p_BT,
+      cone_half_angle, *plant_context_autodiff_);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, 1E-12);
 }
 
@@ -100,15 +100,15 @@ TEST_F(TwoFreeBodiesConstraintTest, GazeTargetConstraint) {
 
   {
     GazeTargetConstraint good_constraint(
-        plant_, plant_->tree().get_frame(body1_index_), p_AS, n_A,
-        plant_->tree().get_frame(body2_index_), p_BT, angle + 0.01 * M_PI,
+        plant_, plant_->get_frame(body1_index_), p_AS, n_A,
+        plant_->get_frame(body2_index_), p_BT, angle + 0.01 * M_PI,
         plant_context_);
     EXPECT_TRUE(good_constraint.CheckSatisfied(q));
   }
   {
     GazeTargetConstraint bad_constraint(
-        plant_, plant_->tree().get_frame(body1_index_), p_AS, n_A,
-        plant_->tree().get_frame(body2_index_), p_BT, angle - 0.01 * M_PI,
+        plant_, plant_->get_frame(body1_index_), p_AS, n_A,
+        plant_->get_frame(body2_index_), p_BT, angle - 0.01 * M_PI,
         plant_context_);
     EXPECT_FALSE(bad_constraint.CheckSatisfied(q));
   }

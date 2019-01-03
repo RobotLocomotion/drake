@@ -4,6 +4,7 @@ from pydrake.multibody.multibody_tree import (
     Body,
     BodyFrame,
     BodyIndex,
+    BodyNodeIndex,  # Deprecated
     ForceElement,
     ForceElementIndex,
     Frame,
@@ -13,9 +14,10 @@ from pydrake.multibody.multibody_tree import (
     JointActuator,
     JointActuatorIndex,
     JointIndex,
+    MobilizerIndex,  # Deprecated
     ModelInstanceIndex,
     MultibodyForces,
-    MultibodyTree,
+    MultibodyTree,  # Deprecated
     RevoluteJoint,
     UniformGravityFieldElement,
     WeldJoint,
@@ -176,25 +178,17 @@ class TestMultibodyTree(unittest.TestCase):
             plant.get_continuous_state_output_port(), OutputPort)
         self.assertIsInstance(
             plant.get_contact_results_output_port(), OutputPort)
-        tree = plant.tree()
-        self.check_old_spelling_exists(tree.num_frames)
         self.assertIsInstance(plant.num_frames(), int)
-        self.check_old_spelling_exists(tree.get_body)
         self.assertIsInstance(plant.get_body(body_index=BodyIndex(0)), Body)
-        self.check_old_spelling_exists(tree.get_joint)
         self.assertIs(shoulder, plant.get_joint(joint_index=JointIndex(0)))
-        self.check_old_spelling_exists(tree.get_joint_actuator)
         self.assertIsInstance(plant.get_joint_actuator(
             actuator_index=JointActuatorIndex(0)), JointActuator)
-        self.check_old_spelling_exists(tree.get_frame)
         self.assertIsInstance(
             plant.get_frame(frame_index=FrameIndex(0)), Frame)
-        self.check_old_spelling_exists(tree.GetModelInstanceName)
         self.assertEqual("acrobot", plant.GetModelInstanceName(
             model_instance=model_instance))
 
     def _test_multibody_tree_element_mixin(self, element):
-        self.assertIsInstance(element.get_parent_tree(), MultibodyTree)
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls))
         self.assertIsInstance(element.model_instance(), ModelInstanceIndex)
@@ -264,24 +258,19 @@ class TestMultibodyTree(unittest.TestCase):
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
         world_frame = plant.world_frame()
         base = plant.GetBodyByName("base")
         base_frame = plant.GetFrameByName("base")
-        self.check_old_spelling_exists(tree.CalcRelativeTransform)
         X_WL = plant.CalcRelativeTransform(
             context, frame_A=world_frame, frame_B=base_frame)
         self.assertIsInstance(X_WL, Isometry3)
 
-        self.check_old_spelling_exists(tree.CalcPointsPositions)
         p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
             p_BQi=np.array([[0, 1, 2], [10, 11, 12]]).T,
             frame_A=world_frame).T
         self.assertTupleEqual(p_AQi.shape, (2, 3))
 
-        self.check_old_spelling_exists(
-            tree.CalcFrameGeometricJacobianExpressedInWorld)
         Jv_WL = plant.CalcFrameGeometricJacobianExpressedInWorld(
             context=context, frame_B=base_frame,
             p_BoFo_B=[0, 0, 0])
@@ -302,40 +291,20 @@ class TestMultibodyTree(unittest.TestCase):
             self.assertEqual(Jw_ABp_E.shape, (6, nw))
 
         # Compute body pose.
-        self.check_old_spelling_exists(tree.EvalBodyPoseInWorld)
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
         self.assertIsInstance(X_WBase, Isometry3)
-
-        # All body poses.
-        X_WB_list = tree.CalcAllBodyPosesInWorld(context)
-        self.assertEqual(len(X_WB_list), 4)
-        for X_WB in X_WB_list:
-            self.assertIsInstance(X_WB, Isometry3)
-
-        # Compute body velocities.
-        v_WB_list = tree.CalcAllBodySpatialVelocitiesInWorld(context)
-        self.assertEqual(len(v_WB_list), 4)
-        for v_WB in v_WB_list:
-            self.assertIsInstance(v_WB, SpatialVelocity)
-        # - Sanity check.
-        v_WBase_flat = np.hstack((
-            v_WB_list[0].rotational(), v_WB_list[0].translational()))
-        self.assertTrue(np.allclose(v_WBase_flat, np.zeros(6)))
 
         # Set pose for the base.
         X_WB_desired = Isometry3.Identity()
         X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
-        self.check_old_spelling_exists(tree.SetFreeBodyPoseOrThrow)
         plant.SetFreeBodyPose(
             context=context, body=base, X_WB=X_WB_desired)
         self.assertTrue(np.allclose(X_WB.matrix(), X_WB_desired.matrix()))
 
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
-        self.check_old_spelling_exists(tree.SetFreeBodySpatialVelocityOrThrow)
         plant.SetFreeBodySpatialVelocity(
             context=context, body=base, V_WB=v_WB)
-        self.check_old_spelling_exists(tree.EvalBodySpatialVelocityInWorld)
         v_base = plant.EvalBodySpatialVelocityInWorld(context, base)
         self.assertTrue(np.allclose(v_base.rotational(), v_WB.rotational()))
         self.assertTrue(np.allclose(v_base.translational(),
@@ -354,7 +323,6 @@ class TestMultibodyTree(unittest.TestCase):
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
 
         self.assertEqual(plant.num_positions(), 2)
         self.assertEqual(plant.num_velocities(), 2)
@@ -364,11 +332,11 @@ class TestMultibodyTree(unittest.TestCase):
         x0 = np.concatenate([q0, v0])
 
         # The default state is all values set to zero.
-        x = tree.GetPositionsAndVelocities(context)
+        x = plant.GetPositionsAndVelocities(context)
         self.assertTrue(np.allclose(x, np.zeros(4)))
 
         # Write into a mutable reference to the state vector.
-        x_ref = tree.GetMutablePositionsAndVelocities(context)
+        x_ref = plant.GetMutablePositionsAndVelocities(context)
         x_ref[:] = x0
 
         # Verify that positions and velocities were set correctly.
@@ -376,7 +344,7 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(plant.GetVelocities(context), v0))
 
         # Verify we did modify the state stored in context.
-        x = tree.GetPositionsAndVelocities(context)
+        x = plant.GetPositionsAndVelocities(context)
         self.assertTrue(np.allclose(x, x0))
 
         # Now set positions and velocities independently and check them.
@@ -394,7 +362,7 @@ class TestMultibodyTree(unittest.TestCase):
         x_ref.fill(0)
         plant.SetPositionsAndVelocities(context, x0)
         self.assertTrue(np.allclose(
-            tree.GetPositionsAndVelocities(context), x0))
+            plant.GetPositionsAndVelocities(context), x0))
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
@@ -460,7 +428,6 @@ class TestMultibodyTree(unittest.TestCase):
         # Create a context of the MBP and set the state of the context
         # to desired values.
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
 
         nq = plant.num_positions()
         nv = plant.num_velocities()
@@ -638,13 +605,10 @@ class TestMultibodyTree(unittest.TestCase):
 
         # Get positions and velocities of specific model instances
         # from the postion/velocity vector of the plant.
-        tree = plant.tree()
-        self.check_old_spelling_exists(tree.GetPositionsFromArray)
         q_iiwa = plant.GetPositions(context, iiwa_model)
         q_iiwa_array = plant.GetPositionsFromArray(iiwa_model, q_plant)
         self.assertTrue(np.allclose(q_iiwa, q_iiwa_array))
         q_gripper = plant.GetPositions(context, gripper_model)
-        self.check_old_spelling_exists(tree.GetVelocitiesFromArray)
         v_iiwa = plant.GetVelocities(context, iiwa_model)
         v_iiwa_array = plant.GetVelocitiesFromArray(iiwa_model, v_plant)
         self.assertTrue(np.allclose(v_iiwa, v_iiwa_array))
@@ -754,11 +718,8 @@ class TestMultibodyTree(unittest.TestCase):
         Parser(plant).AddModelFromFile(file_name)
         plant.Finalize()
         context = plant.CreateDefaultContext()
-        tree = plant.tree()
 
-        self.check_old_spelling_exists(tree.CalcMassMatrixViaInverseDynamics)
         H = plant.CalcMassMatrixViaInverseDynamics(context)
-        self.check_old_spelling_exists(tree.CalcBiasTerm)
         Cv = plant.CalcBiasTerm(context)
 
         self.assertTrue(H.shape == (2, 2))
@@ -767,7 +728,6 @@ class TestMultibodyTree(unittest.TestCase):
         self.assert_sane(Cv, nonzero=False)
         nv = plant.num_velocities()
         vd_d = np.zeros(nv)
-        self.check_old_spelling_exists(tree.CalcInverseDynamics)
         tau = plant.CalcInverseDynamics(
             context, vd_d, MultibodyForces(plant))
         self.assertEqual(tau.shape, (2,))
@@ -779,7 +739,7 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertEqual(tau_g.shape, (nv,))
         self.assert_sane(tau_g, nonzero=False)
 
-        forces = MultibodyForces(tree)
+        forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
 
     def test_contact(self):
@@ -850,3 +810,56 @@ class TestMultibodyTree(unittest.TestCase):
         tree.Body
         # Check for soon-to-be deprecated symbols (#9366).
         self.assertFalse(hasattr(tree, "MultibodyTree"))
+
+    def test_deprecated_tree_api(self):
+        plant = MultibodyPlant()
+        plant.Finalize()
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always', DrakeDeprecationWarning)
+            num_expected_warnings = [0]
+
+            def expect_new_warning(msg_part):
+                num_expected_warnings[0] += 1
+                self.assertEqual(len(w), num_expected_warnings[0])
+                self.assertIn(msg_part, str(w[-1].message))
+
+            tree = plant.tree()
+            expect_new_warning("`tree()`")
+            MobilizerIndex(0)
+            expect_new_warning("`MobilizerIndex`")
+            BodyNodeIndex(0)
+            expect_new_warning("`BodyNodeIndex`")
+            MultibodyForces(model=tree)
+            expect_new_warning("`MultibodyForces(plant)`")
+            element = plant.world_body()
+            self.assertIsInstance(element.get_parent_tree(), MultibodyTree)
+            expect_new_warning("`get_parent_tree()`")
+
+        # Check old spellings (no deprecation warnings).
+        self.check_old_spelling_exists(tree.CalcRelativeTransform)
+        self.check_old_spelling_exists(tree.CalcPointsPositions)
+        self.check_old_spelling_exists(
+            tree.CalcFrameGeometricJacobianExpressedInWorld)
+        self.check_old_spelling_exists(tree.EvalBodyPoseInWorld)
+        self.check_old_spelling_exists(tree.SetFreeBodyPoseOrThrow)
+        self.check_old_spelling_exists(tree.SetFreeBodySpatialVelocityOrThrow)
+        self.check_old_spelling_exists(tree.EvalBodySpatialVelocityInWorld)
+        self.check_old_spelling_exists(tree.GetPositionsFromArray)
+        self.check_old_spelling_exists(tree.GetVelocitiesFromArray)
+        self.check_old_spelling_exists(tree.CalcMassMatrixViaInverseDynamics)
+        self.check_old_spelling_exists(tree.CalcBiasTerm)
+        self.check_old_spelling_exists(tree.CalcInverseDynamics)
+        self.check_old_spelling_exists(tree.num_frames)
+        self.check_old_spelling_exists(tree.get_body)
+        self.check_old_spelling_exists(tree.get_joint)
+        self.check_old_spelling_exists(tree.get_joint_actuator)
+        self.check_old_spelling_exists(tree.get_frame)
+        self.check_old_spelling_exists(tree.GetModelInstanceName)
+
+        context = plant.CreateDefaultContext()
+        # All body poses.
+        X_WB, = tree.CalcAllBodyPosesInWorld(context)
+        self.assertIsInstance(X_WB, Isometry3)
+        v_WB, = tree.CalcAllBodySpatialVelocitiesInWorld(context)
+        self.assertIsInstance(v_WB, SpatialVelocity)

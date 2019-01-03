@@ -68,7 +68,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
 
   // This is a context of the plant_ system, which is only owned here to avoid
   // runtime allocation.  It contains no relevant state.
-  mutable std::unique_ptr<multibody::MultibodyTreeContext<T>> plant_context_;
+  mutable std::unique_ptr<Context<T>> plant_context_;
 };
 
 }  // namespace rendering

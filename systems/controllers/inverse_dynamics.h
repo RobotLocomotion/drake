@@ -83,7 +83,7 @@ class InverseDynamics : public LeafSystem<T> {
   // external forces. I like to imagine a dichotomy of approaches for
   // construction of this system: incorporating *no* external forces or all
   // forces on the plant. The current approach does neither: it only pledges to
-  // account for exactly the forces that MultibodyTree does.
+  // account for exactly the forces that MultibodyPlant does.
   /**
    * Computes the generalized force `tau_id` that needs to be applied so that
    * the multibody system undergoes a desired acceleration `vd_d`. That is,
@@ -95,7 +95,7 @@ class InverseDynamics : public LeafSystem<T> {
    * Coriolis and gyroscopic effects, `tau_g(q)` is the vector of generalized
    * forces due to gravity and `tau_app` contains applied forces from force
    * elements added to the multibody model (this can include damping, springs,
-   * etc. See MultibodyTree::CalcForceElementsContribution()).
+   * etc. See MultibodyPlant::CalcForceElementsContribution()).
    *
    * @param plant Pointer to the multibody plant model. The life span of @p
    * plant must be longer than that of this instance.

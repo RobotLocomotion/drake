@@ -39,7 +39,7 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   end_effector_link_->AddInForce(
       *context_, p_EP, F_Ep_E, end_effector_link_->body_frame(), &forces);
   const VectorX<double> tau_id =
-      plant_->tree().CalcInverseDynamics(*context_, vdot, forces);
+      plant_->CalcInverseDynamics(*context_, vdot, forces);
 
   MatrixX<double> M(nv, nv);
   plant_->CalcMassMatrixViaInverseDynamics(*context_, &M);
