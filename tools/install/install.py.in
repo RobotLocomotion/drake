@@ -26,7 +26,7 @@ from subprocess import check_output, check_call
 # Stores subdirectories that have already been created.
 subdirs = set()
 # Stored from command-line.
-verbose = False
+color = False
 prefix = None
 strip = True
 # Mapping used to (a) check for unique shared library names and (b) provide a
@@ -370,28 +370,28 @@ java {} {} "$@"
 
 
 def main(args):
-    global prefix
-    global verbose
+    global color
     global list_only
+    global prefix
     global strip
 
     # Set up options.
     parser = argparse.ArgumentParser()
     parser.add_argument('prefix', type=str, help='Install prefix')
     parser.add_argument(
+        '--color', action='store_true', default=False,
+        help='colorize the output')
+    parser.add_argument(
         '--list', action='store_true', default=False,
         help='print the list of installed files; do not install anything')
     parser.add_argument(
         '--no_strip', dest='strip', action='store_false', default=True,
         help='do not strip symbols (for debugging)')
-    parser.add_argument(
-        '-v', '--verbose', action='store_true',
-        help='print additional information')
     args = parser.parse_args(args)
 
+    color = args.color
     # Get install prefix.
     prefix = args.prefix
-    verbose = args.verbose
     list_only = args.list
     # Check if we want to avoid stripping symbols.
     strip = args.strip
@@ -410,11 +410,22 @@ def main(args):
             "Install prefix must be an absolute path (got '{}')\n".format(
                 prefix))
 
-    # Match the output of the CMake install step.
-    print("Install the project...")
+    if color:
+       ansi_color_escape = "\x1b[36m"
+       ansi_reset_escape = "\x1b[0m"
+    else:
+       ansi_color_escape = ""
+       ansi_reset_escape = ""
 
-    if verbose and not strip:
-        print("-- Symbols will NOT be stripped")
+    if strip:
+        # Match the output of the CMake install/strip target
+        # (https://git.io/fpdzK).
+        print("{}Installing the project stripped...{}".format(
+            ansi_color_escape, ansi_reset_escape))
+    else:
+        # Match the output of the CMake install target (https://git.io/fpdzo).
+        print("{}Install the project...{}".format(
+            ansi_color_escape, ansi_reset_escape))
 
     # Execute the install actions.
     <<actions>>
