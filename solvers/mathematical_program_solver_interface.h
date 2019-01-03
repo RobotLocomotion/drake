@@ -28,8 +28,9 @@ class MathematicalProgramSolverInterface {
   /// @p prog, or:
   ///  * If no solver is available, throws std::runtime_error
   ///  * If the solver returns an error, returns a nonzero SolutionResult.
-  // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-  virtual SolutionResult Solve(MathematicalProgram& prog) const = 0;
+  virtual SolutionResult Solve(
+      // NOLINTNEXTLINE(runtime/references)
+      MathematicalProgram& prog) const = 0;
 
   /// Solves an optimization program with optional initial guess and solver
   /// options. Note that these initial guess and solver options are not written

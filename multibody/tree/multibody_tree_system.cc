@@ -16,14 +16,16 @@ using systems::LeafSystem;
 using systems::State;
 
 namespace multibody {
+namespace internal {
 
 template <typename T>
 template <typename U>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(
-          systems::SystemTypeTag<multibody::MultibodyTreeSystem>{},
+          systems::SystemTypeTag<multibody::internal::MultibodyTreeSystem>{},
           false,  // Null tree isn't allowed (or possible).
-          other.tree().template CloneToScalar<T>(), other.is_discrete()) {}
+          other.internal_tree().template CloneToScalar<T>(),
+          other.is_discrete()) {}
 
 // This is the one true constructor.
 template <typename T>
@@ -61,10 +63,6 @@ MultibodyTreeSystem<T>::~MultibodyTreeSystem() = default;
 template <typename T>
 MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
   DRAKE_DEMAND(tree_ != nullptr);
-  if (tree_->topology_is_valid())
-    throw std::logic_error(
-        "MultibodyTreeSystem::mutable_tree(): "
-        "the contained MultibodyTree is finalized already.");\
   return *tree_;
 }
 
@@ -165,8 +163,9 @@ template MultibodyTreeSystem<AutoDiffXd>::MultibodyTreeSystem(
 template MultibodyTreeSystem<double>::MultibodyTreeSystem(
     const MultibodyTreeSystem<AutoDiffXd>& other);
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class drake::multibody::MultibodyTreeSystem)
+    class drake::multibody::internal::MultibodyTreeSystem)

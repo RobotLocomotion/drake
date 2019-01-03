@@ -129,7 +129,7 @@ GTEST_TEST(MosekTest, TestLogFile) {
   const auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(x(0) + x(1) == 1);
 
-  const std::string log_file = temp_directory() + "mosek.log";
+  const std::string log_file = temp_directory() + "/mosek.log";
   EXPECT_FALSE(spruce::path(log_file).exists());
   MosekSolver solver;
   solver.Solve(prog);
@@ -143,6 +143,58 @@ GTEST_TEST(MosekTest, TestLogFile) {
   solver.set_stream_logging(true, log_file);
   solver.Solve(prog);
   EXPECT_TRUE(spruce::path(log_file).exists());
+}
+
+GTEST_TEST(MosekTest, SolverOptionsTest) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) >= 0);
+  prog.AddLinearConstraint(x(1) <= 1);
+  prog.AddLinearConstraint(x(0) <= 1);
+  // The Hessian of the quadratic cost has an eigen value -1e-8, so it is not
+  // positive semidefinite. By adjusting Mosek's tolerance on the semidefinite
+  // matrix, we expect the solver to give a different result.
+  prog.AddQuadraticCost(x(0) * x(0) - 1E-8 * x(1) * x(1));
+
+  SolverOptions solver_options;
+  // First try a big positive semidefinite matrix tolerance.
+  solver_options.SetOption(MosekSolver::id(),
+                           "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-6);
+  MathematicalProgramResult result;
+  MosekSolver mosek_solver;
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+
+  // Now try a small positive semidefinite matrix tolerance.
+  solver_options.SetOption(MosekSolver::id(),
+                           "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-10);
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  EXPECT_NE(result.get_solution_result(), SolutionResult::kSolutionFound);
+}
+
+GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
+  // Set a non-existing option. Mosek should report error.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearConstraint(x(0) + x(1) >= 0);
+
+  MathematicalProgramResult result;
+  MosekSolver mosek_solver;
+  SolverOptions solver_options;
+  solver_options.SetOption(MosekSolver::id(), "non-existing options", 42);
+  mosek_solver.Solve(prog, {}, solver_options, &result);
+  const MosekSolverDetails solver_details =
+      result.get_solver_details().GetValue<MosekSolverDetails>();
+  // This response code is defined in
+  // https://docs.mosek.com/8.1/capi/response-codes.html#mosek.rescode
+  const int MSK_RES_ERR_PARAM_NAME_INT = 1207;
+  EXPECT_EQ(solver_details.rescode, MSK_RES_ERR_PARAM_NAME_INT);
+  // This problem status is defined in
+  // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
+  const int MSK_PRO_STA_UNKNOWN = 0;
+  EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
+
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
 }
 }  // namespace test
 }  // namespace solvers

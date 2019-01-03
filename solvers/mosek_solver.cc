@@ -585,6 +585,11 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
         throw std::runtime_error(
             "Boolean variables should not be used with Mosek solver.");
       }
+      case MathematicalProgram::VarType::RANDOM_UNIFORM:
+      case MathematicalProgram::VarType::RANDOM_GAUSSIAN:
+      case MathematicalProgram::VarType::RANDOM_EXPONENTIAL:
+        throw std::runtime_error(
+            "Random variables should not be used with Mosek solver.");
     }
   }
   return rescode;
@@ -657,8 +662,11 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
   *result = {};
-  // TODO(hongkai.dai): support setting initial guess and solver options.
-  if (initial_guess.has_value() || solver_options.has_value()) {
+  SolverOptions merged_solver_options =
+      solver_options.value_or(SolverOptions());
+  merged_solver_options.Merge(prog.solver_options());
+  // TODO(hongkai.dai): support setting initial guess.
+  if (initial_guess.has_value()) {
     throw std::runtime_error("Not implemented yet.");
   }
   const int num_vars = prog.num_vars();
@@ -682,6 +690,8 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
 
   // Create the optimization task.
   rescode = MSK_maketask(env, 0, num_vars, &task);
+  // Always check if rescode is MSK_RES_OK before we call any mosek functions.
+  // If it is not MSK_RES_OK, then bypasses everthing and exits.
   if (rescode == MSK_RES_OK) {
     rescode = MSK_appendvars(task, num_vars);
   }
@@ -732,6 +742,28 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
     } else {
       rescode =
           MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);
+    }
+  }
+
+  if (rescode == MSK_RES_OK) {
+    for (const auto& double_options :
+         merged_solver_options.GetOptionsDouble(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnadouparam(task, double_options.first.c_str(),
+                                    double_options.second);
+      }
+    }
+    for (const auto& int_options : merged_solver_options.GetOptionsInt(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnaintparam(task, int_options.first.c_str(),
+                                    int_options.second);
+      }
+    }
+    for (const auto& str_options : merged_solver_options.GetOptionsStr(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnastrparam(task, str_options.first.c_str(),
+                                    str_options.second.c_str());
+      }
     }
   }
 

@@ -24,8 +24,6 @@ AngleBetweenVectorsConstraint::AngleBetweenVectorsConstraint(
       b_unit_B_(NormalizeVector(b_B)),
       context_(context) {
   if (context == nullptr) throw std::invalid_argument("context is nullptr.");
-  frameA.HasThisParentTreeOrThrow(&plant_.tree());
-  frameB.HasThisParentTreeOrThrow(&plant_.tree());
   if (!(angle_lower >= 0 && angle_upper >= angle_lower &&
         angle_upper <= M_PI)) {
     throw std::invalid_argument(
@@ -71,9 +69,9 @@ void AngleBetweenVectorsConstraint::DoEval(
   const Frame<double>& frameA = plant_.get_frame(frameA_index_);
   const Frame<double>& frameB = plant_.get_frame(frameB_index_);
   const Matrix3<double> R_AB =
-      plant_.tree().CalcRelativeTransform(*context_, frameA, frameB).linear();
+      plant_.CalcRelativeTransform(*context_, frameA, frameB).linear();
   Eigen::MatrixXd Jq_V_AB(6, plant_.num_positions());
-  plant_.tree().CalcJacobianSpatialVelocity(
+  plant_.CalcJacobianSpatialVelocity(
       *context_, JacobianWrtVariable::kQDot, frameB,
       Eigen::Vector3d::Zero() /* p_BQ */, frameA, frameA, &Jq_V_AB);
   const Eigen::Vector3d b_unit_A = R_AB * b_unit_B_;

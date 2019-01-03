@@ -371,23 +371,17 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
- * Deprecated: Please use the MultibodyPlant version.
- */
 DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::internal::MultibodyTree<double>& robot,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
-/**
- * Deprecated: Please use the MultibodyPlant version.
- */
 DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::internal::MultibodyTree<double>& robot,
     const systems::Context<double>& context,
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,

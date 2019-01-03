@@ -7,18 +7,15 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-MultibodyForces<T>::MultibodyForces(const MultibodyTree<T>& model) {
+MultibodyForces<T>::MultibodyForces(const internal::MultibodyTree<T>& model) {
   DRAKE_DEMAND(model.topology_is_valid());
   F_B_W_.resize(model.num_bodies(), SpatialForce<T>::Zero());
   tau_ = VectorX<T>::Zero(model.num_velocities());
 }
 
 template <typename T>
-MultibodyForces<T>::MultibodyForces(const MultibodyTreeSystem<T>& plant) {
-  DRAKE_DEMAND(plant.tree().topology_is_valid());
-  F_B_W_.resize(plant.tree().num_bodies(), SpatialForce<T>::Zero());
-  tau_ = VectorX<T>::Zero(plant.tree().num_velocities());
-}
+MultibodyForces<T>::MultibodyForces(const MultibodyPlantSurrogate<T>& plant)
+    : MultibodyForces(internal::GetInternalTree(plant)) {}
 
 template <typename T>
 MultibodyForces<T>& MultibodyForces<T>::SetZero() {
@@ -29,7 +26,13 @@ MultibodyForces<T>& MultibodyForces<T>::SetZero() {
 
 template <typename T>
 bool MultibodyForces<T>::CheckHasRightSizeForModel(
-    const MultibodyTree<T> &model) const {
+    const MultibodyPlantSurrogate<T>& plant) const {
+  return CheckHasRightSizeForModel(internal::GetInternalTree(plant));
+}
+
+template <typename T>
+bool MultibodyForces<T>::CheckHasRightSizeForModel(
+    const internal::MultibodyTree<T>& model) const {
   return
       model.num_velocities() == num_velocities() &&
       model.num_bodies() == num_bodies();

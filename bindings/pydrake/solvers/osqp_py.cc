@@ -18,7 +18,7 @@ PYBIND11_MODULE(osqp, m) {
           .attr("MathematicalProgramSolverInterface");
 
   py::class_<OsqpSolver>(m, "OsqpSolver", solverinterface, doc.OsqpSolver.doc)
-      .def(py::init<>(), doc.OsqpSolver.ctor.doc_0args);
+      .def(py::init<>(), doc.OsqpSolver.ctor.doc);
 }
 
 }  // namespace pydrake

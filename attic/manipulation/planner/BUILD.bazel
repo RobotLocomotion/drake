@@ -79,6 +79,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "rbt_differential_inverse_kinematics_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rbt_differential_inverse_kinematics",
+        "//attic/multibody/parsers",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+    ],
+)
+
+drake_cc_googletest(
     name = "robot_plan_interpolator_test",
     data = [
         "//examples/kuka_iiwa_arm:models",

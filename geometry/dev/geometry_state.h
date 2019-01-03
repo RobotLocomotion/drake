@@ -467,6 +467,12 @@ class GeometryState {
   void AssignRole(SourceId source_id, GeometryId geometry_id,
                   IllustrationProperties properties);
 
+  /** Implementation of SceneGraph::RemoveRole(SourceId,GeometryId,Role).  */
+  int RemoveRole(SourceId source_id, GeometryId geometry_id, Role role);
+
+  /** Implementation of SceneGraph::RemoveRole(SourceId,FrameId,Role).  */
+  int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
+
   //@}
 
   /** @name       Relationship queries
@@ -810,6 +816,15 @@ class GeometryState {
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
                           PropertyType properties, Role role);
 
+  // Removes the indicated `role` from the indicated geometry. Returns 1 if the
+  // geometry formerly had that role, and 0 if not. This does no checking on
+  // ownership.
+  // @pre geometry_id is a valid geometry.
+  int RemoveRoleUnchecked(GeometryId geometry_id, Role role);
+
+  int RemoveIllustrationRole(GeometryId geometry_id);
+  int RemovePerceptionRole(GeometryId geometry_id);
+
   // Retrieves the requested renderer (if supported), throwing otherwise.
   render::RenderEngine* GetRenderEngineOrThrow(
       render::Fidelity fidelity) const {
@@ -848,7 +863,7 @@ class GeometryState {
                              std::unique_ptr<Shape> shape,
                              const std::string& name,
                              const Isometry3<double>& X_PG,
-                             const Vector4<double>& diffuse,
+                             const IllustrationProperties& properties,
                              internal::InternalGeometry* parent_geometry);
 
   // The GeometryState gets its own source so it can own entities (such as the

@@ -40,6 +40,8 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, std::numeric_limits<double>::infinity(),
               "Simulation duration.");
+DEFINE_string(setup, "default", "Manipulation station type to simulate. "
+                               "Can be {default, clutter_clearing}");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -48,15 +50,16 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->SetupDefaultStation();
-  multibody::Parser parser(&station->get_mutable_multibody_plant(),
-                           &station->get_mutable_scene_graph());
+  if (FLAGS_setup == "default") {
+    station->SetupDefaultStation();
+  } else if (FLAGS_setup == "clutter_clearing") {
+    station->SetupClutterClearingStation();
+  } else {
+    DRAKE_ABORT_MSG("Unrecognized station type. Options are "
+                    "{default, clutter_clearing}.");
+  }
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.
-  auto object = parser.AddModelFromFile(
-      FindResourceOrThrow(
-          "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-      "brick");
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_scene_graph(),
@@ -143,24 +146,10 @@ int do_main(int argc, char* argv[]) {
   auto& station_context =
       diagram->GetMutableSubsystemContext(*station, &context);
 
-  // Set initial conditions for the IIWA:
-  VectorXd q0(7);
-  // A comfortable pose inside the workspace of the workcell.
-  q0 << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+  // Get the initial Iiwa pose and initialize the iiwa_command to match.
+  VectorXd q0 = station->GetIiwaPosition(station_context);
   iiwa_command->set_initial_position(
       &diagram->GetMutableSubsystemContext(*iiwa_command, &context), q0);
-  station->SetIiwaPosition(q0, &station_context);
-  const VectorXd qdot0 = VectorXd::Zero(7);
-  station->SetIiwaVelocity(qdot0, &station_context);
-
-  // Place the object in the center of the table in front of the robot.
-  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
-  pose.translation() = Eigen::Vector3d(.6, 0, 0);
-  station->get_multibody_plant().tree().SetFreeBodyPoseOrThrow(
-      station->get_multibody_plant().GetBodyByName("base_link",
-                                                           object),
-      pose, &station->GetMutableSubsystemContext(
-                station->get_multibody_plant(), &station_context));
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);

@@ -1,6 +1,7 @@
 #include "drake/geometry/dev/render/render_engine_vtk.h"
 
 #include <string>
+#include <tuple>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -523,6 +524,117 @@ TEST_F(RenderEngineVtkTest, TextureMeshTest) {
   // changes, the expected color would likewise have to change.
   expected_color_ = RgbaColor(ColorI{4, 241, 33}, 255);
   PerformCenterShapeTest(renderer_.get(), "Mesh test");
+}
+
+// This confirms that geometries are correctly removed from the render engine.
+// We add two new geometries (testing the rendering after each addition).
+// By removing the first of the added geometries, we can confirm that the
+// remaining geometries are re-ordered appropriately. Then by removing the,
+// second we should restore the original default image.
+//
+// The default image is based on a sphere sitting on a plane at z = 0 with the
+// camera located above the sphere's center and aimed at that center.
+// THe default sphere is drawn with `●`, the first added sphere with `x`, and
+// the second with `o`. The height of the top of each sphere and its depth in
+// the camera's depth sensors are indicated as zᵢ and dᵢ, i ∈ {0, 1, 2},
+// respectively.
+//
+//             /|\       <---- camera_z = 3
+//              v
+//
+//
+//
+//
+//            ooooo       <---- z₂ = 4r = 2, d₂ = 1
+//          oo     oo
+//         o         o
+//        o           o
+//        o           o
+//        o   xxxxx   o   <---- z₁ = 3r = 1.5, d₁ = 1.5
+//         oxx     xxo
+//         xoo     oox
+//        x   ooooo   x
+//        x   ●●●●●   x   <---- z₀ = 2r = 1, d₀ = 2
+//        x ●●     ●● x
+//         ●         ●
+//        ● xx     xx ●
+// z      ●   xxxxx   ●
+// ^      ●           ●
+// |       ●         ●
+// |        ●●     ●●
+// |__________●●●●●____________
+//
+TEST_F(RenderEngineVtkTest, RemoveVisual) {
+  SetUp(X_WR_, true);
+  PopulateSphereTest(renderer_.get());
+  RgbaColor default_color = expected_color_;
+  RenderLabel default_label = expected_label_;
+  float default_depth = expected_object_depth_;
+
+  // Positions a sphere centered at <0, 0, z> with the given color.
+  auto add_sphere = [this](const RgbaColor& diffuse, double z) {
+    const double kRadius = 0.5;
+    Sphere sphere{kRadius};
+    const float depth = kDefaultDistance - kRadius - z;
+    Vector4d norm_diffuse{diffuse.r / 255., diffuse.g / 255., diffuse.b / 255.,
+                          diffuse.a / 255.};
+    RenderLabel label = RenderLabel::new_label();
+    PerceptionProperties material;
+    material.AddGroup("phong");
+    material.AddProperty("phong", "diffuse", norm_diffuse);
+    material.AddGroup("label");
+    material.AddProperty("label", "id", label);
+    RenderIndex index =
+        renderer_->RegisterVisual(sphere, material, Isometry3d::Identity());
+    Isometry3d X_WV{Eigen::Translation3d(0, 0, z)};
+    renderer_->UpdateVisualPose(X_WV, index);
+    return std::make_tuple(index, label, depth);
+  };
+
+  // Sets the expected values prior to calling PerformCenterShapeTest().
+  auto set_expectations = [this](const RgbaColor& color, float depth,
+                                 RenderLabel label) {
+    expected_color_ = color;
+    expected_label_ = label;
+    expected_object_depth_ = depth;
+  };
+
+  // Add another sphere of a different color in front of the default sphere
+  const RgbaColor color1(Color<int>{128, 128, 255}, 255);
+  float depth1{};
+  RenderLabel label1{};
+  RenderIndex index1{};
+  std::tie(index1, label1, depth1) = add_sphere(color1, 0.75);
+  set_expectations(color1, depth1, label1);
+  PerformCenterShapeTest(renderer_.get(), "First sphere added in remove test");
+
+  // Add a _third_ sphere in front of the second.
+  const RgbaColor color2(Color<int>{128, 255, 128}, 255);
+  float depth2{};
+  RenderLabel label2{};
+  RenderIndex index2{};
+  std::tie(index2, label2, depth2) = add_sphere(color2, 1.0);
+  set_expectations(color2, depth2, label2);
+  PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
+
+  // Remove the first sphere added:
+  //  1. index2 should be returned as the index of the shape that got moved.
+  //  2. The test should pass without changing expectations.
+  optional<RenderIndex> moved = renderer_->RemoveVisual(index1);
+  EXPECT_TRUE(moved);
+  EXPECT_EQ(*moved, index2);
+  PerformCenterShapeTest(renderer_.get(), "First added sphere removed");
+
+  // Remove the second added sphere (now indexed by index1):
+  //  1. There should be no returned index.
+  //  2. The rendering should match the default sphere test results.
+  // Confirm restoration to original image.
+  moved = nullopt;
+  moved = renderer_->RemoveVisual(index1);
+  EXPECT_FALSE(moved);
+  set_expectations(default_color, default_depth, default_label);
+  PerformCenterShapeTest(renderer_.get(),
+                         "Default image restored by removing extra geometries");
 }
 
 // All of the clone tests use the PerformCenterShapeTest() with the sphere setup

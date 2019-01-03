@@ -26,9 +26,11 @@ from subprocess import check_output, check_call
 # Stores subdirectories that have already been created.
 subdirs = set()
 # Stored from command-line.
-verbose = False
+color = False
 prefix = None
 strip = True
+strip_tool = None
+install_name_tool = None
 # Mapping used to (a) check for unique shared library names and (b) provide a
 # mapping from library name to paths for RPath fixes (where (a) is essential).
 # Structure: Map[ basename (Str) => full_path ]
@@ -201,21 +203,21 @@ def fix_rpaths_and_strip():
             # the maximum level of stripping is usually -x (to remove all
             # non-global symbols).
             if strip:
-                check_call(['strip', '-x', dst_full])
+                check_call([strip_tool, '-x', dst_full])
             macos_fix_rpaths(basename, dst_full)
         else:
             # Strip before running `patchelf`. Trying to strip after patching
             # the files is likely going to create the following error:
             # 'Not enough room for program headers, try linking with -N'
             if strip:
-                check_call(['strip', dst_full])
+                check_call([strip_tool, dst_full])
             linux_fix_rpaths(dst_full)
 
 
 def macos_fix_rpaths(basename, dst_full):
     # Update file (library, executable) ID (remove relative path).
     check_call(
-        ['install_name_tool', "-id", "@rpath/" + basename, dst_full]
+        [install_name_tool, "-id", "@rpath/" + basename, dst_full]
         )
     # Check if file dependencies are specified with relative paths.
     file_output = check_output(["otool", "-L", dst_full])
@@ -234,7 +236,7 @@ def macos_fix_rpaths(basename, dst_full):
         diff_path = os.path.relpath(libraries_to_fix_rpath[dep_basename],
                                     lib_dirname)
         check_call(
-            ['install_name_tool',
+            [install_name_tool,
              "-change", relative_path,
              os.path.join('@loader_path', diff_path),
              dst_full]
@@ -249,7 +251,7 @@ def macos_fix_rpaths(basename, dst_full):
                 and split_line[0] == 'path' \
                 and split_line[1].startswith('@loader_path'):
             check_call(
-                ['install_name_tool', "-delete_rpath", split_line[1], dst_full]
+                [install_name_tool, "-delete_rpath", split_line[1], dst_full]
             )
 
 
@@ -370,14 +372,22 @@ java {} {} "$@"
 
 
 def main(args):
-    global prefix
-    global verbose
+    global color
     global list_only
+    global prefix
     global strip
+    global strip_tool
+    global install_name_tool
 
     # Set up options.
     parser = argparse.ArgumentParser()
     parser.add_argument('prefix', type=str, help='Install prefix')
+    parser.add_argument(
+        '--color', action='store_true', default=False,
+        help='colorize the output')
+    parser.add_argument(
+        '--install_name_tool', type=str, default='install_name_tool',
+        help='install_name_tool program')
     parser.add_argument(
         '--list', action='store_true', default=False,
         help='print the list of installed files; do not install anything')
@@ -385,16 +395,18 @@ def main(args):
         '--no_strip', dest='strip', action='store_false', default=True,
         help='do not strip symbols (for debugging)')
     parser.add_argument(
-        '-v', '--verbose', action='store_true',
-        help='print additional information')
+        '--strip_tool', type=str, default='strip',
+        help='strip program')
     args = parser.parse_args(args)
 
+    color = args.color
     # Get install prefix.
     prefix = args.prefix
-    verbose = args.verbose
     list_only = args.list
     # Check if we want to avoid stripping symbols.
     strip = args.strip
+    strip_tool = args.strip_tool
+    install_name_tool = args.install_name_tool
 
     # Transform install prefix if DESTDIR is set.
     # https://www.gnu.org/prep/standards/html_node/DESTDIR.html
@@ -410,11 +422,22 @@ def main(args):
             "Install prefix must be an absolute path (got '{}')\n".format(
                 prefix))
 
-    # Match the output of the CMake install step.
-    print("Install the project...")
+    if color:
+       ansi_color_escape = "\x1b[36m"
+       ansi_reset_escape = "\x1b[0m"
+    else:
+       ansi_color_escape = ""
+       ansi_reset_escape = ""
 
-    if verbose and not strip:
-        print("-- Symbols will NOT be stripped")
+    if strip:
+        # Match the output of the CMake install/strip target
+        # (https://git.io/fpdzK).
+        print("{}Installing the project stripped...{}".format(
+            ansi_color_escape, ansi_reset_escape))
+    else:
+        # Match the output of the CMake install target (https://git.io/fpdzo).
+        print("{}Install the project...{}".format(
+            ansi_color_escape, ansi_reset_escape))
 
     # Execute the install actions.
     <<actions>>

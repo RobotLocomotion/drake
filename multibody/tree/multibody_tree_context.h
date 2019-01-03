@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -90,11 +91,21 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   /// Returns a mutable reference to the state vector stored in `this` context
   /// as an `Eigen::VectorBlock<VectorX<T>>`.
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector() {
+    return get_mutable_state_vector(&this->get_mutable_state());
+  }
+
+  /// Returns a mutable reference to the state vector stored in `state` which
+  /// must be the state associated with `this` context, as an
+  /// `Eigen::VectorBlock<VectorX<T>>`.
+  /// @pre `state` must be the systems::State<T> owned by this context.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
+      systems::State<T>* state) const {
+    DRAKE_ASSERT(&this->get_state() == state);
     DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
     systems::BasicVector<T>& state_vector =
-        (is_state_discrete()) ? this->get_mutable_discrete_state(0) :
+        (is_state_discrete()) ? state->get_mutable_discrete_state(0) :
         dynamic_cast<systems::BasicVector<T>&>(
-            this->get_mutable_continuous_state().get_mutable_vector());
+            state->get_mutable_continuous_state().get_mutable_vector());
     return state_vector.get_mutable_value();
   }
 
@@ -198,8 +209,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
 
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::MultibodyTreeContext;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using MultibodyTreeContext
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::MultibodyTreeContext<T>;
 
 }  // namespace multibody
 }  // namespace drake

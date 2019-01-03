@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
@@ -45,11 +46,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   /// @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const Isometry3<double>& get_X_FM() const { return X_FM_; }
-
-  /// This override is a no-op for this mobilizer since it has no state
-  /// associated with it.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const final;
 
   /// Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   /// is independent of the state stored in `context`.
@@ -125,8 +121,12 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::WeldMobilizer;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using WeldMobilizer
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::WeldMobilizer<T>;
 
 }  // namespace multibody
 }  // namespace drake

@@ -106,6 +106,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
@@ -127,6 +129,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(
       const std::string& channel,
@@ -151,6 +155,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,

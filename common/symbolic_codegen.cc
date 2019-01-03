@@ -6,10 +6,12 @@
 namespace drake {
 namespace symbolic {
 
+using std::ostream;
 using std::ostringstream;
 using std::runtime_error;
 using std::string;
 using std::to_string;
+using std::vector;
 
 CodeGenVisitor::CodeGenVisitor(const IdToIndexMap& id_to_idx_map)
     : id_to_idx_map_{id_to_idx_map} {}
@@ -169,6 +171,69 @@ string CodeGenVisitor::VisitIfThenElse(const Expression&) const {
 string CodeGenVisitor::VisitUninterpretedFunction(const Expression&) const {
   throw runtime_error("Codegen does not support uninterpreted functions.");
 }
+
+string CodeGen(const string& function_name, const vector<Variable>& parameters,
+               const Expression& e) {
+  ostringstream oss;
+  // Add header for the main function.
+  oss << "double " << function_name << "(const double* p) {\n";
+  // Codegen the expression.
+  // Build a map from Variable::Id to index (in parameters).
+  CodeGenVisitor::IdToIndexMap id_to_idx_map;
+  for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
+    id_to_idx_map.emplace(parameters[i].get_id(), i);
+  }
+  oss << "    return " << CodeGenVisitor(id_to_idx_map).CodeGen(e) << ";\n";
+  // Add footer for the main function.
+  oss << "}\n";
+  // <function_name>_meta_t type.
+  oss << "typedef struct {\n"
+         "    /* p: input, vector */\n"
+         "    struct { int size; } p;\n"
+         "} "
+      << function_name << "_meta_t;\n";
+  // <function_name>_meta().
+  oss << function_name << "_meta_t " << function_name << "_meta() { return {{"
+      << parameters.size() << "}}; }\n";
+  return oss.str();
+}
+
+namespace internal {
+void CodeGenData(const string& function_name,
+                 const vector<Variable>& parameters,
+                 const Expression* const data, const int size,
+                 ostream* const os) {
+  // Add header for the main function.
+  (*os) << "void " << function_name << "(const double* p, double* m) {\n";
+  // Build a map from Variable::Id to index (in parameters).
+  CodeGenVisitor::IdToIndexMap id_to_idx_map;
+  for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
+    id_to_idx_map.emplace(parameters[i].get_id(), i);
+  }
+  const CodeGenVisitor visitor{id_to_idx_map};
+  for (int i = 0; i < size; ++i) {
+    (*os) << "    "
+          << "m[" << i << "] = " << visitor.CodeGen(data[i]) << ";\n";
+  }
+  // Add footer for the main function.
+  (*os) << "}\n";
+}
+
+void CodeGenMeta(const string& function_name, const int parameter_size,
+                 const int rows, const int cols, ostream* const os) {
+  // <function_name>_meta_t type.
+  (*os) << "typedef struct {\n"
+           "    /* p: input, vector */\n"
+           "    struct { int size; } p;\n"
+           "    /* m: output, matrix */\n"
+           "    struct { int rows; int cols; } m;\n"
+           "} "
+        << function_name << "_meta_t;\n";
+  // <function_name>_meta().
+  (*os) << function_name << "_meta_t " << function_name << "_meta() { return {{"
+        << parameter_size << "}, {" << rows << ", " << cols << "}}; }\n";
+}
+}  // namespace internal
 
 }  // namespace symbolic
 }  // namespace drake

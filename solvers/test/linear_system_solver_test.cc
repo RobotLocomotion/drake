@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
 
@@ -12,9 +13,9 @@ namespace test {
 
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
-  example->prog()->Solve();
-  CheckSolver(*(example->prog()), LinearSystemSolver::id());
-  example->CheckSolution();
+  const MathematicalProgramResult result = Solve(*(example->prog()), {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  example->CheckSolution(result);
 }
 }  // namespace
 

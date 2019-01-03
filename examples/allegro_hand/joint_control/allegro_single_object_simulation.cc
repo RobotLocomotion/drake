@@ -175,16 +175,15 @@ void DoMain() {
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  std::vector<Eigen::Isometry3d> X_WB_all;
-  plant.tree().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
-  const Eigen::Vector3d& p_WHand = X_WB_all[hand.index()].translation();
+  const Eigen::Vector3d& p_WHand =
+      plant.EvalBodyPoseInWorld(plant_context, hand).translation();
   Eigen::Isometry3d X_WM;
   Eigen::Vector3d rpy(M_PI / 2, 0, 0);
   X_WM.linear() =
       math::RotationMatrix<double>(math::RollPitchYaw<double>(rpy)).matrix();
   X_WM.translation() = p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095);
   X_WM.makeAffine();
-  plant.tree().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
+  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   lcm.StartReceiveThread();
 

@@ -57,7 +57,7 @@ PYBIND11_MODULE(lcm, m) {
     using Class = DrakeMockLcm;
     py::class_<Class, DrakeLcmInterface>(
         m, "DrakeMockLcm", doc.DrakeMockLcm.doc)
-        .def(py::init<>(), doc.DrakeMockLcm.ctor.doc_0args)
+        .def(py::init<>(), doc.DrakeMockLcm.ctor.doc)
         .def("Subscribe",
             [](Class* self, const std::string& channel,
                 PyHandlerFunction handler) {

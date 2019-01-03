@@ -828,12 +828,11 @@ class LeafSystem : public System<T> {
     return index;
   }
 
-  /// Declares a discrete state group with @p model_vector.size() state
-  /// variables, stored in a BasicVector initialized with the contents of
-  /// @p model_vector.
+  /// Declares a discrete state group with @p vector.size() state variables,
+  /// stored in a BasicVector initialized with the contents of @p vector.
   DiscreteStateIndex DeclareDiscreteState(
-      const Eigen::Ref<const VectorX<T>>& model_vector) {
-    return DeclareDiscreteState(BasicVector<T>(model_vector));
+      const Eigen::Ref<const VectorX<T>>& vector) {
+    return DeclareDiscreteState(BasicVector<T>(vector));
   }
 
   /// Declares a discrete state group with @p num_state_variables state

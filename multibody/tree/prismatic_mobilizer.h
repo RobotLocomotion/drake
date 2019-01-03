@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
@@ -104,10 +105,6 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   const PrismaticMobilizer<T>& set_translation_rate(
       systems::Context<T> *context, const T& translation_dot) const;
 
-  /// Sets `state` to store a zero translation and translational rate.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const final;
-
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the translation distance
   /// along this mobilizer's axis (see translation_axis().)
@@ -202,8 +199,12 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::PrismaticMobilizer;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using PrismaticMobilizer
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::PrismaticMobilizer<T>;
 
 }  // namespace multibody
 }  // namespace drake

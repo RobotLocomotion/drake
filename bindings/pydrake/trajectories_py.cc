@@ -27,19 +27,19 @@ PYBIND11_MODULE(trajectories, m) {
       .def("start_time",
           overload_cast_explicit<double, int>(
               &PiecewiseTrajectory<T>::start_time),
-          doc.PiecewiseTrajectory.start_time.doc_1args)
+          doc.PiecewiseTrajectory.start_time.doc)
       .def("end_time",
           overload_cast_explicit<double, int>(
               &PiecewiseTrajectory<T>::end_time),
-          doc.PiecewiseTrajectory.end_time.doc_1args)
+          doc.PiecewiseTrajectory.end_time.doc)
       .def("duration", &PiecewiseTrajectory<T>::duration,
           doc.PiecewiseTrajectory.duration.doc)
       .def("start_time",
           overload_cast_explicit<double>(&PiecewiseTrajectory<T>::start_time),
-          doc.PiecewiseTrajectory.start_time.doc_0args)
+          doc.PiecewiseTrajectory.start_time.doc)
       .def("end_time",
           overload_cast_explicit<double>(&PiecewiseTrajectory<T>::end_time),
-          doc.PiecewiseTrajectory.end_time.doc_0args)
+          doc.PiecewiseTrajectory.end_time.doc)
       .def("get_segment_index", &PiecewiseTrajectory<T>::get_segment_index,
           doc.PiecewiseTrajectory.get_segment_index.doc)
       .def("get_segment_times", &PiecewiseTrajectory<T>::get_segment_times,
@@ -47,9 +47,9 @@ PYBIND11_MODULE(trajectories, m) {
 
   py::class_<PiecewisePolynomial<T>, PiecewiseTrajectory<T>>(
       m, "PiecewisePolynomial", doc.PiecewisePolynomial.doc)
-      .def(py::init<>(), doc.PiecewisePolynomial.ctor.doc_3)
+      .def(py::init<>(), doc.PiecewisePolynomial.ctor.doc_0args)
       .def(py::init<const Eigen::Ref<const MatrixX<T>>&>(),
-          doc.PiecewisePolynomial.ctor.doc_4)
+          doc.PiecewisePolynomial.ctor.doc_1args)
       .def_static("ZeroOrderHold",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&>(
@@ -71,21 +71,24 @@ PYBIND11_MODULE(trajectories, m) {
               const Eigen::Ref<const VectorX<T>>&,
               const Eigen::Ref<const VectorX<T>>&>(
               &PiecewisePolynomial<T>::Cubic),
-          py::arg("breaks"), py::arg("knots"), py::arg("knot_dot_start"),
-          py::arg("knot_dot_end"), doc.PiecewisePolynomial.Cubic.doc)
+          py::arg("breaks"), py::arg("knots"), py::arg("knots_dot_start"),
+          py::arg("knots_dot_end"),
+          doc.PiecewisePolynomial.Cubic
+              .doc_4args_breaks_knots_knots_dot_start_knots_dot_end)
       .def_static("Cubic",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&,
               const Eigen::Ref<const MatrixX<T>>&>(
               &PiecewisePolynomial<T>::Cubic),
           py::arg("breaks"), py::arg("knots"), py::arg("knots_dot"),
-          doc.PiecewisePolynomial.Cubic.doc_2)
+          doc.PiecewisePolynomial.Cubic.doc_3args_breaks_knots_knots_dot)
       .def_static("Cubic",
           py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const MatrixX<T>>&, bool>(
               &PiecewisePolynomial<T>::Cubic),
           py::arg("breaks"), py::arg("knots"), py::arg("periodic_end"),
-          doc.PiecewisePolynomial.Cubic.doc_3)
+          doc.PiecewisePolynomial.Cubic
+              .doc_3args_breaks_knots_periodic_end_condition)
       .def("value", &PiecewisePolynomial<T>::value,
           doc.PiecewisePolynomial.value.doc)
       .def("derivative", &PiecewisePolynomial<T>::derivative,

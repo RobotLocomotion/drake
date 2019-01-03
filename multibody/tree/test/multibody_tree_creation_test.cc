@@ -24,12 +24,13 @@ namespace multibody {
 class JointTester {
  public:
   JointTester() = delete;
-  static const RevoluteMobilizer<double>* get_mobilizer(
+  static const internal::RevoluteMobilizer<double>* get_mobilizer(
       const RevoluteJoint<double>& joint) {
     return joint.get_mobilizer();
   }
 };
 
+namespace internal {
 namespace {
 
 using Eigen::Vector3d;
@@ -726,5 +727,6 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

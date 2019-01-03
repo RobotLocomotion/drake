@@ -63,7 +63,7 @@ PYBIND11_MODULE(rendering, m) {
   frame_velocity.attr("kSize") = int{FrameVelocity<T>::kSize};
 
   py::class_<PoseBundle<T>>(m, "PoseBundle", doc.PoseBundle.doc)
-      .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc_1args)
+      .def(py::init<int>(), py::arg("num_poses"), doc.PoseBundle.ctor.doc)
       .def("get_num_poses", &PoseBundle<T>::get_num_poses,
           doc.PoseBundle.get_num_poses.doc)
       .def("get_pose", &PoseBundle<T>::get_pose, doc.PoseBundle.get_pose.doc)
@@ -97,7 +97,7 @@ PYBIND11_MODULE(rendering, m) {
 
   py::class_<PoseAggregator<T>, LeafSystem<T>>(
       m, "PoseAggregator", doc.PoseAggregator.doc)
-      .def(py::init<>(), doc.PoseAggregator.ctor.doc_3)
+      .def(py::init<>(), doc.PoseAggregator.ctor.doc)
       .def("AddSingleInput", &PoseAggregator<T>::AddSingleInput,
           py_reference_internal, doc.PoseAggregator.AddSingleInput.doc)
       .def("AddSinglePoseAndVelocityInput",
@@ -110,7 +110,7 @@ PYBIND11_MODULE(rendering, m) {
       "MultibodyPositionToGeometryPose",
       doc.MultibodyPositionToGeometryPose.doc)
       .def(py::init<const multibody::MultibodyPlant<T>&>(),
-          doc.MultibodyPositionToGeometryPose.ctor.doc_1args)
+          doc.MultibodyPositionToGeometryPose.ctor.doc)
       .def("get_input_port",
           &MultibodyPositionToGeometryPose<T>::get_input_port,
           py_reference_internal,

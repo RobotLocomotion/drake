@@ -12,16 +12,17 @@
 namespace drake {
 namespace solvers {
 struct MosekSolverDetails {
-  // The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
-  // https://docs.mosek.com/8.1/capi/constants.html?highlight=msk_dinf_optimizer_time
+  /// The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
+  /// https://docs.mosek.com/8.1/capi/constants.html?highlight=msk_dinf_optimizer_time
   double optimizer_time{};
-  // The response code returned from mosek solver. Check
-  // https://docs.mosek.com/8.1/capi/response-codes.html for the meaning on the
-  // response code.
+  /// The response code returned from mosek solver. Check
+  /// https://docs.mosek.com/8.1/capi/response-codes.html for the meaning on the
+  /// response code.
   int rescode{};
-  // The solution status after solving the problem. Check
-  // https://docs.mosek.com/8.1/capi/accessing-solution.html for the meaning on
-  // the solution status.
+  /// The solution status after solving the problem. Check
+  /// https://docs.mosek.com/8.1/capi/accessing-solution.html and
+  /// https://docs.mosek.com/8.1/capi/constants.html#mosek.solsta for the
+  /// meaning on the solution status.
   int solution_status{};
 };
 

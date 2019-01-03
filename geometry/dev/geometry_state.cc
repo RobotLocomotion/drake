@@ -323,7 +323,6 @@ GeometryState<T>& GeometryState<T>::operator=(
     // "visualizable" (which means has an illustration role in the main
     // scene graph.
     if (geometry.has_illustration_role()) {
-      const Vector4<double>& diffuse = geometry.visual_material().diffuse();
       internal::InternalGeometry* parent_geometry = nullptr;
       if (geometry.parent_id()) {
         GeometryId parent_id = *geometry.parent_id();
@@ -333,12 +332,16 @@ GeometryState<T>& GeometryState<T>::operator=(
       // to a geometry that has zero-alpha. We assume that for the lifespan of
       // this dev class, it won't come up. However, this is documented in
       // the accompanying README.md.
+      IllustrationProperties properties;
+      properties.AddGroup("phong");
+      properties.AddProperty("phong", "diffuse",
+          geometry.illustration_properties()->GetPropertyOrDefault(
+              "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
       const SourceId source_id = tester.GetSourceId(geometry_id);
       RegisterValidGeometry(source_id,
                             geometry.frame_id(), geometry_id,
                             geometry.shape().Clone(), geometry.name(),
-                            geometry.X_PG(), diffuse,
-                            parent_geometry);
+                            geometry.X_PG(), properties, parent_geometry);
     }
   }
 
@@ -623,10 +626,17 @@ GeometryId GeometryState<T>::RegisterGeometry(
         ", but the frame doesn't belong to the source.";
   });
 
+  IllustrationProperties properties;
+  if (geometry->illustration_properties() != nullptr) {
+    properties.AddGroup("phong");
+    properties.AddProperty(
+        "phong", "diffuse",
+        geometry->illustration_properties()->GetPropertyOrDefault(
+            "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  }
   RegisterValidGeometry(source_id, frame_id, geometry_id,
                         geometry->release_shape(), geometry->name(),
-                        geometry->pose(), geometry->visual_material().diffuse(),
-                        nullptr);
+                        geometry->pose(), properties, nullptr);
 
   return geometry_id;
 }
@@ -655,10 +665,17 @@ GeometryId GeometryState<T>::RegisterGeometryWithParent(
   FrameId frame_id = parent_geometry.frame_id();
 
   GeometryId new_id = geometry->id();
+  IllustrationProperties properties;
+  if (geometry->illustration_properties() != nullptr) {
+    properties.AddGroup("phong");
+    properties.AddProperty(
+        "phong", "diffuse",
+        geometry->illustration_properties()->GetPropertyOrDefault(
+            "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  }
   RegisterValidGeometry(source_id, frame_id, new_id,
                         geometry->release_shape(), geometry->name(),
-                        geometry->pose(), geometry->visual_material().diffuse(),
-                        &parent_geometry);
+                        geometry->pose(), properties, &parent_geometry);
 
   return new_id;
 }
@@ -781,6 +798,61 @@ void GeometryState<T>::AssignRole(SourceId source_id,
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kIllustration);
   // NOTE: No need to assign to any engines.
+}
+
+template <typename T>
+int GeometryState<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
+                                 Role role) {
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error(
+        "Trying to remove the role " + to_string(role) + " from the geometry " +
+        to_string(geometry_id) + " from source " + to_string(source_id) +
+        ", but the geometry doesn't belong to that source.");
+  }
+
+  // dev/SceneGraph doesn't work with proximity, and one can't "remove" the
+  // unassigned role state.
+  if (role == Role::kUnassigned || role == Role::kProximity) return 0;
+
+  return RemoveRoleUnchecked(geometry_id, role);
+}
+
+template <typename T>
+int GeometryState<T>::RemoveRole(SourceId source_id, FrameId frame_id,
+                                 Role role) {
+  int count = 0;
+  SourceId frame_source_id = source_id;
+  if (frame_id == InternalFrame::world_frame_id()) {
+    // Explicitly validate the source id because it won't happen in acquiring
+    // the world frame.
+    FindOrThrow(source_id, source_frame_id_map_, [source_id]() {
+      return get_missing_id_message(source_id);
+    });
+    frame_source_id = self_source_;
+  }
+  const FrameIdSet& set = GetMutableValueOrThrow(frame_source_id,
+                                           &source_frame_id_map_);
+  FindOrThrow(frame_id, set, [frame_id, frame_source_id]() {
+    return "Referenced frame " + to_string(frame_id) + " for source " +
+        to_string(frame_source_id) +
+        ", but the frame doesn't belong to the source.";
+  });
+
+  // dev/SceneGraph doesn't work with proximity, and one can't "remove" the
+  // unassigned role state.
+  if (role == Role::kUnassigned || role == Role::kProximity) return 0;
+
+  const InternalFrame& frame = frames_[frame_id];
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    // If the frame is the world frame, then the specific geometry needs to be
+    // tested to see if it belongs to the source. Otherwise, by definition, the
+    // geometry must belong to the same source as the parent frame.
+    if (frame_id != InternalFrame::world_frame_id() ||
+        BelongsToSource(geometry_id, source_id)) {
+      count += RemoveRoleUnchecked(geometry_id, role);
+    }
+  }
+  return count;
 }
 
 template <typename T>
@@ -1086,6 +1158,77 @@ void GeometryState<T>::AssignRoleInternal(SourceId source_id,
 }
 
 template <typename T>
+int GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
+  switch (role) {
+    case Role::kUnassigned:
+      // Can't remove unassigned; it's a no op.
+      return 0;
+    case Role::kProximity:
+      // This dev/SceneGraph doesn't support proximity roles.
+      return 0;
+    case Role::kIllustration:
+      return RemoveIllustrationRole(geometry_id);
+    case Role::kPerception:
+      return RemovePerceptionRole(geometry_id);
+  }
+  return 0;
+}
+
+template <typename T>
+int GeometryState<T>::RemoveIllustrationRole(GeometryId geometry_id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  DRAKE_DEMAND(geometry != nullptr);
+  if (geometry->has_illustration_role()) {
+    geometry->RemoveIllustrationRole();
+    return 1;
+  }
+  return 0;
+}
+
+template <typename T>
+int GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
+  internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  DRAKE_DEMAND(geometry != nullptr);
+  if (geometry->has_perception_role()) {
+    RenderIndex index = geometry->render_index();
+    optional<RenderIndex> moved_render_index =
+        low_render_engine_->RemoveVisual(index);
+    // I HAVE A PROBLEM HERE!
+    //  Only dynamic geometries appear in X_WG_perception_
+    //  the render engine doesn't distinguish between anchored and dynamic
+    //  geometries.
+    // So, if the render engine *moves* the index of an anchored geometry, I
+    // have no means of simply finding that geometry.
+    if (moved_render_index) {
+      if (X_WG_perception_.count(*moved_render_index) > 0) {
+        // The geometry that the render engine moved is dynamic.
+        InternalIndex moved_index = X_WG_perception_[*moved_render_index];
+        internal::InternalGeometry& moved_geometry =
+            geometries_[geometry_index_id_map_[moved_index]];
+        DRAKE_DEMAND(moved_geometry.has_perception_role());
+        moved_geometry.set_render_index(index);
+        X_WG_perception_[index] = moved_geometry.internal_index();
+        X_WG_perception_.erase(*moved_render_index);
+      } else {
+        // The moved geometry must be an anchored geometry. Go find it. This is
+        // *very* heavy handed, but this operation would be done during
+        // configuration and not simulation *and* this is dev.
+        for (auto& pair : geometries_) {
+          if (pair.second.has_perception_role() &&
+              pair.second.render_index() == *moved_render_index) {
+            pair.second.set_render_index(index);
+            break;
+          }
+        }
+      }
+    }
+    geometry->RemovePerceptionRole();
+    return 1;
+  }
+  return 0;
+}
+
+template <typename T>
 Isometry3<double> GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
   if (frame_id == InternalFrame::world_frame_id()) {
     return Isometry3<double>::Identity();
@@ -1135,7 +1278,7 @@ template <typename T>
 void GeometryState<T>::RegisterValidGeometry(
     SourceId source_id, FrameId frame_id, GeometryId geometry_id,
     std::unique_ptr<Shape> shape, const std::string& name,
-    const Isometry3<double>& X_PG, const Vector4<double>& diffuse,
+    const Isometry3<double>& X_PG, const IllustrationProperties& properties,
     internal::InternalGeometry* parent_geometry) {
   InternalFrame& frame = frames_[frame_id];
   frame.add_child(geometry_id);
@@ -1169,24 +1312,20 @@ void GeometryState<T>::RegisterValidGeometry(
     parent_geometry->add_child(geometry_id);
   }
 
-  // NOTE: This is a hack to provide compatibility with the fact that
-  // GeometryInstance currently has a visual material -- the *correct* work
-  // flow is to assign a role explicitly.
-  if (diffuse(3) > 0) {
-    PerceptionProperties p;
+  AssignRole(source_id, geometry_id, properties);
+
+  PerceptionProperties p;
+  if (properties.HasProperty("phong", "diffuse")) {
     p.AddGroup("phong");
-    p.AddProperty("phong", "diffuse", diffuse);
-    p.AddGroup("label");
-    // NOTE: These render labels are *not* being returned and there is currently
-    // no meaningful facility for looking up by render label.
-    static const auto kNonTerrainLabel = render::RenderLabel::new_label();
-    p.AddProperty("label", "id", kNonTerrainLabel);
-    AssignRole(source_id, geometry_id, p);
-    IllustrationProperties i;
-    i.AddGroup("phong");
-    i.AddProperty("phong", "diffuse", diffuse);
-    AssignRole(source_id, geometry_id, i);
+    p.AddProperty("phong", "diffuse",
+                  properties.GetProperty<Vector4<double>>("phong", "diffuse"));
   }
+  p.AddGroup("label");
+  // NOTE: These render labels are *not* being returned and there is currently
+  // no meaningful facility for looking up by render label.
+  static const auto kNonTerrainLabel = render::RenderLabel::new_label();
+  p.AddProperty("label", "id", kNonTerrainLabel);
+  AssignRole(source_id, geometry_id, p);
 }
 
 }  // namespace dev

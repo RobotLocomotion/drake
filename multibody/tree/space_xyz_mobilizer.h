@@ -4,6 +4,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
@@ -180,11 +181,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context, const Vector3<T>& w_FM,
       systems::State<T>* state) const;
 
-  /// Sets `state` to store zero space x-y-z angles θ₁, θ₂, θ₃ and zero across
-  /// mobilizer angular velocity `w_FM`.
-  void set_zero_state(const systems::Context<T>& context,
-                      systems::State<T>* state) const override;
-
   /// Computes the across-mobilizer transform `X_FM(q)` between the inboard
   /// frame F and the outboard frame M as a function of the space x-y-z angles
   /// θ₁, θ₂, θ₃ stored in `context`.
@@ -292,8 +288,12 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
 
 }  // namespace internal
 
-/// WARNING: This alias will be deprecated on or around 2018/12/20.
-using internal::SpaceXYZMobilizer;
+/// WARNING: This will be removed on or around 2019/03/01.
+template <typename T>
+using SpaceXYZMobilizer
+DRAKE_DEPRECATED(
+    "This public alias is deprecated, and will be removed around 2019/03/01.")
+    = internal::SpaceXYZMobilizer<T>;
 
 }  // namespace multibody
 }  // namespace drake

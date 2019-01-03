@@ -12,6 +12,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 namespace {
 
 using Eigen::Matrix3d;
@@ -168,5 +169,6 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

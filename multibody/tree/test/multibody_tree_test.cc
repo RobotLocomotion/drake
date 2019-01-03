@@ -24,6 +24,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 namespace multibody_model {
 namespace {
 
@@ -263,9 +264,7 @@ class BadDerivedMBSystem : public MultibodyTreeSystem<double> {
 GTEST_TEST(MultibodyTreeSystem, CatchBadBehavior) {
   // Create the internal tree and finalize the MBSystem correctly.
   BadDerivedMBSystem finalized(false);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      finalized.mutable_tree(), std::logic_error,
-      ".*mutable_tree().*MultibodyTree.*finalized.*already.*");
+  EXPECT_NO_THROW(finalized.mutable_tree());
 
   // Make the MBSystem behave badly.
   DRAKE_EXPECT_THROWS_MESSAGE(BadDerivedMBSystem(true), std::logic_error,
@@ -444,10 +443,12 @@ class KukaIiwaModelTests : public ::testing::Test {
         context_on_T, frameH_on_T, p_HPo, Jv_WHp);
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
+  const MultibodyTree<double>& tree() const {
+    return internal::GetInternalTree(*system_);
+  }
 
   const MultibodyTree<AutoDiffXd>& tree_autodiff() const {
-    return system_autodiff_->tree();
+    return internal::GetInternalTree(*system_autodiff_);
   }
 
  protected:
@@ -1182,7 +1183,9 @@ class WeldMobilizerTest : public ::testing::Test {
     X_WB2_.set_rotation(math::RotationMatrixd::MakeZRotation(-3 * M_PI_4));
   }
 
-  const MultibodyTree<double>& tree() const { return system_->tree(); }
+  const MultibodyTree<double>& tree() const {
+      return internal::GetInternalTree(*system_);
+  }
 
  protected:
   std::unique_ptr<MultibodyTreeSystem<double>> system_;
@@ -1222,5 +1225,6 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
 
 }  // namespace
 }  // namespace multibody_model
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

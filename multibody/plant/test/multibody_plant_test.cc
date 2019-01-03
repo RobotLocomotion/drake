@@ -12,6 +12,7 @@
 
 #include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -132,8 +133,8 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_actuated_dofs(), 2);
 
   // World accessors.
-  EXPECT_EQ(&plant->world_body(), &plant->tree().world_body());
-  EXPECT_EQ(&plant->world_frame(), &plant->tree().world_frame());
+  EXPECT_EQ(&plant->world_body(), &plant->world_body());
+  EXPECT_EQ(&plant->world_frame(), &plant->world_frame());
 
   // State size.
   EXPECT_EQ(plant->num_positions(), 3);
@@ -204,12 +205,28 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // an exception.
   EXPECT_THROW(plant->GetBodyByName(kInvalidName), std::logic_error);
 
+  // Get body indices by model_instance.
+  const std::vector<BodyIndex> acrobot_indices =
+      plant->GetBodyIndices(default_model_instance());
+  EXPECT_EQ(acrobot_indices.size(), 2);
+  EXPECT_EQ(acrobot_indices[0], link1.index());
+  EXPECT_EQ(acrobot_indices[1], link2.index());
+
+  const std::vector<BodyIndex> pendulum_indices =
+      plant->GetBodyIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_indices.size(), 2);
+  EXPECT_EQ(pendulum_indices[0], upper.index());
+  EXPECT_EQ(pendulum_indices[1], lower.index());
+
   // Get joints by name.
   const Joint<double>& shoulder_joint =
       plant->GetJointByName(parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.name(), parameters.shoulder_joint_name());
   EXPECT_EQ(shoulder_joint.model_instance(), default_model_instance());
-    const Joint<double>& elbow_joint =
+  Joint<double>& mutable_shoulder_joint =
+      plant->GetMutableJointByName(parameters.shoulder_joint_name());
+  EXPECT_EQ(&mutable_shoulder_joint, &shoulder_joint);
+  const Joint<double>& elbow_joint =
       plant->GetJointByName(parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.name(), parameters.elbow_joint_name());
   EXPECT_EQ(elbow_joint.model_instance(), default_model_instance());
@@ -312,9 +329,9 @@ class AcrobotPlantTests : public ::testing::Test {
 
     link1_ = &plant_->GetBodyByName(parameters_.link1_name());
     link2_ = &plant_->GetBodyByName(parameters_.link2_name());
-    shoulder_ = &plant_->GetJointByName<RevoluteJoint>(
+    shoulder_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.shoulder_joint_name());
-    elbow_ = &plant_->GetJointByName<RevoluteJoint>(
+    elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
     context_ = plant_->CreateDefaultContext();
@@ -342,12 +359,10 @@ class AcrobotPlantTests : public ::testing::Test {
         discrete_plant_->get_actuation_input_port().get_index(),
         Vector1<double>(0.0));
 
-    const auto& mbt_context =
-        dynamic_cast<MultibodyTreeContext<double>&>(*discrete_context_);
-    ASSERT_EQ(mbt_context.num_positions(), 2);
-    ASSERT_EQ(mbt_context.num_velocities(), 2);
-    ASSERT_EQ(mbt_context.get_positions().size(), 2);
-    ASSERT_EQ(mbt_context.get_velocities().size(), 2);
+    ASSERT_EQ(discrete_plant_->num_positions(), 2);
+    ASSERT_EQ(discrete_plant_->num_velocities(), 2);
+    ASSERT_EQ(discrete_plant_->GetPositions(*discrete_context_).size(), 2);
+    ASSERT_EQ(discrete_plant_->GetVelocities(*discrete_context_).size(), 2);
   }
 
   // Computes the vector of generalized forces due to gravity.
@@ -362,7 +377,7 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Calculate the generalized forces due to gravity.
     const VectorX<double> tau_g =
-        plant_->tree().CalcGravityGeneralizedForces(*context_);
+        plant_->CalcGravityGeneralizedForces(*context_);
 
     // Calculate a benchmark value.
     const Vector2d tau_g_expected =
@@ -402,7 +417,7 @@ class AcrobotPlantTests : public ::testing::Test {
         -parameters_.b1() * theta1dot, -parameters_.b2() * theta2dot);
 
     // Verify the computation of the contribution due to joint damping.
-    MultibodyForces<double> forces(plant_->tree());
+    MultibodyForces<double> forces(*plant_);
     shoulder_->AddInDamping(*context_, &forces);
     elbow_->AddInDamping(*context_, &forces);
     EXPECT_TRUE(CompareMatrices(forces.generalized_forces(), tau_damping,
@@ -495,8 +510,8 @@ class AcrobotPlantTests : public ::testing::Test {
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
-  const RevoluteJoint<double>* shoulder_{nullptr};
-  const RevoluteJoint<double>* elbow_{nullptr};
+  RevoluteJoint<double>* shoulder_{nullptr};
+  RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
   systems::FixedInputPortValue* input_port_{nullptr};
 
@@ -601,9 +616,6 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
 
-  const MultibodyTree<double>& tree = plant_->tree();
-  std::vector<Isometry3<double >> X_WB_all;
-  tree.CalcAllBodyPosesInWorld(*context, &X_WB_all);
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
@@ -615,7 +627,8 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
     EXPECT_EQ(frame_id, *optional_id);
     EXPECT_EQ(body_index, plant_->GetBodyFromFrameId(frame_id)->index());
     const Isometry3<double>& X_WB = poses.value(frame_id);
-    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
+    const Isometry3<double> X_WB_expected =
+        plant_->EvalBodyPoseInWorld(*context, plant_->get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
@@ -639,6 +652,37 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       plant_->GetBodyFrameIdIfExists(world_index());
   EXPECT_EQ(undefined_id, nullopt);
 #endif
+}
+
+TEST_F(AcrobotPlantTests, SetRandomState) {
+  RandomGenerator generator;
+  auto random_context = plant_->CreateDefaultContext();
+
+  // Calling SetRandomContext before setting the distribution results in the
+  // zero state.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_TRUE(CompareMatrices(
+      context_->get_mutable_continuous_state_vector().CopyToVector(),
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+
+  // Setup distribution for random initial conditions.
+  std::normal_distribution<symbolic::Expression> gaussian;
+  shoulder_->set_random_angle_distribution(M_PI + 0.02*gaussian(generator));
+  elbow_->set_random_angle_distribution(0.05*gaussian(generator));
+
+  // This call should change the context.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_FALSE(CompareMatrices(
+      context_->get_mutable_continuous_state_vector().CopyToVector(),
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
+
+  const Eigen::VectorXd first_random_state =
+      random_context->get_mutable_continuous_state_vector().CopyToVector();
+  // And every call should return something different.
+  plant_->SetRandomContext(random_context.get(), &generator);
+  EXPECT_FALSE(CompareMatrices(
+      first_random_state,
+      random_context->get_mutable_continuous_state_vector().CopyToVector()));
 }
 
 // Verifies that the right errors get invoked upon finalization.
@@ -1004,13 +1048,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
-  plant.tree().SetFreeBodyPoseOrThrow(
-      sphere1, Isometry3d(Translation3d(-x_offset, radius, 0.0)),
-      context.get());
+  plant.SetFreeBodyPose(
+      context.get(), sphere1,
+      Isometry3d(Translation3d(-x_offset, radius, 0.0)));
   // Place sphere 2 on top of the ground, with offset x = x_offset.
-  plant.tree().SetFreeBodyPoseOrThrow(
-      sphere2, Isometry3d(Translation3d(x_offset, radius, 0.0)),
-      context.get());
+  plant.SetFreeBodyPose(
+      context.get(), sphere2,
+      Isometry3d(Translation3d(x_offset, radius, 0.0)));
 
   unique_ptr<AbstractValue> poses_value =
       plant.get_geometry_poses_output_port().Allocate();
@@ -1023,15 +1067,13 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   // Compute the poses for each geometry in the model.
   plant.get_geometry_poses_output_port().Calc(*context, poses_value.get());
 
-  const MultibodyTree<double>& model = plant.tree();
-  std::vector<Isometry3<double >> X_WB_all;
-  model.CalcAllBodyPosesInWorld(*context, &X_WB_all);
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);
        body_index < plant.num_bodies(); ++body_index) {
     const FrameId frame_id = plant.GetBodyFrameIdOrThrow(body_index);
     const Isometry3<double>& X_WB = pose_data.value(frame_id);
-    const Isometry3<double>& X_WB_expected = X_WB_all[body_index];
+    const Isometry3<double> X_WB_expected =
+        plant.EvalBodyPoseInWorld(*context, plant.get_body(body_index));
     EXPECT_TRUE(CompareMatrices(X_WB.matrix(), X_WB_expected.matrix(),
                                 kTolerance, MatrixCompareType::relative));
   }
@@ -1219,13 +1261,13 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
        2.0 * Vector3d::UnitY() +
        3.0 * Vector3d::UnitZ()).normalized();
   const math::RigidTransformd X_WB(AngleAxisd(M_PI / 3.0, axis_W), p_WB);
-  plant.tree().SetFreeBodyPoseOrThrow(
-      body, X_WB.GetAsIsometry3(), context.get());
+  plant.SetFreeBodyPose(
+      context.get(), body, X_WB.GetAsIsometry3());
 
   // Set an arbitrary, non-zero, spatial velocity of B in W.
   const SpatialVelocity<double> V_WB(Vector3d(1.0, 2.0, 3.0),
                                      Vector3d(-1.0, 4.0, -0.5));
-  plant.tree().SetFreeBodySpatialVelocityOrThrow(body, V_WB, context.get());
+  plant.SetFreeBodySpatialVelocity(context.get(), body, V_WB);
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.
@@ -1293,7 +1335,7 @@ TEST_F(SplitPendulum, MassMatrix) {
 
   MatrixX<double> M(1, 1);
   pin_->set_angle(context_.get(), theta);
-  plant_.tree().CalcMassMatrixViaInverseDynamics(*context_, &M);
+  plant_.CalcMassMatrixViaInverseDynamics(*context_, &M);
 
   // We can only expect values within the precision specified in the sdf file.
   EXPECT_NEAR(M(0, 0), Io, 1.0e-6);
@@ -1445,10 +1487,10 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
         RigidTransform<double>(RotationMatrix<double>::Identity(),
                Vector3<double>(0, small_box_size_ / 2.0 - penetration_, 0));
 
-    plant_.tree().SetFreeBodyPoseOrThrow(
-        large_box, X_WLb.GetAsIsometry3(), context);
-    plant_.tree().SetFreeBodyPoseOrThrow(
-        small_box, X_WSb.GetAsIsometry3(), context);
+    plant_.SetFreeBodyPose(
+        context, large_box, X_WLb.GetAsIsometry3());
+    plant_.SetFreeBodyPose(
+        context, small_box, X_WSb.GetAsIsometry3());
   }
 
   // Generate a valid set of penetrations for this particular setup that
@@ -1459,12 +1501,11 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
     const Body<double>& large_box = plant_.GetBodyByName("LargeBox");
     const Body<double>& small_box = plant_.GetBodyByName("SmallBox");
 
-    std::vector<Isometry3<double>> X_WB_set;
-    plant_.tree().CalcAllBodyPosesInWorld(context, &X_WB_set);
-
     // Pose of the boxes in the world frame.
-    const Isometry3<double>& X_WLb = X_WB_set[large_box.index()];
-    const Isometry3<double>& X_WSb = X_WB_set[small_box.index()];
+    const Isometry3<double>& X_WLb =
+        plant_.EvalBodyPoseInWorld(context, large_box);
+    const Isometry3<double>& X_WSb =
+        plant_.EvalBodyPoseInWorld(context, small_box);
 
     // Normal pointing outwards from the top surface of the large box.
     const Vector3<double> nhat_large_box_W =
@@ -1526,32 +1567,36 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T,
       const std::vector<PenetrationAsPointPair<double>>& pairs_set) const {
-    std::vector<SpatialVelocity<T>> V_WB_set;
-    plant_on_T.tree().CalcAllBodySpatialVelocitiesInWorld(
-        context_on_T, &V_WB_set);
-
-    std::vector<Isometry3<T>> X_WB_set;
-    plant_on_T.tree().CalcAllBodyPosesInWorld(
-        context_on_T, &X_WB_set);
-
     VectorX<T> vn(pairs_set.size());
     int icontact = 0;
     for (const auto& pair : pairs_set) {
       PenetrationAsPointPair<T> pair_on_T;
+
       BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_A);
+      const Isometry3<T> X_WA = plant_on_T.EvalBodyPoseInWorld(
+          context_on_T, plant_on_T.get_body(bodyA_index));
+      const SpatialVelocity<T> V_WA =
+          plant_on_T.EvalBodySpatialVelocityInWorld(
+              context_on_T, plant_on_T.get_body(bodyA_index));
+
       BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_B);
+      const Isometry3<T> X_WB = plant_on_T.EvalBodyPoseInWorld(
+          context_on_T, plant_on_T.get_body(bodyB_index));
+      const SpatialVelocity<T> V_WB =
+          plant_on_T.EvalBodySpatialVelocityInWorld(
+              context_on_T, plant_on_T.get_body(bodyB_index));
+
       const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
-      const Vector3<T> p_WAo = X_WB_set[bodyA_index].translation();
+
+      const Vector3<T> p_WAo = X_WA.translation();
       const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
-      const SpatialVelocity<T> V_WA = V_WB_set[bodyA_index];
       const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
 
       const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
-      const Vector3<T> p_WBo = X_WB_set[bodyB_index].translation();
+      const Vector3<T> p_WBo = X_WB.translation();
       const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
-      const SpatialVelocity<T> V_WB = V_WB_set[bodyB_index];
       const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
 
       // From the relative velocity of B in A, compute the normal separation
@@ -1574,32 +1619,35 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       const Context<T>& context_on_T,
       const std::vector<PenetrationAsPointPair<double>>& pairs_set,
       const std::vector<Matrix3<double>>& R_WC_set) const {
-    std::vector<SpatialVelocity<T>> V_WB_set;
-    plant_on_T.tree().CalcAllBodySpatialVelocitiesInWorld(
-        context_on_T, &V_WB_set);
-
-    std::vector<Isometry3<T>> X_WB_set;
-    plant_on_T.tree().CalcAllBodyPosesInWorld(
-        context_on_T, &X_WB_set);
-
     VectorX<T> vt(2 * pairs_set.size());
     int icontact = 0;
     for (const auto& pair : pairs_set) {
       PenetrationAsPointPair<T> pair_on_T;
+
       BodyIndex bodyA_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_A);
+      const Isometry3<T> X_WA = plant_on_T.EvalBodyPoseInWorld(
+          context_on_T, plant_on_T.get_body(bodyA_index));
+      const SpatialVelocity<T> V_WA =
+          plant_on_T.EvalBodySpatialVelocityInWorld(
+              context_on_T, plant_on_T.get_body(bodyA_index));
+
       BodyIndex bodyB_index = MultibodyPlantTester::geometry_id_to_body_index(
           plant_on_T, pair.id_B);
+      const Isometry3<T> X_WB = plant_on_T.EvalBodyPoseInWorld(
+          context_on_T, plant_on_T.get_body(bodyB_index));
+      const SpatialVelocity<T> V_WB =
+          plant_on_T.EvalBodySpatialVelocityInWorld(
+              context_on_T, plant_on_T.get_body(bodyB_index));
+
       const Vector3<T> p_WCa = pair.p_WCa.cast<T>();
-      const Vector3<T> p_WAo = X_WB_set[bodyA_index].translation();
+      const Vector3<T> p_WAo = X_WA.translation();
       const Vector3<T> p_AoCa_W = p_WCa - p_WAo;
-      const SpatialVelocity<T> V_WA = V_WB_set[bodyA_index];
       const Vector3<T> v_WCa = V_WA.Shift(p_AoCa_W).translational();
 
       const Vector3<T> p_WCb = pair.p_WCb.cast<T>();
-      const Vector3<T> p_WBo = X_WB_set[bodyB_index].translation();
+      const Vector3<T> p_WBo = X_WB.translation();
       const Vector3<T> p_BoCb_W = p_WCb - p_WBo;
-      const SpatialVelocity<T> V_WB = V_WB_set[bodyB_index];
       const Vector3<T> v_WCb = V_WB.Shift(p_BoCb_W).translational();
 
       // The columns of R_WC (the orientation of contact frame C in the world),
@@ -1725,7 +1773,7 @@ GTEST_TEST(KukaModel, JointIndexes) {
   for (JointIndex joint_index(0);
        joint_index < plant.num_joints() - 1 /* Skip "weld" joint. */;
        ++joint_index) {
-    const Joint<double>& joint = plant.tree().get_joint(joint_index);
+    const Joint<double>& joint = plant.get_joint(joint_index);
     // Start index in the vector q of generalized positions.
     const int expected_q_start = joint_index;
     // Start index in the vector v of generalized velocities.
@@ -1736,6 +1784,10 @@ GTEST_TEST(KukaModel, JointIndexes) {
     EXPECT_EQ(joint.position_start(), expected_q_start);
     EXPECT_EQ(joint.num_velocities(), expected_num_v);
     EXPECT_EQ(joint.velocity_start(), expected_v_start);
+
+    // Confirm that the mutable accessor returns the same object.
+    Joint<double>& mutable_joint = plant.get_mutable_joint(joint_index);
+    EXPECT_EQ(&mutable_joint, &joint);
   }
 
   // Verify that the indexes above point to the right entries in the state
@@ -2039,7 +2091,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 
   // Verify the sizes (all these joints are revolute with one q and one v).
   const int num_selected_states = 2 * arm_selected_joints.size();
-  const int num_states = plant.tree().num_states();
+  const int num_states = plant.num_multibody_states();
   ASSERT_EQ(Sx_arm.rows(), num_selected_states);
   ASSERT_EQ(Sx_arm.cols(), num_states);
 
@@ -2061,10 +2113,17 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   Sx_arm_expected(5, num_floating_velocities + nq + 2) = 1;
   EXPECT_EQ(Sx_arm, Sx_arm_expected);
 
+  auto OldMakeStateSelectorMatrixFromJointNames = [&plant](auto names) {
+    // TODO(eric.cousineau): Move this to `multibody_tree_test`, or remove it
+    // once it becomes internal.
+    const auto& tree = internal::GetInternalTree(plant);
+    return tree.MakeStateSelectorMatrixFromJointNames(names);
+  };
+
   // State selection using alternative API in which joints are specified by
   // name.
   const MatrixX<double> Sx_arm_by_name =
-      plant.tree().MakeStateSelectorMatrixFromJointNames(
+      OldMakeStateSelectorMatrixFromJointNames(
           arm_selected_joints_by_name);
   EXPECT_EQ(Sx_arm_by_name, Sx_arm_expected);
 
@@ -2073,7 +2132,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   const std::vector<std::string> repeated_joint_names =
       {"iiwa_joint_2", "iiwa_joint_3", "iiwa_joint_7", "iiwa_joint_3"};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.tree().MakeStateSelectorMatrixFromJointNames(repeated_joint_names),
+      OldMakeStateSelectorMatrixFromJointNames(repeated_joint_names),
       std::logic_error,
       "Joint named 'iiwa_joint_3' is repeated multiple times.");
 
@@ -2133,7 +2192,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
 
   // Verify we can make selector matrices from empty lists of joints/actuators.
   const MatrixX<double> Sx_from_empty_names =
-      plant.tree().MakeStateSelectorMatrixFromJointNames(
+      OldMakeStateSelectorMatrixFromJointNames(
           std::vector<std::string>());
   EXPECT_EQ(Sx_from_empty_names.rows(), 0);
   EXPECT_EQ(Sx_from_empty_names.cols(), plant.num_multibody_states());
@@ -2174,9 +2233,9 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   EXPECT_TRUE(CompareMatrices(B, B_expected, 0.0, MatrixCompareType::absolute));
 
   // Test old spellings.
-  unused(plant.tree().MakeStateSelectorMatrix(std::vector<JointIndex>()));
-  unused(plant.tree().MakeActuatorSelectorMatrix(std::vector<JointIndex>()));
-  unused(plant.tree().MakeActuatorSelectorMatrix(
+  unused(plant.MakeStateSelectorMatrix(std::vector<JointIndex>()));
+  unused(plant.MakeActuatorSelectorMatrix(std::vector<JointIndex>()));
+  unused(plant.MakeActuatorSelectorMatrix(
       std::vector<JointActuatorIndex>()));
 }
 
@@ -2270,6 +2329,52 @@ GTEST_TEST(StateSelection, FloatingBodies) {
           context.get(), end_effector_frame, mug, X_OM),
       std::logic_error,
       "Frame 'iiwa_link_7' must be anchored to the world frame.");
+}
+
+GTEST_TEST(SetRandomTest, FloatingBodies) {
+  // Create a model that contains a single body.
+  MultibodyPlant<double> plant;
+  const Body<double>& body =
+      plant.AddRigidBody("LoneBody", SpatialInertia<double>());
+  plant.Finalize();
+
+  RandomGenerator generator;
+
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+  Vector3<symbolic::Expression> xyz(1.0 + uniform(generator),
+                                    2.0 + uniform(generator),
+                                    3.0 + uniform(generator));
+
+  plant.SetFreeBodyRandomPositionDistribution(body, xyz);
+  plant.SetFreeBodyRandomRotationDistributionToUniform(body);
+
+  auto context = plant.CreateDefaultContext();
+
+  const math::RigidTransform<double> X_WB_default =
+      plant.GetFreeBodyPose(*context, body);
+
+  plant.SetRandomContext(context.get(), &generator);
+  const math::RigidTransform<double> X_WB =
+      plant.GetFreeBodyPose(*context, body);
+
+  // Just make sure that the rotation matrices have changed. (Testing that
+  // the quaternion is unit norm would be good, but is not possible here
+  // because the RigidTransform class scales the quaternion before it is
+  // returned).
+  EXPECT_FALSE(CompareMatrices(X_WB_default.rotation().matrix(),
+                               X_WB.rotation().matrix()));
+
+  // x is drawn from [1, 2).
+  EXPECT_GE(X_WB.translation()[0], 1.0);
+  EXPECT_LT(X_WB.translation()[0], 2.0);
+
+  // y is drawn from [2, 3).
+  EXPECT_GE(X_WB.translation()[1], 2.0);
+  EXPECT_LT(X_WB.translation()[1], 3.0);
+
+  // z is drawn from [3, 4).
+  EXPECT_GE(X_WB.translation()[2], 3.0);
+  EXPECT_LT(X_WB.translation()[2], 4.0);
 }
 
 }  // namespace

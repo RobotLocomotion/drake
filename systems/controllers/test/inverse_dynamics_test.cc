@@ -112,27 +112,23 @@ class InverseDynamicsTest : public ::testing::Test {
   // Determines whether gravity is modeled by checking the generalized forces
   // due to gravity.
   bool GravityModeled(const VectorXd& q) const {
-    // The state can only be altered in this way because the state is known to
-    // be continuous while the state can generally be discrete for MBT/MBP.
-    multibody_context_->get_mutable_continuous_state().
-        get_mutable_generalized_position().SetFromVector(q);
-
+    multibody_plant_->SetPositions(multibody_context_.get(), q);
     // Verify that gravitational forces are nonzero (validating that the tree
     // is put into the proper configuration and gravity is modeled).
-    const auto& tree = multibody_plant_->tree();
-    return tree.CalcGravityGeneralizedForces(*multibody_context_).norm() >
-              std::numeric_limits<double>::epsilon();
+    const VectorXd tau_g =
+        multibody_plant_->CalcGravityGeneralizedForces(*multibody_context_);
+    return tau_g.norm() > std::numeric_limits<double>::epsilon();
   }
 
  private:
   int num_positions() const {
     DRAKE_DEMAND(multibody_plant_.get() != nullptr);
-    return multibody_plant_->tree().num_positions();
+    return multibody_plant_->num_positions();
   }
 
   int num_velocities() const {
     DRAKE_DEMAND(multibody_plant_.get() != nullptr);
-    return multibody_plant_->tree().num_velocities();
+    return multibody_plant_->num_velocities();
   }
 
   std::unique_ptr<MultibodyPlant<double>> multibody_plant_;

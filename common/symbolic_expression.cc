@@ -159,9 +159,21 @@ Polynomiald Expression::ToPolynomial() const {
   return ptr_->ToPolynomial();
 }
 
-double Expression::Evaluate(const Environment& env) const {
+double Expression::Evaluate(const Environment& env,
+                            RandomGenerator* const random_generator) const {
   DRAKE_ASSERT(ptr_ != nullptr);
-  return ptr_->Evaluate(env);
+  if (random_generator == nullptr) {
+    return ptr_->Evaluate(env);
+  } else {
+    Environment env_with_random_variables{env};
+    return ptr_->Evaluate(
+        PopulateRandomVariables(env, GetVariables(), random_generator));
+  }
+}
+
+double Expression::Evaluate(RandomGenerator* const random_generator) const {
+  DRAKE_ASSERT(ptr_ != nullptr);
+  return Evaluate(Environment{}, random_generator);
 }
 
 Expression Expression::EvaluatePartial(const Environment& env) const {
@@ -535,27 +547,6 @@ ostream& operator<<(ostream& os, const Expression& e) {
   const PrecisionGuard precision_guard{&os,
                                        numeric_limits<double>::max_digits10};
   return e.ptr_->Display(os);
-}
-
-string CodeGen(const string& function_name, const vector<Variable>& parameters,
-               const Expression& e) {
-  ostringstream oss;
-  // Add header for the main function.
-  oss << "double " << function_name << "(const double* p) {\n";
-  // Codegen the expression.
-  // Build a map from Variable::Id to index (in parameters).
-  CodeGenVisitor::IdToIndexMap id_to_idx_map;
-  for (vector<Variable>::size_type i = 0; i < parameters.size(); ++i) {
-    id_to_idx_map.emplace(parameters[i].get_id(), i);
-  }
-  oss << "    return " << CodeGenVisitor(id_to_idx_map).CodeGen(e) << ";\n";
-  // Add footer for the main function.
-  oss << "}\n";
-  /// Handle `function_name_in`.
-  oss << "int " << function_name << "_in() {\n"
-      << "    return " << parameters.size() << ";\n"
-      << "}\n";
-  return oss.str();
 }
 
 Expression log(const Expression& e) {
