@@ -362,6 +362,9 @@ class DistanceToPoint {
   // @param id    the id of the geometry G,
   // @param X_WG  pose of the geometry G in World frame,
   // @param p_WQ  position of the query point Q in World frame.
+  // @note Some parts of the geometry (id, pose) are initialized in this
+  // constructor, and the remaining part of the geometry (shape) is a parameter
+  // to the call operator() below.
   DistanceToPoint(const GeometryId id,
                   const Isometry3<double>& X_WG,
                   const Vector3d& p_WQ) :
@@ -385,7 +388,7 @@ class DistanceToPoint {
     // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
     const double tolerance = RelativeTolerance(radius);
     // Unit vector in x-direction of G's frame.
-    const Vector3d Gx = Vector3d(1., 0., 0.);
+    const Vector3d Gx(1., 0., 0.);
     // Gradient vector expressed in G's frame.
     Vector3d grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
 
@@ -414,19 +417,9 @@ class DistanceToPoint {
     // where 'on the boundary' means within a tolerance of the boundary.
     // This helper function takes the i-th coordinate `coord` of p_GQ_G.
     // It returns the clamped value of `coord` within ±h(i). It also returns
-    // two booleans `is_outside` and `on_bound` to indicate whether the
-    // i-th coordinate is outside the interval [-h(i),+h(i)] or on the
-    // bounded value ±h(i) respectively. The decision also depends on a
-    // tolerance.
-    //
-    // Later we can use is_outside(i) and on_bound(i) to classify Q like this:
-    // if (is_outside(0) || is_outside(1) || is_outside(2))
-    //   // Q is outside B
-    // else if (on_bound(0) || on_bound(1) || on_bound(2))
-    //   // Q is on the boundary ∂B.
-    // else
-    //   // Q is inside B.
-    //
+    // an enum to indicate whether the i-th coordinate is inside the interval
+    // (-h(i),+h(i)), or within a tolerance of the bounded value ±h(i), or
+    // outside the interval.
     enum class Location {kInside, kBoundary, kOutside};
     auto clamp = [&half_size](const int i, const double coord,
                               Location* location) -> double {
@@ -485,23 +478,29 @@ class DistanceToPoint {
       // Q is inside the box.
       // The nearest point N is the axis-aligned projection of Q onto one of
       // the faces of the box.  The gradient vector is along that direction.
-      int axis = extremal_axis(p_GQ_G, half_size);
+      int axis = ExtremalAxis(p_GQ_G, half_size);
       double sign = Sign(p_GQ_G(axis));
       p_GN_G(axis) = sign * half_size(axis);
       grad_G(axis) = sign;
       distance = std::abs(p_GQ_G(axis)) - half_size(axis);
     }
 
-    // Use R_WG(= X_WG.rotation()) for vectors. Use X_WG for points.
-    auto R_WG = X_WG_.rotation();
+    // Use R_WG for vectors. Use X_WG for points.
+    const auto& R_WG = X_WG_.rotation();
     Vector3d grad_W = R_WG * grad_G;
     return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
                                          grad_W};
   }
 
- protected:
+ private:
   // Calculate a tolerance relative to a given `size` parameter with a lower
-  // bound in case the given `size` is extremely small.
+  // bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
+  // use the relative tolerance of 1e-14 times the `size`.  If the `size` is
+  // smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
+  // 1e-14-meter lower bound help us handle possible round off errors arising
+  // from applying a pose X_WG to a geometry G. Given a query point Q exactly
+  // on the boundary ∂G, if we apply X_WG to both Q and G, the point Q is likely
+  // to deviate from ∂G more than the machine epsilon, which is around 2e-16.
   static double RelativeTolerance(double size) {
     return 1e-14 * std::max(1., size);
   }
@@ -510,7 +509,7 @@ class DistanceToPoint {
   // Picks the axis i whose coordinate p(i) is closest to the boundary value
   // ±bounds(i). If there are ties, we prioritize according to an arbitrary
   // ordering: +x,-x,+y,-y,+z,-z.
-  static int extremal_axis(const Vector3d& p, const Vector3d& bounds) {
+  static int ExtremalAxis(const Vector3d& p, const Vector3d& bounds) {
     double min_dist = std::numeric_limits<double>::infinity();
     int axis = -1;
     for (int i = 0; i < 3; ++i) {
@@ -525,7 +524,6 @@ class DistanceToPoint {
     return axis;
   }
 
- private:
   // The id of the geometry G.
   const GeometryId geometry_id_;
   // The pose of the geometry G in World frame.

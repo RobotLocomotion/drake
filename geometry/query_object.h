@@ -233,8 +233,9 @@ class QueryObject {
    to multiple nearest faces, the signed distance function φᵢ(p) at p will have
    an undefined gradient vector. There is a nearest point candidate associated
    with each nearest face. In this case, we arbitrarily pick the point Nᵢ
-   associated with one of the nearest faces.  Please note that, due to roundoff
-   errors, applying a pose X_WG to B may perturb Nᵢ to another nearest point.
+   associated with one of the nearest faces.  Please note that, due to the
+   possible round off error arising from applying a pose X_WG to B, there is no
+   guarantee which of the nearest faces will be used.
 
    @note The signed distance function is a continuous function with respect to
    the position of the query point, but its gradient vector field may

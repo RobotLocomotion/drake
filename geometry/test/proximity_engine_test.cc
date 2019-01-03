@@ -341,58 +341,68 @@ struct SignedDistanceToPointTestData {
       : geometry(geometry_in),
         X_WG(X_WG_in),
         p_WQ(p_WQ_in),
-        expect(expect_in) {}
+        expected_result(expect_in) {}
 
   // Google Test uses this operator to report the test data in the log file
   // when a test fails.
   friend std::ostream& operator<<(std::ostream& os,
                                   const SignedDistanceToPointTestData& obj) {
-    return os << std::endl
-              << "geometry: (not printed)"
+    return os << "{\n"
+              << "  geometry: (not printed)\n"
+              << "  X_WG: (not printed)\n"
+              << "  p_WQ: " << obj.p_WQ.transpose() << "\n"
+              << "  expected_result.p_GN: "
+              << obj.expected_result.p_GN.transpose() << "\n"
+              << "  expected_result.distance: " << obj.expected_result.distance
               << "\n"
-              << "X_WG: (not printed)"
-              << "\n"
-              << "p_WQ: \n"
-              << obj.p_WQ << "\n"
-              << "expect.p_GN: \n"
-              << obj.expect.p_GN << "\n"
-              << "expect.distance: " << obj.expect.distance << "\n"
-              << "expect.grad_W: \n"
-              << obj.expect.grad_W << std::endl;
+              << "  expected_result.grad_W: "
+              << obj.expected_result.grad_W.transpose() << "\n"
+              << "}" << std::flush;
   }
 
   shared_ptr<Shape> geometry;
   const RigidTransformd X_WG;
   const Vector3d p_WQ;
-  const SignedDistanceToPoint<double> expect;
+  const SignedDistanceToPoint<double> expected_result;
 };
 
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
+  // We use these identities
+  //           2^2   + 3^2    + 6^2   = 7^2         (1)
+  //           0.2^2 + 0.3^2  + 0.6^2 = 0.7^2       (2)
+  //           0.1^2 + 0.15^2 + 0.3^2 = 0.35^2      (3)
+  // to set up the radius of the sphere geometry G and the position of the
+  // query point Q in such a way that both the signed distance and the
+  // position of the nearest point N can be expressed with fixed-point numbers.
+  //
+  // We will set a query point Q both outside G and inside G in such a way
+  // that Q is collinear to the center Go of the sphere and the nearest point N.
+  //
+  //            Q
+  //           /
+  //     ooo  /
+  //  o      N
+  // o      Q  o
+  // o    Go   o
+  // o         o
+  //  o       o
+  //     ooo
+  //
+  // From (2), we will set the radius of G to 0.7, so later we will have
+  // p_GN at (0.2, 0.3, 0.6). From (1), we will set p_GQ to (2,3,6), so it
+  // will be outside G at the positive distance 7 - 0.7 = 6.3. From (3), we will
+  // set p_GQ to (0.1, 0.15, 0.3), so it will be inside G at the negative
+  // distance 0.35 - 0.7 = -0.35. Both positions of Q will have the same
+  // nearest point N and the gradient vector.
   auto sphere = make_shared<Sphere>(0.7);
   std::vector<SignedDistanceToPointTestData> test_data{
-      // We use query points at (2,3,6) and (0.1,0.15,0.3) at distance 7.0 and
-      // 0.35 from the origin respectively. They are on the same ray from the
-      // origin. The first query point is 20 times farther from the origin than
-      // the second query point is.
-      //
-      // We use the anchored sphere centered at the origin with radius 0.7,
-      // which is 1/10 of the distance to the origin of the first query point,
-      // and twice the distance to the origin of the second query point.
-      //
-      // Since both query points are on the same ray from the origin, they
-      // share the same nearest point on the sphere at:
-      // (1/10)*(2,3,6) = 2*(0.1,0.15,0.3) = (0.2,0.3,0.6).
-      //
-      // The signed distance to the first query point is 7-0.7 = 6.3, and the
-      // signed distance to the second query point is 0.35-0.7 = -0.35.
-      //
-      // The gradient vector is in the direction from the origin to the query
-      // point and hence (2,3,6)/7.
+      // p_GQ = (2,3,6) is outside G at the positive distance 6.3.
       {sphere, X_WG, X_WG * Vector3d{2.0, 3.0, 6.0},
        SignedDistanceToPoint<double>(
            GeometryId::get_new_id(), Vector3d(0.2, 0.3, 0.6), 6.3,
            X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0)},
+      // p_GQ = (0.1,0.15,0.3) is inside G at the negative distance -0.35.
       {sphere, X_WG, X_WG * Vector3d{0.1, 0.15, 0.3},
        SignedDistanceToPoint<double>(
            GeometryId::get_new_id(), Vector3d(0.2, 0.3, 0.6), -0.35,
@@ -535,14 +545,14 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxNonUnique() {
 }
 
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataTranslateBox() {
-  // We set up a 20x10x10 box G centered at the origin [-10,10]x[-5,5]x[-5,5].
-  auto box = make_shared<Box>(20., 10., 10.);
+  // We set up a 20x10x30 box G centered at the origin [-10,10]x[-5,5]x[-15,15].
+  auto box = make_shared<Box>(20., 10., 30.);
   std::vector<SignedDistanceToPointTestData> test_data{
-      // We translate G by (10,10,10) to [0,20]x[5,15]x[5,15] in World frame.
-      // The position of the query point p_WQ(23,10,10) is closest to G at
-      // (20,10,10) in World frame, which is p_GN=(10,0,0) in G's frame.
+      // We translate G by (10,20,30) to [0,20]x[15,25]x[15,45] in World frame.
+      // The position of the query point p_WQ(23,20,30) is closest to G at
+      // (20,20,30) in World frame, which is p_GN=(10,0,0) in G's frame.
       // The gradient vector is expressed in both frames as (1,0,0).
-      {box, RigidTransformd(Vector3d(10., 10., 10.)), Vector3d{23., 10., 10.},
+      {box, RigidTransformd(Vector3d(10., 20., 30.)), Vector3d{23., 20., 30.},
        SignedDistanceToPoint<double>(GeometryId::get_new_id(),
                                      Vector3d(10., 0., 0.), 3.,
                                      Vector3d(1., 0., 0.))}};
@@ -559,7 +569,7 @@ struct SignedDistanceToPointTest
     auto data = GetParam();
     engine.AddAnchoredGeometry(*(data.geometry), data.X_WG.GetAsIsometry3(),
                                GeometryIndex(0));
-    geometry_map.push_back(data.expect.id_G);
+    geometry_map.push_back(data.expected_result.id_G);
   }
 };
 
@@ -569,16 +579,41 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPoint) {
 
   auto results = engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map);
   EXPECT_EQ(results.size(), 1);
-  EXPECT_EQ(results[0].id_G, data.expect.id_G);
-  EXPECT_TRUE(CompareMatrices(results[0].p_GN, data.expect.p_GN, 1e-14))
+  EXPECT_EQ(results[0].id_G, data.expected_result.id_G);
+  EXPECT_TRUE(
+      CompareMatrices(results[0].p_GN, data.expected_result.p_GN, 1e-14))
       << "Incorrect nearest point.";
-  EXPECT_NEAR(results[0].distance, data.expect.distance, 1e-14)
+  EXPECT_NEAR(results[0].distance, data.expected_result.distance, 1e-14)
       << "Incorrect signed distance.";
-  EXPECT_TRUE(CompareMatrices(results[0].grad_W, data.expect.grad_W, 1e-14))
+  EXPECT_TRUE(
+      CompareMatrices(results[0].grad_W, data.expected_result.grad_W, 1e-14))
       << "Incorrect gradient vector.";
 }
 
+TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
+  auto data = GetParam();
+
+  const double large_threshold = data.expected_result.distance + 0.01;
+  auto results =
+      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
+                                          large_threshold);
+  // The large threshold allows one object in the results.
+  EXPECT_EQ(results.size(), 1);
+
+  const double small_threshold = data.expected_result.distance - 0.01;
+  results =
+      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
+                                          small_threshold);
+  // The small threshold skips all objects.
+  EXPECT_EQ(results.size(), 0);
+}
+
+
 // Test what.
+// To debug a specific test, you can use Bazel flag --test_filter and
+// --test_output, for example, "bazel test //geometry:proximity_engine_test
+// --test_filter=Sphere/SignedDistanceToPointTest.SingleQueryPoint/0
+// --test_output=all".
 INSTANTIATE_TEST_CASE_P(Sphere, SignedDistanceToPointTest,
                         testing::ValuesIn(GenDistanceTestDataSphere()));
 INSTANTIATE_TEST_CASE_P(TransformSphere, SignedDistanceToPointTest,
@@ -601,36 +636,6 @@ INSTANTIATE_TEST_CASE_P(
     TransformInsideBoxUnique, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
 
-// Tests the threshold.
-// Another test fixture inherited from SignedDistanceToPointTest without
-// additional members.  It allows us to define a TEST_P() to test the threshold.
-// We could have added the same TEST_P() directly to the parent class; however,
-// it would have double the number of tests.  Instead, this "empty" test
-// fixture helps us instantiate a selected subset of the test data.
-struct SignedDistanceToPointTestThreshold : public SignedDistanceToPointTest {};
-
-TEST_P(SignedDistanceToPointTestThreshold, SingleQueryPoint) {
-  auto data = GetParam();
-
-  const double large_threshold = data.expect.distance + 0.01;
-  auto results =
-      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
-                                          large_threshold);
-  // The large threshold allows one object in the results.
-  EXPECT_EQ(results.size(), 1);
-
-  const double small_threshold = data.expect.distance - 0.01;
-  results =
-      engine.ComputeSignedDistanceToPoint(data.p_WQ, geometry_map,
-                                                small_threshold);
-  // The small threshold skips all objects.
-  EXPECT_EQ(results.size(), 0);
-}
-
-INSTANTIATE_TEST_CASE_P(SphereThreshold, SignedDistanceToPointTestThreshold,
-                        testing::ValuesIn(GenDistanceTestDataSphere()));
-INSTANTIATE_TEST_CASE_P(OutsideBoxThreshold, SignedDistanceToPointTestThreshold,
-                        testing::ValuesIn(GenDistanceTestDataOutsideBox()));
 
 
 // Penetration tests -- testing data flow; not testing the value of the query.
