@@ -119,33 +119,10 @@ GeometryState<T>::GeometryState()
 }
 
 template <typename T>
-int GeometryState<T>::NumFramesForSource(SourceId source_id) const {
-  if (source_frame_id_map_.count(source_id) == 0) return 0;
-  return static_cast<int>(source_frame_id_map_.at(source_id).size());
-}
-
-template <typename T>
 int GeometryState<T>::GetNumGeometriesWithRole(Role role) const {
   int count = 0;
   for (const auto& pair : geometries_) {
     if (pair.second.has_role(role)) ++count;
-  }
-  return count;
-}
-
-template <typename T>
-int GeometryState<T>::GetNumFrameGeometries(FrameId frame_id) const {
-  const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
-  return static_cast<int>(frame.child_geometries().size());
-}
-
-template <typename T>
-int GeometryState<T>::GetNumFrameGeometriesWithRole(FrameId frame_id,
-                                                    Role role) const {
-  const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
-  int count = 0;
-  for (GeometryId geometry_id : frame.child_geometries()) {
-    if (geometries_.at(geometry_id).has_role(role)) ++count;
   }
   return count;
 }
@@ -173,30 +150,82 @@ bool GeometryState<T>::source_is_registered(SourceId source_id) const {
 }
 
 template <typename T>
-int GeometryState<T>::get_frame_group(FrameId frame_id) const {
-  FindOrThrow(frame_id, frames_, [frame_id]() {
-    return "No frame group available for invalid frame id: " +
-           to_string(frame_id);
-  });
-  return frames_.at(frame_id).frame_group();
+const std::string& GeometryState<T>::get_source_name(SourceId id) const {
+  auto itr = source_names_.find(id);
+  if (itr != source_names_.end()) return itr->second;
+  throw std::logic_error(
+      "Querying source name for an invalid source id: " + to_string(id) + ".");
+}
+
+template <typename T>
+int GeometryState<T>::NumFramesForSource(SourceId source_id) const {
+  if (source_frame_id_map_.count(source_id) == 0) return 0;
+  return static_cast<int>(source_frame_id_map_.at(source_id).size());
+}
+
+template <typename T>
+const FrameIdSet& GeometryState<T>::GetFramesForSource(
+    SourceId source_id) const {
+  return GetValueOrThrow(source_id, source_frame_id_map_);
+}
+
+template <typename T>
+bool GeometryState<T>::BelongsToSource(FrameId frame_id,
+                                       SourceId source_id) const {
+  // Confirm that the source_id is valid; use the utility function to confirm
+  // source_id is valid and throw an exception with a known message.
+  GetValueOrThrow(source_id, source_frame_id_map_);
+  // If valid, test the frame.
+  return get_source_id(frame_id) == source_id;
 }
 
 template <typename T>
 const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
-           to_string(frame_id);
+        to_string(frame_id);
   });
   return frames_.at(frame_id).name();
 }
 
 template <typename T>
-const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
-  const InternalGeometry* geometry = GetGeometry(geometry_id);
-  if (geometry != nullptr) return geometry->name();
+int GeometryState<T>::get_frame_group(FrameId frame_id) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "No frame group available for invalid frame id: " +
+        to_string(frame_id);
+  });
+  return frames_.at(frame_id).frame_group();
+}
 
-  throw std::logic_error("No geometry available for invalid geometry id: " +
-      to_string(geometry_id));
+template <typename T>
+int GeometryState<T>::GetNumFrameGeometries(FrameId frame_id) const {
+  const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+  return static_cast<int>(frame.child_geometries().size());
+}
+
+template <typename T>
+int GeometryState<T>::GetNumFrameGeometriesWithRole(FrameId frame_id,
+                                                    Role role) const {
+  const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
+  int count = 0;
+  for (GeometryId geometry_id : frame.child_geometries()) {
+    if (geometries_.at(geometry_id).has_role(role)) ++count;
+  }
+  return count;
+}
+
+template <typename T>
+int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
+  int count = 0;
+  FindOrThrow(frame_id, frames_, [frame_id, role]() {
+    return "Cannot report number of geometries with the " + to_string(role) +
+        " role for invalid frame id: " + to_string(frame_id);
+  });
+  const InternalFrame& frame = frames_.at(frame_id);
+  for (GeometryId id : frame.child_geometries()) {
+    if (geometries_.at(id).has_role(role)) ++count;
+  }
+  return count;
 }
 
 template <typename T>
@@ -234,43 +263,30 @@ GeometryId GeometryState<T>::GetGeometryFromName(
 }
 
 template <typename T>
-const Isometry3<T>& GeometryState<T>::get_pose_in_world(
-    FrameId frame_id) const {
-  FindOrThrow(frame_id, frames_, [frame_id]() {
-    return "No world pose available for invalid frame id: " +
-           to_string(frame_id);
+bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
+                                       SourceId source_id) const {
+  // Confirm valid source id.
+  FindOrThrow(source_id, source_names_, [source_id](){
+    return get_missing_id_message(source_id);
   });
-  return X_WF_[frames_.at(frame_id).index()];
+  // If this fails, the geometry_id is not valid and an exception is thrown.
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  return geometry.belongs_to_source(source_id);
 }
 
 template <typename T>
-const Isometry3<T>& GeometryState<T>::get_pose_in_world(
-    GeometryId geometry_id) const {
-  // TODO(SeanCurtis-TRI): This is a BUG! If you pass in the id of an
-  // anchored geometry, this will throw an exception. See
-  // https://github.com/RobotLocomotion/drake/issues/9145.
-  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
-    return "No world pose available for invalid geometry id: " +
-           to_string(geometry_id);
-  });
-  return X_WG_[geometries_.at(geometry_id).index()];
+FrameId GeometryState<T>::GetFrameId(GeometryId geometry_id) const {
+  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
+  return geometry.frame_id();
 }
 
 template <typename T>
-const Isometry3<T>& GeometryState<T>::get_pose_in_parent(
-    FrameId frame_id) const {
-  FindOrThrow(frame_id, frames_, [frame_id]() {
-    return "No pose available for invalid frame id: " + to_string(frame_id);
-  });
-  return X_PF_[frames_.at(frame_id).index()];
-}
+const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
+  const InternalGeometry* geometry = GetGeometry(geometry_id);
+  if (geometry != nullptr) return geometry->name();
 
-template <typename T>
-const std::string& GeometryState<T>::get_source_name(SourceId id) const {
-  auto itr = source_names_.find(id);
-  if (itr != source_names_.end()) return itr->second;
-  throw std::logic_error(
-      "Querying source name for an invalid source id: " + to_string(id) + ".");
+  throw std::logic_error("No geometry available for invalid geometry id: " +
+      to_string(geometry_id));
 }
 
 template <typename T>
@@ -304,17 +320,69 @@ const IllustrationProperties* GeometryState<T>::get_illustration_properties(
 }
 
 template <typename T>
-int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
-  int count = 0;
-  FindOrThrow(frame_id, frames_, [frame_id, role]() {
-    return "Cannot report number of geometries with the " + to_string(role) +
-        " role for invalid frame id: " + to_string(frame_id);
-  });
-  const InternalFrame& frame = frames_.at(frame_id);
-  for (GeometryId id : frame.child_geometries()) {
-    if (geometries_.at(id).has_role(role)) ++count;
+bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
+  std::string base_message =
+      "Can't report collision filter status between geometries " +
+          to_string(id1) + " and " + to_string(id2) + "; ";
+  const internal::InternalGeometry* geometry1 = GetGeometry(id1);
+  const internal::InternalGeometry* geometry2 = GetGeometry(id2);
+  if (geometry1 != nullptr && geometry2 != nullptr) {
+    if (geometry1->has_proximity_role() && geometry2->has_proximity_role()) {
+      return geometry_engine_->CollisionFiltered(
+          geometry1->index(), geometry1->is_dynamic(),
+          geometry2->index(), geometry2->is_dynamic());
+    }
+    if (geometry1->has_proximity_role()) {
+      throw std::logic_error(base_message + to_string(id2) +
+          " does not have a proximity role");
+    } else if (geometry2->has_proximity_role()) {
+      throw std::logic_error(base_message + to_string(id1) +
+          " does not have a proximity role");
+    } else {
+      throw std::logic_error(base_message + " neither id has a proximity role");
+    }
   }
-  return count;
+  if (geometry1 != nullptr) {
+    throw std::logic_error(base_message + to_string(id2) +
+        " is not a valid geometry");
+  } else if (geometry2 != nullptr) {
+    throw std::logic_error(base_message + to_string(id1) +
+        " is not a valid geometry");
+  } else {
+    throw std::logic_error(base_message + "neither id is a valid geometry");
+  }
+}
+
+template <typename T>
+const Isometry3<T>& GeometryState<T>::get_pose_in_world(
+    FrameId frame_id) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "No world pose available for invalid frame id: " +
+           to_string(frame_id);
+  });
+  return X_WF_[frames_.at(frame_id).index()];
+}
+
+template <typename T>
+const Isometry3<T>& GeometryState<T>::get_pose_in_world(
+    GeometryId geometry_id) const {
+  // TODO(SeanCurtis-TRI): This is a BUG! If you pass in the id of an
+  // anchored geometry, this will throw an exception. See
+  // https://github.com/RobotLocomotion/drake/issues/9145.
+  FindOrThrow(geometry_id, geometries_, [geometry_id]() {
+    return "No world pose available for invalid geometry id: " +
+           to_string(geometry_id);
+  });
+  return X_WG_[geometries_.at(geometry_id).index()];
+}
+
+template <typename T>
+const Isometry3<T>& GeometryState<T>::get_pose_in_parent(
+    FrameId frame_id) const {
+  FindOrThrow(frame_id, frames_, [frame_id]() {
+    return "No pose available for invalid frame id: " + to_string(frame_id);
+  });
+  return X_PF_[frames_.at(frame_id).index()];
 }
 
 template <typename T>
@@ -606,40 +674,6 @@ void GeometryState<T>::AssignRole(SourceId source_id,
 }
 
 template <typename T>
-bool GeometryState<T>::BelongsToSource(FrameId frame_id,
-                                       SourceId source_id) const {
-  // Confirm that the source_id is valid; use the utility function to confirm
-  // source_id is valid and throw an exception with a known message.
-  GetValueOrThrow(source_id, source_frame_id_map_);
-  // If valid, test the frame.
-  return get_source_id(frame_id) == source_id;
-}
-
-template <typename T>
-bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
-                                       SourceId source_id) const {
-  // Confirm valid source id.
-  FindOrThrow(source_id, source_names_, [source_id](){
-    return get_missing_id_message(source_id);
-  });
-  // If this fails, the geometry_id is not valid and an exception is thrown.
-  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
-  return geometry.belongs_to_source(source_id);
-}
-
-template <typename T>
-FrameId GeometryState<T>::GetFrameId(GeometryId geometry_id) const {
-  const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
-  return geometry.frame_id();
-}
-
-template <typename T>
-const FrameIdSet& GeometryState<T>::GetFramesForSource(
-    SourceId source_id) const {
-  return GetValueOrThrow(source_id, source_frame_id_map_);
-}
-
-template <typename T>
 void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   // There is no work to be done if:
   //   1. the set contains a single frame and no geometries -- geometries *on*
@@ -668,40 +702,6 @@ void GeometryState<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
   CollectIndices(setB, &dynamic2, &anchored2);
   geometry_engine_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2,
                                              anchored2);
-}
-
-template <typename T>
-bool GeometryState<T>::CollisionFiltered(GeometryId id1, GeometryId id2) const {
-  std::string base_message =
-      "Can't report collision filter status between geometries " +
-          to_string(id1) + " and " + to_string(id2) + "; ";
-  const internal::InternalGeometry* geometry1 = GetGeometry(id1);
-  const internal::InternalGeometry* geometry2 = GetGeometry(id2);
-  if (geometry1 != nullptr && geometry2 != nullptr) {
-    if (geometry1->has_proximity_role() && geometry2->has_proximity_role()) {
-      return geometry_engine_->CollisionFiltered(
-          geometry1->index(), geometry1->is_dynamic(),
-          geometry2->index(), geometry2->is_dynamic());
-    }
-    if (geometry1->has_proximity_role()) {
-      throw std::logic_error(base_message + to_string(id2) +
-                             " does not have a proximity role");
-    } else if (geometry2->has_proximity_role()) {
-      throw std::logic_error(base_message + to_string(id1) +
-                             " does not have a proximity role");
-    } else {
-      throw std::logic_error(base_message + " neither id has a proximity role");
-    }
-  }
-  if (geometry1 != nullptr) {
-    throw std::logic_error(base_message + to_string(id2) +
-                           " is not a valid geometry");
-  } else if (geometry2 != nullptr) {
-    throw std::logic_error(base_message + to_string(id1) +
-        " is not a valid geometry");
-  } else {
-    throw std::logic_error(base_message + "neither id is a valid geometry");
-  }
 }
 
 template <typename T>
