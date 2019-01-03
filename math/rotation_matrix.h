@@ -491,8 +491,6 @@ class RotationMatrix {
   /// Returns a quaternion q that represents `this` %RotationMatrix.  Since the
   /// quaternion `q` and `-q` represent the same %RotationMatrix, this method
   /// chooses to return a canonical quaternion, i.e., with q(0) >= 0.
-  // @internal This implementation is adapted from simbody at
-  // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
   Eigen::Quaternion<T> ToQuaternion() const { return ToQuaternion(R_AB_); }
 
   /// Returns a unit quaternion q associated with the 3x3 matrix M.  Since the
@@ -503,10 +501,11 @@ class RotationMatrix {
   /// @throws std::logic_error in debug builds if the quaternion `q`
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
-  // @internal This implementation is adapted from simbody at
-  // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
   static Eigen::Quaternion<T> ToQuaternion(
       const Eigen::Ref<const Matrix3<T>>& M) {
+    // This implementation is adapted from simbody at
+    // https://github.com/simbody/simbody/blob/master/SimTKcommon/Mechanics/src/Rotation.cpp
+
     T w, x, y, z;  // Elements of the quaternion, w relates to cos(theta/2).
 
     const T trace = M.trace();

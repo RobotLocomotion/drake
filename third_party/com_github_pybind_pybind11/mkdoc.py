@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #
 #  Syntax:
 #     mkdoc.py [-output=<file>] [-I<path> ..] [-quiet] [.. header files ..]
@@ -17,7 +17,7 @@ from tempfile import NamedTemporaryFile, mkdtemp
 import textwrap
 
 from clang import cindex
-from clang.cindex import AccessSpecifier, CursorKind
+from clang.cindex import AccessSpecifier, CursorKind, TypeKind
 
 CLASS_KINDS = [
     CursorKind.CLASS_DECL,
@@ -66,6 +66,7 @@ CPP_OPERATORS = OrderedDict(
 
 # 'Broadphase' culling; do not recurse inside these symbols.
 SKIP_RECURSE_NAMES = [
+    'DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE',
     'Eigen',
     'detail',
     'google',
@@ -675,54 +676,163 @@ def extract(include_file_map, cursor, symbol_tree):
 
 def choose_doc_var_names(symbols):
     """
-    Given a list of Symbol objects for a single doc struct, choose unambiguous,
-    meaningful, terse names for them.
+    Given a list of Symbol objects for a single doc struct, chooses meaningful,
+    unambiguous, terse names for them.  Returns a matching list of strings.  If
+    a list element is None instead of str, then that symbol should be skipped
+    (its documentation comment should *not* be emitted in this tool's output).
     """
+    if len(symbols) == 0:
+        return []
+
+    # We will repeatedly frob this `result` list until it's good enough.
     result = []
+
+    # If we can't find a good answer then only document the first symbol, using
+    # a variable name that the user would be unable to accidentally refer to.
+    # (This leaves evidence in generated documentation about what happened.)
+    failure_result = [None] * len(symbols)
+    failure_result[0] = "doc_was_unable_to_choose_unambiguous_names"
+
+    def is_unique(candidate_result):
+        # Are the non-None names in a candidate_result unique?
+        trimmed = [x for x in candidate_result if x is not None]
+        return len(trimmed) == len(set(trimmed))
 
     def specialize_well_known_doc_var_names():
         # Force well-known methods to have well-known names.
         nonlocal symbols, result
-        for i, sym in enumerate(symbols):
-            if sym.cursor.is_copy_constructor():
+        for i, cursor in enumerate([s.cursor for s in symbols]):
+            if "@exclude_from_pydrake_mkdoc" in symbols[i].comment:
+                # Allow the user to opt-out this symbol from the documentation.
+                # This is useful when forming unique constexpr names is
+                # otherwise very difficult.  (Sometimes, C++ has *many* more
+                # static-typing convenience overloads that pydrake really
+                # needs, such as various kinds of Eigen<> template magic.)
+                result[i] = None
+                continue
+            elif len(symbols[i].comment) == 0 and not (
+                    cursor.is_default_constructor() and (
+                        len(cursor.type.argument_types()) == 0)):
+                # Ignore (almost all) overloads without docstrings.
+                #
+                # This is convenient for things like deprecated methods or
+                # stubs (which are often no longer documented), where they
+                # could otherwise pollute the overload naming set and cause us
+                # to declare many "ambiguous name" failures.
+                #
+                # However, if a default constructor exists, we should always
+                # provide a constexpr for it even if the user didn't write a
+                # formatted API comment, so that our constant names stay
+                # durable and so that function always participates in the
+                # overload naming set.
+                result[i] = None
+                continue
+            elif any([symbols[i].comment == x.comment for x in symbols[:i]]):
+                # If a subsequent overload's API comment *exactly* matches a
+                # prior overload's comment, the first overload's name wins.
+                # This is important because when a function has separate
+                # declaration and definition, we see its symbol *twice* in our
+                # overload set, which would defeat our disambiguation
+                # heuristics.  (Trying to cull the separate definition is not
+                # tractable given clang's python bindings.)  This rule is
+                # occasionally also useful for distinct function declarations
+                # that nevertheless have identical documentation.
+                result[i] = None
+                continue
+            elif cursor.is_copy_constructor():
+                # Here, the semantics are distinct ("special member function")
+                # so we should never use the "how many arguments" or "what are
+                # the argument types" heuristics.
                 result[i] = "doc_copy"
-            elif sym.cursor.is_move_constructor():
+            elif cursor.is_move_constructor():
+                # Here, the semantics are distinct ("special member function")
+                # so we should never use the "how many arguments" or "what are
+                # the argument types" heuristics.
                 result[i] = "doc_move"
+            elif (  # Look for a constructor like Foo<T>(const Foo<U>&).
+                  cursor.kind == CursorKind.FUNCTION_TEMPLATE and
+                  cursor.semantic_parent.kind == CursorKind.CLASS_TEMPLATE and
+                  re.search(r"^(.*)<T>\(const \1<U> *&\)$",
+                            utf8(cursor.displayname))):
+                # Special case for scalar conversion constructors; we want to
+                # have a nice short name for these, that doesn't necessarily
+                # conflte with any *other* 1-argument constructor.
+                result[i] = "doc_copyconvert"
+            else:
+                # If no special cases matched, leave the name alone.
+                continue
+            # A special case *did* match (we didn't hit the "else" above.)
+            # When we have more than one identical well-known name (e.g,
+            # separate declaration and definition doc_copy), use the first.
+            assert result[i] is not None
+            if result[i] in result[:i]:
+                result[i] = None
 
-    # No salt will be needed if there is only one name -- but we should still
-    # apply the well-known name heuristics.
-    result = ["doc" for _ in symbols]
+    # Try the simplest naming choice -- call everything "doc".  If this makes
+    # things unique (once the well-known heuristics are applied), ship it.
+    result = ["doc"] * len(symbols)
     specialize_well_known_doc_var_names()
-    if len(symbols) <= 1:
+    if is_unique(result):
+        if not any(result):
+            # Always generate a constexpr when there are no overloads, even if
+            # it's empty.  That way, pydrake can refer to the constant and any
+            # future (single) API comment added to C++ will work automatically.
+            result[0] = "doc"
         return result
+
+    # All of the below heuristics only work for function overloads.
+    if symbols[0].cursor.type.kind != TypeKind.FUNCTIONPROTO:
+        return failure_result
+
+    # Find the function argument types and (maybe) names.
+    #
+    # For FUNCTION_TEMPLATE symbols, get_arguments() is always empty (though
+    # for FUNCTION_DECL it works).  So, we use argument_types() to get a
+    # reliable count of arguments, use get_arguments() only for the names.
+    #
+    # These list-of-lists are indexed by [#overload][#argument].
+    overload_arg_types = [
+        [utf8(t.spelling) for t in s.cursor.type.argument_types()]
+        for s in symbols
+    ]
+    overload_arg_names = [
+        [utf8(a.spelling) for a in s.cursor.get_arguments()]
+        for s in symbols
+    ]
 
     # The argument count might be sufficient to disambiguate.
-    # TODO(jwnimmer-tri) Methods with enable_if sometimes report as 0args.
-    each_args = [list(x.cursor.get_arguments()) for x in symbols]
-    result = ["doc_{}args".format(len(args)) for args in each_args]
+    result = ["doc_{}args".format(len(types)) for types in overload_arg_types]
     specialize_well_known_doc_var_names()
-    if len(result) == len(set(result)):
+    if is_unique(result):
         return result
 
-    # The argument names might be sufficient to disambiguate.
-    for i, args in enumerate(each_args):
-        if len(args) == 0:
+    # The parameter names (falling back to the parameter type, when we don't
+    # know the name) might be sufficient to disambiguate.
+    for i, arg_types in enumerate(overload_arg_types):
+        if result[i] is None:
             continue
-        arg_names = []
-        for arg in args:
-            arg_name = utf8(arg.spelling) or \
-                sanitize_name(utf8(arg.type.spelling)).replace("_", "")
-            arg_names.append(arg_name)
-        result[i] = result[i] + "_" + "_".join(arg_names)
+        arg_names = overload_arg_names[i] or [""] * len(arg_types)
+        for arg_name, arg_type in zip(arg_names, arg_types):
+            token = arg_name or sanitize_name(arg_type).replace("_", "")
+            result[i] = result[i] + "_" + token
     specialize_well_known_doc_var_names()
-    if len(result) == len(set(result)):
+    if is_unique(result):
         return result
 
-    # As a last resort, fall back to doc, doc_1, doc_2, etc.
-    result = ["doc"] + ["doc_{}".format(i + 1) for i in range(1, len(symbols))]
+    # Adding in the const-ness might be sufficient to disambiguate.
+    for i, sym in enumerate(symbols):
+        if result[i] is None:
+            continue
+        if sym.cursor.is_const_method():
+            result[i] = result[i] + "_const"
+        else:
+            result[i] = result[i] + "_nonconst"
     specialize_well_known_doc_var_names()
-    assert len(result) == len(set(result))
-    return result
+    if is_unique(result):
+        return result
+
+    # As a last resort, return a random one, with a bogus name.
+    return failure_result
 
 
 def print_symbols(f, name, node, level=0):
@@ -758,6 +868,8 @@ def print_symbols(f, name, node, level=0):
     symbol_iter = sorted(node.doc_symbols, key=Symbol.sorting_key)
     doc_vars = choose_doc_var_names(symbol_iter)
     for symbol, doc_var in zip(symbol_iter, doc_vars):
+        if doc_var is None:
+            continue
         assert name_chain == symbol.name_chain
         delim = "\n"
         if "\n" not in symbol.comment and len(symbol.comment) < 40:

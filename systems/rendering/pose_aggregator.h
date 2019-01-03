@@ -86,6 +86,7 @@ class PoseAggregator : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
 
+  /// Constructs a default aggregator (with no inputs).
   PoseAggregator();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

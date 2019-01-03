@@ -26,7 +26,7 @@ PYBIND11_MODULE(parsing, m) {
     using Class = PackageMap;
     constexpr auto& cls_doc = doc.PackageMap;
     py::class_<Class>(m, "PackageMap", cls_doc.doc)
-        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<>(), cls_doc.ctor.doc)
         .def("Add", &Class::Add, cls_doc.Add.doc)
         .def("Contains", &Class::Contains, cls_doc.Contains.doc)
         .def("size", &Class::size, cls_doc.size.doc)
@@ -46,7 +46,7 @@ PYBIND11_MODULE(parsing, m) {
     py::class_<Class>(m, "Parser", cls_doc.doc)
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
             py::arg("plant"), py::arg("scene_graph") = nullptr,
-            cls_doc.ctor.doc_2args)
+            cls_doc.ctor.doc)
         .def("package_map", &Class::package_map, py_reference_internal,
             cls_doc.package_map.doc)
         .def("AddAllModelsFromFile", &Class::AddAllModelsFromFile,
