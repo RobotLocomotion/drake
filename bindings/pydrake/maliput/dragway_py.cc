@@ -33,7 +33,7 @@ PYBIND11_MODULE(dragway, m) {
       py::arg("road_id"), py::arg("num_lanes"), py::arg("length"),
       py::arg("lane_width"), py::arg("shoulder_width"),
       py::arg("maximum_height"), py::arg("linear_tolerance"),
-      py::arg("angular_tolerance"), doc.dragway.RoadGeometry.ctor.doc_8args);
+      py::arg("angular_tolerance"), doc.dragway.RoadGeometry.ctor.doc);
 }
 
 }  // namespace pydrake

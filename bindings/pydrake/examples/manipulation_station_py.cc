@@ -40,7 +40,7 @@ PYBIND11_MODULE(manipulation_station, m) {
   // creating a geometry::dev::render::DepthCameraProperties struct.
   py::class_<ManipulationStation<T>, Diagram<T>>(m, "ManipulationStation")
       .def(py::init<double>(), py::arg("time_step") = 0.002,
-          doc.ManipulationStation.ctor.doc_1args)
+          doc.ManipulationStation.ctor.doc)
       .def("SetupDefaultStation", &ManipulationStation<T>::SetupDefaultStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
           doc.ManipulationStation.SetupDefaultStation.doc)
@@ -79,7 +79,7 @@ PYBIND11_MODULE(manipulation_station, m) {
               const Eigen::Ref<const VectorX<T>>&>(
               &ManipulationStation<T>::SetIiwaPosition),
           py::arg("station_context"), py::arg("q"),
-          doc.ManipulationStation.SetIiwaPosition.doc_2args_station_context_q)
+          doc.ManipulationStation.SetIiwaPosition.doc_2args)
       .def("SetIiwaPosition",
           [](ManipulationStation<T>* self,
               const Eigen::Ref<const VectorX<T>>& q,
@@ -96,7 +96,7 @@ PYBIND11_MODULE(manipulation_station, m) {
               const Eigen::Ref<const VectorX<T>>&>(
               &ManipulationStation<T>::SetIiwaVelocity),
           py::arg("station_context"), py::arg("v"),
-          doc.ManipulationStation.SetIiwaVelocity.doc_2args_station_context_v)
+          doc.ManipulationStation.SetIiwaVelocity.doc_2args)
       .def("SetIiwaVelocity",
           [](ManipulationStation<T>* self,
               const Eigen::Ref<const VectorX<T>>& v,
@@ -112,7 +112,7 @@ PYBIND11_MODULE(manipulation_station, m) {
           overload_cast_explicit<void, systems::Context<T>*, const T&>(
               &ManipulationStation<T>::SetWsgPosition),
           py::arg("station_context"), py::arg("q"),
-          doc.ManipulationStation.SetWsgPosition.doc_2args_station_context_q)
+          doc.ManipulationStation.SetWsgPosition.doc_2args)
       .def("SetWsgPosition",
           [](ManipulationStation<T>* self, const T& q,
               systems::Context<T>* context) {
@@ -127,7 +127,7 @@ PYBIND11_MODULE(manipulation_station, m) {
           overload_cast_explicit<void, systems::Context<T>*, const T&>(
               &ManipulationStation<T>::SetWsgVelocity),
           py::arg("station_context"), py::arg("v"),
-          doc.ManipulationStation.SetWsgVelocity.doc_2args_station_context_v)
+          doc.ManipulationStation.SetWsgVelocity.doc_2args)
       .def("SetWsgVelocity",
           [](ManipulationStation<T>* self, const T& v,
               systems::Context<T>* context) {
@@ -158,7 +158,7 @@ PYBIND11_MODULE(manipulation_station, m) {
       m, "ManipulationStationHardwareInterface")
       .def(py::init<const std::vector<std::string>>(),
           py::arg("camera_names") = std::vector<std::string>{},
-          doc.ManipulationStationHardwareInterface.ctor.doc_1args)
+          doc.ManipulationStationHardwareInterface.ctor.doc)
       .def("Connect", &ManipulationStationHardwareInterface::Connect,
           py::arg("wait_for_cameras") = true,
           doc.ManipulationStationHardwareInterface.Connect.doc)

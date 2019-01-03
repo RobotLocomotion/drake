@@ -34,6 +34,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
 
+  /** Constructs a default plant. */
   PendulumPlant();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

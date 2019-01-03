@@ -50,7 +50,7 @@ PYBIND11_MODULE(shapes, m) {
             self->getBoundingBoxPoints(pts);
             return pts;
           },
-          doc.Geometry.getBoundingBoxPoints.doc_1args);
+          doc.Geometry.getBoundingBoxPoints.doc);
 
   py::class_<Box, Geometry>(m, "Box", doc.Box.doc)
       .def(
@@ -96,7 +96,7 @@ PYBIND11_MODULE(shapes, m) {
                const Eigen::Vector4d&, const std::string&>(),
           py::arg("geometry_in"), py::arg("T_element_to_local"),
           py::arg("material_in"), py::arg("name") = "",
-          doc.VisualElement.ctor.doc_4args)
+          doc.VisualElement.ctor.doc)
       .def("setMaterial", &VisualElement::setMaterial,
           "Apply an RGBA material.", doc.VisualElement.setMaterial.doc)
       .def("getMaterial", &VisualElement::getMaterial, "Get an RGBA material.",

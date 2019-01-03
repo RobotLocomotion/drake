@@ -57,6 +57,7 @@ class SimpleCar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
 
+  /** Constructs a default car. */
   SimpleCar();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

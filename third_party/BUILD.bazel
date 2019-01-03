@@ -53,4 +53,6 @@ exports_files(
     visibility = ["//tools/workspace/pybind11:__pkg__"],
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = ["com_github_pybind_pybind11/mkdoc.py"],
+)

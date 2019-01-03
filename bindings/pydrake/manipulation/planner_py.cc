@@ -54,7 +54,7 @@ PYBIND11_MODULE(planner, m) {
          return Class{num_positions, num_velocities};
        }),
            py::arg("num_positions") = 0, py::arg("num_velocities") = 0,
-           class_doc.ctor.doc_2args)
+           class_doc.ctor.doc)
         .def("get_timestep", &Class::get_timestep, class_doc.get_timestep.doc)
         .def("set_timestep", &Class::set_timestep, class_doc.set_timestep.doc)
         .def("get_num_positions", &Class::get_num_positions,
@@ -102,7 +102,9 @@ PYBIND11_MODULE(planner, m) {
             q_current, v_current, V, J, parameters);
       },
       py::arg("q_current"), py::arg("v_current"), py::arg("V"), py::arg("J"),
-      py::arg("parameters"), doc.DoDifferentialInverseKinematics.doc);
+      py::arg("parameters"),
+      doc.DoDifferentialInverseKinematics
+          .doc_5args_q_current_v_current_V_J_parameters);
 
   m.def("DoDifferentialInverseKinematics",
       [](const multibody::MultibodyPlant<double>& robot,
@@ -116,7 +118,8 @@ PYBIND11_MODULE(planner, m) {
       },
       py::arg("robot"), py::arg("context"), py::arg("V_WE_desired"),
       py::arg("frame_E"), py::arg("parameters"),
-      doc.DoDifferentialInverseKinematics.doc_4);
+      doc.DoDifferentialInverseKinematics
+          .doc_5args_robot_context_V_WE_desired_frame_E_parameters);
 
   m.def("DoDifferentialInverseKinematics",
       [](const multibody::MultibodyPlant<double>& robot,
@@ -130,7 +133,8 @@ PYBIND11_MODULE(planner, m) {
       },
       py::arg("robot"), py::arg("context"), py::arg("X_WE_desired"),
       py::arg("frame_E"), py::arg("parameters"),
-      doc.DoDifferentialInverseKinematics.doc_5);
+      doc.DoDifferentialInverseKinematics
+          .doc_5args_robot_context_X_WE_desired_frame_E_parameters);
 }
 
 }  // namespace pydrake

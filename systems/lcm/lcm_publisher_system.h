@@ -97,6 +97,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
@@ -115,6 +117,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(
       const std::string& channel,
@@ -136,6 +140,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,

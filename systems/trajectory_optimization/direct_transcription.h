@@ -44,15 +44,16 @@ class DirectTranscription : public MultipleShooting {
   /// This version of the constructor is only for *linear* discrete-time systems
   /// (with a single periodic timestep update).
   ///
-  /// @param system A linear system to be used in the dynamic constraints.
-  ///    Note that this is aliased for the lifetime of this object.
+  /// @param linear_system A linear system to be used in the dynamic
+  ///    constraints.  Note that this is aliased for the lifetime of this
+  ///    object.
   /// @param context Required to describe any parameters of the system.  The
   ///    values of the state in this context do not have any effect.  This
   ///    context will also be "cloned" by the optimization; changes to the
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
-  DirectTranscription(const LinearSystem<double>* system,
+  DirectTranscription(const LinearSystem<double>* linear_system,
                       const Context<double>& context, int num_time_samples);
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.  This
@@ -67,6 +68,11 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
+  ///
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.  When
+  /// we do bind it, we should probably rename `system` to tv_linear_system` or
+  /// similar, so that kwargs determine which overload is suggested, instead of
+  /// hoping that type checking does the right thing.}
   DirectTranscription(const TimeVaryingLinearSystem<double>* system,
                       const Context<double>& context, int num_time_samples);
 
