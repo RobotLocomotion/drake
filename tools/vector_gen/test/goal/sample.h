@@ -63,9 +63,9 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_two_word(0.0);
     this->set_absone(0.0);
     this->set_unset(drake::dummy_value<T>::get());
-    this->AppendInequalityConstraintLowerBound(0.0);
-    this->AppendInequalityConstraintUpperBound(2.0);
-    this->AppendInequalityConstraintBounds(-1.0, 1.0);
+    this->SetLowerBound(0, 0.0);
+    this->SetUpperBound(1, 2.0);
+    this->SetBounds(2, -1.0, 1.0);
   }
 
   // Note: It's safe to implement copy and move because this class is final.
@@ -74,16 +74,25 @@ class Sample final : public drake::systems::BasicVector<T> {
   /// MoveAssignable
   //@{
   Sample(const Sample& other)
-      : drake::systems::BasicVector<T>(other.values()) {}
+      : drake::systems::BasicVector<T>(other.values(), other.lower_bound(),
+                                       other.upper_bound()) {}
   Sample(Sample&& other) noexcept
-      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+      : drake::systems::BasicVector<T>(std::move(other.values()),
+                                       std::move(other.lower_bound()),
+                                       std::move(other.upper_bound())) {
+    other.InitializeBounds();
+  }
   Sample& operator=(const Sample& other) {
     this->values() = other.values();
+    this->SetBounds(other.lower_bound(), other.upper_bound());
     return *this;
   }
   Sample& operator=(Sample&& other) noexcept {
     this->values() = std::move(other.values());
+    this->SetBounds(std::move(other.lower_bound()),
+                    std::move(other.upper_bound()));
     other.values().resize(0);
+    other.InitializeBounds();
     return *this;
   }
   //@}
@@ -200,14 +209,6 @@ class Sample final : public drake::systems::BasicVector<T> {
     result = result && (absone() <= T(1.0));
     result = result && !isnan(unset());
     return result;
-  }
-
-  // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(3);
-    (*value)[0] = x();
-    (*value)[1] = two_word();
-    (*value)[2] = absone();
   }
 
  private:

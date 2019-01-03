@@ -34,6 +34,14 @@ class Supervector : public VectorBase<T> {
       sum += vec->size();
       lookup_table_.push_back(sum);
     }
+    this->InitializeBounds();
+    sum = 0;
+    for (const VectorBase<T>* vec : vectors_) {
+      for (int i = 0; i < vec->size(); ++i) {
+        this->SetBounds(sum + i, vec->lower_bound()(i), vec->upper_bound()(i));
+      }
+      sum += vec->size();
+    }
   }
 
   int size() const override {

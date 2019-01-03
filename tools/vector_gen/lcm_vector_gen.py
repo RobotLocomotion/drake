@@ -135,14 +135,14 @@ DEFAULT_CTOR_CUSTOM_END = """
 DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
-APPEND_INEQUALITY_CONSTRAINT_LOWER_BOUND = """
-    this->AppendInequalityConstraintLowerBound(%(min_value)s);
+SET_UPPER_BOUND = """
+    this->SetUpperBound(%(index)d, %(max_value)s);
 """
-APPEND_INEQUALITY_CONSTRAINT_UPPER_BOUND = """
-    this->AppendInequalityConstraintUpperBound(%(max_value)s);
+SET_LOWER_BOUND = """
+    this->SetLowerBound(%(index)d, %(min_value)s);
 """
-APPEND_INEQUALITY_CONSTRAINT_BOUND = """
-    this->AppendInequalityConstraintBounds(%(min_value)s, %(max_value)s);
+SET_BOUNDS = """
+    this->SetBounds(%(index)d, %(min_value)s, %(max_value)s);
 """
 
 
@@ -170,21 +170,22 @@ def generate_default_ctor(hh, caller_context, fields):
             default_value = "drake::dummy_value<T>::get()"
         context.update(default_value=default_value)
         put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
+    index = 0
     for field in fields:
         field_context = dict(caller_context)
+        field_context.update(index=index)
         if field["min_value"] or field["max_value"]:
             if field["min_value"]:
                 field_context.update(min_value=field["min_value"])
             if field["max_value"]:
                 field_context.update(max_value=field["max_value"])
             if not field["min_value"]:
-                put(hh, APPEND_INEQUALITY_CONSTRAINT_UPPER_BOUND %
-                    field_context, 1)
+                put(hh, SET_UPPER_BOUND % field_context, 1)
             elif not field["max_value"]:
-                put(hh, APPEND_INEQUALITY_CONSTRAINT_LOWER_BOUND %
-                    field_context, 1)
+                put(hh, SET_LOWER_BOUND % field_context, 1)
             else:
-                put(hh, APPEND_INEQUALITY_CONSTRAINT_BOUND % field_context, 1)
+                put(hh, SET_BOUNDS % field_context, 1)
+        index = index + 1
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
 
 
@@ -196,16 +197,24 @@ COPY_AND_ASSIGN = """
   /// MoveAssignable
   //@{
   %(camel)s(const %(camel)s& other)
-      : drake::systems::BasicVector<T>(other.values()) {}
+      : drake::systems::BasicVector<T>(other.values(), other.lower_bound(),
+                                       other.upper_bound()) {}
   %(camel)s(%(camel)s&& other) noexcept
-      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+      : drake::systems::BasicVector<T>(std::move(other.values()),
+        std::move(other.lower_bound()), std::move(other.upper_bound())) {
+    other.InitializeBounds();
+  }
   %(camel)s& operator=(const %(camel)s& other) {
     this->values() = other.values();
+    this->SetBounds(other.lower_bound(), other.upper_bound());
     return *this;
   }
   %(camel)s& operator=(%(camel)s&& other) noexcept {
     this->values() = std::move(other.values());
+    this->SetBounds(std::move(other.lower_bound()),
+                    std::move(other.upper_bound()));
     other.values().resize(0);
+    other.InitializeBounds();
     return *this;
   }
   //@}
@@ -352,41 +361,6 @@ def generate_is_valid(hh, caller_context, fields):
             context.update(max_value=field['max_value'])
             put(hh, IS_VALID_MAX_VALUE % context, 1)
     put(hh, IS_VALID_END % caller_context, 2)
-
-
-CALC_INEQUALITY_CONSTRAINT_BEGIN = """
-  // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(%(num_constraints)d);
-"""
-CALC_INEQUALITY_CONSTRAINT = """
-    (*value)[%(constraint_index)d] = %(field)s();
-"""
-CALC_INEQUALITY_CONSTRAINT_END = """
-  }
-"""
-
-
-def generate_calc_inequality_constraint(hh, caller_context, fields):
-    num_constraints = 0
-    for field in fields:
-        if field['min_value'] or field['max_value']:
-            num_constraints += 1
-    if num_constraints == 0:
-        return
-    context = dict(caller_context)
-    context.update(num_constraints=num_constraints)
-    put(hh, CALC_INEQUALITY_CONSTRAINT_BEGIN % context, 1)
-    constraint_index = 0
-    for field in fields:
-        field_context = dict(caller_context)
-        field_context.update(field=field['name'])
-        if field['min_value'] or field['max_value']:
-            field_context.update(constraint_index=constraint_index)
-            put(hh, CALC_INEQUALITY_CONSTRAINT % field_context, 1)
-            constraint_index += 1
-    assert constraint_index == num_constraints
-    put(hh, CALC_INEQUALITY_CONSTRAINT_END % context, 2)
 
 
 VECTOR_HH_PREAMBLE = """
@@ -688,7 +662,6 @@ def generate_code(
             generate_accessors(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
             generate_is_valid(hh, context, fields)
-            generate_calc_inequality_constraint(hh, context, fields)
             put(hh, VECTOR_CLASS_END % context, 2)
             put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 

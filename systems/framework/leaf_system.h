@@ -1911,23 +1911,53 @@ class LeafSystem : public System<T> {
   // If @p model_vector's CalcInequalityConstraint provides any constraints,
   // then declares inequality constraints on `this` using a calc function that
   // obtains a VectorBase from a Context using @p get_vector_from_context and
-  // then delegates to the VectorBase::CalcInequalityConstraint.
+  // then delegates to the VectorBase::CopyToVector().
   // The inequality constraint is imposed as
-  // lower_bounds <= model_vector.CalcInequalityConstraint() <= upper_bounds
+  // lower_bounds <= model_vector.CopyToVector() <= upper_bounds
   void MaybeDeclareVectorBaseInequalityConstraint(
       const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
           get_vector_from_context) {
-    const int count = model_vector.inequality_constraint_lower_bound().size();
+    const int count = model_vector.size();
     if (count == 0) {
       return;
     }
+    if (model_vector.lower_bound().array().isInf().all() &&
+        model_vector.upper_bound().array().isInf().all()) {
+      return;
+    }
+    // constraint_indices contains the indices in model_vector that are
+    // constrained, namely either or both
+    // model_vector.lower_bound()(constraint_indices[i]) or
+    // model_vector.upper_bound()(constraint_indices[i]) is not inf.
+    std::vector<int> constraint_indices;
+    constraint_indices.reserve(model_vector.size());
+    for (int i = 0; i < model_vector.size(); ++i) {
+      if (!std::isinf(model_vector.lower_bound()(i)) ||
+          !std::isinf(model_vector.upper_bound()(i))) {
+        constraint_indices.push_back(i);
+      }
+    }
+    Eigen::VectorXd constraint_lower_bound(constraint_indices.size());
+    Eigen::VectorXd constraint_upper_bound(constraint_indices.size());
+    for (int i = 0; i < static_cast<int>(constraint_indices.size()); ++i) {
+      constraint_lower_bound(i) =
+          model_vector.lower_bound()(constraint_indices[i]);
+      constraint_upper_bound(i) =
+          model_vector.upper_bound()(constraint_indices[i]);
+    }
     this->DeclareInequalityConstraint(
-        [get_vector_from_context](const Context<T>& con, VectorX<T>* value) {
-          get_vector_from_context(con).CalcInequalityConstraint(value);
+        [get_vector_from_context, constraint_indices](const Context<T>& con,
+                                                      VectorX<T>* value) {
+          const VectorX<T> model_vec_value =
+              get_vector_from_context(con).CopyToVector();
+          value->resize(constraint_indices.size());
+          for (int i = 0; i < static_cast<int>(constraint_indices.size());
+               ++i) {
+            (*value)(i) = model_vec_value(constraint_indices[i]);
+          }
         },
-        model_vector.inequality_constraint_lower_bound(),
-        model_vector.inequality_constraint_upper_bound(),
+        constraint_lower_bound, constraint_upper_bound,
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 

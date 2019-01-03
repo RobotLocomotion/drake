@@ -22,21 +22,38 @@ GTEST_TEST(BasicVectorTest, InitializerList) {
   const BasicVector<double> empty2{};  // Initializer list.
   EXPECT_EQ(0, empty1.size());
   EXPECT_EQ(0, empty2.size());
+  EXPECT_EQ(empty1.lower_bound().size(), 0);
+  EXPECT_EQ(empty1.upper_bound().size(), 0);
+  EXPECT_EQ(empty2.lower_bound().size(), 0);
+  EXPECT_EQ(empty2.upper_bound().size(), 0);
 
   const BasicVector<double> pair{1.0, 2.0};
   ASSERT_EQ(2, pair.size());
   EXPECT_EQ(1.0, pair[0]);
   EXPECT_EQ(2.0, pair[1]);
+  const double kInf = std::numeric_limits<double>::infinity();
+  EXPECT_TRUE(
+      CompareMatrices(pair.lower_bound(), Eigen::Vector2d::Constant(-kInf)));
+  EXPECT_TRUE(
+      CompareMatrices(pair.upper_bound(), Eigen::Vector2d::Constant(kInf)));
 
   const BasicVector<double> from_floats{3.0f, 4.0f, 5.0f};
   ASSERT_EQ(3, from_floats.size());
   EXPECT_EQ(3.0, from_floats[0]);
   EXPECT_EQ(4.0, from_floats[1]);
   EXPECT_EQ(5.0, from_floats[2]);
+  EXPECT_TRUE(CompareMatrices(from_floats.lower_bound(),
+                              Eigen::Vector3d::Constant(-kInf)));
+  EXPECT_TRUE(CompareMatrices(from_floats.upper_bound(),
+                              Eigen::Vector3d::Constant(kInf)));
 
   const BasicVector<AutoDiffXd> autodiff{22.0};
   ASSERT_EQ(1, autodiff.size());
   EXPECT_EQ(22.0, autodiff[0].value());
+  EXPECT_TRUE(
+      CompareMatrices(autodiff.lower_bound(), Vector1d::Constant(-kInf)));
+  EXPECT_TRUE(
+      CompareMatrices(autodiff.upper_bound(), Vector1d::Constant(kInf)));
 }
 
 // Tests SetZero functionality.
@@ -246,20 +263,12 @@ GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
   EXPECT_EQ(s.str(), "foo [] bar");
 }
 
-
-// Tests the default set of inequality constraints (empty).
-GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
-  VectorX<double> value = VectorX<double>::Ones(22);
-  BasicVector<double> vec(1);
-  vec.CalcInequalityConstraint(&value);
-  EXPECT_EQ(value.size(), 0);
-}
-
 // Tests the default lower and upper bounds for inequality constraints (empty).
 GTEST_TEST(BasicVectorTest, DefaultInequalityConstraintBounds) {
   BasicVector<double> vec(1);
-  EXPECT_EQ(vec.inequality_constraint_lower_bound().size(), 0);
-  EXPECT_EQ(vec.inequality_constraint_upper_bound().size(), 0);
+  const double kInf = std::numeric_limits<double>::infinity();
+  EXPECT_TRUE(CompareMatrices(vec.lower_bound(), Vector1d(-kInf)));
+  EXPECT_TRUE(CompareMatrices(vec.upper_bound(), Vector1d(kInf)));
 }
 
 // Tests the protected `::values()` methods.

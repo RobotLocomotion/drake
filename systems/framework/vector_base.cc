@@ -4,36 +4,5 @@
 
 #include "drake/common/default_scalars.h"
 
-namespace drake {
-namespace systems {
-template <typename T>
-void VectorBase<T>::AppendInequalityConstraintBounds(double lower_bound,
-                                                     double upper_bound) {
-  DRAKE_ASSERT(lower_bound < upper_bound);
-  inequality_constraint_lower_bound_.conservativeResize(
-      inequality_constraint_lower_bound_.size() + 1);
-  inequality_constraint_lower_bound_(inequality_constraint_lower_bound_.size() -
-                                     1) = lower_bound;
-  inequality_constraint_upper_bound_.conservativeResize(
-      inequality_constraint_upper_bound_.size() + 1);
-  inequality_constraint_upper_bound_(inequality_constraint_upper_bound_.size() -
-                                     1) = upper_bound;
-}
-
-template <typename T>
-void VectorBase<T>::AppendInequalityConstraintLowerBound(double lower_bound) {
-  this->AppendInequalityConstraintBounds(
-      lower_bound, std::numeric_limits<double>::infinity());
-}
-
-template <typename T>
-void VectorBase<T>::AppendInequalityConstraintUpperBound(double upper_bound) {
-  this->AppendInequalityConstraintBounds(
-      -std::numeric_limits<double>::infinity(), upper_bound);
-}
-
-}  // namespace systems
-}  // namespace drake
-
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::VectorBase)

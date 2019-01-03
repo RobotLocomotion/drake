@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -32,10 +33,7 @@ class VectorBase {
   virtual ~VectorBase() {}
 
   /// Returns the number of elements in the vector.
-  ///
-  /// Implementations should ensure this operation is O(1) and allocates no
-  /// memory.
-  virtual int size() const = 0;
+  virtual int size() const { return lower_bound_.rows(); }
 
   /// Returns the element at the given index in the vector.
   /// @throws std::runtime_error if the index is >= size().
@@ -171,33 +169,73 @@ class VectorBase {
     return norm;
   }
 
-  /// Populates a vector @p value suitable for a SystemConstraint inequality
-  /// constraint. For all indices `i` in the result vector, the validity
-  /// constraint is `inequality_constraint_lower_bound()[i] <= result[i] <=
-  /// inequality_constraint_upper_bound()[i]`. For a given subclass type, the
-  /// size of the result must not vary over time. The %VectorBase default
-  /// implementation sets the @p value to the same size as the bounds (which
-  /// defaults to empty bounds, and hence value is default to empty).
-  virtual void CalcInequalityConstraint(VectorX<T>* value) const {
-    value->resize(inequality_constraint_lower_bound_.size());
+  /// The lower bound of vector value.
+  const Eigen::VectorXd& lower_bound() const { return lower_bound_; }
+
+  /// The upper bound of the vector value .
+  const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
+
+  void SetLowerBound(const Eigen::Ref<const Eigen::VectorXd>& lower_bound) {
+    DRAKE_ASSERT(lower_bound.size() == this->size());
+    DRAKE_ASSERT((lower_bound.array() <= upper_bound_.array()).all());
+    lower_bound_ = lower_bound;
   }
 
-  /// The lower bound of the inequality constraint lower_bound <=
-  /// CalcInequalityConstraint <= upper_bound
-  const Eigen::VectorXd& inequality_constraint_lower_bound() const {
-    return inequality_constraint_lower_bound_;
+  void SetUpperBound(const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
+    DRAKE_ASSERT(upper_bound.size() == this->size());
+    DRAKE_ASSERT((lower_bound_.array() <= upper_bound.array()).all());
+    upper_bound_ = upper_bound;
   }
 
-  /// The lower bound of the inequality constraint lower_bound <=
-  /// CalcInequalityConstraint <= upper_bound
-  const Eigen::VectorXd& inequality_constraint_upper_bound() const {
-    return inequality_constraint_upper_bound_;
+  void SetBounds(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+                 const Eigen::Ref<const Eigen::VectorXd>& upper_bound) {
+    DRAKE_ASSERT(lower_bound.size() == this->size());
+    DRAKE_ASSERT(upper_bound.size() == this->size());
+    DRAKE_ASSERT((lower_bound.array() <= upper_bound.array()).all());
+    lower_bound_ = lower_bound;
+    upper_bound_ = upper_bound;
+  }
+
+  /// Set the lower and upper bounds at the given index
+  void SetBounds(int index, double lower_bound, double upper_bound) {
+    DRAKE_ASSERT(index < size());
+    DRAKE_ASSERT(lower_bound <= upper_bound);
+    lower_bound_(index) = lower_bound;
+    upper_bound_(index) = upper_bound;
+  }
+
+  /// Set the lower bound at the given index.
+  void SetLowerBound(int index, double lower_bound) {
+    DRAKE_ASSERT(index < size());
+    DRAKE_ASSERT(lower_bound <= upper_bound_(index));
+    lower_bound_(index) = lower_bound;
+  }
+
+  /// Set the upper bound at the given index.
+  void SetUpperBound(int index, double upper_bound) {
+    DRAKE_ASSERT(index < size());
+    DRAKE_ASSERT(lower_bound_(index) <= upper_bound);
+    upper_bound_(index) = upper_bound;
   }
 
  protected:
-  VectorBase()
-      : inequality_constraint_lower_bound_{0},
-        inequality_constraint_upper_bound_{0} {}
+  VectorBase() : lower_bound_{0}, upper_bound_{0} {}
+
+  /// Constructs a VectorBase with the given size. The lower and upper bounds
+  /// are set to -inf and inf respectively.
+  explicit VectorBase(int size)
+      : lower_bound_{Eigen::VectorXd::Constant(
+            size, -std::numeric_limits<double>::infinity())},
+        upper_bound_{Eigen::VectorXd::Constant(
+            size, std::numeric_limits<double>::infinity())} {}
+
+  /// Constructs a VectorBase with the given lower and upper bounds.
+  VectorBase(const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+             const Eigen::Ref<const Eigen::VectorXd>& upper_bound)
+      : lower_bound_{lower_bound}, upper_bound_{upper_bound} {
+    DRAKE_ASSERT(lower_bound_.size() == upper_bound_.size());
+    DRAKE_ASSERT((lower_bound_.array() <= upper_bound_.array()).all());
+  }
 
   /// Adds in multiple scaled vectors to this vector. All vectors
   /// are guaranteed to be the same size.
@@ -207,7 +245,8 @@ class VectorBase {
   /// element-by-element computations that are likely inefficient, but even
   /// this implementation minimizes memory accesses for efficiency. If the
   /// vector is contiguous, for example, implementations that leverage SIMD
-  /// operations should be far more efficient. Overriding implementations should
+  /// operations should be far more efficient. Overriding implementations
+  /// should
   /// ensure that this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual void DoPlusEqScaled(const std::initializer_list<
@@ -221,24 +260,16 @@ class VectorBase {
     }
   }
 
-  /// Append one row of inequality bounds.
-  /// Remember that CalcInequalityConstraint needs to append a row also, so that
-  /// the result of CalcInequalityConstraint matches the size of the bounds.
-  void AppendInequalityConstraintBounds(double lower_bound, double upper_bound);
-
-  /// Append one row of inequality bounds. The lower bound is set to -inf
-  /// Remember that CalcInequalityConstraint needs to append a row also, so that
-  /// the result of CalcInequalityConstraint matches the size of the bounds.
-  void AppendInequalityConstraintUpperBound(double upper_bound);
-
-  /// Append one row of inequality bounds. The upper bound is set to inf
-  /// Remember that CalcInequalityConstraint needs to append a row also, so that
-  /// the result of CalcInequalityConstraint matches the size of the bounds.
-  void AppendInequalityConstraintLowerBound(double lower_bound);
+  /// Initialize the lower and upper bounds to -inf and inf respectively.
+  void InitializeBounds() {
+    const double kInf = std::numeric_limits<double>::infinity();
+    lower_bound_ = Eigen::VectorXd::Constant(size(), -kInf);
+    upper_bound_ = Eigen::VectorXd::Constant(size(), kInf);
+  }
 
  private:
-  Eigen::VectorXd inequality_constraint_lower_bound_;
-  Eigen::VectorXd inequality_constraint_upper_bound_;
+  Eigen::VectorXd lower_bound_;
+  Eigen::VectorXd upper_bound_;
 };
 
 // Allows a VectorBase<T> to be streamed into a string. This is useful for

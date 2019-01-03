@@ -36,6 +36,11 @@ class Subvector : public VectorBase<T> {
     if (first_element_ + num_elements_ > vector_->size()) {
       throw std::out_of_range("Subvector out of bounds.");
     }
+    this->InitializeBounds();
+    for (int i = 0; i < num_elements_; ++i) {
+      this->SetBounds(i, vector->lower_bound()(first_element + i),
+                      vector->upper_bound()(first_element + i));
+    }
   }
 
   /// Constructs an empty subvector.

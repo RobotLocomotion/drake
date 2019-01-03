@@ -1961,15 +1961,9 @@ class ConstraintBasicVector final : public BasicVector<T> {
  public:
   static constexpr int kSize = 3;
   ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {
-    this->AppendInequalityConstraintLowerBound(0);
+    this->SetLowerBound(0, static_cast<double>(bias));
   }
   BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
-
-  // Declare a single constraint `this[0] >= bias`.
-  void CalcInequalityConstraint(VectorX<T>* value) const override {
-    value->resize(1);
-    (*value)[0] = (*this)[0] - T{bias};
-  }
 };
 
 class ConstraintTestSystem : public LeafSystem<double> {
@@ -2107,6 +2101,9 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   ASSERT_EQ(dut.get_num_constraints(), 1);
   using Index = SystemConstraintIndex;
   const SystemConstraint<double>& constraint0 = dut.get_constraint(Index{0});
+  const double kInf = std::numeric_limits<double>::infinity();
+  EXPECT_TRUE(CompareMatrices(constraint0.lower_bound(), Vector1d(11)));
+  EXPECT_TRUE(CompareMatrices(constraint0.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint0.is_equality_constraint());
   EXPECT_THAT(constraint0.description(), ::testing::ContainsRegex(
       "^parameter 0 of type .*ConstraintBasicVector<double,11>$"));
@@ -2117,6 +2114,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareContinuousState(StateVector{}, 0, 0, StateVector::kSize);
   EXPECT_EQ(dut.get_num_constraints(), 2);
   const SystemConstraint<double>& constraint1 = dut.get_constraint(Index{1});
+  EXPECT_TRUE(CompareMatrices(constraint1.lower_bound(), Vector1d(22)));
+  EXPECT_TRUE(CompareMatrices(constraint1.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint1.is_equality_constraint());
   EXPECT_THAT(constraint1.description(), ::testing::ContainsRegex(
       "^continuous state of type .*ConstraintBasicVector<double,22>$"));
@@ -2127,6 +2126,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareVectorInputPort(InputVector{});
   EXPECT_EQ(dut.get_num_constraints(), 3);
   const SystemConstraint<double>& constraint2 = dut.get_constraint(Index{2});
+  EXPECT_TRUE(CompareMatrices(constraint2.lower_bound(), Vector1d(33)));
+  EXPECT_TRUE(CompareMatrices(constraint2.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint2.is_equality_constraint());
   EXPECT_THAT(constraint2.description(), ::testing::ContainsRegex(
       "^input 0 of type .*ConstraintBasicVector<double,33>$"));
@@ -2136,6 +2137,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
   EXPECT_EQ(dut.get_num_constraints(), 4);
   const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
+  EXPECT_TRUE(CompareMatrices(constraint3.lower_bound(), Vector1d(44)));
+  EXPECT_TRUE(CompareMatrices(constraint3.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint3.is_equality_constraint());
   EXPECT_THAT(constraint3.description(), ::testing::ContainsRegex(
       "^output 0 of type .*ConstraintBasicVector<double,44>$"));
@@ -2146,6 +2149,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareDiscreteState(DiscreteStateVector{});
   EXPECT_EQ(dut.get_num_constraints(), 5);
   const SystemConstraint<double>& constraint4 = dut.get_constraint(Index{4});
+  EXPECT_TRUE(CompareMatrices(constraint4.lower_bound(), Vector1d(55)));
+  EXPECT_TRUE(CompareMatrices(constraint4.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint4.is_equality_constraint());
   EXPECT_THAT(constraint4.description(), ::testing::ContainsRegex(
       "^discrete state of type .*ConstraintBasicVector<double,55>$"));
@@ -2154,30 +2159,30 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // change the shape of the System and Context while we're Calc'ing.
   auto context = dut.CreateDefaultContext();
 
-  // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `-10.0 >= 0.0`.
+  // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `1.0 >= 11.0`.
   context->get_mutable_numeric_parameter(0).SetAtIndex(0, 1.0);
   Eigen::VectorXd value0;
   constraint0.Calc(*context, &value0);
-  EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(-10.0)));
+  EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(1.0)));
 
-  // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `-20.0 >= 0.0`.
+  // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `2.0 >= 22.0`.
   context->get_mutable_continuous_state_vector().SetAtIndex(0, 2.0);
   Eigen::VectorXd value1;
   constraint1.Calc(*context, &value1);
-  EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
+  EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(2.0)));
 
-  // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `-30.0 >= 0.0`.
+  // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `3.0 >= 33.0`.
   InputVector input;
   input.SetAtIndex(0, 3.0);
   context->FixInputPort(0, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
-  EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));
+  EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(3.0)));
 
-  // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `-40.0 >= 0.0`.
+  // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `4.0 >= 44.0`.
   Eigen::VectorXd value3;
   constraint3.Calc(*context, &value3);
-  EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(-40.0)));
+  EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(4.0)));
 }
 
 // Note: this class is duplicated in diagram_test.

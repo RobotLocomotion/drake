@@ -35,10 +35,20 @@ class BasicVector : public VectorBase<T> {
   /// Initializes with the given @p size using the drake::dummy_value<T>, which
   /// is NaN when T = double.
   explicit BasicVector(int size)
-      : values_(VectorX<T>::Constant(size, dummy_value<T>::get())) {}
+      : VectorBase<T>(size),
+        values_(VectorX<T>::Constant(size, dummy_value<T>::get())) {}
 
   /// Constructs a BasicVector with the specified @p vec data.
-  explicit BasicVector(VectorX<T> vec) : values_(std::move(vec)) {}
+  /// The lower and upper bounds are set to -inf and +inf respectively.
+  explicit BasicVector(VectorX<T> vec)
+      : VectorBase<T>(vec.rows()), values_(std::move(vec)) {}
+
+  /// Constructs a BasicVector with the specified @p vec, @p lower_bound and
+  /// @p upper_bound
+  BasicVector(VectorX<T> vec,
+              const Eigen::Ref<const VectorX<double>>& lower_bound,
+              const Eigen::Ref<const VectorX<double>>& upper_bound)
+      : VectorBase<T>(lower_bound, upper_bound), values_(std::move(vec)) {}
 
   /// Constructs a BasicVector whose elements are the elements of @p init.
   BasicVector(const std::initializer_list<T>& init)
@@ -92,12 +102,12 @@ class BasicVector : public VectorBase<T> {
   }
 
   const T& GetAtIndex(int index) const override {
-    DRAKE_THROW_UNLESS(index < size());
+    DRAKE_THROW_UNLESS(index < this->size());
     return values_[index];
   }
 
   T& GetAtIndex(int index) override {
-    DRAKE_THROW_UNLESS(index < size());
+    DRAKE_THROW_UNLESS(index < this->size());
     return values_[index];
   }
 
@@ -109,7 +119,7 @@ class BasicVector : public VectorBase<T> {
 
   void ScaleAndAddToVector(const T& scale,
                            Eigen::Ref<VectorX<T>> vec) const override {
-    if (vec.rows() != size()) {
+    if (vec.rows() != this->size()) {
       throw std::out_of_range("Addends must be the same size.");
     }
     vec += scale * values_;

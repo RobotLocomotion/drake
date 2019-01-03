@@ -13,33 +13,29 @@ class DummyVector : public VectorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummyVector)
 
-  DummyVector() {
-    this->AppendInequalityConstraintUpperBound(10);
-    this->AppendInequalityConstraintLowerBound(-10);
-    this->AppendInequalityConstraintBounds(-5, 20);
+  DummyVector() : VectorBase<T>(3) {
+    this->SetUpperBound(0, 10);
+    this->SetLowerBound(1, -10);
+    this->SetBounds(2, -5, 20);
   }
-
-  int size() const override { return 2; }
 
   T& GetAtIndex(int index) override { return val_[index]; }
 
   const T& GetAtIndex(int index) const override { return val_[index]; }
 
  private:
-  Vector2<T> val_;
+  Vector3<T> val_;
 };
 
 template <typename T>
 void TestBounds() {
   const double kInf = std::numeric_limits<double>::infinity();
   DummyVector<T> dummy;
-  EXPECT_TRUE(CompareMatrices(dummy.inequality_constraint_lower_bound(),
-                              Vector3<double>(-kInf, -10, -5)));
-  EXPECT_TRUE(CompareMatrices(dummy.inequality_constraint_upper_bound(),
-                              Vector3<double>(10, kInf, 20)));
-  VectorX<T> inequality_val;
-  dummy.CalcInequalityConstraint(&inequality_val);
-  EXPECT_EQ(inequality_val.size(), 3);
+  EXPECT_TRUE(
+      CompareMatrices(dummy.lower_bound(), Vector3<double>(-kInf, -10, -5)));
+  EXPECT_TRUE(
+      CompareMatrices(dummy.upper_bound(), Vector3<double>(10, kInf, 20)));
+  EXPECT_EQ(dummy.size(), 3);
 }
 
 GTEST_TEST(VectorBaseTest, TestBounds) {
