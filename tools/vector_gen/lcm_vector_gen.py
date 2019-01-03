@@ -142,7 +142,7 @@ APPEND_INEQUALITY_CONSTRAINT_UPPER_BOUND = """
     this->AppendInequalityConstraintUpperBound(%(max_value)s);
 """
 APPEND_INEQUALITY_CONSTRAINT_BOUND = """
-    this->AppendInequalityConstraintBound(%(min_value)s, %(max_value)s);
+    this->AppendInequalityConstraintBounds(%(min_value)s, %(max_value)s);
 """
 
 

@@ -903,4 +903,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "vector_base_test",
+    deps = [
+        ":vector",
+        "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
 add_lint_tests()
