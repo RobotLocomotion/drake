@@ -123,10 +123,11 @@ class TestDeprecation(unittest.TestCase):
                 "__gt__(",
                 "__ne__(",
             ]
-            # For Bionic, the behavior of autocompletion seems to constrain
-            # behavior depending on underscore prefixes.
+            if hasattr(deprecation_example, "__init_subclass__"):
+                suffixes_expected.append("__init_subclass__(")
+            # For Bionic Python3, the behavior of autocompletion seems to
+            # constrain behavior depending on underscore prefixes.
             if "__init__(" not in suffixes:
-                suffixes_expected += ["__init_subclass__("]
                 under = get_completion_suffixes(
                     locals(), prefix="deprecation_example._")
                 suffixes += ["_" + s for s in under]
