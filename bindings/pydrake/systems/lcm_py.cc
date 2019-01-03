@@ -88,7 +88,7 @@ PYBIND11_MODULE(lcm, m) {
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             py::arg("publish_period"),
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-            py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc_4)
+            py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc)
         .def("PublishInputAsLcmMessage", &Class::PublishInputAsLcmMessage,
             py::arg("context"),
             doc.LcmPublisherSystem.PublishInputAsLcmMessage.doc);
