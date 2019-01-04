@@ -43,6 +43,7 @@ LcmPublisherSystem::LcmPublisherSystem(
       lcm_(lcm ? lcm : owned_lcm_.get()) {
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
   DRAKE_DEMAND(lcm_);
+  DRAKE_DEMAND(publish_period >= 0.0);
 
   if (translator_ != nullptr) {
     DeclareInputPort("lcm_message", kVectorValued,

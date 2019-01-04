@@ -56,6 +56,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *                       If the publish period is zero, LcmPublisherSystem
+   *                       will use per-step publishing instead; see
+   *                       LeafSystem::PerStepPublishEvent()
+   * @pre publish_period is non-negative.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
@@ -83,6 +87,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *                       If the publish period is zero, LcmPublisherSystem
+   *                       will use per-step publishing instead; see
+   *                       LeafSystem::PerStepPublishEvent()
+   * @pre publish_period is non-negative.
    */
   LcmPublisherSystem(const std::string& channel,
                      std::unique_ptr<SerializerInterface> serializer,
@@ -106,6 +114,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *                       If the publish period is zero, LcmPublisherSystem
+   *                       will use per-step publishing instead; see
+   *                       LeafSystem::PerStepPublishEvent()
+   * @pre publish_period is non-negative.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -129,6 +141,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *                       If the publish period is zero, LcmPublisherSystem
+   *                       will use per-step publishing instead; see
+   *                       LeafSystem::PerStepPublishEvent()
+   * @pre publish_period is non-negative.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
@@ -155,6 +171,10 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
+   *                       If the publish period is zero, LcmPublisherSystem
+   *                       will use per-step publishing instead; see
+   *                       LeafSystem::PerStepPublishEvent()
+   * @pre publish_period is non-negative.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
