@@ -358,6 +358,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "scene_graph_inspector_test",
+    deps = [
+        ":geometry_frame",
+        ":scene_graph_inspector",
+    ],
+)
+
+drake_cc_googletest(
     name = "shape_specification_test",
     deps = [
         ":shape_specification",

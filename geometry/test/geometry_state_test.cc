@@ -393,7 +393,9 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_EQ(geometry_state_.get_num_frames(), single_tree_frame_count());
   EXPECT_EQ(geometry_state_.NumFramesForSource(source_id_),
             single_tree_frame_count() - 1);  // subtract the world frame.
-  EXPECT_EQ(geometry_state_.NumFramesForSource(SourceId::get_new_id()), 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.NumFramesForSource(SourceId::get_new_id()),
+      std::logic_error, "Referenced geometry source .* is not registered.");
   EXPECT_EQ(geometry_state_.GetNumDynamicGeometries(),
             single_tree_dynamic_geometry_count());
   EXPECT_EQ(geometry_state_.GetNumAnchoredGeometries(),
