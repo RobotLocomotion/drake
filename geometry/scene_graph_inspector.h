@@ -98,7 +98,7 @@ class SceneGraphInspector {
     return state_->get_num_geometries();
   }
 
-  /** The set of all ids for registered geometries. The order is _not_
+  /** Returns the set of all ids for registered geometries. The order is _not_
    guaranteed to have any particular meaning. But the order is
    guaranteed to remain fixed between topological changes (e.g., removal or
    addition of geometry/frames).  */
@@ -203,9 +203,9 @@ class SceneGraphInspector {
     return state_->GetNumFrameGeometries(id);
   }
 
-  /** Reports the total number of geometries directly registered to the frame
-   with the given `id`. This count does _not_ include geometries attached to
-   frames that are descendants of this frame.
+  /** Reports the total number of geometries with the given `role` directly
+   registered to the frame with the given `id`. This count does _not_ include
+   geometries attached to frames that are descendants of this frame.
    @throws std::logic_error if `id` does not map to a registered frame.  */
   int NumGeometriesForFrameWithRole(FrameId id, Role role) const {
     DRAKE_DEMAND(state_ != nullptr);

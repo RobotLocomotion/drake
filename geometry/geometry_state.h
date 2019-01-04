@@ -146,11 +146,11 @@ class GeometryState {
   /** @name              Frames and their properties  */
   //@{
 
-  /** Implementation of SceneGraphInspector::BelongsToSource(FrameId, SourceId).
-   */
+  /** Implementation of
+   SceneGraphInspector::BelongsToSource(FrameId, SourceId) const.  */
   bool BelongsToSource(FrameId frame_id, SourceId source_id) const;
 
-  /** Implementation of SceneGraphInspector::GetName(FrameId).  */
+  /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
   const std::string& get_frame_name(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::GetFrameGroup().  */
@@ -170,7 +170,7 @@ class GeometryState {
    @throws std::logic_error if the `frame_id` does not map to a valid frame.  */
   int NumGeometriesWithRole(FrameId frame_id, Role role) const;
 
-  /** Implementation of SceneGraphInspector::GetGeometryFromName().  */
+  /** Implementation of SceneGraphInspector::GetGeometryIdByName().  */
   GeometryId GetGeometryFromName(FrameId frame_id,
                                  Role role,
                                  const std::string& name) const;
@@ -181,13 +181,13 @@ class GeometryState {
   //@{
 
   /** Implementation of
-   SceneGraphInspector::BelongsToSource(GeometryId, SourceId).  */
+   SceneGraphInspector::BelongsToSource(GeometryId, SourceId) const.  */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
 
   /** Implementation of SceneGraphInspector::GetFrameId().  */
   FrameId GetFrameId(GeometryId geometry_id) const;
 
-  /** Implementation of SceneGraphInspector::GetName(GeometryId).  */
+  /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
   const std::string& get_name(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::X_FG().  */
