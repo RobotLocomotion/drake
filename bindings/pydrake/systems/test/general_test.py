@@ -13,6 +13,7 @@ import numpy as np
 from pydrake.autodiffutils import (
     AutoDiffXd,
     )
+from pydrake.examples.pendulum import PendulumPlant
 from pydrake.symbolic import (
     Expression,
     )
@@ -47,7 +48,6 @@ from pydrake.systems.framework import (
     TriggerType,
     VectorSystem_,
     )
-from pydrake.systems import primitives
 from pydrake.systems.primitives import (
     Adder, Adder_,
     AffineSystem,
@@ -108,6 +108,17 @@ class TestGeneral(unittest.TestCase):
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
         # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
+
+        pendulum = PendulumPlant()
+        context = pendulum.CreateDefaultContext()
+        self.assertEqual(context.num_numeric_parameter_groups(), 1)
+        self.assertTrue(
+            context.get_parameters().get_numeric_parameter(0) is
+            context.get_numeric_parameter(index=0))
+        self.assertEqual(context.num_abstract_parameters(), 0)
+        # TODO(russt): Bind _Declare*Parameter or find an example with an
+        # abstract parameter to actually call this method.
+        self.assertTrue(hasattr(context, "get_abstract_parameter"))
 
     def test_event_api(self):
         # TriggerType - existence check.
