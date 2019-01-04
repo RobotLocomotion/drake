@@ -89,6 +89,16 @@ class OutputPort : public OutputPortBase {
     return ExtractValueOrThrow<ValueType>(__func__, abstract_value);
   }
 
+  /** Returns a reference to the up-to-date vector value of this output port
+  contained in the given Context.  See Eval() for the full description of the
+  computational semantics; this method is just sugar that casts the Eval()
+  result to an Eigen type.
+  @pre This is vector-valued output port. */
+  Eigen::VectorBlock<const VectorX<T>> EvalEigenVector(
+      const Context<T>& context) const {
+    return Eval<BasicVector<T>>(context).get_value();
+  }
+
   /** Allocates a concrete object suitable for holding the value to be exposed
   by this output port, and returns that as an AbstractValue. The returned object
   will never be null. If Drake assertions are enabled (typically only in Debug
