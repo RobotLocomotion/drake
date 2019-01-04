@@ -404,6 +404,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         result_->set_solution_result(SolutionResult::kSolutionFound);
         break;
       }
+      case Ipopt::STOP_AT_ACCEPTABLE_POINT: {
+        // This case happens because the user requested more lenient solution
+        // acceptability criteria so it is counted as solved.
+        result_->set_solution_result(SolutionResult::kSolutionFound);
+        break;
+      }
       case Ipopt::LOCAL_INFEASIBILITY: {
         result_->set_solution_result(SolutionResult::kInfeasibleConstraints);
         break;
