@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace geometry {
-namespace detail {
+namespace internal {
 
 std::string CanonicalizeStringName(const std::string& name) {
   // The definition of "canonical" is based on SDF and the functionality in
@@ -29,6 +29,10 @@ std::string CanonicalizeStringName(const std::string& name) {
   return matches[1].str();
 }
 
-}  // namespace detail
+const Isometry3<double>& convert(const Isometry3<double>& transform) {
+  return transform;
+}
+
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

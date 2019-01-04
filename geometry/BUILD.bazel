@@ -47,6 +47,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_index",
         ":shape_specification",
+        ":utilities",
         "//common",
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
@@ -375,7 +376,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "utilities_test",
-    deps = ["utilities"],
+    deps = [
+        "utilities",
+        "//common/test_utilities",
+    ],
 )
 
 add_lint_tests()
