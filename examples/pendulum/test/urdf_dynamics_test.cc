@@ -27,7 +27,7 @@ GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto context_p = p.CreateDefaultContext();
 
   auto& u_rbp = context_rbp->FixInputPort(0, Vector1d::Zero());
-  auto& u_p = context_p->FixInputPort(0, Vector1d::Zero());
+  auto& u_p = context_p->FixInputPort(0, PendulumInput<double>{}.with_tau(0.0));
 
   Eigen::Vector2d x;
   Vector1d u;
