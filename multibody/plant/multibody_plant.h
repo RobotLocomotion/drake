@@ -387,9 +387,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
+  /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodyPose(
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const Isometry3<T>& X_WB) const {
+    CheckValidState(state);
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
@@ -413,9 +415,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
+  /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodySpatialVelocity(
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const SpatialVelocity<T>& V_WB) const {
+    CheckValidState(state);
     internal_tree().SetFreeBodySpatialVelocityOrThrow(
         body, V_WB, context, state);
   }
@@ -517,9 +521,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///          caching mechanism (see @ref dangerous_get_mutable).
   /// @throws std::exception if the `state` is nullptr or if the context does
   ///         not correspond to the context for a multibody model.
-  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  /// @pre `state` comes from this MultibodyPlant.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositions(
       const systems::Context<T>& context, systems::State<T>* state) const {
+    DRAKE_ASSERT_VOID(CheckValidState(state));
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
     // we can call head() on it.
@@ -554,10 +559,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, if the model instance
   /// index is invalid, or if the length of `q_instance` is not equal to
   /// `num_positions(model_instance)`.
-  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  /// @pre `state` comes from this MultibodyPlant.
   void SetPositions(const systems::Context<T>& context,
                     systems::State<T>* state, ModelInstanceIndex model_instance,
                     const VectorX<T>& q_instance) const {
+    CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> q = GetMutablePositions(context, state);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
@@ -596,9 +602,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///          caching mechanism (see @ref dangerous_get_mutable).
   /// @throws std::exception if the `context` is nullptr or the context does
   /// not correspond to the context for a multibody model.
-  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  /// @pre `state` comes from this MultibodyPlant.
   Eigen::VectorBlock<VectorX<T>> GetMutableVelocities(
       const systems::Context<T>& context, systems::State<T>* state) const {
+    DRAKE_ASSERT_VOID(CheckValidState(state));
     // Note: the nestedExpression() is necessary to treat the VectorBlock<T>
     // returned from GetMutablePositionsAndVelocities() as a VectorX<T> so that
     // we can call tail() on it.
@@ -628,10 +635,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// not correspond to the context for a multibody model, if the model instance
   /// index is invalid, or if the length of `v_instance` is not equal to
   /// `num_velocities(model_instance)`.
-  /// @pre `state` must be the systems::State<T> owned by the `context`.
+  /// @pre `state` comes from this MultibodyPlant.
   void SetVelocities(
       const systems::Context<T>& context, systems::State<T>* state,
       ModelInstanceIndex model_instance, const VectorX<T>& v_instance) const {
+    CheckValidState(state);
     Eigen::VectorBlock<VectorX<T>> v = GetMutableVelocities(context, state);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
   }
@@ -2727,13 +2735,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
   /// @}
 
-  /// Sets the state in `context` so that generalized positions and velocities
-  /// are zero.
+  /// Sets the `state` so that generalized positions and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
                        systems::State<T>* state) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_DEMAND(state != nullptr);
+    CheckValidState(state);
     internal_tree().SetDefaultState(context, state);
   }
 
@@ -2747,7 +2754,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
                       systems::State<T>* state,
                       RandomGenerator* generator) const override {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_DEMAND(state != nullptr);
+    CheckValidState(state);
     internal_tree().SetRandomState(context, state, generator);
   }
 
@@ -2801,6 +2808,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // the registered instance.
   void CheckUserProvidedSceneGraph(
       const geometry::SceneGraph<T>* scene_graph) const;
+
+  // Checks that the provided State is consistent with this plant.
+  void CheckValidState(const systems::State<T>*) const;
 
   // Helper method to apply collision filters based on body-adjacency. By
   // default, we don't consider collisions between geometries affixed to
