@@ -2084,14 +2084,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// -infinity.
   /// @throws std::logic_error if called pre-finalize.
   VectorX<double> GetPositionLowerLimits() const {
-    return tree().GetPositionLowerLimits();
+    return internal_tree().GetPositionLowerLimits();
   }
 
   /// Upper limit analog of GetPositionsLowerLimits, where any unbounded or
   /// unspecified limits will be +infinity.
   /// @see GetPositionsLowerLimits for more information.
   VectorX<double> GetPositionUpperLimits() const {
-    return tree().GetPositionUpperLimits();
+    return internal_tree().GetPositionUpperLimits();
   }
 
   /// Performs the computation of the mass matrix `M(q)` of the model using
