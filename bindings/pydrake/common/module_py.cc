@@ -39,6 +39,18 @@ PYBIND11_MODULE(_module_py, m) {
       .value("kExponential", drake::RandomDistribution::kExponential,
           doc.RandomDistribution.kExponential.doc);
 
+  // Adds a binding for drake::RandomGenerator.
+  py::class_<RandomGenerator> random_generator_cls(
+      m, "RandomGenerator", doc.RandomGenerator.doc);
+  random_generator_cls
+      .def(py::init<>(),
+          "Default constructor. Seeds the engine with the default_seed.")
+      .def(py::init<RandomGenerator::result_type>(),
+          "Constructs the engine and initializes the state with a given "
+          "value.")
+      .def("__call__", [](RandomGenerator& self) { return self(); },
+          "Generates a pseudo-random value.");
+
   // Turn DRAKE_ASSERT and DRAKE_DEMAND exceptions into native SystemExit.
   // Admittedly, it's unusual for a python library like pydrake to raise
   // SystemExit, but for now its better than C++ ::abort() taking down the
