@@ -10,6 +10,11 @@ namespace drake {
 /// to be used in Drake. This is provided as a work-around to enable the use of
 /// the generator in virtual methods (which cannot be templated on the generator
 /// type) of system classes.
+///
+/// Note that this is an alias for mt19937, 32-bit Mersenne Twister by Matsumoto
+/// and Nishimura, 1998. See
+/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine for
+/// more information.
 using RandomGenerator = std::mt19937;
 
 /// Drake supports explicit reasoning about a few carefully chosen random
