@@ -171,13 +171,14 @@ class VectorBase {
     return norm;
   }
 
-  /// Populates a vector @p value suitable for a SystemConstraint inequality
-  /// constraint. For all indices `i` in the result vector, the validity
-  /// constraint is `result[i] >= 0`. For a given subclass type, the size of
-  /// the result must not vary over time. The %VectorBase default
-  /// implementation sets the @p value to be empty (no constraints).
-  virtual void CalcInequalityConstraint(VectorX<T>* value) const {
-    value->resize(0);
+  /// Get the bounds for the elements.
+  /// If lower and upper are both empty size vectors, then there are no bounds.
+  /// Otherwise, the bounds are (*lower)(i) <= GetAtIndex(i) <= (*upper)(i)
+  /// The default output is no bounds.
+  virtual void GetElementBounds(Eigen::VectorXd* lower,
+                                Eigen::VectorXd* upper) const {
+    lower->resize(0);
+    upper->resize(0);
   }
 
  protected:

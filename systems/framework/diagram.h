@@ -1419,9 +1419,20 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
             [this, sys, c](const Context<T>& context, VectorX<T>* value) {
               c->Calc(this->GetSubsystemContext(*sys, context), value);
             };
-        this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-            diagram_calc, c->size(), c->type(),
-            sys->get_name() + ":" + c->description()));
+        switch (c->type()) {
+          case SystemConstraintType::kInequality: {
+            this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+                diagram_calc, c->lower_bound(), c->upper_bound(),
+                sys->get_name() + ":" + c->description()));
+            break;
+          }
+          case SystemConstraintType::kEquality: {
+            this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+                diagram_calc, c->size(),
+                sys->get_name() + ":" + c->description()));
+            break;
+          }
+        }
       }
     }
 
