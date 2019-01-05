@@ -209,16 +209,17 @@ PYBIND11_MODULE(symbolic, m) {
       .def("to_string", &Expression::to_string, doc.Expression.to_string.doc)
       .def("Expand", &Expression::Expand, doc.Expression.Expand.doc)
       .def("Evaluate",
-          [](const Expression& self, const Environment::map& env) {
-            return self.Evaluate(Environment{env});
+          [](const Expression& self, const Environment::map& env,
+              RandomGenerator* generator) {
+            return self.Evaluate(Environment{env}, generator);
           },
-          py::arg("env") = Environment::map{},
+          py::arg("env") = Environment::map{}, py::arg("generator") = nullptr,
           doc.Expression.Evaluate.doc_2args)
       .def("Evaluate",
-          [](const Expression& self, const Environment::map& env) {
-            return self.Evaluate(Environment{env});
+          [](const Expression& self, RandomGenerator* generator) {
+            return self.Evaluate(generator);
           },
-          doc.Expression.Evaluate.doc_2args)
+          py::arg("generator"), doc.Expression.Evaluate.doc_1args)
       .def("EvaluatePartial",
           [](const Expression& self, const Environment::map& env) {
             return self.EvaluatePartial(Environment{env});
