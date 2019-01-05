@@ -10,6 +10,7 @@ element {
 element {
     name: "two_word"
     doc: "A very long documentation string that will certainly flow across multiple lines of C++"
+    max_value: "2.0"
     default_value: "0.0"
 }
 element {

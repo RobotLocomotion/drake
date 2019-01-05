@@ -20,8 +20,9 @@ class Context;
 using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 
 enum class SystemConstraintType {
-  kEquality = 0,    ///< The constraint is of the form f(x)=0.
-  kInequality = 1,  ///< The constraint is of the form f(x)≥0.
+  kEquality = 0,  ///< The constraint is of the form f(x)=0.
+  kInequality =
+      1,  ///< The constraint is of the form lower_bound <= f(x) <= upper_bound.
 };
 
 /// A SystemConstraint is a generic base-class for constraints on Systems.
@@ -32,6 +33,8 @@ enum class SystemConstraintType {
 /// by telling our algorithms that "all valid solutions of this dynamical
 /// system will satisfy the following (in)equalities".  Examples could
 /// include conserved quantities or joint limits on a mechanism.
+///
+/// TODO(hongkai.dai): this class can be used to generate solvers::Constraint.
 ///
 /// This class is intentionally similar to, but (so far) independent from
 /// solvers::Constraint. This is primarily because there is no notion of
@@ -67,18 +70,36 @@ class SystemConstraint {
   using CalcCallback =
       std::function<void(const Context<T>& context, VectorX<T>* value)>;
 
-  /// Constructs the SystemConstraint.
+  /// Constructs a SystemConstraint with equality constraint f(x) = 0.
   ///
   /// @param count the number of constraints (size of the value vector).
   /// @param type the SystemConstraintType.
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(CalcCallback calc_function, int count,
-                   SystemConstraintType type, const std::string& description)
+                   const std::string& description)
       : calc_function_(std::move(calc_function)),
         count_(count),
-        type_(type),
+        lower_bound_(Eigen::VectorXd::Zero(count_)),
+        upper_bound_(Eigen::VectorXd::Zero(count_)),
+        type_(SystemConstraintType::kEquality),
         description_(description) {
     DRAKE_DEMAND(count_ >= 0);
+  }
+
+  /// Constructs a SystemConstraint with inequality constraint lower_bound <=
+  /// f(x) <= upper_bound
+  SystemConstraint(CalcCallback calc_function,
+                   const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+                   const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+                   const std::string& description)
+      : calc_function_(std::move(calc_function)),
+        count_(lower_bound.rows()),
+        lower_bound_(lower_bound),
+        upper_bound_(upper_bound),
+        type_(SystemConstraintType::kInequality),
+        description_(description) {
+    DRAKE_DEMAND(lower_bound.rows() == upper_bound.rows());
+    DRAKE_DEMAND((lower_bound.array() <= upper_bound.array()).all());
   }
 
   /// Evaluates the function pointer passed in through the constructor,
@@ -109,9 +130,11 @@ class SystemConstraint {
     } else {
       DRAKE_ASSERT(type_ == SystemConstraintType::kInequality);
       if (tol == 0.0) {
-        return all(value.array() >= 0.0);  // N.B. Not -tol, which is -0.0.
+        return all(value.array() >= lower_bound_.array()) &&
+               all(value.array() <= upper_bound_.array());
       } else {
-        return all(value.array() >= -tol);
+        return all((value - lower_bound_).array() >= -tol) &&
+               all((upper_bound_ - value).array() >= -tol);
       }
     }
   }
@@ -122,11 +145,15 @@ class SystemConstraint {
   bool is_equality_constraint() const {
     return (type_ == SystemConstraintType::kEquality);
   }
+  const Eigen::VectorXd& lower_bound() const { return lower_bound_; }
+  const Eigen::VectorXd& upper_bound() const { return upper_bound_; }
   const std::string& description() const { return description_; }
 
  private:
   const CalcCallback calc_function_;
   const int count_{0};
+  const Eigen::VectorXd lower_bound_;
+  const Eigen::VectorXd upper_bound_;
   const SystemConstraintType type_;
   const std::string description_;
 };
