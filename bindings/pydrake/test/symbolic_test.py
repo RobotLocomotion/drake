@@ -8,6 +8,7 @@ import numpy as np
 import six
 
 import pydrake.symbolic as sym
+import pydrake.common
 from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.util.containers import EqualToDict
 
@@ -598,6 +599,23 @@ class TestSymbolicExpression(SymbolicTestCase):
                y: 4.0}
         self.assertEqual((x + y).Evaluate(env),
                          env[x] + env[y])
+
+    def test_evaluate_with_random_generator(self):
+        g = pydrake.common.RandomGenerator()
+        uni = sym.Variable("uni", sym.Variable.Type.RANDOM_UNIFORM)
+        gau = sym.Variable("gau", sym.Variable.Type.RANDOM_GAUSSIAN)
+        exp = sym.Variable("exp", sym.Variable.Type.RANDOM_EXPONENTIAL)
+        # Checks if we can evaluate an expression with a random number
+        # generator.
+        (uni + gau + exp).Evaluate(g)
+        (uni + gau + exp).Evaluate(generator=g)
+
+        env = {x: 3.0,
+               y: 4.0}
+        # Checks if we can evaluate an expression with an environment and a
+        # random number generator.
+        (x + y + uni + gau + exp).Evaluate(env, g)
+        (x + y + uni + gau + exp).Evaluate(env=env, generator=g)
 
     def test_evaluate_partial(self):
         env = {x: 3.0,
