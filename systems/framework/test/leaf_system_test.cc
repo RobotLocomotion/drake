@@ -2313,6 +2313,118 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   EXPECT_TRUE(dut.get_unres_update_init());
 }
 
+// Although many of the tests above validate behavior of events when the
+// event dispatchers DoPublish() etc are overridden, the preferred method
+// for users is to provide individual handler functions for each event. There
+// is a set of sugar methods to facilitate that; this class uses them all.
+class EventSugarTestSystem : public LeafSystem<double> {
+ public:
+  EventSugarTestSystem() {
+    DeclareInitializationPublishEvent(
+        &EventSugarTestSystem::MyPublishHandler);
+    DeclareInitializationDiscreteUpdateEvent(
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclareInitializationUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    DeclarePerStepPublishEvent(
+        &EventSugarTestSystem::MyPublishHandler);
+    DeclarePerStepDiscreteUpdateEvent(
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclarePerStepUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    DeclarePeriodicPublishEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MyPublishHandler);
+    DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+  }
+
+  const double kPeriod = 0.125;
+  const double kOffset = 0.25;
+
+  int num_publish() const {return num_publish_;}
+  int num_discrete_update() const {return num_discrete_update_;}
+  int num_unrestricted_update() const {return num_unrestricted_update_;}
+
+ private:
+  EventStatus MyPublishHandler(const Context<double>& context) const {
+    ++num_publish_;
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MyDiscreteUpdateHandler(
+      const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const {
+    ++num_discrete_update_;
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MyUnrestrictedUpdateHandler(const Context<double>& context,
+                                          State<double>* discrete_state) const {
+    ++num_unrestricted_update_;
+    return EventStatus::Succeeded();
+  }
+
+  mutable int num_publish_{0};
+  mutable int num_discrete_update_{0};
+  mutable int num_unrestricted_update_{0};
+};
+
+GTEST_TEST(EventSugarTest, EventsAreRegistered) {
+  EventSugarTestSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  auto init_events = dut.AllocateCompositeEventCollection();
+  dut.GetInitializationEvents(*context, &*init_events);
+  EXPECT_TRUE(init_events->HasPublishEvents());
+  EXPECT_TRUE(init_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(init_events->HasUnrestrictedUpdateEvents());
+
+  auto per_step_events = dut.AllocateCompositeEventCollection();
+  dut.GetPerStepEvents(*context, &*per_step_events);
+  EXPECT_TRUE(per_step_events->HasPublishEvents());
+  EXPECT_TRUE(per_step_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(per_step_events->HasUnrestrictedUpdateEvents());
+
+  auto timed_events = dut.AllocateCompositeEventCollection();
+  double next_event_time = dut.CalcNextUpdateTime(*context, &*timed_events);
+  EXPECT_EQ(next_event_time, 0.25);
+  EXPECT_TRUE(timed_events->HasPublishEvents());
+  EXPECT_TRUE(timed_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(timed_events->HasUnrestrictedUpdateEvents());
+}
+
+GTEST_TEST(EventSugarTest, HandlersGetCalled) {
+  EventSugarTestSystem dut;
+  auto context = dut.CreateDefaultContext();
+  auto discrete_state = dut.AllocateDiscreteVariables();
+  auto state = context->CloneState();
+
+  auto all_events = dut.AllocateCompositeEventCollection();
+  dut.GetInitializationEvents(*context, &*all_events);
+
+  auto per_step_events = dut.AllocateCompositeEventCollection();
+  dut.GetPerStepEvents(*context, &*per_step_events);
+  all_events->Merge(*per_step_events);
+
+  auto timed_events = dut.AllocateCompositeEventCollection();
+  dut.CalcNextUpdateTime(*context, &*timed_events);
+  all_events->Merge(*timed_events);
+
+  dut.CalcUnrestrictedUpdate(
+      *context, all_events->get_unrestricted_update_events(), &*state);
+  dut.CalcDiscreteVariableUpdates(
+      *context, all_events->get_discrete_update_events(), &*discrete_state);
+  dut.Publish(*context, all_events->get_publish_events());
+
+  EXPECT_EQ(dut.num_publish(), 3);
+  EXPECT_EQ(dut.num_discrete_update(), 3);
+  EXPECT_EQ(dut.num_unrestricted_update(), 3);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
