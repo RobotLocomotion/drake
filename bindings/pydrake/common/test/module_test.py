@@ -47,3 +47,9 @@ class TestCommon(unittest.TestCase):
 
     def test_logging_enabled(self):
         self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
+
+    def test_random_generator(self):
+        g1 = pydrake.common.RandomGenerator()
+        self.assertEqual(g1(), 3499211612)
+        g2 = pydrake.common.RandomGenerator(10)
+        self.assertEqual(g2(), 3312796937)
