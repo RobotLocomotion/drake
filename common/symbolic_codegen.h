@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <Eigen/Core>
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
 
@@ -117,9 +118,9 @@ namespace internal {
 // @note This function is used to implement std::string
 // drake::symbolic::CodeGen(const std::string &, const std::vector<Variable>&,
 // const Eigen::PlainObjectBase<Derived>&).
-void CodeGenData(const std::string& function_name,
-                 const std::vector<Variable>& parameters,
-                 const Expression* data, int size, std::ostream* os);
+void CodeGenDenseData(const std::string& function_name,
+                      const std::vector<Variable>& parameters,
+                      const Expression* data, int size, std::ostream* os);
 
 // Generates code for the meta information and outputs to the output stream @p
 // os.
@@ -127,8 +128,8 @@ void CodeGenData(const std::string& function_name,
 // @note This function is used to implement std::string
 // drake::symbolic::CodeGen(const std::string &, const std::vector<Variable>&,
 // const Eigen::PlainObjectBase<Derived>&).
-void CodeGenMeta(const std::string& function_name, int parameter_size, int rows,
-                 int cols, std::ostream* os);
+void CodeGenDenseMeta(const std::string& function_name, int parameter_size,
+                      int rows, int cols, std::ostream* os);
 }  // namespace internal
 
 /// For a given symbolic dense matrix @p M, generates two C functions,
@@ -198,10 +199,10 @@ std::string CodeGen(const std::string& function_name,
   static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
                 "CodeGen should take a symbolic matrix.");
   std::ostringstream oss;
-  internal::CodeGenData(function_name, parameters, M.data(),
-                        M.cols() * M.rows(), &oss);
-  internal::CodeGenMeta(function_name, parameters.size(), M.rows(), M.cols(),
-                        &oss);
+  internal::CodeGenDenseData(function_name, parameters, M.data(),
+                             M.cols() * M.rows(), &oss);
+  internal::CodeGenDenseMeta(function_name, parameters.size(), M.rows(),
+                             M.cols(), &oss);
   return oss.str();
 }
 /// @} End of codegen group.
