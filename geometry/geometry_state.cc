@@ -231,7 +231,7 @@ int GeometryState<T>::NumGeometriesWithRole(FrameId frame_id, Role role) const {
 template <typename T>
 GeometryId GeometryState<T>::GetGeometryFromName(
     FrameId frame_id, Role role, const std::string& name) const {
-  const std::string canonical_name = detail::CanonicalizeStringName(name);
+  const std::string canonical_name = internal::CanonicalizeStringName(name);
 
   GeometryId result;
   int count = 0;
@@ -588,7 +588,7 @@ bool GeometryState<T>::IsValidGeometryName(
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "Given frame id is not valid: " + to_string(frame_id);
   });
-  const std::string name = detail::CanonicalizeStringName(candidate_name);
+  const std::string name = internal::CanonicalizeStringName(candidate_name);
   if (name.empty()) return false;
   return NameIsUnique(frame_id, role, name);
 }

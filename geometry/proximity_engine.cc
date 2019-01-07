@@ -21,6 +21,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -35,24 +36,7 @@ using std::unique_ptr;
 
 namespace {
 
-// TODO(SeanCurtis-TRI): Swap all Isometry3 for Transforms.
-
-// ADL-reliant helper functions for converting Isometry<T> to Isometry<double>.
-const Isometry3<double>& convert(const Isometry3<double>& transform) {
-  return transform;
-}
-
-template <class VectorType>
-Isometry3<double> convert(
-    const Isometry3<Eigen::AutoDiffScalar<VectorType>>& transform) {
-  Isometry3<double> result;
-  for (int r = 0; r < 4; ++r) {
-    for (int c = 0; c < 4; ++c) {
-      result.matrix()(r, c) = ExtractDoubleOrThrow(transform.matrix()(r, c));
-    }
-  }
-  return result;
-}
+// TODO(SeanCurtis-TRI): Swap all Isometry3 for RigidTransforms.
 
 // Utilities/functions for working with the encoding of collision object index
 // and mobility type in the fcl::CollisionObject user data field. The encoded
