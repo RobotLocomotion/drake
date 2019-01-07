@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/pointer_cast.h"
@@ -25,6 +26,9 @@ struct StepInfo {
   /// doubles, time resolution will gradually degrade as time increases.
   T time_sec{0.0};
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    struct ::drake::systems::StepInfo)
 
 /// %Context is an abstract class template that represents all the typed values
 /// that are used in a System's computations: time, numeric-valued input ports,
@@ -758,6 +762,9 @@ class Context : public ContextBase {
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Context)
 
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const Context<T>& context) {

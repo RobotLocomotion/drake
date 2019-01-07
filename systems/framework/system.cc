@@ -5,7 +5,6 @@
 #include <regex>
 
 #include "drake/common/autodiff.h"
-#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {

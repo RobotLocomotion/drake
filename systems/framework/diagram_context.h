@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
@@ -104,6 +105,9 @@ class DiagramState : public State<T> {
   std::vector<State<T>*> substates_;
   std::vector<std::unique_ptr<State<T>>> owned_substates_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramState)
 
 /// The DiagramContext is a container for all of the data necessary to uniquely
 /// determine the computations performed by a Diagram. Specifically, a
@@ -525,6 +529,9 @@ class DiagramContext final : public Context<T> {
   // The internal state of the Diagram, which includes all its subsystem states.
   std::unique_ptr<DiagramState<T>> state_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramContext)
 
 }  // namespace systems
 }  // namespace drake

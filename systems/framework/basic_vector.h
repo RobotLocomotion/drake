@@ -10,6 +10,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/systems/framework/vector_base.h"
@@ -187,6 +188,9 @@ class BasicVector : public VectorBase<T> {
   // subclasses.  Derived class's Clone() methods currently assume that the
   // BasicVector(VectorX<T>) constructor is all that is needed.
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::BasicVector)
 
 }  // namespace systems
 }  // namespace drake

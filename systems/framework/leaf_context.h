@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
@@ -164,6 +165,9 @@ class LeafContext : public Context<T> {
   // The state values (x) for this LeafContext; this is never null.
   std::unique_ptr<State<T>> state_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafContext)
 
 }  // namespace systems
 }  // namespace drake
