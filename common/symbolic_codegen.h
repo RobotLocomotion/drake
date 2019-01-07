@@ -19,11 +19,11 @@ class CodeGenVisitor {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CodeGenVisitor)
 
-  /// Constructs an instance of this visitor class from @p id_to_idx_map.
-  ///
-  /// @note This class keeps a constant reference of @p id_to_idx_map. So @p
-  /// id_to_idx_map should outlive this visitor object.
-  explicit CodeGenVisitor(const IdToIndexMap& id_to_idx_map);
+  /// Constructs an instance of this visitor class using the vector of
+  /// variables, @p parameters. This visitor will map a symbolic variable `var`
+  /// into `p[n]` where `n` is the index of the variable `var` in the given @p
+  /// parameters.
+  explicit CodeGenVisitor(const std::vector<Variable>& parameters);
 
   /// Generates C expression for the expression @p e.
   std::string CodeGen(const Expression& e) const;
@@ -64,7 +64,7 @@ class CodeGenVisitor {
   friend std::string VisitExpression<std::string>(const CodeGenVisitor*,
                                                   const Expression&);
 
-  const IdToIndexMap& id_to_idx_map_;
+  IdToIndexMap id_to_idx_map_;
 };
 
 /// @defgroup codegen Code Generation
