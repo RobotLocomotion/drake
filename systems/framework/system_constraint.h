@@ -129,6 +129,7 @@ class SystemConstraint {
       }
     } else {
       DRAKE_ASSERT(type_ == SystemConstraintType::kInequality);
+      // TODO(hongkai.dai): ignore the bounds that are infinite.
       if (tol == 0.0) {
         return all(value.array() >= lower_bound_.array()) &&
                all(value.array() <= upper_bound_.array());
