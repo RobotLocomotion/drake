@@ -618,14 +618,14 @@ class Context : public ContextBase {
   //@}
 
  protected:
-  Context() = default;
+  Context();
 
   /// Copy constructor takes care of base class and `Context<T>` data members.
   /// Derived classes must implement copy constructors that delegate to this
   /// one for use in their DoCloneWithoutPointers() implementations.
   // Default implementation invokes the base class copy constructor and then
   // the local member copy constructors.
-  Context(const Context<T>&) = default;
+  Context(const Context<T>&);
 
   // Structuring these methods as statics permits a DiagramContext to invoke
   // the protected functionality on its children.
@@ -762,6 +762,16 @@ class Context : public ContextBase {
   copyable_unique_ptr<Parameters<T>> parameters_{
       std::make_unique<Parameters<T>>()};
 };
+
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+Context<T>::Context() = default;
+
+template <typename T>
+Context<T>::Context(const Context<T>&) = default;
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Context)
