@@ -266,7 +266,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   void get_output_port(int) = delete;
 
   /**
-   *  Takes the VectorBase from the input port of the context and publishes
+   * Takes the VectorBase from the input port of the context and publishes
    * it onto an LCM channel. This function is called automatically, as
    * necessary, at the requisite publishing period (if a positive publish was
    * passed to the constructor) or per a simulation step (if no publish
