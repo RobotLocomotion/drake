@@ -39,6 +39,8 @@ namespace geometry {
 
  - Display the progress of an interactive simulation of the arm in a GUI-based
    visualization tool.
+ - Simulate a perception system which estimates arm state based on RGB images
+   of the arm.
  - Compute contact forces between the virtual arm and its virtual environment.
  - Find clearances between objects.
  - Simulate what a camera or other sensor reports when exposed to the simulated
@@ -70,6 +72,8 @@ namespace geometry {
  Drake partitions its geometry operations into classes (in the non-C++ sense of
  the word) and defines a unique role for each class of operations.
 
+ <!-- TODO(SeanCurtis-TRI): Can we come up with a better name than "proximity"
+   akin to "Perception" and "Illustration"? -->
    - __Proximity role__: these are the operations that are related to
      evaluations of the signed distance between two geometries. When the
      objects are separated, the distance is positive, when penetrating, the
@@ -90,6 +94,11 @@ namespace geometry {
      can be requested from SceneGraph to, e.g., calculate forces. This role is
      unique in this regard -- the geometry parameters for the other roles
      affect the result of the geometric operation.
+   - __Perception role__: these are the operations that contribute to sensor
+     simulation. In other words, what can be seen? Typically, these are meshes
+     of medium to high fidelity (depending on the fidelity of the sensor). The
+     properties are models of the real world object's optical properties (its
+     color, shininess, opacity, etc.)
    - __Illustration role__: these are the operations that connect drake to some
      external visualizers. The intent is that geometries with this role don't
      contribute to system calculations, they provide the basis for visualizing,
@@ -104,6 +113,7 @@ namespace geometry {
  identifier (see SceneGraph::AssignRole()). The set _can_ be empty. Each
  role has a specific property set associated with it:
    - __Proximity role__: ProximityProperties
+   - __Perception role__: PerceptionProperties
    - __Illustration role__: IllustrationProperties
 
  Even for a single role, different consumers of a geometry may use different
@@ -145,6 +155,20 @@ class ProximityProperties final : public GeometryProperties {
   ProximityProperties() = default;
 };
 
+/** The set of properties for geometry used in a "perception" role.
+
+ Examples of functionality that depends on the perception role:
+   - n/a
+ */
+class PerceptionProperties final : public GeometryProperties{
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PerceptionProperties);
+  // TODO(SeanCurtis-TRI): Should this have a render label built in?
+
+  // TODO(SeanCurtis-TRI): Consider adding PerceptionIndex to this.
+  PerceptionProperties() = default;
+};
+
 /** The set of properties for geometry used in an "illustration" role.
 
  Examples of functionality that depends on the illustration role:
@@ -163,6 +187,7 @@ enum class Role {
   kUnassigned = 0x0,
   kProximity = 0x1,
   kIllustration = 0x2,
+  kPerception = 0x4
 };
 
 /** @name  Geometry role to string conversions

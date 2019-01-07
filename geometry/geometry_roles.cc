@@ -9,6 +9,8 @@ std::string to_string(const Role& role) {
   switch (role) {
     case Role::kProximity:
       return "proximity";
+    case Role::kPerception:
+      return "perception";
     case Role::kIllustration:
       return "illustration";
     case Role::kUnassigned:

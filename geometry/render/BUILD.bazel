@@ -1,0 +1,37 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "render",
+    deps = [
+        ":render_label",
+    ],
+)
+
+drake_cc_library(
+    name = "render_label",
+    srcs = ["render_label.cc"],
+    hdrs = ["render_label.h"],
+    deps = [
+        "//common:essential",
+        "//common:hash",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "render_label_test",
+    deps = [":render_label"],
+)
+
+add_lint_tests()
