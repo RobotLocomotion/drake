@@ -197,10 +197,10 @@ string CodeGen(const string& function_name, const vector<Variable>& parameters,
 }
 
 namespace internal {
-void CodeGenData(const string& function_name,
-                 const vector<Variable>& parameters,
-                 const Expression* const data, const int size,
-                 ostream* const os) {
+void CodeGenDenseData(const string& function_name,
+                      const vector<Variable>& parameters,
+                      const Expression* const data, const int size,
+                      ostream* const os) {
   // Add header for the main function.
   (*os) << "void " << function_name << "(const double* p, double* m) {\n";
   const CodeGenVisitor visitor{parameters};
@@ -212,8 +212,8 @@ void CodeGenData(const string& function_name,
   (*os) << "}\n";
 }
 
-void CodeGenMeta(const string& function_name, const int parameter_size,
-                 const int rows, const int cols, ostream* const os) {
+void CodeGenDenseMeta(const string& function_name, const int parameter_size,
+                      const int rows, const int cols, ostream* const os) {
   // <function_name>_meta_t type.
   (*os) << "typedef struct {\n"
            "    /* p: input, vector */\n"
