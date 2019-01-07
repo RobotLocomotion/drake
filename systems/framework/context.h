@@ -763,7 +763,6 @@ class Context : public ContextBase {
       std::make_unique<Parameters<T>>()};
 };
 
-
 // Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
 // should be moved back into the class definition once we no longer need to
 // support GCC versions prior to 6.3.

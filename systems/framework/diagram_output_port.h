@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
@@ -126,6 +127,9 @@ class DiagramOutputPort final : public OutputPort<T> {
   const OutputPort<T>* const source_output_port_;
   const SubsystemIndex source_subsystem_index_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramOutputPort)
 
 }  // namespace systems
 }  // namespace drake

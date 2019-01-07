@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -336,6 +337,9 @@ class ContinuousState {
   // This is a subset of state_ and does not own the underlying data.
   std::unique_ptr<VectorBase<T>> misc_continuous_state_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::ContinuousState)
 
 }  // namespace systems
 }  // namespace drake

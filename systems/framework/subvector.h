@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/vector_base.h"
@@ -60,6 +61,9 @@ class Subvector : public VectorBase<T> {
   int first_element_{0};
   int num_elements_{0};
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Subvector)
 
 }  // namespace systems
 }  // namespace drake

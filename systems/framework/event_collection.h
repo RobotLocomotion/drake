@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event.h"
@@ -573,6 +574,9 @@ class CompositeEventCollection {
       unrestricted_update_events_{nullptr};
 };
 
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::CompositeEventCollection)
+
 /**
  * A CompositeEventCollection for a LeafSystem. i.e.
  * <pre>
@@ -619,6 +623,9 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
         CompositeEventCollection<T>::get_unrestricted_update_events());
   }
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafCompositeEventCollection)
 
 /**
  * CompositeEventCollection for a Diagram.
@@ -702,6 +709,9 @@ class DiagramCompositeEventCollection final
   std::vector<std::unique_ptr<CompositeEventCollection<T>>>
       owned_subevent_collection_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramCompositeEventCollection)
 
 }  // namespace systems
 }  // namespace drake

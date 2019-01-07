@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/abstract_values.h"
@@ -156,6 +157,9 @@ class Parameters {
   std::unique_ptr<DiscreteValues<T>> numeric_parameters_;
   std::unique_ptr<AbstractValues> abstract_parameters_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Parameters)
 
 }  // namespace systems
 }  // namespace drake

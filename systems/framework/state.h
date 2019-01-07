@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -128,6 +129,9 @@ class State {
   std::unique_ptr<ContinuousState<T>> continuous_state_;
   std::unique_ptr<DiscreteValues<T>> discrete_state_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::State)
 
 }  // namespace systems
 }  // namespace drake

@@ -91,5 +91,10 @@ class SystemOutput {
   std::vector<copyable_unique_ptr<AbstractValue>> port_values_;
 };
 
+// TODO(sammy-tri) I would like to use
+// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS here, but
+// DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN breaks due to
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 with extern templates.
+
 }  // namespace systems
 }  // namespace drake

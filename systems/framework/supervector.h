@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -94,6 +95,9 @@ class Supervector : public VectorBase<T> {
   // the lookup table is [1, 4, 9].
   std::vector<int> lookup_table_;
 };
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Supervector)
 
 }  // namespace systems
 }  // namespace drake
