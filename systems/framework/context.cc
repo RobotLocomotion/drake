@@ -1,7 +1,5 @@
 #include "drake/systems/framework/context.h"
 
-#include "drake/common/default_scalars.h"
-
 namespace drake {
 namespace systems {
 
