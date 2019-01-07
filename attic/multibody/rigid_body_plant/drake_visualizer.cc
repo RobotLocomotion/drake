@@ -130,8 +130,8 @@ void DrakeVisualizer::DoPublish(
 
   // Handle any initialization events first.
   int num_initialization_events = 0;
-  for (int i = 0; i < static_cast<int>(events.size()); ++i) {
-    if (events[i]->get_trigger_type() ==
+  for (const Event<double>* event : events) {
+    if (event->get_trigger_type() ==
         Event<double>::TriggerType::kInitialization) {
       // We expect no more than one initialization event.
       DRAKE_DEMAND(++num_initialization_events == 1);

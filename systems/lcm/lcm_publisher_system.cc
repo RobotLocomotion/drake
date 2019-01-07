@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -57,10 +56,13 @@ LcmPublisherSystem::LcmPublisherSystem(
   // Set the publish period, if nonzero.
   auto publish_function = [this](const systems::Context<double>& context,
                                  const systems::PublishEvent<double>&) {
-    // If multiple events occur simultaneously (for example, due to
-    // occasional synchronization of periods from different periodic
-    // events), we still only want to publish the input port values once,
-    // so we don't care if there are more events.
+    // TODO(edrumwri) Remove this code once set_publish_period(.) has been
+    // removed; it exists so that one does not get both a per-step publish and
+    // a periodic publish if a user constructs the publisher the "old" way
+    // (construction followed by set_publish_period()).
+    if (this->publish_period_)
+      return;
+
     this->PublishInputAsLcmMessage(context);
   };
 

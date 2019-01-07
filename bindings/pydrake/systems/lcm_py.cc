@@ -3,6 +3,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -89,6 +90,15 @@ PYBIND11_MODULE(lcm, m) {
             py::arg("publish_period"),
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
             py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc)
+        .def("set_publish_period",
+            [](Class* self, double period) {
+              WarnDeprecated("set_publish_period() is deprecated");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_publish_period(period);
+#pragma GCC diagnostic pop
+            },
+            py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc)
         .def("PublishInputAsLcmMessage", &Class::PublishInputAsLcmMessage,
             py::arg("context"),
             doc.LcmPublisherSystem.PublishInputAsLcmMessage.doc);

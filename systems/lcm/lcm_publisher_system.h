@@ -56,9 +56,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
-   *                       If the publish period is zero, LcmPublisherSystem
-   *                       will use per-step publishing instead; see
-   *                       LeafSystem::PerStepPublishEvent()
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   * 
    * @pre publish_period is non-negative.
    */
   template <typename LcmMessage>
@@ -87,9 +87,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
-   *                       If the publish period is zero, LcmPublisherSystem
-   *                       will use per-step publishing instead; see
-   *                       LeafSystem::PerStepPublishEvent()
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   * 
    * @pre publish_period is non-negative.
    */
   LcmPublisherSystem(const std::string& channel,
@@ -114,9 +114,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
-   *                       If the publish period is zero, LcmPublisherSystem
-   *                       will use per-step publishing instead; see
-   *                       LeafSystem::PerStepPublishEvent()
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   * 
    * @pre publish_period is non-negative.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
@@ -141,9 +141,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
-   *                       If the publish period is zero, LcmPublisherSystem
-   *                       will use per-step publishing instead; see
-   *                       LeafSystem::PerStepPublishEvent()
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   * 
    * @pre publish_period is non-negative.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
@@ -171,9 +171,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_period Period that messages will be published (optional).
-   *                       If the publish period is zero, LcmPublisherSystem
-   *                       will use per-step publishing instead; see
-   *                       LeafSystem::PerStepPublishEvent()
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   * 
    * @pre publish_period is non-negative.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
@@ -216,16 +216,14 @@ class LcmPublisherSystem : public LeafSystem<double> {
   static std::string make_name(const std::string& channel);
 
   DRAKE_DEPRECATED("Pass publish period to constructor instead. This method "
-                       "will be removed after 5/20/19.")
+                   "will be removed after 5/20/19.")
   void set_publish_period(double period) {
+    DRAKE_DEMAND(!publish_period_);
+    publish_period_ = period;
     const double offset = 0.0;
     this->DeclarePeriodicEvent(period, offset, systems::PublishEvent<double>(
         [this](const systems::Context<double>& context,
                const systems::PublishEvent<double>&) {
-          // If multiple events occur simultaneously (for example, due to
-          // occasional synchronization of periods from different periodic
-          // events), we still only want to publish the input port values once,
-          // so we don't care if there are more events.
           this->PublishInputAsLcmMessage(context);
         }));
   }
@@ -267,12 +265,15 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // This system has no output ports.
   void get_output_port(int) = delete;
 
-  /// Takes the VectorBase from the input port of the context and publishes
-  /// it onto an LCM channel. This function is called automatically, as
-  /// necessary, at the requisite publishing period (if set_publish_period() was
-  /// called) or per a simulation step (if activate_per_step_publish() was
-  /// called). This function has been made public so that LCM messages can be
-  /// published manually, as desired.
+  /**
+   *  Takes the VectorBase from the input port of the context and publishes
+   * it onto an LCM channel. This function is called automatically, as
+   * necessary, at the requisite publishing period (if a positive publish was
+   * passed to the constructor) or per a simulation step (if no publish
+   * period or publish period = 0.0 was passed to the constructor). This
+   * function has been made public so that LCM messages can be published
+   * manually, as desired.
+   */
   void PublishInputAsLcmMessage(const Context<double>& context) const;
 
  private:
@@ -284,7 +285,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
                          owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
-                     double publish_period = 0.0);
+                     double publish_period);
 
   // The channel on which to publish LCM messages.
   const std::string channel_;
@@ -312,6 +313,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // the LCM subsystem is not const. This may refer to an externally-supplied
   // object or the owned_lcm_ object above.
   drake::lcm::DrakeLcmInterface* const lcm_;
+
+  // TODO(edrumwri) Remove this when set_publish_period() is removed.
+  drake::optional<double> publish_period_;
 };
 
 }  // namespace lcm
