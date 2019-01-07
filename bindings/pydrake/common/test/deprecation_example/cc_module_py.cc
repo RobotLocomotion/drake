@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 namespace pydrake {
@@ -15,29 +16,38 @@ class ExampleCppClass {
   // Good overload.
   void overload() {}
 
-  // Bad overload.
+  // Deprecated overload.
+  // N.B. We add an actual C++ deprecation to show an example of how to
+  // suppress the error when calling the method.
+  DRAKE_DEPRECATED("Example message for overload")
   void overload(int) {}
 };
 
 PYBIND11_MODULE(cc_module, m) {
+  // Add nominal bindings.
   py::class_<ExampleCppClass> cls(m, "ExampleCppClass");
-  py::handle cls_handle = cls;
-  // Store messages for testing.
-  cls.attr("message_overload") = "overload(int) is deprecated";
-  cls.attr("message_method") = "Deprecated method";
-  cls.attr("message_prop") = "Deprecated property";
-  // Add deprecated members.
   cls  // BR
       .def(py::init())
-      .def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod)
-      .def_readwrite("deprecated_prop", &ExampleCppClass::deprecated_prop)
-      .def("overload", py::overload_cast<>(&ExampleCppClass::overload))
-      .def("overload", [cls_handle](ExampleCppClass* self, int value) {
-        WarnDeprecated(cls_handle.attr("message_overload"));
-        self->overload(value);
-      });
-  DeprecateAttribute(cls, "DeprecatedMethod", cls.attr("message_method"));
-  DeprecateAttribute(cls, "deprecated_prop", cls.attr("message_prop"));
+      .def("overload", py::overload_cast<>(&ExampleCppClass::overload));
+
+  // Add deprecated method.
+  cls.def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod);
+  DeprecateAttribute(cls, "DeprecatedMethod", "Example message for method");
+
+  // Add deprecated property.
+  cls.def_readwrite("deprecated_prop", &ExampleCppClass::deprecated_prop);
+  DeprecateAttribute(cls, "deprecated_prop", "Example message for property");
+
+  // Add deprecated overload.
+  cls.def("overload", [](ExampleCppClass* self, int value) {
+    // This deprecates the specific overload.
+    WarnDeprecated("Example message for overload");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // The surrounding `pragma`s allow us to use this without a warning.
+    self->overload(value);
+#pragma GCC diagnostic pop
+  });
 }
 
 }  // namespace

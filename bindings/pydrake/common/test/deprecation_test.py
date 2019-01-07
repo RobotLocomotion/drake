@@ -228,11 +228,11 @@ class TestDeprecation(unittest.TestCase):
             # This is a descriptor, so it will trigger on class access.
             ExampleCppClass.DeprecatedMethod
             self.assertEqual(len(w), 1)
-            self._check_warning(w[0], ExampleCppClass.message_method)
+            self._check_warning(w[0], "Example message for method")
             # Same for a property.
             ExampleCppClass.deprecated_prop
             self.assertEqual(len(w), 2)
-            self._check_warning(w[1], ExampleCppClass.message_prop)
+            self._check_warning(w[1], "Example message for property")
             # Call good overload; no new warnings.
             obj = ExampleCppClass()
             obj.overload()
@@ -240,4 +240,4 @@ class TestDeprecation(unittest.TestCase):
             # Call bad overload.
             obj.overload(10)
             self.assertEqual(len(w), 3)
-            self._check_warning(w[2], ExampleCppClass.message_overload)
+            self._check_warning(w[2], "Example message for overload")
