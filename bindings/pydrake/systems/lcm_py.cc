@@ -87,7 +87,7 @@ PYBIND11_MODULE(lcm, m) {
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
                  DrakeLcmInterface*, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
-            py::arg("publish_period"),
+            py::arg("publish_period") = 0.0,
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
             py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc)
         .def("set_publish_period",
