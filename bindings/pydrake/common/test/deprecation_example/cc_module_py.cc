@@ -15,29 +15,31 @@ class ExampleCppClass {
   // Good overload.
   void overload() {}
 
-  // Bad overload.
+  // Deprecated overload.
   void overload(int) {}
 };
 
 PYBIND11_MODULE(cc_module, m) {
+  // Add nominal bindings.
   py::class_<ExampleCppClass> cls(m, "ExampleCppClass");
-  py::handle cls_handle = cls;
-  // Store messages for testing.
-  cls.attr("message_overload") = "overload(int) is deprecated";
-  cls.attr("message_method") = "Deprecated method";
-  cls.attr("message_prop") = "Deprecated property";
-  // Add deprecated members.
   cls  // BR
       .def(py::init())
-      .def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod)
-      .def_readwrite("deprecated_prop", &ExampleCppClass::deprecated_prop)
-      .def("overload", py::overload_cast<>(&ExampleCppClass::overload))
-      .def("overload", [cls_handle](ExampleCppClass* self, int value) {
-        WarnDeprecated(cls_handle.attr("message_overload"));
-        self->overload(value);
-      });
-  DeprecateAttribute(cls, "DeprecatedMethod", cls.attr("message_method"));
-  DeprecateAttribute(cls, "deprecated_prop", cls.attr("message_prop"));
+      .def("overload", py::overload_cast<>(&ExampleCppClass::overload));
+
+  // Add deprecated method.
+  cls.def("DeprecatedMethod", &ExampleCppClass::DeprecatedMethod);
+  DeprecateAttribute(cls, "DeprecatedMethod", "Deprecated method");
+
+  // Add deprecated property.
+  cls.def_readwrite("deprecated_prop", &ExampleCppClass::deprecated_prop);
+  DeprecateAttribute(cls, "deprecated_prop", "Deprecated property");
+
+  // Add deprecated overload.
+  cls.def("overload", [](ExampleCppClass* self, int value) {
+    // This deprecates the specific overload.
+    WarnDeprecated("overload(int) is deprecated");
+    self->overload(value);
+  });
 }
 
 }  // namespace

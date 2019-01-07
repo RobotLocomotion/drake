@@ -2,6 +2,7 @@
 
 /// @file
 /// Provides access to Python deprecation utilities from C++.
+/// For example usages, please see `deprecation_example/cc_module_py.cc`.
 
 #include "pybind11/pybind11.h"
 
