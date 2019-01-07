@@ -201,14 +201,14 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
 
   void GetElementBounds(Eigen::VectorXd* lower,
-                        Eigen::VectorXd* upper) const override {
+                        Eigen::VectorXd* upper) const final {
     const double kInf = std::numeric_limits<double>::infinity();
     *lower = Eigen::Matrix<double, 4, 1>::Constant(-kInf);
     *upper = Eigen::Matrix<double, 4, 1>::Constant(kInf);
-    (*lower)(0) = 0.0;
-    (*upper)(1) = 2.0;
-    (*lower)(2) = -1.0;
-    (*upper)(2) = 1.0;
+    (*lower)(K::kX) = 0.0;
+    (*upper)(K::kTwoWord) = 2.0;
+    (*lower)(K::kAbsone) = -1.0;
+    (*upper)(K::kAbsone) = 1.0;
   }
 
  private:

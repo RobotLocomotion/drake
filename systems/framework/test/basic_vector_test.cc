@@ -251,9 +251,10 @@ GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
   VectorX<double> value = VectorX<double>::Ones(22);
   BasicVector<double> vec(1);
   Eigen::VectorXd lower, upper;
-  // deliberately set lower to size 2, to check if GetElementBounds will resize
-  // the bounds to empty size.
+  // Deliberately set lower/upper to size 2, to check if GetElementBounds will
+  // resize the bounds to empty size.
   lower.resize(2);
+  upper.resize(2);
   vec.GetElementBounds(&lower, &upper);
   EXPECT_EQ(lower.size(), 0);
   EXPECT_EQ(upper.size(), 0);

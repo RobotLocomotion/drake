@@ -2060,34 +2060,52 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   ConstraintTestSystem dut;
   EXPECT_EQ(dut.get_num_constraints(), 0);
 
-  SystemConstraint<double>::CalcCallback calc = [](
+  SystemConstraint<double>::CalcCallback calc0 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(
-                calc, Vector1d::Zero(),
-                Vector1d(std::numeric_limits<double>::infinity()), "x1"),
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc0, Vector1d::Zero(), nullopt,
+                                            "x1_lower"),
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
+
+  SystemConstraint<double>::CalcCallback calc1 = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    *value =
+        Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
+                        context.get_continuous_state_vector().GetAtIndex(0));
+  };
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc1, nullopt,
+                                            Eigen::Vector2d(2, 3), "x_upper"),
+            1);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d(5.0, 7.0));
 
   Eigen::VectorXd value;
-  const SystemConstraint<double>& inequality_constraint =
+  const SystemConstraint<double>& inequality_constraint0 =
       dut.get_constraint(SystemConstraintIndex(0));
-  inequality_constraint.Calc(*context, &value);
+  inequality_constraint0.Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 7.0);
-  EXPECT_FALSE(inequality_constraint.is_equality_constraint());
-  EXPECT_EQ(inequality_constraint.description(), "x1");
+  EXPECT_FALSE(inequality_constraint0.is_equality_constraint());
+  EXPECT_EQ(inequality_constraint0.description(), "x1_lower");
 
-  EXPECT_EQ(dut.DeclareEqualityConstraint(calc, 1, "x1eq"), 1);
-  EXPECT_EQ(dut.get_num_constraints(), 2);
+  const SystemConstraint<double>& inequality_constraint1 =
+      dut.get_constraint(SystemConstraintIndex(1));
+  inequality_constraint1.Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 2);
+  EXPECT_EQ(value[0], 7.0);
+  EXPECT_EQ(value[1], 5.0);
+  EXPECT_FALSE(inequality_constraint1.is_equality_constraint());
+  EXPECT_EQ(inequality_constraint1.description(), "x_upper");
+
+  EXPECT_EQ(dut.DeclareEqualityConstraint(calc0, 1, "x1eq"), 2);
+  EXPECT_EQ(dut.get_num_constraints(), 3);
 
   const SystemConstraint<double>& equality_constraint =
-      dut.get_constraint(SystemConstraintIndex(1));
+      dut.get_constraint(SystemConstraintIndex(2));
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 7.0);

@@ -198,9 +198,14 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
   Sample<symbolic::Expression> dut;
   dut.SetToNamedVariables();
   const symbolic::Formula expected_is_valid =
-      !isnan(dut.x()) && !isnan(dut.two_word()) && !isnan(dut.absone()) &&
-      !isnan(dut.unset()) && (dut.x() >= 0.0) && (dut.two_word() <= 2.0) &&
-      (dut.absone() >= -1.0) && (dut.absone() <= 1.0);
+      !isnan(dut.x()) &&
+      !isnan(dut.two_word()) &&
+      !isnan(dut.absone()) &&
+      !isnan(dut.unset()) &&
+      (dut.x() >= 0.0) &&
+      (dut.two_word() <= 2.0) &&
+      (dut.absone() >= -1.0) &&
+      (dut.absone() <= 1.0);
   EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));
 }
 

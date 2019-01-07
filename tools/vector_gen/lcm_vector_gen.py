@@ -331,16 +331,16 @@ def generate_is_valid(hh, caller_context, fields):
 
 GET_ELEMENT_BOUNDS_BEGIN = """
   void GetElementBounds(Eigen::VectorXd* lower,
-                        Eigen::VectorXd* upper) const override {
+                        Eigen::VectorXd* upper) const final {
     const double kInf = std::numeric_limits<double>::infinity();
-    *lower = Eigen::Matrix<double, %(num_elements)s, 1>::Constant(-kInf);
-    *upper = Eigen::Matrix<double, %(num_elements)s, 1>::Constant(kInf);
+    *lower = Eigen::Matrix<double, %(nfields)s, 1>::Constant(-kInf);
+    *upper = Eigen::Matrix<double, %(nfields)s, 1>::Constant(kInf);
 """
 GET_ELEMENT_BOUNDS_LOWER = """
-    (*lower)(%(index)d) = %(min_value)s;
+    (*lower)(K::%(kname)s) = %(min_value)s;
 """
 GET_ELEMENT_BOUNDS_UPPER = """
-    (*upper)(%(index)d) = %(max_value)s;
+    (*upper)(K::%(kname)s) = %(max_value)s;
 """
 GET_ELEMENT_BOUNDS_END = """
   }
@@ -348,26 +348,22 @@ GET_ELEMENT_BOUNDS_END = """
 
 
 def generate_get_element_bounds(hh, caller_context, fields):
-    is_element_bounded = False
+    is_any_element_bounded = any(
+        [field['min_value'] or field['max_value'] for field in fields])
+    if not is_any_element_bounded:
+        return
+    context = dict(caller_context)
+    context.update(nfields=len(fields))
+    put(hh, GET_ELEMENT_BOUNDS_BEGIN % context, 1)
     for field in fields:
-        if field['min_value'] or field['max_value']:
-            is_element_bounded = True
-            break
-    if is_element_bounded:
-        context = dict(caller_context)
-        context.update(num_elements=len(fields))
-        put(hh, GET_ELEMENT_BOUNDS_BEGIN % context, 1)
-        index = 0
-        for field in fields:
-            context.update(index=index)
-            if field['min_value']:
-                context.update(min_value=field['min_value'])
-                put(hh, GET_ELEMENT_BOUNDS_LOWER % context, 1)
-            if field['max_value']:
-                context.update(max_value=field['max_value'])
-                put(hh, GET_ELEMENT_BOUNDS_UPPER % context, 1)
-            index += 1
-        put(hh, GET_ELEMENT_BOUNDS_END % context, 2)
+        context.update(kname=to_kname(field['name']))
+        if field['min_value']:
+            context.update(min_value=field['min_value'])
+            put(hh, GET_ELEMENT_BOUNDS_LOWER % context, 1)
+        if field['max_value']:
+            context.update(max_value=field['max_value'])
+            put(hh, GET_ELEMENT_BOUNDS_UPPER % context, 1)
+    put(hh, GET_ELEMENT_BOUNDS_END % context, 2)
 
 
 VECTOR_HH_PREAMBLE = """

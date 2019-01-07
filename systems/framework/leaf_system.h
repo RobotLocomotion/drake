@@ -1528,8 +1528,9 @@ class LeafSystem : public System<T> {
         std::make_unique<SystemConstraint<T>>(calc, count, description));
   }
 
+  /// @anchor declareinequality
   /// Declares a system constraint of the form
-  ///   lower_bound <= f(context) <= upper_bound
+  ///   lower_bound <= calc(context) <= upper_bound
   /// by specifying a member function to use to calculate the (VectorX)
   /// constraint value with a signature:
   /// @code
@@ -1561,7 +1562,35 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares a system constraint of the form
-  ///   lower_bound <= f(context) <= upper_bound
+  ///   lower_bound <= calc(context)
+  /// Refer to @ref declareinequality for more details.
+  template <class MySystem>
+  SystemConstraintIndex DeclareInequalityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound, stx::nullopt_t,
+      const std::string& description) {
+    const double kInf = std::numeric_limits<double>::infinity();
+    return this->DeclareInequalityConstraint(
+        calc, lower_bound, Eigen::VectorXd::Constant(lower_bound.size(), kInf),
+        description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   calc(context) <= upper_bound
+  /// Refer to @ref declareinequality for more details.
+  template <class MySystem>
+  SystemConstraintIndex DeclareInequalityConstraint(
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
+      stx::nullopt_t, const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const std::string& description) {
+    const double kInf = std::numeric_limits<double>::infinity();
+    return this->DeclareInequalityConstraint(
+        calc, Eigen::VectorXd::Constant(upper_bound.size(), -kInf), upper_bound,
+        description);
+  }
+
+  /// Declares a system constraint of the form
+  ///   lower_bound <= calc(context) <= upper_bound
   /// by specifying a std::function to use to calculate the (Vector) constraint
   /// value with a signature:
   /// @code
@@ -1582,6 +1611,32 @@ class LeafSystem : public System<T> {
       const std::string& description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
         calc, lower_bound, upper_bound, description));
+  }
+
+  /// Declares a system constraint of the form
+  /// calc(context) <= upper_bound
+  /// Refer to @ref declareinequality for more details.
+  SystemConstraintIndex DeclareInequalityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc, stx::nullopt_t,
+      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+      const std::string description) {
+    const double kInf = std::numeric_limits<double>::infinity();
+    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, Eigen::VectorXd::Constant(upper_bound.size(), -kInf), upper_bound,
+        description));
+  }
+
+  /// Declares a system constraint of the form
+  /// lower_bound <= calc(context)
+  /// Refer to @ref declareinequality for more details.
+  SystemConstraintIndex DeclareInequalityConstraint(
+      typename SystemConstraint<T>::CalcCallback calc,
+      const Eigen::Ref<const Eigen::VectorXd>& lower_bound, stx::nullopt_t,
+      const std::string description) {
+    const double kInf = std::numeric_limits<double>::infinity();
+    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+        calc, lower_bound, Eigen::VectorXd::Constant(lower_bound.size(), kInf),
+        description));
   }
 
   /// Derived-class event handler for all simultaneous publish events
@@ -1911,9 +1966,11 @@ class LeafSystem : public System<T> {
   // If @p model_vector's CalcInequalityConstraint provides any constraints,
   // then declares inequality constraints on `this` using a calc function that
   // obtains a VectorBase from a Context using @p get_vector_from_context and
-  // then delegates to the VectorBase::CopyToVector().
-  // The inequality constraint is imposed as
-  // lower_bounds <= model_vector.CopyToVector() <= upper_bounds
+  // then compares the runtime value against the declaration-time
+  // VectorBase::GetElementBounds. The inequality constraint is imposed as
+  // lower_bounds <= get_vector_from_context(context) <= upper_bounds
+  // where lower_bounds and upper_bounds are obtained from
+  // model_vector.GetElementBounds.
   void MaybeDeclareVectorBaseInequalityConstraint(
       const std::string& kind, const VectorBase<T>& model_vector,
       const std::function<const VectorBase<T>&(const Context<T>&)>&
@@ -1943,15 +2000,15 @@ class LeafSystem : public System<T> {
       constraint_upper_bound(i) = upper_bound(indices[i]);
     }
     this->DeclareInequalityConstraint(
-        [get_vector_from_context, indices](const Context<T>& con,
+        [get_vector_from_context, indices](const Context<T>& context,
                                            VectorX<T>* value) {
-          const VectorBase<T>& model_vec = get_vector_from_context(con);
+          const VectorBase<T>& model_vec = get_vector_from_context(context);
           value->resize(indices.size());
           for (int i = 0; i < static_cast<int>(indices.size()); ++i) {
             (*value)(i) = model_vec.GetAtIndex(indices[i]);
           }
         },
-        constraint_lower_bound, constraint_upper_bound,
+        {constraint_lower_bound}, {constraint_upper_bound},
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
