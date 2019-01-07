@@ -1,7 +1,5 @@
 #include "drake/examples/van_der_pol/van_der_pol.h"
 
-#include <limits>
-
 #include "drake/common/default_scalars.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/system_constraint.h"
@@ -34,9 +32,7 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
         // Extract μ from the parameters.
         *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
       };
-  this->DeclareInequalityConstraint(
-      mu, Vector1d(0), Vector1d(std::numeric_limits<double>::infinity()),
-      "mu ≥ 0");
+  this->DeclareInequalityConstraint(mu, Vector1d(0), nullopt, "mu ≥ 0");
 }
 
 // q̈ + μ(q² - 1)q̇ + q = 0

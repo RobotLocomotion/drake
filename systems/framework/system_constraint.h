@@ -1,12 +1,14 @@
 #pragma once
 
 #include <functional>
+#include <limits>
 #include <string>
 #include <utility>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
 #include "drake/common/unused.h"
@@ -101,6 +103,32 @@ class SystemConstraint {
     DRAKE_DEMAND(lower_bound.rows() == upper_bound.rows());
     DRAKE_DEMAND((lower_bound.array() <= upper_bound.array()).all());
   }
+
+  /// Constructs a SystemConstraint with inequality constraint lower_bound <=
+  /// f(x).
+  SystemConstraint(CalcCallback calc_function,
+                   const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
+                   stx::nullopt_t, const std::string& description)
+      : calc_function_(std::move(calc_function)),
+        count_(lower_bound.rows()),
+        lower_bound_(lower_bound),
+        upper_bound_(Eigen::VectorXd::Constant(
+            lower_bound.rows(), std::numeric_limits<double>::infinity())),
+        type_(SystemConstraintType::kInequality),
+        description_(description) {}
+
+  /// Constructs a SystemConstraint with inequality constraint f(x) <=
+  /// upper_bound
+  SystemConstraint(CalcCallback calc_function, stx::nullopt_t,
+                   const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
+                   const std::string& description)
+      : calc_function_(std::move(calc_function)),
+        count_(upper_bound.rows()),
+        lower_bound_(Eigen::VectorXd::Constant(
+            upper_bound.rows(), -std::numeric_limits<double>::infinity())),
+        upper_bound_(upper_bound),
+        type_(SystemConstraintType::kInequality),
+        description_(description) {}
 
   /// Evaluates the function pointer passed in through the constructor,
   /// writing the output to @p value.  @p value will be (non-conservatively)
