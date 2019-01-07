@@ -4,9 +4,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+
 namespace drake {
 namespace geometry {
-namespace detail {
+namespace internal {
 namespace {
 
 GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
@@ -52,7 +54,22 @@ GTEST_TEST(GeometryUtilities, CanonicalizeGeometryName) {
   }
 }
 
+GTEST_TEST(GeometryUtilities, IsometryConversion) {
+  Isometry3<double> X_AB = Isometry3<double>::Identity();
+  X_AB.translation() << 1, 2, 3;
+  // NOTE: Not a valid transform; we're just looking for unique values.
+  X_AB.linear() << 10, 20, 30, 40, 50, 60, 70, 80, 90;
+  X_AB.makeAffine();
+
+  Isometry3<double> X_AB_converted = convert(X_AB);
+  EXPECT_TRUE(CompareMatrices(X_AB.matrix(), X_AB_converted.matrix()));
+
+  Isometry3<AutoDiffXd> X_AB_ad(X_AB);
+  Isometry3<double> X_AB_ad_converted = convert(X_AB_ad);
+  EXPECT_TRUE(CompareMatrices(X_AB.matrix(), X_AB_ad_converted.matrix()));
+}
+
 }  // namespace
-}  // namespace detail
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake
