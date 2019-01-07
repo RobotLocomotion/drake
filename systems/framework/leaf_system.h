@@ -2008,7 +2008,7 @@ class LeafSystem : public System<T> {
             (*value)(i) = model_vec.GetAtIndex(indices[i]);
           }
         },
-        {constraint_lower_bound}, {constraint_upper_bound},
+        constraint_lower_bound, constraint_upper_bound,
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
