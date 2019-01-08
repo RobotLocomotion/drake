@@ -682,7 +682,7 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
 }
 
 void ExpressionAddFactory::AddMap(
-    const map<Expression, double> expr_to_coeff_map) {
+    const map<Expression, double>& expr_to_coeff_map) {
   for (const auto& p : expr_to_coeff_map) {
     AddTerm(p.second, p.first);
   }
@@ -997,7 +997,7 @@ void ExpressionMulFactory::AddTerm(const Expression& base,
 }
 
 void ExpressionMulFactory::AddMap(
-    const map<Expression, Expression> base_to_exponent_map) {
+    const map<Expression, Expression>& base_to_exponent_map) {
   for (const auto& p : base_to_exponent_map) {
     AddTerm(p.first, p.second);
   }
