@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_constraint.h"
@@ -10,7 +12,7 @@ namespace systems {
 /// context with the value of x.
 template <typename T>
 using UpdateContextFromX = std::function<void(
-    const System<T>*, const Eigen::Ref<const VectorX<T>>&, Context<T>*)>;
+    const System<T>&, const Eigen::Ref<const VectorX<T>>&, Context<T>*)>;
 
 class SystemConstraintWrapper : public solvers::Constraint {
  public:
@@ -38,6 +40,7 @@ class SystemConstraintWrapper : public solvers::Constraint {
 
   const System<double>* const system_double_;
   const System<AutoDiffXd>* const system_autodiff_;
+  const SystemConstraintIndex index_;
   // These contexts are created by system_double_ and system_autodiff_
   // respectively. Their value are initialized to the same as @p context in the
   // constructor. They hold the values inside context that are not part of @p x
