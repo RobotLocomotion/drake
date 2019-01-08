@@ -66,7 +66,7 @@ namespace {
 bool determine_polynomial(
     const std::map<Expression, double>& term_to_coeff_map) {
   return all_of(term_to_coeff_map.begin(), term_to_coeff_map.end(),
-                [](const pair<Expression, double>& p) {
+                [](const pair<const Expression, double>& p) {
                   return p.first.is_polynomial();
                 });
 }
@@ -77,7 +77,7 @@ bool determine_polynomial(
 bool determine_polynomial(
     const std::map<Expression, Expression>& base_to_exponent_map) {
   return all_of(base_to_exponent_map.begin(), base_to_exponent_map.end(),
-                [](const pair<Expression, Expression>& p) {
+                [](const pair<const Expression, Expression>& p) {
                   // For each base^exponent, it has to satisfy the following
                   // conditions:
                   //     - base is polynomial-convertible.
@@ -466,8 +466,8 @@ bool ExpressionAdd::EqualTo(const ExpressionCell& e) const {
   return equal(expr_to_coeff_map_.cbegin(), expr_to_coeff_map_.cend(),
                add_e.expr_to_coeff_map_.cbegin(),
                add_e.expr_to_coeff_map_.cend(),
-               [](const pair<Expression, double>& p1,
-                  const pair<Expression, double>& p2) {
+               [](const pair<const Expression, double>& p1,
+                  const pair<const Expression, double>& p2) {
                  return p1.first.EqualTo(p2.first) && p1.second == p2.second;
                });
 }
@@ -487,8 +487,8 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
   return lexicographical_compare(
       expr_to_coeff_map_.cbegin(), expr_to_coeff_map_.cend(),
       add_e.expr_to_coeff_map_.cbegin(), add_e.expr_to_coeff_map_.cend(),
-      [](const pair<Expression, double>& p1,
-         const pair<Expression, double>& p2) {
+      [](const pair<const Expression, double>& p1,
+         const pair<const Expression, double>& p2) {
         const Expression& term1{p1.first};
         const Expression& term2{p2.first};
         if (term1.Less(term2)) {
@@ -505,18 +505,18 @@ bool ExpressionAdd::Less(const ExpressionCell& e) const {
 
 Polynomiald ExpressionAdd::ToPolynomial() const {
   DRAKE_ASSERT(is_polynomial());
-  return accumulate(
-      expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
-      Polynomiald(constant_),
-      [](const Polynomiald& polynomial, const pair<Expression, double>& p) {
-        return polynomial + p.first.ToPolynomial() * p.second;
-      });
+  return accumulate(expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
+                    Polynomiald(constant_),
+                    [](const Polynomiald& polynomial,
+                       const pair<const Expression, double>& p) {
+                      return polynomial + p.first.ToPolynomial() * p.second;
+                    });
 }
 
 double ExpressionAdd::Evaluate(const Environment& env) const {
   return accumulate(
       expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(), constant_,
-      [&env](const double init, const pair<Expression, double>& p) {
+      [&env](const double init, const pair<const Expression, double>& p) {
         return init + p.first.Evaluate(env) * p.second;
       });
 }
@@ -535,7 +535,7 @@ Expression ExpressionAdd::Substitute(const Substitution& s) const {
   return accumulate(
       expr_to_coeff_map_.begin(), expr_to_coeff_map_.end(),
       Expression{constant_},
-      [&s](const Expression& init, const pair<Expression, double>& p) {
+      [&s](const Expression& init, const pair<const Expression, double>& p) {
         return init + p.first.Substitute(s) * p.second;
       });
 }
@@ -725,8 +725,8 @@ bool ExpressionMul::EqualTo(const ExpressionCell& e) const {
   return equal(
       base_to_exponent_map_.cbegin(), base_to_exponent_map_.cend(),
       mul_e.base_to_exponent_map_.cbegin(), mul_e.base_to_exponent_map_.cend(),
-      [](const pair<Expression, Expression>& p1,
-         const pair<Expression, Expression>& p2) {
+      [](const pair<const Expression, Expression>& p1,
+         const pair<const Expression, Expression>& p2) {
         return p1.first.EqualTo(p2.first) && p1.second.EqualTo(p2.second);
       });
 }
@@ -746,8 +746,8 @@ bool ExpressionMul::Less(const ExpressionCell& e) const {
   return lexicographical_compare(
       base_to_exponent_map_.cbegin(), base_to_exponent_map_.cend(),
       mul_e.base_to_exponent_map_.cbegin(), mul_e.base_to_exponent_map_.cend(),
-      [](const pair<Expression, Expression>& p1,
-         const pair<Expression, Expression>& p2) {
+      [](const pair<const Expression, Expression>& p1,
+         const pair<const Expression, Expression>& p2) {
         const Expression& base1{p1.first};
         const Expression& base2{p2.first};
         if (base1.Less(base2)) {
@@ -767,7 +767,8 @@ Polynomiald ExpressionMul::ToPolynomial() const {
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Polynomiald{constant_},
-      [](const Polynomiald& polynomial, const pair<Expression, Expression>& p) {
+      [](const Polynomiald& polynomial,
+         const pair<const Expression, Expression>& p) {
         const Expression& base{p.first};
         const Expression& exponent{p.second};
         DRAKE_ASSERT(base.is_polynomial());
@@ -780,7 +781,7 @@ Polynomiald ExpressionMul::ToPolynomial() const {
 double ExpressionMul::Evaluate(const Environment& env) const {
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(), constant_,
-      [&env](const double init, const pair<Expression, Expression>& p) {
+      [&env](const double init, const pair<const Expression, Expression>& p) {
         return init * std::pow(p.first.Evaluate(env), p.second.Evaluate(env));
       });
 }
@@ -791,19 +792,20 @@ Expression ExpressionMul::Expand() const {
   return accumulate(
       base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
       Expression{constant_},
-      [](const Expression& init, const pair<Expression, Expression>& p) {
+      [](const Expression& init, const pair<const Expression, Expression>& p) {
         return ExpandMultiplication(
             init, ExpandPow(p.first.Expand(), p.second.Expand()));
       });
 }
 
 Expression ExpressionMul::Substitute(const Substitution& s) const {
-  return accumulate(
-      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
-      Expression{constant_},
-      [&s](const Expression& init, const pair<Expression, Expression>& p) {
-        return init * pow(p.first.Substitute(s), p.second.Substitute(s));
-      });
+  return accumulate(base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
+                    Expression{constant_},
+                    [&s](const Expression& init,
+                         const pair<const Expression, Expression>& p) {
+                      return init *
+                             pow(p.first.Substitute(s), p.second.Substitute(s));
+                    });
 }
 
 // Computes ∂/∂x pow(f, g).
