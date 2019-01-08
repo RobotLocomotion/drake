@@ -1958,31 +1958,33 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   sim.get_mutable_integrator()->set_maximum_step_size(0.001);
 
   // Disables all simulator induced publish events, so that all publish calls
-  // are intiated by sys.
+  // are initiated by sys.
   sim.set_publish_at_initialization(false);
   sim.set_publish_every_time_step(false);
   sim.Initialize();
   sim.StepTo(0.1);
 
-  double dt = sim.get_integrator()->get_maximum_step_size();
-  int N = static_cast<int>(0.1 / dt);
-  // Need to change this if the default integrator step size is not 1ms.
+  const double dt = sim.get_integrator()->get_maximum_step_size();
+  const int N = static_cast<int>(0.1 / dt);
+  // Step size was set to 1ms above; make sure we don't have roundoff trouble.
   EXPECT_EQ(N, 100);
   ASSERT_EQ(sim.get_num_steps_taken(), N);
 
   auto& publish_times = sys.get_publish_times();
   auto& discrete_update_times = sys.get_discrete_update_times();
   auto& unrestricted_update_times = sys.get_unrestricted_update_times();
-  ASSERT_EQ(publish_times.size(), N);
+  ASSERT_EQ(publish_times.size(), N + 1);  // Once at end of Initialize().
   ASSERT_EQ(sys.get_discrete_update_times().size(), N);
   ASSERT_EQ(sys.get_unrestricted_update_times().size(), N);
-  for (size_t i = 0; i < publish_times.size(); ++i) {
-    // Publish happens at the end of a step; unrestricted and discrete
-    // updates happen at the beginning of a step.
-    EXPECT_NEAR(publish_times[i], (i + 1) * dt, 1e-12);
+  for (int i = 0; i < N; ++i) {
+    // Publish happens at the end of a step (including end of Initialize());
+    // unrestricted and discrete updates happen at the beginning of a step.
+    EXPECT_NEAR(publish_times[i], i * dt, 1e-12);
     EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
     EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
   }
+  // There is a final end-of-step publish, but no final updates.
+  EXPECT_NEAR(publish_times[N], N * dt, 1e-12);
 }
 
 // Tests initialization from the simulator.

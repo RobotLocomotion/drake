@@ -931,10 +931,10 @@ class LeafSystem : public System<T> {
   /// @anchor declare_per-step_events
   /// @name                 Declare per-step events
   /// These methods are used to declare events that are triggered whenever the
-  /// Drake Simulator::StepTo() method takes a substep that advances the
-  /// simulated trajectory. Note that each call to StepTo() typically generates
-  /// many trajectory-advancing substeps of varying time intervals; per-step
-  /// events are triggered for each of those substeps.
+  /// Drake Simulator advances the simulated trajectory. Note that each call to
+  /// Simulator::StepTo() typically generates many trajectory-advancing substeps
+  /// of varying time intervals; per-step events are triggered for each of those
+  /// substeps.
   ///
   /// Per-step events are useful for taking discrete action at every point of a
   /// simulated trajectory (generally spaced irregularly in time) without
@@ -945,32 +945,40 @@ class LeafSystem : public System<T> {
   /// by the denser sampling. A periodic sampling would produce less-accurate
   /// interpolations.
   ///
-  /// As with any Drake event trigger type, a per-step event is
-  /// dispatched to one of the three available types of event dispatcher:
-  /// publish (read only), discrete state update, and unrestricted state update.
-  /// Several signatures are provided below to allow for a general Event object
-  /// to be triggered, or simpler class member functions to be invoked instead.
+  /// As with any Drake event trigger type, a per-step event is dispatched to
+  /// one of the three available types of event dispatcher: publish (read only),
+  /// discrete state update, and unrestricted state update. Several signatures
+  /// are provided below to allow for a general Event object to be triggered, or
+  /// simpler class member functions to be invoked instead.
   ///
   /// Per-step events are issued as follows: First, the Simulator::Initialize()
-  /// method queries and records the set of declared per-step events, which set
-  /// does not change during a simulation. Then every StepTo() internal substep
-  /// dispatches unrestricted and discrete update events at the start of the
-  /// step, and dispatches publish events at the end of the step (that is,
-  /// after time advances). No per-step event is triggered during the
-  /// Initialize() call.
+  /// method queries and records the set of declared per-step events. That set
+  /// does not change during a simulation. Any per-step publish events are
+  /// dispatched at the end of Initialize() to publish the initial value of the
+  /// trajectory. Then every StepTo() internal substep dispatches unrestricted
+  /// and discrete update events at the start of the substep, and dispatches
+  /// publish events at the end of the substep (that is, after time advances).
+  /// This means that a per-step event at fixed substep size h behaves
+  /// identically to a periodic event of period h, offset 0.
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.
   //@{
 
-  /// Declares that a Publish event should occur every step and that it should
-  /// invoke the given event handler method. The handler should be a class
-  /// member function (method) with this signature:
+  /// Declares that a Publish event should occur at initialization and at the
+  /// end of every trajectory-advancing substep and that it should invoke the
+  /// given event handler method. The handler should be a class member function
+  /// (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
   /// name is arbitrary.
+  ///
+  /// @warning These per-step publish events are independent of the Simulator's
+  /// optional "publish every time step" and "publish at initialization"
+  /// features. Generally if you are declaring per-step publish events yourself
+  /// you should turn off those Simulation options.
   ///
   /// See @ref declare_per-step_events "Declare per-step events" for more
   /// information.
@@ -998,9 +1006,10 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /// Declares that a DiscreteUpdate event should occur every step and that it
-  /// should invoke the given event handler method. The handler should be a
-  /// class member function (method) with this signature:
+  /// Declares that a DiscreteUpdate event should occur at the start of every
+  /// trajectory-advancing substep and that it should invoke the given event
+  /// handler method. The handler should be a class member function (method)
+  /// with this signature:
   /// @code
   ///   EventStatus MySystem::MyUpdate(const Context<T>&,
   ///                                  DiscreteValues<T>*) const;
@@ -1036,9 +1045,10 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /// Declares that an UnrestrictedUpdate event should occur every step and that
-  /// it should invoke the given event handler method. The handler should be a
-  /// class member function (method) with this signature:
+  /// Declares that an UnrestrictedUpdate event should occur at the start of
+  /// every trajectory-advancing substep and that it should invoke the given
+  /// event handler method. The handler should be a class member function
+  /// (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyUpdate(const Context<T>&,
   ///                                  State<T>*) const;
@@ -1075,9 +1085,11 @@ class LeafSystem : public System<T> {
   }
 
   /// (Advanced) Declares that a particular Event object should be dispatched at
-  /// every simulation step. This is the most general form for declaring
-  /// per-step events and most users should use one of the other methods in this
-  /// group instead.
+  /// every trajectory-advancing substep. Publish events are dispatched at
+  /// the end of initialization and at the end of each substep. Discrete- and
+  /// unrestricted update events are dispatched at the start of each substep.
+  /// This is the most general form for declaring per-step events and most users
+  /// should use one of the other methods in this group instead.
   ///
   /// @see DeclarePerStepPublishEvent()
   /// @see DeclarePerStepDiscreteUpdateEvent()
@@ -1113,15 +1125,13 @@ class LeafSystem : public System<T> {
   /// These methods are used to declare events that occur when the Drake
   /// Simulator::Initialize() method is invoked.
   ///
-  /// During initialization, unrestricted update events are performed first for
-  /// the whole Diagram, then discrete update events for the whole Diagram.
-  /// Timed update events are not performed during initialization, even if they
-  /// are scheduled for the initial time; in that case they are done at the
-  /// beginning of the first Simulator::StepTo() call. On the other hand,
-  /// initialization publish events and timed publish events that are scheduled
-  /// for the initial time are dispatched together during initialization.
-  /// They are ordered such that each subsystem sees its initialization publish
-  /// events before its timed publish events.
+  /// During Initialize(), initialization-triggered unrestricted update events
+  /// are dispatched first for the whole Diagram, then initialization-triggered
+  /// discrete update events are dispatched for the whole Diagram. No other
+  /// _update_ events occur during initialization. On the other hand, any
+  /// triggered _publish_ events, including initialization-triggered, per-step,
+  /// and time-triggered publish events scheduled for the initial time, are
+  /// dispatched together during initialization.
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.
