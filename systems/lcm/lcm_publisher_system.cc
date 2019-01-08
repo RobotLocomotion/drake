@@ -44,8 +44,13 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
 
   if (translator_ != nullptr) {
-    DeclareInputPort("lcm_message", kVectorValued,
-                     translator_->get_vector_size());
+    std::unique_ptr<BasicVector<double>> model_vector =
+        translator_->AllocateOutputVector();
+    if (!model_vector) {
+      model_vector = std::make_unique<BasicVector<double>>(
+          translator_->get_vector_size());
+    }
+    DeclareVectorInputPort("lcm_message", *model_vector);
   } else {
     DeclareAbstractInputPort("lcm_message", *serializer_->CreateDefaultValue());
   }
