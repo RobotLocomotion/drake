@@ -850,10 +850,10 @@ class LeafSystem : public System<T> {
   /// @anchor declare_per-step_events
   /// @name                 Declare per-step events
   /// These methods are used to declare events that are triggered whenever the
-  /// Drake Simulator::StepTo() method takes a substep that advances the
-  /// simulated trajectory. Note that each call to StepTo() typically generates
-  /// many trajectory-advancing substeps of varying time intervals; per-step
-  /// events are triggered for each of those substeps.
+  /// Drake Simulator advances the simulated trajectory. Note that each call to
+  /// Simulator::StepTo() typically generates many trajectory-advancing substeps
+  /// of varying time intervals; per-step events are triggered for each of those
+  /// substeps.
   ///
   /// Per-step events are useful for taking discrete action at every point of a
   /// simulated trajectory (generally spaced irregularly in time) without
@@ -872,11 +872,11 @@ class LeafSystem : public System<T> {
   ///
   /// Per-step events are issued as follows: First, the Simulator::Initialize()
   /// method queries and records the set of declared per-step events, which set
-  /// does not change during a simulation. Then every StepTo() internal substep
-  /// dispatches unrestricted and discrete update events at the start of the
-  /// step, and dispatches publish events at the end of the step (that is,
-  /// after time advances). No per-step event is triggered during the
-  /// Initialize() call.
+  /// does not change during a simulation. Any per-step publish events are
+  /// dispatched at the end of Initialize(). Then every StepTo() internal
+  /// substep dispatches unrestricted and discrete update events at the start of
+  /// the step, and dispatches publish events at the end of the step (that is,
+  /// after time advances).
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.

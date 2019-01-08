@@ -746,16 +746,19 @@ void Simulator<T>::Initialize() {
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
 
-  // Do any publishes last. Merge the initialization events with current_time
-  // timed events (if any). We expect all initialization events to precede
-  // any timed events in the merged collection.
+  // Do any publishes last. Merge the initialization events with per-step
+  // events and current_time timed events (if any). We expect all initialization
+  // events to precede any per-step or timed events in the merged collection.
+  // Note that per-step and timed discrete/unrestricted update events are *not*
+  // processed here; just publish events.
+  init_events->Merge(*per_step_events_);
   if (timed_or_witnessed_event_triggered_) {
     init_events->Merge(*timed_events_);
   }
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a publish before the simulation starts.
+  // Do a force-publish before the simulation starts.
   if (publish_at_initialization_) {
     system_.Publish(*context_);
     ++num_publishes_;
