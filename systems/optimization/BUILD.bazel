@@ -1,0 +1,31 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "optimization",
+    deps = [
+        ":system_constraint_wrapper",
+    ],
+)
+
+drake_cc_library(
+    name = "system_constraint_wrapper",
+    srcs = ["system_constraint_wrapper.cc"],
+    hdrs = ["system_constraint_wrapper.h"],
+    deps = [
+        "//systems/framework:system",
+        "//systems/framework:system_constraint",
+        "//solvers:constraint",
+    ],
+)
+
+add_lint_tests()
