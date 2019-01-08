@@ -4,16 +4,16 @@
 #include <typeinfo>
 #include <utility>
 
+#include "drake/common/value.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_result.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace solvers {
 /**
  * The result returned by MathematicalProgram::Solve(). It stores the
  * solvers::SolutionResult (whether the program is solved to optimality,
- * detected infeasibility, etc), the optimal * value for the decision variables,
+ * detected infeasibility, etc), the optimal value for the decision variables,
  * the optimal cost, and solver specific details.
  */
 class MathematicalProgramResult final {
@@ -53,7 +53,7 @@ class MathematicalProgramResult final {
 
   /** Gets the solver details. Throws an error if the solver_details has not
    * been set.*/
-  const systems::AbstractValue& get_solver_details() const;
+  const AbstractValue& get_solver_details() const;
 
   /** Forces the solver_details to be stored using the given type T.
    * If the storage was already typed as T, this is a no-op.
@@ -70,7 +70,7 @@ class MathematicalProgramResult final {
       DRAKE_ASSERT(solver_details_->MaybeGetValue<T>() != nullptr);
     } else {
       solver_details_type_ = &typeid(T);
-      solver_details_ = std::make_unique<systems::Value<T>>();
+      solver_details_ = std::make_unique<Value<T>>();
     }
     return solver_details_->GetMutableValue<T>();
   }
@@ -90,7 +90,7 @@ class MathematicalProgramResult final {
   double optimal_cost_{};
   SolverId solver_id_;
   reset_after_move<const std::type_info*> solver_details_type_;
-  copyable_unique_ptr<systems::AbstractValue> solver_details_;
+  copyable_unique_ptr<AbstractValue> solver_details_;
 };
 
 }  // namespace solvers

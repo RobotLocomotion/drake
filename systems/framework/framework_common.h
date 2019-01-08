@@ -9,6 +9,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {
@@ -91,7 +92,6 @@ inline bool operator==(
 }
 
 #ifndef DRAKE_DOXYGEN_CXX
-class AbstractValue;
 class ContextBase;
 class InputPortBase;
 

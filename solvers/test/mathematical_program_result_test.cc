@@ -46,7 +46,7 @@ GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
   // Now we test if we call SetSolverDetailsType again, it doesn't allocate new
   // memory.
   // First we check the address of (result.get_solver_details()) is unchanged.
-  const systems::AbstractValue* details = &(result.get_solver_details());
+  const AbstractValue* details = &(result.get_solver_details());
   dummy_solver_details = result.SetSolverDetailsType<DummySolverDetails>();
   EXPECT_EQ(details, &(result.get_solver_details()));
   // Now we check that the value in the solver details are unchanged, note that
