@@ -313,7 +313,7 @@ class DistanceToPoint {
   // bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
   // use the relative tolerance of 1e-14 times the `size`.  If the `size` is
   // smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
-  // 1e-14-meter lower bound help us handle possible round off errors arising
+  // 1e-14-meter lower bound helps us handle possible round off errors arising
   // from applying a pose X_WG to a geometry G. Given a query point Q exactly
   // on the boundary ∂G, if we apply X_WG to both Q and G, the point Q is likely
   // to deviate from ∂G more than the machine epsilon, which is around 2e-16.
@@ -329,8 +329,8 @@ class DistanceToPoint {
     double min_dist = std::numeric_limits<double>::infinity();
     int axis = -1;
     for (int i = 0; i < 3; ++i) {
-      for (auto bound : {bounds(i), -bounds(i)}) {
-        double dist = std::abs(bound - p(i));
+      for (const auto bound : {bounds(i), -bounds(i)}) {
+        const double dist = std::abs(bound - p(i));
         if (dist < min_dist) {
           min_dist = dist;
           axis = i;
@@ -361,7 +361,7 @@ void DistanceGeometryPair(const fcl::Sphered* sphere_A,
   // Radius of the sphere A.
   const double radius_A = sphere_A->radius;
 
-  SignedDistanceToPoint<double> sphere_B_to_point_Ao =
+  const SignedDistanceToPoint<double> sphere_B_to_point_Ao =
       DistanceToPoint{id_B, X_WB, p_WAo}(*sphere_B);
 
   const double signed_distance = sphere_B_to_point_Ao.distance - radius_A;
@@ -374,8 +374,12 @@ void DistanceGeometryPair(const fcl::Sphered* sphere_A,
   // the Euclidean distance between Na and Nb equals the absoluate value
   // of the signed distance between the two spheres, i.e.,
   //        |Na - Nb| = |signed_distance|  (1)
-  // The invariance (1) is true whether the two spheres overlap, one sphere
-  // covers another, or the two spheres are concentric.
+  // The invariance (1) is true for all these cases:
+  // - the two spheres do not overlap,
+  // - the two spheres kiss each other,
+  // - the two spheres overlap,
+  // - one sphere covers another,
+  // - the two spheres are concentric.
   //
   // We already called DistanceToPoint{}() using sphere_B, so it might
   // seem natural to call DistanceToPoint{}() again using sphere_A.
@@ -415,8 +419,8 @@ void DistanceGeometryPair(const fcl::Sphered* sphere_A,
   // gradB_A = gradB expressed in A's frame.
   // gradA_A = gradA expressed in A's frame.
   const Vector3d& gradB_W = sphere_B_to_point_Ao.grad_W;
-  const auto& R_WA = X_WA.rotation();
-  const auto  R_AW = R_WA.inverse();
+  const Eigen::Matrix3d R_WA = X_WA.rotation();
+  const Eigen::Matrix3d R_AW = R_WA.transpose();
   const Vector3d gradB_A = R_AW * gradB_W;
   const Vector3d gradA_A = -gradB_A;
   const Vector3d p_ANa = radius_A * gradA_A;
@@ -502,10 +506,11 @@ void DistanceGeometryPair(const fcl::Sphered* sphere_A,
   // gradB_A = gradB expressed in A's frame.
   // gradA_A = gradA expressed in A's frame.
   const Vector3d& gradB_W = box_B_to_point_Ao.grad_W;
-  const auto& R_WA = X_WA.rotation();
-  const auto  R_AW = R_WA.inverse();
+  const Eigen::Matrix3d R_WA = X_WA.rotation();
+  const Eigen::Matrix3d R_AW = R_WA.transpose();
   const Vector3d gradB_A = R_AW * gradB_W;
   const Vector3d gradA_A = -gradB_A;
+  // gradA_A is unit-length by construction.
   const Vector3d p_ANa = radius_A * gradA_A;
   const Vector3d p_WNa = X_WA * p_ANa;
 
