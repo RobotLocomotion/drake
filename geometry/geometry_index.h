@@ -5,6 +5,8 @@
 namespace drake {
 namespace geometry {
 
+/** Type used to locate any geometry in the render engine. */
+using RenderIndex = TypeSafeIndex<class RenderTag>;
 
 /** Index used to identify a geometry in the proximity engine. The same index
  type applies to both anchored and dynamic geometries. They are distinguished
