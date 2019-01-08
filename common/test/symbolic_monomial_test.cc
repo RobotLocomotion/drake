@@ -66,7 +66,7 @@ class MonomialTest : public ::testing::Test {
   Substitution ExtractSubst(const Environment& env) {
     Substitution subst;
     subst.reserve(env.size());
-    for (const pair<Variable, double>& p : env) {
+    for (const pair<const Variable, double>& p : env) {
       subst.emplace(p.first, p.second);
     }
     return subst;
