@@ -27,7 +27,7 @@ namespace {
 // constructor of Monomial to set its total degree at construction.
 int TotalDegree(const map<Variable, int>& powers) {
   return accumulate(powers.begin(), powers.end(), 0,
-                    [](const int degree, const pair<Variable, int>& p) {
+                    [](const int degree, const pair<const Variable, int>& p) {
                       return degree + p.second;
                     });
 }
@@ -142,7 +142,7 @@ int Monomial::degree(const Variable& v) const {
 
 Variables Monomial::GetVariables() const {
   Variables vars{};
-  for (const pair<Variable, int> p : powers_) {
+  for (const pair<const Variable, int>& p : powers_) {
     vars += p.first;
   }
   return vars;
@@ -174,24 +174,25 @@ bool Monomial::operator==(const Monomial& m) const {
 bool Monomial::operator!=(const Monomial& m) const { return !(*this == m); }
 
 double Monomial::Evaluate(const Environment& env) const {
-  return accumulate(powers_.begin(), powers_.end(), 1.0,
-                    [this, &env](const double v, const pair<Variable, int>& p) {
-                      const Variable& var{p.first};
-                      const auto it = env.find(var);
-                      if (it == env.end()) {
-                        ostringstream oss;
-                        oss << "Monomial " << *this
-                            << " cannot be evaluated with the given "
-                               "environment which does not provide an entry "
-                               "for variable = "
-                            << var << ".";
-                        throw runtime_error(oss.str());
-                      } else {
-                        const double base{it->second};
-                        const int exponent{p.second};
-                        return v * std::pow(base, exponent);
-                      }
-                    });
+  return accumulate(
+      powers_.begin(), powers_.end(), 1.0,
+      [this, &env](const double v, const pair<const Variable, int>& p) {
+        const Variable& var{p.first};
+        const auto it = env.find(var);
+        if (it == env.end()) {
+          ostringstream oss;
+          oss << "Monomial " << *this
+              << " cannot be evaluated with the given "
+                 "environment which does not provide an entry "
+                 "for variable = "
+              << var << ".";
+          throw runtime_error(oss.str());
+        } else {
+          const double base{it->second};
+          const int exponent{p.second};
+          return v * std::pow(base, exponent);
+        }
+      });
 }
 
 pair<double, Monomial> Monomial::EvaluatePartial(const Environment& env) const {

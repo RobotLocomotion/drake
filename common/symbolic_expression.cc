@@ -181,7 +181,7 @@ Expression Expression::EvaluatePartial(const Environment& env) const {
     return *this;
   }
   Substitution subst;
-  for (const pair<Variable, double>& p : env) {
+  for (const pair<const Variable, double>& p : env) {
     subst.emplace(p.first, p.second);
   }
   return Substitute(subst);
