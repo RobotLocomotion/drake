@@ -1,6 +1,5 @@
 lxml
 matplotlib
-pip
 pydot
 PyYAML
 pyzmq
