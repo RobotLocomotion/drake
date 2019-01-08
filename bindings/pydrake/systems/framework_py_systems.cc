@@ -391,7 +391,7 @@ struct Impl {
               return self->DeclareAbstractInputPort(name, model_value);
             },
             py_reference_internal, py::arg("name"),
-            doc.System.DeclareAbstractInputPort.doc)
+            "(This method is deprecated.)")
         .def("_DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               AllocCallback arg1,

@@ -1695,21 +1695,6 @@ class System : public SystemBase {
   }
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // Remove this overload on or about 2018-12-01.
-  DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort() {
-    return DeclareInputPort(kUseDefaultName, kAbstractValued, 0 /* size */);
-  }
-
-  // Remove this overload on or about 2018-12-01.
-  DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort(
-      variant<std::string, UseDefaultName> name) {
-    return DeclareInputPort(std::move(name), kAbstractValued, 0 /* size */);
-  }
-#endif
-
   /// Adds an already-created constraint to the list of constraints for this
   /// System.  Ownership of the SystemConstraint is transferred to this system.
   SystemConstraintIndex AddConstraint(
