@@ -785,7 +785,8 @@ void MultibodyPlant<T>::set_penetration_allowance(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   // Default to Earth's gravity for this estimation.
   const double g = gravity_field_.has_value() ?
-                   gravity_field_.value()->gravity_vector().norm() : 9.81;
+                   gravity_field_.value()->gravity_vector().norm() :
+                   UniformGravityFieldElement<double>::kDefaultStrength;
 
   // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
   // are several flying objects and fixed base robots (E.g.: manipulation

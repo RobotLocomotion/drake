@@ -28,6 +28,14 @@ class UniformGravityFieldElement : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement)
 
+  /// The strength used by our class's default constructor (i.e., on the
+  /// earth's surface).  This is an unsigned (positive) value.
+  static constexpr double kDefaultStrength = 9.81;
+
+  /// Constructs a uniform gravity field element with a default strength (on
+  /// the earth's surface) and direction (-z).
+  UniformGravityFieldElement();
+
   /// Constructs a uniform gravity field element with a strength given by the
   /// acceleration of gravity vector `g_W`, expressed in the world frame W.
   explicit UniformGravityFieldElement(Vector3<double> g_W);

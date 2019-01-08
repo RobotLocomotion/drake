@@ -163,8 +163,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   plant_->RegisterAsSourceForSceneGraph(scene_graph_);
   scene_graph_->set_name("scene_graph");
 
-  plant_->template AddForceElement<multibody::UniformGravityFieldElement>(
-      -9.81 * Vector3d::UnitZ());
+  plant_->template AddForceElement<multibody::UniformGravityFieldElement>();
   plant_->set_name("plant");
 
   this->set_name("manipulation_station");
@@ -419,8 +418,7 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
       wsg_equivalent.body_frame(), wsg_model_.X_PC.GetAsIsometry3());
 
   owned_controller_plant_
-      ->template AddForceElement<multibody::UniformGravityFieldElement>(
-          -9.81 * Vector3d::UnitZ());
+      ->template AddForceElement<multibody::UniformGravityFieldElement>();
   owned_controller_plant_->set_name("controller_plant");
 }
 
