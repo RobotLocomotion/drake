@@ -59,6 +59,12 @@ class ImageHandler(object):
         """
         raise NotImplementedError()
 
+    def is_depth_image(self):
+        """
+        Returns true if the image is a depth image.
+        """
+        return False
+
 
 class ImageWidget(object):
     """
@@ -135,14 +141,23 @@ class ImageWidget(object):
             # @note `GetScalarRange` permits non-finite values, such as `inf`.
             # Use a custom mechanism to get min/max.
             data = vtk_image_to_numpy(self._image)
-            good = np.isfinite(data[:])
+            if data.dtype == np.float32:
+                good = np.isfinite(data[:])
+            elif data.dtype == np.uint16:
+                maxarray = np.full(data.shape, 65535)
+                good = np.less(data[:], maxarray)
+            else:
+                raise RuntimeError(
+                    "Unsupported depth format: {}".format(data.dtype))
             if np.any(good):
                 upper_depth = np.max(data[good])
         return (lower_depth, upper_depth)
 
     def _on_new_image_attrib(self, attrib):
         ((w, h, num_channels), dtype) = attrib
-        if num_channels == 1 and dtype == np.float32:
+        if self._image_handler.is_depth_image():
+            assert(num_channels == 1)
+            assert(dtype == np.uint16 or dtype == np.float32)
             # TODO(eric.cousineau): Delegate to outside of `ImageWidget`?
             # This is depth-image specific.
             # For now, just set arbitrary values.
@@ -344,6 +359,9 @@ def decode_image_t(msg, image_in=None):
     elif pixel_desc == (rli.PIXEL_FORMAT_DEPTH, rli.CHANNEL_TYPE_FLOAT32):
         num_channels = 1
         dtype = np.float32
+    elif pixel_desc == (rli.PIXEL_FORMAT_DEPTH, rli.CHANNEL_TYPE_UINT16):
+        num_channels = 1
+        dtype = np.uint16
     elif pixel_desc == (rli.PIXEL_FORMAT_LABEL, rli.CHANNEL_TYPE_INT16):
         num_channels = 1
         dtype = np.int16
@@ -381,6 +399,7 @@ class LcmImageHandler(ImageHandler):
 
         self.lock = threading.Lock()
         self.prev_utime = 0
+        self._is_depth_image = False
 
     def receive_message(self, msg):
         """
@@ -390,6 +409,9 @@ class LcmImageHandler(ImageHandler):
         with self.lock:
             self.utime = msg.header.utime
             self._image = decode_image_t(msg, self._image)
+            self._is_depth_image = (msg.pixel_format ==
+                                    rl.image_t.PIXEL_FORMAT_DEPTH)
+
 
     def update_image(self, image_out):
         """
@@ -406,6 +428,8 @@ class LcmImageHandler(ImageHandler):
             image_out.DeepCopy(self._image)
         return True
 
+    def is_depth_image(self):
+        return self._is_depth_image
 
 class LcmImageArraySubscriber(object):
     """
