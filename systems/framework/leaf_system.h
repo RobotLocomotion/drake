@@ -1366,10 +1366,6 @@ class LeafSystem : public System<T> {
                                   kVectorValued, size, random_type);
   }
 
-  // Avoid shadowing out the no-arg DeclareAbstractInputPort().  (This line
-  // should be removed when the deprecated base class methods disappear.)
-  using System<T>::DeclareAbstractInputPort;
-
   /// Declares an abstract-valued input port using the given @p model_value.
   /// This is the best way to declare LeafSystem abstract input ports.
   ///

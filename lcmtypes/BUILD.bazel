@@ -316,7 +316,8 @@ drake_lcm_py_library(
 py_library(
     name = "lcmtypes_py",
     deprecation = "Please use `lcmtypes_drake_py` instead. This will be " +
-                  "removed on or after 2018-03-01.",
+                  "removed on or after 2019-03-01.",
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
     deps = ["lcmtypes_drake_py"],
 )
 
@@ -385,7 +386,8 @@ drake_cc_library(
 cc_library(
     name = "lcmtypes_cc",
     deprecation = "Please use `lcmtypes_drake_cc` instead. This will be " +
-                  "removed on or after 2018-03-01.",
+                  "removed on or after 2019-03-01.",
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
     deps = ["lcmtypes_drake_cc"],
 )
 

@@ -834,19 +834,10 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
 }
 
 // A system that incorrectly declares an input port.
-//
-// At some point, the deprecated DeclareAbstractInputPort overload used by this
-// System will be removed.  At that point, this entire test case should be
-// removed, along with the code under test that its covering, because then all
-// abstract input declarations require a model value, so it'll be impossible
-// not to have one, so we won't need missing-model-value error handling.
 class MissingModelAbstractInputSystem : public LeafSystem<double> {
  public:
   MissingModelAbstractInputSystem() {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    this->DeclareAbstractInputPort("no_model_input");
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
+    this->DeclareInputPort("no_model_input", kAbstractValued, 0);
   }
 };
 
