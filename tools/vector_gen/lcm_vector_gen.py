@@ -329,50 +329,41 @@ def generate_is_valid(hh, caller_context, fields):
     put(hh, IS_VALID_END % caller_context, 2)
 
 
-CALC_INEQUALITY_CONSTRAINT_BEGIN = """
-  // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(%(num_constraints)d);
+GET_ELEMENT_BOUNDS_BEGIN = """
+  void GetElementBounds(Eigen::VectorXd* lower,
+                        Eigen::VectorXd* upper) const final {
+    const double kInf = std::numeric_limits<double>::infinity();
+    *lower = Eigen::Matrix<double, %(nfields)s, 1>::Constant(-kInf);
+    *upper = Eigen::Matrix<double, %(nfields)s, 1>::Constant(kInf);
 """
-CALC_INEQUALITY_CONSTRAINT_MIN_VALUE = """
-    (*value)[%(constraint_index)d] = %(field)s() - T(%(min_value)s);
+GET_ELEMENT_BOUNDS_LOWER = """
+    (*lower)(K::%(kname)s) = %(min_value)s;
 """
-CALC_INEQUALITY_CONSTRAINT_MAX_VALUE = """
-    (*value)[%(constraint_index)d] = T(%(max_value)s) - %(field)s();
+GET_ELEMENT_BOUNDS_UPPER = """
+    (*upper)(K::%(kname)s) = %(max_value)s;
 """
-CALC_INEQUALITY_CONSTRAINT_END = """
+GET_ELEMENT_BOUNDS_END = """
   }
 """
 
 
-def generate_calc_inequality_constraint(hh, caller_context, fields):
-    num_constraints = 0
-    for field in fields:
-        if field['min_value']:
-            num_constraints += 1
-        if field['max_value']:
-            num_constraints += 1
-    if num_constraints == 0:
+def generate_get_element_bounds(hh, caller_context, fields):
+    is_any_element_bounded = any(
+        [field['min_value'] or field['max_value'] for field in fields])
+    if not is_any_element_bounded:
         return
     context = dict(caller_context)
-    context.update(num_constraints=num_constraints)
-    put(hh, CALC_INEQUALITY_CONSTRAINT_BEGIN % context, 1)
-    constraint_index = 0
+    context.update(nfields=len(fields))
+    put(hh, GET_ELEMENT_BOUNDS_BEGIN % context, 1)
     for field in fields:
-        field_context = dict(caller_context)
-        field_context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
         if field['min_value']:
-            field_context.update(constraint_index=constraint_index)
-            field_context.update(min_value=field['min_value'])
-            put(hh, CALC_INEQUALITY_CONSTRAINT_MIN_VALUE % field_context, 1)
-            constraint_index += 1
+            context.update(min_value=field['min_value'])
+            put(hh, GET_ELEMENT_BOUNDS_LOWER % context, 1)
         if field['max_value']:
-            field_context.update(constraint_index=constraint_index)
-            field_context.update(max_value=field['max_value'])
-            put(hh, CALC_INEQUALITY_CONSTRAINT_MAX_VALUE % field_context, 1)
-            constraint_index += 1
-    assert constraint_index == num_constraints
-    put(hh, CALC_INEQUALITY_CONSTRAINT_END % context, 2)
+            context.update(max_value=field['max_value'])
+            put(hh, GET_ELEMENT_BOUNDS_UPPER % context, 1)
+    put(hh, GET_ELEMENT_BOUNDS_END % context, 2)
 
 
 VECTOR_HH_PREAMBLE = """
@@ -381,6 +372,7 @@ VECTOR_HH_PREAMBLE = """
 %(generated_code_warning)s
 
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -674,7 +666,7 @@ def generate_code(
             generate_accessors(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
             generate_is_valid(hh, context, fields)
-            generate_calc_inequality_constraint(hh, context, fields)
+            generate_get_element_bounds(hh, context, fields)
             put(hh, VECTOR_CLASS_END % context, 2)
             put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 
