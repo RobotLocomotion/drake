@@ -3,6 +3,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace symbolic {
 
@@ -226,7 +228,77 @@ void CodeGenDenseMeta(const string& function_name, const int parameter_size,
   (*os) << function_name << "_meta_t " << function_name << "_meta() { return {{"
         << parameter_size << "}, {" << rows << ", " << cols << "}}; }\n";
 }
+
+void CodeGenSparseData(const string& function_name,
+                       const vector<Variable>& parameters,
+                       const int outer_index_size, const int non_zeros,
+                       const int* const outer_index_ptr,
+                       const int* const inner_index_ptr,
+                       const Expression* const value_ptr, ostream* const os) {
+  // Print header.
+  (*os) << fmt::format(
+      "void {}(const double* p, int* outer_indices, int* "
+      "inner_indices, double* values) {{\n",
+      function_name);
+
+  for (int i = 0; i < outer_index_size; ++i) {
+    (*os) << fmt::format("    outer_indices[{0}] = {1};\n", i,
+                         outer_index_ptr[i]);
+  }
+  for (int i = 0; i < non_zeros; ++i) {
+    (*os) << fmt::format("    inner_indices[{0}] = {1};\n", i,
+                         inner_index_ptr[i]);
+  }
+  const CodeGenVisitor visitor{parameters};
+  for (int i = 0; i < non_zeros; ++i) {
+    (*os) << fmt::format("    values[{0}] = {1};\n", i,
+                         visitor.CodeGen(value_ptr[i]));
+  }
+  // Print footer.
+  (*os) << "}\n";
+}
+
+void CodeGenSparseMeta(const string& function_name, const int parameter_size,
+                       const int rows, const int cols, const int non_zeros,
+                       const int outer_indices, const int inner_indices,
+                       ostream* const os) {
+  // <function_name>_meta_t type.
+  (*os) << "typedef struct {\n"
+           "    /* p: input, vector */\n"
+           "    struct { int size; } p;\n"
+           "    /* m: output, matrix */\n"
+           "    struct {\n"
+           "        int rows;\n"
+           "        int cols;\n"
+           "        int non_zeros;\n"
+           "        int outer_indices;\n"
+           "        int inner_indices;\n"
+           "    } m;\n"
+           "} "
+        << function_name << "_meta_t;\n";
+  // <function_name>_meta().
+  (*os) << fmt::format(
+      "{0}_meta_t {1}_meta() {{ return {{{{{2}}}, {{{3}, {4}, {5}, {6}, "
+      "{7}}}}}; }}\n",
+      function_name, function_name, parameter_size, rows, cols, non_zeros,
+      outer_indices, inner_indices);
+}
+
 }  // namespace internal
+
+std::string CodeGen(
+    const std::string& function_name, const std::vector<Variable>& parameters,
+    const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& M) {
+  DRAKE_ASSERT(M.isCompressed());
+  ostringstream oss;
+  internal::CodeGenSparseData(function_name, parameters, M.cols() + 1,
+                              M.nonZeros(), M.outerIndexPtr(),
+                              M.innerIndexPtr(), M.valuePtr(), &oss);
+  internal::CodeGenSparseMeta(function_name, parameters.size(), M.rows(),
+                              M.cols(), M.nonZeros(), M.cols() + 1,
+                              M.nonZeros(), &oss);
+  return oss.str();
+}
 
 }  // namespace symbolic
 }  // namespace drake
