@@ -22,9 +22,19 @@ drake_cc_library(
     srcs = ["system_constraint_wrapper.cc"],
     hdrs = ["system_constraint_wrapper.h"],
     deps = [
+        "//solvers:constraint",
         "//systems/framework:system",
         "//systems/framework:system_constraint",
-        "//solvers:constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_wrapper_test",
+    deps = [
+        ":system_constraint_wrapper",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//systems/framework:leaf_system",
     ],
 )
 
