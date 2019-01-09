@@ -2014,8 +2014,8 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
 
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
-          &ConstraintTestSystem::CalcStateConstraint, Eigen::Vector2d::Zero(),
-          Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
+          &ConstraintTestSystem::CalcStateConstraint,
+          { Eigen::Vector2d::Zero(), nullopt },
           "x"),
       1);
   EXPECT_EQ(dut.get_num_constraints(), 2);
@@ -2055,7 +2055,8 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(calc0, Vector1d::Zero(), nullopt,
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
+                                            { Vector1d::Zero(), nullopt },
                                             "x1_lower"),
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
@@ -2066,8 +2067,9 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
         Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
                         context.get_continuous_state_vector().GetAtIndex(0));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(calc1, nullopt,
-                                            Eigen::Vector2d(2, 3), "x_upper"),
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
+                                            { nullopt, Eigen::Vector2d(2, 3) },
+                                            "x_upper"),
             1);
 
   auto context = dut.CreateDefaultContext();
