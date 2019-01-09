@@ -28,13 +28,25 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "system_optimization_test_util",
+    srcs = ["test/system_optimization_test_util.cc"],
+    hdrs = ["test/system_optimization_test_util.h"],
+    testonly = 1,
+    deps = [
+        "//systems/framework:leaf_system",
+        "//multibody/plant",
+        "//multibody/parsing",
+    ],
+)
+
 drake_cc_googletest(
     name = "system_constraint_wrapper_test",
     deps = [
         ":system_constraint_wrapper",
+        ":system_optimization_test_util",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
-        "//systems/framework:leaf_system",
     ],
 )
 
