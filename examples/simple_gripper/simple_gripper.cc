@@ -198,8 +198,7 @@ int do_main() {
   } else if (axis.isApprox(Vector3d::UnitX())) {
     fmt::print("Gripper motions forced in the horizontal direction.\n");
     // Add gravity to the model.
-    plant.AddForceElement<UniformGravityFieldElement>(
-        -9.81 * Vector3<double>::UnitZ());
+    plant.AddForceElement<UniformGravityFieldElement>();
   } else {
     throw std::runtime_error(
         "Only horizontal or vertical motions of the gripper are supported for "

@@ -10,6 +10,11 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+UniformGravityFieldElement<T>::UniformGravityFieldElement()
+    : UniformGravityFieldElement<T>(
+          Vector3<double>(0.0, 0.0, -kDefaultStrength)) {}
+
+template <typename T>
 UniformGravityFieldElement<T>::UniformGravityFieldElement(Vector3<double> g_W)
     : ForceElement<T>(world_model_instance()),
       g_W_(g_W) {}

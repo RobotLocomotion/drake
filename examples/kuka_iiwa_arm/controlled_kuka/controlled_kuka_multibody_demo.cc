@@ -58,8 +58,7 @@ int DoMain() {
                         kuka_plant.GetFrameByName("base"));
 
   // Add gravity to the model.
-  kuka_plant.AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
+  kuka_plant.AddForceElement<UniformGravityFieldElement>();
 
   // Now the model is complete.
   kuka_plant.Finalize();

@@ -26,7 +26,7 @@ scene_graph = builder.AddSystem(SceneGraph())
 cart_pole = builder.AddSystem(MultibodyPlant())
 cart_pole.RegisterAsSourceForSceneGraph(scene_graph)
 Parser(plant=cart_pole).AddModelFromFile(file_name)
-cart_pole.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
+cart_pole.AddForceElement(UniformGravityFieldElement())
 cart_pole.Finalize()
 assert cart_pole.geometry_source_is_registered()
 
