@@ -8,12 +8,21 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace tools {
 namespace test {
 namespace {
+template <typename T>
+void CheckSampleBounds(const systems::VectorBase<T>& sample) {
+  const double kInf = std::numeric_limits<double>::infinity();
+  Eigen::VectorXd lower, upper;
+  sample.GetElementBounds(&lower, &upper);
+  EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(0, -kInf, -1, -kInf)));
+  EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(kInf, 2, 1, kInf)));
+}
 
 // We don't really expect the Sample<T> implementation to fail, but we'd like
 // to touch every method as an API sanity check, so that we are reminded in
@@ -31,6 +40,9 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   // Size.
   EXPECT_EQ(dut.size(), SampleIndices::kNumCoordinates);
 
+  // Bounds.
+  CheckSampleBounds(dut);
+
   // Default values.
   EXPECT_EQ(dut.x(), 42.0);
   EXPECT_EQ(dut.two_word(), 0.0);
@@ -45,11 +57,13 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   const auto& chained = Sample<double>{}.with_x(33.0).with_two_word(44.0);
   EXPECT_EQ(chained.x(), 33.0);
   EXPECT_EQ(chained.two_word(), 44.0);
+  CheckSampleBounds(chained);
 
   // Chained copying from an lvalue.
   const auto& tweaked_dut = dut.with_x(55.0);
   EXPECT_EQ(dut.x(), 11.0);
   EXPECT_EQ(tweaked_dut.x(), 55.0);
+  CheckSampleBounds(tweaked_dut);
 
   // Clone.
   auto cloned = dut.Clone();
@@ -57,6 +71,7 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   EXPECT_NE(dynamic_cast<Sample<double>*>(cloned.get()), nullptr);
   EXPECT_EQ(cloned->GetAtIndex(0), 11.0);
   EXPECT_EQ(cloned->GetAtIndex(1), 22.0);
+  CheckSampleBounds(*cloned);
 
   // Coordinate names.
   const std::vector<std::string>& coordinate_names = dut.GetCoordinateNames();
@@ -87,6 +102,8 @@ GTEST_TEST(SampleTest, Copy) {
   EXPECT_EQ(second.size(), nominal_size);
   EXPECT_EQ(first.x(), 1.0);
   EXPECT_EQ(second.x(), 1.0);
+  CheckSampleBounds(first);
+  CheckSampleBounds(second);
 
   // Copy assignment.
   Sample<double> third;
@@ -96,6 +113,8 @@ GTEST_TEST(SampleTest, Copy) {
   EXPECT_EQ(third.size(), nominal_size);
   EXPECT_EQ(second.x(), 1.0);
   EXPECT_EQ(third.x(), 1.0);
+  CheckSampleBounds(second);
+  CheckSampleBounds(third);
 }
 
 // Confirm that move semantics are efficient (no copying).
@@ -116,6 +135,7 @@ GTEST_TEST(SampleTest, Move) {
   EXPECT_EQ(second.size(), nominal_size);
   EXPECT_EQ(second.x(), 1.0);
   EXPECT_EQ(&second.x(), original_storage);
+  CheckSampleBounds(second);
 
   // Move assignment.  The heap storage of `second` is stolen.
   Sample<double> third;
@@ -126,6 +146,7 @@ GTEST_TEST(SampleTest, Move) {
   EXPECT_EQ(third.size(), nominal_size);
   EXPECT_EQ(third.x(), 1.0);
   EXPECT_EQ(&third.x(), original_storage);
+  CheckSampleBounds(third);
 }
 
 // Cover Simple<double>::IsValid.
@@ -182,6 +203,7 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
       !isnan(dut.absone()) &&
       !isnan(dut.unset()) &&
       (dut.x() >= 0.0) &&
+      (dut.two_word() <= 2.0) &&
       (dut.absone() >= -1.0) &&
       (dut.absone() <= 1.0);
   EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));

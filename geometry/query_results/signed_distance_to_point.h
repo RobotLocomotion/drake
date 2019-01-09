@@ -48,9 +48,18 @@ struct SignedDistanceToPoint{
                    isnan(grad_W(2))));
   }
 
+  /** The id of the geometry G to which we measure distance from the query
+      point Q. */
   GeometryId id_G;
+  /** The position of the nearest point N on G's surface from the query
+      point Q, expressed in G's frame. */
   Vector3<T> p_GN;
+  /** The signed distance from the query point Q to the nearest point N on the
+      surface of geometry G. It is positive if Q is outside G. It is negative
+      if Q is inside G. It is zero if Q is on the boundary of G. */
   T distance{};
+  /** The gradient vector of the distance function with respect to the query
+      point Q, expressed in world frame W. */
   Vector3<T> grad_W;
 };
 

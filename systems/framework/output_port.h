@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/type_safe_index.h"
@@ -74,7 +75,7 @@ class OutputPort : public OutputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort)
 
-  ~OutputPort() override = default;
+  ~OutputPort() override;
 
   /** Returns a reference to the up-to-date value of this output port contained
   in the given Context. This is the preferred way to obtain an output port's
@@ -87,6 +88,16 @@ class OutputPort : public OutputPortBase {
   const ValueType& Eval(const Context<T>& context) const {
     const AbstractValue& abstract_value = EvalAbstract(context);
     return ExtractValueOrThrow<ValueType>(__func__, abstract_value);
+  }
+
+  /** Returns a reference to the up-to-date vector value of this output port
+  contained in the given Context.  See Eval() for the full description of the
+  computational semantics; this method is just sugar that casts the Eval()
+  result to an Eigen type.
+  @pre This is vector-valued output port. */
+  Eigen::VectorBlock<const VectorX<T>> EvalEigenVector(
+      const Context<T>& context) const {
+    return Eval<BasicVector<T>>(context).get_value();
   }
 
   /** Allocates a concrete object suitable for holding the value to be exposed
@@ -280,5 +291,14 @@ const ValueType& OutputPort<T>::ExtractValueOrThrow(
   return *value;
 }
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+OutputPort<T>::~OutputPort() = default;
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::OutputPort)

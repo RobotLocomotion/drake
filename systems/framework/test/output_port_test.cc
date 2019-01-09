@@ -247,6 +247,12 @@ void VectorPortCheck(const Context<double>& context,
   port.Calc(context, val.get());
   // Should have written into the underlying MyVector3d.
   EXPECT_EQ(myvector3.get_value(), Vector3d(99., 100., 101.));
+
+  // Check that Eval runs to completion without error.
+  const auto& eval_basic = port.Eval<BasicVector<double>>(context);
+  const auto& eval_eigen = port.EvalEigenVector(context);
+  EXPECT_EQ(eval_basic.size(), 3);
+  EXPECT_EQ(eval_eigen.size(), 3);
 }
 
 // Check for proper construction and functioning of vector-valued

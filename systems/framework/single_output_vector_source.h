@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -30,7 +31,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   /// vector to the single-argument constructor of `const BasicVector<T>&`.
   SingleOutputVectorSource() = delete;
 
-  ~SingleOutputVectorSource() override = default;
+  ~SingleOutputVectorSource() override;
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
@@ -106,5 +107,14 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   }
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+SingleOutputVectorSource<T>::~SingleOutputVectorSource() = default;
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SingleOutputVectorSource)

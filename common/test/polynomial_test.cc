@@ -280,9 +280,7 @@ GTEST_TEST(PolynomialTest, GetVariables) {
   EXPECT_FALSE(x.Derivative().GetVariables().count(x_var));
 }
 
-// TODO(ggould-tri) -- This test does not pass, which is a misfeature or
-// bug in Polynomial.
-GTEST_TEST(PolynomialTest, DISABLED_Simplification) {
+GTEST_TEST(PolynomialTest, Simplification) {
   Polynomiald x = Polynomiald("x");
   Polynomiald y = Polynomiald("y");
 
@@ -291,7 +289,7 @@ GTEST_TEST(PolynomialTest, DISABLED_Simplification) {
     test_stream << ((x * y) + (x * y));
     std::string result;
     test_stream >> result;
-    EXPECT_EQ(result, "2 * x1 * y1");
+    EXPECT_EQ(result, "(2)*x1*y1");
   }
 
   {  // Test monomials that are duplicates under commutativity.
@@ -299,7 +297,7 @@ GTEST_TEST(PolynomialTest, DISABLED_Simplification) {
     test_stream << ((x * y) + (y * x));
     std::string result;
     test_stream >> result;
-    EXPECT_EQ(result, "2 * x1 * y1");
+    EXPECT_EQ(result, "(2)*x1*y1");
   }
 }
 

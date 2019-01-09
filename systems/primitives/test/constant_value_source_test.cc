@@ -33,10 +33,6 @@ class ConstantValueSourceTest : public ::testing::Test {
   std::unique_ptr<BasicVector<double>> input_;
 };
 
-TEST_F(ConstantValueSourceTest, UniquePtrCtor) {
-  ConstantValueSource<double>(AbstractValue::Make(std::string("foo")));
-}
-
 TEST_F(ConstantValueSourceTest, Output) {
   ASSERT_EQ(source_->get_num_input_ports(), context_->get_num_input_ports());
 

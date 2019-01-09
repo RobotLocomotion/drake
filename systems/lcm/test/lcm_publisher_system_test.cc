@@ -14,6 +14,7 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/lcm/lcm_translator_dictionary.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/lcm/test/custom_drake_signal_translator.h"
 
 using std::make_unique;
 using std::unique_ptr;
@@ -249,6 +250,22 @@ GTEST_TEST(LcmPublisherSystemTest, OwnedTranslatorTest) {
   LcmPublisherSystem dut(channel_name, std::move(translator), &lcm);
 
   TestPublisher(channel_name, &lcm, &dut);
+}
+
+// Publish from a custom VectorBase type.
+GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
+  const std::string channel_name = "dummy";
+
+  test::CustomDrakeSignalTranslator translator;
+  drake::lcm::DrakeMockLcm lcm;
+  LcmPublisherSystem dut(channel_name, translator, &lcm);
+
+  // Test that the System has declared the correct allocator, based on the
+  // user's translator.
+  using Expected = test::CustomDrakeSignalTranslator::CustomVector;
+  std::unique_ptr<BasicVector<double>> input_storage =
+      dut.AllocateInputVector(dut.get_input_port());
+  EXPECT_TRUE(is_dynamic_castable<Expected>(input_storage.get()));
 }
 
 }  // namespace

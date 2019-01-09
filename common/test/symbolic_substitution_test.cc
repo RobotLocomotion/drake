@@ -54,7 +54,7 @@ void CheckHomomorphism(const function<Expression(const vector<Expression>&)>& f,
                        const Substitution& s) {
   vector<Expression> args1;  // {x_1, ..., x_n}
   vector<Expression> args2;  // {e_1, ..., e_n}
-  for (const pair<Variable, Expression>& p : s) {
+  for (const pair<const Variable, Expression>& p : s) {
     args1.emplace_back(p.first);
     args2.push_back(p.second);
   }
@@ -109,7 +109,7 @@ void CheckHomomorphism(const function<Formula(const vector<Expression>&)>& f,
                        const Substitution& s) {
   vector<Expression> args1;  // {x_1, ..., x_n}
   vector<Expression> args2;  // {e_1, ..., e_n}
-  for (const pair<Variable, Expression>& p : s) {
+  for (const pair<const Variable, Expression>& p : s) {
     args1.emplace_back(p.first);
     args2.push_back(p.second);
   }

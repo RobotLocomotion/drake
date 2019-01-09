@@ -80,13 +80,13 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Operating System                 | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
 +==================================+=================+=================+============+===================+========+
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.21.0  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
 |                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
+| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.21.0  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
 |                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   | 3.6.7  |
 +----------------------------------+-----------------+-----------------+------------+                   +--------+
-| macOS High Sierra (10.13)        | | Bazel 0.19.2  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
+| macOS High Sierra (10.13)        | | Bazel 0.21.0  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
 +----------------------------------+ | CMake 3.13.0  |                 |            |                   |        |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
@@ -100,6 +100,28 @@ The following configurations are presently untested in continuous integration:
 -   macOS Mojave: C++, Python
 -   macOS, Ubuntu Bionic: MATLAB
 -   Ubuntu Bionic: Python 3
+
+.. _configuration-management-non-determinism:
+
+Configuration Management Non-Determinism
+----------------------------------------
+
+The indicated versions for build systems and languages are recorded after
+having been tested on Continuous Integration.
+
+Due to how the Debian ``apt`` and Homebrew package managers work, you may not
+have these exact versions on your system when (re)running
+``install_prereqs.sh``. In general, later minor versions for more stable
+packages (e.g. CMake, compilers) should not prove to be too much of an issue.
+
+For less stable packages, such as Bazel, later minor versions may cause
+breakages. If you are on Ubuntu, please rerun ``install_prereqs.sh`` as it can
+downgrade Bazel. If on Mac, there is no easy mechanism to downgrade with
+Homebrew; however, we generally try to stay on top of Bazel versions.
+
+If you have tried and are unable to configure your system by
+:ref:`following the instructions <build_from_source>`, please do not hesitate
+to :ref:`ask for help <getting_help>`.
 
 .. _binary-packages:
 

@@ -192,7 +192,20 @@ void DefineFrameworkPySemantics(py::module m) {
                   index);
             },
             py_reference_internal,
-            doc.Context.get_mutable_abstract_state.doc_1args);
+            doc.Context.get_mutable_abstract_state.doc_1args)
+        .def("get_parameters", &Context<T>::get_parameters,
+            py_reference_internal, doc.Context.get_parameters.doc)
+        .def("num_numeric_parameter_groups",
+            &Context<T>::num_numeric_parameter_groups,
+            doc.Context.num_numeric_parameter_groups.doc)
+        .def("get_numeric_parameter", &Context<T>::get_numeric_parameter,
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_numeric_parameter.doc)
+        .def("num_abstract_parameters", &Context<T>::num_abstract_parameters,
+            doc.Context.num_abstract_parameters.doc)
+        .def("get_abstract_parameter", &Context<T>::get_abstract_parameter,
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_numeric_parameter.doc);
 
     DefineTemplateClassWithDefault<LeafContext<T>, Context<T>>(
         m, "LeafContext", GetPyParam<T>(), doc.LeafContext.doc);

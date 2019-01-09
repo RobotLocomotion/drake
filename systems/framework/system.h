@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -75,7 +76,7 @@ class System : public SystemBase {
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
-  ~System() override = default;
+  ~System() override;
 
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization
@@ -1695,21 +1696,6 @@ class System : public SystemBase {
   }
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // Remove this overload on or about 2018-12-01.
-  DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort() {
-    return DeclareInputPort(kUseDefaultName, kAbstractValued, 0 /* size */);
-  }
-
-  // Remove this overload on or about 2018-12-01.
-  DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort(
-      variant<std::string, UseDefaultName> name) {
-    return DeclareInputPort(std::move(name), kAbstractValued, 0 /* size */);
-  }
-#endif
-
   /// Adds an already-created constraint to the list of constraints for this
   /// System.  Ownership of the SystemConstraint is transferred to this system.
   SystemConstraintIndex AddConstraint(
@@ -2206,5 +2192,14 @@ class System : public SystemBase {
   CacheIndex nonconservative_power_cache_index_;
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+System<T>::~System() = default;
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::System)

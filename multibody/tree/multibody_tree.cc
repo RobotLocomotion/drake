@@ -1,5 +1,6 @@
 #include "drake/multibody/tree/multibody_tree.h"
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
@@ -1569,6 +1570,33 @@ MatrixX<double> MultibodyTree<T>::MakeActuatorSelectorMatrix(
 
   return MakeActuatorSelectorMatrix(user_to_actuator_index_map);
 }
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetPositionLowerLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd q_lower = Eigen::VectorXd::Constant(
+      num_positions(), -std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    q_lower.segment(joint.position_start(), joint.num_positions()) =
+        joint.lower_limits();
+  }
+  return q_lower;
+}
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetPositionUpperLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd q_upper = Eigen::VectorXd::Constant(
+      num_positions(), std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    q_upper.segment(joint.position_start(), joint.num_positions()) =
+        joint.upper_limits();
+  }
+  return q_upper;
+}
+
 
 // Explicitly instantiates on the most common scalar types.
 template class MultibodyTree<double>;

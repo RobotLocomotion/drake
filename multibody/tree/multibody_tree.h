@@ -1027,7 +1027,7 @@ class MultibodyTree {
     // See notes in `HasBodyNamed`.
     const auto range = frame_name_to_index_.equal_range(name);
     for (auto it = range.first; it != range.second; ++it) {
-      if (get_frame(it->second).body().model_instance() == model_instance) {
+      if (get_frame(it->second).model_instance() == model_instance) {
         return true;
       }
     }
@@ -1940,6 +1940,12 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   MatrixX<double> MakeActuatorSelectorMatrix(
       const std::vector<JointIndex>& user_to_joint_index_map) const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetPositionLowerLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetPositionUpperLimits() const;
 
   /// @name Methods to retrieve multibody element variants
   ///

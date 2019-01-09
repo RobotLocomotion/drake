@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <limits>
 #include <utility>
 
 #include <Eigen/Geometry>
@@ -65,12 +64,15 @@ SimpleCar<T>::SimpleCar()
   this->DeclareContinuousState(SimpleCarState<T>());
   this->DeclareNumericParameter(SimpleCarParams<T>());
 
-  this->DeclareInequalityConstraint(
-      &SimpleCar::CalcSteeringAngleConstraint, 2, "steering angle limit");
-  this->DeclareInequalityConstraint(
-      &SimpleCar::CalcAccelerationConstraint, 2, "acceleration limit");
-  this->DeclareInequalityConstraint(
-      &SimpleCar::CalcVelocityConstraint, 2, "velocity limit");
+  this->DeclareInequalityConstraint(&SimpleCar::CalcSteeringAngleConstraint,
+                                    Eigen::Vector2d::Zero(), nullopt,
+                                    "steering angle limit");
+  this->DeclareInequalityConstraint(&SimpleCar::CalcAccelerationConstraint,
+                                    Eigen::Vector2d::Zero(), nullopt,
+                                    "acceleration limit");
+  this->DeclareInequalityConstraint(&SimpleCar::CalcVelocityConstraint,
+                                    Eigen::Vector2d::Zero(), nullopt,
+                                    "velocity limit");
 }
 
 template <typename T>

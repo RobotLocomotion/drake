@@ -31,8 +31,9 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
                                     "equality constraint");
-    this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint, kSize,
-                                      "inequality constraint");
+    this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint,
+                                      Eigen::Matrix<double, kSize, 1>::Zero(),
+                                      nullopt, "inequality constraint");
   }
 
   void AddAbstractInputPort() {
@@ -168,8 +169,8 @@ TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
 TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
   const auto& constraints = inspector_->constraints();
   const std::vector<std::string> expected{
-    "((xc0 == 0) and (xc1 == 0))",
-    "((xc0 >= 0) and (xc1 >= 0))",
+      "((xc0 == 0) and (xc1 == 0))",
+      "((xc0 >= 0) and (xc1 >= 0) and (xc0 <= inf) and (xc1 <= inf))",
   };
   std::vector<std::string> actual;
   std::transform(

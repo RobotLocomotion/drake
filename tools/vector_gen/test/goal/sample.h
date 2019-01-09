@@ -4,6 +4,7 @@
 // See drake/tools/lcm_vector_gen.py.
 
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -122,6 +123,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// A very long documentation string that will certainly flow across multiple
   /// lines of C++
+  /// @note @c two_word has a limited domain of [-Inf, 2.0].
   const T& two_word() const {
     ThrowIfEmpty();
     return this->GetAtIndex(K::kTwoWord);
@@ -190,6 +192,7 @@ class Sample final : public drake::systems::BasicVector<T> {
     result = result && !isnan(x());
     result = result && (x() >= T(0.0));
     result = result && !isnan(two_word());
+    result = result && (two_word() <= T(2.0));
     result = result && !isnan(absone());
     result = result && (absone() >= T(-1.0));
     result = result && (absone() <= T(1.0));
@@ -197,12 +200,15 @@ class Sample final : public drake::systems::BasicVector<T> {
     return result;
   }
 
-  // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(3);
-    (*value)[0] = x() - T(0.0);
-    (*value)[1] = absone() - T(-1.0);
-    (*value)[2] = T(1.0) - absone();
+  void GetElementBounds(Eigen::VectorXd* lower,
+                        Eigen::VectorXd* upper) const final {
+    const double kInf = std::numeric_limits<double>::infinity();
+    *lower = Eigen::Matrix<double, 4, 1>::Constant(-kInf);
+    *upper = Eigen::Matrix<double, 4, 1>::Constant(kInf);
+    (*lower)(K::kX) = 0.0;
+    (*upper)(K::kTwoWord) = 2.0;
+    (*lower)(K::kAbsone) = -1.0;
+    (*upper)(K::kAbsone) = 1.0;
   }
 
  private:

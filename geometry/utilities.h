@@ -3,23 +3,20 @@
 #include <string>
 #include <unordered_map>
 
+#include "drake/common/autodiff.h"
+#include "drake/common/autodiff_overloads.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 
 namespace drake {
 namespace geometry {
-
-// TODO(SeanCurtis-TRI): Get rid of the "detail" namespace.
-namespace detail {
+namespace internal {
 
 /** Canonicalizes the given geometry *candidate* name. A canonicalized name may
  still not be valid (as it may duplicate a previously used name). See
  @ref canonicalized_geometry_names "documentation in GeometryInstance" for
  details. */
 std::string CanonicalizeStringName(const std::string& name);
-
-}  // namespace detail
-
-namespace internal {
 
 /// A const range iterator through the keys of an unordered map.
 template <typename K, typename V>
@@ -58,7 +55,35 @@ class MapKeyRange {
   const std::unordered_map<K, V>* map_;
 };
 
-}  // namespace internal
+/** @name Isometry scalar conversion
 
+ Some of SceneGraph's inner-workings are _not_ templated on scalar type and
+ always require Isometry3<double>. These functions work in an ADL-compatible
+ manner to allow SceneGraph to mindlessly convert templated Isometry3 to
+ double-valued transforms.  */
+//@{
+
+// TODO(SeanCurtis-TRI): Get rid of these when I finally swap for
+// RigidTransforms.
+
+inline const Isometry3<double>& convert(const Isometry3<double>& transform) {
+  return transform;
+}
+
+template <class VectorType>
+Isometry3<double> convert(
+    const Isometry3<Eigen::AutoDiffScalar<VectorType>>& transform) {
+  Isometry3<double> result;
+  for (int r = 0; r < 4; ++r) {
+    for (int c = 0; c < 4; ++c) {
+      result.matrix()(r, c) = ExtractDoubleOrThrow(transform.matrix()(r, c));
+    }
+  }
+  return result;
+}
+
+//@}
+
+}  // namespace internal
 }  // namespace geometry
 }  // namespace drake

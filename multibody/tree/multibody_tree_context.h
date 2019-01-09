@@ -82,7 +82,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   Eigen::VectorBlock<const VectorX<T>> get_state_vector() const {
     DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
     const systems::BasicVector<T>& state_vector =
-        (is_state_discrete()) ? this->get_discrete_state(0) :
+        is_state_discrete() ? this->get_discrete_state(0) :
         dynamic_cast<const systems::BasicVector<T>&>(
             this->get_continuous_state().get_vector());
     return state_vector.get_value();
@@ -97,13 +97,15 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   /// Returns a mutable reference to the state vector stored in `state` which
   /// must be the state associated with `this` context, as an
   /// `Eigen::VectorBlock<VectorX<T>>`.
-  /// @pre `state` must be the systems::State<T> owned by this context.
+  /// @pre `state` must be a systems::State<T> created by the same System
+  /// that created this Context.
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
       systems::State<T>* state) const {
-    DRAKE_ASSERT(&this->get_state() == state);
     DRAKE_ASSERT(this->get_num_discrete_state_groups() <= 1);
+    DRAKE_ASSERT(is_state_discrete() ==
+                 (this->get_num_discrete_state_groups() == 1));
     systems::BasicVector<T>& state_vector =
-        (is_state_discrete()) ? state->get_mutable_discrete_state(0) :
+        is_state_discrete() ? state->get_mutable_discrete_state(0) :
         dynamic_cast<systems::BasicVector<T>&>(
             state->get_mutable_continuous_state().get_mutable_vector());
     return state_vector.get_mutable_value();
