@@ -2037,6 +2037,10 @@ class System : public SystemBase {
   }
   //@}
 
+  EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
+    return *forced_publish_;
+  }
+
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
     return *forced_publish_;

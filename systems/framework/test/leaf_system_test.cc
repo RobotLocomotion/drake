@@ -341,7 +341,6 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
 }
 
-
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
 TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
@@ -644,6 +643,20 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(4, xc.get_generalized_position().size());
   EXPECT_EQ(3, xc.get_generalized_velocity().size());
   EXPECT_EQ(2, xc.get_misc_continuous_state().size());
+}
+
+EventStatus ForcedPublishCallback(const Context<T>&) const {
+  // TODO: do something here.
+  return EventStatus::kSuccess;
+}
+
+TEST_F(LeafSystemTest, DeclareForcedEvents) {
+  // Note: only declares forced publish, but we keep the function name generic
+  // to keep open the possibility that other event types are handled and to
+  // be analogous with the DeclarePerStepEvents(), etc. tests.
+  system_.DeclareForcedPublishEvent(&LeafSystemTest::ForcedPublishCallback);
+  auto context = system_.CreateDefaultContext();
+  system_.Publish(*context);
 }
 
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {

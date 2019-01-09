@@ -99,6 +99,65 @@ class LeafSystem : public System<T> {
         System<T>::AllocateContext());
   }
 
+  /// Declares a forced publish event.
+  template <class MySystem>
+  void DeclareForcedPublishEvent(
+    EventStatus (MySystem::*publish)(const Context<T>&) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    // Instantiate the event.
+    PublishEvent<T> forced(TriggerType::kForced, 
+        [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*publish)(context);  // Ignore return status for now.
+        }));
+
+    // Allocate the forced event collection, if necessary.
+    if (!this->forced_events_allocated<PublishEvent<T>>()) {
+      this->set_forced_publish_events(
+        this->AllocateForcedPublishEventCollection());
+    }
+
+    forced.AddToComposite(forced.get_trigger_type(),
+        &this->get_mutable_forced_events<EventType>());
+  }
+
+  /// (Advanced) Declares that a particular Event object should be dispatched
+  /// whenever one of the dispatchers is called by force. This is the most
+  /// general form for declaring
+  /// publish events and most users should use one of the other methods in this
+  /// group instead.
+  ///
+  /// @see DeclareForcedPublishEvent()
+  ///
+  /// See @ref declare_per-step_events "Declare forced events" for more
+  /// information.
+  ///
+  /// Depending on the type of `event`, at each step it will be passed to
+  /// the Publish, DiscreteUpdate, or UnrestrictedUpdate event dispatcher. If
+  /// the `event` object contains a handler function, Drake's default
+  /// dispatchers will invoke that handler. If not, then no further action is
+  /// taken. Thus an `event` with no handler has no effect unless its dispatcher
+  /// has been overridden. We strongly recommend that you _do not_ override the
+  /// dispatcher and instead _do_ supply a handler.
+  ///
+  /// The given `event` object is deep-copied (cloned), and the copy is stored
+  /// internally so you do not need to keep the object around after this call.
+  ///
+  /// @pre `event`'s associated trigger type must be TriggerType::kUnknown or
+  /// already set to TriggerType::kPerStep.
+  template <typename EventType>
+  void DeclareForcedEvent(const EventType& event) {
+    DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
+        event.get_trigger_type() == TriggerType::kForced);
+
+
+  }
+
   // =========================================================================
   // Implementations of System<T> methods.
 
