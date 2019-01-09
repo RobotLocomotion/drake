@@ -864,27 +864,28 @@ class LeafSystem : public System<T> {
   /// by the denser sampling. A periodic sampling would produce less-accurate
   /// interpolations.
   ///
-  /// As with any Drake event trigger type, a per-step event is
-  /// dispatched to one of the three available types of event dispatcher:
-  /// publish (read only), discrete state update, and unrestricted state update.
-  /// Several signatures are provided below to allow for a general Event object
-  /// to be triggered, or simpler class member functions to be invoked instead.
+  /// As with any Drake event trigger type, a per-step event is dispatched to
+  /// one of the three available types of event dispatcher: publish (read only),
+  /// discrete state update, and unrestricted state update. Several signatures
+  /// are provided below to allow for a general Event object to be triggered, or
+  /// simpler class member functions to be invoked instead.
   ///
   /// Per-step events are issued as follows: First, the Simulator::Initialize()
   /// method queries and records the set of declared per-step events, which set
   /// does not change during a simulation. Any per-step publish events are
-  /// dispatched at the end of Initialize(). Then every StepTo() internal
-  /// substep dispatches unrestricted and discrete update events at the start of
-  /// the step, and dispatches publish events at the end of the step (that is,
-  /// after time advances).
+  /// dispatched at the end of Initialize() to publish the initial value of the
+  /// trajectory. Then every StepTo() internal substep dispatches unrestricted
+  /// and discrete update events at the start of the substep, and dispatches
+  /// publish events at the end of the substep (that is, after time advances).
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.
   //@{
 
-  /// Declares that a Publish event should occur every step and that it should
-  /// invoke the given event handler method. The handler should be a class
-  /// member function (method) with this signature:
+  /// Declares that a Publish event should occur at initialization and at the
+  /// end of every trajectory-advancing substep and that it should invoke the
+  /// given event handler method. The handler should be a class member function
+  /// (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
   /// @endcode
@@ -917,9 +918,10 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /// Declares that a DiscreteUpdate event should occur every step and that it
-  /// should invoke the given event handler method. The handler should be a
-  /// class member function (method) with this signature:
+  /// Declares that a DiscreteUpdate event should occur at the start of every
+  /// trajectory-advancing substep and that it should invoke the given event
+  /// handler method. The handler should be a class member function (method)
+  /// with this signature:
   /// @code
   ///   EventStatus MySystem::MyUpdate(const Context<T>&,
   ///                                  DiscreteValues<T>*) const;
@@ -955,9 +957,10 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /// Declares that an UnrestrictedUpdate event should occur every step and that
-  /// it should invoke the given event handler method. The handler should be a
-  /// class member function (method) with this signature:
+  /// Declares that an UnrestrictedUpdate event should occur at the start of
+  /// every trajectory-advancing substep and that it should invoke the given
+  /// event handler method. The handler should be a class member function
+  /// (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyUpdate(const Context<T>&,
   ///                                  State<T>*) const;
@@ -994,9 +997,11 @@ class LeafSystem : public System<T> {
   }
 
   /// (Advanced) Declares that a particular Event object should be dispatched at
-  /// every simulation step. This is the most general form for declaring
-  /// per-step events and most users should use one of the other methods in this
-  /// group instead.
+  /// every trajectory-advancing substep. Publish events are dispatched at
+  /// the end of initialization and at the end of each substep. Discrete- and
+  /// unrestricted update events are dispatched at the start of each substep.
+  /// This is the most general form for declaring per-step events and most users
+  /// should use one of the other methods in this group instead.
   ///
   /// @see DeclarePerStepPublishEvent()
   /// @see DeclarePerStepDiscreteUpdateEvent()
@@ -1032,15 +1037,14 @@ class LeafSystem : public System<T> {
   /// These methods are used to declare events that occur when the Drake
   /// Simulator::Initialize() method is invoked.
   ///
-  /// During initialization, unrestricted update events are performed first for
-  /// the whole Diagram, then discrete update events for the whole Diagram.
-  /// Timed update events are not performed during initialization, even if they
-  /// are scheduled for the initial time; in that case they are done at the
-  /// beginning of the first Simulator::StepTo() call. On the other hand,
-  /// initialization publish events and timed publish events that are scheduled
-  /// for the initial time are dispatched together during initialization.
-  /// They are ordered such that each subsystem sees its initialization publish
-  /// events before its timed publish events.
+  /// During Initialize(), initialization unrestricted update events are
+  /// dispatched first for the whole Diagram, then initialization discrete
+  /// update events are dispatched for the whole Diagram. No other _update_
+  /// events occur during initialization. On the other hand, any triggered
+  /// _publish_ events, including initialization, per-step, and timed publish
+  /// events scheduled for the initial time, are dispatched together during
+  /// initialization. They are ordered such that each subsystem sees its
+  /// initialization publish events before any other publish events.
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.
@@ -1054,6 +1058,11 @@ class LeafSystem : public System<T> {
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
   /// name is arbitrary.
+  ///
+  /// In the list of simultaneous events passed to the Publish dispatcher during
+  /// initialization, the initialization-triggered publish events declared here
+  /// always precede other publish events that happen to trigger during
+  /// initialization.
   ///
   /// See @ref declare_initialization_events "Declare initialization events" for
   /// more information.

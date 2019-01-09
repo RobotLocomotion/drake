@@ -92,16 +92,19 @@ Where needed, we extend the above notation to xc⁻, xa⁺, etc. to indicate the
 value of an individual partition at a particular stage of the stepping
 algorithm.
 
-The following pseudocode uses the above notation to describe the algorithm that
-the %Simulator uses to advance the system by a single time step, and to clarify
-the effects on time and state of each of the update stages above. This algorithm
-is given a starting Context value `{tₛ, x⁻(tₛ)}` and returns an end Context
-value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ.
-
+The following pseudocode uses the above notation to describe the algorithm
+"Advance()" that the %Simulator uses to advance the system trajectory (time t
+and state x) by a single step, the length of which may be determined by the
+algorithm. We refer to such an advancement as a "substep" to make it clear that
+we are not talking about a StepTo() call, which may cause many substeps to
+occur. We'll define StepTo() in terms of Advance() below. The pseudocode will
+clarify the effects on time and state of each of the update stages above. This
+algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}` and returns an end
+Context value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ.
 ```
-// Advance time and state from start value {tₛ, x⁻(tₛ)} to an end value
-// {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
-procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
+// Advance the trajectory (time and state) from start value {tₛ, x⁻(tₛ)} to an
+// end value {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
+procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
 
   // Update any variables (no restrictions).
   x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x⁻(tₛ))
@@ -147,14 +150,16 @@ Initialize() functions:
 procedure StepTo(tₘₐₓ)
   t ← current_time
   while t < tₘₐₓ
-    {tₑ, x⁻(tₑ)} ← Step(t, x⁻(t), tₘₐₓ)
+    {tₑ, x⁻(tₑ)} ← Advance(t, x⁻(t), tₘₐₓ)
     {t, x⁻(t)} ← {tₑ, x⁻(tₑ)}
   endwhile
 
-// Update time and state to {t₀, x⁻(t₀)}, the value the Context should contain
-// at the start of the first simulation step.
+// Update time and state to {t₀, x⁻(t₀)}, which is the starting value of the
+// trajectory, and thus the value the Context should contain at the start of the
+// first simulation substep.
 procedure Initialize(t₀, x₀)
-  x⁻(t₀) ← DoAnyUpdates as in Step()
+  x⁺(t₀) ← DoAnyUpdates as in Advance()
+  x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
   // ----------------------------------
   // Time and state are at {t₀, x⁻(t₀)}
@@ -162,8 +167,14 @@ procedure Initialize(t₀, x₀)
 
   DoAnyPublishes(t₀, x⁻(t₀))
 ```
-Thus Initialize() performs initialization updates, does no integration, and
-processes any publish events that trigger at t₀.
+Initialize() can be viewed as a "0ᵗʰ substep" that occurs before the first
+Advance() substep as described above. Like Advance(), Initialize() first
+performs pending updates (in this case only initialization events can be
+"pending"). Time doesn't advance so there is no continuous update phase and
+witnesses cannot trigger. Finally, again like Advance(), the initial trajectory
+point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
+events. That includes initialization publish events, per-step publish events,
+and periodic or timed publish events that trigger at t₀.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
@@ -205,9 +216,12 @@ class Simulator {
   Simulator(std::unique_ptr<const System<T>> system,
             std::unique_ptr<Context<T>> context = nullptr);
 
-  /// Prepares the %Simulator for a simulation. Initialization events are
-  /// triggered and handled, and time-triggered publish events that are
-  /// scheduled for the initial time are handled also. The active integrator's
+  /// Prepares the %Simulator for a simulation. Initialization update events are
+  /// triggered and handled to produce the initial trajectory value
+  /// `{t₀, x(t₀)}`. Then that initial value is provided to the handlers for any
+  /// publish events that have triggered, including initialization and per-step
+  /// publish events, and periodic or other time-triggered publish events that
+  /// are scheduled for the initial time t₀. The active integrator's
   /// Initialize() method is invoked and statistics are reset. (See the class
   /// documentation for more information.) We recommend calling Initialize()
   /// explicitly prior to beginning a simulation so that error conditions
