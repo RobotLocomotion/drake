@@ -495,6 +495,9 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   Mesh mesh(filename);
   expected_label_ = RenderLabel::new_label();
   PerceptionProperties material = simple_material();
+  // NOTE: Specifying a diffuse map with a known bad path, will force the box
+  // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
+  // texture.
   material.AddProperty("phong", "diffuse_map", "bad_path");
   RenderIndex geometry_index = renderer_->RegisterVisual(
       mesh, material, Isometry3d::Identity());
@@ -516,6 +519,34 @@ TEST_F(RenderEngineVtkTest, TextureMeshTest) {
   material.AddProperty(
       "phong", "diffuse_map",
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png"));
+  RenderIndex geometry_index = renderer_->RegisterVisual(
+      mesh, material, Isometry3d::Identity());
+  renderer_->UpdateVisualPose(Isometry3d::Identity(), geometry_index);
+
+  // box.png contains a single pixel with the color (4, 241, 33). If the image
+  // changes, the expected color would likewise have to change.
+  expected_color_ = RgbaColor(ColorI{4, 241, 33}, 255);
+  PerformCenterShapeTest(renderer_.get(), "Mesh test");
+
+  // Now confirm that the texture survives cloning.
+  unique_ptr<RenderEngine> clone = renderer_->Clone();
+  EXPECT_NE(dynamic_cast<RenderEngineVtk*>(clone.get()), nullptr);
+  PerformCenterShapeTest(dynamic_cast<RenderEngineVtk*>(clone.get()),
+                         "Cloned mesh test");
+}
+
+// Repeat the texture test but with an *implied* texture map. In other words,
+// registering a mesh "foo.obj" will look for a "foo.png" in the same folder as
+// a fall back and use it if found. But *only* as a back up. This is a
+// SHORT TERM hack to get textures in.
+TEST_F(RenderEngineVtkTest, ImpliedTextureMeshTest) {
+  SetUp(X_WR_, true);
+
+  auto filename =
+      FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.obj");
+  Mesh mesh(filename);
+  expected_label_ = RenderLabel::new_label();
+  PerceptionProperties material = simple_material();
   RenderIndex geometry_index = renderer_->RegisterVisual(
       mesh, material, Isometry3d::Identity());
   renderer_->UpdateVisualPose(Isometry3d::Identity(), geometry_index);

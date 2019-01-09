@@ -88,7 +88,18 @@ class ShaderCallback : public vtkCommand {
  | Group name | Required | Property Name |  Property Type  | Property Description |
  | :--------: | :------: | :-----------: | :-------------: | :------------------- |
  |    phong   | no       | diffuse       | Eigen::Vector4d | The rgba value of the object surface |
- |    phong   | no       | diffuse_map   | std::string     | The path to a texture to apply to the geometry. If none is given, or the file cannot be read, the diffuse RGB value is used. |
+ |    phong   | no       | diffuse_map   | std::string     | The path to a texture to apply to the geometry¹. |
+
+ 1. The semantics of the `diffuse_map` can be complex. The semantics depend on
+    the specified shape:
+    - Mesh: If _no_ `diffuse_map` value is specified, the renderer will look for
+      a default texture. If the default texture does not exist, it applies the
+      `diffuse` RGBA value. Note: specifying a _bad_ texture will skip the
+      default texture and go straight to the diffuse value. The _default_
+      texture is defined relative to the obj file name. If the mesh is
+      `/path/to/my.obj`, its default texture would be `/path/to/my.png`.
+    - All other shapes: A missing `diffuse_map` value or a bad value will both
+      immediately fall through to the constant `diffuse` RGBA value.
 
  Depth images - no specific properties required.
 
