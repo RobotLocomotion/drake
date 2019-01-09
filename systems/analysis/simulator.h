@@ -151,10 +151,12 @@ procedure StepTo(tₘₐₓ)
     {t, x⁻(t)} ← {tₑ, x⁻(tₑ)}
   endwhile
 
-// Update time and state to {t₀, x⁻(t₀)}, the value the Context should contain
-// at the start of the first simulation step.
+// Update time and state to {t₀, x⁻(t₀)}, which is the starting value of the
+// trajectory, and thus value the Context should contain at the start of the
+// first simulation step.
 procedure Initialize(t₀, x₀)
-  x⁻(t₀) ← DoAnyUpdates as in Step()
+  x⁺(t₀) ← DoAnyUpdates as in Step()
+  x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
   // ----------------------------------
   // Time and state are at {t₀, x⁻(t₀)}
@@ -162,8 +164,14 @@ procedure Initialize(t₀, x₀)
 
   DoAnyPublishes(t₀, x⁻(t₀))
 ```
-Thus Initialize() performs initialization updates, does no integration, and
-processes any publish events that trigger at t₀.
+Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
+time-advancing Step() as described above. Like Step(), Initialize() first
+performs pending updates (in this case only initialization events can be
+"pending"). Time doesn't advance so there is no continuous update phase and
+witnesses cannot trigger. Finally, again like Step(), the initial trajectory
+point `{t₀, x⁻(t₀)}` is provided to any triggered publish events. That
+includes initialization publish events, per-step publish events, and
+periodic or timed publish events that trigger at t₀.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
@@ -205,9 +213,12 @@ class Simulator {
   Simulator(std::unique_ptr<const System<T>> system,
             std::unique_ptr<Context<T>> context = nullptr);
 
-  /// Prepares the %Simulator for a simulation. Initialization events are
-  /// triggered and handled, and time-triggered publish events that are
-  /// scheduled for the initial time are handled also. The active integrator's
+  /// Prepares the %Simulator for a simulation. Initialization update events are
+  /// triggered and handled to produce the initial trajectory value
+  /// `{t₀, x(t₀)}`. Then that initial value is provided to the handlers for any
+  /// publish events that have triggered, including initialization and per-step
+  /// publish events, and periodic or other time-triggered publish events that
+  /// are scheduled for the initial time t₀. The active integrator's
   /// Initialize() method is invoked and statistics are reset. (See the class
   /// documentation for more information.) We recommend calling Initialize()
   /// explicitly prior to beginning a simulation so that error conditions
