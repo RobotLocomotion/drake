@@ -44,8 +44,18 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
 
   if (translator_ != nullptr) {
-    DeclareInputPort("lcm_message", kVectorValued,
-                     translator_->get_vector_size());
+    // If the translator provides a specific storage type (i.e., if it returns
+    // non-nullptr from AllocateOutputVector), then use its storage to declare
+    // our input type.  This is important when the basic vector subtype has
+    // intrinsic constraints (e.g., a bounding box on its values), or to enable
+    // type-checking for Diagram wiring or FixInputPort values.
+    std::unique_ptr<BasicVector<double>> model_vector =
+        translator_->AllocateOutputVector();
+    if (!model_vector) {
+      model_vector = std::make_unique<BasicVector<double>>(
+          translator_->get_vector_size());
+    }
+    DeclareVectorInputPort("lcm_message", *model_vector);
   } else {
     DeclareAbstractInputPort("lcm_message", *serializer_->CreateDefaultValue());
   }
