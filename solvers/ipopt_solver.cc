@@ -566,6 +566,7 @@ void SetIpoptOptions(const MathematicalProgram& prog,
     app->Options()->SetIntegerValue(it.first, it.second);
   }
 
+  app->Options()->SetStringValue("sb", "yes");  // Turn off the banner.
   for (const auto& it : ipopt_options_str) {
     app->Options()->SetStringValue(it.first, it.second);
   }
