@@ -99,7 +99,6 @@ The following configurations are presently untested in continuous integration:
 
 -   macOS Mojave: C++, Python
 -   macOS, Ubuntu Bionic: MATLAB
--   Ubuntu Bionic: Python 3
 
 .. _configuration-management-non-determinism:
 
