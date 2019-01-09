@@ -7,6 +7,7 @@ load(
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(":macros.bzl", "drake_cc_forwarding_hdrs_tree_internal")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -16,6 +17,7 @@ drake_cc_package_library(
     name = "tree",
     deps = [
         ":articulated_body_inertia",
+        ":forwarding_hdrs",
         ":multibody_tree_context",
         ":multibody_tree_core",
         ":multibody_tree_element",
@@ -210,6 +212,33 @@ drake_cc_library(
         "//math:vector3_util",
         "//multibody/math:spatial_algebra",
     ],
+)
+
+drake_cc_forwarding_hdrs_tree_internal(
+    name = "forwarding_hdrs",
+    hdrs = [
+        "acceleration_kinematics_cache.h",
+        "articulated_body_inertia_cache.h",
+        "body_node.h",
+        "body_node_impl.h",
+        "body_node_welded.h",
+        "mobilizer.h",
+        "mobilizer_impl.h",
+        "multibody_tree.h",
+        "multibody_tree_context.h",
+        "multibody_tree_element.h",
+        "multibody_tree_forward_decl.h",
+        "multibody_tree_system.h",
+        "multibody_tree_topology.h",
+        "position_kinematics_cache.h",
+        "prismatic_mobilizer.h",
+        "quaternion_floating_mobilizer.h",
+        "revolute_mobilizer.h",
+        "space_xyz_mobilizer.h",
+        "velocity_kinematics_cache.h",
+        "weld_mobilizer.h",
+    ],
+    visibility = ["//visibility:private"],
 )
 
 # === test/ ===
