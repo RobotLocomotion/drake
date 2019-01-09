@@ -8,8 +8,8 @@
 #include "drake/systems/framework/leaf_system.h"
 
 // Simple Discrete Time System
-//   xₙ₊₁ = xₙ³
-//   y = x
+//   x_{n+1} = x_n³
+//         y = x
 class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
  public:
   SimpleDiscreteTimeSystem() {
@@ -21,7 +21,7 @@ class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
   }
 
  private:
-  // xₙ₊₁ = xₙ³
+  // x_{n+1} = x_n³
   drake::systems::EventStatus Update(
       const drake::systems::Context<double>& context,
       drake::systems::DiscreteValues<double>* next_state) const {

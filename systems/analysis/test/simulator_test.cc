@@ -953,14 +953,15 @@ GTEST_TEST(SimulatorTest, SpringMass) {
 
 // This is the example from discrete_systems.h. Let's make sure it works
 // as advertised there! The discrete system is:
-//    xₙ₊₁ = xₙ + 1
-//    yₙ   = 10 xₙ
-//    x₀   = 0
+//    x_{n+1} = x_n + 1
+//    y_n     = 10 x_n
+//    x_0     = 0
 // which should produce 0 10 20 30 ... .
 //
 // Don't change this unit test without making a corresponding change to the
 // doxygen example in the systems/discrete_systems.h module. This class should
-// be copypasta identical to the code there.
+// be as identical to the code there as possible; ideally, just a
+// copy-and-paste.
 class ExampleDiscreteSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExampleDiscreteSystem)
@@ -968,12 +969,12 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
-    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
+    // Update to x_{n+1}, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
                                        &ExampleDiscreteSystem::Update);
 
-    // Present yₙ (=Sₙ) at the output port.
+    // Present y_n (=S_n) at the output port.
     DeclareVectorOutputPort("Sn", systems::BasicVector<double>(1),
                             &ExampleDiscreteSystem::Output);
   }
@@ -1033,10 +1034,10 @@ GTEST_TEST(SimulatorTest, ExampleDiscreteSystem) {
 }
 
 // A hybrid discrete-continuous system:
-//   xₙ₊₁ = sin(1.234*t)
-//   yₙ = xₙ
+//   x_{n+1} = sin(1.234*t)
+//   y_n     = x_n
 // With proper initial conditions, this should produce a one-step-delayed
-// sample of the periodic function, so that yₙ = sin(1.234 * (n-1)*h).
+// sample of the periodic function, so that y_n = sin(1.234 * (n-1)*h).
 class SinusoidalDelayHybridSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SinusoidalDelayHybridSystem)
@@ -1068,9 +1069,9 @@ class SinusoidalDelayHybridSystem : public LeafSystem<double> {
 
 // Tests that sinusoidal hybrid system that is not periodic in the update period
 // produces the result from simulating the discrete system:
-//   xₙ₊₁ = sin(f * n * h)
-//   yₙ = xₙ
-//   x₀ = sin(f * -1 * h)
+//   x_{n+1} = sin(f * n * h)
+//   y_n     = x_n
+//   x_0     = sin(f * -1 * h)
 // where h is the update period and f is the frequency of the sinusoid.
 // This should be a one-step delayed discrete sampling of the sinusoid.
 GTEST_TEST(SimulatorTest, SinusoidalHybridSystem) {
@@ -1143,8 +1144,8 @@ class ShiftedTimeOutputter : public LeafSystem<double> {
 };
 
 // A hybrid discrete-continuous system:
-// xₙ₊₁ = xₙ + u(t)
-// x₀ = 0
+//   x_{n+1} = x_n + u(t)
+//   x_0     = 0
 class SimpleHybridSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleHybridSystem)
@@ -1163,7 +1164,7 @@ class SimpleHybridSystem : public LeafSystem<double> {
     const BasicVector<double>* input = this->EvalVectorInput(context, 0);
     DRAKE_DEMAND(input);
     const double u = input->get_value()[0];  // u(t)
-    double x = context.get_discrete_state()[0];  // xₙ
+    double x = context.get_discrete_state()[0];  // x_n
     (*x_next)[0] = x + u;
     return EventStatus::Succeeded();
   }
@@ -1176,7 +1177,7 @@ class SimpleHybridSystem : public LeafSystem<double> {
 GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
   DiagramBuilder<double> builder;
   // Connect a system that outputs u(t) = t to the hybrid system
-  // xₙ₊₁ = xₙ + u(t).
+  // x_{n+1} = x_n + u(t).
   auto shifted_time_outputter = builder.AddSystem<ShiftedTimeOutputter>();
   const double updating_offset_time = 0.0;
   auto hybrid_system = builder.AddSystem<SimpleHybridSystem>(
@@ -1185,18 +1186,18 @@ GTEST_TEST(SimulatorTest, SimpleHybridSystemTestOffsetZero) {
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
 
-  // Set the initial condition x₀ (the subscript notation reflects the
+  // Set the initial condition x_0 (the subscript notation reflects the
   // discrete step number as described in discrete_systems.h).
   const double initial_condition = 0.0;
   simulator.get_mutable_context().get_mutable_discrete_state()[0] =
       initial_condition;
 
   // Simulate forward. The first update occurs at t=0, meaning StepTo(1) updates
-  // the discrete state to x⁺(0) (i.e., x₁) before updating time to 1.0.
+  // the discrete state to x⁺(0) (i.e., x_1) before updating time to 1.0.
   simulator.StepTo(1.0);
 
   // Check that the expected state value was attained. The value should be
-  // x₀ + u(0) since we expect the discrete update to occur at t = 0 when
+  // x_0 + u(0) since we expect the discrete update to occur at t = 0 when
   // u(t) = 1.
   const double u0 = 1;
   EXPECT_EQ(simulator.get_context().get_discrete_state()[0],
@@ -1235,9 +1236,9 @@ class DeltaFunction : public LeafSystem<double> {
 };
 
 // This is a mixed continuous/discrete system:
-//    xₙ₊₁ = xₙ + u(t)
-//    yₙ   = xₙ
-//    x₀   = 0
+//    x_{n+1} = x_n + u(t)
+//    y_n     = x_n
+//    x_0     = 0
 // By plugging interesting things into the input we can test whether we're
 // sampling the continuous input at the appropriate times.
 class DiscreteInputAccumulator : public LeafSystem<double> {
@@ -1249,7 +1250,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
 
     DeclareVectorInputPort("u", BasicVector<double>(1));
 
-    // Set initial condition x₀ = 0, and clear the result.
+    // Set initial condition x_0 = 0, and clear the result.
     DeclareInitializationEvent(
         DiscreteUpdateEvent<double>([this](const Context<double>&,
                                            const DiscreteUpdateEvent<double>&,
@@ -1258,16 +1259,16 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
           result_.clear();
         }));
 
-    // Output yₙ using a Drake "publish" event (occurs at the end of step n).
+    // Output y_n using a Drake "publish" event (occurs at the end of step n).
     DeclarePeriodicEvent(
         kPeriod, kPublishOffset,
         PublishEvent<double>(
             [this](const Context<double>& context,
                    const PublishEvent<double>&) {
-              result_.push_back(get_x(context));  // yₙ = xₙ
+              result_.push_back(get_x(context));  // y_n = x_n
             }));
 
-    // Update to xₙ₊₁ (x_np1), using a Drake "discrete update" event (occurs
+    // Update to x_{n+1} (x_np1), using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicEvent(
         kPeriod, kPublishOffset,
@@ -1276,7 +1277,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
                                            DiscreteValues<double>* x_np1) {
           const double x_n = get_x(context);
           const double u = EvalVectorInput(context, 0)->GetAtIndex(0);
-          x_np1->get_mutable_vector()[0] = x_n + u;  // xₙ₊₁ = xₙ + u(t)
+          x_np1->get_mutable_vector()[0] = x_n + u;  // x_{n+1} = x_n + u(t)
         }));
   }
 
@@ -1295,13 +1296,13 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
 
 // Build a diagram that takes a DeltaFunction input and then simulates this
 // mixed discrete/continuous system:
-//    xₙ₊₁ = xₙ + u(t)
-//    yₙ   = xₙ
-//    x₀   = 0
-// Let tₛ be the chosen "spike time" for the delta function. We expect the
-// output yₙ to be zero for all n unless a sample at k*h occurs exactly at
-// tₛ for some k. In that case yₙ=0, n ≤ k and yₙ=1, n > k. Important cases
-// to check are: tₛ=0, tₛ=k*h for some k>0, and tₛ≠k*h for any k.
+//    x_{n+1} = x_n + u(t)
+//    y_n     = x_n
+//    x_0     = 0
+// Let t_s be the chosen "spike time" for the delta function. We expect the
+// output y_n to be zero for all n unless a sample at k*h occurs exactly at
+// tₛ for some k. In that case y_n=0, n ≤ k and y_n=1, n > k. Important cases
+// to check are: t_s=0, t_s=k*h for some k>0, and t_s≠k*h for any k.
 GTEST_TEST(SimulatorTest, SpikeTest) {
   DiagramBuilder<double> builder;
 

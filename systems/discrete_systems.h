@@ -14,32 +14,33 @@ as well as considerations for implementing these systems in Drake.
 
 The state space dynamics of a discrete system is:
 ```
-    xₙ₊₁ = f(n, xₙ, uₙ)    // update
-    yₙ   = g(n, xₙ, uₙ)    // output
-    x₀   = xᵢₙᵢₜ           // initialize
+    x_{n+1} = f(n, x_n, u_n)    // update
+    y_n     = g(n, x_n, u_n)    // output
+    x_0     = x_init            // initialize
 ```
+(We're using LaTeX underscore notation for subscripts, where x_0 means x₀.)
 
-where n ∈ ℕ is the step number (typically starting at zero), x is the discrete
-state variable ("discrete" refers to the countability of the elements of the
-sequence, x₀, x₁, ..., xₙ and not the values that x can take), y is the desired
+Here n ∈ ℕ is the step number (typically starting at zero), x is the
+discrete-time state variable ("discrete time" refers to the countability of the
+elements of the sequence, x_0, x_1, ..., x_n and not the values that x can
+take), y is the desired
 output, and u is an external input. f(.) and g(.) are the _update_ and _output_
 functions, respectively. Any of these quantities can be vector-valued. The
-subscript notation (e.g., x₀) is used to show that the state, input, and output
+subscript notation (e.g., x_0) is used to show that the state, input, and output
 result from a discrete process. We use square bracket notation, e.g. x[1] to
 designate particular elements of a vector-valued quantity (indexing from 0).
-Combined, x₁[3] would be the value of the fourth element of the x vector,
-evaluated at step n=1. In code we use a Latex-like underscore to indicate the
-step number, so we write x_1[3] to represent x₁[3].
+Combined, x_1[3] would be the value of the fourth element of the x vector,
+evaluated at step n=1.
 
 <h3>A pedagogical example: simple difference equation</h3>
 
 The following class implements in Drake the simple discrete system
 ```
-    xₙ₊₁ = xₙ + 1
-    yₙ   = 10 xₙ
-    x₀   = 0
+    x_{n+1} = x_n + 1
+    y_n     = 10 x_n
+    x_0     = 0
 ```
-which should generate the sequence `S = 0 10 20 30 ...` (that is, `Sₙ = 10*n`).
+which should generate the sequence `S = 0 10 20 30 ...` (that is, `S_n = 10*n`).
 
 @code{.cpp}
 class ExampleDiscreteSystem : public LeafSystem<double> {
@@ -49,12 +50,12 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
-    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs
+    // Update to x_{n+1}, using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
                                        &ExampleDiscreteSystem::Update);
 
-    // Present yₙ (=Sₙ) at the output port.
+    // Present y_n (=S_n) at the output port.
     DeclareVectorOutputPort("Sn", systems::BasicVector<double>(1),
                             &ExampleDiscreteSystem::Output);
   }
@@ -115,7 +116,7 @@ The above yields the following output:
 Purely-discrete systems produce values only intermittently. For example, the
 system above generates values only at integer values of n: <pre>
 
-     yₙ
+     y_n
       |
    30 |              ●
       |              ┆             Figure 1. The discrete-valued system
@@ -174,7 +175,7 @@ You might expect that 2(b) would be the most natural mapping from the
 discrete system to a continuous one. In practice, however, it is problematic
 for mixed discrete/continuous (hybrid) systems so Drake uses the mapping in
 2(a). The advantage of 2(a) is that the hybrid update function
-`xₙ₊₁ = f(t,n,xₙ,u(t))` is invoked at time `t=n*h`, while in 2(b) it would be
+`x_{n+1} = f(t,n,x_n,u(t))` is invoked at time `t=n*h`, while in 2(b) it would be
 invoked at time `t=(n+1)*h`. That would make it difficult to coordinate discrete
 and continuous signals.
 
@@ -182,7 +183,7 @@ Drake's choice of 2(a) dictates what value a discrete quantity will have when
 evaluated at times _between_ update times. In particular, consider a discrete
 variable x evaluated during a simulation from a publish, update, or derivative
 function at times `t ∈ (n*h, (n+1)*h]`. x will be seen to have value
-`x(t) = xₙ₊₁` (_not_ `xₙ`). You can see that clearly by inspection of
+`x(t) = x_{n+1}` (_not_ `x_n`). You can see that clearly by inspection of
 Figure 2(a).
 
 <h3>Timing of publish vs. discrete update events in Drake</h3>
@@ -194,7 +195,7 @@ denote the "pre-update" value of the state x, and x⁺(t) to denote the
 "post-update" value of x. So x⁻(t) is the value of x at time t _before_ discrete
 variables are updated, and x⁺(t) the value of x at time t _after_ they are
 updated. Thus if we have `t = n*h` as in the discussion above, then
-`x⁻(t) = xₙ` and `x⁺(t) = xₙ₊₁`. State-dependent computations are affected
+`x⁻(t) = x_n` and `x⁺(t) = x_{n+1}`. State-dependent computations are affected
 by the scheduling of these updates. For example, evaluating an input u(t) yields
 u⁻(t) before discrete updates, and u⁺(t) afterwards, meaning that the input
 evaluation is carried out using x⁻(t) or x⁺(t), respectively.
