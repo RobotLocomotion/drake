@@ -58,8 +58,7 @@ int do_main() {
   Parser(&cart_pole, &scene_graph).AddModelFromFile(full_name);
 
   // Add gravity to the model.
-  cart_pole.AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
+  cart_pole.AddForceElement<UniformGravityFieldElement>();
 
   // Now the model is complete.
   cart_pole.Finalize();

@@ -61,8 +61,7 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   Parser parser(&acrobot);
   parser.AddModelFromFile(full_name);
   // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
+  acrobot.AddForceElement<UniformGravityFieldElement>();
   // We are done defining the model.
   acrobot.Finalize();
 
@@ -111,8 +110,7 @@ int do_main() {
   parser.AddModelFromFile(full_name);
 
   // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>(
-      -9.81 * Vector3<double>::UnitZ());
+  acrobot.AddForceElement<UniformGravityFieldElement>();
 
   // We are done defining the model.
   acrobot.Finalize();
