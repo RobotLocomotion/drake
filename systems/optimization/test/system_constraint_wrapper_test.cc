@@ -4,51 +4,13 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff_gradient.h"
-#include "drake/systems/framework/leaf_system.h"
+#include "drake/systems/optimization/test/system_optimization_test_util.h"
 
 namespace drake {
 namespace systems {
 namespace {
-// Declare a constraint p * x(0) + x(1) >= 2
-//                      x(1) * x(1) + p * x(0) * x(0) <= x(2)
-template <typename T>
-void DummySystemConstraintCalc(const Context<T>& context, VectorX<T>* y) {
-  const T p = context.get_numeric_parameter(0).GetAtIndex(0);
-  const Vector3<T> x = context.get_continuous_state_vector().CopyToVector();
-  y->resize(2);
-  (*y)(0) = p * x(0) + x(1);
-  (*y)(1) = x(2) - x(1) * x(1) + p * x(0) * x(0);
-}
-
-template <typename T>
-class DummySystem : public LeafSystem<T> {
- public:
-  DummySystem() : LeafSystem<T>(SystemTypeTag<DummySystem>{}) {
-    this->DeclareContinuousState(3);  // 3 state variable.
-    this->DeclareNumericParameter(BasicVector<T>(1));
-    this->constraint_index_ = this->DeclareInequalityConstraint(
-        DummySystemConstraintCalc<T>, Eigen::Vector2d(2, 0), nullopt,
-        "dummy_system_constraint");
-  }
-
-  template <typename U>
-  explicit DummySystem(const DummySystem<U>& system) : DummySystem() {}
-
-  SystemConstraintIndex constraint_index() const { return constraint_index_; }
-
- private:
-  // xdot = [p0 * x(0); p0 * x(1) + x(0), x(2) - x(1)]
-  void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const override {
-    const Vector3<T>& x = context.get_continuous_state_vector().CopyToVector();
-    const T& p0 = context.get_numeric_parameter(0).GetAtIndex(0);
-    const Vector3<T> xdot(p0 * x(0), p0 * x(1) + x(0), x(2) - x(1));
-    derivatives->SetFromVector(xdot);
-  }
-
-  SystemConstraintIndex constraint_index_;
-};
-
+const double kInf = std::numeric_limits<double>::infinity();
+const double kEps = std::numeric_limits<double>::epsilon();
 // val contains [x(0); p0; x(2)]
 template <typename T>
 void Selector1(const System<T>&, const Eigen::Ref<const VectorX<T>>& val,
@@ -75,6 +37,9 @@ GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
   SystemConstraintWrapper constraint(
       &system_double, system_autodiff.get(), system_double.constraint_index(),
       *context_double, Selector1<double>, Selector1<AutoDiffXd>, 3);
+  EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), Eigen::Vector2d(2, 0)));
+  EXPECT_TRUE(
+      CompareMatrices(constraint.upper_bound(), Eigen::Vector2d(kInf, kInf)));
 
   // [x(0); p0; x(2)] = val = [10, 11, 12]
   const Eigen::Vector3d val(10, 11, 12);
@@ -83,8 +48,8 @@ GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
 
   Selector1<double>(system_double, val, context_double.get());
   Eigen::VectorXd y_expected;
-  DummySystemConstraintCalc(*context_double, &y_expected);
-  const double tol = 3 * std::numeric_limits<double>::epsilon();
+  DummySystemConstraintCalc<double>(*context_double, &y_expected);
+  const double tol = 3 * kEps;
   EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
 
   Eigen::Matrix3Xd val_gradient(3, 2);
@@ -96,13 +61,53 @@ GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
 
   Selector1<AutoDiffXd>(*system_autodiff, val_autodiff, context_autodiff.get());
   AutoDiffVecXd y_autodiff_expected;
-  DummySystemConstraintCalc(*context_autodiff, &y_autodiff_expected);
+  DummySystemConstraintCalc<AutoDiffXd>(*context_autodiff,
+                                        &y_autodiff_expected);
   EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
                               math::autoDiffToValueMatrix(y_autodiff_expected),
                               tol));
   EXPECT_TRUE(CompareMatrices(
       math::autoDiffToGradientMatrix(y_autodiff),
       math::autoDiffToGradientMatrix(y_autodiff_expected), tol));
+}
+
+// Assumes x only contains the position q.
+template <typename T>
+void Selector2(const System<T>& plant, const Eigen::Ref<const VectorX<T>>& x,
+               Context<T>* context) {
+  dynamic_cast<const multibody::MultibodyPlant<T>&>(plant).SetPositions(context,
+                                                                        x);
+}
+
+GTEST_TEST(SystemConstraintWrapperTest, FreeBodyPlantTest) {
+  // Test if SystemConstraintWrapper works for MultibodyPlant.
+  const double time_step{0};
+  FreeBodyPlant<double> plant_double(time_step);
+  auto context_double = plant_double.CreateDefaultContext();
+  auto context_tmp = context_double->Clone();
+
+  /*const Eigen::Quaterniond quat0(
+      Eigen::AngleAxisd(0.2 * M_PI, Eigen::Vector3d(1, 2, 3).normalized()));
+  Eigen::Matrix<double, 7, 1> q0;
+  q0.head<4>() << quat0.w(), quat0.x(), quat0.y(), quat0.z();
+  q0.tail<3>() << 2, 3, 4;
+  plant_double.SetPositions(context_double.get(), q0);
+  Vector6<double> v0;
+  v0 << 2, 3, 4, 5, 6, 7;
+  plant_double.SetVelocities(context_double.get(), v0);
+
+  FreeBodyPlant<AutoDiffXd> plant_autodiff(time_step);
+  SystemConstraintWrapper constraint(
+      &plant_double, &plant_autodiff,
+      plant_double.unit_quaternion_constraint_index(), *context_double,
+      Selector2<double>, Selector2<AutoDiffXd>, 7);
+
+  Eigen::Matrix<double, 7, 1> x_double;
+  x_double << 1, 2, 3, 4, 5, 6, 7, 8;
+  Eigen::VectorXd y_double;
+  constraint.Eval(x_double, &y_double);
+  const Vector1d y_double_expected(29);
+  EXPECT_TRUE(CompareMatrices(y_double, y_double_expected, 3 * kEps));*/
 }
 
 }  // namespace
