@@ -1950,7 +1950,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareEqualityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      int count, const std::string& description) {
+      int count, std::string description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareEqualityConstraint(
@@ -1958,7 +1958,7 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(value != nullptr);
           (this_ptr->*calc)(context, value);
         },
-        count, description);
+        count, std::move(description));
   }
 
   /// Declares a system constraint of the form
@@ -1977,22 +1977,20 @@ class LeafSystem : public System<T> {
   /// these constraints.
   SystemConstraintIndex DeclareEqualityConstraint(
       typename SystemConstraint<T>::CalcCallback calc, int count,
-      const std::string& description) {
-    return this->AddConstraint(
-        std::make_unique<SystemConstraint<T>>(calc, count, description));
+      std::string description) {
+    return DeclareInequalityConstraint(
+        std::move(calc), SystemConstraintBounds::Equality(count),
+        std::move(description));
   }
 
-  /// @anchor declareinequality
   /// Declares a system constraint of the form
-  ///   lower_bound <= calc(context) <= upper_bound
+  ///   bounds.lower() <= calc(context) <= bounds.upper()
   /// by specifying a member function to use to calculate the (VectorX)
   /// constraint value with a signature:
   /// @code
   /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
   /// @endcode
   ///
-  /// @param lower_bound The lower bound of the constraint.
-  /// @param upper_bound The upper bound of the constraint.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   /// Template arguments will be deduced and do not need to be specified.
@@ -2002,9 +2000,8 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareInequalityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
+      SystemConstraintBounds bounds,
+      std::string description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareInequalityConstraint(
@@ -2012,47 +2009,17 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(value != nullptr);
           (this_ptr->*calc)(context, value);
         },
-        lower_bound, upper_bound, description);
+        std::move(bounds), std::move(description));
   }
 
   /// Declares a system constraint of the form
-  ///   lower_bound <= calc(context)
-  /// Refer to @ref declareinequality for more details.
-  template <class MySystem>
-  SystemConstraintIndex DeclareInequalityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound, stx::nullopt_t,
-      const std::string& description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->DeclareInequalityConstraint(
-        calc, lower_bound, Eigen::VectorXd::Constant(lower_bound.size(), kInf),
-        description);
-  }
-
-  /// Declares a system constraint of the form
-  ///   calc(context) <= upper_bound
-  /// Refer to @ref declareinequality for more details.
-  template <class MySystem>
-  SystemConstraintIndex DeclareInequalityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      stx::nullopt_t, const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->DeclareInequalityConstraint(
-        calc, Eigen::VectorXd::Constant(upper_bound.size(), -kInf), upper_bound,
-        description);
-  }
-
-  /// Declares a system constraint of the form
-  ///   lower_bound <= calc(context) <= upper_bound
+  ///   bounds.lower() <= calc(context) <= bounds.upper()
   /// by specifying a std::function to use to calculate the (Vector) constraint
   /// value with a signature:
   /// @code
   /// void CalcConstraint(const Context<T>&, VectorX<T>*);
   /// @endcode
   ///
-  /// @param lower_bound The lower bound of the constraint.
-  /// @param upper_bound The upper bound of the constraint.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   ///
@@ -2060,37 +2027,10 @@ class LeafSystem : public System<T> {
   /// these constraints.
   SystemConstraintIndex DeclareInequalityConstraint(
       typename SystemConstraint<T>::CalcCallback calc,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
+      SystemConstraintBounds bounds,
+      std::string description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, lower_bound, upper_bound, description));
-  }
-
-  /// Declares a system constraint of the form
-  /// calc(context) <= upper_bound
-  /// Refer to @ref declareinequality for more details.
-  SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc, stx::nullopt_t,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, Eigen::VectorXd::Constant(upper_bound.size(), -kInf), upper_bound,
-        description));
-  }
-
-  /// Declares a system constraint of the form
-  /// lower_bound <= calc(context)
-  /// Refer to @ref declareinequality for more details.
-  SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound, stx::nullopt_t,
-      const std::string description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, lower_bound, Eigen::VectorXd::Constant(lower_bound.size(), kInf),
-        description));
+        std::move(calc), std::move(bounds), std::move(description)));
   }
 
   /// Derived-class event dispatcher for all simultaneous publish events
@@ -2468,7 +2408,7 @@ class LeafSystem : public System<T> {
             (*value)(i) = model_vec.GetAtIndex(indices[i]);
           }
         },
-        constraint_lower_bound, constraint_upper_bound,
+        {constraint_lower_bound, constraint_upper_bound},
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
