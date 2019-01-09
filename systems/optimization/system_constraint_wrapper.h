@@ -8,16 +8,44 @@
 
 namespace drake {
 namespace systems {
-/// Given x (as in SystemConstraintWrapper.Eval(x, &y)), update the part of the
-/// context with the value of x.
+/** Given x (as in SystemConstraintWrapper.Eval(x, &y)), update the part of the
+ * context with the value of x.
+ */
 template <typename T>
 using UpdateContextFromX = std::function<void(
     const System<T>&, const Eigen::Ref<const VectorX<T>>&, Context<T>*)>;
 
+/**
+ * This wrapper class wraps a SystemConstraint object to the format of
+ * solvers::Constraint
+ * The constraint is
+ * lower <= SystemConstraint.Calc(selector(x)) <= upper
+ * where lower/upper are the lower and upper bounds of the SystemConstraint
+ * object.
+ */
 class SystemConstraintWrapper : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintWrapper)
 
+  /**
+   * @param system_double The System whose SystemConstraint is converted to
+   * solvers::Constraint.
+   * @param system_autodiff This system should be transmogrified from
+   * system_double.
+   * @param index The index of the SystemConstraint in @p system_double (and
+   * also @p system_autodiff).
+   * @param context The value stored in this context will be used in
+   * SystemConstraintWrapper::Eval. If @p selector_double (and @p
+   * selector_autodiff) doesn't update everything in the context (such as state,
+   * input, params, etc), then the un-updated part in the context will keep its
+   * value to those stored in @p context.
+   * @param selector_double Maps x in SystemConstraintWrapper::Eval(x, &y) to a
+   * context. The context is then used in SystemConstraint.Calc(context).
+   * @param selector_autodiff Same as @p selector_double, but works for autodiff
+   * type.
+   * @param x_size The number of variables bound with this constraint. Namely,
+   * the size of x in SystemConstraintWrapper.Eval(x, &y).
+   */
   SystemConstraintWrapper(const System<double>* const system_double,
                           const System<AutoDiffXd>* const system_autodiff,
                           SystemConstraintIndex index,
