@@ -11,3 +11,10 @@ build:python3 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python3
 # Configure ${PATH} for actions.
 # N.B. Ensure this is consistent with `execute.bzl`.
 build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
+
+# TODO(#10370) Disable some linter tests on macOS until we can repair its
+# clang-format.  We should remove this section once the linter works again.
+test --test_tag_filters=-gurobi,-mosek,-snopt,-clang_format_lint
+test:everything --test_tag_filters=-no_everything,-clang_format_lint
+test:asan --test_tag_filters=-gurobi,-mosek,-snopt,-no_asan,-no_lsan,-clang_format_lint
+test:asan_everything --test_tag_filters=-no_asan,-no_lsan,-clang_format_lint
