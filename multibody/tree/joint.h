@@ -9,7 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/internal/mobilizer.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/rigid_body.h"

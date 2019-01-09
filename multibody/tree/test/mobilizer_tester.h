@@ -5,9 +5,9 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/multibody_tree.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/internal/mobilizer.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 

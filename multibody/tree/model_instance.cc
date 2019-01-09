@@ -1,8 +1,8 @@
 #include "drake/multibody/tree/model_instance.h"
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 #include "drake/multibody/tree/joint.h"
-#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {

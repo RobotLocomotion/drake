@@ -9,7 +9,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {

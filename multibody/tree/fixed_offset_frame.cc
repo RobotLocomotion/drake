@@ -6,7 +6,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/body.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {

@@ -1,4 +1,4 @@
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/internal/space_xyz_mobilizer.h"
 
 #include <gtest/gtest.h>
 
@@ -6,8 +6,8 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/multibody_tree.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 

@@ -7,13 +7,13 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/math/spatial_force.h"
+#include "drake/multibody/tree/internal/multibody_tree_context.h"
+#include "drake/multibody/tree/internal/multibody_tree_element.h"
+#include "drake/multibody/tree/internal/multibody_tree_topology.h"
+#include "drake/multibody/tree/internal/position_kinematics_cache.h"
+#include "drake/multibody/tree/internal/velocity_kinematics_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
-#include "drake/multibody/tree/position_kinematics_cache.h"
-#include "drake/multibody/tree/velocity_kinematics_cache.h"
 
 namespace drake {
 namespace multibody {

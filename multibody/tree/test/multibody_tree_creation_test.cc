@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 /* clang-format on */
 
 #include <algorithm>
@@ -11,8 +11,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/tree/internal/revolute_mobilizer.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/multibody/tree/weld_joint.h"

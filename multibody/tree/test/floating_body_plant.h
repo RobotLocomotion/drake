@@ -4,7 +4,7 @@
 
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/tree/internal/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/leaf_system.h"

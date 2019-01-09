@@ -5,7 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {

@@ -1,5 +1,5 @@
 // clang-format: off
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 // clang-format: on
 
 #include <functional>
@@ -15,10 +15,10 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/internal/multibody_tree_system.h"
+#include "drake/multibody/tree/internal/revolute_mobilizer.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"

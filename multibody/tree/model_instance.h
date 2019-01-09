@@ -4,9 +4,9 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/tree/internal/mobilizer.h"
+#include "drake/multibody/tree/internal/multibody_tree_element.h"
 #include "drake/multibody/tree/joint_actuator.h"
-#include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {

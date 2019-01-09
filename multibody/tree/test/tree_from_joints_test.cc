@@ -1,5 +1,5 @@
 // clang-format: off
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
 // clang-format: on
 
 #include <functional>
@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/benchmarks/acrobot/acrobot.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/internal/multibody_tree_system.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"

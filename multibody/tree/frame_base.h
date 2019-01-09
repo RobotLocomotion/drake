@@ -1,6 +1,6 @@
 #pragma once
 
-#include "drake/multibody/tree/multibody_tree_element.h"
+#include "drake/multibody/tree/internal/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {

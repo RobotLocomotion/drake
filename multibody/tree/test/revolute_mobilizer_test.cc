@@ -1,12 +1,12 @@
-#include "drake/multibody/tree/revolute_mobilizer.h"
+#include "drake/multibody/tree/internal/revolute_mobilizer.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/tree/multibody_tree.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
+#include "drake/multibody/tree/internal/multibody_tree.h"
+#include "drake/multibody/tree/internal/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 

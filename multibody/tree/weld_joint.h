@@ -6,9 +6,9 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/tree/internal/weld_mobilizer.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/weld_mobilizer.h"
 
 namespace drake {
 namespace multibody {
