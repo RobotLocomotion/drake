@@ -323,6 +323,8 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     context_ = system_->CreateDefaultContext();
 
+    EXPECT_NO_THROW(context_->Clone());
+
     // Scalar-convert the model and create a default context for it.
     system_autodiff_ = std::make_unique<MultibodyTreeSystem<AutoDiffXd>>(
         tree().ToAutoDiffXd());

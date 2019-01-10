@@ -41,7 +41,13 @@ namespace internal {
 template <typename T>
 class MultibodyTreeContext: public systems::LeafContext<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeContext)
+  /// @name Does not allow copy, move, or assignment.
+  //@{
+  // Copy constructor is protected for use in implementing Clone().
+  MultibodyTreeContext(MultibodyTreeContext&&) = delete;
+  MultibodyTreeContext& operator=(const MultibodyTreeContext&) = delete;
+  MultibodyTreeContext& operator=(MultibodyTreeContext&&) = delete;
+  //@}
 
   /// Instantiates a %MultibodyTreeContext for a MultibodyTree with a given
   /// `topology`. The stored state is continuous.
@@ -59,6 +65,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       systems::LeafContext<T>(),
       topology_(topology),
       is_state_discrete_(discrete_state) {
+  }
+
+  std::unique_ptr<systems::ContextBase> DoCloneWithoutPointers()
+      const override {
+    return std::unique_ptr<systems::ContextBase>(
+        new MultibodyTreeContext<T>(*this));
   }
 
   /// Returns the size of the generalized positions vector.
@@ -200,6 +212,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     // Block<Block<VectorX>>, which is very different from Block<VectorX>.
     return x.nestedExpression().segment(start, count);
   }
+
+ protected:
+  MultibodyTreeContext(const MultibodyTreeContext& source)
+      : systems::LeafContext<T>(source),
+        topology_{source.topology_},
+        is_state_discrete_{source.is_state_discrete_} {}
 
  private:
   const MultibodyTreeTopology topology_;
