@@ -20,7 +20,7 @@ First, download and extract an :ref:`available binary package
 <binary-installation>`.
 
 As an example, here is how to download and extract one of the latest releases
-to ``/opt`` (where ``<platform>`` could be ``xenial`` or ``mac``):
+to ``/opt`` (where ``<platform>`` could be ``bionic``, ``xenial``, or ``mac``):
 
 .. code-block:: shell
 
