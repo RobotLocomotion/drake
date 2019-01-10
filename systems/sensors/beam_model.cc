@@ -49,7 +49,8 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
                           params->probability_uniform();
           };
   this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-      calc_event_probabilities_constraint, Vector1d(0), nullopt,
+      calc_event_probabilities_constraint,
+      SystemConstraintBounds(Vector1d(0), nullopt),
       "event probabilities sum to one"));
 }
 
