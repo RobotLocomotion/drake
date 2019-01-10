@@ -107,7 +107,11 @@ class LeafSystem : public System<T> {
   // documentation for their corresponding methods in System.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    if (this->forced_publish_events_allocated()) {
+      return this->get_forced_publish_events();
+    } else { 
+      return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    }
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>

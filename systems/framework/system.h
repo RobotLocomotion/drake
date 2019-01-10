@@ -2037,6 +2037,11 @@ class System : public SystemBase {
   }
   //@}
 
+  // Determines whether the forced publish events collection has been allocated.
+  bool forced_publish_events_allocated() const {
+    return forced_publish_ != nullptr;
+  }
+
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
     return *forced_publish_;
