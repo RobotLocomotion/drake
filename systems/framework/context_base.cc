@@ -15,7 +15,7 @@ std::unique_ptr<ContextBase> ContextBase::Clone() const {
   // DoCloneWithoutPointers().
   const ContextBase& source = *this;  // Deref here to avoid typeid warning.
   ContextBase& clone = *clone_ptr;
-  DRAKE_ASSERT(typeid(source) == typeid(clone));
+  DRAKE_DEMAND(typeid(source) == typeid(clone));
 
   // Create a complete mapping of tracker pointers.
   DependencyTracker::PointerMap tracker_map;

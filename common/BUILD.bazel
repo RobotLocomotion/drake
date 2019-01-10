@@ -50,6 +50,7 @@ drake_cc_package_library(
         ":temp_directory",
         ":type_safe_index",
         ":unused",
+        ":value",
     ],
 )
 
@@ -471,6 +472,18 @@ drake_cc_library(
     hdrs = ["scoped_singleton.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "value",
+    srcs = ["value.cc"],
+    hdrs = ["value.h"],
+    deps = [
+        ":copyable_unique_ptr",
+        ":essential",
+        ":is_cloneable",
+        ":nice_type_name",
     ],
 )
 
@@ -1166,6 +1179,15 @@ drake_py_unittest(
         "test/resource_tool_test_data.txt",
         ":resource_tool",
         "//examples/pendulum:models",
+    ],
+)
+
+drake_cc_googletest(
+    name = "value_test",
+    deps = [
+        ":value",
+        "//common:essential",
+        "//systems/framework/test_utilities:my_vector",
     ],
 )
 

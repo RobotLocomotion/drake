@@ -2653,8 +2653,8 @@ class ConstraintTestSystem : public LeafSystem<T> {
     this->DeclareEqualityConstraint(&ConstraintTestSystem::CalcState0Constraint,
                                     1, "x0");
     this->DeclareInequalityConstraint(
-        &ConstraintTestSystem::CalcStateConstraint, Eigen::Vector2d::Zero(),
-        nullopt, "x");
+        &ConstraintTestSystem::CalcStateConstraint,
+        { Eigen::Vector2d::Zero(), nullopt }, "x");
   }
 
   // Scalar-converting copy constructor.

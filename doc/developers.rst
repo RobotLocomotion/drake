@@ -87,7 +87,7 @@ supported for CMake builds using the "Unix Makefiles" generator.
 |                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   | 3.6.7  |
 +----------------------------------+-----------------+-----------------+------------+                   +--------+
 | macOS High Sierra (10.13)        | | Bazel 0.21.0  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
-+----------------------------------+ | CMake 3.13.0  |                 |            |                   |        |
++----------------------------------+ | CMake 3.13.2  |                 |            |                   | 3.7.2  |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
@@ -99,7 +99,6 @@ The following configurations are presently untested in continuous integration:
 
 -   macOS Mojave: C++, Python
 -   macOS, Ubuntu Bionic: MATLAB
--   Ubuntu Bionic: Python 3
 
 .. _configuration-management-non-determinism:
 

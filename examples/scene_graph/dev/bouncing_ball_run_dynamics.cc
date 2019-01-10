@@ -16,9 +16,15 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/sensors/dev/rgbd_camera.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/pixel_types.h"
 
 DEFINE_double(simulation_time, 10.0,
               "Desired duration of the simulation in seconds.");
+DEFINE_bool(render_on, true, "Sets rendering generally enabled (or not)");
+DEFINE_bool(color, true, "Sets the enabled camera to render color");
+DEFINE_bool(depth, true, "Sets the enabled camera to render depth");
+DEFINE_bool(label, true, "Sets the enabled camera to render label");
+DEFINE_double(render_fps, 10, "Frames per simulation second to render");
 
 namespace drake {
 namespace examples {
@@ -34,11 +40,15 @@ using RenderSceneGraph = geometry::dev::SceneGraph<T>;
 using geometry::dev::ConnectDrakeVisualizer;
 using geometry::dev::render::DepthCameraProperties;
 using geometry::dev::render::Fidelity;
+using geometry::GeometryId;
 using geometry::HalfSpace;
+using geometry::IllustrationProperties;
+using geometry::ProximityProperties;
 using geometry::SourceId;
 using lcm::DrakeLcm;
 using systems::InputPort;
 using systems::sensors::dev::RgbdCamera;
+using systems::sensors::PixelType;
 using std::make_unique;
 
 int do_main() {
@@ -65,10 +75,14 @@ int do_main() {
   // X_WH will be the identity.
   Vector3<double> Hz_W(0, 0, 1);
   Vector3<double> p_WH(0, 0, 0);
-  proximity_scene_graph->RegisterAnchoredGeometry(
+  GeometryId ground_id = proximity_scene_graph->RegisterAnchoredGeometry(
       global_source,
       make_unique<GeometryInstance>(HalfSpace::MakePose(Hz_W, p_WH),
                                     make_unique<HalfSpace>(), "ground"));
+  proximity_scene_graph->AssignRole(global_source, ground_id,
+                                    ProximityProperties());
+  proximity_scene_graph->AssignRole(global_source, ground_id,
+                                    IllustrationProperties());
 
   builder.Connect(bouncing_ball1->get_geometry_pose_output_port(),
                   proximity_scene_graph->get_source_pose_port(ball_source_id1));
@@ -92,44 +106,59 @@ int do_main() {
   DrakeLcm lcm;
   ConnectDrakeVisualizer(&builder, *render_scene_graph, &lcm);
 
-  // Create the camera.
-  DepthCameraProperties camera_properties(640, 480, M_PI_4, Fidelity::kLow, 0.1,
-                                          2.0);
-  Vector3<double> p_WC(-0.25, -0.75, 0.15);
-  Vector3<double> rpy_WC(0, 0, M_PI_2 * 0.9);
-  auto camera = builder.AddSystem<RgbdCamera>("fixed", p_WC, rpy_WC,
-                                              camera_properties, false);
-  builder.Connect(render_scene_graph->get_query_output_port(),
-                  camera->query_object_input_port());
+  if (FLAGS_render_on) {
+    // Create the camera.
+    DepthCameraProperties
+        camera_properties(640, 480, M_PI_4, Fidelity::kLow, 0.1,
+                          2.0);
+    Vector3<double> p_WC(-0.25, -0.75, 0.15);
+    Vector3<double> rpy_WC(0, 0, M_PI_2 * 0.9);
+    auto camera = builder.AddSystem<RgbdCamera>("fixed", p_WC, rpy_WC,
+                                                camera_properties, false);
+    builder.Connect(render_scene_graph->get_query_output_port(),
+                    camera->query_object_input_port());
 
-  // Broadcast the images.
-  // Publishing images to drake visualizer
-  auto image_to_lcm_image_array =
-      builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>(
-          "color", "depth", "label");
-  image_to_lcm_image_array->set_name("converter");
+    // Broadcast the images.
+    // Publishing images to drake visualizer
+    auto image_to_lcm_image_array =
+        builder.template AddSystem<systems::sensors::ImageToLcmImageArrayT>();
+    image_to_lcm_image_array->set_name("converter");
 
-  auto image_array_lcm_publisher = builder.template AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
-          "DRAKE_RGBD_CAMERA_IMAGES", &lcm));
-  image_array_lcm_publisher->set_name("publisher");
-  image_array_lcm_publisher->set_publish_period(1. / 10 /* 10 fps */);
+    systems::lcm::LcmPublisherSystem* image_array_lcm_publisher{nullptr};
+    if ((FLAGS_color || FLAGS_depth || FLAGS_label)) {
+      image_array_lcm_publisher =
+          builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
+              robotlocomotion::image_array_t>(
+              "DRAKE_RGBD_CAMERA_IMAGES", &lcm));
+      image_array_lcm_publisher->set_name("publisher");
+      image_array_lcm_publisher->set_publish_period(1. / FLAGS_render_fps);
 
-  builder.Connect(
-      camera->color_image_output_port(),
-      image_to_lcm_image_array->color_image_input_port());
+      builder.Connect(
+          image_to_lcm_image_array->image_array_t_msg_output_port(),
+          image_array_lcm_publisher->get_input_port());
+    }
 
-  builder.Connect(
-      camera->depth_image_output_port(),
-      image_to_lcm_image_array->depth_image_input_port());
+    if (FLAGS_color) {
+      const auto& port =
+          image_to_lcm_image_array->DeclareImageInputPort<PixelType::kRgba8U>(
+              "color");
+      builder.Connect(camera->color_image_output_port(), port);
+    }
 
-  builder.Connect(
-      camera->label_image_output_port(),
-      image_to_lcm_image_array->label_image_input_port());
+    if (FLAGS_depth) {
+      const auto& port =
+          image_to_lcm_image_array
+              ->DeclareImageInputPort<PixelType::kDepth32F>("depth");
+      builder.Connect(camera->depth_image_output_port(), port);
+    }
 
-  builder.Connect(
-      image_to_lcm_image_array->image_array_t_msg_output_port(),
-      image_array_lcm_publisher->get_input_port());
+    if (FLAGS_label) {
+      const auto& port =
+          image_to_lcm_image_array
+              ->DeclareImageInputPort<PixelType::kLabel16I>("label");
+      builder.Connect(camera->label_image_output_port(), port);
+    }
+  }
 
   auto diagram = builder.Build();
 
@@ -146,8 +175,9 @@ int do_main() {
   init_ball(bouncing_ball2, 0.3, 0.3);
 
   simulator.get_mutable_integrator()->set_maximum_step_size(0.002);
-  simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
+  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
   simulator.StepTo(FLAGS_simulation_time);
 
   return 0;

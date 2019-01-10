@@ -17,8 +17,7 @@ MathematicalProgramResult::MathematicalProgramResult()
       solver_details_type_{nullptr},
       solver_details_{nullptr} {}
 
-const systems::AbstractValue& MathematicalProgramResult::get_solver_details()
-    const {
+const AbstractValue& MathematicalProgramResult::get_solver_details() const {
   if (!solver_details_) {
     throw std::logic_error("The solver_details has not been set yet.");
   }

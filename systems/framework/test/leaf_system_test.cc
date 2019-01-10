@@ -965,9 +965,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       context->FixInputPort(0, Value<std::string>{}),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
-      "drake::systems::Value<drake::systems::BasicVector<double>> "
+      "drake::Value<drake::systems::BasicVector<double>> "
       "for input port\\[0\\] but the actual type was "
-      "drake::systems::Value<std::string>. "
+      "drake::Value<std::string>. "
       "\\(System ::dut\\)");
 
   // The second port should only accept ints.
@@ -2100,8 +2100,8 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
 
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
-          &ConstraintTestSystem::CalcStateConstraint, Eigen::Vector2d::Zero(),
-          Eigen::Vector2d::Constant(std::numeric_limits<double>::infinity()),
+          &ConstraintTestSystem::CalcStateConstraint,
+          { Eigen::Vector2d::Zero(), nullopt },
           "x"),
       1);
   EXPECT_EQ(dut.get_num_constraints(), 2);
@@ -2141,7 +2141,8 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(calc0, Vector1d::Zero(), nullopt,
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
+                                            { Vector1d::Zero(), nullopt },
                                             "x1_lower"),
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
@@ -2152,8 +2153,9 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
         Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
                         context.get_continuous_state_vector().GetAtIndex(0));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(calc1, nullopt,
-                                            Eigen::Vector2d(2, 3), "x_upper"),
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
+                                            { nullopt, Eigen::Vector2d(2, 3) },
+                                            "x_upper"),
             1);
 
   auto context = dut.CreateDefaultContext();
@@ -2455,7 +2457,13 @@ class EventSugarTestSystem : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
 
-    DeclareForcedPublishEvent(&EventSugarTestSystem::MyPublishHandler);
+    // These variants don't require an EventStatus return.
+    DeclarePeriodicPublishEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulPublishHandler);
+    DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulDiscreteUpdateHandler);
+    DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulUnrestrictedUpdateHandler);
   }
 
   const double kPeriod = 0.125;
@@ -2467,21 +2475,35 @@ class EventSugarTestSystem : public LeafSystem<double> {
 
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
-    ++num_publish_;
+    MySuccessfulPublishHandler(context);
     return EventStatus::Succeeded();
   }
 
   EventStatus MyDiscreteUpdateHandler(
       const Context<double>& context,
       DiscreteValues<double>* discrete_state) const {
-    ++num_discrete_update_;
+    MySuccessfulDiscreteUpdateHandler(context, &*discrete_state);
     return EventStatus::Succeeded();
   }
 
   EventStatus MyUnrestrictedUpdateHandler(const Context<double>& context,
-                                          State<double>* discrete_state) const {
-    ++num_unrestricted_update_;
+                                          State<double>* state) const {
+    MySuccessfulUnrestrictedUpdateHandler(context, &*state);
     return EventStatus::Succeeded();
+  }
+
+  void MySuccessfulPublishHandler(const Context<double>&) const {
+    ++num_publish_;
+  }
+
+  void MySuccessfulDiscreteUpdateHandler(const Context<double>&,
+                                         DiscreteValues<double>*) const {
+    ++num_discrete_update_;
+  }
+
+  void MySuccessfulUnrestrictedUpdateHandler(const Context<double>&,
+                                             State<double>*) const {
+    ++num_unrestricted_update_;
   }
 
   mutable int num_publish_{0};
@@ -2537,9 +2559,9 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.Publish(*context, all_events->get_publish_events());
   dut.Publish(*context);
 
-  EXPECT_EQ(dut.num_publish(), 4);
-  EXPECT_EQ(dut.num_discrete_update(), 3);
-  EXPECT_EQ(dut.num_unrestricted_update(), 3);
+  EXPECT_EQ(dut.num_publish(), 5);
+  EXPECT_EQ(dut.num_discrete_update(), 4);
+  EXPECT_EQ(dut.num_unrestricted_update(), 4);
 }
 
 }  // namespace
