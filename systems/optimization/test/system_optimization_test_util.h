@@ -26,7 +26,7 @@ class DummySystem : public LeafSystem<T> {
     this->DeclareContinuousState(3);  // 3 state variable.
     this->DeclareNumericParameter(BasicVector<T>(1));
     this->constraint_index_ = this->DeclareInequalityConstraint(
-        DummySystemConstraintCalc<T>, Eigen::Vector2d(2, 0), nullopt,
+        DummySystemConstraintCalc<T>, {Eigen::Vector2d(2, 0), nullopt},
         "dummy_system_constraint");
   }
 
