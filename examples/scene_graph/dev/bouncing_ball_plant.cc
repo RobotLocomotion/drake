@@ -6,6 +6,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/shape_specification.h"
 
@@ -17,7 +18,9 @@ namespace bouncing_ball {
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
 using geometry::GeometryInstance;
+using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
+using geometry::ProximityProperties;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
@@ -52,6 +55,9 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
       make_unique<GeometryInstance>(Isometry3<double>::Identity(), /*X_FG*/
                                     make_unique<Sphere>(diameter_ / 2.0),
                                     "ball"));
+  // Use the default material.
+  scene_graph->AssignRole(source_id, ball_id_, IllustrationProperties());
+  scene_graph->AssignRole(source_id, ball_id_, ProximityProperties());
 
   // Allocate the output port now that the frame has been registered.
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
