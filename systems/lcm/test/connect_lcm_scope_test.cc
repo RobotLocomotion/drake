@@ -27,17 +27,7 @@ GTEST_TEST(ScopeTest, PublishTest) {
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 
-  // Get the LCM publisher subsystem so that we can force it to publish.
-  std::vector<const systems::System<double>*> systems = diagram->GetSystems();
-  for (int i = 0; i < static_cast<int>(systems.size()); ++i) {
-    const auto* publisher = dynamic_cast<const LcmPublisherSystem*>(systems[i]);
-    if (publisher) {
-      const systems::Context<double>& publisher_context =
-          diagram->GetSubsystemContext(*publisher, *context);
-      publisher->PublishInputAsLcmMessage(publisher_context);
-      break;
-    }
-  }
+  diagram->Publish(*context);
 
   auto message = lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(channel);
 

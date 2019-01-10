@@ -65,10 +65,10 @@ int DoMain() {
 
   auto status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
-          "SCHUNK_WSG_STATUS", &lcm,
-          manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod
-              /* publish period */));
+          "SCHUNK_WSG_STATUS", &lcm));
   status_pub->set_name("status_publisher");
+  status_pub->set_publish_period(
+      manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto status_sender = builder.AddSystem<SchunkWsgStatusSender>();
   auto mbp_state_to_wsg_state = builder.AddSystem(

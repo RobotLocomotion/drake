@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -34,7 +33,7 @@ LcmPublisherSystem::LcmPublisherSystem(
     const LcmAndVectorBaseTranslator* translator,
     std::unique_ptr<const LcmAndVectorBaseTranslator> owned_translator,
     std::unique_ptr<SerializerInterface> serializer,
-    DrakeLcmInterface* lcm, double publish_period)
+    DrakeLcmInterface* lcm)
     : channel_(channel),
       translator_(owned_translator ? owned_translator.get() : translator),
       owned_translator_(std::move(owned_translator)),
@@ -62,58 +61,35 @@ LcmPublisherSystem::LcmPublisherSystem(
   }
 
   set_name(make_name(channel_));
-
-  // Set the publish period, if nonzero.
-  auto publish_function = [this](const systems::Context<double>& context,
-                                 const systems::PublishEvent<double>&) {
-    // If multiple events occur simultaneously (for example, due to
-    // occasional synchronization of periods from different periodic
-    // events), we still only want to publish the input port values once,
-    // so we don't care if there are more events.
-    this->PublishInputAsLcmMessage(context);
-  };
-
-  if (publish_period > 0.0) {
-    const double offset = 0.0;
-    this->DeclarePeriodicEvent(publish_period, offset,
-                               systems::PublishEvent<double>(publish_function));
-  } else {
-    this->DeclarePerStepEvent(systems::PublishEvent<double>(publish_function));
-  }
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
-    drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
+    drake::lcm::DrakeLcmInterface* lcm)
     : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
-                         lcm, publish_period) {}
+                         lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator,
-    drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
-    : LcmPublisherSystem(channel, &translator, nullptr, nullptr,
-                         lcm, publish_period) {}
+    drake::lcm::DrakeLcmInterface* lcm)
+    : LcmPublisherSystem(channel, &translator, nullptr, nullptr, lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
-    drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
+    drake::lcm::DrakeLcmInterface* lcm)
     : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
-                         lcm, publish_period) {}
+                         lcm) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
-    DrakeLcmInterface* lcm,
-    double publish_period)
+    DrakeLcmInterface* lcm)
     : LcmPublisherSystem(
           channel,
           translator_dictionary.GetTranslator(channel),
-          lcm, publish_period) {}
+          lcm) {}
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 
@@ -139,8 +115,44 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
 }
 
-void LcmPublisherSystem::PublishInputAsLcmMessage(
-    const Context<double>& context) const {
+void LcmPublisherSystem::set_publish_period(double period) {
+  LeafSystem<double>::DeclarePeriodicPublish(period);
+}
+
+void LcmPublisherSystem::DoPublish(
+    const Context<double>& context,
+    const std::vector<const systems::PublishEvent<double>*>& events) const {
+
+  DRAKE_DEMAND(!events.empty());  // Framework guarantees this.
+
+  // Note: initialization events can be packaged in the `events` vector along
+  // with other kinds of event triggers as of #9766. In order to retain the
+  // current behavior, we handle initialization events first and other events
+  // second.
+  // TODO(edrumwri): Replace this DoPublish() handler with separate event
+  // handlers in a separate PR (all sorts of tests _will_ break).
+  int num_initialization_events = 0;
+  for (const systems::PublishEvent<double>* event : events) {
+    if (event->get_trigger_type() == systems::TriggerType::kInitialization) {
+      // We expect no more than one initialization event.
+      DRAKE_DEMAND(++num_initialization_events == 1);
+      SPDLOG_TRACE(drake::log(), "Invoking initialization publisher");
+      event->handle(context);
+    }
+  }
+
+  // If events are all initialization events, return now.
+  if (static_cast<int>(events.size()) == num_initialization_events)
+    return;
+
+  // If there are remaining non-initialization events, we assume they are
+  // requests to publish the input port contents as an LCM message. (This is
+  // likely to be a periodic event, but could be a forced event or any other
+  // type.) If multiple events occur simultaneously (for example, due to
+  // occasional synchronization of periods from different periodic events), we
+  // still only want to publish the input port values once, so we don't care if
+  // there are more events.
+
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
 
