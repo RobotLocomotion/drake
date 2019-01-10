@@ -1416,7 +1416,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       const auto sys = registered_systems_[i].get();
       for (SystemConstraintIndex j(0); j < sys->get_num_constraints(); ++j) {
         const auto c = &(sys->get_constraint(j));
-        typename SystemConstraint<T>::CalcCallback diagram_calc =
+        ContextConstraintCalc<T> diagram_calc =
             [this, sys, c](const Context<T>& context, VectorX<T>* value) {
               c->Calc(this->GetSubsystemContext(*sys, context), value);
             };
