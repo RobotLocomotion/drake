@@ -879,9 +879,9 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       context->FixInputPort(0, Value<std::string>{}),
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
-      "drake::systems::Value<drake::systems::BasicVector<double>> "
+      "drake::Value<drake::systems::BasicVector<double>> "
       "for input port\\[0\\] but the actual type was "
-      "drake::systems::Value<std::string>. "
+      "drake::Value<std::string>. "
       "\\(System ::dut\\)");
 
   // The second port should only accept ints.

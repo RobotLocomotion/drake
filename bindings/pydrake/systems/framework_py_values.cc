@@ -105,19 +105,20 @@ void DefineFrameworkPyValues(py::module m) {
     };
   };
 
+  // TODO(jwnimmer-tri) Move Value<> bindings into pydrake.common module.
   py::class_<AbstractValue> abstract_value(m, "AbstractValue");
   DefClone(&abstract_value);
   abstract_value
       // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
       // Otherwise, a user could encounter undefind behavior via `SetFrom`.
       .def("SetFrom", &AbstractValue::SetFromOrThrow,
-          doc.AbstractValue.SetFrom.doc)
+          pydrake_doc.drake.AbstractValue.SetFrom.doc)
       .def("get_value", abstract_stub("get_value"),
-          doc.AbstractValue.GetValue.doc)
+          pydrake_doc.drake.AbstractValue.GetValue.doc)
       .def("get_mutable_value", abstract_stub("get_mutable_value"),
-          doc.AbstractValue.GetMutableValue.doc)
+          pydrake_doc.drake.AbstractValue.GetMutableValue.doc)
       .def("set_value", abstract_stub("set_value"),
-          doc.AbstractValue.SetValue.doc);
+          pydrake_doc.drake.AbstractValue.SetValue.doc);
 
   // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
   AddValueInstantiation<string>(m);
@@ -134,7 +135,7 @@ void DefineFrameworkPyValues(py::module m) {
   // N.B. If any code explicitly uses `Value<py::object>` for whatever reason,
   // then this should turn into a specialization of `Value<>`, rather than an
   // extension.
-  class PyObjectValue : public Value<py::object> {
+  class PyObjectValue : public drake::Value<py::object> {
    public:
     using Base = Value<py::object>;
     using Base::Base;
@@ -164,7 +165,7 @@ void DefineFrameworkPyValues(py::module m) {
         }
         return py_value_class(value);
       },
-      doc.AbstractValue.Make.doc);
+      pydrake_doc.drake.AbstractValue.Make.doc);
 }
 
 }  // namespace pydrake

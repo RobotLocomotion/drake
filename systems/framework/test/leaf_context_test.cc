@@ -469,23 +469,23 @@ TEST_F(LeafContextTest, FixInputPort) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         context_.FixInputPort(i_new, zero),
         std::runtime_error,
-        "Bad type drake::systems::Value<drake::systems::BasicVector<double>>");
+        "Bad type drake::Value<drake::systems::BasicVector<double>>");
     DRAKE_EXPECT_THROWS_MESSAGE(
         context_.FixInputPort(i_new, BasicVector<double>(zero)),
         std::runtime_error,
-        "Bad type drake::systems::Value<drake::systems::BasicVector<double>>");
+        "Bad type drake::Value<drake::systems::BasicVector<double>>");
     DRAKE_EXPECT_THROWS_MESSAGE(
         context_.FixInputPort(i_new, BasicVector<double>::Make(0.0)),
         std::runtime_error,
-        "Bad type drake::systems::Value<drake::systems::BasicVector<double>>");
+        "Bad type drake::Value<drake::systems::BasicVector<double>>");
     DRAKE_EXPECT_THROWS_MESSAGE(
         context_.FixInputPort(i_new, Value<std::string>("foo")),
         std::runtime_error,
-        "Bad type drake::systems::Value<std::string>");
+        "Bad type drake::Value<std::string>");
     DRAKE_EXPECT_THROWS_MESSAGE(
         context_.FixInputPort(i_new, AbstractValue::Make<std::string>("foo")),
         std::runtime_error,
-        "Bad type drake::systems::Value<std::string>");
+        "Bad type drake::Value<std::string>");
   }
 }
 
