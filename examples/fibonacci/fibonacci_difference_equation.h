@@ -78,12 +78,11 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
 
  private:
   // Update function x_{n+1} = f(n, x_n).
-  systems::EventStatus Update(const systems::Context<double>& context,
+  void Update(const systems::Context<double>& context,
                               systems::DiscreteValues<double>* xd) const {
     const auto& x_n = context.get_discrete_state();
     (*xd)[0] = x_n[0] + x_n[1];
     (*xd)[1] = x_n[0];
-    return systems::EventStatus::Succeeded();
   }
 
   // Returns the result of the output function y_n = g(n, x_n) when the output

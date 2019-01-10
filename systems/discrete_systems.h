@@ -64,11 +64,10 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
   static constexpr double kOffset = 0.;       // Trigger events at n=0.
 
  private:
-  systems::EventStatus Update(const systems::Context<double>& context,
-                              systems::DiscreteValues<double>* xd) const {
+  void Update(const systems::Context<double>& context,
+              systems::DiscreteValues<double>* xd) const {
     const double x_n = context.get_discrete_state()[0];
     (*xd)[0] = x_n + 1.;
-    return systems::EventStatus::Succeeded();
   }
 
   void Output(const systems::Context<double>& context,

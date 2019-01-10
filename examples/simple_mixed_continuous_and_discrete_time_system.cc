@@ -19,24 +19,22 @@ namespace {
 class SimpleMixedContinuousTimeDiscreteTimeSystem : public LeafSystem<double> {
  public:
   SimpleMixedContinuousTimeDiscreteTimeSystem() {
-    const int kSize = 1;
-    this->DeclarePeriodicDiscreteUpdateEvent(
+    DeclarePeriodicDiscreteUpdateEvent(
         1.0, 0.0, &SimpleMixedContinuousTimeDiscreteTimeSystem::Update);
-    this->DeclareVectorOutputPort(
-        "y", BasicVector<double>(2 * kSize),
+    DeclareVectorOutputPort(
+        "y", BasicVector<double>(2),  // xd;xc
         &SimpleMixedContinuousTimeDiscreteTimeSystem::CopyStateOut);
-    this->DeclareContinuousState(kSize);
-    this->DeclareDiscreteState(kSize);
+    DeclareDiscreteState(1);    // xd
+    DeclareContinuousState(1);  // xc
   }
 
  private:
   // xd_{n+1} =  xd_n³
-  EventStatus Update(const Context<double>& context,
-                     DiscreteValues<double>* updates) const {
-    const double x_n = context.get_discrete_state()[0];
-    const double x_np1 = std::pow(x_n, 3.0);
-    (*updates)[0] = x_np1;
-    return EventStatus::Succeeded();
+  void Update(const Context<double>& context,
+              DiscreteValues<double>* updates) const {
+    const double xd_n = context.get_discrete_state()[0];
+    const double xd_np1 = std::pow(xd_n, 3.0);
+    (*updates)[0] = xd_np1;
   }
 
   // xcdot = -xc + xc³
@@ -54,7 +52,7 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem : public LeafSystem<double> {
     const double xd = context.get_discrete_state()[0];
     (*output)[0] = xd;
 
-    const double xc = context.get_continuous_state_vector().GetAtIndex(0);
+    const double xc = context.get_continuous_state()[0];
     (*output)[1] = xc;
   }
 };
@@ -66,10 +64,10 @@ int main() {
   // Create the simulator.
   Simulator<double> simulator(system);
 
-  // Set the initial conditions xd₀, xc(0).
+  // Set the initial conditions xd_0, xc(0).
   DiscreteValues<double>& xd =
       simulator.get_mutable_context().get_mutable_discrete_state();
-  xd[0] = 0.99;  // xd₀
+  xd[0] = 0.99;  // xd_0
   ContinuousState<double>& xc =
       simulator.get_mutable_context().get_mutable_continuous_state();
   xc[0] = 0.9;  // xc(0)

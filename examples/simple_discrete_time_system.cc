@@ -17,20 +17,19 @@ namespace {
 class SimpleDiscreteTimeSystem : public LeafSystem<double> {
  public:
   SimpleDiscreteTimeSystem() {
-    this->DeclarePeriodicDiscreteUpdateEvent(1.0, 0.0,
-                                             &SimpleDiscreteTimeSystem::Update);
-    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
-                                  &SimpleDiscreteTimeSystem::CopyStateOut);
-    this->DeclareDiscreteState(1);  // One state variable.
+    DeclarePeriodicDiscreteUpdateEvent(1.0, 0.0,
+                                       &SimpleDiscreteTimeSystem::Update);
+    DeclareVectorOutputPort("y", BasicVector<double>(1),
+                            &SimpleDiscreteTimeSystem::CopyStateOut);
+    DeclareDiscreteState(1);  // One state variable.
   }
 
  private:
   // x_{n+1} = x_n³
-  EventStatus Update(const Context<double>& context,
-                     DiscreteValues<double>* next_state) const {
+  void Update(const Context<double>& context,
+              DiscreteValues<double>* next_state) const {
     const double x_n = context.get_discrete_state()[0];
     (*next_state)[0] = std::pow(x_n, 3.0);
-    return EventStatus::Succeeded();
   }
 
   // y = x

@@ -1,4 +1,3 @@
-
 // Simple Continuous Time System Example
 //
 // This is meant to be a sort of "hello world" example for the
@@ -18,9 +17,9 @@ namespace {
 class SimpleContinuousTimeSystem : public LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
-    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
-                                  &SimpleContinuousTimeSystem::CopyStateOut);
-    this->DeclareContinuousState(1);  // One state variable.
+    DeclareVectorOutputPort("y", BasicVector<double>(1),
+                            &SimpleContinuousTimeSystem::CopyStateOut);
+    DeclareContinuousState(1);  // One state variable.
   }
 
  private:
@@ -28,7 +27,7 @@ class SimpleContinuousTimeSystem : public LeafSystem<double> {
   void DoCalcTimeDerivatives(
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {
-    const double x = context.get_continuous_state_vector()[0];
+    const double x = context.get_continuous_state()[0];
     const double xdot = -x + std::pow(x, 3.0);
     (*derivatives)[0] = xdot;
   }
@@ -36,7 +35,7 @@ class SimpleContinuousTimeSystem : public LeafSystem<double> {
   // y = x
   void CopyStateOut(const Context<double>& context,
                     BasicVector<double>* output) const {
-    const double x = context.get_continuous_state_vector()[0];
+    const double x = context.get_continuous_state()[0];
     (*output)[0] = x;
   }
 };
