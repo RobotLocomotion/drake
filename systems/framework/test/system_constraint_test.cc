@@ -136,6 +136,24 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
   EXPECT_EQ(inequality_constraint.description(), "inequality constraint");
 }
 
+GTEST_TEST(SystemConstraintTest, External) {
+  const ExternalSystemConstraint empty;
+
+  const auto& ge_zero_all =
+      ExternalSystemConstraint::MakeForAllScalars(
+          "u == [0]", { Vector1d::Zero(), nullopt },
+          [](const auto& system, const auto& context, auto* value) {
+            *value = system.EvalEigenVectorInput(context, 0);
+          });
+
+  const auto& ge_zero_nosym =
+      ExternalSystemConstraint::MakeForNonsymbolicScalars(
+          "u == [0]", { Vector1d::Zero(), nullopt },
+          [](const auto& system, const auto& context, auto* value) {
+            *value = system.EvalEigenVectorInput(context, 0);
+          });
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
