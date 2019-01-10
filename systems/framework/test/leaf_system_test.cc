@@ -2424,10 +2424,6 @@ GTEST_TEST(EventSugarTest, EventsAreRegistered) {
   EXPECT_TRUE(timed_events->HasPublishEvents());
   EXPECT_TRUE(timed_events->HasDiscreteUpdateEvents());
   EXPECT_TRUE(timed_events->HasUnrestrictedUpdateEvents());
-
-  // Verify that the LeafSystem forced publish events have been allocated.
-//  EXPECT_TRUE(dut.forced_publish_events_allocated());
-//  EXPECT_TRUE(dut.get_forced_publish_events()->HasPublishEvents());
 }
 
 GTEST_TEST(EventSugarTest, HandlersGetCalled) {
