@@ -387,7 +387,7 @@ struct Impl {
               WarnDeprecated(
                   "`DeclareAbstractInputPort(self, name)` is deprecated. "
                   "Please use `(self, name, model_value)` instead.");
-              Value<py::object> model_value;
+              drake::Value<py::object> model_value;
               return self->DeclareAbstractInputPort(name, model_value);
             },
             py_reference_internal, py::arg("name"),

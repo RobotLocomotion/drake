@@ -6,6 +6,10 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_hdrs_forwarding_library",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -75,17 +79,12 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
+drake_cc_hdrs_forwarding_library(
     name = "value",
-    srcs = ["value.cc"],
-    hdrs = ["value.h"],
-    deps = [
-        ":vector",
-        "//common:copyable_unique_ptr",
-        "//common:essential",
-        "//common:is_cloneable",
-        "//common:nice_type_name",
-    ],
+    actual_subdir = "common",
+    add_deprecation_warning = False,
+    relative_labels = [":value"],
+    deps = ["//common:value"],
 )
 
 drake_cc_library(
@@ -95,6 +94,7 @@ drake_cc_library(
     visibility = [":__subpackages__"],
     deps = [
         ":value",
+        ":vector",
         "//common:essential",
         "//common:nice_type_name",
     ],
@@ -194,6 +194,7 @@ drake_cc_library(
         "framework_common.h",
     ],
     deps = [
+        ":value",
         "//common:type_safe_index",
     ],
 )
@@ -231,6 +232,9 @@ drake_cc_library(
     ],
     deps = [
         ":cache_and_dependency_tracker",
+        ":framework_common",
+        ":value",
+        ":vector",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -832,15 +836,6 @@ drake_cc_googletest(
         "//common:unused",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
-    ],
-)
-
-drake_cc_googletest(
-    name = "value_test",
-    deps = [
-        ":value",
-        "//common:essential",
-        "//systems/framework/test_utilities:my_vector",
     ],
 )
 
