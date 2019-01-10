@@ -66,7 +66,8 @@ class FreeBodyPlant final : public multibody::MultibodyPlant<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeBodyPlant)
 
-  FreeBodyPlant(double time_step) : multibody::MultibodyPlant<T>(time_step) {
+  explicit FreeBodyPlant(double time_step)
+      : multibody::MultibodyPlant<T>(time_step) {
     const double mass{1};
     const Eigen::Vector3d p_BoBcm_B(0, 0, 0);
     const multibody::RotationalInertia<double> I_BBcm_B{0.01, 0.01, 0.01};

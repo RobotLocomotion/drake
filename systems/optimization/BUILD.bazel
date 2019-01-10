@@ -30,13 +30,13 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system_optimization_test_util",
+    testonly = 1,
     srcs = ["test/system_optimization_test_util.cc"],
     hdrs = ["test/system_optimization_test_util.h"],
-    testonly = 1,
     deps = [
-        "//systems/framework:leaf_system",
-        "//multibody/plant",
         "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
     ],
 )
 
