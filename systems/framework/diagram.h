@@ -227,21 +227,21 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // The three methods below are hidden from doxygen, as described in
   // documentation for their corresponding methods in System.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateOrTransferForcedPublishEventCollection() final {
+  AllocateForcedPublishEventCollection() const final {
     return AllocateForcedEventCollection<PublishEvent<T>>(
-        &System<T>::AllocateOrTransferForcedPublishEventCollection);
+        &System<T>::AllocateForcedPublishEventCollection);
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateOrTransferForcedDiscreteUpdateEventCollection() final {
+  AllocateForcedDiscreteUpdateEventCollection() const final {
     return AllocateForcedEventCollection<DiscreteUpdateEvent<T>>(
-        &System<T>::AllocateOrTransferForcedDiscreteUpdateEventCollection);
+        &System<T>::AllocateForcedDiscreteUpdateEventCollection);
   }
 
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateOrTransferForcedUnrestrictedUpdateEventCollection() final {
+  AllocateForcedUnrestrictedUpdateEventCollection() const final {
     return AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
-        &System<T>::AllocateOrTransferForcedUnrestrictedUpdateEventCollection);
+        &System<T>::AllocateForcedUnrestrictedUpdateEventCollection);
   }
   /// @endcond
 
@@ -1085,8 +1085,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   template <typename EventType>
   std::unique_ptr<EventCollection<EventType>> AllocateForcedEventCollection(
       std::function<
-      std::unique_ptr<EventCollection<EventType>>(System<T>*)>
-  allocater_func) {
+      std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+  allocater_func) const {
     const int num_systems = num_subsystems();
     auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
     for (SubsystemIndex i(0); i < num_systems; ++i) {
@@ -1470,14 +1470,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
     this->set_forced_publish_events(
         AllocateForcedEventCollection<PublishEvent<T>>(
-            &System<T>::AllocateOrTransferForcedPublishEventCollection));
+            &System<T>::AllocateForcedPublishEventCollection));
     this->set_forced_discrete_update_events(
         AllocateForcedEventCollection<DiscreteUpdateEvent<T>>(
-            &System<T>::AllocateOrTransferForcedDiscreteUpdateEventCollection));
+            &System<T>::AllocateForcedDiscreteUpdateEventCollection));
     this->set_forced_unrestricted_update_events(
         AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
             &System<T>::
-                AllocateOrTransferForcedUnrestrictedUpdateEventCollection));
+                AllocateForcedUnrestrictedUpdateEventCollection));
   }
 
   // Exposes the given port as an input of the Diagram.

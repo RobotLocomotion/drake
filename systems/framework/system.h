@@ -1020,8 +1020,9 @@ class System : public SystemBase {
     return nullptr;
   }
 
-  // The derived class implementation should provide exactly one event of the
-  // appropriate type with a kForced trigger type.
+  // The derived class implementation shall create the appropriate collection
+  // for each of these three methods.
+  //
   // Consumers of this class should never need to call the three methods below.
   // These three methods would ideally be designated as "protected", but
   // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
@@ -1033,13 +1034,13 @@ class System : public SystemBase {
   // (2) Use the doxygen cond/endcond tags so that these methods are hidden
   //     from the user (in the doxygen documentation).
   virtual std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateOrTransferForcedPublishEventCollection() = 0;
+  AllocateForcedPublishEventCollection() const = 0;
 
   virtual std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateOrTransferForcedDiscreteUpdateEventCollection() = 0;
+  AllocateForcedDiscreteUpdateEventCollection() const = 0;
 
   virtual std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateOrTransferForcedUnrestrictedUpdateEventCollection() = 0;
+  AllocateForcedUnrestrictedUpdateEventCollection() const = 0;
   /// @endcond
 
   //----------------------------------------------------------------------------
@@ -2023,7 +2024,7 @@ class System : public SystemBase {
   }
   //@}
 
-  bool forced_publish_events_allocated() const { 
+  bool forced_publish_events_allocated() const {
     return forced_publish_events_ != nullptr;
   }
 
@@ -2033,24 +2034,6 @@ class System : public SystemBase {
 
   bool forced_unrestricted_update_events_allocated() const {
     return forced_unrestricted_update_events_ != nullptr;
-  }
-
-  std::unique_ptr<EventCollection<PublishEvent<T>>>
-      transfer_forced_publish_events() {
-    DRAKE_DEMAND(forced_publish_events_ != nullptr);
-    return std::move(forced_publish_events_);
-  }
-
-  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-      transfer_forced_discrete_update_events() {
-    DRAKE_DEMAND(forced_discrete_update_events_ != nullptr);
-    return std::move(forced_discrete_update_events_);
-  }
-
-  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-      transfer_forced_unrestricted_update_events() {
-    DRAKE_DEMAND(forced_unrestricted_update_events_ != nullptr);
-    return std::move(forced_unrestricted_update_events_);
   }
 
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {

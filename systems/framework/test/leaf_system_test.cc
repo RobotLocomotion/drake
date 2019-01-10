@@ -27,6 +27,93 @@ namespace drake {
 namespace systems {
 namespace {
 
+// A shell System to test the event dispatchers are sent at least one event upon
+// a forced call.
+class ForcedDispatchOverrideSystem : public LeafSystem<double> {
+ public:
+  bool has_publish_event() const { return has_publish_event_; }
+  bool has_discrete_update_event() const {
+    return has_discrete_update_event_;
+  }
+  bool has_unrestricted_update_event() const {
+    return has_unrestricted_update_event_;
+  }
+  TriggerType get_publish_event_trigger_type() const {
+    return publish_event_trigger_type_;
+  }
+  TriggerType get_discrete_update_event_trigger_type() const {
+    return discrete_update_event_trigger_type_;
+  }
+  TriggerType get_unrestricted_update_event_trigger_type() const {
+    return unrestricted_update_event_trigger_type_;
+  }
+
+ private:
+  void DoPublish(
+      const Context<double>&,
+      const std::vector<const PublishEvent<double>*>& events) const final {
+    has_publish_event_ = (events.size() == 1);
+    if (has_publish_event_) {
+      publish_event_trigger_type_ =
+          events.front()->get_trigger_type();
+    }
+  }
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>&,
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      DiscreteValues<double>*) const final {
+    has_discrete_update_event_ = (events.size() == 1);
+    if (has_discrete_update_event_) {
+      discrete_update_event_trigger_type_ =
+          events.front()->get_trigger_type();
+    }
+  }
+
+  void DoCalcUnrestrictedUpdate(
+      const Context<double>&,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>*) const final {
+    has_unrestricted_update_event_ = (events.size() == 1);
+    if (has_unrestricted_update_event_) {
+      unrestricted_update_event_trigger_type_ =
+          events.front()->get_trigger_type();
+    }
+  }
+
+  // Variables used to determine whether the handlers have been called with
+  // forced update events. Note: updating method variables in event handlers
+  // is an anti-pattern, but we do it here to simplify test code.
+  mutable bool has_publish_event_{false};
+  mutable bool has_discrete_update_event_{false};
+  mutable bool has_unrestricted_update_event_{false};
+  mutable TriggerType publish_event_trigger_type_{TriggerType::kUnknown};
+  mutable TriggerType discrete_update_event_trigger_type_{
+    TriggerType::kUnknown
+  };
+  mutable TriggerType unrestricted_update_event_trigger_type_{
+    TriggerType::kUnknown
+  };
+};
+
+GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
+  ForcedDispatchOverrideSystem system;
+  auto context = system.CreateDefaultContext();
+  auto discrete_values = system.AllocateDiscreteVariables();
+  auto state = context->CloneState();
+  system.Publish(*context);
+  system.CalcDiscreteVariableUpdates(*context, discrete_values.get());
+  system.CalcUnrestrictedUpdate(*context, state.get());
+  ASSERT_TRUE(system.has_publish_event());
+  ASSERT_TRUE(system.has_discrete_update_event());
+  ASSERT_TRUE(system.has_unrestricted_update_event());
+  EXPECT_TRUE(system.get_publish_event_trigger_type() == TriggerType::kForced);
+  EXPECT_TRUE(system.get_discrete_update_event_trigger_type() ==
+      TriggerType::kForced);
+  EXPECT_TRUE(system.get_unrestricted_update_event_trigger_type() ==
+      TriggerType::kForced);
+}
+
 // A shell System to test the default implementations.
 template <typename T>
 class TestSystem : public LeafSystem<T> {

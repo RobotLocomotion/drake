@@ -1684,7 +1684,7 @@ class ForcedPublishingSystem : public LeafSystem<double> {
  private:
   EventStatus PublishHandler(const Context<double>& context) const {
     published_ = true;
-    return EventStatus::Succeeded();   
+    return EventStatus::Succeeded();
   }
 
   // Recording state through event handlers, like this system does, is an
@@ -1698,14 +1698,14 @@ class ForcedPublishingSystemDiagram : public Diagram<double> {
   ForcedPublishingSystemDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
     publishing_system_ = builder.template AddSystem<ForcedPublishingSystem>();
-    builder.BuildInto(this);    
+    builder.BuildInto(this);
   }
-  ForcedPublishingSystem* publishing_system() const { 
+  ForcedPublishingSystem* publishing_system() const {
       return publishing_system_;
   }
 
-  private:
-   ForcedPublishingSystem* publishing_system_{nullptr};
+ private:
+  ForcedPublishingSystem* publishing_system_{nullptr};
 };
 
 class DiscreteStateTest : public ::testing::Test {

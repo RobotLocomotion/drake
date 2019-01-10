@@ -101,7 +101,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares a function that is called whenever a user directly calls
-  /// Publish(.) with a Context as a single argument. 
+  /// Publish(.) with a Context as a single argument.
   /// @pre `this` must be dynamic_cast-able to MySystem.
   /// @pre `publish` must not be null.
   template <class MySystem>
@@ -115,7 +115,7 @@ class LeafSystem : public System<T> {
 
     // Instantiate the event.
     auto forced = std::make_unique<PublishEvent<T>>(
-        TriggerType::kForced, 
+        TriggerType::kForced,
         [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
           // TODO(sherm1) Forward the return status.
           (this_ptr->*publish)(context);  // Ignore return status for now.
@@ -132,32 +132,32 @@ class LeafSystem : public System<T> {
   // The three methods below are hidden from doxygen, as described in
   // documentation for their corresponding methods in System.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateOrTransferForcedPublishEventCollection() override {
-    if (this->forced_publish_events_allocated()) {
-      return this->transfer_forced_publish_events();
-    } else {
-      return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-    }
+  AllocateForcedPublishEventCollection() const override {
+    auto collection =
+        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    if (this->forced_publish_events_allocated())
+      collection->SetFrom(this->get_forced_publish_events());
+    return collection;
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateOrTransferForcedDiscreteUpdateEventCollection() override {
-    if (this->forced_discrete_update_events_allocated()) {
-      return this->transfer_forced_discrete_update_events();
-    } else {
-      return LeafEventCollection<
-          DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
-    }
+  AllocateForcedDiscreteUpdateEventCollection() const override {
+    auto collection =
+        LeafEventCollection<
+            DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+    if (this->forced_discrete_update_events_allocated())
+      collection->SetFrom(this->get_forced_discrete_update_events());
+    return collection;
   }
 
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateOrTransferForcedUnrestrictedUpdateEventCollection() override {
-    if (this->forced_unrestricted_update_events_allocated()) {
-      return this->transfer_forced_unrestricted_update_events();
-    } else {
-      return LeafEventCollection<
+  AllocateForcedUnrestrictedUpdateEventCollection() const override {
+    auto collection =
+        LeafEventCollection<
           UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
-    }
+    if (this->forced_unrestricted_update_events_allocated())
+      collection->SetFrom(this->get_forced_unrestricted_update_events());
+    return collection;
   }
   /// @endcond
 
@@ -354,11 +354,11 @@ class LeafSystem : public System<T> {
   explicit LeafSystem(SystemScalarConverter converter)
       : System<T>(std::move(converter)) {
     this->set_forced_publish_events(
-        AllocateOrTransferForcedPublishEventCollection());
+        AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
-        AllocateOrTransferForcedDiscreteUpdateEventCollection());
+        AllocateForcedDiscreteUpdateEventCollection());
     this->set_forced_unrestricted_update_events(
-        AllocateOrTransferForcedUnrestrictedUpdateEventCollection());
+        AllocateForcedUnrestrictedUpdateEventCollection());
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
