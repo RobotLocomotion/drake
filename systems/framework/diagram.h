@@ -1465,8 +1465,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
             &System<T>::AllocateForcedDiscreteUpdateEventCollection));
     this->set_forced_unrestricted_update_events(
         AllocateForcedEventCollection<UnrestrictedUpdateEvent<T>>(
-            &System<T>::
-                AllocateForcedUnrestrictedUpdateEventCollection));
+            &System<T>::AllocateForcedUnrestrictedUpdateEventCollection));
   }
 
   // Exposes the given port as an input of the Diagram.

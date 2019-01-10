@@ -2186,9 +2186,9 @@ class System : public SystemBase {
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
-  // all of these have exactly one kForced triggered event. For a Diagram, they
+  // these contain at least one kForced triggered event. For a Diagram, they
   // are DiagramEventCollection, whose leafs are LeafEventCollection with
-  // exactly one kForced triggered event.
+  // one or more kForced triggered events.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
       forced_publish_events_{nullptr};
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>

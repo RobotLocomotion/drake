@@ -1697,15 +1697,22 @@ class ForcedPublishingSystemDiagram : public Diagram<double> {
  public:
   ForcedPublishingSystemDiagram() : Diagram<double>() {
     DiagramBuilder<double> builder;
-    publishing_system_ = builder.template AddSystem<ForcedPublishingSystem>();
+    publishing_system_one_ =
+        builder.template AddSystem<ForcedPublishingSystem>();
+    publishing_system_two_ =
+        builder.template AddSystem<ForcedPublishingSystem>();
     builder.BuildInto(this);
   }
-  ForcedPublishingSystem* publishing_system() const {
-      return publishing_system_;
+  ForcedPublishingSystem* publishing_system_one() const {
+      return publishing_system_one_;
+  }
+  ForcedPublishingSystem* publishing_system_two() const {
+      return publishing_system_two_;
   }
 
  private:
-  ForcedPublishingSystem* publishing_system_{nullptr};
+  ForcedPublishingSystem* publishing_system_one_{nullptr};
+  ForcedPublishingSystem* publishing_system_two_{nullptr};
 };
 
 class DiscreteStateTest : public ::testing::Test {
@@ -1845,10 +1852,13 @@ class ForcedPublishingSystemDiagramTest : public ::testing::Test {
 
 // Tests that a forced publish is processed through the event handler.
 TEST_F(ForcedPublishingSystemDiagramTest, Publish) {
-  auto* forced_publishing_system = diagram_.publishing_system();
-  EXPECT_FALSE(forced_publishing_system->published());
+  auto* forced_publishing_system_one = diagram_.publishing_system_one();
+  auto* forced_publishing_system_two = diagram_.publishing_system_two();
+  EXPECT_FALSE(forced_publishing_system_one->published());
+  EXPECT_FALSE(forced_publishing_system_two->published());
   diagram_.Publish(*context_);
-  EXPECT_TRUE(forced_publishing_system->published());
+  EXPECT_TRUE(forced_publishing_system_one->published());
+  EXPECT_TRUE(forced_publishing_system_two->published());
 }
 
 class SystemWithAbstractState : public LeafSystem<double> {
