@@ -68,9 +68,10 @@ int DoMain(void) {
   // Add blocks to publish contact results.
   auto contact_results_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
+          "CONTACT_RESULTS", &lcm));
   builder.Connect(plant->get_output_port_contact_results(),
                   contact_results_publisher->get_input_port());
+  contact_results_publisher->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Add visualizer.
   auto drake_visualizer =

@@ -151,15 +151,15 @@ int main() {
 
   auto image_array_lcm_publisher = builder.template AddSystem(
       lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
-          kImageArrayLcmChannelName, &lcm,
-          kCameraUpdatePeriod /* publish period */));
+          kImageArrayLcmChannelName, &lcm));
   image_array_lcm_publisher->set_name("publisher");
+  image_array_lcm_publisher->set_publish_period(kCameraUpdatePeriod);
 
   rendering::PoseStampedTPoseVectorTranslator translator(kCameraBaseFrameName);
   auto pose_lcm_publisher = builder.template AddSystem<lcm::LcmPublisherSystem>(
-      kPoseLcmChannelName, translator, &lcm,
-      kCameraUpdatePeriod /* publish period */);
+      kPoseLcmChannelName, translator, &lcm);
   pose_lcm_publisher->set_name("pose_lcm_publisher");
+  pose_lcm_publisher->set_publish_period(kCameraUpdatePeriod);
 
   builder.Connect(
       plant->get_output_port(0),

@@ -555,10 +555,6 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
       std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
   auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  publisher->AddInitializationMessage([publisher](
-      const systems::Context<double>& context, lcm::DrakeLcmInterface*) {
-    publisher->PublishInputAsLcmMessage(context);
-  });
   builder_->Connect(system.state_output(), publisher->get_input_port());
 }
 
@@ -572,10 +568,6 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  publisher->AddInitializationMessage([publisher](
-      const systems::Context<double>& context, lcm::DrakeLcmInterface*) {
-    publisher->PublishInputAsLcmMessage(context);
-  });
   builder_->Connect(system.state_output(), publisher->get_input_port());
 }
 
@@ -589,11 +581,6 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
   auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
       channel, translator, lcm_.get());
-  publisher->AddInitializationMessage([publisher](
-      const systems::Context<double>& context, lcm::DrakeLcmInterface*) {
-    publisher->PublishInputAsLcmMessage(context);
-  });
-
   builder_->Connect(system.raw_pose_output(), publisher->get_input_port());
 }
 
@@ -669,7 +656,6 @@ void AutomotiveSimulator<T>::Start(
   simulator_->template reset_integrator<RungeKutta2Integrator<T>>(
       *diagram_, max_step_size, &simulator_->get_mutable_context());
   simulator_->get_mutable_integrator()->set_fixed_step_mode(true);
-  simulator_->set_publish_at_initialization(false);
   simulator_->Initialize();
 }
 
