@@ -19,6 +19,12 @@
 namespace drake {
 namespace systems {
 
+// Break the System <=> SystemConstraint physical dependency cycle.
+// SystemConstraint is decorated with a back-pointer to its owning System,
+// but that pointer is never dereferenced within this component.
+template <typename T>
+class System;
+
 /// The form of a SystemConstraint.
 enum class SystemConstraintType {
   kEquality = 0,  ///< The constraint is of the form f(x)=0.
@@ -79,9 +85,27 @@ class SystemConstraintBounds final {
 /// This is the signature of a stateless function that evaluates the value of
 /// the constraint function f:
 ///   value = f(context)
+//
+/// See also SystemConstraintCalc, which offers the System reference.
 template <typename T>
 using ContextConstraintCalc =
-    std::function<void(const Context<T>& context, VectorX<T>* value)>;
+    std::function<void(const Context<T>&, VectorX<T>* value)>;
+
+/// This is the signature of a stateless function that evaluates the value of
+/// the constraint function f:
+///   value = f(context)
+///
+/// Values of this type are expected to work with *any* instance of the class
+/// of System they are designed for.  Specifically, they should not capture
+/// pointers into an instance of a System or OutputPort or etc.  Instead, they
+/// should only use the System reference that is passed into this functor.
+///
+/// See also ContextConstraintCalc, which omits the System reference.  A value
+/// of type ContextConstraintCalc is allowed to assume it's only ever applied
+/// to a specific System object.
+template <typename T>
+using SystemConstraintCalc =
+    std::function<void(const System<T>&, const Context<T>&, VectorX<T>* value)>;
 
 /// A SystemConstraint is a generic base-class for constraints on Systems.
 ///
@@ -115,7 +139,7 @@ using ContextConstraintCalc =
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class SystemConstraint {
+class SystemConstraint final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
 
@@ -128,12 +152,33 @@ class SystemConstraint {
   /// f(x) <= upper_bound.
   ///
   /// @param description a human-readable description useful for debugging.
-  SystemConstraint(ContextConstraintCalc<T> calc_function,
+  SystemConstraint(const System<T>* system,
+                   ContextConstraintCalc<T> calc_function,
                    SystemConstraintBounds bounds,
                    std::string description)
-      : calc_function_(std::move(calc_function)),
+      : system_(system),
+        system_calc_function_(),
+        context_calc_function_(std::move(calc_function)),
         bounds_(std::move(bounds)),
         description_(std::move(description)) {
+    DRAKE_DEMAND(system != nullptr);
+  }
+
+  /// Constructs a SystemConstraint.  Depending on the `bounds` it could be an
+  /// equality constraint f(x) = 0, or an inequality constraint lower_bound <=
+  /// f(x) <= upper_bound.
+  ///
+  /// @param description a human-readable description useful for debugging.
+  SystemConstraint(const System<T>* system,
+                   SystemConstraintCalc<T> calc_function,
+                   SystemConstraintBounds bounds,
+                   std::string description)
+      : system_(system),
+        system_calc_function_(std::move(calc_function)),
+        context_calc_function_(),
+        bounds_(std::move(bounds)),
+        description_(std::move(description)) {
+    DRAKE_DEMAND(system != nullptr);
   }
 
   /// Evaluates the function pointer passed in through the constructor,
@@ -141,7 +186,11 @@ class SystemConstraint {
   /// resized to match the constraint function output.
   void Calc(const Context<T>& context, VectorX<T>* value) const {
     value->resize(size());
-    calc_function_(context, value);
+    if (context_calc_function_) {
+      context_calc_function_(context, value);
+    } else {
+      system_calc_function_(*system_, context, value);
+    }
     DRAKE_DEMAND(value->size() == size());
   }
 
@@ -172,6 +221,13 @@ class SystemConstraint {
     }
   }
 
+  /// Returns a reference to the System that owns this output port. Note that
+  /// for a constraint on a diagram this will be the diagram itself, never a
+  /// leaf system whose constraint was re-expressed.
+  const System<T>& get_system() const {
+    return *system_;
+  }
+
   // Accessor methods.
   const SystemConstraintBounds& bounds() const { return bounds_; }
   int size() const { return bounds_.size(); }
@@ -184,7 +240,9 @@ class SystemConstraint {
   const std::string& description() const { return description_; }
 
  private:
-  const ContextConstraintCalc<T> calc_function_;
+  const System<T>* const system_;
+  const SystemConstraintCalc<T> system_calc_function_;
+  const ContextConstraintCalc<T> context_calc_function_;
   const SystemConstraintBounds bounds_;
   const std::string description_;
 };
