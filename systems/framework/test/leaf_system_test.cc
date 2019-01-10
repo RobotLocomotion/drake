@@ -2457,6 +2457,9 @@ class EventSugarTestSystem : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
 
+    // Single forced publish callback.
+    DeclareForcedPublishEvent(&EventSugarTestSystem::MyPublishHandler);
+
     // These variants don't require an EventStatus return.
     DeclarePeriodicPublishEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MySuccessfulPublishHandler);
