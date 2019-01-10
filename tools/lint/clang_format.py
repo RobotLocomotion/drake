@@ -7,7 +7,7 @@ import sys
 
 def get_clang_format_path():
     if sys.platform == "darwin":
-        path = "/usr/local/bin/clang-format"
+        path = "/usr/local/opt/llvm@6/bin/clang-format"
     else:
         path = "/usr/bin/clang-format-6.0"
     if os.path.isfile(path):
