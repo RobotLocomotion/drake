@@ -39,11 +39,11 @@ namespace internal {
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class MultibodyTreeContext: public systems::LeafContext<T> {
+class MultibodyTreeContext final : public systems::LeafContext<T> {
  public:
   /// @name Does not allow copy, move, or assignment.
   //@{
-  // Copy constructor is protected for use in implementing Clone().
+  // Copy constructor is private for use in implementing Clone().
   MultibodyTreeContext(MultibodyTreeContext&&) = delete;
   MultibodyTreeContext& operator=(const MultibodyTreeContext&) = delete;
   MultibodyTreeContext& operator=(MultibodyTreeContext&&) = delete;
@@ -67,8 +67,7 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       is_state_discrete_(discrete_state) {
   }
 
-  std::unique_ptr<systems::ContextBase> DoCloneWithoutPointers()
-      const override {
+  std::unique_ptr<systems::ContextBase> DoCloneWithoutPointers() const final {
     return std::unique_ptr<systems::ContextBase>(
         new MultibodyTreeContext<T>(*this));
   }
@@ -213,13 +212,12 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
     return x.nestedExpression().segment(start, count);
   }
 
- protected:
+ private:
   MultibodyTreeContext(const MultibodyTreeContext& source)
       : systems::LeafContext<T>(source),
         topology_{source.topology_},
         is_state_discrete_{source.is_state_discrete_} {}
 
- private:
   const MultibodyTreeTopology topology_;
 
   // If `true`, this context stores a discrete state. If `false` the state is
