@@ -11,8 +11,6 @@ class which is exposed to C++ has been explicitly enumerated in one of the
 source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
-Python 2.7 is currently the only supported version for these bindings.
-
 .. _python-bindings-binary:
 
 Binary Installation for Python
@@ -45,6 +43,9 @@ Next, ensure that your ``PYTHONPATH`` is properly configured:
 See :ref:`below <using-python-bindings>` for usage instructions. If using
 macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
 
+Python 2.7 is currently the only supported version for the bindings supplied
+by the binary packages.
+
 Building the Python Bindings
 ----------------------------
 
@@ -64,6 +65,7 @@ Please note the additional CMake options which affect the Python bindings:
 *   ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
 *   ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
 *   ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
+*   ``-DWITH_PYTHON_VERSION={[2], 3}`` - Build with a specific version of Python.
 
 ``{...}`` means a list of options, and the option surrounded by ``[...]`` is
 the default option. An example of building ``pydrake`` with both Gurobi and
