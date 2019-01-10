@@ -105,7 +105,7 @@ GTEST_TEST(SystemConstraintWrapperTest, FreeBodyPlantTest) {
 
   // First test Eval with VectorX<double>
   Eigen::Matrix<double, 7, 1> x_double;
-  x_double << 1, 2, 3, 4, 5, 6, 7, 8;
+  x_double << 1, 2, 3, 4, 5, 6, 7;
   Eigen::VectorXd y_double;
   constraint.Eval(x_double, &y_double);
   const Vector1d y_double_expected(29);
