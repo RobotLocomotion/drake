@@ -9,9 +9,9 @@ leverage the stochastic modeling framework.
 
 A system in Drake can be viewed as having the state-space dynamics
 
-  x[n+1] = f(p; n, x[n], u[n], w[n]),
+  x_{n+1} = f(p; n, x_n, u_n, w_n),
 
-  y[n] = g(p; n, x[n], u[n], w[n]),
+  y_n = g(p; n, x_n, u_n, w_n),
 
 where n is the time index, x is the state, y is the output, u is the
 input, and p are the (constant) parameters.  This form also calls out
