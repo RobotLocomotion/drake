@@ -8,13 +8,17 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
 
+namespace drake {
+namespace systems {
+namespace {
+
 // Simple Continuous Time System
 //   xdot = -x + x³
 //   y = x
-class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
+class SimpleContinuousTimeSystem : public LeafSystem<double> {
  public:
   SimpleContinuousTimeSystem() {
-    this->DeclareVectorOutputPort("y", drake::systems::BasicVector<double>(1),
+    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
                                   &SimpleContinuousTimeSystem::CopyStateOut);
     this->DeclareContinuousState(1);  // One state variable.
   }
@@ -22,16 +26,16 @@ class SimpleContinuousTimeSystem : public drake::systems::LeafSystem<double> {
  private:
   // xdot = -x + x³
   void DoCalcTimeDerivatives(
-      const drake::systems::Context<double>& context,
-      drake::systems::ContinuousState<double>* derivatives) const override {
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
     const double x = context.get_continuous_state_vector()[0];
     const double xdot = -x + std::pow(x, 3.0);
     (*derivatives)[0] = xdot;
   }
 
   // y = x
-  void CopyStateOut(const drake::systems::Context<double>& context,
-                    drake::systems::BasicVector<double>* output) const {
+  void CopyStateOut(const Context<double>& context,
+                    BasicVector<double>* output) const {
     const double x = context.get_continuous_state_vector()[0];
     (*output)[0] = x;
   }
@@ -42,10 +46,10 @@ int main() {
   SimpleContinuousTimeSystem system;
 
   // Create the simulator.
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
 
   // Set the initial conditions x(0).
-  drake::systems::ContinuousState<double>& state =
+  ContinuousState<double>& state =
       simulator.get_mutable_context().get_mutable_continuous_state();
   state[0] = 0.9;
 
@@ -58,4 +62,12 @@ int main() {
   // TODO(russt): make a plot of the resulting trajectory.
 
   return 0;
+}
+
+}  // namespace
+}  // namespace systems
+}  // namespace drake
+
+int main() {
+  return drake::systems::main();
 }

@@ -969,7 +969,7 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
-    // Update to x_{n+1}, using a Drake "discrete update" event (occurs
+    // Update to x_{n+1} using a Drake "discrete update" event (occurs
     // at the beginning of step n+1).
     DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
                                        &ExampleDiscreteSystem::Update);

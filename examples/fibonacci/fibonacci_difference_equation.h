@@ -68,8 +68,7 @@ class FibonacciDifferenceEquation : public systems::LeafSystem<double> {
     DeclarePeriodicDiscreteUpdateEvent(kPeriod, 0.,  // First update is at t=0.
                                        &FibonacciDifferenceEquation::Update);
 
-    // Present y_n at the output port. This will be the Fibonacci element F_n
-    // if queried at `t=n*h`.
+    // Output y_n. This will be the Fibonacci element F_n if queried at `t=n*h`.
     DeclareVectorOutputPort("Fn", systems::BasicVector<double>(1),
                             &FibonacciDifferenceEquation::Output);
   }

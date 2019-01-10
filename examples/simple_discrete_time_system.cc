@@ -7,32 +7,35 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
 
+namespace drake {
+namespace systems {
+namespace {
+
 // Simple Discrete Time System
 //   x_{n+1} = x_n³
 //         y = x
-class SimpleDiscreteTimeSystem : public drake::systems::LeafSystem<double> {
+class SimpleDiscreteTimeSystem : public LeafSystem<double> {
  public:
   SimpleDiscreteTimeSystem() {
     this->DeclarePeriodicDiscreteUpdateEvent(1.0, 0.0,
                                              &SimpleDiscreteTimeSystem::Update);
-    this->DeclareVectorOutputPort("y", drake::systems::BasicVector<double>(1),
+    this->DeclareVectorOutputPort("y", BasicVector<double>(1),
                                   &SimpleDiscreteTimeSystem::CopyStateOut);
     this->DeclareDiscreteState(1);  // One state variable.
   }
 
  private:
   // x_{n+1} = x_n³
-  drake::systems::EventStatus Update(
-      const drake::systems::Context<double>& context,
-      drake::systems::DiscreteValues<double>* next_state) const {
+  EventStatus Update(const Context<double>& context,
+                     DiscreteValues<double>* next_state) const {
     const double x_n = context.get_discrete_state()[0];
     (*next_state)[0] = std::pow(x_n, 3.0);
-    return drake::systems::EventStatus::Succeeded();
+    return EventStatus::Succeeded();
   }
 
   // y = x
-  void CopyStateOut(const drake::systems::Context<double>& context,
-                    drake::systems::BasicVector<double>* output) const {
+  void CopyStateOut(const Context<double>& context,
+                    BasicVector<double>* output) const {
     const double x = context.get_discrete_state()[0];
     (*output)[0] = x;
   }
@@ -43,10 +46,10 @@ int main() {
   SimpleDiscreteTimeSystem system;
 
   // Create the simulator.
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
 
   // Set the initial conditions x₀.
-  drake::systems::DiscreteValues<double>& state =
+  DiscreteValues<double>& state =
       simulator.get_mutable_context().get_mutable_discrete_state();
   state[0] = 0.99;
 
@@ -59,4 +62,12 @@ int main() {
   // TODO(russt): make a plot of the resulting trajectory.
 
   return 0;
+}
+
+}  // namespace
+}  // namespace systems
+}  // namespace drake
+
+int main() {
+  return drake::systems::main();
 }
