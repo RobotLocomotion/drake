@@ -26,11 +26,10 @@ class SimpleDiscreteTimeSystem : public LeafSystem<double> {
 
  private:
   // x_{n+1} = x_n³
-  EventStatus Update(const Context<double>& context,
+  void Update(const Context<double>& context,
                      DiscreteValues<double>* next_state) const {
     const double x_n = context.get_discrete_state()[0];
     (*next_state)[0] = std::pow(x_n, 3.0);
-    return EventStatus::Succeeded();
   }
 
   // y = x

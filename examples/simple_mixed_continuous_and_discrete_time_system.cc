@@ -31,12 +31,11 @@ class SimpleMixedContinuousTimeDiscreteTimeSystem : public LeafSystem<double> {
 
  private:
   // xd_{n+1} =  xd_n³
-  EventStatus Update(const Context<double>& context,
+  void Update(const Context<double>& context,
                      DiscreteValues<double>* updates) const {
     const double x_n = context.get_discrete_state()[0];
     const double x_np1 = std::pow(x_n, 3.0);
     (*updates)[0] = x_np1;
-    return EventStatus::Succeeded();
   }
 
   // xcdot = -xc + xc³
