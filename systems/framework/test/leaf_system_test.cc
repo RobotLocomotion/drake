@@ -646,20 +646,6 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   EXPECT_EQ(2, xc.get_misc_continuous_state().size());
 }
 
-EventStatus ForcedPublishCallback(const Context<T>&) const {
-  // TODO: do something here.
-  return EventStatus::kSuccess;
-}
-
-TEST_F(LeafSystemTest, DeclareForcedEvents) {
-  // Note: only declares forced publish, but we keep the function name generic
-  // to keep open the possibility that other event types are handled and to
-  // be analogous with the DeclarePerStepEvents(), etc. tests.
-  system_.DeclareForcedPublishEvent(&LeafSystemTest::ForcedPublishCallback);
-  auto context = system_.CreateDefaultContext();
-  system_.Publish(*context);
-}
-
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 
@@ -2381,6 +2367,8 @@ class EventSugarTestSystem : public LeafSystem<double> {
         &EventSugarTestSystem::MyDiscreteUpdateHandler);
     DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    DeclareForcedPublishEvent(&EventSugarTestSystem::MyPublishHandler);
   }
 
   const double kPeriod = 0.125;
@@ -2436,6 +2424,10 @@ GTEST_TEST(EventSugarTest, EventsAreRegistered) {
   EXPECT_TRUE(timed_events->HasPublishEvents());
   EXPECT_TRUE(timed_events->HasDiscreteUpdateEvents());
   EXPECT_TRUE(timed_events->HasUnrestrictedUpdateEvents());
+
+  // Verify that the LeafSystem forced publish events have been allocated.
+//  EXPECT_TRUE(dut.forced_publish_events_allocated());
+//  EXPECT_TRUE(dut.get_forced_publish_events()->HasPublishEvents());
 }
 
 GTEST_TEST(EventSugarTest, HandlersGetCalled) {
@@ -2460,8 +2452,9 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.CalcDiscreteVariableUpdates(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
   dut.Publish(*context, all_events->get_publish_events());
+  dut.Publish(*context);
 
-  EXPECT_EQ(dut.num_publish(), 3);
+  EXPECT_EQ(dut.num_publish(), 4);
   EXPECT_EQ(dut.num_discrete_update(), 3);
   EXPECT_EQ(dut.num_unrestricted_update(), 3);
 }

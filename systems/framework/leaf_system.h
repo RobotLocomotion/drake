@@ -100,7 +100,10 @@ class LeafSystem : public System<T> {
         System<T>::AllocateContext());
   }
 
-  /// Declares a forced publish event.
+  /// Declares a function that is called whenever a user directly calls
+  /// Publish(.) with a Context as a single argument. 
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `publish` must not be null.
   template <class MySystem>
   void DeclareForcedPublishEvent(
     EventStatus (MySystem::*publish)(const Context<T>&) const) {
@@ -111,52 +114,15 @@ class LeafSystem : public System<T> {
     DRAKE_DEMAND(publish != nullptr);
 
     // Instantiate the event.
-    PublishEvent<T> forced(TriggerType::kForced, 
+    auto forced = std::make_unique<PublishEvent<T>>(
+        TriggerType::kForced, 
         [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
           // TODO(sherm1) Forward the return status.
           (this_ptr->*publish)(context);  // Ignore return status for now.
-        }));
+        });
 
-    // Allocate the forced event collection, if necessary.
-    if (!this->forced_events_allocated<PublishEvent<T>>()) {
-      this->set_forced_publish_events(
-        this->AllocateForcedPublishEventCollection());
-    }
-
-    forced.AddToComposite(forced.get_trigger_type(),
-        &this->get_mutable_forced_events<EventType>());
-  }
-
-  /// (Advanced) Declares that a particular Event object should be dispatched
-  /// whenever one of the dispatchers is called by force. This is the most
-  /// general form for declaring
-  /// publish events and most users should use one of the other methods in this
-  /// group instead.
-  ///
-  /// @see DeclareForcedPublishEvent()
-  ///
-  /// See @ref declare_per-step_events "Declare forced events" for more
-  /// information.
-  ///
-  /// Depending on the type of `event`, at each step it will be passed to
-  /// the Publish, DiscreteUpdate, or UnrestrictedUpdate event dispatcher. If
-  /// the `event` object contains a handler function, Drake's default
-  /// dispatchers will invoke that handler. If not, then no further action is
-  /// taken. Thus an `event` with no handler has no effect unless its dispatcher
-  /// has been overridden. We strongly recommend that you _do not_ override the
-  /// dispatcher and instead _do_ supply a handler.
-  ///
-  /// The given `event` object is deep-copied (cloned), and the copy is stored
-  /// internally so you do not need to keep the object around after this call.
-  ///
-  /// @pre `event`'s associated trigger type must be TriggerType::kUnknown or
-  /// already set to TriggerType::kPerStep.
-  template <typename EventType>
-  void DeclareForcedEvent(const EventType& event) {
-    DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
-        event.get_trigger_type() == TriggerType::kForced);
-
-
+    // Add the event to the collection of forced publish events.
+    this->get_mutable_forced_publish_events().add_event(std::move(forced));
   }
 
   // =========================================================================
@@ -166,20 +132,32 @@ class LeafSystem : public System<T> {
   // The three methods below are hidden from doxygen, as described in
   // documentation for their corresponding methods in System.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+  AllocateOrTransferForcedPublishEventCollection() override {
+    if (this->forced_publish_events_allocated()) {
+      return this->transfer_forced_publish_events();
+    } else {
+      return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    }
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateForcedDiscreteUpdateEventCollection() const override {
-    return LeafEventCollection<
-        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+  AllocateOrTransferForcedDiscreteUpdateEventCollection() override {
+    if (this->forced_discrete_update_events_allocated()) {
+      return this->transfer_forced_discrete_update_events();
+    } else {
+      return LeafEventCollection<
+          DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+    }
   }
 
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateForcedUnrestrictedUpdateEventCollection() const override {
-    return LeafEventCollection<
-        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+  AllocateOrTransferForcedUnrestrictedUpdateEventCollection() override {
+    if (this->forced_unrestricted_update_events_allocated()) {
+      return this->transfer_forced_unrestricted_update_events();
+    } else {
+      return LeafEventCollection<
+          UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+    }
   }
   /// @endcond
 
@@ -376,13 +354,11 @@ class LeafSystem : public System<T> {
   explicit LeafSystem(SystemScalarConverter converter)
       : System<T>(std::move(converter)) {
     this->set_forced_publish_events(
-        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
+        AllocateOrTransferForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
-        LeafEventCollection<
-            DiscreteUpdateEvent<T>>::MakeForcedEventCollection());
+        AllocateOrTransferForcedDiscreteUpdateEventCollection());
     this->set_forced_unrestricted_update_events(
-        LeafEventCollection<
-            UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
+        AllocateOrTransferForcedUnrestrictedUpdateEventCollection());
   }
 
   /// Provides a new instance of the leaf context for this system. Derived

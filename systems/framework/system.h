@@ -1033,13 +1033,13 @@ class System : public SystemBase {
   // (2) Use the doxygen cond/endcond tags so that these methods are hidden
   //     from the user (in the doxygen documentation).
   virtual std::unique_ptr<EventCollection<PublishEvent<T>>>
-  AllocateForcedPublishEventCollection() const = 0;
+  AllocateOrTransferForcedPublishEventCollection() = 0;
 
   virtual std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-  AllocateForcedDiscreteUpdateEventCollection() const = 0;
+  AllocateOrTransferForcedDiscreteUpdateEventCollection() = 0;
 
   virtual std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-  AllocateForcedUnrestrictedUpdateEventCollection() const = 0;
+  AllocateOrTransferForcedUnrestrictedUpdateEventCollection() = 0;
   /// @endcond
 
   //----------------------------------------------------------------------------
@@ -2023,38 +2023,68 @@ class System : public SystemBase {
   }
   //@}
 
+  bool forced_publish_events_allocated() const { 
+    return forced_publish_events_ != nullptr;
+  }
+
+  bool forced_discrete_update_events_allocated() const {
+    return forced_discrete_update_events_ != nullptr;
+  }
+
+  bool forced_unrestricted_update_events_allocated() const {
+    return forced_unrestricted_update_events_ != nullptr;
+  }
+
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+      transfer_forced_publish_events() {
+    DRAKE_DEMAND(forced_publish_events_ != nullptr);
+    return std::move(forced_publish_events_);
+  }
+
+  std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
+      transfer_forced_discrete_update_events() {
+    DRAKE_DEMAND(forced_discrete_update_events_ != nullptr);
+    return std::move(forced_discrete_update_events_);
+  }
+
+  std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
+      transfer_forced_unrestricted_update_events() {
+    DRAKE_DEMAND(forced_unrestricted_update_events_ != nullptr);
+    return std::move(forced_unrestricted_update_events_);
+  }
+
   EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
-    return *forced_publish_;
+    return *forced_publish_events_;
   }
 
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
-    return *forced_publish_;
+    return *forced_publish_events_;
   }
 
   const EventCollection<DiscreteUpdateEvent<T>>&
   get_forced_discrete_update_events() const {
-    return *forced_discrete_update_;
+    return *forced_discrete_update_events_;
   }
 
   const EventCollection<UnrestrictedUpdateEvent<T>>&
   get_forced_unrestricted_update_events() const {
-    return *forced_unrestricted_update_;
+    return *forced_unrestricted_update_events_;
   }
 
   void set_forced_publish_events(
   std::unique_ptr<EventCollection<PublishEvent<T>>> forced) {
-    forced_publish_ = std::move(forced);
+    forced_publish_events_ = std::move(forced);
   }
 
   void set_forced_discrete_update_events(
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>> forced) {
-    forced_discrete_update_ = std::move(forced);
+    forced_discrete_update_events_ = std::move(forced);
   }
 
   void set_forced_unrestricted_update_events(
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> forced) {
-    forced_unrestricted_update_ = std::move(forced);
+    forced_unrestricted_update_events_ = std::move(forced);
   }
 
  private:
@@ -2176,11 +2206,12 @@ class System : public SystemBase {
   // all of these have exactly one kForced triggered event. For a Diagram, they
   // are DiagramEventCollection, whose leafs are LeafEventCollection with
   // exactly one kForced triggered event.
-  std::unique_ptr<EventCollection<PublishEvent<T>>> forced_publish_{nullptr};
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+      forced_publish_events_{nullptr};
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-      forced_discrete_update_{nullptr};
+      forced_discrete_update_events_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-      forced_unrestricted_update_{nullptr};
+      forced_unrestricted_update_events_{nullptr};
 
   // Functions to convert this system to use alternative scalar types.
   SystemScalarConverter system_scalar_converter_;
