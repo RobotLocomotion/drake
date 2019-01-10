@@ -84,9 +84,8 @@ GTEST_TEST(SystemConstraintWrapperTest, FreeBodyPlantTest) {
   const double time_step{0};
   FreeBodyPlant<double> plant_double(time_step);
   auto context_double = plant_double.CreateDefaultContext();
-  auto context_tmp = context_double->Clone();
 
-  /*const Eigen::Quaterniond quat0(
+  const Eigen::Quaterniond quat0(
       Eigen::AngleAxisd(0.2 * M_PI, Eigen::Vector3d(1, 2, 3).normalized()));
   Eigen::Matrix<double, 7, 1> q0;
   q0.head<4>() << quat0.w(), quat0.x(), quat0.y(), quat0.z();
@@ -97,17 +96,42 @@ GTEST_TEST(SystemConstraintWrapperTest, FreeBodyPlantTest) {
   plant_double.SetVelocities(context_double.get(), v0);
 
   FreeBodyPlant<AutoDiffXd> plant_autodiff(time_step);
+  auto context_autodiff = plant_autodiff.CreateDefaultContext();
+  context_autodiff->SetTimeStateAndParametersFrom(*context_double);
   SystemConstraintWrapper constraint(
       &plant_double, &plant_autodiff,
       plant_double.unit_quaternion_constraint_index(), *context_double,
       Selector2<double>, Selector2<AutoDiffXd>, 7);
 
+  // First test Eval with VectorX<double>
   Eigen::Matrix<double, 7, 1> x_double;
   x_double << 1, 2, 3, 4, 5, 6, 7, 8;
   Eigen::VectorXd y_double;
   constraint.Eval(x_double, &y_double);
   const Vector1d y_double_expected(29);
-  EXPECT_TRUE(CompareMatrices(y_double, y_double_expected, 3 * kEps));*/
+  EXPECT_TRUE(CompareMatrices(y_double, y_double_expected, 3 * kEps));
+
+  // Now test Eval with VectorX<AutoDiffXd>
+  Eigen::Matrix<double, 7, Eigen::Dynamic> x_gradient(7, 2);
+  x_gradient << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
+  const auto x_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(x_double, x_gradient);
+  AutoDiffVecXd y_autodiff;
+  constraint.Eval(x_autodiff, &y_autodiff);
+
+  Selector2<AutoDiffXd>(plant_autodiff, x_autodiff, context_autodiff.get());
+
+  AutoDiffVecXd y_autodiff_expected;
+  plant_autodiff
+      .get_constraint(plant_autodiff.unit_quaternion_constraint_index())
+      .Calc(*context_autodiff, &y_autodiff_expected);
+
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
+                              math::autoDiffToValueMatrix(y_autodiff_expected),
+                              3 * kEps));
+  EXPECT_TRUE(CompareMatrices(
+      math::autoDiffToGradientMatrix(y_autodiff),
+      math::autoDiffToGradientMatrix(y_autodiff_expected), 3 * kEps));
 }
 
 }  // namespace
