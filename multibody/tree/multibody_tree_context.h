@@ -213,10 +213,7 @@ class MultibodyTreeContext final : public systems::LeafContext<T> {
   }
 
  private:
-  MultibodyTreeContext(const MultibodyTreeContext& source)
-      : systems::LeafContext<T>(source),
-        topology_{source.topology_},
-        is_state_discrete_{source.is_state_discrete_} {}
+  MultibodyTreeContext(const MultibodyTreeContext& source) = default;
 
   const MultibodyTreeTopology topology_;
 
