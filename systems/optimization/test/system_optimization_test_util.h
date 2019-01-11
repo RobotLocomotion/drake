@@ -85,6 +85,10 @@ class FreeBodyPlant final : public multibody::MultibodyPlant<T> {
     this->Finalize();
   }
 
+  template <typename U>
+  FreeBodyPlant(const FreeBodyPlant<U>& other)
+      : FreeBodyPlant<T>(other.time_step()) {}
+
   SystemConstraintIndex unit_quaternion_constraint_index() const {
     return unit_quaternion_constraint_index_;
   }

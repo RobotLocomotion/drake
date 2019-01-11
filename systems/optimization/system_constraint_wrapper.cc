@@ -6,20 +6,30 @@ SystemConstraintWrapper::SystemConstraintWrapper(
     const System<double>* const system_double,
     const System<AutoDiffXd>* const system_autodiff,
     SystemConstraintIndex index, const Context<double>& context,
-    UpdateContextFromX<double> selector_double,
-    UpdateContextFromX<AutoDiffXd> selector_autodiff, int x_size)
+    UpdateContextFromDecisionVariables<double> selector_double,
+    UpdateContextFromDecisionVariables<AutoDiffXd> selector_autodiff,
+    int x_size)
     : solvers::Constraint(system_double->get_constraint(index).size(), x_size,
                           system_double->get_constraint(index).lower_bound(),
                           system_double->get_constraint(index).upper_bound(),
                           system_double->get_constraint(index).description()),
       system_double_{system_double},
-      system_autodiff_{system_autodiff},
+      owned_system_autodiff_{system_autodiff == nullptr
+                                 ? system_double_->ToAutoDiffXd()
+                                 : nullptr},
+      system_autodiff_{system_autodiff == nullptr ? owned_system_autodiff_.get()
+                                                  : system_autodiff},
       index_{index},
       context_double_{context.Clone()},
       context_autodiff_{system_autodiff_->CreateDefaultContext()},
       selector_double_(selector_double),
       selector_autodiff_(selector_autodiff) {
+  DRAKE_DEMAND(system_double_);
   context_autodiff_->SetTimeStateAndParametersFrom(*context_double_);
+}
+
+const System<AutoDiffXd>* SystemConstraintWrapper::system_autodiff() const {
+  return system_autodiff_;
 }
 
 void SystemConstraintWrapper::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -30,8 +40,8 @@ void SystemConstraintWrapper::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
 
 void SystemConstraintWrapper::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                      AutoDiffVecXd* y) const {
-  selector_autodiff_(*system_autodiff_, x, context_autodiff_.get());
-  system_autodiff_->get_constraint(index_).Calc(*context_autodiff_, y);
+  selector_autodiff_(*system_autodiff(), x, context_autodiff_.get());
+  system_autodiff()->get_constraint(index_).Calc(*context_autodiff_, y);
 }
 
 void SystemConstraintWrapper::DoEval(
