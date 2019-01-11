@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/text_logging.h"
+#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 #include "drake/systems/rendering/drake_visualizer_client.h"
 
@@ -78,7 +79,7 @@ void DrakeVisualizer::ReplayCachedSimulation() const {
 }
 
 void DrakeVisualizer::PlaybackTrajectory(
-    const trajectories::PiecewisePolynomial<double>& input_trajectory) const {
+    const trajectories::Trajectory<double>& input_trajectory) const {
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   using TimePoint = std::chrono::time_point<Clock, Duration>;

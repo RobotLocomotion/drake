@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_load_robot.hpp"
@@ -106,7 +106,7 @@ class DrakeVisualizer : public LeafSystem<double> {
    * Plays back (at real time) a trajectory representing the input signal.
    */
   void PlaybackTrajectory(
-      const trajectories::PiecewisePolynomial<double>& input_trajectory) const;
+      const trajectories::Trajectory<double>& input_trajectory) const;
 
   /**
    * Publishes a lcmt_viewer_load_robot message containing a description
