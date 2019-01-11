@@ -1300,13 +1300,15 @@ class LeafSystem : public System<T> {
   // =========================================================================
   /// @anchor declare_forced_events
   /// @name                  Declare forced events
-  /// Forced events are those that are called manually through a method
-  /// invocation (i.e., "by force") like System::Publish(const Context&),
+  /// Forced events are those that are triggered through invocation of
+  /// System::Publish(const Context&), 
+  /// System::CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*),
+  /// or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
   /// rather than as a response to some computation-related event (e.g.,
   /// the beginning of a period of time was reached, a trajectory advancing
   /// substep was performed, etc.) One useful application of a forced publish:
-  /// a system receives a network message and wants to trigger a message
-  /// publish in a different system in response.
+  /// a subscriber receives a network message and wants to trigger a message
+  /// emissions in various systems embedded within a Diagram in response.
   ///
   /// Template arguments to these methods are inferred from the argument lists.
   /// and need not be specified explicitly.
@@ -1324,8 +1326,8 @@ class LeafSystem : public System<T> {
   /// Declares a function that is called whenever a user directly calls
   /// Publish(const Context&). Multiple calls to
   /// DeclareForcedPublishEvent() will register multiple callbacks, which will
-  /// be called together in an arbitrary sequence. The handler should be a
-  /// class member function (method) with this signature:
+  /// be called with the same const Context in arbitrary order. The handler
+  /// should be a class member function (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
   /// @endcode
