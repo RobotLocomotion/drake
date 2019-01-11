@@ -647,48 +647,6 @@ class LeafSystem : public System<T> {
   }
 
   // =========================================================================
-  /// @anchor declare_forced_events
-  /// @name                  Declare forced events
-  /// Forced events are those that are called directly through a method
-  /// invocation (i.e., "by force") like System::Publish(const Context&),
-  /// rather than in response to some computation-related event (e.g.,
-  /// the beginning of a period of time was reached, a trajectory advancing
-  /// substep was performed, etc.)
-  ///
-  /// @note It's rare that an event needs to be triggered by force. Please
-  /// consider per-step and periodic triggered events first.
-  /// 
-  //@{
-
-  /// Declares a function that is called whenever a user directly calls
-  /// Publish(const Context&). Multiple calls to
-  /// DeclareForcedPublishEvent() will register multiple callbacks, which will
-  /// be called together in an arbitrary sequence.
-  /// @pre `this` must be dynamic_cast-able to MySystem.
-  /// @pre `publish` must not be null.
-  template <class MySystem>
-  void DeclareForcedPublishEvent(
-    EventStatus (MySystem::*publish)(const Context<T>&) const) {
-    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
-                  "Expected to be invoked from a LeafSystem-derived System.");
-    auto this_ptr = dynamic_cast<const MySystem*>(this);
-    DRAKE_DEMAND(this_ptr != nullptr);
-    DRAKE_DEMAND(publish != nullptr);
-
-    // Instantiate the event.
-    auto forced = std::make_unique<PublishEvent<T>>(
-        TriggerType::kForced,
-        [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
-          // TODO(sherm1) Forward the return status.
-          (this_ptr->*publish)(context);  // Ignore return status for now.
-        });
-
-    // Add the event to the collection of forced publish events.
-    this->get_mutable_forced_publish_events().add_event(std::move(forced));
-  }
-  //@}
-
-  // =========================================================================
   /// @anchor declare_periodic_events
   /// @name                  Declare periodic events
   /// Methods in this group declare that this System has an event that
@@ -1041,6 +999,8 @@ class LeafSystem : public System<T> {
   /// @see DeclarePerStepDiscreteUpdateEvent()
   /// @see DeclarePerStepUnrestrictedUpdateEvent()
   /// @see DeclarePerStepEvent()
+  /// @see Simulator::set_publish_at_initialization() 
+  /// @see Simulator::set_publish_every_time_step()
   template <class MySystem>
   void DeclarePerStepPublishEvent(
       EventStatus (MySystem::*publish)(const Context<T>&) const) {
@@ -1336,6 +1296,63 @@ class LeafSystem : public System<T> {
     event.AddToComposite(TriggerType::kInitialization, &initialization_events_);
   }
   //@}
+
+  // =========================================================================
+  /// @anchor declare_forced_events
+  /// @name                  Declare forced events
+  /// Forced events are those that are called directly through a method
+  /// invocation (i.e., "by force") like System::Publish(const Context&),
+  /// rather than in response to some computation-related event (e.g.,
+  /// the beginning of a period of time was reached, a trajectory advancing
+  /// substep was performed, etc.)
+  ///
+  /// @note It's rare that an event needs to be triggered by force. Please
+  /// consider per-step and periodic triggered events first.
+  ///
+  /// @warning Simulator generates forced publish events at initialization
+  /// and on a per-step basis when its "publish at initialization" and
+  /// "publish every time step" options are set. 
+  /// @see Simulator::set_publish_at_initialization() 
+  /// @see Simulator::set_publish_every_time_step()
+  //@{
+
+  /// Declares a function that is called whenever a user directly calls
+  /// Publish(const Context&). Multiple calls to
+  /// DeclareForcedPublishEvent() will register multiple callbacks, which will
+  /// be called together in an arbitrary sequence. The handler should be a
+  /// class member function (method) with this signature:
+  /// @code
+  ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary.
+  ///
+  /// See @ref declare_forced_events "Declare forced events" for more
+  /// information.
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `publish` must not be null.
+  template <class MySystem>
+  void DeclareForcedPublishEvent(
+    EventStatus (MySystem::*publish)(const Context<T>&) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    // Instantiate the event.
+    auto forced = std::make_unique<PublishEvent<T>>(
+        TriggerType::kForced,
+        [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*publish)(context);  // Ignore return status for now.
+        });
+
+    // Add the event to the collection of forced publish events.
+    this->get_mutable_forced_publish_events().add_event(std::move(forced));
+  }
+  //@}
+
 
   /// @name          Declare continuous state variables
   /// Continuous state consists of up to three kinds of variables: generalized
