@@ -999,7 +999,7 @@ class LeafSystem : public System<T> {
   /// @see DeclarePerStepDiscreteUpdateEvent()
   /// @see DeclarePerStepUnrestrictedUpdateEvent()
   /// @see DeclarePerStepEvent()
-  /// @see Simulator::set_publish_at_initialization() 
+  /// @see Simulator::set_publish_at_initialization()
   /// @see Simulator::set_publish_every_time_step()
   template <class MySystem>
   void DeclarePerStepPublishEvent(
@@ -1311,8 +1311,8 @@ class LeafSystem : public System<T> {
   ///
   /// @warning Simulator generates forced publish events at initialization
   /// and on a per-step basis when its "publish at initialization" and
-  /// "publish every time step" options are set. 
-  /// @see Simulator::set_publish_at_initialization() 
+  /// "publish every time step" options are set.
+  /// @see Simulator::set_publish_at_initialization()
   /// @see Simulator::set_publish_every_time_step()
   //@{
 
