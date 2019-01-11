@@ -646,8 +646,22 @@ class LeafSystem : public System<T> {
     return index;
   }
 
+  // =========================================================================
+  /// @anchor declare_forced_events
+  /// @name                  Declare forced events
+  /// Forced events are those that are called directly through a method
+  /// invocation (i.e., "by force") like System::Publish(const Context&),
+  /// rather than in response to some computation-related event (e.g.,
+  /// the beginning of a period of time was reached, a trajectory advancing
+  /// substep was performed, etc.)
+  ///
+  /// @note It's rare that an event needs to be triggered by force. Please
+  /// consider per-step and periodic triggered events first.
+  /// 
+  //@{
+
   /// Declares a function that is called whenever a user directly calls
-  /// Publish(.) with a Context as a single argument. Multiple calls to
+  /// Publish(const Context&). Multiple calls to
   /// DeclareForcedPublishEvent() will register multiple callbacks, which will
   /// be called together in an arbitrary sequence.
   /// @pre `this` must be dynamic_cast-able to MySystem.
@@ -672,11 +686,12 @@ class LeafSystem : public System<T> {
     // Add the event to the collection of forced publish events.
     this->get_mutable_forced_publish_events().add_event(std::move(forced));
   }
+  //@}
 
   // =========================================================================
   /// @anchor declare_periodic_events
   /// @name                  Declare periodic events
-  /// Methods in the this group declare that this System has an event that
+  /// Methods in this group declare that this System has an event that
   /// is triggered periodically. The first periodic trigger will occur at
   /// t = `offset_sec`, and it will recur at every `period_sec` thereafter.
   /// Several signatures are provided to allow for a general Event object to be
