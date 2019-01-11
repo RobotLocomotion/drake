@@ -1308,7 +1308,7 @@ class LeafSystem : public System<T> {
   ///
   /// Template arguments to these methods are inferred from the argument lists.
   /// and need not be specified explicitly.
-  /// 
+  ///
   /// @note It's rare that an event needs to be triggered by force. Please
   /// consider per-step and periodic triggered events first.
   ///
@@ -1317,7 +1317,7 @@ class LeafSystem : public System<T> {
   /// "publish every time step" options are set.
   /// @see Simulator::set_publish_at_initialization()
   /// @see Simulator::set_publish_every_time_step()
-   //@{
+  //@{
 
   /// Declares a function that is called whenever a user directly calls
   /// Publish(const Context&). Multiple calls to
@@ -1330,7 +1330,7 @@ class LeafSystem : public System<T> {
   /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
   /// name is arbitrary.
   ///
- /// See @ref declare_forced_events "Declare forced events" for more
+  /// See @ref declare_forced_events "Declare forced events" for more
   /// information.
   /// @pre `this` must be dynamic_cast-able to MySystem.
   /// @pre `publish` must not be null.
