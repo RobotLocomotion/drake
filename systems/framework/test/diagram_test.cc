@@ -1692,7 +1692,7 @@ class ForcedPublishingSystem : public LeafSystem<double> {
   mutable bool published_{false};
 };
 
-// A diagram that consists of only the forced publishing system.
+// A diagram that consists of only forced publishing systems.
 class ForcedPublishingSystemDiagram : public Diagram<double> {
  public:
   ForcedPublishingSystemDiagram() : Diagram<double>() {

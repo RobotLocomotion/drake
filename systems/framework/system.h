@@ -2024,15 +2024,15 @@ class System : public SystemBase {
   }
   //@}
 
-  bool forced_publish_events_allocated() const {
+  bool forced_publish_events_exist() const {
     return forced_publish_events_ != nullptr;
   }
 
-  bool forced_discrete_update_events_allocated() const {
+  bool forced_discrete_update_events_exist() const {
     return forced_discrete_update_events_ != nullptr;
   }
 
-  bool forced_unrestricted_update_events_allocated() const {
+  bool forced_unrestricted_update_events_exist() const {
     return forced_unrestricted_update_events_ != nullptr;
   }
 
@@ -2042,16 +2042,19 @@ class System : public SystemBase {
 
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
+    DRAKE_DEMAND(forced_publish_events_.get());
     return *forced_publish_events_;
   }
 
   const EventCollection<DiscreteUpdateEvent<T>>&
   get_forced_discrete_update_events() const {
+    DRAKE_DEMAND(forced_discrete_update_events_.get());
     return *forced_discrete_update_events_;
   }
 
   const EventCollection<UnrestrictedUpdateEvent<T>>&
   get_forced_unrestricted_update_events() const {
+    DRAKE_DEMAND(forced_unrestricted_update_events_.get());
     return *forced_unrestricted_update_events_;
   }
 

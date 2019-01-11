@@ -110,7 +110,7 @@ class LeafSystem : public System<T> {
   AllocateForcedPublishEventCollection() const override {
     auto collection =
         LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
-    if (this->forced_publish_events_allocated())
+    if (this->forced_publish_events_exist())
       collection->SetFrom(this->get_forced_publish_events());
     return collection;
   }
@@ -120,7 +120,7 @@ class LeafSystem : public System<T> {
     auto collection =
         LeafEventCollection<
             DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
-    if (this->forced_discrete_update_events_allocated())
+    if (this->forced_discrete_update_events_exist())
       collection->SetFrom(this->get_forced_discrete_update_events());
     return collection;
   }
@@ -130,7 +130,7 @@ class LeafSystem : public System<T> {
     auto collection =
         LeafEventCollection<
           UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
-    if (this->forced_unrestricted_update_events_allocated())
+    if (this->forced_unrestricted_update_events_exist())
       collection->SetFrom(this->get_forced_unrestricted_update_events());
     return collection;
   }
@@ -1300,11 +1300,13 @@ class LeafSystem : public System<T> {
   // =========================================================================
   /// @anchor declare_forced_events
   /// @name                  Declare forced events
-  /// Forced events are those that are called directly through a method
+  /// Forced events are those that are called manually through a method
   /// invocation (i.e., "by force") like System::Publish(const Context&),
-  /// rather than in response to some computation-related event (e.g.,
+  /// rather than as a response to some computation-related event (e.g.,
   /// the beginning of a period of time was reached, a trajectory advancing
-  /// substep was performed, etc.)
+  /// substep was performed, etc.) One useful application of a forced publish:
+  /// a system receives a network message and wants to trigger a message
+  /// publish in a different system in response.
   ///
   /// Template arguments to these methods are inferred from the argument lists.
   /// and need not be specified explicitly.

@@ -53,10 +53,8 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
       const Context<double>&,
       const std::vector<const PublishEvent<double>*>& events) const final {
     got_publish_event_ = (events.size() == 1);
-    if (got_publish_event_) {
-      publish_event_trigger_type_ =
-          events.front()->get_trigger_type();
-    }
+    if (got_publish_event_)
+      publish_event_trigger_type_ = events.front()->get_trigger_type();
   }
 
   void DoCalcDiscreteVariableUpdates(
@@ -64,10 +62,8 @@ class ForcedDispatchOverrideSystem : public LeafSystem<double> {
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>*) const final {
     got_discrete_update_event_ = (events.size() == 1);
-    if (got_discrete_update_event_) {
-      discrete_update_event_trigger_type_ =
-          events.front()->get_trigger_type();
-    }
+    if (got_discrete_update_event_)
+      discrete_update_event_trigger_type_ = events.front()->get_trigger_type();
   }
 
   void DoCalcUnrestrictedUpdate(
@@ -250,19 +246,19 @@ class TestSystem : public LeafSystem<T> {
 
   // Verifies that the forced publish events collection has been allocated.
   bool forced_publish_events_collection_allocated() const {
-    return this->forced_publish_events_allocated();
+    return this->forced_publish_events_exist();
   }
 
   // Verifies that the forced discrete update events collection has been
   // allocated.
   bool forced_discrete_update_events_collection_allocated() const {
-    return this->forced_discrete_update_events_allocated();
+    return this->forced_discrete_update_events_exist();
   }
 
   // Verifies that the forced unrestricted update events collection has been=
   // allocated.
   bool forced_unrestricted_update_events_collection_allocated() const {
-    return this->forced_unrestricted_update_events_allocated();
+    return this->forced_unrestricted_update_events_exist();
   }
 
   // Gets the forced publish events collection.
