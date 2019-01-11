@@ -26,3 +26,14 @@ def scoped_singleton_func(f):
         return result
 
     return wrapped
+
+
+def warn_old_script(new_module):
+    """Warns that the current script is deprecated, and instead the given
+    new module should be imported."""
+    # N.B. Use the default warning class, `UserWarning`, instead of
+    # `DeprecationWarning`, so that this warning shows up by default.
+    warn(
+        ("This file will be removed on or around 2019-03-01. Please import "
+         "from the module '{}' instead.").format(new_module.__name__),
+        stacklevel=2)
