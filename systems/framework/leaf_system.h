@@ -1307,7 +1307,7 @@ class LeafSystem : public System<T> {
   /// rather than as a response to some computation-related event (e.g.,
   /// the beginning of a period of time was reached, a trajectory advancing
   /// substep was performed, etc.) One useful application of a forced publish:
-  /// a subscriber receives a network message and wants to trigger a message
+  /// a process receives a network message and wants to trigger message
   /// emissions in various systems embedded within a Diagram in response.
   ///
   /// Template arguments to these methods are inferred from the argument lists.
