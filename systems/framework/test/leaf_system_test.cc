@@ -27,6 +27,89 @@ namespace drake {
 namespace systems {
 namespace {
 
+// A shell System to test the event dispatchers are sent at least one event upon
+// a forced call.
+class ForcedDispatchOverrideSystem : public LeafSystem<double> {
+ public:
+  bool got_publish_event() const { return got_publish_event_; }
+  bool got_discrete_update_event() const {
+    return got_discrete_update_event_;
+  }
+  bool got_unrestricted_update_event() const {
+    return got_unrestricted_update_event_;
+  }
+  TriggerType get_publish_event_trigger_type() const {
+    return publish_event_trigger_type_;
+  }
+  TriggerType get_discrete_update_event_trigger_type() const {
+    return discrete_update_event_trigger_type_;
+  }
+  TriggerType get_unrestricted_update_event_trigger_type() const {
+    return unrestricted_update_event_trigger_type_;
+  }
+
+ private:
+  void DoPublish(
+      const Context<double>&,
+      const std::vector<const PublishEvent<double>*>& events) const final {
+    got_publish_event_ = (events.size() == 1);
+    if (got_publish_event_)
+      publish_event_trigger_type_ = events.front()->get_trigger_type();
+  }
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>&,
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      DiscreteValues<double>*) const final {
+    got_discrete_update_event_ = (events.size() == 1);
+    if (got_discrete_update_event_)
+      discrete_update_event_trigger_type_ = events.front()->get_trigger_type();
+  }
+
+  void DoCalcUnrestrictedUpdate(
+      const Context<double>&,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>*) const final {
+    got_unrestricted_update_event_ = (events.size() == 1);
+    if (got_unrestricted_update_event_) {
+      unrestricted_update_event_trigger_type_ =
+          events.front()->get_trigger_type();
+    }
+  }
+
+  // Variables used to determine whether the handlers have been called with
+  // forced update events. Note: updating method variables in event handlers
+  // is an anti-pattern, but we do it here to simplify test code.
+  mutable bool got_publish_event_{false};
+  mutable bool got_discrete_update_event_{false};
+  mutable bool got_unrestricted_update_event_{false};
+  mutable TriggerType publish_event_trigger_type_{TriggerType::kUnknown};
+  mutable TriggerType discrete_update_event_trigger_type_{
+    TriggerType::kUnknown
+  };
+  mutable TriggerType unrestricted_update_event_trigger_type_{
+    TriggerType::kUnknown
+  };
+};
+
+GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
+  ForcedDispatchOverrideSystem system;
+  auto context = system.CreateDefaultContext();
+  auto discrete_values = system.AllocateDiscreteVariables();
+  auto state = context->CloneState();
+  system.Publish(*context);
+  system.CalcDiscreteVariableUpdates(*context, discrete_values.get());
+  system.CalcUnrestrictedUpdate(*context, state.get());
+  ASSERT_TRUE(system.got_publish_event());
+  ASSERT_TRUE(system.got_discrete_update_event());
+  ASSERT_TRUE(system.got_unrestricted_update_event());
+  EXPECT_TRUE(system.get_publish_event_trigger_type() == TriggerType::kForced);
+  EXPECT_TRUE(system.get_discrete_update_event_trigger_type() ==
+      TriggerType::kForced);
+  EXPECT_TRUE(system.get_unrestricted_update_event_trigger_type() ==
+      TriggerType::kForced);
+}
+
 // A shell System to test the default implementations.
 template <typename T>
 class TestSystem : public LeafSystem<T> {
@@ -161,6 +244,69 @@ class TestSystem : public LeafSystem<T> {
       return unrestricted_update_callback_called_;
   }
 
+  // Verifies that the forced publish events collection has been allocated.
+  bool forced_publish_events_collection_allocated() const {
+    return this->forced_publish_events_exist();
+  }
+
+  // Verifies that the forced discrete update events collection has been
+  // allocated.
+  bool forced_discrete_update_events_collection_allocated() const {
+    return this->forced_discrete_update_events_exist();
+  }
+
+  // Verifies that the forced unrestricted update events collection has been=
+  // allocated.
+  bool forced_unrestricted_update_events_collection_allocated() const {
+    return this->forced_unrestricted_update_events_exist();
+  }
+
+  // Gets the forced publish events collection.
+  const EventCollection<PublishEvent<double>>&
+      get_forced_publish_events_collection() const {
+    return this->get_forced_publish_events();
+  }
+
+  // Gets the forced discrete update events collection.
+  const EventCollection<DiscreteUpdateEvent<double>>&
+      get_forced_discrete_update_events_collection() const {
+    return this->get_forced_discrete_update_events();
+  }
+
+  // Gets the forced unrestricted update events collection.
+  const EventCollection<UnrestrictedUpdateEvent<double>>&
+      get_forced_unrestricted_update_events_collection() const {
+    return this->get_forced_unrestricted_update_events();
+  }
+
+  // Sets the forced publish events collection.
+  void set_forced_publish_events_collection(
+      std::unique_ptr<EventCollection<PublishEvent<double>>>
+          publish_events) {
+    this->set_forced_publish_events(std::move(publish_events));
+  }
+
+  // Sets the forced discrete_update events collection.
+  void set_forced_discrete_update_events_collection(
+      std::unique_ptr<EventCollection<DiscreteUpdateEvent<double>>>
+          discrete_update_events) {
+    this->set_forced_discrete_update_events(std::move(discrete_update_events));
+  }
+
+  // Sets the forced unrestricted_update events collection.
+  void set_forced_unrestricted_update_events_collection(
+      std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<double>>>
+          unrestricted_update_events) {
+    this->set_forced_unrestricted_update_events(
+        std::move(unrestricted_update_events));
+  }
+
+  // Gets the mutable version of the forced publish events collection.
+  EventCollection<PublishEvent<double>>&
+      get_mutable_forced_publish_events_collection() {
+    return this->get_mutable_forced_publish_events();
+  }
+
  private:
   // This dummy witness function exists only to test that the
   // DeclareWitnessFunction() interface works as promised.
@@ -217,6 +363,41 @@ class LeafSystemTest : public ::testing::Test {
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
 };
+
+TEST_F(LeafSystemTest, ForcedEventCollectionsTest) {
+  // Verify that all collections are allocated.
+  EXPECT_TRUE(system_.forced_publish_events_collection_allocated());
+  EXPECT_TRUE(system_.forced_discrete_update_events_collection_allocated());
+  EXPECT_TRUE(system_.forced_unrestricted_update_events_collection_allocated());
+
+  // Verify that we can set the publish collection.
+  auto forced_publishes =
+      std::make_unique<LeafEventCollection<PublishEvent<double>>>();
+  auto* forced_publishes_pointer = forced_publishes.get();
+  system_.set_forced_publish_events_collection(std::move(forced_publishes));
+  EXPECT_EQ(&system_.get_forced_publish_events_collection(),
+      forced_publishes_pointer);
+  EXPECT_EQ(&system_.get_mutable_forced_publish_events_collection(),
+      forced_publishes_pointer);
+
+  // Verify that we can set the discrete update collection.
+  auto forced_discrete_updates =
+      std::make_unique<LeafEventCollection<DiscreteUpdateEvent<double>>>();
+  auto* forced_discrete_updates_pointer = forced_discrete_updates.get();
+  system_.set_forced_discrete_update_events_collection(
+      std::move(forced_discrete_updates));
+  EXPECT_EQ(&system_.get_forced_discrete_update_events_collection(),
+      forced_discrete_updates_pointer);
+
+  // Verify that we can set the forced unrestricted update collection.
+  auto forced_unrestricted_updates =
+      std::make_unique<LeafEventCollection<UnrestrictedUpdateEvent<double>>>();
+  auto* forced_unrestricted_updates_pointer = forced_unrestricted_updates.get();
+  system_.set_forced_unrestricted_update_events_collection(
+      std::move(forced_unrestricted_updates));
+  EXPECT_EQ(&system_.get_forced_unrestricted_update_events_collection(),
+      forced_unrestricted_updates_pointer);
+}
 
 TEST_F(LeafSystemTest, DefaultPortNameTest) {
   EXPECT_EQ(system_.DeclareVectorInputPort(BasicVector<double>(2)).get_name(),
@@ -341,7 +522,6 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   ASSERT_EQ(mapping.size(), 2);
   EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
 }
-
 
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
@@ -2371,6 +2551,10 @@ class EventSugarTestSystem : public LeafSystem<double> {
     DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
 
+    // Two forced publish callbacks (to ensure sure that they are additive).
+    DeclareForcedPublishEvent(&EventSugarTestSystem::MyPublishHandler);
+    DeclareForcedPublishEvent(&EventSugarTestSystem::MySecondPublishHandler);
+
     // These variants don't require an EventStatus return.
     DeclarePeriodicPublishEvent(kPeriod, kOffset,
         &EventSugarTestSystem::MySuccessfulPublishHandler);
@@ -2384,12 +2568,20 @@ class EventSugarTestSystem : public LeafSystem<double> {
   const double kOffset = 0.25;
 
   int num_publish() const {return num_publish_;}
+  int num_second_publish_handler_publishes() const {
+    return num_second_publish_handler_publishes_;
+  }
   int num_discrete_update() const {return num_discrete_update_;}
   int num_unrestricted_update() const {return num_unrestricted_update_;}
 
  private:
   EventStatus MyPublishHandler(const Context<double>& context) const {
     MySuccessfulPublishHandler(context);
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MySecondPublishHandler(const Context<double>& context) const {
+    ++num_second_publish_handler_publishes_;
     return EventStatus::Succeeded();
   }
 
@@ -2421,6 +2613,7 @@ class EventSugarTestSystem : public LeafSystem<double> {
   }
 
   mutable int num_publish_{0};
+  mutable int num_second_publish_handler_publishes_{0};
   mutable int num_discrete_update_{0};
   mutable int num_unrestricted_update_{0};
 };
@@ -2471,8 +2664,10 @@ GTEST_TEST(EventSugarTest, HandlersGetCalled) {
   dut.CalcDiscreteVariableUpdates(
       *context, all_events->get_discrete_update_events(), &*discrete_state);
   dut.Publish(*context, all_events->get_publish_events());
+  dut.Publish(*context);
 
-  EXPECT_EQ(dut.num_publish(), 4);
+  EXPECT_EQ(dut.num_publish(), 5);
+  EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
   EXPECT_EQ(dut.num_discrete_update(), 4);
   EXPECT_EQ(dut.num_unrestricted_update(), 4);
 }
