@@ -39,6 +39,9 @@ class SystemConstraintBounds final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemConstraintBounds)
 
+  /// Creates constraint bounds with zero size.
+  SystemConstraintBounds() : SystemConstraintBounds(0) {}
+
   /// Creates constraint of type SystemConstraintType::kEquality, with the
   /// given size for `f(x)`.
   static SystemConstraintBounds Equality(int size) {
@@ -93,7 +96,7 @@ using ContextConstraintCalc =
 
 /// This is the signature of a stateless function that evaluates the value of
 /// the constraint function f:
-///   value = f(context)
+///   value = f(system, context)
 ///
 /// Values of this type are expected to work with *any* instance of the class
 /// of System they are designed for.  Specifically, they should not capture
@@ -146,6 +149,14 @@ class SystemConstraint final {
   using CalcCallback
       DRAKE_DEPRECATED("Spell as ContextConstraintCalc instead.")
       = ContextConstraintCalc<T>;
+
+  /// Constructs an empty SystemConstraint.
+  ///
+  /// @param description a human-readable description useful for debugging.
+  SystemConstraint(const System<T>* system, std::string description)
+      : SystemConstraint(
+            system, &SystemConstraint<T>::NoopSystemConstraintCalc, {},
+            std::move(description)) {}
 
   /// Constructs a SystemConstraint.  Depending on the `bounds` it could be an
   /// equality constraint f(x) = 0, or an inequality constraint lower_bound <=
@@ -240,12 +251,112 @@ class SystemConstraint final {
   const std::string& description() const { return description_; }
 
  private:
+  static void NoopSystemConstraintCalc(
+      const System<T>&, const Context<T>&, VectorX<T>*) {}
+
   const System<T>* const system_;
   const SystemConstraintCalc<T> system_calc_function_;
   const ContextConstraintCalc<T> context_calc_function_;
   const SystemConstraintBounds bounds_;
   const std::string description_;
 };
+
+/// An "external" constraint on a System.  This class is intended for use by
+/// applications that are examining a System by adding additional constraints
+/// based on their particular situation (e.g., that a velocity state element
+/// has an upper bound); it is not intended for declaring intrinsic constraints
+/// that some particular System subclass might always impose on itself (e.g.,
+/// that a mass parameter is non-negative).
+class ExternalSystemConstraint final {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExternalSystemConstraint)
+
+  /// Creates an empty constraint.
+  ExternalSystemConstraint()
+      : ExternalSystemConstraint("empty", {}, {}) {}
+
+  /// Creates a constraint with the given arguments.
+  /// The calc functions may be omitted.
+  ExternalSystemConstraint(
+      std::string description,
+      SystemConstraintBounds bounds,
+      SystemConstraintCalc<double> calc_double,
+      SystemConstraintCalc<AutoDiffXd> calc_autodiffxd = {},
+      SystemConstraintCalc<symbolic::Expression> calc_expression = {})
+      : description_(std::move(description)),
+        bounds_(std::move(bounds)),
+        calc_double_(std::move(calc_double)),
+        calc_autodiffxd_(std::move(calc_autodiffxd)),
+        calc_expression_(std::move(calc_expression)) {}
+
+  /// Creates a constraint based on generic lambda.  This constraint will
+  /// supply Calc functions for Drake's default scalar types.
+  template <typename GenericSystemConstraintCalc>
+  static ExternalSystemConstraint MakeForAllScalars(
+      std::string description,
+      SystemConstraintBounds bounds,
+      GenericSystemConstraintCalc calc) {
+    return ExternalSystemConstraint(
+        std::move(description),
+        std::move(bounds),
+        calc, calc, calc);
+  }
+
+  /// Creates a constraint based on generic lambda.  This constraint will
+  /// supply Calc functions for Drake's non-symbolic default scalar types.
+  template <typename GenericSystemConstraintCalc>
+  static ExternalSystemConstraint MakeForNonsymbolicScalars(
+      std::string description,
+      SystemConstraintBounds bounds,
+      GenericSystemConstraintCalc calc) {
+    return ExternalSystemConstraint(
+        std::move(description),
+        std::move(bounds),
+        calc, calc, {});
+  }
+
+  /// Returns a human-readable description of this constraint.
+  const std::string& description() const { return description_; }
+
+  /// Returns the bounds (and type) of this constraint.
+  const SystemConstraintBounds& bounds() const { return bounds_; }
+
+  /// Retrieves the evaluation function `value = f(system, context)` for this
+  /// constraint.  The result may be a default-constructed (missing) function,
+  /// if the scalar type T is not supported by this constraint instance.
+  ///
+  /// @tparam T denotes the vector element type of the System<T>.
+  template <typename T>
+  SystemConstraintCalc<T> GetCalc() const {
+    return DoGetCalc<T>();
+  }
+
+ private:
+  template <typename T>
+  SystemConstraintCalc<T> DoGetCalc() const { return {}; }
+
+  std::string description_;
+  SystemConstraintBounds bounds_;
+  SystemConstraintCalc<double> calc_double_;
+  SystemConstraintCalc<AutoDiffXd> calc_autodiffxd_;
+  SystemConstraintCalc<symbolic::Expression> calc_expression_;
+};
+
+template <> inline
+SystemConstraintCalc<double> ExternalSystemConstraint::DoGetCalc() const {
+  return calc_double_;
+}
+
+template <> inline
+SystemConstraintCalc<AutoDiffXd> ExternalSystemConstraint::DoGetCalc() const {
+  return calc_autodiffxd_;
+}
+
+template <> inline
+SystemConstraintCalc<symbolic::Expression>
+ExternalSystemConstraint::DoGetCalc() const {
+  return calc_expression_;
+}
 
 }  // namespace systems
 }  // namespace drake
