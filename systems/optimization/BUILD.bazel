@@ -33,6 +33,7 @@ drake_cc_library(
     testonly = 1,
     srcs = ["test/system_optimization_test_util.cc"],
     hdrs = ["test/system_optimization_test_util.h"],
+    visibility = ["//visibility:private"],
     deps = [
         "//multibody/parsing",
         "//multibody/plant",
