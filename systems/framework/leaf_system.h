@@ -1301,7 +1301,7 @@ class LeafSystem : public System<T> {
   /// @anchor declare_forced_events
   /// @name                  Declare forced events
   /// Forced events are those that are triggered through invocation of
-  /// System::Publish(const Context&), 
+  /// System::Publish(const Context&),
   /// System::CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*),
   /// or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
   /// rather than as a response to some computation-related event (e.g.,
