@@ -265,18 +265,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // This system has no output ports.
   void get_output_port(int) = delete;
 
-  /**
-   * Takes the VectorBase from the input port of the context and publishes
-   * it onto an LCM channel. This function is called automatically, as
-   * necessary, at the requisite publishing period (if a positive publish was
-   * passed to the constructor) or per a simulation step (if no publish
-   * period or publish period = 0.0 was passed to the constructor). This
-   * function has been made public so that LCM messages can be published
-   * manually, as desired.
-   */
-  void PublishInputAsLcmMessage(const Context<double>& context) const;
-
  private:
+  EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
+
   // All constructors delegate to here. If the lcm pointer is null, we'll
   // allocate and maintain a DrakeLcm object internally.
   LcmPublisherSystem(const std::string& channel,

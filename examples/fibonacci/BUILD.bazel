@@ -27,6 +27,7 @@ drake_cc_binary(
     deps = [
         ":fibonacci_difference_equation",
         "//systems/analysis:simulator",
+        "//systems/primitives:signal_logger",
         "@gflags",
     ],
 )
@@ -38,6 +39,7 @@ drake_cc_googletest(
     deps = [
         ":fibonacci_difference_equation",
         "//systems/analysis",
+        "//systems/primitives:signal_logger",
     ],
 )
 

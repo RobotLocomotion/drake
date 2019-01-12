@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -21,6 +22,9 @@ using multibody::UniformGravityFieldElement;
 
 namespace multibody {
 namespace {
+
+const char kIiwaFilePath[] =
+    "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf";
 
 // These unit tests verify the convergence of the joint limits as the time step
 // is decreased. A constant force is applied at the joint to drive its state to
@@ -178,6 +182,17 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
   }
 }
 
+VectorX<double> KukaPositionLowerLimits() {
+  VectorX<double> lower_limits(7);
+  lower_limits
+      << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
+  return lower_limits;
+}
+
+VectorX<double> KukaPositionUpperLimits() {
+  return -KukaPositionLowerLimits();
+}
+
 // We test joint limits for the case of a Kuka arm model. In order to reach
 // the joint limits we drive the joints by applying a constant torque for a
 // given length of simulation time.
@@ -200,33 +215,34 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   // between what we want to test and the computational cost of this unit test.
   const double kRelativePositionTolerance = 0.055;
 
-  const std::string file_path =
-      "drake/manipulation/models/iiwa_description/sdf/"
-          "iiwa14_no_collision.sdf";
   MultibodyPlant<double> plant(time_step);
-  Parser(&plant).AddModelFromFile(FindResourceOrThrow(file_path));
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("iiwa_link_0"));
   plant.Finalize();
 
   // Some sanity check on model sizes.
-  ASSERT_EQ(plant.num_velocities(), 7);
-  ASSERT_EQ(plant.num_actuators(), 7);
-  ASSERT_EQ(plant.num_actuated_dofs(), 7);
+  const int nq = plant.num_positions();
+  ASSERT_EQ(plant.num_positions(), nq);
+  ASSERT_EQ(plant.num_velocities(), nq);
+  ASSERT_EQ(plant.num_actuators(), nq);
+  ASSERT_EQ(plant.num_actuated_dofs(), nq);
 
   // Verify the joint limits were correctly parsed.
-  VectorX<double> lower_limits(7);
-  lower_limits
-      << -2.96706, -2.0944, -2.96706, -2.0944, -2.96706, -2.0944, -3.05433;
-  VectorX<double> upper_limits(7);
-  upper_limits = -lower_limits;
+  const VectorX<double> lower_limits_expected = KukaPositionLowerLimits();
+  const VectorX<double> upper_limits_expected = KukaPositionUpperLimits();
+  EXPECT_TRUE(CompareMatrices(lower_limits_expected,
+                              plant.GetPositionLowerLimits()));
+  EXPECT_TRUE(CompareMatrices(upper_limits_expected,
+                              plant.GetPositionUpperLimits()));
 
-  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
+  // Duplicate checks for `GetPosition*Limits`, but using joint names.
+  for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_NEAR(joint.lower_limit(), lower_limits(joint_number-1),
+    EXPECT_NEAR(joint.lower_limit(), lower_limits_expected(joint_number-1),
                 std::numeric_limits<double>::epsilon());
-    EXPECT_NEAR(joint.upper_limit(), upper_limits(joint_number-1),
+    EXPECT_NEAR(joint.upper_limit(), upper_limits_expected(joint_number-1),
                 std::numeric_limits<double>::epsilon());
   }
 
@@ -234,11 +250,11 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   Context<double>& context = simulator.get_mutable_context();
 
   // Drive all the joints to their upper limit by applying a positive torque.
-  context.FixInputPort(0, VectorX<double>::Constant(7, 0.4));
+  context.FixInputPort(0, VectorX<double>::Constant(nq, 0.4));
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
-  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
+  for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_LT(std::abs(
@@ -248,11 +264,11 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   }
 
   // Drive all the joints to their lower limit by applying a negative torque.
-  context.FixInputPort(0, VectorX<double>::Constant(7, -0.4));
+  context.FixInputPort(0, VectorX<double>::Constant(nq, -0.4));
   plant.SetDefaultContext(&context);
   context.set_time(0.0);
   simulator.StepTo(simulation_time);
-  for (int joint_number = 1; joint_number <= 7; ++joint_number) {
+  for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);
     EXPECT_LT(std::abs(
@@ -262,7 +278,28 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   }
 }
 
+GTEST_TEST(JointLimitsTest, KukaArmFloating) {
+  // Check limits for a model with a floating base.
+  MultibodyPlant<double> plant;
+  Parser(&plant).AddModelFromFile(FindResourceOrThrow(kIiwaFilePath));
+  plant.Finalize();
+  const int nq = 14;
+  const int nq_floating = 7;
+  const int nq_arm = 7;
+  EXPECT_EQ(plant.num_positions(), nq);
+  const double inf = std::numeric_limits<double>::infinity();
+  VectorX<double> lower_limits_expected(nq);
+  lower_limits_expected.head(nq_floating).setConstant(-inf);
+  lower_limits_expected.tail(nq_arm) = KukaPositionLowerLimits();
+  EXPECT_TRUE(CompareMatrices(lower_limits_expected,
+                              plant.GetPositionLowerLimits()));
+  VectorX<double> upper_limits_expected(nq);
+  upper_limits_expected.head(nq_floating).setConstant(inf);
+  upper_limits_expected.tail(nq_arm) = KukaPositionUpperLimits();
+  EXPECT_TRUE(CompareMatrices(upper_limits_expected,
+                              plant.GetPositionUpperLimits()));
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
-

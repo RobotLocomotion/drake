@@ -11,7 +11,7 @@ GeometryInstance::GeometryInstance(const Isometry3<double>& X_PG,
     : id_(GeometryId::get_new_id()),
       X_PG_(X_PG),
       shape_(std::move(shape)),
-      name_(detail::CanonicalizeStringName(name)) {
+      name_(internal::CanonicalizeStringName(name)) {
   if (name_.empty()) {
     throw std::logic_error("GeometryInstance given the name '" + name +
                            "' which is an empty canonical string");

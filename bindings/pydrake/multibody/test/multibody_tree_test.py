@@ -251,6 +251,16 @@ class TestMultibodyTree(unittest.TestCase):
         # Just to make it obvious when this is being tested.
         self.assertIsNot(value, None)
 
+    def test_multibody_gravity_default(self):
+        plant = MultibodyPlant()
+        plant.AddForceElement(UniformGravityFieldElement())
+        plant.Finalize()
+
+    def test_multibody_gravity_vector(self):
+        plant = MultibodyPlant()
+        plant.AddForceElement(UniformGravityFieldElement([0.0, -9.81, 0.0]))
+        plant.Finalize()
+
     def test_multibody_tree_kinematics(self):
         file_name = FindResourceOrThrow(
             "drake/examples/double_pendulum/models/double_pendulum.sdf")

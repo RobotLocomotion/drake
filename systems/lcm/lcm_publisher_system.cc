@@ -44,9 +44,24 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
   DRAKE_DEMAND(publish_period >= 0.0);
 
+  // Declare a forced publish so that any time Publish(.) is called on this
+  // system (or a Diagram containing it), a message is emitted.
+  this->DeclareForcedPublishEvent(
+    &LcmPublisherSystem::PublishInputAsLcmMessage);
+
   if (translator_ != nullptr) {
-    DeclareInputPort("lcm_message", kVectorValued,
-                     translator_->get_vector_size());
+    // If the translator provides a specific storage type (i.e., if it returns
+    // non-nullptr from AllocateOutputVector), then use its storage to declare
+    // our input type.  This is important when the basic vector subtype has
+    // intrinsic constraints (e.g., a bounding box on its values), or to enable
+    // type-checking for Diagram wiring or FixInputPort values.
+    std::unique_ptr<BasicVector<double>> model_vector =
+        translator_->AllocateOutputVector();
+    if (!model_vector) {
+      model_vector = std::make_unique<BasicVector<double>>(
+          translator_->get_vector_size());
+    }
+    DeclareVectorInputPort("lcm_message", *model_vector);
   } else {
     DeclareAbstractInputPort("lcm_message", *serializer_->CreateDefaultValue());
   }
@@ -132,7 +147,14 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
   return channel_;
 }
 
-void LcmPublisherSystem::PublishInputAsLcmMessage(
+// Takes the VectorBase from the input port of the context and publishes
+// it onto an LCM channel. This function is called automatically, as
+// necessary, at the requisite publishing period (if a positive publish was
+// passed to the constructor) or per a simulation step (if no publish
+// period or publish period = 0.0 was passed to the constructor). This
+// function has been made public so that LCM messages can be published
+// manually, as desired.
+EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
     const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
@@ -154,6 +176,8 @@ void LcmPublisherSystem::PublishInputAsLcmMessage(
   // Publishes onto the specified LCM channel.
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
                 context.get_time());
+
+  return EventStatus::Succeeded();
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {

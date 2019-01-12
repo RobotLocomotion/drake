@@ -27,7 +27,7 @@ class SnoptVisibilityTest(unittest.TestCase):
         else:
             command = ["nm", "-a"]
             undefined_marker = " U "
-        output = subprocess.check_output(command + [libdrake])
+        output = subprocess.check_output(command + [libdrake]).decode("utf8")
         for line in output.splitlines():
             if undefined_marker in line:
                 # Ignore undefined references (like snprintf).

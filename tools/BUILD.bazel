@@ -29,7 +29,7 @@ py_binary(
     main = "//tools/workspace/drake_visualizer:drake_visualizer.py",
     # Python libraries to import.
     deps = [
-        "//lcmtypes:lcmtypes_py",
+        "//lcmtypes:lcmtypes_drake_py",
         "//tools/workspace/drake_visualizer:stub_pydrake",
         "//tools/workspace/drake_visualizer/plugin",
         "@drake_visualizer//:drake_visualizer_python_deps",

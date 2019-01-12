@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <iterator>
 #include <string>
@@ -18,7 +19,9 @@
 #include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_variant.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
@@ -33,24 +36,7 @@ using std::unique_ptr;
 
 namespace {
 
-// TODO(SeanCurtis-TRI): Swap all Isometry3 for Transforms.
-
-// ADL-reliant helper functions for converting Isometry<T> to Isometry<double>.
-const Isometry3<double>& convert(const Isometry3<double>& transform) {
-  return transform;
-}
-
-template <class VectorType>
-Isometry3<double> convert(
-    const Isometry3<Eigen::AutoDiffScalar<VectorType>>& transform) {
-  Isometry3<double> result;
-  for (int r = 0; r < 4; ++r) {
-    for (int c = 0; c < 4; ++c) {
-      result.matrix()(r, c) = ExtractDoubleOrThrow(transform.matrix()(r, c));
-    }
-  }
-  return result;
-}
+// TODO(SeanCurtis-TRI): Swap all Isometry3 for RigidTransforms.
 
 // Utilities/functions for working with the encoding of collision object index
 // and mobility type in the fcl::CollisionObject user data field. The encoded
@@ -349,8 +335,188 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   return false;
 }
 
-// The callback function in fcl::distance request. It supports
-// ComputeSignedDistanceToPoint.
+// A functor to support DistanceFromPointCallback(). It computes the signed
+// distance to a query point from a supported geometry.
+// Each overload to the call operator reports the signed distance (encoded as
+// SignedDistanceToPoint) between the functor's stored query point and the
+// given geometry argument.
+class DistanceToPoint {
+ public:
+  // Constructs the functor DistanceToPoint.
+  // @param id    the id of the geometry G,
+  // @param X_WG  pose of the geometry G in World frame,
+  // @param p_WQ  position of the query point Q in World frame.
+  // @note Some parts of the geometry (id, pose) are initialized in this
+  // constructor, and the remaining part of the geometry (shape) is a parameter
+  // to the call operator() below.
+  DistanceToPoint(const GeometryId id,
+                  const Isometry3<double>& X_WG,
+                  const Vector3d& p_WQ) :
+                  geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
+
+  // Overload for Sphere.
+  SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere) {
+    // TODO(DamrongGuoy): Move most code of this function into FCL.
+    const double radius = sphere.radius;
+    const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
+    const double dist_GQ = p_GQ_G.norm();
+    const double distance = dist_GQ - radius;
+
+    // The gradient is always in the direction from the center of the sphere to
+    // the query point Q, regardless of whether the point Q is outside or inside
+    // the sphere G.  The gradient is undefined if the query point Q is at the
+    // center of the sphere G.
+    //
+    // If the query point Q is near the center of the sphere G within a
+    // tolerance, we arbitrarily set the gradient vector as documented in
+    // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
+    const double tolerance = RelativeTolerance(radius);
+    // Unit vector in x-direction of G's frame.
+    const Vector3d Gx(1., 0., 0.);
+    // Gradient vector expressed in G's frame.
+    Vector3d grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
+
+    // Position vector of the nearest point N on G's surface from the query
+    // point Q, expressed in G's frame.
+    const Vector3d p_GN_G = radius * grad_G;
+    // Gradient vector expressed in World frame.
+    const Vector3d grad_W = X_WG_.rotation() * grad_G;
+
+    return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
+                                         grad_W};
+  }
+
+  // Overload for Box.
+  SignedDistanceToPoint<double> operator()(const fcl::Boxd& box) {
+    // TODO(DamrongGuoy): Move most code of this function into FCL.
+    // Express the given query point Q in the frame of the box geometry G.
+    const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
+
+    // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
+    // centered at the origin, where h(i) is half the size of the box in the
+    // i-th coordinate.
+    const Vector3d half_size = box.side / 2.0;
+
+    // We need to classify Q as inside, outside, or on the boundary of B,
+    // where 'on the boundary' means within a tolerance of the boundary.
+    // This helper function takes the i-th coordinate `coord` of p_GQ_G.
+    // It returns the clamped value of `coord` within ±h(i). It also returns
+    // an enum to indicate whether the i-th coordinate is inside the interval
+    // (-h(i),+h(i)), or within a tolerance of the bounded value ±h(i), or
+    // outside the interval.
+    enum class Location {kInside, kBoundary, kOutside};
+    auto clamp = [&half_size](const int i, const double coord,
+                              Location* location) -> double {
+      const double tolerance = RelativeTolerance(half_size(i));
+      if (std::abs(coord) > half_size(i) + tolerance) {
+        *location = Location::kOutside;
+        return Sign(coord) * half_size(i);
+      } else if (std::abs(coord) >= half_size(i) - tolerance) {
+        *location = Location::kBoundary;
+        return Sign(coord) * half_size(i);
+      } else {
+        *location = Location::kInside;
+        return coord;
+      }
+    };
+
+    // The clamp point C has coordinates of Q clamped onto the box.
+    // Note that:
+    // 1. C is the nearest point to Q on ∂B if Q is classified as outside B.
+    // 2. C is at the same position as Q if Q is classified as inside B.
+    // 3. C is exactly on ∂B if Q is within a tolerance from ∂B.
+    Vector3d p_GC_G;
+    Vector3<Location> locations;
+    for (int i = 0; i < 3; ++i)
+      p_GC_G(i) = clamp(i, p_GQ_G(i), &locations(i));
+
+    // Initialize the position of the nearest point N on ∂B as that of C.
+    Vector3d p_GN_G = p_GC_G;
+    double distance;
+    Vector3d grad_G{0., 0., 0.};
+
+    if ((locations(0) == Location::kOutside)||
+        (locations(1) == Location::kOutside)||
+        (locations(2) == Location::kOutside)) {
+      // Q is outside the box.
+      Vector3d p_NQ_G = p_GQ_G - p_GN_G;
+      distance = p_NQ_G.norm();
+      DRAKE_DEMAND(distance != 0.);
+      grad_G = p_NQ_G / distance;
+    } else if ((locations(0) == Location::kBoundary)||
+               (locations(1) == Location::kBoundary)||
+               (locations(2) == Location::kBoundary)) {
+      // Q is on the boundary of the box.
+      distance = 0.0;
+      // A point on a face, on an edge, or on a vertex of the box has one, two,
+      // or three of locations(i) on boundary respectively.  The gradient
+      // at a point on an edge or a vertex of the box is undefined. Here, the
+      // calculation is equivalent to averaging outward unit normals of the
+      // faces that contain the point.
+      for (int i = 0; i < 3; ++i) {
+        if (locations(i) == Location::kBoundary)
+          grad_G(i) = Sign(p_GC_G(i));
+      }
+      grad_G.normalize();
+    } else {
+      // Q is inside the box.
+      // The nearest point N is the axis-aligned projection of Q onto one of
+      // the faces of the box.  The gradient vector is along that direction.
+      int axis = ExtremalAxis(p_GQ_G, half_size);
+      double sign = Sign(p_GQ_G(axis));
+      p_GN_G(axis) = sign * half_size(axis);
+      grad_G(axis) = sign;
+      distance = std::abs(p_GQ_G(axis)) - half_size(axis);
+    }
+
+    // Use R_WG for vectors. Use X_WG for points.
+    const auto& R_WG = X_WG_.rotation();
+    Vector3d grad_W = R_WG * grad_G;
+    return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
+                                         grad_W};
+  }
+
+ private:
+  // Calculate a tolerance relative to a given `size` parameter with a lower
+  // bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
+  // use the relative tolerance of 1e-14 times the `size`.  If the `size` is
+  // smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
+  // 1e-14-meter lower bound help us handle possible round off errors arising
+  // from applying a pose X_WG to a geometry G. Given a query point Q exactly
+  // on the boundary ∂G, if we apply X_WG to both Q and G, the point Q is likely
+  // to deviate from ∂G more than the machine epsilon, which is around 2e-16.
+  static double RelativeTolerance(double size) {
+    return 1e-14 * std::max(1., size);
+  }
+  // This version of Sign(x) returns +1.0 for zero.
+  static double Sign(double x) { return (x < 0.0) ? -1. : 1.; }
+  // Picks the axis i whose coordinate p(i) is closest to the boundary value
+  // ±bounds(i). If there are ties, we prioritize according to an arbitrary
+  // ordering: +x,-x,+y,-y,+z,-z.
+  static int ExtremalAxis(const Vector3d& p, const Vector3d& bounds) {
+    double min_dist = std::numeric_limits<double>::infinity();
+    int axis = -1;
+    for (int i = 0; i < 3; ++i) {
+      for (auto bound : {bounds(i), -bounds(i)}) {
+        double dist = std::abs(bound - p(i));
+        if (dist < min_dist) {
+          min_dist = dist;
+          axis = i;
+        }
+      }
+    }
+    return axis;
+  }
+
+  // The id of the geometry G.
+  const GeometryId geometry_id_;
+  // The pose of the geometry G in World frame.
+  const Isometry3<double> X_WG_;
+  // The position of the query point Q in World frame.
+  const Vector3d p_WQ_;
+};
+
+// Callback function from fcl::distance to help ComputeSignedDistanceToPoint.
 bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                                fcl::CollisionObjectd* fcl_object_B_ptr,
                                // NOLINTNEXTLINE
@@ -365,11 +531,11 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd* point_object = data.query_point;
   const fcl::CollisionObjectd* geometry_object =
-                                   (data.query_point == fcl_object_A_ptr)?
-                                   fcl_object_B_ptr: fcl_object_A_ptr;
+      (data.query_point == fcl_object_A_ptr) ?
+      fcl_object_B_ptr : fcl_object_A_ptr;
 
   const std::vector<GeometryId>& geometry_map = data.geometry_map;
-  GeometryId target_id = EncodedData(*geometry_object).id(geometry_map);
+  GeometryId geometry_id = EncodedData(*geometry_object).id(geometry_map);
 
   const fcl::CollisionGeometryd* collision_geometry =
       geometry_object->collisionGeometry().get();
@@ -377,46 +543,27 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // TODO(DamrongGuoy): Replace this custom code when FCL does this for us with
   // the required accuracy and performance.
   //
-  // For now, we skip any non-sphere geometry. Returning false tells fcl to
-  // continue to other objects.
-  if (collision_geometry->getNodeType() != fcl::GEOM_SPHERE)
-    return false;
+  DistanceToPoint distance_to_point{geometry_id,
+                                    geometry_object->getTransform(),
+                                    point_object->getTranslation()};
 
-  const fcl::Sphered& fcl_sphere =
-      *static_cast<const fcl::Sphered*>(collision_geometry);
-  const double radius = fcl_sphere.radius;
+  SignedDistanceToPoint<double> distance;
+  switch (collision_geometry->getNodeType()) {
+    case fcl::GEOM_SPHERE:
+      distance = distance_to_point(
+          *static_cast<const fcl::Sphered*>(collision_geometry));
+      break;
+    case fcl::GEOM_BOX:
+      distance = distance_to_point(
+          *static_cast<const fcl::Boxd*>(collision_geometry));
+      break;
+    default:
+      return false;  // Returning false tells fcl to continue to other objects.
+  }
 
-  const Vector3d& p_WQ = point_object->getTranslation();
-  const Vector3d& p_WG = geometry_object->getTranslation();
-  const Vector3d p_GQ_W = p_WQ - p_WG;
-  const double dist_GQ = p_GQ_W.norm();
-  const double distance = dist_GQ - radius;
+  if (distance.distance <= data.threshold)
+    data.distances->emplace_back(distance);
 
-  if (distance > data.threshold)
-    return false;  // Returning false tells fcl to continue to other objects.
-
-  // The gradient is always in the direction from the center of the sphere to
-  // the query point Q, regardless of whether the point Q is outside or inside
-  // the sphere G.  The gradient is undefined if the query point Q is at the
-  // center of the sphere G.
-  //
-  // If the query point Q is at the center of the sphere G, we arbitrarily set
-  // the gradient vector to (1,0,0) as documented in query_object.h
-  // (QueryObject::ComputeSignedDistanceToPoint).
-  //
-  // TODO(DamrongGuoy): Set up tolerance, so that very near the center of the
-  // sphere, we consistently set the gradient vector in the direction (1,0,0)
-  // instead of a noisy direction.
-  Vector3d grad_W = (dist_GQ != 0.0)? p_GQ_W / dist_GQ
-                                    : Vector3d{1.0, 0.0, 0.0};
-
-  // Position vector of the nearest point N on G's surface from the query
-  // point Q, expressed in G's frame.
-  const Isometry3<double>& X_WG = geometry_object->getTransform();
-  const Vector3d p_GN_W = radius * grad_W;
-  const Vector3d p_GN_G = X_WG.inverse() * p_GN_W;
-
-  data.distances->emplace_back(target_id, p_GN_G, distance, grad_W);
   return false;  // Returning false tells fcl to continue to other objects.
 }
 

@@ -46,48 +46,43 @@ namespace solar_system {
  Illustration of the orrery:
 
  Legend:
-     Body Symbol | Meaning
-    :-----------:|:--------------------
-        E - ◯    | Earth
-        L - ◑    | Luna (Earth's moon)
-        M - ◍    | Mars
-        P - ●    | Phobos (Mars's moon)
-
         Frames   | Meaning
     :-----------:|:--------------------
         S        | The sun's frame
-        E        | Earth's orbital frame
-        M        | Mars's orbital frame
-        L        | Luna's orbital frame
-        P        | Phobos's orbital frame
-        Gᵢ       | Frame of geometry; `i ∈ {e, m, l, p, r}` for Earth, Mars, Luna, Phobos, and rings of Mars, respectively.
+        E - ◯    | Earth's frame
+        M - ◍    | Mars's frame
+        L - ◑    | Luna's (Earth's moon) frame
+        P - ●    | Phobos's (Mars's moon) frame
+        Oᵢ       | Body's orbit in a circular path. `i ∈ {e, m, l, p}` for Earth, Mars, Luna, and Phobos, respectively.
 
      Pose Symbol | Meaning
     :-----------:|:--------------------
-       `X_SE`    | Earth's frame E relative to S
-       `X_EGₑ`   | Earth's geometry Gₑ relative to E (placed at the end of the arm)
-       `X_EL`    | Luna's frame L relative to E (X_EL = X_EGₑ)
-       `X_LGₗ`   | Luna's geometry Gₗ relative to L (placed out in orbit)
-       `X_SM`    | Mars's frame M relative to S
-       `X_MGₘ`   | Mars's geometry Gₘ relative to M (placed at the end of the arm)
-       `X_MP`    | Phobos's frame P relative to M (X_MP = X_MGₘ)
-       `X_PGₚ`   | Phobos's geometry Gₚ relative to P (placed out in orbit)
-       `X_GₘGᵣ`  | Mars's rings Gr relative to Mars's geometry Gm (not shown in diagram).
+       `X_SOₑ`   | Earth's orbit Oₑ relative to S
+       `X_OₑE`   | Earth's frame E relative to its orbit Oₑ
+       `X_OₑOₗ`  | Luna's orbit Oₗ relative to Earth's Oₑ
+       `X_OₗL`   | Luna's geometry L relative to its orbit Oₗ
+       `X_SOₘ`   | Mars's orbit Oₘ relative to S
+       `X_OₘM`   | Mars's frame M relative to its orbit Oₘ
+       `X_OₘOₚ`  | Phobos's orbit Oₚ relative to Mars's orbit Oₘ
+       `X_OₚP`   | Phobos's frame P relative to its orbit Oₚ
+       `X_MR`    | Mars's rings R relative to Mars's frame M (not shown in diagram).
 
-<br>
 ```
-   X_EGₑ  X_LGₗ                          X_MGₘ  X_PGₚ
-      ↓   ↓                                ↓   ↓
-      E   L         ▁▁▁                    M   p
-      ◯   ◑        ╱   ╲                   ◍   ●
-X_EL →├───┘       │  S  │           X_MP → ├───┘
-      │            ╲▁▁▁╱                   │
-      │              │                     │
-      └──────────────┤ ← X_SE              │
-                     └─────────────────────┘
-                     ↑
-                    X_SM
+    X_OₑE  X_OₗL                          X_OₘM  X_OₚP
+       ↓   ↓                                ↓   ↓
+       E   L         ▁▁▁                    M   P
+       ◯   ◑        ╱   ╲                   ◍   ●
+X_OₑOₗ→├───┘       │  S  │         X_OₘOₚ → ├───┘
+       │            ╲▁▁▁╱                   │
+       │              │                     │
+       └──────────────┤ ← X_SOₑ             │
+                      └─────────────────────┘
+                      ↑
+                     X_SOₘ
 ```
+
+ The frame of orbit's origin lies at the circle's center and it's z-axis is
+ perpendicular to the plane of the circle.
 
  @tparam T The vector element type, which must be a valid Eigen scalar.
 

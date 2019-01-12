@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -75,7 +76,7 @@ class System : public SystemBase {
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
-  ~System() override = default;
+  ~System() override;
 
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization
@@ -1019,8 +1020,9 @@ class System : public SystemBase {
     return nullptr;
   }
 
-  // The derived class implementation should provide exactly one event of the
-  // appropriate type with a kForced trigger type.
+  // The derived class implementation shall create the appropriate collection
+  // for each of these three methods.
+  //
   // Consumers of this class should never need to call the three methods below.
   // These three methods would ideally be designated as "protected", but
   // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
@@ -1695,21 +1697,6 @@ class System : public SystemBase {
   }
   //@}
 
-#ifndef DRAKE_DOXYGEN_CXX
-  // Remove this overload on or about 2018-12-01.
-  DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort() {
-    return DeclareInputPort(kUseDefaultName, kAbstractValued, 0 /* size */);
-  }
-
-  // Remove this overload on or about 2018-12-01.
-  DRAKE_DEPRECATED("Use one of the other overloads.")
-  const InputPort<T>& DeclareAbstractInputPort(
-      variant<std::string, UseDefaultName> name) {
-    return DeclareInputPort(std::move(name), kAbstractValued, 0 /* size */);
-  }
-#endif
-
   /// Adds an already-created constraint to the list of constraints for this
   /// System.  Ownership of the SystemConstraint is transferred to this system.
   SystemConstraintIndex AddConstraint(
@@ -2037,34 +2024,53 @@ class System : public SystemBase {
   }
   //@}
 
+  bool forced_publish_events_exist() const {
+    return forced_publish_events_ != nullptr;
+  }
+
+  bool forced_discrete_update_events_exist() const {
+    return forced_discrete_update_events_ != nullptr;
+  }
+
+  bool forced_unrestricted_update_events_exist() const {
+    return forced_unrestricted_update_events_ != nullptr;
+  }
+
+  EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
+    return *forced_publish_events_;
+  }
+
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
-    return *forced_publish_;
+    DRAKE_DEMAND(forced_publish_events_.get());
+    return *forced_publish_events_;
   }
 
   const EventCollection<DiscreteUpdateEvent<T>>&
   get_forced_discrete_update_events() const {
-    return *forced_discrete_update_;
+    DRAKE_DEMAND(forced_discrete_update_events_.get());
+    return *forced_discrete_update_events_;
   }
 
   const EventCollection<UnrestrictedUpdateEvent<T>>&
   get_forced_unrestricted_update_events() const {
-    return *forced_unrestricted_update_;
+    DRAKE_DEMAND(forced_unrestricted_update_events_.get());
+    return *forced_unrestricted_update_events_;
   }
 
   void set_forced_publish_events(
   std::unique_ptr<EventCollection<PublishEvent<T>>> forced) {
-    forced_publish_ = std::move(forced);
+    forced_publish_events_ = std::move(forced);
   }
 
   void set_forced_discrete_update_events(
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>> forced) {
-    forced_discrete_update_ = std::move(forced);
+    forced_discrete_update_events_ = std::move(forced);
   }
 
   void set_forced_unrestricted_update_events(
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> forced) {
-    forced_unrestricted_update_ = std::move(forced);
+    forced_unrestricted_update_events_ = std::move(forced);
   }
 
  private:
@@ -2183,14 +2189,15 @@ class System : public SystemBase {
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
-  // all of these have exactly one kForced triggered event. For a Diagram, they
+  // these contain at least one kForced triggered event. For a Diagram, they
   // are DiagramEventCollection, whose leafs are LeafEventCollection with
-  // exactly one kForced triggered event.
-  std::unique_ptr<EventCollection<PublishEvent<T>>> forced_publish_{nullptr};
+  // one or more kForced triggered events.
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+      forced_publish_events_{nullptr};
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-      forced_discrete_update_{nullptr};
+      forced_discrete_update_events_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-      forced_unrestricted_update_{nullptr};
+      forced_unrestricted_update_events_{nullptr};
 
   // Functions to convert this system to use alternative scalar types.
   SystemScalarConverter system_scalar_converter_;
@@ -2202,5 +2209,14 @@ class System : public SystemBase {
   CacheIndex nonconservative_power_cache_index_;
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+System<T>::~System() = default;
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::System)

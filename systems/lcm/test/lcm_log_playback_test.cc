@@ -94,26 +94,26 @@ void GenerateLog() {
   auto context1 = pub1->CreateDefaultContext();
 
   SetInput(0.1, "Ch0", 1, context0.get());
-  pub0->PublishInputAsLcmMessage(*context0);
+  pub0->Publish(*context0);
 
   SetInput(0.22, "Ch1", 2, context1.get());
-  pub1->PublishInputAsLcmMessage(*context1);
+  pub1->Publish(*context1);
 
   // Testing multiple messages sent to the same channel at the same time.
   // Only the last one should be visible from the Subscriber's point of view.
   SetInput(0.3, "Ch0", 3, context0.get());
-  pub0->PublishInputAsLcmMessage(*context0);
+  pub0->Publish(*context0);
   SetInput(0.3, "Ch0", 4, context0.get());
-  pub0->PublishInputAsLcmMessage(*context0);
+  pub0->Publish(*context0);
   SetInput(0.3, "Ch0", 5, context0.get());
-  pub0->PublishInputAsLcmMessage(*context0);
+  pub0->Publish(*context0);
 
   // Testing sending a message to a different channel at the same time.
   SetInput(0.3, "Ch1", 6, context1.get());
-  pub1->PublishInputAsLcmMessage(*context1);
+  pub1->Publish(*context1);
 
   SetInput(0.4, "Ch1", 7, context1.get());
-  pub1->PublishInputAsLcmMessage(*context1);
+  pub1->Publish(*context1);
 }
 
 void CheckLog(const std::vector<double>& expected_times,

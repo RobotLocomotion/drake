@@ -77,7 +77,7 @@ class TestSystemsLcm(unittest.TestCase):
         model = self._model_message()
         context = dut.CreateDefaultContext()
         context.FixInputPort(0, AbstractValue.Make(model))
-        dut.PublishInputAsLcmMessage(context)
+        dut.Publish(context)
         raw = lcm.get_last_published_message("TEST_CHANNEL")
         value = quaternion_t.decode(raw)
         self.assert_lcm_equal(value, model)

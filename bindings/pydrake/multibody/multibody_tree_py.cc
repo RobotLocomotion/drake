@@ -236,8 +236,9 @@ void init_module(py::module m) {
     using Class = UniformGravityFieldElement<T>;
     py::class_<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", doc.UniformGravityFieldElement.doc)
+        .def(py::init<>(), doc.UniformGravityFieldElement.ctor.doc_0args)
         .def(py::init<Vector3<double>>(), py::arg("g_W"),
-            doc.UniformGravityFieldElement.ctor.doc);
+            doc.UniformGravityFieldElement.ctor.doc_1args);
   }
 
   // MultibodyForces

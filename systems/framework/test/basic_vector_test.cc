@@ -246,13 +246,18 @@ GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
   EXPECT_EQ(s.str(), "foo [] bar");
 }
 
-
-// Tests the default set of inequality constraints (empty).
+// Tests the default set of bounds (empty).
 GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
   VectorX<double> value = VectorX<double>::Ones(22);
   BasicVector<double> vec(1);
-  vec.CalcInequalityConstraint(&value);
-  EXPECT_EQ(value.size(), 0);
+  Eigen::VectorXd lower, upper;
+  // Deliberately set lower/upper to size 2, to check if GetElementBounds will
+  // resize the bounds to empty size.
+  lower.resize(2);
+  upper.resize(2);
+  vec.GetElementBounds(&lower, &upper);
+  EXPECT_EQ(lower.size(), 0);
+  EXPECT_EQ(upper.size(), 0);
 }
 
 // Tests the protected `::values()` methods.

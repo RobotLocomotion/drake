@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic.h"
@@ -1420,7 +1421,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
               c->Calc(this->GetSubsystemContext(*sys, context), value);
             };
         this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-            diagram_calc, c->size(), c->type(),
+            diagram_calc, c->bounds(),
             sys->get_name() + ":" + c->description()));
       }
     }
@@ -1605,3 +1606,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Diagram)

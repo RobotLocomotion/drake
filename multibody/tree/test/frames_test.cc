@@ -212,6 +212,19 @@ TEST_F(FrameTests, ModelInstanceOverride) {
   EXPECT_EQ(frameSChild_->model_instance(), extra_instance_);
 }
 
+// Verifies that `HasFrameNamed` has model instances correctly mapped for named
+// frames.
+TEST_F(FrameTests, HasFrameNamed) {
+  for (FrameIndex i{0}; i < tree().num_frames(); ++i) {
+    auto& frame = tree().get_frame(i);
+    if (!frame.name().empty()) {
+      EXPECT_TRUE(
+          tree().HasFrameNamed(frame.name(), frame.model_instance()))
+          << frame.name();
+    }
+  }
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

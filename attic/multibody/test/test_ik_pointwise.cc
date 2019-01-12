@@ -65,17 +65,18 @@ WorldCoMConstraint com_kc_final(tree.get(), com_lb, com_ub, tspan_end);
 
   const Vector3d expected_initial(0, 0, 0.216933);
   const Vector3d expected_final(0, 0, 0.9);
+  // SNOPT and IPOPT diverge slightly in their output, so reduce
+  // the tolerance a bit.
+  const double tolerance{1e-4};
   for (int i = 0; i < nT; i++) {
     KinematicsCache<double> cache = tree->doKinematics(q_sol.col(i));
     Vector3d com = tree->centerOfMass(cache);
     printf("t %d: %5.6f\n%5.6f\n%5.6f\n", i, com(0), com(1), com(2));
     if (i < (nT - 1)) {
-      // SNOPT and IPOPT diverge slightly in their output, so reduce
-      // the tolerance a bit.
-      EXPECT_TRUE(CompareMatrices(com, expected_initial, 1e-4,
+      EXPECT_TRUE(CompareMatrices(com, expected_initial, tolerance,
                                   MatrixCompareType::absolute));
     } else {
-      EXPECT_TRUE(CompareMatrices(com, expected_final, 1e-6,
+      EXPECT_TRUE(CompareMatrices(com, expected_final, tolerance,
                                   MatrixCompareType::absolute));
     }
   }

@@ -31,7 +31,8 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
                                     "equality constraint");
-    this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint, kSize,
+    this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint,
+                                      { Eigen::VectorXd::Zero(kSize), nullopt },
                                       "inequality constraint");
   }
 
@@ -168,8 +169,8 @@ TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
 TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
   const auto& constraints = inspector_->constraints();
   const std::vector<std::string> expected{
-    "((xc0 == 0) and (xc1 == 0))",
-    "((xc0 >= 0) and (xc1 >= 0))",
+      "((xc0 == 0) and (xc1 == 0))",
+      "((xc0 >= 0) and (xc1 >= 0) and (xc0 <= inf) and (xc1 <= inf))",
   };
   std::vector<std::string> actual;
   std::transform(

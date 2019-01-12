@@ -122,7 +122,7 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType3) {
 TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {
   for (int i = 0; i < monomials_.size(); ++i) {
     const Polynomial p{monomials_[i]};
-    for (const std::pair<Monomial, Expression>& map :
+    for (const std::pair<const Monomial, Expression>& map :
          p.monomial_to_coefficient_map()) {
       EXPECT_EQ(map.first, monomials_[i]);
       EXPECT_EQ(map.second, 1);

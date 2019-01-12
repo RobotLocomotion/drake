@@ -22,7 +22,7 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         cart_pole, scene_graph = AddMultibodyPlantSceneGraph(builder)
         Parser(plant=cart_pole).AddModelFromFile(file_name)
-        cart_pole.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
+        cart_pole.AddForceElement(UniformGravityFieldElement())
         cart_pole.Finalize()
         assert cart_pole.geometry_source_is_registered()
 
@@ -58,7 +58,7 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
         kuka, scene_graph = AddMultibodyPlantSceneGraph(builder)
         Parser(plant=kuka).AddModelFromFile(file_name)
-        kuka.AddForceElement(UniformGravityFieldElement([0, 0, -9.81]))
+        kuka.AddForceElement(UniformGravityFieldElement())
         kuka.Finalize()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,

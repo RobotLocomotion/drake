@@ -137,8 +137,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
                                           "iiwa_link_0", controller_iiwa_model),
                                       Isometry3d::Identity());
   owned_controller_plant_
-      ->template AddForceElement<multibody::UniformGravityFieldElement>(
-          -9.81 * Vector3d::UnitZ());
+      ->template AddForceElement<multibody::UniformGravityFieldElement>();
   owned_controller_plant_->Finalize();
 }
 

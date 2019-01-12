@@ -98,10 +98,7 @@ PYBIND11_MODULE(lcm, m) {
               self->set_publish_period(period);
 #pragma GCC diagnostic pop
             },
-            py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc)
-        .def("PublishInputAsLcmMessage", &Class::PublishInputAsLcmMessage,
-            py::arg("context"),
-            doc.LcmPublisherSystem.PublishInputAsLcmMessage.doc);
+            py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc);
   }
 
   {

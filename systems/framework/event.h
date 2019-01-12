@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
+#include "drake/systems/framework/event_status.h"
 #include "drake/systems/framework/value.h"
 
 namespace drake {
@@ -323,7 +324,7 @@ class Event {
 
   // Note: Users should not be calling this.
   #if !defined(DRAKE_DOXYGEN_CXX)
-  /// Constructs an Event with the specified @p trigger.
+  // Constructs an Event with the specified @p trigger.
   explicit Event(const TriggerType& trigger) : trigger_type_(trigger) {}
   #endif
 
@@ -346,8 +347,10 @@ class Event {
   std::unique_ptr<EventData> event_data_{nullptr};
 };
 
-/// Structure for comparing two PeriodicEventData objects for use in a map
-/// container, using an arbitrary comparison method.
+/**
+ * Structure for comparing two PeriodicEventData objects for use in a map
+ * container, using an arbitrary comparison method.
+ */
 struct PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
     const PeriodicEventData& b) const {
@@ -408,7 +411,7 @@ class PublishEvent final : public Event<T> {
   }
 
  private:
-  PublishEvent(const PublishEvent&) = default;
+  PublishEvent(const PublishEvent&);
 
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
@@ -423,6 +426,12 @@ class PublishEvent final : public Event<T> {
   // Optional callback function that handles this publish event.
   PublishCallback callback_{nullptr};
 };
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+PublishEvent<T>::PublishEvent(const PublishEvent<T>&) = default;
 
 /**
  * This class represents a discrete update event. It has an optional callback
@@ -480,7 +489,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   }
 
  private:
-  DiscreteUpdateEvent(const DiscreteUpdateEvent&) = default;
+  DiscreteUpdateEvent(const DiscreteUpdateEvent&);
 
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
@@ -497,6 +506,13 @@ class DiscreteUpdateEvent final : public Event<T> {
   // Optional callback function that handles this discrete update event.
   DiscreteUpdateCallback callback_{nullptr};
 };
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+DiscreteUpdateEvent<T>::DiscreteUpdateEvent(
+    const DiscreteUpdateEvent<T>&) = default;
 
 /**
  * This class represents an unrestricted update event. It has an optional
@@ -552,7 +568,7 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   }
 
  private:
-  UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&) = default;
+  UnrestrictedUpdateEvent(const UnrestrictedUpdateEvent&);
 
   void DoAddToComposite(TriggerType trigger_type,
                         CompositeEventCollection<T>* events) const final {
@@ -570,5 +586,30 @@ class UnrestrictedUpdateEvent final : public Event<T> {
   UnrestrictedUpdateCallback callback_{nullptr};
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+UnrestrictedUpdateEvent<T>::UnrestrictedUpdateEvent(
+    const UnrestrictedUpdateEvent<T>&) = default;
+
 }  // namespace systems
 }  // namespace drake
+
+// TODO(sammy-tri) I would like to use
+// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS for
+// WitnessTriggeredEventData, but DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN
+// breaks due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 with
+// extern templates.
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::Event)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::PublishEvent)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiscreteUpdateEvent)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::UnrestrictedUpdateEvent)

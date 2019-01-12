@@ -14,7 +14,6 @@ namespace drake {
 using systems::DiagramBuilder;
 using systems::FrameVisualizer;
 using systems::PassThrough;
-using systems::Value;
 using systems::ZeroOrderHold;
 using systems::lcm::LcmPublisherSystem;
 using systems::sensors::ImageDepth32F;

@@ -152,14 +152,46 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   )
 endif()
 
-if(APPLE)
-  # Ensure that the python2 executable or link is used in preference to the
-  # python and python2.7 executables or links.
-  find_program(PYTHON_EXECUTABLE NAMES python2)
+# The supported Python major/minor versions should match those listed in both
+# doc/developers.rst and tools/workspace/python/repository.bzl.
+set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
+
+if(PYTHON_EXECUTABLE)
+  find_package(PythonInterp MODULE REQUIRED)
+else()
+  string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
+    "${SUPPORTED_PYTHON_VERSIONS}"
+  )
+  set(WITH_PYTHON_VERSION 2 CACHE STRING
+    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
+  )
+  set_property(CACHE WITH_PYTHON_VERSION PROPERTY
+    STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
+  )
+
+  string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
+  list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
+
+  if(APPLE AND WITH_PYTHON_VERSION_MAJOR EQUAL 2)
+    # Ensure that the python2 executable or link is used in preference to the
+    # python and python2.7 executables or links, which correspond to the
+    # system version of Python installed on macOS. There is no system python3
+    # as of macOS Mojave 10.14.
+    find_program(PYTHON_EXECUTABLE NAMES python2)
+  endif()
+
+  find_package(PythonInterp ${WITH_PYTHON_VERSION} EXACT MODULE REQUIRED)
 endif()
 
-# TODO(jamiesnape) Ensure that we can switch between supported versions.
-find_package(PythonInterp 2.7 EXACT MODULE REQUIRED)
+set(PYTHON_VERSION_MAJOR_MINOR
+  "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
+)
+
+if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
+  message(WARNING
+    "Python ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python code in project drake_cxx_python may fail at runtime."
+  )
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
   set(BAZEL_COMPILATION_MODE dbg)

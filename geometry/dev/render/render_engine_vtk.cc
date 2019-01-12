@@ -92,7 +92,17 @@ enum ImageType {
 struct RegistrationData {
   const PerceptionProperties& properties;
   const Isometry3<double>& X_FG;
+  // The file name if the shape being registered is a mesh.
+  optional<std::string> mesh_filename;
 };
+
+std::string RemoveFileExtension(const std::string& filepath) {
+  const size_t last_dot = filepath.find_last_of(".");
+  if (last_dot == std::string::npos) {
+    DRAKE_ABORT_MSG("File has no extension.");
+  }
+  return filepath.substr(0, last_dot);
+}
 
 }  // namespace
 
@@ -174,7 +184,11 @@ std::unique_ptr<RenderEngine> RenderEngineVtk::Clone() const {
       vtkActor& source = *source_actors[i];
       vtkActor& clone = *clone_actors[i];
 
-      clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
+      if (source.GetTexture() == nullptr) {
+        clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
+      } else {
+        clone.SetTexture(source.GetTexture());
+      }
       clone.SetUserTransform(source.GetUserTransform());
 
       // NOTE: The clone renderer and original renderer *share* polygon data.
@@ -413,6 +427,7 @@ const ColorI& RenderEngineVtk::get_flat_terrain_color() const {
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    void* user_data) {
+  static_cast<RegistrationData*>(user_data)->mesh_filename = file_name;
   vtkNew<vtkOBJReader> mesh_reader;
   mesh_reader->SetFileName(file_name.c_str());
   mesh_reader->Update();
@@ -466,25 +481,35 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   const std::string& diffuse_map_name =
       data.properties.GetPropertyOrDefault<std::string>("phong", "diffuse_map",
                                                         "");
+  std::string texture_name;
   std::ifstream file_exist(diffuse_map_name);
   if (file_exist) {
+    texture_name = diffuse_map_name;
+  } else if (diffuse_map_name.empty() && data.mesh_filename) {
+    // This is the hack to search for mesh.png as a possible texture.
+    const std::string
+        alt_texture_name(RemoveFileExtension(*data.mesh_filename) +
+        ".png");
+    std::ifstream alt_file_exist(alt_texture_name);
+    if (alt_file_exist) texture_name = alt_texture_name;
+  }
+  if (!texture_name.empty()) {
     vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(diffuse_map_name.c_str());
+    texture_reader->SetFileName(texture_name.c_str());
     texture_reader->Update();
     vtkNew<vtkOpenGLTexture> texture;
     texture->SetInputConnection(texture_reader->GetOutputPort());
     texture->InterpolateOn();
-
     color_actor->SetTexture(texture.Get());
   } else {
-    // TODO(SeanCurtis-TRI): Make this default color part of the public API so
-    // it can be configured.
-    // Default is an obnoxious orange to help flag un-defined values.
-    const Eigen::Vector4d default_diffuse(0.9, 0.45, 0.1, 1.0);
-    const Eigen::Vector4d& diffuse =
-        data.properties.GetPropertyOrDefault("phong", "diffuse",
-                                             default_diffuse);
-    color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
+      // TODO(SeanCurtis-TRI): Make this default color part of the public API so
+      // it can be configured.
+      // Default is an obnoxious orange to help flag un-defined values.
+      const Eigen::Vector4d default_diffuse(0.9, 0.45, 0.1, 1.0);
+      const Eigen::Vector4d& diffuse =
+          data.properties.GetPropertyOrDefault("phong", "diffuse",
+                                               default_diffuse);
+      color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
   }
   // TODO(SeanCurtis-TRI): It is not clear why this isn't illuminated. Document
   // this behavior when I change "terrain" label to "don't care" label.

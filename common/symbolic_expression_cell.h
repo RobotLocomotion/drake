@@ -346,7 +346,7 @@ class ExpressionAddFactory {
   void AddTerm(double coeff, const Expression& term);
   /* Adds expr_to_coeff_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, double> expr_to_coeff_map);
+  void AddMap(const std::map<Expression, double>& expr_to_coeff_map);
 
   double constant_{0.0};
   std::map<Expression, double> expr_to_coeff_map_;
@@ -448,7 +448,7 @@ class ExpressionMulFactory {
   void AddTerm(const Expression& base, const Expression& exponent);
   /* Adds base_to_exponent_map to this factory. It calls AddConstant and AddTerm
    * methods. */
-  void AddMap(const std::map<Expression, Expression> base_to_exponent_map);
+  void AddMap(const std::map<Expression, Expression>& base_to_exponent_map);
 
   /* Sets to represent a zero expression. */
   void SetZero();
