@@ -13,7 +13,7 @@ void DummySystemConstraintCalc(const Context<T>& context, VectorX<T>* y) {
   const Vector3<T> x = context.get_continuous_state_vector().CopyToVector();
   y->resize(2);
   (*y)(0) = p * x(0) + x(1);
-  (*y)(1) = x(2) - x(1) * x(1) + p * x(0) * x(0);
+  (*y)(1) = x(2) - x(1) * x(1) - p * x(0) * x(0);
 }
 
 /**

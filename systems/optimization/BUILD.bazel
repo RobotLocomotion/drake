@@ -13,6 +13,7 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "optimization",
     deps = [
+        ":system_constraint_adapter",
         ":system_constraint_wrapper",
     ],
 )
@@ -25,6 +26,15 @@ drake_cc_library(
         "//solvers:constraint",
         "//systems/framework:system",
         "//systems/framework:system_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "system_constraint_adapter",
+    srcs = ["system_constraint_adapter.cc"],
+    hdrs = ["system_constraint_adapter.h"],
+    deps = [
+        ":system_constraint_wrapper",
     ],
 )
 
@@ -48,6 +58,17 @@ drake_cc_googletest(
         ":system_optimization_test_util",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_adapter_test",
+    deps = [
+        ":system_constraint_adapter",
+        ":system_optimization_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//solvers:solve",
     ],
 )
 
