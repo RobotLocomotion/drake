@@ -266,7 +266,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   void get_output_port(int) = delete;
 
  private:
-  void PublishInputAsLcmMessage(const Context<double>& context) const;
+  EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
 
   // All constructors delegate to here. If the lcm pointer is null, we'll
   // allocate and maintain a DrakeLcm object internally.
