@@ -220,6 +220,24 @@ struct JointLimitsPenaltyParametersEstimator {
 };
 }  // namespace internal
 
+namespace {
+
+// Hack to fully qualify frame names, pending resolution of #9128. Used by
+// geometry registration routines.
+template <typename T>
+std::string GetScopedName(
+    const MultibodyPlant<T>& plant,
+    ModelInstanceIndex model_instance, const std::string& name) {
+  if (model_instance != world_model_instance() &&
+      model_instance != default_model_instance()) {
+    return plant.GetModelInstanceName(model_instance) + "::" + name;
+  } else {
+    return name;
+  }
+}
+
+}  // namespace
+
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
     : MultibodyPlant(nullptr, time_step) {}
@@ -296,7 +314,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(body, X_BG, shape, name, scene_graph_);
+  GeometryId id = RegisterGeometry(
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
+      scene_graph_);
   scene_graph_->AssignRole(*source_id_, id, properties);
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
@@ -324,7 +344,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(body, X_BG, shape, name, scene_graph_);
+  GeometryId id = RegisterGeometry(
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
+      scene_graph_);
 
   // TODO(SeanCurtis-TRI): Push the contact parameters into the
   // ProximityProperties.
@@ -400,7 +422,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     FrameId frame_id = scene_graph_->RegisterFrame(
         source_id_.value(),
         GeometryFrame(
-            body.name(),
+            GetScopedName(*this, body.model_instance(), body.name()),
             /* Initial pose: Not really used by GS. Will get removed. */
             Isometry3<double>::Identity(),
             /* TODO(@SeanCurtis-TRI): Add test coverage for this
