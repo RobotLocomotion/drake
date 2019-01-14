@@ -14,15 +14,10 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/type_safe_index.h"
-#include "drake/common/unused.h"
+#include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace systems {
-
-template <typename T>
-class Context;
-
-using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 
 /// The form of a SystemConstraint.
 enum class SystemConstraintType {
