@@ -10,14 +10,5 @@ SystemConstraintAdapter::SystemConstraintAdapter(
   DRAKE_DEMAND(system);
 }
 
-std::shared_ptr<SystemConstraintWrapper> SystemConstraintAdapter::Create(
-    SystemConstraintIndex index, const Context<double>& context,
-    UpdateContextFromDecisionVariables<double> selector_double,
-    UpdateContextFromDecisionVariables<AutoDiffXd> selector_autodiff,
-    int x_size) const {
-  return std::make_shared<SystemConstraintWrapper>(
-      system_double_, system_autodiff_.get(), index, context, selector_double,
-      selector_autodiff, x_size);
-}
 }  // namespace systems
 }  // namespace drake

@@ -35,11 +35,17 @@ class SystemConstraintAdapter {
    * select the decision variables inside @p context. The unselected variables
    * will remain to its values stored in @p context.
    */
+  template <typename UpdateContextFromDecisionVariablesGeneric>
   std::shared_ptr<SystemConstraintWrapper> Create(
       SystemConstraintIndex index, const Context<double>& context,
-      UpdateContextFromDecisionVariables<double> selector_double,
-      UpdateContextFromDecisionVariables<AutoDiffXd> selector_autodiff,
-      int x_size) const;
+      UpdateContextFromDecisionVariablesGeneric selector,
+      int x_size) const {
+  return std::make_shared<SystemConstraintWrapper>(
+      system_double_, system_autodiff_.get(), index, context,
+      UpdateContextFromDecisionVariables<double>(selector),
+      UpdateContextFromDecisionVariables<AutoDiffXd>(selector),
+      x_size);
+  }
 
  private:
   const System<double>* const system_double_;
