@@ -2231,7 +2231,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   ConstraintTestSystem dut;
   EXPECT_EQ(dut.get_num_constraints(), 0);
 
-  SystemConstraint<double>::CalcCallback calc0 = [](
+  ContextConstraintCalc<double> calc0 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
@@ -2241,7 +2241,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
-  SystemConstraint<double>::CalcCallback calc1 = [](
+  ContextConstraintCalc<double> calc1 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value =
         Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
