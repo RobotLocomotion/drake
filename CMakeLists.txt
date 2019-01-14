@@ -142,14 +142,25 @@ else()
   )
 endif()
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are None Debug Release RelWithDebInfo MinSizeRel"
-    FORCE
-  )
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
-    STRINGS None Debug Release RelWithDebInfo MinSizeRel
-  )
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  set(SUPPORTED_BUILD_TYPES None Debug Release RelWithDebInfo MinSizeRel)
+
+  if(NOT CMAKE_BUILD_TYPE)
+    string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
+      "${SUPPORTED_BUILD_TYPES}"
+    )
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are ${SUPPORTED_BUILD_TYPES_STRING}"
+      FORCE
+    )
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
+      STRINGS "${SUPPORTED_BUILD_TYPES}"
+    )
+  endif()
+
+  if(NOT CMAKE_BUILD_TYPE IN_LIST SUPPORTED_BUILD_TYPES)
+    message(WARNING "Configuration ${CMAKE_BUILD_TYPE} is NOT supported")
+  endif()
 endif()
 
 # The supported Python major/minor versions should match those listed in both
