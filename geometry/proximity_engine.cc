@@ -21,6 +21,8 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
@@ -33,6 +35,8 @@ using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 
 namespace {
 
@@ -283,11 +287,11 @@ struct CollisionData {
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
 
-// A functor to support DistanceFromPointCallback(), ComputeNearphaseDistance().
-// It computes the signed distance to a query point from a supported geometry.
-// Each overload to the call operator reports the signed distance (encoded as
-// SignedDistanceToPoint) between the functor's stored query point and the
-// given geometry argument.
+// An internal functor to support DistanceFromPointCallback() and
+// ComputeNearphaseDistance(). It computes the signed distance to a query
+// point from a supported geometry. Each overload to the call operator
+// reports the signed distance (encoded as SignedDistanceToPoint) between the
+// functor's stored query point and the given geometry argument.
 class DistanceToPoint {
  public:
   // Constructs the functor DistanceToPoint.
@@ -298,7 +302,7 @@ class DistanceToPoint {
   // constructor, and the remaining part of the geometry (shape) is a parameter
   // to the call operator() below.
   DistanceToPoint(const GeometryId id,
-                  const Isometry3<double>& X_WG,
+                  const RigidTransformd& X_WG,
                   const Vector3d& p_WQ) :
       geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
 
@@ -343,178 +347,118 @@ class DistanceToPoint {
   // The id of the geometry G.
   const GeometryId geometry_id_;
   // The pose of the geometry G in World frame.
-  const Isometry3<double> X_WG_;
+  const RigidTransformd X_WG_;
   // The position of the query point Q in World frame.
   const Vector3d p_WQ_;
 };
 
-// Calculate signed distance between two spheres.
-void DistanceGeometryPair(const fcl::Sphered* sphere_A,
-                          const fcl::Sphered* sphere_B,
-                          const Isometry3d& X_WA,
-                          const Isometry3d& X_WB,
-                          const GeometryId& /*id_A*/,
-                          const GeometryId& id_B,
-                          fcl::DistanceResultd* result) {
-  // Position of the center of the sphere A expressed in World frame.
-  const Vector3d& p_WAo = X_WA.translation();
-  // Radius of the sphere A.
-  const double radius_A = sphere_A->radius;
+// An internal functor to compute sphere-sphere signed distance and sphere-box
+// signed distance.
+//
+class DistancePairGeometry {
+ public:
+  // Constructs the functor DistancePairGeometry.
+  DistancePairGeometry(const GeometryId& id_A, const GeometryId& id_B,
+                       const RigidTransformd& X_WA, const RigidTransformd& X_WB,
+                       fcl::DistanceResultd* result)
+      : id_A_(id_A), id_B_(id_B), X_WA_(X_WA), X_WB_(X_WB), result_(result) {}
 
-  const SignedDistanceToPoint<double> sphere_B_to_point_Ao =
-      DistanceToPoint{id_B, X_WB, p_WAo}(*sphere_B);
+  // Given a sphere A centered at Ao with radius r and another geometry B,
+  // we want to compute
+  // 1. φ_A,B = the signed distance between the two objects, which is positive
+  //    for non-overlapping objects and equals the negative penetration depth
+  //    for overlapping objects.
+  // 2. Na, Nb = a pair of witness points, Na ∈ ∂A, Nb ∈ ∂B (not necessarily
+  //    unique), |Na-Nb| = |φ_A,B|.
+  //
+  // Define these functions: (available from SignedDistanceToPoint)
+  //   φ_B:ℝ³→ℝ, φ_B(p)  = signed distance to point p from B.
+  //   η_B:ℝ³→ℝ³, η_B(p) = a nearest point to p on the boundary ∂B (not
+  //                       necessarily unique).
+  //   ∇φ_B:ℝ³→ℝ³, ∇φ_B(p) = gradient vector of φ_B with respect to p.
+  //                         It has unit length by construction.
+  // Algorithm:
+  // 1. φ_A,B = φ_B(Ao) - r
+  // 2. Nb = η_B(Ao)
+  // 3. Na = Ao - r * ∇φ_B(Ao)
+  void operator()(const fcl::Sphered* sphere_A, const fcl::Sphered* sphere_B);
+  void operator()(const fcl::Sphered* sphere_A, const fcl::Boxd* box_B);
+  void operator()(const fcl::Boxd* box_A, const fcl::Sphered* sphere_B);
 
-  const double signed_distance = sphere_B_to_point_Ao.distance - radius_A;
+ private:
+  // Performs step 3. Na = Ao - r * ∇φ_B(Ao).
+  // @param radius_A the radius of the sphere A.
+  // @param X_WA the pose of the sphere A.
+  // @param gradB_W the gradient vector ∇φ_B(Ao).
+  Vector3d WitnessPointOnSphere(
+      const double radius_A, const RigidTransformd& X_WA,
+      const Vector3d& gradB_W) const;
 
-  // Nb is the witness point on B.
-  const Vector3d& p_BNb = sphere_B_to_point_Ao.p_GN;
-  const Vector3d p_WNb = X_WB * p_BNb;
+  GeometryId id_A_;
+  GeometryId id_B_;
+  RigidTransformd X_WA_;
+  RigidTransformd X_WB_;
+  fcl::DistanceResultd* result_;
+};
 
-  // We will calculate Na the witness point on A with the invariance that
-  // the Euclidean distance between Na and Nb equals the absoluate value
-  // of the signed distance between the two spheres, i.e.,
-  //        |Na - Nb| = |signed_distance|  (1)
-  // The invariance (1) is true for all these cases:
-  // - the two spheres do not overlap,
-  // - the two spheres kiss each other,
-  // - the two spheres overlap,
-  // - one sphere covers another,
-  // - the two spheres are concentric.
-  //
-  // We already called DistanceToPoint{}() using sphere_B, so it might
-  // seem natural to call DistanceToPoint{}() again using sphere_A.
-  // However, for concentric spheres, there is no guarantee that both calls
-  // will give us Na and Nb that satisfy the above invariance. Instead, we
-  // will use the following observation.
-  //
-  // Let gradA (gradB) be the gradient vector of the signed distance function
-  // from the sphere A (sphere B) evaluated at the center Bo (center Ao).
-  // Na is in the direction of gradA from the center Ao, and gradA = -gradB.
-  //
-  // If Ao ≠ Bo, both gradA and gradB are well defined as shown in this picture:
-  //
-  //                ooo             ooo
-  //             o       o       o       o
-  //            o         o     o         o
-  // gradB <---------Ao   Na    Nb   Bo--------> gradA
-  //            o         o     o         o
-  //             o       o       o       o
-  //                ooo             ooo
-  //
-  // If A and B are concentric, both gradA and gradB are undefined. The call to
-  // DistanceToPoint{}() above already picked gradB arbitrarily.  We will set
-  // gradA = -gradB to satisfy the invariance (1), as illustrated in this
-  // picture:
-  //
-  //                ooo
-  //             o       o
-  //            o         o
-  // gradB <---Nb--Ao=Bo--Na---> gradA
-  //            o         o
-  //             o       o
-  //                ooo
-  //
+Vector3d DistancePairGeometry::WitnessPointOnSphere(
+    const double radius_A, const RigidTransformd& X_WA,
+    const Vector3d& gradB_W) const {
   // Notation:
-  // gradB_W = gradB expressed in World frame.
-  // gradB_A = gradB expressed in A's frame.
-  // gradA_A = gradA expressed in A's frame.
-  const Vector3d& gradB_W = sphere_B_to_point_Ao.grad_W;
-  const Eigen::Matrix3d R_WA = X_WA.rotation();
-  const Eigen::Matrix3d R_AW = R_WA.transpose();
+  // gradB_W = ∇φ_B(Ao) expressed in World frame.
+  // gradB_A = ∇φ_B(Ao) expressed in A's frame.
+  const RotationMatrixd& R_WA = X_WA.rotation();
+  const RotationMatrixd R_AW = R_WA.transpose();
   const Vector3d gradB_A = R_AW * gradB_W;
-  const Vector3d gradA_A = -gradB_A;
-  const Vector3d p_ANa = radius_A * gradA_A;
+  // By construction gradB_A has unit length.
+  const Vector3d p_ANa = -radius_A * gradB_A;
   const Vector3d p_WNa = X_WA * p_ANa;
-
-  result->update(signed_distance, sphere_A, sphere_B, -1, -1, p_WNa, p_WNb);
+  return p_WNa;
 }
 
-// Calculate signed distance between a sphere and a box.
-void DistanceGeometryPair(const fcl::Sphered* sphere_A,
-                          const fcl::Boxd* box_B,
-                          const Isometry3d& X_WA,
-                          const Isometry3d& X_WB,
-                          const GeometryId& /*id_A*/,
-                          const GeometryId& id_B,
-                          fcl::DistanceResultd* result) {
-  // Position of the center of the sphere A expressed in World frame.
-  const Vector3d& p_WAo = X_WA.translation();
-  // Radius of the sphere A.
-  const double radius_A = sphere_A->radius;
+// Signed distance between two spheres.
+void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
+                                      const fcl::Sphered* sphere_B) {
+  const SignedDistanceToPoint<double> sphere_B_to_point_Ao =
+      DistanceToPoint{id_B_, X_WB_, X_WA_.translation()}(*sphere_B);
+  const double distance = sphere_B_to_point_Ao.distance - sphere_A->radius;
+  // Nb is the witness point on ∂B.
+  const Vector3d& p_BNb = sphere_B_to_point_Ao.p_GN;
+  const Vector3d p_WNb = X_WB_ * p_BNb;
+  // Na is the witness point on ∂A.
+  const Vector3d& gradB_W = sphere_B_to_point_Ao.grad_W;
+  const Vector3d p_WNa = WitnessPointOnSphere(sphere_A->radius, X_WA_, gradB_W);
+  result_->update(distance, sphere_A, sphere_B, -1, -1, p_WNa, p_WNb);
+}
 
+// Signed distance between a sphere and a box.
+void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
+                                      const fcl::Boxd* box_B) {
   SignedDistanceToPoint<double> box_B_to_point_Ao =
-      DistanceToPoint{id_B, X_WB, p_WAo}(*box_B);
-
-  const double signed_distance = box_B_to_point_Ao.distance - radius_A;
-
-  // Nb is the witness point on B.
+      DistanceToPoint{id_B_, X_WB_, X_WA_.translation()}(*box_B);
+  const double distance = box_B_to_point_Ao.distance - sphere_A->radius;
+  // Nb is the witness point on ∂B.
   const Vector3d& p_BNb = box_B_to_point_Ao.p_GN;
-  const Vector3d p_WNb = X_WB * p_BNb;
-
-  // We will calculate Na the witness point on A with the invariance that
-  // the Euclidean distance between Na and Nb equals the absoluate value
-  // of the signed distance between the two spheres, i.e.,
-  //        |Na - Nb| = |signed_distance|  (1)
-  // The invariance (1) is true whether A and B overlap, one covers another,
-  // Ao is equidistant to multiple faces of B, or Ao is on the boundary ∂B.
-  //
-  // We already called DistanceToPoint{}() from the box B to Ao. It gives Nb
-  // and gradB the gradient vector of the signed distance function from the
-  // box B evaluated at Ao.  It might seem natural to call DistanceToPoint
-  // again from sphere A to Nb. However, if Ao is on ∂B, Na will be chosen
-  // arbitrarily and violate the invariance (1).
-  //
-  // Let gradA be the gradient vector of the signed distance function from
-  // the sphere A evaluated at Nb. Na is in the direction of gradA from
-  // the center Ao, and gradA = -gradB.
-  //
-  // If A and B do not overlap, both gradA and gradB are well defined as
-  // shown in this picture:
-  //
-  //                ooo         +---------+
-  //             o       o      |         |
-  //            o         o     |         |
-  // gradB <---------Ao   Na    Nb--------> gradA
-  //            o         o     |         |
-  //             o       o      |         |
-  //                ooo         +---------+
-  //
-  // If Ao is equidistant to multiple faces of B, gradB is undefined, and
-  // DistanceToPoint{}() already assigned gradB arbitrarily. We will set
-  // gradA=-gradB.
-  //
-  //                +---ooo---------+
-  //                |o       o      |
-  //                o         o     |
-  // gradB <--------Nb---Ao---Na---> gradA
-  //                o         o     |
-  //                |o       o      |
-  //                +---ooo---------+
-  //
-  // If Ao is on ∂B, gradA is undefined, so we will set gradA=-gradB.
-  //
-  //                o+o---------+
-  //             o   |   o      |
-  //            o    |    o     |
-  // gradB <-------Ao=Nb--Na--->|gradA
-  //            o    |    o     |
-  //             o   |   o      |
-  //                o+o---------+
-  //
-  // Notation:
-  // gradB_W = gradB expressed in World frame.
-  // gradB_A = gradB expressed in A's frame.
-  // gradA_A = gradA expressed in A's frame.
+  const Vector3d p_WNb = X_WB_ * p_BNb;
+  // Na is the witness point on ∂A.
   const Vector3d& gradB_W = box_B_to_point_Ao.grad_W;
-  const Eigen::Matrix3d R_WA = X_WA.rotation();
-  const Eigen::Matrix3d R_AW = R_WA.transpose();
-  const Vector3d gradB_A = R_AW * gradB_W;
-  const Vector3d gradA_A = -gradB_A;
-  // gradA_A is unit-length by construction.
-  const Vector3d p_ANa = radius_A * gradA_A;
-  const Vector3d p_WNa = X_WA * p_ANa;
+  const Vector3d p_WNa = WitnessPointOnSphere(sphere_A->radius, X_WA_, gradB_W);
+  result_->update(distance, sphere_A, box_B, -1, -1, p_WNa, p_WNb);
+}
 
-  result->update(signed_distance, sphere_A, box_B, -1, -1, p_WNa, p_WNb);
+// Signed distance between a box and a sphere.
+void DistancePairGeometry::operator()(const fcl::Boxd* box_A,
+                                      const fcl::Sphered* sphere_B) {
+  SignedDistanceToPoint<double> box_A_to_point_Bo =
+      DistanceToPoint{id_A_, X_WA_, X_WB_.translation()}(*box_A);
+  const double distance = box_A_to_point_Bo.distance - sphere_B->radius;
+  // Na is the witness point on ∂A.
+  const Vector3d& p_ANa = box_A_to_point_Bo.p_GN;
+  const Vector3d p_WNa = X_WA_ * p_ANa;
+  // Nb is the witness point on ∂B.
+  const Vector3d& gradA_W = box_A_to_point_Bo.grad_W;
+  const Vector3d p_WNb = WitnessPointOnSphere(sphere_B->radius, X_WB_, gradA_W);
+  result_->update(distance, box_A, sphere_B, -1, -1, p_WNa, p_WNb);
 }
 
 // Helps DistanceCallback(). Do it in closed forms for sphere-sphere or
@@ -526,10 +470,12 @@ void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
                               fcl::DistanceResultd* result) {
   const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
-  const auto& X_WA = a->getTransform();
-  const auto& X_WB = b->getTransform();
+  const RigidTransformd X_WA(a->getTransform());
+  const RigidTransformd X_WB(b->getTransform());
   const auto id_A = EncodedData(*a).id(geometry_map);
   const auto id_B = EncodedData(*b).id(geometry_map);
+
+  DistancePairGeometry distance_pair(id_A, id_B, X_WA, X_WB, result);
 
   switch (a_geometry->getNodeType()) {
     case fcl::GEOM_SPHERE: {
@@ -537,15 +483,13 @@ void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
         case fcl::GEOM_SPHERE: {
           auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
           auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
-          DistanceGeometryPair(sphere_A, sphere_B, X_WA, X_WB,
-                               id_A, id_B, result);
+          distance_pair(sphere_A, sphere_B);
           break;
         }
         case fcl::GEOM_BOX: {
           auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
           auto box_B = static_cast<const fcl::Boxd*>(b_geometry);
-          DistanceGeometryPair(sphere_A, box_B, X_WA, X_WB,
-                               id_A, id_B, result);
+          distance_pair(sphere_A, box_B);
           break;
         }
         default: {
@@ -559,8 +503,7 @@ void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
         case fcl::GEOM_SPHERE: {
           auto box_A = static_cast<const fcl::Boxd*>(a_geometry);
           auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
-          DistanceGeometryPair(sphere_B, box_A, X_WB, X_WA,
-                               id_B, id_A, result);
+          distance_pair(box_A, sphere_B);
           break;
         }
         default: {
@@ -795,9 +738,9 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   // TODO(DamrongGuoy): Replace this custom code when FCL does this for us with
   // the required accuracy and performance.
   //
-  DistanceToPoint distance_to_point{geometry_id,
-                                    geometry_object->getTransform(),
-                                    point_object->getTranslation()};
+  DistanceToPoint distance_to_point(geometry_id,
+      RigidTransformd(geometry_object->getTransform()),
+      point_object->getTranslation());
 
   SignedDistanceToPoint<double> distance;
   switch (collision_geometry->getNodeType()) {
