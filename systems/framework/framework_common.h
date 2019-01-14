@@ -62,6 +62,9 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
 
+/** Serves as the local index for constraints declared on a given System. */
+using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
+
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
 typedef enum {
