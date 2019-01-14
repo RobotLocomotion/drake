@@ -142,14 +142,25 @@ else()
   )
 endif()
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are None Debug Release RelWithDebInfo MinSizeRel"
-    FORCE
-  )
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
-    STRINGS None Debug Release RelWithDebInfo MinSizeRel
-  )
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  set(SUPPORTED_BUILD_TYPES None Debug Release RelWithDebInfo MinSizeRel)
+
+  if(NOT CMAKE_BUILD_TYPE)
+    string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
+      "${SUPPORTED_BUILD_TYPES}"
+    )
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are ${SUPPORTED_BUILD_TYPES_STRING}"
+      FORCE
+    )
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
+      STRINGS "${SUPPORTED_BUILD_TYPES}"
+    )
+  endif()
+
+  if(NOT CMAKE_BUILD_TYPE IN_LIST SUPPORTED_BUILD_TYPES)
+    message(WARNING "Configuration ${CMAKE_BUILD_TYPE} is NOT supported")
+  endif()
 endif()
 
 # The supported Python major/minor versions should match those listed in both
@@ -333,8 +344,9 @@ if(CMAKE_STRIP)
   list(INSERT BAZEL_TARGETS_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
 endif()
 
-# If we are in debug mode, do not strip symbols.
-if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebugInfo)
+# If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
+# install.
+if(CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
