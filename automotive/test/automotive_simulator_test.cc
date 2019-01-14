@@ -440,7 +440,9 @@ GTEST_TEST(AutomotiveSimulatorTest, TestMaliputRailcar) {
 
   simulator->Start();
 
-  // LCM draw messages are published every 1/60s (starting at time zero).
+  // AutomotiveSimulator's call to ConnectToDrakeVisualizer causes LCM draw
+  // messages to be published every 1/60s (starting at time zero). If that
+  // rate is changed, the step size here will need to be changed to match. 
   const double step_size = 1.0/60;
   simulator->StepBy(step_size);
 

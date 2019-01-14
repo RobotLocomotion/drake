@@ -175,7 +175,6 @@ int do_main() {
   init_ball(bouncing_ball2, 0.3, 0.3);
 
   simulator.get_mutable_integrator()->set_maximum_step_size(0.002);
-  simulator.set_target_realtime_rate(1.f);
   simulator.Initialize();
   simulator.set_publish_every_time_step(false);
   simulator.set_publish_at_initialization(false);

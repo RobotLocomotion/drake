@@ -68,7 +68,7 @@ LcmPublisherSystem::LcmPublisherSystem(
 
   set_name(make_name(channel_));
 
-  // Set the publish period, if nonzero.
+  // Set the periodic callback if the period is nonzero.
   auto publish_function = [this](const systems::Context<double>& context,
                                  const systems::PublishEvent<double>&) {
     // TODO(edrumwri) Remove this code once set_publish_period(.) has been
@@ -151,10 +151,8 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
 // it onto an LCM channel. This function is called automatically, as
 // necessary, at the requisite publishing period (if a positive publish was
 // passed to the constructor) or per a simulation step (if no publish
-// period or publish period = 0.0 was passed to the constructor). This
-// function has been made public so that LCM messages can be published
-// manually, as desired.
-EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
+// period or publish period = 0.0 was passed to the constructor).
+void LcmPublisherSystem::PublishInputAsLcmMessage(
     const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
   DRAKE_ASSERT((translator_ != nullptr) != (serializer_.get() != nullptr));
@@ -176,8 +174,6 @@ EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
   // Publishes onto the specified LCM channel.
   lcm_->Publish(channel_, message_bytes.data(), message_bytes.size(),
                 context.get_time());
-
-  return EventStatus::Succeeded();
 }
 
 const LcmAndVectorBaseTranslator& LcmPublisherSystem::get_translator() const {
