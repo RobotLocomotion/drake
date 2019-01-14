@@ -148,8 +148,6 @@ class SystemConstraint {
 
   /// Evaluates the function pointer, and check if all of the outputs
   /// are within the desired bounds.
-  // TODO(russt): Resolve names differences across the codebase. The vector
-  // gen scripts call this IsValid, but Constraint calls it CheckSatisfied.
   boolean<T> CheckSatisfied(const Context<T>& context, double tol) const {
     DRAKE_DEMAND(tol >= 0.0);
     VectorX<T> value(size());
