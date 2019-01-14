@@ -20,7 +20,7 @@ class DummySystem final : public LeafSystem<double> {
   DummySystem() {}
 };
 
-GTEST_TEST(SystemConstraintTest, BoundsEqFactory) {
+GTEST_TEST(SystemConstraintBoundsTest, EqFactory) {
   auto dut = SystemConstraintBounds::Equality(2);
   EXPECT_EQ(dut.size(), 2);
   EXPECT_EQ(dut.type(), SystemConstraintType::kEquality);
@@ -28,7 +28,7 @@ GTEST_TEST(SystemConstraintTest, BoundsEqFactory) {
   EXPECT_TRUE(CompareMatrices(dut.upper(), Vector2d::Zero()));
 }
 
-GTEST_TEST(SystemConstraintTest, BoundsEqCtor) {
+GTEST_TEST(SystemConstraintBoundsTest, EqCtor) {
   const SystemConstraintBounds dut(Vector2d::Zero(), Vector2d::Zero());
   EXPECT_EQ(dut.size(), 2);
   EXPECT_EQ(dut.type(), SystemConstraintType::kEquality);
@@ -36,13 +36,13 @@ GTEST_TEST(SystemConstraintTest, BoundsEqCtor) {
   EXPECT_TRUE(CompareMatrices(dut.upper(), Vector2d::Zero()));
 }
 
-GTEST_TEST(SystemConstraintTest, BoundsEqNonzero) {
+GTEST_TEST(SystemConstraintBoundsTest, EqNonzero) {
   const Vector2d b = Vector2d::Constant(2.0);
   // For now, we only allow b == 0; in the future, we might allow b != 0.
   EXPECT_THROW(SystemConstraintBounds(b, b), std::exception);
 }
 
-GTEST_TEST(SystemConstraintTest, BoundsLower) {
+GTEST_TEST(SystemConstraintBoundsTest, Lower) {
   const double kInf = std::numeric_limits<double>::infinity();
   const SystemConstraintBounds dut(Vector2d::Zero(), nullopt);
   EXPECT_EQ(dut.size(), 2);
@@ -51,7 +51,7 @@ GTEST_TEST(SystemConstraintTest, BoundsLower) {
   EXPECT_TRUE(CompareMatrices(dut.upper(), Vector2d::Constant(kInf)));
 }
 
-GTEST_TEST(SystemConstraintTest, BoundsUpper) {
+GTEST_TEST(SystemConstraintBoundsTest, Upper) {
   const double kInf = std::numeric_limits<double>::infinity();
   const SystemConstraintBounds dut(nullopt, Vector2d::Constant(1.0));
   EXPECT_EQ(dut.size(), 2);
@@ -60,7 +60,7 @@ GTEST_TEST(SystemConstraintTest, BoundsUpper) {
   EXPECT_TRUE(CompareMatrices(dut.upper(), Vector2d::Constant(1.0)));
 }
 
-GTEST_TEST(SystemConstraintTest, BoundsBadSizes) {
+GTEST_TEST(SystemConstraintBoundsTest, BadSizes) {
   EXPECT_THROW(SystemConstraintBounds::Equality(-1), std::exception);
   EXPECT_THROW(
       SystemConstraintBounds(
@@ -70,7 +70,7 @@ GTEST_TEST(SystemConstraintTest, BoundsBadSizes) {
 }
 
 // Just a simple test to call each of the public methods.
-GTEST_TEST(SystemConstraintTest, BasicTest) {
+GTEST_TEST(SystemConstraintTest, Basic) {
   const DummySystem dummy_system;
 
   ContextConstraintCalc<double> calc = [](
@@ -134,6 +134,71 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
 
   EXPECT_EQ(inequality_constraint.size(), 2);
   EXPECT_EQ(inequality_constraint.description(), "inequality constraint");
+}
+
+// For a state x, constrains xc_dot = 0 and xd_{n+1} = 0.
+// TODO(jwnimmer-tri) This cannot handle discrete state yet.
+// TODO(jwnimmer-tri) Make this constraint public (and not testonly) -- it is
+// quite commonly used.
+ExternalSystemConstraint MakeZeroStateDerivativeConstraint(
+    const System<double>& shape) {
+  auto dummy_context = shape.AllocateContext();
+
+  // We dont't handle discrete state yet, because to do so efficiently we'd
+  // need a method like System::EvalDiscreteVariableUpdates, but only the Calc
+  // flavor of that method currently exists.
+  DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
+  const int n_xc = dummy_context->get_continuous_state_vector().size();
+  return ExternalSystemConstraint::MakeForAllScalars(
+      "xc_dot = 0 and xd_{n+1} = 0",
+      SystemConstraintBounds::Equality(n_xc),
+      [](const auto& system, const auto& context, auto* value) {
+        const auto& xc = system.EvalTimeDerivatives(context).get_vector();
+        *value = xc.CopyToVector();
+      });
+}
+
+// For a state x, constrains velocity(x) = 0.  This can be useful to directly
+// express decision variable bounds to a solver, even if an constraint on xcdot
+// is already in effect.
+// TODO(jwnimmer-tri) This cannot handle discrete state yet.
+// TODO(jwnimmer-tri) Make this constraint public (and not testonly) -- it is
+// quite commonly used.
+ExternalSystemConstraint MakeZeroVelocityConstraint(
+    const System<double>& shape) {
+  auto dummy_context = shape.AllocateContext();
+
+  // We can't handle discrete state yet, because of #9171.
+  DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
+  const int num_v = dummy_context->get_continuous_state().num_v();
+  return ExternalSystemConstraint::MakeForAllScalars(
+      "zero velocity", SystemConstraintBounds::Equality(num_v),
+      [](const auto& system, const auto& context, auto* value) {
+        *value = context.get_continuous_state().get_generalized_velocity()
+          .CopyToVector();
+      });
+}
+
+// Acceptance test the symbolic form a fixed-point constraint.
+GTEST_TEST(ExternalSystemConstraintTest, FixedPoint) {
+  // A double integrator.
+  Eigen::Matrix2d A;
+  A << 0.0, 1.0,
+       0.0, 0.0;
+  Eigen::Vector2d B;
+  B << 0.0, 1.0;
+  Eigen::MatrixXd C(0, 2);
+  Eigen::MatrixXd D(0, 1);
+  LinearSystem<double> system(A, B, C, D);
+
+  system.AddConstraint(MakeZeroStateDerivativeConstraint(system));
+  system.AddConstraint(MakeZeroVelocityConstraint(system));
+  auto symbolic = system.ToSymbolic();
+  SystemSymbolicInspector inspector(*symbolic);
+  const auto& result = inspector.constraints();
+  ASSERT_EQ(result.size(), 2);
+  EXPECT_EQ(make_conjunction(result).to_string(),
+            "((u0_0 == 0) and (xc1 == 0))");
 }
 
 }  // namespace

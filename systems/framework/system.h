@@ -636,6 +636,34 @@ class System : public SystemBase {
       throw std::logic_error("Error vector is mis-sized.");
     return DoCalcConstraintErrorNorm(context, error);
   }
+
+  /// Adds an "external" constraint to this System.
+  ///
+  /// This method is intended for use by applications that are examining this
+  /// System to add additional constraints based on their particular situation
+  /// (e.g., that a velocity state element has an upper bound); it is not
+  /// intended for declaring intrinsic constraints that some particular System
+  /// subclass might always impose on itself (e.g., that a mass parameter is
+  /// non-negative).  To that end, this method should not be called by
+  /// subclasses of `this` during their constructor.
+  ///
+  /// The `constraint` will automatically persist across system scalar
+  /// conversion.
+  SystemConstraintIndex AddConstraint(ExternalSystemConstraint constraint) {
+    auto calc = constraint.GetCalc<T>();
+    if (calc) {
+      constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
+          this, calc, constraint.bounds(), constraint.description()));
+    } else {
+      constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
+          this, fmt::format(
+              "{} (disabled for this scalar type)",
+              constraint.description())));
+    }
+    external_constraints_.emplace_back(std::move(constraint));
+    return SystemConstraintIndex(constraints_.size() - 1);
+  }
+
   //@}
 
   //----------------------------------------------------------------------------
@@ -1323,7 +1351,14 @@ class System : public SystemBase {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
+    using U = AutoDiffXd;
+    auto result = system_scalar_converter_.Convert<U, T>(*this);
+    if (result) {
+      for (const auto& item : external_constraints_) {
+        result->AddConstraint(item);
+      }
+    }
+    return result;
   }
   //@}
 
@@ -1378,7 +1413,14 @@ class System : public SystemBase {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
+    using U = symbolic::Expression;
+    auto result = system_scalar_converter_.Convert<U, T>(*this);
+    if (result) {
+      for (const auto& item : external_constraints_) {
+        result->AddConstraint(item);
+      }
+    }
+    return result;
   }
   //@}
 
@@ -1703,6 +1745,13 @@ class System : public SystemBase {
       std::unique_ptr<SystemConstraint<T>> constraint) {
     DRAKE_DEMAND(constraint != nullptr);
     DRAKE_DEMAND(&constraint->get_system() == this);
+    if (!external_constraints_.empty()) {
+      throw std::logic_error(fmt::format(
+          "System {} cannot add an internal constraint (named {}) "
+          "after an external constraint (named {}) has already been added",
+          GetSystemName(), constraint->description(),
+          external_constraints_.front().description()));
+    }
     constraints_.push_back(std::move(constraint));
     return SystemConstraintIndex(constraints_.size() - 1);
   }
@@ -2188,6 +2237,7 @@ class System : public SystemBase {
   }
 
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
+  std::vector<ExternalSystemConstraint> external_constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
   // these contain at least one kForced triggered event. For a Diagram, they
