@@ -2142,7 +2142,7 @@ class LeafSystem : public System<T> {
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
   SystemConstraintIndex DeclareEqualityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc, int count,
+      ContextConstraintCalc<T> calc, int count,
       std::string description) {
     return DeclareInequalityConstraint(
         std::move(calc), SystemConstraintBounds::Equality(count),
@@ -2192,7 +2192,7 @@ class LeafSystem : public System<T> {
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
   SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc,
+      ContextConstraintCalc<T> calc,
       SystemConstraintBounds bounds,
       std::string description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(

@@ -9,6 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
@@ -80,6 +81,13 @@ class SystemConstraintBounds final {
   Eigen::VectorXd upper_;
 };
 
+/// This is the signature of a stateless function that evaluates the value of
+/// the constraint function f:
+///   value = f(context)
+template <typename T>
+using ContextConstraintCalc =
+    std::function<void(const Context<T>& context, VectorX<T>* value)>;
+
 /// A SystemConstraint is a generic base-class for constraints on Systems.
 ///
 /// A SystemConstraint is a means to inform our algorithms *about*
@@ -116,21 +124,17 @@ class SystemConstraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
 
-  /// This is the signature of a stateless function that evaluates the value of
-  /// the constraint function f:
-  ///   value = f(context),
-  /// where value has the dimension specified in the constructor.
-  // TODO(russt): replace the argument VectorX<T>* with an Eigen::Ref* using
-  // whatever magic jwnimmer and soonho figured out a few weeks back.
-  using CalcCallback =
-      std::function<void(const Context<T>& context, VectorX<T>* value)>;
+  using CalcCallback
+      DRAKE_DEPRECATED("Spell as ContextConstraintCalc instead.")
+      = ContextConstraintCalc<T>;
 
   /// Constructs a SystemConstraint.  Depending on the `bounds` it could be an
   /// equality constraint f(x) = 0, or an inequality constraint lower_bound <=
   /// f(x) <= upper_bound.
   ///
   /// @param description a human-readable description useful for debugging.
-  SystemConstraint(CalcCallback calc_function, SystemConstraintBounds bounds,
+  SystemConstraint(ContextConstraintCalc<T> calc_function,
+                   SystemConstraintBounds bounds,
                    std::string description)
       : calc_function_(std::move(calc_function)),
         bounds_(std::move(bounds)),
@@ -185,7 +189,7 @@ class SystemConstraint {
   const std::string& description() const { return description_; }
 
  private:
-  const CalcCallback calc_function_;
+  const ContextConstraintCalc<T> calc_function_;
   const SystemConstraintBounds bounds_;
   const std::string description_;
 };
