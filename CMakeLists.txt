@@ -333,8 +333,9 @@ if(CMAKE_STRIP)
   list(INSERT BAZEL_TARGETS_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
 endif()
 
-# If we are in debug mode, do not strip symbols.
-if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebugInfo)
+# If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
+# install.
+if(CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
