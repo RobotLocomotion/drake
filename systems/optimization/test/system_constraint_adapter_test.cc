@@ -12,15 +12,17 @@ namespace systems {
 const double kInf = std::numeric_limits<double>::infinity();
 const double kEps = std::numeric_limits<double>::epsilon();
 
-// Assumes that vars = [p; x(0); x(1); x(2)]
-template <typename T>
-void DummySystemSelector1(const System<T>&,
-                          const Eigen::Ref<const VectorX<T>>& vars,
-                          Context<T>* context) {
-  context->get_mutable_continuous_state_vector().SetFromVector(
-      vars.template tail<3>());
-  context->get_mutable_numeric_parameter(0).SetAtIndex(0, vars(0));
-}
+// Assumes that vars = [p; x(0); x(1); x(2)].
+struct DummySystemSelector1 {
+  template <typename T>
+  void operator()(const System<T>&,
+                  const Eigen::Ref<const VectorX<T>>& vars,
+                  Context<T>* context) {
+    context->get_mutable_continuous_state_vector().SetFromVector(
+        vars.template tail<3>());
+    context->get_mutable_numeric_parameter(0).SetAtIndex(0, vars(0));
+  }
+};
 
 GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   DummySystem<double> system;
@@ -30,8 +32,7 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   auto context = system.CreateDefaultContext();
 
   auto constraint = adapter.Create(system.constraint_index(), *context,
-                                   DummySystemSelector1<double>,
-                                   DummySystemSelector1<AutoDiffXd>, 4);
+                                   DummySystemSelector1{}, 4);
   EXPECT_TRUE(
       CompareMatrices(constraint->lower_bound(), Eigen::Vector2d(2, 0)));
   EXPECT_TRUE(
@@ -43,7 +44,8 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   Eigen::VectorXd y;
   constraint->Eval(var, &y);
 
-  DummySystemSelector1<double>(system, var, context.get());
+  DummySystemSelector1 selector;
+  selector.operator()<double>(system, var, context.get());
   Eigen::VectorXd y_expected;
   DummySystemConstraintCalc<double>(*context, &y_expected);
   EXPECT_TRUE(CompareMatrices(y, y_expected, 3 * kEps));
@@ -57,8 +59,7 @@ GTEST_TEST(SystemConstraintAdapter, SolveDummySystemConstraint) {
   auto context = system.CreateDefaultContext();
 
   auto constraint = adapter.Create(system.constraint_index(), *context,
-                                   DummySystemSelector1<double>,
-                                   DummySystemSelector1<AutoDiffXd>, 4);
+                                   DummySystemSelector1{}, 4);
 
   solvers::MathematicalProgram prog;
   auto p = prog.NewContinuousVariables<1>();
