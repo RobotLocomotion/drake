@@ -182,6 +182,8 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [":models"],
     test_rule_args = ["-realtime_factor=0.0"],
+    # Non-deterministic IPOPT-related failures on macOS, see #10276.
+    test_rule_flaky = 1,
     deps = [
         ":acrobot_plant",
         "//attic/multibody:rigid_body_tree",

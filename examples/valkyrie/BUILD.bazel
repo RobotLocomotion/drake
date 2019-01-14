@@ -169,6 +169,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "valkyrie_ik_test",
     data = [":models"],
+    # Non-deterministic IPOPT-related failures on macOS, see #10276.
+    flaky = 1,
     deps = [
         "//attic/multibody:inverse_kinematics",
         "//attic/multibody:rigid_body_constraint",
