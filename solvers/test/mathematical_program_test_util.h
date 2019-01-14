@@ -10,9 +10,6 @@
 namespace drake {
 namespace solvers {
 namespace test {
-/// Test that @p prog was solved by @p desired_solver_id.
-void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id);
-
 /// Run solver.Solve() on the given @p prog.  If the solver is absent or does
 /// not find a solution, stop immediately via an exception.  (Were we to
 /// continue, testing statements that examine the results would be likely to

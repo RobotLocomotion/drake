@@ -42,6 +42,7 @@ drake_cc_library(
         "//common:essential",
         "//math:wrap_to",
         "//solvers:mathematical_program",
+        "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/primitives:barycentric_system",

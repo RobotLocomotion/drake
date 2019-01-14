@@ -5,14 +5,6 @@
 namespace drake {
 namespace solvers {
 namespace test {
-void CheckSolver(const MathematicalProgram& prog, SolverId desired_solver_id) {
-  const optional<SolverId> solver_id = prog.GetSolverId();
-  EXPECT_TRUE(solver_id);
-  if (!solver_id) { return; }
-
-  EXPECT_EQ(*solver_id, desired_solver_id);
-}
-
 MathematicalProgramResult RunSolver(
     const MathematicalProgram& prog,
     const MathematicalProgramSolverInterface& solver,
