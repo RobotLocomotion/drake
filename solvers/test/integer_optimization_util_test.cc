@@ -4,6 +4,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -134,18 +135,22 @@ GTEST_TEST(TestBinaryCodeMatchConstraint, Test) {
           b_constraint.evaluator()->UpdateUpperBound(b_val);
           match_constraint.evaluator()->UpdateUpperBound(Vector1d(match_val));
           match_constraint.evaluator()->UpdateLowerBound(Vector1d(match_val));
-          const auto result = prog.Solve();
+          const auto result = Solve(prog, {}, {});
           if (b0_val == 0 && b1_val == 1 && b2_val == 1) {
             if (match_val == 1.0) {
-              EXPECT_EQ(result, SolutionResult::kSolutionFound);
+              EXPECT_EQ(result.get_solution_result(),
+                        SolutionResult::kSolutionFound);
             } else {
-              EXPECT_NE(result, SolutionResult::kSolutionFound);
+              EXPECT_NE(result.get_solution_result(),
+                        SolutionResult::kSolutionFound);
             }
           } else {
             if (match_val == 0.0) {
-              EXPECT_EQ(result, SolutionResult::kSolutionFound);
+              EXPECT_EQ(result.get_solution_result(),
+                        SolutionResult::kSolutionFound);
             } else {
-              EXPECT_NE(result, SolutionResult::kSolutionFound);
+              EXPECT_NE(result.get_solution_result(),
+                        SolutionResult::kSolutionFound);
             }
           }
         }

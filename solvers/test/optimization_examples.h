@@ -149,7 +149,7 @@ class LinearMatrixEqualityExample {
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
-  void CheckSolution() const;
+  void CheckSolution(const MathematicalProgramResult& result) const;
 
  private:
   std::unique_ptr<MathematicalProgram> prog_;

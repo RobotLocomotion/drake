@@ -738,10 +738,12 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * /////////////////////////////////////////////////////////////
    *
    * // Now solve the program.
-   * prog.Solve();
+   * auto result = Solve(prog, {},  // no initial guess
+   *                     {}  // no solver options
+   *                     );
    *
    * // Retrieve the solution of matrix S.
-   * auto S_value = GetSolution(S);
+   * auto S_value = GetSolution(S, result);
    *
    * // Compute the eigen values of the solution, to see if they are
    * // all non-negative.
