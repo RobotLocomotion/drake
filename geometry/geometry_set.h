@@ -154,6 +154,7 @@ class GeometrySet {
      - an iterable object containing frame ids
      - two iterable objects, the first containing geometry ids, the second
        containing frame ids.
+     - another %GeometrySet instance.
 
    NOTE: the iterable objects don't have to be the same type. The "iterable"
    can also be an initializer list. All of the following invocations are valid
@@ -230,6 +231,11 @@ class GeometrySet {
   Add(const ContainerG& geometries, std::initializer_list<FrameId> frames) {
     Add(geometries);
     Add(frames);
+  }
+
+  void Add(const GeometrySet& other) {
+    frames_.insert(other.frames_.begin(), other.frames_.end());
+    geometries_.insert(other.geometries_.begin(), other.geometries_.end());
   }
 
   //@}

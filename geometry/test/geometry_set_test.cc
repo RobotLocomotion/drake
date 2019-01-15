@@ -283,6 +283,56 @@ GTEST_TEST(GeometrySetTests, IterableGeometryAndFrames) {
                     "frame initializer list");
 }
 
+GTEST_TEST(GeometrySetTests, GeometrySetAdd) {
+  GeometrySet set1;
+  GeometrySet set2;
+
+  std::vector<FrameId> frame_ids{FrameId::get_new_id(), FrameId::get_new_id()};
+  std::vector<GeometryId> geometry_ids{GeometryId::get_new_id(),
+                                       GeometryId::get_new_id()};
+
+  // Set 1 contains all of the created ids.
+  set1.Add(frame_ids);
+  set1.Add(geometry_ids);
+  EXPECT_EQ(set1.num_frames(), static_cast<int>(frame_ids.size()));
+  EXPECT_EQ(set1.num_geometries(), static_cast<int>(geometry_ids.size()));
+  ExpectContainsAll(set1, frame_ids,
+                    "GeometrySetAdd - set1 initial contents - frames");
+  ExpectContainsAll(set1, geometry_ids,
+                    "GeometrySetAdd - set1 initial contents - geometries");
+
+  // Set 2 contains some unique ids and *some* ids from the created sets (so
+  // that there is a non-empty intersection between the two sets).
+  std::vector<FrameId> frame_ids_2{*frame_ids.begin(), FrameId::get_new_id()};
+  std::vector<GeometryId> geometry_ids_2{*geometry_ids.begin(),
+                                         GeometryId::get_new_id()};
+  set2.Add(frame_ids_2);
+  set2.Add(geometry_ids_2);
+  EXPECT_EQ(set2.num_frames(), static_cast<int>(frame_ids_2.size()));
+  EXPECT_EQ(set2.num_geometries(), static_cast<int>(geometry_ids_2.size()));
+  ExpectContainsAll(set2, frame_ids_2,
+                    "GeometrySetAdd - set2 initial contents - frames");
+  ExpectContainsAll(set2, geometry_ids_2,
+                    "GeometrySetAdd - set2 initial contents - geometries");
+
+  // Adds set2 into set1. There should be an increase of a *single* frame and
+  // geometry in set 1.
+  std::vector<FrameId> frame_union(frame_ids);
+  frame_union.push_back(frame_ids_2.back());
+  std::vector<GeometryId> geometry_union(geometry_ids);
+  geometry_union.push_back(geometry_ids_2.back());
+
+  set1.Add(set2);
+
+  EXPECT_EQ(set1.num_frames(), static_cast<int>(frame_union.size()));
+  EXPECT_EQ(set1.num_geometries(), static_cast<int>(geometry_union.size()));
+  ExpectContainsAll(set1, frame_union,
+                    "GeometrySetAdd - set1 merged - frames");
+  ExpectContainsAll(set1, geometry_union,
+                    "GeometrySetAdd - set1 merged - geometries");
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
+
