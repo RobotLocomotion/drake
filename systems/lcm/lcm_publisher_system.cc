@@ -153,11 +153,9 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
 
 // Takes the VectorBase from the input port of the context and publishes
 // it onto an LCM channel. This function is called automatically, as
-// necessary, at the requisite publishing period (if a positive publish was
-// passed to the constructor), per a simulation step (if no publish
-// period or publish period = 0.0 was passed to the constructor), or as a result
-// of a "forced" publish. This function has been made public so that LCM
-// messages can be published manually, as desired.
+// necessary, at the requisite publishing period (if a positive publish period
+// was passed to the constructor) or per a simulation step (if no publish
+// period or publish period = 0.0 was passed to the constructor).
 EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
     const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
