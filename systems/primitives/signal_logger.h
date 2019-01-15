@@ -15,11 +15,36 @@
 namespace drake {
 namespace systems {
 
-/// A sink block which logs its input to memory.  This data is then retrievable
-/// (e.g. after a simulation) via a handful of accessor methods.
-/// This class essentially holds a large Eigen matrix for data storage, where
-/// each column corresponds to a data point. This system saves a data point and
-/// the context time whenever its Publish() method is called.
+// TODO(sherm1) This System has problems as discussed in issue #10228 that
+//              should be fixed.
+/// A discrete sink block which logs its input to memory (not thread safe). This
+/// data is then retrievable (e.g. after a simulation) via a handful of accessor
+/// methods. This system holds a large, mutable Eigen matrix for data storage,
+/// where each column corresponds to a data point. It saves a data point and
+/// the context time whenever it samples its input.
+///
+/// By default, sampling is performed every time the Simulator completes a
+/// trajectory-advancing substep (that is, via a per-step Publish event), with
+/// the first sample occuring during Simulator::Initialize(). That means the
+/// samples will generally be unevenly spaced in time. If you prefer regular
+/// sampling, you may optionally specify a "publish period" in which case
+/// sampling occurs periodically, with the first sample occurring at time 0.
+/// Alternatively (not common), you can specify that logging should only occur
+/// at "forced publish" events, meaning at explicit calls to System::Publish().
+/// The Simulator's "publish every time step" option also results in forced
+/// publish events, so should be disabled if you want to control logging
+/// yourself.
+///
+/// @warning %SignalLogger is _not_ thread-safe because it writes to a mutable
+/// buffer internally. If you have a Diagram that contains a SignalLogger,
+/// even with each thread having its own Context, the threads will conflict.
+/// You would have to have separate Diagrams in each thread to avoid trouble.
+///
+/// @see LogOutput() for a convenient way to add %logging to a Diagram.
+/// @see Simulator::set_publish_every_time_step()
+/// @see Simulator::set_publish_at_initialization()
+///
+/// @system{ SignalLogger, @input_port{data}, }
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
@@ -35,52 +60,84 @@ class SignalLogger : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLogger)
 
-  /// Construct the signal logger system.
+  /// Constructs the signal logger system.
+  ///
+  /// @warning %SignalLogger may become slower and slower as the number of
+  /// log entries increases due to memory reallocations. You can avoid that by
+  /// providing a `batch_allocation_size` comparable to the total expected
+  /// number of log entries for your simulation.
+  ///
   /// @param input_size Dimension of the (single) input port. This corresponds
   /// to the number of rows of the data matrix.
   /// @param batch_allocation_size Storage is (re)allocated in blocks of
   /// input_size-by-batch_allocation_size.
+  /// @see LogOutput() helper function for a convenient way to add %logging.
   explicit SignalLogger(int input_size, int batch_allocation_size = 1000);
 
-  /// Sets the publishing period of this system. See
-  /// LeafSystem::DeclarePeriodicPublish() for details about the semantics of
-  /// parameter `period`.
+  /// Sets the publishing period of this system to specify periodic sampling
+  /// and disables the default per-step sampling. This method can only be called
+  /// once and only if set_forced_publish_only() hasn't been called.
+  /// @throws std::logic_error if called more than once, or if
+  ///   set_forced_publish_only() has been called.
+  /// @pre `period` must be greater than zero.
   void set_publish_period(double period);
 
+  /// Limits logging to forced publish calls only, that is, explicit calls
+  /// to System::Publish() issued directly or by the Simulator and disables the
+  /// default per-step sampling. This method cannot be called if
+  /// set_publish_period() has been called.
+  /// @throws std::logic_error if set_publish_period() has been called.
+  void set_forced_publish_only();
 
-  /// Access the (simulation) time of the logged data.
+  /// Returns the number of samples taken since construction or last reset().
+  int num_samples() const { return log_.num_samples(); }
+
+  /// Provides access to the sample times of the logged data. Time is taken
+  /// from the Context when the log entry is added.
   Eigen::VectorBlock<const VectorX<T>> sample_times() const {
     return log_.sample_times();
   }
 
-  /// Access the logged data.
-  Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true> data()
-      const {
+  /// Provides access to the logged data.
+  Eigen::Block<const MatrixX<T>, Eigen::Dynamic, Eigen::Dynamic, true>
+  data() const {
     return log_.data();
   }
 
+  /// Clears the logged data.
   void reset() { log_.reset(); }
 
-  /// Returns the only input port.
+  /// Returns the only input port. The port's name is "data" so you can also
+  /// access this with GetInputPort("data").
   const InputPort<T>& get_input_port() const;
 
  private:
-  // Logging is done in this method.
-  void DoPublish(const Context<T>& context,
-                 const std::vector<const systems::PublishEvent<T>*>& events)
-      const override;
+  enum LoggingMode { kPerStep, kPeriodic, kForced };
 
-  mutable SignalLog<T> log_;
+  // Logging is done in this event handler.
+  EventStatus WriteToLog(const Context<T>& context) const;
+
+  // This event handler logs only if we're in per-step logging mode.
+  EventStatus PerStepWriteToLog(const Context<T>& context) const {
+    if (logging_mode_ == kPerStep)
+      return WriteToLog(context);
+    return EventStatus::DidNothing();
+  }
+
+  LoggingMode logging_mode_{kPerStep};
+
+  mutable SignalLog<T> log_;  // TODO(sherm1) Not thread safe :(
 };
 
 /// Provides a convenience function for adding a SignalLogger, initialized to
-/// the correct size, and connected to another output in a DiagramBuilder.
+/// the correct size, and connected to an output in a DiagramBuilder.
 ///
 /// @code
 ///   DiagramBuilder<double> builder;
 ///   auto foo = builder.AddSystem<Foo>("name", 3.14);
 ///   auto logger = LogOutput(foo->get_output_port(), &builder);
 /// @endcode
+/// @relates drake::systems::SignalLogger
 
 template <typename T>
 SignalLogger<T>* LogOutput(const OutputPort<T>& src,

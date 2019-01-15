@@ -90,8 +90,11 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   sub->set_name("subscriber");
   auto dummy = builder.AddSystem<DummySys>();
   dummy->set_name("dummy");
+
   auto logger = builder.AddSystem<SignalLogger<double>>(1);
   logger->set_name("logger");
+  logger->set_forced_publish_only();  // Log only when told to do so.
+
   builder.Connect(*sub, *dummy);
   builder.Connect(*dummy, *logger);
   auto sys = builder.Build();
@@ -99,9 +102,9 @@ GTEST_TEST(LcmDrivenLoopTest, TestLoop) {
   // Makes the lcm driven loop.
   lcm::LcmDrivenLoop dut(*sys, *sub, nullptr, &lcm,
       std::make_unique<MilliSecTimeStampMessageToSeconds>());
-  // This ensures that dut calls sys->Publish() every time it handles a
-  // message, which triggers the logger to save its input (message time stamp)
-  // to the log.
+  // This ensures that dut calls sys->Publish() (a.k.a. "forced publish")
+  // every time it handles a message, which triggers the logger to save its
+  // input (message time stamp) to the log.
   dut.set_publish_on_every_received_message(true);
 
   // Starts the publishing thread.
