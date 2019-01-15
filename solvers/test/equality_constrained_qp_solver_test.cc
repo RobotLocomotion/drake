@@ -350,7 +350,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
   prog.AddLinearCost(x(0) + x(1) + 1);
 
   MathematicalProgramResult result;
-  result = Solve(prog, {}, {});
+  result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 
   EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result),
