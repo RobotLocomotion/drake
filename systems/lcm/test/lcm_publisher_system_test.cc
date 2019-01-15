@@ -236,7 +236,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   for (double time = 0; time < 1; time += 0.25)
     simulator.StepTo(time);
 
-  // Check that we get *exactly* the number of publishes desired: one (at
+  // Check that we get exactly the number of publishes desired: one (at
   // initialization) plus another for each step.
   EXPECT_EQ(simulator.get_num_publishes(), 1 + simulator.get_num_steps_taken());
 }
@@ -276,7 +276,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
       channel_name).timestamp, expected_time);
   }
 
-  // Check that we get *exactly* the number of publishes desired (i.e., that
+  // Check that we get exactly the number of publishes desired (i.e., that
   // no per-step publishing is being done).
   EXPECT_EQ(simulator.get_num_publishes(), 3 /* 1 + floor(4 / 1.5) */);
 }
@@ -321,7 +321,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
   EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
     channel_name).timestamp, expected_time);
 
-  // Check that we get *exactly* the number of publishes desired. One will
+  // Check that we get exactly the number of publishes desired. One will
   // happen at initialization, one will happen at time 0.75, and one will happen
   // at time 1.0.
   EXPECT_EQ(simulator.get_num_publishes(), 3);

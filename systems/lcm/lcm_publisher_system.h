@@ -221,17 +221,14 @@ class LcmPublisherSystem : public LeafSystem<double> {
                    "will be removed after 4/14/19.")
   void set_publish_period(double period) {
     if (disable_internal_per_step_publish_events_) {
-      SPDLOG_DEBUG(drake::log(), "LcmPublisherSystem publish period set "
+      drake::log()->info("LcmPublisherSystem publish period set "
           "multiple times. Multiple publish periods now registered "
           "(did you mean to do this?)");
     }
     disable_internal_per_step_publish_events_ = true;
     const double offset = 0.0;
-    this->DeclarePeriodicEvent(period, offset, systems::PublishEvent<double>(
-        [this](const systems::Context<double>& context,
-               const systems::PublishEvent<double>&) {
-          this->PublishInputAsLcmMessage(context);
-        }));
+    this->DeclarePeriodicPublishEvent(period, offset,
+        &LcmPublisherSystem::PublishInputAsLcmMessage);
   }
 
   /**

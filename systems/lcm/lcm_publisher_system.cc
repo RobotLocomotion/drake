@@ -68,20 +68,6 @@ LcmPublisherSystem::LcmPublisherSystem(
 
   set_name(make_name(channel_));
 
-  // Construct the per-step publish function.
-  auto per_step_publish_function = [this](
-      const systems::Context<double>& context,
-      const systems::PublishEvent<double>&) {
-    // TODO(edrumwri) Remove this code once set_publish_period(.) has been
-    // removed; it exists so that one does not get both a per-step publish and
-    // a periodic publish if a user constructs the publisher the "old" way
-    // (construction followed by set_publish_period()).
-    if (this->disable_internal_per_step_publish_events_)
-      return;
-
-    this->PublishInputAsLcmMessage(context);
-  };
-
   if (publish_period > 0.0) {
     this->disable_internal_per_step_publish_events_ = true;
     const double offset = 0.0;
@@ -90,7 +76,18 @@ LcmPublisherSystem::LcmPublisherSystem(
         &LcmPublisherSystem::PublishInputAsLcmMessage);
   } else {
     this->DeclarePerStepEvent(
-      systems::PublishEvent<double>(per_step_publish_function));
+        systems::PublishEvent<double>([this](
+            const systems::Context<double>& context,
+            const systems::PublishEvent<double>&) {
+          // TODO(edrumwri) Remove this code once set_publish_period(.) has
+          // been removed; it exists so that one does not get both a per-step
+          // publish and a periodic publish if a user constructs the publisher
+          // the "old" way (construction followed by set_publish_period()).
+          if (this->disable_internal_per_step_publish_events_)
+            return;
+
+          this->PublishInputAsLcmMessage(context);
+        }));
   }
 }
 
