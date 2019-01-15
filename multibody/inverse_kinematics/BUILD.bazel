@@ -130,6 +130,7 @@ drake_cc_googletest(
         ":inverse_kinematics_core",
         ":inverse_kinematics_test_utilities",
         "//math:geometric_transform",
+        "//solvers:solve",
     ],
 )
 

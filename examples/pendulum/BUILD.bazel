@@ -109,6 +109,7 @@ drake_cc_binary(
         "//common:is_approx_equal_abstol",
         "//geometry:geometry_visualization",
         "//lcm",
+        "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework",

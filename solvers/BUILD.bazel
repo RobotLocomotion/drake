@@ -376,6 +376,7 @@ drake_cc_library(
     hdrs = ["system_identification.h"],
     deps = [
         ":mathematical_program",
+        ":solve",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
@@ -411,6 +412,7 @@ drake_cc_library(
         ":integer_optimization_util",
         ":mathematical_program",
         ":mixed_integer_optimization_util",
+        ":solve",
     ],
 )
 
@@ -1245,6 +1247,7 @@ drake_cc_googletest(
     deps = [
         ":decision_variable",
         ":non_convex_optimization_util",
+        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
     ],
@@ -1300,6 +1303,7 @@ drake_cc_googletest(
         ":mathematical_program",
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
+        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1343,6 +1347,7 @@ drake_cc_binary(
         ":mathematical_program",
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
+        ":solve",
         "//common/proto:call_matlab",
     ],
 )
@@ -1419,6 +1424,7 @@ drake_cc_googletest(
     tags = mosek_test_tags(),
     deps = [
         ":mathematical_program",
+        ":solve",
         ":sos_basis_generator",
     ],
 )

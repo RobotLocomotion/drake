@@ -216,6 +216,34 @@ PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
 }
 
+PiecewisePolynomial<double> DirectTranscription::ReconstructInputTrajectory(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::VectorXd times = GetSampleTimes(result);
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> inputs(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    inputs[i] = GetSolution(input(i), result);
+  }
+  // TODO(russt): Implement DTTrajectories and return one of those instead.
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
+}
+
+PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::VectorXd times = GetSampleTimes(result);
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> states(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    states[i] = GetSolution(state(i), result);
+  }
+  // TODO(russt): Implement DTTrajectories and return one of those instead.
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
+}
+
 bool DirectTranscription::AddSymbolicDynamicConstraints(
     const System<double>* system, const Context<double>& context) {
   const auto symbolic_system = system->ToSymbolicMaybe();

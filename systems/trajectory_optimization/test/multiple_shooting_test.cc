@@ -10,6 +10,7 @@
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace systems {
@@ -43,6 +44,16 @@ class MyDirectTrajOpt : public MultipleShooting {
     return PiecewisePolynomial<double>();
   };
 
+  PiecewisePolynomial<double> ReconstructInputTrajectory(
+      const solvers::MathematicalProgramResult&) const override {
+    return PiecewisePolynomial<double>();
+  };
+
+  PiecewisePolynomial<double> ReconstructStateTrajectory(
+      const solvers::MathematicalProgramResult&) const override {
+    return PiecewisePolynomial<double>();
+  };
+
   // Expose for unit testing.
   using MultipleShooting::h_vars;
   using MultipleShooting::x_vars;
@@ -64,7 +75,8 @@ GTEST_TEST(MultipleShootingTest, FixedTimestepTest) {
   EXPECT_FALSE(prog.timesteps_are_decision_variables());
 
   EXPECT_EQ(prog.num_vars(), 6);
-  const Eigen::VectorXd times = prog.GetSampleTimes();
+  solvers::MathematicalProgramResult result;
+  const Eigen::VectorXd times = prog.GetSampleTimes(result);
   EXPECT_EQ(times.size(), 2);
   EXPECT_EQ(times[0], 0.0);
   EXPECT_EQ(times[1], 0.1);
@@ -89,8 +101,10 @@ GTEST_TEST(MultipleShootingTest, VariableTimestepTest) {
   EXPECT_THROW(prog.fixed_timestep(), std::runtime_error);
 
   EXPECT_EQ(prog.num_vars(), 7);
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
-  const Eigen::VectorXd times = prog.GetSampleTimes();
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
+  const Eigen::VectorXd times = prog.GetSampleTimes(result);
   EXPECT_EQ(times.size(), 2);
   EXPECT_NEAR(times[0], 0.0, kSolverTolerance);
   EXPECT_NEAR(times[1], 0.1, kSolverTolerance);
@@ -125,8 +139,11 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
                                         Eigen::Vector2d::Zero(), x),
                std::runtime_error);
 
-  EXPECT_THROW(prog.GetSolution(t(0)), std::runtime_error);
-  EXPECT_THROW(prog.GetSolution(u), std::runtime_error);
+  solvers::MathematicalProgramResult result;
+  // Arbitrarily set the decision variable values to 0.
+  result.set_x_val(Eigen::VectorXd::Zero(prog.num_vars()));
+  EXPECT_THROW(prog.GetSolution(t(0), result), std::runtime_error);
+  EXPECT_THROW(prog.GetSolution(u, result), std::runtime_error);
 }
 
 GTEST_TEST(MultipleShootingTest, PlaceholderVariableNames) {
@@ -152,8 +169,10 @@ GTEST_TEST(MultipleShootingTest, TimeIntervalBoundsTest) {
                        kMaxTimeStep);
 
   prog.AddTimeIntervalBounds(.5, .5);
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.h_vars()),
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.h_vars(), result),
                               Eigen::Vector2d(0.5, 0.5), 1e-6));
 }
 
@@ -171,9 +190,13 @@ GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
   prog.SetInitialGuess(prog.timestep(0), Vector1d(.1));
   prog.SetInitialGuess(prog.timestep(1), Vector1d(.2));
 
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(prog.timestep(0).coeff(0)),
-              prog.GetSolution(prog.timestep(1).coeff(0)), kSolverTolerance);
+  const solvers::MathematicalProgramResult result =
+      Solve(prog, prog.initial_guess());
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
+  EXPECT_NEAR(prog.GetSolution(prog.timestep(0).coeff(0), result),
+              prog.GetSolution(prog.timestep(1).coeff(0), result),
+              kSolverTolerance);
 }
 
 GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
@@ -194,8 +217,11 @@ GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
   prog.AddConstraintToAllKnotPoints(prog.state() <= Vector1d(1));
   prog.AddConstraintToAllKnotPoints(prog.state() >= Vector1d(0));
 
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(prog.h_vars()).sum(), .5, 1e-6);
+  const solvers::MathematicalProgramResult result =
+      Solve(prog, prog.initial_guess());
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
+  EXPECT_NEAR(prog.GetSolution(prog.h_vars(), result).sum(), .5, 1e-6);
 }
 
 GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
@@ -210,28 +236,32 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   const Eigen::Vector2d state_value(4.0, 5.0);
   prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
 
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  solvers::MathematicalProgramResult result = Solve(prog);
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
   for (int i = 0; i < kNumSampleTimes; i++) {
     // osqp can fail in polishing step, such that the accuracy cannot reach
     // 1E-6.
     const double tol =
-        prog.GetSolverId() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
-    EXPECT_TRUE(
-        CompareMatrices(prog.GetSolution(prog.state(i)), state_value, tol));
+        result.get_solver_id() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
+    EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(i), result),
+                                state_value, tol));
   }
 
   const solvers::VectorDecisionVariable<1>& t = prog.time();
   const solvers::VectorXDecisionVariable& u = prog.input();
   prog.AddConstraintToAllKnotPoints(u == t);
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  result = Solve(prog);
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
   // u(0) = 0.
-  EXPECT_NEAR(prog.GetSolution(prog.input(0).coeff(0)), 0.0, 1e-6);
+  EXPECT_NEAR(prog.GetSolution(prog.input(0).coeff(0), result), 0.0, 1e-6);
   // u(1) = h(0).
-  EXPECT_NEAR(prog.GetSolution(prog.input(1).coeff(0)),
-              prog.GetSolution(prog.timestep(0).coeff(0)), 1e-6);
+  EXPECT_NEAR(prog.GetSolution(prog.input(1).coeff(0), result),
+              prog.GetSolution(prog.timestep(0).coeff(0), result), 1e-6);
   // u(2) = h(0)+h(1).
-  EXPECT_NEAR(prog.GetSolution(prog.input(2).coeff(0)),
-              prog.GetSolution(prog.h_vars()).sum(), 1e-6);
+  EXPECT_NEAR(prog.GetSolution(prog.input(2).coeff(0), result),
+              prog.GetSolution(prog.h_vars(), result).sum(), 1e-6);
 }
 
 GTEST_TEST(MultipleShootingTest, FinalCostTest) {
@@ -246,10 +276,12 @@ GTEST_TEST(MultipleShootingTest, FinalCostTest) {
   const auto error = prog.state() - desired_state;
 
   prog.AddFinalCost(error.dot(error));
-  ASSERT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetOptimalCost(), 0.0, kSolverTolerance);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(1)), desired_state,
-                              kSolverTolerance));
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  ASSERT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
+  EXPECT_NEAR(result.get_optimal_cost(), 0.0, kSolverTolerance);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(1), result),
+                              desired_state, kSolverTolerance));
 }
 
 GTEST_TEST(MultipleShootingTest, TrajectoryCallbackTest) {
@@ -342,24 +374,22 @@ GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
   prog.SetInitialTrajectory(PiecewisePolynomial<double>(), traj1);
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  solvers::SolverResult solver_result(solvers::SolverId("dummy"));
-  solver_result.set_decision_variable_values(prog.initial_guess());
-  prog.SetSolverResult(solver_result);
-  EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
+  solvers::MathematicalProgramResult result;
+  result.set_solver_id(solvers::SolverId("dummy"));
+  result.set_x_val(prog.initial_guess());
+  EXPECT_EQ(prog.GetSampleTimes(result), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   prog.SetInitialTrajectory(traj2, PiecewisePolynomial<double>());
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  solver_result.set_decision_variable_values(prog.initial_guess());
-  prog.SetSolverResult(solver_result);
-  EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 1.5, 3.0));
+  result.set_x_val(prog.initial_guess());
+  EXPECT_EQ(prog.GetSampleTimes(result), Eigen::Vector3d(0.0, 1.5, 3.0));
 
   prog.SetInitialTrajectory(traj1, traj1);
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  solver_result.set_decision_variable_values(prog.initial_guess());
-  prog.SetSolverResult(solver_result);
-  EXPECT_EQ(prog.GetSampleTimes(), Eigen::Vector3d(0.0, 0.5, 1.0));
+  result.set_x_val(prog.initial_guess());
+  EXPECT_EQ(prog.GetSampleTimes(result), Eigen::Vector3d(0.0, 0.5, 1.0));
 
   // Throws if trajectories don't match.
   EXPECT_THROW(prog.SetInitialTrajectory(traj1, traj2), std::runtime_error);
@@ -385,14 +415,16 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
   }
   // Pretends that the solver has solved the optimization problem, and sets
   // the solution to prog.initial_guess().
-  solvers::SolverResult solver_result(solvers::SolverId("dummy"));
-  solver_result.set_decision_variable_values(prog.initial_guess());
-  prog.SetSolverResult(solver_result);
+  solvers::MathematicalProgramResult result;
+  result.set_solver_id(solvers::SolverId("dummy"));
+  result.set_x_val(prog.initial_guess());
 
-  EXPECT_TRUE(CompareMatrices(prog.GetSampleTimes(),
+  EXPECT_TRUE(CompareMatrices(prog.GetSampleTimes(result),
                               Eigen::Vector2d(0.0, kFixedTimeStep), 0.0));
-  EXPECT_TRUE(CompareMatrices(prog.GetInputSamples(), input_trajectory, 0.0));
-  EXPECT_TRUE(CompareMatrices(prog.GetStateSamples(), state_trajectory, 0.0));
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetInputSamples(result), input_trajectory, 0.0));
+  EXPECT_TRUE(
+      CompareMatrices(prog.GetStateSamples(result), state_trajectory, 0.0));
 }
 
 }  // anonymous namespace

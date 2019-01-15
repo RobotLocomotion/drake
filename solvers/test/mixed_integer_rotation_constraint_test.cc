@@ -14,6 +14,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -27,14 +28,14 @@ namespace drake {
 namespace solvers {
 namespace {
 bool IsFeasibleCheck(
-    MathematicalProgram* prog,
+    const MathematicalProgram& prog,
     const std::shared_ptr<LinearEqualityConstraint>& feasibility_constraint,
     const Eigen::Ref<const Matrix3d>& R_sample) {
   Eigen::Map<const Eigen::Matrix<double, 9, 1>> R_sample_vec(R_sample.data());
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return prog->Solve() == kSolutionFound;
+  return Solve(prog).get_solution_result() == kSolutionFound;
 }
 
 class TestMixedIntegerRotationConstraint {
@@ -56,7 +57,7 @@ class TestMixedIntegerRotationConstraint {
                                     .evaluator()} {}
 
   bool IsFeasible(const Eigen::Ref<const Eigen::Matrix3d>& R_to_check) {
-    return IsFeasibleCheck(&prog_, feasibility_constraint_, R_to_check);
+    return IsFeasibleCheck(prog_, feasibility_constraint_, R_to_check);
   }
 
   bool IsFeasible(const RotationMatrixd& R_to_check) {

@@ -209,6 +209,24 @@ Eigen::MatrixXd MultipleShooting::GetStateSamples() const {
   return states;
 }
 
+Eigen::MatrixXd MultipleShooting::GetInputSamples(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::MatrixXd inputs(num_inputs_, N_);
+  for (int i = 0; i < N_; i++) {
+    inputs.col(i) = GetSolution(input(i), result);
+  }
+  return inputs;
+}
+
+Eigen::MatrixXd MultipleShooting::GetStateSamples(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::MatrixXd states(num_states_, N_);
+  for (int i = 0; i < N_; i++) {
+    states.col(i) = GetSolution(state(i), result);
+  }
+  return states;
+}
+
 symbolic::Substitution
 MultipleShooting::ConstructPlaceholderVariableSubstitution(
     int interval_index) const {

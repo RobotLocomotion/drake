@@ -252,30 +252,61 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   Eigen::VectorXd GetSampleTimes() const {
     return GetSampleTimes(this->GetSolution(h_vars_));
   }
 
+  Eigen::VectorXd GetSampleTimes(
+      const solvers::MathematicalProgramResult& result) const {
+    return GetSampleTimes(this->GetSolution(h_vars_, result));
+  }
+
   /// Returns a matrix containing the input values (arranged in columns) at
   /// each knot point at the solution.
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   Eigen::MatrixXd GetInputSamples() const;
+
+  /// Returns a matrix containing the input values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetInputSamples(
+      const solvers::MathematicalProgramResult& result) const;
 
   /// Returns a matrix containing the state values (arranged in columns) at
   /// each knot point at the solution.
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   Eigen::MatrixXd GetStateSamples() const;
+
+  /// Returns a matrix containing the state values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetStateSamples(
+      const solvers::MathematicalProgramResult& result) const;
 
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input
   /// port.
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
+
+  virtual trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
+      const solvers::MathematicalProgramResult& result) const = 0;
 
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
+
+  virtual trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
+      const solvers::MathematicalProgramResult& result) const = 0;
 
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);

@@ -16,6 +16,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -541,8 +542,9 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
     prog.AddConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
 
-  const SolutionResult result = prog.Solve();
-  *info = GetIKSolverInfo(result);
+  const solvers::MathematicalProgramResult result =
+      Solve(prog, prog.initial_guess());
+  *info = GetIKSolverInfo(result.get_solution_result());
 
   // Populate the output arguments.
   const auto q_value = prog.GetSolution(q);
