@@ -110,6 +110,24 @@ Cheat sheet for operating on specific portions of the project::
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake/tools/bazel.rc``.
 
+Running with Flags
+------------------
+
+In general, to figure out what binary-specific arguments are available, add
+"``-- --help``" to your ``bazel run`` command. If the binary can only run via
+``bazel test``, look at `--test_arg <https://docs.bazel.build/versions/master/user-manual.html#flag--test_arg>`_.
+
+If a C++ unittest uses ``gtest`` (e.g. using ``drake_cc_googletest``),
+you can specify gtest-specific flags. As an example::
+
+  bazel run multibody/plant:multibody_plant_test -- --gtest_filter='*SimpleModelCreation*'
+
+If a Python unittest is run via ``drake_py_unittest_main.py`` (e.g. using
+``drake_py_unittest``), you can specify flags such as ``--trace`` or
+``--deprecation_action``. As an example::
+
+  bazel run bindings/pydrake:py/symbolic_test -- --trace=user --deprecation_action=error
+
 Debugging on macOS
 ------------------
 
