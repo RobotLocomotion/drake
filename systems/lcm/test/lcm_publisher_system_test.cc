@@ -210,7 +210,7 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
 }
 
-// Tests that per-step publish works as expected.
+// Tests that per-step publish generates the expected number of publishes.
 GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
