@@ -1702,6 +1702,7 @@ class System : public SystemBase {
   SystemConstraintIndex AddConstraint(
       std::unique_ptr<SystemConstraint<T>> constraint) {
     DRAKE_DEMAND(constraint != nullptr);
+    DRAKE_DEMAND(&constraint->get_system() == this);
     constraints_.push_back(std::move(constraint));
     return SystemConstraintIndex(constraints_.size() - 1);
   }
