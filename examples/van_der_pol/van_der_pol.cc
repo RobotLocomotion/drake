@@ -27,7 +27,7 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   this->DeclareNumericParameter(systems::BasicVector<T>(Vector1<T>(1.0)));
 
   // Declare μ≥0 constraint.
-  typename systems::SystemConstraint<T>::CalcCallback mu =
+  systems::ContextConstraintCalc<T> mu =
       [](const systems::Context<T>& context, VectorX<T>* value) {
         // Extract μ from the parameters.
         *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));

@@ -65,11 +65,11 @@ GTEST_TEST(SystemConstraintTest, BoundsBadSizes) {
 
 // Just a simple test to call each of the public methods.
 GTEST_TEST(SystemConstraintTest, BasicTest) {
-  SystemConstraint<double>::CalcCallback calc = [](
+  ContextConstraintCalc<double> calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  SystemConstraint<double>::CalcCallback calc2 = [](
+  ContextConstraintCalc<double> calc2 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value =
         Eigen::Vector2d(context.get_continuous_state_vector().CopyToVector());

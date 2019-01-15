@@ -383,7 +383,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  SystemConstraint<double>::CalcCallback calc = [](
+  ContextConstraintCalc<double> calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = 1.0;
@@ -399,7 +399,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
 
   const double tol = 1e-6;
   EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(context_, tol));
-  SystemConstraint<double>::CalcCallback calc_false = [](
+  ContextConstraintCalc<double> calc_false = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = -1.0;
