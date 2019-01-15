@@ -1405,6 +1405,26 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
   EXPECT_NO_THROW(plant_autodiff.get_geometry_poses_output_port());
 }
 
+// In general, we strongly discourage users from subclassing MultibodyPlant.
+// However, until we mark it `final`, we should test that subclassing works as
+// expected.
+template <typename T>
+class SubclassPlant final : public MultibodyPlant<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SubclassPlant)
+
+  SubclassPlant() : multibody::MultibodyPlant<T>() {
+    this->Finalize();
+  }
+};
+
+// Verifies that subclasses of MBP can be scalar-converted.
+GTEST_TEST(MultibodyPlantTest, SubclassScalarConversion) {
+  // Confirm that the constructor disables the subtype preservation checks.
+  const SubclassPlant<double> dut;
+  ASSERT_NO_THROW(dut.ToAutoDiffXd());
+}
+
 // This test is used to verify the correctness of the methods to compute the
 // normal Jacobian N and the tangent Jacobian D.
 // We do this for the particular case of a small box sitting on top of a larger
