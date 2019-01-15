@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/geometry_set_tester.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -934,6 +935,7 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
 // will be included.
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
   using geometry::GeometrySet;
+  using geometry::GeometrySetTester;
 
   SphereChainScenario scenario(5);
 
@@ -942,25 +944,28 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
   // Case: Empty vector produces empty geometry set.
   {
     GeometrySet set = plant.CollectRegisteredGeometries({});
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_EQ(set.num_frames(), 0);
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_EQ(tester.num_frames(), 0);
   }
 
   // Case: Single body produces single, corresponding frame.
   {
     GeometrySet set = plant.CollectRegisteredGeometries({&scenario.sphere(0)});
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_EQ(set.num_frames(), 1);
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_EQ(tester.num_frames(), 1);
     FrameId id_0 = plant.GetBodyFrameIdOrThrow(scenario.sphere(0).index());
-    EXPECT_TRUE(set.contains(id_0));
+    EXPECT_TRUE(tester.contains(id_0));
   }
 
   // Case: Body with no corresponding geometry frame.
   {
     GeometrySet set =
         plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_EQ(set.num_frames(), 0);
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_EQ(tester.num_frames(), 0);
   }
 
   // Case: Include the world body.
@@ -968,9 +973,10 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
     GeometrySet set =
         plant.CollectRegisteredGeometries(
             {&scenario.mutable_plant()->world_body()});
-    EXPECT_EQ(set.num_frames(), 1);
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_FALSE(set.contains(scenario.ground_id()));
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_frames(), 1);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_FALSE(tester.contains(scenario.ground_id()));
   }
 }
 

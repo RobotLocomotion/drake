@@ -16,6 +16,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/test_utilities/geometry_set_tester.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
@@ -893,12 +894,13 @@ const FrameIdSet& GeometryState<T>::GetFramesForSource(
 
 template <typename T>
 void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
+  GeometrySetTester tester(&set);
   // There is no work to be done if:
   //   1. the set contains a single frame and no geometries -- geometries *on*
   //      that single frame have already been handled, or
   //   2. there are no frames and a single geometry.
-  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
-      (set.num_frames() == 0 && set.num_geometries() == 1)) {
+  if ((tester.num_frames() == 1 && tester.num_geometries() == 0) ||
+      (tester.num_frames() == 0 && tester.num_geometries() == 1)) {
     return;
   }
 
@@ -972,8 +974,9 @@ template <typename T>
 void GeometryState<T>::CollectIndices(
     const GeometrySet& geometry_set, std::unordered_set<InternalIndex>* dynamic,
     std::unordered_set<InternalIndex>* anchored) {
+  GeometrySetTester tester(&geometry_set);
   std::unordered_set<InternalIndex>* target;
-  for (auto frame_id : geometry_set.frames()) {
+  for (auto frame_id : tester.frames()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     target = frame.is_world() ? anchored : dynamic;
     for (auto geometry_id : frame.child_geometries()) {
@@ -984,7 +987,7 @@ void GeometryState<T>::CollectIndices(
     }
   }
 
-  for (auto geometry_id : geometry_set.geometries()) {
+  for (auto geometry_id : tester.geometries()) {
     const InternalGeometry* geometry = GetGeometry(geometry_id);
     if (geometry == nullptr) {
       throw std::logic_error(

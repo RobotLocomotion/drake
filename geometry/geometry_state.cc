@@ -679,8 +679,8 @@ void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   //   1. the set contains a single frame and no geometries -- geometries *on*
   //      that single frame have already been handled, or
   //   2. there are no frames and a single geometry.
-  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
-      (set.num_frames() == 0 && set.num_geometries() == 1)) {
+  if ((set.num_frames_internal() == 1 && set.num_geometries_internal() == 0) ||
+      (set.num_frames_internal() == 0 && set.num_geometries_internal() == 1)) {
     return;
   }
 
@@ -718,7 +718,7 @@ void GeometryState<T>::CollectIndices(
   // TODO(SeanCurtis-TRI): Consider expanding this to include Role if it proves
   // that collecting indices for *other* role-related tasks prove necessary.
   std::unordered_set<GeometryIndex>* target;
-  for (auto frame_id : geometry_set.frames()) {
+  for (auto frame_id : geometry_set.frames_internal()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     target = frame.is_world() ? anchored : dynamic;
     for (auto geometry_id : frame.child_geometries()) {
@@ -729,7 +729,7 @@ void GeometryState<T>::CollectIndices(
     }
   }
 
-  for (auto geometry_id : geometry_set.geometries()) {
+  for (auto geometry_id : geometry_set.geometries_internal()) {
     const InternalGeometry* geometry = GetGeometry(geometry_id);
     if (geometry == nullptr) {
       throw std::logic_error(
