@@ -46,23 +46,23 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, FeasibilityCheck) {
 
   // [1 0.9;0.9 2] is diagonally dominant
   set_X_value(Eigen::Vector3d(1, 0.9, 2));
-  MathematicalProgramResult result = Solve(prog, {}, {});
+  MathematicalProgramResult result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 
   // [1 -0.9; -0.9 2] is diagonally dominant
   set_X_value(Eigen::Vector3d(1, -0.9, 2));
-  result = Solve(prog, {}, {});
+  result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 
   // [1 1.1; 1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, 1.1, 2));
-  result = Solve(prog, {}, {});
+  result = Solve(prog);
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
   // [1 -1.1; -1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, -1.1, 2));
-  result = Solve(prog, {}, {});
+  result = Solve(prog);
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
@@ -93,7 +93,7 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
 
   auto solve_and_check = [&prog, &X](const Eigen::Vector3d& sol_expected,
                                      double tol) {
-    const auto result = Solve(prog, {}, {});
+    const auto result = Solve(prog);
     if (result.get_solver_id() != SnoptSolver::id()) {
       // Do not check when we use SNOPT. It is known that our SnoptSolver
       // wrapper doesn't solve this problem correctly, see

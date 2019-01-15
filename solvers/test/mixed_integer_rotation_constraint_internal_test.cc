@@ -221,7 +221,7 @@ GTEST_TEST(RotationTest, TestInnerFacetsAndHalfSpace) {
   prog.AddLinearConstraint(z.cast<symbolic::Expression>().sum() >= 1);
   prog.AddLinearConstraint(n.dot(x) >= d);
   prog.AddBoundingBoxConstraint(bmin, bmax, x);
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  const MathematicalProgramResult result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 }
 

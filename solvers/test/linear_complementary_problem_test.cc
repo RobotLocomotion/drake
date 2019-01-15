@@ -33,7 +33,7 @@ GTEST_TEST(testMathematicalProgram, simpleLCP) {
 
   prog.AddLinearComplementarityConstraint(M, q, x);
   MathematicalProgramResult result;
-  EXPECT_NO_THROW(result = Solve(prog, {}, {}));
+  EXPECT_NO_THROW(result = Solve(prog));
   const auto& x_value = prog.GetSolution(x, result);
   EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,
                               MatrixCompareType::absolute));
@@ -59,7 +59,7 @@ GTEST_TEST(testMathematicalProgram, multiLCP) {
   prog.AddLinearComplementarityConstraint(M, q, x);
   prog.AddLinearComplementarityConstraint(M, q, y);
   MathematicalProgramResult result;
-  EXPECT_NO_THROW(result = Solve(prog, {}, {}));
+  EXPECT_NO_THROW(result = Solve(prog));
   const auto& x_value = prog.GetSolution(x, result);
   const auto& y_value = prog.GetSolution(y, result);
   EXPECT_TRUE(CompareMatrices(x_value, Vector2d(16, 0), 1e-4,

@@ -738,9 +738,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    * /////////////////////////////////////////////////////////////
    *
    * // Now solve the program.
-   * auto result = Solve(prog, {},  // no initial guess
-   *                     {}  // no solver options
-   *                     );
+   * auto result = Solve(prog);
    *
    * // Retrieve the solution of matrix S.
    * auto S_value = GetSolution(S, result);

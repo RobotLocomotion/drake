@@ -32,7 +32,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddCost(pow(x(0) - 1, 2) + pow(x(1) - 1, 2));
 
-  MathematicalProgramResult result = Solve(prog, {}, {});
+  MathematicalProgramResult result = Solve(prog);
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
@@ -50,7 +50,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
 
   prog.AddCost(pow(x(1) - 3, 2) + pow(2 * y(0) - 4, 2));
   prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
-  result = Solve(prog, {}, {});
+  result = Solve(prog);
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 2.0;
   VectorXd actual_answer(3);
@@ -85,7 +85,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
 
-  MathematicalProgramResult result = Solve(prog, {}, {});
+  MathematicalProgramResult result = Solve(prog);
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
@@ -106,8 +106,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   prog.AddLinearConstraint(2 * x(0) - y(0) == 0);
   prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
-  Eigen::VectorXd x_init = Eigen::Vector3d::Zero();
-  result = Solve(prog, x_init, {});
+  result = Solve(prog, Eigen::Vector3d::Zero());
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
   VectorXd actual_answer(3);

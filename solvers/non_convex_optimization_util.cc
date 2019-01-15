@@ -38,7 +38,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
   prog.AddLinearConstraint(symbolic::Expression(s) >=
                            Q2.cast<symbolic::Expression>().trace());
   prog.AddCost(s);
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  const MathematicalProgramResult result = Solve(prog);
   // This problem should always be feasible, since we can choose Q1 to a large
   // diagonal matrix, and Q2 will also have large diagonal entries. Both Q1 and
   // Q2 are diagonally dominant, thus they are both positive definite.
