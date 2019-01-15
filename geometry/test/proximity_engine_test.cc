@@ -1232,7 +1232,7 @@ class SignedDistancePairTestData {
 // A's frame and B's frame respectively do not change during this motion.
 //
 // @param X_WA specifies the pose of A in world.
-// @param R_WB specifies the rotation of B in world.
+// @param R_WB specifies the orientation of B in world.
 std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
@@ -1283,6 +1283,14 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereTransform() {
       RotationMatrixd(RollPitchYawd(M_PI / 4., 5. * M_PI / 6., M_PI / 3)));
 }
 
+// Gimbal lock of the orientation of the sphere at pitch = pi/2.
+std::vector<SignedDistancePairTestData>
+GenDistPairTestSphereSphereGimbalLock() {
+  return GenDistancePairTestSphereSphere(
+    RigidTransformd::Identity(),
+    RotationMatrixd(RollPitchYawd(M_PI / 6., M_PI_2, M_PI / 6.)));
+}
+
 // Two spheres with more general position. Here, we describe the configuration
 // in the frame of the first sphere A.  The second sphere B is centered at
 // (1,4,8) in A's frame.  We use these identities to design the configuration.
@@ -1320,7 +1328,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereTransform() {
 // negative of the radius of A.
 //
 // @param X_WA the pose of A in world.
-// @param R_WB the rotation matrix of B in world.
+// @param R_WB the orientation of B in world.
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereNonAligned(
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
@@ -1373,7 +1381,7 @@ GenDistPairTestSphereSphereNonAlignedTransform() {
 // witness points as expressed in the frames of the sphere and the box stay
 // the same in all cases.
 //
-// @param R_WA specifies the rotation of the sphere A in world.
+// @param R_WA specifies the orientation of the sphere A in world.
 // @param X_WB specifies the pose of the box B in world.
 // @return the test data for testing sphere-box pairwise signed distances.
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereBox(
@@ -1432,13 +1440,12 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxTransform() {
                       Vector3d(1., 2., 3.)));
 }
 
-// Test pitch = pi/2 when the roll-pitch-yaw is in singular configuration.
+// Gimbal lock of the orientation of the sphere at pitch = pi/2.
 std::vector<SignedDistancePairTestData>
-GenDistPairTestSphereBoxTransformSingularPitch() {
+GenDistPairTestSphereBoxGimbalLock() {
   return GenDistPairTestSphereBox(
-      RotationMatrixd(RollPitchYawd(M_PI / 8., M_PI_2, 2. * M_PI / 3)),
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., M_PI_2, M_PI / 12.),
-                      Vector3d(1., 2., 3.)));
+      RotationMatrixd(RollPitchYawd(M_PI / 8., M_PI_2, M_PI / 8)),
+      RigidTransformd::Identity());
 }
 
 std::vector<SignedDistancePairTestData> GenDistPairTestBoxSphere() {
@@ -1477,7 +1484,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestBoxSphereTransform() {
 //     p_ACa = - r * s_A/|s_A|,
 // where s_A is the sign vector s expressed in A's frame.
 //
-// @param R_WA specifies rotation of the sphere in world.
+// @param R_WA specifies the orientation of the sphere in world.
 // @param X_WB specifies the pose of the box in world.
 // @return  the test data for testing sphere-box pairwise signed distances.
 //
@@ -1592,20 +1599,26 @@ INSTANTIATE_TEST_CASE_P(SphereSphere, SignedDistancePairTest,
     testing::ValuesIn(GenDistancePairTestSphereSphere()));
 INSTANTIATE_TEST_CASE_P(SphereSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereTransform()));
+INSTANTIATE_TEST_CASE_P(SphereSphereGimbalLock, SignedDistancePairTest,
+    testing::ValuesIn(GenDistPairTestSphereSphereGimbalLock()));
+
 INSTANTIATE_TEST_CASE_P(SphereSphreNonAligned, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAligned()));
 INSTANTIATE_TEST_CASE_P(SphereSphreNonAlignedTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAlignedTransform()));
+
 INSTANTIATE_TEST_CASE_P(SphereBox, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBox()));
 INSTANTIATE_TEST_CASE_P(SphereBoxTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxTransform()));
-INSTANTIATE_TEST_CASE_P(SphereBoxTransformSingularPitch, SignedDistancePairTest,
-    testing::ValuesIn(GenDistPairTestSphereBoxTransformSingularPitch()));
+INSTANTIATE_TEST_CASE_P(SphereBoxGimbalLock, SignedDistancePairTest,
+    testing::ValuesIn(GenDistPairTestSphereBoxGimbalLock()));
+
 INSTANTIATE_TEST_CASE_P(BoxSphere, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphere()));
 INSTANTIATE_TEST_CASE_P(BoxSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphereTransform()));
+
 INSTANTIATE_TEST_CASE_P(SphereBoxBoundary, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundary()));
 INSTANTIATE_TEST_CASE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
@@ -1645,12 +1658,18 @@ TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
     << "Incorrect distance between witness points.";
 }
 
-std::vector<SignedDistancePairTestData>
-GenDistPairTestSphereSphereConcentric(
+// Generates one record of test data for two spheres whose centers are at the
+// same point.
+// @param radius_A specifies the radius of the first sphere A.
+// @param radius_B specifies the radius of the second sphere B.
+// @param X_WA specifies the pose of A in world.
+// @param R_WB specifies the orientation of B in world.
+SignedDistancePairTestData
+GenDistPairTestTwoSpheresConcentricBasic(
+    const double radius_A = 1.0,
+    const double radius_B = 1.0,
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
-  const double radius_A = 3.0;
-  const double radius_B = 7.0;
   auto sphere_A = make_shared<const Sphere>(radius_A);
   auto sphere_B = make_shared<const Sphere>(radius_B);
   const RigidTransformd X_WB(R_WB, X_WA.translation());
@@ -1664,11 +1683,35 @@ GenDistPairTestSphereSphereConcentric(
   const Vector3d p_ACb = X_AB * p_BCb;
   const Vector3d p_ACa = -(radius_A / radius_B) * p_ACb;
 
-  std::vector<SignedDistancePairTestData> test_data{
-      {sphere_A, sphere_B, X_WA, X_WB,
+  return  SignedDistancePairTestData(
+      sphere_A, sphere_B, X_WA, X_WB,
        SignedDistancePair<double>(
            GeometryId::get_new_id(), GeometryId::get_new_id(),
-           p_ACa, p_BCb, -radius_A - radius_B)}
+           p_ACa, p_BCb, -radius_A - radius_B));
+}
+
+// Generates test data for two spheres A and B whose centers are at the same
+// point with varying radii.
+// @param X_WA specifies the pose of A in world.
+// @param R_WB specifies the orientation of B in world.
+std::vector<SignedDistancePairTestData>
+GenDistPairTestSphereSphereConcentric(
+    const RigidTransformd& X_WA = RigidTransformd::Identity(),
+    const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
+  std::vector<SignedDistancePairTestData> test_data{
+      // Both unit spheres.
+      GenDistPairTestTwoSpheresConcentricBasic(1.0, 1.0, X_WA, R_WB),
+      // One is smaller than a unit sphere, another is larger than a unit
+      // sphere.
+      GenDistPairTestTwoSpheresConcentricBasic(0.5, 2.0, X_WA, R_WB),
+      // Different sizes. Both spheres are smaller than a unit sphere.
+      GenDistPairTestTwoSpheresConcentricBasic(0.3, 0.7, X_WA, R_WB),
+      // Same sizes. Both spheres are smaller than a unit sphere.
+      GenDistPairTestTwoSpheresConcentricBasic(0.7, 0.7, X_WA, R_WB),
+      // Different sizes. Both spheres are larger than a unit sphere.
+      GenDistPairTestTwoSpheresConcentricBasic(3.0, 7.0, X_WA, R_WB),
+      // Same sizes. Both spheres are larger than a unit sphere.
+      GenDistPairTestTwoSpheresConcentricBasic(7.0, 7.0, X_WA, R_WB),
   };
   return test_data;
 }
@@ -1676,11 +1719,22 @@ GenDistPairTestSphereSphereConcentric(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereSphereConcentricTransform() {
   return GenDistPairTestSphereSphereConcentric(
-      RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI),
-                      Vector3d(1., 2., 3.)),
-      RotationMatrixd(RollPitchYawd(M_PI, M_PI/6., M_PI)));
+    RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI),
+                    Vector3d(1., 2., 3.)),
+    RotationMatrixd(RollPitchYawd(M_PI, M_PI/6., M_PI)));
 }
 
+// Gimbal lock of the orientation of the sphere at pitch = pi/2.
+std::vector<SignedDistancePairTestData>
+GenDistPairTestSphereSphereConcentricGimbalLock() {
+  return GenDistPairTestSphereSphereConcentric(
+    RigidTransformd::Identity(),
+    RotationMatrixd(RollPitchYawd(M_PI, M_PI_2, M_PI)));
+}
+
+// Generates test data for a sphere and a box with the same centers.
+// @param X_WA specifies the pose of the sphere A in world.
+// @param R_WB specifies the orientation of the box B in world.
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereBoxConcentric(
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
@@ -1723,6 +1777,10 @@ INSTANTIATE_TEST_CASE_P(SphereSphereConcentric,
 INSTANTIATE_TEST_CASE_P(SphereSphereConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricTransform()));
+INSTANTIATE_TEST_CASE_P(SphereSphereConcentricGimbalLock,
+    SignedDistancePairConcentricTest,
+    testing::ValuesIn(GenDistPairTestSphereSphereConcentricGimbalLock()));
+
 INSTANTIATE_TEST_CASE_P(SphereBoxConcentric,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentric()));
