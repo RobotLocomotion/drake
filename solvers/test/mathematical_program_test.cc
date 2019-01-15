@@ -26,6 +26,7 @@
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/generic_trivial_constraints.h"
 #include "drake/solvers/test/generic_trivial_costs.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -2816,11 +2817,11 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
   }
 
   prog.AddCost(x(0) + x(1));
-  prog.SetInitialGuess(x, Vector2d{-.5, -.5});
-  SolutionResult result = prog.Solve();
-  EXPECT_EQ(result, kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
-                              Vector2d::Constant(-std::sqrt(2.)/2.), 1e-6));
+  const MathematicalProgramResult result =
+      Solve(prog, Eigen::Vector2d(-0.5, -0.5));
+  EXPECT_EQ(result.get_solution_result(), kSolutionFound);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result),
+                              Vector2d::Constant(-std::sqrt(2.) / 2.), 1e-6));
 }
 
 GTEST_TEST(testMathematicalProgram, testSetSolverResult) {

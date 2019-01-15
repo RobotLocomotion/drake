@@ -13,7 +13,7 @@ namespace test {
 
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
-  const MathematicalProgramResult result = Solve(*(example->prog()), {}, {});
+  const MathematicalProgramResult result = Solve(*(example->prog()));
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
   example->CheckSolution(result);
 }
@@ -42,14 +42,16 @@ GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
   prog.AddLinearConstraint(3 * x(0) == 1 && 2 * x(0) + x(1) == 2 &&
         x(0) - x(1) == 0);
 
-  SolutionResult result = prog.Solve();
-  EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
+  const MathematicalProgramResult result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
   // The solution should minimize the error ||b - A * x||₂
   // x_expected is computed as (Aᵀ*A)⁻¹*(Aᵀ*b)
   Eigen::Vector2d x_expected(12.0 / 27, 21.0 / 27);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, 1E-12,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-12,
                               MatrixCompareType::absolute));
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 /**
@@ -62,22 +64,22 @@ GTEST_TEST(testLinearSystemSolver, UnderDeterminedProblem) {
   auto x = prog.NewContinuousVariables<3>();
   prog.AddLinearConstraint(3 * x(0) + x(1) == 1 && x(0) + x(2) == 2);
 
-  SolutionResult result = prog.Solve();
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  const MathematicalProgramResult result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
   // The solution should minimize the norm ||x||₂
   // x_expected is computed as the solution to
   // [2*I -Aᵀ] * [x] = [0]
   // [ A   0 ]   [λ]   [b]
   Eigen::Vector3d x_expected(5.0 / 11, -4.0 / 11, 17.0 / 11);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, 1E-12,
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-12,
                               MatrixCompareType::absolute));
 }
 
 GTEST_TEST(testLinearSystemSolver, linearMatrixEqualityExample) {
   LinearMatrixEqualityExample example{};
-  example.prog()->Solve();
-  CheckSolver(*(example.prog()), LinearSystemSolver::id());
-  example.CheckSolution();
+  const auto result = Solve(*(example.prog()));
+  EXPECT_EQ(result.get_solver_id(), LinearSystemSolver::id());
+  example.CheckSolution(result);
 }
 }  // namespace test
 }  // namespace solvers

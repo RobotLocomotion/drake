@@ -3,6 +3,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -45,22 +46,26 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, FeasibilityCheck) {
 
   // [1 0.9;0.9 2] is diagonally dominant
   set_X_value(Eigen::Vector3d(1, 0.9, 2));
-  EXPECT_EQ(prog.Solve(), SolutionResult::kSolutionFound);
+  MathematicalProgramResult result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 
   // [1 -0.9; -0.9 2] is diagonally dominant
   set_X_value(Eigen::Vector3d(1, -0.9, 2));
-  EXPECT_EQ(prog.Solve(), SolutionResult::kSolutionFound);
+  result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 
   // [1 1.1; 1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, 1.1, 2));
-  auto result = prog.Solve();
-  EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
-              result == SolutionResult::kInfeasible_Or_Unbounded);
+  result = Solve(prog);
+  EXPECT_TRUE(
+      result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
+      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
   // [1 -1.1; -1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, -1.1, 2));
-  result = prog.Solve();
-  EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
-              result == SolutionResult::kInfeasible_Or_Unbounded);
+  result = Solve(prog);
+  EXPECT_TRUE(
+      result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
+      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
 }
 
 GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
@@ -88,19 +93,20 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
 
   auto solve_and_check = [&prog, &X](const Eigen::Vector3d& sol_expected,
                                      double tol) {
-    const auto result = prog.Solve();
-    if (prog.GetSolverId() && prog.GetSolverId().value() != SnoptSolver::id()) {
+    const auto result = Solve(prog);
+    if (result.get_solver_id() != SnoptSolver::id()) {
       // Do not check when we use SNOPT. It is known that our SnoptSolver
       // wrapper doesn't solve this problem correctly, see
       // https://github.com/RobotLocomotion/drake/pull/9382
       // TODO(hongkai.dai): fix the problem in SnoptSolver wrapper and enable
       // this test with Snopt.
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
-      EXPECT_TRUE(CompareMatrices(prog.GetSolution(VectorDecisionVariable<3>(
-                                      X(0, 1), X(0, 2), X(1, 2))),
-                                  sol_expected, tol));
+      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+      EXPECT_TRUE(CompareMatrices(
+          prog.GetSolution(VectorDecisionVariable<3>(X(0, 1), X(0, 2), X(1, 2)),
+                           result),
+          sol_expected, tol));
       // The matrix should be positive semidefinite.
-      const Eigen::Matrix3d X_sol = prog.GetSolution(X);
+      const Eigen::Matrix3d X_sol = prog.GetSolution(X, result);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
       EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -tol).all());
     }

@@ -7,6 +7,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/random_rotation.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::Vector3d;
 
@@ -220,8 +221,8 @@ GTEST_TEST(RotationTest, TestInnerFacetsAndHalfSpace) {
   prog.AddLinearConstraint(z.cast<symbolic::Expression>().sum() >= 1);
   prog.AddLinearConstraint(n.dot(x) >= d);
   prog.AddBoundingBoxConstraint(bmin, bmax, x);
-  SolutionResult sol_result = prog.Solve();
-  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
+  const MathematicalProgramResult result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 }
 
 // Test a number of closed-form solutions for the intersection of a box in the

@@ -113,6 +113,7 @@ drake_cc_library(
         "//math:autodiff",
         "//math:gradient",
         "//solvers:mathematical_program",
+        "//solvers:solve",
         "//systems/framework",
     ],
 )
