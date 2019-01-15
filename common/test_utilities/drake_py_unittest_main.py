@@ -100,9 +100,13 @@ if __name__ == '__main__':
              "client (non-batch), output may be mixed, so piping makes " +
              "the output more readable.")
     parser.add_argument(
-        "--drake_deprecation_action", type=str, default="error",
-        help="Action for Drake deprecation warnings. See " +
+        "--deprecation_action", type=str, default="once",
+        help="Action for any deprecation warnings. See " +
              "`warnings.simplefilter()`.")
+    parser.add_argument(
+        "--drake_deprecation_action", type=str, default="error",
+        help="Action for Drake deprecation warnings. Applied after " +
+             "--deprecation_action.")
     args, remaining = parser.parse_known_args()
     sys.argv = sys.argv[:1] + remaining
 
@@ -119,6 +123,9 @@ if __name__ == '__main__':
         sys.stdout.flush()
         sys.stdout = sys.stderr
 
+    # Ensure deprecation warnings are always shown at least once.
+    warnings.simplefilter(args.deprecation_action, DeprecationWarning)
+    # Handle Drake-specific deprecations.
     if has_pydrake:
         warnings.simplefilter(
             args.drake_deprecation_action, DrakeDeprecationWarning)
