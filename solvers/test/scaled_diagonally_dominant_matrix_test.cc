@@ -59,7 +59,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     prog.AddBoundingBoxConstraint(X_val.col(i), X_val.col(i), X.col(i));
   }
 
-  const auto result = Solve(prog, {}, {});
+  const auto result = Solve(prog);
   if (is_sdd) {
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
     // Since X = ∑ᵢⱼ Mⁱʲ according to the definition of scaled diagonally
@@ -120,7 +120,7 @@ bool IsMatrixSDD(const Eigen::Ref<Eigen::MatrixXd>& X) {
   prog.AddPositiveDiagonallyDominantMatrixConstraint(A);
   prog.AddBoundingBoxConstraint(1, std::numeric_limits<double>::infinity(), d);
 
-  const auto result = Solve(prog, {}, {});
+  const auto result = Solve(prog);
   return result.get_solution_result() ==
          solvers::SolutionResult::kSolutionFound;
 }
@@ -211,7 +211,7 @@ GTEST_TEST(SdsosTest, SdsosPolynomial) {
   }
   prog.AddLinearEqualityConstraint(p == p_expected);
 
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  const MathematicalProgramResult result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 }
 
@@ -232,7 +232,7 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
 
   prog.AddLinearEqualityConstraint(p == non_sdsos_poly);
 
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  const MathematicalProgramResult result = Solve(prog);
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);

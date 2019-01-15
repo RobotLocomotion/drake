@@ -13,7 +13,7 @@ namespace test {
 
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
-  const MathematicalProgramResult result = Solve(*(example->prog()), {}, {});
+  const MathematicalProgramResult result = Solve(*(example->prog()));
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
   example->CheckSolution(result);
 }
@@ -42,7 +42,7 @@ GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
   prog.AddLinearConstraint(3 * x(0) == 1 && 2 * x(0) + x(1) == 2 &&
         x(0) - x(1) == 0);
 
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  const MathematicalProgramResult result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(),
             SolutionResult::kInfeasibleConstraints);
   // The solution should minimize the error ||b - A * x||₂
@@ -64,7 +64,7 @@ GTEST_TEST(testLinearSystemSolver, UnderDeterminedProblem) {
   auto x = prog.NewContinuousVariables<3>();
   prog.AddLinearConstraint(3 * x(0) + x(1) == 1 && x(0) + x(2) == 2);
 
-  const MathematicalProgramResult result = Solve(prog, {}, {});
+  const MathematicalProgramResult result = Solve(prog);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
   // The solution should minimize the norm ||x||₂
   // x_expected is computed as the solution to
@@ -77,7 +77,7 @@ GTEST_TEST(testLinearSystemSolver, UnderDeterminedProblem) {
 
 GTEST_TEST(testLinearSystemSolver, linearMatrixEqualityExample) {
   LinearMatrixEqualityExample example{};
-  const auto result = Solve(*(example.prog()), {}, {});
+  const auto result = Solve(*(example.prog()));
   EXPECT_EQ(result.get_solver_id(), LinearSystemSolver::id());
   example.CheckSolution(result);
 }
