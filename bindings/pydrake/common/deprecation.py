@@ -165,10 +165,10 @@ def install_numpy_warning_filters(force=False):
         return
     _installed_numpy_warning_filters = True
     # Warnings specific to comparison with `dtype=object` should be raised to
-    # errors (#8315, #8491). Without them, NumPy will return effectively
-    # garbage values (e.g. comparison based on object ID): either a scalar bool
-    # or an array of bools (based on what objects are present and the NumPy
-    # version).
+    # errors (#8315, #8491). Without them, NumPy will swallow the errors and
+    # make a DeprecationWarning, while returning effectively garbage values
+    # (e.g. comparison based on object ID): either a scalar bool or an array of
+    # bools (based on what objects are present and the NumPy version).
     # N.B. Using a `module=` regex filter does not work, as the warning is
     # raised from C code, and thus inherits the calling module, which may not
     # be "numpy\..*" (numpy/numpy#10861).
@@ -177,6 +177,10 @@ def install_numpy_warning_filters(force=False):
     warnings.filterwarnings(
         "error", category=DeprecationWarning,
         message="elementwise == comparison failed")
+    # Error changed in 1.16.0
+    warnings.filterwarnings(
+        "error", category=DeprecationWarning,
+        message="elementwise comparison failed")
 
 
 warnings.simplefilter('once', DrakeDeprecationWarning)

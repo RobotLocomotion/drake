@@ -11,6 +11,7 @@ import pydrake.symbolic as sym
 import pydrake.common
 from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.util.containers import EqualToDict
+from pydrake.util.deprecation import install_numpy_warning_filters
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.
@@ -306,6 +307,14 @@ class TestSymbolicVariables(SymbolicTestCase):
 
 
 class TestSymbolicExpression(SymbolicTestCase):
+    def setUp(self):
+        SymbolicTestCase.setUp(self)
+        # For some reason, something in how `unittest` tries to scope warnings
+        # causes the previous filters to be lost. Re-install here.
+        # TODO(eric.cousineau): This used to be necessary for PY3-only, but
+        # with NumPy 1.16, it became PY2 too. Figure out why.
+        install_numpy_warning_filters(force=True)
+
     def _check_scalar(self, actual, expected):
         self.assertIsInstance(actual, sym.Expression)
         # Chain conversion to ensure equivalent treatment.
@@ -511,18 +520,6 @@ class TestSymbolicExpression(SymbolicTestCase):
         e_yv = np.array([e_y, e_y])
         # N.B. In some versions of NumPy, `!=` for dtype=object implies ID
         # comparison (e.g. `is`).
-        # N.B. If `__nonzero__` throws, then NumPy swallows the error and
-        # produces a DeprecationWarning, in addition to effectively garbage
-        # values. For this reason, `pydrake.symbolic` will automatically
-        # promote these warnings to errors.
-        if six.PY3:
-            # For some reason, something in how `unittest` tries to scope
-            # warnings causes the previous filters to be lost. Re-install
-            # here.
-            # TODO(eric.cousineau): Figure out better hook for this, or better
-            # way to restore warning filters from when everything's imported.
-            from pydrake.util.deprecation import install_numpy_warning_filters
-            install_numpy_warning_filters(force=True)
         # - All false.
         with self.assertRaises(DeprecationWarning):
             value = (e_xv == e_yv)
