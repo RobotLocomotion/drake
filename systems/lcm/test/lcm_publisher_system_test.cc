@@ -210,6 +210,37 @@ GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received_message, sample_data));
 }
 
+// Tests that per-step publish works as expected.
+GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  // Instantiate the "device under test" in per-step publishing mode.
+  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm);
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(kDim)));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(*dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
+  simulator.Initialize();
+
+  // Check that a publish was done (at time zero).
+  EXPECT_EQ(simulator.get_num_publishes(), 1);
+
+  // Ensure that the integrator takes at least a few steps.
+  for (double time = 0; time < 1; time += 0.25)
+    simulator.StepTo(time);
+
+  // Check that we get *exactly* the number of publishes desired: one (at
+  // initialization) plus another for each step.
+  EXPECT_EQ(simulator.get_num_publishes(), 1 + simulator.get_num_steps_taken());
+}
+
 // Tests that the published LCM message has the expected timestamps.
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
@@ -229,7 +260,11 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
   simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
   simulator.Initialize();
+
+  // Check that a publish was done (at time zero).
+  EXPECT_EQ(simulator.get_num_publishes(), 1);
 
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
@@ -240,12 +275,16 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
     EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
       channel_name).timestamp, expected_time);
   }
+
+  // Check that we get *exactly* the number of publishes desired (i.e., that
+  // no per-step publishing is being done).
+  EXPECT_EQ(simulator.get_num_publishes(), 3 /* 1 + floor(4 / 1.5) */);
 }
 
 // Tests that the published LCM message has the expected timestamps using the
 // deprecated set_publish_period() method.
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
-  const double kPublishPeriod = 1.5;  // Seconds between publications.
+  const double kPublishPeriod = 0.75;  // Seconds between publications.
 
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
@@ -265,17 +304,28 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
   simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
   simulator.Initialize();
 
-  for (double time = 0; time < 4; time += 0.01) {
-    simulator.StepTo(time);
-    EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
-    // Note that the expected time is in milliseconds.
-    const double expected_time =
-        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
-    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
-      channel_name).timestamp, expected_time);
-  }
+  // Check that one publish was done at time zero: the periodic and per-step
+  // triggered events are dispatched as one publish by the simulator.
+  EXPECT_EQ(simulator.get_num_publishes(), 1);
+
+  // Step the simulator to one second.
+  const double time = 1.0;
+  simulator.StepTo(time);
+  EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
+  // Note that the expected time is in milliseconds.
+  const double expected_time =
+      std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+  EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
+    channel_name).timestamp, expected_time);
+
+  // Check that we get *exactly* the number of publishes desired. One will
+  // happen at initialization, one will happen at time 0.75, and one will happen
+  // at time 1.0.
+  EXPECT_EQ(simulator.get_num_publishes(), 3);
+  EXPECT_EQ(simulator.get_num_steps_taken(), 2);
 }
 
 GTEST_TEST(LcmPublisherSystemTest, OwnedTranslatorTest) {

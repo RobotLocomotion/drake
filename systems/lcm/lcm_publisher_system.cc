@@ -68,25 +68,29 @@ LcmPublisherSystem::LcmPublisherSystem(
 
   set_name(make_name(channel_));
 
-  // Set the publish period, if nonzero.
-  auto publish_function = [this](const systems::Context<double>& context,
-                                 const systems::PublishEvent<double>&) {
+  // Construct the per-step publish function.
+  auto per_step_publish_function = [this](
+      const systems::Context<double>& context,
+      const systems::PublishEvent<double>&) {
     // TODO(edrumwri) Remove this code once set_publish_period(.) has been
     // removed; it exists so that one does not get both a per-step publish and
     // a periodic publish if a user constructs the publisher the "old" way
     // (construction followed by set_publish_period()).
-    if (this->disable_internal_publish_events_)
+    if (this->disable_internal_per_step_publish_events_)
       return;
 
     this->PublishInputAsLcmMessage(context);
   };
 
   if (publish_period > 0.0) {
+    this->disable_internal_per_step_publish_events_ = true;
     const double offset = 0.0;
-    this->DeclarePeriodicEvent(publish_period, offset,
-                               systems::PublishEvent<double>(publish_function));
+    this->DeclarePeriodicPublishEvent(
+        publish_period, offset,
+        &LcmPublisherSystem::PublishInputAsLcmMessage);
   } else {
-    this->DeclarePerStepEvent(systems::PublishEvent<double>(publish_function));
+    this->DeclarePerStepEvent(
+      systems::PublishEvent<double>(per_step_publish_function));
   }
 }
 
@@ -150,10 +154,10 @@ const std::string& LcmPublisherSystem::get_channel_name() const {
 // Takes the VectorBase from the input port of the context and publishes
 // it onto an LCM channel. This function is called automatically, as
 // necessary, at the requisite publishing period (if a positive publish was
-// passed to the constructor) or per a simulation step (if no publish
-// period or publish period = 0.0 was passed to the constructor). This
-// function has been made public so that LCM messages can be published
-// manually, as desired.
+// passed to the constructor), per a simulation step (if no publish
+// period or publish period = 0.0 was passed to the constructor), or as a result
+// of a "forced" publish. This function has been made public so that LCM
+// messages can be published manually, as desired.
 EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
     const Context<double>& context) const {
   SPDLOG_TRACE(drake::log(), "Publishing LCM {} message", channel_);
