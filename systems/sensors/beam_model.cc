@@ -38,7 +38,7 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
   // one.   Since probability_hit() is defined implicitly, this becomes the
   // inequality constraint:
   //   1 - probability_short() - probability_miss() - probability_uniform() ≥ 0.
-  typename SystemConstraint<T>::CalcCallback
+  ContextConstraintCalc<T>
       calc_event_probabilities_constraint =
           [](const Context<T>& context, VectorX<T>* value) {
             const auto* params = dynamic_cast<const BeamModelParams<T>*>(

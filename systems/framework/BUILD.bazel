@@ -552,6 +552,7 @@ drake_cc_library(
     srcs = ["system_constraint.cc"],
     hdrs = ["system_constraint.h"],
     deps = [
+        ":context",
         "//common:default_scalars",
         "//common:essential",
         "//common:symbolic",
