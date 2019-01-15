@@ -403,7 +403,7 @@ Vector3d DistancePairGeometry::WitnessPointOnSphere(
 void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
                                       const fcl::Sphered* sphere_B) {
   const SignedDistanceToPoint<double> sphere_B_to_point_Ao =
-      DistanceToPoint{id_B_, X_WB_, X_WA_.translation()}(*sphere_B);
+      DistanceToPoint {id_B_, X_WB_, X_WA_.translation()}(*sphere_B);
   const double distance = sphere_B_to_point_Ao.distance - sphere_A->radius;
   // Nb is the witness point on ∂B.
   const Vector3d& p_BNb = sphere_B_to_point_Ao.p_GN;
@@ -420,7 +420,7 @@ void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
 void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
                                       const fcl::Boxd* box_B) {
   SignedDistanceToPoint<double> box_B_to_point_Ao =
-      DistanceToPoint{id_B_, X_WB_, X_WA_.translation()}(*box_B);
+      DistanceToPoint {id_B_, X_WB_, X_WA_.translation()}(*box_B);
   const double distance = box_B_to_point_Ao.distance - sphere_A->radius;
   // Nb is the witness point on ∂B.
   const Vector3d& p_BNb = box_B_to_point_Ao.p_GN;
@@ -442,7 +442,7 @@ void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
 void DistancePairGeometry::operator()(const fcl::Boxd* box_A,
                                       const fcl::Sphered* sphere_B) {
   SignedDistanceToPoint<double> box_A_to_point_Bo =
-      DistanceToPoint{id_A_, X_WA_, X_WB_.translation()}(*box_A);
+      DistanceToPoint {id_A_, X_WA_, X_WB_.translation()}(*box_A);
   const double distance = box_A_to_point_Bo.distance - sphere_B->radius;
   // Na is the witness point on ∂A.
   const Vector3d& p_ANa = box_A_to_point_Bo.p_GN;
