@@ -126,6 +126,17 @@ class MeshcatVisualizer(LeafSystem):
                 trigger_type=TriggerType.kInitialization,
                 callback=on_initialize))
 
+    def _parse_name(self, name):
+        # Parse name, split on the first (required) occurence of `::` to get
+        # the source name, and let the rest be the frame name.
+        # TODO(eric.cousineau): Remove name parsing once #9128 is resolved.
+        delim = "::"
+        assert delim in name
+        pos = name.index(delim)
+        source_name = name[:pos]
+        frame_name = name[pos + len(delim):]
+        return source_name, frame_name
+
     def load(self):
         """
         Loads `meshcat` visualization elements.
@@ -143,7 +154,7 @@ class MeshcatVisualizer(LeafSystem):
         # Translate elements to `meshcat`.
         for i in range(load_robot_msg.num_links):
             link = load_robot_msg.link[i]
-            [source_name, frame_name] = link.name.split("::")
+            [source_name, frame_name] = self._parse_name(link.name)
 
             for j in range(link.num_geom):
                 geom = link.geom[j]
@@ -212,8 +223,8 @@ class MeshcatVisualizer(LeafSystem):
         for frame_i in range(pose_bundle.get_num_poses()):
             # SceneGraph currently sets the name in PoseBundle as
             #    "get_source_name::frame_name".
-            [source_name, frame_name] = pose_bundle.get_name(frame_i)\
-                .split("::")
+            [source_name, frame_name] = self._parse_name(
+                pose_bundle.get_name(frame_i))
             model_id = pose_bundle.get_model_instance_id(frame_i)
             # The MBP parsers only register the plant as a nameless source.
             # TODO(russt): Use a more textual naming convention here?
