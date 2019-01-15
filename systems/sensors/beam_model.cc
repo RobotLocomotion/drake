@@ -48,10 +48,10 @@ BeamModel<T>::BeamModel(int num_depth_readings, double max_range)
                           params->probability_miss() -
                           params->probability_uniform();
           };
-  this->AddConstraint(std::make_unique<SystemConstraint<T>>(
+  this->DeclareInequalityConstraint(
       calc_event_probabilities_constraint,
       SystemConstraintBounds(Vector1d(0), nullopt),
-      "event probabilities sum to one"));
+      "event probabilities sum to one");
 }
 
 template <typename T>

@@ -14,6 +14,12 @@ namespace {
 
 using Eigen::Vector2d;
 
+// A hollow shell of a System.
+class DummySystem final : public LeafSystem<double> {
+ public:
+  DummySystem() {}
+};
+
 GTEST_TEST(SystemConstraintTest, BoundsEqFactory) {
   auto dut = SystemConstraintBounds::Equality(2);
   EXPECT_EQ(dut.size(), 2);
@@ -65,6 +71,8 @@ GTEST_TEST(SystemConstraintTest, BoundsBadSizes) {
 
 // Just a simple test to call each of the public methods.
 GTEST_TEST(SystemConstraintTest, BasicTest) {
+  const DummySystem dummy_system;
+
   SystemConstraint<double>::CalcCallback calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
@@ -87,7 +95,8 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
 
   // Test equality constraint.
   SystemConstraint<double> equality_constraint(
-      calc, SystemConstraintBounds::Equality(1), "equality constraint");
+      &dummy_system, calc, SystemConstraintBounds::Equality(1),
+      "equality constraint");
   context->get_mutable_continuous_state_vector().SetAtIndex(1, 5.0);
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value[0], 5.0);
@@ -105,7 +114,7 @@ GTEST_TEST(SystemConstraintTest, BasicTest) {
 
   // Test inequality constraint.
   SystemConstraint<double> inequality_constraint(
-      calc2, { Eigen::Vector2d::Ones(), Eigen::Vector2d(4, 6) },
+      &dummy_system, calc2, { Eigen::Vector2d::Ones(), Eigen::Vector2d(4, 6) },
       "inequality constraint");
   EXPECT_TRUE(CompareMatrices(inequality_constraint.lower_bound(),
                               Eigen::Vector2d::Ones()));

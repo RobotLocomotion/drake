@@ -2196,7 +2196,7 @@ class LeafSystem : public System<T> {
       SystemConstraintBounds bounds,
       std::string description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        std::move(calc), std::move(bounds), std::move(description)));
+        this, std::move(calc), std::move(bounds), std::move(description)));
   }
 
   /// Derived-class event dispatcher for all simultaneous publish events

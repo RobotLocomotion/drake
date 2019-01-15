@@ -23,6 +23,12 @@ class Context;
 
 using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
 
+// Break the System <=> SystemConstraint physical dependency cycle.
+// SystemConstraint is decorated with a back-pointer to its owning System,
+// but that pointer is never dereferenced within this component.
+template <typename T>
+class System;
+
 /// The form of a SystemConstraint.
 enum class SystemConstraintType {
   kEquality = 0,  ///< The constraint is of the form f(x)=0.
@@ -112,7 +118,7 @@ class SystemConstraintBounds final {
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class SystemConstraint {
+class SystemConstraint final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
 
@@ -125,16 +131,21 @@ class SystemConstraint {
   using CalcCallback =
       std::function<void(const Context<T>& context, VectorX<T>* value)>;
 
-  /// Constructs a SystemConstraint.  Depending on the `bounds` it could be an
-  /// equality constraint f(x) = 0, or an inequality constraint lower_bound <=
-  /// f(x) <= upper_bound.
+  /// (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
+  /// could be an equality constraint f(x) = 0, or an inequality constraint
+  /// lower_bound <= f(x) <= upper_bound.
+  ///
+  /// Most users should call a LeafSystem method like DeclareEqualityConstraint
+  /// to create (and add) constraints, not call this constructor directly.
   ///
   /// @param description a human-readable description useful for debugging.
-  SystemConstraint(CalcCallback calc_function, SystemConstraintBounds bounds,
-                   std::string description)
-      : calc_function_(std::move(calc_function)),
+  SystemConstraint(const System<T>* system, CalcCallback calc_function,
+                   SystemConstraintBounds bounds, std::string description)
+      : system_(system),
+        calc_function_(std::move(calc_function)),
         bounds_(std::move(bounds)),
         description_(std::move(description)) {
+    DRAKE_DEMAND(system != nullptr);
   }
 
   /// Evaluates the function pointer passed in through the constructor,
@@ -173,6 +184,13 @@ class SystemConstraint {
     }
   }
 
+  /// Returns a reference to the System that owns this output port. Note that
+  /// for a constraint on a diagram this will be the diagram itself, never a
+  /// leaf system whose constraint was re-expressed.
+  const System<T>& get_system() const {
+    return *system_;
+  }
+
   // Accessor methods.
   const SystemConstraintBounds& bounds() const { return bounds_; }
   int size() const { return bounds_.size(); }
@@ -185,6 +203,7 @@ class SystemConstraint {
   const std::string& description() const { return description_; }
 
  private:
+  const System<T>* const system_;
   const CalcCallback calc_function_;
   const SystemConstraintBounds bounds_;
   const std::string description_;
