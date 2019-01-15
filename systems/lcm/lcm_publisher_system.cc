@@ -75,7 +75,7 @@ LcmPublisherSystem::LcmPublisherSystem(
     // removed; it exists so that one does not get both a per-step publish and
     // a periodic publish if a user constructs the publisher the "old" way
     // (construction followed by set_publish_period()).
-    if (this->publish_period_)
+    if (this->disable_internal_publish_events_)
       return;
 
     this->PublishInputAsLcmMessage(context);

@@ -216,10 +216,14 @@ class LcmPublisherSystem : public LeafSystem<double> {
   static std::string make_name(const std::string& channel);
 
   DRAKE_DEPRECATED("Pass publish period to constructor instead. This method "
-                   "will be removed after 5/20/19.")
+                   "will be removed after 4/14/19.")
   void set_publish_period(double period) {
-    DRAKE_DEMAND(!publish_period_);
-    publish_period_ = period;
+    if (disable_internal_publish_events_) {
+      SPDLOG_DEBUG(drake::log(), "LcmPublisherSystem::set_publish_period() "
+          "called multiple times. Multiple publish periods now registered "
+          "(did you mean to do this?)");
+    }
+    disable_internal_publish_events_ = true;
     const double offset = 0.0;
     this->DeclarePeriodicEvent(period, offset, systems::PublishEvent<double>(
         [this](const systems::Context<double>& context,
@@ -306,7 +310,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   drake::lcm::DrakeLcmInterface* const lcm_;
 
   // TODO(edrumwri) Remove this when set_publish_period() is removed.
-  drake::optional<double> publish_period_;
+  drake::optional<double> disable_internal_publish_events_;
 };
 
 }  // namespace lcm

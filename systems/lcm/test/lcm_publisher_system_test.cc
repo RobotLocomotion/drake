@@ -242,6 +242,42 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   }
 }
 
+// Tests that the published LCM message has the expected timestamps using the
+// deprecated set_publish_period() method.
+GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
+  const double kPublishPeriod = 1.5;  // Seconds between publications.
+
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  LcmtDrakeSignalTranslator translator(kDim);
+
+  // Instantiates the "device under test".
+  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  dut->set_publish_period(kPublishPeriod);
+#pragma GCC diagnostic pop
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  context->FixInputPort(kPortNumber,
+      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(kDim)));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(*dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.Initialize();
+
+  for (double time = 0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
+    // Note that the expected time is in milliseconds.
+    const double expected_time =
+        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
+    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
+      channel_name).timestamp, expected_time);
+  }
+}
+
 GTEST_TEST(LcmPublisherSystemTest, OwnedTranslatorTest) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "my_channel";
