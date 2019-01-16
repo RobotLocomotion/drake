@@ -228,6 +228,12 @@ class Class {
   /// This one takes a non-primitive type.
   void overloaded_method(const std::string&);
 
+  /// Different overload with same doc.
+  void overloaded_with_same_doc();
+
+  /// Different overload with same doc.
+  void overloaded_with_same_doc(int);
+
   /// Overloaded only by its const-ness.
   void get_foo();
 
