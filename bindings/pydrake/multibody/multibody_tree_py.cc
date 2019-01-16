@@ -690,6 +690,10 @@ void init_multibody_plant(py::module m) {
             py::arg("context"), doc.MultibodyPlant.CalcPotentialEnergy.doc)
         .def("CalcConservativePower", &Class::CalcConservativePower,
             py::arg("context"), doc.MultibodyPlant.CalcConservativePower.doc)
+        .def("GetPositionLowerLimits", &Class::GetPositionLowerLimits,
+            doc.MultibodyPlant.GetPositionLowerLimits.doc)
+        .def("GetPositionUpperLimits", &Class::GetPositionUpperLimits,
+            doc.MultibodyPlant.GetPositionUpperLimits.doc)
         .def("CalcMassMatrixViaInverseDynamics",
             [](const Class* self, const Context<T>& context) {
               MatrixX<T> H;
