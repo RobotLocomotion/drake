@@ -70,4 +70,6 @@ install(
 
 check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = ["metadata.py"],
+)
