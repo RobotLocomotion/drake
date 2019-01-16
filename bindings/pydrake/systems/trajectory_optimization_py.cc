@@ -69,7 +69,7 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           doc.MultipleShooting.AddRunningCost.doc_1args_g)
       .def("AddRunningCost",
           [](MultipleShooting& prog,
-               const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
             prog.AddRunningCost(g);
           },
           doc.MultipleShooting.AddRunningCost.doc_1args_constEigenMatrixBase)
@@ -83,13 +83,14 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           doc.MultipleShooting.AddEqualTimeIntervalsConstraints.doc)
       .def("AddDurationBounds", &MultipleShooting::AddDurationBounds,
           doc.MultipleShooting.AddDurationBounds.doc)
-      .def("AddFinalCost", py::overload_cast<const symbolic::Expression&>(
-                               &MultipleShooting::AddFinalCost),
+      .def("AddFinalCost",
+          py::overload_cast<const symbolic::Expression&>(
+              &MultipleShooting::AddFinalCost),
           doc.MultipleShooting.AddFinalCost.doc_1args_e)
       .def("AddFinalCost",
           py::overload_cast<
-               const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
-               &MultipleShooting::AddFinalCost),
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
+              &MultipleShooting::AddFinalCost),
           doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
       .def("AddInputTrajectoryCallback",
           &MultipleShooting::AddInputTrajectoryCallback,
@@ -99,20 +100,25 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           doc.MultipleShooting.AddStateTrajectoryCallback.doc)
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
           doc.MultipleShooting.SetInitialTrajectory.doc)
-      .def("GetSampleTimes", overload_cast_explicit<Eigen::VectorXd>(
-                                 &MultipleShooting::GetSampleTimes),
+      .def("GetSampleTimes",
+          overload_cast_explicit<Eigen::VectorXd>(
+              &MultipleShooting::GetSampleTimes),
           doc.MultipleShooting.GetSampleTimes.doc_0args)
       .def("GetInputSamples",
           [](const MultipleShooting& prog) { return prog.GetInputSamples(); },
-          doc.MultipleShooting.GetInputSamples.doc_0args)
+          doc.MultipleShooting.GetInputSamples.doc)
       .def("GetStateSamples",
           [](const MultipleShooting& prog) { return prog.GetStateSamples(); },
-          doc.MultipleShooting.GetStateSamples.doc_0args)
+          doc.MultipleShooting.GetStateSamples.doc)
       .def("ReconstructInputTrajectory",
-          &MultipleShooting::ReconstructInputTrajectory,
+          [](const MultipleShooting& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
           doc.MultipleShooting.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
-          &MultipleShooting::ReconstructStateTrajectory,
+          [](const MultipleShooting& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
           doc.MultipleShooting.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocation, MultipleShooting>(
@@ -123,10 +129,14 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           py::arg("minimum_timestep"), py::arg("maximum_timestep"),
           doc.DirectCollocation.ctor.doc)
       .def("ReconstructInputTrajectory",
-          &DirectCollocation::ReconstructInputTrajectory,
+          [](const DirectCollocation& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
           doc.DirectCollocation.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
-          &DirectCollocation::ReconstructStateTrajectory,
+          [](const DirectCollocation& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
           doc.DirectCollocation.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocationConstraint, solvers::Constraint,
@@ -158,10 +168,14 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       //      .def(py::init<const TimeVaryingLinearSystem<double>*,
       //                    const Context<double>&, int>())
       .def("ReconstructInputTrajectory",
-          &DirectTranscription::ReconstructInputTrajectory,
+          [](const DirectTranscription& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
           doc.DirectTranscription.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
-          &DirectTranscription::ReconstructStateTrajectory,
+          [](const DirectTranscription& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
           doc.DirectTranscription.ReconstructStateTrajectory.doc);
 }
 
