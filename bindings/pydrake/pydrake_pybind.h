@@ -198,6 +198,7 @@ overload.  Browse the documentation_pybind.h (described above) for details.
 Most commonly, the names will be `doc_1args`, `doc_3args`, etc.  Be sure that
 the pydrake binding's signature is consistent with the docstring argument
 count.
+- If two or more docstrings are the same, only one new symbol is introduced.
 - To suppress a Doxygen comment from mkdoc, add the custom Doxygen command
 `@exclude_from_pydrake_mkdoc{Explanatory text.}` to the API comment text.
 (This is useful to help dismiss unbound overloads, so that mkdoc's choice of
