@@ -375,7 +375,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the provided context.  */
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               FrameId frame_id,
-                              std::unique_ptr<GeometryInstance> geometry);
+                              std::unique_ptr<GeometryInstance> geometry) const;
 
   /** Registers a new geometry G for this source. This hangs geometry G on a
    previously registered geometry P (indicated by `geometry_id`). The pose of
@@ -405,7 +405,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    the provided context.  */
   GeometryId RegisterGeometry(systems::Context<T>* context, SourceId source_id,
                               GeometryId geometry_id,
-                              std::unique_ptr<GeometryInstance> geometry);
+                              std::unique_ptr<GeometryInstance> geometry) const;
 
   /** Registers a new _anchored_ geometry G for this source. This hangs geometry
    G from the world frame (W). Its pose is defined in that frame (i.e., `X_WG`).
@@ -441,7 +441,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
   void RemoveGeometry(systems::Context<T>* context, SourceId source_id,
-                      GeometryId geometry_id);
+                      GeometryId geometry_id) const;
 
   //@}
 
@@ -533,7 +533,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    than modifying %SceneGraph's model, it modifies the copy of the model stored
    in the provided context.  */
   void ExcludeCollisionsWithin(systems::Context<T>* context,
-                               const GeometrySet& set);
+                               const GeometrySet& set) const;
 
   /** Excludes geometry pairs from collision evaluation by updating the
    candidate pair set `C = C - P`, where `P = {(a, b)}, ∀ a ∈ A, b ∈ B` and
@@ -557,7 +557,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
    in the provided context.  */
   void ExcludeCollisionsBetween(systems::Context<T>* context,
                                 const GeometrySet& setA,
-                                const GeometrySet& setB);
+                                const GeometrySet& setB) const;
   //@}
 
  private:
