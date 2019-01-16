@@ -43,9 +43,8 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
       builder.AddSystem<examples::kuka_iiwa_arm::IiwaCommandSender>();
   auto iiwa_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_command>(
-          "IIWA_COMMAND", owned_lcm_.get()));
-  // IIWA driver won't respond faster than 200Hz.
-  iiwa_command_publisher->set_publish_period(0.005);
+          "IIWA_COMMAND", owned_lcm_.get(), 0.005
+          /* publish period: IIWA driver won't respond faster than 200Hz */));
   builder.ExportInput(iiwa_command_sender->get_position_input_port(),
                       "iiwa_position");
   builder.ExportInput(iiwa_command_sender->get_torque_input_port(),
@@ -83,9 +82,8 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
       builder.AddSystem<manipulation::schunk_wsg::SchunkWsgCommandSender>();
   auto wsg_command_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_schunk_wsg_command>(
-          "SCHUNK_WSG_COMMAND", owned_lcm_.get()));
-  // Schunk driver won't respond faster than 20Hz.
-  wsg_command_publisher->set_publish_period(0.05);
+          "SCHUNK_WSG_COMMAND", owned_lcm_.get(), 0.05
+          /* publish period: Schunk driver won't respond faster than 20Hz */));
   builder.ExportInput(wsg_command_sender->get_position_input_port(),
                       "wsg_position");
   builder.ExportInput(wsg_command_sender->get_force_limit_input_port(),

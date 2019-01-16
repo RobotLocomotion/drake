@@ -3,6 +3,7 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -81,13 +82,22 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = LcmPublisherSystem;
-    py::class_<Class, LeafSystem<double>>(m, "LcmPublisherSystem")
+    py::class_<Class, LeafSystem<double>> cls(m, "LcmPublisherSystem");
+    cls  // BR
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
-                 DrakeLcmInterface*>(),
+                 DrakeLcmInterface*, double>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
+            py::arg("publish_period") = 0.0,
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
             py::keep_alive<1, 3>(), doc.LcmPublisherSystem.ctor.doc)
-        .def("set_publish_period", &Class::set_publish_period,
+        .def("set_publish_period",
+            [](Class* self, double period) {
+              WarnDeprecated("set_publish_period() is deprecated");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+              self->set_publish_period(period);
+#pragma GCC diagnostic pop
+            },
             py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc);
   }
 

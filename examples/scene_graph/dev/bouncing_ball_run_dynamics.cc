@@ -129,9 +129,9 @@ int do_main() {
       image_array_lcm_publisher =
           builder.template AddSystem(systems::lcm::LcmPublisherSystem::Make<
               robotlocomotion::image_array_t>(
-              "DRAKE_RGBD_CAMERA_IMAGES", &lcm));
+              "DRAKE_RGBD_CAMERA_IMAGES", &lcm,
+              1. / FLAGS_render_fps /* publish period */));
       image_array_lcm_publisher->set_name("publisher");
-      image_array_lcm_publisher->set_publish_period(1. / FLAGS_render_fps);
 
       builder.Connect(
           image_to_lcm_image_array->image_array_t_msg_output_port(),

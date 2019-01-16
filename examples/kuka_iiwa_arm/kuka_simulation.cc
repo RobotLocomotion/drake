@@ -123,10 +123,9 @@ int DoMain() {
       base_builder->AddSystem<IiwaContactResultsToExternalTorque>(
           tree, iiwa_instances);
   auto status_pub = base_builder->AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   status_pub->set_name("status_publisher");
-  status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
   status_sender->set_name("status_sender");
 

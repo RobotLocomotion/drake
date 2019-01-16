@@ -105,13 +105,12 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 
   auto contact_results_publisher = builder->AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", lcm));
+          "CONTACT_RESULTS", lcm, 1.0 / 60 /* publish period */));
   contact_results_publisher->set_name("contact_results_publisher");
 
   builder->Connect(contact_results_port, contact_to_lcm->get_input_port(0));
   builder->Connect(contact_to_lcm->get_output_port(0),
                    contact_results_publisher->get_input_port());
-  contact_results_publisher->set_publish_period(1 / 60.0);
 
   return contact_results_publisher;
 }

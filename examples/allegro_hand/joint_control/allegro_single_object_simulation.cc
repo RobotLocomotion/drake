@@ -141,9 +141,8 @@ void DoMain() {
   hand_command_receiver.set_name("hand_command_receiver");
   auto& hand_status_pub = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_allegro_status>(
-          "ALLEGRO_STATUS", &lcm));
+          "ALLEGRO_STATUS", &lcm, kLcmStatusPeriod /* publish period */));
   hand_status_pub.set_name("hand_status_publisher");
-  hand_status_pub.set_publish_period(kLcmStatusPeriod);
   auto& status_sender =
       *builder.AddSystem<AllegroStatusSender>(kAllegroNumJoints);
   status_sender.set_name("status_sender");

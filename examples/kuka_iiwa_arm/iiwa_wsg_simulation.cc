@@ -169,10 +169,9 @@ int DoMain() {
   iiwa_command_receiver->set_name("iwwa_command_receiver");
 
   auto iiwa_status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_status_pub->set_name("iiwa_status_publisher");
-  iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
   iiwa_status_sender->set_name("iiwa_status_sender");
 
@@ -219,10 +218,10 @@ int DoMain() {
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
-          "SCHUNK_WSG_STATUS", &lcm));
+          "SCHUNK_WSG_STATUS", &lcm,
+          manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod
+          /* publish period */));
   wsg_status_pub->set_name("wsg_status_publisher");
-  wsg_status_pub->set_publish_period(
-      manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
   auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>();
   auto mbp_state_to_wsg_state = builder.AddSystem
@@ -249,23 +248,19 @@ int DoMain() {
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "EST_ROBOT_STATE", &lcm));
+          "EST_ROBOT_STATE", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_state_pub->set_name("iiwa_state_publisher");
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port());
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "OBJECT_STATE_EST", &lcm));
+          "OBJECT_STATE_EST", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   box_state_pub->set_name("box_state_publisher");
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_object_robot_state_msg(),
                   box_state_pub->get_input_port());
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);

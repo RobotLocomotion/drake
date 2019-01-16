@@ -78,18 +78,16 @@ int DoMain(void) {
           plant->get_tree());
   auto contact_results_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-          "CONTACT_RESULTS", &lcm));
+          "CONTACT_RESULTS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   builder.Connect(plant->get_output_port_contact_results(),
                   contact_viz->get_input_port(0));
   builder.Connect(contact_viz->get_output_port(0),
                   contact_results_publisher->get_input_port());
-  contact_results_publisher->set_publish_period(kIiwaLcmStatusPeriod);
 
   // Publish the mock Optitrack data over LCM.
   auto optitrack_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<optitrack::optitrack_frame_t>(
-          "OPTITRACK_FRAMES", &lcm));
-  optitrack_pub->set_publish_period(kIiwaLcmStatusPeriod);
+          "OPTITRACK_FRAMES", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   builder.Connect(plant->get_output_port_optitrack_frame(),
                   optitrack_pub->get_input_port());
 
@@ -110,9 +108,9 @@ int DoMain(void) {
 
     auto iiwa_status_pub = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
-            "IIWA_STATUS" + suffix, &lcm));
+            "IIWA_STATUS" + suffix, &lcm,
+            kIiwaLcmStatusPeriod /* publish period */));
     iiwa_status_pub->set_name("iiwa_status_publisher" + suffix);
-    iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
     builder.Connect(plant->get_output_port_iiwa_status(i),
                     iiwa_status_pub->get_input_port());
   }
@@ -126,10 +124,10 @@ int DoMain(void) {
     const std::string suffix = (num_wsg > 1) ? "_" + std::to_string(i) : "";
     auto wsg_status_pub = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
-            "SCHUNK_WSG_STATUS" + suffix, &lcm));
+            "SCHUNK_WSG_STATUS" + suffix, &lcm,
+            kIiwaLcmStatusPeriod /* publish period */));
     builder.Connect(plant->get_output_port_wsg_status(i),
                     wsg_status_pub->get_input_port());
-    wsg_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
     auto wsg_command_sub =
         builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(

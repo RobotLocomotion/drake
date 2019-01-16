@@ -194,10 +194,9 @@ int DoMain() {
   iiwa_command_receiver->set_name("iwwa_command_receiver");
 
   auto iiwa_status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_status_pub->set_name("iiwa_status_publisher");
-  iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>(kNumJoints);
   iiwa_status_sender->set_name("iiwa_status_sender");
 
@@ -225,8 +224,7 @@ int DoMain() {
       builder.AddSystem<OptitrackLcmFrameSender>(frame_map);
   auto optitrack_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<optitrack::optitrack_frame_t>(
-          "OPTITRACK_FRAMES", &lcm));
-  optitrack_pub->set_publish_period(kIiwaLcmStatusPeriod);
+          "OPTITRACK_FRAMES", &lcm, kIiwaLcmStatusPeriod /* publish period */));
 
   // Connect the systems related to tracking bodies.
   builder.Connect(model->get_output_port_kinematics_results(),
@@ -265,23 +263,19 @@ int DoMain() {
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "IIWA_STATE_EST", &lcm));
+          "IIWA_STATE_EST", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_state_pub->set_name("iiwa_state_publisher");
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port());
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "OBJECT_STATE_EST", &lcm));
+          "OBJECT_STATE_EST", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   box_state_pub->set_name("box_state_publisher");
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_box_robot_state_msg(),
                   box_state_pub->get_input_port());
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
 
   // Add contact viz.
@@ -293,14 +287,13 @@ int DoMain() {
 
     auto contact_results_publisher = builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-            "CONTACT_RESULTS", &lcm));
+            "CONTACT_RESULTS", &lcm, 0.01 /* publish period */));
     contact_results_publisher->set_name("contact_results_publisher");
 
     builder.Connect(model->get_output_port_contact_results(),
                     contact_viz->get_input_port(0));
     builder.Connect(contact_viz->get_output_port(0),
                     contact_results_publisher->get_input_port());
-    contact_results_publisher->set_publish_period(.01);
   }
 
   auto sys = builder.Build();
