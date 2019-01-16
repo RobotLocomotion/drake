@@ -43,20 +43,6 @@
       "Version": "2.6.1",
       "X-CMake-Find-Args": ["MODULE"]
     },
-    "PythonInterp": {
-      "Version": "@PYTHON_VERSION@",
-      "X-CMake-Find-Args": [
-        "EXACT",
-        "MODULE"
-      ]
-    },
-    "PythonLibs": {
-      "Version": "@PYTHON_VERSION@",
-      "X-CMake-Find-Args": [
-          "EXACT",
-          "MODULE"
-      ]
-    },
     "robotlocomotion-lcmtypes": {
       "Hints": ["@prefix@/lib/cmake/robotlocomotion-lcmtypes"],
       "X-CMake-Find-Args": ["CONFIG"]
@@ -117,7 +103,6 @@
     }
   },
   "X-CMake-Variables": {
-    "drake_PYTHON_DIRS": "${CMAKE_CURRENT_LIST_DIR}/../../python@PYTHON_VERSION@/site-packages",
     "drake_RESOURCE_ROOT": "${CMAKE_CURRENT_LIST_DIR}/../../../share/drake"
   },
   "X-CMake-Variables-Init": {
