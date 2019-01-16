@@ -1203,6 +1203,7 @@ drake_cc_googletest(
         ":linear_program_examples",
         ":mathematical_program",
         ":mathematical_program_test_util",
+        ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
