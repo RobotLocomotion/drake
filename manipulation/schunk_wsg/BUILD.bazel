@@ -58,10 +58,17 @@ drake_cc_vector_gen_library(
     visibility = [":__subpackages__"],
 )
 
-drake_cc_vector_gen_library(
+drake_cc_library(
     name = "schunk_wsg_command",
-    srcs = ["schunk_wsg_command.named_vector"],
+    srcs = ["gen/schunk_wsg_command.cc"],
+    hdrs = ["gen/schunk_wsg_command.h"],
     visibility = [":__subpackages__"],
+    deps = [
+        "//common:dummy_value",
+        "//common:essential",
+        "//common:symbolic",
+        "//systems/framework:vector",
+    ],
 )
 
 drake_cc_library(

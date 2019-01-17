@@ -109,10 +109,9 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
-  IiwaCommandTranslator iiwa_cmd_to_vec(num_joints);
   auto command_sub = base_builder->AddSystem(
-      std::make_unique<systems::lcm::LcmSubscriberSystem>(
-          "IIWA_COMMAND", iiwa_cmd_to_vec, &lcm));
+      MakeIiwaCommandLcmSubscriberSystem(
+          num_joints, "IIWA_COMMAND", &lcm));
   command_sub->set_name("command_subscriber");
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
@@ -130,7 +129,7 @@ int DoMain() {
   status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(),
-                        command_receiver->get_input_port(0));
+                        command_receiver->GetInputPort("command_message"));
   base_builder->Connect(command_receiver->get_commanded_state_output_port(),
                         controller->get_input_port_desired_state());
   base_builder->Connect(plant->get_output_port(0),

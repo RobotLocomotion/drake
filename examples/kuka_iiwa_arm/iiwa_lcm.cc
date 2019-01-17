@@ -64,10 +64,13 @@ void IiwaCommand<T>::set_joint_torque(const VectorX<T>& torque) {
   this->values().tail(num_joints_) = torque;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 IiwaCommandTranslator::IiwaCommandTranslator(int num_joints)
     : systems::lcm::LcmAndVectorBaseTranslator(
           IiwaCommand<double>(num_joints).size()),
       num_joints_(num_joints) {}
+#pragma GCC diagnostic pop
 
 void IiwaCommandTranslator::Deserialize(
     const void* lcm_message_bytes, int lcm_message_length,
@@ -108,12 +111,16 @@ IiwaCommandTranslator::AllocateOutputVector() const {
 }
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
-    : num_joints_(num_joints), translator_(num_joints) {
+    : num_joints_(num_joints) {
   lcmt_iiwa_command uninitialized_message{};
   uninitialized_message.utime =
       static_cast<uint64_t>(IiwaCommand<double>::kUnitializedTime);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) Remove this input port after 2019-03-01.
   this->DeclareVectorInputPort("command_vector",
                                IiwaCommand<double>(num_joints));
+#pragma GCC diagnostic pop
   this->DeclareAbstractInputPort(
       "command_message",
       systems::Value<lcmt_iiwa_command>(uninitialized_message));
@@ -149,14 +156,26 @@ void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
       this->template EvalVectorInput<IiwaCommand>(context, 0);
 
   // If the vector input port is not wired, try the abstract value one.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   IiwaCommand<double> decoded_command(num_joints_);
+#pragma GCC diagnostic pop
   if (!command) {
     const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
     DRAKE_THROW_UNLESS(input != nullptr);
     const auto& command_msg = input->GetValue<lcmt_iiwa_command>();
     std::vector<uint8_t> bytes(command_msg.getEncodedSize());
-    command_msg.encode(bytes.data(), 0, bytes.size());
-    translator_.Deserialize(bytes.data(), bytes.size(), &decoded_command);
+    const int encoded_size = command_msg.encode(bytes.data(), 0, bytes.size());
+    DRAKE_DEMAND(encoded_size == static_cast<int>(bytes.size()));
+    if (command_msg.num_joints == 0) {
+      // This can happen if we haven't received a message yet.
+      return;
+    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const IiwaCommandTranslator translator(num_joints_);
+#pragma GCC diagnostic pop
+    translator.Deserialize(bytes.data(), bytes.size(), &decoded_command);
     command = &decoded_command;
   }
   DRAKE_THROW_UNLESS(command);

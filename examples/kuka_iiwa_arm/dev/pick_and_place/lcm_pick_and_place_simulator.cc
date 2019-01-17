@@ -93,14 +93,13 @@ int DoMain(void) {
 
   // Add LCM subscribers/publishers for the iiwa arms.
   const int num_iiwa{plant->num_iiwa()};
-  kuka_iiwa_arm::IiwaCommandTranslator iiwa_cmd_to_vec;
   for (int i = 0; i < num_iiwa; ++i) {
     // All LCM traffic for this arm will occur on channels that end with the
     // suffix specified below.
     const std::string suffix = (num_iiwa > 1) ? "_" + std::to_string(i) : "";
     auto iiwa_command_sub =
-        builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
-            "IIWA_COMMAND" + suffix, iiwa_cmd_to_vec, &lcm));
+        builder.AddSystem(MakeIiwaCommandLcmSubscriberSystem(
+            kIiwaArmNumJoints, "IIWA_COMMAND" + suffix, &lcm));
 
     iiwa_command_sub->set_name("iiwa_command_subscriber" + suffix);
     builder.Connect(iiwa_command_sub->get_output_port(),
@@ -116,7 +115,6 @@ int DoMain(void) {
   }
 
   // Add LCM subscribers/publishers for the Schunk grippers.
-  manipulation::schunk_wsg::SchunkWsgCommandTranslator wsg_cmd_to_vec;
   const int num_wsg{plant->num_wsg()};
   for (int i = 0; i < num_wsg; ++i) {
     // All LCM traffic for this gripper will occur on channels that end with the
@@ -130,8 +128,8 @@ int DoMain(void) {
                     wsg_status_pub->get_input_port());
 
     auto wsg_command_sub =
-        builder.AddSystem(std::make_unique<systems::lcm::LcmSubscriberSystem>(
-            "SCHUNK_WSG_COMMAND" + suffix, wsg_cmd_to_vec, &lcm));
+        builder.AddSystem(systems::lcm::LcmSubscriberSystem::MakeFixedSize(
+            lcmt_schunk_wsg_command{}, "SCHUNK_WSG_COMMAND" + suffix, &lcm));
     builder.Connect(wsg_command_sub->get_output_port(),
                     plant->get_input_port_wsg_command(i));
   }
