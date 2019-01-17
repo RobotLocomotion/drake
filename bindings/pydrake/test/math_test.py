@@ -98,6 +98,7 @@ class TestMath(unittest.TestCase):
         # - Constructors.
         X_I = np.eye(4)
         check_equality(mut.RigidTransform(), X_I)
+        check_equality(mut.RigidTransform(other=mut.RigidTransform()), X_I)
         R_I = mut.RotationMatrix()
         p_I = np.zeros(3)
         rpy_I = mut.RollPitchYaw(0, 0, 0)
@@ -131,6 +132,8 @@ class TestMath(unittest.TestCase):
     def test_rotation_matrix(self):
         # - Constructors.
         R = mut.RotationMatrix()
+        self.assertTrue(np.allclose(
+            mut.RotationMatrix(other=R).matrix(), np.eye(3)))
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
         self.assertTrue(np.allclose(
             mut.RotationMatrix.Identity().matrix(), np.eye(3)))
@@ -152,6 +155,8 @@ class TestMath(unittest.TestCase):
     def test_roll_pitch_yaw(self):
         # - Constructors.
         rpy = mut.RollPitchYaw(rpy=[0, 0, 0])
+        self.assertTrue(np.allclose(
+            mut.RollPitchYaw(other=rpy).vector(), [0, 0, 0]))
         self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         rpy = mut.RollPitchYaw(roll=0, pitch=0, yaw=0)
         self.assertTupleEqual(
