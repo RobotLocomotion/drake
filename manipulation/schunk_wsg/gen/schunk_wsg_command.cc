@@ -1,7 +1,7 @@
 #include "drake/manipulation/schunk_wsg/gen/schunk_wsg_command.h"
 
-// GENERATED FILE DO NOT EDIT
-// See drake/tools/lcm_vector_gen.py.
+// This file was originally created by drake/tools/lcm_vector_gen.py;
+// we have committed it to git in order to add deprecation warnings.
 
 namespace drake {
 namespace manipulation {

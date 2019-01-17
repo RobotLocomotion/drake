@@ -21,12 +21,14 @@ namespace schunk_wsg {
 /// its vectorized representation, SchunkWsgCommand. This is intended
 /// to be used with systems::lcm::LcmPublisherSystem and
 /// systems::lcm::LcmSubscriberSystem.
-// TODO(siyuan.feng@tri.global) remove this with #10149 is resolved.
 class SchunkWsgCommandTranslator
     : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandTranslator)
 
+  // TODO(jwnimmer-tri) Remove this class after 2019-03-01.
+  // There is no replacement -- these objects should never be needed anymore.
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
   SchunkWsgCommandTranslator() : LcmAndVectorBaseTranslator(3) {}
 
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
@@ -46,22 +48,23 @@ class SchunkWsgCommandTranslator
 };
 
 /// Handles the command for the Schunk WSG gripper from a LcmSubscriberSystem.
-/// It has two input ports for the lcmt_schunk_wsg_command message itself and
-/// a vectorized version (SchunkWsgCommand) of the message. Note, only one of
-/// the inputs should be connected. However, if both are connected, the
-/// message port will be ignored. It has two output ports: one for the
-/// commanded finger position represented as the desired distance between the
-/// fingers in meters, and one for the commanded force limit.
-/// The commanded position and force limit are scalars
+///
+/// It has two input ports: the "command_message" for lcmt_schunk_wsg_command
+/// abstract values, and "command_vector" for SchunkWsgCommand. Only one of the
+/// inputs should be connected. However, if both are connected, the message
+/// port will be ignored.  The "command_vector" port is deprecated and will be
+/// removed on 2019-03-01.
+///
+/// It has two output ports: one for the commanded finger position represented
+/// as the desired distance between the fingers in meters, and one for the
+/// commanded force limit.  The commanded position and force limit are scalars
 /// (BasicVector<double> of size 1).
 ///
 /// @system{ SchunkWsgCommandReceiver,
-///   @input_port{command_vector},
+///   @input_port{command_vector (deprecated)},
 ///   @input_port{command_message},
 ///   @output_port{position}
 ///   @output_port{force_limit} }
-// TODO(siyuan.feng@tri.global) remove the vector input version after #10149 is
-// resolved.
 class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
@@ -92,7 +95,6 @@ class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
   void EvalInput(const systems::Context<double>& context,
                  SchunkWsgCommand<double>* result) const;
 
-  const SchunkWsgCommandTranslator translator_;
   const double initial_position_{};
   const double initial_force_{};
 };

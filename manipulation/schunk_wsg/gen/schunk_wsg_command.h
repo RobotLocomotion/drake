@@ -1,7 +1,7 @@
 #pragma once
 
-// GENERATED FILE DO NOT EDIT
-// See drake/tools/lcm_vector_gen.py.
+// This file was originally created by drake/tools/lcm_vector_gen.py;
+// we have committed it to git in order to add deprecation warnings.
 
 #include <cmath>
 #include <limits>
@@ -13,6 +13,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
@@ -53,10 +54,13 @@ class SchunkWsgCommand final : public drake::systems::BasicVector<T> {
   /// An abbreviation for our row index constants.
   typedef SchunkWsgCommandIndices K;
 
+  // TODO(jwnimmer-tri) Remove this class after 2019-03-01.
+  // There is no replacement -- these objects should never be needed anymore.
   /// Default constructor.  Sets all rows to their default value:
   /// @arg @c utime defaults to 0.0 microsecond.
   /// @arg @c target_position_mm defaults to 0.0 mm.
   /// @arg @c force defaults to 0.0 N.
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
   SchunkWsgCommand() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_utime(0.0);
     this->set_target_position_mm(0.0);
@@ -93,7 +97,12 @@ class SchunkWsgCommand final : public drake::systems::BasicVector<T> {
     this->set_force(symbolic::Variable("force"));
   }
 
-  SchunkWsgCommand<T>* DoClone() const final { return new SchunkWsgCommand; }
+  SchunkWsgCommand<T>* DoClone() const final {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return new SchunkWsgCommand;
+#pragma GCC diagnostic pop
+  }
 
   /// @name Getters and Setters
   //@{

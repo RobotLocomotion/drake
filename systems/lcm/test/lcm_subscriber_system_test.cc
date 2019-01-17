@@ -132,7 +132,7 @@ struct SampleData {
   const lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
   void MockPublish(
-      drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) {
+      drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
     const int num_bytes = value.getEncodedSize();
     std::vector<uint8_t> buffer(num_bytes);
     value.encode(buffer.data(), 0, num_bytes);
@@ -154,6 +154,32 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
 
   // MockLcm produces a sample message.
   SampleData sample_data;
+  sample_data.MockPublish(&lcm, channel_name);
+
+  // Verifies that the dut produces the output message.
+  EvalOutputHelper(*dut, context.get(), output.get());
+
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
+// Tests LcmSubscriberSystem using a fixed-size Serializer.
+GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
+  drake::lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  const SampleData sample_data;
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::MakeFixedSize(
+      sample_data.value, channel_name, &lcm);
+
+  // Establishes the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // MockLcm produces a sample message.
   sample_data.MockPublish(&lcm, channel_name);
 
   // Verifies that the dut produces the output message.

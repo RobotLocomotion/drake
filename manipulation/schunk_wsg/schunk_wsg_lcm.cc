@@ -51,7 +51,11 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
       "force_limit", BasicVector<double>(1),
       &SchunkWsgCommandReceiver::CalcForceLimitOutput);
 
+  // TODO(jwnimmer-tri) Remove this input port after 2019-03-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   SchunkWsgCommand<double> uninitialized_vector;
+#pragma GCC diagnostic pop
   this->DeclareVectorInputPort("command_vector", uninitialized_vector);
 
   lcmt_schunk_wsg_command uninitialized_message{};
@@ -67,14 +71,21 @@ void SchunkWsgCommandReceiver::EvalInput(
       this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
 
   // Maybe the vector input is not wired, try abstract input next.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   SchunkWsgCommand<double> decoded_command;
+#pragma GCC diagnostic pop
   if (!wsg_command) {
     const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
     DRAKE_THROW_UNLESS(input != nullptr);
     const auto& command_msg = input->GetValue<lcmt_schunk_wsg_command>();
     std::vector<uint8_t> bytes(command_msg.getEncodedSize());
     command_msg.encode(bytes.data(), 0, bytes.size());
-    translator_.Deserialize(bytes.data(), bytes.size(), &decoded_command);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const SchunkWsgCommandTranslator translator;
+#pragma GCC diagnostic pop
+    translator.Deserialize(bytes.data(), bytes.size(), &decoded_command);
     wsg_command = &decoded_command;
   }
   DRAKE_THROW_UNLESS(wsg_command != nullptr);
@@ -84,11 +95,15 @@ void SchunkWsgCommandReceiver::EvalInput(
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const SchunkWsgCommand<double> default_command;
   SchunkWsgCommand<double> wsg_command;
+#pragma GCC diagnostic pop
   EvalInput(context, &wsg_command);
 
   double target_position = initial_position_;
-  if (wsg_command.utime() != SchunkWsgCommand<double>().utime()) {
+  if (wsg_command.utime() != default_command.utime()) {
     target_position = wsg_command.target_position_mm() / 1e3;
     if (std::isnan(target_position)) {
       target_position = 0;
@@ -100,11 +115,15 @@ void SchunkWsgCommandReceiver::CalcPositionOutput(
 
 void SchunkWsgCommandReceiver::CalcForceLimitOutput(
     const Context<double>& context, BasicVector<double>* output) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const SchunkWsgCommand<double> default_command;
   SchunkWsgCommand<double> wsg_command;
+#pragma GCC diagnostic pop
   EvalInput(context, &wsg_command);
 
   double force_limit = initial_force_;
-  if (wsg_command.utime() != SchunkWsgCommand<double>().utime()) {
+  if (wsg_command.utime() != default_command.utime()) {
     force_limit = wsg_command.force();
   }
 
