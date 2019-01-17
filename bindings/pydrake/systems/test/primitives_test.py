@@ -89,29 +89,43 @@ class TestGeneral(unittest.TestCase):
         source = builder.AddSystem(ConstantVectorSource([kValue]))
         kSize = 1
         integrator = builder.AddSystem(Integrator(kSize))
-        logger = builder.AddSystem(SignalLogger(kSize))
+        logger_per_step = builder.AddSystem(SignalLogger(kSize))
         builder.Connect(source.get_output_port(0),
                         integrator.get_input_port(0))
         builder.Connect(integrator.get_output_port(0),
-                        logger.get_input_port(0))
+                        logger_per_step.get_input_port(0))
 
         # Add a redundant logger via the helper method.
-        logger2 = LogOutput(integrator.get_output_port(0), builder)
+        logger_per_step_2 = LogOutput(integrator.get_output_port(0), builder)
+
+        # Add a periodic logger
+        logger_periodic = builder.AddSystem(SignalLogger(kSize))
+        kPeriod = 0.1
+        logger_periodic.set_publish_period(kPeriod)
+        builder.Connect(integrator.get_output_port(0),
+                        logger_periodic.get_input_port(0))
 
         diagram = builder.Build()
         simulator = Simulator(diagram)
+        kTime = 1.
+        simulator.StepTo(kTime)
 
-        simulator.StepTo(1)
-
-        t = logger.sample_times()
-        x = logger.data()
+        # Verify outputs of the every-step logger
+        t = logger_per_step.sample_times()
+        x = logger_per_step.data()
 
         self.assertTrue(t.shape[0] > 2)
         self.assertTrue(t.shape[0] == x.shape[1])
         self.assertAlmostEqual(x[0, -1], t[-1]*kValue, places=2)
-        np.testing.assert_array_equal(x, logger2.data())
+        np.testing.assert_array_equal(x, logger_per_step_2.data())
 
-        logger.reset()
+        # Verify outputs of the periodic logger
+        t = logger_periodic.sample_times()
+        x = logger_periodic.data()
+        # Should log exactly once every kPeriod, up to and including kTime.
+        self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
+
+        logger_per_step.reset()
 
     def test_linear_affine_system(self):
         # Just make sure linear system is spelled correctly.
