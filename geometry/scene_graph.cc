@@ -175,7 +175,7 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, FrameId frame_id,
-    std::unique_ptr<GeometryInstance> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) const {
   auto* g_context = static_cast<GeometryContext<T>*>(context);
   auto& g_state = g_context->get_mutable_geometry_state();
   return g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
@@ -193,7 +193,7 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance> geometry) {
+    std::unique_ptr<GeometryInstance> geometry) const {
   auto* g_context = static_cast<GeometryContext<T>*>(context);
   auto& g_state = g_context->get_mutable_geometry_state();
   return g_state.RegisterGeometryWithParent(source_id, geometry_id,
@@ -216,7 +216,7 @@ void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
 
 template <typename T>
 void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
-                                   GeometryId geometry_id) {
+                                   GeometryId geometry_id) const {
   auto* g_context = static_cast<GeometryContext<T>*>(context);
   auto& g_state = g_context->get_mutable_geometry_state();
   g_state.RemoveGeometry(source_id, geometry_id);
@@ -251,8 +251,8 @@ void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
 }
 
 template <typename T>
-void SceneGraph<T>::ExcludeCollisionsWithin(Context<T>* context,
-                                            const GeometrySet& geometry_set) {
+void SceneGraph<T>::ExcludeCollisionsWithin(
+    Context<T>* context, const GeometrySet& geometry_set) const {
   auto* g_context = static_cast<GeometryContext<T>*>(context);
   auto& g_state = g_context->get_mutable_geometry_state();
   g_state.ExcludeCollisionsWithin(geometry_set);
@@ -268,7 +268,7 @@ void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
 template <typename T>
 void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
                                              const GeometrySet& setA,
-                                             const GeometrySet& setB) {
+                                             const GeometrySet& setB) const {
   auto* g_context = static_cast<GeometryContext<T>*>(context);
   auto& g_state = g_context->get_mutable_geometry_state();
   g_state.ExcludeCollisionsBetween(setA, setB);
