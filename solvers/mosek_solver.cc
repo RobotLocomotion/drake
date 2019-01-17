@@ -768,6 +768,9 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
     DRAKE_ASSERT(initial_guess->size() == prog.num_vars());
     MSKint32t num_mosek_vars{0};
     if (rescode == MSK_RES_OK) {
+      // num_mosek_vars is guaranteed to be no less than prog.num_vars(), as we
+      // can add slack variables when we construct Mosek constraints. For
+      // example, when we call AddSecondOrderConeConstraints.
       rescode = MSK_getnumvar(task, &num_mosek_vars);
     }
     if (rescode == MSK_RES_OK) {

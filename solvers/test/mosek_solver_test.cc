@@ -201,9 +201,8 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
 GTEST_TEST(MosekSolver, TestInitialGuess) {
   // Mosek allows to set initial guess for integer/binary variables.
   // Solve the following mixed-integer problem
-  // Find a point C on the line segment A1A2, A2A3, A3A4, A4A1 such that the
-  // distance from
-  // the distance C to the point D = (0, 0) is minimized.
+  // Find a point C on one of the line segment A1A2, A2A3, A3A4, A4A1 such that
+  // the distance from the point C to the point D = (0, 0) is minimized, where
   // A1 = (-1, 0), A2 = (0, 1), A3 = (2, 0), A4 = (1, -0.5)
   MathematicalProgram prog;
   auto lambda = prog.NewContinuousVariables<5>();
