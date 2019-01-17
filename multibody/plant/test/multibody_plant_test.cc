@@ -2301,6 +2301,11 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 
   plant.Finalize();
 
+  // Check link 0 is anchored, and link 1 is not.
+  EXPECT_TRUE(plant.IsAnchored(plant.GetBodyByName("iiwa_link_0", arm_model)));
+  EXPECT_FALSE(
+      plant.IsAnchored(plant.GetBodyByName("iiwa_link_1", arm_model)));
+
   auto context = plant.CreateDefaultContext();
 
   // Initialize the pose X_OM of the mug frame M in the objects table frame O.
