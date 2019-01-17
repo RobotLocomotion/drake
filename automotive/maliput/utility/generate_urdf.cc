@@ -33,7 +33,6 @@ void GenerateUrdfFile(const api::RoadGeometry* road_geometry,
   </joint>
 
   <link name="surface">
-    <inertial/>
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
