@@ -176,7 +176,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 8.0.0
  * MOSEK 8.1
- * SNOPT 7.6
+ * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
    solvers/test/snopt_solver_test.cc.
@@ -240,8 +240,8 @@ Using your own source archive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
-   named ``snopt7.6.tar.gz``).
-2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.6.tar.gz``
+   named ``snopt7.4.tar.gz``).
+2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.4.tar.gz``
 
 Using the RobotLocomotion git repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
