@@ -1,4 +1,6 @@
-#include "drake/systems/primitives/gain-inl.h"
+/* clang-format off to disable clang-format-includes */
+#include "drake/systems/primitives/gain.h"
+/* clang-format on */
 
 #include <memory>
 #include <stdexcept>
