@@ -16,23 +16,20 @@ of the following:
 * ``status``: PRs only.  Indicates the status of the PR.
 
 Please only assign labels if you are reasonably confident they are correct.
-The Drake development team will apply appropriate labels to issues during
-the weekly scrub.
+The Drake development team will apply appropriate labels later as needed.
 
 Owner
 =====
 
-All GitHub issues should have an owner. The Platform Reviewer should check once
-per day that `all unassigned issues
-<https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee>`_
-have an appropriate owner.
+Every issue must have at least one owner assigned.
+
+.. _issues-team:
 
 Team
 ====
 
-Every issue must have at least one ``team`` label. If no team agrees to own an
-issue, the issue will be closed with an explanation.  The teams, their leads,
-and their responsibilities are:
+Every issue must have at least one ``team`` label. The teams, their leads, and
+their responsibilities are:
 
 - ``automotive``
 
@@ -66,15 +63,9 @@ and their responsibilities are:
 
   responsibilities: MIT CSAIL research lab / MIT courses
 
-Type
-====
-Every issue must have at least one ``type``, and typically should have exactly
-one. Issues that require a code change will typically have type ``bug``,
-``feature request``, or ``cleanup``. There are a number of niche types for
-other kinds of issues, and the exact set is expected to evolve over time.
-
 Priority
 ========
+
 The ``emergency`` priority indicates that the owning team should not work
 on anything else until the issue is resolved.
 
