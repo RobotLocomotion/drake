@@ -170,7 +170,9 @@ PYBIND11_MODULE(primitives, m) {
         .def("sample_times", &SignalLogger<T>::sample_times,
             doc.SignalLogger.sample_times.doc)
         .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
-        .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
+        .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc)
+        .def("set_publish_period", &SignalLogger<T>::set_publish_period,
+             doc.SignalLogger.set_publish_period.doc);
 
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
