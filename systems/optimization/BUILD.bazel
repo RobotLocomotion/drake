@@ -48,6 +48,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/framework:leaf_system",
+        "@gtest//:without_main",
     ],
 )
 
