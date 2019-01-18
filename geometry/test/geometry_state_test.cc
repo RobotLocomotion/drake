@@ -997,6 +997,27 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   Isometry3<double> X_WG = X_WF_.back() * X_FG_.back();
   EXPECT_TRUE(CompareMatrices(gs_tester_.get_geometry_world_poses()[0].matrix(),
                               X_WG.matrix()));
+
+  // Confirm that, post removal, updating poses still works.
+  EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
+
+  // Adding a new geometry should bring the number of total geometries back to
+  // the original count.
+  GeometryId added_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                    make_unique<Sphere>(1), "newest"));
+  const InternalGeometry& added_geo = gs_tester_.get_geometries().at(added_id);
+  // Highest index should be number of geometries - 1.
+  EXPECT_EQ(added_geo.index(),
+            GeometryIndex(single_tree_total_geometry_count() - 1));
+
+  // Adding proximity role to the new geometry brings the total number of
+  // dynamic geometries with proximity roles back up to the original value.
+  geometry_state_.AssignRole(source_id_, added_id, ProximityProperties());
+  // Only dynamic geometries have this index; highest index is total number
+  EXPECT_EQ(added_geo.proximity_index(),
+            ProximityIndex(single_tree_dynamic_geometry_count() - 1));
 }
 
 // Tests the RemoveGeometry functionality in which the geometry removed has
