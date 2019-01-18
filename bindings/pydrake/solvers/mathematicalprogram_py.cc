@@ -306,9 +306,9 @@ PYBIND11_MODULE(mathematicalprogram, m) {
                     vars.size(), func, lb, ub, description),
                 vars);
           },
-          py::arg("func"), py::arg("vars"), py::arg("lb"), py::arg("ub"),
+          py::arg("func"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           py::arg("description") = "",
-          doc.MathematicalProgram.AddConstraint.doc_1args_binding)
+          "Adds a constraint using a Python function.")
       .def("AddConstraint",
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
