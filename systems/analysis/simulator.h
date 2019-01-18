@@ -1240,7 +1240,8 @@ bool Simulator<T>::IntegrateContinuousState(
       break;
 
     case IntegratorBase<T>::kTimeHasAdvanced:
-      // Verify that an event time was not reached.
+      // If an event time was reached, indicate as such by returning
+      // `true`. Otherwise, return `false` to indicate just advancement of time.
       return (tf >= next_update_time || tf >= next_publish_time);
       break;
 
