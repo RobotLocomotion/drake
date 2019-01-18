@@ -190,6 +190,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
   const std::string& get_name(GeometryId geometry_id) const;
 
+  /** Implementation of SceneGraphInspector::GetShape().  */
+  const Shape& GetShape(GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::X_FG().  */
   const Isometry3<double>& GetPoseInFrame(GeometryId geometry_id) const;
 

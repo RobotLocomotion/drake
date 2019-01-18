@@ -290,6 +290,15 @@ const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
 }
 
 template <typename T>
+const Shape& GeometryState<T>::GetShape(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry != nullptr) return geometry->shape();
+
+  throw std::logic_error("No geometry available for invalid geometry id: " +
+      to_string(id));
+}
+
+template <typename T>
 const Isometry3<double>& GeometryState<T>::GetPoseInFrame(
     GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
