@@ -1,7 +1,6 @@
-#include "drake/systems/primitives/pass_through-inl.h"
-
-/// @file
-/// Separate test program, so that we can use the -inl file.
+/* clang-format off to disable clang-format-includes */
+#include "drake/systems/primitives/pass_through.h"
+/* clang-format on */
 
 #include <memory>
 
