@@ -84,7 +84,23 @@ PYBIND11_MODULE(controllers, m) {
           py::keep_alive<1, 2>(), doc.InverseDynamicsController.ctor.doc)
       .def("set_integral_value",
           &InverseDynamicsController<double>::set_integral_value,
-          doc.InverseDynamicsController.set_integral_value.doc);
+          doc.InverseDynamicsController.set_integral_value.doc)
+      .def("get_input_port_desired_acceleration",
+           &InverseDynamicsController<double>::get_input_port_desired_acceleration,
+           py_reference_internal,
+           doc.InverseDynamicsController.get_input_port_desired_acceleration.doc)
+      .def("get_input_port_estimated_state",
+           &InverseDynamicsController<double>::get_input_port_estimated_state,
+           py_reference_internal,
+           doc.InverseDynamicsController.get_input_port_estimated_state.doc)
+      .def("get_input_port_desired_state",
+           &InverseDynamicsController<double>::get_input_port_desired_state,
+           py_reference_internal,
+           doc.InverseDynamicsController.get_input_port_desired_state.doc)
+      .def("get_output_port_control",
+           &InverseDynamicsController<double>::get_output_port_control,
+           py_reference_internal,
+           doc.InverseDynamicsController.get_output_port_control.doc);
 
   m.def("FittedValueIteration", WrapCallbacks(&FittedValueIteration),
       doc.FittedValueIteration.doc);

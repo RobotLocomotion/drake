@@ -14,6 +14,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/gain.h"
+#include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
@@ -118,6 +119,18 @@ PYBIND11_MODULE(primitives, m) {
             doc.Gain.ctor.doc_2args)
         .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("k"),
             doc.Gain.ctor.doc_1args);
+
+    DefineTemplateClassWithDefault<Sine<T>, LeafSystem<T>>(
+        m, "Sine", GetPyParam<T>(), doc.Sine.doc)
+        .def(py::init<double, double, double, int, bool>(), py::arg("amplitude"),
+            py::arg("frequency"), py::arg("phase"), py::arg("size"),
+            py::arg("is_time_based") = true, doc.Sine.ctor.doc_5args)
+        .def(py::init<const Eigen::Ref<const VectorXd>&,
+            const Eigen::Ref<const VectorXd>&,
+                const Eigen::Ref<const VectorXd>&, bool>(), py::arg("amplitudes"),
+             py::arg("frequencies"), py::arg("phases"),
+             py::arg("is_time_based") = true,
+             doc.Sine.ctor.doc_4args);
 
     DefineTemplateClassWithDefault<Integrator<T>, LeafSystem<T>>(
         m, "Integrator", GetPyParam<T>(), doc.Integrator.doc)
