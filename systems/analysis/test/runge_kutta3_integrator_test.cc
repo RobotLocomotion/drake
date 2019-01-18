@@ -7,12 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/joints/prismatic_joint.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/parsers/model_instance_id_table.h"
-#include "drake/multibody/parsers/sdf_parser.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
@@ -29,25 +24,16 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
 class RK3IntegratorTest : public ::testing::Test {
  protected:
   void SetUp() {
-    // Instantiates a Multibody Dynamics (MBD) model of the world.
-    auto tree = std::make_unique<RigidBodyTree<double>>();
+    plant_ = std::make_unique<multibody::MultibodyPlant<double>>();
 
-    // Add a single free body with a quaternion base.
-    RigidBody<double>* body = tree->add_rigid_body(
-        std::make_unique<RigidBody<double>>());
-    body->set_name("free_body");
-
-    // Sets body to have a non-zero spatial inertia. Otherwise the body gets
-    // welded by a fixed joint to the world by RigidBodyTree::compile().
-    body->set_mass(1.0);
-    body->set_spatial_inertia(Matrix6<double>::Identity());
-    body->add_joint(&tree->world(), std::make_unique<QuaternionFloatingJoint>(
-        "base", Isometry3<double>::Identity()));
-
-    tree->compile();
-
-    // Instantiates a RigidBodyPlant from the MBD model.
-    plant_ = std::make_unique<RigidBodyPlant<double>>(std::move(tree));
+    // Add a single free body to the world.
+    const double radius = 0.05;   // m
+    const double mass = 0.1;      // kg
+    auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
+    multibody::SpatialInertia<double> M_Bcm(
+      mass, Vector3<double>::Zero(), G_Bcm);
+    plant_->AddRigidBody("Ball", M_Bcm);
+    plant_->Finalize();
   }
 
   std::unique_ptr<Context<double>> MakePlantContext() const {
@@ -58,23 +44,21 @@ class RK3IntegratorTest : public ::testing::Test {
     Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
     Vector3<double> w0(-4., 5., -6.);  // Angular velocity in body's frame.
     VectorX<double> generalized_velocities(6);
-    generalized_velocities << v0, w0;
-    for (int i = 0; i < plant_->get_num_velocities(); ++i)
-      plant_->set_velocity(context.get(), i, generalized_velocities[i]);
+    generalized_velocities << w0, v0;
+    plant_->SetVelocities(context.get(), generalized_velocities);
 
     // Set body position and orientation.
     Vector3<double> p0(1., 2., 3.);  // Body's frame position in the world.
     // Set body's frame orientation to 90 degree rotation about y-axis.
     Vector4<double> q0(std::sqrt(2.)/2., 0., std::sqrt(2.)/2., 0.);
     VectorX<double> generalized_positions(7);
-    generalized_positions << p0, q0;
-    for (int i = 0; i < plant_->get_num_positions(); ++i)
-      plant_->set_position(context.get(), i, generalized_positions[i]);
+    generalized_positions << q0, p0;
+    plant_->SetPositions(context.get(), generalized_positions);
 
     return context;
   }
 
-  std::unique_ptr<RigidBodyPlant<double>> plant_{};
+  std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
 };
 
 // Tests accuracy when generalized velocity is not the time derivative of
@@ -139,7 +123,7 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
         rk3.get_dense_output()->Evaluate(t + t_step),
-        plant_->GetStateVector(*context),
+        plant_->GetPositionsAndVelocities(*context),
         rk3.get_accuracy_in_use(),
         MatrixCompareType::relative));
   }
