@@ -11,6 +11,7 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/contact_info.h"
 #include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -603,6 +604,19 @@ PYBIND11_MODULE(plant, m) {
     pysystems::AddValueInstantiation<Class>(m);
   }
 
+  // ContactResultsToLcmSystem
+  {
+    using Class = ContactResultsToLcmSystem<T>;
+    py::class_<Class, systems::LeafSystem<T>>(m, "ContactResultsToLcmSystem")
+        .def(py::init<const MultibodyPlant<double>&>(), py::arg("plant"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>())
+        .def("get_contact_result_input_port",
+            &Class::get_contact_result_input_port, py_reference_internal)
+        .def("get_lcm_message_output_port", &Class::get_lcm_message_output_port,
+            py_reference_internal);
+  }
+
   m.def("AddMultibodyPlantSceneGraph",
       [](systems::DiagramBuilder<T>* builder,
           std::unique_ptr<MultibodyPlant<T>> plant,
@@ -621,6 +635,20 @@ PYBIND11_MODULE(plant, m) {
       },
       py::arg("builder"), py::arg("plant") = nullptr,
       py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
+
+  m.def("ConnectContactResultsToDrakeVisualizer",
+      [](systems::DiagramBuilder<T>* builder,
+          const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
+        return drake::multibody::ConnectContactResultsToDrakeVisualizer(
+            builder, plant, lcm);
+      },
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(),
+      // Keep alive, reference transfer: `plant` keeps `builder` alive.
+      py::keep_alive<2, 1>(),
+      // Keep alive, reference transfer: `lcm` keeps `builder` alive.
+      py::keep_alive<3, 1>(), py_reference, py::arg("builder"),
+      py::arg("plant"), py::arg("lcm") = nullptr);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
