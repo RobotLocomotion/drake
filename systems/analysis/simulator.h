@@ -337,23 +337,34 @@ class Simulator {
   /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /// Sets whether the simulation should invoke Publish on the System under
-  /// simulation during every time step. If enabled, Publish will be invoked
-  /// after discrete updates and before continuous integration. Regardless of
-  /// whether publishing every time step is enabled, Publish will be invoked at
-  /// Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
+  /// Sets whether the simulation should trigger a forced-Publish event on the
+  /// System under simulation at the end of every trajectory-advancing substep.
+  /// Specifically, that means the System::Publish() event dispatcher will be
+  /// invoked on each subsystem of the System and passed the current Context
+  /// and a forced-publish Event. If a subsystem has declared a forced-publish
+  /// event handler, that will be called. Otherwise, nothing will happen unless
+  /// the DoPublish() dispatcher has been overridden.
+  ///
+  /// Enabling this option does not cause a forced-publish to be triggered at
+  /// initialization; if you want that you should also call
+  /// `set_publish_at_initialization(true)`. If you want a forced-publish at the
+  /// end of every step, you will usually also want one at the end of
+  /// initialization, requiring both options to be enabled.
+  ///
+  /// @see LeafSystem::DeclareForcedPublishEvent()
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
 
-  /// Sets whether the simulation should invoke Publish in Initialize().
+  /// Sets whether the simulation should trigger a forced-Publish at the end
+  /// of Initialize(). See set_publish_every_time_step() documentation for
+  /// more information.
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
 
-  /// Returns true if the simulation should invoke Publish on the System under
-  /// simulation every time step.  By default, returns true.
-  // TODO(sherm1, edrumwri): Consider making this false by default.
+  /// Returns true if the set_publish_every_time_step() option has been
+  /// enabled. By default, returns false.
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the
@@ -558,9 +569,9 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
 
-  bool publish_every_time_step_{true};
+  bool publish_every_time_step_{false};
 
-  bool publish_at_initialization_{true};
+  bool publish_at_initialization_{false};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
