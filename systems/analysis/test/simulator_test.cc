@@ -23,6 +23,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/signal_logger.h"
 
 using drake::systems::WitnessFunction;
@@ -1703,6 +1705,36 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   // taken to integrate the continuous variables forward.
   EXPECT_EQ(simulator.get_context().get_time(), expected_t_final);
   EXPECT_EQ(simulator.get_num_steps_taken(), 1);
+}
+
+GTEST_TEST(SimulatorTest, IssueX) {
+  // Log the output of a simple diagram containing a constant
+  // source and an integrator.
+  DiagramBuilder<double> builder;
+  const double kValue = 2.4;
+  const auto& source = *builder.AddSystem<ConstantVectorSource<double>>(kValue);
+  const int kSize = 1;
+  const auto& integrator = *builder.AddSystem<Integrator<double>>(kSize);
+  builder.Connect(source.get_output_port(),
+      integrator.get_input_port());
+
+  // Add a periodic logger
+  const double kPeriod = 0.1;
+  auto& periodic_logger = *builder.AddSystem<SignalLogger<double>>(kSize);
+  periodic_logger.set_publish_period(kPeriod);
+  builder.Connect(integrator.get_output_port(),
+      periodic_logger.get_input_port());
+
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+  Simulator<double> simulator(*diagram);
+  const double kTime = 1.0;
+  simulator.StepTo(kTime);
+
+  // Should log exactly once every kPeriod, up to and including
+  // kTime.
+  Eigen::VectorBlock<const VectorX<double>> t_periodic =
+      periodic_logger.sample_times();
+  EXPECT_EQ(t_periodic.size(), std::floor(kTime / kPeriod) + 1);
 }
 
 // Verifies that an integrator will *not* stretch its integration step in the
