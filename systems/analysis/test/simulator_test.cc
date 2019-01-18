@@ -1727,8 +1727,21 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   builder.Connect(integrator.get_output_port(),
       periodic_logger.get_input_port());
 
+  // Finish constructing the Diagram.
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  // Construct the Simulator with an RK3 integrator and settings that reproduce
+  // the behavior.
   Simulator<double> simulator(*diagram);
+  auto rk3 = std::make_unique<RungeKutta3Integrator<double>>(
+      *diagram, &simulator.get_mutable_context());
+  rk3->set_maximum_step_size(0.1);
+  rk3->request_initial_step_size_target(1e-4);
+  rk3->set_target_accuracy(1e-4);
+  rk3->set_fixed_step_mode(false);
+  simulator.reset_integrator(std::move(rk3));
+
+  // Simulate.
   const double kTime = 1.0;
   simulator.StepTo(kTime);
 
