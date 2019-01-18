@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "robotlocomotion/robot_plan_t.hpp"
+
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -45,6 +47,11 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   RobotPlanInterpolator(const std::string& model_path,
                         const InterpolatorType = InterpolatorType::Cubic,
                         double update_interval = kDefaultPlanUpdateInterval);
+
+  RobotPlanInterpolator(
+      const std::shared_ptr<multibody::MultibodyPlant<double>> plant,
+      const InterpolatorType = InterpolatorType::Cubic,
+      double update_interval = kDefaultPlanUpdateInterval);
   ~RobotPlanInterpolator() override;
 
   /// N.B. This input port is useless and may be left disconnected.
@@ -70,7 +77,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void Initialize(double plan_start_time, const VectorX<double>& q0,
                   systems::State<double>* state) const;
 
-  const multibody::MultibodyPlant<double>& plant() { return plant_; }
+  const multibody::MultibodyPlant<double>& plant() { return *plant_; }
 
  protected:
   void SetDefaultState(const systems::Context<double>& context,
@@ -85,6 +92,9 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
 
  private:
   struct PlanData;
+
+  // Creates the input/output ports for the system.
+  void FinalizeSystem(double update_interval);
 
   // Calculator method for the state output port.
   void OutputState(const systems::Context<double>& context,
@@ -101,9 +111,26 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   const int plan_input_port_{};
   int state_output_port_{-1};
   int acceleration_output_port_{-1};
-  multibody::MultibodyPlant<double> plant_;
+  std::shared_ptr<multibody::MultibodyPlant<double>> plant_;
   const InterpolatorType interp_type_;
 };
+
+/// Makes a robotlocomotion::robot_plan_t message.  The number of
+/// columns in @p keyframes must match the size of @p time.  Times
+/// must be in strictly increasing order.
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const multibody::MultibodyPlant<double>& robot,
+    const std::vector<double>& time, const std::vector<int>& info,
+    const MatrixX<double>& keyframes);
+
+/// Makes a robotlocomotion::robot_plan_t message.  The number of rows in @p
+/// keyframes must match the size of @p joint_names.  The number of columns in
+/// @p keyframes must match the size of @p time.  Times must be in strictly
+/// increasing order.
+robotlocomotion::robot_plan_t EncodeKeyFrames(
+    const std::vector<std::string>& joint_names,
+    const std::vector<double>& time, const std::vector<int>& info,
+    const MatrixX<double>& keyframes);
 
 }  // namespace planner
 }  // namespace manipulation
