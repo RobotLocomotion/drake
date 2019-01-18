@@ -96,6 +96,7 @@ void Selector2(const System<T>& plant, const Eigen::Ref<const VectorX<T>>& x,
 }
 
 void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
+                                 SystemConstraintIndex constraint_index,
                                  Context<double>* context_double) {
   // First test Eval with VectorX<double>
   Eigen::Matrix<double, 7, 1> x_double;
@@ -120,10 +121,10 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
                         context_autodiff.get());
 
   AutoDiffVecXd y_autodiff_expected;
-  auto plant_autodiff = dynamic_cast<const FreeBodyPlant<AutoDiffXd>*>(
-      constraint.system_autodiff());
-  plant_autodiff
-      ->get_constraint(plant_autodiff->unit_quaternion_constraint_index())
+  auto plant_autodiff =
+      dynamic_cast<const multibody::MultibodyPlant<AutoDiffXd>*>(
+          constraint.system_autodiff());
+  plant_autodiff->get_constraint(constraint_index)
       .Calc(*context_autodiff, &y_autodiff_expected);
 
   EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
@@ -134,31 +135,29 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
       math::autoDiffToGradientMatrix(y_autodiff_expected), 3 * kEps));
 }
 
-GTEST_TEST(SystemConstraintWrapperTest, FreeBodyPlantTest) {
+TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {
   // Test if SystemConstraintWrapper works for MultibodyPlant.
-  const double time_step{0};
-  FreeBodyPlant<double> plant_double(time_step);
-  auto context_double = plant_double.CreateDefaultContext();
+  auto context_double = plant_double_->CreateDefaultContext();
 
   const Eigen::Quaterniond quat0(
       Eigen::AngleAxisd(0.2 * M_PI, Eigen::Vector3d(1, 2, 3).normalized()));
   Eigen::Matrix<double, 7, 1> q0;
   q0.head<4>() << quat0.w(), quat0.x(), quat0.y(), quat0.z();
   q0.tail<3>() << 2, 3, 4;
-  plant_double.SetPositions(context_double.get(), q0);
+  plant_double_->SetPositions(context_double.get(), q0);
   Vector6<double> v0;
   v0 << 2, 3, 4, 5, 6, 7;
-  plant_double.SetVelocities(context_double.get(), v0);
+  plant_double_->SetVelocities(context_double.get(), v0);
 
-  FreeBodyPlant<AutoDiffXd> plant_autodiff(time_step);
-  auto context_autodiff = plant_autodiff.CreateDefaultContext();
+  auto context_autodiff = plant_autodiff_->CreateDefaultContext();
   // Construct the constraint with plant_autodiff.
   SystemConstraintWrapper constraint1(
-      &plant_double, &plant_autodiff,
-      plant_double.unit_quaternion_constraint_index(), *context_double,
-      Selector2<double>, Selector2<AutoDiffXd>, 7);
+      plant_double_.get(), plant_autodiff_.get(),
+      unit_quaternion_constraint_index_, *context_double, Selector2<double>,
+      Selector2<AutoDiffXd>, 7);
 
-  TestFreeBodyPlantConstraint(constraint1, context_double.get());
+  TestFreeBodyPlantConstraint(constraint1, unit_quaternion_constraint_index_,
+                              context_double.get());
 
   // Construct the constraint without plant_autodiff.
   // TODO(hongkai.dai): enable the following test when we can convert
@@ -166,12 +165,12 @@ GTEST_TEST(SystemConstraintWrapperTest, FreeBodyPlantTest) {
   // need to add a new constructor to MBP that takes a SystemTypeTag, or we need
   // to disable the guaranteed subtype preservation in MultibodyPlant to allow
   // the conversion.
-  // SystemConstraintWrapper constraint2(
-  //    &plant_double, nullptr,
-  //    plant_double.unit_quaternion_constraint_index(), *context_double,
-  //    Selector2<double>, Selector2<AutoDiffXd>, 7);
+  SystemConstraintWrapper constraint2(
+      plant_double_.get(), nullptr, unit_quaternion_constraint_index_,
+      *context_double, Selector2<double>, Selector2<AutoDiffXd>, 7);
 
-  // TestFreeBodyPlantConstraint(constraint2, context_double.get());
+  TestFreeBodyPlantConstraint(constraint2, unit_quaternion_constraint_index_,
+                              context_double.get());
 }
 
 }  // namespace

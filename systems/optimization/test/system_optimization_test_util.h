@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+
+#include <gtest/gtest.h>
+
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -49,51 +53,50 @@ class DummySystem : public LeafSystem<T> {
 };
 
 template <typename T>
-void UnitQuaternionCallback(const multibody::MultibodyPlant<T>& plant,
-                            const Context<T>& context, VectorX<T>* y) {
-  y->resize(1);
-  (*y)(0) =
-      plant.GetPositions(context).template head<4>().squaredNorm() - T(1.0);
+void CalcUnitQuaternion(const System<T>& system, const Context<T>& context,
+                        VectorX<T>* value) {
+  (*value)(0) = dynamic_cast<const multibody::MultibodyPlant<T>&>(system)
+                    .GetPositions(context)
+                    .template head<4>()
+                    .squaredNorm() -
+                T(1.0);
 }
 
-/**
- * A free floating body.
- * TODO(hongkai.dai): make the mass and inertia matrix to be parameters of this
- * system.
- */
-template <typename T>
-class FreeBodyPlant final : public multibody::MultibodyPlant<T> {
+class FreeBodyPlantTest : public ::testing::Test {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FreeBodyPlant)
-
-  explicit FreeBodyPlant(double time_step)
-      : multibody::MultibodyPlant<T>(time_step) {
+  FreeBodyPlantTest()
+      : plant_double_{std::make_unique<multibody::MultibodyPlant<double>>(0)} {
     const double mass{1};
     const Eigen::Vector3d p_BoBcm_B(0, 0, 0);
     const multibody::RotationalInertia<double> I_BBcm_B{0.01, 0.01, 0.01};
     const multibody::SpatialInertia<double> M_BBo_B =
         multibody::SpatialInertia<double>::MakeFromCentralInertia(
             mass, p_BoBcm_B, I_BBcm_B);
-    this->AddRigidBody("body", M_BBo_B);
+    plant_double_->AddRigidBody("body", M_BBo_B);
 
-    this->unit_quaternion_constraint_index_ = this->DeclareEqualityConstraint(
-        [this](const Context<T>& context, VectorX<T>* y) {
-          UnitQuaternionCallback(*this, context, y);
-        },
-        1, "unit_quaternion");
+    auto unit_quaternion_constraint =
+        ExternalSystemConstraint::MakeForNonsymbolicScalars(
+            "quaternion_norm_square = 1", SystemConstraintBounds::Equality(1),
+            [](const auto& system, const auto& context, auto* value) {
+              CalcUnitQuaternion(system, context, value);
+            });
 
-    this->Finalize();
+    this->unit_quaternion_constraint_index_ =
+        plant_double_->AddExternalConstraint(unit_quaternion_constraint);
+
+    plant_double_->Finalize();
+    plant_autodiff_ =
+        dynamic_pointer_cast<multibody::MultibodyPlant<AutoDiffXd>>(
+            plant_double_->ToAutoDiffXd());
   }
-
-  template <typename U>
-  FreeBodyPlant(const FreeBodyPlant<U>& other)
-      : FreeBodyPlant<T>(other.time_step()) {}
 
   SystemConstraintIndex unit_quaternion_constraint_index() const {
     return unit_quaternion_constraint_index_;
   }
 
- private:
+ protected:
+  std::unique_ptr<multibody::MultibodyPlant<double>> plant_double_;
+  std::unique_ptr<multibody::MultibodyPlant<AutoDiffXd>> plant_autodiff_;
   SystemConstraintIndex unit_quaternion_constraint_index_;
 };
 
