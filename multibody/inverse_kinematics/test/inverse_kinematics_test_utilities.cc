@@ -9,7 +9,6 @@ using drake::geometry::SceneGraph;
 namespace drake {
 namespace multibody {
 
-namespace internal {
 IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   const std::string iiwa_path = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/sdf/"
@@ -31,14 +30,15 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   plant_context_ =
       &diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get());
 
-  plant_autodiff_ = systems::System<double>::ToAutoDiffXd(
-      *ConstructIiwaPlant(iiwa_path, 0.));
+  plant_autodiff_ =
+      systems::System<double>::ToAutoDiffXd(*ConstructIiwaPlant(iiwa_path, 0.));
   plant_context_autodiff_ = plant_autodiff_->CreateDefaultContext();
 }
 
 TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest() {
   systems::DiagramBuilder<double> builder{};
   plant_ = builder.AddSystem(ConstructTwoFreeBodiesPlant<double>());
+  plant_->Finalize();
   diagram_ = builder.Build();
   diagram_context_ = diagram_->CreateDefaultContext();
   plant_context_ =
@@ -47,10 +47,9 @@ TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest() {
   body2_index_ = plant_->GetBodyByName("body2").body_frame().index();
 
   plant_autodiff_ = ConstructTwoFreeBodiesPlant<AutoDiffXd>();
+  plant_autodiff_->Finalize();
   plant_context_autodiff_ = plant_autodiff_->CreateDefaultContext();
 }
-
-}  // namespace internal
 
 template <typename T>
 std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
@@ -64,7 +63,6 @@ std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
   model->AddRigidBody("body1", M_AAo_A);
   model->AddRigidBody("body2", M_AAo_A);
 
-  model->Finalize();
   return model;
 }
 
@@ -72,8 +70,7 @@ std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& file_path, double time_step) {
   auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
   Parser(plant.get()).AddModelFromFile(file_path);
-  plant->WeldFrames(plant->world_frame(),
-                    plant->GetFrameByName("iiwa_link_0"));
+  plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
   plant->Finalize();
   return plant;
 }
@@ -82,9 +79,70 @@ Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q) {
   return Eigen::Vector4d(q.w(), q.x(), q.y(), q.z());
 }
 
+TwoFreeSpheresTest::TwoFreeSpheresTest() {
+  diagram_double_ = BuildTwoFreeSpheresDiagram(
+      radius1_, radius2_, &plant_double_, &scene_graph_double_, &sphere1_index_,
+      &sphere2_index_);
+  diagram_context_double_ = diagram_double_->CreateDefaultContext();
+  plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
+      *plant_double_, diagram_context_double_.get()));
+
+  diagram_autodiff_ = BuildTwoFreeSpheresDiagram(
+      radius1_, radius2_, &plant_autodiff_, &scene_graph_autodiff_,
+      &sphere1_index_, &sphere2_index_);
+
+  diagram_context_autodiff_ = diagram_autodiff_->CreateDefaultContext();
+  plant_context_autodiff_ = &(diagram_autodiff_->GetMutableSubsystemContext(
+      *plant_autodiff_, diagram_context_autodiff_.get()));
+}
+
+template <typename T>
+std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
+    double radius1, double radius2, MultibodyPlant<T>** plant,
+    geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
+    FrameIndex* sphere2_index) {
+  systems::DiagramBuilder<T> builder;
+  *scene_graph = builder.template AddSystem<geometry::SceneGraph<T>>();
+  auto model = ConstructTwoFreeBodiesPlant<T>();
+  *plant = builder.AddSystem(std::move(model));
+  (*plant)->RegisterAsSourceForSceneGraph(*scene_graph);
+  const auto& sphere1 = (*plant)->GetBodyByName("body1");
+  const auto& sphere2 = (*plant)->GetBodyByName("body2");
+  (*plant)->RegisterCollisionGeometry(
+      sphere1, Eigen::Isometry3d::Identity(), geometry::Sphere(radius1),
+      "sphere1_collision",
+      multibody::multibody_plant::CoulombFriction<double>(), *scene_graph);
+  (*plant)->RegisterCollisionGeometry(
+      sphere2, Eigen::Isometry3d::Identity(), geometry::Sphere(radius2),
+      "sphere2_collision",
+      multibody::multibody_plant::CoulombFriction<double>(), *scene_graph);
+  *sphere1_index = sphere1.body_frame().index();
+  *sphere2_index = sphere2.body_frame().index();
+  (*plant)->Finalize(*scene_graph);
+  builder.Connect(
+      (*plant)->get_geometry_poses_output_port(),
+      (*scene_graph)->get_source_pose_port(*(*plant)->get_source_id()));
+  builder.Connect((*scene_graph)->get_query_output_port(),
+                  (*plant)->get_geometry_query_input_port());
+
+  return builder.Build();
+}
+
 template std::unique_ptr<MultibodyPlant<double>>
 ConstructTwoFreeBodiesPlant<double>();
 template std::unique_ptr<MultibodyPlant<AutoDiffXd>>
 ConstructTwoFreeBodiesPlant<AutoDiffXd>();
+
+template std::unique_ptr<systems::Diagram<double>>
+BuildTwoFreeSpheresDiagram<double>(double radius1, double radius2,
+                                   MultibodyPlant<double>** plant,
+                                   geometry::SceneGraph<double>** scene_graph,
+                                   FrameIndex* sphere1_index,
+                                   FrameIndex* sphere2_index);
+template std::unique_ptr<systems::Diagram<AutoDiffXd>>
+BuildTwoFreeSpheresDiagram<AutoDiffXd>(
+    double radius1, double radius2, MultibodyPlant<AutoDiffXd>** plant,
+    geometry::SceneGraph<AutoDiffXd>** scene_graph, FrameIndex* sphere1_index,
+    FrameIndex* sphere2_index);
 }  // namespace multibody
 }  // namespace drake
