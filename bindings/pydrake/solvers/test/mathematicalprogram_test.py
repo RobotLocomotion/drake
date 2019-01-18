@@ -366,8 +366,8 @@ class TestMathematicalProgram(unittest.TestCase):
         def constraint(x):
             return x
 
-        prog.AddCost(cost, x)
-        prog.AddConstraint(constraint, [0.], [2.], x)
+        prog.AddCost(cost, vars=x)
+        prog.AddConstraint(constraint, lb=[0.], ub=[2.], vars=x)
         prog.Solve()
         self.assertAlmostEqual(prog.GetSolution(x)[0], 1.)
 
