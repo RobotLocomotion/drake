@@ -2571,6 +2571,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().topology_is_valid(); }
 
+  /// Returns `true` if @p body is anchored (i.e. the kinematic path between
+  /// @p body and the world only contains weld joints.)
+  /// @throws std::exception if called pre-finalize.
+  bool IsAnchored(const Body<T>& body) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().get_topology().IsBodyAnchored(body.index());
+  }
+
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
   /// computations are performed.
