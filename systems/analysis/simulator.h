@@ -1152,8 +1152,8 @@ bool Simulator<T>::IntegrateContinuousState(
   // distinguished between. See internal documentation for
   // IntegratorBase::StepOnceAtMost() for more information.
   typename IntegratorBase<T>::StepResult result =
-      integrator_->IntegrateAtMost(next_publish_dt, next_update_dt,
-                                  boundary_dt);
+      integrator_->IntegrateAtMost(next_publish_time, next_update_time,
+                                  boundary_time);
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
@@ -1242,7 +1242,13 @@ bool Simulator<T>::IntegrateContinuousState(
     case IntegratorBase<T>::kTimeHasAdvanced:
       // If an event time was reached, indicate as such by returning
       // `true`. Otherwise, return `false` to indicate just advancement of time.
-      return (tf >= next_update_time || tf >= next_publish_time);
+      if (tf >= next_update_time || tf >= next_publish_time) {
+        // Correct the time to the timed event time.
+        context_->set_time(time_of_next_timed_event);
+        return true;            // Timed event hit.
+      } else {
+        return false;
+      }
       break;
 
     case IntegratorBase<T>::kReachedBoundaryTime:
