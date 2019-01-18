@@ -329,8 +329,7 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":runge_kutta3_integrator",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
+        "//multibody/plant:plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//systems/analysis/test_utilities",
@@ -343,8 +342,7 @@ drake_cc_googletest(
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",
-        "//attic/multibody/joints",
-        "//attic/multibody/rigid_body_plant",
+        "//multibody/plant:plant",
         "//systems/analysis/test_utilities",
     ],
 )
