@@ -4,6 +4,7 @@
 #include "robotlocomotion/robot_plan_t.hpp"
 
 #include "drake/common/find_resource.h"
+#include "drake/multibody/parsing/parser.h"
 
 namespace drake {
 namespace manipulation {
@@ -19,17 +20,34 @@ const char* const kDualIiwaUrdf =
     "dual_iiwa14_polytope_collision.urdf";
 
 GTEST_TEST(RobotPlanInterpolatorTest, InstanceTest) {
-  // Test that the constructor works and that the expected ports are
+  // Test that the constructors work and that the expected ports are
   // present.
-  RobotPlanInterpolator dut(FindResourceOrThrow(kIiwaUrdf));
-  EXPECT_EQ(dut.get_plan_input_port().get_data_type(),
+
+  // This constructor builds the MBP internally from a passed in model file.
+  RobotPlanInterpolator dut1(FindResourceOrThrow(kIiwaUrdf));
+  EXPECT_EQ(dut1.get_plan_input_port().get_data_type(),
             systems::kAbstractValued);
-  EXPECT_EQ(dut.get_state_output_port().get_data_type(),
+  EXPECT_EQ(dut1.get_state_output_port().get_data_type(),
             systems::kVectorValued);
-  EXPECT_EQ(dut.get_state_output_port().size(), kNumJoints * 2);
-  EXPECT_EQ(dut.get_acceleration_output_port().get_data_type(),
+  EXPECT_EQ(dut1.get_state_output_port().size(), kNumJoints * 2);
+  EXPECT_EQ(dut1.get_acceleration_output_port().get_data_type(),
             systems::kVectorValued);
-  EXPECT_EQ(dut.get_acceleration_output_port().size(), kNumJoints);
+  EXPECT_EQ(dut1.get_acceleration_output_port().size(), kNumJoints);
+
+  // This constructor takes in a shared pointer to an already built MBP.
+  auto plant = std::make_unique<multibody::MultibodyPlant<double>>();
+  multibody::Parser(plant.get())
+      .AddModelFromFile(FindResourceOrThrow(kIiwaUrdf));
+  plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("iiwa_link_0"));
+  RobotPlanInterpolator dut2(FindResourceOrThrow(kIiwaUrdf));
+  EXPECT_EQ(dut2.get_plan_input_port().get_data_type(),
+            systems::kAbstractValued);
+  EXPECT_EQ(dut2.get_state_output_port().get_data_type(),
+            systems::kVectorValued);
+  EXPECT_EQ(dut2.get_state_output_port().size(), kNumJoints * 2);
+  EXPECT_EQ(dut2.get_acceleration_output_port().get_data_type(),
+            systems::kVectorValued);
+  EXPECT_EQ(dut2.get_acceleration_output_port().size(), kNumJoints);
 }
 
 GTEST_TEST(RobotPlanInterpolatorTest, DualInstanceTest) {
