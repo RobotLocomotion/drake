@@ -652,18 +652,15 @@ class GeometryState {
   // This contains internal indices into X_WG_. If a _dynamic_ geometry G has a
   // proximity role, in addition to its internal index, it will
   // also have a proximity index. It must be the case that
-  // G.internal_index == X_WG_proximity_[G.proximity_index] if it has a
-  // proximity role.
+  // G.internal_index ==
+  //      dynamic_proximity_index_to_internal_map_[G.proximity_index]
+  // if it has a proximity role.
   // Generally, internal_index is not equal to the role index. This allows
   // just those geometries with the proximity role to be provided to
   // the proximity engine.
   // NOTE: There is no equivalent for anchored geometries because anchored
   // geometries do not need updating.
-
-  // For proximity, the mapping from ProximityIndex to InternalIndex is implicit
-  // because anchored and dynamic geometries are segregated; they draw from
-  // independent index sets.
-  std::vector<GeometryIndex> X_WG_proximity_;
+  std::vector<GeometryIndex> dynamic_proximity_index_to_internal_map_;
 
   // ---------------------------------------------------------------------
   // These values depend on time-dependent input values (e.g., current frame

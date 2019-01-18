@@ -611,8 +611,10 @@ void GeometryState<T>::AssignRole(SourceId source_id,
     ProximityIndex proximity_index =
         geometry_engine_->AddDynamicGeometry(geometry->shape(), index);
     geometry->set_proximity_index(proximity_index);
-    DRAKE_DEMAND(static_cast<int>(X_WG_proximity_.size()) == proximity_index);
-    X_WG_proximity_.push_back(index);
+    DRAKE_DEMAND(
+        static_cast<int>(dynamic_proximity_index_to_internal_map_.size()) ==
+        proximity_index);
+    dynamic_proximity_index_to_internal_map_.push_back(index);
 
     InternalFrame& frame = frames_[geometry->frame_id()];
 
@@ -785,7 +787,8 @@ void GeometryState<T>::ValidateFrameIds(
 
 template <typename T>
 void GeometryState<T>::FinalizePoseUpdate() {
-  geometry_engine_->UpdateWorldPoses(X_WG_, X_WG_proximity_);
+  geometry_engine_->UpdateWorldPoses(X_WG_,
+                                     dynamic_proximity_index_to_internal_map_);
 }
 
 template <typename T>
@@ -799,7 +802,7 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
                                                RemoveGeometryOrigin caller) {
   const InternalGeometry& geometry = GetValueOrThrow(geometry_id, geometries_);
 
-  // TODO(SeanCurtis-TRI): When this get invoked by RemoveFrame(), this
+  // TODO(SeanCurtis-TRI): When this gets invoked by RemoveFrame(), this
   // recursive action will not be necessary, as all child geometries will
   // automatically get removed. I've put it into a block so for future
   // reference; simply add an if statement to determine if this is coming from
@@ -844,8 +847,12 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
       // `proximity_index`. Update the state's knowledge of this.
       GeometryId moved_id = geometry_index_to_id_map_[*moved_index];
       if (geometry.is_dynamic()) {
-        swap(X_WG_[proximity_index],
-             X_WG_[geometries_[moved_id].proximity_index()]);
+        const ProximityIndex moved_proximity_index =
+            geometries_[moved_id].proximity_index();
+        swap(X_WG_[proximity_index], X_WG_[moved_proximity_index]);
+        swap(dynamic_proximity_index_to_internal_map_[proximity_index],
+             dynamic_proximity_index_to_internal_map_[moved_proximity_index]);
+        dynamic_proximity_index_to_internal_map_.pop_back();
       }
       geometries_[moved_id].set_proximity_index(proximity_index);
     }
