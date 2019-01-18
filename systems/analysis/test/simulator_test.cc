@@ -1707,7 +1707,9 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   EXPECT_EQ(simulator.get_num_steps_taken(), 1);
 }
 
-GTEST_TEST(SimulatorTest, IssueX) {
+// This test specifically tests for correct handling of issue #10443, in which
+// an event can be missed.
+GTEST_TEST(SimulatorTest, Issue10443) {
   // Log the output of a simple diagram containing a constant
   // source and an integrator.
   DiagramBuilder<double> builder;
