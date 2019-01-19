@@ -336,48 +336,6 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MaxStepSizeRespected) {
             max_step_size * this->integrator->get_stretch_factor());
 }
 
-// Verify that attempting to take a step for a very large initial time throws
-// an exception.
-TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MinTimeThrows) {
-  // Set integrator parameters: do error control.
-  const double dt = 1e-1;
-  this->integrator->set_maximum_step_size(dt);
-  this->integrator->set_fixed_step_mode(false);
-  this->integrator->set_target_accuracy(1e-14);
-
-  // Initialize the integrator.
-  this->integrator->Initialize();
-
-  // Set the initial position and initial velocity.
-  const double initial_position = 0.1;
-  const double initial_velocity = 0.01;
-  this->spring_mass->set_position(this->integrator->get_mutable_context(),
-                             initial_position);
-  this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
-                             initial_velocity);
-
-  // Set the time to a really large value in the context.
-  const double large_time = 1e20;
-  this->integrator->get_mutable_context()->set_time(large_time);
-
-  // It should throw if we try to integrate forward.
-  EXPECT_THROW(this->integrator->IntegrateWithMultipleStepsToTime(
-      large_time + dt), std::runtime_error);
-
-  // Set the requested minimum step size and try to integrate again; should
-  // still throw an exception.
-  this->integrator->set_maximum_step_size(dt * 10);
-  this->integrator->get_mutable_context()->set_time(0);
-  this->integrator->set_requested_minimum_step_size(1e-2);
-  EXPECT_THROW(this->integrator->IntegrateWithMultipleStepsToTime(
-      large_time + dt), std::runtime_error);
-
-  // Disable the throw and verify that the exception does not still occur.
-  this->integrator->set_throw_on_minimum_step_size_violation(false);
-  EXPECT_NO_THROW(this->integrator->IntegrateWithMultipleStepsToTime(
-      large_time + dt));
-}
-
 // Verify that attempting to take a single fixed step throws an exception.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, IllegalFixedStep) {
   // Set integrator parameters: do error control.
@@ -432,7 +390,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
 REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
-    MinTimeThrows, IllegalFixedStep, CheckStat);
+    IllegalFixedStep, CheckStat);
 
 }  // namespace analysis_test
 }  // namespace systems

@@ -582,43 +582,34 @@ class IntegratorBase {
   double get_stretch_factor() const { return 1.01; }
 
   /// Stepping function for integrators operating outside of Simulator that
-  /// advances the continuous state exactly by @p dt. This method is designed
-  /// for integrator users that do not wish to consider publishing or
+  /// advances the continuous state exactly to `t_final`. This method is
+  /// designed for integrator users that do not wish to consider publishing or
   /// discontinuous, mid-interval updates. This method will step the integrator
   /// multiple times, as necessary, to attain requested error tolerances and
   /// to ensure the integrator converges.
   /// @warning Users should simulate systems using `Simulator::StepTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
-  /// @param dt The non-negative integration step to take.
+  /// @param t_final The current or future time to integrate to.
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          dt is negative.
+  ///                          t_final is in the past.
   /// @sa IntegrateNoFurtherThanTime(), which is designed to be operated by
   ///     Simulator and accounts for publishing and state reinitialization.
   /// @sa IntegrateWithSingleStepToTime(), which is also designed to be operated
   ///     *outside of* Simulator, but throws an exception if the integrator
-  ///     cannot advance time by @p dt in a single step.
+  ///     cannot advance time to `t_final` in a single step.
   ///
   /// This method at a glance:
   ///
   /// - For integrating ODEs/DAEs not using Simulator
   /// - Supports fixed step and variable step integration schemes
-  /// - Takes as many steps as necessary until time has advanced by @p dt
-  void IntegrateWithMultipleStepsToTime(const T& dt) {
+  /// - Takes as many steps as necessary until time has advanced to `t_final`
+  void IntegrateWithMultipleStepsToTime(const T& t_final) {
     using std::max;
     using std::min;
 
     const Context<T>& context = get_context();
     const T inf = std::numeric_limits<double>::infinity();
-
-    // Note: A concern below is that the while loop while run forever because
-    // t_remaining could be small, but not quite zero, if dt is relatively
-    // small compared to the context time. In such a case, t_final will be
-    // equal to context.get_time() in the expression immediately below,
-    // context.get_time() will not change during the call to
-    // IntegrateNoFurtherThanTime(), and t_remaining will be equal to zero
-    // (meaning that the loop will indeed terminate, as desired).
-    const T t_final = context.get_time() + dt;
 
     do {
       IntegrateNoFurtherThanTime(inf, inf,
