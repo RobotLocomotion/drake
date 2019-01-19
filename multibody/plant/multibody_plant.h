@@ -2094,6 +2094,38 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetPositionUpperLimits();
   }
 
+  /// Returns a vector of size `num_velocities()` containing the lower velocity
+  /// limits for every generalized velocity coordinate. These include joint and
+  /// floating base coordinates. Any unbounded or unspecified limits will be
+  /// -infinity.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetVelocityLowerLimits() const {
+    return internal_tree().GetVelocityLowerLimits();
+  }
+
+  /// Upper limit analog of GetVelocitysLowerLimits, where any unbounded or
+  /// unspecified limits will be +infinity.
+  /// @see GetVelocitysLowerLimits for more information.
+  VectorX<double> GetVelocityUpperLimits() const {
+    return internal_tree().GetVelocityUpperLimits();
+  }
+
+  /// Returns a vector of size `num_velocities()` containing the lower
+  /// acceleration limits for every generalized velocity coordinate. These
+  /// include joint and floating base coordinates. Any unbounded or unspecified
+  /// limits will be -infinity.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetAccelerationLowerLimits() const {
+    return internal_tree().GetAccelerationLowerLimits();
+  }
+
+  /// Upper limit analog of GetAccelerationsLowerLimits, where any unbounded or
+  /// unspecified limits will be +infinity.
+  /// @see GetAccelerationsLowerLimits for more information.
+  VectorX<double> GetAccelerationUpperLimits() const {
+    return internal_tree().GetAccelerationUpperLimits();
+  }
+
   /// Performs the computation of the mass matrix `M(q)` of the model using
   /// inverse dynamics, where the generalized positions q are stored in
   /// `context`. See CalcInverseDynamics().

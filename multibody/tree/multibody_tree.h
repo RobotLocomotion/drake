@@ -1947,6 +1947,18 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   VectorX<double> GetPositionUpperLimits() const;
 
+  /// See MultibodyPlant method.
+  VectorX<double> GetVelocityLowerLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetVelocityUpperLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetAccelerationLowerLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetAccelerationUpperLimits() const;
+
   /// @name Methods to retrieve multibody element variants
   ///
   /// Given two variants of the same %MultibodyTree, these methods map an

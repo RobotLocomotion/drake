@@ -89,10 +89,18 @@ class AcrobotModelTests :
 // Verifies that the default joint limits are ±infinity when no limits are
 // specified.
 TEST_P(AcrobotModelTests, DefaultJointLimits) {
-  EXPECT_TRUE(std::isinf(shoulder_->lower_limit()));
-  EXPECT_TRUE(std::isinf(shoulder_->upper_limit()));
-  EXPECT_TRUE(std::isinf(elbow_->lower_limit()));
-  EXPECT_TRUE(std::isinf(elbow_->upper_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->position_lower_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->position_upper_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->velocity_lower_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->velocity_upper_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->acceleration_lower_limit()));
+  EXPECT_TRUE(std::isinf(shoulder_->acceleration_upper_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->position_lower_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->position_upper_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->velocity_lower_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->velocity_upper_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->acceleration_lower_limit()));
+  EXPECT_TRUE(std::isinf(elbow_->acceleration_upper_limit()));
 }
 
 // This test verifies a number of invariants such as model sizes and that body

@@ -65,18 +65,8 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     params_->set_timestep(1e-3);
 
     // Get position and velocity limits.
-    VectorXd pos_upper_limits(num_joints), pos_lower_limits(num_joints);
-    int joint_index = 0;
-    for (int i = 0; i < plant_->num_joints(); i++) {
-      const multibody::Joint<double>& joint =
-          plant_->get_joint(multibody::JointIndex(i));
-      DRAKE_THROW_UNLESS(joint.num_positions() >= 0);
-      if (joint.num_positions() > 0) {
-        pos_lower_limits[joint_index] = joint.lower_limits()[0];
-        pos_upper_limits[joint_index++] = joint.upper_limits()[0];
-      }
-    }
-    DRAKE_THROW_UNLESS(joint_index == num_joints);
+    VectorXd pos_upper_limits = plant_->GetPositionUpperLimits();
+    VectorXd pos_lower_limits = plant_->GetPositionLowerLimits();
 
     VectorXd vel_limits = get_iiwa_max_joint_velocities();
     params_->set_joint_position_limits({pos_lower_limits, pos_upper_limits});

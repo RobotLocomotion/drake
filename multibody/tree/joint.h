@@ -84,28 +84,59 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   ///   The frame F attached on the parent body connected by this joint.
   /// @param[in] frame_on_child
   ///   The frame M attached on the child body connected by this joint.
-  /// @param[in] lower_limit
-  ///   A vector storing the position lower limit for each generalized position.
-  ///   It must have the same size as `upper_limit`.
+  /// @param[in] pos_lower_limits
+  ///   A vector storing the lower limit for each generalized position.
+  ///   It must have the same size as `pos_upper_limit`.
   ///   A value equal to -∞ implies no lower limit.
-  /// @param[in] upper_limit
-  ///   A vector storing the position upper limit for each generalized position.
-  ///   It must have the same size as `lower_limit`.
+  /// @param[in] pos_upper_limits
+  ///   A vector storing the upper limit for each generalized position.
+  ///   It must have the same size as `pos_lower_limit`.
   ///   A value equal to +∞ implies no upper limit.
-  Joint(const std::string& name,
-        const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-        const VectorX<double>& lower_limits,
-        const VectorX<double>& upper_limits)
+  /// @param[in] vel_lower_limits
+  ///   A vector storing the lower limit for each generalized velocity.
+  ///   It must have the same size as `vel_upper_limit`.
+  ///   A value equal to -∞ implies no lower limit.
+  /// @param[in] vel_upper_limits
+  ///   A vector storing the upper limit for each generalized velocity.
+  ///   It must have the same size as `vel_lower_limit`.
+  ///   A value equal to +∞ implies no upper limit.
+  /// @param[in] acc_lower_limits
+  ///   A vector storing the lower limit for each generalized acceleration.
+  ///   It must have the same size as `acc_upper_limit`.
+  ///   A value equal to -∞ implies no lower limit.
+  /// @param[in] acc_upper_limits
+  ///   A vector storing the upper limit for each generalized acceleration.
+  ///   It must have the same size as `acc_lower_limit`.
+  ///   A value equal to +∞ implies no upper limit.
+  Joint(const std::string& name, const Frame<T>& frame_on_parent,
+        const Frame<T>& frame_on_child, const VectorX<double>& pos_lower_limits,
+        const VectorX<double>& pos_upper_limits,
+        const VectorX<double>& vel_lower_limits,
+        const VectorX<double>& vel_upper_limits,
+        const VectorX<double>& acc_lower_limits,
+        const VectorX<double>& acc_upper_limits)
       : MultibodyTreeElement<Joint<T>, JointIndex>(
             frame_on_child.model_instance()),
         name_(name),
-        frame_on_parent_(frame_on_parent), frame_on_child_(frame_on_child),
-        lower_limits_(lower_limits), upper_limits_(upper_limits) {
+        frame_on_parent_(frame_on_parent),
+        frame_on_child_(frame_on_child),
+        pos_lower_limits_(pos_lower_limits),
+        pos_upper_limits_(pos_upper_limits),
+        vel_lower_limits_(vel_lower_limits),
+        vel_upper_limits_(vel_upper_limits),
+        acc_lower_limits_(acc_lower_limits),
+        acc_upper_limits_(acc_upper_limits) {
     // Notice `this` joint references `frame_on_parent` and `frame_on_child` and
     // therefore they must outlive it.
-    DRAKE_DEMAND(lower_limits.size() == upper_limits.size());
+    DRAKE_DEMAND(pos_lower_limits.size() == pos_upper_limits.size());
     // Verify that lower_limit <= upper_limit, elementwise.
-    DRAKE_DEMAND((lower_limits.array() <= upper_limits.array()).all());
+    DRAKE_DEMAND((pos_lower_limits.array() <= pos_upper_limits.array()).all());
+
+    DRAKE_DEMAND(vel_lower_limits.size() == vel_upper_limits.size());
+    DRAKE_DEMAND((vel_lower_limits.array() <= vel_upper_limits.array()).all());
+
+    DRAKE_DEMAND(acc_lower_limits.size() == acc_upper_limits.size());
+    DRAKE_DEMAND((acc_lower_limits.array() <= acc_upper_limits.array()).all());
   }
 
   virtual ~Joint() {}
@@ -173,8 +204,8 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// Joint limits are returned in order with the limit for position with index
   /// position_start() in the first entry and with the limit for position with
   /// index position_start() + num_positions() - 1 in the last entry.
-  const VectorX<double>& lower_limits() const {
-    return lower_limits_;
+  const VectorX<double>& position_lower_limits() const {
+    return pos_lower_limits_;
   }
 
   /// Returns a vector of size num_positions() storing the upper limits for each
@@ -184,8 +215,76 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// Joint limits are returned in order with the limit for position with index
   /// position_start() in the first entry and with the limit for position with
   /// index position_start() + num_positions() - 1 in the last entry.
-  const VectorX<double>& upper_limits() const {
-    return upper_limits_;
+  const VectorX<double>& position_upper_limits() const {
+    return pos_upper_limits_;
+  }
+
+  /// Returns a vector of size num_velocities() storing the lower limits for
+  /// each generalized velocity for `this` joint. A limit with value -∞ implies
+  /// no lower limit for the corresponding velocity. Joint limits are returned
+  /// in order with the limit for velocity with index velocity_start() in the
+  /// first entry and with the limit for velocity with index velocity_start() +
+  /// num_velocities() - 1 in the last entry.
+  const VectorX<double>& velocity_lower_limits() const {
+    return vel_lower_limits_;
+  }
+
+  /// Returns a vector of size num_velocities() storing the upper limits for
+  /// each generalized velocity for `this` joint. A limit with value +∞ implies
+  /// no upper limit for the corresponding velocity. Joint limits are returned
+  /// in order with the limit for velocity with index velocity_start() in the
+  /// first entry and with the limit for velocity with index velocity_start() +
+  /// num_velocities() - 1 in the last entry.
+  const VectorX<double>& velocity_upper_limits() const {
+    return vel_upper_limits_;
+  }
+
+  /// Returns a vector of size num_velocities() storing the lower limits for
+  /// each generalized acceleration for `this` joint. A limit with value -∞
+  /// implies no lower limit for the corresponding acceleration. Joint limits
+  /// are returned in order with the limit for acceleration with index
+  /// velocity_start() in the first entry and with the limit for acceleration
+  /// with index velocity_start() + num_velocities() - 1 in the last entry.
+  const VectorX<double>& acceleration_lower_limits() const {
+    return acc_lower_limits_;
+  }
+
+  /// Returns a vector of size num_velocities() storing the lower limits for
+  /// each generalized acceleration for `this` joint. A limit with value +∞
+  /// implies no upper limit for the corresponding acceleration. Joint limits
+  /// are returned in order with the limit for acceleration with index
+  /// velocity_start() in the first entry and with the limit for acceleration
+  /// with index velocity_start() + num_velocities() - 1 in the last entry.
+  const VectorX<double>& acceleration_upper_limits() const {
+    return acc_upper_limits_;
+  }
+
+  /// Sets the velocity limits to @p lower_limits and @p upper_limits.
+  /// @throws std::exception if the dimension of @p lower_limits or
+  /// @p upper_limits does not match num_velocities().
+  /// @throws std::exception if any of @p lower_limits is larger than the
+  /// corresponding term in @p upper_limits.
+  void set_velocity_limits(const VectorX<double>& lower_limits,
+                           const VectorX<double>& upper_limits) {
+    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
+    DRAKE_THROW_UNLESS(lower_limits.size() == num_velocities());
+    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
+    vel_lower_limits_ = lower_limits;
+    vel_upper_limits_ = upper_limits;
+  }
+
+  /// Sets the acceleration limits to @p lower_limits and @p upper_limits.
+  /// @throws std::exception if the dimension of @p lower_limits or
+  /// @p upper_limits does not match num_velocities().
+  /// @throws std::exception if any of @p lower_limits is larger than the
+  /// corresponding term in @p upper_limits.
+  void set_acceleration_limits(const VectorX<double>& lower_limits,
+                               const VectorX<double>& upper_limits) {
+    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
+    DRAKE_THROW_UNLESS(lower_limits.size() == num_velocities());
+    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
+    acc_lower_limits_ = lower_limits;
+    acc_upper_limits_ = upper_limits;
   }
 
   /// Returns the position coordinate for joints with a single degree of
@@ -455,9 +554,20 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   const Frame<T>& frame_on_parent_;
   const Frame<T>& frame_on_child_;
 
-  // Joint limits. These vectors have zero size for joints with no limits.
-  VectorX<double> lower_limits_;
-  VectorX<double> upper_limits_;
+  // Joint position limits. These vectors have zero size for joints with no
+  // such limits.
+  VectorX<double> pos_lower_limits_;
+  VectorX<double> pos_upper_limits_;
+
+  // Joint velocity limits. These vectors have zero size for joints with no
+  // such limits.
+  VectorX<double> vel_lower_limits_;
+  VectorX<double> vel_upper_limits_;
+
+  // Joint acceleration limits. These vectors have zero size for joints with no
+  // such limits.
+  VectorX<double> acc_lower_limits_;
+  VectorX<double> acc_upper_limits_;
 
   // The Joint<T> implementation:
   std::unique_ptr<JointImplementation> implementation_;
