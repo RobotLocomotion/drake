@@ -272,6 +272,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   // instance. This will be nullified at Finalize().
   scene_graph_ = scene_graph;
   body_index_to_frame_id_[world_index()] = scene_graph->world_frame_id();
+  frame_id_to_body_index_[scene_graph->world_frame_id()] = world_index();
   DeclareSceneGraphPorts();
   return source_id_.value();
 }

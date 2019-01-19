@@ -815,6 +815,9 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
                                                               &context);
 
   simulator.set_target_realtime_rate(0.5);
+  simulator.set_publish_at_initialization(true);
+  simulator.set_publish_every_time_step(true);
+
   // Set the integrator and initialize the simulator.
   simulator.Initialize();
 
@@ -895,11 +898,12 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
-// Tests that if publishing every timestep is disabled, publish only happens
-// on initialization.
+// Tests that if publishing every timestep is disabled and publish on
+// initialization is enabled, publish only happens on initialization.
 GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
   Simulator<double> simulator(spring_mass);  // Use default Context.
+  simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(false);
 
   simulator.get_mutable_context().set_time(0.);

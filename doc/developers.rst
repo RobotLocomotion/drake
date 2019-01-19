@@ -139,6 +139,7 @@ Issue Tracking
     :maxdepth: 1
 
     issues
+    platform_reviewer_checklist
 
 Code Review
 ===========

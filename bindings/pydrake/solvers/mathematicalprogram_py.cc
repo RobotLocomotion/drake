@@ -632,7 +632,23 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def("lower_bound", &Constraint::lower_bound,
           doc.Constraint.lower_bound.doc)
       .def("upper_bound", &Constraint::upper_bound,
-          doc.Constraint.upper_bound.doc);
+          doc.Constraint.upper_bound.doc)
+      .def("CheckSatisfied",
+          [](Constraint& self, const Eigen::Ref<const Eigen::VectorXd>& x,
+              double tol) { return self.CheckSatisfied(x, tol); },
+          py::arg("x"), py::arg("tol") = 1E-6,
+          doc.Constraint.CheckSatisfied.doc)
+      .def("CheckSatisfied",
+          [](Constraint& self, const Eigen::Ref<const AutoDiffVecXd>& x,
+              double tol) { return self.CheckSatisfied(x, tol); },
+          py::arg("x"), py::arg("tol") = 1E-6,
+          doc.Constraint.CheckSatisfied.doc)
+      .def("CheckSatisfied",
+          [](Constraint& self,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
+            return self.CheckSatisfied(x);
+          },
+          py::arg("x"), doc.Constraint.CheckSatisfied.doc);
 
   py::class_<LinearConstraint, Constraint, std::shared_ptr<LinearConstraint>>(
       m, "LinearConstraint", doc.LinearConstraint.doc)

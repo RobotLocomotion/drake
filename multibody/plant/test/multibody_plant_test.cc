@@ -614,6 +614,11 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
   // Compute the poses for each geometry in the model.
   plant_->get_geometry_poses_output_port().Calc(*context, poses_value.get());
 
+  const FrameId world_frame_id =
+      plant_->GetBodyFrameIdOrThrow(plant_->world_body().index());
+  ASSERT_TRUE(plant_->GetBodyFromFrameId(world_frame_id) != nullptr);
+  EXPECT_EQ(plant_->GetBodyFromFrameId(world_frame_id)->index(),
+            plant_->world_body().index());
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
   for (BodyIndex body_index(1);
        body_index < plant_->num_bodies(); ++body_index) {
@@ -2300,6 +2305,11 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   const Body<double>& mug = plant.GetBodyByName("main_body", mug_model);
 
   plant.Finalize();
+
+  // Check link 0 is anchored, and link 1 is not.
+  EXPECT_TRUE(plant.IsAnchored(plant.GetBodyByName("iiwa_link_0", arm_model)));
+  EXPECT_FALSE(
+      plant.IsAnchored(plant.GetBodyByName("iiwa_link_1", arm_model)));
 
   auto context = plant.CreateDefaultContext();
 

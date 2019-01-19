@@ -334,8 +334,10 @@ class TestMultibodyTree(unittest.TestCase):
         plant.Finalize()
         context = plant.CreateDefaultContext()
 
-        self.assertEqual(plant.num_positions(), 2)
-        self.assertEqual(plant.num_velocities(), 2)
+        nq = 2
+        nv = 2
+        self.assertEqual(plant.num_positions(), nq)
+        self.assertEqual(plant.num_velocities(), nv)
 
         q0 = np.array([3.14, 2.])
         v0 = np.array([-0.5, 1.])
@@ -376,6 +378,10 @@ class TestMultibodyTree(unittest.TestCase):
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+        # Test existence of limits.
+        self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
+        self.assertEqual(plant.GetPositionUpperLimits().shape, (nq,))
 
     def test_model_instance_port_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.
