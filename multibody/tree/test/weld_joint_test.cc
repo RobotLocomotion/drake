@@ -74,8 +74,8 @@ TEST_F(WeldJointTest, GetX_PC) {
 }
 
 TEST_F(WeldJointTest, GetJointLimits) {
-  EXPECT_EQ(joint_->lower_limits().size(), 0);
-  EXPECT_EQ(joint_->upper_limits().size(), 0);
+  EXPECT_EQ(joint_->position_lower_limits().size(), 0);
+  EXPECT_EQ(joint_->position_upper_limits().size(), 0);
 }
 
 }  // namespace

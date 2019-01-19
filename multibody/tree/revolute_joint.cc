@@ -21,10 +21,11 @@ RevoluteJoint<T>::TemplatedDoCloneToScalar(
 
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<RevoluteJoint<ToScalar>>(
-      this->name(),
-      frame_on_parent_body_clone, frame_on_child_body_clone,
-      this->revolute_axis(),
-      this->lower_limit(), this->upper_limit(), this->damping());
+      this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
+      this->revolute_axis(), this->position_lower_limits()[0],
+      this->position_upper_limit(), this->damping(),
+      this->velocity_lower_limit(), this->velocity_upper_limit(),
+      this->acceleration_lower_limit(), this->acceleration_upper_limit());
 
   return std::move(joint_clone);
 }

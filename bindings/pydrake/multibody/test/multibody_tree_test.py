@@ -155,8 +155,10 @@ class TestMultibodyTree(unittest.TestCase):
             name="ShoulderJoint", model_instance=model_instance))
         shoulder = plant.GetJointByName(name="ShoulderJoint")
         self._test_joint_api(shoulder)
-        np.testing.assert_array_equal(shoulder.lower_limits(), [-np.inf])
-        np.testing.assert_array_equal(shoulder.upper_limits(), [np.inf])
+        np.testing.assert_array_equal(
+            shoulder.position_lower_limits(), [-np.inf])
+        np.testing.assert_array_equal(
+            shoulder.position_upper_limits(), [np.inf])
         self.assertIs(shoulder, plant.GetJointByName(
             name="ShoulderJoint", model_instance=model_instance))
         self._test_joint_actuator_api(

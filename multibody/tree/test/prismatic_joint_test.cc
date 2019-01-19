@@ -16,6 +16,14 @@ const double kEpsilon = std::numeric_limits<double>::epsilon();
 using Eigen::Vector3d;
 using systems::Context;
 
+constexpr double kPositionLowerLimit = -1.0;
+constexpr double kPositionUpperLimit = 1.5;
+constexpr double kVelocityLowerLimit = -1.1;
+constexpr double kVelocityUpperLimit = 1.6;
+constexpr double kAccelerationLowerLimit = -1.2;
+constexpr double kAccelerationUpperLimit = 1.7;
+constexpr double kDamping = 3;
+
 class PrismaticJointTest : public ::testing::Test {
  public:
   // Creates a simple model consisting of a single body with a prismatic joint
@@ -32,13 +40,10 @@ class PrismaticJointTest : public ::testing::Test {
     body1_ = &model->AddBody<RigidBody>(M_B);
 
     // Add a prismatic joint between the world and body1:
-    const double lower_limit = -1.0;
-    const double upper_limit = 1.5;
-    const double damping = 3.0;
     joint1_ = &model->AddJoint<PrismaticJoint>(
-        "Joint1",
-        model->world_body(), {}, *body1_, {}, Vector3d::UnitZ(),
-        lower_limit, upper_limit, damping);
+        "Joint1", model->world_body(), {}, *body1_, {}, Vector3d::UnitZ(),
+        kPositionLowerLimit, kPositionUpperLimit, kDamping, kVelocityLowerLimit,
+        kVelocityUpperLimit, kAccelerationLowerLimit, kAccelerationUpperLimit);
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -75,10 +80,20 @@ TEST_F(PrismaticJointTest, GetAxis) {
 }
 
 TEST_F(PrismaticJointTest, GetJointLimits) {
-  EXPECT_EQ(joint1_->lower_limits().size(), 1);
-  EXPECT_EQ(joint1_->upper_limits().size(), 1);
-  EXPECT_EQ(joint1_->lower_limits()[0], joint1_->lower_limit());
-  EXPECT_EQ(joint1_->upper_limits()[0], joint1_->upper_limit());
+  EXPECT_EQ(joint1_->position_lower_limits().size(), 1);
+  EXPECT_EQ(joint1_->position_upper_limits().size(), 1);
+  EXPECT_EQ(joint1_->velocity_lower_limits().size(), 1);
+  EXPECT_EQ(joint1_->velocity_upper_limits().size(), 1);
+  EXPECT_EQ(joint1_->acceleration_lower_limits().size(), 1);
+  EXPECT_EQ(joint1_->acceleration_upper_limits().size(), 1);
+
+  EXPECT_EQ(joint1_->position_lower_limit(), kPositionLowerLimit);
+  EXPECT_EQ(joint1_->position_upper_limit(), kPositionUpperLimit);
+  EXPECT_EQ(joint1_->velocity_lower_limit(), kVelocityLowerLimit);
+  EXPECT_EQ(joint1_->velocity_upper_limit(), kVelocityUpperLimit);
+  EXPECT_EQ(joint1_->acceleration_lower_limit(), kAccelerationLowerLimit);
+  EXPECT_EQ(joint1_->acceleration_upper_limit(), kAccelerationUpperLimit);
+  EXPECT_EQ(joint1_->damping(), kDamping);
 }
 
 // Context-dependent value access.
@@ -126,10 +141,18 @@ TEST_F(PrismaticJointTest, Clone) {
   EXPECT_EQ(joint1_clone.frame_on_child().index(),
             joint1_->frame_on_child().index());
   EXPECT_EQ(joint1_clone.translation_axis(), joint1_->translation_axis());
-  EXPECT_EQ(joint1_clone.lower_limits(), joint1_->lower_limits());
-  EXPECT_EQ(joint1_clone.upper_limits(), joint1_->upper_limits());
-  EXPECT_EQ(joint1_clone.lower_limit(), joint1_->lower_limit());
-  EXPECT_EQ(joint1_clone.upper_limit(), joint1_->upper_limit());
+  EXPECT_EQ(joint1_clone.position_lower_limits(),
+            joint1_->position_lower_limits());
+  EXPECT_EQ(joint1_clone.position_upper_limits(),
+            joint1_->position_upper_limits());
+  EXPECT_EQ(joint1_clone.velocity_lower_limits(),
+            joint1_->velocity_lower_limits());
+  EXPECT_EQ(joint1_clone.velocity_upper_limits(),
+            joint1_->velocity_upper_limits());
+  EXPECT_EQ(joint1_clone.acceleration_lower_limits(),
+            joint1_->acceleration_lower_limits());
+  EXPECT_EQ(joint1_clone.acceleration_upper_limits(),
+            joint1_->acceleration_upper_limits());
   EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
 }
 
