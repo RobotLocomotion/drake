@@ -1039,11 +1039,8 @@ void Simulator<T>::IsolateWitnessTriggers(
     const T inf = std::numeric_limits<double>::infinity();
     context.set_time(t0);
     context.get_mutable_continuous_state().SetFromVector(x0);
-    T t_remaining = t_des - t0;
-    while (t_remaining > 0) {
-      integrator_->IntegrateAtMost(inf, inf, t_remaining);
-      t_remaining = t_des - context.get_time();
-    }
+    while (context.get_time() < t_des)
+      integrator_->IntegrateNoFurtherThanTime(inf, inf, t_des);
   };
 
   // Loop until the isolation window is sufficiently small.
@@ -1106,7 +1103,7 @@ void Simulator<T>::IsolateWitnessTriggers(
 template <class T>
 bool Simulator<T>::IntegrateContinuousState(
     const T& next_publish_time, const T& next_update_time,
-    const T& time_of_next_timed_event, const T& boundary_time,
+    const T&, const T& boundary_time,
     CompositeEventCollection<T>* events) {
   using std::abs;
 
@@ -1118,21 +1115,6 @@ bool Simulator<T>::IntegrateContinuousState(
   const Context<T>& context = get_context();
   const T t0 = context.get_time();
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
-
-  // Note: this function is only called in one place and under the conditions
-  // that (1) t0 + next_update_dt equals *either* time_of_next_timed_event *or*
-  // infinity and (2) t0 + next_publish_dt equals *either*
-  // time_of_next_timed_event or infinity. This function should work without
-  // these assumptions being valid but might benefit from additional review.
-  const double inf = std::numeric_limits<double>::infinity();
-  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  const T next_publish_dt = next_publish_time - t0;
-  const T next_update_dt = next_update_time - t0;
-  const T boundary_dt = boundary_time - t0;
-  DRAKE_ASSERT(next_update_dt == inf ||
-      abs(t0 + next_update_dt - time_of_next_timed_event) < zero_tol);
-  DRAKE_ASSERT(next_publish_dt == inf ||
-      abs(t0 + next_publish_dt - time_of_next_timed_event) < zero_tol);
 
   // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
@@ -1152,8 +1134,8 @@ bool Simulator<T>::IntegrateContinuousState(
   // distinguished between. See internal documentation for
   // IntegratorBase::StepOnceAtMost() for more information.
   typename IntegratorBase<T>::StepResult result =
-      integrator_->IntegrateAtMost(next_publish_time, next_update_time,
-                                  boundary_time);
+      integrator_->IntegrateNoFurtherThanTime(
+          next_publish_time, next_update_time, boundary_time);
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
@@ -1233,24 +1215,9 @@ bool Simulator<T>::IntegrateContinuousState(
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:
-      // Next line sets the time to the exact event time rather than
-      // introducing rounding error by summing the context time + dt.
-      context_->set_time(time_of_next_timed_event);
-      return true;            // Timed event hit.
-      break;
+      return true;
 
     case IntegratorBase<T>::kTimeHasAdvanced:
-      // If an event time was reached, indicate as such by returning
-      // `true`. Otherwise, return `false` to indicate just advancement of time.
-      if (tf >= next_update_time || tf >= next_publish_time) {
-        // Correct the time to the timed event time.
-        context_->set_time(time_of_next_timed_event);
-        return true;            // Timed event hit.
-      } else {
-        return false;
-      }
-      break;
-
     case IntegratorBase<T>::kReachedBoundaryTime:
       return false;           // Did not hit a time for a timed event.
       break;

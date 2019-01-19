@@ -161,7 +161,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
   }
 
   // Integrates up to the requested time.
-  integrator_->IntegrateWithMultipleSteps(
+  integrator_->IntegrateWithMultipleStepsToTime(
       tf - context_->get_time());
 
   // Retrieves the state vector. This cast is safe because the
@@ -267,7 +267,7 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
   integrator_->StartDenseIntegration();
 
   // Steps the integrator through the entire interval.
-  integrator_->IntegrateWithMultipleSteps(
+  integrator_->IntegrateWithMultipleStepsToTime(
       tf - context_->get_time());
 
   // Stops dense integration to prevent future updates to

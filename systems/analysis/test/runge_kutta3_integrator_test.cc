@@ -90,7 +90,7 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
   const double t_final = 1.0;
   const int n_steps = t_final / dt;
   for (int i = 0; i < n_steps; ++i)
-    rk2.IntegrateWithSingleFixedStep(dt);
+    rk2.IntegrateWithSingleFixedStepToTime(i * dt);
 
   // Re-integrate with RK3.
   std::unique_ptr<Context<double>> rk3_context = MakePlantContext();
@@ -99,9 +99,9 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
   rk3.set_target_accuracy(1e-6);
   rk3.Initialize();
 
-  // Verify that IntegrateWithMultipleSteps works.
+  // Verify that IntegrateWithMultipleStepsToTime works.
   const double tol = std::numeric_limits<double>::epsilon();
-  rk3.IntegrateWithMultipleSteps(t_final - rk3_context->get_time());
+  rk3.IntegrateWithMultipleStepsToTime(t_final - rk3_context->get_time());
   EXPECT_NEAR(rk3_context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".
@@ -135,7 +135,7 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   const double t_step = t_final / 100.;
   for (double t = 0.; t <= t_final ; t += t_step) {
     // Integrate the whole step.
-    rk3.IntegrateWithMultipleSteps(t_step);
+    rk3.IntegrateWithMultipleStepsToTime(t);
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
         rk3.get_dense_output()->Evaluate(t + t_step),
@@ -150,7 +150,7 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   EXPECT_FALSE(rk3.get_dense_output());
 
   // Integrate one more step.
-  rk3.IntegrateWithMultipleSteps(t_step);
+  rk3.IntegrateWithMultipleStepsToTime(t_final + t_step);
 
   // Verify that the dense output was not updated.
   EXPECT_LT(rk3_dense_output->end_time(), context->get_time());

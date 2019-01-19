@@ -62,7 +62,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
 // magnitude step sizes.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
   // Set a unit magnitude time.
-  this->context->set_time(1.0);
+  this->context->set_time(0.0);
 
   // Set integrator parameters.
   this->integrator->set_maximum_step_size(0.1);
@@ -73,7 +73,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
   this->integrator->Initialize();
 
   // Attempt to take a variable step- should not throw an exception.
-  EXPECT_NO_THROW(this->integrator->IntegrateWithMultipleSteps(1e-40));
+  EXPECT_NO_THROW(
+    this->integrator->IntegrateWithMultipleStepsToTime(1e-40));
 }
 
 // Test scaling vectors
@@ -143,11 +144,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 
   // Integrate for 1 second using variable stepping.
   const double t_final = 1.0;
-  double t_remaining = t_final - this->context->get_time();
   do {
-    this->integrator->IntegrateAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - this->context->get_time();
-  } while (t_remaining > 0.0);
+    this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  } while (this->context->get_time() < t_final);
 
   // Get the final position.
   const double x_final =
@@ -185,8 +184,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
   this->integrator->Initialize();
 
   // Take a single step of size this->kBigDt.
-  this->integrator->IntegrateAtMost(this->kBigDt, this->kBigDt,
-                                     this->kBigDt);
+  const double t_final = this->context->get_time() + this->kBigDt;
+  this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
 
   // Verify that a step of this->kBigDt was taken.
   EXPECT_NEAR(this->context->get_time(), this->kBigDt,
@@ -241,8 +240,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
 
   // Step for 1 second.
   const double t_final = 1.0;
-  for (double t = 0.0; t < t_final; t += this->kDt)
-    this->integrator->IntegrateAtMost(this->kDt, this->kDt, this->kDt);
+  for (double t = this->kDt; t <= t_final; t += this->kDt)
+    this->integrator->IntegrateNoFurtherThanTime(t, t, t);
+  this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
 
   // Get the final position.
   const double x_final =
@@ -274,11 +274,9 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
                              initial_velocity);
 
   // Step for 1 second.
-  double t_remaining = t_final - this->context->get_time();
   do {
-    this->integrator->IntegrateAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - this->context->get_time();
-  } while (t_remaining > 0.0);
+    this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  } while (this->context->get_time() < t_final);
 
   // Check the solution.
   EXPECT_NEAR(
@@ -323,16 +321,15 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MaxStepSizeRespected) {
   const double inf = std::numeric_limits<double>::infinity();
   const double eps = std::numeric_limits<double>::epsilon();
   const double t_final = 0.1;
-  double t_remaining = t_final - this->context->get_time();
   do {
     // NOTE: this perfect storm of conditions (error controlled integration
     // can take the maximum step size, publish time larger than update time,
     // update time larger than directed step, directed step larger than maximum
     // step size) causes IntegratorBase::StepOnceErrorControlledAtMost() to
     // to hang *if* that method does not account for the maximum step size.
-    this->integrator->IntegrateAtMost(inf, max_step_size + eps, t_remaining);
-    t_remaining = t_final - this->context->get_time();
-  } while (t_remaining > 0.0);
+    this->integrator->IntegrateNoFurtherThanTime(
+        inf, this->context->get_time() + max_step_size + eps, t_final);
+  } while (this->context->get_time() < t_final);
 
   // Verify the statistics.
   EXPECT_LE(this->integrator->get_largest_step_size_taken(),
@@ -364,20 +361,21 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MinTimeThrows) {
   this->integrator->get_mutable_context()->set_time(large_time);
 
   // It should throw if we try to integrate forward.
-  EXPECT_THROW(this->integrator->IntegrateWithMultipleSteps(dt),
-               std::runtime_error);
+  EXPECT_THROW(this->integrator->IntegrateWithMultipleStepsToTime(
+      large_time + dt), std::runtime_error);
 
   // Set the requested minimum step size and try to integrate again; should
   // still throw an exception.
   this->integrator->set_maximum_step_size(dt * 10);
   this->integrator->get_mutable_context()->set_time(0);
   this->integrator->set_requested_minimum_step_size(1e-2);
-  EXPECT_THROW(this->integrator->IntegrateWithMultipleSteps(dt),
-               std::runtime_error);
+  EXPECT_THROW(this->integrator->IntegrateWithMultipleStepsToTime(
+      large_time + dt), std::runtime_error);
 
   // Disable the throw and verify that the exception does not still occur.
   this->integrator->set_throw_on_minimum_step_size_violation(false);
-  EXPECT_NO_THROW(this->integrator->IntegrateWithMultipleSteps(dt));
+  EXPECT_NO_THROW(this->integrator->IntegrateWithMultipleStepsToTime(
+      large_time + dt));
 }
 
 // Verify that attempting to take a single fixed step throws an exception.
@@ -393,7 +391,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, IllegalFixedStep) {
   // Initialize the integrator.
   this->integrator->Initialize();
 
-  EXPECT_THROW(this->integrator->IntegrateWithSingleFixedStep(1e-8),
+  ASSERT_EQ(this->context->get_time(), 0.0);
+  EXPECT_THROW(this->integrator->IntegrateWithSingleFixedStepToTime(1e-8),
                std::logic_error);
 }
 
@@ -419,7 +418,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
                              initial_velocity);
 
   // Integrate just one step.
-  this->integrator->IntegrateAtMost(this->kDt, this->kDt, this->kDt);
+  const double t_final = this->context->get_time() + this->kDt;
+  this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
 
   // Verify that integrator statistics are valid.
   EXPECT_GE(this->integrator->get_previous_integration_step_size(), 0.0);

@@ -1721,22 +1721,35 @@ GTEST_TEST(SimulatorTest, Issue10443) {
       integrator.get_input_port());
 
   // Add a periodic logger
-  const double kPeriod = 0.1;
+  const int kFrequency = 10;  // 10 cycles.
   auto& periodic_logger = *builder.AddSystem<SignalLogger<double>>(kSize);
-  periodic_logger.set_publish_period(kPeriod);
+  periodic_logger.set_publish_period(1.0 / kFrequency);
   builder.Connect(integrator.get_output_port(),
       periodic_logger.get_input_port());
 
+  // Finish constructing the Diagram.
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  // Construct the Simulator with an RK3 integrator and settings that reproduce
+  // the behavior.
   Simulator<double> simulator(*diagram);
-  const double kTime = 1.0;
-  simulator.StepTo(kTime);
+  auto rk3 = std::make_unique<RungeKutta3Integrator<double>>(
+      *diagram, &simulator.get_mutable_context());
+  rk3->set_maximum_step_size(0.1);
+  rk3->request_initial_step_size_target(1e-4);
+  rk3->set_target_accuracy(1e-4);
+  rk3->set_fixed_step_mode(false);
+  simulator.reset_integrator(std::move(rk3));
+
+  // Simulate.
+  const int kTime = 1.0;
+  simulator.StepTo(static_cast<double>(kTime));
 
   // Should log exactly once every kPeriod, up to and including
   // kTime.
   Eigen::VectorBlock<const VectorX<double>> t_periodic =
       periodic_logger.sample_times();
-  EXPECT_EQ(t_periodic.size(), std::floor(kTime / kPeriod) + 1);
+  EXPECT_EQ(t_periodic.size(), kTime * kFrequency + 1);
 }
 
 // Verifies that an integrator will *not* stretch its integration step in the
@@ -1806,10 +1819,12 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
 
   // Take a single step with the integrator.
   const double inf = std::numeric_limits<double>::infinity();
-  integrator->IntegrateAtMost(inf, 1.0, 1.0);
+  const Context<double>& context = integrator->get_context();
+  integrator->IntegrateNoFurtherThanTime(inf,
+      context.get_time() + 1.0, context.get_time() + 1.0);
 
   // Verify that the integrator has stepped before the event time.
-  EXPECT_LT(simulator.get_mutable_context().get_time(), event_time);
+  EXPECT_LT(context.get_time(), event_time);
 
   // Get the ideal next step size and verify that it is not NaN.
   const double ideal_next_step_size = integrator->get_ideal_next_step_size();
@@ -1820,10 +1835,11 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   simulator.get_mutable_context().set_time(event_time - desired_dt);
 
   // Step to the event time.
-  integrator->IntegrateAtMost(inf, desired_dt, inf);
+  integrator->IntegrateNoFurtherThanTime(
+    inf, context.get_time() + desired_dt, inf);
 
   // Verify that the context is at the event time.
-  EXPECT_EQ(simulator.get_context().get_time(), event_time);
+  EXPECT_EQ(context.get_time(), event_time);
 
   // Verify that artificial limiting did not change the ideal next step size.
   EXPECT_EQ(integrator->get_ideal_next_step_size(), ideal_next_step_size);
