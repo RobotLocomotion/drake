@@ -45,42 +45,81 @@ class TestSystemsLcm(unittest.TestCase):
 
     def test_serializer(self):
         dut = mut.PySerializer(quaternion_t)
-        model = self._model_message()
+        model_msg = self._model_message()
         value = dut.CreateDefaultValue()
-        self.assert_lcm_not_equal(value.get_value(), model)
+        self.assert_lcm_not_equal(value.get_value(), model_msg)
         # Check deserialization.
-        dut.Deserialize(model.encode(), value)
-        self.assert_lcm_equal(value.get_value(), model)
+        dut.Deserialize(model_msg.encode(), value)
+        self.assert_lcm_equal(value.get_value(), model_msg)
         # Check serialization.
         raw = dut.Serialize(value)
         reconstruct = quaternion_t.decode(raw)
-        self.assert_lcm_equal(reconstruct, model)
+        self.assert_lcm_equal(reconstruct, model_msg)
+
+    def _calc_output(self, dut):
+        context = dut.CreateDefaultContext()
+        output = dut.AllocateOutput()
+        dut.CalcOutput(context, output)
+        actual = output.get_data(0)
+        return actual
 
     def test_subscriber(self):
         lcm = DrakeMockLcm()
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
-        model = self._model_message()
+        model_msg = self._model_message()
         lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model.encode())
+            channel="TEST_CHANNEL", buffer=model_msg.encode())
+        actual_msg = self._calc_output(dut).get_value()
+        self.assert_lcm_equal(actual_msg, model_msg)
+
+    def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
-        output = dut.AllocateOutput()
-        dut.CalcOutput(context, output)
-        actual = output.get_data(0).get_value()
-        self.assert_lcm_equal(actual, model)
+        context.FixInputPort(0, value)
+        dut.Publish(context)
 
     def test_publisher(self):
         lcm = DrakeMockLcm()
         dut = mut.LcmPublisherSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
-        model = self._model_message()
-        context = dut.CreateDefaultContext()
-        context.FixInputPort(0, AbstractValue.Make(model))
-        dut.Publish(context)
+        model_msg = self._model_message()
+        self._fix_and_publish(dut, AbstractValue.Make(model_msg))
         raw = lcm.get_last_published_message("TEST_CHANNEL")
-        value = quaternion_t.decode(raw)
-        self.assert_lcm_equal(value, model)
+        actual_msg = quaternion_t.decode(raw)
+        self.assert_lcm_equal(actual_msg, model_msg)
+
+    def test_cpp_subscriber_and_publisher(self):
+        # Setup (and test) C++ serializer.
+        serializer = mut.CppSerializer[quaternion_t]()
+
+        def cpp_to_lcm(value):
+            raw = serializer.Serialize(value)
+            return quaternion_t.decode(raw)
+
+        model_msg = self._model_message()
+        value = serializer.CreateDefaultValue()
+        serializer.Deserialize(model_msg.encode(), value)
+        self.assert_lcm_equal(cpp_to_lcm(value), model_msg)
+
+        # Exercise `use_cpp_serializer` in factory methods.
+        lcm = DrakeMockLcm()
+        # - Subscriber.
+        sub = mut.LcmSubscriberSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
+            use_cpp_serializer=True)
+        lcm.InduceSubscriberCallback(
+            channel="TEST_CHANNEL", buffer=model_msg.encode())
+        sub_actual_msg = cpp_to_lcm(self._calc_output(sub))
+        self.assert_lcm_equal(sub_actual_msg, model_msg)
+        # - Publisher.
+        pub = mut.LcmPublisherSystem.Make(
+            channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
+            use_cpp_serializer=True)
+        self._fix_and_publish(pub, value)
+        raw = lcm.get_last_published_message("TEST_CHANNEL")
+        pub_actual_msg = quaternion_t.decode(raw)
+        self.assert_lcm_equal(pub_actual_msg, model_msg)
 
     def test_connect_lcm_scope(self):
         builder = DiagramBuilder()
