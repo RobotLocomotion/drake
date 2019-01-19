@@ -46,6 +46,7 @@ drake_pybind_library(
     name = "multibody_tree_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/systems:lcm_pybind",
         "//bindings/pydrake/systems:systems_pybind",
         "//bindings/pydrake/util:deprecation_pybind",
         "//bindings/pydrake/util:drake_optional_pybind",

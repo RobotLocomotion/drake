@@ -55,6 +55,13 @@ class TestSystemsLcm(unittest.TestCase):
         raw = dut.Serialize(value)
         reconstruct = quaternion_t.decode(raw)
         self.assert_lcm_equal(reconstruct, model)
+        # - Test C++ serializer.
+        cpp_dut = mut.CppSerializer[quaternion_t]()
+        cpp_value = cpp_dut.CreateDefaultValue()
+        self.assertIsInstance(cpp_value, AbstractValue)
+        cpp_dut.Deserialize(raw, cpp_value)
+        cpp_raw = cpp_dut.Serialize(cpp_value)
+        self.assertEqual(raw, cpp_raw)
 
     def test_subscriber(self):
         lcm = DrakeMockLcm()

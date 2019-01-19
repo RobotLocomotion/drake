@@ -2,10 +2,12 @@
 
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
+#include "robotlocomotion/quaternion_t.hpp"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/lcm_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/lcm/connect_lcm_scope.h"
@@ -16,6 +18,7 @@
 namespace drake {
 namespace pydrake {
 
+using pysystems::pylcm::BindCppSerializer;
 using systems::AbstractValue;
 using systems::lcm::SerializerInterface;
 
@@ -72,13 +75,35 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = SerializerInterface;
+    constexpr auto& cls_doc = doc.SerializerInterface;
     py::class_<Class, PySerializerInterface>(m, "SerializerInterface")
         .def(py::init(
                  []() { return std::make_unique<PySerializerInterface>(); }),
-            doc.SerializerInterface.ctor.doc);
-    // TODO(eric.cousineau): Consider providing bindings of C++ types if we want
-    // to be able to connect to ports which use C++ LCM types.
+            cls_doc.ctor.doc)
+        .def("CreateDefaultValue", &Class::CreateDefaultValue,
+            cls_doc.CreateDefaultValue.doc)
+        .def("Deserialize",
+            [](const Class& self, py::bytes message_bytes,
+                AbstractValue* abstract_value) {
+              std::string str = message_bytes;
+              self.Deserialize(str.data(), str.size(), abstract_value);
+            },
+            py::arg("message_bytes"), py::arg("abstract_value"),
+            cls_doc.Deserialize.doc)
+        .def("Serialize",
+            [](const Class& self, const AbstractValue& abstract_value) {
+              std::vector<uint8_t> message_bytes;
+              self.Serialize(abstract_value, &message_bytes);
+              return py::bytes(
+                  reinterpret_cast<const char*>(message_bytes.data()),
+                  message_bytes.size());
+            },
+            py::arg("abstract_value"), cls_doc.Serialize.doc);
   }
+
+  // Permit defining C++ serializers. Use `robotlocomotion::quaternion_t` as
+  // an initial type to seed the template (and use for testing).
+  BindCppSerializer<robotlocomotion::quaternion_t>("robotlocomotion");
 
   {
     using Class = LcmPublisherSystem;

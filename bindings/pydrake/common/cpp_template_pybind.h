@@ -68,24 +68,33 @@ inline py::object AddTemplateClass(  // BR
   return py_template;
 }
 
-/// Provides a convenience wrapper for defining a template class instantiation
-/// and a default instantiation (if not already defined).
-/// The default instantiation is named `default_name`, while the template is
-/// named `default_name + template_suffix`.
+/// Provides a convenience wrapper for defining a template class instantiation.
 /// @return pybind11 class
 template <typename Class, typename... Options>
-py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
-    py::handle scope, const std::string& default_name, py::tuple param,
-    const char* doc_string = "", const std::string& template_suffix = "_") {
-  const std::string template_name = default_name + template_suffix;
+py::class_<Class, Options...> DefineTemplateClass(  // BR
+    py::handle scope, const std::string& template_name, py::tuple param,
+    const char* doc_string = "") {
   // Define class with temporary name.
   py::class_<Class, Options...> py_class(
       scope, TemporaryClassName<Class>().c_str(), doc_string);
   // Register instantiation.
   AddTemplateClass(scope, template_name, py_class, param);
+  return py_class;
+}
+
+/// Same as `DefineTemplateClass`, but adds a default instantiation if it does
+/// not already exist in `scope`. The default instantiation is named
+/// `name`, while the template is named `name + template_suffix`.
+template <typename Class, typename... Options>
+py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
+    py::handle scope, const std::string& name, py::tuple param,
+    const char* doc_string = "", const std::string& template_suffix = "_") {
+  const std::string template_name = name + template_suffix;
+  auto py_class = DefineTemplateClass<Class, Options...>(
+      scope, template_name, param, doc_string);
   // Declare default instantiation if it does not already exist.
-  if (!py::hasattr(scope, default_name.c_str())) {
-    scope.attr(default_name.c_str()) = py_class;
+  if (!py::hasattr(scope, name.c_str())) {
+    scope.attr(name.c_str()) = py_class;
   }
   return py_class;
 }
