@@ -1,5 +1,7 @@
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
+#include <utility>
+
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/systems/framework/diagram_builder.h"
