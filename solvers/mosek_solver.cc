@@ -770,8 +770,9 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
     if (rescode == MSK_RES_OK) {
       // num_mosek_vars is guaranteed to be no less than prog.num_vars(), as we
       // can add slack variables when we construct Mosek constraints. For
-      // example, when we call AddSecondOrderConeConstraints.
+      // example, when we call AddSecondOrderConeConstraints().
       rescode = MSK_getnumvar(task, &num_mosek_vars);
+      DRAKE_DEMAND(num_mosek_vars >= prog.num_vars());
     }
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putintparam(task, MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON);
@@ -791,6 +792,7 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
         var_count++;
       }
     }
+    DRAKE_DEMAND(var_count == prog.num_vars());
   }
 
   result->set_solution_result(SolutionResult::kUnknownError);
