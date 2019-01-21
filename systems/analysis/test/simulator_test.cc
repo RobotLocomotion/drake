@@ -188,22 +188,22 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 
 // A composite system using the logistic system with the clock-based
 // witness function.
-class CompositeSystem : public LogisticSystem {
+class CompositeSystem : public analysis_test::LogisticSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeSystem)
 
-  CompositeSystem(double k, double alpha, double nu, double trigger_time) :
-      LogisticSystem(k, alpha, nu), trigger_time_(trigger_time) {
+  CompositeSystem(double k, double alpha, double nu, double trigger_time)
+      : LogisticSystem(k, alpha, nu), trigger_time_(trigger_time) {
     this->DeclareContinuousState(1);
 
-    logistic_witness_ = this->DeclareWitnessFunction("logistic witness",
-      WitnessFunctionDirection::kCrossesZero,
-      &CompositeSystem::GetStateValue,
-      PublishEvent<double>());
-    clock_witness_ = this->DeclareWitnessFunction("clock witness",
-      WitnessFunctionDirection::kCrossesZero,
-      &CompositeSystem::CalcClockWitness,
-      PublishEvent<double>());
+    logistic_witness_ = this->DeclareWitnessFunction(
+        "logistic witness", WitnessFunctionDirection::kCrossesZero,
+        &CompositeSystem::GetStateValue,
+        &CompositeSystem::UseLogisticsCallback);
+    clock_witness_ = this->DeclareWitnessFunction(
+        "clock witness", WitnessFunctionDirection::kCrossesZero,
+        &CompositeSystem::CalcClockWitness,
+        &CompositeSystem::UseLogisticsCallback);
   }
 
   const WitnessFunction<double>* get_logistic_witness() const {
@@ -230,6 +230,11 @@ class CompositeSystem : public LogisticSystem {
   // The witness function is the time value itself plus the offset value.
   double CalcClockWitness(const Context<double>& context) const {
     return context.get_time() - trigger_time_;
+  }
+
+  void UseLogisticsCallback(const Context<double>& context,
+                            const PublishEvent<double>& event) const {
+    LogisticSystem<double>::InvokePublishCallback(context, event);
   }
 
   const double trigger_time_;

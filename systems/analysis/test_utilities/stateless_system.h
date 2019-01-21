@@ -23,7 +23,7 @@ class StatelessSystem final : public LeafSystem<T> {
         offset_(offset) {
     witness_ = this->DeclareWitnessFunction(
         "clock witness", dir_type, &StatelessSystem::CalcClockWitness,
-            PublishEvent<T>());
+        &StatelessSystem::InvokePublishCallback);
   }
 
   /// Scalar-converting copy constructor. See @ref system_scalar_conversion.
@@ -50,19 +50,18 @@ class StatelessSystem final : public LeafSystem<T> {
     w->push_back(witness_.get());
   }
 
-  void DoPublish(
-      const Context<T>& context,
-      const std::vector<const PublishEvent<T>*>&) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
-  }
-
  private:
   // Allow different specializations to access each other's private data.
   template <typename> friend class StatelessSystem;
 
-  // The witness function is the time value itself plus the offset value.
+  // The witness function is the time value itself less the offset value.
   T CalcClockWitness(const Context<T>& context) const {
     return context.get_time() - offset_;
+  }
+
+  void InvokePublishCallback(const Context<T>& context,
+                             const PublishEvent<T>&) const {
+    if (this->publish_callback_ != nullptr) this->publish_callback_(context);
   }
 
   const double offset_;

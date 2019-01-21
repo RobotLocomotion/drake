@@ -21,13 +21,12 @@ class LogisticSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LogisticSystem)
 
-  LogisticSystem(double k, double alpha, double nu) : k_(k), alpha_(alpha),
-      nu_(nu) {
+  LogisticSystem(double k, double alpha, double nu)
+      : k_(k), alpha_(alpha), nu_(nu) {
     this->DeclareContinuousState(1);
-    witness_ = this->DeclareWitnessFunction("Logistic witness",
-        WitnessFunctionDirection::kCrossesZero,
-        &LogisticSystem::GetStateValue,
-        PublishEvent<T>());
+    witness_ = this->DeclareWitnessFunction(
+        "Logistic witness", WitnessFunctionDirection::kCrossesZero,
+        &LogisticSystem::GetStateValue, &LogisticSystem::InvokePublishCallback);
   }
 
   void set_publish_callback(
@@ -56,10 +55,9 @@ class LogisticSystem : public LeafSystem<T> {
     w->push_back(witness_.get());
   }
 
-  void DoPublish(
-      const drake::systems::Context<double>& context,
-      const std::vector<const systems::PublishEvent<double>*>&) const override {
-    if (publish_callback_ != nullptr) publish_callback_(context);
+  void InvokePublishCallback(const Context<T>& context,
+                             const PublishEvent<T>&) const {
+    if (this->publish_callback_ != nullptr) this->publish_callback_(context);
   }
 
  private:
