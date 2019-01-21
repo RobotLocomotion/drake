@@ -131,10 +131,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag(-std=c++14 CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
+  set(FLAG_STD_CXX14 -std=c++14)
+  check_cxx_compiler_flag(${FLAG_STD_CXX14} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
   if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
     message(FATAL_ERROR
-      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the -std=c++14 flag"
+      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the ${FLAG_STD_CXX14} flag"
     )
   endif()
   message(WARNING
@@ -258,6 +259,39 @@ configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
 set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
 
 set(BAZEL_ARGS)
+
+if(CMAKE_BUILD_TYPE MATCHES "^(MinSizeRel|RelWithDebInfo)$")
+  set(FLAG_OS -Os)
+  set(FLAG_G -g)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GCC)$")
+    if(CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
+      list(APPEND BAZEL_ARGS "--copt=${FLAG_OS}")
+    elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+      list(APPEND BAZEL_ARGS "--copt=${FLAG_G}")
+    endif()
+  else()
+    include(CheckCXXCompilerFlag)
+    if(CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
+      check_cxx_compiler_flag(${FLAG_OS} CXX_COMPILER_SUPPORTS_FLAG_OS)
+      if(CXX_COMPILER_SUPPORTS_FLAG_OS)
+        list(APPEND BAZEL_ARGS "--copt=${FLAG_OS}")
+      else()
+        message(WARNING
+          "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration ${CMAKE_BUILD_TYPE} is NOT supported because it does not accept the ${FLAG_OS} flag. Code will NOT be optimized for size."
+        )
+      endif()
+    elseif(CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+      check_cxx_compiler_flag(${FLAG_G} CXX_COMPILER_SUPPORTS_FLAG_G)
+      if(CXX_COMPILER_SUPPORTS_FLAG_G)
+        list(APPEND BAZEL_ARGS "--copt=${FLAG_G}")
+      else()
+        message(WARNING
+          "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration ${CMAKE_BUILD_TYPE} is NOT supported because it does not accept the ${FLAG_G} flag. Debug information will NOT be generated."
+        )
+      endif()
+    endif()
+  endif()
+endif()
 
 if(CMAKE_COLOR_MAKEFILE)
   list(APPEND BAZEL_ARGS --color=yes)
