@@ -42,7 +42,8 @@ class FrameVisualizer : public LeafSystem<double> {
    * parameter `period`.
    */
   void set_publish_period(double period) {
-    this->DeclarePeriodicPublish(period);
+    this->DeclarePeriodicPublishEvent(period, 0.,
+        &FrameVisualizer::PublishFramePose);
   }
 
   /**
@@ -53,9 +54,8 @@ class FrameVisualizer : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
-      const systems::Context<double>& context,
-      const std::vector<const PublishEvent<double>*>&) const override;
+  EventStatus PublishFramePose(
+      const systems::Context<double>& context) const;
 
   const RigidBodyTree<double>& tree_;
   drake::lcm::DrakeLcmInterface* const lcm_;

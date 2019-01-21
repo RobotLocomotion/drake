@@ -12,6 +12,10 @@ FrameVisualizer::FrameVisualizer(
                    tree_.get_num_positions() + tree_.get_num_velocities());
   set_name("frame_visualizer");
 
+  // This ensures that an explicit call to System::Publish() will produce
+  // a message to the visualizer.
+  this->DeclareForcedPublishEvent(&FrameVisualizer::PublishFramePose);
+
   default_msg_.num_links = static_cast<int>(local_transforms_.size());
   default_msg_.link_name.resize(default_msg_.num_links);
   // The robot num is not relevant here.
@@ -25,9 +29,8 @@ FrameVisualizer::FrameVisualizer(
   }
 }
 
-void FrameVisualizer::DoPublish(
-    const systems::Context<double>& context,
-    const std::vector<const PublishEvent<double>*>&) const {
+EventStatus FrameVisualizer::PublishFramePose(
+    const systems::Context<double>& context) const {
   KinematicsCache<double> cache = tree_.CreateKinematicsCache();
 
   auto state = EvalEigenVectorInput(context, 0);
@@ -52,6 +55,7 @@ void FrameVisualizer::DoPublish(
   }
 
   drake::lcm::Publish(lcm_, lcm_channel_, msg, context.get_time());
+  return EventStatus::Succeeded();
 }
 
 }  // namespace systems
