@@ -30,13 +30,18 @@ DrakeVisualizer::DrakeVisualizer(const RigidBodyTree<double>& tree,
   if (enable_playback)
     log_.reset(new SignalLog<double>(tree.get_num_positions()));
 
-  PublishEvent<double> init_event(
-      Event<double>::TriggerType::kInitialization);
-  DeclareInitializationEvent(init_event);
+  DeclareInitializationPublishEvent(&DrakeVisualizer::PublishInitialMessage);
+  DeclareForcedPublishEvent(&DrakeVisualizer::PublishDrawMessage);
+
+  // This is disabled if a publish period is set.
+  DeclarePerStepPublishEvent(&DrakeVisualizer::PerStepPublishDrawMessage);
 }
 
 void DrakeVisualizer::set_publish_period(double period) {
-  LeafSystem<double>::DeclarePeriodicPublish(period);
+  DeclarePeriodicPublishEvent(
+      period, 0.0, &DrakeVisualizer::PublishDrawMessage);
+  // Disable the default per-step event.
+  publish_per_step_ = false;
 }
 
 void DrakeVisualizer::ReplayCachedSimulation() const {
@@ -120,34 +125,9 @@ void DrakeVisualizer::PlaybackTrajectory(
                 message_bytes.size(), sim_time);
 }
 
-void DrakeVisualizer::DoPublish(
-    const Context<double>& context,
-    const std::vector<const PublishEvent<double>*>& events) const {
-  // This event handler is called to handle initialization, periodic, and
-  // forced events (at least). The clean way to handle this variety of event
-  // types would be to establish a handler for each type, rather than the pseudo
-  // switch statement that is being done. But since this code lives in the
-  // attic, we're going with the simplest (ugly) strategy that works.
-
-  // Handle any initialization events first.
-  int num_initialization_events = 0;
-  for (const Event<double>* event : events) {
-    if (event->get_trigger_type() ==
-        Event<double>::TriggerType::kInitialization) {
-      // We expect no more than one initialization event.
-      DRAKE_DEMAND(++num_initialization_events == 1);
-      PublishLoadRobot();
-    }
-  }
-
-  // If events are all initialization events, return now.
-  if (static_cast<int>(events.size()) == num_initialization_events)
-    return;
-
-  // There is at least one non-initialization event (it's conceivable
-  // multiple periodic events triggered at the same time), so we do the
-  // non-initial behavior.
-
+// Both periodic and forced-publish events trigger this handler.
+EventStatus DrakeVisualizer::PublishDrawMessage(
+    const Context<double>& context) const {
   // Obtains the input vector, which contains the generalized q,v state of the
   // RigidBodyTree.
   const BasicVector<double>* input_vector =
@@ -166,6 +146,7 @@ void DrakeVisualizer::DoPublish(
   // Publishes onto the specified LCM channel.
   lcm_->Publish("DRAKE_VIEWER_DRAW", message_bytes.data(),
                 message_bytes.size(), context.get_time());
+  return EventStatus::Succeeded();
 }
 
 void DrakeVisualizer::PublishLoadRobot() const {
