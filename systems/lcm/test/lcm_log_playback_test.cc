@@ -32,7 +32,8 @@ class DummySys : public LeafSystem<double> {
 
   DummySys() {
     DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
-    DeclarePeriodicPublish(1.0 / publish_freq_, 0.0 /* no time offset */);
+    DeclarePeriodicPublishEvent(1.0 / publish_freq_, 0.0 /* no time offset */,
+        &DummySys::SaveMessage);
   }
 
   const std::vector<lcmt_drake_signal>& get_received_msgs() const {
@@ -48,10 +49,7 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const systems::PublishEvent<double>*>&)
-  const override {
+  EventStatus SaveMessage(const Context<double>& context) const {
     const lcmt_drake_signal* msg =
         EvalInputValue<lcmt_drake_signal>(context, 0);
 
@@ -77,6 +75,7 @@ class DummySys : public LeafSystem<double> {
       // "tick" behind.
       received_time_.push_back(context.get_time() - 1.0 / publish_freq_);
     }
+    return EventStatus::Succeeded();
   }
 
   const double publish_freq_{100.0};  // In Hz.

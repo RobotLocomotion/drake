@@ -42,7 +42,9 @@ class FrameVisualizer : public LeafSystem<double> {
    * parameter `period`.
    */
   void set_publish_period(double period) {
-    this->DeclarePeriodicPublish(period);
+    this->DeclarePeriodicPublishEvent(period, 0.,
+        &FrameVisualizer::PublishFramePose);
+    publish_per_step_ = false;  // Disable default per-step publish.
   }
 
   /**
@@ -53,9 +55,14 @@ class FrameVisualizer : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
-      const systems::Context<double>& context,
-      const std::vector<const PublishEvent<double>*>&) const override;
+  EventStatus PerStepPublishFramePose(
+      const systems::Context<double>& context) const {
+    if (!publish_per_step_) return EventStatus::DidNothing();
+    return PublishFramePose(context);
+  }
+
+  EventStatus PublishFramePose(
+      const systems::Context<double>& context) const;
 
   const RigidBodyTree<double>& tree_;
   drake::lcm::DrakeLcmInterface* const lcm_;
@@ -63,6 +70,9 @@ class FrameVisualizer : public LeafSystem<double> {
 
   drake::lcmt_viewer_draw default_msg_{};
   std::string lcm_channel_{"DRAKE_DRAW_FRAMES"};
+
+  // Visualize every step by default; disabled if a period is specified.
+  bool publish_per_step_{true};
 };
 
 }  // namespace systems
