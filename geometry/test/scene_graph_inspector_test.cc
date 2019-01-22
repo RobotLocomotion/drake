@@ -79,6 +79,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.BelongsToSource(geometry_id, source_id);
   inspector.GetFrameId(geometry_id);
   inspector.GetName(geometry_id);
+  inspector.GetShape(geometry_id);
   inspector.X_PG(geometry_id);
   inspector.X_FG(geometry_id);
   inspector.GetProximityProperties(geometry_id);
