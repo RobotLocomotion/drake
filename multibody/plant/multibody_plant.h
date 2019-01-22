@@ -2087,11 +2087,43 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetPositionLowerLimits();
   }
 
-  /// Upper limit analog of GetPositionsLowerLimits, where any unbounded or
+  /// Upper limit analog of GetPositionsLowerLimits(), where any unbounded or
   /// unspecified limits will be +infinity.
-  /// @see GetPositionsLowerLimits for more information.
+  /// @see GetPositionLowerLimits() for more information.
   VectorX<double> GetPositionUpperLimits() const {
     return internal_tree().GetPositionUpperLimits();
+  }
+
+  /// Returns a vector of size `num_velocities()` containing the lower velocity
+  /// limits for every generalized velocity coordinate. These include joint and
+  /// floating base coordinates. Any unbounded or unspecified limits will be
+  /// -infinity.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetVelocityLowerLimits() const {
+    return internal_tree().GetVelocityLowerLimits();
+  }
+
+  /// Upper limit analog of GetVelocitysLowerLimits(), where any unbounded or
+  /// unspecified limits will be +infinity.
+  /// @see GetVelocityLowerLimits() for more information.
+  VectorX<double> GetVelocityUpperLimits() const {
+    return internal_tree().GetVelocityUpperLimits();
+  }
+
+  /// Returns a vector of size `num_velocities()` containing the lower
+  /// acceleration limits for every generalized velocity coordinate. These
+  /// include joint and floating base coordinates. Any unbounded or unspecified
+  /// limits will be -infinity.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetAccelerationLowerLimits() const {
+    return internal_tree().GetAccelerationLowerLimits();
+  }
+
+  /// Upper limit analog of GetAccelerationsLowerLimits(), where any unbounded
+  /// or unspecified limits will be +infinity.
+  /// @see GetAccelerationLowerLimits() for more information.
+  VectorX<double> GetAccelerationUpperLimits() const {
+    return internal_tree().GetAccelerationUpperLimits();
   }
 
   /// Performs the computation of the mass matrix `M(q)` of the model using

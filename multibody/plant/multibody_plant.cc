@@ -543,17 +543,16 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     const double penalty_time_scale = kAlpha * time_step();
 
     if (revolute_joint) {
+      const double lower_limit = revolute_joint->position_lower_limits()(0);
+      const double upper_limit = revolute_joint->position_upper_limits()(0);
       // We only compute parameters if joints do have upper/lower bounds.
-      if (!std::isinf(revolute_joint->lower_limit()) ||
-          !std::isinf(revolute_joint->upper_limit())) {
+      if (!std::isinf(lower_limit) || !std::isinf(upper_limit)) {
         joint_limits_parameters_.joints_with_limits.push_back(
             revolute_joint->index());
 
         // Store joint limits.
-        joint_limits_parameters_.lower_limit.push_back(
-            revolute_joint->lower_limit());
-        joint_limits_parameters_.upper_limit.push_back(
-            revolute_joint->upper_limit());
+        joint_limits_parameters_.lower_limit.push_back(lower_limit);
+        joint_limits_parameters_.upper_limit.push_back(upper_limit);
         // Estimate penalty parameters.
         auto penalty_parameters =
             internal::JointLimitsPenaltyParametersEstimator<T>::
@@ -565,17 +564,16 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     }
 
     if (prismatic_joint) {
+      const double lower_limit = prismatic_joint->position_lower_limits()(0);
+      const double upper_limit = prismatic_joint->position_upper_limits()(0);
       // We only compute parameters if joints do have upper/lower bounds.
-      if (!std::isinf(prismatic_joint->lower_limit()) ||
-          !std::isinf(prismatic_joint->upper_limit())) {
+      if (!std::isinf(lower_limit) || !std::isinf(upper_limit)) {
         joint_limits_parameters_.joints_with_limits.push_back(
             prismatic_joint->index());
 
         // Store joint limits.
-        joint_limits_parameters_.lower_limit.push_back(
-            prismatic_joint->lower_limit());
-        joint_limits_parameters_.upper_limit.push_back(
-            prismatic_joint->upper_limit());
+        joint_limits_parameters_.lower_limit.push_back(lower_limit);
+        joint_limits_parameters_.upper_limit.push_back(upper_limit);
 
         // Estimate penalty parameters.
         auto penalty_parameters =

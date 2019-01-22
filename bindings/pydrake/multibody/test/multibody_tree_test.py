@@ -155,8 +155,10 @@ class TestMultibodyTree(unittest.TestCase):
             name="ShoulderJoint", model_instance=model_instance))
         shoulder = plant.GetJointByName(name="ShoulderJoint")
         self._test_joint_api(shoulder)
-        np.testing.assert_array_equal(shoulder.lower_limits(), [-np.inf])
-        np.testing.assert_array_equal(shoulder.upper_limits(), [np.inf])
+        np.testing.assert_array_equal(
+            shoulder.position_lower_limits(), [-np.inf])
+        np.testing.assert_array_equal(
+            shoulder.position_upper_limits(), [np.inf])
         self.assertIs(shoulder, plant.GetJointByName(
             name="ShoulderJoint", model_instance=model_instance))
         self._test_joint_actuator_api(
@@ -215,6 +217,16 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertIsInstance(joint.num_velocities(), int)
         self.assertIsInstance(joint.position_start(), int)
         self.assertIsInstance(joint.velocity_start(), int)
+
+        nq = joint.num_positions()
+        nv = joint.num_velocities()
+
+        self.assertEqual(len(joint.position_upper_limits()), nq)
+        self.assertEqual(len(joint.position_lower_limits()), nq)
+        self.assertEqual(len(joint.velocity_upper_limits()), nv)
+        self.assertEqual(len(joint.velocity_lower_limits()), nv)
+        self.assertEqual(len(joint.acceleration_upper_limits()), nv)
+        self.assertEqual(len(joint.acceleration_lower_limits()), nv)
 
     def _test_joint_actuator_api(self, joint_actuator):
         self.assertIsInstance(joint_actuator, JointActuator)
@@ -382,6 +394,10 @@ class TestMultibodyTree(unittest.TestCase):
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
         self.assertEqual(plant.GetPositionUpperLimits().shape, (nq,))
+        self.assertEqual(plant.GetVelocityLowerLimits().shape, (nv,))
+        self.assertEqual(plant.GetVelocityUpperLimits().shape, (nv,))
+        self.assertEqual(plant.GetAccelerationLowerLimits().shape, (nv,))
+        self.assertEqual(plant.GetAccelerationUpperLimits().shape, (nv,))
 
     def test_model_instance_port_access(self):
         # Create a MultibodyPlant with a kuka arm and a schunk gripper.

@@ -161,8 +161,18 @@ void init_module(py::module m) {
             "num_positions", &Class::num_positions, doc.Joint.num_positions.doc)
         .def("num_velocities", &Class::num_velocities,
             doc.Joint.num_velocities.doc)
-        .def("lower_limits", &Class::lower_limits, doc.Joint.lower_limits.doc)
-        .def("upper_limits", &Class::upper_limits, doc.Joint.upper_limits.doc);
+        .def("position_lower_limits", &Class::position_lower_limits,
+            doc.Joint.position_lower_limits.doc)
+        .def("position_upper_limits", &Class::position_upper_limits,
+            doc.Joint.position_upper_limits.doc)
+        .def("velocity_lower_limits", &Class::velocity_lower_limits,
+            doc.Joint.velocity_lower_limits.doc)
+        .def("velocity_upper_limits", &Class::velocity_upper_limits,
+            doc.Joint.velocity_upper_limits.doc)
+        .def("acceleration_lower_limits", &Class::acceleration_lower_limits,
+            doc.Joint.acceleration_lower_limits.doc)
+        .def("acceleration_upper_limits", &Class::acceleration_upper_limits,
+            doc.Joint.acceleration_upper_limits.doc);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
@@ -694,6 +704,14 @@ void init_multibody_plant(py::module m) {
             doc.MultibodyPlant.GetPositionLowerLimits.doc)
         .def("GetPositionUpperLimits", &Class::GetPositionUpperLimits,
             doc.MultibodyPlant.GetPositionUpperLimits.doc)
+        .def("GetVelocityLowerLimits", &Class::GetVelocityLowerLimits,
+            doc.MultibodyPlant.GetVelocityLowerLimits.doc)
+        .def("GetVelocityUpperLimits", &Class::GetVelocityUpperLimits,
+            doc.MultibodyPlant.GetVelocityUpperLimits.doc)
+        .def("GetAccelerationLowerLimits", &Class::GetAccelerationLowerLimits,
+            doc.MultibodyPlant.GetAccelerationLowerLimits.doc)
+        .def("GetAccelerationUpperLimits", &Class::GetAccelerationUpperLimits,
+            doc.MultibodyPlant.GetAccelerationUpperLimits.doc)
         .def("CalcMassMatrixViaInverseDynamics",
             [](const Class* self, const Context<T>& context) {
               MatrixX<T> H;
