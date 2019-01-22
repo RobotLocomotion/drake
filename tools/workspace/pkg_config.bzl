@@ -270,7 +270,6 @@ pkg_config_repository = repository_rule(
         "static": attr.bool(default = _DEFAULT_STATIC),
         "build_file_template": attr.label(
             default = _DEFAULT_TEMPLATE,
-            single_file = True,
             allow_files = True,
         ),
         "extra_srcs": attr.string_list(),
