@@ -415,7 +415,7 @@ TEST_F(LeafSystemTest, DefaultPortNameTest) {
 }
 
 // Tests that witness functions can be declared. Tests that witness functions
-// stop Simulator at desired points (i.e., the raison d'etre of a witness
+// stop Simulator at desired points (i.e., the raison d'être of a witness
 // function) are done in diagram_test.cc and
 // drake/systems/analysis/test/simulator_test.cc.
 TEST_F(LeafSystemTest, WitnessDeclarations) {

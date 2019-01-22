@@ -248,7 +248,7 @@ class Simulator {
   ///
   /// @warning Initialize() does not automatically attempt to satisfy System
   /// constraints -- it is up to you to make sure that constraints are
-  /// satisifed by the initial conditions.
+  /// satisfied by the initial conditions.
   ///
   /// This method will throw `std::logic_error` if the combination of options
   /// doesn't make sense. Other failures are possible from the System and

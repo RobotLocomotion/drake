@@ -687,7 +687,7 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
   // Create the optimization task.
   rescode = MSK_maketask(env, 0, num_vars, &task);
   // Always check if rescode is MSK_RES_OK before we call any mosek functions.
-  // If it is not MSK_RES_OK, then bypasses everthing and exits.
+  // If it is not MSK_RES_OK, then bypasses everything and exits.
   if (rescode == MSK_RES_OK) {
     rescode = MSK_appendvars(task, num_vars);
   }

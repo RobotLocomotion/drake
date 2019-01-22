@@ -114,7 +114,7 @@ def _warn_deprecated(message, stacklevel=2):
 
 class _DeprecatedDescriptor(object):
     """Wraps a descriptor to warn that it is deprecated any time it is
-    acccessed.
+    accessed.
     """
 
     def __init__(self, original, message):

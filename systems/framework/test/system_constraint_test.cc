@@ -171,7 +171,7 @@ ExternalSystemConstraint ZeroStateDerivativeConstraint(
     const System<double>& shape) {
   auto dummy_context = shape.AllocateContext();
 
-  // We dont't handle discrete state yet, because to do so efficiently we'd
+  // We don't handle discrete state yet, because to do so efficiently we'd
   // need a method like System::EvalDiscreteVariableUpdates, but only the Calc
   // flavor of that method currently exists.
   DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
