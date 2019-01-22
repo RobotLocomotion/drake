@@ -11,7 +11,8 @@ def _combine_relative_labels(arg_list, arg_map):
     # the public macros below.  The result is a map where the arg_list items
     # are twinned into matching key:key pairs, union'd with the arg_map.  (Also
     # double-checks that the keys and values are all relative labels.)
-    result = dict([(x, x) for x in arg_list]) + arg_map
+    result = dict([(x, x) for x in arg_list])
+    result.update(arg_map)
     for x in result.keys() + result.values():
         if not x.startswith(":"):
             fail("Expected relative_label, got " + x)
