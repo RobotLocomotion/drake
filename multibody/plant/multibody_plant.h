@@ -2087,9 +2087,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetPositionLowerLimits();
   }
 
-  /// Upper limit analog of GetPositionsLowerLimits, where any unbounded or
+  /// Upper limit analog of GetPositionsLowerLimits(), where any unbounded or
   /// unspecified limits will be +infinity.
-  /// @see GetPositionsLowerLimits for more information.
+  /// @see GetPositionsLowerLimits() for more information.
   VectorX<double> GetPositionUpperLimits() const {
     return internal_tree().GetPositionUpperLimits();
   }
@@ -2103,9 +2103,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetVelocityLowerLimits();
   }
 
-  /// Upper limit analog of GetVelocitysLowerLimits, where any unbounded or
+  /// Upper limit analog of GetVelocitysLowerLimits(), where any unbounded or
   /// unspecified limits will be +infinity.
-  /// @see GetVelocitysLowerLimits for more information.
+  /// @see GetVelocitysLowerLimits() for more information.
   VectorX<double> GetVelocityUpperLimits() const {
     return internal_tree().GetVelocityUpperLimits();
   }
@@ -2119,9 +2119,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetAccelerationLowerLimits();
   }
 
-  /// Upper limit analog of GetAccelerationsLowerLimits, where any unbounded or
-  /// unspecified limits will be +infinity.
-  /// @see GetAccelerationsLowerLimits for more information.
+  /// Upper limit analog of GetAccelerationsLowerLimits(), where any unbounded
+  /// or unspecified limits will be +infinity.
+  /// @see GetAccelerationsLowerLimits() for more information.
   VectorX<double> GetAccelerationUpperLimits() const {
     return internal_tree().GetAccelerationUpperLimits();
   }

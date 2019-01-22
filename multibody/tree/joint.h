@@ -197,96 +197,6 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     return do_get_num_positions();
   }
 
-  /// Returns a vector of size num_positions() storing the lower limits for each
-  /// generalized position for `this` joint.
-  /// A limit with value -∞ implies no lower limit for the corresponding
-  /// position.
-  /// Joint limits are returned in order with the limit for position with index
-  /// position_start() in the first entry and with the limit for position with
-  /// index position_start() + num_positions() - 1 in the last entry.
-  const VectorX<double>& position_lower_limits() const {
-    return pos_lower_limits_;
-  }
-
-  /// Returns a vector of size num_positions() storing the upper limits for each
-  /// generalized position for `this` joint.
-  /// A limit with value +∞ implies no upper limit for the corresponding
-  /// position.
-  /// Joint limits are returned in order with the limit for position with index
-  /// position_start() in the first entry and with the limit for position with
-  /// index position_start() + num_positions() - 1 in the last entry.
-  const VectorX<double>& position_upper_limits() const {
-    return pos_upper_limits_;
-  }
-
-  /// Returns a vector of size num_velocities() storing the lower limits for
-  /// each generalized velocity for `this` joint. A limit with value -∞ implies
-  /// no lower limit for the corresponding velocity. Joint limits are returned
-  /// in order with the limit for velocity with index velocity_start() in the
-  /// first entry and with the limit for velocity with index velocity_start() +
-  /// num_velocities() - 1 in the last entry.
-  const VectorX<double>& velocity_lower_limits() const {
-    return vel_lower_limits_;
-  }
-
-  /// Returns a vector of size num_velocities() storing the upper limits for
-  /// each generalized velocity for `this` joint. A limit with value +∞ implies
-  /// no upper limit for the corresponding velocity. Joint limits are returned
-  /// in order with the limit for velocity with index velocity_start() in the
-  /// first entry and with the limit for velocity with index velocity_start() +
-  /// num_velocities() - 1 in the last entry.
-  const VectorX<double>& velocity_upper_limits() const {
-    return vel_upper_limits_;
-  }
-
-  /// Returns a vector of size num_velocities() storing the lower limits for
-  /// each generalized acceleration for `this` joint. A limit with value -∞
-  /// implies no lower limit for the corresponding acceleration. Joint limits
-  /// are returned in order with the limit for acceleration with index
-  /// velocity_start() in the first entry and with the limit for acceleration
-  /// with index velocity_start() + num_velocities() - 1 in the last entry.
-  const VectorX<double>& acceleration_lower_limits() const {
-    return acc_lower_limits_;
-  }
-
-  /// Returns a vector of size num_velocities() storing the lower limits for
-  /// each generalized acceleration for `this` joint. A limit with value +∞
-  /// implies no upper limit for the corresponding acceleration. Joint limits
-  /// are returned in order with the limit for acceleration with index
-  /// velocity_start() in the first entry and with the limit for acceleration
-  /// with index velocity_start() + num_velocities() - 1 in the last entry.
-  const VectorX<double>& acceleration_upper_limits() const {
-    return acc_upper_limits_;
-  }
-
-  /// Sets the velocity limits to @p lower_limits and @p upper_limits.
-  /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_velocities().
-  /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
-  void set_velocity_limits(const VectorX<double>& lower_limits,
-                           const VectorX<double>& upper_limits) {
-    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
-    DRAKE_THROW_UNLESS(lower_limits.size() == num_velocities());
-    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
-    vel_lower_limits_ = lower_limits;
-    vel_upper_limits_ = upper_limits;
-  }
-
-  /// Sets the acceleration limits to @p lower_limits and @p upper_limits.
-  /// @throws std::exception if the dimension of @p lower_limits or
-  /// @p upper_limits does not match num_velocities().
-  /// @throws std::exception if any of @p lower_limits is larger than the
-  /// corresponding term in @p upper_limits.
-  void set_acceleration_limits(const VectorX<double>& lower_limits,
-                               const VectorX<double>& upper_limits) {
-    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
-    DRAKE_THROW_UNLESS(lower_limits.size() == num_velocities());
-    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
-    acc_lower_limits_ = lower_limits;
-    acc_upper_limits_ = upper_limits;
-  }
-
   /// Returns the position coordinate for joints with a single degree of
   /// freedom.
   /// @throws std::exception if the joint does not have a single degree of
@@ -359,6 +269,71 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
     DRAKE_DEMAND(forces->CheckHasRightSizeForModel(this->get_parent_tree()));
     DoAddInDamping(context, forces);
   }
+
+  /// @name Methods to get and set the limits of `this` joint. For position
+  /// limits, the layout is the same as the generalized position's. For
+  /// velocity and acceleration limits, the layout is the same as the
+  /// generalized velocity's. A limit with value +/- ∞ implies no upper or
+  /// lower limit.
+  /// @{
+  /// Returns the position lower limits.
+  const VectorX<double>& position_lower_limits() const {
+    return pos_lower_limits_;
+  }
+
+  /// Returns the position upper limits.
+  const VectorX<double>& position_upper_limits() const {
+    return pos_upper_limits_;
+  }
+
+  /// Returns the velocity lower limits.
+  const VectorX<double>& velocity_lower_limits() const {
+    return vel_lower_limits_;
+  }
+
+  /// Returns the velocity upper limits.
+  const VectorX<double>& velocity_upper_limits() const {
+    return vel_upper_limits_;
+  }
+
+  /// Returns the acceleration lower limits.
+  const VectorX<double>& acceleration_lower_limits() const {
+    return acc_lower_limits_;
+  }
+
+  /// Returns the acceleration upper limits.
+  const VectorX<double>& acceleration_upper_limits() const {
+    return acc_upper_limits_;
+  }
+
+  /// Sets the velocity limits to @p lower_limits and @p upper_limits.
+  /// @throws std::exception if the dimension of @p lower_limits or
+  /// @p upper_limits does not match num_velocities().
+  /// @throws std::exception if any of @p lower_limits is larger than the
+  /// corresponding term in @p upper_limits.
+  void set_velocity_limits(const VectorX<double>& lower_limits,
+                           const VectorX<double>& upper_limits) {
+    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
+    DRAKE_THROW_UNLESS(lower_limits.size() == num_velocities());
+    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
+    vel_lower_limits_ = lower_limits;
+    vel_upper_limits_ = upper_limits;
+  }
+
+  /// Sets the acceleration limits to @p lower_limits and @p upper_limits.
+  /// @throws std::exception if the dimension of @p lower_limits or
+  /// @p upper_limits does not match num_velocities().
+  /// @throws std::exception if any of @p lower_limits is larger than the
+  /// corresponding term in @p upper_limits.
+  void set_acceleration_limits(const VectorX<double>& lower_limits,
+                               const VectorX<double>& upper_limits) {
+    DRAKE_THROW_UNLESS(lower_limits.size() == upper_limits.size());
+    DRAKE_THROW_UNLESS(lower_limits.size() == num_velocities());
+    DRAKE_THROW_UNLESS((lower_limits.array() <= upper_limits.array()).all());
+    acc_lower_limits_ = lower_limits;
+    acc_upper_limits_ = upper_limits;
+  }
+  /// @}
 
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
