@@ -465,6 +465,8 @@ class GeometryState {
         geometries_(source.geometries_),
         geometry_index_to_id_map_(source.geometry_index_to_id_map_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
+        dynamic_proximity_index_to_internal_map_(
+            source.dynamic_proximity_index_to_internal_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we _can_
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
