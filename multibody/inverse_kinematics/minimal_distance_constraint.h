@@ -31,9 +31,9 @@ class MinimalDistanceConstraint : public solvers::Constraint {
 
   /**
    * @param plant The robot on which the inverse kinematics problem will be
-   * solved. If this plant has registered its geometry with a SceneGraph object,
-   * then the user can impose collision related constraint (like
-   * AddMinimalDistanceConstraint).
+   * solved. This plant has to have registered its geometry with a SceneGraph
+   * object. @throws invalid_argument if the plant has not registered its
+   * geometry.
    * @param minimal_distance The minimal value of the signed distance between
    * any admissible pairs of objects.
    * @pre The MultibodyPlant passed in the constructor of InverseKinematics has

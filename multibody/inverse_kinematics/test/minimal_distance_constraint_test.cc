@@ -160,7 +160,9 @@ GTEST_TEST(MinimalDistanceConstraintTest,
       MinimalDistanceConstraint(plant.get(), 0.1, context.get()),
       std::invalid_argument,
       "MinimalDistanceConstraint: MultibodyPlant has not registered its "
-      "geometry source with SceneGraph yet.");
+      "geometry source with SceneGraph yet. Please refer to "
+      "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
+      "SceneGraph.");
 }
 
 TEST_F(TwoFreeSpheresTest, NonpositiveMinimalDistance) {

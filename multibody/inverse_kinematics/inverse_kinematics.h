@@ -46,29 +46,17 @@ class InverseKinematics {
    * To construct a plant connected to a SceneGraph, the users could refer to
    * BuildTwoFreeSpheresDiagram() function in
    * inverse_kinematics_test_utilities.cc as an example. The steps are
-   * // 1. Construct a DiagramBuilder
-   * systems::DiagramBuilder<double> builder;
-   * // 2. Add a SceneGraph to the builder.
-   * auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
-   * // 3. Construct a MultibodyPlant
-   * auto model = USER_FUNCTION_CONSTRUCT_PLANT();
-   * // 4. Add MultibodyPlant to the builder
-   * auto plant = builder.AddSystem(std::move(model));
-   * // 5. Register SceneGraph to plant.
-   * plant->RegisterAsSourceForSceneGraph(scene_graph);
-   * // 6. Finalize plant
-   * plant->Finalize(scene_graph);
-   * // 7. Connect plant to SceneGraph, and vice versa
-   * builder.Connect(
-   *     plant->get_geometry_poses_output_port(),
-   *     scene_graph->get_source_pose_port(*plant->get_source_id()));
-   * builder.Connect(scene_graph>get_query_output_port(),
-   *                 plant->get_geometry_query_input_port());
-   * // 8. Construct the diagram
+   * // 1. Add a diagram containing the MultibodyPlant and SceneGraph
+   * system::DiagramBuilder<double> builder;
+   * auto items = AddMultibodyPlantSceneGraph(&builder);
+   * // 2. Add collision geometries to the plant
+   * items.plant.DoFoo(...);
+   * items.plant.Finalize();
+   * // 3. Construct the diagram
    * auto diagram = builder.Build();
-   * // 9. Create diagram context.
+   * // 4. Create diagram context.
    * auto diagram_context= diagram->CreateDefaultContext();
-   * // 10. Get the context for the plant.
+   * // 5. Get the context for the plant.
    * auto plant_context = &(diagram->GetMutableSubsystemContext(*plant,
    * diagram_context.get()));
    */
@@ -196,21 +184,24 @@ class InverseKinematics {
       double angle_upper);
 
   /**
- * Adds the constraint that the pairwise distance between objects should be no
- * smaller than a positive threshold. We consider the distance between pairs of
- * 1. Anchored (static) object and a dynamic object.
- * 2. A dynamic object and another dynamic object, if one is not the parent
- * link of the other.
- * The formulation of the constraint is
- * ∑ γ(φᵢ/dₘᵢₙ - 1) = 0
- * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimal
- * allowable distance, and γ is a penalizing function defined as
- * γ(x) = 0 if x ≥ 0
- * γ(x) = -x exp(1/x) if x < 0
- * This formulation is described in section II.C of Whole-body Motion Planning
- * with Centroidal Dynamics and Full Kinematics by Hongkai Dai, Andres
- * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
- * Humanoid Robots.
+   * Adds the constraint that the pairwise distance between objects should be no
+   * smaller than a positive threshold. We consider the distance between pairs
+   * of
+   * 1. Anchored (static) object and a dynamic object.
+   * 2. A dynamic object and another dynamic object, if one is not the parent
+   * link of the other.
+   * The formulation of the constraint is
+   * ∑ γ(φᵢ/dₘᵢₙ - 1) = 0
+   * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimal
+   * allowable distance, and γ is a penalizing function defined as
+   * γ(x) = 0 if x ≥ 0
+   * γ(x) = -x exp(1/x) if x < 0
+   * This formulation is described in section II.C of Whole-body Motion Planning
+   * with Centroidal Dynamics and Full Kinematics by Hongkai Dai, Andres
+   * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
+   * Humanoid Robots.
+   * @throws invalid_argument if the plant does not register its geometry
+   * with a SceneGraph.
    */
   solvers::Binding<solvers::Constraint> AddMinimalDistanceConstraint(
       double minimal_distance);

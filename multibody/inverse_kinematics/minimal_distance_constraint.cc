@@ -48,7 +48,9 @@ MinimalDistanceConstraint::MinimalDistanceConstraint(
   if (!plant_.geometry_source_is_registered()) {
     throw std::invalid_argument(
         "MinimalDistanceConstraint: MultibodyPlant has not registered its "
-        "geometry source with SceneGraph yet.");
+        "geometry source with SceneGraph yet. Please refer to "
+        "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
+        "SceneGraph.");
   }
   if (minimal_distance_ <= 0) {
     throw std::invalid_argument(
@@ -56,6 +58,7 @@ MinimalDistanceConstraint::MinimalDistanceConstraint(
   }
 }
 
+namespace {
 void InitializeY(const Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd* y) {
   (*y)(0) = 0;
 }
@@ -85,9 +88,10 @@ void AddPenalty(const MultibodyPlant<double>& plant,
                 const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
   // The distance is d = sign * |p_CbCa_W| = sign * |p_WCa - p_WCb|, where the
   // closest points are Ca on object A, and Cb on object B. Namely
-  // d = sign * |p_WA + R_WA * p_ACa - p_WB + R_WB * p_BCb|
+  // d = sign * |p_WA + R_WA * p_ACa - (p_WB + R_WB * p_BCb)|
   // So the gradient ∂d/∂q = p_CaCb_W * (∂p_WCa/∂q - ∂p_WCb/∂q) / d
-  // where p_CaCb_W = p_WCa - p_WCb = p_WA + R_WA * p_ACa - p_WB + R_WB * p_BCb
+  // where p_CaCb_W = p_WCa - p_WCb = p_WA + R_WA * p_ACa - (p_WB + R_WB *
+  // p_BCb)
   double penalty, dpenalty_ddistance;
   Penalty(distance, minimal_distance, &penalty, &dpenalty_ddistance);
 
@@ -107,6 +111,7 @@ void AddPenalty(const MultibodyPlant<double>& plant,
                                  math::autoDiffToGradientMatrix(x));
   *y += penalty_autodiff;
 }
+}  // namespace
 
 template <typename T>
 void MinimalDistanceConstraint::DoEvalGeneric(
@@ -114,11 +119,18 @@ void MinimalDistanceConstraint::DoEvalGeneric(
   y->resize(1);
 
   internal::UpdateContextConfiguration(plant_context_, plant_, x);
+  auto plant_geometry_query_object = plant_.EvalAbstractInput(
+      *plant_context_, plant_.get_geometry_query_input_port().get_index());
+  if (plant_geometry_query_object == nullptr) {
+    throw std::invalid_argument(
+        "MinimalDistanceConstraint: Cannot get a valid geometry::QueryObject. "
+        "Either the plant geometry_query_input_port() is not properly "
+        "connected to the SceneGraph's output port, or the plant_context_ is "
+        "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
+        "MultibodyPlant to SceneGraph.");
+  }
   const geometry::QueryObject<double>& query_object =
-      plant_
-          .EvalAbstractInput(*plant_context_,
-                             plant_.get_geometry_query_input_port().get_index())
-          ->GetValue<geometry::QueryObject<double>>();
+      plant_geometry_query_object->GetValue<geometry::QueryObject<double>>();
 
   const std::vector<geometry::SignedDistancePair<double>>
       signed_distance_pairs =

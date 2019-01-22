@@ -54,8 +54,7 @@ TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest() {
 }
 
 template <typename T>
-std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
-  auto model = std::make_unique<MultibodyPlant<T>>();
+void ConstructTwoFreeBodiesPlant(MultibodyPlant<T>* model) {
   const double mass{1};
   const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
   const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
@@ -64,7 +63,12 @@ std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
 
   model->AddRigidBody("body1", M_AAo_A);
   model->AddRigidBody("body2", M_AAo_A);
+}
 
+template <typename T>
+std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
+  auto model = std::make_unique<MultibodyPlant<T>>();
+  ConstructTwoFreeBodiesPlant(model.get());
   return model;
 }
 
@@ -104,10 +108,8 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
     geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
     FrameIndex* sphere2_index) {
   systems::DiagramBuilder<T> builder;
-  *scene_graph = builder.template AddSystem<geometry::SceneGraph<T>>();
-  auto model = ConstructTwoFreeBodiesPlant<T>();
-  *plant = builder.AddSystem(std::move(model));
-  (*plant)->RegisterAsSourceForSceneGraph(*scene_graph);
+  std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  ConstructTwoFreeBodiesPlant(*plant);
   const auto& sphere1 = (*plant)->GetBodyByName("body1");
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
   (*plant)->RegisterCollisionGeometry(
@@ -121,11 +123,6 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
   *sphere1_index = sphere1.body_frame().index();
   *sphere2_index = sphere2.body_frame().index();
   (*plant)->Finalize(*scene_graph);
-  builder.Connect(
-      (*plant)->get_geometry_poses_output_port(),
-      (*scene_graph)->get_source_pose_port(*(*plant)->get_source_id()));
-  builder.Connect((*scene_graph)->get_query_output_port(),
-                  (*plant)->get_geometry_query_input_port());
 
   return builder.Build();
 }
