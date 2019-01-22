@@ -131,10 +131,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag(-std=c++14 CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
+  set(FLAG_STD_CXX14 -std=c++14)
+  check_cxx_compiler_flag(${FLAG_STD_CXX14} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
   if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
     message(FATAL_ERROR
-      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the -std=c++14 flag"
+      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the ${FLAG_STD_CXX14} flag"
     )
   endif()
   message(WARNING
@@ -142,9 +143,10 @@ else()
   )
 endif()
 
-if(NOT CMAKE_CONFIGURATION_TYPES)
-  set(SUPPORTED_BUILD_TYPES None Debug Release RelWithDebInfo MinSizeRel)
-
+set(SUPPORTED_BUILD_TYPES None Debug Release RelWithDebInfo MinSizeRel)
+if(CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_CONFIGURATION_TYPES ${SUPPORTED_BUILD_TYPES})
+else()
   if(NOT CMAKE_BUILD_TYPE)
     string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
       "${SUPPORTED_BUILD_TYPES}"
@@ -204,10 +206,16 @@ if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
   )
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  set(BAZEL_COMPILATION_MODE dbg)
+if(CMAKE_COLOR_MAKEFILE)
+  set(BAZEL_COLOR yes)
 else()
-  set(BAZEL_COMPILATION_MODE opt)
+  set(BAZEL_COLOR no)
+endif()
+
+if(CMAKE_VERBOSE_MAKEFILE)
+  set(BAZEL_SUBCOMMANDS yes)
+else()
+  set(BAZEL_SUBCOMMANDS no)
 endif()
 
 set(BAZEL_ENV)
@@ -217,6 +225,43 @@ if(NOT APPLE)
     "CC=${CMAKE_C_COMPILER}"
     "CXX=${CMAKE_CXX_COMPILER}"
   )
+endif()
+
+set(FLAG_OS -Os)
+set(FLAG_G -g)
+if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU)$")
+  set(MAYBE_BAZEL_COPT_OS "--copt=${FLAG_OS} --host_copt=${FLAG_OS}")
+  set(MAYBE_BAZEL_COPT_G "--copt=${FLAG_G} --host_copt=${FLAG_G}")
+else()
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(${FLAG_OS} CXX_COMPILER_SUPPORTS_FLAG_OS)
+  if(CXX_COMPILER_SUPPORTS_FLAG_OS)
+    set(MAYBE_BAZEL_COPT_OS "--copt=${FLAG_OS} --host_copt=${FLAG_OS}")
+  else()
+    set(MAYBE_BAZEL_COPT_OS)
+    if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
+      message(WARNING
+        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration MinSizeRel is NOT supported because it does not accept the ${FLAG_OS} flag. Code will NOT be optimized for size."
+      )
+      if(CMAKE_CONFIGURATION_TYPES)
+        list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel)
+      endif()
+    endif()
+  endif()
+  check_cxx_compiler_flag(${FLAG_G} CXX_COMPILER_SUPPORTS_FLAG_G)
+  if(CXX_COMPILER_SUPPORTS_FLAG_G)
+    set(MAYBE_BAZEL_COPT_G "--copt=${FLAG_G} --host_copt=${FLAG_G}")
+  else()
+    set(MAYBE_BAZEL_COPT_G)
+    if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+      message(WARNING
+        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration RelWithDebInfo is NOT supported because it does not accept the ${FLAG_G} flag. Debug information will NOT be generated."
+      )
+      if(CMAKE_CONFIGURATION_TYPES)
+        list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES RelWithDebInfo)
+      endif()
+    endif()
+  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
@@ -253,28 +298,14 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
-
-set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
-
-set(BAZEL_ARGS)
-
-if(CMAKE_COLOR_MAKEFILE)
-  list(APPEND BAZEL_ARGS --color=yes)
-else()
-  list(APPEND BAZEL_ARGS --color=no)
-endif()
-
-if(CMAKE_VERBOSE_MAKEFILE)
-  list(APPEND BAZEL_ARGS --subcommands)
-endif()
+set(BAZEL_CONFIGS)
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
   find_package(Gurobi 8.0.0 MODULE REQUIRED)
 
-  list(APPEND BAZEL_ARGS --config=gurobi)
+  list(APPEND BAZEL_CONFIGS --config=gurobi)
 
   if(NOT APPLE)
     get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
@@ -282,10 +313,12 @@ if(WITH_GUROBI)
   endif()
 endif()
 
+set(BAZEL_DEFINES)
+
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
 
 if(WITH_MATLAB)
-  list(APPEND BAZEL_ARGS
+  list(APPEND BAZEL_DEFINES
     --define=NO_IPOPT=ON
     --define=NO_OSQP=ON
   )
@@ -294,7 +327,7 @@ endif()
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
 
 if(WITH_MOSEK)
-  list(APPEND BAZEL_ARGS --config=mosek)
+  list(APPEND BAZEL_CONFIGS --config=mosek)
 endif()
 
 option(WITH_ROBOTLOCOMOTION_SNOPT
@@ -311,10 +344,10 @@ if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
     "WITH_ROBOTLOCOMOTION_SNOPT and WITH_SNOPT options are mutually exclusive"
   )
 elseif(WITH_ROBOTLOCOMOTION_SNOPT)
-  list(APPEND BAZEL_ARGS --config=snopt)
+  list(APPEND BAZEL_CONFIGS --config=snopt)
   list(APPEND BAZEL_ENV "SNOPT_PATH=git")
 elseif(WITH_SNOPT)
-  list(APPEND BAZEL_ARGS --config=snopt)
+  list(APPEND BAZEL_CONFIGS --config=snopt)
   set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH
     "Path to SNOPT source archive"
   )
@@ -325,6 +358,32 @@ elseif(WITH_SNOPT)
   endif()
   mark_as_advanced(SNOPT_PATH)
   list(APPEND BAZEL_ENV "SNOPT_PATH=${SNOPT_PATH}")
+endif()
+
+if(BAZEL_CONFIGS)
+  string(REPLACE ";" " " MAYBE_BAZEL_CONFIG "${BAZEL_CONFIGS}")
+  set(MAYBE_BAZEL_CONFIG "build ${MAYBE_BAZEL_CONFIG}")
+else()
+  set(MAYBE_BAZEL_CONFIG)
+endif()
+
+if(BAZEL_DEFINES)
+  string(REPLACE ";" " " MAYBE_BAZEL_DEFINE "${BAZEL_DEFINES}")
+  set(MAYBE_BAZEL_DEFINE "build ${MAYBE_BAZEL_DEFINE}")
+else()
+  set(MAYBE_BAZEL_DEFINE)
+endif()
+
+configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
+
+set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
+
+if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|MinSizeRel|Release|RelWithDebInfo)$")
+  set(BAZEL_ARGS
+    "$<$<CONFIG:Debug>:--config=Debug>$<$<CONFIG:MinSizeRel>:--config=MinSizeRel>$<$<CONFIG:Release>:--config=Release>$<$<CONFIG:RelWithDebInfo>:--config=RelWithDebInfo>"
+  )
+else()
+  set(BAZEL_ARGS)
 endif()
 
 # N.B. If you are testing the CMake API and making changes to `install.py.in`,
@@ -357,15 +416,15 @@ endif()
 
 # If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
 # install.
-if(CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
+if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
     message(WARNING
-      "Install configuration ${CMAKE_BUILD_TYPE} will STILL strip symbols because support for SNOPT is enabled"
+      "Install configurations Debug and RelWithDebInfo will STILL strip symbols because support for SNOPT is enabled"
     )
   else()
-    list(INSERT BAZEL_TARGETS_ARGS 0 "--no_strip")
+    list(INSERT BAZEL_TARGETS_ARGS 0 "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>")
   endif()
 endif()
 
