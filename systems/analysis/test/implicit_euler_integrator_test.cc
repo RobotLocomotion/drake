@@ -196,9 +196,8 @@ TEST_F(ImplicitIntegratorTest, AutoDiff) {
 
   // Integrate for one step. We expect this to throw because the integrator
   // is generally unlikely to converge for such a relatively large step.
-  ASSERT_EQ(context_->get_time(), 0.0);
-  EXPECT_THROW(integrator.IntegrateWithSingleFixedStepToTime(large_dt_),
-               std::logic_error);
+  EXPECT_THROW(integrator.IntegrateWithSingleFixedStepToTime(
+      context_->get_time() + large_dt_), std::logic_error);
 
   // TODO(edrumwri): Add test that an automatic differentiation of an implicit
   // integrator produces the expected result.
@@ -260,9 +259,8 @@ TEST_F(ImplicitIntegratorTest, FixedStepThrowsOnMultiStep) {
   // Integrate to the desired step time. We expect this to throw because the
   // integrator is generally unlikely to converge for such a relatively large
   // step.
-  ASSERT_EQ(context_->get_time(), 0.0);
-  EXPECT_THROW(integrator.IntegrateWithSingleFixedStepToTime(huge_dt),
-               std::runtime_error);
+  EXPECT_THROW(integrator.IntegrateWithSingleFixedStepToTime(
+      context_->get_time() + huge_dt), std::runtime_error);
 }
 
 TEST_F(ImplicitIntegratorTest, ContextAccess) {
@@ -612,7 +610,8 @@ TEST_P(ImplicitIntegratorTest, ErrorEstimation) {
       spring_mass.set_velocity(context_.get(), initial_velocity[i]);
 
       // Integrate for the desired step size.
-      integrator.IntegrateWithSingleFixedStepToTime(dts[j]);
+      integrator.IntegrateWithSingleFixedStepToTime(
+          context_->get_time() + dts[j]);
 
       // Check the time.
       EXPECT_NEAR(context_->get_time(), dts[j], ttol);
@@ -676,7 +675,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
                                     large_dt_, &x_final_true, &v_final_true);
 
   // Integrate exactly one step.
-  integrator.IntegrateWithMultipleStepsToTime(large_dt_);
+  integrator.IntegrateWithMultipleStepsToTime(context_->get_time() + large_dt_);
 
   // Get the positional error.
   const double pos_err = std::abs(x_final_true -
@@ -691,7 +690,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   context_->set_time(0);
   spring_mass.set_position(context_.get(), initial_position);
   spring_mass.set_velocity(context_.get(), initial_velocity);
-  integrator.IntegrateWithMultipleStepsToTime(large_dt_);
+  integrator.IntegrateWithMultipleStepsToTime(context_->get_time() + large_dt_);
   EXPECT_GT(std::abs(x_final_true -
       context_->get_continuous_state_vector().GetAtIndex(0)), pos_err);
 }

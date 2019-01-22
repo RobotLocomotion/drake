@@ -184,7 +184,7 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
     if (t >= t_final_minus_epsilon) break;
 
     // Step forward by at most dt.
-    const double t_max = min(t + dt_max, t_final);
+    const double t_max = std::min(t + dt_max, t_final);
     rk3.IntegrateNoFurtherThanTime(t_max, t_max, t_max);
   }
 }

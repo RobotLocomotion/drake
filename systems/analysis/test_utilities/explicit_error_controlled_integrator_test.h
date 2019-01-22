@@ -61,7 +61,6 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
 // Verifies that the stepping works with relatively small
 // magnitude step sizes.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
-  // Set a unit magnitude time.
   this->context->set_time(0.0);
 
   // Set integrator parameters.
@@ -296,6 +295,56 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   EXPECT_LT(this->integrator->get_num_steps_taken(), fixed_steps);
 }
 
+// Verifies that the integrator does not alter the state when directed to step
+// to the present time.
+TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, StepToCurrentTimeNoOp) {
+  // Set integrator parameters: do error control.
+  this->integrator->set_maximum_step_size(this->kDt);
+  this->integrator->set_fixed_step_mode(false);
+
+  // Initialize the integrator.
+  this->integrator->Initialize();
+
+  // Setup the initial position and initial velocity.
+  const double initial_position = 0.1;
+  const double initial_velocity = 0.01;
+
+  // Set initial conditions.
+  this->spring_mass->set_position(this->integrator->get_mutable_context(),
+                             initial_position);
+  this->spring_mass->set_velocity(this->integrator->get_mutable_context(),
+                             initial_velocity);
+
+  // Integrate to one second.
+  const double t_final = 1.0;
+  while (this->context->get_time() < t_final)
+    this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  ASSERT_EQ(this->context->get_time(), t_final);
+
+  // Get the final state.
+  const VectorX<double> x_final =
+      this->context->get_continuous_state_vector().CopyToVector();
+
+  // Call the various stepping methods, ensuring that the state and time do
+  // not change.
+  const double inf = std::numeric_limits<double>::infinity();
+  this->integrator->IntegrateWithMultipleStepsToTime(t_final);
+  EXPECT_EQ(this->context->get_time(), t_final);
+  for (int i = 0; i < x_final.size(); ++i)
+    EXPECT_EQ(x_final[i], this->context->get_continuous_state_vector()[i]);
+  this->integrator->IntegrateNoFurtherThanTime(inf, inf, t_final);
+  EXPECT_EQ(this->context->get_time(), t_final);
+  for (int i = 0; i < x_final.size(); ++i)
+    EXPECT_EQ(x_final[i], this->context->get_continuous_state_vector()[i]);
+
+  // Must do fixed stepping for the last test.
+  this->integrator->set_fixed_step_mode(true);
+  this->integrator->IntegrateWithSingleFixedStepToTime(t_final);
+  EXPECT_EQ(this->context->get_time(), t_final);
+  for (int i = 0; i < x_final.size(); ++i)
+    EXPECT_EQ(x_final[i], this->context->get_continuous_state_vector()[i]);
+}
+
 // Verifies that the maximum step size taken is smaller than the integrator
 // max.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MaxStepSizeRespected) {
@@ -390,7 +439,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
 REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
-    IllegalFixedStep, CheckStat);
+    IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
 
 }  // namespace analysis_test
 }  // namespace systems

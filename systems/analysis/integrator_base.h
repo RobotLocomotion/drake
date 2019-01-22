@@ -618,7 +618,7 @@ class IntegratorBase {
   }
 
   /// Stepping function for integrators operating outside of Simulator that
-  /// advances the continuous state *using a single step* to `t_final`.
+  /// advances the continuous state *using a single step* to `t_target`.
   /// This method is designed for integrator users that do not wish to
   /// consider publishing or discontinuous, mid-interval updates. One such
   /// example application is that of direct transcription for trajectory
@@ -631,17 +631,17 @@ class IntegratorBase {
   /// @warning Users should simulate systems using `Simulator::StepTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
-  /// @param t_final The current or future time to integrate to.
+  /// @param t_target The current or future time to integrate to.
   /// @throws std::logic_error If the integrator has not been initialized or
-  ///                          `t_final` is in the past or the integrator
+  ///                          `t_target` is in the past or the integrator
   ///                          is not operating in fixed step mode.
   /// @throws std::runtime_error If the integrator was unable to take a single
-  ///         fixed step to realize `t_final`.
+  ///         fixed step to realize `t_target`.
   /// @sa IntegrateNoFurtherThanTime(), which is designed to be operated by
   ///     Simulator and accounts for publishing and state reinitialization.
   /// @sa IntegrateWithMultipleStepsToTime(), which is also designed to be
   ///     operated *outside of* Simulator, but will take as many integration
-  ///     steps as necessary until time has been stepped forward to `t_final`.
+  ///     steps as necessary until time has been stepped forward to `t_target`.
   ///
   /// This method at a glance:
   ///
@@ -649,8 +649,11 @@ class IntegratorBase {
   /// - Fixed step integration (no step size reductions for error control or
   ///   integrator convergence)
   /// - Takes only a single step forward.
-  void IntegrateWithSingleFixedStepToTime(const T& t_final) {
-    const T dt = t_final - context_->get_time();
+  void IntegrateWithSingleFixedStepToTime(const T& t_target) {
+    using std::max;
+    using std::abs;
+
+    const T dt = t_target - context_->get_time();
     if (dt < 0) {
       throw std::logic_error("IntegrateWithSingleFixedStepToTime() called with "
                              "a negative step size.");
@@ -664,6 +667,14 @@ class IntegratorBase {
     }
 
     UpdateStepStatistics(dt);
+
+    // Correct any round-off error that has occurred.
+    const double near_eps = 10 * std::numeric_limits<double>::epsilon();
+    const T time_err = t_target - context_->get_time();
+    DRAKE_DEMAND((abs(t_target) <= 1 &&
+        abs(time_err) < near_eps) || (abs(t_target) > 1 &&
+        abs(time_err) < near_eps * max(context_->get_time(), t_target)));
+    context_->set_time(t_target);
   }
 
   /**
