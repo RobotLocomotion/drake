@@ -102,37 +102,23 @@ class RevoluteJoint final : public Joint<T> {
   ///   joint. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e.
   ///   opposing motion, with ω the angular rate for `this` joint (see
   ///   get_angular_rate()).
-  /// @param[in] vel_lower_limit
-  ///   Lower velocity limit, in radians / s, for the rotation coordinate
-  ///   (see get_angle()).
-  /// @param[in] vel_upper_limit
-  ///   Upper velocity limit, in radians / s, for the rotation coordinate
-  ///   (see get_angle()).
-  /// @param[in] acc_lower_limit
-  ///   Lower acceleration limit, in radians / s², for the rotation coordinate
-  ///   (see get_angle()).
-  /// @param[in] acc_upper_limit
-  ///   Upper acceleration limit, in radians / s², for the rotation coordinate
-  ///   (see get_angle()).
   /// @throws std::exception if damping is negative.
   /// @throws std::exception if pos_lower_limit > pos_upper_limit.
-  /// @throws std::exception if vel_lower_limit > vel_upper_limit.
-  /// @throws std::exception if acc_lower_limit > acc_upper_limit.
-  RevoluteJoint(
-      const std::string& name, const Frame<T>& frame_on_parent,
-      const Frame<T>& frame_on_child, const Vector3<double>& axis,
-      double pos_lower_limit, double pos_upper_limit, double damping = 0,
-      double vel_lower_limit = -std::numeric_limits<double>::infinity(),
-      double vel_upper_limit = std::numeric_limits<double>::infinity(),
-      double acc_lower_limit = -std::numeric_limits<double>::infinity(),
-      double acc_upper_limit = std::numeric_limits<double>::infinity())
+  RevoluteJoint(const std::string& name, const Frame<T>& frame_on_parent,
+                const Frame<T>& frame_on_child, const Vector3<double>& axis,
+                double pos_lower_limit, double pos_upper_limit,
+                double damping = 0)
       : Joint<T>(name, frame_on_parent, frame_on_child,
                  VectorX<double>::Constant(1, pos_lower_limit),
                  VectorX<double>::Constant(1, pos_upper_limit),
-                 VectorX<double>::Constant(1, vel_lower_limit),
-                 VectorX<double>::Constant(1, vel_upper_limit),
-                 VectorX<double>::Constant(1, acc_lower_limit),
-                 VectorX<double>::Constant(1, acc_upper_limit)) {
+                 VectorX<double>::Constant(
+                     1, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     1, std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     1, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     1, std::numeric_limits<double>::infinity())) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
