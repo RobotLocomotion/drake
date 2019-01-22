@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -117,6 +118,168 @@ using internal::InternalGeometry;
 using std::make_unique;
 using std::move;
 using std::unique_ptr;
+
+// Class to aid in testing Shape introspection. Instantiated with a model
+// Shape instance, it registers a copy of that shape and confirms that the
+// introspected Shape matches in type and parameters.
+template <typename ShapeType>
+class ShapeMatcher final : public ShapeReifier {
+ public:
+  explicit ShapeMatcher(const ShapeType& expected)
+      : expected_(expected), result_(::testing::AssertionFailure()) {}
+
+  // Tests shape introspection.
+  ::testing::AssertionResult ShapeIntrospects(GeometryState<double>* state,
+                                              SourceId source_id,
+                                              FrameId frame_id) {
+    GeometryId g_id = state->RegisterGeometry(
+        source_id, frame_id,
+        make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                      make_unique<ShapeType>(expected_),
+                                      "shape"));
+    state->GetShape(g_id).Reify(this);
+    return result_;
+  }
+
+  // Shape reifier implementations.
+  void ImplementGeometry(const Sphere& sphere, void*) final {
+    if (IsExpectedType(sphere)) {
+      TestShapeParameters(sphere);
+    }
+  }
+
+  void ImplementGeometry(const Cylinder& cylinder, void*) final {
+    if (IsExpectedType(cylinder)) {
+      TestShapeParameters(cylinder);
+    }
+  }
+
+  void ImplementGeometry(const HalfSpace& half_space, void*) final {
+    // Halfspace has no parameters; so no further testing is necessary.
+    IsExpectedType(half_space);
+  }
+
+  void ImplementGeometry(const Box& box, void*) final {
+    if (IsExpectedType(box)) {
+      TestShapeParameters(box);
+    }
+  }
+
+  void ImplementGeometry(const Mesh& mesh, void*) final {
+    if (IsExpectedType(mesh)) {
+      TestShapeParameters(mesh);
+    }
+  }
+
+  void ImplementGeometry(const Convex& convex, void*) final {
+    if (IsExpectedType(convex)) {
+      TestShapeParameters(convex);
+    }
+  }
+
+ private:
+  // Base template signature for comparing shape parameters. By default, it
+  // fails.
+  template <typename TestType>
+  void TestShapeParameters(const TestType& test) {
+    error() << "Not implemented for " << NiceTypeName::Get<ShapeType>() << " vs"
+            << NiceTypeName::Get<TestType>();
+  }
+
+  // Convenience method for logging errors.
+  ::testing::AssertionResult error() {
+    if (result_) result_ = ::testing::AssertionFailure();
+    return result_;
+  }
+
+  // Tests type of parameter against reference type. If they match, resets the
+  // result to the best known answer (success). Subsequent parameter testing
+  // will revert it to false via invocations to error().
+  template <typename TestShape>
+  bool IsExpectedType(const TestShape& test) {
+    if (typeid(ShapeType) == typeid(const TestShape)) {
+      result_ = ::testing::AssertionSuccess();
+      return true;
+    } else {
+      result_ << "Expected '" << NiceTypeName::Get<ShapeType>() << "', given '"
+              << NiceTypeName::Get<TestShape>() << "'";
+      return false;
+    }
+  }
+
+  // The model shape.
+  const ShapeType expected_;
+
+  // The result of the test (with appropriate failure messages).
+  ::testing::AssertionResult result_;
+};
+
+// Specializations for where the ShapeMatcher's ShapeType match the reified
+// TestType.
+template <>
+template <>
+void ShapeMatcher<Sphere>::TestShapeParameters(const Sphere& test) {
+  if (test.get_radius() != expected_.get_radius()) {
+    error() << "\nExpected sphere radius " << expected_.get_radius() << ", "
+            << "received sphere radius " << test.get_radius();
+  }
+}
+
+template <>
+template <>
+void ShapeMatcher<Cylinder>::TestShapeParameters(const Cylinder& test) {
+  if (test.get_radius() != expected_.get_radius()) {
+    error() << "\nExpected cylinder radius " << expected_.get_radius() << ", "
+            << "received cylinder radius " << test.get_radius();
+  }
+  if (test.get_length() != expected_.get_length()) {
+    error() << "\nExpected cylinder length " << expected_.get_length()
+            << ", received cylinder length " << test.get_length();
+  }
+}
+
+template <>
+template <>
+void ShapeMatcher<Box>::TestShapeParameters(const Box& test) {
+  if (test.width() != expected_.width()) {
+    error() << "\nExpected box width " << expected_.width() << ", "
+            << "received box width " << test.width();
+  }
+  if (test.height() != expected_.height()) {
+    error() << "\nExpected box height " << expected_.height()
+            << ", received box height " << test.height();
+  }
+  if (test.depth() != expected_.depth()) {
+    error() << "\nExpected box depth " << expected_.depth()
+            << ", received box depth " << test.depth();
+  }
+}
+
+template <>
+template <>
+void ShapeMatcher<Mesh>::TestShapeParameters(const Mesh& test) {
+  if (test.filename() != expected_.filename()) {
+    error() << "\nExpected mesh filename " << expected_.filename() << ", "
+            << "received mesh filename " << test.filename();
+  }
+  if (test.scale() != expected_.scale()) {
+    error() << "\nExpected mesh scale " << expected_.scale()
+            << ", received mesh scale " << test.scale();
+  }
+}
+
+template <>
+template <>
+void ShapeMatcher<Convex>::TestShapeParameters(const Convex& test) {
+  if (test.filename() != expected_.filename()) {
+    error() << "\nExpected convex filename " << expected_.filename() << ", "
+            << "received convex filename " << test.filename();
+  }
+  if (test.scale() != expected_.scale()) {
+    error() << "\nExpected convex scale " << expected_.scale()
+            << ", received convex scale " << test.scale();
+  }
+}
 
 class GeometryStateTest : public ::testing::Test {
  protected:
@@ -355,6 +518,51 @@ TEST_F(GeometryStateTest, Constructor) {
   // GeometryState always has a world frame.
   EXPECT_EQ(geometry_state_.get_num_frames(), 1);
   EXPECT_EQ(geometry_state_.get_num_geometries(), 0);
+}
+
+// Confirms that the registered shapes are correctly returned upon
+// introspection.
+TEST_F(GeometryStateTest, IntrospectShapes) {
+  SourceId source_id = geometry_state_.RegisterNewSource("test_source");
+  FrameId frame_id = geometry_state_.RegisterFrame(
+      source_id, GeometryFrame("frame", Isometry3d::Identity()));
+
+  // Test across all valid shapes.
+  {
+    ShapeMatcher<Sphere> matcher(Sphere(0.25));
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
+    ShapeMatcher<Cylinder> matcher(Cylinder(0.25, 2.0));
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
+    ShapeMatcher<Box> matcher(Box(0.25, 2.0, 32.0));
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
+    ShapeMatcher<HalfSpace> matcher(HalfSpace{});
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
+    ShapeMatcher<Mesh> matcher(Mesh{"Path/to/mesh", 0.25});
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+  {
+    ShapeMatcher<Convex> matcher(Convex{"Path/to/convex", 0.25});
+    EXPECT_TRUE(
+        matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
+  }
+
+  // Test invalid id.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetShape(GeometryId::get_new_id()),
+      std::logic_error, "No geometry available for invalid geometry id: .+");
 }
 
 // Confirms semantics of user-specified source name.

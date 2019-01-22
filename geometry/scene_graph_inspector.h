@@ -264,6 +264,14 @@ class SceneGraphInspector {
     return state_->get_name(id);
   }
 
+  /** Returns the shape specified for the geometry with the given `id`. In order
+   to extract the details of the shape, it should be passed through an
+   implementation of a ShapeReifier.  */
+  const Shape& GetShape(GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetShape(id);
+  }
+
   /** Reports the pose of the geometry G with the given `id` in its registered
    _topological parent_ P. That topological parent may be a frame F or another
    geometry. If the geometry was registered directly to F, then `X_PG = X_FG`.
