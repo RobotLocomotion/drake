@@ -36,7 +36,7 @@ only updated nightly.</p>
 
 
 */
-// Define groups here so we can contol the ordering.
+// Define groups here so we can control the ordering.
 /**
   @defgroup solvers Formulating and Solving Optimization Problems
   @defgroup systems Modeling Dynamical Systems

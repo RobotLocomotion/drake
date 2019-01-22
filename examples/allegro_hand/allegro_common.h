@@ -82,7 +82,7 @@ class AllegroHandMotionState {
   Eigen::Array<bool, Eigen::Dynamic, 1> is_joint_stuck_;
   Eigen::Array<bool, Eigen::Dynamic, 1> is_finger_stuck_;
 
-  /// The velocity threhold under which the joint is considered not moving.
+  /// The velocity threshold under which the joint is considered not moving.
   static const double velocity_thresh_;
 };
 

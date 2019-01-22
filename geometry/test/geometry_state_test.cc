@@ -1737,7 +1737,7 @@ TEST_F(GeometryStateTest, CollisionFilteredExceptions) {
 
 // Tests the ability to query for a geometry from the name of a geometry.
 TEST_F(GeometryStateTest, GetGeometryIdFromName) {
-  SetUpSingleSourceTree(true /* intialize with proximity role */);
+  SetUpSingleSourceTree(true /* initialize with proximity role */);
   // Frame i has geometries f * kFrameCount + g, where g ∈ [0, kGeometryCount).
   for (int f = 0; f < kFrameCount; ++f) {
     for (int g = 0; g < kGeometryCount; ++g) {

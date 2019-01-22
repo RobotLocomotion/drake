@@ -40,7 +40,7 @@ class TestParsing(unittest.TestCase):
         dut.PopulateFromFolder(tmpdir)
 
     def test_parser(self):
-        # Calls every combination of argments for the Parser methods and
+        # Calls every combination of arguments for the Parser methods and
         # inspects their return type.
         sdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")

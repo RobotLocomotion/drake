@@ -2,8 +2,8 @@
 ///
 /// This file set up an example about control the allegro hand based on
 /// position. In the program, the hand firstly grasps on a mug, and then twsits
-/// it repeatly. The program presently only runs on simulation, with the file
-/// allegro_single_object_simulation.cc which creats the simulation environment
+/// it repeatedly. The program presently only runs on simulation, with the file
+/// allegro_single_object_simulation.cc which creates the simulation environment
 /// for the hand and object. This program reads from LCM about the state of the
 /// hands, and process command the positions of the finger joints through LCM.
 /// It also uses the velocity states of the fingers to decide whether the hand
@@ -67,7 +67,7 @@ class PositionCommander {
     // object
     Eigen::VectorXd close_hand_joint_position = Eigen::Map<Eigen::VectorXd>(
         &(allegro_status_.joint_position_measured[0]), kAllegroNumJoints);
-    // twisting the cup repeatly
+    // twisting the cup repeatedly
     while (true) {
       target_joint_position = close_hand_joint_position;
       // The middle finger works as a pivot finger for the rotation, and exert
@@ -113,7 +113,7 @@ class PositionCommander {
   inline void MovetoPositionUntilStuck(
       const Eigen::VectorXd& target_joint_position) {
     PublishPositionCommand(target_joint_position);
-    // A time delay at the intial moving stage so that the noisy data from the
+    // A time delay at the initial moving stage so that the noisy data from the
     // hand motion is filtered.
     for (int i = 0; i < 60; i++) {
       while (0 == lcm_.handleTimeout(10) || allegro_status_.utime == -1) {

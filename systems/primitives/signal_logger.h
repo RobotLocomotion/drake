@@ -25,7 +25,7 @@ namespace systems {
 ///
 /// By default, sampling is performed every time the Simulator completes a
 /// trajectory-advancing substep (that is, via a per-step Publish event), with
-/// the first sample occuring during Simulator::Initialize(). That means the
+/// the first sample occurring during Simulator::Initialize(). That means the
 /// samples will generally be unevenly spaced in time. If you prefer regular
 /// sampling, you may optionally specify a "publish period" in which case
 /// sampling occurs periodically, with the first sample occurring at time 0.

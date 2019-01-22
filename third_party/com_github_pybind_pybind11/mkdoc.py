@@ -619,7 +619,7 @@ class SymbolTree(object):
     class Node(object):
         """Node for a given name chain."""
         def __init__(self):
-            # First encountered occurence of a symbol when extracting, used to
+            # First encountered occurrence of a symbol when extracting, used to
             # label symbols that do not have documentation. Will only be None
             # for the root node.
             self.first_symbol = None
@@ -837,7 +837,7 @@ def choose_doc_var_names(symbols):
 
 def print_symbols(f, name, node, level=0):
     """
-    Prints C++ code for releveant documentation.
+    Prints C++ code for relevant documentation.
     """
     indent = '  ' * level
 

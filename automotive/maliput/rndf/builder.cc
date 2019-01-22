@@ -40,7 +40,7 @@ using std::vector;
 
 // Let p and q be the position of two RNDF waypoints w1 and w2 which belong
 // to two different RNDF lanes on the same RNDF segment. Let F1 and F2 be the
-// curve functions that parameterizes each lane. In addition, let q' be the
+// curve functions that parametrizes each lane. In addition, let q' be the
 // intersection point of the normal vector of q at F1's trajectory. We can
 // define the distance between q' and p as D, and when D is less than
 // kWaypointDistancePhase no new DirectedWaypoint will be inserted into the

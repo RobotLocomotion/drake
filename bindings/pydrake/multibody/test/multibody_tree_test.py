@@ -620,7 +620,7 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(x_plant_desired, x_plant_tmp))
 
         # Get positions and velocities of specific model instances
-        # from the postion/velocity vector of the plant.
+        # from the position/velocity vector of the plant.
         q_iiwa = plant.GetPositions(context, iiwa_model)
         q_iiwa_array = plant.GetPositionsFromArray(iiwa_model, q_plant)
         self.assertTrue(np.allclose(q_iiwa, q_iiwa_array))
