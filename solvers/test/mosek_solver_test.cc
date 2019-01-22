@@ -5,6 +5,7 @@
 
 #include "drake/common/temp_directory.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/mixed_integer_optimization_util.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
@@ -195,6 +196,50 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
 
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
+}
+
+GTEST_TEST(MosekSolver, TestInitialGuess) {
+  // Mosek allows to set initial guess for integer/binary variables.
+  // Solve the following mixed-integer problem
+  // Find a point C on one of the line segment A1A2, A2A3, A3A4, A4A1 such that
+  // the distance from the point C to the point D = (0, 0) is minimized, where
+  // A1 = (-1, 0), A2 = (0, 1), A3 = (2, 0), A4 = (1, -0.5)
+  MathematicalProgram prog;
+  auto lambda = prog.NewContinuousVariables<5>();
+  auto y = prog.NewBinaryVariables<4>();
+  AddSos2Constraint(&prog, lambda.cast<symbolic::Expression>(),
+                    y.cast<symbolic::Expression>());
+  Eigen::Matrix<double, 2, 5> pts_A;
+  pts_A.col(0) << -1, 0;
+  pts_A.col(1) << 0, 1;
+  pts_A.col(2) << 2, 0;
+  pts_A.col(3) << 1, -0.5;
+  pts_A.col(4) = pts_A.col(0);
+  // point C in the documentation above.
+  auto pt_C = prog.NewContinuousVariables<2>();
+  prog.AddLinearEqualityConstraint(pt_C == pts_A * lambda);
+  prog.AddQuadraticCost(pt_C(0) * pt_C(0) + pt_C(1) * pt_C(1));
+
+  MosekSolver solver;
+  SolverOptions solver_options;
+  // Allow only one solution (the one corresponding to the initial guess on the
+  // integer values.)
+  solver_options.SetOption(solver.id(), "MSK_IPAR_MIO_MAX_NUM_SOLUTIONS", 1);
+  // By setting y = (0, 1, 0, 0), point C is on the line segment A2A3. The
+  // minimal squared distance is 0.8;
+  prog.SetInitialGuess(y, Eigen::Vector4d(0, 1, 0, 0));
+  MathematicalProgramResult result;
+  solver.Solve(prog, prog.initial_guess(), solver_options, &result);
+  const double tol = 1E-8;
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_NEAR(result.get_optimal_cost(), 0.8, tol);
+
+  // By setting y = (0, 0, 0, 1), point C is on the line segment A4A1. The
+  // minimal squared distance is  1.0 / 17
+  prog.SetInitialGuess(y, Eigen::Vector4d(0, 0, 0, 1));
+  solver.Solve(prog, prog.initial_guess(), solver_options, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_NEAR(result.get_optimal_cost(), 1.0 / 17, tol);
 }
 }  // namespace test
 }  // namespace solvers

@@ -665,10 +665,6 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
   SolverOptions merged_solver_options =
       solver_options.value_or(SolverOptions());
   merged_solver_options.Merge(prog.solver_options());
-  // TODO(hongkai.dai): support setting initial guess.
-  if (initial_guess.has_value()) {
-    throw std::runtime_error("Not implemented yet.");
-  }
   const int num_vars = prog.num_vars();
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
@@ -767,6 +763,38 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
     }
   }
 
+  if (with_integer_or_binary_variable && initial_guess.has_value()) {
+    // Set the initial guess for the integer/binary variables.
+    DRAKE_ASSERT(initial_guess->size() == prog.num_vars());
+    MSKint32t num_mosek_vars{0};
+    if (rescode == MSK_RES_OK) {
+      // num_mosek_vars is guaranteed to be no less than prog.num_vars(), as we
+      // can add slack variables when we construct Mosek constraints. For
+      // example, when we call AddSecondOrderConeConstraints().
+      rescode = MSK_getnumvar(task, &num_mosek_vars);
+      DRAKE_DEMAND(num_mosek_vars >= prog.num_vars());
+    }
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putintparam(task, MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON);
+    }
+    int var_count = 0;
+    for (int i = 0; i < num_mosek_vars; ++i) {
+      if (!is_new_variable[i]) {
+        const auto var_type = prog.decision_variable(var_count).get_type();
+        if (var_type == MathematicalProgram::VarType::INTEGER ||
+            var_type == MathematicalProgram::VarType::BINARY) {
+          if (rescode == MSK_RES_OK) {
+            const MSKrealt initial_guess_i = initial_guess.value()(var_count);
+            rescode =
+                MSK_putxxslice(task, MSK_SOL_ITG, i, i + 1, &initial_guess_i);
+          }
+        }
+        var_count++;
+      }
+    }
+    DRAKE_DEMAND(var_count == prog.num_vars());
+  }
+
   result->set_solution_result(SolutionResult::kUnknownError);
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
@@ -804,7 +832,8 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
         case MSK_SOL_STA_OPTIMAL:
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
+        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL:
+        case MSK_SOL_STA_PRIM_FEAS: {
           result->set_solution_result(SolutionResult::kSolutionFound);
           MSKint32t num_mosek_vars;
           rescode = MSK_getnumvar(task, &num_mosek_vars);
