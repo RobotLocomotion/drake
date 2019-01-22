@@ -44,11 +44,16 @@ class RevoluteJointTest : public ::testing::Test {
     // Add a revolute joint between the world and body1:
     joint1_ = &model->AddJoint<RevoluteJoint>(
         "Joint1", model->world_body(), {}, *body1_, {}, Vector3d::UnitZ(),
-        kPositionLowerLimit, kPositionUpperLimit, kDamping, kVelocityLowerLimit,
-        kVelocityUpperLimit, kAccelerationLowerLimit, kAccelerationUpperLimit);
+        kPositionLowerLimit, kPositionUpperLimit, kDamping);
     mutable_joint1_ = dynamic_cast<RevoluteJoint<double>*>(
         &model->get_mutable_joint(joint1_->index()));
     DRAKE_DEMAND(mutable_joint1_);
+    mutable_joint1_->set_velocity_limits(
+        Vector1<double>::Constant(kVelocityLowerLimit),
+        Vector1<double>::Constant(kVelocityUpperLimit));
+    mutable_joint1_->set_acceleration_limits(
+        Vector1<double>::Constant(kAccelerationLowerLimit),
+        Vector1<double>::Constant(kAccelerationUpperLimit));
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.

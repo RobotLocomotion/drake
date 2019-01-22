@@ -42,8 +42,14 @@ class PrismaticJointTest : public ::testing::Test {
     // Add a prismatic joint between the world and body1:
     joint1_ = &model->AddJoint<PrismaticJoint>(
         "Joint1", model->world_body(), {}, *body1_, {}, Vector3d::UnitZ(),
-        kPositionLowerLimit, kPositionUpperLimit, kDamping, kVelocityLowerLimit,
-        kVelocityUpperLimit, kAccelerationLowerLimit, kAccelerationUpperLimit);
+        kPositionLowerLimit, kPositionUpperLimit, kDamping);
+    Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
+    mutable_joint.set_velocity_limits(
+        Vector1<double>::Constant(kVelocityLowerLimit),
+        Vector1<double>::Constant(kVelocityUpperLimit));
+    mutable_joint.set_acceleration_limits(
+        Vector1<double>::Constant(kAccelerationLowerLimit),
+        Vector1<double>::Constant(kAccelerationUpperLimit));
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
