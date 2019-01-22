@@ -1018,6 +1018,14 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   // Only dynamic geometries have this index; highest index is total number
   EXPECT_EQ(added_geo.proximity_index(),
             ProximityIndex(single_tree_dynamic_geometry_count() - 1));
+
+  // Now remove the *final* geometry; even though it doesn't require re-ordering
+  // proximity indices, it should still keep things valid -- in other words,
+  // the mapping from proximity index to internal index for *dynamic* geometries
+  // should shrink appropriately.
+  geometry_state_.RemoveGeometry(s_id, added_id);
+  // Confirm that, post removal, updating poses still works.
+  EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 }
 
 // Tests the RemoveGeometry functionality in which the geometry removed has
