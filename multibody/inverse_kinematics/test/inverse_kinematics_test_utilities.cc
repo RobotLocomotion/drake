@@ -40,7 +40,6 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
 TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest() {
   systems::DiagramBuilder<double> builder{};
   plant_ = builder.AddSystem(ConstructTwoFreeBodiesPlant<double>());
-  plant_->Finalize();
   diagram_ = builder.Build();
   diagram_context_ = diagram_->CreateDefaultContext();
   plant_context_ =
@@ -49,12 +48,11 @@ TwoFreeBodiesConstraintTest::TwoFreeBodiesConstraintTest() {
   body2_index_ = plant_->GetBodyByName("body2").body_frame().index();
 
   plant_autodiff_ = ConstructTwoFreeBodiesPlant<AutoDiffXd>();
-  plant_autodiff_->Finalize();
   plant_context_autodiff_ = plant_autodiff_->CreateDefaultContext();
 }
 
 template <typename T>
-void ConstructTwoFreeBodiesPlant(MultibodyPlant<T>* model) {
+void AddTwoFreeBodiesToPlant(MultibodyPlant<T>* model) {
   const double mass{1};
   const Eigen::Vector3d p_AoAcm_A(0, 0, 0);
   const RotationalInertia<double> I_AAcm_A{0.001, 0.001, 0.001};
@@ -68,7 +66,8 @@ void ConstructTwoFreeBodiesPlant(MultibodyPlant<T>* model) {
 template <typename T>
 std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
   auto model = std::make_unique<MultibodyPlant<T>>();
-  ConstructTwoFreeBodiesPlant(model.get());
+  AddTwoFreeBodiesToPlant(model.get());
+  model->Finalize();
   return model;
 }
 
@@ -109,7 +108,7 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
     FrameIndex* sphere2_index) {
   systems::DiagramBuilder<T> builder;
   std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder);
-  ConstructTwoFreeBodiesPlant(*plant);
+  AddTwoFreeBodiesToPlant(*plant);
   const auto& sphere1 = (*plant)->GetBodyByName("body1");
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
   (*plant)->RegisterCollisionGeometry(

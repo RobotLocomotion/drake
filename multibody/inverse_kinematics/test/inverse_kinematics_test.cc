@@ -16,19 +16,12 @@ Eigen::Quaterniond Vector4ToQuaternion(
   return Eigen::Quaterniond(q(0), q(1), q(2), q(3));
 }
 
-template <typename T>
-std::unique_ptr<MultibodyPlant<T>> ConstructAndFinalizeTwoFreeBodiesPlant() {
-  auto plant = ConstructTwoFreeBodiesPlant<T>();
-  plant->Finalize();
-  return plant;
-}
-
 class TwoFreeBodiesTest : public ::testing::Test {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TwoFreeBodiesTest)
 
   TwoFreeBodiesTest()
-      : two_bodies_plant_(ConstructAndFinalizeTwoFreeBodiesPlant<double>()),
+      : two_bodies_plant_(ConstructTwoFreeBodiesPlant<double>()),
         // TODO(hongkai.dai) call GetFrameByName()
         body1_frame_(two_bodies_plant_->GetFrameByName("body1")),
         body2_frame_(two_bodies_plant_->GetFrameByName("body2")),

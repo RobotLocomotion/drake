@@ -154,7 +154,6 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
 GTEST_TEST(MinimalDistanceConstraintTest,
            MultibodyPlantWithouthGeometrySource) {
   auto plant = ConstructTwoFreeBodiesPlant<double>();
-  plant->Finalize();
   auto context = plant->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
       MinimalDistanceConstraint(plant.get(), 0.1, context.get()),
