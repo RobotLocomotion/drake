@@ -852,9 +852,14 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
         swap(X_WG_[proximity_index], X_WG_[moved_proximity_index]);
         swap(dynamic_proximity_index_to_internal_map_[proximity_index],
              dynamic_proximity_index_to_internal_map_[moved_proximity_index]);
-        dynamic_proximity_index_to_internal_map_.pop_back();
       }
       geometries_[moved_id].set_proximity_index(proximity_index);
+    }
+    if (geometry.is_dynamic()) {
+      // We've removed a dynamic geometry -- it was either the last or it has
+      // been moved to be last -- so, we pop the map to reflect the removed
+      // state.
+      dynamic_proximity_index_to_internal_map_.pop_back();
     }
   }
 
