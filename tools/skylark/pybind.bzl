@@ -310,7 +310,7 @@ def _generate_pybind_documentation_header_impl(ctx):
             # the same Bazel package as the target.
             package_headers_depsets.append(depset(direct = [
                 transitive_header
-                for transitive_header in target.cc.transitive_headers
+                for transitive_header in target.cc.transitive_headers.to_list()
                 if (target.label.package == transitive_header.owner.package and
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))
