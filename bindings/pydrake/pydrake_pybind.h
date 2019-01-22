@@ -267,7 +267,7 @@ to debug C++ bits. Example:
 
     bazel run //bindings/pydrake/systems:py/lifetime_test -- --trace=user
 
-If you need to debug futher while using Bazel, it is suggested to use
+If you need to debug further while using Bazel, it is suggested to use
 `gdbserver` for simplicity. Example:
 
 ```

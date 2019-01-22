@@ -119,7 +119,7 @@ void DoMain() {
   builder.Connect(hand_controller.get_output_port_control(),
                   plant.get_actuation_input_port());
 
-  // Creat an output port of the continuous state from the plant that only
+  // Create an output port of the continuous state from the plant that only
   // output the status of the hand finger joints related DOFs, and put them in
   // the pre-defined order that is easy for understanding.
   const auto& hand_status_converter =

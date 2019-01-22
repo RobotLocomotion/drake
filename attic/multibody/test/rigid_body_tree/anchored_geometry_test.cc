@@ -163,7 +163,7 @@ GTEST_TEST(UrdfAnchoredGeometry, LinkedToAnchoredIsAnchored) {
   ExpectAnchored(body, 1, true);
 }
 
-// Confirms that a body that is rigidly fixed to a dyanmic body is *not*
+// Confirms that a body that is rigidly fixed to a dynamic body is *not*
 // marked as anchored from URDF file.
 GTEST_TEST(UrdfAnchoredGeometry, LinkedToFloatdIsNotAnchored) {
   RigidBodyTree<double> tree;

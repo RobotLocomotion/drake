@@ -2055,7 +2055,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
       parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
   const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
   const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
-  // We dont care for the actual pose of the gripper in the end effector frame
+  // We don't care for the actual pose of the gripper in the end effector frame
   // for this example. We only care about the state size.
   plant.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
   plant.Finalize();

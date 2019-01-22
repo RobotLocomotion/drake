@@ -23,7 +23,7 @@ HumanoidStatus::HumanoidStatus(
     const RigidBodyTree<double>* robot,
     const RigidBodyTreeAliasGroups<double>& alias_group)
     : RobotKinematicState<double>(robot) {
-  // These are humanoid specific special group names, and they do not exsit
+  // These are humanoid specific special group names, and they do not exist
   // for manupulators such as the iiwa arm.
   const std::vector<std::string> body_names = {"pelvis", "torso", "left_foot",
                                                "right_foot"};

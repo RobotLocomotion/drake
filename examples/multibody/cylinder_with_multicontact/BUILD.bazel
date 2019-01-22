@@ -42,7 +42,7 @@ drake_cc_binary(
     # a violent collision between the cylinder and the ground. MultibodyPlant
     # must use sub-stepping in order to handle this situation. Otherwise the
     # contact solver aborts with a non-convergence error.
-    # Therefore the success of this test indicates MultibodyPlant correcly
+    # Therefore the success of this test indicates MultibodyPlant correctly
     # identified this event and used sub-stepping.
     add_test_rule = 1,
     test_rule_args = [

@@ -103,7 +103,7 @@ Eigen::Vector4d AllegroHandMotionState::FingerGraspJointPosition(
   Eigen::Vector4d position;
   // The numbers corresponds to the joint positions when the hand grasps a
   // medium size object, such as the mug. The final positions of the joints
-  // are usually larger than the preset values, so that the fingers continously
+  // are usually larger than the preset values, so that the fingers continuously
   // apply force on the object.
   if (finger_index == 0)
     position << 1.396, 0.85, 0, 1.3;
@@ -119,7 +119,7 @@ Eigen::Vector4d AllegroHandMotionState::FingerGraspJointPosition(
 Eigen::Vector4d AllegroHandMotionState::FingerOpenJointPosition(
     int finger_index) const {
   Eigen::Vector4d position;
-  // The preset postion of the joints when the hand is open. The thumb joints
+  // The preset position of the joints when the hand is open. The thumb joints
   // are not at 0 positions, so that it starts from the lower limit, and faces
   // upward.
   position.setZero();

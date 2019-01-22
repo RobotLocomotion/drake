@@ -988,7 +988,7 @@ class ImplicitStribeckSolver {
 
     // Returns a constant reference to the vector containing the tangential
     // friction forces fₜ for all contact points. fₜ has size 2nc since it
-    // stores the two tangential compoents of the friction force for each
+    // stores the two tangential components of the friction force for each
     // contact point. Refer to ImplicitStribeckSolver for details.
     Eigen::VectorBlock<const VectorX<T>> ft() const {
       return ft_.segment(0, 2 * nc_);
