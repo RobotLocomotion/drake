@@ -4,7 +4,7 @@
 
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
-#include "drake/multibody/inverse_kinematics/minimal_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
@@ -81,8 +81,8 @@ InverseKinematics::AddAngleBetweenVectorsConstraint(
 }
 
 solvers::Binding<solvers::Constraint>
-InverseKinematics::AddMinimalDistanceConstraint(double minimal_distance) {
-  auto constraint = std::make_shared<MinimalDistanceConstraint>(
+InverseKinematics::AddMinimumDistanceConstraint(double minimal_distance) {
+  auto constraint = std::make_shared<MinimumDistanceConstraint>(
       &plant_, minimal_distance, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }

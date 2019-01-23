@@ -1,4 +1,4 @@
-#include "drake/multibody/inverse_kinematics/minimal_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 
 #include <limits>
 #include <vector>
@@ -37,7 +37,7 @@ void Penalty(double distance, double distance_threshold, double* penalty,
   }
 }
 
-MinimalDistanceConstraint::MinimalDistanceConstraint(
+MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     double minimal_distance, systems::Context<double>* plant_context)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
@@ -47,14 +47,14 @@ MinimalDistanceConstraint::MinimalDistanceConstraint(
       plant_context_{plant_context} {
   if (!plant_.geometry_source_is_registered()) {
     throw std::invalid_argument(
-        "MinimalDistanceConstraint: MultibodyPlant has not registered its "
+        "MinimumDistanceConstraint: MultibodyPlant has not registered its "
         "geometry source with SceneGraph yet. Please refer to "
         "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
         "SceneGraph.");
   }
   if (minimal_distance_ <= 0) {
     throw std::invalid_argument(
-        "MinimalDistanceConstraint: minimal_distance should be positive.");
+        "MinimumDistanceConstraint: minimal_distance should be positive.");
   }
 }
 
@@ -69,9 +69,9 @@ void InitializeY(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
 }
 void AddPenalty(const MultibodyPlant<double>&, const systems::Context<double>&,
                 const Frame<double>&, const Frame<double>&,
-                const Eigen::Vector3d&, const Eigen::Vector3d&,
-                const Frame<double>&, double distance, double minimal_distance,
-                const Eigen::Vector3d&, const Eigen::Vector3d&,
+                const Eigen::Vector3d&, double distance,
+                double minimal_distance, const Eigen::Vector3d&,
+                const Eigen::Vector3d&,
                 const Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd* y) {
   double penalty;
   Penalty(distance, minimal_distance, &penalty, nullptr);
@@ -81,31 +81,25 @@ void AddPenalty(const MultibodyPlant<double>&, const systems::Context<double>&,
 void AddPenalty(const MultibodyPlant<double>& plant,
                 const systems::Context<double>& context,
                 const Frame<double>& frameA, const Frame<double>& frameB,
-                const Eigen::Vector3d& p_ACa, const Eigen::Vector3d& p_BCb,
-                const Frame<double>& world_frame, double distance,
+                const Eigen::Vector3d& p_ACa, double distance,
                 double minimal_distance, const Eigen::Vector3d& p_WCa,
                 const Eigen::Vector3d& p_WCb,
                 const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
-  // The distance is d = sign * |p_CbCa_W| = sign * |p_WCa - p_WCb|, where the
-  // closest points are Ca on object A, and Cb on object B. Namely
-  // d = sign * |p_WA + R_WA * p_ACa - (p_WB + R_WB * p_BCb)|
-  // So the gradient ∂d/∂q = p_CaCb_W * (∂p_WCa/∂q - ∂p_WCb/∂q) / d
-  // where p_CaCb_W = p_WCa - p_WCb = p_WA + R_WA * p_ACa - (p_WB + R_WB *
+  // The distance is d = sign * |p_CbCa_B|, where the
+  // closest points are Ca on object A, and Cb on object B.
+  // So the gradient ∂d/∂q = p_CbCa_W * ∂p_BCa_B/∂q / d
+  // where p_CbCa_W = p_WCa - p_WCb = p_WA + R_WA * p_ACa - (p_WB + R_WB *
   // p_BCb)
   double penalty, dpenalty_ddistance;
   Penalty(distance, minimal_distance, &penalty, &dpenalty_ddistance);
 
-  Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_WCa(6, plant.num_positions());
-  Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_WCb(6, plant.num_positions());
+  Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_BCa(6, plant.num_positions());
   plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frameA,
-                                    p_ACa, world_frame, world_frame, &Jq_V_WCa);
-  plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frameB,
-                                    p_BCb, world_frame, world_frame, &Jq_V_WCb);
+                                    p_ACa, frameB, frameB, &Jq_V_BCa);
 
-  Eigen::RowVectorXd ddistance_dq =
-      (p_WCa - p_WCb).transpose() *
-      (Jq_V_WCa.bottomRows<3>() - Jq_V_WCb.bottomRows<3>()) / distance;
-  Vector1<AutoDiffXd> penalty_autodiff =
+  const Eigen::RowVectorXd ddistance_dq =
+      (p_WCa - p_WCb).transpose() * Jq_V_BCa.bottomRows<3>() / distance;
+  const Vector1<AutoDiffXd> penalty_autodiff =
       math::initializeAutoDiffGivenGradientMatrix(
           Vector1d(penalty), dpenalty_ddistance * ddistance_dq *
                                  math::autoDiffToGradientMatrix(x));
@@ -114,7 +108,7 @@ void AddPenalty(const MultibodyPlant<double>& plant,
 }  // namespace
 
 template <typename T>
-void MinimalDistanceConstraint::DoEvalGeneric(
+void MinimumDistanceConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {
   y->resize(1);
 
@@ -123,7 +117,7 @@ void MinimalDistanceConstraint::DoEvalGeneric(
       *plant_context_, plant_.get_geometry_query_input_port().get_index());
   if (plant_geometry_query_object == nullptr) {
     throw std::invalid_argument(
-        "MinimalDistanceConstraint: Cannot get a valid geometry::QueryObject. "
+        "MinimumDistanceConstraint: Cannot get a valid geometry::QueryObject. "
         "Either the plant geometry_query_input_port() is not properly "
         "connected to the SceneGraph's output port, or the plant_context_ is "
         "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
@@ -159,19 +153,18 @@ void MinimalDistanceConstraint::DoEvalGeneric(
                                  signed_distance_pair.p_BCb,
                                  plant_.world_frame(), &p_WCb);
       AddPenalty(plant_, *plant_context_, frameA, frameB,
-                 signed_distance_pair.p_ACa, signed_distance_pair.p_BCb,
-                 plant_.world_frame(), distance, minimal_distance_, p_WCa,
+                 signed_distance_pair.p_ACa, distance, minimal_distance_, p_WCa,
                  p_WCb, x, y);
     }
   }
 }
 
-void MinimalDistanceConstraint::DoEval(
+void MinimumDistanceConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   DoEvalGeneric(x, y);
 }
 
-void MinimalDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+void MinimumDistanceConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                                        AutoDiffVecXd* y) const {
   DoEvalGeneric(x, y);
 }

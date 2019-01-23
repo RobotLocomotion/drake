@@ -28,7 +28,7 @@ class InverseKinematics {
    * solved.
    * @note The inverse kinematics problem constructed in this way doesn't permit
    * collision related constraint (such as calling
-   * AddMinimalDistanceConstraint). To enable collision related constraint, call
+   * AddMinimumDistanceConstraint). To enable collision related constraint, call
    * InverseKinematics(const MultibodyPlant<double>& plant,
    * systems::Context<double>* plant_context);
    */
@@ -37,28 +37,25 @@ class InverseKinematics {
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant. If the user
    * wants to solve the problem with collision related constraint (like calling
-   * AddMinimalDistanceConstraint), please use this constructor.
+   * AddMinimumDistanceConstraint), please use this constructor.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved. This plant should have been connected to a SceneGraph within a
    * Diagram
    * @param context The context for the plant. This context should be a part of
    * the Diagram context.
-   * To construct a plant connected to a SceneGraph, the users could refer to
-   * BuildTwoFreeSpheresDiagram() function in
-   * inverse_kinematics_test_utilities.cc as an example. The steps are
+   * To construct a plant connected to a SceneGraph, with the corresponding
+   * plant_context, the steps are
    * // 1. Add a diagram containing the MultibodyPlant and SceneGraph
    * system::DiagramBuilder<double> builder;
    * auto items = AddMultibodyPlantSceneGraph(&builder);
    * // 2. Add collision geometries to the plant
-   * items.plant.DoFoo(...);
-   * items.plant.Finalize();
+   * Parser(&(items.plant)).AddModelFromFile("model.sdf");
    * // 3. Construct the diagram
    * auto diagram = builder.Build();
    * // 4. Create diagram context.
    * auto diagram_context= diagram->CreateDefaultContext();
    * // 5. Get the context for the plant.
-   * auto plant_context = &(diagram->GetMutableSubsystemContext(*plant,
-   * diagram_context.get()));
+   * auto plant_context = &(diagram->GetMutableSubsystemContext(*plant, diagram_context.get()));
    */
   InverseKinematics(const MultibodyPlant<double>& plant,
                     systems::Context<double>* plant_context);
@@ -200,10 +197,12 @@ class InverseKinematics {
    * with Centroidal Dynamics and Full Kinematics by Hongkai Dai, Andres
    * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
    * Humanoid Robots.
+   * TODO(hongkai.dai): use a piecewise quadratic function as the default
+   * penalty function.
    * @throws invalid_argument if the plant does not register its geometry
    * with a SceneGraph.
    */
-  solvers::Binding<solvers::Constraint> AddMinimalDistanceConstraint(
+  solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
       double minimal_distance);
 
   /** Getter for q. q is the decision variable for the generalized positions of

@@ -1,4 +1,4 @@
-#include "drake/multibody/inverse_kinematics/minimal_distance_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 
 #include <limits>
 
@@ -23,7 +23,7 @@ T Penalty(const T& distance, double minimal_distance) {
   }
 }
 
-AutoDiffVecXd EvalMinimalDistanceConstraintAutoDiff(
+AutoDiffVecXd EvalMinimumDistanceConstraintAutoDiff(
     const systems::Context<AutoDiffXd>& context,
     const MultibodyPlant<AutoDiffXd>& plant, double minimal_distance) {
   AutoDiffVecXd y(1);
@@ -74,9 +74,9 @@ AutoDiffVecXd EvalMinimalDistanceConstraintAutoDiff(
 }
 // Compare the result between Eval<double> and Eval<AutoDiffXd>. Also compare
 // the gradient in Eval<AutoDiffXd> with the result in
-// EvalMinimalDistanceConstraintAutoDiff.
-void CheckMinimalDistanceConstraintEval(
-    const MinimalDistanceConstraint& constraint,
+// EvalMinimumDistanceConstraintAutoDiff.
+void CheckMinimumDistanceConstraintEval(
+    const MinimumDistanceConstraint& constraint,
     const Eigen::Ref<const AutoDiffVecXd>& x_autodiff,
     const MultibodyPlant<AutoDiffXd>& plant_autodiff,
     systems::Context<AutoDiffXd>* context_autodiff, double tol) {
@@ -88,14 +88,14 @@ void CheckMinimalDistanceConstraintEval(
       CompareMatrices(y_double, math::autoDiffToValueMatrix(y_autodiff), tol));
   plant_autodiff.SetPositions(context_autodiff, x_autodiff);
   const AutoDiffVecXd y_autodiff_expected =
-      EvalMinimalDistanceConstraintAutoDiff(*context_autodiff, plant_autodiff,
+      EvalMinimumDistanceConstraintAutoDiff(*context_autodiff, plant_autodiff,
                                             constraint.minimal_distance());
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 }
 
-TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
+TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraint) {
   const double minimal_distance(0.1);
-  const MinimalDistanceConstraint constraint(plant_double_, minimal_distance,
+  const MinimumDistanceConstraint constraint(plant_double_, minimal_distance,
                                              plant_context_double_);
   EXPECT_EQ(constraint.num_constraints(), 1);
   EXPECT_TRUE(CompareMatrices(constraint.lower_bound(), Vector1d(0)));
@@ -119,7 +119,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   EXPECT_EQ(y_double(0), 0);
   EXPECT_TRUE(CompareMatrices(y_autodiff(0).derivatives(),
                               Eigen::Matrix<double, 14, 1>::Zero()));
-  CheckMinimalDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
+  CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
                                      plant_context_autodiff_, 1E-12);
 
   // distance smaller than the minimal_distance, we can compute the penalty and
@@ -147,18 +147,18 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraint) {
   const double gradient_tol = 5 * kEps;
   EXPECT_TRUE(CompareMatrices(y_autodiff(0).derivatives(),
                               penalty_autodiff.derivatives(), gradient_tol));
-  CheckMinimalDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
+  CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
                                      plant_context_autodiff_, 10 * kEps);
 }
 
-GTEST_TEST(MinimalDistanceConstraintTest,
+GTEST_TEST(MinimumDistanceConstraintTest,
            MultibodyPlantWithouthGeometrySource) {
   auto plant = ConstructTwoFreeBodiesPlant<double>();
   auto context = plant->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MinimalDistanceConstraint(plant.get(), 0.1, context.get()),
+      MinimumDistanceConstraint(plant.get(), 0.1, context.get()),
       std::invalid_argument,
-      "MinimalDistanceConstraint: MultibodyPlant has not registered its "
+      "MinimumDistanceConstraint: MultibodyPlant has not registered its "
       "geometry source with SceneGraph yet. Please refer to "
       "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
       "SceneGraph.");
@@ -166,13 +166,13 @@ GTEST_TEST(MinimalDistanceConstraintTest,
 
 TEST_F(TwoFreeSpheresTest, NonpositiveMinimalDistance) {
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MinimalDistanceConstraint(plant_double_, 0, plant_context_double_),
+      MinimumDistanceConstraint(plant_double_, 0, plant_context_double_),
       std::invalid_argument,
-      "MinimalDistanceConstraint: minimal_distance should be positive.");
+      "MinimumDistanceConstraint: minimal_distance should be positive.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MinimalDistanceConstraint(plant_double_, -0.1, plant_context_double_),
+      MinimumDistanceConstraint(plant_double_, -0.1, plant_context_double_),
       std::invalid_argument,
-      "MinimalDistanceConstraint: minimal_distance should be positive.");
+      "MinimumDistanceConstraint: minimal_distance should be positive.");
 }
 }  // namespace multibody
 }  // namespace drake

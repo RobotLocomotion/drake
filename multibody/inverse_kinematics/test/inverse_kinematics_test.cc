@@ -213,7 +213,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
 
   InverseKinematics ik(*plant_double_, plant_context_double_);
 
-  auto constraint = ik.AddMinimalDistanceConstraint(min_distance);
+  auto constraint = ik.AddMinimumDistanceConstraint(min_distance);
 
   // The two spheres are colliding in the initial guess.
   ik.get_mutable_prog()->SetInitialGuess(ik.q().head<4>(),

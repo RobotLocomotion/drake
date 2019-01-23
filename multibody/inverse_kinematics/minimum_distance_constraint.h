@@ -25,9 +25,9 @@ namespace multibody {
  * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
  * Humanoid Robots.
  */
-class MinimalDistanceConstraint : public solvers::Constraint {
+class MinimumDistanceConstraint : public solvers::Constraint {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimalDistanceConstraint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinimumDistanceConstraint)
 
   /**
    * @param plant The robot on which the inverse kinematics problem will be
@@ -41,11 +41,11 @@ class MinimalDistanceConstraint : public solvers::Constraint {
    * @pre minimal_distance > 0.
    * @throw invalid_argument if the geometry hasn't been registered.
    */
-  MinimalDistanceConstraint(
+  MinimumDistanceConstraint(
       const multibody::MultibodyPlant<double>* const plant,
       double minimal_distance, systems::Context<double>* plant_context);
 
-  ~MinimalDistanceConstraint() override {}
+  ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimal distance. */
   double minimal_distance() const { return minimal_distance_; }
@@ -60,7 +60,7 @@ class MinimalDistanceConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
               VectorX<symbolic::Expression>*) const override {
     throw std::logic_error(
-        "MinimalDistanceConstraint::DoEval() does not work for symbolic "
+        "MinimumDistanceConstraint::DoEval() does not work for symbolic "
         "variables.");
   }
 
