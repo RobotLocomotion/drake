@@ -415,10 +415,20 @@ drake_py_unittest(
     ],
 )
 
+drake_pybind_library(
+    name = "compatibility_test_util_py",
+    testonly = 1,
+    add_install = False,
+    cc_srcs = ["test/compatibility_test_util_py.cc"],
+    package_info = PACKAGE_INFO,
+    visibility = ["//visibility:private"],
+)
+
 drake_py_unittest(
     name = "compatibility_test",
     deps = [
         ":compatibility_py",
+        ":compatibility_test_util_py",
     ],
 )
 
