@@ -295,7 +295,14 @@ class MultipleShooting : public solvers::MathematicalProgram {
   ReconstructInputTrajectory() const = 0;
 
   virtual trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
-      const solvers::MathematicalProgramResult&) const {}
+      const solvers::MathematicalProgramResult&) const {
+    // TODO(hongkai.dai): make this function an abstract virtual function, when
+    // we deprecate ReconstructInputTrajectory(). Currently I throw this error
+    // so that the derived classes in Drake can override it, and we do not break
+    // the derived class outside of drake master.
+    throw std::runtime_error(
+        "The derived class has to override this function.");
+  }
 
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
@@ -306,7 +313,14 @@ class MultipleShooting : public solvers::MathematicalProgram {
   ReconstructStateTrajectory() const = 0;
 
   virtual trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
-      const solvers::MathematicalProgramResult& result) const = 0;
+      const solvers::MathematicalProgramResult&) const {
+    // TODO(hongkai.dai): make this function an abstract virtual function, when
+    // we deprecate ReconstructStateTrajectory(). Currently I throw this error
+    // so that the derived classes in Drake can override it, and we do not break
+    // the derived class outside of drake master.
+    throw std::runtime_error(
+        "The derived class has to override this function.");
+  }
 
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);
