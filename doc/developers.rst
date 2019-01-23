@@ -93,7 +93,8 @@ supported for CMake builds using the "Unix Makefiles" generator.
 
 
 CPython is the only Python implementation supported. On all platforms, Python 2
-is the default version.
+is the default version. On Ubuntu, amd64 (i.e., x86_64) is the only supported
+architecture.
 
 The following configurations are presently untested in continuous integration:
 
