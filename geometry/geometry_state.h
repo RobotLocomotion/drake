@@ -457,6 +457,9 @@ class GeometryState {
 
   // Conversion constructor. In the initial implementation, this is only
   // intended to be used to clone an AutoDiffXd instance from a double instance.
+  // It is _vitally_ important that all members are _explicitly_ accounted for
+  // (either in the initialization list or in the body). Failure to do so will
+  // lead to errors in the converted GeometryState instance.
   template <typename U>
   GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
@@ -468,6 +471,8 @@ class GeometryState {
         geometries_(source.geometries_),
         geometry_index_to_id_map_(source.geometry_index_to_id_map_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
+        dynamic_proximity_index_to_internal_map_(
+            source.dynamic_proximity_index_to_internal_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we _can_
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
@@ -597,11 +602,14 @@ class GeometryState {
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
                           PropertyType properties, Role role);
 
+  // NOTE: If adding a member it is important that it be _explicitly_ copied
+  // in the converting copy constructor and likewise tested in the unit test
+  // for that constructor.
+
   // The GeometryState gets its own source so it can own entities (such as the
   // world frame).
   SourceId self_source_;
 
-  // ---------------------------------------------------------------------
   // Maps from registered source ids to the entities registered to those
   // sources (e.g., frames and geometries). This lives in the state to support
   // runtime topology changes. This data should only change at _discrete_

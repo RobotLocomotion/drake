@@ -36,6 +36,10 @@ class GeometryStateTester {
     return internal::InternalFrame::world_frame_id();
   }
 
+  SourceId get_self_source_id() const {
+    return state_->self_source_;
+  }
+
   const std::unordered_map<SourceId, std::string>& get_source_name_map() const {
     return state_->source_names_;
   }
@@ -69,8 +73,12 @@ class GeometryStateTester {
     return state_->geometry_index_to_id_map_;
   }
 
-  const vector<FrameId>& get_pose_index_frame_id_map() const {
+  const vector<FrameId>& get_frame_index_id_map() const {
     return state_->frame_index_to_id_map_;
+  }
+
+  const vector<GeometryIndex>& get_dynamic_pose_index_id_map() const {
+    return state_->dynamic_proximity_index_to_internal_map_;
   }
 
   const vector<Isometry3<T>>& get_geometry_world_poses() const {
@@ -624,7 +632,7 @@ void ExpectSuccessfulTransmogrification(
     const GeometryStateTester<double>& d_tester) {
 
   // 1. Test all of the identifier -> trivially testable value maps
-  EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
+  EXPECT_EQ(ad_tester.get_self_source_id(), d_tester.get_self_source_id());
   EXPECT_EQ(ad_tester.get_source_name_map(), d_tester.get_source_name_map());
   EXPECT_EQ(ad_tester.get_source_frame_id_map(),
             d_tester.get_source_frame_id_map());
@@ -638,10 +646,10 @@ void ExpectSuccessfulTransmogrification(
   // 2. Test the vectors of ids
   EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
             d_tester.get_geometry_index_id_map());
-  EXPECT_EQ(ad_tester.get_geometry_index_id_map(),
-            d_tester.get_geometry_index_id_map());
-  EXPECT_EQ(ad_tester.get_pose_index_frame_id_map(),
-            d_tester.get_pose_index_frame_id_map());
+  EXPECT_EQ(ad_tester.get_frame_index_id_map(),
+            d_tester.get_frame_index_id_map());
+  EXPECT_EQ(ad_tester.get_dynamic_pose_index_id_map(),
+            d_tester.get_dynamic_pose_index_id_map());
 
   // 3. Compare Isometry3<double> with Isometry3<double>
   for (GeometryId id : ad_tester.get_geometry_index_id_map()) {
