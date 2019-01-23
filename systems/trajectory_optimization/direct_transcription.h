@@ -81,22 +81,22 @@ class DirectTranscription : public MultipleShooting {
 
   ~DirectTranscription() override {}
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
-  // TODO(hongkai.dai): remove this function in the future, use the one with
-  // MathematicalProgramResult& as the input.
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
   const override;
 
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
       const solvers::MathematicalProgramResult& result) const override;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
-  // TODO(hongkai.dai): remove this function in the future, use the one with
-  // MathematicalProgramResult& as the input.
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
   const override;
 

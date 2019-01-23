@@ -295,7 +295,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   ReconstructInputTrajectory() const = 0;
 
   virtual trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
-      const solvers::MathematicalProgramResult& result) const = 0;
+      const solvers::MathematicalProgramResult&) const {}
 
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
