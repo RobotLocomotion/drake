@@ -599,9 +599,9 @@ void init_multibody_plant(py::module m) {
             },
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             doc.MultibodyPlant.SetPositionsInArray.doc)
-        .def("GetVelocitiesFromArray", &Class::GetPositionsFromArray,
-            py::arg("model_instance"), py::arg("q"),
-            doc.MultibodyPlant.GetPositionsFromArray.doc)
+        .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
+            py::arg("model_instance"), py::arg("v"),
+            doc.MultibodyPlant.GetVelocitiesFromArray.doc)
         .def("SetVelocitiesInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> v_instance,
