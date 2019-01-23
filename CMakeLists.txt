@@ -14,6 +14,12 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
+if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  message(FATAL_ERROR
+    "System processor ${CMAKE_SYSTEM_PROCESSOR} is NOT supported"
+  )
+endif()
+
 set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
