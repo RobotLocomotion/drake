@@ -179,6 +179,14 @@ class SceneGraphInspector {
     return state_->BelongsToSource(frame_id, source_id);
   }
 
+  /** Reports the _name_ of the geometry source that registered the frame with
+   the given `id`.
+   @throws std::logic_error  If `id` does not map to a registered frame.  */
+  const std::string& GetOwningSourceName(FrameId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetOwningSourceName(id);
+  }
+
   /** Reports the name of the frame with the given `id`.
    @throws std::logic_error if `id` does not map to a registered frame.  */
   const std::string& GetName(FrameId id) const {
@@ -246,6 +254,14 @@ class SceneGraphInspector {
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->BelongsToSource(geometry_id, source_id);
+  }
+
+  /** Reports the _name_ of the geometry source that registered the geometry
+   with the given `id`.
+   @throws std::logic_error  If `id` does not map to a registered geometry.  */
+  const std::string& GetOwningSourceName(GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetOwningSourceName(id);
   }
 
   /** Reports the id of the frame to which the given geometry with the given
