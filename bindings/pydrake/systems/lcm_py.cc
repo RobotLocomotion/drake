@@ -6,7 +6,6 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/lcm/connect_lcm_scope.h"
@@ -17,8 +16,6 @@
 namespace drake {
 namespace pydrake {
 
-using lcm::DrakeLcmInterface;
-using pysystems::pylcm::BindCppSerializers;
 using systems::AbstractValue;
 using systems::lcm::SerializerInterface;
 
@@ -31,12 +28,6 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
   using Base = py::wrapper<SerializerInterface>;
 
   PySerializerInterface() : Base() {}
-
-  // The following methods are for the pybind11 trampoline class to permit C++
-  // to call the correct Python override. This code path is only activated for
-  // Python implementations of the class (whose inheritance will pass through
-  // `PySerializerInterface`). C++ implementations will use the bindings on the
-  // interface below.
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const override {
     PYBIND11_OVERLOAD_PURE(std::unique_ptr<AbstractValue>, SerializerInterface,
@@ -69,6 +60,8 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
 
 PYBIND11_MODULE(lcm, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::lcm;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems::lcm;
@@ -79,36 +72,12 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = SerializerInterface;
-    constexpr auto& cls_doc = doc.SerializerInterface;
-    py::class_<Class, PySerializerInterface> cls(m, "SerializerInterface");
-    cls  // BR
-         // Adding a constructor permits implementing this interface in Python.
+    py::class_<Class, PySerializerInterface>(m, "SerializerInterface")
         .def(py::init(
                  []() { return std::make_unique<PySerializerInterface>(); }),
-            cls_doc.ctor.doc);
-    // The following bindings are present to allow Python to call C++
-    // implementations of this interface. Python implementations of the
-    // interface will call the trampoline implementation methods above.
-    cls  // BR
-        .def("CreateDefaultValue", &Class::CreateDefaultValue,
-            cls_doc.CreateDefaultValue.doc)
-        .def("Deserialize",
-            [](const Class& self, py::bytes message_bytes,
-                AbstractValue* abstract_value) {
-              std::string str = message_bytes;
-              self.Deserialize(str.data(), str.size(), abstract_value);
-            },
-            py::arg("message_bytes"), py::arg("abstract_value"),
-            cls_doc.Deserialize.doc)
-        .def("Serialize",
-            [](const Class& self, const AbstractValue& abstract_value) {
-              std::vector<uint8_t> message_bytes;
-              self.Serialize(abstract_value, &message_bytes);
-              return py::bytes(
-                  reinterpret_cast<const char*>(message_bytes.data()),
-                  message_bytes.size());
-            },
-            py::arg("abstract_value"), cls_doc.Serialize.doc);
+            doc.SerializerInterface.ctor.doc);
+    // TODO(eric.cousineau): Consider providing bindings of C++ types if we want
+    // to be able to connect to ports which use C++ LCM types.
   }
 
   {
@@ -147,9 +116,6 @@ PYBIND11_MODULE(lcm, m) {
       py::arg("builder"), py::arg("lcm") = nullptr, py::keep_alive<0, 2>(),
       // TODO(eric.cousineau): Figure out why this is necessary (#9398).
       py_reference, doc.ConnectLcmScope.doc);
-
-  // Bind C++ serializers.
-  BindCppSerializers();
 
   ExecuteExtraPythonCode(m);
 }
