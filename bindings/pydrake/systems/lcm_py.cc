@@ -68,6 +68,7 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
 }  // namespace
 
 PYBIND11_MODULE(lcm, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
