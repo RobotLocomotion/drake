@@ -114,6 +114,7 @@ PYBIND11_MODULE(lcm, m) {
 
   {
     using Class = LcmPublisherSystem;
+    constexpr auto& cls_doc = doc.LcmPublisherSystem;
     py::class_<Class, LeafSystem<double>> cls(m, "LcmPublisherSystem");
     cls  // BR
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
@@ -130,18 +131,21 @@ PYBIND11_MODULE(lcm, m) {
               self->set_publish_period(period);
 #pragma GCC diagnostic pop
             },
-            py::arg("period"), doc.LcmPublisherSystem.set_publish_period.doc);
+            py::arg("period"), cls_doc.set_publish_period.doc);
   }
 
   {
     using Class = LcmSubscriberSystem;
+    constexpr auto& cls_doc = doc.LcmSubscriberSystem;
     py::class_<Class, LeafSystem<double>>(m, "LcmSubscriberSystem")
         .def(py::init<const std::string&, std::unique_ptr<SerializerInterface>,
                  DrakeLcmInterface*>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
             py::keep_alive<1, 3>(),
-            doc.LcmSubscriberSystem.ctor.doc_3args_channel_serializer_lcm);
+            cls_doc.ctor.doc_3args_channel_serializer_lcm)
+        .def("CopyLatestMessageInto", &Class::CopyLatestMessageInto,
+            py::arg("state"), cls_doc.CopyLatestMessageInto.doc);
   }
 
   m.def("ConnectLcmScope", &ConnectLcmScope, py::arg("src"), py::arg("channel"),

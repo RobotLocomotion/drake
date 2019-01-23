@@ -178,6 +178,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
       int old_message_count, AbstractValue* message = nullptr) const;
 
   /**
+   * (Advanced.) Writes the most recently received message (and message count)
+   * into @p state.  If no messages have been received, only the message count
+   * is updated.  This is primarily useful for unit testing.
+   */
+  void CopyLatestMessageInto(State<double>* state) const;
+
+  /**
    * Returns the internal message counter. Meant to be used with
    * `WaitForMessage`.
    */
@@ -200,20 +207,12 @@ class LcmSubscriberSystem : public LeafSystem<double> {
     ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override;
-
   void DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* discrete_state) const override {
     ProcessMessageAndStoreToDiscreteState(discrete_state);
   }
-
-  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()
-      const override;
-
-  void SetDefaultState(const Context<double>& context,
-                       State<double>* state) const override;
 
  private:
   // All constructors delegate to here.

@@ -47,6 +47,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
       this->HandleMessage(buffer, size);
     });
 
+  // Declare the single output port.
   if (translator_ != nullptr) {
     // Invoke the translator allocate method once to provide a model value.
     DeclareVectorOutputPort(*AllocateTranslatorOutputValue(),
@@ -61,6 +62,24 @@ LcmSubscriberSystem::LcmSubscriberSystem(
         [this](const Context<double>& context, AbstractValue* out) {
           this->CalcSerializerOutputValue(context, out);
         });
+  }
+
+  // Declare our two states (message_value, message_count).
+  if (is_abstract_state()) {
+    static_assert(kStateIndexMessage == 0, "");
+    this->DeclareAbstractState(AllocateSerializerOutputValue());
+    static_assert(kStateIndexMessageCount == 1, "");
+    this->DeclareAbstractState(AbstractValue::Make<int>(0));
+  } else {
+    DRAKE_DEMAND(is_discrete_state());
+    static_assert(kStateIndexMessage == 0, "");
+    if (translator_) {
+      this->DeclareDiscreteState(*AllocateTranslatorOutputValue());
+    } else {
+      this->DeclareDiscreteState(fixed_encoded_size_);
+    }
+    static_assert(kStateIndexMessageCount == 1, "");
+    this->DeclareDiscreteState(1 /* size */);
   }
 
   set_name(make_name(channel_));
@@ -85,8 +104,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
 
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 
-void LcmSubscriberSystem::SetDefaultState(const Context<double>&,
-                                          State<double>* state) const {
+void LcmSubscriberSystem::CopyLatestMessageInto(State<double>* state) const {
   if (is_discrete_state()) {
     ProcessMessageAndStoreToDiscreteState(&state->get_mutable_discrete_state());
   } else {
@@ -182,37 +200,6 @@ void LcmSubscriberSystem::DoCalcNextUpdateTime(
         std::make_unique<systems::DiscreteUpdateEvent<double>>(
             TriggerType::kTimed));
   }
-}
-
-std::unique_ptr<DiscreteValues<double>>
-LcmSubscriberSystem::AllocateDiscreteState() const {
-  if (is_discrete_state()) {
-    std::vector<std::unique_ptr<BasicVector<double>>> discrete_state_vec(2);
-    if (translator_) {
-      discrete_state_vec[kStateIndexMessage] =
-          this->LcmSubscriberSystem::AllocateTranslatorOutputValue();
-    } else {
-      discrete_state_vec[kStateIndexMessage] =
-          std::make_unique<BasicVector<double>>(fixed_encoded_size_);
-    }
-    discrete_state_vec[kStateIndexMessageCount] =
-        std::make_unique<BasicVector<double>>(1);
-    return std::make_unique<DiscreteValues<double>>(
-        std::move(discrete_state_vec));
-  }
-  return LeafSystem<double>::AllocateDiscreteState();
-}
-
-std::unique_ptr<AbstractValues> LcmSubscriberSystem::AllocateAbstractState()
-    const {
-  if (is_abstract_state()) {
-    std::vector<std::unique_ptr<systems::AbstractValue>> abstract_vals(2);
-    abstract_vals[kStateIndexMessage] =
-        this->LcmSubscriberSystem::AllocateSerializerOutputValue();
-    abstract_vals[kStateIndexMessageCount] = AbstractValue::Make<int>(0);
-    return std::make_unique<systems::AbstractValues>(std::move(abstract_vals));
-  }
-  return LeafSystem<double>::AllocateAbstractState();
 }
 
 std::string LcmSubscriberSystem::make_name(const std::string& channel) {

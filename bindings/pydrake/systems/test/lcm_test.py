@@ -78,6 +78,7 @@ class TestSystemsLcm(unittest.TestCase):
     def _calc_output(self, dut):
         context = dut.CreateDefaultContext()
         output = dut.AllocateOutput()
+        dut.CopyLatestMessageInto(context.get_mutable_state())
         dut.CalcOutput(context, output)
         actual = output.get_data(0)
         return actual

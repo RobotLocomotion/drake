@@ -76,6 +76,15 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(value[i], i);
   }
+
+  // Confirm that the unit test sugar used by pydrake is another equally-valid
+  // way to read messages.
+  auto new_context = dut->CreateDefaultContext();
+  dut->CopyLatestMessageInto(&new_context->get_mutable_state());
+  const auto& new_y = dut->get_output_port().EvalEigenVector(*new_context);
+  for (int i = 0; i < kDim; ++i) {
+    EXPECT_EQ(new_y[i], i);
+  }
 }
 
 // Tests the functionality of LcmSubscriberSystem.
