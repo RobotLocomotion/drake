@@ -1340,7 +1340,7 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& v_array) const;
+      const Eigen::Ref<const VectorX<T>>& v) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
@@ -1360,8 +1360,8 @@ class MultibodyTree {
   /// `MultibodyTree::num_positions(model_instance)`.
   void SetVelocitiesInArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& model_v,
-      EigenPtr<VectorX<T>> v_array) const;
+      const Eigen::Ref<const VectorX<T>>& v_instance,
+      EigenPtr<VectorX<T>> v) const;
 
   /// @}
   // End of "Model instance accessors" section.

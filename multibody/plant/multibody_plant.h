@@ -1232,8 +1232,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// MultibodyPlant::num_velocities().
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& v_array) const {
-    return internal_tree().GetVelocitiesFromArray(model_instance, v_array);
+      const Eigen::Ref<const VectorX<T>>& v) const {
+    return internal_tree().GetVelocitiesFromArray(model_instance, v);
   }
 
   /// Sets the vector of generalized velocities for `model_instance` in
@@ -1243,9 +1243,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// `MultibodyPlant::num_positions(model_instance)`.
   void SetVelocitiesInArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& model_v,
-      EigenPtr<VectorX<T>> v_array) const {
-    internal_tree().SetVelocitiesInArray(model_instance, model_v, v_array);
+      const Eigen::Ref<const VectorX<T>>& v_instance,
+      EigenPtr<VectorX<T>> v) const {
+    internal_tree().SetVelocitiesInArray(model_instance, v_instance, v);
   }
 
   /// @}

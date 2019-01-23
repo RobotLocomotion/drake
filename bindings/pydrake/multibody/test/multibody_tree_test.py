@@ -486,11 +486,11 @@ class TestMultibodyTree(unittest.TestCase):
         x_gripper_desired[0:nq_gripper] = q_gripper_desired
         x_gripper_desired[nq_gripper:nq_gripper+nv_gripper] = v_gripper_desired
 
-        x_plant_desired = np.zeros(nq + nv)
-        x_plant_desired[0:7] = q_iiwa_desired
-        x_plant_desired[7:9] = q_gripper_desired
-        x_plant_desired[nq:nq+7] = v_iiwa_desired
-        x_plant_desired[nq+7:nq+nv] = v_gripper_desired
+        x_desired = np.zeros(nq + nv)
+        x_desired[0:7] = q_iiwa_desired
+        x_desired[7:9] = q_gripper_desired
+        x_desired[nq:nq+7] = v_iiwa_desired
+        x_desired[nq+7:nq+nv] = v_gripper_desired
 
         # Check SetPositionsAndVelocities() for each model instance.
         # Do the iiwa model first.
@@ -614,32 +614,37 @@ class TestMultibodyTree(unittest.TestCase):
         q_gripper_desired = [0.4, 0.5]
         v_gripper_desired = [-1., -2.]
 
-        x_plant_desired = np.zeros(nq + nv)
-        x_plant_desired[0:7] = q_iiwa_desired
-        x_plant_desired[7:9] = q_gripper_desired
-        x_plant_desired[nq:nq+7] = v_iiwa_desired
-        x_plant_desired[nq+7:nq+nv] = v_gripper_desired
+        x_desired = np.zeros(nq + nv)
+        x_desired[0:7] = q_iiwa_desired
+        x_desired[7:9] = q_gripper_desired
+        x_desired[nq:nq+7] = v_iiwa_desired
+        x_desired[nq+7:nq+nv] = v_gripper_desired
 
-        x_plant = plant.GetMutablePositionsAndVelocities(context)
-        x_plant[:] = x_plant_desired
-        q_plant = plant.GetPositions(context)
-        v_plant = plant.GetVelocities(context)
+        x = plant.GetMutablePositionsAndVelocities(context=context)
+        x[:] = x_desired
+        q = plant.GetPositions(context=context)
+        v = plant.GetVelocities(context=context)
 
         # Get state from context.
-        x = plant.GetPositionsAndVelocities(context)
-        x_plant_tmp = plant.GetMutablePositionsAndVelocities(context)
-        self.assertTrue(np.allclose(x_plant_desired, x_plant_tmp))
+        x = plant.GetPositionsAndVelocities(context=context)
+        x_tmp = plant.GetMutablePositionsAndVelocities(context=context)
+        self.assertTrue(np.allclose(x_desired, x_tmp))
 
         # Get positions and velocities of specific model instances
         # from the position/velocity vector of the plant.
-        q_iiwa = plant.GetPositions(context, iiwa_model)
-        q_iiwa_array = plant.GetPositionsFromArray(iiwa_model, q_plant)
+        q_iiwa = plant.GetPositions(context=context, model_instance=iiwa_model)
+        q_iiwa_array = plant.GetPositionsFromArray(
+            model_instance=iiwa_model, q=q)
         self.assertTrue(np.allclose(q_iiwa, q_iiwa_array))
-        q_gripper = plant.GetPositions(context, gripper_model)
-        v_iiwa = plant.GetVelocities(context, iiwa_model)
-        v_iiwa_array = plant.GetVelocitiesFromArray(iiwa_model, v_plant)
+        q_gripper = plant.GetPositions(
+            context=context, model_instance=gripper_model)
+        v_iiwa = plant.GetVelocities(
+            context=context, model_instance=iiwa_model)
+        v_iiwa_array = plant.GetVelocitiesFromArray(
+            model_instance=iiwa_model, v=v)
         self.assertTrue(np.allclose(v_iiwa, v_iiwa_array))
-        v_gripper = plant.GetVelocities(context, gripper_model)
+        v_gripper = plant.GetVelocities(
+            context=context, model_instance=gripper_model)
 
         # Assert that the `GetPositions` and `GetVelocities` return
         # the desired values set earlier.
@@ -649,21 +654,24 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(np.allclose(v_gripper_desired, v_gripper))
 
         # Verify that SetPositionsInArray() and SetVelocitiesInArray() works.
-        plant.SetPositionsInArray(iiwa_model, np.zeros(nq_iiwa), q_plant)
+        plant.SetPositionsInArray(
+            model_instance=iiwa_model, q_instance=np.zeros(nq_iiwa), q=q)
         self.assertTrue(np.allclose(
-            plant.GetPositionsFromArray(iiwa_model, q_plant),
+            plant.GetPositionsFromArray(model_instance=iiwa_model, q=q),
             np.zeros(nq_iiwa)))
-        plant.SetVelocitiesInArray(iiwa_model, np.zeros(nv_iiwa), v_plant)
+        plant.SetVelocitiesInArray(
+            model_instance=iiwa_model, v_instance=np.zeros(nv_iiwa), v=v)
         self.assertTrue(np.allclose(
-            plant.GetVelocitiesFromArray(iiwa_model, v_plant),
+            plant.GetVelocitiesFromArray(model_instance=iiwa_model, v=v),
             np.zeros(nv_iiwa)))
 
         # Check actuation.
         nu = plant.num_actuated_dofs()
-        u_plant = np.zeros(nu)
+        u = np.zeros(nu)
         u_iiwa = np.arange(nv_iiwa)
-        plant.SetActuationInArray(iiwa_model, u_iiwa, u_plant)
-        self.assertTrue(np.allclose(u_plant[:7], u_iiwa))
+        plant.SetActuationInArray(
+            model_instance=iiwa_model, u_instance=u_iiwa, u=u)
+        self.assertTrue(np.allclose(u[:7], u_iiwa))
 
     def test_map_qdot_to_v_and_back(self):
         plant = MultibodyPlant()
