@@ -609,15 +609,10 @@ class TestMultibodyTree(unittest.TestCase):
         nv = plant.num_velocities()
         nv_iiwa = plant.num_velocities(iiwa_model)
 
-        q_iiwa_desired = np.zeros(7)
-        v_iiwa_desired = np.zeros(7)
-        q_gripper_desired = np.zeros(2)
-        v_gripper_desired = np.zeros(2)
-
-        q_iiwa_desired[2] = np.pi/3
-        q_gripper_desired[0] = 0.1
-        v_iiwa_desired[1] = 5.0
-        q_gripper_desired[0] = -0.3
+        q_iiwa_desired = np.linspace(0, 0.3, 7)
+        v_iiwa_desired = q_iiwa_desired + 0.4
+        q_gripper_desired = [0.4, 0.5]
+        v_gripper_desired = [-1., -2.]
 
         x_plant_desired = np.zeros(nq + nv)
         x_plant_desired[0:7] = q_iiwa_desired
