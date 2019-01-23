@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <typeinfo>
+#include <unordered_map>
 #include <utility>
 
+#include "drake/common/symbolic.h"
 #include "drake/common/value.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_result.h"
@@ -19,6 +21,7 @@ namespace solvers {
 class MathematicalProgramResult final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MathematicalProgramResult)
+
   /**
    * Constructs the result.
    * @note The solver_details is set to nullptr.
@@ -27,6 +30,17 @@ class MathematicalProgramResult final {
 
   /** Gets SolutionResult. */
   SolutionResult get_solution_result() const { return solution_result_; }
+
+  /**
+   * Sets decision_variable_index mapping, that maps each decision variable to
+   * its index in the aggregated vector containing all decision variables in
+   * MathematicalProgram.
+   */
+  void set_decision_variable_index(
+      const std::unordered_map<symbolic::Variable::Id, int>*
+          decision_variable_index) {
+    decision_variable_index_ = decision_variable_index;
+  }
 
   /** Sets SolutionResult. */
   void set_solution_result(SolutionResult solution_result) {
@@ -37,7 +51,7 @@ class MathematicalProgramResult final {
   const Eigen::VectorXd& get_x_val() const { return x_val_; }
 
   /** Sets the decision variable values. */
-  void set_x_val(const Eigen::VectorXd& x_val) { x_val_ = x_val; }
+  void set_x_val(const Eigen::VectorXd& x_val);
 
   /** Gets the optimal cost. */
   double get_optimal_cost() const { return optimal_cost_; }
@@ -84,7 +98,34 @@ class MathematicalProgramResult final {
    */
   SolverResult ConvertToSolverResult() const;
 
+  /**
+   * Gets the solution of an Eigen matrix of decision variables.
+   * @tparam Derived An Eigen matrix containing Variable.
+   * @param var The decision variables.
+   * @return The value of the decision variable after solving the problem.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
+  GetSolution(const Eigen::MatrixBase<Derived>& var) const {
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>
+        value(var.rows(), var.cols());
+    for (int i = 0; i < var.rows(); ++i) {
+      for (int j = 0; j < var.cols(); ++j) {
+        value(i, j) = GetSolution(var(i, j));
+      }
+    }
+    return value;
+  }
+
+  double GetSolution(const symbolic::Variable& var) const;
+
  private:
+  const std::unordered_map<symbolic::Variable::Id, int>*
+      decision_variable_index_;
   SolutionResult solution_result_{};
   Eigen::VectorXd x_val_;
   double optimal_cost_{};

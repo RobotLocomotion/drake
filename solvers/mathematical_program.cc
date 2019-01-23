@@ -943,17 +943,6 @@ double MathematicalProgram::GetSolution(const Variable& var) const {
   return x_values_[FindDecisionVariableIndex(var)];
 }
 
-double MathematicalProgram::GetSolution(
-    const Variable& var, const MathematicalProgramResult& result) const {
-  if (result.get_x_val().rows() != num_vars()) {
-    throw std::invalid_argument("result.get_x_val().rows() = " +
-                                std::to_string(result.get_x_val().rows()) +
-                                ", num_vars() = " + std::to_string(num_vars()) +
-                                ", they should be equal.");
-  }
-  return result.get_x_val()(FindDecisionVariableIndex(var));
-}
-
 namespace {
 template <typename T>
 T GetSolutionForExpressionOrPolynomial(const MathematicalProgram& prog,

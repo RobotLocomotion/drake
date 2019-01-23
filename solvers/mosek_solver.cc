@@ -662,6 +662,7 @@ void MosekSolver::Solve(const MathematicalProgram& prog,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(&(prog.decision_variable_index()));
   SolverOptions merged_solver_options =
       solver_options.value_or(SolverOptions());
   merged_solver_options.Merge(prog.solver_options());

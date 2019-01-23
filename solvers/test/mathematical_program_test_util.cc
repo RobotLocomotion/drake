@@ -14,7 +14,7 @@ MathematicalProgramResult RunSolver(
         "Solver " + solver.solver_id().name() + " is not available");
   }
 
-  MathematicalProgramResult result;
+  MathematicalProgramResult result{};
   solver.Solve(prog, initial_guess, {}, &result);
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
   if (result.get_solution_result() != SolutionResult::kSolutionFound) {

@@ -644,6 +644,7 @@ void IpoptSolver::Solve(const MathematicalProgram& prog,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(&(prog.decision_variable_index()));
   if (!AreProgramAttributesSatisfied(prog)) {
     throw std::invalid_argument(
         "Ipopt doesn't satisfy the capabilities required by the program");

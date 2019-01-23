@@ -252,7 +252,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
   }
   drake::log()->info("Done solving linear program.");
 
-  return prog.GetSolution(params, result);
+  return result.GetSolution(params);
 }
 
 }  // namespace controllers

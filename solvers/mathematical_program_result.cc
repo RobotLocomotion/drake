@@ -10,7 +10,8 @@ SolverId UnknownId() {
 }  // namespace
 
 MathematicalProgramResult::MathematicalProgramResult()
-    : solution_result_{SolutionResult::kUnknownError},
+    : decision_variable_index_(nullptr),
+      solution_result_{SolutionResult::kUnknownError},
       x_val_{0},
       optimal_cost_{NAN},
       solver_id_{UnknownId()},
@@ -31,6 +32,29 @@ SolverResult MathematicalProgramResult::ConvertToSolverResult() const {
   }
   solver_result.set_optimal_cost(optimal_cost_);
   return solver_result;
+}
+
+void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
+  if (x_val.size() != static_cast<int>(decision_variable_index_->size())) {
+    std::stringstream oss;
+    oss << "MathematicalProgramResult::set_x_val, the dimension of x_val is "
+        << x_val.size() << ", expected " << decision_variable_index_->size();
+    throw std::invalid_argument(oss.str());
+  }
+  x_val_ = x_val;
+}
+
+double MathematicalProgramResult::GetSolution(
+    const symbolic::Variable& var) const {
+  auto it = decision_variable_index_->find(var.get_id());
+  if (it == decision_variable_index_->end()) {
+    std::stringstream oss;
+    oss << "MathematicalProgramResult: " << var
+        << " is not captured by the decision_variable_index map, passed in the "
+           "constructor of this MathematicalProgramResult.";
+    throw std::invalid_argument(oss.str());
+  }
+  return x_val_[it->second];
 }
 }  // namespace solvers
 }  // namespace drake

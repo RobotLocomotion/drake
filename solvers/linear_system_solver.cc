@@ -19,6 +19,7 @@ void LinearSystemSolver::Solve(const MathematicalProgram& prog,
                                const optional<SolverOptions>& solver_options,
                                MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(&(prog.decision_variable_index()));
   // The initial guess doesn't help us, and we don't offer any tuning options.
   unused(initial_guess, solver_options);
   size_t num_constraints = 0;

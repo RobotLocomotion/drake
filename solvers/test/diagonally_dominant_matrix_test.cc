@@ -101,12 +101,11 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
       // TODO(hongkai.dai): fix the problem in SnoptSolver wrapper and enable
       // this test with Snopt.
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-      EXPECT_TRUE(CompareMatrices(
-          prog.GetSolution(VectorDecisionVariable<3>(X(0, 1), X(0, 2), X(1, 2)),
-                           result),
-          sol_expected, tol));
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(
+                                      X(0, 1), X(0, 2), X(1, 2))),
+                                  sol_expected, tol));
       // The matrix should be positive semidefinite.
-      const Eigen::Matrix3d X_sol = prog.GetSolution(X, result);
+      const Eigen::Matrix3d X_sol = result.GetSolution(X);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
       EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -tol).all());
     }

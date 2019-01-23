@@ -8,6 +8,15 @@
 namespace drake {
 namespace solvers {
 namespace {
+std::unordered_map<symbolic::Variable::Id, int> get_decision_variable_index() {
+  symbolic::Variable x0("x0");
+  symbolic::Variable x1("x1");
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index;
+  decision_variable_index.emplace(x0.get_id(), 0);
+  decision_variable_index.emplace(x1.get_id(), 1);
+  return decision_variable_index;
+}
+
 GTEST_TEST(MathematicalProgramResultTest, DefaultConstructor) {
   MathematicalProgramResult result;
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
@@ -18,7 +27,9 @@ GTEST_TEST(MathematicalProgramResultTest, DefaultConstructor) {
 }
 
 GTEST_TEST(MathematicalProgramResultTest, Setters) {
+  const auto decision_variable_index = get_decision_variable_index();
   MathematicalProgramResult result;
+  result.set_decision_variable_index(&decision_variable_index);
   result.set_solution_result(SolutionResult::kSolutionFound);
   const Eigen::Vector2d x_val(0, 0);
   result.set_x_val(x_val);
@@ -36,7 +47,9 @@ struct DummySolverDetails {
 };
 
 GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
+  const auto decision_variable_index = get_decision_variable_index();
   MathematicalProgramResult result;
+  result.set_decision_variable_index(&decision_variable_index);
   const int data = 1;
   DummySolverDetails& dummy_solver_details =
       result.SetSolverDetailsType<DummySolverDetails>();
@@ -59,7 +72,9 @@ GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
 }
 
 GTEST_TEST(MathematicalProgramResultTest, ConvertToSolverResult) {
+  const auto decision_variable_index = get_decision_variable_index();
   MathematicalProgramResult result;
+  result.set_decision_variable_index(&decision_variable_index);
   result.set_solver_id(SolverId("foo"));
   result.set_optimal_cost(2);
   // The x_val is not set. So solver_result.decision_variable_values should be
