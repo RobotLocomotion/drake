@@ -56,6 +56,11 @@ namespace dev {
  poses can be overwritten after construction with the appropriate methods
  (though you'll often only want to change their origins while keeping both
  cameras facing in the same direction).
+  <!-- TODO(gizatt): The setters for modifying the camera poses create a
+  vulnerability that allows users to modify internal system state during
+  simulation via a non-intended path. See PR#10491 for discussion;
+  solutions could include enshrining these poses as proper parameters
+  or accepting these poses during construction.-->
 
  Output port image formats:
    - color_image: Four channels, each channel uint8_t, in the following order:
