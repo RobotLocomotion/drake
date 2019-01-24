@@ -138,7 +138,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 }
 
 struct SampleData {
-  const lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
+  lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
   void MockPublish(
       drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
@@ -198,6 +198,16 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   ASSERT_NE(abstract_value, nullptr);
   auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+
+  // Smaller messages should also work.
+  SampleData smaller_data;
+  smaller_data.value = lcmt_drake_signal{1, {1.0}, {"x"}, 12345};
+  smaller_data.MockPublish(&lcm, channel_name);
+  EvalOutputHelper(*dut, context.get(), output.get());
+  const AbstractValue* small_abstract_value = output->get_data(0);
+  ASSERT_NE(small_abstract_value, nullptr);
+  auto small_value = small_abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(small_value, smaller_data.value));
 }
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {

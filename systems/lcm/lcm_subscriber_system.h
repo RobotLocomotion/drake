@@ -65,7 +65,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /**
    * (Experimental.) Factory method like Make(channel, lcm), but the result
-   * only accepts fixed-size LCM messages.  The subscriber returned by this
+   * only accepts bounded-size LCM messages.  The subscriber returned by this
    * method may perform better than the subscriber returned by a plain Make.
    * (To avoid issue #10149, this fixed-size subscriber will store the message
    * as discrete-state bytes, instead of a deserialized abstract value.)  Once
@@ -73,7 +73,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * deprecation period.
    *
    * @param exemplar A sample message value; all messages received by this
-   * System must be exactly this encoded size.
+   * System must be no larger than this encoded size.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> MakeFixedSize(
