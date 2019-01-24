@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/random_rotation.h"
@@ -394,10 +393,9 @@ QuaternionFloatingMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class QuaternionFloatingMobilizer<double>;
-template class QuaternionFloatingMobilizer<AutoDiffXd>;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::QuaternionFloatingMobilizer)

@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/autodiff.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -43,9 +42,8 @@ std::unique_ptr<Joint<AutoDiffXd>> PrismaticJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class PrismaticJoint<double>;
-template class PrismaticJoint<AutoDiffXd>;
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::PrismaticJoint)

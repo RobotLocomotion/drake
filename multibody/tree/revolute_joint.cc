@@ -3,7 +3,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/common/autodiff.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -57,9 +56,8 @@ RevoluteJoint<T>::MakeImplementationBlueprint() const {
   return std::move(blue_print);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class RevoluteJoint<double>;
-template class RevoluteJoint<AutoDiffXd>;
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::RevoluteJoint)

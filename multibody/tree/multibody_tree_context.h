@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
@@ -213,7 +213,7 @@ class MultibodyTreeContext final : public systems::LeafContext<T> {
   }
 
  private:
-  MultibodyTreeContext(const MultibodyTreeContext& source) = default;
+  MultibodyTreeContext(const MultibodyTreeContext& source);
 
   const MultibodyTreeTopology topology_;
 
@@ -221,6 +221,13 @@ class MultibodyTreeContext final : public systems::LeafContext<T> {
   // stored as continuous state.
   bool is_state_discrete_{false};
 };
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+MultibodyTreeContext<T>::MultibodyTreeContext(const MultibodyTreeContext&)
+    = default;
 
 }  // namespace internal
 
@@ -233,3 +240,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::MultibodyTreeContext)

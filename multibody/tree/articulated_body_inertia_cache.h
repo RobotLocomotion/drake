@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/articulated_body_inertia.h"
@@ -34,7 +35,7 @@ namespace internal {
 template<typename T>
 class ArticulatedBodyInertiaCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertiaCache)
 
   /// Constructs an articulated body cache entry for the given
   /// MultibodyTreeTopology.
@@ -75,6 +76,8 @@ class ArticulatedBodyInertiaCache {
   ABI_PoolType Pplus_PB_W_{};  // Indexed by BodyNodeIndex.
 };
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertiaCache);
+
 }  // namespace internal
 
 /// WARNING: This will be removed on or around 2019/03/01.
@@ -86,3 +89,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::internal::ArticulatedBodyInertiaCache)

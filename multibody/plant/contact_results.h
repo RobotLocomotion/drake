@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
@@ -24,9 +25,9 @@ namespace multibody {
 template <typename T>
 class ContactResults {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactResults)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(ContactResults)
 
-  ContactResults() = default;
+  ContactResults();
 
   /** Clears the set of contact information for when the old data becomes
    invalid. */
@@ -48,6 +49,12 @@ class ContactResults {
   std::vector<PointPairContactInfo<T>> point_pairs_info_;
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T> ContactResults<T>::ContactResults() = default;
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ContactResults)
+
 #ifndef DRAKE_DOXYGEN_CXX
 // TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
 namespace multibody_plant {
@@ -58,3 +65,6 @@ using ContactResults = ::drake::multibody::ContactResults<T>;
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::ContactResults)

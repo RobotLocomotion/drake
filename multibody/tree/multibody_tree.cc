@@ -6,7 +6,6 @@
 #include <unordered_set>
 #include <utility>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
@@ -1649,10 +1648,9 @@ VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
   return vd_upper;
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class MultibodyTree<double>;
-template class MultibodyTree<AutoDiffXd>;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::MultibodyTree)

@@ -1,6 +1,6 @@
 #include "drake/multibody/tree/body_node_impl.h"
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace multibody {
@@ -17,6 +17,7 @@ template class BodyNodeImpl<T, 6, 6>; \
 template class BodyNodeImpl<T, 7, 6>;
 
 // Explicitly instantiates on the most common scalar types.
+// These should be kept in sync with the NONSYMBOLIC list in default_scalars.h
 EXPLICITLY_INSTANTIATE_IMPLS(double);
 EXPLICITLY_INSTANTIATE_IMPLS(AutoDiffXd);
 

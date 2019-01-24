@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/joint_actuator.h"
@@ -180,3 +181,6 @@ class ModelInstance :
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::ModelInstance)
