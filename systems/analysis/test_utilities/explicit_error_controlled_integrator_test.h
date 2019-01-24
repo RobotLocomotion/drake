@@ -241,6 +241,10 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   const double t_final = 1.0;
   for (double t = this->kDt; t <= t_final; t += this->kDt)
     this->integrator->IntegrateNoFurtherThanTime(t, t, t);
+
+  // At this point, the time will often be 0.999 plus some change. Step one last
+  // time to take us to 1.0s. If the time happens to already be 1.0s, this
+  // call will have no effect.
   this->integrator->IntegrateNoFurtherThanTime(t_final, t_final, t_final);
 
   // Get the final position.

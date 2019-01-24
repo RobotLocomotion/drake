@@ -403,7 +403,10 @@ class IntegratorBase {
     using std::max;
     // Tolerance is just a number close to machine epsilon.
     const double tol = 1e-14;
-    const T smart_minimum = max(tol, get_context().get_time()*tol);
+
+    // Formula below requires time to be non-negative.
+    DRAKE_DEMAND(get_context().get_time() >= 0);
+    const T smart_minimum = max(tol, get_context().get_time() * tol);
     return max(smart_minimum, req_min_step_size_);
   }
   //@}
@@ -668,12 +671,12 @@ class IntegratorBase {
 
     UpdateStepStatistics(dt);
 
-    // Correct any round-off error that has occurred.
-    const double near_eps = 10 * std::numeric_limits<double>::epsilon();
-    const T time_err = t_target - context_->get_time();
-    DRAKE_DEMAND((abs(t_target) <= 1 &&
-        abs(time_err) < near_eps) || (abs(t_target) > 1 &&
-        abs(time_err) < near_eps * max(context_->get_time(), t_target)));
+    // Correct any round-off error that has occurred. Formula below requires
+    // that time be non-negative.
+    DRAKE_DEMAND(context_->get_time() >= 0);
+    const double tol = 10 * std::numeric_limits<double>::epsilon() *
+        ExtractDoubleOrThrow(max(t_target, context_->get_time()));
+    DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
     context_->set_time(t_target);
   }
 
@@ -1482,6 +1485,10 @@ class IntegratorBase {
   // result of the step and might "rewind" and take a smaller one.
   // @returns `true` if successful, `false` otherwise (due to, e.g., integrator
   //          convergence failure).
+  // @note The working minimum step size does not apply here (recall that it
+  // only applies when error control attempts to shrink the step). The logic
+  // behind this is that it's common to call Step(0) or, less commonly,
+  // Step(1e-40) for integrating over very, very small timescales.
   // @sa DoStep()
   // @sa DoDenseStep()
   bool Step(const T& dt) {
