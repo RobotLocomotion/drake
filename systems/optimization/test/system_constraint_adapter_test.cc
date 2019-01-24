@@ -13,7 +13,7 @@ const double kInf = std::numeric_limits<double>::infinity();
 const double kEps = std::numeric_limits<double>::epsilon();
 
 // Assumes that vars = [p; x(0); x(1); x(2)].
-struct DummySystemSelector1 {
+struct DummySystemUpdater1 {
   template <typename T>
   void operator()(const System<T>&, const Eigen::Ref<const VectorX<T>>& vars,
                   Context<T>* context) {
@@ -31,7 +31,7 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   auto context = system.CreateDefaultContext();
 
   auto constraint1 = adapter.Create(system.constraint_index(), *context,
-                                    DummySystemSelector1{}, 4);
+                                    DummySystemUpdater1{}, 4);
   EXPECT_TRUE(
       CompareMatrices(constraint1->lower_bound(), Eigen::Vector2d(2, 0)));
   EXPECT_TRUE(
@@ -43,7 +43,7 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   Eigen::VectorXd y;
   constraint1->Eval(var, &y);
 
-  DummySystemSelector1 selector;
+  DummySystemUpdater1 selector;
   selector.operator()<double>(system, var, context.get());
   Eigen::VectorXd y_expected;
   DummySystemConstraintCalc<double>(*context, &y_expected);
@@ -77,7 +77,7 @@ GTEST_TEST(SystemConstraintAdapter, SolveDummySystemConstraint) {
   auto context = system.CreateDefaultContext();
 
   auto constraint = adapter.Create(system.constraint_index(), *context,
-                                   DummySystemSelector1{}, 4);
+                                   DummySystemUpdater1{}, 4);
 
   solvers::MathematicalProgram prog;
   auto p = prog.NewContinuousVariables<1>();

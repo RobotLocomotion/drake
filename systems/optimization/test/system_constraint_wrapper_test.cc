@@ -13,8 +13,8 @@ const double kInf = std::numeric_limits<double>::infinity();
 const double kEps = std::numeric_limits<double>::epsilon();
 // val contains [x(0); p0; x(2)]
 template <typename T>
-void Selector1(const System<T>&, const Eigen::Ref<const VectorX<T>>& val,
-               Context<T>* context) {
+void Updater1(const System<T>&, const Eigen::Ref<const VectorX<T>>& val,
+              Context<T>* context) {
   context->get_mutable_continuous_state_vector().SetAtIndex(0, val(0));
   context->get_mutable_continuous_state_vector().SetAtIndex(2, val(2));
   context->get_mutable_numeric_parameter(0).SetAtIndex(0, val(1));
@@ -33,7 +33,7 @@ void TestDummySystemConstraint(const SystemConstraintWrapper& constraint,
   Eigen::VectorXd y;
   constraint.Eval(val, &y);
 
-  Selector1<double>(system_double, val, context_double);
+  Updater1<double>(system_double, val, context_double);
   Eigen::VectorXd y_expected;
   DummySystemConstraintCalc<double>(*context_double, &y_expected);
   const double tol = 3 * kEps;
@@ -46,11 +46,11 @@ void TestDummySystemConstraint(const SystemConstraintWrapper& constraint,
   AutoDiffVecXd y_autodiff;
   constraint.Eval(val_autodiff, &y_autodiff);
 
-  auto context_autodiff = constraint.system_autodiff()->CreateDefaultContext();
+  auto context_autodiff = constraint.system_autodiff().CreateDefaultContext();
   context_autodiff->SetTimeStateAndParametersFrom(*context_double);
 
-  Selector1<AutoDiffXd>(*(constraint.system_autodiff()), val_autodiff,
-                        context_autodiff.get());
+  Updater1<AutoDiffXd>(constraint.system_autodiff(), val_autodiff,
+                       context_autodiff.get());
   AutoDiffVecXd y_autodiff_expected;
   DummySystemConstraintCalc<AutoDiffXd>(*context_autodiff,
                                         &y_autodiff_expected);
@@ -76,21 +76,21 @@ GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
 
   SystemConstraintWrapper constraint1(
       &system_double, system_autodiff.get(), system_double.constraint_index(),
-      *context_double, Selector1<double>, Selector1<AutoDiffXd>, 3);
+      *context_double, Updater1<double>, Updater1<AutoDiffXd>, 3);
 
   TestDummySystemConstraint(constraint1, system_double, context_double.get());
 
   // Now construct the constraint without the autodiff system.
   SystemConstraintWrapper constraint2(
       &system_double, nullptr, system_double.constraint_index(),
-      *context_double, Selector1<double>, Selector1<AutoDiffXd>, 3);
+      *context_double, Updater1<double>, Updater1<AutoDiffXd>, 3);
   TestDummySystemConstraint(constraint2, system_double, context_double.get());
 }
 
 // Assumes x only contains the position q.
 template <typename T>
-void Selector2(const System<T>& plant, const Eigen::Ref<const VectorX<T>>& x,
-               Context<T>* context) {
+void Updater2(const System<T>& plant, const Eigen::Ref<const VectorX<T>>& x,
+              Context<T>* context) {
   dynamic_cast<const multibody::MultibodyPlant<T>&>(plant).SetPositions(context,
                                                                         x);
 }
@@ -114,16 +114,16 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
 
-  auto context_autodiff = constraint.system_autodiff()->CreateDefaultContext();
+  auto context_autodiff = constraint.system_autodiff().CreateDefaultContext();
   context_autodiff->SetTimeStateAndParametersFrom(*context_double);
 
-  Selector2<AutoDiffXd>(*(constraint.system_autodiff()), x_autodiff,
-                        context_autodiff.get());
+  Updater2<AutoDiffXd>(constraint.system_autodiff(), x_autodiff,
+                       context_autodiff.get());
 
   AutoDiffVecXd y_autodiff_expected;
   auto plant_autodiff =
       dynamic_cast<const multibody::MultibodyPlant<AutoDiffXd>*>(
-          constraint.system_autodiff());
+          &(constraint.system_autodiff()));
   plant_autodiff->get_constraint(constraint_index)
       .Calc(*context_autodiff, &y_autodiff_expected);
 
@@ -153,8 +153,8 @@ TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {
   // Construct the constraint with plant_autodiff.
   SystemConstraintWrapper constraint1(
       plant_double_.get(), plant_autodiff_.get(),
-      unit_quaternion_constraint_index_, *context_double, Selector2<double>,
-      Selector2<AutoDiffXd>, 7);
+      unit_quaternion_constraint_index_, *context_double, Updater2<double>,
+      Updater2<AutoDiffXd>, 7);
 
   TestFreeBodyPlantConstraint(constraint1, unit_quaternion_constraint_index_,
                               context_double.get());
@@ -167,7 +167,7 @@ TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {
   // the conversion.
   SystemConstraintWrapper constraint2(
       plant_double_.get(), nullptr, unit_quaternion_constraint_index_,
-      *context_double, Selector2<double>, Selector2<AutoDiffXd>, 7);
+      *context_double, Updater2<double>, Updater2<AutoDiffXd>, 7);
 
   TestFreeBodyPlantConstraint(constraint2, unit_quaternion_constraint_index_,
                               context_double.get());
