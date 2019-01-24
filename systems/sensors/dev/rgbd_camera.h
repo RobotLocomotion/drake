@@ -53,7 +53,9 @@ namespace dev {
  depth image" for the RGB image, and that no disparity between the RGB and
  depth images are modeled in this system by default. For more details about
  the poses of `C` and `D`, see the class documentation of CameraInfo. These
- origins can be overwritten after construction with the appropriate methods.
+ poses can be overwritten after construction with the appropriate methods
+ (though you'll often only want to change their origins while keeping both
+ cameras facing in the same direction).
 
  Output port image formats:
    - color_image: Four channels, each channel uint8_t, in the following order:
