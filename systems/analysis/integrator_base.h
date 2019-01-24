@@ -315,16 +315,16 @@ class IntegratorBase {
    * be done warily.
    *
    * #### Details
-   * Because time is maintained to finite precision, there is an absolute
-   * minimum step size `h_floor` required to avoid roundoff error. The
-   * integrator will never take a step smaller than `h_floor`. We calculate
-   * `h_floor=max(ε,ε⋅t)`, where t is the current time and ε is a small multiple
-   * of machine precision, typically a number like 1e-14. Note that `h_floor`
-   * necessarily grows with time; if that is a concern you should limit how
-   * long your simulations are allowed to run without resetting time.
+   * Because time is maintained to finite precision, the integrator uses a
+   * scalar `h_floor ≤ h` in order to satisfy `current_time + h > current_time`.
+   * The integrator will never automatically decrease its step below `h_floor`.
+   * We calculate `h_floor=max(ε, ε⋅t)`, where t is the current time and ε is a
+   * small multiple of machine precision, typically a number like 1e-14. Note
+   * that `h_floor` necessarily grows with time; if that is a concern you should
+   * limit how long your simulations are allowed to run without resetting time.
    *
    * You may request a larger minimum step size `h_min`. Then at every time t,
-   * the integrator determines a "working" minimum `h_work=max(h_min,h_floor)`.
+   * the integrator determines a "working" minimum `h_work=max(h_min, h_floor)`.
    * If the step size selection algorithm determines that a step smaller than
    * `h_work` is needed to meet accuracy or other needs, then a
    * std::runtime_error exception will be thrown and the simulation halted. On
@@ -342,8 +342,7 @@ class IntegratorBase {
    * afterwards. Another circumstance is when one of the integrator's stepping
    * methods is called directly requesting a very small step, for example
    * `IntegrateWithMultipleStepsToTime(h)`. No exception will be thrown in
-   * either of
-   * these cases.
+   * either of these cases.
    */
 
   //@{
@@ -1485,10 +1484,7 @@ class IntegratorBase {
   // result of the step and might "rewind" and take a smaller one.
   // @returns `true` if successful, `false` otherwise (due to, e.g., integrator
   //          convergence failure).
-  // @note The working minimum step size does not apply here (recall that it
-  // only applies when error control attempts to shrink the step). The logic
-  // behind this is that it's common to call Step(0) or, less commonly,
-  // Step(1e-40) for integrating over very, very small timescales.
+  // @note The working minimum step size does not apply here- see @link Minstep.
   // @sa DoStep()
   // @sa DoDenseStep()
   bool Step(const T& dt) {
