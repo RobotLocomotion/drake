@@ -20,7 +20,8 @@ using UpdateContextFromDecisionVariables = std::function<void(
  * This wrapper class wraps a SystemConstraint object to the format of
  * solvers::Constraint.
  * The constraint is
- * lower <= SystemConstraint.Calc(selector(x)) <= upper
+ * lower <= SystemConstraint.Calc(UpdateContextFromDecisionVaraibles(x)) <=
+ * upper
  * where lower/upper are the lower and upper bounds of the SystemConstraint
  * object. When the lower and upper are equal, this represents an equality
  * constraint.
@@ -41,13 +42,13 @@ class SystemConstraintWrapper : public solvers::Constraint {
    * @param index The index of the SystemConstraint in @p system_double (and
    * also @p system_autodiff).
    * @param context The value stored in this context will be used in
-   * SystemConstraintWrapper::Eval. If @p selector_double (and @p
-   * selector_autodiff) doesn't update everything in the context (such as state,
+   * SystemConstraintWrapper::Eval. If @p updater_double (and @p
+   * updater_autodiff) doesn't update everything in the context (such as state,
    * input, params, etc), then the un-updated part in the context will keep its
    * value to those stored in @p context.
-   * @param selector_double Maps x in SystemConstraintWrapper::Eval(x, &y) to a
+   * @param updater_double Maps x in SystemConstraintWrapper::Eval(x, &y) to a
    * context. The context is then used in SystemConstraint.Calc(context).
-   * @param selector_autodiff Same as @p selector_double, but works for autodiff
+   * @param updater_autodiff Same as @p updater_double, but works for autodiff
    * type.
    * @param x_size The number of variables bound with this constraint. Namely,
    * the size of x in SystemConstraintWrapper.Eval(x, &y).
@@ -56,14 +57,14 @@ class SystemConstraintWrapper : public solvers::Constraint {
       const System<double>* const system_double,
       const System<AutoDiffXd>* const system_autodiff,
       SystemConstraintIndex index, const Context<double>& context,
-      UpdateContextFromDecisionVariables<double> selector_double,
-      UpdateContextFromDecisionVariables<AutoDiffXd> selector_autodiff,
+      UpdateContextFromDecisionVariables<double> updater_double,
+      UpdateContextFromDecisionVariables<AutoDiffXd> updater_autodiff,
       int x_size);
 
   ~SystemConstraintWrapper() override {}
 
   /** Get the AutoDiffXd type System stored in this constraint.*/
-  const System<AutoDiffXd>* system_autodiff() const;
+  const System<AutoDiffXd>& system_autodiff() const;
 
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -80,13 +81,13 @@ class SystemConstraintWrapper : public solvers::Constraint {
   const System<AutoDiffXd>* system_autodiff_;
   const SystemConstraintIndex index_;
   // These contexts are created by system_double_ and system_autodiff_
-  // respectively. Their value are initialized to the same as @p context in the
+  // respectively. Their values are initialized to the same as @p context in the
   // constructor. They hold the values inside context that are not part of @p x
   // in the Eval function.
   std::unique_ptr<Context<double>> context_double_;
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
-  UpdateContextFromDecisionVariables<double> selector_double_;
-  UpdateContextFromDecisionVariables<AutoDiffXd> selector_autodiff_;
+  const UpdateContextFromDecisionVariables<double> updater_double_;
+  const UpdateContextFromDecisionVariables<AutoDiffXd> updater_autodiff_;
 };
 }  // namespace systems
 }  // namespace drake

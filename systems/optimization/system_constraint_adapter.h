@@ -17,7 +17,7 @@ class SystemConstraintAdapter {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraintAdapter)
 
-  explicit SystemConstraintAdapter(const System<double>* const system);
+  explicit SystemConstraintAdapter(const System<double>* system);
 
   /**
    * This method creates a solvers::Constraint from a SystemConstraint.
@@ -34,17 +34,17 @@ class SystemConstraintAdapter {
    * context. Hence we use @p UpdateContextFromDecisionVariablesGeneric to
    * select the decision variables inside @p context. The unselected variables
    * will remain to its values stored in @p context.
+   * TODO(hongkai.dai): add another function to parse the system constraint to
+   * linear/quadratic/second-order-cone etc using symbolic expression.
    */
   template <typename UpdateContextFromDecisionVariablesGeneric>
   std::shared_ptr<SystemConstraintWrapper> Create(
       SystemConstraintIndex index, const Context<double>& context,
-      UpdateContextFromDecisionVariablesGeneric selector,
-      int x_size) const {
-  return std::make_shared<SystemConstraintWrapper>(
-      system_double_, system_autodiff_.get(), index, context,
-      UpdateContextFromDecisionVariables<double>(selector),
-      UpdateContextFromDecisionVariables<AutoDiffXd>(selector),
-      x_size);
+      UpdateContextFromDecisionVariablesGeneric updater, int x_size) const {
+    return std::make_shared<SystemConstraintWrapper>(
+        system_double_, system_autodiff_.get(), index, context,
+        UpdateContextFromDecisionVariables<double>(updater),
+        UpdateContextFromDecisionVariables<AutoDiffXd>(updater), x_size);
   }
 
  private:
