@@ -48,11 +48,12 @@ namespace dev {
 
  Frames `C` and `D` are coincident and aligned. The origins of `C` and `D`
  (`Co` and `Do`, respectively) have position
- `p_BoCo_B = p_BoDo_B = <0 m, 0.02 m, 0 m>`. In other words `X_CD = I`.
- This definition implies that the depth image is a "registered depth image"
- for the RGB image. No disparity between the RGB and depth images are
- modeled in this system. For more details about the poses of `C` and `D`,
- see the class documentation of CameraInfo.
+ `p_BoCo_B = p_BoDo_B = <0 m, 0.02 m, 0 m>` by default. In other words
+ `X_CD = I`. This definition implies that the depth image is a "registered
+ depth image" for the RGB image, and that no disparity between the RGB and
+ depth images are modeled in this system by default. For more details about
+ the poses of `C` and `D`, see the class documentation of CameraInfo. These
+ origins can be overwritten after construction with the appropriate methods.
 
  Output port image formats:
    - color_image: Four channels, each channel uint8_t, in the following order:
@@ -210,16 +211,14 @@ class RgbdCamera final : public LeafSystem<double> {
   // The position of the camera's B frame relative to its parent frame P.
   const Eigen::Isometry3d X_PB_;
 
-  // The color sensor's origin (`Co`) is offset by 0.02 m on the Y axis of
-  // the RgbdCamera's base coordinate system (`B`).
+  // By default, the color sensor's origin (`Co`) is offset by 0.02m on
+  // the Y axis of the RgbdCamera's base coordinate system (`B`).
   Eigen::Isometry3d X_BC_{Eigen::Translation3d(0., 0.02, 0.) *
       (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
 
-  // TODO(kunimatsu-tri) Change the X_BD_ to be different from X_BC_ when
-  // it's needed.
-  // The depth sensor's origin (`Do`) is offset by 0.02 m on the Y axis of
-  // the RgbdCamera's base coordinate system (`B`).
+  // By default, the depth sensor's origin (`Do`) is offset by 0.02 m on
+  // the Y axis of the RgbdCamera's base coordinate system (`B`).
   Eigen::Isometry3d X_BD_{Eigen::Translation3d(0., 0.02, 0.) *
       (Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
           Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY()))};
