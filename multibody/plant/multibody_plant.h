@@ -1070,6 +1070,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetBodyIndices(model_instance);
   }
 
+  /// Returns a list of joint indices associated with `model_instance`.
+  std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
+  const {
+    return internal_tree().GetJointIndices(model_instance);
+  }
+
   /// Returns a constant reference to a frame that is identified by the
   /// string `name` in `this` model.
   /// @throws std::logic_error if there is no frame with the requested name.

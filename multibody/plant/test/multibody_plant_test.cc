@@ -236,6 +236,18 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pin_joint.model_instance(), pendulum_model_instance);
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
+  // Get joint indices by model instance
+  const std::vector<JointIndex> acrobot_joint_indices =
+      plant->GetJointIndices(default_model_instance());
+  EXPECT_EQ(acrobot_joint_indices.size(), 2);
+  EXPECT_EQ(acrobot_joint_indices[0], shoulder_joint.index());
+  EXPECT_EQ(acrobot_joint_indices[1], elbow_joint.index());
+
+  const std::vector<JointIndex> pendulum_joint_indices =
+      plant->GetJointIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_joint_indices.size(), 2);  // pin joint + weld joint.
+  EXPECT_EQ(pendulum_joint_indices[0], pin_joint.index());
+
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
       plant->GetJointByName<RevoluteJoint>(parameters.shoulder_joint_name());
