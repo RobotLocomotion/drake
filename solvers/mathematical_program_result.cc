@@ -49,9 +49,9 @@ double MathematicalProgramResult::GetSolution(
   auto it = decision_variable_index_->find(var.get_id());
   if (it == decision_variable_index_->end()) {
     std::stringstream oss;
-    oss << "MathematicalProgramResult: " << var
-        << " is not captured by the decision_variable_index map, passed in the "
-           "constructor of this MathematicalProgramResult.";
+    oss << "MathematicalProgramResult::GetSolution, " << var
+        << " is not captured by the decision_variable_index map, passed in "
+           "set_decision_variable_index().";
     throw std::invalid_argument(oss.str());
   }
   return x_val_[it->second];
