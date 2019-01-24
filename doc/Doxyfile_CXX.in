@@ -314,6 +314,14 @@ X& operator=(const X&) = default; \
 X(X&&) = default; \
 X& operator=(X&&) = default; \
 /** \} */"
+PREDEFINED            += DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(X):=" \
+/** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
+/** \{ */ \
+X(const X&) = default; \
+X& operator=(const X&) = default; \
+X(X&&) = default; \
+X& operator=(X&&) = default; \
+/** \} */"
 # =============================================================================
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
