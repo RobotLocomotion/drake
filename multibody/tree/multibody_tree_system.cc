@@ -4,8 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/tree/multibody_tree.h"
 

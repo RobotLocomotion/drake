@@ -19,8 +19,5 @@ DRAKE_DEPRECATED(
     "This will soon be internal. Please use `MultibodyPlant` instead.")
     = internal::MultibodyTree<T>;
 
-// // Forward declaration.
-// template <typename T> class MultibodyPlant;
-
 }  // namespace multibody
 }  // namespace drake

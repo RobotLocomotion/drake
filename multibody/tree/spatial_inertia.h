@@ -5,6 +5,7 @@
 #include <iostream>
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -97,7 +98,7 @@ namespace multibody {
 template <typename T>
 class SpatialInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
 
   /// Creates a spatial inertia for a physical body or composite body S about a
   /// point P from a given mass, center of mass, and central rotational inertia.
@@ -490,5 +491,10 @@ std::ostream& operator<<(std::ostream& o,
       << M.CalcRotationalInertia();
 }
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(SpatialInertia)
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::SpatialInertia)

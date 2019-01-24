@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"

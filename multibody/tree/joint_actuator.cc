@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/joint_actuator.h"
 
-#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_tree.h"
 

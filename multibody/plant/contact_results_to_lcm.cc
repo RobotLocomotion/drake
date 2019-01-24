@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/default_scalars.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
 #include "drake/systems/framework/value.h"
 
@@ -118,6 +117,5 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 }  // namespace multibody
 }  // namespace drake
 
-// This should be kept in sync with the scalars that MultibodyPlant supports.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::multibody::ContactResultsToLcmSystem)

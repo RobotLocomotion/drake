@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
@@ -3427,6 +3428,14 @@ struct AddMultibodyPlantSceneGraphResult final {
   geometry::SceneGraph<T>* scene_graph_ptr{};
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// Forward-declare specializations, prior to DRAKE_DECLARE... below.
+template <>
+std::vector<geometry::PenetrationAsPointPair<double>>
+MultibodyPlant<double>::CalcPointPairPenetrations(
+    const systems::Context<double>&) const;
+#endif
+
 }  // namespace multibody
 }  // namespace drake
 
@@ -3441,3 +3450,8 @@ struct Traits<drake::multibody::MultibodyPlant> :
 }  // namespace scalar_conversion
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::MultibodyPlant)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    struct drake::multibody::AddMultibodyPlantSceneGraphResult)

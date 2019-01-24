@@ -1,7 +1,5 @@
 #include "drake/multibody/plant/contact_info.h"
 
-#include "drake/common/default_scalars.h"
-
 namespace drake {
 namespace multibody {
 

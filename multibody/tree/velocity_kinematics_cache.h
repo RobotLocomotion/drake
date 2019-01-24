@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -40,7 +41,7 @@ namespace internal {
 template <typename T>
 class VelocityKinematicsCache {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(VelocityKinematicsCache)
 
   /// Constructs a velocity kinematics cache entry for the given
   /// MultibodyTreeTopology.
@@ -149,6 +150,8 @@ class VelocityKinematicsCache {
   SpatialVelocity_PoolType V_PB_W_pool_;
 };
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(VelocityKinematicsCache)
+
 }  // namespace internal
 
 /// WARNING: This will be removed on or around 2019/03/01.
@@ -160,3 +163,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::VelocityKinematicsCache)
