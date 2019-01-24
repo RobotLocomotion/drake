@@ -625,6 +625,23 @@ TEST_F(GeometryStateTest, GeometryStatistics) {
   EXPECT_FALSE(geometry_state_.source_is_registered(false_id));
 }
 
+TEST_F(GeometryStateTest, GetOwningSourceName) {
+  SetUpSingleSourceTree();
+
+  EXPECT_EQ(kSourceName, geometry_state_.GetOwningSourceName(frames_[0]));
+  EXPECT_EQ(kSourceName, geometry_state_.GetOwningSourceName(geometries_[0]));
+  EXPECT_EQ(kSourceName,
+            geometry_state_.GetOwningSourceName(anchored_geometry_));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetOwningSourceName(FrameId::get_new_id()),
+      std::logic_error, "Referenced frame .* has not been registered.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetOwningSourceName(GeometryId::get_new_id()),
+      std::logic_error, "Geometry id .* does not map to a registered geometry");
+}
+
 // Compares the autodiff geometry state (embedded in its tester) against the
 // double state to confirm they have the same values/topology.
 void ExpectSuccessfulTransmogrification(

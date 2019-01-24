@@ -150,6 +150,10 @@ class GeometryState {
    SceneGraphInspector::BelongsToSource(FrameId, SourceId) const.  */
   bool BelongsToSource(FrameId frame_id, SourceId source_id) const;
 
+  /** Implementation of
+   SceneGraphInspector::GetOwningSourceName(FrameId) const.  */
+  const std::string& GetOwningSourceName(FrameId id) const;
+
   /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
   const std::string& get_frame_name(FrameId frame_id) const;
 
@@ -183,6 +187,11 @@ class GeometryState {
   /** Implementation of
    SceneGraphInspector::BelongsToSource(GeometryId, SourceId) const.  */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
+
+  /** Implementation of
+   SceneGraphInspector::GetOwningSourceName(GeometryId) const.  */
+  const std::string& GetOwningSourceName(GeometryId id) const;
+
 
   /** Implementation of SceneGraphInspector::GetFrameId().  */
   FrameId GetFrameId(GeometryId geometry_id) const;
@@ -547,6 +556,10 @@ class GeometryState {
   // Gets the source id for the given frame id. Throws std::logic_error if the
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
+
+  // Gets the source id for the given frame id. Throws std::logic_error if the
+  // geometry belongs to no registered source.
+  SourceId get_source_id(GeometryId frame_id) const;
 
   // The origin from where an invocation of RemoveGeometryUnchecked was called.
   // The origin changes the work that is required.
