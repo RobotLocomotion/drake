@@ -80,6 +80,18 @@ TEST_F(RevoluteMobilizerTest, ZeroState) {
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 }
 
+TEST_F(RevoluteMobilizerTest, DefaultPosition) {
+  RevoluteMobilizer<double>* mutable_mobilizer =
+      &mutable_tree().get_mutable_variant(*mobilizer_);
+
+  EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
+
+  mutable_mobilizer->set_default_position(Vector1d{.4});
+  mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
+
+  EXPECT_EQ(mobilizer_->get_angle(*context_), .4);
+}
+
 TEST_F(RevoluteMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;

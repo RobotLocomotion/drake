@@ -344,6 +344,16 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
     set_zero_state(*context, &context->get_mutable_state());
   }
 
+  /// Sets the `state` to the _default_ state (position and velocity) for
+  /// `this` mobilizer.  For example, the zero state for our standard IIWA
+  /// model has the arm pointing directly up; this is the correct definition of
+  /// the zero state (it is where our joint angles measure zero).  But we also
+  /// support a default state (perhaps a more comfortable initial configuration
+  /// of the IIWA), which need not be the zero state, that describes a state of
+  /// the Mobilizer to be used in e.g. MultibodyPlant::SetDefaultContext().
+  virtual void set_default_state(const systems::Context<T>& context,
+                                 systems::State<T>* state) const = 0;
+
   /// Sets the `state` to a (potentially) random position and velocity, by
   /// evaluating any random distributions that were declared (via e.g.
   /// MobilizerImpl::set_random_position_distribution() and/or

@@ -194,6 +194,10 @@ class RevoluteJoint final : public Joint<T> {
     return *this;
   }
 
+  void set_default_angle(double angle) {
+    get_mutable_mobilizer()->set_default_position(Vector1d{angle});
+  }
+
   void set_random_angle_distribution(const symbolic::Expression& angle) {
     get_mutable_mobilizer()->set_random_position_distribution(
         Vector1<symbolic::Expression>{angle});
