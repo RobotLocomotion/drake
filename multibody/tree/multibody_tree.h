@@ -1123,6 +1123,19 @@ class MultibodyTree {
     return indices;
   }
 
+  /// Returns a list of joint indices associated with `model_instance`.
+  std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
+  const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    std::vector<JointIndex> indices;
+    for (auto& joint : owned_joints_) {
+      if (joint->model_instance() == model_instance) {
+        indices.emplace_back(joint->index());
+      }
+    }
+    return indices;
+  }
+
   /// See MultibodyPlant method.
   const Frame<T>& GetFrameByName(const std::string& name) const {
     return get_frame(
