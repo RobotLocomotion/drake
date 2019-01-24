@@ -172,10 +172,10 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 
   const double dt = 1;
   Simulator<double> simulator(system);
-  simulator.set_publish_at_initialization(false);
   Context<double>& context = simulator.get_mutable_context();
   simulator.reset_integrator<RungeKutta2Integrator<double>>(system, dt,
                                                             &context);
+  simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
 
   context.set_time(0);
@@ -188,22 +188,22 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
 
 // A composite system using the logistic system with the clock-based
 // witness function.
-class CompositeSystem : public LogisticSystem {
+class CompositeSystem : public analysis_test::LogisticSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CompositeSystem)
 
-  CompositeSystem(double k, double alpha, double nu, double trigger_time) :
-      LogisticSystem(k, alpha, nu), trigger_time_(trigger_time) {
+  CompositeSystem(double k, double alpha, double nu, double trigger_time)
+      : LogisticSystem(k, alpha, nu), trigger_time_(trigger_time) {
     this->DeclareContinuousState(1);
 
-    logistic_witness_ = this->DeclareWitnessFunction("logistic witness",
-      WitnessFunctionDirection::kCrossesZero,
-      &CompositeSystem::GetStateValue,
-      PublishEvent<double>());
-    clock_witness_ = this->DeclareWitnessFunction("clock witness",
-      WitnessFunctionDirection::kCrossesZero,
-      &CompositeSystem::CalcClockWitness,
-      PublishEvent<double>());
+    logistic_witness_ = this->DeclareWitnessFunction(
+        "logistic witness", WitnessFunctionDirection::kCrossesZero,
+        &CompositeSystem::GetStateValue,
+        &CompositeSystem::CallLogisticsCallback);
+    clock_witness_ = this->DeclareWitnessFunction(
+        "clock witness", WitnessFunctionDirection::kCrossesZero,
+        &CompositeSystem::CalcClockWitness,
+        &CompositeSystem::CallLogisticsCallback);
   }
 
   const WitnessFunction<double>* get_logistic_witness() const {
@@ -230,6 +230,11 @@ class CompositeSystem : public LogisticSystem {
   // The witness function is the time value itself plus the offset value.
   double CalcClockWitness(const Context<double>& context) const {
     return context.get_time() - trigger_time_;
+  }
+
+  void CallLogisticsCallback(const Context<double>& context,
+                            const PublishEvent<double>& event) const {
+    LogisticSystem<double>::InvokePublishCallback(context, event);
   }
 
   const double trigger_time_;
@@ -813,6 +818,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
                                                               &context);
 
   simulator.set_target_realtime_rate(0.5);
+  // Request forced-publishes at every internal substep.
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(true);
 
@@ -1639,10 +1645,8 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
         events[simulator.get_num_steps_taken()].push_back(kIntegrate);
       });
 
-  // Ensure that publish happens before any updates.
+  // Run a simulation with per-step forced-publishing enabled.
   simulator.set_publish_at_initialization(true);
-
-  // Run a simulation.
   simulator.set_publish_every_time_step(true);
   simulator.StepTo(0.5);
 
