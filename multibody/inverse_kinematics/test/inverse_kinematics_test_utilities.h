@@ -108,16 +108,16 @@ class TwoFreeSpheresTest : public ::testing::Test {
   FrameIndex sphere1_index_;
   FrameIndex sphere2_index_;
 
+  // The pose of sphere 1's collision geometry in sphere 1's body frame.
+  Eigen::Isometry3d X_B1S1_;
+  // The pose of sphere 2's collision geometry in sphere 2's body frame.
+  Eigen::Isometry3d X_B2S2_;
+
   std::unique_ptr<systems::Context<double>> diagram_context_double_;
   std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;
   systems::Context<double>* plant_context_double_{nullptr};
   systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
 };
 
-template <typename T>
-std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
-    double radius1, double radius2, MultibodyPlant<T>** plant,
-    geometry::SceneGraph<T>** scene_graph, FrameIndex* sphere1_index,
-    FrameIndex* sphere2_index);
 }  // namespace multibody
 }  // namespace drake

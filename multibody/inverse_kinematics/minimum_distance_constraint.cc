@@ -113,7 +113,7 @@ void MinimumDistanceConstraint::DoEvalGeneric(
   y->resize(1);
 
   internal::UpdateContextConfiguration(plant_context_, plant_, x);
-  auto plant_geometry_query_object = plant_.EvalAbstractInput(
+  const AbstractValue* plant_geometry_query_object = plant_.EvalAbstractInput(
       *plant_context_, plant_.get_geometry_query_input_port().get_index());
   if (plant_geometry_query_object == nullptr) {
     throw std::invalid_argument(
@@ -147,14 +147,17 @@ void MinimumDistanceConstraint::DoEvalGeneric(
       const Frame<double>& frameB =
           plant_.GetBodyFromFrameId(frame_B_id)->body_frame();
       plant_.CalcPointsPositions(*plant_context_, frameA,
-                                 signed_distance_pair.p_ACa,
+                                 inspector.X_FG(signed_distance_pair.id_A) *
+                                     signed_distance_pair.p_ACa,
                                  plant_.world_frame(), &p_WCa);
       plant_.CalcPointsPositions(*plant_context_, frameB,
-                                 signed_distance_pair.p_BCb,
+                                 inspector.X_FG(signed_distance_pair.id_B) *
+                                     signed_distance_pair.p_BCb,
                                  plant_.world_frame(), &p_WCb);
       AddPenalty(plant_, *plant_context_, frameA, frameB,
-                 signed_distance_pair.p_ACa, distance, minimal_distance_, p_WCa,
-                 p_WCb, x, y);
+                 inspector.X_FG(signed_distance_pair.id_A) *
+                     signed_distance_pair.p_ACa,
+                 distance, minimal_distance_, p_WCa, p_WCb, x, y);
     }
   }
 }

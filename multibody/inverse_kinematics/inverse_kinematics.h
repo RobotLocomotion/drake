@@ -180,6 +180,9 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
       double angle_upper);
 
+  // TODO(hongkai.dai): use a piecewise quadratic function as the default
+  // penalty function.
+  // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
    * smaller than a positive threshold. We consider the distance between pairs
@@ -197,8 +200,6 @@ class InverseKinematics {
    * with Centroidal Dynamics and Full Kinematics by Hongkai Dai, Andres
    * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
    * Humanoid Robots.
-   * TODO(hongkai.dai): use a piecewise quadratic function as the default
-   * penalty function.
    * @throws invalid_argument if the plant does not register its geometry
    * with a SceneGraph.
    */

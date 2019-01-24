@@ -55,12 +55,16 @@ AutoDiffVecXd EvalMinimumDistanceConstraintAutoDiff(
           inspector.GetFrameId(signed_distance_pair.id_B);
       plant.CalcPointsPositions(
           context, plant.GetBodyFromFrameId(frame_A_id)->body_frame(),
-          signed_distance_pair.p_ACa.cast<AutoDiffXd>(), plant.world_frame(),
-          &p_WCa);
+          (inspector.X_FG(signed_distance_pair.id_A) *
+           signed_distance_pair.p_ACa)
+              .cast<AutoDiffXd>(),
+          plant.world_frame(), &p_WCa);
       plant.CalcPointsPositions(
           context, plant.GetBodyFromFrameId(frame_B_id)->body_frame(),
-          signed_distance_pair.p_BCb.cast<AutoDiffXd>(), plant.world_frame(),
-          &p_WCb);
+          (inspector.X_FG(signed_distance_pair.id_B) *
+           signed_distance_pair.p_BCb)
+              .cast<AutoDiffXd>(),
+          plant.world_frame(), &p_WCb);
 
       const AutoDiffXd distance_autodiff = sign * (p_WCa - p_WCb).norm();
 
@@ -93,6 +97,16 @@ void CheckMinimumDistanceConstraintEval(
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 }
 
+template <typename T>
+Vector3<T> ComputeCollisionSphereCenterPosition(const Vector3<T>& p_WB,
+                                                const Quaternion<T>& quat_WB,
+                                                const Eigen::Isometry3d& X_BS) {
+  Isometry3<T> X_WB;
+  X_WB.linear() = quat_WB.toRotationMatrix();
+  X_WB.translation() = p_WB;
+  return X_WB * (X_BS.translation().cast<T>());
+}
+
 TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraint) {
   const double minimal_distance(0.1);
   const MinimumDistanceConstraint constraint(plant_double_, minimal_distance,
@@ -105,11 +119,11 @@ TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraint) {
   const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
   // distance larger than minimal_distance;
   // The penalty should be 0, so is the gradient.
-  Eigen::Vector3d sphere1_position(0.2, 1.2, 0.3);
-  Eigen::Vector3d sphere2_position(1.2, -0.4, 2.3);
+  Eigen::Vector3d sphere1_body_position(0.2, 1.2, 0.3);
+  Eigen::Vector3d sphere2_body_position(1.2, -0.4, 2.3);
   Eigen::Matrix<double, 14, 1> q;
-  q << QuaternionToVectorWxyz(sphere1_quaternion), sphere1_position,
-      QuaternionToVectorWxyz(sphere2_quaternion), sphere2_position;
+  q << QuaternionToVectorWxyz(sphere1_quaternion), sphere1_body_position,
+      QuaternionToVectorWxyz(sphere2_quaternion), sphere2_body_position;
   Eigen::VectorXd y_double(1);
   constraint.Eval(q, &y_double);
   Eigen::Matrix<AutoDiffXd, 14, 1> q_autodiff = math::initializeAutoDiff(q);
@@ -124,31 +138,47 @@ TEST_F(TwoFreeSpheresTest, MinimumDistanceConstraint) {
 
   // distance smaller than the minimal_distance, we can compute the penalty and
   // the gradient by hand.
-  sphere1_position << 0.1, 0.2, 0.3;
-  sphere2_position << 0.11, 0.21, 0.31;
-  q << QuaternionToVectorWxyz(sphere1_quaternion), sphere1_position,
-      QuaternionToVectorWxyz(sphere2_quaternion), sphere2_position;
-  const double distance_expected =
-      (sphere1_position - sphere2_position).norm() - radius1_ - radius2_;
+  sphere1_body_position << 0.1, 0.2, 0.3;
+  sphere2_body_position << 0.11, 0.21, 0.31;
+  q << QuaternionToVectorWxyz(sphere1_quaternion), sphere1_body_position,
+      QuaternionToVectorWxyz(sphere2_quaternion), sphere2_body_position;
+  const Eigen::Vector3d p_WS1 = ComputeCollisionSphereCenterPosition(
+      sphere1_body_position, sphere1_quaternion, X_B1S1_);
+  const Eigen::Vector3d p_WS2 = ComputeCollisionSphereCenterPosition(
+      sphere2_body_position, sphere2_quaternion, X_B2S2_);
+  const double distance_expected = (p_WS1 - p_WS2).norm() - radius1_ - radius2_;
   constraint.Eval(q, &y_double);
   const double penalty_expected = Penalty(distance_expected, minimal_distance);
   const double tol{5 * kEps};
   EXPECT_NEAR(y_double(0), penalty_expected, tol);
-  const Eigen::Vector3d distance_normal =
-      (sphere1_position - sphere2_position).normalized();
-  Eigen::RowVectorXd ddistance_dq(14);
-  ddistance_dq << Eigen::RowVector4d::Zero(), distance_normal.transpose(),
-      Eigen::RowVector4d::Zero(), -distance_normal.transpose();
-  const auto distance_autodiff = math::initializeAutoDiffGivenGradientMatrix(
-      Vector1d(distance_expected), ddistance_dq);
-  const auto penalty_autodiff = Penalty(distance_autodiff(0), minimal_distance);
-  q_autodiff = math::initializeAutoDiff(q);
+  // Test with a non-ideneity gradient.
+  Eigen::Matrix<double, 14, Eigen::Dynamic> dqdz(14, 2);
+  for (int i = 0; i < 14; ++i) {
+    dqdz(i, 0) = i;
+    dqdz(i, 1) = i + 1;
+  }
+  q_autodiff = math::initializeAutoDiffGivenGradientMatrix(q, dqdz);
+  Vector3<AutoDiffXd> p_WB1_autodiff = q_autodiff.segment<3>(4);
+  Vector3<AutoDiffXd> p_WB2_autodiff = q_autodiff.segment<3>(11);
+  Quaternion<AutoDiffXd> quat_WB1_autodiff(q_autodiff(0), q_autodiff(1),
+                                           q_autodiff(2), q_autodiff(3));
+  Quaternion<AutoDiffXd> quat_WB2_autodiff(q_autodiff(7), q_autodiff(8),
+                                           q_autodiff(9), q_autodiff(10));
+  Vector3<AutoDiffXd> p_WS1_autodiff = ComputeCollisionSphereCenterPosition(
+      p_WB1_autodiff, quat_WB1_autodiff, X_B1S1_);
+  Vector3<AutoDiffXd> p_WS2_autodiff = ComputeCollisionSphereCenterPosition(
+      p_WB2_autodiff, quat_WB2_autodiff, X_B2S2_);
+  const AutoDiffXd distance_autodiff =
+      (p_WS1_autodiff - p_WS2_autodiff).norm() - AutoDiffXd(radius1_) -
+      AutoDiffXd(radius2_);
+  const auto penalty_autodiff = Penalty(distance_autodiff, minimal_distance);
   constraint.Eval(q_autodiff, &y_autodiff);
-  const double gradient_tol = 5 * kEps;
+  const double gradient_tol = 200 * kEps;
   EXPECT_TRUE(CompareMatrices(y_autodiff(0).derivatives(),
                               penalty_autodiff.derivatives(), gradient_tol));
+  // Now evaluate the constraint using autodiff from start.
   CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
-                                     plant_context_autodiff_, 10 * kEps);
+                                     plant_context_autodiff_, gradient_tol);
 }
 
 GTEST_TEST(MinimumDistanceConstraintTest,
