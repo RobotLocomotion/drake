@@ -180,6 +180,12 @@ bool GeometryState<T>::BelongsToSource(FrameId frame_id,
 }
 
 template <typename T>
+const std::string& GeometryState<T>::GetOwningSourceName(FrameId id) const {
+  SourceId source_id = get_source_id(id);
+  return source_names_.at(source_id);
+}
+
+template <typename T>
 const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
@@ -272,6 +278,12 @@ bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
   // If this fails, the geometry_id is not valid and an exception is thrown.
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.belongs_to_source(source_id);
+}
+
+template <typename T>
+const std::string& GeometryState<T>::GetOwningSourceName(GeometryId id) const {
+  SourceId source_id = get_source_id(id);
+  return source_names_.at(source_id);
 }
 
 template <typename T>
@@ -795,6 +807,16 @@ template <typename T>
 SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
   const auto& frame = GetValueOrThrow(frame_id, frames_);
   return frame.source_id();
+}
+
+template <typename T>
+SourceId GeometryState<T>::get_source_id(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry == nullptr) {
+    throw std::logic_error("Geometry id " + to_string(id) +
+                           " does not map to a registered geometry");
+  }
+  return geometry->source_id();
 }
 
 template <typename T>
