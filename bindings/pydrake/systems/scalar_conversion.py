@@ -6,7 +6,7 @@ from pydrake.systems.framework import (
     LeafSystem_,
     SystemScalarConverter,
 )
-from pydrake.util.cpp_template import (
+from pydrake.common.cpp_template import (
     _get_module_name_from_stack,
     TemplateClass,
 )

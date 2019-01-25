@@ -6,12 +6,12 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
-#include "drake/bindings/pydrake/util/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_pybind.h"
-#include "drake/bindings/pydrake/util/type_pack.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/sensors/image.h"
@@ -44,7 +44,7 @@ PYBIND11_MODULE(sensors, m) {
   m.doc() = "Bindings for the sensors portion of the Systems framework.";
 
   py::module::import("pydrake.systems.framework");
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.common.eigen_geometry");
 
   // Expose only types that are used.
   py::enum_<PixelFormat>(m, "PixelFormat")

@@ -18,7 +18,7 @@ from pydrake.systems.framework import (
     OutputPort,
     Value,
     )
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType

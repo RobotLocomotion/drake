@@ -2,9 +2,9 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/deprecation_pybind.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/examples/manipulation_station/manipulation_station_hardware_interface.h"  // noqa
 

@@ -6,9 +6,9 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/type_pack.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/parsers/package_map.h"
@@ -38,7 +38,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   py::module::import("pydrake.multibody.parsers");
   py::module::import("pydrake.multibody.rigid_body");
   py::module::import("pydrake.multibody.shapes");
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.common.eigen_geometry");
 
   constexpr auto& joints_doc = doc.drake.multibody.joints;
   py::enum_<FloatingBaseType>(

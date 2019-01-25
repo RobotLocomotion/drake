@@ -20,7 +20,7 @@ from pydrake.multibody.rigid_body_tree import (
     FloatingBaseType
     )
 import pydrake.multibody.shapes as shapes
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 
 
 class TestRigidBodyTree(unittest.TestCase):
