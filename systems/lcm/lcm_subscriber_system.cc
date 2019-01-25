@@ -136,7 +136,7 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
       }
       auto& xd = discrete_state->get_mutable_vector(kStateIndexMessage);
       xd[0] = received_size;
-      for (int i = 0; i < fixed_encoded_size_; ++i) {
+      for (int i = 0; i < received_size; ++i) {
         xd[i + 1] = received_message_[i];
       }
     }
