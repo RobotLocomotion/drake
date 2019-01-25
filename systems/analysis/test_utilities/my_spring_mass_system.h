@@ -19,7 +19,6 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   // Pass through to SpringMassSystem, except add events and handlers.
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
-
     // This forced-publish event is necessary for any simulator_test case that
     // needs to verify that the publish_every_time_step feature works.
     this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
