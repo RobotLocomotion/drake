@@ -10,15 +10,20 @@ namespace solvers {
 namespace {
 class MathematicalProgramResultTest : public ::testing::Test {
  public:
-  MathematicalProgramResultTest() : x0_{"x0"}, x1_{"x1"} {
-    decision_variable_index_.emplace(x0_.get_id(), 0);
-    decision_variable_index_.emplace(x1_.get_id(), 1);
+  MathematicalProgramResultTest()
+      : x0_{"x0"},
+        x1_{"x1"},
+        decision_variable_index_{std::make_shared<
+            std::unordered_map<symbolic::Variable::Id, int>>()} {
+    decision_variable_index_->emplace(x0_.get_id(), 0);
+    decision_variable_index_->emplace(x1_.get_id(), 1);
   }
 
  protected:
   symbolic::Variable x0_;
   symbolic::Variable x1_;
-  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_;
+  std::shared_ptr<std::unordered_map<symbolic::Variable::Id, int>>
+      decision_variable_index_;
 };
 
 TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
@@ -32,7 +37,7 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
 
 TEST_F(MathematicalProgramResultTest, Setters) {
   MathematicalProgramResult result;
-  result.set_decision_variable_index(&decision_variable_index_);
+  result.set_decision_variable_index(decision_variable_index_);
   result.set_solution_result(SolutionResult::kSolutionFound);
   const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
@@ -66,7 +71,7 @@ struct DummySolverDetails {
 
 TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   MathematicalProgramResult result;
-  result.set_decision_variable_index(&decision_variable_index_);
+  result.set_decision_variable_index(decision_variable_index_);
   const int data = 1;
   DummySolverDetails& dummy_solver_details =
       result.SetSolverDetailsType<DummySolverDetails>();
@@ -90,7 +95,7 @@ TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
 
 TEST_F(MathematicalProgramResultTest, ConvertToSolverResult) {
   MathematicalProgramResult result;
-  result.set_decision_variable_index(&decision_variable_index_);
+  result.set_decision_variable_index(decision_variable_index_);
   result.set_solver_id(SolverId("foo"));
   result.set_optimal_cost(2);
   // The x_val is not set. So solver_result.decision_variable_values should be
