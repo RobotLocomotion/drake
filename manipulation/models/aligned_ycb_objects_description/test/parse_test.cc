@@ -38,12 +38,12 @@ TEST_P(ParseTest, Quantities) {
 }
 
 INSTANTIATE_TEST_CASE_P(Both, ParseTest, testing::Values(
-    "cracker_box",
-    "gelatin_box",
-    "mustard_bottle",
-    "potted_meat_can",
-    "soup_can",
-    "sugar_box"));
+    "003_cracker_box",
+    "004_sugar_box",
+    "005_tomato_soup_can",
+    "006_mustard_bottle",
+    "009_gelatin_box",
+    "010_potted_meat_can"));
 
 }  // namespace
 }  // namespace manipulation

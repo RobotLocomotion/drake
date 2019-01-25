@@ -20,7 +20,7 @@
       <pose frame=''>0 0 0 0 0 0</pose>
       <geometry>
         <mesh>
-          <uri>../meshes/gelatin_box_texture.obj</uri>
+          <uri>../meshes/009_gelatin_box_textured.obj</uri>
         </mesh>
       </geometry>
     </visual>

@@ -1,26 +1,26 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-<model name="cracker_box">
-  <link name="base_link_cracker">
+<model name="mustard_bottle">
+  <link name="base_link_mustard">
 
     <inertial>
       <pose frame=''>0 0 0 0 0 0</pose>
-      <mass>0.411000</mass>
+      <mass>0.603000</mass>
         <inertia>
-          <ixx>0.001736</ixx>
+          <ixx>0.001478</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.001098</iyy>
+          <iyy>0.000633</iyy>
           <iyz>0</iyz>
-          <izz>0.002481</izz>
+          <izz>0.001770</izz>
         </inertia>
     </inertial>
 
-    <visual name='base_link_cracker'>
+    <visual name='base_link_mustard'>
       <pose frame=''>0 0 0 0 0 0</pose>
       <geometry>
         <mesh>
-          <uri>../meshes/cracker_box_texture.obj</uri>
+          <uri>../meshes/006_mustard_bottle_textured.obj</uri>
         </mesh>
       </geometry>
     </visual>
@@ -36,11 +36,11 @@
       slightly inset box will provide contact with a *slight* offset (in this
       case a deviation of 0.0005 m from the visual surface).
      -->
-    <collision name='cracker_box_collision'>
-      <pose>0 0 0 0 0 0</pose>
+    <collision name='mustard_bottle_collision'>
+      <pose>0 0.015 0 0 0 0</pose>
       <geometry>
         <box> 
-          <size>0.158000 0.207400 0.065800</size>
+          <size>0.090000 0.155300 0.052200</size>
         </box>
       </geometry>
       <material>
@@ -49,56 +49,56 @@
     </collision>
 
     <collision name='point_collision1'>
-      <pose>0.079500 0.104200 0.033400 0 0 0 </pose>
+      <pose>0.045500 0.09315 0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision2'>
-      <pose>0.079500 -0.104200 0.033400 0 0 0 </pose>
+      <pose>0.045500 -0.06315 0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision3'>
-      <pose>-0.079500 0.104200 0.033400 0 0 0 </pose>
+      <pose>-0.045500 0.09315 0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision4'>
-      <pose>-0.079500 -0.104200 0.033400 0 0 0 </pose>
+      <pose>-0.045500 -0.06315 0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision5'>
-      <pose>0.079500 0.104200 -0.033400 0 0 0 </pose>
+      <pose>0.045500 0.09315 -0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision6'>
-      <pose>0.079500 -0.104200 -0.033400 0 0 0 </pose>
+      <pose>0.045500 -0.06315 -0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision7'>
-      <pose>-0.079500 0.104200 -0.033400 0 0 0 </pose>
+      <pose>-0.045500 0.09315 -0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
     </collision>
 
     <collision name='point_collision8'>
-      <pose>-0.079500 -0.104200 -0.033400 0 0 0 </pose>
+      <pose>-0.045500 -0.06315 -0.026600 0 0 0 </pose>
       <geometry>
         <sphere><radius>1e-7</radius></sphere>
       </geometry>
