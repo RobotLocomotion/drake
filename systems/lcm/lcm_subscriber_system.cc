@@ -76,7 +76,7 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     if (translator_) {
       this->DeclareDiscreteState(*AllocateTranslatorOutputValue());
     } else {
-      this->DeclareDiscreteState(1 + fixed_encoded_size_);
+      this->DeclareDiscreteState(fixed_encoded_size_);
     }
     static_assert(kStateIndexMessageCount == 1, "");
     this->DeclareDiscreteState(1 /* size */);
@@ -127,17 +127,11 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToDiscreteState(
           received_message_.data(), received_message_.size(),
           &discrete_state->get_mutable_vector(kStateIndexMessage));
     } else {
-      const int received_size = static_cast<int>(received_message_.size());
-      if (received_size > fixed_encoded_size_) {
-        throw std::runtime_error(fmt::format(
-            "LcmSubscriberSystem: Received {} message was {} bytes, not the "
-            "at-most-{} bytes that was promised to our constructor", channel_,
-            received_size, fixed_encoded_size_));
-      }
+      DRAKE_THROW_UNLESS(
+          static_cast<int>(received_message_.size()) == fixed_encoded_size_);
       auto& xd = discrete_state->get_mutable_vector(kStateIndexMessage);
-      xd[0] = received_size;
       for (int i = 0; i < fixed_encoded_size_; ++i) {
-        xd[i + 1] = received_message_[i];
+        xd[i] = received_message_[i];
       }
     }
   }
@@ -251,13 +245,13 @@ void LcmSubscriberSystem::CalcSerializerOutputValue(
   } else {
     if (GetMessageCount(context) > 0) {
       const auto& xd = context.get_discrete_state(kStateIndexMessage);
-      const int size = xd[0];
       std::vector<uint8_t> buffer;
-      buffer.resize(size);
-      for (int i = 0; i < size; ++i) {
-        buffer[i] = xd[i + 1];
+      buffer.resize(fixed_encoded_size_);
+      for (int i = 0; i < fixed_encoded_size_; ++i) {
+        buffer[i] = xd[i];
       }
-      serializer_->Deserialize(buffer.data(), size, output_value);
+      serializer_->Deserialize(
+          buffer.data(), fixed_encoded_size_, output_value);
     }
   }
 }
