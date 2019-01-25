@@ -95,15 +95,17 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
 /// @param name Name of the template.
 /// @param func Function to be added.
 /// @param param Parameters for the instantiation.
-template <typename Func>
-py::object AddTemplateFunction(
-    py::handle scope, const std::string& name, Func&& func, py::tuple param) {
+/// @param extra... Additional arguments to pass to `py::cpp_function`.
+template <typename Func, typename... Extra>
+py::object AddTemplateFunction(py::handle scope, const std::string& name,
+    Func&& func, py::tuple param, Extra&&... extra) {
   // TODO(eric.cousineau): Use `py::sibling` if overloads are needed.
   py::object py_template =
       internal::GetOrInitTemplate(scope, name, "TemplateFunction");
   py::object py_func = py::cpp_function(  // BR
       std::forward<Func>(func),
-      py::name(internal::GetInstantiationName(py_template, param).c_str()));
+      py::name(internal::GetInstantiationName(py_template, param).c_str()),
+      std::forward<Extra>(extra)...);
   internal::AddInstantiation(py_template, py_func, param);
   return py_template;
 }
@@ -113,16 +115,17 @@ py::object AddTemplateFunction(
 /// @param name Name of the template.
 /// @param method Method to be added.
 /// @param param Parameters for the instantiation.
-template <typename Method>
+/// @param extra... Additional arguments to pass to `py::cpp_function`.
+template <typename Method, typename... Extra>
 py::object AddTemplateMethod(  // BR
-    py::handle scope, const std::string& name, Method&& method,
-    py::tuple param) {
+    py::handle scope, const std::string& name, Method&& method, py::tuple param,
+    Extra&&... extra) {
   py::object py_template = internal::GetOrInitTemplate(
       scope, name, "TemplateMethod", py::make_tuple(scope));
   py::object py_func = py::cpp_function(  // BR
       std::forward<Method>(method),
       py::name(internal::GetInstantiationName(py_template, param).c_str()),
-      py::is_method(scope));
+      py::is_method(scope), std::forward<Extra>(extra)...);
   internal::AddInstantiation(py_template, py_func, param);
   return py_template;
 }
