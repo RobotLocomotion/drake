@@ -13,6 +13,10 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_py_library_aliases",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -68,16 +72,6 @@ drake_pybind_library(
     ],
 )
 
-# This covers //attic/multibody/parsers.
-drake_py_library(
-    name = "parsers_py",
-    srcs = ["parsers.py"],
-    deps = [
-        ":parsing_py",
-    ],
-)
-
-# This covers //multibody/parsing.
 drake_pybind_library(
     name = "parsing_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
@@ -85,92 +79,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "rigid_body_plant_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
-        "//lcmtypes:viewer",
-    ],
-    cc_srcs = ["rigid_body_plant_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-        ":rigid_body_tree_py",
-        "//bindings/pydrake:lcm_py",
-        "//bindings/pydrake/systems:framework_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "rigid_body_tree_py",
-    cc_deps = [
-        "//bindings/pydrake:autodiff_types_pybind",
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:type_pack",
-    ],
-    cc_srcs = ["rigid_body_tree_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":collision_py",
-        ":joints_py",
-        ":module_py",
-        ":parsers_py",
-        ":rigid_body_py",
-        ":shapes_py",
-        "//bindings/pydrake:autodiffutils_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "collision_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_srcs = ["collision_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-        ":rigid_body_py",
-        ":shapes_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "joints_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:eigen_geometry_pybind",
-    ],
-    cc_srcs = ["joints_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "rigid_body_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_srcs = ["rigid_body_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-        ":shapes_py",
-    ],
-)
-
-drake_pybind_library(
-    name = "shapes_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
-    cc_srcs = ["shapes_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-        "//bindings/pydrake/common:eigen_geometry_py",
     ],
 )
 
@@ -189,22 +97,30 @@ drake_pybind_library(
     ],
 )
 
-PY_LIBRARIES_WITH_INSTALL = [
-    ":benchmarks_py",
+PY_LIBRARIES_ATTIC_ALIASES = [
     ":collision_py",
-    ":inverse_kinematics_py",
     ":joints_py",
-    ":multibody_tree_py",
-    ":parsing_py",
-    ":rigid_body_py",
+    ":parsers_py",
     ":rigid_body_plant_py",
+    ":rigid_body_py",
     ":rigid_body_tree_py",
     ":shapes_py",
 ]
 
-PY_LIBRARIES = [
+drake_py_library_aliases(
+    actual_subdir = "bindings/pydrake/attic/multibody",
+    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
+)
+
+PY_LIBRARIES_WITH_INSTALL = [
+    ":benchmarks_py",
+    ":inverse_kinematics_py",
+    ":multibody_tree_py",
+    ":parsing_py",
+]
+
+PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
     ":module_py",
-    ":parsers_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -239,6 +155,7 @@ drake_py_unittest(
     data = ["//examples/pendulum:models"],
     deps = [
         ":rigid_body_plant_py",
+        ":rigid_body_tree_py",
     ],
 )
 
@@ -257,7 +174,14 @@ drake_py_unittest(
         "//examples/pendulum:models",
         "//examples/simple_four_bar:models",
     ],
-    deps = [":rigid_body_tree_py"],
+    deps = [
+        ":collision_py",
+        ":joints_py",
+        ":parsers_py",
+        ":rigid_body_py",
+        ":rigid_body_tree_py",
+        ":shapes_py",
+    ],
 )
 
 drake_py_unittest(

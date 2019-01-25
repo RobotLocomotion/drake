@@ -175,14 +175,21 @@ drake_py_test(
     allow_import_unittest = True,
     data = ["//examples/pr2:models"],
     tags = ["snopt"],
-    deps = [":ik_py"],
+    deps = [
+        ":ik_py",
+        "//bindings/pydrake/multibody:parsers_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
+    ],
 )
 
 drake_py_unittest(
     name = "rbt_ik_test",
     data = ["//examples/pendulum:models"],
     tags = ["snopt"],
-    deps = [":ik_py"],
+    deps = [
+        ":ik_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
+    ],
 )
 
 add_lint_tests(
