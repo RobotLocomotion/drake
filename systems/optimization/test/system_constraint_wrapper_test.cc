@@ -95,7 +95,6 @@ void Updater2(const System<T>& plant, const Eigen::Ref<const VectorX<T>>& x,
 }
 
 void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
-                                 SystemConstraintIndex constraint_index,
                                  Context<double>* context_double) {
   // First test Eval with VectorX<double>.
   Eigen::Matrix<double, 7, 1> x_double;
@@ -123,7 +122,7 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
   auto plant_autodiff =
       dynamic_cast<const multibody::MultibodyPlant<AutoDiffXd>*>(
           &(constraint.system_autodiff()));
-  plant_autodiff->get_constraint(constraint_index)
+  plant_autodiff->get_constraint(constraint.constraint_index())
       .Calc(*context_autodiff, &y_autodiff_expected);
 
   EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(y_autodiff),
@@ -155,16 +154,14 @@ TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {
       unit_quaternion_constraint_index_, *context_double, Updater2<double>,
       Updater2<AutoDiffXd>, 7);
 
-  TestFreeBodyPlantConstraint(constraint1, unit_quaternion_constraint_index_,
-                              context_double.get());
+  TestFreeBodyPlantConstraint(constraint1, context_double.get());
 
   // Construct the constraint without plant_autodiff.
   SystemConstraintWrapper constraint2(
       plant_double_.get(), nullptr, unit_quaternion_constraint_index_,
       *context_double, Updater2<double>, Updater2<AutoDiffXd>, 7);
 
-  TestFreeBodyPlantConstraint(constraint2, unit_quaternion_constraint_index_,
-                              context_double.get());
+  TestFreeBodyPlantConstraint(constraint2, context_double.get());
 }
 
 }  // namespace

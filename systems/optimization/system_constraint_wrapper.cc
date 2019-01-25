@@ -1,5 +1,7 @@
 #include "drake/systems/optimization/system_constraint_wrapper.h"
 
+#include <utility>
+
 namespace drake {
 namespace systems {
 SystemConstraintWrapper::SystemConstraintWrapper(
