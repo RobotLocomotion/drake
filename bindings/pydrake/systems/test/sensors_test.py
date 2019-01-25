@@ -26,6 +26,7 @@ pf = mut.PixelFormat
 # Available image / pixel types.
 pixel_types = [
     pt.kRgba8U,
+    pt.kDepth16U,
     pt.kDepth32F,
     pt.kLabel16I,
 ]
@@ -33,6 +34,7 @@ pixel_types = [
 # Convenience aliases.
 image_type_aliases = [
     mut.ImageRgba8U,
+    mut.ImageDepth16U,
     mut.ImageDepth32F,
     mut.ImageLabel16I,
 ]
@@ -41,11 +43,20 @@ image_type_aliases = [
 class TestSensors(unittest.TestCase):
 
     def test_image_traits(self):
+        # Ensure that we test all available enums.
+        self.assertSetEqual(
+            set(pixel_types), set(mut.PixelType.__members__.values()))
+
         # Test instantiations of ImageTraits<>.
         t = mut.ImageTraits[pt.kRgba8U]
         self.assertEqual(t.kNumChannels, 4)
         self.assertEqual(t.ChannelType, np.uint8)
         self.assertEqual(t.kPixelFormat, pf.kRgba)
+
+        t = mut.ImageTraits[pt.kDepth16U]
+        self.assertEqual(t.kNumChannels, 1)
+        self.assertEqual(t.ChannelType, np.uint16)
+        self.assertEqual(t.kPixelFormat, pf.kDepth)
 
         t = mut.ImageTraits[pt.kDepth32F]
         self.assertEqual(t.kNumChannels, 1)
@@ -68,7 +79,7 @@ class TestSensors(unittest.TestCase):
             w = 640
             h = 480
             nc = ImageT.Traits.kNumChannels
-            image = ImageT(w, h)
+            image = ImageT(width=w, height=h)
             self.assertEqual(image.width(), w)
             self.assertEqual(image.height(), h)
             self.assertEqual(image.size(), h * w * nc)
