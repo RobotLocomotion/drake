@@ -17,7 +17,7 @@ from pydrake.examples import (
 )
 from pydrake.examples.multibody import cart_pole_passive_simulation
 # TODO(eric.cousineau): Indicate these as deprecated.
-from pydrake.util import (
+from pydrake.common import (
     cpp_const,
     cpp_param,
     cpp_template,
@@ -41,7 +41,7 @@ def get_submodules(name):
         # Ensure its an immediate child.
         if "." in sub or sub.startswith("_"):
             continue
-        # For some reason, things like `pydrake.util` has submodules like
+        # For some reason, things like `pydrake.common` has submodules like
         # `inspect`, etc, whose value in `sys.modules` are none. Ignore those.
         # TODO(eric.cousineau): Figure out where these come from, and remove
         # them.

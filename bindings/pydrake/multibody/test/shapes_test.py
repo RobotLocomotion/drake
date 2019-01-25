@@ -5,7 +5,7 @@ import numpy as np
 
 import pydrake
 from pydrake.multibody import shapes
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 
 
 class TestShapes(unittest.TestCase):
