@@ -16,7 +16,7 @@ PYBIND11_MODULE(rigid_body, m) {
 
   m.doc() = "Bindings for the individual RigidBody class.";
 
-  py::module::import("pydrake.multibody.joints");
+  py::module::import("pydrake.attic.multibody.joints");
 
   py::class_<RigidBody<double> >(m, "RigidBody", doc.RigidBody.doc)
       .def(py::init(), doc.RigidBody.ctor.doc)
