@@ -4,6 +4,7 @@
 
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
 #include "drake/multibody/inverse_kinematics/gaze_target_constraint.h"
+#include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 
@@ -12,8 +13,23 @@ namespace multibody {
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant)
     : prog_{new solvers::MathematicalProgram()},
       plant_(plant),
-      context_(plant_.CreateDefaultContext()),
+      owned_context_(plant_.CreateDefaultContext()),
+      context_(owned_context_.get()),
       q_(prog_->NewContinuousVariables(plant_.num_positions(), "q")) {
+  prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
+                                  plant.GetPositionUpperLimits(), q_);
+  // TODO(hongkai.dai) Add other position constraints, such as unit length
+  // quaternion constraint here.
+}
+
+InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
+                                     systems::Context<double>* plant_context)
+    : prog_{new solvers::MathematicalProgram()},
+      plant_(plant),
+      owned_context_(nullptr),
+      context_(plant_context),
+      q_(prog_->NewContinuousVariables(plant.num_positions(), "q")) {
+  DRAKE_DEMAND(plant_context);
   prog_->AddBoundingBoxConstraint(plant.GetPositionLowerLimits(),
                                   plant.GetPositionUpperLimits(), q_);
   // TODO(hongkai.dai) Add other position constraints, such as unit length
@@ -61,6 +77,13 @@ InverseKinematics::AddAngleBetweenVectorsConstraint(
   auto constraint = std::make_shared<AngleBetweenVectorsConstraint>(
       &plant_, frameA, na_A, frameB, nb_B, angle_lower, angle_upper,
       get_mutable_context());
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint>
+InverseKinematics::AddMinimumDistanceConstraint(double minimal_distance) {
+  auto constraint = std::make_shared<MinimumDistanceConstraint>(
+      &plant_, minimal_distance, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 }  // namespace multibody

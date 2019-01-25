@@ -7,6 +7,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 #include "drake/solvers/create_constraint.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace multibody {
@@ -205,6 +206,63 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
   const double angle =
       std::acos(n_A_W.dot(n_B_W) / (n_A_W.norm() * n_B_W.norm()));
   EXPECT_NEAR(angle, angle_lower, 1E-6);
+}
+
+TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
+  const double min_distance = 0.1;
+
+  InverseKinematics ik(*plant_double_, plant_context_double_);
+
+  auto constraint = ik.AddMinimumDistanceConstraint(min_distance);
+
+  // The two spheres are colliding in the initial guess.
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().head<4>(),
+                                         Eigen::Vector4d(1, 0, 0, 0));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().segment<3>(4),
+                                         Eigen::Vector3d(0, 0, 0.01));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().segment<4>(7),
+                                         Eigen::Vector4d(1, 0, 0, 0));
+  ik.get_mutable_prog()->SetInitialGuess(ik.q().tail<3>(),
+                                         Eigen::Vector3d(0, 0, -0.01));
+
+  auto solve_and_check = [&]() {
+    const solvers::MathematicalProgramResult result =
+        Solve(ik.prog(), ik.prog().initial_guess());
+    EXPECT_EQ(result.get_solution_result(),
+              solvers::SolutionResult::kSolutionFound);
+
+    const Eigen::Vector3d p_WB1 =
+        ik.prog().GetSolution(ik.q().segment<3>(4), result);
+    const Eigen::Quaterniond quat_WB1(ik.prog().GetSolution(ik.q()(0), result),
+                                      ik.prog().GetSolution(ik.q()(1), result),
+                                      ik.prog().GetSolution(ik.q()(2), result),
+                                      ik.prog().GetSolution(ik.q()(3), result));
+    const Eigen::Vector3d p_WB2 =
+        ik.prog().GetSolution(ik.q().tail<3>(), result);
+    const Eigen::Quaterniond quat_WB2(
+        ik.prog().GetSolution(ik.q()(7), result),
+        ik.prog().GetSolution(ik.q()(8), result),
+        ik.prog().GetSolution(ik.q()(9), result),
+        ik.prog().GetSolution(ik.q()(10), result));
+    const Eigen::Vector3d p_WS1 =
+        p_WB1 + quat_WB1.toRotationMatrix() * X_B1S1_.translation();
+    const Eigen::Vector3d p_WS2 =
+        p_WB2 + quat_WB2.toRotationMatrix() * X_B2S2_.translation();
+    // This large error is due to the derivative of the penalty function(i.e.,
+    // the gradient ∂penalty/∂distance) being small near minimal_distance. For
+    // example, when the minimal_distance = 0.1, and the actual distance is
+    // 0.095, the derivative is 5E-7. Hence a small violation on the penalty
+    // leads to a large violation on the minimal_distance.
+    const double tol = 1e-2;
+    EXPECT_GE((p_WS1 - p_WS2).norm() - radius1_ - radius2_, min_distance - tol);
+  };
+
+  solve_and_check();
+
+  // Now set the two spheres to coincide at the initial guess, and solve again.
+  ik.get_mutable_prog()->SetInitialGuess(
+      ik.q().tail<3>(), ik.prog().initial_guess().segment<3>(4));
+  solve_and_check();
 }
 }  // namespace multibody
 }  // namespace drake
