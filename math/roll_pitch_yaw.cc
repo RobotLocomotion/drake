@@ -5,7 +5,6 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include "drake/common/default_scalars.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -173,10 +172,10 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
   const T yA = e1 + e3, xA = e0 - e2;
   const T yB = e3 - e1, xB = e0 + e2;
   const T epsilon = Eigen::NumTraits<T>::epsilon();
-  const bool isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
-  const bool isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
-  const T zA = isSingularA ? 0.0 : atan2(yA, xA);
-  const T zB = isSingularB ? 0.0 : atan2(yB, xB);
+  const auto isSingularA = abs(yA) <= epsilon && abs(xA) <= epsilon;
+  const auto isSingularB = abs(yB) <= epsilon && abs(xB) <= epsilon;
+  const T zA = if_then_else(isSingularA, T{0.0}, atan2(yA, xA));
+  const T zB = if_then_else(isSingularB, T{0.0}, atan2(yB, xB));
   T q1 = zA - zB;  // First angle in rotation sequence.
   T q3 = zA + zB;  // Third angle in rotation sequence.
 
@@ -192,8 +191,8 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
 }
 
 template <typename T>
-bool RollPitchYaw<T>::IsNearlySameOrientation(const RollPitchYaw<T>& other,
-                                              double tolerance) const {
+boolean<T> RollPitchYaw<T>::IsNearlySameOrientation(
+    const RollPitchYaw<T>& other, double tolerance) const {
   // Note: When pitch is close to PI/2 or -PI/2, derivative calculations for
   // Euler angles can encounter numerical problems (dividing by nearly 0).
   // Although values of angles may "jump around" (difficult derivatives), the
@@ -225,9 +224,5 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
 }  // namespace math
 }  // namespace drake
 
-// Explicitly instantiate on non-symbolic scalar types.
-// TODO(Mitiguy) Ensure this class handles RollPitchYaw<symbolic::Expression>.
-// To enable symbolic expressions, remove _NONSYMBOLIC in next line.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RollPitchYaw)
-
