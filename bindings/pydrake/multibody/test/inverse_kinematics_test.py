@@ -9,15 +9,15 @@ from numpy.linalg import norm
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Quaternion, AngleAxis, Isometry3
-import pydrake.math
+from pydrake.math import RotationMatrix
 from pydrake.multibody.multibody_tree.multibody_plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
     MakeAcrobotPlant,
 )
-from pydrake.systems.framework import DiagramBuilder
 import pydrake.solvers.mathematicalprogram as mp
+from pydrake.systems.framework import DiagramBuilder
 
 # TODO(eric.cousineau): Replace manual coordinate indexing with more semantic
 # operations (`CalcRelativeTransform`, `SetFreeBodyPose`).
@@ -102,9 +102,8 @@ class TestInverseKinematics(unittest.TestCase):
 
     def test_AddOrientationConstraint(self):
         theta_bound = 0.2 * math.pi
-        R_AbarA = pydrake.math.RotationMatrix(
-            quaternion=Quaternion(0.5, -0.5, 0.5, 0.5))
-        R_BbarB = pydrake.math.RotationMatrix(
+        R_AbarA = RotationMatrix(quaternion=Quaternion(0.5, -0.5, 0.5, 0.5))
+        R_BbarB = RotationMatrix(
             quaternion=Quaternion(1.0 / 3, 2.0 / 3, 0, 2.0 / 3))
         self.ik_two_bodies.AddOrientationConstraint(
             frameAbar=self.body1_frame, R_AbarA=R_AbarA,

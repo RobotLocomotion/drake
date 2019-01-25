@@ -47,7 +47,7 @@ drake_py_library(
         # We use `common:_init_py` to avoid dependency cycles.
         "//bindings:bazel_workaround_4594_libdrake_py",
         "//bindings/pydrake/common:_init_py",
-        "//bindings/pydrake/util:deprecation_py",
+        "//bindings/pydrake/common:deprecation_py",
     ],
 )
 
@@ -110,14 +110,14 @@ drake_pybind_library(
     cc_deps = [
         ":autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/util:wrap_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":math_py",
         ":module_py",
-        "//bindings/pydrake/util:deprecation_py",
+        "//bindings/pydrake/common:deprecation_py",
     ],
     py_srcs = [
         "forwarddiff.py",
@@ -128,8 +128,8 @@ drake_pybind_library(
     name = "automotive_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
         "//bindings/pydrake/systems:systems_pybind",
-        "//bindings/pydrake/util:wrap_pybind",
     ],
     cc_srcs = ["automotive_py.cc"],
     package_info = PACKAGE_INFO,
@@ -139,8 +139,8 @@ drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
-        "//bindings/pydrake/util:deprecation_pybind",
         "//lcmtypes:viewer",
     ],
     cc_srcs = ["geometry_py.cc"],
@@ -156,7 +156,7 @@ drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/util:drake_optional_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["lcm_py.cc"],
     package_info = PACKAGE_INFO,
@@ -172,7 +172,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
-        "//bindings/pydrake/util:eigen_geometry_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
     ],
 )
 
@@ -203,15 +203,15 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/util:wrap_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["symbolic_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":math_py",
         ":module_py",
-        "//bindings/pydrake/util:compatibility_py",
-        "//bindings/pydrake/util:deprecation_py",
+        "//bindings/pydrake/common:compatibility_py",
+        "//bindings/pydrake/common:deprecation_py",
     ],
     py_srcs = ["_symbolic_extra.py"],
 )
@@ -255,6 +255,9 @@ PY_LIBRARIES = [
 drake_py_library(
     name = "all_py",
     srcs = ["all.py"],
+    # pycodestyle gets confused by the top `with` statement. This should be
+    # removed once no modules with deprecation warnings are imported.
+    tags = ["nolint"],
     deps = PY_LIBRARIES_WITH_INSTALL + PY_LIBRARIES,
 )
 
@@ -398,7 +401,7 @@ drake_py_unittest(
     deps = [
         ":algebra_test_util_py",
         ":symbolic_py",
-        "//bindings/pydrake/util:containers_py",
+        "//bindings/pydrake/common:containers_py",
     ],
 )
 

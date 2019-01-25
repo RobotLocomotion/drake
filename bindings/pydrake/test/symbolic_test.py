@@ -10,8 +10,8 @@ import six
 import pydrake.symbolic as sym
 import pydrake.common
 from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
-from pydrake.util.containers import EqualToDict
-from pydrake.util.deprecation import install_numpy_warning_filters
+from pydrake.common.containers import EqualToDict
+from pydrake.common.deprecation import install_numpy_warning_filters
 
 # TODO(eric.cousineau): Replace usages of `sym` math functions with the
 # overloads from `pydrake.math`.

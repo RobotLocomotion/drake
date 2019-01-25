@@ -147,9 +147,6 @@ class TestAll(unittest.TestCase):
             "TemplateSystem",
             # - sensors
             "Image",
-            # util
-            "Isometry3",
-            "Quaternion",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.

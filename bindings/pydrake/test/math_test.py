@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import pydrake.math as mut
 from pydrake.math import (BarycentricMesh, wrap_to)
-from pydrake.util.eigen_geometry import Isometry3, Quaternion, AngleAxis
+from pydrake.common.eigen_geometry import Isometry3, Quaternion, AngleAxis
 
 import unittest
 import numpy as np

@@ -24,7 +24,7 @@ from pydrake.systems.framework import (
     BasicVector,
     PortDataType,
 )
-from pydrake.util.eigen_geometry import (
+from pydrake.common.eigen_geometry import (
     Isometry3,
     Quaternion,
 )

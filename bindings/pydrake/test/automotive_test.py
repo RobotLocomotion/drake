@@ -37,7 +37,7 @@ from pydrake.systems.rendering import (
     PoseBundle,
     PoseVector,
 )
-from pydrake.util.eigen_geometry import (
+from pydrake.common.eigen_geometry import (
     Isometry3,
     Quaternion,
 )

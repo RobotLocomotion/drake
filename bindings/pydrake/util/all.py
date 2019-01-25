@@ -1,3 +1,9 @@
+"""
+Warning:
+    Deprecated. Please used ``pydrake.common`` instead. This package will be
+    removed on or after 2019-03-15.
+"""
+
 from .compatibility import *
 from .containers import *
 # - `cpp_const` does not offer public Drake symbols.

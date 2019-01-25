@@ -1,3 +1,6 @@
+// `#pragma GCC diagnostic ignored "-Wcpp"` does not suppress the warnings.
+#define _DRAKE_TESTING
+
 // Ensure we can include files from their old path.
 #include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/util/cpp_template_pybind.h"
