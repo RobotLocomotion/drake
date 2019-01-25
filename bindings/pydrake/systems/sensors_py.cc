@@ -15,6 +15,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/image_to_lcm_image_array_t.h"
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_camera.h"
 
@@ -240,6 +241,42 @@ PYBIND11_MODULE(sensors, m) {
   def_camera_ports(&rgbd_camera_discrete);
   rgbd_camera_discrete.attr("kDefaultPeriod") =
       double{RgbdCameraDiscrete::kDefaultPeriod};
+
+  {
+    constexpr auto& cls_doc = doc.ImageToLcmImageArrayT;
+    using Class = ImageToLcmImageArrayT;
+    py::class_<Class, LeafSystem<T>> cls(
+        m, "ImageToLcmImageArrayT", cls_doc.doc);
+    cls  // BR
+        .def(py::init<const string&, const string&, const string&, bool>(),
+            py::arg("color_frame_name"), py::arg("depth_frame_name"),
+            py::arg("label_frame_name"), py::arg("do_compress") = false,
+            cls_doc.ctor.doc_4args)
+        .def(py::init<bool>(), py::arg("do_compress") = false,
+            cls_doc.ctor.doc_1args)
+        .def("color_image_input_port", &Class::color_image_input_port,
+            py_reference_internal, cls_doc.color_image_input_port.doc)
+        .def("depth_image_input_port", &Class::depth_image_input_port,
+            py_reference_internal, cls_doc.depth_image_input_port.doc)
+        .def("label_image_input_port", &Class::label_image_input_port,
+            py_reference_internal, cls_doc.label_image_input_port.doc)
+        .def("image_array_t_msg_output_port",
+            &Class::image_array_t_msg_output_port, py_reference_internal,
+            cls_doc.image_array_t_msg_output_port.doc);
+    // Because the public interface requires templates and it's hard to
+    // reproduce the logic publicly (e.g. no overload that just takes
+    // `AbstractValue` and the pixel type), go ahead and bind the templated
+    // methods.
+    auto def_image_input_port = [&cls, cls_doc](auto param) {
+      constexpr PixelType kPixelType =
+          decltype(param)::template type_at<0>::value;
+      AddTemplateMethod(cls, "DeclareImageInputPort",
+          &Class::DeclareImageInputPort<kPixelType>, GetPyParam(param),
+          py::arg("name"), py_reference_internal,
+          cls_doc.DeclareImageInputPort.doc);
+    };
+    type_visit(def_image_input_port, PixelTypeList{});
+  }
 }
 
 }  // namespace pydrake

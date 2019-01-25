@@ -13,6 +13,7 @@ from pydrake.multibody.rigid_body_tree import (
     RigidBodyFrame,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     InputPort,
     OutputPort,
     Value,
@@ -258,3 +259,34 @@ class TestSensors(unittest.TestCase):
         self.assertIsInstance(values.get_value(0), Value[mut.ImageRgba8U])
         self.assertIsInstance(values.get_value(1), Value[mut.ImageDepth32F])
         self.assertIsInstance(values.get_value(2), Value[mut.ImageLabel16I])
+
+    def test_image_to_lcm_image_array_t(self):
+        # Test nominal constructor.
+        dut = mut.ImageToLcmImageArrayT(
+            color_frame_name="color", depth_frame_name="depth",
+            label_frame_name="label", do_compress=False)
+        for port in (
+                dut.color_image_input_port(), dut.depth_image_input_port(),
+                dut.label_image_input_port()):
+            self._check_input(port)
+        self._check_output(dut.image_array_t_msg_output_port())
+
+        # Test custom constructor, test functionality (up to getting abstract
+        # value).
+        dut = mut.ImageToLcmImageArrayT(do_compress=False)
+        # Declare ports.
+        for pixel_type in pixel_types:
+            name = str(pixel_type)
+            dut.DeclareImageInputPort[pixel_type](name=name)
+        context = dut.CreateDefaultContext()
+        for pixel_type in pixel_types:
+            name = str(pixel_type)
+            port = dut.GetInputPort(name)
+            self._check_input(port)
+            image = mut.Image[pixel_type](width=1, height=1)
+            context.FixInputPort(port.get_index(), AbstractValue.Make(image))
+        output = dut.AllocateOutput()
+        dut.CalcOutput(context, output)
+        # N.B. This Value[] is a C++ LCM object. See
+        # `lcm_py_bind_cpp_serializers.h` for more information.
+        self.assertIsInstance(output.get_data(0), AbstractValue)
