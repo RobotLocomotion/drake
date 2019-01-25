@@ -1,0 +1,4 @@
+newmtl material_0
+# shader_type beckmann
+map_Kd soup_can_texture.png 
+

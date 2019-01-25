@@ -1,0 +1,4 @@
+newmtl material_0
+# shader_type beckmann
+map_Kd cracker_box_texture.png 
+

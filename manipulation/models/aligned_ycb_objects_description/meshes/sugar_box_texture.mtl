@@ -1,0 +1,4 @@
+newmtl material_0
+# shader_type beckmann
+map_Kd sugar_box_texture.png 
+

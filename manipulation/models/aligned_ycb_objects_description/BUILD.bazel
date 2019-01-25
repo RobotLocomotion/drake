@@ -1,0 +1,31 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+)
+load("//tools/install:install_data.bzl", "install_data")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+# This package is public so that other packages can refer to
+# individual files in model from their bazel rules.
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "parse_test",
+    srcs = ["test/parse_test.cc"],
+    data = [":models"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//multibody/plant",
+    ],
+)
+
+install_data()
+
+add_lint_tests()
