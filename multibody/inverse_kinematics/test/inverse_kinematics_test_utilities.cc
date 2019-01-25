@@ -8,6 +8,9 @@
 
 using drake::geometry::SceneGraph;
 
+// TODO(eric.cousineau): Replace two bodies with pure SDF. Consider using
+// geometry queries to get sphere radii, etc.
+
 namespace drake {
 namespace multibody {
 
