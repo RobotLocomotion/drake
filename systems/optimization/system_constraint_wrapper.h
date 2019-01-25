@@ -66,6 +66,9 @@ class SystemConstraintWrapper : public solvers::Constraint {
   /** Get the AutoDiffXd type System stored in this constraint.*/
   const System<AutoDiffXd>& system_autodiff() const;
 
+  /** Getter for the index of the constraint in the system. */
+  SystemConstraintIndex constraint_index() const { return index_; }
+
  private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;

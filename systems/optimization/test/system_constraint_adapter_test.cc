@@ -6,6 +6,7 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/optimization/test/system_optimization_test_util.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -17,8 +18,7 @@ struct DummySystemUpdater1 {
   template <typename T>
   void operator()(const System<T>&, const Eigen::Ref<const VectorX<T>>& vars,
                   Context<T>* context) {
-    context->get_mutable_continuous_state_vector().SetFromVector(
-        vars.template tail<3>());
+    context->SetContinuousState(vars.template tail<3>());
     context->get_mutable_numeric_parameter(0).SetAtIndex(0, vars(0));
   }
 };
@@ -52,7 +52,7 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   // Use a lambda function as the selector.
   // This selector's vars = [x(0); x(1); x(2)]
   auto selector2 = [](const auto&, const auto& vars, auto* m_context) {
-    m_context->get_mutable_continuous_state_vector().SetFromVector(vars);
+    m_context->SetContinuousState(vars);
   };
   const double p_val = 2;
   context->get_mutable_numeric_parameter(0).SetAtIndex(0, p_val);
@@ -99,5 +99,47 @@ GTEST_TEST(SystemConstraintAdapter, SolveDummySystemConstraint) {
             -tol);
 }
 
+GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {
+  Eigen::Matrix2d A;
+  A << 0, 1, 0, 0;
+  LinearSystem<double> double_integrator(A, Eigen::Vector2d(0, 1),
+                                         Eigen::Matrix2d::Identity(),
+                                         Eigen::Vector2d::Zero());
+
+  // Now add an external system constraint that we don't want the velocity to be
+  // to high.
+  ExternalSystemConstraint velocity_bound =
+      ExternalSystemConstraint::MakeForAllScalars(
+          "|velocity| < 5", SystemConstraintBounds(Vector1d(-5), Vector1d(5)),
+          [](const auto& system, const auto& context, auto* value) {
+            *value = context.get_continuous_state_vector()
+                         .CopyToVector()
+                         .template tail<1>();
+          });
+  const SystemConstraintIndex velocity_bound_index =
+      double_integrator.AddExternalConstraint(velocity_bound);
+
+  SystemConstraintAdapter adapter(&double_integrator);
+
+  auto context = double_integrator.CreateDefaultContext();
+
+  auto selector = [](const auto&, const auto& vars, auto* m_context) {
+    m_context->SetContinuousState(vars);
+  };
+
+  auto constraint = adapter.Create(velocity_bound_index, *context, selector, 2);
+
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddConstraint(constraint, x);
+
+  auto result = Solve(prog, Eigen::Vector2d(1, 6));
+
+  EXPECT_EQ(result.get_solution_result(),
+            solvers::SolutionResult::kSolutionFound);
+  const double tol{1E-6};
+  EXPECT_LE(prog.GetSolution(x(1), result), 5 + tol);
+  EXPECT_GE(prog.GetSolution(x(1), result), -5 - tol);
+}
 }  // namespace systems
 }  // namespace drake
