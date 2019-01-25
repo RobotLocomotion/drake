@@ -70,6 +70,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//solvers:solve",
+        "//systems/primitives:linear_system",
     ],
 )
 

@@ -68,8 +68,7 @@ GTEST_TEST(SystemConstraintWrapperTest, BasicTest) {
   // Set p0 = 2.
   context_double->get_mutable_numeric_parameter(0).set_value(Vector1d(2));
   // Set x = [3, 4, 5]
-  context_double->get_mutable_continuous_state_vector().SetFromVector(
-      Eigen::Vector3d(3, 4, 5));
+  context_double->SetContinuousState(Eigen::Vector3d(3, 4, 5));
 
   // First construct the constraint wrapper with the autodiff system.
   auto system_autodiff = system_double.ToAutoDiffXd();
@@ -98,7 +97,7 @@ void Updater2(const System<T>& plant, const Eigen::Ref<const VectorX<T>>& x,
 void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
                                  SystemConstraintIndex constraint_index,
                                  Context<double>* context_double) {
-  // First test Eval with VectorX<double>
+  // First test Eval with VectorX<double>.
   Eigen::Matrix<double, 7, 1> x_double;
   x_double << 1, 2, 3, 4, 5, 6, 7;
   Eigen::VectorXd y_double;
@@ -106,7 +105,7 @@ void TestFreeBodyPlantConstraint(const SystemConstraintWrapper& constraint,
   const Vector1d y_double_expected(29);
   EXPECT_TRUE(CompareMatrices(y_double, y_double_expected, 3 * kEps));
 
-  // Now test Eval with VectorX<AutoDiffXd>
+  // Now test Eval with VectorX<AutoDiffXd>.
   Eigen::Matrix<double, 7, Eigen::Dynamic> x_gradient(7, 2);
   x_gradient << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14;
   const auto x_autodiff =
@@ -160,11 +159,6 @@ TEST_F(FreeBodyPlantTest, FreeBodyPlantTest) {
                               context_double.get());
 
   // Construct the constraint without plant_autodiff.
-  // TODO(hongkai.dai): enable the following test when we can convert
-  // FreeBodyPlant<double> to FreeBodyPlant<AutoDiffXd>. Currently we either
-  // need to add a new constructor to MBP that takes a SystemTypeTag, or we need
-  // to disable the guaranteed subtype preservation in MultibodyPlant to allow
-  // the conversion.
   SystemConstraintWrapper constraint2(
       plant_double_.get(), nullptr, unit_quaternion_constraint_index_,
       *context_double, Updater2<double>, Updater2<AutoDiffXd>, 7);
