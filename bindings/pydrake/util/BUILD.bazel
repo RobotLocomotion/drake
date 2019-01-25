@@ -14,7 +14,7 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
-    "drake_py_test",
+    "drake_py_unittest",
 )
 load(":build_macros.bzl", "util_cc_alias", "util_py_alias")
 
@@ -64,7 +64,7 @@ cc_alias_names = [
     ":wrap_pybind",
 ]
 
-[
+cc_alias_names_no_deprecation = [
     util_cc_alias(name = name[1:])
     for name in cc_alias_names
 ]
@@ -93,12 +93,11 @@ drake_cc_test(
     name = "alias_cc_test",
     # Using `drake_shared_library` can cause timeouts in debug mode.
     timeout = "moderate",
-    deps = cc_alias_names,
+    deps = cc_alias_names_no_deprecation,
 )
 
-drake_py_test(
+drake_py_unittest(
     name = "alias_py_test",
-    allow_import_unittest = True,
     deps = [":util"],
 )
 

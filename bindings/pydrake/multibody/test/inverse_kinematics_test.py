@@ -13,7 +13,7 @@ import pydrake.math
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.util.eigen_geometry import Quaternion, AngleAxis
+from pydrake.common.eigen_geometry import Quaternion, AngleAxis
 
 
 class TestInverseKinematics(unittest.TestCase):

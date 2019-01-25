@@ -22,6 +22,7 @@ from __future__ import absolute_import
 
 # Legacy / soon-to-be-deprecated symbols.
 from .attic.all import *
+from .util.all import *
 
 # Normal symbols.
 from . import getDrakePath
@@ -44,4 +45,3 @@ from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
 # - `third_party` does not offer public Drake library symbols.
-from .util.all import *

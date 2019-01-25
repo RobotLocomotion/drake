@@ -35,7 +35,7 @@ from pydrake.systems.test.test_util import (
     call_vector_system_overrides,
     )
 
-from pydrake.util.deprecation import (
+from pydrake.common.deprecation import (
     DrakeDeprecationWarning,
     )
 

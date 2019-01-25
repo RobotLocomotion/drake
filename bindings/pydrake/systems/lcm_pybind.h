@@ -5,8 +5,8 @@
 
 #include <string>
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/cpp_template_pybind.h"
 #include "drake/systems/lcm/serializer.h"
 
 namespace drake {

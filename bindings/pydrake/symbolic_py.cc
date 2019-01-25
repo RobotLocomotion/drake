@@ -8,10 +8,10 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/bindings/pydrake/util/wrap_pybind.h"
 
 namespace drake {
 namespace pydrake {
@@ -28,11 +28,11 @@ PYBIND11_MODULE(symbolic, m) {
   // Install NumPy warning filtres.
   // N.B. This may interfere with other code, but until that is a confirmed
   // issue, we should aggressively try to avoid these warnings.
-  py::module::import("pydrake.util.deprecation")
+  py::module::import("pydrake.common.deprecation")
       .attr("install_numpy_warning_filters")();
 
   // Install NumPy formatters patch.
-  py::module::import("pydrake.util.compatibility")
+  py::module::import("pydrake.common.compatibility")
       .attr("maybe_patch_numpy_formatters")();
 
   m.doc() =
@@ -421,7 +421,7 @@ PYBIND11_MODULE(symbolic, m) {
             "You should not call `__bool__` / `__nonzero__` on `Formula`. "
             "If you are trying to make a map with `Variable`, `Expression`, "
             "or `Polynomial` as keys (and then access the map in Python), "
-            "please use pydrake.util.containers.EqualToDict`.");
+            "please use pydrake.common.containers.EqualToDict`.");
       });
   formula_cls.attr("__bool__") = formula_cls.attr("__nonzero__");
 

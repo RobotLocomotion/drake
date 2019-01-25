@@ -66,7 +66,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import (
     DrakeDeprecationWarning,
 )
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
 
