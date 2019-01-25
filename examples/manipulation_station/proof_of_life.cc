@@ -28,6 +28,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, 4.0, "Simulation duration.");
+DEFINE_bool(test, false, "Disable random initial conditions in test mode.");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -36,7 +37,7 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->SetupDefaultStation();
+  station->SetupClutterClearingStation();
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
@@ -86,6 +87,12 @@ int do_main(int argc, char* argv[]) {
   // Force limit at 40N.
   station_context.FixInputPort(
       station->GetInputPort("wsg_force_limit").get_index(), Vector1d(40.0));
+
+  if (!FLAGS_test) {
+    std::random_device rd;
+    RandomGenerator generator{rd()};
+    diagram->SetRandomContext(&simulator.get_mutable_context(), &generator);
+  }
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.StepTo(FLAGS_duration);

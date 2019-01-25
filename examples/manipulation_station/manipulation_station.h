@@ -166,6 +166,16 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetDefaultState(const systems::Context<T>& station_context,
                        systems::State<T>* state) const override;
 
+  /// Sets a random State for the chosen setup.
+  /// @param context A const reference to the ManipulationStation context.
+  /// @param state A pointer to the State of the ManipulationStation system.
+  /// @param generator is the random number generator.
+  /// @pre `state` must be the systems::State<T> object contained in
+  /// `station_context`.
+  void SetRandomState(const systems::Context<T>& station_context,
+                       systems::State<T>* state, RandomGenerator* generator)
+                       const override;
+
   /// Notifies the ManipulationStation that the IIWA robot model instance can
   /// be identified by @p iiwa_instance as well as necessary information to
   /// reload model for the internal controller's use. Assumes @p iiwa_instance
@@ -491,6 +501,10 @@ class ManipulationStation : public systems::Diagram<T> {
   // RegisterWsgControllerModel().
   ModelInformation iiwa_model_;
   ModelInformation wsg_model_;
+
+  // Store references to objects as *body* indices instead of model indices,
+  // because this is needed for MultibodyPlant::SetFreeBodyPose(), etc.
+  std::vector<multibody::BodyIndex> object_ids_;
 
   // Registered camera related information.
   std::map<std::string, CameraInformation> camera_information_;
