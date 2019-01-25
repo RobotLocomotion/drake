@@ -4,6 +4,7 @@
 /// LCM messages related to the iiwa arm.
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
+#include "drake/systems/lcm/lcm_subscriber_system.h"
 
 namespace drake {
 namespace examples {
@@ -25,7 +27,6 @@ extern const double kIiwaLcmStatusPeriod;
 /**
  * A vectorized representation of lcmt_iiwa_command.
  */
-// TODO(siyuan.feng@tri.global) remove this when #10149 is resolved.
 template <typename T>
 class IiwaCommand : public systems::BasicVector<T> {
  public:
@@ -33,10 +34,13 @@ class IiwaCommand : public systems::BasicVector<T> {
 
   static constexpr double kUnitializedTime = 0;
 
+  // TODO(jwnimmer-tri) Remove this class after 2019-03-01.
+  // There is no replacement -- these objects should never be needed anymore.
   /**
    * The dimension of this will be 2 * @p num_joints + 1, which are timestamp,
    * position and torque per each joint.
    */
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
   explicit IiwaCommand(int num_joints);
 
   T utime() const;
@@ -61,7 +65,10 @@ class IiwaCommand : public systems::BasicVector<T> {
 
  private:
   IiwaCommand<T>* DoClone() const override {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return new IiwaCommand<T>(num_joints_);
+#pragma GCC diagnostic pop
   }
 
   const int num_joints_;
@@ -72,15 +79,17 @@ class IiwaCommand : public systems::BasicVector<T> {
  * vectorized representation, IiwaCommand<double>. This is intended to be used
  * with systems::lcm::LcmPublisherSystem and systems::lcm::LcmSubscriberSystem.
  */
-// TODO(siyuan.feng@tri.global) remove this when #10149 is resolved.
 class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandTranslator)
 
+  // TODO(jwnimmer-tri) Remove this class after 2019-03-01.
+  // There is no replacement -- these objects should never be needed anymore.
   /**
    * Constructs a IiwaCommandTranslator.
    * @param num_joints Number of joints of the IIWA command.
    */
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
   explicit IiwaCommandTranslator(int num_joints = kIiwaArmNumJoints);
 
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
@@ -113,22 +122,37 @@ class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
   const int num_joints_;
 };
 
-/// Handles IIWA commands from a LcmSubscriberSystem. It has two input ports:
-/// one for lcmt_iiwa_command messages and the other for the vectorized
-/// version (IiwaCommand). Only one of the inputs should be connected. However,
-/// if both are connected, the message one will be ignored.
+inline std::unique_ptr<systems::lcm::LcmSubscriberSystem>
+MakeIiwaCommandLcmSubscriberSystem(
+    int num_joints, const std::string& channel,
+    drake::lcm::DrakeLcmInterface* lcm) {
+  drake::lcmt_iiwa_command message_size_exemplar;
+  message_size_exemplar.num_joints = num_joints;
+  message_size_exemplar.joint_position.resize(num_joints);
+  message_size_exemplar.num_torques = num_joints;
+  message_size_exemplar.joint_torque.resize(num_joints);
+  return systems::lcm::LcmSubscriberSystem::MakeFixedSize(
+      message_size_exemplar, channel, lcm);
+}
+
+/// Handles IIWA commands from a LcmSubscriberSystem.
+///
+/// It has two input ports: the "command_message" for lcmt_iiwa_command abstract
+/// values, and the "command_vector" for IiwaCommand. Only one of the inputs
+/// should be connected. However, if both are connected, the message port will
+/// be ignored. The "command_vector" port is deprecated and will be removed on
+/// 2019-03-01.
+///
 /// It has two output ports: one for the commanded position for each joint along
 /// with an estimate of the commanded velocity for each joint, and another for
 /// commanded additional feedforward joint torque.
 ///
 /// @system {
 ///   @input_port{command_message}
-///   @input_port{command_vector}
+///   @input_port{command_vector (deprecated)}
 ///   @output_port{state}
 ///   @output_port{feedforward_torque}
 /// }
-// TODO(siyuan.feng@tri.global) remove the vector input version after #10149 is
-// resolved.
 class IiwaCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandReceiver)
@@ -167,7 +191,6 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
 
  private:
   const int num_joints_;
-  const IiwaCommandTranslator translator_;
 };
 
 /// Creates and outputs lcmt_iiwa_command messages

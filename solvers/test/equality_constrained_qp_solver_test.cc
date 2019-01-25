@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
 using Eigen::MatrixXd;
@@ -31,39 +32,39 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddCost(pow(x(0) - 1, 2) + pow(x(1) - 1, 2));
 
-  prog.Solve();
+  MathematicalProgramResult result = Solve(prog);
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
-  auto x_value = prog.GetSolution(x);
+  auto x_value = prog.GetSolution(x, result);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(0.0, prog.GetOptimalCost(), 1e-10);
+  EXPECT_NEAR(0.0, result.get_optimal_cost(), 1e-10);
 
   // There are no inequality constraints, and only quadratic costs,
   // so this should hold:
-  CheckSolver(prog, EqualityConstrainedQPSolver::id());
+  EXPECT_EQ(result.get_solver_id(), EqualityConstrainedQPSolver::id());
 
   // Add one more variable and constrain a view into them.
   auto y = prog.NewContinuousVariables<1>("y");
 
   prog.AddCost(pow(x(1) - 3, 2) + pow(2 * y(0) - 4, 2));
   prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
-  prog.Solve();
+  result = Solve(prog);
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 2.0;
   VectorXd actual_answer(3);
-  x_value = prog.GetSolution(x);
-  const auto& y_value = prog.GetSolution(y);
+  x_value = prog.GetSolution(x, result);
+  const auto& y_value = prog.GetSolution(y, result);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
-  EXPECT_NEAR(2.0, prog.GetOptimalCost(), 1e-10);
+  EXPECT_NEAR(2.0, result.get_optimal_cost(), 1e-10);
 
   // Problem still has only quadratic costs, so solver should be the same.
-  CheckSolver(prog, EqualityConstrainedQPSolver::id());
+  EXPECT_EQ(result.get_solver_id(), EqualityConstrainedQPSolver::id());
 }
 
 // Test how an equality-constrained QP is dispatched
@@ -84,19 +85,19 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   prog.SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
 
-  prog.Solve();
+  MathematicalProgramResult result = Solve(prog);
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
-  auto x_value = prog.GetSolution(x);
+  auto x_value = prog.GetSolution(x, result);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
 
-  EXPECT_NEAR(0.5, prog.GetOptimalCost(), 1e-10);
+  EXPECT_NEAR(0.5, result.get_optimal_cost(), 1e-10);
 
   // This problem is now an Equality Constrained QP and should
   // use this solver:
-  CheckSolver(prog, EqualityConstrainedQPSolver::id());
+  EXPECT_EQ(result.get_solver_id(), EqualityConstrainedQPSolver::id());
 
   // Add one more variable and constrain it in a different way
   auto y = prog.NewContinuousVariables(1);
@@ -105,18 +106,18 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   prog.AddLinearConstraint(2 * x(0) - y(0) == 0);
   prog.SetInitialGuessForAllVariables(Eigen::Vector3d::Zero());
-  prog.Solve();
+  result = Solve(prog, Eigen::Vector3d::Zero());
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
   VectorXd actual_answer(3);
-  x_value = prog.GetSolution(x);
-  auto y_value = prog.GetSolution(y);
+  x_value = prog.GetSolution(x, result);
+  auto y_value = prog.GetSolution(y, result);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
       << "\tExpected: " << expected_answer.transpose()
       << "\tActual: " << actual_answer.transpose();
-  EXPECT_NEAR(0.5, prog.GetOptimalCost(), 1e-10);
+  EXPECT_NEAR(0.5, result.get_optimal_cost(), 1e-10);
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver,
@@ -348,11 +349,13 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
   prog.AddQuadraticCost(x.transpose() * x);
   prog.AddLinearCost(x(0) + x(1) + 1);
 
-  EXPECT_EQ(prog.Solve(), SolutionResult::kSolutionFound);
+  MathematicalProgramResult result;
+  result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 
-  EXPECT_TRUE(
-      CompareMatrices(prog.GetSolution(x), Eigen::Vector2d(-.5, -.5), 1e-6));
-  EXPECT_EQ(prog.GetOptimalCost(), .5);
+  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result),
+                              Eigen::Vector2d(-.5, -.5), 1e-6));
+  EXPECT_EQ(result.get_optimal_cost(), .5);
 }
 
 class EqualityConstrainedQPSolverTest : public ::testing::Test {

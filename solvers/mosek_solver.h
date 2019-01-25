@@ -40,6 +40,17 @@ class MosekSolver : public MathematicalProgramSolverInterface {
 
   static bool is_available();
 
+  /**
+   * @param initial_guess The initial guess of all decision variables.
+   * @note Mosek only cares about the initial guess of integer variables. The
+   * initial guess of continuous variables are not passed to MOSEK. If all the
+   * integer variables are set to some integer values, then MOSEK will be forced
+   * to compute the remaining continuous variable values as the initial guess.
+   * (Mosek might change the values of the integer/binary variables in the
+   * subsequent iterations.) If the specified integer solution is infeasible or
+   * incomplete, MOSEK will simply ignore it. For more details, check
+   * https://docs.mosek.com/8.1/capi/tutorial-mio-shared.html?highlight=initial
+   */
   void Solve(const MathematicalProgram& prog,
              const optional<Eigen::VectorXd>& initial_guess,
              const optional<SolverOptions>& solver_options,

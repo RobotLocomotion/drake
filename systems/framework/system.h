@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -75,7 +76,7 @@ class System : public SystemBase {
   // System objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(System)
 
-  ~System() override = default;
+  ~System() override;
 
   //----------------------------------------------------------------------------
   /// @name           Resource allocation and initialization
@@ -635,6 +636,35 @@ class System : public SystemBase {
       throw std::logic_error("Error vector is mis-sized.");
     return DoCalcConstraintErrorNorm(context, error);
   }
+
+  /// Adds an "external" constraint to this System.
+  ///
+  /// This method is intended for use by applications that are examining this
+  /// System to add additional constraints based on their particular situation
+  /// (e.g., that a velocity state element has an upper bound); it is not
+  /// intended for declaring intrinsic constraints that some particular System
+  /// subclass might always impose on itself (e.g., that a mass parameter is
+  /// non-negative).  To that end, this method should not be called by
+  /// subclasses of `this` during their constructor.
+  ///
+  /// The `constraint` will automatically persist across system scalar
+  /// conversion.
+  SystemConstraintIndex AddExternalConstraint(
+      ExternalSystemConstraint constraint) {
+    const auto& calc = constraint.get_calc<T>();
+    if (calc) {
+      constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
+          this, calc, constraint.bounds(), constraint.description()));
+    } else {
+      constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
+          this, fmt::format(
+              "{} (disabled for this scalar type)",
+              constraint.description())));
+    }
+    external_constraints_.emplace_back(std::move(constraint));
+    return SystemConstraintIndex(constraints_.size() - 1);
+  }
+
   //@}
 
   //----------------------------------------------------------------------------
@@ -1019,8 +1049,9 @@ class System : public SystemBase {
     return nullptr;
   }
 
-  // The derived class implementation should provide exactly one event of the
-  // appropriate type with a kForced trigger type.
+  // The derived class implementation shall create the appropriate collection
+  // for each of these three methods.
+  //
   // Consumers of this class should never need to call the three methods below.
   // These three methods would ideally be designated as "protected", but
   // Diagram::AllocateForcedXEventCollection() needs to call these methods and,
@@ -1321,7 +1352,14 @@ class System : public SystemBase {
   /// returns nullptr if this System does not support autodiff, instead of
   /// throwing an exception.
   std::unique_ptr<System<AutoDiffXd>> ToAutoDiffXdMaybe() const {
-    return system_scalar_converter_.Convert<AutoDiffXd, T>(*this);
+    using U = AutoDiffXd;
+    auto result = system_scalar_converter_.Convert<U, T>(*this);
+    if (result) {
+      for (const auto& item : external_constraints_) {
+        result->AddExternalConstraint(item);
+      }
+    }
+    return result;
   }
   //@}
 
@@ -1376,7 +1414,14 @@ class System : public SystemBase {
   /// nullptr if this System does not support symbolic, instead of throwing an
   /// exception.
   std::unique_ptr<System<symbolic::Expression>> ToSymbolicMaybe() const {
-    return system_scalar_converter_.Convert<symbolic::Expression, T>(*this);
+    using U = symbolic::Expression;
+    auto result = system_scalar_converter_.Convert<U, T>(*this);
+    if (result) {
+      for (const auto& item : external_constraints_) {
+        result->AddExternalConstraint(item);
+      }
+    }
+    return result;
   }
   //@}
 
@@ -1700,6 +1745,14 @@ class System : public SystemBase {
   SystemConstraintIndex AddConstraint(
       std::unique_ptr<SystemConstraint<T>> constraint) {
     DRAKE_DEMAND(constraint != nullptr);
+    DRAKE_DEMAND(&constraint->get_system() == this);
+    if (!external_constraints_.empty()) {
+      throw std::logic_error(fmt::format(
+          "System {} cannot add an internal constraint (named {}) "
+          "after an external constraint (named {}) has already been added",
+          GetSystemName(), constraint->description(),
+          external_constraints_.front().description()));
+    }
     constraints_.push_back(std::move(constraint));
     return SystemConstraintIndex(constraints_.size() - 1);
   }
@@ -2022,34 +2075,53 @@ class System : public SystemBase {
   }
   //@}
 
+  bool forced_publish_events_exist() const {
+    return forced_publish_events_ != nullptr;
+  }
+
+  bool forced_discrete_update_events_exist() const {
+    return forced_discrete_update_events_ != nullptr;
+  }
+
+  bool forced_unrestricted_update_events_exist() const {
+    return forced_unrestricted_update_events_ != nullptr;
+  }
+
+  EventCollection<PublishEvent<T>>& get_mutable_forced_publish_events() {
+    return *forced_publish_events_;
+  }
+
   const EventCollection<PublishEvent<T>>&
   get_forced_publish_events() const {
-    return *forced_publish_;
+    DRAKE_DEMAND(forced_publish_events_.get());
+    return *forced_publish_events_;
   }
 
   const EventCollection<DiscreteUpdateEvent<T>>&
   get_forced_discrete_update_events() const {
-    return *forced_discrete_update_;
+    DRAKE_DEMAND(forced_discrete_update_events_.get());
+    return *forced_discrete_update_events_;
   }
 
   const EventCollection<UnrestrictedUpdateEvent<T>>&
   get_forced_unrestricted_update_events() const {
-    return *forced_unrestricted_update_;
+    DRAKE_DEMAND(forced_unrestricted_update_events_.get());
+    return *forced_unrestricted_update_events_;
   }
 
   void set_forced_publish_events(
   std::unique_ptr<EventCollection<PublishEvent<T>>> forced) {
-    forced_publish_ = std::move(forced);
+    forced_publish_events_ = std::move(forced);
   }
 
   void set_forced_discrete_update_events(
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>> forced) {
-    forced_discrete_update_ = std::move(forced);
+    forced_discrete_update_events_ = std::move(forced);
   }
 
   void set_forced_unrestricted_update_events(
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> forced) {
-    forced_unrestricted_update_ = std::move(forced);
+    forced_unrestricted_update_events_ = std::move(forced);
   }
 
  private:
@@ -2165,17 +2237,30 @@ class System : public SystemBase {
     return basic_value;
   }
 
+  // The constraints_ vector encompass all constraints on this system, whether
+  // they were declared by a concrete subclass during construction (e.g., by
+  // calling DeclareInequalityConstraint), or added after construction (e.g.,
+  // by AddExternalConstraint).  The constraints are listed in the order they
+  // were added, which means that the construction-time constraints will always
+  // appear earlier in the vector than the post-construction constraints.
   std::vector<std::unique_ptr<SystemConstraint<T>>> constraints_;
+  // The external_constraints_ vector only contains constraints added after
+  // construction (e.g., by AddExternalConstraint), in the order they were
+  // added.  The contents of this vector is only used during scalar conversion
+  // (so that the external constraints are preserved); for runtime calculations,
+  // only the constraints_ vector is used.
+  std::vector<ExternalSystemConstraint> external_constraints_;
 
   // These are only used to dispatch forced event handling. For a LeafSystem,
-  // all of these have exactly one kForced triggered event. For a Diagram, they
+  // these contain at least one kForced triggered event. For a Diagram, they
   // are DiagramEventCollection, whose leafs are LeafEventCollection with
-  // exactly one kForced triggered event.
-  std::unique_ptr<EventCollection<PublishEvent<T>>> forced_publish_{nullptr};
+  // one or more kForced triggered events.
+  std::unique_ptr<EventCollection<PublishEvent<T>>>
+      forced_publish_events_{nullptr};
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
-      forced_discrete_update_{nullptr};
+      forced_discrete_update_events_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
-      forced_unrestricted_update_{nullptr};
+      forced_unrestricted_update_events_{nullptr};
 
   // Functions to convert this system to use alternative scalar types.
   SystemScalarConverter system_scalar_converter_;
@@ -2187,5 +2272,14 @@ class System : public SystemBase {
   CacheIndex nonconservative_power_cache_index_;
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+System<T>::~System() = default;
+
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::System)

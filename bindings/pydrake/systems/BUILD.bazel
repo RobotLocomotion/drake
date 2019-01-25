@@ -202,18 +202,36 @@ drake_py_library(
     deps = [":module_py"],
 )
 
+drake_cc_library(
+    name = "lcm_pybind",
+    hdrs = ["lcm_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//bindings/pydrake/util:cpp_template_pybind",
+    ],
+)
+
 drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
+        ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
+        "//bindings/pydrake/util:deprecation_pybind",
     ],
-    cc_srcs = ["lcm_py.cc"],
+    cc_srcs = [
+        "lcm_py.cc",
+        "lcm_py_bind_cpp_serializers.cc",
+        "lcm_py_bind_cpp_serializers.h",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
         "//bindings/pydrake:lcm_py",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
     py_srcs = ["_lcm_extra.py"],
 )
@@ -223,7 +241,6 @@ drake_py_unittest(
     deps = [
         ":lcm_py",
         ":primitives_py",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
 )
 

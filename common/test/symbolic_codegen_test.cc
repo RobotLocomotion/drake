@@ -285,6 +285,135 @@ TEST_F(SymbolicCodeGenTest, DenseMatrixExampleInDocumentation) {
                                         2 /* number of columns */, expected));
 }
 
+TEST_F(SymbolicCodeGenTest, SparseMatrixColMajor) {
+  const Variable x{"x"};
+  const Variable y{"y"};
+  const Variable z{"z"};
+  // | x  0  0  0  z  0|
+  // | 0  0  y  0  0  0|
+  // | 0  0  0  y  0  y|
+  Eigen::SparseMatrix<Expression, Eigen::ColMajor> m(3, 6);
+  m.insert(0, 0) = x;
+  m.insert(0, 4) = z;
+  m.insert(1, 2) = y;
+  m.insert(2, 3) = y;
+  m.insert(2, 5) = y;
+  m.makeCompressed();
+
+  const string generated{CodeGen("f", {x, y, z}, m)};
+  const string expected{
+      R"""(void f(const double* p, int* outer_indices, int* inner_indices, double* values) {
+    outer_indices[0] = 0;
+    outer_indices[1] = 1;
+    outer_indices[2] = 1;
+    outer_indices[3] = 2;
+    outer_indices[4] = 3;
+    outer_indices[5] = 4;
+    outer_indices[6] = 5;
+    inner_indices[0] = 0;
+    inner_indices[1] = 1;
+    inner_indices[2] = 2;
+    inner_indices[3] = 0;
+    inner_indices[4] = 2;
+    values[0] = p[0];
+    values[1] = p[1];
+    values[2] = p[1];
+    values[3] = p[2];
+    values[4] = p[1];
+}
+typedef struct {
+    /* p: input, vector */
+    struct { int size; } p;
+    /* m: output, matrix */
+    struct {
+        int rows;
+        int cols;
+        int non_zeros;
+        int outer_indices;
+        int inner_indices;
+    } m;
+} f_meta_t;
+f_meta_t f_meta() { return {{3}, {3, 6, 5, 7, 5}}; }
+)"""};
+  EXPECT_EQ(generated, expected);
+}
+
+// This is the generated code (string expected) from the above
+// SparseMatrixColMajor testcase. We use it in the following
+// SparseMatrixColMajorExampleUsingEigenMap testcase.
+void f(const double* p, int* outer_indices, int* inner_indices,
+       double* values) {
+  outer_indices[0] = 0;
+  outer_indices[1] = 1;
+  outer_indices[2] = 1;
+  outer_indices[3] = 2;
+  outer_indices[4] = 3;
+  outer_indices[5] = 4;
+  outer_indices[6] = 5;
+  inner_indices[0] = 0;
+  inner_indices[1] = 1;
+  inner_indices[2] = 2;
+  inner_indices[3] = 0;
+  inner_indices[4] = 2;
+  values[0] = p[0];
+  values[1] = p[1];
+  values[2] = p[1];
+  values[3] = p[2];
+  values[4] = p[1];
+}
+typedef struct {
+  /* p: input, vector */
+  struct {
+    int size;
+  } p;
+  /* m: output, matrix */
+  struct {
+    int rows;
+    int cols;
+    int non_zeros;
+    int outer_indices;
+    int inner_indices;
+  } m;
+} f_meta_t;
+f_meta_t f_meta() { return {{3}, {3, 6, 5, 7, 5}}; }
+
+TEST_F(SymbolicCodeGenTest, SparseMatrixColMajorExampleUsingEigenMap) {
+  f_meta_t meta = f_meta();
+  // Checks that the meta information is correct.
+  EXPECT_EQ(meta.p.size, 3);
+  EXPECT_EQ(meta.m.rows, 3);
+  EXPECT_EQ(meta.m.cols, 6);
+  EXPECT_EQ(meta.m.non_zeros, 5);
+
+  // Prepares param, outer_indices, inner_indices, and values to call the
+  // generated function f.
+  const Eigen::Vector3d param{1 /* x */, 2 /* y */, 3 /* z */};
+  vector<int> outer_indices(meta.m.outer_indices);
+  vector<int> inner_indices(meta.m.inner_indices);
+  vector<double> values(meta.m.non_zeros);
+
+  // Calls f to fill the output parameters, `outer_indices`, `inner_indices`,
+  // and `values`.
+  f(param.data(), outer_indices.data(), inner_indices.data(), values.data());
+
+  // Uses `Eigen::Map` to construct a sparse matrix of double from
+  // `outer_indices`, `inner_indices`, and `values`.
+  Eigen::Map<Eigen::SparseMatrix<double, Eigen::ColMajor>> map_sp(
+      meta.m.rows, meta.m.cols, meta.m.non_zeros, outer_indices.data(),
+      inner_indices.data(), values.data());
+  const Eigen::SparseMatrix<double> m_double{map_sp.eval()};
+
+  // Checks that the constructed m_double is the expected one.
+  EXPECT_EQ(m_double.rows(), 3);
+  EXPECT_EQ(m_double.cols(), 6);
+  EXPECT_EQ(m_double.nonZeros(), 5);
+  EXPECT_EQ(m_double.coeff(0, 0), 1.0 /* x */);
+  EXPECT_EQ(m_double.coeff(0, 4), 3.0 /* z */);
+  EXPECT_EQ(m_double.coeff(1, 2), 2.0 /* y */);
+  EXPECT_EQ(m_double.coeff(2, 3), 2.0 /* y */);
+  EXPECT_EQ(m_double.coeff(2, 5), 2.0 /* y */);
+}
+
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

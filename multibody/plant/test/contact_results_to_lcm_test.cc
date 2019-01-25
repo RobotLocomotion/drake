@@ -15,7 +15,6 @@ using geometry::GeometryId;
 using geometry::PenetrationAsPointPair;
 using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::acrobot::AcrobotParameters;
-using systems::Value;
 
 namespace multibody {
 namespace {

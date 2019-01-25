@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/math/spatial_force.h"
@@ -27,7 +28,7 @@ namespace multibody {
 template <typename T>
 class MultibodyForces {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(MultibodyForces)
 
   // TODO(amcastro-tri): replace with MultibodyPlant once dependency becomes
   // logical.
@@ -108,5 +109,10 @@ class MultibodyForces {
   VectorX<T> tau_;
 };
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(MultibodyForces)
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::MultibodyForces)

@@ -101,6 +101,8 @@ drake_cc_binary(
     add_test_rule = 1,
     data = [":models"],
     test_rule_args = ["--target_realtime_rate=0.0"],
+    # Non-deterministic IPOPT-related failures on macOS, see #10276.
+    test_rule_flaky = 1,
     deps = [
         ":pendulum_plant",
         "//common:find_resource",

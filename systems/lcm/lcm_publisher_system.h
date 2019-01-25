@@ -25,7 +25,9 @@ namespace lcm {
 
 /**
  * Publishes an LCM message containing information from its input port.
- * Optionally sends a one-time initialization message.
+ * Optionally sends a one-time initialization message. Publishing can be set up
+ * to happen on a per-step or periodic basis. Publishing "by force", through
+ * `LcmPublisherSystem::Publish(const Context&)`, is also enabled.
  *
  * @note You should generally provide an LCM interface yourself, since there
  * should normally be just one of these typically-heavyweight objects per
@@ -54,13 +56,21 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   *
+   * @pre publish_period is non-negative.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm) {
+      drake::lcm::DrakeLcmInterface* lcm,
+      double publish_period = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
-        channel, std::make_unique<Serializer<LcmMessage>>(), lcm);
+        channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
+        publish_period);
   }
 
   /**
@@ -77,10 +87,17 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
+   *
+   * @param publish_period Period that messages will be published (optional).
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   *
+   * @pre publish_period is non-negative.
    */
   LcmPublisherSystem(const std::string& channel,
                      std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   /**
    * A constructor for an %LcmPublisherSystem that takes vector data on its sole
@@ -98,11 +115,18 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
    *
+   * @param publish_period Period that messages will be published (optional).
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   *
+   * @pre publish_period is non-negative.
+   *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmAndVectorBaseTranslator& translator,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   /**
    * Constructor that passes a unique_ptr of the LcmAndVectorBaseTranslator,
@@ -118,12 +142,19 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
    *
+   * @param publish_period Period that messages will be published (optional).
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   *
+   * @pre publish_period is non-negative.
+   *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(
       const std::string& channel,
       std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
-      drake::lcm::DrakeLcmInterface* lcm);
+      drake::lcm::DrakeLcmInterface* lcm,
+      double publish_period = 0.0);
 
   /**
    * Constructor that returns a publisher System that takes vector data on
@@ -141,11 +172,18 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but
    * see the note in the class comments.
    *
+   * @param publish_period Period that messages will be published (optional).
+   * If the publish period is zero, LcmPublisherSystem will use per-step
+   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
+   *
+   * @pre publish_period is non-negative.
+   *
    * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
    */
   LcmPublisherSystem(const std::string& channel,
                      const LcmTranslatorDictionary& translator_dictionary,
-                     drake::lcm::DrakeLcmInterface* lcm);
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period = 0.0);
 
   ~LcmPublisherSystem() override;
 
@@ -179,12 +217,19 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   static std::string make_name(const std::string& channel);
 
-  /**
-   * Sets the publishing period of this system. See
-   * LeafSystem::DeclarePeriodicPublish() for details about the semantics of
-   * parameter `period`.
-   */
-  void set_publish_period(double period);
+  DRAKE_DEPRECATED("Pass publish period to constructor instead. This method "
+                   "will be removed after 4/14/19.")
+  void set_publish_period(double period) {
+    if (disable_internal_per_step_publish_events_) {
+      drake::log()->info("LcmPublisherSystem publish period set "
+          "multiple times. Multiple publish periods now registered "
+          "(did you mean to do this?)");
+    }
+    disable_internal_per_step_publish_events_ = true;
+    const double offset = 0.0;
+    this->DeclarePeriodicPublishEvent(period, offset,
+        &LcmPublisherSystem::PublishInputAsLcmMessage);
+  }
 
   /**
    * Returns the translator used by this publisher. This can be used to convert
@@ -224,6 +269,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
   void get_output_port(int) = delete;
 
  private:
+  EventStatus PublishInputAsLcmMessage(const Context<double>& context) const;
+
   // All constructors delegate to here. If the lcm pointer is null, we'll
   // allocate and maintain a DrakeLcm object internally.
   LcmPublisherSystem(const std::string& channel,
@@ -231,13 +278,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
                      std::unique_ptr<const LcmAndVectorBaseTranslator>
                          owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm);
-
-  // Takes the VectorBase from the input port of the context and publishes
-  // it onto an LCM channel.
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const systems::PublishEvent<double>*>&) const override;
+                     drake::lcm::DrakeLcmInterface* lcm,
+                     double publish_period);
 
   // The channel on which to publish LCM messages.
   const std::string channel_;
@@ -265,6 +307,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
   // the LCM subsystem is not const. This may refer to an externally-supplied
   // object or the owned_lcm_ object above.
   drake::lcm::DrakeLcmInterface* const lcm_;
+
+  // TODO(edrumwri) Remove this when set_publish_period() is removed.
+  bool disable_internal_per_step_publish_events_{false};
 };
 
 }  // namespace lcm

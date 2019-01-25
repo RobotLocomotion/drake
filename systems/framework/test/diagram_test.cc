@@ -1641,6 +1641,8 @@ class TestPublishingSystem : public LeafSystem<double> {
   }
 
  private:
+  // Recording state through event handlers, like this system does, is an
+  // anti-pattern, but we do it to simplify testing.
   mutable bool published_{false};
 };
 
@@ -1669,6 +1671,48 @@ class DiscreteStateDiagram : public Diagram<double> {
   ZeroOrderHold<double>* hold1_ = nullptr;
   ZeroOrderHold<double>* hold2_ = nullptr;
   TestPublishingSystem* publisher_ = nullptr;
+};
+
+class ForcedPublishingSystem : public LeafSystem<double> {
+ public:
+  ForcedPublishingSystem() {
+    this->DeclareForcedPublishEvent(
+        &ForcedPublishingSystem::PublishHandler);
+  }
+  bool published() const { return published_; }
+
+ private:
+  EventStatus PublishHandler(const Context<double>& context) const {
+    published_ = true;
+    return EventStatus::Succeeded();
+  }
+
+  // Recording state through event handlers, like this system does, is an
+  // anti-pattern, but we do it to simplify testing.
+  mutable bool published_{false};
+};
+
+// A diagram that consists of only forced publishing systems.
+class ForcedPublishingSystemDiagram : public Diagram<double> {
+ public:
+  ForcedPublishingSystemDiagram() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    publishing_system_one_ =
+        builder.template AddSystem<ForcedPublishingSystem>();
+    publishing_system_two_ =
+        builder.template AddSystem<ForcedPublishingSystem>();
+    builder.BuildInto(this);
+  }
+  ForcedPublishingSystem* publishing_system_one() const {
+      return publishing_system_one_;
+  }
+  ForcedPublishingSystem* publishing_system_two() const {
+      return publishing_system_two_;
+  }
+
+ private:
+  ForcedPublishingSystem* publishing_system_one_{nullptr};
+  ForcedPublishingSystem* publishing_system_two_{nullptr};
 };
 
 class DiscreteStateTest : public ::testing::Test {
@@ -1793,6 +1837,28 @@ TEST_F(DiscreteStateTest, Publish) {
   diagram_.Publish(*context_, events->get_publish_events());
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
+}
+
+class ForcedPublishingSystemDiagramTest : public ::testing::Test {
+ public:
+  void SetUp() override {
+    context_ = diagram_.CreateDefaultContext();
+  }
+
+ protected:
+  ForcedPublishingSystemDiagram diagram_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+// Tests that a forced publish is processed through the event handler.
+TEST_F(ForcedPublishingSystemDiagramTest, Publish) {
+  auto* forced_publishing_system_one = diagram_.publishing_system_one();
+  auto* forced_publishing_system_two = diagram_.publishing_system_two();
+  EXPECT_FALSE(forced_publishing_system_one->published());
+  EXPECT_FALSE(forced_publishing_system_two->published());
+  diagram_.Publish(*context_);
+  EXPECT_TRUE(forced_publishing_system_one->published());
+  EXPECT_TRUE(forced_publishing_system_two->published());
 }
 
 class SystemWithAbstractState : public LeafSystem<double> {
@@ -2597,8 +2663,8 @@ class ConstraintTestSystem : public LeafSystem<T> {
     this->DeclareEqualityConstraint(&ConstraintTestSystem::CalcState0Constraint,
                                     1, "x0");
     this->DeclareInequalityConstraint(
-        &ConstraintTestSystem::CalcStateConstraint, Eigen::Vector2d::Zero(),
-        nullopt, "x");
+        &ConstraintTestSystem::CalcStateConstraint,
+        { Eigen::Vector2d::Zero(), nullopt }, "x");
   }
 
   // Scalar-converting copy constructor.

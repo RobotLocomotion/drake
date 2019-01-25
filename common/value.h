@@ -13,7 +13,6 @@
 #include "drake/common/nice_type_name.h"
 
 namespace drake {
-namespace systems {
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 class AbstractValue;
@@ -376,5 +375,13 @@ class Value : public AbstractValue {
   typename Traits::Storage value_;
 };
 
+#if !defined(DRAKE_DOXYGEN_CXX)
+// TODO(jwnimmer-tri) Port all of Drake to use the new location, and then
+// deprecate the old typenames, include path, and BUILD label.
+namespace systems {
+using AbstractValue = drake::AbstractValue;
+template <typename T> using Value = drake::Value<T>;
 }  // namespace systems
+#endif
+
 }  // namespace drake

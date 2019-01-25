@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
@@ -1070,6 +1071,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetBodyIndices(model_instance);
   }
 
+  /// Returns a list of joint indices associated with `model_instance`.
+  std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
+  const {
+    return internal_tree().GetJointIndices(model_instance);
+  }
+
   /// Returns a constant reference to a frame that is identified by the
   /// string `name` in `this` model.
   /// @throws std::logic_error if there is no frame with the requested name.
@@ -1232,8 +1239,8 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// MultibodyPlant::num_velocities().
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& v_array) const {
-    return internal_tree().GetVelocitiesFromArray(model_instance, v_array);
+      const Eigen::Ref<const VectorX<T>>& v) const {
+    return internal_tree().GetVelocitiesFromArray(model_instance, v);
   }
 
   /// Sets the vector of generalized velocities for `model_instance` in
@@ -1243,9 +1250,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// `MultibodyPlant::num_positions(model_instance)`.
   void SetVelocitiesInArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& model_v,
-      EigenPtr<VectorX<T>> v_array) const {
-    internal_tree().SetVelocitiesInArray(model_instance, model_v, v_array);
+      const Eigen::Ref<const VectorX<T>>& v_instance,
+      EigenPtr<VectorX<T>> v) const {
+    internal_tree().SetVelocitiesInArray(model_instance, v_instance, v);
   }
 
   /// @}
@@ -2087,11 +2094,43 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().GetPositionLowerLimits();
   }
 
-  /// Upper limit analog of GetPositionsLowerLimits, where any unbounded or
+  /// Upper limit analog of GetPositionsLowerLimits(), where any unbounded or
   /// unspecified limits will be +infinity.
-  /// @see GetPositionsLowerLimits for more information.
+  /// @see GetPositionLowerLimits() for more information.
   VectorX<double> GetPositionUpperLimits() const {
     return internal_tree().GetPositionUpperLimits();
+  }
+
+  /// Returns a vector of size `num_velocities()` containing the lower velocity
+  /// limits for every generalized velocity coordinate. These include joint and
+  /// floating base coordinates. Any unbounded or unspecified limits will be
+  /// -infinity.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetVelocityLowerLimits() const {
+    return internal_tree().GetVelocityLowerLimits();
+  }
+
+  /// Upper limit analog of GetVelocitysLowerLimits(), where any unbounded or
+  /// unspecified limits will be +infinity.
+  /// @see GetVelocityLowerLimits() for more information.
+  VectorX<double> GetVelocityUpperLimits() const {
+    return internal_tree().GetVelocityUpperLimits();
+  }
+
+  /// Returns a vector of size `num_velocities()` containing the lower
+  /// acceleration limits for every generalized velocity coordinate. These
+  /// include joint and floating base coordinates. Any unbounded or unspecified
+  /// limits will be -infinity.
+  /// @throws std::logic_error if called pre-finalize.
+  VectorX<double> GetAccelerationLowerLimits() const {
+    return internal_tree().GetAccelerationLowerLimits();
+  }
+
+  /// Upper limit analog of GetAccelerationsLowerLimits(), where any unbounded
+  /// or unspecified limits will be +infinity.
+  /// @see GetAccelerationLowerLimits() for more information.
+  VectorX<double> GetAccelerationUpperLimits() const {
+    return internal_tree().GetAccelerationUpperLimits();
   }
 
   /// Performs the computation of the mass matrix `M(q)` of the model using
@@ -2570,6 +2609,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Finalize().
   /// @see Finalize().
   bool is_finalized() const { return internal_tree().topology_is_valid(); }
+
+  /// Returns `true` if @p body is anchored (i.e. the kinematic path between
+  /// @p body and the world only contains weld joints.)
+  /// @throws std::exception if called pre-finalize.
+  bool IsAnchored(const Body<T>& body) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return internal_tree().get_topology().IsBodyAnchored(body.index());
+  }
 
   /// This method must be called after all elements in the model (joints,
   /// bodies, force elements, constraints, etc.) are added and before any
@@ -3387,6 +3434,14 @@ struct AddMultibodyPlantSceneGraphResult final {
   geometry::SceneGraph<T>* scene_graph_ptr{};
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// Forward-declare specializations, prior to DRAKE_DECLARE... below.
+template <>
+std::vector<geometry::PenetrationAsPointPair<double>>
+MultibodyPlant<double>::CalcPointPairPenetrations(
+    const systems::Context<double>&) const;
+#endif
+
 }  // namespace multibody
 }  // namespace drake
 
@@ -3401,3 +3456,8 @@ struct Traits<drake::multibody::MultibodyPlant> :
 }  // namespace scalar_conversion
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class drake::multibody::MultibodyPlant)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    struct drake::multibody::AddMultibodyPlantSceneGraphResult)

@@ -14,6 +14,12 @@ if(CYGWIN OR NOT UNIX)
   message(FATAL_ERROR "Cygwin and non-Unix platforms are NOT supported")
 endif()
 
+if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+  message(FATAL_ERROR
+    "System processor ${CMAKE_SYSTEM_PROCESSOR} is NOT supported"
+  )
+endif()
+
 set(UNIX_DISTRIBUTION_ID)
 set(UNIX_DISTRIBUTION_CODENAME)
 
@@ -131,10 +137,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
 else()
   # Check flag added in tools/cc_toolchain/bazel.rc is supported.
   include(CheckCXXCompilerFlag)
-  check_cxx_compiler_flag(-std=c++14 CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
+  set(FLAG_STD_CXX14 -std=c++14)
+  check_cxx_compiler_flag(${FLAG_STD_CXX14} CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
   if(NOT CXX_COMPILER_SUPPORTS_FLAG_STD_CXX14)
     message(FATAL_ERROR
-      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the -std=c++14 flag"
+      "Compilation with ${CMAKE_CXX_COMPILER_ID} is NOT supported because it does not accept the ${FLAG_STD_CXX14} flag"
     )
   endif()
   message(WARNING
@@ -142,29 +149,79 @@ else()
   )
 endif()
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-    "Choose the type of build, options are None Debug Release RelWithDebInfo MinSizeRel"
-    FORCE
-  )
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
-    STRINGS None Debug Release RelWithDebInfo MinSizeRel
-  )
-endif()
-
-if(APPLE)
-  # Ensure that the python2 executable or link is used in preference to the
-  # python and python2.7 executables or links.
-  find_program(PYTHON_EXECUTABLE NAMES python2)
-endif()
-
-# TODO(jamiesnape) Ensure that we can switch between supported versions.
-find_package(PythonInterp 2.7 EXACT MODULE REQUIRED)
-
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  set(BAZEL_COMPILATION_MODE dbg)
+set(SUPPORTED_BUILD_TYPES None Debug Release RelWithDebInfo MinSizeRel)
+if(CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_CONFIGURATION_TYPES ${SUPPORTED_BUILD_TYPES})
 else()
-  set(BAZEL_COMPILATION_MODE opt)
+  if(NOT CMAKE_BUILD_TYPE)
+    string(REPLACE ";" " " SUPPORTED_BUILD_TYPES_STRING
+      "${SUPPORTED_BUILD_TYPES}"
+    )
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are ${SUPPORTED_BUILD_TYPES_STRING}"
+      FORCE
+    )
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY
+      STRINGS "${SUPPORTED_BUILD_TYPES}"
+    )
+  endif()
+
+  if(NOT CMAKE_BUILD_TYPE IN_LIST SUPPORTED_BUILD_TYPES)
+    message(WARNING "Configuration ${CMAKE_BUILD_TYPE} is NOT supported")
+  endif()
+endif()
+
+# The supported Python major/minor versions should match those listed in both
+# doc/developers.rst and tools/workspace/python/repository.bzl.
+set(SUPPORTED_PYTHON_VERSIONS 2 2.7 3 3.6 3.7)
+
+if(PYTHON_EXECUTABLE)
+  find_package(PythonInterp MODULE REQUIRED)
+else()
+  string(REPLACE ";" " " SUPPORTED_PYTHON_VERSIONS_STRING
+    "${SUPPORTED_PYTHON_VERSIONS}"
+  )
+  set(WITH_PYTHON_VERSION 2 CACHE STRING
+    "Choose the version of Python to use, options are ${SUPPORTED_PYTHON_VERSIONS_STRING}"
+  )
+  set_property(CACHE WITH_PYTHON_VERSION PROPERTY
+    STRINGS "${SUPPORTED_PYTHON_VERSIONS}"
+  )
+
+  string(REPLACE "." ";" WITH_PYTHON_VERSION_LIST "${WITH_PYTHON_VERSION}")
+  list(GET WITH_PYTHON_VERSION_LIST 0 WITH_PYTHON_VERSION_MAJOR)
+
+  if(APPLE AND WITH_PYTHON_VERSION_MAJOR EQUAL 2)
+    # Ensure that the python2 executable or link is used in preference to the
+    # python and python2.7 executables or links, which correspond to the
+    # system version of Python installed on macOS. There is no system python3
+    # as of macOS Mojave 10.14.
+    find_program(PYTHON_EXECUTABLE NAMES python2)
+  endif()
+
+  find_package(PythonInterp ${WITH_PYTHON_VERSION} EXACT MODULE REQUIRED)
+endif()
+
+set(PYTHON_VERSION_MAJOR_MINOR
+  "${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}"
+)
+
+if(NOT PYTHON_VERSION_MAJOR_MINOR IN_LIST SUPPORTED_PYTHON_VERSIONS)
+  message(WARNING
+    "Python ${PYTHON_VERSION_MAJOR_MINOR} is NOT supported. Python code in project drake_cxx_python may fail at runtime."
+  )
+endif()
+
+if(CMAKE_COLOR_MAKEFILE)
+  set(BAZEL_COLOR yes)
+else()
+  set(BAZEL_COLOR no)
+endif()
+
+if(CMAKE_VERBOSE_MAKEFILE)
+  set(BAZEL_SUBCOMMANDS yes)
+else()
+  set(BAZEL_SUBCOMMANDS no)
 endif()
 
 set(BAZEL_ENV)
@@ -174,6 +231,43 @@ if(NOT APPLE)
     "CC=${CMAKE_C_COMPILER}"
     "CXX=${CMAKE_CXX_COMPILER}"
   )
+endif()
+
+set(FLAG_OS -Os)
+set(FLAG_G -g)
+if(CMAKE_CXX_COMPILER_ID MATCHES "^(AppleClang|Clang|GNU)$")
+  set(MAYBE_BAZEL_COPT_OS "--copt=${FLAG_OS} --host_copt=${FLAG_OS}")
+  set(MAYBE_BAZEL_COPT_G "--copt=${FLAG_G} --host_copt=${FLAG_G}")
+else()
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag(${FLAG_OS} CXX_COMPILER_SUPPORTS_FLAG_OS)
+  if(CXX_COMPILER_SUPPORTS_FLAG_OS)
+    set(MAYBE_BAZEL_COPT_OS "--copt=${FLAG_OS} --host_copt=${FLAG_OS}")
+  else()
+    set(MAYBE_BAZEL_COPT_OS)
+    if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL MinSizeRel)
+      message(WARNING
+        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration MinSizeRel is NOT supported because it does not accept the ${FLAG_OS} flag. Code will NOT be optimized for size."
+      )
+      if(CMAKE_CONFIGURATION_TYPES)
+        list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES MinSizeRel)
+      endif()
+    endif()
+  endif()
+  check_cxx_compiler_flag(${FLAG_G} CXX_COMPILER_SUPPORTS_FLAG_G)
+  if(CXX_COMPILER_SUPPORTS_FLAG_G)
+    set(MAYBE_BAZEL_COPT_G "--copt=${FLAG_G} --host_copt=${FLAG_G}")
+  else()
+    set(MAYBE_BAZEL_COPT_G)
+    if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE STREQUAL RelWithDebInfo)
+      message(WARNING
+        "Compilation with ${CMAKE_CXX_COMPILER_ID} in configuration RelWithDebInfo is NOT supported because it does not accept the ${FLAG_G} flag. Debug information will NOT be generated."
+      )
+      if(CMAKE_CONFIGURATION_TYPES)
+        list(REMOVE_ITEM CMAKE_CONFIGURATION_TYPES RelWithDebInfo)
+      endif()
+    endif()
+  endif()
 endif()
 
 get_filename_component(PROJECT_BINARY_DIR_REALPATH
@@ -192,7 +286,7 @@ string(FIND "${PROJECT_BINARY_DIR_REALPATH}/" "${PROJECT_SOURCE_DIR_REALPATH}/"
 if(STRING_FIND_RESULT_VARIABLE EQUAL 0)
   # The --output_base cannot be within the WORKSPACE (a subdirectory of
   # PROJECT_SOURCE_DIR), so fallback to the using the same parent directory
-  # that bazel uses by default for its --output_base.
+  # that Bazel uses by default for its --output_base.
   if(APPLE)
     set(BAZEL_OUTPUT_BASE "/var/tmp")
   else()
@@ -202,36 +296,22 @@ else()
   set(BAZEL_OUTPUT_BASE "${PROJECT_BINARY_DIR}")
 endif()
 
-# Compute the MD5 of the PROJECT_BINARY_DIR rather than the WORKSPACE
-# (PROJECT_SOURCE_DIR) to avoid colliding with the directory that bazel uses by
+# Compute the MD5 hash of the PROJECT_BINARY_DIR rather than the WORKSPACE
+# (PROJECT_SOURCE_DIR) to avoid colliding with the directory that Bazel uses by
 # default.
 string(MD5 PROJECT_BINARY_DIR_MD5 "${PROJECT_BINARY_DIR_REALPATH}")
 set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
-
-set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
-
-set(BAZEL_ARGS)
-
-if(CMAKE_COLOR_MAKEFILE)
-  list(APPEND BAZEL_ARGS --color=yes)
-else()
-  list(APPEND BAZEL_ARGS --color=no)
-endif()
-
-if(CMAKE_VERBOSE_MAKEFILE)
-  list(APPEND BAZEL_ARGS --subcommands)
-endif()
+set(BAZEL_CONFIGS)
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 
 if(WITH_GUROBI)
   find_package(Gurobi 8.0.0 MODULE REQUIRED)
 
-  list(APPEND BAZEL_ARGS --config=gurobi)
+  list(APPEND BAZEL_CONFIGS --config=gurobi)
 
   if(NOT APPLE)
     get_filename_component(GUROBI_PATH "${Gurobi_INCLUDE_DIRS}" DIRECTORY)
@@ -239,10 +319,12 @@ if(WITH_GUROBI)
   endif()
 endif()
 
+set(BAZEL_DEFINES)
+
 option(WITH_MATLAB "Build with support for MATLAB" OFF)
 
 if(WITH_MATLAB)
-  list(APPEND BAZEL_ARGS
+  list(APPEND BAZEL_DEFINES
     --define=NO_IPOPT=ON
     --define=NO_OSQP=ON
   )
@@ -251,26 +333,63 @@ endif()
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
 
 if(WITH_MOSEK)
-  list(APPEND BAZEL_ARGS --config=mosek)
+  list(APPEND BAZEL_CONFIGS --config=mosek)
 endif()
 
-option(WITH_ROBOTLOCOMOTION_SNOPT "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository" OFF)
-option(WITH_SNOPT "Build with support for SNOPT using the SNOPT source archive at SNOPT_PATH" OFF)
+option(WITH_ROBOTLOCOMOTION_SNOPT
+  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
+  OFF
+)
+option(WITH_SNOPT
+  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
+  OFF
+)
 
 if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
   message(FATAL_ERROR
-    "WITH_SNOPT and WITH_ROBOTLOCOMOTION_SNOPT are mutually exclusive")
+    "WITH_ROBOTLOCOMOTION_SNOPT and WITH_SNOPT options are mutually exclusive"
+  )
 elseif(WITH_ROBOTLOCOMOTION_SNOPT)
-  list(APPEND BAZEL_ARGS --config=snopt)
+  list(APPEND BAZEL_CONFIGS --config=snopt)
   list(APPEND BAZEL_ENV "SNOPT_PATH=git")
 elseif(WITH_SNOPT)
-  list(APPEND BAZEL_ARGS --config=snopt)
-  set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH "Path to SNOPT source archive")
+  list(APPEND BAZEL_CONFIGS --config=snopt)
+  set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH
+    "Path to SNOPT source archive"
+  )
   if(NOT EXISTS "${SNOPT_PATH}")
-    message(FATAL_ERROR "SNOPT source archive was NOT found at '${SNOPT_PATH}'")
+    message(FATAL_ERROR
+      "SNOPT source archive was NOT found at '${SNOPT_PATH}'"
+    )
   endif()
   mark_as_advanced(SNOPT_PATH)
   list(APPEND BAZEL_ENV "SNOPT_PATH=${SNOPT_PATH}")
+endif()
+
+if(BAZEL_CONFIGS)
+  string(REPLACE ";" " " MAYBE_BAZEL_CONFIG "${BAZEL_CONFIGS}")
+  set(MAYBE_BAZEL_CONFIG "build ${MAYBE_BAZEL_CONFIG}")
+else()
+  set(MAYBE_BAZEL_CONFIG)
+endif()
+
+if(BAZEL_DEFINES)
+  string(REPLACE ";" " " MAYBE_BAZEL_DEFINE "${BAZEL_DEFINES}")
+  set(MAYBE_BAZEL_DEFINE "build ${MAYBE_BAZEL_DEFINE}")
+else()
+  set(MAYBE_BAZEL_DEFINE)
+endif()
+
+configure_file(cmake/bazel.rc.in bazel.rc @ONLY)
+
+set(BAZEL_STARTUP_ARGS "--bazelrc=${CMAKE_CURRENT_BINARY_DIR}/bazel.rc")
+
+if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|MinSizeRel|Release|RelWithDebInfo)$")
+  set(BAZEL_ARGS
+    "$<$<CONFIG:Debug>:--config=Debug>$<$<CONFIG:MinSizeRel>:--config=MinSizeRel>$<$<CONFIG:Release>:--config=Release>$<$<CONFIG:RelWithDebInfo>:--config=RelWithDebInfo>"
+  )
+else()
+  set(BAZEL_ARGS)
 endif()
 
 # N.B. If you are testing the CMake API and making changes to `install.py.in`,
@@ -301,14 +420,17 @@ if(CMAKE_STRIP)
   list(INSERT BAZEL_TARGETS_ARGS 0 "--strip_tool" "${CMAKE_STRIP}")
 endif()
 
-# If we are in debug mode, do not strip symbols.
-if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL RelWithDebugInfo)
+# If CMAKE_BUILD_TYPE is Debug or RelWithDebInfo, do NOT strip symbols during
+# install.
+if(CMAKE_CONFIGURATION_TYPES OR CMAKE_BUILD_TYPE MATCHES "^(Debug|RelWithDebInfo)$")
   # SNOPT has restrictions for redistribution given that we are statically
   # linking it in.
   if(WITH_SNOPT OR WITH_ROBOTLOCOMOTION_SNOPT)
-    message(WARNING "SNOPT is enabled, thus symbols will STILL be stripped, even in debug mode.")
+    message(WARNING
+      "Install configurations Debug and RelWithDebInfo will STILL strip symbols because support for SNOPT is enabled"
+    )
   else()
-    list(INSERT BAZEL_TARGETS_ARGS 0 "--no_strip")
+    list(INSERT BAZEL_TARGETS_ARGS 0 "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:--no_strip>")
   endif()
 endif()
 
@@ -317,12 +439,26 @@ include(ExternalProject)
 ExternalProject_Add(drake_cxx_python
   SOURCE_DIR "${PROJECT_SOURCE_DIR}"
   CONFIGURE_COMMAND :
-  BUILD_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} build ${BAZEL_ARGS} ${BAZEL_TARGETS}
-  BUILD_IN_SOURCE 1
-  BUILD_ALWAYS 1
-  INSTALL_COMMAND ${BAZEL_ENV} "${Bazel_EXECUTABLE}" ${BAZEL_STARTUP_ARGS} run ${BAZEL_ARGS} ${BAZEL_TARGETS} -- ${BAZEL_TARGETS_ARGS}
-  USES_TERMINAL_BUILD 1
-  USES_TERMINAL_INSTALL 1
+  BUILD_COMMAND
+    ${BAZEL_ENV}
+    "${Bazel_EXECUTABLE}"
+    ${BAZEL_STARTUP_ARGS}
+    build
+    ${BAZEL_ARGS}
+    ${BAZEL_TARGETS}
+  BUILD_IN_SOURCE ON
+  BUILD_ALWAYS ON
+  INSTALL_COMMAND
+    ${BAZEL_ENV}
+    "${Bazel_EXECUTABLE}"
+    ${BAZEL_STARTUP_ARGS}
+    run
+    ${BAZEL_ARGS}
+    ${BAZEL_TARGETS}
+    --
+    ${BAZEL_TARGETS_ARGS}
+  USES_TERMINAL_BUILD ON
+  USES_TERMINAL_INSTALL ON
 )
 
 set(GIT_DIR "${PROJECT_SOURCE_DIR}/.git")
@@ -331,7 +467,8 @@ set(GIT_REVISION HEAD)
 find_package(Git)
 
 if(GIT_FOUND AND EXISTS "${GIT_DIR}")
-  execute_process(COMMAND "${GIT_EXECUTABLE}" "--git-dir=${GIT_DIR}" rev-parse HEAD
+  execute_process(COMMAND
+    "${GIT_EXECUTABLE}" "--git-dir=${GIT_DIR}" rev-parse HEAD
     RESULT_VARIABLE GIT_REV_PARSE_RESULT_VARIABLE
     OUTPUT_VARIABLE GIT_REV_PARSE_OUTPUT_VARIABLE
     OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -365,7 +502,7 @@ if(WITH_MATLAB)
       "-DCMAKE_SHARED_LINKER_FLAGS:STRING=${CMAKE_SHARED_LINKER_FLAGS}"
       -DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}
     BINARY_DIR "${PROJECT_BINARY_DIR}/drake_matlab-build"
-    BUILD_ALWAYS 1
+    BUILD_ALWAYS ON
   )
 endif()
 
@@ -396,7 +533,8 @@ else()
   set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
   set(CPACK_DEBIAN_PACKAGE_SECTION contrib/devel)
 
-  file(STRINGS "setup/${UNIX_DISTRIBUTION_ID}/binary_distribution/packages-${UNIX_DISTRIBUTION_CODENAME}.txt"
+  file(STRINGS
+    "setup/${UNIX_DISTRIBUTION_ID}/binary_distribution/packages-${UNIX_DISTRIBUTION_CODENAME}.txt"
     CPACK_DEBIAN_PACKAGE_DEPENDS
   )
   string(REGEX REPLACE "([a-z0-9\\-]+)=([a-z0-9\\-\\.~]+)" "\\1 (= \\2)"

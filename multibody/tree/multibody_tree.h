@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
@@ -1027,7 +1027,7 @@ class MultibodyTree {
     // See notes in `HasBodyNamed`.
     const auto range = frame_name_to_index_.equal_range(name);
     for (auto it = range.first; it != range.second; ++it) {
-      if (get_frame(it->second).body().model_instance() == model_instance) {
+      if (get_frame(it->second).model_instance() == model_instance) {
         return true;
       }
     }
@@ -1118,6 +1118,19 @@ class MultibodyTree {
     for (auto& body : owned_bodies_) {
       if (body->model_instance() == model_instance) {
         indices.emplace_back(body->index());
+      }
+    }
+    return indices;
+  }
+
+  /// Returns a list of joint indices associated with `model_instance`.
+  std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
+  const {
+    DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());
+    std::vector<JointIndex> indices;
+    for (auto& joint : owned_joints_) {
+      if (joint->model_instance() == model_instance) {
+        indices.emplace_back(joint->index());
       }
     }
     return indices;
@@ -1340,7 +1353,7 @@ class MultibodyTree {
   /// See MultibodyPlant method.
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& v_array) const;
+      const Eigen::Ref<const VectorX<T>>& v) const;
 
   #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
@@ -1360,8 +1373,8 @@ class MultibodyTree {
   /// `MultibodyTree::num_positions(model_instance)`.
   void SetVelocitiesInArray(
       ModelInstanceIndex model_instance,
-      const Eigen::Ref<const VectorX<T>>& model_v,
-      EigenPtr<VectorX<T>> v_array) const;
+      const Eigen::Ref<const VectorX<T>>& v_instance,
+      EigenPtr<VectorX<T>> v) const;
 
   /// @}
   // End of "Model instance accessors" section.
@@ -1946,6 +1959,18 @@ class MultibodyTree {
 
   /// See MultibodyPlant method.
   VectorX<double> GetPositionUpperLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetVelocityLowerLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetVelocityUpperLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetAccelerationLowerLimits() const;
+
+  /// See MultibodyPlant method.
+  VectorX<double> GetAccelerationUpperLimits() const;
 
   /// @name Methods to retrieve multibody element variants
   ///
@@ -2637,3 +2662,6 @@ class MultibodyTree {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::MultibodyTree)

@@ -34,11 +34,13 @@ Arguments:
 load("@drake//tools/workspace:execute.bzl", "execute_or_fail", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
+# The supported Python versions should match those listed in both the root
+# CMakeLists.txt and doc/developers.rst.
 _VERSION_SUPPORT_MATRIX = {
     "ubuntu:16.04": ["2.7"],
     "ubuntu:18.04": ["2.7", "3.6"],
-    "macos:10.13": ["2.7"],
-    "macos:10.14": ["2.7"],
+    "macos:10.13": ["2.7", "3.7"],
+    "macos:10.14": ["2.7", "3.7"],
 }
 
 def _repository_python_info(repository_ctx):

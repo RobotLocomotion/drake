@@ -65,13 +65,13 @@ SimpleCar<T>::SimpleCar()
   this->DeclareNumericParameter(SimpleCarParams<T>());
 
   this->DeclareInequalityConstraint(&SimpleCar::CalcSteeringAngleConstraint,
-                                    Eigen::Vector2d::Zero(), nullopt,
+                                    { Eigen::Vector2d::Zero(), nullopt },
                                     "steering angle limit");
   this->DeclareInequalityConstraint(&SimpleCar::CalcAccelerationConstraint,
-                                    Eigen::Vector2d::Zero(), nullopt,
+                                    { Eigen::Vector2d::Zero(), nullopt },
                                     "acceleration limit");
   this->DeclareInequalityConstraint(&SimpleCar::CalcVelocityConstraint,
-                                    Eigen::Vector2d::Zero(), nullopt,
+                                    { Eigen::Vector2d::Zero(), nullopt },
                                     "velocity limit");
 }
 
@@ -203,6 +203,7 @@ void SimpleCar<T>::ImplCalcTimeDerivatives(const SimpleCarParams<T>& params,
   rates->set_velocity(smooth_acceleration);
 }
 
+// TODO(jwnimmer-tri) Change this to a single-value upper/lower constraint.
 // params.max_abs_steering_angle - input.steering_angle ≥ 0.
 // params.max_abs_steering_angle + input.steering_angle ≥ 0.
 template <typename T>
@@ -214,6 +215,7 @@ void SimpleCar<T>::CalcSteeringAngleConstraint(
                       params.max_abs_steering_angle() + input.steering_angle());
 }
 
+// TODO(jwnimmer-tri) Change this to a single-value upper/lower constraint.
 // params.max_acceleration - input.acceleration ≥ 0,
 // params.max_acceleration + input.acceleration ≥ 0.
 template <typename T>
@@ -225,6 +227,7 @@ void SimpleCar<T>::CalcAccelerationConstraint(
                       params.max_acceleration() + input.acceleration());
 }
 
+// TODO(jwnimmer-tri) Change this to a single-value upper/lower constraint.
 // params.max_velocity - state.velocity ≥ 0,
 // state.velocity ≥ 0.
 template <typename T>

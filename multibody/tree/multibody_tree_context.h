@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
@@ -39,9 +39,15 @@ namespace internal {
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
-class MultibodyTreeContext: public systems::LeafContext<T> {
+class MultibodyTreeContext final : public systems::LeafContext<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeContext)
+  /// @name Does not allow copy, move, or assignment.
+  //@{
+  // Copy constructor is private for use in implementing Clone().
+  MultibodyTreeContext(MultibodyTreeContext&&) = delete;
+  MultibodyTreeContext& operator=(const MultibodyTreeContext&) = delete;
+  MultibodyTreeContext& operator=(MultibodyTreeContext&&) = delete;
+  //@}
 
   /// Instantiates a %MultibodyTreeContext for a MultibodyTree with a given
   /// `topology`. The stored state is continuous.
@@ -59,6 +65,11 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
       systems::LeafContext<T>(),
       topology_(topology),
       is_state_discrete_(discrete_state) {
+  }
+
+  std::unique_ptr<systems::ContextBase> DoCloneWithoutPointers() const final {
+    return std::unique_ptr<systems::ContextBase>(
+        new MultibodyTreeContext<T>(*this));
   }
 
   /// Returns the size of the generalized positions vector.
@@ -202,12 +213,21 @@ class MultibodyTreeContext: public systems::LeafContext<T> {
   }
 
  private:
+  MultibodyTreeContext(const MultibodyTreeContext& source);
+
   const MultibodyTreeTopology topology_;
 
   // If `true`, this context stores a discrete state. If `false` the state is
   // stored as continuous state.
   bool is_state_discrete_{false};
 };
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+MultibodyTreeContext<T>::MultibodyTreeContext(const MultibodyTreeContext&)
+    = default;
 
 }  // namespace internal
 
@@ -220,3 +240,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::MultibodyTreeContext)

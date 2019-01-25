@@ -133,7 +133,7 @@ drake_cc_library(
         ":create_load_robot_message",
         "//attic/multibody:rigid_body_tree",
         "//attic/systems/rendering:drake_visualizer_client",
-        "//common/trajectories:piecewise_polynomial",
+        "//common/trajectories",
         "//lcmtypes:viewer",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:signal_log",

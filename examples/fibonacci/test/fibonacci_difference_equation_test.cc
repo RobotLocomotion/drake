@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/simulator.h"
+#include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/signal_logger.h"
 
 namespace drake {
 namespace examples {
@@ -11,23 +13,23 @@ namespace {
 
 // Verify that we get the right sequence for one sequence length.
 GTEST_TEST(Fibonacci, CheckSequence) {
-  FibonacciDifferenceEquation fibonacci;
+  systems::DiagramBuilder<double> builder;
+  auto fibonacci = builder.AddSystem<FibonacciDifferenceEquation>();
+  auto logger =
+      builder.AddSystem<systems::SignalLogger<double>>(1);  // Size of input.
+  logger->set_publish_period(FibonacciDifferenceEquation::kPeriod);
+  builder.Connect(fibonacci->GetOutputPort("Fn"), logger->GetInputPort("data"));
+  auto diagram = builder.Build();
 
-  systems::Simulator<double> simulator(fibonacci);
+  systems::Simulator<double> simulator(*diagram);
 
   // Simulate forward to fibonacci(6): 0 1 1 2 3 5 8
-  testing::internal::CaptureStdout();
   simulator.StepTo(6 * FibonacciDifferenceEquation::kPeriod);
-  std::string output = testing::internal::GetCapturedStdout();
 
-  EXPECT_EQ(output,
-            "0: 0\n"
-            "1: 1\n"
-            "2: 1\n"
-            "3: 2\n"
-            "4: 3\n"
-            "5: 5\n"
-            "6: 8\n");
+  Eigen::VectorXd expected(7);
+  expected << 0, 1, 1, 2, 3, 5, 8;
+
+  EXPECT_EQ(logger->data().transpose(), expected);
 }
 
 }  // namespace

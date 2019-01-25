@@ -27,12 +27,12 @@ VanDerPolOscillator<T>::VanDerPolOscillator()
   this->DeclareNumericParameter(systems::BasicVector<T>(Vector1<T>(1.0)));
 
   // Declare μ≥0 constraint.
-  typename systems::SystemConstraint<T>::CalcCallback mu =
+  systems::ContextConstraintCalc<T> mu =
       [](const systems::Context<T>& context, VectorX<T>* value) {
         // Extract μ from the parameters.
         *value = Vector1<T>(context.get_numeric_parameter(0).GetAtIndex(0));
       };
-  this->DeclareInequalityConstraint(mu, Vector1d(0), nullopt, "mu ≥ 0");
+  this->DeclareInequalityConstraint(mu, { Vector1d(0), nullopt }, "mu ≥ 0");
 }
 
 // q̈ + μ(q² - 1)q̇ + q = 0

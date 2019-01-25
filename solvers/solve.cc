@@ -17,5 +17,16 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
   solver->Solve(prog, initial_guess, solver_options, &result);
   return result;
 }
+
+MathematicalProgramResult Solve(
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const Eigen::VectorXd>& initial_guess) {
+  const Eigen::VectorXd initial_guess_xd = initial_guess;
+  return Solve(prog, initial_guess_xd, {});
+}
+
+MathematicalProgramResult Solve(const MathematicalProgram& prog) {
+  return Solve(prog, {}, {});
+}
 }  // namespace solvers
 }  // namespace drake

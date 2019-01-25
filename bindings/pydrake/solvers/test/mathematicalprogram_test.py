@@ -10,6 +10,7 @@ import numpy as np
 
 import pydrake
 from pydrake.common.deprecation import DrakeDeprecationWarning
+from pydrake.autodiffutils import AutoDiffXd
 import pydrake.symbolic as sym
 
 
@@ -179,6 +180,10 @@ class TestMathematicalProgram(unittest.TestCase):
         x0, = prog.NewContinuousVariables(1, "x")
         c = prog.AddLinearConstraint(x0 >= 2).evaluator()
         ce = prog.AddLinearEqualityConstraint(2*x0, 1).evaluator()
+
+        self.assertTrue(c.CheckSatisfied([2.], tol=1e-3))
+        self.assertFalse(c.CheckSatisfied([AutoDiffXd(1.)]))
+        self.assertIsInstance(c.CheckSatisfied([x0]), sym.Formula)
 
         def check_bounds(c, A, lb, ub):
             self.assertTrue(np.allclose(c.A(), A))
@@ -361,8 +366,8 @@ class TestMathematicalProgram(unittest.TestCase):
         def constraint(x):
             return x
 
-        prog.AddCost(cost, x)
-        prog.AddConstraint(constraint, [0.], [2.], x)
+        prog.AddCost(cost, vars=x)
+        prog.AddConstraint(constraint, lb=[0.], ub=[2.], vars=x)
         prog.Solve()
         self.assertAlmostEqual(prog.GetSolution(x)[0], 1.)
 

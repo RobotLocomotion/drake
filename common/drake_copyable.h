@@ -64,3 +64,49 @@ class Foo {
     (void) static_cast<Classname& (Classname::*)(               \
         const Classname&)>(&Classname::operator=);              \
   }
+
+/** DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN declares (but does not define) the
+special member functions for copy-construction, copy-assignment,
+move-construction, and move-assignment.  Drake's Doxygen is customized to
+render the declarations with appropriate comments.
+
+This is useful when paired with DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T
+to work around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 whereby the
+declaration and definition must be split.  Once Drake no longer supports GCC
+versions prior to 6.3, this macro could be removed.
+
+Invoke this this macro in the public section of the class declaration, e.g.:
+<pre>
+template <typename T>
+class Foo {
+ public:
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Foo)
+
+  // ...
+};
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(Foo)
+</pre>
+*/
+#define DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(Classname)       \
+  Classname(const Classname&);                                          \
+  Classname& operator=(const Classname&);                               \
+  Classname(Classname&&);                                               \
+  Classname& operator=(Classname&&);                                    \
+  /* Fails at compile-time if default-copy doesn't work. */             \
+  static void DRAKE_COPYABLE_DEMAND_COPY_CAN_COMPILE() {                \
+    (void) static_cast<Classname& (Classname::*)(                       \
+        const Classname&)>(&Classname::operator=);                      \
+  }
+
+/** Helper for DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN.  Provides defaulted
+definitions for the four special member functions of a templated class.
+*/
+#define DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(Classname)      \
+  template <typename T>                                                 \
+  Classname<T>::Classname(const Classname<T>&) = default;               \
+  template <typename T>                                                 \
+  Classname<T>& Classname<T>::operator=(const Classname<T>&) = default; \
+  template <typename T>                                                 \
+  Classname<T>::Classname(Classname<T>&&) = default;                    \
+  template <typename T>                                                 \
+  Classname<T>& Classname<T>::operator=(Classname<T>&&) = default;

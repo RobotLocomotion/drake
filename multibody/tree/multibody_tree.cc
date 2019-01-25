@@ -6,7 +6,6 @@
 #include <unordered_set>
 #include <utility>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
@@ -1579,7 +1578,7 @@ VectorX<double> MultibodyTree<T>::GetPositionLowerLimits() const {
   for (JointIndex i{0}; i < num_joints(); ++i) {
     const auto& joint = get_joint(i);
     q_lower.segment(joint.position_start(), joint.num_positions()) =
-        joint.lower_limits();
+        joint.position_lower_limits();
   }
   return q_lower;
 }
@@ -1592,16 +1591,66 @@ VectorX<double> MultibodyTree<T>::GetPositionUpperLimits() const {
   for (JointIndex i{0}; i < num_joints(); ++i) {
     const auto& joint = get_joint(i);
     q_upper.segment(joint.position_start(), joint.num_positions()) =
-        joint.upper_limits();
+        joint.position_upper_limits();
   }
   return q_upper;
 }
 
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetVelocityLowerLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd v_lower = Eigen::VectorXd::Constant(
+      num_velocities(), -std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    v_lower.segment(joint.velocity_start(), joint.num_velocities()) =
+        joint.velocity_lower_limits();
+  }
+  return v_lower;
+}
 
-// Explicitly instantiates on the most common scalar types.
-template class MultibodyTree<double>;
-template class MultibodyTree<AutoDiffXd>;
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetVelocityUpperLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd v_upper = Eigen::VectorXd::Constant(
+      num_velocities(), std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    v_upper.segment(joint.velocity_start(), joint.num_velocities()) =
+        joint.velocity_upper_limits();
+  }
+  return v_upper;
+}
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetAccelerationLowerLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd vd_lower = Eigen::VectorXd::Constant(
+      num_velocities(), -std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    vd_lower.segment(joint.velocity_start(), joint.num_velocities()) =
+        joint.acceleration_lower_limits();
+  }
+  return vd_lower;
+}
+
+template <typename T>
+VectorX<double> MultibodyTree<T>::GetAccelerationUpperLimits() const {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+  Eigen::VectorXd vd_upper = Eigen::VectorXd::Constant(
+      num_velocities(), std::numeric_limits<double>::infinity());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const auto& joint = get_joint(i);
+    vd_upper.segment(joint.velocity_start(), joint.num_velocities()) =
+        joint.acceleration_upper_limits();
+  }
+  return vd_upper;
+}
 
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::MultibodyTree)

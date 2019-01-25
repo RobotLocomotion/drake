@@ -40,9 +40,7 @@ generate_export_header(
 # These options are used when building all LCM C/C++ code.
 # They do not flow downstream to LCM-using libraries.
 LCM_COPTS = [
-    "-Wno-all",
-    "-Wno-deprecated-declarations",
-    "-Wno-format-zero-length",
+    "-w",
     "-std=gnu11",
     "-fvisibility=hidden",
 ]

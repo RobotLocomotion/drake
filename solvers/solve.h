@@ -19,5 +19,14 @@ namespace solvers {
 MathematicalProgramResult Solve(const MathematicalProgram& prog,
                                 const optional<Eigen::VectorXd>& initial_guess,
                                 const optional<SolverOptions>& solver_options);
+
+/**
+ * Solves an optimization program with a given initial guess.
+ */
+MathematicalProgramResult Solve(
+    const MathematicalProgram& prog,
+    const Eigen::Ref<const Eigen::VectorXd>& initial_guess);
+
+MathematicalProgramResult Solve(const MathematicalProgram& prog);
 }  // namespace solvers
 }  // namespace drake

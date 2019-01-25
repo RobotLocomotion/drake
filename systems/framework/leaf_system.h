@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -107,19 +108,31 @@ class LeafSystem : public System<T> {
   // documentation for their corresponding methods in System.
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const override {
-    return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    auto collection =
+        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
+    if (this->forced_publish_events_exist())
+      collection->SetFrom(this->get_forced_publish_events());
+    return collection;
   }
 
   std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
   AllocateForcedDiscreteUpdateEventCollection() const override {
-    return LeafEventCollection<
-        DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+    auto collection =
+        LeafEventCollection<
+            DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+    if (this->forced_discrete_update_events_exist())
+      collection->SetFrom(this->get_forced_discrete_update_events());
+    return collection;
   }
 
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
   AllocateForcedUnrestrictedUpdateEventCollection() const override {
-    return LeafEventCollection<
-        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+    auto collection =
+        LeafEventCollection<
+          UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+    if (this->forced_unrestricted_update_events_exist())
+      collection->SetFrom(this->get_forced_unrestricted_update_events());
+    return collection;
   }
   /// @endcond
 
@@ -316,13 +329,11 @@ class LeafSystem : public System<T> {
   explicit LeafSystem(SystemScalarConverter converter)
       : System<T>(std::move(converter)) {
     this->set_forced_publish_events(
-        LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection());
+        AllocateForcedPublishEventCollection());
     this->set_forced_discrete_update_events(
-        LeafEventCollection<
-            DiscreteUpdateEvent<T>>::MakeForcedEventCollection());
+        AllocateForcedDiscreteUpdateEventCollection());
     this->set_forced_unrestricted_update_events(
-        LeafEventCollection<
-            UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection());
+        AllocateForcedUnrestrictedUpdateEventCollection());
   }
 
   /// Provides a new instance of the leaf context for this system. Derived
@@ -638,7 +649,7 @@ class LeafSystem : public System<T> {
   // =========================================================================
   /// @anchor declare_periodic_events
   /// @name                  Declare periodic events
-  /// Methods in the this group declare that this System has an event that
+  /// Methods in this group declare that this System has an event that
   /// is triggered periodically. The first periodic trigger will occur at
   /// t = `offset_sec`, and it will recur at every `period_sec` thereafter.
   /// Several signatures are provided to allow for a general Event object to be
@@ -695,6 +706,32 @@ class LeafSystem : public System<T> {
         }));
   }
 
+  /// This variant accepts a handler that is assumed to succeed rather than
+  /// one that returns an EventStatus result. The handler signature is:
+  /// @code
+  ///   void MySystem::MyPublish(const Context<T>&) const;
+  /// @endcode
+  /// See the other signature for more information.
+  template <class MySystem>
+  void DeclarePeriodicPublishEvent(double period_sec, double offset_sec,
+                                   void (MySystem::*publish)(const Context<T>&)
+                                       const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    DeclarePeriodicEvent(
+        period_sec, offset_sec,
+        PublishEvent<T>(TriggerType::kPeriodic,
+                        [this_ptr, publish](const Context<T>& context,
+                                            const PublishEvent<T>&) {
+                          (this_ptr->*publish)(context);
+                          // TODO(sherm1) return EventStatus::Succeeded()
+                        }));
+  }
+
   /// Declares that a DiscreteUpdate event should occur periodically and that it
   /// should invoke the given event handler method. The handler should be a
   /// class member function (method) with this signature:
@@ -738,12 +775,39 @@ class LeafSystem : public System<T> {
                                }));
   }
 
+  /// This variant accepts a handler that is assumed to succeed rather than
+  /// one that returns an EventStatus result. The handler signature is:
+  /// @code
+  ///   void MySystem::MyUpdate(const Context<T>&,
+  ///                           DiscreteValues<T>*) const;
+  /// @endcode
+  /// See the other signature for more information.
+  template <class MySystem>
+  void DeclarePeriodicDiscreteUpdateEvent(
+      double period_sec, double offset_sec,
+      void (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePeriodicEvent(
+        period_sec, offset_sec,
+        DiscreteUpdateEvent<T>(TriggerType::kPeriodic,
+                               [this_ptr, update](const Context<T>& context,
+                                                  const DiscreteUpdateEvent<T>&,
+                                                  DiscreteValues<T>* xd) {
+                                 (this_ptr->*update)(context, &*xd);
+                                 // TODO(sherm1) return EventStatus::Succeeded()
+                               }));
+  }
+
   /// Declares that an UnrestrictedUpdate event should occur periodically and
   /// that it should invoke the given event handler method. The handler should
   /// be a class member function (method) with this signature:
   /// @code
-  ///   EventStatus MySystem::MyUpdate(const Context<T>&,
-  ///                                  State<T>*) const;
+  ///   EventStatus MySystem::MyUpdate(const Context<T>&, State<T>*) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
   /// name is arbitrary.
@@ -776,6 +840,33 @@ class LeafSystem : public System<T> {
               // TODO(sherm1) Forward the return status.
               (this_ptr->*update)(context,
                                   &*x);  // Ignore return status for now.
+            }));
+  }
+
+  /// This variant accepts a handler that is assumed to succeed rather than
+  /// one that returns an EventStatus result. The handler signature is:
+  /// @code
+  ///   void MySystem::MyUpdate(const Context<T>&, State<T>*) const;
+  /// @endcode
+  /// See the other signature for more information.
+  template <class MySystem>
+  void DeclarePeriodicUnrestrictedUpdateEvent(
+      double period_sec, double offset_sec,
+      void (MySystem::*update)(const Context<T>&, State<T>*) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(update != nullptr);
+
+    DeclarePeriodicEvent(
+        period_sec, offset_sec,
+        UnrestrictedUpdateEvent<T>(
+            TriggerType::kPeriodic,
+            [this_ptr, update](const Context<T>& context,
+                               const UnrestrictedUpdateEvent<T>&, State<T>* x) {
+              (this_ptr->*update)(context, &*x);
+              // TODO(sherm1) return EventStatus::Succeeded()
             }));
   }
 
@@ -850,10 +941,10 @@ class LeafSystem : public System<T> {
   /// @anchor declare_per-step_events
   /// @name                 Declare per-step events
   /// These methods are used to declare events that are triggered whenever the
-  /// Drake Simulator::StepTo() method takes a substep that advances the
-  /// simulated trajectory. Note that each call to StepTo() typically generates
-  /// many trajectory-advancing substeps of varying time intervals; per-step
-  /// events are triggered for each of those substeps.
+  /// Drake Simulator advances the simulated trajectory. Note that each call to
+  /// Simulator::StepTo() typically generates many trajectory-advancing substeps
+  /// of varying time intervals; per-step events are triggered for each of those
+  /// substeps.
   ///
   /// Per-step events are useful for taking discrete action at every point of a
   /// simulated trajectory (generally spaced irregularly in time) without
@@ -864,32 +955,40 @@ class LeafSystem : public System<T> {
   /// by the denser sampling. A periodic sampling would produce less-accurate
   /// interpolations.
   ///
-  /// As with any Drake event trigger type, a per-step event is
-  /// dispatched to one of the three available types of event dispatcher:
-  /// publish (read only), discrete state update, and unrestricted state update.
-  /// Several signatures are provided below to allow for a general Event object
-  /// to be triggered, or simpler class member functions to be invoked instead.
+  /// As with any Drake event trigger type, a per-step event is dispatched to
+  /// one of the three available types of event dispatcher: publish (read only),
+  /// discrete state update, and unrestricted state update. Several signatures
+  /// are provided below to allow for a general Event object to be triggered, or
+  /// simpler class member functions to be invoked instead.
   ///
   /// Per-step events are issued as follows: First, the Simulator::Initialize()
-  /// method queries and records the set of declared per-step events, which set
-  /// does not change during a simulation. Then every StepTo() internal substep
-  /// dispatches unrestricted and discrete update events at the start of the
-  /// step, and dispatches publish events at the end of the step (that is,
-  /// after time advances). No per-step event is triggered during the
-  /// Initialize() call.
+  /// method queries and records the set of declared per-step events. That set
+  /// does not change during a simulation. Any per-step publish events are
+  /// dispatched at the end of Initialize() to publish the initial value of the
+  /// trajectory. Then every StepTo() internal substep dispatches unrestricted
+  /// and discrete update events at the start of the substep, and dispatches
+  /// publish events at the end of the substep (that is, after time advances).
+  /// This means that a per-step event at fixed substep size h behaves
+  /// identically to a periodic event of period h, offset 0.
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.
   //@{
 
-  /// Declares that a Publish event should occur every step and that it should
-  /// invoke the given event handler method. The handler should be a class
-  /// member function (method) with this signature:
+  /// Declares that a Publish event should occur at initialization and at the
+  /// end of every trajectory-advancing substep and that it should invoke the
+  /// given event handler method. The handler should be a class member function
+  /// (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
   /// @endcode
   /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
   /// name is arbitrary.
+  ///
+  /// @warning These per-step publish events are independent of the Simulator's
+  /// optional "publish every time step" and "publish at initialization"
+  /// features. Generally if you are declaring per-step publish events yourself
+  /// you should turn off those Simulation options.
   ///
   /// See @ref declare_per-step_events "Declare per-step events" for more
   /// information.
@@ -900,6 +999,8 @@ class LeafSystem : public System<T> {
   /// @see DeclarePerStepDiscreteUpdateEvent()
   /// @see DeclarePerStepUnrestrictedUpdateEvent()
   /// @see DeclarePerStepEvent()
+  /// @see Simulator::set_publish_at_initialization()
+  /// @see Simulator::set_publish_every_time_step()
   template <class MySystem>
   void DeclarePerStepPublishEvent(
       EventStatus (MySystem::*publish)(const Context<T>&) const) {
@@ -917,9 +1018,10 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /// Declares that a DiscreteUpdate event should occur every step and that it
-  /// should invoke the given event handler method. The handler should be a
-  /// class member function (method) with this signature:
+  /// Declares that a DiscreteUpdate event should occur at the start of every
+  /// trajectory-advancing substep and that it should invoke the given event
+  /// handler method. The handler should be a class member function (method)
+  /// with this signature:
   /// @code
   ///   EventStatus MySystem::MyUpdate(const Context<T>&,
   ///                                  DiscreteValues<T>*) const;
@@ -955,9 +1057,10 @@ class LeafSystem : public System<T> {
         }));
   }
 
-  /// Declares that an UnrestrictedUpdate event should occur every step and that
-  /// it should invoke the given event handler method. The handler should be a
-  /// class member function (method) with this signature:
+  /// Declares that an UnrestrictedUpdate event should occur at the start of
+  /// every trajectory-advancing substep and that it should invoke the given
+  /// event handler method. The handler should be a class member function
+  /// (method) with this signature:
   /// @code
   ///   EventStatus MySystem::MyUpdate(const Context<T>&,
   ///                                  State<T>*) const;
@@ -994,9 +1097,11 @@ class LeafSystem : public System<T> {
   }
 
   /// (Advanced) Declares that a particular Event object should be dispatched at
-  /// every simulation step. This is the most general form for declaring
-  /// per-step events and most users should use one of the other methods in this
-  /// group instead.
+  /// every trajectory-advancing substep. Publish events are dispatched at
+  /// the end of initialization and at the end of each substep. Discrete- and
+  /// unrestricted update events are dispatched at the start of each substep.
+  /// This is the most general form for declaring per-step events and most users
+  /// should use one of the other methods in this group instead.
   ///
   /// @see DeclarePerStepPublishEvent()
   /// @see DeclarePerStepDiscreteUpdateEvent()
@@ -1032,15 +1137,13 @@ class LeafSystem : public System<T> {
   /// These methods are used to declare events that occur when the Drake
   /// Simulator::Initialize() method is invoked.
   ///
-  /// During initialization, unrestricted update events are performed first for
-  /// the whole Diagram, then discrete update events for the whole Diagram.
-  /// Timed update events are not performed during initialization, even if they
-  /// are scheduled for the initial time; in that case they are done at the
-  /// beginning of the first Simulator::StepTo() call. On the other hand,
-  /// initialization publish events and timed publish events that are scheduled
-  /// for the initial time are dispatched together during initialization.
-  /// They are ordered such that each subsystem sees its initialization publish
-  /// events before its timed publish events.
+  /// During Initialize(), initialization-triggered unrestricted update events
+  /// are dispatched first for the whole Diagram, then initialization-triggered
+  /// discrete update events are dispatched for the whole Diagram. No other
+  /// _update_ events occur during initialization. On the other hand, any
+  /// triggered _publish_ events, including initialization-triggered, per-step,
+  /// and time-triggered publish events scheduled for the initial time, are
+  /// dispatched together during initialization.
   ///
   /// Template arguments to these methods are inferred from the argument lists
   /// and need not be specified explicitly.
@@ -1193,6 +1296,70 @@ class LeafSystem : public System<T> {
     event.AddToComposite(TriggerType::kInitialization, &initialization_events_);
   }
   //@}
+
+  // =========================================================================
+  /// @anchor declare_forced_events
+  /// @name                  Declare forced events
+  /// Forced events are those that are triggered through invocation of
+  /// System::Publish(const Context&),
+  /// System::CalcDiscreteVariableUpdates(const Context&, DiscreteValues<T>*),
+  /// or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
+  /// rather than as a response to some computation-related event (e.g.,
+  /// the beginning of a period of time was reached, a trajectory advancing
+  /// substep was performed, etc.) One useful application of a forced publish:
+  /// a process receives a network message and wants to trigger message
+  /// emissions in various systems embedded within a Diagram in response.
+  ///
+  /// Template arguments to these methods are inferred from the argument lists.
+  /// and need not be specified explicitly.
+  ///
+  /// @note It's rare that an event needs to be triggered by force. Please
+  /// consider per-step and periodic triggered events first.
+  ///
+  /// @warning Simulator generates forced publish events at initialization
+  /// and on a per-step basis when its "publish at initialization" and
+  /// "publish every time step" options are set.
+  /// @see Simulator::set_publish_at_initialization()
+  /// @see Simulator::set_publish_every_time_step()
+  //@{
+
+  /// Declares a function that is called whenever a user directly calls
+  /// Publish(const Context&). Multiple calls to
+  /// DeclareForcedPublishEvent() will register multiple callbacks, which will
+  /// be called with the same const Context in arbitrary order. The handler
+  /// should be a class member function (method) with this signature:
+  /// @code
+  ///   EventStatus MySystem::MyPublish(const Context<T>&) const;
+  /// @endcode
+  /// where `MySystem` is a class derived from `LeafSystem<T>` and the method
+  /// name is arbitrary.
+  ///
+  /// See @ref declare_forced_events "Declare forced events" for more
+  /// information.
+  /// @pre `this` must be dynamic_cast-able to MySystem.
+  /// @pre `publish` must not be null.
+  template <class MySystem>
+  void DeclareForcedPublishEvent(
+    EventStatus (MySystem::*publish)(const Context<T>&) const) {
+    static_assert(std::is_base_of<LeafSystem<T>, MySystem>::value,
+                  "Expected to be invoked from a LeafSystem-derived System.");
+    auto this_ptr = dynamic_cast<const MySystem*>(this);
+    DRAKE_DEMAND(this_ptr != nullptr);
+    DRAKE_DEMAND(publish != nullptr);
+
+    // Instantiate the event.
+    auto forced = std::make_unique<PublishEvent<T>>(
+        TriggerType::kForced,
+        [this_ptr, publish](const Context<T>& context, const PublishEvent<T>&) {
+          // TODO(sherm1) Forward the return status.
+          (this_ptr->*publish)(context);  // Ignore return status for now.
+        });
+
+    // Add the event to the collection of forced publish events.
+    this->get_mutable_forced_publish_events().add_event(std::move(forced));
+  }
+  //@}
+
 
   /// @name          Declare continuous state variables
   /// Continuous state consists of up to three kinds of variables: generalized
@@ -1949,7 +2116,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareEqualityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      int count, const std::string& description) {
+      int count, std::string description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareEqualityConstraint(
@@ -1957,7 +2124,7 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(value != nullptr);
           (this_ptr->*calc)(context, value);
         },
-        count, description);
+        count, std::move(description));
   }
 
   /// Declares a system constraint of the form
@@ -1975,23 +2142,21 @@ class LeafSystem : public System<T> {
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
   SystemConstraintIndex DeclareEqualityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc, int count,
-      const std::string& description) {
-    return this->AddConstraint(
-        std::make_unique<SystemConstraint<T>>(calc, count, description));
+      ContextConstraintCalc<T> calc, int count,
+      std::string description) {
+    return DeclareInequalityConstraint(
+        std::move(calc), SystemConstraintBounds::Equality(count),
+        std::move(description));
   }
 
-  /// @anchor declareinequality
   /// Declares a system constraint of the form
-  ///   lower_bound <= calc(context) <= upper_bound
+  ///   bounds.lower() <= calc(context) <= bounds.upper()
   /// by specifying a member function to use to calculate the (VectorX)
   /// constraint value with a signature:
   /// @code
   /// void MySystem::CalcConstraint(const Context<T>&, VectorX<T>*) const;
   /// @endcode
   ///
-  /// @param lower_bound The lower bound of the constraint.
-  /// @param upper_bound The upper bound of the constraint.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   /// Template arguments will be deduced and do not need to be specified.
@@ -2001,9 +2166,8 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareInequalityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
+      SystemConstraintBounds bounds,
+      std::string description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareInequalityConstraint(
@@ -2011,85 +2175,28 @@ class LeafSystem : public System<T> {
           DRAKE_DEMAND(value != nullptr);
           (this_ptr->*calc)(context, value);
         },
-        lower_bound, upper_bound, description);
+        std::move(bounds), std::move(description));
   }
 
   /// Declares a system constraint of the form
-  ///   lower_bound <= calc(context)
-  /// Refer to @ref declareinequality for more details.
-  template <class MySystem>
-  SystemConstraintIndex DeclareInequalityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound, stx::nullopt_t,
-      const std::string& description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->DeclareInequalityConstraint(
-        calc, lower_bound, Eigen::VectorXd::Constant(lower_bound.size(), kInf),
-        description);
-  }
-
-  /// Declares a system constraint of the form
-  ///   calc(context) <= upper_bound
-  /// Refer to @ref declareinequality for more details.
-  template <class MySystem>
-  SystemConstraintIndex DeclareInequalityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      stx::nullopt_t, const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->DeclareInequalityConstraint(
-        calc, Eigen::VectorXd::Constant(upper_bound.size(), -kInf), upper_bound,
-        description);
-  }
-
-  /// Declares a system constraint of the form
-  ///   lower_bound <= calc(context) <= upper_bound
+  ///   bounds.lower() <= calc(context) <= bounds.upper()
   /// by specifying a std::function to use to calculate the (Vector) constraint
   /// value with a signature:
   /// @code
   /// void CalcConstraint(const Context<T>&, VectorX<T>*);
   /// @endcode
   ///
-  /// @param lower_bound The lower bound of the constraint.
-  /// @param upper_bound The upper bound of the constraint.
   /// @param description should be a human-readable phrase.
   /// @returns The index of the constraint.
   ///
   /// @see SystemConstraint<T> for more information about the meaning of
   /// these constraints.
   SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string& description) {
+      ContextConstraintCalc<T> calc,
+      SystemConstraintBounds bounds,
+      std::string description) {
     return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, lower_bound, upper_bound, description));
-  }
-
-  /// Declares a system constraint of the form
-  /// calc(context) <= upper_bound
-  /// Refer to @ref declareinequality for more details.
-  SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc, stx::nullopt_t,
-      const Eigen::Ref<const Eigen::VectorXd>& upper_bound,
-      const std::string description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, Eigen::VectorXd::Constant(upper_bound.size(), -kInf), upper_bound,
-        description));
-  }
-
-  /// Declares a system constraint of the form
-  /// lower_bound <= calc(context)
-  /// Refer to @ref declareinequality for more details.
-  SystemConstraintIndex DeclareInequalityConstraint(
-      typename SystemConstraint<T>::CalcCallback calc,
-      const Eigen::Ref<const Eigen::VectorXd>& lower_bound, stx::nullopt_t,
-      const std::string description) {
-    const double kInf = std::numeric_limits<double>::infinity();
-    return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
-        calc, lower_bound, Eigen::VectorXd::Constant(lower_bound.size(), kInf),
-        description));
+        this, std::move(calc), std::move(bounds), std::move(description)));
   }
 
   /// Derived-class event dispatcher for all simultaneous publish events
@@ -2467,7 +2574,7 @@ class LeafSystem : public System<T> {
             (*value)(i) = model_vec.GetAtIndex(indices[i]);
           }
         },
-        constraint_lower_bound, constraint_upper_bound,
+        {constraint_lower_bound, constraint_upper_bound},
         kind + " of type " + NiceTypeName::Get(model_vector));
   }
 
@@ -2507,3 +2614,6 @@ class LeafSystem : public System<T> {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafSystem)

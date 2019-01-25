@@ -170,7 +170,7 @@ class DifferentialIK(LeafSystem):
         self.time_step = time_step
         # Note that this context is NOT the context of the DifferentialIK
         # system, but rather a context for the multibody plant that is used
-        # to pass the configuation into the DifferentialInverseKinematics
+        # to pass the configuration into the DifferentialInverseKinematics
         # methods.
         self.robot_context = robot.CreateDefaultContext()
         # Confirm that all velocities are zero (they will not be reset below).

@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -47,7 +48,7 @@ class RevoluteJoint final : public Joint<T> {
   /// class's documentation for further details on the definition of these
   /// frames and rotation angle.
   /// This constructor signature creates a joint with no joint limits, i.e. the
-  /// joint limits are the pair `(-∞, ∞)`.
+  /// joint position, velocity and acceleration limits are the pair `(-∞, ∞)`.
   /// The first three arguments to this constructor are those of the Joint class
   /// constructor. See the Joint class's documentation for details.
   /// The additional parameters are:
@@ -91,11 +92,11 @@ class RevoluteJoint final : public Joint<T> {
   ///   equal to one.
   ///   This vector can have any length, only the direction is used. This method
   ///   aborts if `axis` is the zero vector.
-  /// @param[in] lower_limit
-  ///   Lower limit, in radians, for the rotation coordinate
+  /// @param[in] pos_lower_limit
+  ///   Lower position limit, in radians, for the rotation coordinate
   ///   (see get_angle()).
-  /// @param[in] upper_limit
-  ///   Upper limit, in radians, for the rotation coordinate
+  /// @param[in] pos_upper_limit
+  ///   Upper position limit, in radians, for the rotation coordinate
   ///   (see get_angle()).
   /// @param[in] damping
   ///   Viscous damping coefficient, in N⋅m⋅s, used to model losses within the
@@ -103,23 +104,27 @@ class RevoluteJoint final : public Joint<T> {
   ///   opposing motion, with ω the angular rate for `this` joint (see
   ///   get_angular_rate()).
   /// @throws std::exception if damping is negative.
-  /// @throws std::exception if lower_limit > upper_limit.
-  RevoluteJoint(const std::string& name,
-                const Frame<T>& frame_on_parent, const Frame<T>& frame_on_child,
-                const Vector3<double>& axis,
-                double lower_limit, double upper_limit,
-                double damping = 0) :
-      Joint<T>(name, frame_on_parent, frame_on_child,
-               VectorX<double>::Constant(1, lower_limit),
-               VectorX<double>::Constant(1, upper_limit)) {
+  /// @throws std::exception if pos_lower_limit > pos_upper_limit.
+  RevoluteJoint(const std::string& name, const Frame<T>& frame_on_parent,
+                const Frame<T>& frame_on_child, const Vector3<double>& axis,
+                double pos_lower_limit, double pos_upper_limit,
+                double damping = 0)
+      : Joint<T>(name, frame_on_parent, frame_on_child,
+                 VectorX<double>::Constant(1, pos_lower_limit),
+                 VectorX<double>::Constant(1, pos_upper_limit),
+                 VectorX<double>::Constant(
+                     1, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     1, std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     1, -std::numeric_limits<double>::infinity()),
+                 VectorX<double>::Constant(
+                     1, std::numeric_limits<double>::infinity())) {
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     DRAKE_DEMAND(!axis.isZero(kEpsilon));
     DRAKE_THROW_UNLESS(damping >= 0);
-    DRAKE_THROW_UNLESS(lower_limit <= upper_limit);
     axis_ = axis.normalized();
     damping_ = damping;
-    lower_limit_ = lower_limit;
-    upper_limit_ = upper_limit;
   }
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
@@ -133,11 +138,35 @@ class RevoluteJoint final : public Joint<T> {
   /// Returns `this` joint's damping constant in N⋅m⋅s.
   double damping() const { return damping_; }
 
-  /// Returns the lower limit for `this` joint in radians.
-  double lower_limit() const { return lower_limit_; }
+  /// Returns the position lower limit for `this` joint in radians.
+  double position_lower_limit() const {
+    return this->position_lower_limits()[0];
+  }
 
-  /// Returns the upper limit for `this` joint in radians.
-  double upper_limit() const { return upper_limit_; }
+  /// Returns the position upper limit for `this` joint in radians.
+  double position_upper_limit() const {
+    return this->position_upper_limits()[0];
+  }
+
+  /// Returns the velocity lower limit for `this` joint in radians / s.
+  double velocity_lower_limit() const {
+    return this->velocity_lower_limits()[0];
+  }
+
+  /// Returns the velocity upper limit for `this` joint in radians / s.
+  double velocity_upper_limit() const {
+    return this->velocity_upper_limits()[0];
+  }
+
+  /// Returns the acceleration lower limit for `this` joint in radians / s².
+  double acceleration_lower_limit() const {
+    return this->acceleration_lower_limits()[0];
+  }
+
+  /// Returns the acceleration upper limit for `this` joint in radians / s².
+  double acceleration_upper_limit() const {
+    return this->acceleration_upper_limits()[0];
+  }
 
   /// @name Context-dependent value access
   ///
@@ -326,12 +355,10 @@ class RevoluteJoint final : public Joint<T> {
 
   // This joint's damping constant in N⋅m⋅s.
   double damping_{0};
-
-  // The lower and upper joint limits in radians.
-  // lower_limit_ <= upper_limit_ always (enforced at construction).
-  double lower_limit_{-std::numeric_limits<double>::infinity()};
-  double upper_limit_{std::numeric_limits<double>::infinity()};
 };
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::RevoluteJoint)

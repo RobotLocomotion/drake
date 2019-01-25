@@ -77,9 +77,9 @@ void DoMain() {
       joint_hand_root, {}, Isometry3<double>::Identity());
 
   // Add gravity, if needed
-  if (FLAGS_add_gravity)
-    plant.AddForceElement<multibody::UniformGravityFieldElement>(
-        -9.81 * Eigen::Vector3d::UnitZ());
+  if (FLAGS_add_gravity) {
+    plant.AddForceElement<multibody::UniformGravityFieldElement>();
+  }
 
   // Now the model is complete.
   plant.Finalize();

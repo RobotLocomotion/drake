@@ -70,8 +70,8 @@ int main(int argc, char* argv[]) {
   LcmPublisherSystem* publisher =
       builder.template AddSystem<LcmPublisherSystem>(
           "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher->set_publish_period(0.01);
+          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm,
+          0.01 /* publish period */);
 
   // Create the rod and add it to the diagram.
   Rod2D* rod;

@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/event_collection.h"
 
@@ -259,3 +260,6 @@ class WitnessFunction final {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::WitnessFunction)

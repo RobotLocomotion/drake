@@ -48,7 +48,6 @@ CompareAutoDiffVectors(const Eigen::MatrixBase<DerivedA>& a,
  */
 Eigen::Vector4d QuaternionToVectorWxyz(const Eigen::Quaterniond& q);
 
-namespace internal {
 // We test kinematic constraints on two robots: an IIWA robot and two free
 // bodies. The IIWA test confirms that the bounds and the Eval function of each
 // constraint computes the expected result. The two free bodies test confirms
@@ -91,6 +90,34 @@ class TwoFreeBodiesConstraintTest : public ::testing::Test {
   std::unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff_;
   std::unique_ptr<systems::Context<AutoDiffXd>> plant_context_autodiff_;
 };
-}  // namespace internal
+
+class TwoFreeSpheresTest : public ::testing::Test {
+ public:
+  TwoFreeSpheresTest();
+
+ protected:
+  double radius1_{0.1};
+  double radius2_{0.2};
+  std::unique_ptr<systems::Diagram<double>> diagram_double_;
+  std::unique_ptr<systems::Diagram<AutoDiffXd>> diagram_autodiff_;
+  MultibodyPlant<double>* plant_double_{nullptr};
+  MultibodyPlant<AutoDiffXd>* plant_autodiff_{nullptr};
+  geometry::SceneGraph<double>* scene_graph_double_{nullptr};
+  geometry::SceneGraph<AutoDiffXd>* scene_graph_autodiff_{nullptr};
+
+  FrameIndex sphere1_index_;
+  FrameIndex sphere2_index_;
+
+  // The pose of sphere 1's collision geometry in sphere 1's body frame.
+  Eigen::Isometry3d X_B1S1_;
+  // The pose of sphere 2's collision geometry in sphere 2's body frame.
+  Eigen::Isometry3d X_B2S2_;
+
+  std::unique_ptr<systems::Context<double>> diagram_context_double_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> diagram_context_autodiff_;
+  systems::Context<double>* plant_context_double_{nullptr};
+  systems::Context<AutoDiffXd>* plant_context_autodiff_{nullptr};
+};
+
 }  // namespace multibody
 }  // namespace drake

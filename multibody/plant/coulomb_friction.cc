@@ -3,8 +3,6 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
-#include "drake/common/default_scalars.h"
-
 namespace drake {
 namespace multibody {
 

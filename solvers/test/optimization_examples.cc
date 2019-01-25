@@ -172,15 +172,16 @@ LinearMatrixEqualityExample::LinearMatrixEqualityExample()
                                      -Eigen::Matrix3d::Identity(), true);
 }
 
-void LinearMatrixEqualityExample::CheckSolution() const {
-  auto X_value = prog_->GetSolution(X_);
+void LinearMatrixEqualityExample::CheckSolution(
+    const MathematicalProgramResult& result) const {
+  auto X_value = prog_->GetSolution(X_, result);
   EXPECT_TRUE(CompareMatrices(A_.transpose() * X_value + X_value * A_,
                               -Eigen::Matrix3d::Identity(), 1E-8,
                               MatrixCompareType::absolute));
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
   es.compute(X_value);
   EXPECT_TRUE((es.eigenvalues().array() >= 0).all());
-  EXPECT_NEAR(0.0, prog_->GetOptimalCost(), 1E-8);
+  EXPECT_NEAR(0.0, result.get_optimal_cost(), 1E-8);
 }
 
 NonConvexQPproblem1::NonConvexQPproblem1(CostForm cost_form,

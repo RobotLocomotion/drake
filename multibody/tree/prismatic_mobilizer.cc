@@ -148,10 +148,9 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> PrismaticMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class PrismaticMobilizer<double>;
-template class PrismaticMobilizer<AutoDiffXd>;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::PrismaticMobilizer)

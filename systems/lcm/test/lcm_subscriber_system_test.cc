@@ -8,8 +8,8 @@
 #include "drake/lcm/drake_mock_lcm.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
-#include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/lcm/lcmt_drake_signal_translator.h"
+#include "drake/systems/lcm/test/custom_drake_signal_translator.h"
 
 using drake::lcm::CompareLcmtDrakeSignalMessages;
 
@@ -76,6 +76,15 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(value[i], i);
   }
+
+  // Confirm that the unit test sugar used by pydrake is another equally-valid
+  // way to read messages.
+  auto new_context = dut->CreateDefaultContext();
+  dut->CopyLatestMessageInto(&new_context->get_mutable_state());
+  const auto& new_y = dut->get_output_port().EvalEigenVector(*new_context);
+  for (int i = 0; i < kDim; ++i) {
+    EXPECT_EQ(new_y[i], i);
+  }
 }
 
 // Tests the functionality of LcmSubscriberSystem.
@@ -129,10 +138,10 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 }
 
 struct SampleData {
-  const lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
+  lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
   void MockPublish(
-      drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) {
+      drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
     const int num_bytes = value.getEncodedSize();
     std::vector<uint8_t> buffer(num_bytes);
     value.encode(buffer.data(), 0, num_bytes);
@@ -163,6 +172,42 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
   ASSERT_NE(abstract_value, nullptr);
   auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+}
+
+// Tests LcmSubscriberSystem using a fixed-size Serializer.
+GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
+  drake::lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  const SampleData sample_data;
+
+  // The "device under test".
+  auto dut = LcmSubscriberSystem::MakeFixedSize(
+      sample_data.value, channel_name, &lcm);
+
+  // Establishes the context and output for the dut.
+  std::unique_ptr<Context<double>> context = dut->CreateDefaultContext();
+  std::unique_ptr<SystemOutput<double>> output = dut->AllocateOutput();
+
+  // MockLcm produces a sample message.
+  sample_data.MockPublish(&lcm, channel_name);
+
+  // Verifies that the dut produces the output message.
+  EvalOutputHelper(*dut, context.get(), output.get());
+
+  const AbstractValue* abstract_value = output->get_data(0);
+  ASSERT_NE(abstract_value, nullptr);
+  auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+
+  // Smaller messages should also work.
+  SampleData smaller_data;
+  smaller_data.value = lcmt_drake_signal{1, {1.0}, {"x"}, 12345};
+  smaller_data.MockPublish(&lcm, channel_name);
+  EvalOutputHelper(*dut, context.get(), output.get());
+  const AbstractValue* small_abstract_value = output->get_data(0);
+  ASSERT_NE(small_abstract_value, nullptr);
+  auto small_value = small_abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(small_value, smaller_data.value));
 }
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
@@ -208,81 +253,19 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
       future_message.get(), sample_data.value));
 }
 
-// A lcmt_drake_signal translator that preserves coordinate names.
-class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
- public:
-  // An output vector type that tests that subscribers permit non-default
-  // types.
-  using CustomVector = MyVector<kDim, double>;
-
-  CustomDrakeSignalTranslator() : LcmAndVectorBaseTranslator(kDim) {}
-
-  std::unique_ptr<BasicVector<double>> AllocateOutputVector() const override {
-    return std::make_unique<CustomVector>();
-  }
-
-  static std::string NameFor(int index) {
-    return std::to_string(index) + "_name";
-  }
-
-  void Deserialize(const void* lcm_message_bytes, int lcm_message_length,
-                   VectorBase<double>* vector_base) const override {
-    CustomVector* const custom_vector =
-        dynamic_cast<CustomVector*>(vector_base);
-    ASSERT_NE(nullptr, custom_vector);
-
-    // Decode the LCM message.
-    drake::lcmt_drake_signal message;
-    int status = message.decode(lcm_message_bytes, 0, lcm_message_length);
-    ASSERT_GE(status, 0);
-    ASSERT_EQ(kDim, message.dim);
-
-    // Copy message into our custom_vector.
-    for (int i = 0; i < kDim; ++i) {
-      EXPECT_EQ(message.coord[i], NameFor(i));
-      custom_vector->SetAtIndex(i, message.val[i]);
-    }
-  }
-
-  void Serialize(double time, const VectorBase<double>& vector_base,
-                 std::vector<uint8_t>* lcm_message_bytes) const override {
-    const CustomVector* const custom_vector =
-        dynamic_cast<const CustomVector*>(&vector_base);
-    ASSERT_NE(nullptr, custom_vector);
-    ASSERT_NE(nullptr, lcm_message_bytes);
-
-    // Copy custom_vector into the message.
-    drake::lcmt_drake_signal message;
-    message.dim = kDim;
-    message.val.resize(kDim);
-    message.coord.resize(kDim);
-    message.timestamp = static_cast<int64_t>(time * 1000);
-
-    for (int i = 0; i < kDim; ++i) {
-      message.val.at(i) = custom_vector->GetAtIndex(i);
-      message.coord.at(i) = NameFor(i);
-    }
-
-    // Encode the LCM message.
-    const int lcm_message_length = message.getEncodedSize();
-    lcm_message_bytes->resize(lcm_message_length);
-    message.encode(lcm_message_bytes->data(), 0, lcm_message_length);
-  }
-};
-
 // Subscribe and output a custom VectorBase type.
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   const std::string kChannelName = "dummy";
 
   // The "device under test" and its prerequisites.
-  CustomDrakeSignalTranslator translator;
+  test::CustomDrakeSignalTranslator translator;
   drake::lcm::DrakeMockLcm lcm;
   LcmSubscriberSystem dut(kChannelName, translator, &lcm);
 
   // Create a data-filled vector.
-  typedef CustomDrakeSignalTranslator::CustomVector CustomVector;
+  using CustomVector = test::CustomDrakeSignalTranslator::CustomVector;
   CustomVector sample_vector;
-  for (int i = 0; i < kDim; ++i) {
+  for (int i = 0; i < sample_vector.size(); ++i) {
     sample_vector.SetAtIndex(i, i);
   }
 
@@ -304,7 +287,7 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   const CustomVector* const custom_output =
       dynamic_cast<const CustomVector*>(output_vector);
   ASSERT_NE(nullptr, custom_output);
-  for (int i = 0; i < kDim; ++i) {
+  for (int i = 0; i < sample_vector.size(); ++i) {
     EXPECT_EQ(sample_vector.GetAtIndex(i), custom_output->GetAtIndex(i));
   }
 }
