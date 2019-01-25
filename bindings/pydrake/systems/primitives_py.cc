@@ -162,6 +162,11 @@ PYBIND11_MODULE(primitives, m) {
         m, "SignalLogger", GetPyParam<T>(), doc.SignalLogger.doc)
         .def(py::init<int, int>(), py::arg("input_size"),
             py::arg("batch_allocation_size") = 1000, doc.SignalLogger.ctor.doc)
+        .def("set_publish_period", &SignalLogger<T>::set_publish_period,
+            py::arg("period"), doc.SignalLogger.set_publish_period.doc)
+        .def("set_forced_publish_only",
+            &SignalLogger<T>::set_forced_publish_only,
+            doc.SignalLogger.set_forced_publish_only.doc)
         .def("sample_times", &SignalLogger<T>::sample_times,
             doc.SignalLogger.sample_times.doc)
         .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
