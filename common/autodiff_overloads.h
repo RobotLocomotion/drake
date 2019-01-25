@@ -54,6 +54,13 @@ bool isinf(const Eigen::AutoDiffScalar<DerType>& x) {
   return isinf(x.value());
 }
 
+/// Overloads isfinite to mimic std::isfinite from <cmath>.
+template <typename DerType>
+bool isfinite(const Eigen::AutoDiffScalar<DerType>& x) {
+  using std::isfinite;
+  return isfinite(x.value());
+}
+
 /// Overloads isnan to mimic std::isnan from <cmath>.
 template <typename DerType>
 bool isnan(const Eigen::AutoDiffScalar<DerType>& x) {
