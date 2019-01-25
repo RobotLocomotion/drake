@@ -8,6 +8,9 @@
 
 using drake::geometry::SceneGraph;
 
+// TODO(eric.cousineau): Replace `TwoFreeBodies*` methods with
+// `two_bodies.sdf`; consider using geometry queries to get sphere radii, etc.
+
 namespace drake {
 namespace multibody {
 
