@@ -175,6 +175,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
     ],
+    py_srcs = ["_sensors_extra.py"],
 )
 
 drake_pybind_library(
@@ -440,6 +441,7 @@ drake_py_unittest(
     ],
     deps = [
         ":sensors_py",
+        "//bindings/pydrake/attic/systems:sensors_py",
     ],
 )
 
