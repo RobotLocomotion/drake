@@ -1355,7 +1355,9 @@ class IntegratorBase {
    * Derived classes must implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt and
    * (2) set the error estimate (via get_mutable_error_estimate()). This
-   * method is called during the default Step() method.
+   * method is called during the integration process (via
+   * StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
+   * IntegrateWithSingleFixedStepToTime()).
    * @param dt The integration step to take.
    * @returns `true` if successful, `false` if the integrator was unable to take
    *           a single step of size @p dt (due to, e.g., an integrator
@@ -1378,8 +1380,10 @@ class IntegratorBase {
    * Derived classes may implement this method to (1) integrate the continuous
    * portion of this system forward by a single step of size @p dt, (2) set the
    * error estimate (via get_mutable_error_estimate()) and (3) update their own
-   * dense output implementation (via get_mutable_dense_output()). This method
-   * is called during the default Step() method.
+   * dense output implementation (via get_mutable_dense_output()).  This
+   * method is called during the integration process (via
+   * StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
+   * IntegrateWithSingleFixedStepToTime()).
    * @param dt The integration step to take.
    * @returns `true` if successful, `false` if either the integrator was
    *           unable to take a single step of size @p dt or to advance

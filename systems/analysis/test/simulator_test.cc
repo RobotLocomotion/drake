@@ -1714,6 +1714,12 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
 // This test specifically tests for correct handling of issue #10443, in which
 // an event can be missed.
 GTEST_TEST(SimulatorTest, Issue10443) {
+  // NOTE: This bug arose from a "perfect storm" of conditions- which
+  // occurred due to the interactions of an error controlled integrator, the
+  // maximum step size setting, and the particular publish period used. The
+  // maintainer should assume that every line below is critical to reproducing
+  // those conditions.
+
   // Log the output of a simple diagram containing a constant
   // source and an integrator.
   DiagramBuilder<double> builder;

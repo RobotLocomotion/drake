@@ -116,13 +116,15 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   // Arbitrary step, valid as long as it doesn't match the same
   // steps taken by the integrator. otherwise, dense output accuracy
   // would not be checked.
-  const double t_step = t_final / 100.;
-  for (double t = t_step; t < t_final ; t += t_step) {
+  const double dt = t_final / 100;
+  const int n_steps = t_final / dt;
+  for (int i = 1; i < n_steps; ++i) {
     // Integrate the whole step.
-    rk3.IntegrateWithMultipleStepsToTime(t);
+    rk3.IntegrateWithMultipleStepsToTime(i * dt);
+
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
-        rk3.get_dense_output()->Evaluate(t),
+        rk3.get_dense_output()->Evaluate(context->get_time()),
         plant_->GetPositionsAndVelocities(*context),
         rk3.get_accuracy_in_use(),
         MatrixCompareType::relative));
