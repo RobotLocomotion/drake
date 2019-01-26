@@ -62,6 +62,7 @@ GTEST_TEST(TypeUtilTest, Extract) {
   EXPECT_TRUE((std::is_same<TPack, Pack>::value));
 }
 
+/// Example usages of `type_visit`.
 GTEST_TEST(TypeUtilTest, Visit) {
   using PackTags = type_pack<  // BR
       type_tag<int>,           //
@@ -71,12 +72,19 @@ GTEST_TEST(TypeUtilTest, Visit) {
   vector<string> names;
   const vector<string> names_expected = {"int", "double", "char", "void"};
 
-  auto visitor = [&names](auto tag) {
+  // This is the (optional) state of the loop.
+  int counter = 0;
+  // This it the 'body' of the loop.
+  auto visitor = [&counter, &names](auto tag) {
     using T = typename decltype(tag)::type;
+    ++counter;
     names.push_back(NiceTypeName::Get<T>());
   };
-  names.clear();
+  // This executes the loop.
   type_visit(visitor, PackTags{});
+
+  // Check output.
+  EXPECT_EQ(counter, 4);
   EXPECT_EQ(names, names_expected);
 
   names.clear();
