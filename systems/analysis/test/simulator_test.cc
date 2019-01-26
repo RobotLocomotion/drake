@@ -1724,8 +1724,8 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   builder.Connect(source.get_output_port(),
       integrator.get_input_port());
 
-  // Add a periodic logger
-  const int kFrequency = 10;  // 10 cycles.
+  // Add a periodic logger.
+  const int kFrequency = 10;  // 10 cycles per second.
   auto& periodic_logger = *builder.AddSystem<SignalLogger<double>>(kSize);
   periodic_logger.set_publish_period(1.0 / kFrequency);
   builder.Connect(integrator.get_output_port(),
@@ -1739,14 +1739,14 @@ GTEST_TEST(SimulatorTest, Issue10443) {
   Simulator<double> simulator(*diagram);
   auto rk3 = std::make_unique<RungeKutta3Integrator<double>>(
       *diagram, &simulator.get_mutable_context());
-  rk3->set_maximum_step_size(0.1);
+  rk3->set_maximum_step_size(1.0 / kFrequency);
   rk3->request_initial_step_size_target(1e-4);
   rk3->set_target_accuracy(1e-4);
   rk3->set_fixed_step_mode(false);
   simulator.reset_integrator(std::move(rk3));
 
   // Simulate.
-  const int kTime = 1.0;
+  const int kTime = 1;
   simulator.StepTo(static_cast<double>(kTime));
 
   // Should log exactly once every kPeriod, up to and including

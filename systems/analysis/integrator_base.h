@@ -316,7 +316,8 @@ class IntegratorBase {
    *
    * #### Details
    * Because time is maintained to finite precision, the integrator uses a
-   * scalar `h_floor ≤ h` in order to satisfy `current_time + h > current_time`.
+   * scalar `h_floor` to constrain time step h ≥ `h_floor` such that 
+   * `current_time + h > current_time` will be strictly satisfied.
    * The integrator will never automatically decrease its step below `h_floor`.
    * We calculate `h_floor=max(ε, ε⋅t)`, where t is the current time and ε is a
    * small multiple of machine precision, typically a number like 1e-14. Note
@@ -665,7 +666,7 @@ class IntegratorBase {
                              "fixed stepping.");
     if (!Step(dt)) {
       throw std::runtime_error("Integrator was unable to take a single fixed "
-                                   "step of the requested size.");
+                               "step of the requested size.");
     }
 
     UpdateStepStatistics(dt);
@@ -1943,12 +1944,12 @@ typename IntegratorBase<T>::StepResult
   // should return kReachedBoundaryTime (followed in rapid succession by
   // StepTo(.) return).
 
-  // By default, the candidate dt is the next discrete update event.
+  // By default, the target time is that of the the next discrete update event.
   StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
   T target_time = update_time;
 
   // If the next discrete publish event is sooner than the next discrete update
-  // event, the publish event becomes the candidate dt
+  // event, the time of the publish event becomes the target time.
   if (publish_time < update_time) {
     candidate_result = IntegratorBase<T>::kReachedPublishTime;
     target_time = publish_time;
@@ -1969,9 +1970,9 @@ typename IntegratorBase<T>::StepResult
     return candidate_result;
   }
 
-  // If all events are farther into the future than the maximum step
-  // size times a stretch factor of 1.01, the maximum step size becomes the
-  // candidate dt. Put another way, if the maximum step occurs right before
+  // If all events are further into the future than the maximum step
+  // size times a stretch factor of 1.01, the maximum time becomes the
+  // target time. Put another way, if the maximum step occurs right before
   // an update or a publish, the update or publish is done instead. In contrast,
   // we never step past boundary_time, even if doing so would allow hitting a
   // publish or an update.
