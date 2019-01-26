@@ -424,7 +424,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformSphere() {
 }
 
 // We declare this function here, so we can call it from
-// GenDistanceTestDataOutsideBox().
+// GenDistanceTestDataOutsideBox() below.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
     const RigidTransformd& X_WG = RigidTransformd::Identity());
 
@@ -441,6 +441,7 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
       GenDistanceTestDataBoxBoundary(X_WG);
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const auto& data : test_data_box_boundary) {
+    // We expect the geometry to have a shape of a box.
     const shared_ptr<Shape> box = data.geometry;
     // The gradient grad_W has unit length by construction.
     const Vector3d p_WQ = data.p_WQ + data.expected_result.grad_W;
@@ -462,40 +463,51 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformOutsideBox() {
 }
 
 // Generates test data for a query point Q on the boundary ∂G of a box
-// geometry G. Q can be at the 8 corners, in the middle of the 12 edges, or
-// in the middle of the 6 faces of G. These 26 positions can be expressed in
-// G's frame as:
+// geometry G. Q can be at the 8 corners, at the midpoints of the 12 edges, or
+// at the centers of the 6 faces of G. The set of all 26 positions can be
+// expressed in G's frame as the following Cartesian product excluding the
+// origin (3x3x3-1 = 26) :
+//
 //     p_GQ ∈ {-h(x),0,+h(x)} x {-h(y),0,+h(y)} x {-h(z),0,+h(z)} - {(0,0,0)},
+//
 // where h(x), h(y), and h(z) are the half width, half depth, and half height
-// of G respectively.
+// of G, respectively. We do not allow p_GQ=(0,0,0) because it is in the
+// interior of G. The number of zeroes in p_GQ corresponds to the location at
+// a corner (no zero, 3 non-zeroes), at the midpoint of an edge (1 zero,
+// 2 non-zeroes), or at the center of a face (2 zeroes, 1 non-zero).
+//     The positions above is parameterized by the sign vector s expressed in
+// G's frame as:
 //
-// The positions above is parameterized by the sign vector s expressed in G's
-// frame as:
 //     s_G = (sx,sy,sz) ∈ {-1,0,+1} x {-1,0,+1} x {-1,0,+1} - {(0,0,0)},
-//     p_GQ(s) = (sx * h(x), sy * h(y), sz * h(z)).
+//     p_GQ(s) = s_G ∘ h_G,
 //
-// In each case, Q is also its own nearest point on ∂G, the signed distance
+// where h_G = (h(x), h(y), h(z)), which is the vector from the origin Go to a
+// vertex of G expressed in G's frame. The operator ∘ is the entrywise product:
+// (a,b,c)∘(u,v,w) = (a*u, b*v, c*w).
+//     In each case, Q is also its own nearest point on ∂G, the signed distance
 // is always zero, and the gradient vector equals the normalized unit vector of
-// the signed vector s.
+// the vector s.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
     const RigidTransformd& X_WG) {
   auto box = make_shared<Box>(20., 30., 10.);
-  const Vector3d half_G = box->size() / 2.;
+  const Vector3d h_G = box->size() / 2.;
+  const double distance = 0.;
   std::vector<SignedDistanceToPointTestData> test_data;
-  for (const double sign_x : {-1., 0., 1.}) {
-    for (const double sign_y : {-1., 0., 1.}) {
-      for (const double sign_z : {-1., 0., 1.}) {
-        if (sign_x == 0. && sign_y == 0. && sign_z == 0.) continue;
-        const Vector3d sign_G(sign_x, sign_y, sign_z);
-        const Vector3d p_GQ = sign_G.array() * half_G.array();
+  for (const double sx : {-1., 0., 1.}) {
+    for (const double sy : {-1., 0., 1.}) {
+      for (const double sz : {-1., 0., 1.}) {
+        // Skip the origin.
+        if (sx == 0. && sy == 0. && sz == 0.) continue;
+        const Vector3d s_G(sx, sy, sz);
+        const Vector3d p_GQ = s_G.cwiseProduct(h_G);
         const Vector3d p_WQ = X_WG * p_GQ;
+        // We create new id for each test case to help distinguish them.
         const GeometryId id = GeometryId::get_new_id();
         // Q is its own nearest point on ∂G.
         const Vector3d& p_GN = p_GQ;
-        const double distance = 0.;
         // Rotation matrix for transforming vector expression from G to world.
-        const RotationMatrixd R_WG = X_WG.rotation();
-        const Vector3d grad_G = sign_G.normalized();
+        const RotationMatrixd& R_WG = X_WG.rotation();
+        const Vector3d grad_G = s_G.normalized();
         const Vector3d grad_W = R_WG * grad_G;
         test_data.emplace_back(
             box, X_WG, p_WQ,
@@ -513,40 +525,53 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformBoxBoundary() {
 }
 
 // Generates test data for a query point Q inside a box geometry G with a
-// unique nearest point on the boundary ∂G.
-//     The position of Q is parameterized by the chosen negative distance s,
-// the outward unit normal vector n of the six faces of G, expressed in
-// G's frame as:
-//    s       = - min {h(x), h(y), h(z)} / 2,
-//    n_G     = (nx,ny,nz) = ±UnitX, ±UnitY, or ±UnitZ,
-//    p_GQ(n) = (nx * h(x), ny * h(y), nz * h(z)) + s * n_G,
-// where h(x), h(y), and h(z) are the half width, half depth, and half height
-// of G respectively.  We chose s so that Q has a unique nearest face.
-//     In each case, the nearest point N on ∂G expressed in G's frame is at
-// p_GN = (nx * h(x), ny * h(y), nz * h(z)), and the gradient vector equals
-// the vector n.
+// unique nearest point on the boundary ∂G. Unlike Q on ∂G or outside G that
+// has 26 cases each, we have only 6 cases of Q inside G. In each case, Q is
+// unambiguously closest to a single face.
+//     The position of Q is parameterized by a chosen distance d and the
+// outward unit normal vector s of the six faces of G. We calculate the
+// center C of the face and offset C by the distance d inwards into G:
+//
+//         d    = min {h(x), h(y), h(z)} / 2,
+//         s_G  ∈ {-x, +x, -y, +y, -z, +z}
+//         p_GC = s_G ∘ h_G
+//         p_GQ = p_GC - d * s_G,
+//
+// where h_G = (h(x), h(y), h(z)) is the vector of the half width, half depth,
+// and half height of G. It is the vector from the origin Go to a corner
+// of G expressed in G's frame. The opertor ∘ is the entrywise product:
+// (a,b,c)∘(u,v,w) = (a*u, b*v, c*w).
+//     The chosen d is small enough that Q at the inward normal offset from a
+// face center is still unambiguously closest to that face.
+//     In each case, the nearest point N on ∂G is C, the negative signed
+// distance is -d, and the gradient vector equals the face normal vector s.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   // Create a box [-10,10]x[-15,15]x[-5,5],
   auto box = make_shared<Box>(20., 30., 10.);
-  const Vector3d half_G = box->size() / 2.;
-  const double negative_distance = -half_G.minCoeff() / 2.;
+  const Vector3d h_G = box->size() / 2.;
+  const double d = h_G.minCoeff() / 2.;
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const Vector3d unit_vector :
        {Vector3d::UnitX(), Vector3d::UnitY(), Vector3d::UnitZ()}) {
     for (const double sign : {-1., 1.}) {
-      const Vector3d normal_G = sign * unit_vector;
-      const Vector3d p_GN = normal_G.array() * half_G.array();
-      const Vector3d p_GQ = p_GN + negative_distance * normal_G;
+      // Unit face normal vector.
+      const Vector3d s_G = sign * unit_vector;
+      // Center of a face.
+      const Vector3d p_GC = s_G.cwiseProduct(h_G);
+      const Vector3d p_GQ = p_GC - d * s_G;
       const Vector3d p_WQ = X_WG * p_GQ;
+      // We create new id for each test case to help distinguish them.
       const GeometryId id = GeometryId::get_new_id();
+      // The nearest point is at the face center.
+      const Vector3d& p_GN = p_GC;
       // Rotation matrix for transforming vector expression from G to world.
       const RotationMatrixd R_WG = X_WG.rotation();
-      const Vector3d& grad_G = normal_G;
+      const Vector3d& grad_G = s_G;
       const Vector3d grad_W = R_WG * grad_G;
       test_data.emplace_back(
           box, X_WG, p_WQ,
-          SignedDistanceToPoint<double>(id, p_GN, negative_distance, grad_W));
+          SignedDistanceToPoint<double>(id, p_GN, -d, grad_W));
     }
   }
   return test_data;
