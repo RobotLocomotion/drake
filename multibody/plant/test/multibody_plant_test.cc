@@ -670,6 +670,26 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 #endif
 }
 
+TEST_F(AcrobotPlantTests, SetDefaulState) {
+  EXPECT_EQ(shoulder_->get_angle(*context_), 0.0);
+  EXPECT_EQ(elbow_->get_angle(*context_), 0.0);
+
+  // Set the default joint angles for the acrobot.
+  shoulder_->set_default_angle(0.05);
+  elbow_->set_default_angle(1.2);
+
+  // New contexts should get the default angles.
+  auto test_context = plant_->CreateDefaultContext();
+  EXPECT_EQ(shoulder_->get_angle(*test_context), 0.05);
+  EXPECT_EQ(elbow_->get_angle(*test_context), 1.2);
+
+  shoulder_->set_default_angle(4.2);
+
+  // Calling SetDefaultContext directly works, too.
+  plant_->SetDefaultContext(context_.get());
+  EXPECT_EQ(shoulder_->get_angle(*context_), 4.2);
+}
+
 TEST_F(AcrobotPlantTests, SetRandomState) {
   RandomGenerator generator;
   auto random_context = plant_->CreateDefaultContext();

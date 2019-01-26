@@ -309,7 +309,7 @@ template <typename T>
 void MultibodyTree<T>::SetDefaultState(
     const systems::Context<T>& context, systems::State<T>* state) const {
   for (const auto& mobilizer : owned_mobilizers_) {
-    mobilizer->set_zero_state(context, state);
+    mobilizer->set_default_state(context, state);
   }
 }
 

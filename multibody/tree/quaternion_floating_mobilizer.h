@@ -216,7 +216,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  protected:
   /// Sets `state` to store a configuration in which M coincides with F (i.e.
   /// q_FM is the identity quaternion).
-  Eigen::Matrix<double, 7, 1> get_zero_position() const override;
+  Vector<double, 7> get_zero_position() const override;
 
   void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
