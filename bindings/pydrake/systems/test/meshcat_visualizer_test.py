@@ -110,7 +110,7 @@ class TestMeshcat(unittest.TestCase):
 
         visualizer = builder.AddSystem(
             MeshcatVisualizer(scene_graph,
-                              # zmq_url=None,
+                              zmq_url=None,
                               open_browser=False,
                               draw_contact_force=True,
                               plant=plant))
