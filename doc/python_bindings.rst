@@ -13,6 +13,9 @@ installed as a single package called ``pydrake``.
 
 .. _python-bindings-binary:
 
+Installation
+============
+
 Binary Installation for Python
 ------------------------------
 
@@ -87,10 +90,13 @@ As an example, continuing from the code snippets from above:
 .. _using-python-bindings:
 
 Using the Python Bindings
--------------------------
+=========================
 
-To use the Drake Python bindings, follow the steps above to install or build
-Drake. To check this:
+Check Installation
+------------------
+
+After following the above install steps, check to ensure you can import
+``pydrake``:
 
 .. code-block:: shell
 
@@ -180,7 +186,7 @@ explicitly refer to each symbol:
         pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
 
 Differences with C++ API
-========================
+------------------------
 
 In general, the `Python API <pydrake/index.html#://>`_ should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:
