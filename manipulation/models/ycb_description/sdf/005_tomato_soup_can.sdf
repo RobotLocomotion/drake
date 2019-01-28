@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-<model name="soup_can">
+<model name="005_tomato_soup_can">
   <link name="base_link_soup">
 
     <inertial>
@@ -36,7 +36,7 @@
       slightly inset cylinder will provide contact with a *slight* offset (in this
       case a deviation of 0.0005 m from the visual surface).
      -->
-    <collision name='soup_can_collision'>
+    <collision name='tomato_soup_can_collision'>
       <pose>0 0 0 -1.57 0 0</pose>
       <geometry>
         <cylinder>

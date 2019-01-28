@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-<model name="gelatin_box">
+<model name="009_gelatin_box">
   <link name="base_link_gelatin">
 
     <inertial>

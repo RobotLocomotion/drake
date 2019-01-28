@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-<model name="potted_meat_can">
+<model name="010_potted_meat_can">
   <link name="base_link_meat">
 
     <inertial>

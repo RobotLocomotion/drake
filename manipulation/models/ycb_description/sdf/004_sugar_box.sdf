@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-<model name="sugar_box">
+<model name="004_sugar_box">
   <link name="base_link_sugar">
 
     <inertial>

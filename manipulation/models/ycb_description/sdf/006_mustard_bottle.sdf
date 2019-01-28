@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version='1.6'>
-<model name="mustard_bottle">
+<model name="006_mustard_bottle">
   <link name="base_link_mustard">
 
     <inertial>
