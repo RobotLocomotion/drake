@@ -1096,14 +1096,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_box, user_data);
   }
 
-  void ImplementGeometry(const Mesh&, void* user_data) override {
-    // TODO(SeanCurtis-TRI): Replace this with a legitimate fcl mesh. This
-    // assumes that a zero-radius sphere has no interesting interactions with
-    // other meshes. However, it *does* increase the collision space. :(
-    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);
-    TakeShapeOwnership(fcl_sphere, user_data);
+  void ImplementGeometry(const Mesh&, void*) override {
+    DRAKE_ABORT_MSG("The proximity engine does not support meshes yet");
   }
-
 
   //
   // Convert vertices from tinyobj format to FCL format.
