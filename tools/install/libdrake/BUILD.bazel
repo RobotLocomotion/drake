@@ -16,17 +16,6 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
-load("@python//:version.bzl", "PYTHON_VERSION")
-
-genrule(
-    name = "drake_cps_generate",
-    srcs = ["drake.cps.in"],
-    outs = ["drake.cps"],
-    cmd = "cat \"$<\" | sed 's#@PYTHON_VERSION@#{}#g' > \"$@\"".format(
-        PYTHON_VERSION,
-    ),
-    visibility = ["//visibility:private"],
-)
 
 # TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
 # such that no downstream users can use it?

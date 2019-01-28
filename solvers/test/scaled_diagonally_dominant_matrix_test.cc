@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 using drake::symbolic::test::ExprEqual;
 
@@ -58,16 +59,16 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     prog.AddBoundingBoxConstraint(X_val.col(i), X_val.col(i), X.col(i));
   }
 
-  const auto result = prog.Solve();
+  const auto result = Solve(prog);
   if (is_sdd) {
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
     // Since X = ∑ᵢⱼ Mⁱʲ according to the definition of scaled diagonally
     // dominant matrix, we evaluate the summation of M, and compare that with X.
     std::vector<std::vector<Eigen::MatrixXd>> M_val(nx);
     symbolic::Environment env;
     for (int i = 0; i < prog.num_vars(); ++i) {
       env.insert(prog.decision_variable(i),
-                 prog.GetSolution(prog.decision_variable(i)));
+                 prog.GetSolution(prog.decision_variable(i), result));
     }
     Eigen::MatrixXd M_sum(nx, nx);
     M_sum.setZero();
@@ -92,8 +93,10 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     }
     EXPECT_TRUE(CompareMatrices(M_sum, X_val, tol));
   } else {
-    EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
-                result == SolutionResult::kInfeasible_Or_Unbounded);
+    EXPECT_TRUE(result.get_solution_result() ==
+                    SolutionResult::kInfeasibleConstraints ||
+                result.get_solution_result() ==
+                    SolutionResult::kInfeasible_Or_Unbounded);
   }
 }
 
@@ -117,8 +120,9 @@ bool IsMatrixSDD(const Eigen::Ref<Eigen::MatrixXd>& X) {
   prog.AddPositiveDiagonallyDominantMatrixConstraint(A);
   prog.AddBoundingBoxConstraint(1, std::numeric_limits<double>::infinity(), d);
 
-  const auto result = prog.Solve();
-  return result == solvers::SolutionResult::kSolutionFound;
+  const auto result = Solve(prog);
+  return result.get_solution_result() ==
+         solvers::SolutionResult::kSolutionFound;
 }
 
 GTEST_TEST(ScaledDiagonallyDominantMatrixTest, TestSDDMatrix) {
@@ -207,8 +211,8 @@ GTEST_TEST(SdsosTest, SdsosPolynomial) {
   }
   prog.AddLinearEqualityConstraint(p == p_expected);
 
-  const SolutionResult result = prog.Solve();
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  const MathematicalProgramResult result = Solve(prog);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
 }
 
 GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
@@ -228,9 +232,10 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
 
   prog.AddLinearEqualityConstraint(p == non_sdsos_poly);
 
-  const SolutionResult result = prog.Solve();
-  EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
-              result == SolutionResult::kInfeasible_Or_Unbounded);
+  const MathematicalProgramResult result = Solve(prog);
+  EXPECT_TRUE(
+      result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
+      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
 }
 }  // namespace solvers
 }  // namespace drake

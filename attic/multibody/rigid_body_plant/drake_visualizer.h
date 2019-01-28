@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_load_robot.hpp"
@@ -106,7 +106,7 @@ class DrakeVisualizer : public LeafSystem<double> {
    * Plays back (at real time) a trajectory representing the input signal.
    */
   void PlaybackTrajectory(
-      const trajectories::PiecewisePolynomial<double>& input_trajectory) const;
+      const trajectories::Trajectory<double>& input_trajectory) const;
 
   /**
    * Publishes a lcmt_viewer_load_robot message containing a description
@@ -117,14 +117,20 @@ class DrakeVisualizer : public LeafSystem<double> {
   void PublishLoadRobot() const;
 
  private:
-  // TODO(siyuan): Split DoPublish into individual callbacks for different
-  // events. Since the desired behaviors for different triggers are exclusive.
+  EventStatus PublishInitialMessage(
+      const systems::Context<double>&) const {
+    PublishLoadRobot();
+    return EventStatus::Succeeded();
+  }
 
-  // If @p events has only 1 kInitialization trigger typed event, calls
-  // PublishLoadRobot. Otherwise it publishes a draw message.
-  void DoPublish(const systems::Context<double>& context,
-                 const std::vector<const PublishEvent<double>*>& events)
-                 const override;
+  EventStatus PerStepPublishDrawMessage(
+      const systems::Context<double>& context) const {
+    if (!publish_per_step_) return EventStatus::DidNothing();
+    return PublishDrawMessage(context);
+  }
+
+  EventStatus PublishDrawMessage(
+      const systems::Context<double>& context) const;
 
   // A pointer to the LCM subsystem. It is through this object that LCM messages
   // are published.
@@ -143,6 +149,9 @@ class DrakeVisualizer : public LeafSystem<double> {
   // The RigidBodyTree with which the poses of each RigidBody can be
   // determined given the state vector of the RigidBodyTree.
   const RigidBodyTree<double>& tree_;
+
+  // Visualize every step by default; disabled if a period is specified.
+  bool publish_per_step_{true};
 };
 
 }  // namespace systems

@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
@@ -33,7 +34,7 @@ namespace multibody {
 template <typename T>
 class PointPairContactInfo {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PointPairContactInfo)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(PointPairContactInfo)
   /**
    Constructs the contact information for a given pair of two colliding bodies.
    @param bodyA_index
@@ -111,6 +112,8 @@ class PointPairContactInfo {
   T slip_speed_;
 };
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(PointPairContactInfo)
+
 #ifndef DRAKE_DOXYGEN_CXX
 // TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
 namespace multibody_plant {
@@ -123,3 +126,6 @@ using PointPairContactInfo
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::PointPairContactInfo)

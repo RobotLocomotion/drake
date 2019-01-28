@@ -158,7 +158,8 @@ struct type_check_different_from {
   using type = negation<std::is_same<T, U>>;
 };
 
-/// Visits each type in a type pack.
+/// Visits each type in a type pack. This effectively implements a
+// `constexpr for` loops. See `type_pack_test.cc` for usages.
 /// @tparam VisitWith
 ///   Visit helper. @see `type_visit_with_default`, `type_visit_with_tag`.
 /// @tparam Predicate Predicate operating on the type dictated by `VisitWith`.

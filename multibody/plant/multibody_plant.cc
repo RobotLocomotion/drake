@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -220,6 +219,24 @@ struct JointLimitsPenaltyParametersEstimator {
 };
 }  // namespace internal
 
+namespace {
+
+// Hack to fully qualify frame names, pending resolution of #9128. Used by
+// geometry registration routines.
+template <typename T>
+std::string GetScopedName(
+    const MultibodyPlant<T>& plant,
+    ModelInstanceIndex model_instance, const std::string& name) {
+  if (model_instance != world_model_instance() &&
+      model_instance != default_model_instance()) {
+    return plant.GetModelInstanceName(model_instance) + "::" + name;
+  } else {
+    return name;
+  }
+}
+
+}  // namespace
+
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
     : MultibodyPlant(nullptr, time_step) {}
@@ -254,6 +271,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
   // instance. This will be nullified at Finalize().
   scene_graph_ = scene_graph;
   body_index_to_frame_id_[world_index()] = scene_graph->world_frame_id();
+  frame_id_to_body_index_[scene_graph->world_frame_id()] = world_index();
   DeclareSceneGraphPorts();
   return source_id_.value();
 }
@@ -296,7 +314,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(body, X_BG, shape, name, scene_graph_);
+  GeometryId id = RegisterGeometry(
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
+      scene_graph_);
   scene_graph_->AssignRole(*source_id_, id, properties);
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
@@ -324,7 +344,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(body, X_BG, shape, name, scene_graph_);
+  GeometryId id = RegisterGeometry(
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
+      scene_graph_);
 
   // TODO(SeanCurtis-TRI): Push the contact parameters into the
   // ProximityProperties.
@@ -400,7 +422,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     FrameId frame_id = scene_graph_->RegisterFrame(
         source_id_.value(),
         GeometryFrame(
-            body.name(),
+            GetScopedName(*this, body.model_instance(), body.name()),
             /* Initial pose: Not really used by GS. Will get removed. */
             Isometry3<double>::Identity(),
             /* TODO(@SeanCurtis-TRI): Add test coverage for this
@@ -520,17 +542,16 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     const double penalty_time_scale = kAlpha * time_step();
 
     if (revolute_joint) {
+      const double lower_limit = revolute_joint->position_lower_limits()(0);
+      const double upper_limit = revolute_joint->position_upper_limits()(0);
       // We only compute parameters if joints do have upper/lower bounds.
-      if (!std::isinf(revolute_joint->lower_limit()) ||
-          !std::isinf(revolute_joint->upper_limit())) {
+      if (!std::isinf(lower_limit) || !std::isinf(upper_limit)) {
         joint_limits_parameters_.joints_with_limits.push_back(
             revolute_joint->index());
 
         // Store joint limits.
-        joint_limits_parameters_.lower_limit.push_back(
-            revolute_joint->lower_limit());
-        joint_limits_parameters_.upper_limit.push_back(
-            revolute_joint->upper_limit());
+        joint_limits_parameters_.lower_limit.push_back(lower_limit);
+        joint_limits_parameters_.upper_limit.push_back(upper_limit);
         // Estimate penalty parameters.
         auto penalty_parameters =
             internal::JointLimitsPenaltyParametersEstimator<T>::
@@ -542,17 +563,16 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     }
 
     if (prismatic_joint) {
+      const double lower_limit = prismatic_joint->position_lower_limits()(0);
+      const double upper_limit = prismatic_joint->position_upper_limits()(0);
       // We only compute parameters if joints do have upper/lower bounds.
-      if (!std::isinf(prismatic_joint->lower_limit()) ||
-          !std::isinf(prismatic_joint->upper_limit())) {
+      if (!std::isinf(lower_limit) || !std::isinf(upper_limit)) {
         joint_limits_parameters_.joints_with_limits.push_back(
             prismatic_joint->index());
 
         // Store joint limits.
-        joint_limits_parameters_.lower_limit.push_back(
-            prismatic_joint->lower_limit());
-        joint_limits_parameters_.upper_limit.push_back(
-            prismatic_joint->upper_limit());
+        joint_limits_parameters_.lower_limit.push_back(lower_limit);
+        joint_limits_parameters_.upper_limit.push_back(upper_limit);
 
         // Estimate penalty parameters.
         auto penalty_parameters =
@@ -785,7 +805,8 @@ void MultibodyPlant<T>::set_penetration_allowance(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   // Default to Earth's gravity for this estimation.
   const double g = gravity_field_.has_value() ?
-                   gravity_field_.value()->gravity_vector().norm() : 9.81;
+                   gravity_field_.value()->gravity_vector().norm() :
+                   UniformGravityFieldElement<double>::kDefaultStrength;
 
   // TODO(amcastro-tri): Improve this heuristics in future PR's for when there
   // are several flying objects and fixed base robots (E.g.: manipulation

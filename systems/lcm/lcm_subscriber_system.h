@@ -64,6 +64,28 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   }
 
   /**
+   * (Experimental.) Factory method like Make(channel, lcm), but the result
+   * only accepts bounded-size LCM messages.  The subscriber returned by this
+   * method may perform better than the subscriber returned by a plain Make.
+   * (To avoid issue #10149, this fixed-size subscriber will store the message
+   * as discrete-state bytes, instead of a deserialized abstract value.)  Once
+   * #10149 is resolved, this method might evaporate without a preceding
+   * deprecation period.
+   *
+   * @param exemplar A sample message value; all messages received by this
+   * System must be no larger than this encoded size.
+   */
+  template <typename LcmMessage>
+  static std::unique_ptr<LcmSubscriberSystem> MakeFixedSize(
+      const LcmMessage& exemplar, const std::string& channel,
+      drake::lcm::DrakeLcmInterface* lcm) {
+    // We can't use make_unique when calling a private constructor.
+    return std::unique_ptr<LcmSubscriberSystem>(new LcmSubscriberSystem(
+        channel, nullptr, std::make_unique<Serializer<LcmMessage>>(), lcm,
+        exemplar.getEncodedSize()));
+  }
+
+  /**
    * Constructor that returns a subscriber System that provides message objects
    * on its sole abstract-valued output port.  The type of the message object is
    * determined by the @p serializer.
@@ -156,6 +178,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
       int old_message_count, AbstractValue* message = nullptr) const;
 
   /**
+   * (Advanced.) Writes the most recently received message (and message count)
+   * into @p state.  If no messages have been received, only the message count
+   * is updated.  This is primarily useful for unit testing.
+   */
+  void CopyLatestMessageInto(State<double>* state) const;
+
+  /**
    * Returns the internal message counter. Meant to be used with
    * `WaitForMessage`.
    */
@@ -178,8 +207,6 @@ class LcmSubscriberSystem : public LeafSystem<double> {
     ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override;
-
   void DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
@@ -187,18 +214,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
     ProcessMessageAndStoreToDiscreteState(discrete_state);
   }
 
-  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()
-      const override;
-
-  void SetDefaultState(const Context<double>& context,
-                       State<double>* state) const override;
-
  private:
   // All constructors delegate to here.
   LcmSubscriberSystem(const std::string& channel,
                       const LcmAndVectorBaseTranslator* translator,
                       std::unique_ptr<SerializerInterface> serializer,
-                      drake::lcm::DrakeLcmInterface* lcm);
+                      drake::lcm::DrakeLcmInterface* lcm,
+                      int fixed_encoded_size = -1);
 
   void ProcessMessageAndStoreToDiscreteState(
       DiscreteValues<double>* discrete_state) const;
@@ -221,6 +243,14 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   void CalcSerializerOutputValue(const Context<double>& context,
                                  AbstractValue* output_value) const;
 
+  bool is_abstract_state() const {
+    return serializer_ && (fixed_encoded_size_ < 0);
+  }
+
+  bool is_discrete_state() const {
+    return !is_abstract_state();
+  }
+
   // The channel on which to receive LCM messages.
   const std::string channel_;
 
@@ -231,6 +261,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
   // Converts LCM message bytes to Value<LcmMessage> objects.
   // Will be non-null iff our output port is abstract-valued.
   const std::unique_ptr<SerializerInterface> serializer_;
+  const int fixed_encoded_size_;
 
   // The mutex that guards received_message_ and received_message_count_.
   mutable std::mutex received_message_mutex_;

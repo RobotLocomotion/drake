@@ -16,11 +16,16 @@ class MySpringMassSystem : public SpringMassSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MySpringMassSystem)
 
-  // Pass through to SpringMassSystem, except add update rate
+  // Pass through to SpringMassSystem, except add events and handlers.
   MySpringMassSystem(double stiffness, double mass, double update_rate)
       : SpringMassSystem<T>(stiffness, mass, false /*no input force*/) {
+    // This forced-publish event is necessary for any simulator_test case that
+    // needs to verify that the publish_every_time_step feature works.
+    this->DeclareForcedPublishEvent(&MySpringMassSystem::CountPublishes);
+
     if (update_rate > 0.0) {
-      this->DeclarePeriodicDiscreteUpdate(1.0 / update_rate);
+      this->DeclarePeriodicDiscreteUpdateEvent(1.0 / update_rate, 0.0,
+          &MySpringMassSystem::CountDiscreteUpdates);
     }
   }
 
@@ -29,20 +34,17 @@ class MySpringMassSystem : public SpringMassSystem<T> {
   int get_update_count() const { return update_count_; }
 
  private:
-  // Publish t q u to standard output.
-  void DoPublish(const Context<T>&,
-                 const std::vector<const systems::PublishEvent<T>*>&)
-      const override {
+  EventStatus CountPublishes(const Context<T>&) const {
     ++publish_count_;
+    return EventStatus::Succeeded();
   }
 
   // The discrete equation update here is for the special case of zero
   // discrete variables- in other words, this is just a counter.
-  void DoCalcDiscreteVariableUpdates(
-      const Context<T>&,
-      const std::vector<const systems::DiscreteUpdateEvent<T>*>&,
-      DiscreteValues<T>*) const override {
+  EventStatus CountDiscreteUpdates(const Context<T>&,
+                                   DiscreteValues<T>*) const {
     ++update_count_;
+    return EventStatus::Succeeded();
   }
 
   mutable int publish_count_{0};

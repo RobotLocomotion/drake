@@ -3,7 +3,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/common/autodiff.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -150,10 +149,9 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class RevoluteMobilizer<double>;
-template class RevoluteMobilizer<AutoDiffXd>;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::RevoluteMobilizer)

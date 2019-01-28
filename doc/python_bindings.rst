@@ -11,8 +11,6 @@ class which is exposed to C++ has been explicitly enumerated in one of the
 source files inside the ``bindings/pydrake`` folder. These bindings are
 installed as a single package called ``pydrake``.
 
-Python 2.7 is currently the only supported version for these bindings.
-
 .. _python-bindings-binary:
 
 Binary Installation for Python
@@ -22,7 +20,7 @@ First, download and extract an :ref:`available binary package
 <binary-installation>`.
 
 As an example, here is how to download and extract one of the latest releases
-to ``/opt`` (where ``<platform>`` could be ``xenial`` or ``mac``):
+to ``/opt`` (where ``<platform>`` could be ``bionic``, ``xenial``, or ``mac``):
 
 .. code-block:: shell
 
@@ -45,6 +43,9 @@ Next, ensure that your ``PYTHONPATH`` is properly configured:
 See :ref:`below <using-python-bindings>` for usage instructions. If using
 macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
 
+Python 2.7 is currently the only supported version for the bindings supplied
+by the binary packages. To use Python 3.x, see below for building from source.
+
 Building the Python Bindings
 ----------------------------
 
@@ -64,6 +65,7 @@ Please note the additional CMake options which affect the Python bindings:
 *   ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
 *   ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK enabled.
 *   ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
+*   ``-DWITH_PYTHON_VERSION={[2], 3}`` - Build with a specific version of Python.
 
 ``{...}`` means a list of options, and the option surrounded by ``[...]`` is
 the default option. An example of building ``pydrake`` with both Gurobi and
@@ -136,13 +138,18 @@ Here's an example snippet of code from ``pydrake``:
 .. code-block:: python
 
     from pydrake.common import FindResourceOrThrow
-    from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-    from pydrake.multibody.rigid_body_tree import RigidBodyTree
+    from pydrake.multibody.parsing import Parser
+    from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
     from pydrake.systems.analysis import Simulator
+    from pydrake.systems.framework import DiagramBuilder
 
-    tree = RigidBodyTree(
+    builder = DiagramBuilder()
+    plant, _ = AddMultibodyPlantSceneGraph(builder)
+    Parser(plant).AddModelFromFile(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-    simulator = Simulator(RigidBodyPlant(tree))
+    plant.Finalize()
+    diagram = builder.Build()
+    simulator = Simulator(diagram)
 
 If you are prototyping code in a REPL environment (such as IPython / Jupyter)
 and to reduce the number of import statements, consider using ``pydrake.all`` to
@@ -153,16 +160,21 @@ automatically. If you are writing non-prototype code, avoid using
 In all cases, try to avoid using ``from pydrake.all import *``, as it may
 introduce symbol collisions that are difficiult to debug.
 
-An example of importing symbols directly from ``pydrake.all``:
+The above example, but using ``pydrake.all``:
 
 .. code-block:: python
 
     from pydrake.all import (
-        FindResourceOrThrow, RigidBodyPlant, RigidBodyTree, Simulator)
+        AddMultibodyPlantSceneGraph, DiagramBuilder, FindResourceOrThrow,
+        Parser, Simulator)
 
-    tree = RigidBodyTree(
+    builder = DiagramBuilder()
+    plant, _ = AddMultibodyPlantSceneGraph(builder)
+    Parser(plant).AddModelFromFile(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-    simulator = Simulator(RigidBodyPlant(tree))
+    plant.Finalize()
+    diagram = builder.Build()
+    simulator = Simulator(diagram)
 
 An alternative is to use ``pydrake.all`` to import all modules, but then
 explicitly refer to each symbol:
@@ -171,11 +183,14 @@ explicitly refer to each symbol:
 
     import pydrake.all
 
-    tree = pydrake.multibody.rigid_body_tree.RigidBodyTree(
+    builder = pydrake.systems.framework.DiagramBuilder()
+    plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder)
+    pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
         pydrake.common.FindResourceOrThrow(
             "drake/examples/pendulum/Pendulum.urdf"))
-    simulator = pydrake.systems.analysis.Simulator(
-        pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
+    plant.Finalize()
+    diagram = builder.Build()
+    simulator = pydrake.systems.analysis.Simulator(diagram)
 
 Differences with C++ API
 ========================

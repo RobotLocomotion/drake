@@ -88,9 +88,9 @@ void DoMain() {
                                        Isometry3<double>::Identity());
 
   // Add gravity, if needed
-  if (FLAGS_add_gravity)
-    plant.AddForceElement<multibody::UniformGravityFieldElement>(
-        -9.81 * Eigen::Vector3d::UnitZ());
+  if (FLAGS_add_gravity) {
+    plant.AddForceElement<multibody::UniformGravityFieldElement>();
+  }
 
   // Finished building the plant
   plant.Finalize();
@@ -119,7 +119,7 @@ void DoMain() {
   builder.Connect(hand_controller.get_output_port_control(),
                   plant.get_actuation_input_port());
 
-  // Creat an output port of the continuous state from the plant that only
+  // Create an output port of the continuous state from the plant that only
   // output the status of the hand finger joints related DOFs, and put them in
   // the pre-defined order that is easy for understanding.
   const auto& hand_status_converter =
@@ -141,9 +141,8 @@ void DoMain() {
   hand_command_receiver.set_name("hand_command_receiver");
   auto& hand_status_pub = *builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_allegro_status>(
-          "ALLEGRO_STATUS", &lcm));
+          "ALLEGRO_STATUS", &lcm, kLcmStatusPeriod /* publish period */));
   hand_status_pub.set_name("hand_status_publisher");
-  hand_status_pub.set_publish_period(kLcmStatusPeriod);
   auto& status_sender =
       *builder.AddSystem<AllegroStatusSender>(kAllegroNumJoints);
   status_sender.set_name("status_sender");

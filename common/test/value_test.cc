@@ -1,4 +1,4 @@
-#include "drake/systems/framework/value.h"
+#include "drake/common/value.h"
 
 #include <memory>
 #include <sstream>

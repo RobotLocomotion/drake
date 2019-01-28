@@ -318,7 +318,7 @@ int do_main() {
   const math::RotationMatrix<double> R_dumbbell_expected(
       rpy_EE_final.ToQuaternion());
 
-  // compute object final poistion and orientation.
+  // compute object final position and orientation.
   const Eigen::VectorXd q_final = log_state->data().rightCols(1);
   cache.initialize(q_final, v);
   tree->doKinematics(cache);

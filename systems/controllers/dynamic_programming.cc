@@ -7,6 +7,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/wrap_to.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
@@ -244,14 +245,14 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
   }
 
   drake::log()->info("Solving linear program.");
-  const solvers::SolutionResult result = prog.Solve();
-  if (result != solvers::SolutionResult::kSolutionFound) {
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  if (result.get_solution_result() != solvers::SolutionResult::kSolutionFound) {
     drake::log()->error("No solution found.  SolutionResult = " +
-                        to_string(result));
+                        to_string(result.get_solution_result()));
   }
   drake::log()->info("Done solving linear program.");
 
-  return prog.GetSolution(params);
+  return prog.GetSolution(params, result);
 }
 
 }  // namespace controllers

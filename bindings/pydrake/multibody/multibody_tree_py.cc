@@ -2,13 +2,13 @@
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_geometry_pybind.h"
+#include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
-#include "drake/bindings/pydrake/util/deprecation_pybind.h"
-#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
-#include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/math/spatial_acceleration.h"
 #include "drake/multibody/math/spatial_force.h"
@@ -161,8 +161,18 @@ void init_module(py::module m) {
             "num_positions", &Class::num_positions, doc.Joint.num_positions.doc)
         .def("num_velocities", &Class::num_velocities,
             doc.Joint.num_velocities.doc)
-        .def("lower_limits", &Class::lower_limits, doc.Joint.lower_limits.doc)
-        .def("upper_limits", &Class::upper_limits, doc.Joint.upper_limits.doc);
+        .def("position_lower_limits", &Class::position_lower_limits,
+            doc.Joint.position_lower_limits.doc)
+        .def("position_upper_limits", &Class::position_upper_limits,
+            doc.Joint.position_upper_limits.doc)
+        .def("velocity_lower_limits", &Class::velocity_lower_limits,
+            doc.Joint.velocity_lower_limits.doc)
+        .def("velocity_upper_limits", &Class::velocity_upper_limits,
+            doc.Joint.velocity_upper_limits.doc)
+        .def("acceleration_lower_limits", &Class::acceleration_lower_limits,
+            doc.Joint.acceleration_lower_limits.doc)
+        .def("acceleration_upper_limits", &Class::acceleration_upper_limits,
+            doc.Joint.acceleration_upper_limits.doc);
 
     // Add deprecated methods.
 #pragma GCC diagnostic push
@@ -236,8 +246,9 @@ void init_module(py::module m) {
     using Class = UniformGravityFieldElement<T>;
     py::class_<Class, ForceElement<T>>(
         m, "UniformGravityFieldElement", doc.UniformGravityFieldElement.doc)
+        .def(py::init<>(), doc.UniformGravityFieldElement.ctor.doc_0args)
         .def(py::init<Vector3<double>>(), py::arg("g_W"),
-            doc.UniformGravityFieldElement.ctor.doc);
+            doc.UniformGravityFieldElement.ctor.doc_1args);
   }
 
   // MultibodyForces
@@ -588,9 +599,9 @@ void init_multibody_plant(py::module m) {
             },
             py::arg("model_instance"), py::arg("q_instance"), py::arg("q"),
             doc.MultibodyPlant.SetPositionsInArray.doc)
-        .def("GetVelocitiesFromArray", &Class::GetPositionsFromArray,
-            py::arg("model_instance"), py::arg("q"),
-            doc.MultibodyPlant.GetPositionsFromArray.doc)
+        .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
+            py::arg("model_instance"), py::arg("v"),
+            doc.MultibodyPlant.GetVelocitiesFromArray.doc)
         .def("SetVelocitiesInArray",
             [](const Class* self, multibody::ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>> v_instance,
@@ -689,6 +700,18 @@ void init_multibody_plant(py::module m) {
             py::arg("context"), doc.MultibodyPlant.CalcPotentialEnergy.doc)
         .def("CalcConservativePower", &Class::CalcConservativePower,
             py::arg("context"), doc.MultibodyPlant.CalcConservativePower.doc)
+        .def("GetPositionLowerLimits", &Class::GetPositionLowerLimits,
+            doc.MultibodyPlant.GetPositionLowerLimits.doc)
+        .def("GetPositionUpperLimits", &Class::GetPositionUpperLimits,
+            doc.MultibodyPlant.GetPositionUpperLimits.doc)
+        .def("GetVelocityLowerLimits", &Class::GetVelocityLowerLimits,
+            doc.MultibodyPlant.GetVelocityLowerLimits.doc)
+        .def("GetVelocityUpperLimits", &Class::GetVelocityUpperLimits,
+            doc.MultibodyPlant.GetVelocityUpperLimits.doc)
+        .def("GetAccelerationLowerLimits", &Class::GetAccelerationLowerLimits,
+            doc.MultibodyPlant.GetAccelerationLowerLimits.doc)
+        .def("GetAccelerationUpperLimits", &Class::GetAccelerationUpperLimits,
+            doc.MultibodyPlant.GetAccelerationUpperLimits.doc)
         .def("CalcMassMatrixViaInverseDynamics",
             [](const Class* self, const Context<T>& context) {
               MatrixX<T> H;

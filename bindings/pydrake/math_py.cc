@@ -24,7 +24,7 @@ PYBIND11_MODULE(math, m) {
   m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
 
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.common.eigen_geometry");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -75,6 +75,7 @@ PYBIND11_MODULE(math, m) {
 
   py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
       .def(py::init(), doc.RigidTransform.ctor.doc_0args)
+      .def(py::init<const RigidTransform<T>&>(), py::arg("other"))
       .def(py::init<const RotationMatrix<T>&, const Vector3<T>&>(),
           py::arg("R"), py::arg("p"), doc.RigidTransform.ctor.doc_2args_R_p)
       .def(py::init<const RollPitchYaw<T>&, const Vector3<T>&>(),
@@ -133,6 +134,7 @@ PYBIND11_MODULE(math, m) {
   // .def("IsExactlyEqualTo", ...)
 
   py::class_<RollPitchYaw<T>>(m, "RollPitchYaw")
+      .def(py::init<const RollPitchYaw<T>&>(), py::arg("other"))
       .def(py::init<const Vector3<T>>(), py::arg("rpy"),
           doc.RollPitchYaw.ctor.doc_1args_rpy)
       .def(py::init<const T&, const T&, const T&>(), py::arg("roll"),
@@ -156,6 +158,7 @@ PYBIND11_MODULE(math, m) {
 
   py::class_<RotationMatrix<T>>(m, "RotationMatrix", doc.RotationMatrix.doc)
       .def(py::init(), doc.RotationMatrix.ctor.doc_0args)
+      .def(py::init<const RotationMatrix<T>&>(), py::arg("other"))
       .def(py::init<const Matrix3<T>&>(), py::arg("R"),
           doc.RotationMatrix.ctor.doc_1args_R)
       .def(py::init<Eigen::Quaternion<T>>(), py::arg("quaternion"),

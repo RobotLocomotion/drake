@@ -1,7 +1,7 @@
 # -*- mode: python -*-
 
 # These macros are intended to be used when declaring tests that either may-use
-# or must-use dependencies that have constraints (commerical licenses, or
+# or must-use dependencies that have constraints (commercial licenses, or
 # peculiar behavior). For commercial dependnecies, these labels both account
 # for any license-related needs and provide a marker so that //tools/bazel.rc
 # can selectively enable tests based on the developer's chosen configuration.

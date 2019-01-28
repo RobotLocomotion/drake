@@ -161,6 +161,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:geometry_set_tester",
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/benchmarks/acrobot",

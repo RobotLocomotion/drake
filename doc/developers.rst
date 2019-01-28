@@ -80,26 +80,26 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Operating System                 | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
 +==================================+=================+=================+============+===================+========+
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.21.0  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
 |                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.19.2  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
+| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.21.0  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
 |                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   | 3.6.7  |
 +----------------------------------+-----------------+-----------------+------------+                   +--------+
-| macOS High Sierra (10.13)        | | Bazel 0.19.2  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
-+----------------------------------+ | CMake 3.13.0  |                 |            |                   |        |
+| macOS High Sierra (10.13)        | | Bazel 0.21.0  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
++----------------------------------+ | CMake 3.13.2  |                 |            |                   | 3.7.2  |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
 
 CPython is the only Python implementation supported. On all platforms, Python 2
-is the default version.
+is the default version. On Ubuntu, amd64 (i.e., x86_64) is the only supported
+architecture.
 
 The following configurations are presently untested in continuous integration:
 
 -   macOS Mojave: C++, Python
 -   macOS, Ubuntu Bionic: MATLAB
--   Ubuntu Bionic: Python 3
 
 .. _configuration-management-non-determinism:
 
@@ -140,6 +140,7 @@ Issue Tracking
     :maxdepth: 1
 
     issues
+    platform_reviewer_checklist
 
 Code Review
 ===========

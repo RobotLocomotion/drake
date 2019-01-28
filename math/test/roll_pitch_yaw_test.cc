@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
@@ -402,6 +403,49 @@ GTEST_TEST(RollPitchYaw, CalcRpyDDtFromAngularAccel) {
       }
     }
   }
+}
+
+// Verify the constructor and a few key operations are compatible with
+// symbolic::Expression.  We focus only on methods that required tweaks in
+// order to compile against Expression.
+GTEST_TEST(RollPitchYaw, SymbolicTest) {
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  const Variable r1("r1");
+  const Variable r2("r2");
+  const Variable p1("p1");
+  const Variable p2("p2");
+  const Variable y1("y1");
+  const Variable y2("y2");
+  const RollPitchYaw<Expression> dut1(r1, p1, y1);
+  const RollPitchYaw<Expression> dut2(r2, p2, y2);
+
+  EXPECT_EQ(
+      dut1.IsNearlyEqualTo(dut2, 1e-3).to_string(),
+      fmt::format(
+          "(max({}, max({}, {})) <= 0.001)",
+          "abs((r1 - r2))",
+          "abs((p1 - p2))",
+          "abs((y1 - y2))"));
+
+  EXPECT_THAT(
+      dut1.IsNearlySameOrientation(dut2, 1e-3).to_string(),
+      testing::MatchesRegex("\\(max.* <= 0.001\\)"));
+
+  EXPECT_THAT(
+      dut1.IsRollPitchYawInCanonicalRange().to_string(),
+      testing::MatchesRegex(".*(and.*){5}"));
+
+  EXPECT_THAT(
+      RollPitchYaw<Expression>::DoesCosPitchAngleViolateGimbalLockTolerance(
+          cos(p1)).to_string(),
+      testing::StartsWith("(abs(cos(p1)) < 0.008"));
+
+  const Vector3<Expression> vec(r1, p1, y1);
+  EXPECT_THAT(
+      RollPitchYaw<Expression>::IsValid(vec).to_string(),
+      testing::MatchesRegex(".*inf.*(and.*inf.*){5}"));
 }
 
 }  // namespace

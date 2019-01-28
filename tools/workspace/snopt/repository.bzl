@@ -163,7 +163,7 @@ def _impl(repo_ctx):
 snopt_repository = repository_rule(
     attrs = {
         "remote": attr.string(default = "git@github.com:RobotLocomotion/snopt.git"),  # noqa
-        "commit": attr.string(default = "c17db3769e59d4a8d651631d5d79641cecca0504"),  # noqa
+        "commit": attr.string(default = "0254e961cb8c60193b0862a0428fd6a42bfb5243"),  # noqa
         "use_drake_build_rules": attr.bool(
             default = True,
             doc = ("When obtaining SNOPT via git, controls whether or not " +

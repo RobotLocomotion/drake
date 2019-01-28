@@ -150,6 +150,10 @@ class GeometryState {
    SceneGraphInspector::BelongsToSource(FrameId, SourceId) const.  */
   bool BelongsToSource(FrameId frame_id, SourceId source_id) const;
 
+  /** Implementation of
+   SceneGraphInspector::GetOwningSourceName(FrameId) const.  */
+  const std::string& GetOwningSourceName(FrameId id) const;
+
   /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
   const std::string& get_frame_name(FrameId frame_id) const;
 
@@ -184,11 +188,19 @@ class GeometryState {
    SceneGraphInspector::BelongsToSource(GeometryId, SourceId) const.  */
   bool BelongsToSource(GeometryId geometry_id, SourceId source_id) const;
 
+  /** Implementation of
+   SceneGraphInspector::GetOwningSourceName(GeometryId) const.  */
+  const std::string& GetOwningSourceName(GeometryId id) const;
+
+
   /** Implementation of SceneGraphInspector::GetFrameId().  */
   FrameId GetFrameId(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
   const std::string& get_name(GeometryId geometry_id) const;
+
+  /** Implementation of SceneGraphInspector::GetShape().  */
+  const Shape& GetShape(GeometryId id) const;
 
   /** Implementation of SceneGraphInspector::X_FG().  */
   const Isometry3<double>& GetPoseInFrame(GeometryId geometry_id) const;
@@ -454,6 +466,9 @@ class GeometryState {
 
   // Conversion constructor. In the initial implementation, this is only
   // intended to be used to clone an AutoDiffXd instance from a double instance.
+  // It is _vitally_ important that all members are _explicitly_ accounted for
+  // (either in the initialization list or in the body). Failure to do so will
+  // lead to errors in the converted GeometryState instance.
   template <typename U>
   GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
@@ -465,6 +480,8 @@ class GeometryState {
         geometries_(source.geometries_),
         geometry_index_to_id_map_(source.geometry_index_to_id_map_),
         frame_index_to_id_map_(source.frame_index_to_id_map_),
+        dynamic_proximity_index_to_internal_map_(
+            source.dynamic_proximity_index_to_internal_map_),
         geometry_engine_(std::move(source.geometry_engine_->ToAutoDiffXd())) {
     // NOTE: Can't assign Isometry3<double> to Isometry3<AutoDiff>. But we _can_
     // assign Matrix<double> to Matrix<AutoDiff>, so that's what we're doing.
@@ -540,6 +557,10 @@ class GeometryState {
   // frame belongs to no registered source.
   SourceId get_source_id(FrameId frame_id) const;
 
+  // Gets the source id for the given frame id. Throws std::logic_error if the
+  // geometry belongs to no registered source.
+  SourceId get_source_id(GeometryId frame_id) const;
+
   // The origin from where an invocation of RemoveGeometryUnchecked was called.
   // The origin changes the work that is required.
   // TODO(SeanCurtis-TRI): Add `kFrame` when this can be invoked by removing
@@ -594,11 +615,14 @@ class GeometryState {
   void AssignRoleInternal(SourceId source_id, GeometryId geometry_id,
                           PropertyType properties, Role role);
 
+  // NOTE: If adding a member it is important that it be _explicitly_ copied
+  // in the converting copy constructor and likewise tested in the unit test
+  // for that constructor.
+
   // The GeometryState gets its own source so it can own entities (such as the
   // world frame).
   SourceId self_source_;
 
-  // ---------------------------------------------------------------------
   // Maps from registered source ids to the entities registered to those
   // sources (e.g., frames and geometries). This lives in the state to support
   // runtime topology changes. This data should only change at _discrete_
@@ -652,18 +676,15 @@ class GeometryState {
   // This contains internal indices into X_WG_. If a _dynamic_ geometry G has a
   // proximity role, in addition to its internal index, it will
   // also have a proximity index. It must be the case that
-  // G.internal_index == X_WG_proximity_[G.proximity_index] if it has a
-  // proximity role.
+  // G.internal_index ==
+  //      dynamic_proximity_index_to_internal_map_[G.proximity_index]
+  // if it has a proximity role.
   // Generally, internal_index is not equal to the role index. This allows
   // just those geometries with the proximity role to be provided to
   // the proximity engine.
   // NOTE: There is no equivalent for anchored geometries because anchored
   // geometries do not need updating.
-
-  // For proximity, the mapping from ProximityIndex to InternalIndex is implicit
-  // because anchored and dynamic geometries are segregated; they draw from
-  // independent index sets.
-  std::vector<GeometryIndex> X_WG_proximity_;
+  std::vector<GeometryIndex> dynamic_proximity_index_to_internal_map_;
 
   // ---------------------------------------------------------------------
   // These values depend on time-dependent input values (e.g., current frame

@@ -292,6 +292,9 @@ GET_COORDINATE_NAMES = """
    }
 """
 
+# TODO(russt): Resolve names differences across the codebase. The vector gen
+# scripts call this IsValid, but the system and solvers Constraint classes call
+# it CheckSatisfied.
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
   drake::boolean<T> IsValid() const {

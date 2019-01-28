@@ -87,7 +87,6 @@ new_deb_archive = repository_rule(
             e.g., `hdrs = glob(["usr/include/foo/**/*.h"]),`.
             """,
             mandatory = True,
-            single_file = True,
             allow_files = True,
         ),
     },

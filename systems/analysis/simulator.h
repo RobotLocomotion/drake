@@ -92,16 +92,25 @@ Where needed, we extend the above notation to xc⁻, xa⁺, etc. to indicate the
 value of an individual partition at a particular stage of the stepping
 algorithm.
 
-The following pseudocode uses the above notation to describe the algorithm that
-the %Simulator uses to advance the system by a single time step, and to clarify
-the effects on time and state of each of the update stages above. This algorithm
-is given a starting Context value `{tₛ, x⁻(tₛ)}` and returns an end Context
-value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a given tₘₐₓ.
+The following pseudocode uses the above notation to describe the algorithm
+"Advance()" that the %Simulator uses to incrementally advance the system
+trajectory (time t and state x). We refer to such an advancement as a "substep"
+to make it clear that we are not talking about a StepTo() call, which may cause
+many substeps to occur. (We'll define StepTo() in terms of Advance() below.) In
+general, the length of a substep is not known a priori and is determined by
+the Advance() algorithm. Each substep consists of zero or more unrestricted
+updates, followed by zero or more discrete updates, followed by (possibly
+zero-length) continuous time and state advancement, followed by zero or more
+publishes.
 
+The pseudocode will clarify the effects on time and state of each of the update
+stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
+and returns an end Context value `{tₑ, x⁻(tₑ)}`, where tₑ is _no later_ than a
+given tₘₐₓ.
 ```
-// Advance time and state from start value {tₛ, x⁻(tₛ)} to an end value
-// {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
-procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
+// Advance the trajectory (time and state) from start value {tₛ, x⁻(tₛ)} to an
+// end value {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
+procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
 
   // Update any variables (no restrictions).
   x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x⁻(tₛ))
@@ -147,14 +156,16 @@ Initialize() functions:
 procedure StepTo(tₘₐₓ)
   t ← current_time
   while t < tₘₐₓ
-    {tₑ, x⁻(tₑ)} ← Step(t, x⁻(t), tₘₐₓ)
+    {tₑ, x⁻(tₑ)} ← Advance(t, x⁻(t), tₘₐₓ)
     {t, x⁻(t)} ← {tₑ, x⁻(tₑ)}
   endwhile
 
-// Update time and state to {t₀, x⁻(t₀)}, the value the Context should contain
-// at the start of the first simulation step.
+// Update time and state to {t₀, x⁻(t₀)}, which is the starting value of the
+// trajectory, and thus the value the Context should contain at the start of the
+// first simulation substep.
 procedure Initialize(t₀, x₀)
-  x⁻(t₀) ← DoAnyUpdates as in Step()
+  x⁺(t₀) ← DoAnyUpdates as in Advance()
+  x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
   // ----------------------------------
   // Time and state are at {t₀, x⁻(t₀)}
@@ -162,8 +173,14 @@ procedure Initialize(t₀, x₀)
 
   DoAnyPublishes(t₀, x⁻(t₀))
 ```
-Thus Initialize() performs initialization updates, does no integration, and
-processes any publish events that trigger at t₀.
+Initialize() can be viewed as a "0ᵗʰ substep" that occurs before the first
+Advance() substep as described above. Like Advance(), Initialize() first
+performs pending updates (in this case only initialization events can be
+"pending"). Time doesn't advance so there is no continuous update phase and
+witnesses cannot trigger. Finally, again like Advance(), the initial trajectory
+point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
+events. That includes initialization publish events, per-step publish events,
+and periodic or timed publish events that trigger at t₀.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
@@ -205,13 +222,20 @@ class Simulator {
   Simulator(std::unique_ptr<const System<T>> system,
             std::unique_ptr<Context<T>> context = nullptr);
 
-  /// Prepares the %Simulator for a simulation. Initialization events are
-  /// triggered and handled, and time-triggered publish events that are
-  /// scheduled for the initial time are handled also. The active integrator's
-  /// Initialize() method is invoked and statistics are reset. (See the class
-  /// documentation for more information.) We recommend calling Initialize()
-  /// explicitly prior to beginning a simulation so that error conditions
-  /// will be discovered early. However, Initialize() will be called
+  /// Prepares the %Simulator for a simulation. In order, the sequence of
+  /// actions taken here are:
+  /// - The active integrator's Initialize() method is invoked.
+  /// - Statistics are reset.
+  /// - Initialization update events are triggered and handled to produce the
+  ///   initial trajectory value `{t₀, x(t₀)}`.
+  /// - Then that initial value is provided to the handlers for any publish
+  ///   events that have triggered, including initialization and per-step
+  ///   publish events, and periodic or other time-triggered publish events
+  ///   that are scheduled for the initial time t₀.
+  ///
+  /// See the class documentation for more information. We recommend calling
+  /// Initialize() explicitly prior to beginning a simulation so that error
+  /// conditions will be discovered early. However, Initialize() will be called
   /// automatically by the first StepTo() call if it hasn't already been called.
   ///
   /// @note If you make a change to the Context or to Simulator options between
@@ -224,7 +248,7 @@ class Simulator {
   ///
   /// @warning Initialize() does not automatically attempt to satisfy System
   /// constraints -- it is up to you to make sure that constraints are
-  /// satisifed by the initial conditions.
+  /// satisfied by the initial conditions.
   ///
   /// This method will throw `std::logic_error` if the combination of options
   /// doesn't make sense. Other failures are possible from the System and
@@ -313,23 +337,34 @@ class Simulator {
   /// @see set_target_realtime_rate()
   double get_actual_realtime_rate() const;
 
-  /// Sets whether the simulation should invoke Publish on the System under
-  /// simulation during every time step. If enabled, Publish will be invoked
-  /// after discrete updates and before continuous integration. Regardless of
-  /// whether publishing every time step is enabled, Publish will be invoked at
-  /// Simulator initialize time, and as System<T>::CalcNextUpdateTime requests.
+  /// Sets whether the simulation should trigger a forced-Publish event on the
+  /// System under simulation at the end of every trajectory-advancing substep.
+  /// Specifically, that means the System::Publish() event dispatcher will be
+  /// invoked on each subsystem of the System and passed the current Context
+  /// and a forced-publish Event. If a subsystem has declared a forced-publish
+  /// event handler, that will be called. Otherwise, nothing will happen unless
+  /// the DoPublish() dispatcher has been overridden.
+  ///
+  /// Enabling this option does not cause a forced-publish to be triggered at
+  /// initialization; if you want that you should also call
+  /// `set_publish_at_initialization(true)`. If you want a forced-publish at the
+  /// end of every step, you will usually also want one at the end of
+  /// initialization, requiring both options to be enabled.
+  ///
+  /// @see LeafSystem::DeclareForcedPublishEvent()
   void set_publish_every_time_step(bool publish) {
     publish_every_time_step_ = publish;
   }
 
-  /// Sets whether the simulation should invoke Publish in Initialize().
+  /// Sets whether the simulation should trigger a forced-Publish at the end
+  /// of Initialize(). See set_publish_every_time_step() documentation for
+  /// more information.
   void set_publish_at_initialization(bool publish) {
     publish_at_initialization_ = publish;
   }
 
-  /// Returns true if the simulation should invoke Publish on the System under
-  /// simulation every time step.  By default, returns true.
-  // TODO(sherm1, edrumwri): Consider making this false by default.
+  /// Returns true if the set_publish_every_time_step() option has been
+  /// enabled. By default, returns false.
   bool get_publish_every_time_step() const { return publish_every_time_step_; }
 
   /// Returns a const reference to the internally-maintained Context holding the
@@ -386,8 +421,9 @@ class Simulator {
   /// ResetStatistics() call.
   int64_t get_num_publishes() const { return num_publishes_; }
 
-  /// Gets the number of integration steps since the last Initialize() call.
-  int64_t get_num_steps_taken() const { return num_steps_taken_; }
+  /// Gets the number of substeps since the last Initialize() call. (We're
+  /// not counting the Initialize() 0-length "substep".)
+  int64_t get_num_steps_taken() const { return num_substeps_taken_; }
 
   /// Gets the number of discrete variable updates performed since the last
   /// Initialize() call.
@@ -533,25 +569,25 @@ class Simulator {
   // Slow down to this rate if possible (user settable).
   double target_realtime_rate_{0.};
 
-  bool publish_every_time_step_{true};
+  bool publish_every_time_step_{false};
 
-  bool publish_at_initialization_{true};
+  bool publish_at_initialization_{false};
 
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
   TimePoint initial_realtime_;     // Real time at start of period.
 
-  // The number of discrete updates since the last call to Initialize().
+  // The number of discrete updates since the last statistics reset.
   int64_t num_discrete_updates_{0};
 
-  // The number of unrestricted updates since the last call to Initialize().
+  // The number of unrestricted updates since the last statistics reset.
   int64_t num_unrestricted_updates_{0};
 
-  // The number of publishes since the last call to Initialize().
+  // The number of publishes since the last statistics reset.
   int64_t num_publishes_{0};
 
-  // The number of integration steps since the last call to Initialize().
-  int64_t num_steps_taken_{0};
+  // The number of integration substeps since the last statistics reset.
+  int64_t num_substeps_taken_{0};
 
   // Set by Initialize() and reset by various traumas.
   bool initialization_done_{false};
@@ -564,7 +600,7 @@ class Simulator {
   bool redetermine_active_witnesses_{true};
 
   // Per step events that are to be handled on every "major time step" (i.e.,
-  // every successful completion of a step). This collection is constructed
+  // every successful completion of a substep). This collection is constructed
   // within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> per_step_events_;
 
@@ -746,16 +782,19 @@ void Simulator<T>::Initialize() {
   // Allocate the witness function collection.
   witnessed_events_ = system_.AllocateCompositeEventCollection();
 
-  // Do any publishes last. Merge the initialization events with current_time
-  // timed events (if any). We expect all initialization events to precede
-  // any timed events in the merged collection.
+  // Do any publishes last. Merge the initialization events with per-step
+  // events and current_time timed events (if any). We expect all initialization
+  // events to precede any per-step or timed events in the merged collection.
+  // Note that per-step and timed discrete/unrestricted update events are *not*
+  // processed here; just publish events.
+  init_events->Merge(*per_step_events_);
   if (timed_or_witnessed_event_triggered_) {
     init_events->Merge(*timed_events_);
   }
   HandlePublish(init_events->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.
-  // Do a publish before the simulation starts.
+  // Do a force-publish before the simulation starts.
   if (publish_at_initialization_) {
     system_.Publish(*context_);
     ++num_publishes_;
@@ -839,9 +878,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   }
 
   while (true) {
-    // Starting a new step on the trajectory.
+    // Starting a new substep on the trajectory.
     const T step_start_time = context_->get_time();
-    SPDLOG_TRACE(log(), "Starting a simulation step at {}", step_start_time);
+    SPDLOG_TRACE(log(), "Starting a simulation substep at {}", step_start_time);
 
     // Delay to match target realtime rate if requested and possible.
     PauseIfTooFast();
@@ -863,29 +902,26 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // Determine whether the set of events requested by the System at
     // next_timed_event_time includes an Update action, a Publish action, or
     // both.
-    T next_update_dt = std::numeric_limits<double>::infinity();
-    T next_publish_dt = std::numeric_limits<double>::infinity();
+    T next_update_time = std::numeric_limits<double>::infinity();
+    T next_publish_time = std::numeric_limits<double>::infinity();
     if (timed_events_->HasDiscreteUpdateEvents() ||
         timed_events_->HasUnrestrictedUpdateEvents()) {
-      next_update_dt = next_timed_event_time_ - step_start_time;
+      next_update_time = next_timed_event_time_;
     }
     if (timed_events_->HasPublishEvents()) {
-      next_publish_dt = next_timed_event_time_ - step_start_time;
+      next_publish_time = next_timed_event_time_;
     }
-
-    // Get the dt that gets to the boundary time.
-    const T boundary_dt = boundary_time - step_start_time;
 
     // Integrate the continuous state forward in time.
     timed_or_witnessed_event_triggered_ = IntegrateContinuousState(
-        next_publish_dt,
-        next_update_dt,
+        next_publish_time,
+        next_update_time,
         next_timed_event_time_,
-        boundary_dt,
+        boundary_time,
         witnessed_events_.get());
 
-    // Update the number of simulation steps taken.
-    ++num_steps_taken_;
+    // Update the number of simulation substeps taken.
+    ++num_substeps_taken_;
 
     // TODO(sherm1) Constraint projection goes here.
 
@@ -1014,11 +1050,8 @@ void Simulator<T>::IsolateWitnessTriggers(
     const T inf = std::numeric_limits<double>::infinity();
     context.set_time(t0);
     context.get_mutable_continuous_state().SetFromVector(x0);
-    T t_remaining = t_des - t0;
-    while (t_remaining > 0) {
-      integrator_->IntegrateAtMost(inf, inf, t_remaining);
-      t_remaining = t_des - context.get_time();
-    }
+    while (context.get_time() < t_des)
+      integrator_->IntegrateNoFurtherThanTime(inf, inf, t_des);
   };
 
   // Loop until the isolation window is sufficiently small.
@@ -1070,19 +1103,18 @@ void Simulator<T>::IsolateWitnessTriggers(
 
 // Integrates the continuous state forward in time while also locating
 // the first zero of any triggered witness functions.
-// @param next_publish_dt the *time step* at which the next publish event
-//        occurs.
-// @param next_update_dt the *time step* at which the next update event occurs.
-// @param time_of_next_event the *time* at which the next timed event occurs.
-// @param boundary_dt the maximum time step to take.
+// @param next_publish_time the time at which the next publish event occurs.
+// @param next_update_time the time at which the next update event occurs.
+// @param time_of_next_event the time at which the next timed event occurs.
+// @param boundary_time the maximum time to advance to.
 // @param events a non-null collection of events, which the method will clear
 //        on entry.
 // @returns `true` if integration terminated on an event trigger, indicating
 //          that an event needs to be handled at the state on return.
 template <class T>
 bool Simulator<T>::IntegrateContinuousState(
-    const T& next_publish_dt, const T& next_update_dt,
-    const T& time_of_next_timed_event, const T& boundary_dt,
+    const T& next_publish_time, const T& next_update_time,
+    const T&, const T& boundary_time,
     CompositeEventCollection<T>* events) {
   using std::abs;
 
@@ -1094,18 +1126,6 @@ bool Simulator<T>::IntegrateContinuousState(
   const Context<T>& context = get_context();
   const T t0 = context.get_time();
   const VectorX<T> x0 = context.get_continuous_state().CopyToVector();
-
-  // Note: this function is only called in one place and under the conditions
-  // that (1) t0 + next_update_dt equals *either* time_of_next_timed_event *or*
-  // infinity and (2) t0 + next_publish_dt equals *either*
-  // time_of_next_timed_event or infinity. This function should work without
-  // these assumptions being valid but might benefit from additional review.
-  const double inf = std::numeric_limits<double>::infinity();
-  const double zero_tol = 10 * std::numeric_limits<double>::epsilon();
-  DRAKE_ASSERT(next_update_dt == inf ||
-      abs(t0 + next_update_dt - time_of_next_timed_event) < zero_tol);
-  DRAKE_ASSERT(next_publish_dt == inf ||
-      abs(t0 + next_publish_dt - time_of_next_timed_event) < zero_tol);
 
   // Get the set of witness functions active at the current state.
   const System<T>& system = get_system();
@@ -1125,8 +1145,8 @@ bool Simulator<T>::IntegrateContinuousState(
   // distinguished between. See internal documentation for
   // IntegratorBase::StepOnceAtMost() for more information.
   typename IntegratorBase<T>::StepResult result =
-      integrator_->IntegrateAtMost(next_publish_dt, next_update_dt,
-                                  boundary_dt);
+      integrator_->IntegrateNoFurtherThanTime(
+          next_publish_time, next_update_time, boundary_time);
   const T tf = context.get_time();
 
   // Evaluate the witness functions again.
@@ -1206,11 +1226,7 @@ bool Simulator<T>::IntegrateContinuousState(
   switch (result) {
     case IntegratorBase<T>::kReachedUpdateTime:
     case IntegratorBase<T>::kReachedPublishTime:
-      // Next line sets the time to the exact event time rather than
-      // introducing rounding error by summing the context time + dt.
-      context_->set_time(time_of_next_timed_event);
-      return true;            // Timed event hit.
-      break;
+      return true;
 
     case IntegratorBase<T>::kTimeHasAdvanced:
     case IntegratorBase<T>::kReachedBoundaryTime:
@@ -1219,7 +1235,6 @@ bool Simulator<T>::IntegrateContinuousState(
 
     default:DRAKE_ABORT_MSG("Unexpected integrator result.");
   }
-  ++num_steps_taken_;
 
   // TODO(sherm1) Constraint projection goes here.
 

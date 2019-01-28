@@ -227,7 +227,7 @@ def _gather_transitive_hdrs_impl(ctx):
     # Filter in/out items matching a prefix.
     result = depset([
         x
-        for x in all_hdrs
+        for x in all_hdrs.to_list()
         if _path_startswith_match(
             x.short_path,
             ctx.attr.only_startswith,

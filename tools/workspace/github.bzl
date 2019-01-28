@@ -1,6 +1,14 @@
 # -*- python -*-
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
+load(
+    "@drake//tools/workspace:metadata.bzl",
+    "generate_repository_metadata",
+)
+
+# The github.bzl and bitbucket.bzl implementations are very similar.  Try to
+# keep the two files relatively well-synchronized -- or even better, rework
+# them to share code where doing so is an improvement.
 
 def github_archive(
         name,
@@ -61,14 +69,104 @@ def github_archive(
             )
         return
 
-    http_archive(
+    # Once we've handled the "local_repository_override" sidestep, we delegate
+    # to a rule (not a macro) so that we have more leeway in the actions we can
+    # take (i.e., so we can do more than just a simple download-and-extract).
+    _github_archive_real(
         name = name,
-        urls = _urls(repository, commit, mirrors),
-        sha256 = _sha256(sha256),
+        repository = repository,
+        commit = commit,
+        sha256 = sha256,
         build_file = build_file,
-        strip_prefix = _strip_prefix(repository, commit),
+        mirrors = mirrors,
         **kwargs
     )
+
+# Helper stub to implement a repository_rule in terms of a setup() function.
+def _github_archive_real_impl(repository_ctx):
+    result = setup_github_repository(repository_ctx)
+    if result.error != None:
+        fail("Unable to complete setup for " +
+             "@{} repository: {}".format(
+                 repository_ctx.name,
+                 result.error,
+             ))
+
+_github_archive_real = repository_rule(
+    implementation = _github_archive_real_impl,
+    attrs = {
+        "repository": attr.string(
+            mandatory = True,
+        ),
+        "commit": attr.string(
+            mandatory = True,
+        ),
+        "sha256": attr.string(
+            mandatory = False,
+            default = "0" * 64,
+        ),
+        "build_file": attr.label(
+            default = None,
+        ),
+        "mirrors": attr.string_list_dict(
+            mandatory = True,
+            allow_empty = False,
+        ),
+        "patches": attr.label_list(
+            default = [],
+        ),
+        "patch_tool": attr.string(
+            default = "patch",
+        ),
+        "patch_args": attr.string_list(
+            default = ["-p0"],
+        ),
+        "patch_cmds": attr.string_list(
+            default = [],
+        ),
+    },
+)
+"""This is a rule() formulation of the github_archive() macro.  It is identical
+to the macro except that it does not support local_repository_override.
+Consult the macro documentation for full API details.
+"""
+
+def setup_github_repository(repository_ctx):
+    """This is reusable formulation of the github_archive() macro.  It is identical
+    to the macro except that (1) it does not support local_repository_override,
+    and (2) it returns a status struct, instead of failing internally.  The
+    result struct has a field `error` that will be non-None iff there were any
+    errors.  Consult the macro documentation for additional API details.
+    """
+
+    # Do the download step first.  (This also writes the metadata.)
+    github_download_and_extract(
+        repository_ctx,
+        repository = repository_ctx.attr.repository,
+        commit = repository_ctx.attr.commit,
+        mirrors = repository_ctx.attr.mirrors,
+        sha256 = repository_ctx.attr.sha256,
+    )
+
+    # Optionally apply source patches, using Bazel's utility helper.  Here we
+    # use getattr as a guard, in case the originating repository_rule didn't
+    # want to declare attr support for the patchfile-related settings.
+    patch_triggers = ["patches", "patch_cmds"]
+    if any([getattr(repository_ctx.attr, a, None) for a in patch_triggers]):
+        patch(repository_ctx)
+
+    # We re-implement Bazel's workspace_and_buildfile utility, so that options
+    # we don't care about (e.g., build_file_content) do not have to be declared
+    # as attrs on our all of our own repository rules.
+    repository_ctx.file("WORKSPACE", "workspace(name = \"{name}\")\n".format(
+        name = repository_ctx.name,
+    ))
+    if repository_ctx.attr.build_file:
+        for name in ["BUILD", "BUILD.bazel"]:
+            if repository_ctx.path(name).exists:
+                repository_ctx.execute(["/bin/mv", name, name + ".ignored"])
+        repository_ctx.symlink(repository_ctx.attr.build_file, "BUILD.bazel")
+    return struct(error = None)
 
 def github_download_and_extract(
         repository_ctx,
@@ -100,6 +198,16 @@ def github_download_and_extract(
         output = output,
         sha256 = _sha256(sha256),
         stripPrefix = _strip_prefix(repository, commit),
+    )
+
+    # Create a summary file for for Drake maintainers.
+    generate_repository_metadata(
+        repository_ctx,
+        repository_rule_type = "github",
+        repository = repository,
+        commit = commit,
+        sha256 = sha256,
+        urls = urls,
     )
 
 def _sha256(sha256):

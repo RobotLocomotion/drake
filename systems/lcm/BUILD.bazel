@@ -127,6 +127,7 @@ drake_cc_library(
 )
 
 # === test ===
+
 drake_cc_googletest(
     name = "lcm_driven_loop_test",
     # TODO(jamiesnape, siyuanfeng-tri): Remove flaky flag, see #5936.
@@ -147,9 +148,22 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_library(
+    name = "custom_drake_signal_translator",
+    testonly = 1,
+    hdrs = ["test/custom_drake_signal_translator.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":translator",
+        "//lcmtypes:drake_signal",
+        "//systems/framework/test_utilities:my_vector",
+    ],
+)
+
 drake_cc_googletest(
     name = "lcm_publisher_system_test",
     deps = [
+        ":custom_drake_signal_translator",
         ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
         "//common/test_utilities:is_dynamic_castable",
@@ -171,11 +185,11 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "lcm_subscriber_system_test",
     deps = [
+        ":custom_drake_signal_translator",
         ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
         "//lcm:lcmt_drake_signal_utils",
         "//lcm:mock",
-        "//systems/framework/test_utilities:my_vector",
     ],
 )
 

@@ -9,6 +9,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {
@@ -61,6 +62,9 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
 
+/** Serves as the local index for constraints declared on a given System. */
+using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
+
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
 typedef enum {
@@ -91,7 +95,6 @@ inline bool operator==(
 }
 
 #ifndef DRAKE_DOXYGEN_CXX
-class AbstractValue;
 class ContextBase;
 class InputPortBase;
 

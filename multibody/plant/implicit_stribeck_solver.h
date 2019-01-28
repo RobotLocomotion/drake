@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -988,7 +989,7 @@ class ImplicitStribeckSolver {
 
     // Returns a constant reference to the vector containing the tangential
     // friction forces fₜ for all contact points. fₜ has size 2nc since it
-    // stores the two tangential compoents of the friction force for each
+    // stores the two tangential components of the friction force for each
     // contact point. Refer to ImplicitStribeckSolver for details.
     Eigen::VectorBlock<const VectorX<T>> ft() const {
       return ft_.segment(0, 2 * nc_);
@@ -1155,3 +1156,9 @@ class ImplicitStribeckSolver {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    struct ::drake::multibody::internal::DirectionChangeLimiter)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::ImplicitStribeckSolver)

@@ -14,32 +14,33 @@ as well as considerations for implementing these systems in Drake.
 
 The state space dynamics of a discrete system is:
 ```
-    xₙ₊₁ = f(n, xₙ, uₙ)    // update
-    yₙ   = g(n, xₙ, uₙ)    // output
-    x₀   = xᵢₙᵢₜ           // initialize
+    x_{n+1} = f(n, x_n, u_n)    // update
+    y_n     = g(n, x_n, u_n)    // output
+    x_0     = x_init            // initialize
 ```
+(We're using LaTeX underscore notation for subscripts, where x_0 means x₀.)
 
-where n ∈ ℕ is the step number (typically starting at zero), x is the discrete
-state variable ("discrete" refers to the countability of the elements of the
-sequence, x₀, x₁, ..., xₙ and not the values that x can take), y is the desired
+Here n ∈ ℕ is the step number (typically starting at zero), x is the
+discrete-time state variable ("discrete time" refers to the countability of the
+elements of the sequence, x_0, x_1, ..., x_n and not the values that x can
+take), y is the desired
 output, and u is an external input. f(.) and g(.) are the _update_ and _output_
 functions, respectively. Any of these quantities can be vector-valued. The
-subscript notation (e.g., x₀) is used to show that the state, input, and output
+subscript notation (e.g., x_0) is used to show that the state, input, and output
 result from a discrete process. We use square bracket notation, e.g. x[1] to
 designate particular elements of a vector-valued quantity (indexing from 0).
-Combined, x₁[3] would be the value of the fourth element of the x vector,
-evaluated at step n=1. In code we use a Latex-like underscore to indicate the
-step number, so we write x_1[3] to represent x₁[3].
+Combined, x_1[3] would be the value of the fourth element of the x vector,
+evaluated at step n=1.
 
 <h3>A pedagogical example: simple difference equation</h3>
 
 The following class implements in Drake the simple discrete system
 ```
-    xₙ₊₁ = xₙ + 1
-    yₙ   = 10 xₙ
-    x₀   = 0
+    x_{n+1} = x_n + 1
+    y_n     = 10 x_n
+    x_0     = 0
 ```
-which should generate the sequence `S = 0 10 20 30 ...` (that is, `Sₙ = 10*n`).
+which should generate the sequence `S = 0 10 20 30 ...` (that is, `S_n = 10*n`).
 
 @code{.cpp}
 class ExampleDiscreteSystem : public LeafSystem<double> {
@@ -49,57 +50,57 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
   ExampleDiscreteSystem() {
     DeclareDiscreteState(1);  // Just one state variable, x[0], default=0.
 
-    // Output yₙ using a Drake "publish" event (occurs at the end of step n).
-    DeclarePeriodicEvent(kPeriod, kOffset,
-                         systems::PublishEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::PublishEvent<double>&) {
-                               PrintResult(context);
-                             }));
+    // Update to x_{n+1}, using a Drake "discrete update" event (occurs
+    // at the beginning of step n+1).
+    DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
+                                       &ExampleDiscreteSystem::Update);
 
-    // Update to xₙ₊₁, using a Drake "discrete update" event (occurs at the
-    // beginning of step n+1).
-    DeclarePeriodicEvent(kPeriod, kOffset,
-                         systems::DiscreteUpdateEvent<double>(
-                             [this](const systems::Context<double>& context,
-                                    const systems::DiscreteUpdateEvent<double>&,
-                                    systems::DiscreteValues<double>* xd) {
-                               Update(context, xd);
-                             }));
+    // Present y_n (=S_n) at the output port.
+    DeclareVectorOutputPort("Sn", systems::BasicVector<double>(1),
+                            &ExampleDiscreteSystem::Output);
   }
 
-  static constexpr double kPeriod = 1/50.;  // Update at 50Hz (h=1/50).
-  static constexpr double kOffset = 0.;  // Trigger events at n=0.
+  static constexpr double kPeriod = 1 / 50.;  // Update at 50Hz (h=1/50).
+  static constexpr double kOffset = 0.;       // Trigger events at n=0.
 
  private:
-  // Update function xₙ₊₁ = f(n, xₙ).
   void Update(const systems::Context<double>& context,
               systems::DiscreteValues<double>* xd) const {
-    const double x_n = GetX(context);
+    const double x_n = context.get_discrete_state()[0];
     (*xd)[0] = x_n + 1.;
   }
 
-  // Prints the result of output function yₙ = g(n, xₙ) to cout.
-  void PrintResult(const systems::Context<double>& context) const {
-    const double t = context.get_time();
-    const int n = static_cast<int>(std::round(t / kPeriod));
-    const double S_n = 10 * GetX(context);  // 10 xₙ[0]
-    std::cout << n << ": " << S_n << " (" << t << ")\n";
-  }
-
-  double GetX(const Context<double>& context) const {
-    return context.get_discrete_state()[0];
+  void Output(const systems::Context<double>& context,
+              systems::BasicVector<double>* result) const {
+    const double x_n = context.get_discrete_state()[0];
+    const double S_n = 10 * x_n;
+    (*result)[0] = S_n;
   }
 };
 @endcode
 
-Stepping this system forward using the following code fragment:
+The following code fragment can be used to step this system forward:
 @code
-  ExampleDiscreteSystem system;
-  Simulator<double> simulator(system);
+  // Build a Diagram containing the Example system and a data logger that
+  // samples the Sn output port exactly at the update times.
+  DiagramBuilder<double> builder;
+  auto example = builder.AddSystem<ExampleDiscreteSystem>();
+  auto logger = LogOutput(example->GetOutputPort("Sn"), &builder);
+  logger->set_publish_period(ExampleDiscreteSystem::kPeriod);
+  auto diagram = builder.Build();
+
+  // Create a Simulator and use it to advance time until t=3*h.
+  Simulator<double> simulator(*diagram);
   simulator.StepTo(3 * ExampleDiscreteSystem::kPeriod);
+
+  // Print out the contents of the log.
+  for (int n = 0; n < logger->sample_times().size(); ++n) {
+    const double t = logger->sample_times()[n];
+    std::cout << n << ": " << logger->data()(0, n)
+        << " (" << t << ")\n";
+  }
 @endcode
-yields the following output:
+The above yields the following output:
 ```
     0: 0 (0)
     1: 10 (0.02)
@@ -112,7 +113,7 @@ yields the following output:
 Purely-discrete systems produce values only intermittently. For example, the
 system above generates values only at integer values of n: <pre>
 
-     yₙ
+     y_n
       |
    30 |              ●
       |              ┆             Figure 1. The discrete-valued system
@@ -171,7 +172,7 @@ You might expect that 2(b) would be the most natural mapping from the
 discrete system to a continuous one. In practice, however, it is problematic
 for mixed discrete/continuous (hybrid) systems so Drake uses the mapping in
 2(a). The advantage of 2(a) is that the hybrid update function
-`xₙ₊₁ = f(t,n,xₙ,u(t))` is invoked at time `t=n*h`, while in 2(b) it would be
+`x_{n+1} = f(t,n,x_n,u(t))` is invoked at time `t=n*h`, while in 2(b) it would be
 invoked at time `t=(n+1)*h`. That would make it difficult to coordinate discrete
 and continuous signals.
 
@@ -179,7 +180,7 @@ Drake's choice of 2(a) dictates what value a discrete quantity will have when
 evaluated at times _between_ update times. In particular, consider a discrete
 variable x evaluated during a simulation from a publish, update, or derivative
 function at times `t ∈ (n*h, (n+1)*h]`. x will be seen to have value
-`x(t) = xₙ₊₁` (_not_ `xₙ`). You can see that clearly by inspection of
+`x(t) = x_{n+1}` (_not_ `x_n`). You can see that clearly by inspection of
 Figure 2(a).
 
 <h3>Timing of publish vs. discrete update events in Drake</h3>
@@ -191,7 +192,7 @@ denote the "pre-update" value of the state x, and x⁺(t) to denote the
 "post-update" value of x. So x⁻(t) is the value of x at time t _before_ discrete
 variables are updated, and x⁺(t) the value of x at time t _after_ they are
 updated. Thus if we have `t = n*h` as in the discussion above, then
-`x⁻(t) = xₙ` and `x⁺(t) = xₙ₊₁`. State-dependent computations are affected
+`x⁻(t) = x_n` and `x⁺(t) = x_{n+1}`. State-dependent computations are affected
 by the scheduling of these updates. For example, evaluating an input u(t) yields
 u⁻(t) before discrete updates, and u⁺(t) afterwards, meaning that the input
 evaluation is carried out using x⁻(t) or x⁺(t), respectively.

@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
 #include "drake/math/random_rotation.h"
@@ -192,9 +191,9 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
 }
 
 template <typename T>
-Eigen::Matrix<double, 7, 1> QuaternionFloatingMobilizer<T>::get_zero_position()
+Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
     const {
-  Eigen::Matrix<double, 7, 1> q = Eigen::Matrix<double, 7, 1>::Zero();
+  Vector<double, 7> q = Vector<double, 7>::Zero();
   const Quaternion<double> quaternion = Quaternion<double>::Identity();
   q[0] = quaternion.w();
   q.template segment<3>(1) = quaternion.vec();
@@ -394,10 +393,9 @@ QuaternionFloatingMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class QuaternionFloatingMobilizer<double>;
-template class QuaternionFloatingMobilizer<AutoDiffXd>;
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::QuaternionFloatingMobilizer)

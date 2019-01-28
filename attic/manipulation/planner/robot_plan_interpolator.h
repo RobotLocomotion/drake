@@ -89,7 +89,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void OutputState(const systems::Context<double>& context,
                    systems::BasicVector<double>* output) const;
 
-  // Calculator method for the accleration output port.
+  // Calculator method for the acceleration output port.
   void OutputAccel(const systems::Context<double>& context,
                    systems::BasicVector<double>* output) const;
 

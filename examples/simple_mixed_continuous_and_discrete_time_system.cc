@@ -1,60 +1,59 @@
-
 // Simple Mixed Continuous-Time/Discrete-Time System Example
 //
 // This is meant to be a sort of "hello world" example for the
 // drake::system classes.  It defines a very simple system with both continuous
 // and discrete time dynamics, simulates it from a given initial condition, and
-// plots the result.
+// checks the result.
 
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
 
+namespace drake {
+namespace systems {
+namespace {
+
 // Simple Discrete Time System
-//   x1[n+1] = x1[n]^3
-//   x2dot = -x2 + x2^3
-//   y = [x1;x2]
-class SimpleMixedContinuousTimeDiscreteTimeSystem
-    : public drake::systems::LeafSystem<double> {
+//   xd_{n+1} =  xd_n³
+//   xcdot    = -xc + xc³
+//   y        = [xd;xc]
+class SimpleMixedContinuousTimeDiscreteTimeSystem : public LeafSystem<double> {
  public:
   SimpleMixedContinuousTimeDiscreteTimeSystem() {
-    const int kSize = 1;
-    this->DeclarePeriodicDiscreteUpdate(1.0);
-    this->DeclareVectorOutputPort(
-        drake::systems::BasicVector<double>(2 * kSize),
+    DeclarePeriodicDiscreteUpdateEvent(
+        1.0, 0.0, &SimpleMixedContinuousTimeDiscreteTimeSystem::Update);
+    DeclareVectorOutputPort(
+        "y", BasicVector<double>(2),  // xd;xc
         &SimpleMixedContinuousTimeDiscreteTimeSystem::CopyStateOut);
-    this->DeclareContinuousState(kSize);
-    this->DeclareDiscreteState(kSize);
+    DeclareDiscreteState(1);    // xd
+    DeclareContinuousState(1);  // xc
   }
 
  private:
-  // x[n+1] = x[n]^3
-  void DoCalcDiscreteVariableUpdates(
-      const drake::systems::Context<double>& context,
-      const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&,
-      drake::systems::DiscreteValues<double>* updates) const override {
-    const double x = context.get_discrete_state(0).GetAtIndex(0);
-    const double xn = std::pow(x, 3.0);
-    (*updates)[0] = xn;
+  // xd_{n+1} =  xd_n³
+  void Update(const Context<double>& context,
+              DiscreteValues<double>* updates) const {
+    const double xd_n = context.get_discrete_state()[0];
+    const double xd_np1 = std::pow(xd_n, 3.0);
+    (*updates)[0] = xd_np1;
   }
 
-  // xdot = -x + x^3
+  // xcdot = -xc + xc³
   void DoCalcTimeDerivatives(
-      const drake::systems::Context<double>& context,
-      drake::systems::ContinuousState<double>* derivatives) const override {
-    const double x = context.get_continuous_state_vector().GetAtIndex(0);
-    const double xdot = -x + std::pow(x, 3.0);
-    derivatives->get_mutable_vector().SetAtIndex(0, xdot);
+      const Context<double>& context,
+      ContinuousState<double>* derivatives) const override {
+    const double xc = context.get_continuous_state()[0];
+    const double xcdot = -xc + std::pow(xc, 3.0);
+    (*derivatives)[0] = xcdot;
   }
 
   // y = x
-  void CopyStateOut(
-      const drake::systems::Context<double>& context,
-      drake::systems::BasicVector<double>* output) const {
-    const double x1 = context.get_discrete_state(0).GetAtIndex(0);
-    output->SetAtIndex(0, x1);
+  void CopyStateOut(const Context<double>& context,
+                    BasicVector<double>* output) const {
+    const double xd = context.get_discrete_state()[0];
+    (*output)[0] = xd;
 
-    const double x2 = context.get_continuous_state_vector().GetAtIndex(0);
-    output->SetAtIndex(1, x2);
+    const double xc = context.get_continuous_state()[0];
+    (*output)[1] = xc;
   }
 };
 
@@ -63,15 +62,15 @@ int main() {
   SimpleMixedContinuousTimeDiscreteTimeSystem system;
 
   // Create the simulator.
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
 
-  // Set the initial conditions x(0).
-  drake::systems::DiscreteValues<double>& xd =
+  // Set the initial conditions xd_0, xc(0).
+  DiscreteValues<double>& xd =
       simulator.get_mutable_context().get_mutable_discrete_state();
-  xd[0] = 0.99;
-  drake::systems::ContinuousState<double>& xc =
+  xd[0] = 0.99;  // xd_0
+  ContinuousState<double>& xc =
       simulator.get_mutable_context().get_mutable_continuous_state();
-  xc[0] = 0.9;
+  xc[0] = 0.9;  // xc(0)
 
   // Simulate for 10 seconds.
   simulator.StepTo(10);
@@ -83,4 +82,12 @@ int main() {
   // TODO(russt): make a plot of the resulting trajectory (using vtk?).
 
   return 0;
+}
+
+}  // namespace
+}  // namespace systems
+}  // namespace drake
+
+int main() {
+  return drake::systems::main();
 }

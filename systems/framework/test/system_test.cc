@@ -383,7 +383,7 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  SystemConstraint<double>::CalcCallback calc = [](
+  ContextConstraintCalc<double> calc = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = 1.0;
@@ -391,7 +391,8 @@ TEST_F(SystemTest, SystemConstraintTest) {
   const double kInf = std::numeric_limits<double>::infinity();
   SystemConstraintIndex test_constraint =
       system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-          calc, Vector1d(0), Vector1d(kInf), "test"));
+          &system_, calc, SystemConstraintBounds(Vector1d(0), nullopt),
+          "test"));
   EXPECT_EQ(test_constraint, 0);
 
   EXPECT_NO_THROW(system_.get_constraint(test_constraint));
@@ -399,13 +400,14 @@ TEST_F(SystemTest, SystemConstraintTest) {
 
   const double tol = 1e-6;
   EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(context_, tol));
-  SystemConstraint<double>::CalcCallback calc_false = [](
+  ContextConstraintCalc<double> calc_false = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = -1.0;
   };
   system_.AddConstraint(std::make_unique<SystemConstraint<double>>(
-      calc_false, Vector1d(0), Vector1d(kInf), "bad constraint"));
+      &system_, calc_false, SystemConstraintBounds(Vector1d(0), Vector1d(kInf)),
+      "bad constraint"));
   EXPECT_FALSE(system_.CheckSystemConstraintsSatisfied(context_, tol));
 }
 

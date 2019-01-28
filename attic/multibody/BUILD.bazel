@@ -640,17 +640,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "test_ik_pointwise",
-    data = ["//examples/atlas:models"],
-    deps = [
-        ":inverse_kinematics",
-        "//attic/multibody/parsers",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
     name = "test_ik_more_constraints",
     data = ["//examples/atlas:models"],
     tags = ["snopt"],

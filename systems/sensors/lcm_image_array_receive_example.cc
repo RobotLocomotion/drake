@@ -54,8 +54,7 @@ int DoMain() {
 
   auto image_array_lcm_publisher = builder.AddSystem(
       lcm::LcmPublisherSystem::Make<robotlocomotion::image_array_t>(
-          FLAGS_publish_name, &lcm));
-  image_array_lcm_publisher->set_publish_period(0.1);
+          FLAGS_publish_name, &lcm, 0.1 /* publish period */));
   builder.Connect(
       image_to_lcm_image_array->image_array_t_msg_output_port(),
       image_array_lcm_publisher->get_input_port());

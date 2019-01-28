@@ -2,6 +2,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -82,10 +83,10 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
   prog.AddBoundingBoxConstraint(0, 10, x);
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
-    auto result = prog.Solve();
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    const auto x_val = prog.GetSolution(x);
-    const auto y_val = prog.GetSolution(y);
+    MathematicalProgramResult result = Solve(prog);
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+    const auto x_val = prog.GetSolution(x, result);
+    const auto y_val = prog.GetSolution(y, result);
     // Choose 1e-6 as the precision, since that is the default minor feasibility
     // tolerance of SNOPT.
     double precision = 1E-6;

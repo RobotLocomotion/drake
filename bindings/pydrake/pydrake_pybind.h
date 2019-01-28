@@ -36,8 +36,6 @@ then in Python you would do:
 
 Some (but not all) exceptions:
 
-- Some of `drake/common` is incorporated into `pydrake.util`. (This will be
-remedied in the future.)
 - `drake/multibody/rigid_body_tree.h` is actually contained in the module
 `pydrake.multibody.rigid_body_tree`.
 - `drake/solvers/mathematical_program.h` is actually contained in the module
@@ -198,6 +196,7 @@ overload.  Browse the documentation_pybind.h (described above) for details.
 Most commonly, the names will be `doc_1args`, `doc_3args`, etc.  Be sure that
 the pydrake binding's signature is consistent with the docstring argument
 count.
+- If two or more docstrings are the same, only one new symbol is introduced.
 - To suppress a Doxygen comment from mkdoc, add the custom Doxygen command
 `@exclude_from_pydrake_mkdoc{Explanatory text.}` to the API comment text.
 (This is useful to help dismiss unbound overloads, so that mkdoc's choice of
@@ -266,7 +265,7 @@ to debug C++ bits. Example:
 
     bazel run //bindings/pydrake/systems:py/lifetime_test -- --trace=user
 
-If you need to debug futher while using Bazel, it is suggested to use
+If you need to debug further while using Bazel, it is suggested to use
 `gdbserver` for simplicity. Example:
 
 ```

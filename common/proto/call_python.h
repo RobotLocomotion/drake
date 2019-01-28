@@ -12,8 +12,8 @@
 /// Provides functionality similar to `call_matlab` (i.e., one-directional RPC),
 /// leveraging an API similar to `pybind11`.
 ///
-/// @see call_python_test.cc for C++ examples.
-// TODO(eric.cousineau): Add (untested) example usage in IPython notebook.
+/// For command-line examples, see the documentation in `call_python_client.py`.
+/// For C++ examples, see `call_python_test.cc`.
 
 namespace drake {
 namespace common {

@@ -22,7 +22,6 @@ are expandable via `$(locations ...)`.
 recursive_filegroup = rule(
     attrs = {
         "data": attr.label_list(
-            cfg = "data",
             allow_files = True,
             mandatory = True,
         ),

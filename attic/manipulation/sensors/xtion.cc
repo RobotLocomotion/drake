@@ -14,7 +14,6 @@ namespace drake {
 using systems::DiagramBuilder;
 using systems::FrameVisualizer;
 using systems::PassThrough;
-using systems::Value;
 using systems::ZeroOrderHold;
 using systems::lcm::LcmPublisherSystem;
 using systems::sensors::ImageDepth32F;
@@ -106,9 +105,8 @@ void Xtion::BuildDiagram(lcm::DrakeLcm* lcm, bool add_lcm_publisher,
     // Camera image publisher.
     auto* image_lcm_pub = builder.AddSystem(
         LcmPublisherSystem::Make<robotlocomotion::image_array_t>(lcm_channel_,
-                                                                 lcm));
+                                                                 lcm, period_));
     image_lcm_pub->set_name(name_ + "_lcm_publisher");
-    image_lcm_pub->set_publish_period(period_);
 
     builder.Connect(image_to_lcm_message->image_array_t_msg_output_port(),
                     image_lcm_pub->get_input_port());

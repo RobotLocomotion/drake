@@ -95,8 +95,8 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     // where the constant 1100 is simply obtained through previous runs of this
     // test. See description of this test at the top.
 
-    EXPECT_NEAR(
-        slider.get_translation(context), slider.lower_limit(), expected_error);
+    EXPECT_NEAR(slider.get_translation(context), slider.position_lower_limit(),
+                expected_error);
     // After a second of simulation we expect the slider to be at rest.
     EXPECT_NEAR(slider.get_translation_rate(context), 0.0, kVelocityTolerance);
 
@@ -106,8 +106,8 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     simulator.StepTo(simulation_time);
 
     // Verify we are at rest near the upper limit.
-    EXPECT_NEAR(
-        slider.get_translation(context), slider.upper_limit(), expected_error);
+    EXPECT_NEAR(slider.get_translation(context), slider.position_upper_limit(),
+                expected_error);
     EXPECT_NEAR(slider.get_translation_rate(context), 0.0, kVelocityTolerance);
   }
 }
@@ -167,7 +167,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     // where the constant 5100 is simply obtained through previous runs of this
     // test. See description of this test at the top.
 
-    EXPECT_NEAR(pin.get_angle(context), pin.upper_limit(), expected_error);
+    EXPECT_NEAR(pin.get_angle(context), pin.position_upper_limit(),
+                expected_error);
     // After a second of simulation we expect the pint to be at rest.
     EXPECT_NEAR(pin.get_angular_rate(context), 0.0, kVelocityTolerance);
 
@@ -177,7 +178,8 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     simulator.StepTo(simulation_time);
 
     // Verify we are at rest near the lower limit.
-    EXPECT_NEAR(pin.get_angle(context), pin.lower_limit(), expected_error);
+    EXPECT_NEAR(pin.get_angle(context), pin.position_lower_limit(),
+                expected_error);
     EXPECT_NEAR(pin.get_angular_rate(context), 0.0, kVelocityTolerance);
   }
 }
@@ -240,9 +242,11 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_NEAR(joint.lower_limit(), lower_limits_expected(joint_number-1),
+    EXPECT_NEAR(joint.position_lower_limit(),
+                lower_limits_expected(joint_number - 1),
                 std::numeric_limits<double>::epsilon());
-    EXPECT_NEAR(joint.upper_limit(), upper_limits_expected(joint_number-1),
+    EXPECT_NEAR(joint.position_upper_limit(),
+                upper_limits_expected(joint_number - 1),
                 std::numeric_limits<double>::epsilon());
   }
 
@@ -257,9 +261,10 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_LT(std::abs(
-        (joint.get_angle(context)-joint.upper_limit())/joint.upper_limit()),
-              kRelativePositionTolerance);
+    EXPECT_LT(
+        std::abs((joint.get_angle(context) - joint.position_upper_limit()) /
+                 joint.position_upper_limit()),
+        kRelativePositionTolerance);
     EXPECT_NEAR(joint.get_angular_rate(context), 0.0, kVelocityTolerance);
   }
 
@@ -271,9 +276,10 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   for (int joint_number = 1; joint_number <= nq; ++joint_number) {
     const std::string joint_name = "iiwa_joint_" + std::to_string(joint_number);
     const auto& joint = plant.GetJointByName<RevoluteJoint>(joint_name);
-    EXPECT_LT(std::abs(
-        (joint.get_angle(context)-joint.lower_limit())/joint.lower_limit()),
-              kRelativePositionTolerance);
+    EXPECT_LT(
+        std::abs((joint.get_angle(context) - joint.position_lower_limit()) /
+                 joint.position_lower_limit()),
+        kRelativePositionTolerance);
     EXPECT_NEAR(joint.get_angular_rate(context), 0.0, kVelocityTolerance);
   }
 }

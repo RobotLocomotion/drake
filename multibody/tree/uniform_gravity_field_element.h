@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/force_element.h"
 
@@ -12,7 +12,7 @@ namespace multibody {
 
 /// This ForceElement allows modeling the effect of a uniform gravity field as
 /// felt by bodies on the surface of the Earth.
-/// This gravity fields acts on all bodies in the MultibodyTree model.
+/// This gravity field acts on all bodies in the MultibodyTree model.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -27,6 +27,16 @@ template <typename T>
 class UniformGravityFieldElement : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniformGravityFieldElement)
+
+  // TODO(sherm1) Switch to the NIST standard 9.80665 value but be sure that's
+  // used consistently throughout the code, SDFs, etc.
+  /// The strength used by our class's default constructor (i.e., on the
+  /// earth's surface).  This is an unsigned (positive) value in m/s².
+  static constexpr double kDefaultStrength = 9.81;
+
+  /// Constructs a uniform gravity field element with a default strength (on
+  /// the earth's surface) and direction (-z).
+  UniformGravityFieldElement();
 
   /// Constructs a uniform gravity field element with a strength given by the
   /// acceleration of gravity vector `g_W`, expressed in the world frame W.
@@ -101,3 +111,6 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::UniformGravityFieldElement)

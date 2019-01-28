@@ -132,7 +132,7 @@ TEST_P(IdmControllerTest, Topology) {
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_port = dut_->get_output_port(acceleration_output_index_);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
-  EXPECT_EQ(1 /* accleration output */, output_port.size());
+  EXPECT_EQ(1 /* acceleration output */, output_port.size());
 }
 
 // Tests that the unrestricted update has been registered and updates to the

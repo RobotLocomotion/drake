@@ -133,15 +133,17 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
         plant_->get_rigid_body_tree(), force_torque_sensor_info);
     robot_state_encoder.set_name("robot_state_encoder");
 
+    const double publish_period = 1e-3;
     auto& robot_state_publisher = *builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-            "EST_ROBOT_STATE", lcm));
+            "EST_ROBOT_STATE", lcm, publish_period));
     robot_state_publisher.set_name("robot_state_publisher");
 
     // Visualizer.
     systems::DrakeVisualizer& visualizer_publisher =
         *builder.template AddSystem<systems::DrakeVisualizer>(tree, lcm);
     visualizer_publisher.set_name("visualizer_publisher");
+    visualizer_publisher.set_publish_period(publish_period);
 
     systems::ContactResultsToLcmSystem<double>& contact_viz =
         *builder.template AddSystem<systems::ContactResultsToLcmSystem<double>>(
@@ -150,12 +152,8 @@ class ValkyrieSimulationDiagram : public systems::Diagram<double> {
 
     auto& contact_results_publisher = *builder.AddSystem(
         systems::lcm::LcmPublisherSystem::Make<lcmt_contact_results_for_viz>(
-            "CONTACT_RESULTS", lcm));
+            "CONTACT_RESULTS", lcm, publish_period));
     contact_results_publisher.set_name("contact_results_publisher");
-
-    contact_results_publisher.set_publish_period(1e-3);
-    visualizer_publisher.set_publish_period(1e-3);
-    robot_state_publisher.set_publish_period(1e-3);
 
     // Connections.
     // LCM message to desired effort conversion.

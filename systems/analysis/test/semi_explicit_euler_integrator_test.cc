@@ -4,9 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/joints/prismatic_joint.h"
-#include "drake/multibody/joints/quaternion_floating_joint.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 
@@ -32,10 +30,12 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
-  EXPECT_EQ(context->get_time(), 3.);\
+  EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.IntegrateAtMost(dt, dt, dt), std::logic_error);
+  const double target_time = context->get_time() + dt;
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(
+    target_time, target_time, target_time), std::logic_error);
 }
 
 // Verifies error estimation is unsupported.
@@ -57,53 +57,34 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
 // Tests accuracy when generalized velocity is not the time derivative of
 // generalized configuration (using a rigid body).
 GTEST_TEST(IntegratorTest, RigidBody) {
-  // Instantiates a Multibody Dynamics (MBD) model of the world.
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-
-  // Add a single free body with a quaternion base.
-  RigidBody<double>* body;
-  tree->add_rigid_body(
-      std::unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
-  body->set_name("free_body");
-
-  // Sets body to have a non-zero spatial inertia. Otherwise the body gets
-  // welded by a fixed joint to the world by RigidBodyTree::compile().
-  body->set_mass(1.0);
-  body->set_spatial_inertia(Matrix6<double>::Identity());
-  body->add_joint(&tree->world(), std::make_unique<QuaternionFloatingJoint>(
-      "base", Eigen::Isometry3d::Identity()));
-
-  tree->compile();
-
-  // Instantiates a RigidBodyPlant from the  MBD model.
-  RigidBodyPlant<double> plant(move(tree));
-  auto context = plant.CreateDefaultContext();
+  // Instantiate a multibody plant consisting of a single rigid body.
+  multibody::MultibodyPlant<double> plant;
+  const double radius = 0.05;   // m
+  const double mass = 0.1;      // kg
+  auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
+  multibody::SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
+  plant.AddRigidBody("Ball", M_Bcm);
+  plant.Finalize();
 
   // Set free_body to have zero translation, zero rotation, and zero velocity.
+  auto context = plant.CreateDefaultContext();
   plant.SetDefaultState(*context, &context->get_mutable_state());
 
-  Eigen::Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
-  Eigen::Vector3d w0(-4, 5, 6);  // Angular velocity in body's frame.
-  BasicVector<double> generalized_velocities(plant.get_num_velocities());
-
-  // NOTE: the functionality of this code is dependent upon the rigid body
-  // velocity variables being ordering as [ angular, linear ].
-  generalized_velocities.get_mutable_value() << w0, v0;
+  // Update the velocity.
+  VectorX<double> generalized_velocities(plant.num_velocities());
+  generalized_velocities << 1, 2, 3, 4, 5, 6;
 
   // Set the linear and angular velocity.
-  for (int i=0; i< plant.get_num_velocities(); ++i)
-    plant.set_velocity(context.get(), i, generalized_velocities[i]);
+  plant.SetVelocities(context.get(), generalized_velocities);
 
   // Integrate for one second of virtual time using explicit Euler integrator.
   const double small_dt = 1e-4;
   ExplicitEulerIntegrator<double> ee(plant, small_dt, context.get());
   ee.Initialize();
   const double t_final = 1.0;
-  double t_remaining = t_final - context->get_time();
   do {
-    ee.IntegrateAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - context->get_time();
-  } while (t_remaining > 0.0);
+    ee.IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  } while (context->get_time() < t_final);
 
   // Get the final state.
   VectorX<double> x_final_ee = context->get_continuous_state_vector().
@@ -112,17 +93,14 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   // Re-integrate with semi-explicit Euler.
   context->set_time(0.);
   plant.SetDefaultState(*context, &context->get_mutable_state());
-  for (int i=0; i< plant.get_num_velocities(); ++i)
-    plant.set_velocity(context.get(), i, generalized_velocities[i]);
+  plant.SetVelocities(context.get(), generalized_velocities);
   SemiExplicitEulerIntegrator<double> see(plant, small_dt, context.get());
   see.Initialize();
 
   // Integrate for one second.
-  t_remaining = t_final - context->get_time();
   do {
-    see.IntegrateAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - context->get_time();
-  } while (t_remaining > 0.0);
+    see.IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  } while (context->get_time() < t_final);
 
   // Verify that the final states are "close".
   VectorX<double> x_final_see = context->get_continuous_state_vector().
@@ -175,7 +153,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kTFinal = 1.0;
   double t;
   for (t = 0.0; std::abs(t - kTFinal) > dt; t += dt)
-    integrator.IntegrateAtMost(inf, inf, dt);
+    integrator.IntegrateNoFurtherThanTime(inf, inf, kTFinal);
 
   EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
 
