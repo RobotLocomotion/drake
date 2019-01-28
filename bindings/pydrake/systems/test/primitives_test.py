@@ -122,9 +122,7 @@ class TestGeneral(unittest.TestCase):
         # Verify outputs of the periodic logger
         t = logger_periodic.sample_times()
         x = logger_periodic.data()
-        # Should log exactly once every kPeriod, up to and including
-        # kTime.
-        print t, t.shape[0], kTime / kPeriod, np.floor(kTime / kPeriod) + 1.
+        # Should log exactly once every kPeriod, up to and including kTime.
         self.assertTrue(t.shape[0] == np.floor(kTime / kPeriod) + 1.)
 
         logger_per_step.reset()
