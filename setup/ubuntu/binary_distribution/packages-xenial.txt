@@ -38,6 +38,7 @@ python-scipy
 python-six
 python-tk
 python-tornado
+python-virtualenv
 python-yaml
 python-zmq
 qtbase5-dev
