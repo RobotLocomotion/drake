@@ -12,7 +12,7 @@ import meshcat
 import meshcat.transformations as tf
 
 from drake import lcmt_viewer_load_robot
-from pydrake.util.eigen_geometry import Quaternion
+from pydrake.common.eigen_geometry import Quaternion
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix

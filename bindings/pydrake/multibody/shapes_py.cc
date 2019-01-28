@@ -14,7 +14,7 @@ PYBIND11_MODULE(shapes, m) {
   using namespace DrakeShapes;
   constexpr auto& doc = pydrake_doc.DrakeShapes;
 
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.common.eigen_geometry");
 
   m.doc() = "Core geometry and shape types.";
 
