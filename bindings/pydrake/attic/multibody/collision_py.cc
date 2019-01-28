@@ -17,8 +17,8 @@ PYBIND11_MODULE(collision, m) {
 
   m.doc() = "Drake Collision types.";
 
-  py::module::import("pydrake.multibody.shapes");
-  py::module::import("pydrake.multibody.rigid_body");
+  py::module::import("pydrake.attic.multibody.shapes");
+  py::module::import("pydrake.attic.multibody.rigid_body");
 
   py::class_<Element, DrakeShapes::Element>(
       m, "CollisionElement", doc.Element.doc)

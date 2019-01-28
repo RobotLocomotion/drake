@@ -30,6 +30,7 @@ drake_py_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    "//bindings/pydrake/attic/multibody",
     "//bindings/pydrake/attic/solvers",
 ]
 

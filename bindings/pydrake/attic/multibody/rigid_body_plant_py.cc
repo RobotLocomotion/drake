@@ -22,8 +22,8 @@ PYBIND11_MODULE(rigid_body_plant, m) {
   constexpr auto& doc = pydrake_doc.drake.systems;
 
   // Ensure we have bindings for dependencies.
+  py::module::import("pydrake.attic.multibody.rigid_body_tree");
   py::module::import("pydrake.lcm");
-  py::module::import("pydrake.multibody.rigid_body_tree");
   py::module::import("pydrake.systems.framework");
 
   using T = double;
