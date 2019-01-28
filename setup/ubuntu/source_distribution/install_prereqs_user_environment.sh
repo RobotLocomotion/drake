@@ -5,8 +5,10 @@
 
 set -euo pipefail
 
-if [[ "${EUID}" -eq 0 ]]; then
-  echo 'This script must NOT be run as root' >&2
+# Check for existence of `SUDO_USER` so that this may be used in Docker
+# environments.
+if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
+  echo 'This script must NOT be run through sudo as root' >&2
   exit 1
 fi
 
