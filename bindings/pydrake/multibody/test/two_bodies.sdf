@@ -16,9 +16,9 @@
       </inertial>
       <collision name='body1_collision'>
         <geometry>
-          <box>
-            <size>1.0 2.0 3.0</size>
-          </box>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
         </geometry>
       </collision>
     </link>
@@ -35,9 +35,9 @@
       </inertial>
       <collision name='body2_collision'>
         <geometry>
-          <box>
-            <size>1.0 2.0 3.0</size>
-          </box>
+          <sphere>
+            <radius>0.2</radius>
+          </sphere>
         </geometry>
       </collision>
     </link>

@@ -9,6 +9,9 @@
 #include "drake/solvers/create_constraint.h"
 #include "drake/solvers/solve.h"
 
+// TODO(eric.cousineau): Replace manual coordinate indexing with more semantic
+// operations (`CalcRelativeTransform`, `SetFreeBodyPose`).
+
 namespace drake {
 namespace multibody {
 Eigen::Quaterniond Vector4ToQuaternion(
