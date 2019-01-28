@@ -20,7 +20,7 @@ class ParseTest : public testing::TestWithParam<std::string> {};
 TEST_P(ParseTest, Quantities) {
   const std::string object_name = GetParam();
   const std::string kPath(FindResourceOrThrow(fmt::format(
-      "drake/manipulation/models/aligned_ycb_objects_description/sdf/"
+      "drake/manipulation/models/ycb_description/sdf/"
       "{}.sdf", object_name)));
 
   multibody::MultibodyPlant<double> plant;
