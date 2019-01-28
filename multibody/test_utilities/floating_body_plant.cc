@@ -1,4 +1,4 @@
-#include "drake/multibody/tree/test/floating_body_plant.h"
+#include "drake/multibody/test_utilities/floating_body_plant.h"
 
 #include <vector>
 
