@@ -137,6 +137,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "pose_stamped_t_pose_vector_translator_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":pose_stamped_t_pose_vector_translator",
     ],
