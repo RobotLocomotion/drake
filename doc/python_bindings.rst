@@ -49,6 +49,34 @@ macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
 Python 2.7 is currently the only supported version for the bindings supplied
 by the binary packages. To use Python 3.x, see below for building from source.
 
+Inside ``virtualenv``
+^^^^^^^^^^^^^^^^^^^^^
+
+At present, Drake is not installable via ``pip``. However, you can still
+incorporate its install tree into a ``virtualenv``
+`FHS <https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard>`_-like
+environment.
+
+.. note::
+
+    These steps *may* conflict with files installed via ``pip``. If you have
+    not done so already, be sure to capture / freeze your current requirements
+    so you can reproduce your environment if needed.
+
+An example for ``python2``, where you should replace ``<venv_path>`` and
+``<platform>``:
+
+.. code-block:: shell
+
+    python2 -m virtualenv -p python2 <venv_path> --system-site-packages
+    curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
+    tar -xvzf drake.tar.gz -C <venv_path> --strip-components=1
+
+To check if this worked, follow the instructions as
+:ref:`shown below <using-python-bindings>`, but either use
+``<venv_path>/bin/python`` directly, or source ``<venv_path>/bin/activate`` in
+your current shell session.
+
 Building the Python Bindings
 ----------------------------
 
