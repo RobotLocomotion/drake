@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -59,18 +60,27 @@ struct SnoptImpl<true> {
 // that SFINAE ignores the function bodies when the user has SNOPT 7.6.
 template<>
 struct SnoptImpl<false> {
-  static const int kLegacyPrintDefault = 9;
+  thread_local static int g_iprint;
   template <typename Int>
   static void snend(
       Int* iw, int leniw, double* rw, int lenrw) {
-    Int iprint = kLegacyPrintDefault;
+    Int iprint = g_iprint;
     ::f_snend(&iprint);
   }
   template <typename Int>
   static void sninit(
       const char* name, int len, int summOn,
       Int* iw, int leniw, double* rw, int lenrw) {
-    Int iprint = kLegacyPrintDefault;
+    if (len == 0) {
+      g_iprint = 0;
+    } else {
+      // TODO(jwnimmer-tri) Really, we should use an singleton integer factory
+      // here, insetad of assuming that there will be no hash collisions.
+      auto tid = std::this_thread::get_id();
+      auto hasher = std::hash<std::thread::id>{};
+      g_iprint = 100 + (hasher(tid) % 900);
+    }
+    Int iprint = g_iprint;
     ::f_sninit(name, &len, &iprint, &summOn, iw, &leniw, rw, &lenrw);
   }
   template <typename Int>
@@ -125,6 +135,9 @@ struct SnoptImpl<false> {
     ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
   }
 };
+
+// Declare storage.
+thread_local int SnoptImpl<false>::g_iprint;
 
 // Choose the correct SnoptImpl specialization.
 void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
