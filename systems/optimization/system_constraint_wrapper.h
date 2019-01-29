@@ -18,12 +18,12 @@ namespace systems {
  * struct Foo {
  *   template <typename T>
  *   void operator()(const System<T>&, const Eigen::Ref<const VectorX<T>>&,
- *                   Context<T>*);
+ *                   Context<T>*) {}
  * };
  * @endcode
  * A generic lambda can take the form
  * @code{cc}
- * auto foo = [](const auto& system, const auto& vars, auto* context);
+ * auto foo = [](const auto& system, const auto& vars, auto* context) {}
  * @endcode
  * The users can refer to system_constraint_wrapper_test.cc and
  * system_constraint_adapter_test.cc for more details.
