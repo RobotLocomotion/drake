@@ -1083,6 +1083,37 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
+void MultibodyPlant<T>::AddAppliedExternalForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  // Get the mutable body force vector.
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
+
+  // Evaluate the input port.
+  const auto& applied_input =
+      this->EvalAbstractInput(context, externally_applied_input_port_)->
+          template GetValue<std::vector<ExternallyAppliedForce>>();
+
+  // Loop over all forces.
+  for (const auto& force_structure : applied_input) {
+    const BodyIndex body_index = force_structure.body_index;
+    const Body<T>& body = get_body(body_index);
+    const auto body_node_index = body.node_index();
+
+    // Get the pose for this body in the world frame.
+    // TODO(amcastro) When we can evaluate body poses and return a reference
+    // to a rigid transform, use that reference here instead.
+    math::RigidTransform<T> X_WB(EvalBodyPoseInWorld(context, body));
+
+    // Get the translation from the body origin to the point of application
+    // described in the world frame.
+    const Vector3<T> p_Bo_Q_W = X_WB.rotation() * force_structure.p_BoQ_B;
+
+    // Shift the spatial force.
+    F_BBo_W_array[body_node_index] += force_structure.F_B_W.Shift(p_Bo_Q_W);
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
@@ -1205,6 +1236,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
+  AddAppliedExternalForces(context, &forces);
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1331,6 +1363,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
+  AddAppliedExternalForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 
@@ -1520,6 +1553,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   if (num_actuated_instances == 1) {
     actuated_instance_ = last_actuated_instance;
   }
+
+  // Declare externally applied input force port.
+  externally_applied_input_port_ = this->DeclareAbstractInputPort(
+        "externally_applied_input",
+        Value<std::vector<ExternallyAppliedForce>>()).get_index();
 
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =

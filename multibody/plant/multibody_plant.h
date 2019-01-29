@@ -238,6 +238,20 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     FinalizePlantOnly();
   }
 
+  struct ExternallyAppliedForce {
+    //DRAKE_DEFAULT_COPY_DEFAULT_MOVE_DEFAULT_ASSIGN(ExternallyAppliedForce)
+    // The index of the body that the force is to be applied to.
+    BodyIndex body_index;
+
+    // A vector from Body B's origin (Bo) to location Q, expressed in
+    // B's frame.
+    Vector3<T> p_BoQ_B;
+
+    // A spatial force applied to Body B at location Q, expressed in the
+    // world frame.
+    SpatialForce<T> F_B_W;
+  };
+
   /// Returns the number of Frame objects in this model.
   /// Frames include body frames associated with each of the bodies,
   /// including the _world_ body. This means the minimum number of frames is
@@ -2970,6 +2984,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const override;
 
+  void AddAppliedExternalForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
   // 1. Register a frame for this body if not already done so. The body gets
@@ -3277,6 +3294,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // If only one model instance has actuated dofs, remember it here.  If
   // multiple instances have actuated dofs, this index will not be valid.
   ModelInstanceIndex actuated_instance_;
+
+  // Port for externally applied spatial forces.
+  systems::InputPortIndex externally_applied_input_port_;
 
   systems::OutputPortIndex continuous_state_output_port_;
   // A vector containing state output ports for each model instance indexed by

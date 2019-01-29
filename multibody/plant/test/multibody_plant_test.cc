@@ -1286,6 +1286,15 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
 }
 
+TEST_F(AcrobotPlantTests, CheckExternalAppliedInput) {
+  // Put the acrobot into a configuration where it has nonzero potential
+  // energy.
+
+  // Add forces to the link centers that counteract gravity.
+
+  // Ensure that the acceleration is zero.
+}
+
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
   MultibodyPlant<double> plant;
   // This test is purely kinematic. Therefore we leave the spatial inertia
