@@ -828,10 +828,14 @@ Evaluate(const Eigen::MatrixBase<Derived>& m,
  * symbolic::Expression conversion so that we can write one such as <tt>cond(x >
  * 0.0, 1.0, -1.0)</tt>.
  */
-template <typename... Rest>
-symbolic::Expression cond(const symbolic::Formula& f_cond, double v_then,
+template <typename ScalarType, typename... Rest,
+          typename = std::enable_if_t<std::is_arithmetic<ScalarType>::value>>
+symbolic::Expression cond(const symbolic::Formula& f_cond,
+                          const ScalarType& v_then,
                           Rest... rest) {
-  return if_then_else(f_cond, symbolic::Expression{v_then}, cond(rest...));
+  return if_then_else(
+      f_cond, symbolic::Expression{static_cast<double>(v_then)},
+      cond(rest...));
 }
 
 /// Specializes common/dummy_value.h.

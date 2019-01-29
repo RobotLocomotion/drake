@@ -203,7 +203,7 @@ class Formula {
   static Formula False();
 
   /** Conversion to bool. */
-  explicit operator bool() const { return Evaluate(); }
+  operator bool() const { return Evaluate(); }
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
