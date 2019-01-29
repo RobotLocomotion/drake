@@ -11,9 +11,25 @@ namespace systems {
 /** Given the decision variable values x (as in
  * SystemConstraintWrapper.Eval(x, &y)), update part of the context with the
  * value of x.
+ * The user could define either a generic functor or using a generic lambda as
+ * UpdateContextFromDecisionVariablesFunction. For generic functor, one example
+ * is
+ * @code{cc}
+ * struct Foo {
+ *   template <typename T>
+ *   void operator()(const System<T>&, const Eigen::Ref<const VectorX<T>>&,
+ *                   Context<T>*);
+ * };
+ * @endcode
+ * A generic lambda can take the form
+ * @code{cc}
+ * auto foo = [](const auto& system, const auto& vars, auto* context);
+ * @endcode
+ * The users can refer to system_constraint_wrapper_test.cc and
+ * system_constraint_adapter_test.cc for more details.
  */
 template <typename T>
-using UpdateContextFromDecisionVariables = std::function<void(
+using UpdateContextFromDecisionVariablesFunction = std::function<void(
     const System<T>&, const Eigen::Ref<const VectorX<T>>&, Context<T>*)>;
 
 /**
@@ -33,6 +49,9 @@ class SystemConstraintWrapper : public solvers::Constraint {
   /**
    * Wraps a single SystemConstraint of the given system into a
    * solvers::Constraint.
+   * Note that this constraint doesn't require the System to support symbolic
+   * expressions. The wrapped solvers::Constraint is a generic nonlinear
+   * constraint.
    * @param system_double The System whose SystemConstraint is converted to
    * solvers::Constraint.
    * @param system_autodiff This system should be converted from system_double
@@ -57,8 +76,8 @@ class SystemConstraintWrapper : public solvers::Constraint {
       const System<double>* const system_double,
       const System<AutoDiffXd>* const system_autodiff,
       SystemConstraintIndex index, const Context<double>& context,
-      UpdateContextFromDecisionVariables<double> updater_double,
-      UpdateContextFromDecisionVariables<AutoDiffXd> updater_autodiff,
+      UpdateContextFromDecisionVariablesFunction<double> updater_double,
+      UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
       int x_size);
 
   ~SystemConstraintWrapper() override {}
@@ -89,8 +108,9 @@ class SystemConstraintWrapper : public solvers::Constraint {
   // in the Eval function.
   std::unique_ptr<Context<double>> context_double_;
   std::unique_ptr<Context<AutoDiffXd>> context_autodiff_;
-  const UpdateContextFromDecisionVariables<double> updater_double_;
-  const UpdateContextFromDecisionVariables<AutoDiffXd> updater_autodiff_;
+  const UpdateContextFromDecisionVariablesFunction<double> updater_double_;
+  const UpdateContextFromDecisionVariablesFunction<AutoDiffXd>
+      updater_autodiff_;
 };
 }  // namespace systems
 }  // namespace drake
