@@ -4,6 +4,7 @@ load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
+    "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
@@ -29,10 +30,18 @@ drake_py_library(
     ],
 )
 
+drake_pybind_library(
+    name = "sensors_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_srcs = ["sensors_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        "//bindings/pydrake/systems:sensors_py",
+    ],
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
-    "//bindings/pydrake/attic/multibody",
-    "//bindings/pydrake/attic/solvers",
-    "//bindings/pydrake/attic/systems",
+    ":sensors_py",
 ]
 
 PY_LIBRARIES = [
@@ -48,7 +57,7 @@ drake_py_library(
 
 # Package roll-up (for Bazel dependencies).
 drake_py_library(
-    name = "attic",
+    name = "systems",
     deps = [":all_py"],
 )
 
@@ -58,6 +67,9 @@ install(
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
+
+# NOTE: Unittests on `attic` should not move until the forwarding modules
+# outside of the attic are deprecated!
 
 add_lint_tests(
     cpplint_data = ["//bindings/pydrake:.clang-format"],

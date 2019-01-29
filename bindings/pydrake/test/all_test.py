@@ -78,6 +78,9 @@ class TestAll(unittest.TestCase):
             # attic
             # - solvers
             "RigidBodyConstraint",
+            # - systems
+            # - - sensors
+            "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
             # automotive
