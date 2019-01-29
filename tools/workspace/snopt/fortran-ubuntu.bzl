@@ -23,7 +23,7 @@ def fortran_library(
             srcs = [src],
             outs = [obj],
             tools = [compiler],
-            cmd = "$(location {}) -fPIC -c $< -o $@".format(compiler),
+            cmd = "$(location {}) -fopenmp -fPIC -c $< -o $@".format(compiler),
             visibility = ["//visibility:private"],
         )
 

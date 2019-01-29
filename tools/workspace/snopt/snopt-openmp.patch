@@ -1,0 +1,13 @@
+We patch the snopt_interface to mark the character workspace as threadprivate.
+Otherwise, solving distinct problems in multiple threads still has data races.
+
+--- interfaces/src/snopt_wrapper.f90.orig	2019-01-28 17:12:02.415160931 -0500
++++ interfaces/src/snopt_wrapper.f90	2019-01-28 17:10:52.610244839 -0500
+@@ -192,6 +192,7 @@
+   ! Character arrays don't work well with Fortran/C/C++ so have a dummy one here.
+   integer, parameter :: lencw = 500
+   character*8        :: cw(lencw)
++!$OMP THREADPRIVATE(cw)
+ 
+ contains
+ 
