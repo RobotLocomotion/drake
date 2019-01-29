@@ -31,6 +31,20 @@ drake_py_library(
 )
 
 drake_pybind_library(
+    name = "controllers_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["controllers_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/attic/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
     name = "sensors_py",
     cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["sensors_py.cc"],
@@ -42,6 +56,7 @@ drake_pybind_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    ":controllers_py",
     ":sensors_py",
 ]
 

@@ -137,7 +137,9 @@ drake_pybind_library(
         ":primitives_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
+    py_srcs = ["_controllers_extra.py"],
 )
 
 drake_pybind_library(
@@ -383,6 +385,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
+        "//bindings/pydrake/attic/systems:controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
         "//bindings/pydrake/multibody:multibody_tree_py",
         "//bindings/pydrake/multibody:rigid_body_tree_py",
