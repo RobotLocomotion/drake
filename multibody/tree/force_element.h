@@ -240,6 +240,9 @@ class ForceElement : public
   /// AutoDiffXd.
   virtual std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
 
  private:

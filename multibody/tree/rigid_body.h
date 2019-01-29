@@ -274,6 +274,12 @@ class RigidBody : public Body<T> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
+  std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>& tree_clone) const
+      final {
+    return TemplatedDoCloneToScalar(tree_clone);
+  }
+
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
@@ -291,5 +297,5 @@ class RigidBody : public Body<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::RigidBody)

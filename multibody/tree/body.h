@@ -90,6 +90,9 @@ class BodyFrame final : public Frame<T> {
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
+
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
   // every time a Body object is created and they are associated with each
@@ -305,6 +308,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
+  /// Clones this %Body (templated on T) to a body templated on Expression.
+  virtual std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+
   /// @}
 
  private:
@@ -347,5 +354,5 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::BodyFrame)

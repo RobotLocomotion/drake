@@ -63,6 +63,14 @@ JointActuator<T>::DoCloneToScalar(
       new JointActuator<AutoDiffXd>(name_, joint_index_));
 }
 
+template <typename T>
+std::unique_ptr<JointActuator<symbolic::Expression>>
+JointActuator<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>&) const {
+  return std::unique_ptr<JointActuator<symbolic::Expression>>(
+      new JointActuator<symbolic::Expression>(name_, joint_index_));
+}
+
 }  // namespace multibody
 }  // namespace drake
 

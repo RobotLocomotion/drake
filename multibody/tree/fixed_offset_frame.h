@@ -106,6 +106,9 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
   /// @}
 
  private:
@@ -125,5 +128,5 @@ class FixedOffsetFrame final : public Frame<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::FixedOffsetFrame)

@@ -225,17 +225,5 @@ DRAKE_DEPRECATED(
 }  // namespace multibody
 }  // namespace drake
 
-// Disable support for symbolic evaluation.
-// TODO(amcastro-tri): Allow symbolic evaluation once MultibodyTree supports it.
-namespace drake {
-namespace systems {
-namespace scalar_conversion {
-template <>
-struct Traits<drake::multibody::internal::MultibodyTreeSystem> :
-    public NonSymbolicTraits {};
-}  // namespace scalar_conversion
-}  // namespace systems
-}  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)
