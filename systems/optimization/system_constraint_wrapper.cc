@@ -8,8 +8,9 @@ SystemConstraintWrapper::SystemConstraintWrapper(
     const System<double>* const system_double,
     const System<AutoDiffXd>* const system_autodiff,
     SystemConstraintIndex index, const Context<double>& context,
-    UpdateContextFromDecisionVariables<double> updater_double,
-    UpdateContextFromDecisionVariables<AutoDiffXd> updater_autodiff, int x_size)
+    UpdateContextFromDecisionVariablesFunction<double> updater_double,
+    UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
+    int x_size)
     : solvers::Constraint(system_double->get_constraint(index).size(), x_size,
                           system_double->get_constraint(index).lower_bound(),
                           system_double->get_constraint(index).upper_bound(),

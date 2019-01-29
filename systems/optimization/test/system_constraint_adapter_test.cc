@@ -42,6 +42,8 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   const Eigen::Vector4d var(2, 3, 4, 5);
   Eigen::VectorXd y;
   constraint1->Eval(var, &y);
+  // Compute the constraint by hand, and compare it against y.
+  EXPECT_TRUE(CompareMatrices(y, Eigen::Vector2d(10, -29), 10 * kEps));
 
   DummySystemUpdater1 selector;
   selector.operator()<double>(system, var, context.get());
@@ -51,6 +53,7 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
 
   // Use a lambda function as the selector.
   // This selector's vars = [x(0); x(1); x(2)]
+  // We use "auto" here to allow transmogrify the scalar types.
   auto selector2 = [](const auto&, const auto& vars, auto* m_context) {
     m_context->SetContinuousState(vars);
   };

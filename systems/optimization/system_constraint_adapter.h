@@ -11,7 +11,8 @@ namespace systems {
  * this class helps to convert a SystemConstraint to a solvers::Constraint.
  * Internally this class will convert a System<double> to System<AutoDiffXd>
  * (and System<symbolic::Expression> if possible), and store these systems (of
- * different scalar types) inside this class.
+ * different scalar types) inside this class. Using this class with a system
+ * that cannot be converted to System<AutoDiffXd> will cause a runtime error.
  */
 class SystemConstraintAdapter {
  public:
@@ -37,14 +38,16 @@ class SystemConstraintAdapter {
    * TODO(hongkai.dai): add another function to parse the system constraint to
    * linear/quadratic/second-order-cone etc using symbolic expression.
    */
-  template <typename UpdateContextFromDecisionVariablesGeneric>
+  template <typename UpdateContextFromDecisionVariablesGenericFunction>
   std::shared_ptr<SystemConstraintWrapper> Create(
       SystemConstraintIndex index, const Context<double>& context,
-      UpdateContextFromDecisionVariablesGeneric updater, int x_size) const {
+      UpdateContextFromDecisionVariablesGenericFunction updater,
+      int x_size) const {
     return std::make_shared<SystemConstraintWrapper>(
         system_double_, system_autodiff_.get(), index, context,
-        UpdateContextFromDecisionVariables<double>(updater),
-        UpdateContextFromDecisionVariables<AutoDiffXd>(updater), x_size);
+        UpdateContextFromDecisionVariablesFunction<double>(updater),
+        UpdateContextFromDecisionVariablesFunction<AutoDiffXd>(updater),
+        x_size);
   }
 
  private:
