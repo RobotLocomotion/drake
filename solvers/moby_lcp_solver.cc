@@ -174,7 +174,7 @@ void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
                              const optional<SolverOptions>& solver_options,
                              MathematicalProgramResult* result) const {
   *result = {};
-  result->set_decision_variable_index(&(prog.decision_variable_index()));
+  result->set_decision_variable_index(prog.decision_variable_index());
   // Moby doesn't use initial guess or the solver options.
   unused(initial_guess);
   unused(solver_options);

@@ -659,7 +659,7 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
                          MathematicalProgramResult* result) const {
   // reset result.
   *result = {};
-  result->set_decision_variable_index(&(prog.decision_variable_index()));
+  result->set_decision_variable_index(prog.decision_variable_index());
   if (!license_) {
     license_ = AcquireLicense();
   }

@@ -2843,6 +2843,10 @@ class MathematicalProgram {
     return required_capabilities_;
   }
 
+  /**
+   * Returns the mapping from a decision variable to its index in the vector,
+   * containing all the decision variables in the optimization program.
+   */
   const std::unordered_map<symbolic::Variable::Id, int>&
   decision_variable_index() const {
     return decision_variable_index_;

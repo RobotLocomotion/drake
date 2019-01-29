@@ -37,9 +37,8 @@ class MathematicalProgramResult final {
    * MathematicalProgram.
    */
   void set_decision_variable_index(
-      std::shared_ptr<const std::unordered_map<symbolic::Variable::Id, int>>
-          decision_variable_index) {
-    decision_variable_index_ = decision_variable_index;
+      std::unordered_map<symbolic::Variable::Id, int> decision_variable_index) {
+    decision_variable_index_ = std::move(decision_variable_index);
   }
 
   /** Sets SolutionResult. */
@@ -121,11 +120,18 @@ class MathematicalProgramResult final {
     return value;
   }
 
+  /**
+   * Gets the solution of a single decision variable.
+   * @param var The decision variable.
+   * @return The value of the decision variable after solving the problem.
+   * @throws invalid_argument if `var` is not captured in the mapping @p
+   * decision_variable_index, as the input argument of
+   * set_decision_variable_index().
+   */
   double GetSolution(const symbolic::Variable& var) const;
 
  private:
-  std::shared_ptr<const std::unordered_map<symbolic::Variable::Id, int>>
-      decision_variable_index_;
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
   SolutionResult solution_result_{};
   Eigen::VectorXd x_val_;
   double optimal_cost_{};

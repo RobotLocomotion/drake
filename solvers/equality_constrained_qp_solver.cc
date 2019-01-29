@@ -96,7 +96,7 @@ void EqualityConstrainedQPSolver::Solve(
     const optional<SolverOptions>& solver_options,
     MathematicalProgramResult* result) const {
   *result = {};
-  result->set_decision_variable_index(&(prog.decision_variable_index()));
+  result->set_decision_variable_index(prog.decision_variable_index());
   // An equality constrained QP problem has analytical solution. It doesn't
   // depend on the initial guess.
   unused(initial_guess);

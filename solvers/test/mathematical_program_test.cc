@@ -2936,7 +2936,7 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   auto x = prog.NewContinuousVariables<2>();
 
   MathematicalProgramResult result;
-  result.set_decision_variable_index(&(prog.decision_variable_index()));
+  result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(Eigen::Vector2d(1, 2));
 
   // GetSolution(var, result) retrieves solution from `result`, GetSolution(var)

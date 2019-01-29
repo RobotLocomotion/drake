@@ -11,19 +11,15 @@ namespace {
 class MathematicalProgramResultTest : public ::testing::Test {
  public:
   MathematicalProgramResultTest()
-      : x0_{"x0"},
-        x1_{"x1"},
-        decision_variable_index_{std::make_shared<
-            std::unordered_map<symbolic::Variable::Id, int>>()} {
-    decision_variable_index_->emplace(x0_.get_id(), 0);
-    decision_variable_index_->emplace(x1_.get_id(), 1);
+      : x0_{"x0"}, x1_{"x1"}, decision_variable_index_{} {
+    decision_variable_index_.emplace(x0_.get_id(), 0);
+    decision_variable_index_.emplace(x1_.get_id(), 1);
   }
 
  protected:
   symbolic::Variable x0_;
   symbolic::Variable x1_;
-  std::shared_ptr<std::unordered_map<symbolic::Variable::Id, int>>
-      decision_variable_index_;
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_;
 };
 
 TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
