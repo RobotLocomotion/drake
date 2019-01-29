@@ -1297,7 +1297,7 @@ GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
   plant->Finalize();
 
   // Add the system that applies inverse gravitational forces to the link
-  // centers.
+  // endpoints.
 
   // Connect the system to the MBP.
   builder.Connect(
@@ -1312,12 +1312,14 @@ GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
 
   // Put the acrobot into a configuration where it has nonzero potential
   // energy.
-  BasicVector<double> acrobot_state =
+  BasicVector<double>& acrobot_state =
     acrobot_context.get_mutable_continuous_state_vector();
   acrobot_state[0] = M_PI_2;
   acrobot_state[1] = 0.0;
 
   // Compute time derivatives and ensure that they're sufficiently near zero.
+  BasicVector<double> derivatives(acrobot_state.size());
+  diagram->CalcTimeDerivatives(context, &derivatives);
 
   // Add forces to the link centers that counteract gravity.
 
