@@ -36,7 +36,7 @@ using constant_pack = type_pack<type_pack<constant<T, kPixelTypes>>...>;
 using Eigen::Map;
 
 PYBIND11_MODULE(sensors, m) {
-  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable);
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
 
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;

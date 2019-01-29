@@ -376,7 +376,9 @@ inline void ExecuteExtraPythonCode(py::module m) {
     }                                                                     \
   }
 #else  // PY_MAJOR_VERSION >= 3
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)
+// N.B. Still use the variable to ensure it's valid code.
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
+  { (void)variable; }
 #endif  // PY_MAJOR_VERSION >= 3
 
 }  // namespace pydrake

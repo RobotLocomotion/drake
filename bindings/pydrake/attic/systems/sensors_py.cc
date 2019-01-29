@@ -15,6 +15,8 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(sensors, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
+
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
