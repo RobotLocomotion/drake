@@ -441,8 +441,9 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
       GenDistanceTestDataBoxBoundary(X_WG);
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const auto& data : test_data_box_boundary) {
-    // We expect the geometry to have a shape of a box.
-    const shared_ptr<Shape> box = data.geometry;
+    const shared_ptr<Shape> shape = data.geometry;
+    // We expect the shape to be a box.
+    DRAKE_DEMAND(dynamic_cast<Box*>(shape.get()) != nullptr);
     // The gradient grad_W has unit length by construction.
     const Vector3d p_WQ = data.p_WQ + data.expected_result.grad_W;
     const GeometryId& id = data.expected_result.id_G;
@@ -450,7 +451,7 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
     const double distance = 1.;
     const Vector3d& grad_W = data.expected_result.grad_W;
     test_data.emplace_back(
-        box, X_WG, p_WQ,
+        shape, X_WG, p_WQ,
         SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
   }
   return test_data;
@@ -482,8 +483,8 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformOutsideBox() {
 //     p_GQ(s) = s_G ∘ h_G,
 //
 // where h_G = (h(x), h(y), h(z)), which is the vector from the origin Go to a
-// vertex of G expressed in G's frame. The operator ∘ is the entrywise product:
-// (a,b,c)∘(u,v,w) = (a*u, b*v, c*w).
+// vertex of G expressed in G's frame. The operator ∘ is the entrywise product
+// (also known as Hadamard product): (a,b,c)∘(u,v,w) = (a*u, b*v, c*w).
 //     In each case, Q is also its own nearest point on ∂G, the signed distance
 // is always zero, and the gradient vector equals the normalized unit vector of
 // the vector s.
@@ -544,7 +545,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformBoxBoundary() {
 //     The chosen d is small enough that Q at the inward normal offset from a
 // face center is still unambiguously closest to that face.
 //     In each case, the nearest point N on ∂G is C, the negative signed
-// distance is -d, and the gradient vector equals the face normal vector s.
+// distance is -d, and the gradient vector is the face normal vector s.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   // Create a box [-10,10]x[-15,15]x[-5,5],
