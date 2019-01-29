@@ -240,20 +240,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "floating_body_test",
-    timeout = "moderate",
-    srcs = [
-        "test/floating_body_test.cc",
-    ],
-    deps = [
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/free_body",
-        "//multibody/test_utilities:floating_body_plant",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
     name = "tree_from_mobilizers_test",
     # Test timeout increased to not timeout in debug and when run with
     # Valgrind.
