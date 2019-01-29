@@ -102,7 +102,7 @@ author, and include the following template in the PR description.
  Thanks!
  Your Friendly On-call Build Cop
 
- [1] CI Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Production/
+ [1] CI Continuous Production Dashboard: https://drake-jenkins.csail.mit.edu/view/Continuous%20Production/
  [2] https://drake.mit.edu/buildcop.html#workflow-for-handling-a-build-cop-revert
 
 .. _handling_a_build_cop_revert:
