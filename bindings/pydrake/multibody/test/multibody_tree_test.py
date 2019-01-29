@@ -23,6 +23,7 @@ from pydrake.multibody.multibody_tree import (
     WeldJoint,
     world_index,
 )
+
 from pydrake.multibody.multibody_tree.math import (
     SpatialAcceleration,
     SpatialVelocity,
@@ -35,7 +36,6 @@ from pydrake.multibody.multibody_tree.multibody_plant import (
 )
 from pydrake.multibody.multibody_tree.parsing import (
     AddModelFromSdfFile,
-    Parser as DeprecatedParser,
 )
 from pydrake.multibody.parsing import (
     Parser,
@@ -52,6 +52,13 @@ from pydrake.geometry import (
     SceneGraph,
 )
 from pydrake.systems.framework import DiagramBuilder
+
+# Test new module layout.
+# TODO(eric.cousineau): Use only these modules once the old modules are
+# deprecated.
+import pydrake.multibody.math
+import pydrake.multibody.tree
+import pydrake.multibody.plant
 
 
 import copy
@@ -243,20 +250,6 @@ class TestMultibodyTree(unittest.TestCase):
             warnings.simplefilter("default", DrakeDeprecationWarning)
             result = AddModelFromSdfFile(plant=plant, file_name=sdf_file)
             self.assertIsInstance(result, ModelInstanceIndex)
-            self.assertEqual(len(w), 1)
-
-        plant = MultibodyPlant(time_step=0.01)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("default", DrakeDeprecationWarning)
-            result = DeprecatedParser(plant).AddModelFromFile(sdf_file)
-            self.assertIsInstance(result, ModelInstanceIndex)
-            self.assertEqual(len(w), 1)
-
-        plant = MultibodyPlant(time_step=0.01)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("default", DrakeDeprecationWarning)
-            result = DeprecatedParser(plant).AddAllModelsFromFile(sdf_file)
-            self.assertIsInstance(result, list)
             self.assertEqual(len(w), 1)
 
     def check_old_spelling_exists(self, value):
