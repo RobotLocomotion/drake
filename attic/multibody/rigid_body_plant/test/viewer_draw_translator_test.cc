@@ -11,6 +11,7 @@
 #include "drake/multibody/joints/roll_pitch_yaw_floating_joint.h"
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace systems {
