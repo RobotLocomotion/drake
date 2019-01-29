@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <deque>
 #include <limits>
 #include <map>
 #include <memory>
@@ -29,6 +30,52 @@
 
 
 namespace {
+
+// Fortran has a pool of integers, which it uses as file handles for debug
+// output.  When "Print file" output is enabled, we will need to tell SNOPT
+// which integer to use for a given thread's debug output, so therefore we
+// maintain a singleton pool of those integers here.
+// See also http://fortranwiki.org/fortran/show/newunit.
+class FortranUnitFactory {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FortranUnitFactory)
+
+  static FortranUnitFactory& singleton() {
+    static drake::never_destroyed<FortranUnitFactory> result;
+    return result.access();
+  }
+
+  // Default constructor; don't call this -- only use the singleton().
+  // (We can't mark this private, due to never_destroyed's use of it.)
+  FortranUnitFactory() {
+    // Populate the pool; we'll work from the back (i.e., starting with 10).
+    // The range 10..1000 is borrowed from SNOPT 7.6's snopt-interface code,
+    // also found at http://fortranwiki.org/fortran/show/newunit.
+    for (int i = 10; i < 1000; ++i) {
+      available_units_.push_front(i);
+    }
+  }
+
+  // Returns an available new unit.
+  int Allocate() {
+    std::lock_guard<std::mutex> guard(mutex_);
+    DRAKE_DEMAND(!available_units_.empty());
+    int result = available_units_.back();
+    available_units_.pop_back();
+    return result;
+  }
+
+  // Reclaims a unit, returning it to the pool.
+  void Release(int unit) {
+    DRAKE_DEMAND(unit != 0);
+    std::lock_guard<std::mutex> guard(mutex_);
+    available_units_.push_back(unit);
+  }
+
+ private:
+  std::mutex mutex_;
+  std::deque<int> available_units_;
+};
 
 // This struct is a helper to bridge the gap between SNOPT's 7.4 and 7.6 APIs.
 // Its specializations provide static methods that express the SNOPT 7.6 APIs.
@@ -59,18 +106,33 @@ struct SnoptImpl<true> {
 // that SFINAE ignores the function bodies when the user has SNOPT 7.6.
 template<>
 struct SnoptImpl<false> {
-  static const int kLegacyPrintDefault = 9;
+  // The unit number for our "Print file" log for the current thread.  When the
+  // "Print file" option is not enabled, this is zero.
+  thread_local static int g_iprint;
+
   template <typename Int>
   static void snend(
       Int* iw, int leniw, double* rw, int lenrw) {
-    Int iprint = kLegacyPrintDefault;
+    // Close the print file and then release its unit (if necessary).
+    Int iprint = g_iprint;
     ::f_snend(&iprint);
+    if (g_iprint) {
+      FortranUnitFactory::singleton().Release(g_iprint);
+      g_iprint = 0;
+    }
   }
   template <typename Int>
   static void sninit(
       const char* name, int len, int summOn,
       Int* iw, int leniw, double* rw, int lenrw) {
-    Int iprint = kLegacyPrintDefault;
+    // Allocate a unit number for the "Print file" (if necessary); the code
+    // within f_sninit will open the file.
+    if (len == 0) {
+      g_iprint = 0;
+    } else {
+      g_iprint = FortranUnitFactory::singleton().Allocate();
+    }
+    Int iprint = g_iprint;
     ::f_sninit(name, &len, &iprint, &summOn, iw, &leniw, rw, &lenrw);
   }
   template <typename Int>
@@ -125,6 +187,9 @@ struct SnoptImpl<false> {
     ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
   }
 };
+
+// The next line is C++ boilerplate to declare linker storage for this global.
+thread_local int SnoptImpl<false>::g_iprint;
 
 // Choose the correct SnoptImpl specialization.
 void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
