@@ -13,6 +13,8 @@ namespace {
 // below.
 const int kDim = 10;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the functionality of LcmTranslatorDictionary.
 GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
   const std::string channel_name = "_=?+pYa8J9c!Hg;V";
@@ -41,6 +43,7 @@ GTEST_TEST(LcmTranslatorDictionaryTest, BasicTests) {
   // translator that exists in the dictionary.
   EXPECT_NO_THROW(dictionary.GetTranslator(channel_name));
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace lcm
