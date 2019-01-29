@@ -243,13 +243,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     // The index of the body that the force is to be applied to.
     BodyIndex body_index;
 
-    // A vector from Body B's origin (Bo) to location Q, expressed in
-    // B's frame.
-    Vector3<T> p_BoQ_B;
+    // A position vector from Body B's origin (Bo) to a point Bq (a point of B),
+    // expressed in B's frame.
+    Vector3<T> p_BoBq_B;
 
-    // A spatial force applied to Body B at location Q, expressed in the
+    // A spatial force applied to Body B at point Bq, expressed in the
     // world frame.
-    SpatialForce<T> F_B_W;
+    SpatialForce<T> F_Bq_W;
   };
 
   /// Returns the number of Frame objects in this model.
@@ -2516,6 +2516,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @throws std::exception if the model instance does not exist.
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
+
+  /// Returns a constant reference to the input port for TBD...
+  const systems::InputPort<T>& get_externally_applied_input_port() const;
 
   /// @}
   // Closes Doxygen section "Actuation input"

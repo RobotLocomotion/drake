@@ -1088,9 +1088,13 @@ void MultibodyPlant<T>::AddAppliedExternalForces(
   // Get the mutable body force vector.
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
 
-  // Evaluate the input port.
-  const auto& applied_input =
-      this->EvalAbstractInput(context, externally_applied_input_port_)->
+  // Evaluate the input port; if it's not connected, return now.
+  AbstractValue* port_eval = this->EvalAbstractInput(
+      context, externally_applied_input_port_);
+  if (!port_eval)
+    return;
+
+  const auto& applied_input = port_eval->
           template GetValue<std::vector<ExternallyAppliedForce>>();
 
   // Loop over all forces.
@@ -1104,12 +1108,12 @@ void MultibodyPlant<T>::AddAppliedExternalForces(
     // to a rigid transform, use that reference here instead.
     math::RigidTransform<T> X_WB(EvalBodyPoseInWorld(context, body));
 
-    // Get the translation from the body origin to the point of application
-    // described in the world frame.
-    const Vector3<T> p_Bo_Q_W = X_WB.rotation() * force_structure.p_BoQ_B;
+    // Get the position vector from the body origin (Bo) to the point of
+    // force application (Bq), expressed in the world frame (W).
+    const Vector3<T> p_BoBq_W = X_WB.rotation() * force_structure.p_BoBq_B;
 
-    // Shift the spatial force.
-    F_BBo_W_array[body_node_index] += force_structure.F_B_W.Shift(p_Bo_Q_W);
+    // Shift the spatial force from Bq to Bo.
+    F_BBo_W_array[body_node_index] += force_structure.F_Bq_W.Shift(p_BoBq_W);
   }
 }
 
@@ -1689,6 +1693,13 @@ MultibodyPlant<T>::get_actuation_input_port(
   DRAKE_THROW_UNLESS(num_actuated_dofs(model_instance) > 0);
   return systems::System<T>::get_input_port(
       instance_actuation_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::InputPort<T>&
+MultibodyPlant<T>::get_externally_applied_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_input_port(externally_applied_input_port_);
 }
 
 template <typename T>

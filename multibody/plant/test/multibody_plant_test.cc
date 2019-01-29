@@ -1286,13 +1286,44 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
 }
 
-TEST_F(AcrobotPlantTests, CheckExternalAppliedInput) {
+GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
+  // Load the acrobot model.
+  const std::string full_name = FindResourceOrThrow(
+        "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  systems::DiagramBuilder<double> builder;
+  auto plant = builder.AddSystem<MultibodyPlant<double>>();
+  Parser(*plant).AddModelFromFile(full_name);
+  plant->AddForceElement<UniformGravityFieldElement>();
+  plant->Finalize();
+
+  // Add the system that applies inverse gravitational forces to the link
+  // centers.
+
+  // Connect the system to the MBP.
+  builder.Connect(
+      acrobot_gravity_compensator->get_output_port(),
+      plant->get_externally_applied_input_port());
+  auto diagram = builder.Build();
+
+  // Create a context.
+  auto context = diagram->CreateDefaultContext();
+  auto& acrobot_context = diagram->GetMutableSubsystemContext(
+      *plant, context.get());
+
   // Put the acrobot into a configuration where it has nonzero potential
   // energy.
+  BasicVector<double> acrobot_state =
+    acrobot_context.get_mutable_continuous_state_vector();
+  acrobot_state[0] = M_PI_2;
+  acrobot_state[1] = 0.0;
+
+  // Compute time derivatives and ensure that they're sufficiently near zero.
 
   // Add forces to the link centers that counteract gravity.
 
+
   // Ensure that the acceleration is zero.
+
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
