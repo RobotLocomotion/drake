@@ -91,7 +91,7 @@ PYBIND11_MODULE(autodiffutils, m) {
 
   // Add overloads for `math` functions.
   auto math = py::module::import("pydrake.math");
-  MirrorDef<py::module, decltype(autodiff)>(&math, &autodiff)
+  UfuncMirrorDef<decltype(autodiff)>(&autodiff, math)
       .def_loop("__abs__", "abs", [](const AutoDiffXd& x) { return abs(x); })
       .def_loop("log", [](const AutoDiffXd& x) { return log(x); })
       .def_loop("exp", [](const AutoDiffXd& x) { return exp(x); })
@@ -118,7 +118,8 @@ PYBIND11_MODULE(autodiffutils, m) {
           "fmax", "max",
           [](const AutoDiffXd& x, const AutoDiffXd& y) { return max(x, y); })
       .def_loop("ceil", [](const AutoDiffXd& x) { return ceil(x); })
-      .def_loop("floor", [](const AutoDiffXd& x) { return floor(x); })
+      .def_loop("floor", [](const AutoDiffXd& x) { return floor(x); });
+  MirrorDef<py::module, decltype(autodiff)>(&math, &autodiff)
       // Matrix
       .def("inv", [](const MatrixX<AutoDiffXd>& X) -> MatrixX<AutoDiffXd> {
         return X.inverse();

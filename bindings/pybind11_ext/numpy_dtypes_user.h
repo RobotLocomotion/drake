@@ -412,6 +412,7 @@ class dtype_user : public object {
       "Cannot define NumPy dtypes for polymorphics classes.");
 
   using PyClass = class_<Class_>;
+  using type = typename PyClass::type;
   using Class = Class_;
   using DTypePyObject = detail::dtype_user_instance<Class>;
 
@@ -466,16 +467,16 @@ class dtype_user : public object {
   }
 
   /// Defines a constructor.
-  template <typename ... Args>
+  template <typename ... Args, typename ... Extra>
   dtype_user& def(
-      detail::initimpl::constructor<Args...>&&, const char* doc = "") {
+      detail::initimpl::constructor<Args...>&&, Extra&&... extra) {
     // See notes in `add_init`.
     // N.B. Do NOT use `Class*` as the argument, since that may incur recursion.
     add_init([](object py_self, Args... args) {
       // Old-style. No factories for now.
         Class* self = DTypePyObject::load_raw(py_self.ptr());
       new (self) Class(std::forward<Args>(args)...);
-    }, doc);
+    }, detail::type_pack<Args...>{}, std::forward<Extra>(extra)...);
     return *this;
   }
 
@@ -607,8 +608,8 @@ class dtype_user : public object {
   }
 
   // Adds constructor. See comments within for explanation.
-  template <typename Func>
-  void add_init(Func&& f, const char* doc) {
+  template <typename Func, typename... Extra, typename... Args>
+  void add_init(Func&& f, detail::type_pack<Args...>, Extra&&... extra) {
     // Do not construct this with the name `__init__` as `pybind11`s
     // constructor implementations via `cpp_function` are rigidly fixed to
     // its instance registration system (which we don't want).
@@ -620,10 +621,10 @@ class dtype_user : public object {
     if (!d.contains("__init__")) {
       auto init = self().attr("_dtype_init");
       auto func = cpp_function(
-          [init](handle self, args args, kwargs kwargs) {
+          [init](handle self, Args... args) {
             // Dispatch.
-            init(self, *args, **kwargs);
-          }, is_method(self()), doc);
+            init(self, std::forward<Args>(args)...);
+          }, is_method(self()), std::forward<Extra>(extra)...);
       self().attr("__init__") = func;
     }
   }

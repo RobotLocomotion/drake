@@ -187,7 +187,7 @@ PYBIND11_MODULE(test_util, m) {
               auto& state = context->get_mutable_discrete_state();
               DiscreteValues<T> state_copy(clone_vector(state.get_vector()));
               system.CalcDiscreteVariableUpdates(*context, &state_copy);
-              state.CopyFrom(state_copy);
+              state.SetFrom(state_copy);
             } else {
               auto& state = context->get_mutable_continuous_state();
               ContinuousState<T> state_dot(
