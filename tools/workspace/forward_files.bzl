@@ -36,3 +36,4 @@ def forward_files(
             visibility = visibility,
         )
         outs.append(out)
+    return outs
