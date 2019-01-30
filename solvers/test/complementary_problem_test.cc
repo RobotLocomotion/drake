@@ -85,8 +85,8 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
   if (snopt_solver.available()) {
     MathematicalProgramResult result = Solve(prog);
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-    const auto x_val = prog.GetSolution(x, result);
-    const auto y_val = prog.GetSolution(y, result);
+    const auto x_val = result.GetSolution(x);
+    const auto y_val = result.GetSolution(y);
     // Choose 1e-6 as the precision, since that is the default minor feasibility
     // tolerance of SNOPT.
     double precision = 1E-6;

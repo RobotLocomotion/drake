@@ -33,7 +33,7 @@ void TestTrivialSDP(const MathematicalProgramSolverInterface& solver,
 
   const MathematicalProgramResult result = RunSolver(prog, solver);
 
-  auto S_value = prog.GetSolution(S, result);
+  auto S_value = result.GetSolution(S);
 
   EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), tol));
 }
@@ -65,9 +65,9 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver,
 
   const MathematicalProgramResult result = RunSolver(prog, solver);
 
-  const Matrix3d P_value = prog.GetSolution(P, result);
-  const auto Q1_flat_value = prog.GetSolution(binding1.variables(), result);
-  const auto Q2_flat_value = prog.GetSolution(binding2.variables(), result);
+  const Matrix3d P_value = result.GetSolution(P);
+  const auto Q1_flat_value = result.GetSolution(binding1.variables());
+  const auto Q2_flat_value = result.GetSolution(binding2.variables());
   const Eigen::Map<const Matrix3d> Q1_value(&Q1_flat_value(0));
   const Eigen::Map<const Matrix3d> Q2_value(&Q2_flat_value(0));
   Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_P(P_value);
@@ -126,9 +126,9 @@ void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver,
 
   const MathematicalProgramResult result = RunSolver(prog, solver);
 
-  const auto P_value = prog.GetSolution(P, result);
-  const auto s_value = prog.GetSolution(s, result);
-  const auto c_value = prog.GetSolution(c, result);
+  const auto P_value = result.GetSolution(P);
+  const auto s_value = result.GetSolution(s);
+  const auto c_value = result.GetSolution(c);
 
   const Eigen::SelfAdjointEigenSolver<Matrix3d> es_P(P_value);
   EXPECT_TRUE((es_P.eigenvalues().array() >= -tol).all());
@@ -175,8 +175,8 @@ void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver,
 
   const MathematicalProgramResult result = RunSolver(prog, solver);
 
-  const double z_value = prog.GetSolution(z(0), result);
-  const auto x_value = prog.GetSolution(x, result);
+  const double z_value = result.GetSolution(z(0));
+  const auto x_value = result.GetSolution(x);
   const auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
 
   Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_xF(xF_sum);

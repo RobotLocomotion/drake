@@ -87,7 +87,7 @@ GTEST_TEST(testNonlinearProgram, BoundingBoxTest) {
   MathematicalProgramResult result;
   RunNonlinearProgram(prog, x_init,
                       [&]() {
-                        const auto& x_value = prog.GetSolution(x, result);
+                        const auto& x_value = result.GetSolution(x);
                         for (int i = 0; i < 4; ++i) {
                           EXPECT_GE(x_value(i), lb(i) - 1E-10);
                           EXPECT_LE(x_value(i), ub(i) + 1E-10);
@@ -126,7 +126,7 @@ GTEST_TEST(testNonlinearProgram, trivialLinearEquality) {
   const Eigen::VectorXd x_init = Eigen::Vector2d(2, 2);
   RunNonlinearProgram(prog, x_init,
                       [&]() {
-                        const auto& vars_value = prog.GetSolution(vars, result);
+                        const auto& vars_value = result.GetSolution(vars);
                         EXPECT_DOUBLE_EQ(vars_value(0), 2);
                         EXPECT_DOUBLE_EQ(vars_value(1), 1);
                       },
@@ -157,13 +157,12 @@ GTEST_TEST(testNonlinearProgram, QuadraticCost) {
   RunNonlinearProgram(
       prog, x_init,
       [&]() {
-        const auto& x_value = prog.GetSolution(x, result);
+        const auto& x_value = result.GetSolution(x);
         EXPECT_TRUE(CompareMatrices(x_value, expected, 1e-6,
                                     MatrixCompareType::absolute));
         EXPECT_TRUE(CompareMatrices(
-            prog.EvalBinding(
-                prog.quadratic_costs().front(),
-                prog.GetSolution(prog.decision_variables(), result)),
+            prog.EvalBinding(prog.quadratic_costs().front(),
+                             result.GetSolution(prog.decision_variables())),
             0.5 * x_value.transpose() * Q_symmetric * x_value +
                 b.transpose() * x_value,
             1E-14, MatrixCompareType::absolute));
@@ -238,7 +237,7 @@ GTEST_TEST(testNonlinearProgram, sixHumpCamel) {
       [&]() {
         // check (numerically) if it is a local minimum
         VectorXd ystar, y;
-        const auto& x_value = prog.GetSolution(x, result);
+        const auto& x_value = result.GetSolution(x);
         cost->Eval(x_value, &ystar);
         for (int i = 0; i < 10; i++) {
           cost->Eval(x_value + .01 * Matrix<double, 2, 1>::Random(), &y);
@@ -281,12 +280,10 @@ GTEST_TEST(testNonlinearProgram, linearPolynomialConstraint) {
   // Check that it gives the correct answer as well.
   const Eigen::VectorXd initial_guess = (Vector1d() << 0).finished();
   MathematicalProgramResult result;
-  RunNonlinearProgram(problem, initial_guess,
-                      [&]() {
-                        EXPECT_NEAR(problem.GetSolution(x_var(0), result), 2,
-                                    kEpsilon);
-                      },
-                      &result);
+  RunNonlinearProgram(
+      problem, initial_guess,
+      [&]() { EXPECT_NEAR(result.GetSolution(x_var(0)), 2, kEpsilon); },
+      &result);
 }
 
 // Simple test of polynomial constraints.
@@ -312,7 +309,7 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
     MathematicalProgramResult result;
     RunNonlinearProgram(problem, initial_guess,
                         [&]() {
-                          EXPECT_NEAR(problem.GetSolution(x_var(0), result), 2,
+                          EXPECT_NEAR(result.GetSolution(x_var(0)), 2,
                                       kEpsilon);
                           // TODO(ggould-tri) test this with a two-sided
                           // constraint, once
@@ -337,10 +334,9 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
     RunNonlinearProgram(
         problem, initial_guess,
         [&]() {
-          EXPECT_NEAR(problem.GetSolution(x_var(0), result), 1, 0.2);
-          EXPECT_LE(
-              poly.EvaluateUnivariate(problem.GetSolution(x_var(0), result)),
-              kEpsilon);
+          EXPECT_NEAR(result.GetSolution(x_var(0)), 1, 0.2);
+          EXPECT_LE(poly.EvaluateUnivariate(result.GetSolution(x_var(0))),
+                    kEpsilon);
         },
         &result);
   }
@@ -362,11 +358,11 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
     RunNonlinearProgram(
         problem, initial_guess,
         [&]() {
-          EXPECT_NEAR(problem.GetSolution(xy_var(0), result), 1, 0.2);
-          EXPECT_NEAR(problem.GetSolution(xy_var(1), result), -2, 0.2);
+          EXPECT_NEAR(result.GetSolution(xy_var(0)), 1, 0.2);
+          EXPECT_NEAR(result.GetSolution(xy_var(1)), -2, 0.2);
           std::map<Polynomiald::VarType, double> eval_point = {
-              {x.GetSimpleVariable(), problem.GetSolution(xy_var(0), result)},
-              {y.GetSimpleVariable(), problem.GetSolution(xy_var(1), result)}};
+              {x.GetSimpleVariable(), result.GetSolution(xy_var(0))},
+              {y.GetSimpleVariable(), result.GetSolution(xy_var(1))}};
           EXPECT_LE(poly.EvaluateMultivariate(eval_point), kEpsilon);
         },
         &result);
@@ -392,10 +388,9 @@ GTEST_TEST(testNonlinearProgram, polynomialConstraint) {
     RunNonlinearProgram(
         problem, initial_guess,
         [&]() {
-          EXPECT_NEAR(problem.GetSolution(x_var(0), result), -0.7, 0.2);
-          EXPECT_LE(
-              poly.EvaluateUnivariate(problem.GetSolution(x_var(0), result)),
-              kEpsilon);
+          EXPECT_NEAR(result.GetSolution(x_var(0)), -0.7, 0.2);
+          EXPECT_LE(poly.EvaluateUnivariate(result.GetSolution(x_var(0))),
+                    kEpsilon);
         },
         &result);
   }

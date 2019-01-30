@@ -995,6 +995,7 @@ void SnoptSolver::Solve(const MathematicalProgram& prog,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(prog.decision_variable_index());
 
   // Our function's arguments for initial_guess and solver_options take
   // precedence over prog's values.
