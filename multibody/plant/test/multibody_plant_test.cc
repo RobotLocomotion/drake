@@ -1319,13 +1319,13 @@ GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
 
   // Compute time derivatives and ensure that they're sufficiently near zero.
   BasicVector<double> derivatives(acrobot_state.size());
+  ASSERT_EQ(derivatives.size(), 4);
   diagram->CalcTimeDerivatives(context, &derivatives);
 
-  // Add forces to the link centers that counteract gravity.
-
-
   // Ensure that the acceleration is zero.
-
+  const double eps = 100 * std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(derivatives[2], 0.0, eps);
+  EXPECT_NEAR(derivatives[3], 0.0, eps);
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {
