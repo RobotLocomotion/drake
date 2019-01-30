@@ -234,19 +234,14 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
     EXPECT_EQ(result.get_solution_result(),
               solvers::SolutionResult::kSolutionFound);
 
-    const Eigen::Vector3d p_WB1 =
-        ik.prog().GetSolution(ik.q().segment<3>(4), result);
-    const Eigen::Quaterniond quat_WB1(ik.prog().GetSolution(ik.q()(0), result),
-                                      ik.prog().GetSolution(ik.q()(1), result),
-                                      ik.prog().GetSolution(ik.q()(2), result),
-                                      ik.prog().GetSolution(ik.q()(3), result));
-    const Eigen::Vector3d p_WB2 =
-        ik.prog().GetSolution(ik.q().tail<3>(), result);
+    const Eigen::Vector3d p_WB1 = result.GetSolution(ik.q().segment<3>(4));
+    const Eigen::Quaterniond quat_WB1(
+        result.GetSolution(ik.q()(0)), result.GetSolution(ik.q()(1)),
+        result.GetSolution(ik.q()(2)), result.GetSolution(ik.q()(3)));
+    const Eigen::Vector3d p_WB2 = result.GetSolution(ik.q().tail<3>());
     const Eigen::Quaterniond quat_WB2(
-        ik.prog().GetSolution(ik.q()(7), result),
-        ik.prog().GetSolution(ik.q()(8), result),
-        ik.prog().GetSolution(ik.q()(9), result),
-        ik.prog().GetSolution(ik.q()(10), result));
+        result.GetSolution(ik.q()(7)), result.GetSolution(ik.q()(8)),
+        result.GetSolution(ik.q()(9)), result.GetSolution(ik.q()(10)));
     const Eigen::Vector3d p_WS1 =
         p_WB1 + quat_WB1.toRotationMatrix() * X_B1S1_.translation();
     const Eigen::Vector3d p_WS2 =
