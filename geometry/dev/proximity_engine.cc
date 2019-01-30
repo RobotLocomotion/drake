@@ -747,8 +747,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                "one and only one object defined in it.");
     }
 
-    std::vector<Vector3d> vertices =
-        TinyObjToFclVertices(attrib, convex.scale());
+    auto vertices = std::make_shared<std::vector<Vector3d>>(
+        TinyObjToFclVertices(attrib, convex.scale()));
 
     const tinyobj::mesh_t& mesh = shapes[0].mesh;
 
@@ -761,15 +761,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //               ...}
     // where n_i is the number of vertices of face_i.
     //
-    std::vector<int> faces;
-    int num_faces = TinyObjToFclFaces(mesh, &faces);
-
-    convex_objects_.emplace_back(move(vertices), num_faces, move(faces));
-    ConvexData& object = convex_objects_.back();
+    auto faces = std::make_shared<std::vector<int>>();
+    int num_faces = TinyObjToFclFaces(mesh, faces.get());
 
     // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(
-        object.vertices, object.num_faces, object.faces);
+        vertices, num_faces, faces);
     TakeShapeOwnership(fcl_convex, user_data);
 
     // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
@@ -1010,33 +1007,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The mechanism for dictating collision filtering.
   CollisionFilterLegacy collision_filter_;
-
-  // The data needed by fcl::Convex.
-  struct ConvexData {
-    // @param v the list of vertices.
-    // @param n the number of faces.
-    // @param f the list of integers containing both the number and indices of
-    //          vertices of each face like this:
-    //          { n0, v0_0,...,v0_n0-1,
-    //            n1, v1_0,v1_1,...,v1_n1-1,
-    //            n2, v2_0,v2_1,...,v2_n2-1}
-    // @note n ≠ f->size()
-    // TODO(DamrongGuoy) We will switch the input to shared_ptr<vector<>> later.
-    // For now, we force callers to use move semantics (&& rvalue reference)
-    // for efficiency.
-    ConvexData(std::vector<Vector3d>&& v, int n, std::vector<int>&& f):
-        vertices(std::make_shared<const std::vector<Vector3d>>(move(v))),
-        num_faces(n),
-        faces(std::make_shared<const std::vector<int>>(move(f))) {
-    }
-
-    std::shared_ptr<const std::vector<Vector3d>> vertices;
-    int num_faces;
-    std::shared_ptr<const std::vector<int>> faces;
-  };
-
-  // The vector containing data for each convex object.
-  std::vector<ConvexData> convex_objects_;
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
