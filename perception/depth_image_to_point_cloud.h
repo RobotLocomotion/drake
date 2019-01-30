@@ -16,6 +16,8 @@
 namespace drake {
 namespace perception {
 
+// TODO(kmuhlrad): finish updating all documentation, figure out transform business.
+
 /// Converts a depth image to a point cloud.
 ///
 /// @system{ DepthImageToPointCloud,

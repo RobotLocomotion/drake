@@ -69,7 +69,6 @@ void DoConvert(
   }
   Eigen::Ref<Matrix3Xf> output_xyz = output->mutable_xyzs();
 
-
   const int height = depth_image.height();
   const int width = depth_image.width();
   const float cx = camera_info.center_x();
