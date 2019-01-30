@@ -79,6 +79,8 @@ class TestAll(unittest.TestCase):
             # - solvers
             "RigidBodyConstraint",
             # - systems
+            # - - controllers
+            "RbtInverseDynamics",
             # - - sensors
             "RgbdCamera",
             # autodiffutils
@@ -159,6 +161,8 @@ class TestAll(unittest.TestCase):
             "LeafSystem",
             # - analysis
             "Simulator",
+            # - controllers
+            "InverseDynamics",
             # - lcm
             "PySerializer",
             # - primitives
