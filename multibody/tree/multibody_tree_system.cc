@@ -158,12 +158,24 @@ MultibodyTreeSystem<T>::DoMakeLeafContext() const {
 template MultibodyTreeSystem<AutoDiffXd>::MultibodyTreeSystem(
     const MultibodyTreeSystem<double>& other);
 
+template MultibodyTreeSystem<symbolic::Expression>::MultibodyTreeSystem(
+    const MultibodyTreeSystem<double>& other);
+
 template MultibodyTreeSystem<double>::MultibodyTreeSystem(
     const MultibodyTreeSystem<AutoDiffXd>& other);
+
+template MultibodyTreeSystem<symbolic::Expression>::MultibodyTreeSystem(
+    const MultibodyTreeSystem<AutoDiffXd>& other);
+
+template MultibodyTreeSystem<double>::MultibodyTreeSystem(
+    const MultibodyTreeSystem<symbolic::Expression>& other);
+
+template MultibodyTreeSystem<AutoDiffXd>::MultibodyTreeSystem(
+    const MultibodyTreeSystem<symbolic::Expression>& other);
 
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)

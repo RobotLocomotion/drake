@@ -90,6 +90,13 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> WeldMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Mobilizer<symbolic::Expression>>
+WeldMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
