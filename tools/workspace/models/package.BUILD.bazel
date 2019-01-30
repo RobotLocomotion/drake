@@ -1,0 +1,6 @@
+package(default_visibility = ["//visibility:private"])
+
+exports_files(
+    srcs = glob(["ycb/meshes/*"]) or fail("No match"),
+    visibility = ["//visibility:public"],
+)
