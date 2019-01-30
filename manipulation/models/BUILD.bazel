@@ -12,6 +12,7 @@ install(
         "//manipulation/models/jaco_description:install_data",
         "//manipulation/models/wsg_50_description:install_data",
         "//manipulation/models/xtion_description:install_data",
+        "//manipulation/models/ycb:install_data",
     ],
 )
 
