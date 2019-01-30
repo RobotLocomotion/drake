@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -2864,6 +2865,19 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // MultibodyTree::Finalize() was called.
   void FinalizePlantOnly();
 
+  // MemberSceneGraph is an alias for SceneGraph<T>, except when T = Expression.
+  struct SceneGraphStub;
+  using MemberSceneGraph = typename std::conditional<
+      std::is_same<T, symbolic::Expression>::value,
+      SceneGraphStub, geometry::SceneGraph<T>>::type;
+
+  // Returns the SceneGraph that pre-Finalize geometry operations should
+  // interact with.  In most cases, that will be whatever the user has passesd
+  // into RegisterAsSourceForSceneGraph.  However, when T = Expression, the
+  // result will be a stub type instead.  (We can get rid of the stub once
+  // SceneGraph supports symbolic::Expression.)
+  MemberSceneGraph& member_scene_graph();
+
   // Helper to check when a deprecated user-provided `scene_graph` pointer is
   // passed in via public API (aside form `RegisterAsSourceForSceneGraph`).
   // @throws std::logic_error if `scene_graph` is non-null (non-default) and
@@ -2984,8 +2998,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   geometry::GeometryId RegisterGeometry(
       const Body<T>& body, const Isometry3<double>& X_BG,
       const geometry::Shape& shape,
-      const std::string& name,
-      geometry::SceneGraph<T>* scene_graph);
+      const std::string& name);
 
   bool body_has_registered_frame(const Body<T>& body) const {
     return body_index_to_frame_id_.find(body.index()) !=
@@ -3437,27 +3450,24 @@ struct AddMultibodyPlantSceneGraphResult final {
 #ifndef DRAKE_DOXYGEN_CXX
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
 template <>
+geometry::SourceId
+MultibodyPlant<symbolic::Expression>::RegisterAsSourceForSceneGraph(
+    geometry::SceneGraph<symbolic::Expression>*);
+template <>
+typename MultibodyPlant<symbolic::Expression>::SceneGraphStub&
+MultibodyPlant<symbolic::Expression>::member_scene_graph();
+template <>
 std::vector<geometry::PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
     const systems::Context<double>&) const;
+template <>
+void MultibodyPlant<symbolic::Expression>::DeclareSceneGraphPorts();
 #endif
 
 }  // namespace multibody
 }  // namespace drake
 
-// Disable support for symbolic evaluation.
-// TODO(amcastro-tri): Allow symbolic evaluation once MultibodyTree supports it.
-namespace drake {
-namespace systems {
-namespace scalar_conversion {
-template <>
-struct Traits<drake::multibody::MultibodyPlant> :
-    public NonSymbolicTraits {};
-}  // namespace scalar_conversion
-}  // namespace systems
-}  // namespace drake
-
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct drake::multibody::AddMultibodyPlantSceneGraphResult)

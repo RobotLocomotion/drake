@@ -261,6 +261,17 @@ const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
       std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
 }
 
+template <>
+geometry::SourceId
+MultibodyPlant<symbolic::Expression>::RegisterAsSourceForSceneGraph(
+    SceneGraph<symbolic::Expression>* scene_graph) {
+  DRAKE_THROW_UNLESS(scene_graph != nullptr);
+  DRAKE_THROW_UNLESS(!geometry_source_is_registered());
+  scene_graph_ = scene_graph;
+  DeclareSceneGraphPorts();
+  return {};
+}
+
 template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
@@ -315,9 +326,8 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
   GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
-      scene_graph_);
-  scene_graph_->AssignRole(*source_id_, id, properties);
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+  member_scene_graph().AssignRole(*source_id_, id, properties);
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
@@ -345,12 +355,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
   GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
-      scene_graph_);
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
   // TODO(SeanCurtis-TRI): Push the contact parameters into the
   // ProximityProperties.
-  scene_graph_->AssignRole(*source_id_, id, geometry::ProximityProperties());
+  member_scene_graph().AssignRole(
+      *source_id_, id, geometry::ProximityProperties());
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
@@ -412,14 +422,12 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape,
-    const std::string& name,
-    SceneGraph<T>* scene_graph) {
+    const std::string& name) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
-  CheckUserProvidedSceneGraph(scene_graph);
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
-    FrameId frame_id = scene_graph_->RegisterFrame(
+    FrameId frame_id = member_scene_graph().RegisterFrame(
         source_id_.value(),
         GeometryFrame(
             GetScopedName(*this, body.model_instance(), body.name()),
@@ -435,7 +443,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
       std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
-  GeometryId geometry_id = scene_graph->RegisterGeometry(
+  GeometryId geometry_id = member_scene_graph().RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = body.index();
@@ -643,6 +651,56 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
 }
 
 template <typename T>
+struct MultibodyPlant<T>::SceneGraphStub {
+  static void Throw(const char* operation_name) {
+    throw std::logic_error(fmt::format(
+        "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
+  }
+
+  template <typename... Args>
+  void AssignRole(Args...) const {
+    Throw("AssignRole");
+  }
+
+  template <typename... Args>
+  FrameId RegisterFrame(Args...) const {
+    Throw("RegisterFrame");
+    return {};
+  }
+
+  template <typename... Args>
+  GeometryId RegisterGeometry(Args...) const {
+    Throw("RegisterGeometry");
+    return {};
+  }
+
+  template <typename... Args>
+  void ExcludeCollisionsBetween(Args...) const {
+    Throw("ExcludeCollisionsBetween");
+  }
+
+  template <typename... Args>
+  void ExcludeCollisionsWithin(Args...) const {
+    Throw("ExcludeCollisionsWithin");
+  }
+};
+
+template <typename T>
+typename MultibodyPlant<T>::MemberSceneGraph&
+MultibodyPlant<T>::member_scene_graph() {
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  return *scene_graph_;
+}
+
+template <>
+typename MultibodyPlant<symbolic::Expression>::MemberSceneGraph&
+MultibodyPlant<symbolic::Expression>::member_scene_graph() {
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+  static never_destroyed<SceneGraphStub> stub_;
+  return stub_.access();
+}
+
+template <typename T>
 void MultibodyPlant<T>::CheckUserProvidedSceneGraph(
     const geometry::SceneGraph<T>* scene_graph) const {
   if (scene_graph != nullptr) {
@@ -688,7 +746,7 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
     if (child_id && parent_id) {
-      scene_graph_->ExcludeCollisionsBetween(
+      member_scene_graph().ExcludeCollisionsBetween(
           geometry::GeometrySet(*child_id),
           geometry::GeometrySet(*parent_id));
     }
@@ -706,8 +764,8 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   for (const auto& body_geometries : collision_geometries_) {
     collision.Add(body_geometries);
   }
-  scene_graph_->ExcludeCollisionsWithin(visual);
-  scene_graph_->ExcludeCollisionsBetween(visual, collision);
+  member_scene_graph().ExcludeCollisionsWithin(visual);
+  member_scene_graph().ExcludeCollisionsBetween(visual, collision);
 }
 
 template<typename T>
@@ -1693,6 +1751,22 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
   return this->get_output_port(contact_results_port_);
 }
 
+namespace {
+struct SymbolicGeometryValue {};
+}  // namespace
+
+template <>
+void MultibodyPlant<symbolic::Expression>::DeclareSceneGraphPorts() {
+  // SceneGraph doesn't support symbolic::Expression, but we'd like our port
+  // indices to remain consistent.
+  geometry_query_port_ = this->DeclareAbstractInputPort(
+      "geometry_query", systems::Value<SymbolicGeometryValue>{}).get_index();
+  geometry_pose_port_ = this->DeclareAbstractOutputPort(
+      "geometry_pose",
+      []() { return std::make_unique<Value<SymbolicGeometryValue>>(); },
+      [](const auto&, auto*) { /* no-op calc */ }).get_index();
+}
+
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
@@ -1832,6 +1906,7 @@ AddMultibodyPlantSceneGraph(
 }
 
 // Add explicit instantiations for `AddMultibodyPlantSceneGraph`.
+// This does *not* support symbolic::Expression.
 template
 AddMultibodyPlantSceneGraphResult<double>
 AddMultibodyPlantSceneGraph(
@@ -1849,7 +1924,7 @@ AddMultibodyPlantSceneGraph(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct drake::multibody::AddMultibodyPlantSceneGraphResult)
