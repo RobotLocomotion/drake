@@ -1,12 +1,13 @@
 from __future__ import division
 
 import pydrake.systems.sensors as mut
+import pydrake.attic.systems.sensors as attic_mut
 
 import numpy as np
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.rigid_body_tree import (
+from pydrake.attic.multibody.rigid_body_tree import (
     AddModelInstancesFromSdfString,
     FloatingBaseType,
     RigidBodyTree,
@@ -224,7 +225,7 @@ class TestSensors(unittest.TestCase):
         width = 1280
         height = 720
 
-        camera = mut.RgbdCamera(
+        camera = attic_mut.RgbdCamera(
             name="camera", tree=tree, frame=frame,
             z_near=0.5, z_far=5.0,
             fov_y=np.pi / 4, show_window=False,
@@ -245,8 +246,8 @@ class TestSensors(unittest.TestCase):
         self._check_ports(camera)
 
         # Test discrete camera.
-        period = mut.RgbdCameraDiscrete.kDefaultPeriod
-        discrete = mut.RgbdCameraDiscrete(
+        period = attic_mut.RgbdCameraDiscrete.kDefaultPeriod
+        discrete = attic_mut.RgbdCameraDiscrete(
             camera=camera, period=period, render_label_image=True)
         self.assertTrue(discrete.camera() is camera)
         self.assertTrue(discrete.mutable_camera() is camera)

@@ -2,12 +2,14 @@ import numpy as np
 import os
 import unittest
 
-import pydrake.multibody.rigid_body_plant as mut
+import pydrake.attic.multibody.rigid_body_plant as mut
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.lcm import DrakeMockLcm
 from pydrake.systems.framework import BasicVector
-from pydrake.multibody.rigid_body_tree import RigidBodyTree, FloatingBaseType
+from pydrake.attic.multibody.rigid_body_tree import (
+    RigidBodyTree, FloatingBaseType
+)
 
 
 class TestRigidBodyPlant(unittest.TestCase):

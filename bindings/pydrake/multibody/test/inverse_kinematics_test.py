@@ -10,7 +10,7 @@ from numpy.linalg import norm
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.eigen_geometry import Quaternion, AngleAxis, Isometry3
 from pydrake.math import RotationMatrix
-from pydrake.multibody.multibody_tree.multibody_plant import (
+from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
