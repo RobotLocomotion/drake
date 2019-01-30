@@ -305,6 +305,50 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
   }
 }
 
+class AutoDiffOnlyCost final : public drake::solvers::Cost {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AutoDiffOnlyCost)
+
+  AutoDiffOnlyCost() : drake::solvers::Cost(1) {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    throw std::runtime_error("Do not support eval with double.");
+  }
+
+  void DoEval(const Eigen::Ref<const drake::AutoDiffVecXd>& x,
+              drake::AutoDiffVecXd* y) const override {
+    (*y)(0) = x(0) * x(0) + 1;
+  }
+
+  void DoEval(
+      const Eigen::Ref<const drake::VectorX<drake::symbolic::Variable>>& x,
+      drake::VectorX<drake::symbolic::Expression>* y) const override {
+    throw std::runtime_error("Do no support eval with Expression.");
+  }
+};
+
+GTEST_TEST(SnoptTest, AutoDiffOnlyCost) {
+  // Test a problem whose cost only supports DoEval with double. This is to
+  // confirm that when extracting the objective function, we don't redundantly
+  // evaluate the cost again at the solution, but can fetch the objective value
+  // directly at the last iteration before convergence.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddLinearConstraint(2 * x(0) >= 2);
+  prog.AddCost(std::make_shared<AutoDiffOnlyCost>(), x);
+
+  SnoptSolver solver;
+  if (solver.available()) {
+    const auto solver_result = solver.Solve(prog);
+    EXPECT_EQ(solver_result, drake::solvers::SolutionResult::kSolutionFound);
+    const double tol = 1E-6;
+    EXPECT_NEAR(prog.GetOptimalCost(), 2, tol);
+    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), drake::Vector1d(1), tol));
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
