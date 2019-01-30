@@ -88,12 +88,16 @@ struct SnoptImpl {};
 // This is the SNOPT 7.6 implementation.  It just aliases the function pointers.
 template<>
 struct SnoptImpl<true> {
+#pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
   static constexpr auto snend = ::f_snend;
   static constexpr auto sninit = ::f_sninit;
   static constexpr auto snkera = ::f_snkera;
   static constexpr auto snmema = ::f_snmema;
   static constexpr auto snseti = ::f_snseti;
   static constexpr auto snsetr = ::f_snsetr;
+#pragma GCC diagnostic pop
 };
 
 // This is the SNOPT 7.4 implementation.
@@ -192,7 +196,11 @@ struct SnoptImpl<false> {
 thread_local int SnoptImpl<false>::g_iprint;
 
 // Choose the correct SnoptImpl specialization.
+#pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
 void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
+#pragma GCC diagnostic pop
 const bool kIsSnopt76 =
     std::is_same<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>::value;
 using Snopt = SnoptImpl<kIsSnopt76>;
