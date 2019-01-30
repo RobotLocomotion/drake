@@ -107,6 +107,26 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "dope_perception",
+    srcs = [
+        "dope_perception.cc",
+    ],
+    add_test_rule = 1,
+    tags = vtk_test_tags(),
+    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_timeout = "moderate",
+    deps = [
+        ":manipulation_station",
+        "//geometry:geometry_visualization",
+        "//multibody/plant:contact_results_to_lcm",
+        "//perception:depth_image_to_point_cloud",
+        "//systems/analysis:simulator",
+        "//systems/sensors:image_to_lcm_image_array_t",
+        "@gflags",
+    ],
+)
+
 # Tests
 
 drake_cc_googletest(

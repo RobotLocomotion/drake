@@ -304,6 +304,7 @@ void ManipulationStation<T>::SetupDefaultStation(
     for (const auto& camera_pair : camera_poses) {
       RegisterRgbdCamera(camera_pair.first, plant_->world_frame(),
                          camera_pair.second, camera_properties);
+      break;
     }
   }
 }
