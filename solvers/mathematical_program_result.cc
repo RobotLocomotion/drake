@@ -56,6 +56,8 @@ double MathematicalProgramResult::GetSolution(
            "set_decision_variable_index().";
     throw std::invalid_argument(oss.str());
   }
+  DRAKE_DEMAND(x_val_.size() ==
+               static_cast<int>(decision_variable_index_.size()));
   return x_val_[it->second];
 }
 }  // namespace solvers

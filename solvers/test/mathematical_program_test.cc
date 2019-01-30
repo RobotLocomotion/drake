@@ -2939,7 +2939,7 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(Eigen::Vector2d(1, 2));
 
-  // GetSolution(var, result) retrieves solution from `result`, GetSolution(var)
+  // result.GetSolution(var) retrieves solution from `result`, GetSolution(var)
   // retrieves the solution stored in prog. They should not be equal.
   // TODO(hongkai.dai): remove these two lines when MathematicalProgram do not
   // store the result.
