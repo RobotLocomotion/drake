@@ -866,7 +866,14 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
     }
     case fcl::GEOM_CONVEX: {
       const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
-      return make_shared<fcl::Convexd>(convex);
+      // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
+      //  we figure out why "Convex(const Convex& other) = default" created
+      //  link errors for Xenial Debug build.  For now we do deep copy of the
+      //  vertices and faces instead of simply copying the shared pointer.
+      return make_shared<fcl::Convexd>(
+          make_shared<const std::vector<Vector3d>>(convex.getVertices()),
+          convex.getFaceCount(),
+          make_shared<const std::vector<int>>(convex.getFaces()));
     }
     case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CAPSULE:
