@@ -866,8 +866,14 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
     }
     case fcl::GEOM_CONVEX: {
       const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
-      return make_shared<fcl::Convexd>(convex.num_vertices, convex.vertices,
-                                       convex.num_faces, convex.faces);
+      // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
+      //  we figure out why "Convex(const Convex& other) = default" created
+      //  link errors for Xenial Debug build.  For now we do deep copy of the
+      //  vertices and faces instead of simply copying the shared pointer.
+      return make_shared<fcl::Convexd>(
+          make_shared<const std::vector<Vector3d>>(convex.getVertices()),
+          convex.getFaceCount(),
+          make_shared<const std::vector<int>>(convex.getFaces()));
     }
     case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CAPSULE:
@@ -1210,8 +1216,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                "one and only one object defined in it.");
     }
 
-    std::vector<Vector3d> vertices =
-        TinyObjToFclVertices(attrib, convex.scale());
+    auto vertices = std::make_shared<std::vector<Vector3d>>(
+        TinyObjToFclVertices(attrib, convex.scale()));
 
     const tinyobj::mesh_t& mesh = shapes[0].mesh;
 
@@ -1224,16 +1230,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //               ...}
     // where n_i is the number of vertices of face_i.
     //
-    std::vector<int> faces;
-    int num_faces = TinyObjToFclFaces(mesh, &faces);
-
-    convex_objects_.emplace_back(move(vertices), num_faces, move(faces));
-    ConvexData& object = convex_objects_.back();
+    auto faces = std::make_shared<std::vector<int>>();
+    int num_faces = TinyObjToFclFaces(mesh, faces.get());
 
     // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(
-        object.vertices.size(), object.vertices.data(),
-        object.num_faces, object.faces.data());
+        vertices, num_faces, faces);
     TakeShapeOwnership(fcl_convex, user_data);
 
     // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
@@ -1552,23 +1554,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The mechanism for dictating collision filtering.
   CollisionFilterLegacy collision_filter_;
-
-  // The data needed by fcl::Convex.
-  struct ConvexData {
-    // TODO(DamrongGuoy) We will switch to shared_ptr<vector<>> later.
-    // For now, we force callers to use move semantics (&& rvalue reference)
-    // for efficiency.
-    ConvexData(std::vector<Vector3d>&& v, int n, std::vector<int>&& f):
-      vertices(move(v)), num_faces(n), faces(move(f)) {
-    }
-
-    std::vector<Vector3d> vertices;
-    int num_faces;
-    std::vector<int> faces;
-  };
-
-  // The vector containing data for each convex object.
-  std::vector<ConvexData> convex_objects_;
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.
