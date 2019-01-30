@@ -9,17 +9,17 @@ import pydrake
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
-from pydrake.multibody.collision import CollisionElement
-from pydrake.multibody.joints import PrismaticJoint, RevoluteJoint
-from pydrake.multibody.parsers import PackageMap
-from pydrake.multibody.rigid_body import RigidBody
-from pydrake.multibody.rigid_body_tree import (
+from pydrake.attic.multibody.collision import CollisionElement
+from pydrake.attic.multibody.joints import PrismaticJoint, RevoluteJoint
+from pydrake.attic.multibody.parsers import PackageMap
+from pydrake.attic.multibody.rigid_body import RigidBody
+from pydrake.attic.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
     RigidBodyFrame,
     RigidBodyTree,
     FloatingBaseType
     )
-import pydrake.multibody.shapes as shapes
+import pydrake.attic.multibody.shapes as shapes
 from pydrake.common.eigen_geometry import Isometry3
 
 

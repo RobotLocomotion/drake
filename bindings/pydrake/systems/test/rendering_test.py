@@ -14,8 +14,8 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree.math import (
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.math import (
     SpatialVelocity,
 )
 from pydrake.multibody.parsing import Parser

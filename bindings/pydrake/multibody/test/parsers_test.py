@@ -5,8 +5,8 @@ import os.path
 
 from pydrake import getDrakePath
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.parsers import PackageMap
-from pydrake.multibody.rigid_body_tree import (
+from pydrake.attic.multibody.parsers import PackageMap
+from pydrake.attic.multibody.rigid_body_tree import (
     AddModelInstanceFromUrdfFile,
     AddModelInstanceFromUrdfStringSearchingInRosPackages,
     AddModelInstancesFromSdfFile,

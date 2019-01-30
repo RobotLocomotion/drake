@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
 from pydrake.lcm import DrakeLcm
-from pydrake.multibody.multibody_tree import UniformGravityFieldElement
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.tree import UniformGravityFieldElement
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.drawing import plot_system_graphviz
 from pydrake.systems.framework import DiagramBuilder

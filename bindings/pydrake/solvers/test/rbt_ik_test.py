@@ -3,8 +3,8 @@ from __future__ import absolute_import, division, print_function
 import unittest
 import numpy as np
 import pydrake
-from pydrake.multibody.rigid_body_tree import RigidBodyTree
-from pydrake.solvers import ik
+from pydrake.attic.multibody.rigid_body_tree import RigidBodyTree
+from pydrake.attic.solvers import ik
 import os.path
 
 

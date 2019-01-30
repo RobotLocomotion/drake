@@ -3,14 +3,14 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 import pydrake
-from pydrake.multibody.parsers import PackageMap
-from pydrake.multibody.rigid_body_tree import (
+from pydrake.attic.multibody.parsers import PackageMap
+from pydrake.attic.multibody.rigid_body_tree import (
     AddModelInstanceFromUrdfStringSearchingInRosPackages,
     FloatingBaseType,
     RigidBodyFrame,
     RigidBodyTree,
 )
-from pydrake.solvers import ik
+from pydrake.attic.solvers import ik
 
 # TODO(eric.cousineau): Use `unittest` (after moving `ik` into `multibody`),
 # declaring this as a drake_py_unittest in the BUILD.bazel file.

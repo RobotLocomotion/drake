@@ -4,7 +4,7 @@ import unittest
 import numpy as np
 
 import pydrake
-from pydrake.multibody import shapes
+from pydrake.attic.multibody import shapes
 from pydrake.common.eigen_geometry import Isometry3
 
 
