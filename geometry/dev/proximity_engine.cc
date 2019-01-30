@@ -769,8 +769,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(
-        object.vertices.size(), object.vertices.data(),
-        object.num_faces, object.faces.data());
+        object.vertices, object.num_faces, object.faces);
     TakeShapeOwnership(fcl_convex, user_data);
 
     // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
@@ -1014,16 +1013,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The data needed by fcl::Convex.
   struct ConvexData {
-    // TODO(DamrongGuoy) We will switch to shared_ptr<vector<>> later.
+    // @param v the list of vertices.
+    // @param n the number of faces.
+    // @param f the list of integers containing both the number and indices of
+    //          vertices of each face like this:
+    //          { n0, v0_0,...,v0_n0-1,
+    //            n1, v1_0,v1_1,...,v1_n1-1,
+    //            n2, v2_0,v2_1,...,v2_n2-1}
+    // @note n ≠ f->size()
+    // TODO(DamrongGuoy) We will switch the input to shared_ptr<vector<>> later.
     // For now, we force callers to use move semantics (&& rvalue reference)
     // for efficiency.
     ConvexData(std::vector<Vector3d>&& v, int n, std::vector<int>&& f):
-      vertices(move(v)), num_faces(n), faces(move(f)) {
+        vertices(std::make_shared<const std::vector<Vector3d>>(move(v))),
+        num_faces(n),
+        faces(std::make_shared<const std::vector<int>>(move(f))) {
     }
 
-    std::vector<Vector3d> vertices;
+    std::shared_ptr<const std::vector<Vector3d>> vertices;
     int num_faces;
-    std::vector<int> faces;
+    std::shared_ptr<const std::vector<int>> faces;
   };
 
   // The vector containing data for each convex object.
