@@ -17,7 +17,7 @@ const api::BranchPoint* Lane::DoGetBranchPoint(
     case api::LaneEnd::kStart:  { return start_bp_; }
     case api::LaneEnd::kFinish: { return end_bp_; }
   }
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 const api::LaneEndSet* Lane::DoGetConfluentBranches(

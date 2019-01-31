@@ -57,9 +57,7 @@ Result VisitFormula(Visitor* v, const Formula& f, Args&&... args) {
     case FormulaKind::PositiveSemidefinite:
       return v->VisitPositiveSemidefinite(f, std::forward<Args>(args)...);
   }
-  // Should not be reachable. But we need the following to avoid "control
-  // reaches end of non-void function" gcc-warning.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace symbolic
