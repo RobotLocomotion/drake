@@ -26,7 +26,6 @@ SystemConstraintWrapper::SystemConstraintWrapper(
       context_autodiff_{system_autodiff_->CreateDefaultContext()},
       updater_double_(std::move(updater_double)),
       updater_autodiff_(std::move(updater_autodiff)) {
-  DRAKE_DEMAND(system_double_);
   context_autodiff_->SetTimeStateAndParametersFrom(*context_double_);
 }
 
