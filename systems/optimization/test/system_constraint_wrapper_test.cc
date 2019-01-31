@@ -41,8 +41,8 @@ void TestDummySystemConstraint(const SystemConstraintWrapper& constraint,
 
   Eigen::Matrix3Xd val_gradient(3, 2);
   val_gradient << 1, 2, 3, 4, 5, 6;
-  const auto val_autodiff = math::initializeAutoDiffGivenGradientMatrix(
-      Eigen::Vector3d(10, 11, 12), val_gradient);
+  const auto val_autodiff =
+      math::initializeAutoDiffGivenGradientMatrix(val, val_gradient);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(val_autodiff, &y_autodiff);
 

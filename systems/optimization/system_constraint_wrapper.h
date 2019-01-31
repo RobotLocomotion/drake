@@ -9,11 +9,11 @@
 namespace drake {
 namespace systems {
 /** Given the decision variable values x (as in
- * SystemConstraintWrapper.Eval(x, &y)), update part of the context with the
+ * `SystemConstraintWrapper.Eval(x, &y)`), update part of the context with the
  * value of x.
  * The user could define either a generic functor or using a generic lambda as
- * UpdateContextFromDecisionVariablesFunction. For generic functor, one example
- * is
+ * UpdateContextFromDecisionVariablesFunction. For a generic functor, one
+ * example is
  * @code{cc}
  * struct Foo {
  *   template <typename T>
@@ -73,16 +73,16 @@ class SystemConstraintWrapper : public solvers::Constraint {
    * the size of x in SystemConstraintWrapper.Eval(x, &y).
    */
   SystemConstraintWrapper(
-      const System<double>* const system_double,
-      const System<AutoDiffXd>* const system_autodiff,
-      SystemConstraintIndex index, const Context<double>& context,
+      const System<double>* system_double,
+      const System<AutoDiffXd>* system_autodiff, SystemConstraintIndex index,
+      const Context<double>& context,
       UpdateContextFromDecisionVariablesFunction<double> updater_double,
       UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
       int x_size);
 
   ~SystemConstraintWrapper() override {}
 
-  /** Get the AutoDiffXd type System stored in this constraint.*/
+  /** Gets the AutoDiffXd type System stored in this constraint.*/
   const System<AutoDiffXd>& system_autodiff() const;
 
   /** Getter for the index of the constraint in the system. */
@@ -100,7 +100,7 @@ class SystemConstraintWrapper : public solvers::Constraint {
 
   const System<double>* const system_double_;
   std::unique_ptr<const System<AutoDiffXd>> owned_system_autodiff_;
-  const System<AutoDiffXd>* system_autodiff_;
+  const System<AutoDiffXd>* system_autodiff_{};
   const SystemConstraintIndex index_;
   // These contexts are created by system_double_ and system_autodiff_
   // respectively. Their values are initialized to the same as @p context in the
