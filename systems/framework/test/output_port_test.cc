@@ -71,7 +71,8 @@ class MyOutputPort : public OutputPort<double> {
 
   // We won't call this.
   internal::OutputPortPrerequisite DoGetPrerequisite() const override {
-    DRAKE_ABORT();
+    ADD_FAILURE();
+    return {}
   };
 };
 

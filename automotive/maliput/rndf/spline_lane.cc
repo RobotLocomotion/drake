@@ -1,5 +1,6 @@
 #include "drake/automotive/maliput/rndf/spline_lane.h"
 
+#include <stdexcept>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -38,7 +39,7 @@ api::LanePosition SplineLane::DoToLanePosition(const api::GeoPosition&,
                                                api::GeoPosition*,
                                                double*) const {
   // TODO(@agalbachicar) We need to find a way to implement it.
-  DRAKE_ABORT();
+  throw std::runtime_error("SplineLane::DoToLanePosition is not implemented");
 }
 
 api::GeoPosition SplineLane::DoToGeoPosition(

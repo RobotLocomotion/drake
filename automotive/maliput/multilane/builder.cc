@@ -326,8 +326,8 @@ Vector3<double> DirectionOutFromLane(const api::Lane* const lane,
       return lane->GetOrientation({lane->length(), r_offset, 0.}).matrix() *
              s_hat;
     }
-    default: { DRAKE_ABORT(); }
   }
+  DRAKE_UNREACHABLE();
 }
 
 
@@ -446,7 +446,6 @@ void Builder::AttachBranchPoint(
       lane->SetEndBp(bp);
       break;
     }
-    default: { DRAKE_ABORT(); }
   }
   // Now, tell the branch-point about the lane.
   //
