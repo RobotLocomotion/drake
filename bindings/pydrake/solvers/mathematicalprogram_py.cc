@@ -617,14 +617,16 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .def(
           "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc)
       .def("Eval",
-            [](const EvaluatorBase& self, const Eigen::Ref<const Eigen::VectorXd>& x) {
+            [](const EvaluatorBase& self,
+               const Eigen::Ref<const Eigen::VectorXd>& x) {
             Eigen::VectorXd y;
             self.Eval(x, &y);
             return y;
           },
           py::arg("x"))
       .def("Eval",
-            [](const EvaluatorBase& self, const Eigen::Ref<const AutoDiffVecXd>& x) {
+            [](const EvaluatorBase& self,
+               const Eigen::Ref<const AutoDiffVecXd>& x) {
             AutoDiffVecXd y;
             self.Eval(x, &y);
             return y;
