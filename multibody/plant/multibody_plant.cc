@@ -1206,6 +1206,12 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
 
+  // If there are any generalized forces applied, add them.
+  const BasicVector<T>* tau_applied =
+      this->EvalVectorInput(context, generalized_forces_input_port_);
+  if (tau_applied)
+    forces.mutable_generalized_forces() += tau_applied->get_value();
+
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
@@ -1521,6 +1527,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
+  // Declare the generalized force input port.
+  generalized_forces_input_port_ = this->DeclareVectorInputPort(
+      "generalized_forces",
+      systems::BasicVector<T>(num_velocities())).get_index();
+
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
@@ -1639,6 +1650,13 @@ MultibodyPlant<T>::get_actuation_input_port() const {
   DRAKE_THROW_UNLESS(num_actuators() > 0);
   DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
   return get_actuation_input_port(actuated_instance_);
+}
+
+template <typename T>
+const systems::InputPort<T>&
+MultibodyPlant<T>::get_generalized_forces_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_input_port(generalized_forces_input_port_);
 }
 
 template <typename T>

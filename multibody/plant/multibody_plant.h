@@ -2503,6 +2503,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
+  /// Returns a constant reference to the vector-valued input port for
+  /// generalized forces, which are accumulated directly into `tau`
+  /// (see @ref equations_of_motion). This vector is ordered using the same
+  /// convention as the plant velocities: you can set the generalized forces
+  /// that will be applied to model instance i using, e.g.,
+  /// `SetVelocitiesInArray(i, model_forces, &force_array)`.
+  /// @throws std::exception if called before Finalize().
+  const systems::InputPort<T>& get_generalized_forces_input_port() const;
+
   /// @}
   // Closes Doxygen section "Actuation input"
 
@@ -2513,7 +2522,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns a constant reference to the output port for the full continuous
-  /// state of the model.
+  /// state `x = [q v]` of the model. The ordering of q is determined
   /// @pre Finalize() was already called on `this` plant.
   const systems::OutputPort<T>& get_continuous_state_output_port() const;
 
@@ -3277,6 +3286,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // If only one model instance has actuated dofs, remember it here.  If
   // multiple instances have actuated dofs, this index will not be valid.
   ModelInstanceIndex actuated_instance_;
+
+  // A port for accumulating generalized forces into tau.
+  systems::InputPortIndex generalized_forces_input_port_;
 
   systems::OutputPortIndex continuous_state_output_port_;
   // A vector containing state output ports for each model instance indexed by
