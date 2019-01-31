@@ -43,7 +43,7 @@ class DummySystem : public LeafSystem<T> {
   // xdot = [p0 * x(0); p0 * x(1) + x(0), x(2) - x(1)]
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {
-    const Vector3<T>& x = context.get_continuous_state_vector().CopyToVector();
+    const Vector3<T> x = context.get_continuous_state_vector().CopyToVector();
     const T& p0 = context.get_numeric_parameter(0).GetAtIndex(0);
     const Vector3<T> xdot(p0 * x(0), p0 * x(1) + x(0), x(2) - x(1));
     derivatives->SetFromVector(xdot);

@@ -45,15 +45,17 @@ class SystemConstraintAdapter {
       int x_size) const {
     return std::make_shared<SystemConstraintWrapper>(
         system_double_, system_autodiff_.get(), index, context,
-        UpdateContextFromDecisionVariablesFunction<double>(updater),
-        UpdateContextFromDecisionVariablesFunction<AutoDiffXd>(updater),
+        std::forward<UpdateContextFromDecisionVariablesFunction<double>>(
+            updater),
+        std::forward<UpdateContextFromDecisionVariablesFunction<AutoDiffXd>>(
+            updater),
         x_size);
   }
 
  private:
   const System<double>* const system_double_;
-  std::unique_ptr<System<AutoDiffXd>> system_autodiff_;
-  std::unique_ptr<System<symbolic::Expression>> system_symbolic_;
+  const std::unique_ptr<System<AutoDiffXd>> system_autodiff_;
+  const std::unique_ptr<System<symbolic::Expression>> system_symbolic_;
 };
 }  // namespace systems
 }  // namespace drake

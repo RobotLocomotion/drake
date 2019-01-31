@@ -66,6 +66,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/dev/render",
     "//geometry/dev/render/shaders",
     "//geometry/query_results",
+    "//geometry/test_utilities:geometry_set_tester",  # unpackaged
     "//lcm",
     "//manipulation/perception",
     "//manipulation/planner",
@@ -97,6 +98,7 @@ LIBDRAKE_COMPONENTS = [
     "//systems/estimators",
     "//systems/framework",
     "//systems/lcm",
+    "//systems/optimization",
     "//systems/plants/spring_mass_system",
     "//systems/primitives",
     "//systems/rendering",
