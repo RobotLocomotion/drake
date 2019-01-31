@@ -94,8 +94,8 @@ GTEST_TEST(SystemConstraintAdapter, SolveDummySystemConstraint) {
       solvers::Solve(prog, init_val, {});
   EXPECT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
-  const auto p_val = prog.GetSolution(p, result);
-  const auto x_val = prog.GetSolution(x, result);
+  const auto p_val = result.GetSolution(p);
+  const auto x_val = result.GetSolution(x);
   const double tol = 1E-6;
   EXPECT_GE(p_val(0) * x_val(0) + x_val(1), 2 - tol);
   EXPECT_GE(x_val(2) - x_val(1) * x_val(1) - p_val(0) * x_val(0) * x_val(0),
@@ -142,8 +142,8 @@ GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {
   EXPECT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
   const double tol{1E-6};
-  EXPECT_LE(prog.GetSolution(x(1), result), 5 + tol);
-  EXPECT_GE(prog.GetSolution(x(1), result), -5 - tol);
+  EXPECT_LE(result.GetSolution(x(1)), 5 + tol);
+  EXPECT_GE(result.GetSolution(x(1)), -5 - tol);
 }
 }  // namespace systems
 }  // namespace drake
