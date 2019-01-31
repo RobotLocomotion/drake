@@ -186,8 +186,16 @@ UniformGravityFieldElement<T>::DoCloneToScalar(
       gravity_vector());
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<symbolic::Expression>>
+UniformGravityFieldElement<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>&) const {
+  return std::make_unique<UniformGravityFieldElement<symbolic::Expression>>(
+      gravity_vector());
+}
+
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::UniformGravityFieldElement)

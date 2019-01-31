@@ -37,6 +37,12 @@ std::unique_ptr<Joint<AutoDiffXd>> WeldJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Joint<symbolic::Expression>> WeldJoint<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.

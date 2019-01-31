@@ -119,6 +119,9 @@ class LinearSpringDamper final : public ForceElement<T> {
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
+
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
@@ -154,5 +157,5 @@ class LinearSpringDamper final : public ForceElement<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::LinearSpringDamper)

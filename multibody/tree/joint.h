@@ -492,6 +492,9 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
   /// Clones this %Joint (templated on T) to a joint templated on AutoDiffXd.
   virtual std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
 
   /// This method must be implemented by derived classes in order to provide

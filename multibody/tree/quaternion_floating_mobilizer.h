@@ -230,6 +230,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
+
  private:
   typedef MobilizerImpl<T, 7, 6> MobilizerBase;
   // Bring the handy number of position and velocities MobilizerImpl enums into
@@ -275,5 +278,5 @@ DRAKE_DEPRECATED(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::QuaternionFloatingMobilizer)

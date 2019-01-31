@@ -170,6 +170,13 @@ LinearSpringDamper<T>::DoCloneToScalar(
 }
 
 template <typename T>
+std::unique_ptr<ForceElement<symbolic::Expression>>
+LinearSpringDamper<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
 T LinearSpringDamper<T>::SafeSoftNorm(const Vector3<T> &x) const {
   using std::sqrt;
   const double epsilon_length =
@@ -223,5 +230,5 @@ T LinearSpringDamper<T>::CalcLengthTimeDerivative(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::LinearSpringDamper)
