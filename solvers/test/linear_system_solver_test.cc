@@ -14,7 +14,7 @@ namespace test {
 namespace {
 void TestLinearSystemExample(LinearSystemExample1* example) {
   const MathematicalProgramResult result = Solve(*(example->prog()));
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   example->CheckSolution(result);
 }
 }  // namespace
@@ -43,8 +43,7 @@ GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
         x(0) - x(1) == 0);
 
   const MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(),
-            SolutionResult::kInfeasibleConstraints);
+  EXPECT_FALSE(result.is_success());
   // The solution should minimize the error ||b - A * x||₂
   // x_expected is computed as (Aᵀ*A)⁻¹*(Aᵀ*b)
   Eigen::Vector2d x_expected(12.0 / 27, 21.0 / 27);
@@ -65,7 +64,7 @@ GTEST_TEST(testLinearSystemSolver, UnderDeterminedProblem) {
   prog.AddLinearConstraint(3 * x(0) + x(1) == 1 && x(0) + x(2) == 2);
 
   const MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   // The solution should minimize the norm ||x||₂
   // x_expected is computed as the solution to
   // [2*I -Aᵀ] * [x] = [0]

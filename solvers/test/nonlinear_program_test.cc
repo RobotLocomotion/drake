@@ -59,8 +59,7 @@ void RunNonlinearProgram(const MathematicalProgram& prog,
     }
     ASSERT_NO_THROW(solver.second->Solve(prog, x_init, {}, result))
         << "Using solver: " << solver.first;
-    EXPECT_EQ(result->get_solution_result(), SolutionResult::kSolutionFound)
-        << "Using solver: " << solver.first;
+    EXPECT_TRUE(result->is_success()) << "Using solver: " << solver.first;
     EXPECT_NO_THROW(test_func()) << "Using solver: " << solver.first;
   }
 }
@@ -488,8 +487,7 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
     num_calls = 0;
     ASSERT_NO_THROW(solver.second->Solve(prog, {}, {}, &result))
         << "Using solver: " << solver.first;
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound)
-        << "Using solver: " << solver.first;
+    EXPECT_TRUE(result.is_success()) << "Using solver: " << solver.first;
     EXPECT_GT(num_calls, 0);
   }
 }

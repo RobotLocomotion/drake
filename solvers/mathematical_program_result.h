@@ -28,8 +28,12 @@ class MathematicalProgramResult final {
    */
   MathematicalProgramResult();
 
-  /** Gets SolutionResult. */
-  SolutionResult get_solution_result() const { return solution_result_; }
+  /** Returns true if the optimization problem is solved successfully; false
+   * otherwise.
+   * For more information on the solution status, the user could call
+   * get_solver_details() to obtain the solver-specific solution status.
+   */
+  bool is_success() const;
 
   /**
    * Sets decision_variable_index mapping, that maps each decision variable to
@@ -48,6 +52,8 @@ class MathematicalProgramResult final {
 
   /** Gets the decision variable values. */
   const Eigen::VectorXd& get_x_val() const { return x_val_; }
+
+  SolutionResult get_solution_result() const { return solution_result_; }
 
   /** Sets the decision variable values. */
   void set_x_val(const Eigen::VectorXd& x_val);
