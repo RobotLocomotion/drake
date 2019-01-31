@@ -2403,6 +2403,24 @@ TEST_F(GeometryStateTest, RoleAssignExceptions) {
       "role.");
 }
 
+// Confirms that assigning a proximity role to a mesh is a no-op. If it
+// *weren't* no-op, the ProximityEngine would abort; so not aborting is
+// correlated with its no-op-ness. This test will go away when meshes are fully
+// supported in collision.
+TEST_F(GeometryStateTest, ProximityRoleOnMesh) {
+  SetUpSingleSourceTree();
+
+  // Add a mesh to a frame.
+  GeometryId mesh_id = geometry_state_.RegisterGeometry(
+      source_id_, frames_[0],
+      make_unique<GeometryInstance>(Isometry3d::Identity(),
+                                    make_unique<Mesh>("path", 1.0), "mesh"));
+  const InternalGeometry* mesh = gs_tester_.GetGeometry(mesh_id);
+  ASSERT_FALSE(mesh->has_proximity_role());
+  geometry_state_.AssignRole(source_id_, mesh_id, ProximityProperties());
+  ASSERT_FALSE(mesh->has_proximity_role());
+}
+
 // Tests the functionality that counts the number of children geometry a frame
 // has for each role.
 TEST_F(GeometryStateTest, ChildGeometryRoleCount) {

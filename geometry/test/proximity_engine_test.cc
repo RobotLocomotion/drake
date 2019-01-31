@@ -2374,6 +2374,29 @@ TEST_F(BoxPenetrationTest, TangentConvex2) {
   TestCollision2(TangentConvex, 1e-3);
 }
 
+// Attempting to add a dynamic Mesh should cause an abort.
+GTEST_TEST(ProximityEngineTests, AddDynamicMesh) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  ProximityEngine<double> engine;
+  Mesh mesh{"invalid/path/thing.obj", 1.0};
+  ASSERT_DEATH(
+      engine.AddDynamicGeometry(mesh, GeometryIndex(0)),
+      "abort: .*proximity_engine.*"
+      "The proximity engine does not support meshes yet.*");
+}
+
+// Attempting to add a anchored Mesh should cause an abort.
+GTEST_TEST(ProximityEngineTests, AddAnchoredMesh) {
+  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  ProximityEngine<double> engine;
+  Mesh mesh{"invalid/path/thing.obj", 1.0};
+  ASSERT_DEATH(
+      engine.AddAnchoredGeometry(mesh, Isometry3d::Identity(),
+                                 GeometryIndex(0)),
+      "abort: .*proximity_engine.*"
+      "The proximity engine does not support meshes yet.*");
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
