@@ -484,6 +484,13 @@ TEST_F(KukaIiwaModelTests, VerifyScalarConversionToAutoDiffXd) {
   VerifyModelBasics(tree_autodiff());
 }
 
+// Verifies the integrity of a scalar converted MultibodyTree from <double> to
+// <symbolic::Expression>.
+TEST_F(KukaIiwaModelTests, VerifyScalarConversionToSymbolic) {
+  auto dut = tree().CloneToScalar<symbolic::Expression>();
+  VerifyModelBasics(*dut);
+}
+
 // This test is used to verify the correctness of the method
 // MultibodyTree::CalcPointsGeometricJacobianExpressedInWorld().
 // The test computes the end effector geometric Jacobian Jv_WE (in the world

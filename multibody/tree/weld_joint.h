@@ -98,6 +98,9 @@ class WeldJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&x) const override;
+
   // Make WeldJoint templated on every other scalar type a friend of
   // WeldJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of WeldJoint<T>.

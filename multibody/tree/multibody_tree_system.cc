@@ -17,6 +17,32 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+MultibodyTreeSystem<T>::MultibodyTreeSystem(
+    std::unique_ptr<MultibodyTree<T>> tree,
+    bool is_discrete)
+    : MultibodyTreeSystem(
+          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          false,  // Null tree is not allowed here.
+          std::move(tree), is_discrete) {}
+
+template <typename T>
+MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
+    : MultibodyTreeSystem(
+          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          true,  // Null tree is OK.
+          nullptr, is_discrete) {}
+
+template <typename T>
+MultibodyTreeSystem<T>::MultibodyTreeSystem(
+    systems::SystemScalarConverter converter,
+    std::unique_ptr<MultibodyTree<T>> tree,
+    bool is_discrete)
+    : MultibodyTreeSystem(
+          std::move(converter),
+          true,  // Null tree is OK.
+          std::move(tree), is_discrete) {}
+
+template <typename T>
 template <typename U>
 MultibodyTreeSystem<T>::MultibodyTreeSystem(const MultibodyTreeSystem<U>& other)
     : MultibodyTreeSystem(
@@ -152,18 +178,9 @@ MultibodyTreeSystem<T>::DoMakeLeafContext() const {
                                                    is_discrete_);
 }
 
-// Instantiate supported conversion methods.
-// TODO(sherm1) Move definitions of these methods to an -inl.h file so that
-// they don't require explicit instantiation here.
-template MultibodyTreeSystem<AutoDiffXd>::MultibodyTreeSystem(
-    const MultibodyTreeSystem<double>& other);
-
-template MultibodyTreeSystem<double>::MultibodyTreeSystem(
-    const MultibodyTreeSystem<AutoDiffXd>& other);
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)
