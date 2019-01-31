@@ -60,10 +60,7 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
     } else {
       throw std::logic_error("Invalid restitution coefficient!");
     }
-
-    // Should never reach here.
-    DRAKE_ABORT();
-    return std::make_pair(0.0, 0.0);
+    DRAKE_UNREACHABLE();
   }
 }
 

@@ -45,7 +45,8 @@ class TestSystem : public System<double> {
 
   // Implementation is required, but unused here.
   int get_num_continuous_states() const final {
-    DRAKE_ABORT();
+    ADD_FAILURE();
+    return {};
   }
 
   ~TestSystem() override {}
@@ -116,14 +117,15 @@ class TestSystem : public System<double> {
   double DoCalcWitnessValue(const Context<double>&,
                             const WitnessFunction<double>&) const override {
     // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE();
+    return {};
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<double>*,
       CompositeEventCollection<double>*) const override {
     // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE();
   }
 
   // The default publish function.
@@ -169,7 +171,7 @@ class TestSystem : public System<double> {
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
 
   // Sets up an arbitrary mapping from the current time to the next discrete
@@ -501,7 +503,8 @@ class ValueIOTestSystem : public System<T> {
 
   // Implementation is required, but unused here.
   int get_num_continuous_states() const final {
-    DRAKE_ABORT();
+    ADD_FAILURE();
+    return {};
   }
 
     ~ValueIOTestSystem() override {}
@@ -509,14 +512,15 @@ class ValueIOTestSystem : public System<T> {
   T DoCalcWitnessValue(const Context<T>&,
                        const WitnessFunction<T>&) const override {
     // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE();
+    return {};
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<T>*,
       CompositeEventCollection<T>*) const override {
     // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE();
   }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -582,21 +586,21 @@ class ValueIOTestSystem : public System<T> {
   void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
 
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
 
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
 
   std::unique_ptr<EventCollection<PublishEvent<T>>>
@@ -845,7 +849,8 @@ class ComputationTestSystem final : public System<double> {
 
   // Implementation is required, but unused here.
   int get_num_continuous_states() const final {
-    DRAKE_ABORT();
+    ADD_FAILURE();
+    return {};
   }
 
  private:
@@ -916,11 +921,12 @@ class ComputationTestSystem final : public System<double> {
   std::multimap<int, int> GetDirectFeedthroughs() const final { return {}; }
   double DoCalcWitnessValue(const Context<double>&,
                             const WitnessFunction<double>&) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
+    return {};
   }
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<double>*, CompositeEventCollection<double>*) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<double>&) const final {
@@ -929,19 +935,19 @@ class ComputationTestSystem final : public System<double> {
   void DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
   void DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
   void DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE();
   }
   std::map<PeriodicEventData, std::vector<const Event<double>*>,
            PeriodicEventDataComparator>

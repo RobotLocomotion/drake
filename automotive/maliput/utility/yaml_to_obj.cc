@@ -82,10 +82,9 @@ int main(int argc, char* argv[]) {
       drake::log()->info("Loaded a multilane road geometry.");
       break;
     }
-    default: {
+    case MaliputImplementation::kUnknown: {
       drake::log()->error("Unknown map.");
-      DRAKE_ABORT();
-      break;
+      return 1;
     }
   }
 

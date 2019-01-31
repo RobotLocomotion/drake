@@ -452,14 +452,13 @@ shared_ptr<Constraint> MakePolynomialConstraint(
         if (monomial.terms.size() == 0) {
           linear_constraint_lb[poly_num] -= monomial.coefficient;
           linear_constraint_ub[poly_num] -= monomial.coefficient;
-        } else if (monomial.terms.size() == 1) {
+        } else {
+          DRAKE_DEMAND(monomial.terms.size() == 1);  // Because isAffine().
           const Polynomiald::VarType term_var = monomial.terms[0].var;
           int var_num = (find(poly_vars.begin(), poly_vars.end(), term_var) -
                          poly_vars.begin());
           DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
           linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
-        } else {
-          DRAKE_ABORT();  // Can't happen (unless isAffine() lied to us).
         }
       }
     }

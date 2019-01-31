@@ -32,9 +32,8 @@ int GetVariableSize(const multibody::MultibodyPlant<T>& plant,
       return plant.num_positions();
     case multibody::JacobianWrtVariable::kV:
       return plant.num_velocities();
-    default:
-      DRAKE_ABORT();
   }
+  DRAKE_UNREACHABLE();
 }
 
 PYBIND11_MODULE(plant, m) {
