@@ -69,9 +69,9 @@ class MyOutputPort : public OutputPort<double> {
     return *temp.access();
   }
 
-  // We won't call this.
   internal::OutputPortPrerequisite DoGetPrerequisite() const override {
-    DRAKE_ABORT();
+    ADD_FAILURE() << "We won't call this.";
+    return {};
   };
 };
 

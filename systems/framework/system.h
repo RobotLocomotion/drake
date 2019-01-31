@@ -2200,7 +2200,7 @@ class System : public SystemBase {
         };
       }
     }
-    DRAKE_ABORT();
+    DRAKE_UNREACHABLE();
   }
 
   // Shared code for updating a vector input port and returning a pointer to its

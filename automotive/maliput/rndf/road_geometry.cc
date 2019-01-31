@@ -1,5 +1,7 @@
 #include "drake/automotive/maliput/rndf/road_geometry.h"
 
+#include <stdexcept>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -33,7 +35,8 @@ api::RoadPosition RoadGeometry::DoToRoadPosition(const api::GeoPosition&,
                                                  api::GeoPosition*,
                                                  double*) const {
   // TODO(@agalbachicar) We need to find a way of implement this.
-  DRAKE_ABORT();
+  throw std::runtime_error(
+      "RoadGeometry::DoToRoadPosition is not implemented");
 }
 
 }  // namespace rndf

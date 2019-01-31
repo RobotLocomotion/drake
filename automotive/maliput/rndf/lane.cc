@@ -18,7 +18,7 @@ const api::BranchPoint* Lane::DoGetBranchPoint(
       return end_bp_;
     }
   }
-  DRAKE_ABORT_MSG("which_end value is not supported.");
+  DRAKE_UNREACHABLE();
 }
 
 const api::LaneEndSet* Lane::DoGetConfluentBranches(

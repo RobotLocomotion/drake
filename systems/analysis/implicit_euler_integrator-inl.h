@@ -697,10 +697,6 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
     case JacobianComputationScheme::kAutomatic:
       J = ComputeAutoDiffJacobian(system, *context);
       break;
-
-    default:
-      // Should never get here.
-      DRAKE_ABORT();
   }
 
   // Use the new number of ODE evaluations to determine the number of Jacobian

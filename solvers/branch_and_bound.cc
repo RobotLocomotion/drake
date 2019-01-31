@@ -271,9 +271,7 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
           "function.");
     }
   }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 bool IsVariableInList(const std::list<symbolic::Variable>& variable_list,
@@ -496,9 +494,7 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
       }
     }
   }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 namespace {
@@ -650,9 +646,7 @@ const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
           "SetUserDefinedVariableSelectionFunction to provide the user-defined "
           "function for selecting the branching variable.");
   }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
