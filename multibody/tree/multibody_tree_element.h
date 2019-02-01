@@ -2,7 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/tree/multibody_tree_forward_decl.h"
+#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 

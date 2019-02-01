@@ -6,7 +6,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/space_xyz_mobilizer.h"
 #include "drake/multibody/tree/spatial_inertia.h"

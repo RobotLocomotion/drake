@@ -80,7 +80,6 @@ drake_cc_library(
     srcs = [],
     hdrs = [
         "multibody_tree_element.h",
-        "multibody_tree_forward_decl.h",
     ],
     deps = [
         ":multibody_tree_topology",
@@ -128,6 +127,7 @@ drake_cc_library(
         "model_instance.h",
         "multibody_forces.h",
         "multibody_tree.h",
+        "multibody_tree-inl.h",
         "multibody_tree_system.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
