@@ -443,7 +443,7 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         .def("ComputeMaximumDepthCollisionPoints",
             &RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<T>,
             py::arg("cache"), py::arg("use_margins") = true,
-            py::arg("throw_i f_missing_gradient") = true,
+            py::arg("throw_if_missing_gradient") = true,
             doc.RigidBodyTree.ComputeMaximumDepthCollisionPoints.doc);
     // Type (b) methods:
     tree_cls
