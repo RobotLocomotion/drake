@@ -29,17 +29,16 @@ PYBIND11_MODULE(collision, m) {
       .def("get_body", &Element::get_body, doc.Element.get_body.doc);
 
   py::class_<PointPair<double>>(m, "PointPair")
-    .def_readonly("elementA",
-                  &PointPair<double>::elementA, py_reference_internal)
-    .def_readonly("elementB",
-                  &PointPair<double>::elementB, py_reference_internal)
-    .def_readonly("idA", &PointPair<double>::idA)
-    .def_readonly("idB", &PointPair<double>::idB)
-    .def_readonly("ptA", &PointPair<double>::ptA)
-    .def_readonly("ptB", &PointPair<double>::ptB)
-    .def_readonly("normal", &PointPair<double>::normal)
-    .def_readonly("distance", &PointPair<double>::distance);
-
+      .def_readonly(
+          "elementA", &PointPair<double>::elementA, py_reference_internal)
+      .def_readonly(
+          "elementB", &PointPair<double>::elementB, py_reference_internal)
+      .def_readonly("idA", &PointPair<double>::idA)
+      .def_readonly("idB", &PointPair<double>::idB)
+      .def_readonly("ptA", &PointPair<double>::ptA)
+      .def_readonly("ptB", &PointPair<double>::ptB)
+      .def_readonly("normal", &PointPair<double>::normal)
+      .def_readonly("distance", &PointPair<double>::distance);
 }
 
 }  // namespace pydrake
