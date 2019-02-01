@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":contact_info",
         ":contact_results",
         ":coulomb_friction",
+        ":externally_applied_force",
         ":implicit_stribeck_solver",
         ":multibody_plant_core",
     ],
@@ -46,6 +47,7 @@ drake_cc_library(
     deps = [
         ":contact_results",
         ":coulomb_friction",
+        ":externally_applied_force",
         ":implicit_stribeck_solver",
         "//common:default_scalars",
         "//geometry:geometry_ids",
@@ -135,6 +137,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "externally_applied_force",
+    srcs = ["externally_applied_force.cc"],
+    hdrs = ["externally_applied_force.h"],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/tree",
+    ],
+)
+
 drake_cc_googletest(
     name = "implicit_stribeck_solver_test",
     deps = [
@@ -167,6 +179,7 @@ drake_cc_googletest(
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
         "//multibody/parsing",
+        "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
     ],
 )

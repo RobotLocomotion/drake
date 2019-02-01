@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/plant/externally_applied_force.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -1089,16 +1090,14 @@ void MultibodyPlant<T>::AddAppliedExternalForces(
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
 
   // Evaluate the input port; if it's not connected, return now.
-  AbstractValue* port_eval = this->EvalAbstractInput(
-      context, externally_applied_input_port_);
-  if (!port_eval)
+  const auto* applied_input = this->template EvalInputValue<
+      std::vector<ExternallyAppliedForce<T>>>(
+          context, externally_applied_input_port_);
+  if (!applied_input)
     return;
 
-  const auto& applied_input = port_eval->
-          template GetValue<std::vector<ExternallyAppliedForce>>();
-
   // Loop over all forces.
-  for (const auto& force_structure : applied_input) {
+  for (const auto& force_structure : *applied_input) {
     const BodyIndex body_index = force_structure.body_index;
     const Body<T>& body = get_body(body_index);
     const auto body_node_index = body.node_index();
@@ -1561,7 +1560,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Declare externally applied input force port.
   externally_applied_input_port_ = this->DeclareAbstractInputPort(
         "externally_applied_input",
-        Value<std::vector<ExternallyAppliedForce>>()).get_index();
+        Value<std::vector<ExternallyAppliedForce<T>>>()).get_index();
 
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =

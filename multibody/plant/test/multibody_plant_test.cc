@@ -28,11 +28,13 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_force.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -63,6 +65,7 @@ using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::Parser;
 using systems::AbstractValue;
 using systems::BasicVector;
+using systems::ConstantVectorSource;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiagramBuilder;
@@ -346,11 +349,15 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
-    context_ = plant_->CreateDefaultContext();
-    derivatives_ = plant_->AllocateTimeDerivatives();
+    context_ = diagram_->CreateDefaultContext();
+    derivatives_ = diagram_->AllocateTimeDerivatives();
+    plant_context_ = &diagram_->GetMutableSubsystemContext(
+        *plant_, context_.get());
 
     ASSERT_GT(plant_->num_actuators(), 0);
-    input_port_ = &context_->FixInputPort(
+    Context<double>& plant_context = diagram_->GetMutableSubsystemContext(
+        *plant_, context_.get());
+    input_port_ = &plant_context.FixInputPort(
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
   }
 
@@ -383,12 +390,12 @@ class AcrobotPlantTests : public ::testing::Test {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
 
     // Calculate the generalized forces due to gravity.
     const VectorX<double> tau_g =
-        plant_->CalcGravityGeneralizedForces(*context_);
+        plant_->CalcGravityGeneralizedForces(*plant_context_);
 
     // Calculate a benchmark value.
     const Vector2d tau_g_expected =
@@ -407,16 +414,16 @@ class AcrobotPlantTests : public ::testing::Test {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
-    shoulder_->set_angular_rate(context_.get(), theta1dot);
-    elbow_->set_angular_rate(context_.get(), theta2dot);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
+    shoulder_->set_angular_rate(plant_context_, theta1dot);
+    elbow_->set_angular_rate(plant_context_, theta2dot);
 
     // Fix input port to a value before computing anything. In this case, zero
     // actuation.
     input_port_->GetMutableVectorData<double>()->SetAtIndex(0, input_torque);
 
-    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     const VectorXd xdot = derivatives_->CopyToVector();
 
     // Now compute inverse dynamics using our benchmark:
@@ -429,8 +436,8 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Verify the computation of the contribution due to joint damping.
     MultibodyForces<double> forces(*plant_);
-    shoulder_->AddInDamping(*context_, &forces);
-    elbow_->AddInDamping(*context_, &forces);
+    shoulder_->AddInDamping(*plant_context_, &forces);
+    elbow_->AddInDamping(*plant_context_, &forces);
     EXPECT_TRUE(CompareMatrices(forces.generalized_forces(), tau_damping,
                                 kTolerance, MatrixCompareType::relative));
 
@@ -463,10 +470,10 @@ class AcrobotPlantTests : public ::testing::Test {
     const double time_step = discrete_plant_->time_step();
 
     // Set the state for the continuous model:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
-    shoulder_->set_angular_rate(context_.get(), theta1dot);
-    elbow_->set_angular_rate(context_.get(), theta2dot);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
+    shoulder_->set_angular_rate(plant_context_, theta1dot);
+    elbow_->set_angular_rate(plant_context_, theta2dot);
 
     // Set the state for the discrete model:
     // Note: modeling elements such as joints, bodies, frames, etc. are agnostic
@@ -478,7 +485,7 @@ class AcrobotPlantTests : public ::testing::Test {
     shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
     elbow_->set_angular_rate(discrete_context_.get(), theta2dot);
 
-    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     auto updates = discrete_plant_->AllocateDiscreteVariables();
     discrete_plant_->CalcDiscreteVariableUpdates(
         *discrete_context_, updates.get());
@@ -514,10 +521,12 @@ class AcrobotPlantTests : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   // The Diagram containing both the MultibodyPlant and the SceneGraph.
   unique_ptr<Diagram<double>> diagram_;
-  // Workspace including context and derivatives vector:
+  // Workspace including diagram context and derivatives vector:
   unique_ptr<Context<double>> context_;
   unique_ptr<Context<double>> discrete_context_;
   unique_ptr<ContinuousState<double>> derivatives_;
+  // Non-owning pointer to the plant context.
+  Context<double>* plant_context_{nullptr};
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
@@ -670,9 +679,9 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 #endif
 }
 
-TEST_F(AcrobotPlantTests, SetDefaulState) {
-  EXPECT_EQ(shoulder_->get_angle(*context_), 0.0);
-  EXPECT_EQ(elbow_->get_angle(*context_), 0.0);
+TEST_F(AcrobotPlantTests, SetDefaultState) {
+  EXPECT_EQ(shoulder_->get_angle(*plant_context_), 0.0);
+  EXPECT_EQ(elbow_->get_angle(*plant_context_), 0.0);
 
   // Set the default joint angles for the acrobot.
   shoulder_->set_default_angle(0.05);
@@ -686,8 +695,8 @@ TEST_F(AcrobotPlantTests, SetDefaulState) {
   shoulder_->set_default_angle(4.2);
 
   // Calling SetDefaultContext directly works, too.
-  plant_->SetDefaultContext(context_.get());
-  EXPECT_EQ(shoulder_->get_angle(*context_), 4.2);
+  plant_->SetDefaultContext(plant_context_);
+  EXPECT_EQ(shoulder_->get_angle(*plant_context_), 4.2);
 }
 
 TEST_F(AcrobotPlantTests, SetRandomState) {
@@ -1286,23 +1295,77 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
   EXPECT_EQ(state_out.CopyToVector(), state.CopyToVector());
 }
 
+class AcrobotGravityCompensator : public systems::LeafSystem<double> {
+ public:
+  explicit AcrobotGravityCompensator(const MultibodyPlant<double>* plant)
+      : plant_(plant) {
+    this->DeclareAbstractOutputPort(
+        "spatial_forces",
+        &AcrobotGravityCompensator::CalcSpatialForceGravityCompensation);
+  }
+
+ private:
+  void CalcSpatialForceGravityCompensation(
+      const Context<double>& context,
+      std::vector<ExternallyAppliedForce<double>>* output) const {
+    const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+
+    // Verify that the links are in the expected order.
+    const Body<double>& link1 = plant_->get_body(BodyIndex(1));
+    const Body<double>& link2 = plant_->get_body(BodyIndex(2));
+    ASSERT_EQ(&link1, &plant_->GetBodyByName("Link1"));
+    ASSERT_EQ(&link2, &plant_->GetBodyByName("Link2"));
+
+    // Construct a spatial force that will be applied at the center of Link 1
+    // and opposed to gravity.
+    SpatialForce<double> F_L1o_W(
+        Vector3<double>::Zero() /* no torque */,
+        link1.get_default_mass() * g * Vector3<double>(0, 0, 1) /* upward */);
+    SpatialForce<double> F_L2o_W(
+        Vector3<double>::Zero() /* no torque */,
+        link2.get_default_mass() * g * Vector3<double>(0, 0, 1) /* upward */);
+
+    // Shift the forces to be applied to an arbitrary point on each link.
+    const Vector3<double> p_L1oL1q_W(1, 2, 3);
+    const Vector3<double> p_L2oL2q_W(-1, 3, -5);
+
+    output->resize(2 /* number of links */);
+
+    output->front().body_index = BodyIndex(1);
+    output->front().p_BoBq_B = -p_L1oL1q_W;
+    output->front().F_Bq_W = F_L1o_W.Shift(p_L1oL1q_W);
+
+    output->back().body_index = BodyIndex(2);
+    output->back().p_BoBq_B = -p_L2oL2q_W;
+    output->back().F_Bq_W = F_L2o_W.Shift(p_L2oL2q_W);
+  }
+
+  const MultibodyPlant<double>* plant_{nullptr};
+};
+
 GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
   // Load the acrobot model.
   const std::string full_name = FindResourceOrThrow(
         "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   systems::DiagramBuilder<double> builder;
   auto plant = builder.AddSystem<MultibodyPlant<double>>();
-  Parser(*plant).AddModelFromFile(full_name);
+  Parser(plant).AddModelFromFile(full_name);
   plant->AddForceElement<UniformGravityFieldElement>();
   plant->Finalize();
 
   // Add the system that applies inverse gravitational forces to the link
   // endpoints.
+  auto acrobot_gravity_compensator =
+      builder.AddSystem<AcrobotGravityCompensator>(plant);
 
   // Connect the system to the MBP.
   builder.Connect(
-      acrobot_gravity_compensator->get_output_port(),
+      acrobot_gravity_compensator->get_output_port(0),
       plant->get_externally_applied_input_port());
+  auto zero_source =
+      builder.AddSystem<ConstantVectorSource<double>>(Vector1<double>(0));
+  builder.Connect(zero_source->get_output_port(),
+                  plant->get_actuation_input_port());
   auto diagram = builder.Build();
 
   // Create a context.
@@ -1312,20 +1375,21 @@ GTEST_TEST(MultibodyPlantTest, CheckExternalAppliedInput) {
 
   // Put the acrobot into a configuration where it has nonzero potential
   // energy.
-  BasicVector<double>& acrobot_state =
+  VectorBase<double>& acrobot_state =
     acrobot_context.get_mutable_continuous_state_vector();
-  acrobot_state[0] = M_PI_2;
+  acrobot_state[0] = 0.0;
   acrobot_state[1] = 0.0;
 
   // Compute time derivatives and ensure that they're sufficiently near zero.
-  BasicVector<double> derivatives(acrobot_state.size());
-  ASSERT_EQ(derivatives.size(), 4);
-  diagram->CalcTimeDerivatives(context, &derivatives);
+  auto derivatives = context->get_continuous_state().Clone();
+  ASSERT_EQ(derivatives->size(), 4);
+  diagram->CalcTimeDerivatives(*context, derivatives.get());
 
   // Ensure that the acceleration is zero.
+  const VectorBase<double>& derivatives_vector = derivatives->get_vector();
   const double eps = 100 * std::numeric_limits<double>::epsilon();
-  EXPECT_NEAR(derivatives[2], 0.0, eps);
-  EXPECT_NEAR(derivatives[3], 0.0, eps);
+  EXPECT_NEAR(derivatives_vector[2], 0.0, eps);
+  EXPECT_NEAR(derivatives_vector[3], 0.0, eps);
 }
 
 GTEST_TEST(MultibodyPlantTest, MapVelocityToQdotAndBack) {

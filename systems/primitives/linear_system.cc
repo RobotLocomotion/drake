@@ -152,6 +152,10 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   // Must have some values for all of the inputs.
   for (int index = 0; index < system.get_num_input_ports(); index++) {
+    if (system.get_input_port_base(InputPortIndex(index)).get_data_type() ==
+        PortDataType::kAbstractValued) {
+      continue;
+    }
     Eigen::VectorXd u = system.EvalEigenVectorInput(context, index);
     autodiff_context->FixInputPort(index, u.cast<AutoDiffXd>());
   }
