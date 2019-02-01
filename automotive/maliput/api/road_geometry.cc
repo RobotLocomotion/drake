@@ -56,8 +56,8 @@ Rotation OrientationOutFromLane(const LaneEnd& lane_end) {
     case LaneEnd::kFinish: {
       return lane_end.lane->GetOrientation({lane_end.lane->length(), 0., 0.});
     }
-    default: { DRAKE_ABORT(); }
   }
+  DRAKE_UNREACHABLE();
 }
 
 

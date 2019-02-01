@@ -44,7 +44,7 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
     case SolverType::kUnrevisedLemke:
       return UnrevisedLemkeSolverId::id();
   }
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {

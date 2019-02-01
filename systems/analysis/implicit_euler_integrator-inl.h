@@ -684,24 +684,19 @@ MatrixX<T> ImplicitEulerIntegrator<T>::CalcJacobian(const T& t,
       get_mutable_continuous_state();
 
   // TODO(edrumwri): Give the caller the option to provide their own Jacobian.
-  MatrixX<T> J;
-  switch (jacobian_scheme_) {
-    case JacobianComputationScheme::kForwardDifference:
-      J = ComputeForwardDiffJacobian(system, *context, &continuous_state);
-      break;
+  const MatrixX<T> J = [&]() {
+    switch (jacobian_scheme_) {
+      case JacobianComputationScheme::kForwardDifference:
+        return ComputeForwardDiffJacobian(system, *context, &continuous_state);
 
-    case JacobianComputationScheme::kCentralDifference:
-      J = ComputeCentralDiffJacobian(system, *context, &continuous_state);
-      break;
+      case JacobianComputationScheme::kCentralDifference:
+        return ComputeCentralDiffJacobian(system, *context, &continuous_state);
 
-    case JacobianComputationScheme::kAutomatic:
-      J = ComputeAutoDiffJacobian(system, *context);
-      break;
-
-    default:
-      // Should never get here.
-      DRAKE_ABORT();
-  }
+      case JacobianComputationScheme::kAutomatic:
+        return ComputeAutoDiffJacobian(system, *context);
+    }
+    DRAKE_UNREACHABLE();
+  }();
 
   // Use the new number of ODE evaluations to determine the number of Jacobian
   // evaluations.
