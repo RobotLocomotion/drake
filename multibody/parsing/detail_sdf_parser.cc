@@ -478,9 +478,12 @@ ModelInstanceIndex AddModelFromSpecification(
   const Isometry3d X_WM = ToIsometry3(model.Pose());
   // Add a model frame given the instance name so that way any frames added to
   // the model are associated with this instance.
+  // N.B. Obfuscate this, this frame may generally not correspond to where the
+  // "base link" *actually* is, and tends to pollute the frame names.
+  const std::string model_frame_name = "_" + model_name + "_model_frame";
   const Frame<double>& model_frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          model_name, plant->world_frame(), X_WM, model_instance));
+          model_frame_name, plant->world_frame(), X_WM, model_instance));
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
