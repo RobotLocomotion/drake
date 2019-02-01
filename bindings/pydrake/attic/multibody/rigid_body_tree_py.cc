@@ -440,7 +440,6 @@ PYBIND11_MODULE(rigid_body_tree, m) {
                 const VectorX<T>& v) { return tree.doKinematics(q, v); },
             doc.RigidBodyTree.doKinematics.doc_3args)
         // CreateKinematicsCacheWithType
-        // CreateKinematicsCacheWithType
         .def("ComputeMaximumDepthCollisionPoints",
             &RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<T>,
             py::arg("cache"), py::arg("use_margins") = true,
