@@ -10,7 +10,12 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
 from pydrake.attic.multibody.collision import CollisionElement
-from pydrake.attic.multibody.joints import PrismaticJoint, RevoluteJoint
+from pydrake.attic.multibody.joints import (
+    FixedJoint,
+    PrismaticJoint,
+    RevoluteJoint,
+    RollPitchYawFloatingJoint
+    )
 from pydrake.attic.multibody.parsers import PackageMap
 from pydrake.attic.multibody.rigid_body import RigidBody
 from pydrake.attic.multibody.rigid_body_tree import (
@@ -517,6 +522,20 @@ class TestRigidBodyTree(unittest.TestCase):
                                             np.array([0., 0., 1.]))
         self.assertEqual(revolute_joint_isom.get_num_positions(), 1)
         self.assertEqual(revolute_joint_isom.get_name(), name)
+
+        name = "fixed"
+        fixed_joint_np = FixedJoint(name, np.eye(4))
+        fixed_joint_isom = FixedJoint(name, Isometry3.Identity())
+        self.assertEqual(fixed_joint_isom.get_num_positions(), 0)
+        self.assertEqual(fixed_joint_isom.get_name(), name)
+
+        name = "rpy"
+        rpy_floating_joint_np = RollPitchYawFloatingJoint(
+            name, np.eye(4))
+        rpy_floating_joint_isom = RollPitchYawFloatingJoint(
+            name, Isometry3.Identity())
+        self.assertEqual(rpy_floating_joint_isom.get_num_positions(), 6)
+        self.assertEqual(rpy_floating_joint_isom.get_name(), name)
 
     def test_collision_element_api(self):
         # Verify construction from both Isometry3d and 4x4 arrays.
