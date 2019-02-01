@@ -246,11 +246,19 @@ class TestMathematicalProgram(unittest.TestCase):
         for (constraint, value_expected) in enum:
             value = prog.EvalBindingAtSolution(constraint)
             self.assertTrue(np.allclose(value, value_expected))
+            # Also evaluate the constraint evaluator directly
+            self.assertTrue(
+                np.allclose(constraint.evaluator().Eval(x_expected),
+                            value_expected))
 
         enum = zip(costs, cost_values_expected)
         for (cost, value_expected) in enum:
             value = prog.EvalBindingAtSolution(cost)
             self.assertTrue(np.allclose(value, value_expected))
+            # Also evaluate the cost evaluator directly
+            self.assertTrue(
+                np.allclose(cost.evaluator().Eval(x_expected),
+                            value_expected))
 
         # Existence check.
         self.assertIsInstance(
