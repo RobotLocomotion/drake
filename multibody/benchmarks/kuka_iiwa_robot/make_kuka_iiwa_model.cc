@@ -3,6 +3,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 

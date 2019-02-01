@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"

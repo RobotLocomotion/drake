@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_assert.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 
 namespace drake {
 using systems::BasicVector;

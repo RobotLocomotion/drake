@@ -184,9 +184,9 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns a mutable reference to the state vector stored in `state` as an
   /// Eigen::VectorBlock<VectorX<T>>.
   Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
-      const systems::Context<T>& context, systems::State<T>* state) const {
+      const systems::Context<T>&, systems::State<T>* state) const {
     systems::BasicVector<T>& state_vector =
-        is_state_discrete(context) ?
+        this->get_parent_tree().is_state_discrete() ?
         state->get_mutable_discrete_state().get_mutable_vector() :
         dynamic_cast<systems::BasicVector<T>&>(
             state->get_mutable_continuous_state().get_mutable_vector());
@@ -276,12 +276,6 @@ class MobilizerImpl : public Mobilizer<T> {
   }
 
  private:
-  /// Helper that returns `true` if the state of the multibody system is stored
-  /// as discrete state.
-  static bool is_state_discrete(const systems::Context<T>& context) {
-    return GetMultibodyTreeContextOrThrow(context).is_state_discrete();
-  }
-
   // Returns the index in the global array of generalized coordinates in the
   // MultibodyTree model to the first component of the generalized coordinates
   // vector that corresponds to this mobilizer.

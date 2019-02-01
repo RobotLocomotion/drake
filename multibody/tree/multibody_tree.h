@@ -16,27 +16,29 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
-#include "drake/multibody/tree/body.h"
-#include "drake/multibody/tree/body_node.h"
-#include "drake/multibody/tree/force_element.h"
-#include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/joint.h"
-#include "drake/multibody/tree/joint_actuator.h"
-#include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/model_instance.h"
+#include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
-#include "drake/multibody/tree/quaternion_floating_mobilizer.h"
-#include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
 namespace multibody {
+
+template <typename T> class Body;
+template <typename T> class BodyFrame;
+template <typename T> class Frame;
+template <typename T> class RigidBody;
+template <typename T> class Joint;
+template <typename T> class JointActuator;
+template <typename T> class ForceElement;
+template <typename T> class UniformGravityFieldElement;
 
 /// Enumeration that distinguishes between flavors of Jacobians based
 /// on the variable with respect to which they are taken.
@@ -57,6 +59,11 @@ enum class JacobianWrtVariable {
 
 namespace internal {
 
+template <typename T> class BodyNode;
+template <typename T> class ModelInstance;
+template <typename T> class Mobilizer;
+template <typename T> class QuaternionFloatingMobilizer;
+
 /// %MultibodyTree provides a representation for a physical system consisting of
 /// a collection of interconnected rigid and deformable bodies. As such, it owns
 /// and manages each of the elements that belong to this physical system.
@@ -72,6 +79,7 @@ namespace internal {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -122,44 +130,7 @@ class MultibodyTree {
   ///                  template needs to be specialized on the same scalar type
   ///                  T of this %MultibodyTree.
   template <template<typename Scalar> class BodyType>
-  const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body) {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more bodies is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (body == nullptr) {
-      throw std::logic_error("Input body is a nullptr.");
-    }
-    BodyIndex body_index(0);
-    FrameIndex body_frame_index(0);
-    std::tie(body_index, body_frame_index) = topology_.add_body();
-    // These tests MUST be performed BEFORE frames_.push_back() and
-    // owned_bodies_.push_back() below. Do not move them around!
-    DRAKE_DEMAND(body_index == num_bodies());
-    DRAKE_DEMAND(body_frame_index == num_frames());
-    DRAKE_DEMAND(body->model_instance().is_valid());
-
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyTreeElement altogether.
-    body->set_parent_tree(this, body_index);
-    // MultibodyTree can access selected private methods in Body through its
-    // BodyAttorney.
-    // - Register body frame.
-    Frame<T>* body_frame =
-        &internal::BodyAttorney<T>::get_mutable_body_frame(body.get());
-    body_frame->set_parent_tree(this, body_frame_index);
-    DRAKE_ASSERT(body_frame->name() == body->name());
-    frame_name_to_index_.insert({body_frame->name(), body_frame_index});
-    frames_.push_back(body_frame);
-    // - Register body.
-    BodyType<T>* raw_body_ptr = body.get();
-    body_name_to_index_.insert({body->name(), body->index()});
-    owned_bodies_.push_back(std::move(body));
-    return *raw_body_ptr;
-  }
+  const BodyType<T>& AddBody(std::unique_ptr<BodyType<T>> body);
 
   /// Constructs a new body with type `BodyType` with the given `args`, and adds
   /// it to `this` %MultibodyTree, which retains ownership. The `BodyType` will
@@ -194,11 +165,7 @@ class MultibodyTree {
   ///                  template will be specialized on the scalar type T of this
   ///                  %MultibodyTree.
   template<template<typename Scalar> class BodyType, typename... Args>
-  const BodyType<T>& AddBody(Args&&... args) {
-    static_assert(std::is_convertible<BodyType<T>*, Body<T>*>::value,
-                  "BodyType must be a sub-class of Body<T>.");
-    return AddBody(std::make_unique<BodyType<T>>(std::forward<Args>(args)...));
-  }
+  const BodyType<T>& AddBody(Args&&... args);
 
   /// Creates a rigid body with the provided name, model instance, and spatial
   /// inertia.  This method returns a constant reference to the body just added,
@@ -230,22 +197,7 @@ class MultibodyTree {
   /// @throws std::logic_error if the model instance does not exist.
   const RigidBody<T>& AddRigidBody(
       const std::string& name, ModelInstanceIndex model_instance,
-      const SpatialInertia<double>& M_BBo_B) {
-    if (model_instance >= num_model_instances()) {
-      throw std::logic_error("Invalid model instance specified.");
-    }
-
-    if (HasBodyNamed(name, model_instance)) {
-      throw std::logic_error(
-          "Model instance '" + instance_index_to_name_.at(model_instance) +
-          "' already contains a body named '" + name + "'. " +
-          "Body names must be unique within a given model.");
-    }
-
-    const RigidBody<T>& body =
-        this->template AddBody<RigidBody>(name, model_instance, M_BBo_B);
-    return body;
-  }
+      const SpatialInertia<double>& M_BBo_B);
 
   /// Creates a rigid body with the provided name, model instance, and spatial
   /// inertia.  The newly created body will be placed in the default model
@@ -275,15 +227,7 @@ class MultibodyTree {
   /// @throws std::logic_error if additional model instances have been created
   ///                          beyond the world and default instances.
   const RigidBody<T>& AddRigidBody(
-      const std::string& name, const SpatialInertia<double>& M_BBo_B) {
-    if (num_model_instances() != 2) {
-      throw std::logic_error(
-          "This model has more model instances than the default.  Please "
-          "call AddRigidBody with an explicit model instance.");
-    }
-
-    return AddRigidBody(name, default_model_instance(), M_BBo_B);
-  }
+      const std::string& name, const SpatialInertia<double>& M_BBo_B);
 
   /// Takes ownership of `frame` and adds it to `this` %MultibodyTree. Returns
   /// a constant reference to the frame just added, which will remain valid for
@@ -311,32 +255,7 @@ class MultibodyTree {
   ///                   template needs to be specialized on the same scalar type
   ///                   T of this %MultibodyTree.
   template <template<typename Scalar> class FrameType>
-  const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame) {
-    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
-                  "FrameType must be a sub-class of Frame<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more frames is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (frame == nullptr) {
-      throw std::logic_error("Input frame is a nullptr.");
-    }
-    FrameIndex frame_index = topology_.add_frame(frame->body().index());
-    // This test MUST be performed BEFORE frames_.push_back() and
-    // owned_frames_.push_back() below. Do not move it around!
-    DRAKE_DEMAND(frame_index == num_frames());
-    DRAKE_DEMAND(frame->model_instance().is_valid());
-
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyTreeElement altogether.
-    frame->set_parent_tree(this, frame_index);
-    FrameType<T>* raw_frame_ptr = frame.get();
-    frames_.push_back(raw_frame_ptr);
-    frame_name_to_index_.insert(std::make_pair(frame->name(), frame_index));
-    owned_frames_.push_back(std::move(frame));
-    return *raw_frame_ptr;
-  }
+  const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame);
 
   /// Constructs a new frame with type `FrameType` with the given `args`, and
   /// adds it to `this` %MultibodyTree, which retains ownership. The `FrameType`
@@ -374,12 +293,7 @@ class MultibodyTree {
   ///                   template will be specialized on the scalar type T of
   ///                   this %MultibodyTree.
   template<template<typename Scalar> class FrameType, typename... Args>
-  const FrameType<T>& AddFrame(Args&&... args) {
-    static_assert(std::is_convertible<FrameType<T>*, Frame<T>*>::value,
-                  "FrameType must be a sub-class of Frame<T>.");
-    return AddFrame(
-        std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
-  }
+  const FrameType<T>& AddFrame(Args&&... args);
 
   /// Takes ownership of `mobilizer` and adds it to `this` %MultibodyTree.
   /// Returns a constant reference to the mobilizer just added, which will
@@ -422,50 +336,7 @@ class MultibodyTree {
   ///                       same scalar type T of this %MultibodyTree.
   template <template<typename Scalar> class MobilizerType>
   const MobilizerType<T>& AddMobilizer(
-      std::unique_ptr<MobilizerType<T>> mobilizer) {
-    static_assert(std::is_convertible<MobilizerType<T>*, Mobilizer<T>*>::value,
-                  "MobilizerType must be a sub-class of mobilizer<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more mobilizers is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (mobilizer == nullptr) {
-      throw std::logic_error("Input mobilizer is a nullptr.");
-    }
-    // Verifies that the inboard/outboard frames provided by the user do belong
-    // to this tree. This is a pathological case, but in theory nothing
-    // (but this test) stops a user from adding frames to a tree1 and attempting
-    // later to define mobilizers between those frames in a second tree2.
-    mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);
-    mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
-    const int num_positions = mobilizer->num_positions();
-    const int num_velocities = mobilizer->num_velocities();
-    MobilizerIndex mobilizer_index = topology_.add_mobilizer(
-        mobilizer->inboard_frame().index(),
-        mobilizer->outboard_frame().index(),
-        num_positions, num_velocities);
-
-    // This DRAKE_ASSERT MUST be performed BEFORE owned_mobilizers_.push_back()
-    // below. Do not move it around!
-    DRAKE_ASSERT(mobilizer_index == num_mobilizers());
-
-    // TODO(sammy-tri) This effectively means that there's no way to
-    // programmatically add mobilizers from outside of MultibodyTree
-    // itself with multiple model instances.  I'm not convinced that
-    // this is a problem.
-    if (!mobilizer->model_instance().is_valid()) {
-      mobilizer->set_model_instance(default_model_instance());
-    }
-
-    // TODO(amcastro-tri): consider not depending on setting this pointer at
-    // all. Consider also removing MultibodyTreeElement altogether.
-    mobilizer->set_parent_tree(this, mobilizer_index);
-
-    MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
-    owned_mobilizers_.push_back(std::move(mobilizer));
-    return *raw_mobilizer_ptr;
-  }
+      std::unique_ptr<MobilizerType<T>> mobilizer);
 
   /// Constructs a new mobilizer with type `MobilizerType` with the given
   /// `args`, and adds it to `this` %MultibodyTree, which retains ownership.
@@ -505,12 +376,7 @@ class MultibodyTree {
   ///                       The template will be specialized on the scalar type
   ///                       T of `this` %MultibodyTree.
   template<template<typename Scalar> class MobilizerType, typename... Args>
-  const MobilizerType<T>& AddMobilizer(Args&&... args) {
-    static_assert(std::is_base_of<Mobilizer<T>, MobilizerType<T>>::value,
-                  "MobilizerType must be a sub-class of Mobilizer<T>.");
-    return AddMobilizer(
-        std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
-  }
+  const MobilizerType<T>& AddMobilizer(Args&&... args);
 
   /// Creates and adds to `this` %MultibodyTree (which retains ownership) a new
   /// `ForceElement` member with the specific type `ForceElementType`. The
@@ -521,30 +387,7 @@ class MultibodyTree {
   /// scalar type T of this %MultibodyTree.
   template <template<typename Scalar> class ForceElementType>
   const ForceElementType<T>& AddForceElement(
-      std::unique_ptr<ForceElementType<T>> force_element) {
-    static_assert(
-        std::is_convertible<ForceElementType<T>*, ForceElement<T>*>::value,
-        "ForceElementType<T> must be a sub-class of ForceElement<T>.");
-    if (topology_is_valid()) {
-      throw std::logic_error(
-          "This MultibodyTree is finalized already. Therefore adding more "
-          "force elements is not allowed. "
-          "See documentation for Finalize() for details.");
-    }
-    if (force_element == nullptr) {
-      throw std::logic_error("Input force element is a nullptr.");
-    }
-    ForceElementIndex force_element_index = topology_.add_force_element();
-    // This test MUST be performed BEFORE owned_force_elements_.push_back()
-    // below. Do not move it around!
-    DRAKE_DEMAND(force_element_index == num_force_elements());
-    DRAKE_DEMAND(force_element->model_instance().is_valid());
-    force_element->set_parent_tree(this, force_element_index);
-
-    ForceElementType<T>* raw_force_element_ptr = force_element.get();
-    owned_force_elements_.push_back(std::move(force_element));
-    return *raw_force_element_ptr;
-  }
+      std::unique_ptr<ForceElementType<T>> force_element);
 
   /// Adds a new force element model of type `ForceElementType` to `this`
   /// %MultibodyTree.  The arguments to this method `args` are forwarded to
@@ -574,13 +417,7 @@ class MultibodyTree {
       ForceElementType<T>,
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
 #endif
-  AddForceElement(Args&&... args) {
-    static_assert(std::is_base_of<ForceElement<T>, ForceElementType<T>>::value,
-        "ForceElementType<T> must be a sub-class of "
-            "ForceElement<T>.");
-    return AddForceElement(
-        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-  }
+  AddForceElement(Args&&... args);
 
   // SFINAE overload for ForceElementType = UniformGravityFieldElement.
   // This allow us to keep track of the gravity field parameters.
@@ -588,18 +425,7 @@ class MultibodyTree {
   typename std::enable_if<std::is_same<
       ForceElementType<T>,
       UniformGravityFieldElement<T>>::value, const ForceElementType<T>&>::type
-  AddForceElement(Args&&... args) {
-    if (gravity_field_.has_value()) {
-      throw std::runtime_error(
-          "This model already contains a gravity field element. "
-          "Only one gravity field element is allowed per model.");
-    }
-    // We save the force element so that we can grant users access to it for
-    // gravity field specific queries.
-    gravity_field_ = &AddForceElement(
-        std::make_unique<ForceElementType<T>>(std::forward<Args>(args)...));
-    return *gravity_field_.value();
-  }
+  AddForceElement(Args&&... args);
 
   /// This method adds a Joint of type `JointType` between the frames specified
   /// by the joint.
@@ -614,33 +440,7 @@ class MultibodyTree {
   /// is defined, or the semi-emplace `AddJoint<>` overload below.
   template <template<typename Scalar> class JointType>
   const JointType<T>& AddJoint(
-      std::unique_ptr<JointType<T>> joint) {
-    static_assert(std::is_convertible<JointType<T>*, Joint<T>*>::value,
-                  "JointType must be a sub-class of Joint<T>.");
-
-    if (HasJointNamed(joint->name(), joint->model_instance())) {
-      throw std::logic_error(
-          "Model instance '" +
-              instance_index_to_name_.at(joint->model_instance()) +
-              "' already contains a joint named '" + joint->name() + "'. " +
-              "Joint names must be unique within a given model.");
-    }
-
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more joints is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-    if (joint == nullptr) {
-      throw std::logic_error("Input joint is a nullptr.");
-    }
-    const JointIndex joint_index(owned_joints_.size());
-    joint->set_parent_tree(this, joint_index);
-    JointType<T>* raw_joint_ptr = joint.get();
-    joint_name_to_index_.insert({joint->name(), joint->index()});
-    owned_joints_.push_back(std::move(joint));
-    return *raw_joint_ptr;
-  }
+      std::unique_ptr<JointType<T>> joint);
 
   /// This method helps to create a Joint of type `JointType` between two
   /// bodies.
@@ -715,31 +515,7 @@ class MultibodyTree {
       const std::string& name,
       const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
       const Body<T>& child, const optional<Isometry3<double>>& X_BM,
-      Args&&... args) {
-    static_assert(std::is_base_of<Joint<T>, JointType<T>>::value,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-
-    const Frame<T>* frame_on_parent;
-    if (X_PF) {
-      frame_on_parent = &this->AddFrame<FixedOffsetFrame>(parent, *X_PF);
-    } else {
-      frame_on_parent = &parent.body_frame();
-    }
-
-    const Frame<T>* frame_on_child;
-    if (X_BM) {
-      frame_on_child = &this->AddFrame<FixedOffsetFrame>(child, *X_BM);
-    } else {
-      frame_on_child = &child.body_frame();
-    }
-
-    const JointType<T>& joint = AddJoint(
-        std::make_unique<JointType<T>>(
-            name,
-            *frame_on_parent, *frame_on_child,
-            std::forward<Args>(args)...));
-    return joint;
-  }
+      Args&&... args);
 
   /// Creates and adds a JointActuator model for an actuator acting on a given
   /// `joint`.
@@ -761,29 +537,7 @@ class MultibodyTree {
   // TODO(amcastro-tri): consider adding sugar method to declare an actuated
   // joint with a single call. Maybe MBT::AddActuatedJoint() or the like.
   const JointActuator<T>& AddJointActuator(
-      const std::string& name, const Joint<T>& joint) {
-    if (HasJointActuatorNamed(name, joint.model_instance())) {
-      throw std::logic_error(
-          "Model instance '" +
-          instance_index_to_name_.at(joint.model_instance()) +
-          "' already contains a joint actuator named '" + name + "'. " +
-          "Joint actuator names must be unique within a given model.");
-    }
-
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more actuators is not allowed. "
-                             "See documentation for Finalize() for details.");
-    }
-
-    const JointActuatorIndex actuator_index =
-        topology_.add_joint_actuator(joint.num_velocities());
-    owned_actuators_.push_back(std::make_unique<JointActuator<T>>(name, joint));
-    JointActuator<T>* actuator = owned_actuators_.back().get();
-    actuator->set_parent_tree(this, actuator_index);
-    actuator_name_to_index_.insert(std::make_pair(name, actuator_index));
-    return *actuator;
-  }
+      const std::string& name, const Joint<T>& joint);
 
   /// Creates a new model instance.  Returns the index for a new model
   /// instance (as there is no concrete object beyond the index).
@@ -793,24 +547,7 @@ class MultibodyTree {
   ///   model. An exception is thrown if an instance with the same name
   ///   already exists in the model. See HasModelInstanceNamed().
   /// @throws std::logic_error if Finalize() was already called on `this` tree.
-  ModelInstanceIndex AddModelInstance(const std::string& name) {
-    if (HasModelInstanceNamed(name)) {
-      throw std::logic_error(
-          "This model already contains a model instance named '" + name +
-          "'. Model instance names must be unique within a given model.");
-    }
-
-    if (topology_is_valid()) {
-      throw std::logic_error("This MultibodyTree is finalized already. "
-                             "Therefore adding more model instances is not "
-                             "allowed. See documentation for Finalize() for "
-                             "details.");
-    }
-    const ModelInstanceIndex index(num_model_instances());
-    instance_name_to_index_[name] = index;
-    instance_index_to_name_[index] = name;
-    return index;
-  }
+  ModelInstanceIndex AddModelInstance(const std::string& name);
 
   /// @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
@@ -960,8 +697,8 @@ class MultibodyTree {
     const auto it = instance_index_to_name_.find(model_instance);
     if (it == instance_index_to_name_.end()) {
       throw std::logic_error("There is no model instance id " +
-                             std::to_string(model_instance) +
-                             " in the model.");
+          std::to_string(model_instance) +
+          " in the model.");
     }
     return it->second;
   }
@@ -1107,7 +844,7 @@ class MultibodyTree {
     }
     throw std::logic_error(
         "There is no body named '" + name + "' in model instance '" +
-        instance_index_to_name_.at(model_instance) + "'.");
+            instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// Returns a list of body indices associated with `model_instance`.
@@ -1155,7 +892,7 @@ class MultibodyTree {
     }
     throw std::logic_error(
         "There is no frame named '" + name + "' in model instance '" +
-        instance_index_to_name_.at(model_instance) + "'.");
+            instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// See MultibodyPlant method.
@@ -1175,9 +912,9 @@ class MultibodyTree {
     const RigidBody<T>* body =
         dynamic_cast<const RigidBody<T>*>(&GetBodyByName(name, model_instance));
     if (body == nullptr) {
-      throw std::logic_error(
-          "Body '" + name + "' in model instance '" +
-          instance_index_to_name_.at(model_instance)  +"' is not a RigidBody.");
+      throw std::logic_error("Body '" + name + "' in model instance '" +
+                             instance_index_to_name_.at(model_instance) +
+                             "' is not a RigidBody.");
     }
     return *body;
   }
@@ -1257,7 +994,7 @@ class MultibodyTree {
     }
     throw std::logic_error(
         "There is no joint actuator named '" + name + "' in model instance '" +
-        instance_index_to_name_.at(model_instance) + "'.");
+            instance_index_to_name_.at(model_instance) + "'.");
   }
 
   /// See MultibodyPlant method.
@@ -1291,14 +1028,14 @@ class MultibodyTree {
   /// those vectors which apply to a single model instance only.
   /// @{
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call SetActuationInArray(). Will be deleted after 2/7/19.")
   void set_actuation_vector(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
-  #endif
+#endif
 
   /// See MultibodyPlant method.
   void SetActuationInArray(
@@ -1306,23 +1043,23 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& u_instance,
       EigenPtr<VectorX<T>> u) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call GetPositionsFromArray(). Will be removed after "
-                       "2/7/19.")
+                   "2/7/19.")
   VectorX<T> get_positions_from_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q) const {
     return GetPositionsFromArray(model_instance, q);
   }
-  #endif
+#endif
 
   /// See MultibodyPlant method.
   VectorX<T> GetPositionsFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call SetPositionsInArray(). Will be removed after 2/7/19.")
   void set_positions_in_array(
@@ -1331,7 +1068,7 @@ class MultibodyTree {
       EigenPtr<VectorX<T>> q_array) const {
     SetPositionsInArray(model_instance, model_q, q_array);
   }
-  #endif
+#endif
 
   /// See MultibodyPlant method.
   void SetPositionsInArray(
@@ -1339,23 +1076,23 @@ class MultibodyTree {
       const Eigen::Ref<const VectorX<T>>& q_instance,
       EigenPtr<VectorX<T>> q) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call GetVelocitiesFromArray(). Will be removed after"
-                       " 2/7/19.")
+                   " 2/7/19.")
   VectorX<T> get_velocities_from_array(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v_array) const {
     return GetVelocitiesFromArray(model_instance, v_array);
   }
-  #endif
+#endif
 
   /// See MultibodyPlant method.
   VectorX<T> GetVelocitiesFromArray(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& v) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call SetVelocitiesInArray(). Will be removed after 2/7/19.")
   void set_velocities_in_array(
@@ -1364,7 +1101,7 @@ class MultibodyTree {
       EigenPtr<VectorX<T>> v_array) const {
     SetVelocitiesInArray(model_instance, model_v, v_array);
   }
-  #endif
+#endif
 
   /// Sets the vector of generalized velocities for `model_instance` in
   /// `v` using `v_instance`, leaving all other elements in the array
@@ -1404,9 +1141,9 @@ class MultibodyTree {
   std::unique_ptr<systems::LeafContext<T>> CreateDefaultContext() const {
     if (tree_system_ == nullptr) {
       throw std::runtime_error(
-        "MultibodyTree::CreateDefaultContext(): can only be called from a "
-        "MultibodyTree that is owned by a MultibodyPlant / "
-        "MultibodyTreeSystem");
+          "MultibodyTree::CreateDefaultContext(): can only be called from a "
+          "MultibodyTree that is owned by a MultibodyPlant / "
+          "MultibodyTreeSystem");
     }
     return dynamic_pointer_cast<systems::LeafContext<T>>(
         tree_system_->CreateDefaultContext());
@@ -1421,15 +1158,15 @@ class MultibodyTree {
                       systems::State<T>* state,
                       RandomGenerator* generator) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
-                       "2/7/19.")
+                   "2/7/19.")
   Eigen::VectorBlock<const VectorX<T>> get_multibody_state_vector(
       const systems::Context<T>& context) const {
     return GetPositionsAndVelocities(context);
   }
-  #endif
+#endif
 
   /// Returns a const Eigen vector reference containing the vector
   /// `[q; v]` of the model with `q` the vector of generalized positions and
@@ -1444,13 +1181,13 @@ class MultibodyTree {
 #ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call GetPositionsAndVelocities(). Will be removed after "
-                       "2/7/19.")
+                   "2/7/19.")
   VectorX<T> get_multibody_state_vector(
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const {
     return GetPositionsAndVelocities(context, model_instance);
   }
-  #endif
+#endif
 
   /// Returns a Eigen vector containing the multibody state `x = [q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
@@ -1463,15 +1200,15 @@ class MultibodyTree {
       const systems::Context<T>& context,
       ModelInstanceIndex model_instance) const;
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call GetMutablePositionsAndVelocities(). Will be removed"
-                       " after 2/7/19.")
+                   " after 2/7/19.")
   Eigen::VectorBlock<VectorX<T>> get_mutable_multibody_state_vector(
-      systems::Context<T>* context) const {
+  systems::Context<T>* context) const {
     return GetMutablePositionsAndVelocities(context);
   }
-  #endif
+#endif
 
   /// Returns a mutable Eigen vector containing the vector `[q; v]`
   /// of the model with `q` the vector of generalized positions and `v` the
@@ -1482,27 +1219,27 @@ class MultibodyTree {
   ///       i.e., O(1) time complexity, and runs very quickly.
   /// @pre `state` must be the systems::State<T> owned by the `context`.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-      const systems::Context<T>& context, systems::State<T>* state) const;
+  const systems::Context<T>& context, systems::State<T>* state) const;
 
   /// See GetMutablePositionsAndVelocities(context, state) above.
   Eigen::VectorBlock<VectorX<T>> GetMutablePositionsAndVelocities(
-      systems::Context<T>* context) const {
+  systems::Context<T>* context) const {
     return GetMutablePositionsAndVelocities(*context,
-        &context->get_mutable_state());
+                                            &context->get_mutable_state());
   }
 
 
-  #ifndef DRAKE_DOXYGEN_CXX
+#ifndef DRAKE_DOXYGEN_CXX
   // TODO(edrumwri) Remove this method after 2/7/19 (3 months).
   DRAKE_DEPRECATED("Call SetPositionsAndVelocities(). Will be removed after "
-                       "2/7/19.")
+                   "2/7/19.")
   void set_multibody_state_vector(
       ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& instance_state,
       systems::Context<T>* context) const {
     SetPositionsAndVelocities(model_instance, instance_state, context);
   }
-  #endif
+#endif
 
   /// Sets `context` to store the vector `[q; v]`
   /// with `q` the vector of generalized positions and `v` the vector
@@ -1852,10 +1589,10 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc,
       const VectorX<T>& known_vdot,
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
-      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+  const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialAcceleration<T>>* A_WB_array,
-      std::vector<SpatialForce<T>>* F_BMo_W_array,
-      EigenPtr<VectorX<T>> tau_array) const;
+  std::vector<SpatialForce<T>>* F_BMo_W_array,
+  EigenPtr<VectorX<T>> tau_array) const;
 
   /// See MultibodyPlant method.
   void CalcForceElementsContribution(
@@ -2033,7 +1770,7 @@ class MultibodyTree {
   /// SFINAE overload for Mobilizer<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
   std::enable_if_t<std::is_base_of<Mobilizer<T>, MultibodyElement<T>>::value,
-      MultibodyElement<T>&> get_mutable_variant(
+                   MultibodyElement<T>&> get_mutable_variant(
       const MultibodyElement<Scalar>& element) {
     return get_mutable_mobilizer_variant(element);
   }
@@ -2177,6 +1914,13 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalVelocityKinematics(context);
+  }
+
+  /// Returns true if we are using discrete state for positions and velocities;
+  /// otherwise we're using continuous state.
+  bool is_state_discrete() const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->is_discrete();
   }
 
   /// (Internal use only) Informs the MultibodyTree how to access its resources
@@ -2379,22 +2123,7 @@ class MultibodyTree {
 
   // Helper method to create a clone of `frame` and add it to `this` tree.
   template <typename FromScalar>
-  Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame) {
-    FrameIndex frame_index = frame.index();
-
-    auto frame_clone = frame.CloneToScalar(*this);
-    frame_clone->set_parent_tree(this, frame_index);
-    frame_clone->set_model_instance(frame.model_instance());
-
-    Frame<T>* raw_frame_clone_ptr = frame_clone.get();
-    // The order in which frames are added into frames_ is important to keep the
-    // topology invariant. Therefore we index new clones according to the
-    // original frame_index.
-    frames_[frame_index] = raw_frame_clone_ptr;
-    // The order within owned_frames_ does not matter.
-    owned_frames_.push_back(std::move(frame_clone));
-    return raw_frame_clone_ptr;
-  }
+  Frame<T>* CloneFrameAndAdd(const Frame<FromScalar>& frame);
 
   // Helper method to create a clone of `body` and add it to `this` tree.
   // Because this method is only invoked in a controlled manner from within
@@ -2402,80 +2131,27 @@ class MultibodyTree {
   // `owned_bodies_` will occupy the same position as its corresponding Body
   // in the source variant `body`.
   template <typename FromScalar>
-  Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body) {
-    const BodyIndex body_index = body.index();
-    const FrameIndex body_frame_index = body.body_frame().index();
-
-    auto body_clone = body.CloneToScalar(*this);
-    body_clone->set_parent_tree(this, body_index);
-    body_clone->set_model_instance(body.model_instance());
-    // MultibodyTree can access selected private methods in Body through its
-    // BodyAttorney.
-    Frame<T>* body_frame_clone =
-        &internal::BodyAttorney<T>::get_mutable_body_frame(body_clone.get());
-    body_frame_clone->set_parent_tree(this, body_frame_index);
-    body_frame_clone->set_model_instance(body.model_instance());
-
-    // The order in which frames are added into frames_ is important to keep the
-    // topology invariant. Therefore we index new clones according to the
-    // original body_frame_index.
-    frames_[body_frame_index] = body_frame_clone;
-    Body<T>* raw_body_clone_ptr = body_clone.get();
-    // The order in which bodies are added into owned_bodies_ is important to
-    // keep the topology invariant. Therefore this method is called from
-    // MultibodyTree::CloneToScalar() within a loop by original body_index.
-    DRAKE_DEMAND(static_cast<int>(owned_bodies_.size()) == body_index);
-    owned_bodies_.push_back(std::move(body_clone));
-    return raw_body_clone_ptr;
-  }
+  Body<T>* CloneBodyAndAdd(const Body<FromScalar>& body);
 
   // Helper method to create a clone of `mobilizer` and add it to `this` tree.
   template <typename FromScalar>
-  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer) {
-    MobilizerIndex mobilizer_index = mobilizer.index();
-    auto mobilizer_clone = mobilizer.CloneToScalar(*this);
-    mobilizer_clone->set_parent_tree(this, mobilizer_index);
-    mobilizer_clone->set_model_instance(mobilizer.model_instance());
-    Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
-    owned_mobilizers_.push_back(std::move(mobilizer_clone));
-    return raw_mobilizer_clone_ptr;
-  }
+  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer);
 
   // Helper method to create a clone of `force_element` and add it to `this`
   // tree.
   template <typename FromScalar>
   void CloneForceElementAndAdd(
-      const ForceElement<FromScalar>& force_element) {
-    ForceElementIndex force_element_index = force_element.index();
-    auto force_element_clone = force_element.CloneToScalar(*this);
-    force_element_clone->set_parent_tree(this, force_element_index);
-    force_element_clone->set_model_instance(force_element.model_instance());
-    owned_force_elements_.push_back(std::move(force_element_clone));
-  }
+      const ForceElement<FromScalar>& force_element);
 
   // Helper method to create a clone of `joint` and add it to `this` tree.
   template <typename FromScalar>
-  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint) {
-    JointIndex joint_index = joint.index();
-    auto joint_clone = joint.CloneToScalar(this);
-    joint_clone->set_parent_tree(this, joint_index);
-    joint_clone->set_model_instance(joint.model_instance());
-    owned_joints_.push_back(std::move(joint_clone));
-    return owned_joints_.back().get();
-  }
+  Joint<T>* CloneJointAndAdd(const Joint<FromScalar>& joint);
 
   // Helper method to create a clone of `actuator` (which is templated on
   // FromScalar) and add it to `this` tree (templated on T).
   template <typename FromScalar>
   void CloneActuatorAndAdd(
-      const JointActuator<FromScalar>& actuator) {
-    JointActuatorIndex actuator_index = actuator.index();
-    std::unique_ptr<JointActuator<T>> actuator_clone =
-        actuator.CloneToScalar(*this);
-    actuator_clone->set_parent_tree(this, actuator_index);
-    actuator_clone->set_model_instance(actuator.model_instance());
-    owned_actuators_.push_back(std::move(actuator_clone));
-  }
+      const JointActuator<FromScalar>& actuator);
 
   // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
   // a MultibodyTree variant templated on Scalar.
@@ -2506,8 +2182,7 @@ class MultibodyTree {
     BodyIndex body_index = body.index();
     DRAKE_DEMAND(body_index < num_bodies());
     const BodyType<T>* body_variant =
-        dynamic_cast<const BodyType<T>*>(
-            owned_bodies_[body_index].get());
+        dynamic_cast<const BodyType<T>*>(owned_bodies_[body_index].get());
     DRAKE_DEMAND(body_variant != nullptr);
     return *body_variant;
   }
@@ -2542,9 +2217,8 @@ class MultibodyTree {
     //   MultibodyTree. That will require the tree to have some sort of id.
     MobilizerIndex mobilizer_index = mobilizer.index();
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
-    MobilizerType<T>* mobilizer_variant =
-        dynamic_cast<MobilizerType<T>*>(
-            owned_mobilizers_[mobilizer_index].get());
+    MobilizerType<T>* mobilizer_variant = dynamic_cast<MobilizerType<T>*>(
+        owned_mobilizers_[mobilizer_index].get());
     DRAKE_DEMAND(mobilizer_variant != nullptr);
     return *mobilizer_variant;
   }
@@ -2561,8 +2235,7 @@ class MultibodyTree {
     JointIndex joint_index = joint.index();
     DRAKE_DEMAND(joint_index < num_joints());
     const JointType<T>* joint_variant =
-        dynamic_cast<const JointType<T>*>(
-            owned_joints_[joint_index].get());
+        dynamic_cast<const JointType<T>*>(owned_joints_[joint_index].get());
     DRAKE_DEMAND(joint_variant != nullptr);
     return *joint_variant;
   }
@@ -2570,7 +2243,7 @@ class MultibodyTree {
   // Helper function to find the element index for an element in the tree from
   // a multimap of name to index.  It finds the element from any model
   // instance and ensures only one element of that name exists.
-  template<typename ElementIndex>
+  template <typename ElementIndex>
   static ElementIndex GetElementIndex(
       const std::string& name, const std::string& element_description,
       const std::unordered_multimap<std::string, ElementIndex>& name_to_index) {
@@ -2578,12 +2251,11 @@ class MultibodyTree {
     if (range.first == range.second) {
       std::string lower = element_description;
       std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
-      throw std::logic_error("There is no " + lower + " named '" +
-                             name + "' in the model.");
+      throw std::logic_error("There is no " + lower + " named '" + name +
+                             "' in the model.");
     } else if (std::next(range.first) != range.second) {
-      throw std::logic_error(
-          element_description + " "  + name +
-          " appears in multiple model instances.");
+      throw std::logic_error(element_description + " " + name +
+                             " appears in multiple model instances.");
     }
     return range.first->second;
   }
@@ -2649,6 +2321,13 @@ class MultibodyTree {
 };
 
 }  // namespace internal
+
+/// Deprecated public alias to internal `MultibodyTree`.
+/// @warning This alias will be removed 2019-03-01.
+template <typename T>
+using MultibodyTree DRAKE_DEPRECATED(
+    "This will be internal only after 2019-03-01. Please use `MultibodyPlant` "
+    "instead.") = internal::MultibodyTree<T>;
 
 /// @cond
 // Undef macros defined at the top of the file. From the GSG:

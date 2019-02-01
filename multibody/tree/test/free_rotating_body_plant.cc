@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 
 namespace drake {
 namespace multibody {

@@ -30,6 +30,7 @@ namespace internal {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template<typename T>

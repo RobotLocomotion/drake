@@ -11,6 +11,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
