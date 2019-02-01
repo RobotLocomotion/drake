@@ -1316,8 +1316,8 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
     ASSERT_EQ(&link1, &plant_->GetBodyByName("Link1"));
     ASSERT_EQ(&link2, &plant_->GetBodyByName("Link2"));
 
-    // Construct a spatial force that will be applied at the center of Link 1
-    // and opposed to gravity.
+    // Construct spatial forces applied at the center of mass of each link, with
+    // no moment, and opposing gravity.
     SpatialForce<double> F_L1o_W(
         Vector3<double>::Zero() /* no torque */,
         link1.get_default_mass() * g * Vector3<double>(0, 0, 1) /* upward */);
@@ -1325,19 +1325,26 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
         Vector3<double>::Zero() /* no torque */,
         link2.get_default_mass() * g * Vector3<double>(0, 0, 1) /* upward */);
 
-    // Shift the forces to be applied to an arbitrary point on each link.
+    // Arbitrary points on each link that we want to shift the application point
+    // of forces to.
     const Vector3<double> p_L1oL1q_W(1, 2, 3);
     const Vector3<double> p_L2oL2q_W(-1, 3, -5);
 
+    // Shift the forces to these new points of application.
+    const SpatialForce<double> F_L1q_W = F_L1o_W.Shift(p_L1oL1q_W);
+    const SpatialForce<double> F_L2q_W = F_L2o_W.Shift(p_L2oL2q_W);
+
     output->resize(2 /* number of links */);
 
+    // Add the spatial forces to be applied to each link, now putting the
+    // point of application *back* to the center-of-mass.
     output->front().body_index = BodyIndex(1);
     output->front().p_BoBq_B = -p_L1oL1q_W;
-    output->front().F_Bq_W = F_L1o_W.Shift(p_L1oL1q_W);
+    output->front().F_Bq_W = F_L1q_W;
 
     output->back().body_index = BodyIndex(2);
     output->back().p_BoBq_B = -p_L2oL2q_W;
-    output->back().F_Bq_W = F_L2o_W.Shift(p_L2oL2q_W);
+    output->back().F_Bq_W = F_L2q_W;
   }
 
   const MultibodyPlant<double>* plant_{nullptr};

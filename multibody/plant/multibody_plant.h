@@ -2503,7 +2503,10 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
-  /// Returns a constant reference to the input port for TBD...
+  /// Returns a constant reference to the input port for applying spatial
+  /// forces to bodies in the plant. The data type for the port is an
+  /// std::vector of ExternallyAppliedForce; any number of spatial forces
+  /// can be applied to any number of bodies in the plant.
   const systems::InputPort<T>& get_externally_applied_input_port() const;
 
   /// @}

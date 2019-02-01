@@ -1104,7 +1104,7 @@ void MultibodyPlant<T>::AddAppliedExternalForces(
 
     // Get the pose for this body in the world frame.
     // TODO(amcastro) When we can evaluate body poses and return a reference
-    // to a rigid transform, use that reference here instead.
+    // to a RigidTransform, use that reference here instead.
     math::RigidTransform<T> X_WB(EvalBodyPoseInWorld(context, body));
 
     // Get the position vector from the body origin (Bo) to the point of
