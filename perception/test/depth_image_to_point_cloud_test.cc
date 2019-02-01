@@ -90,7 +90,9 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       PointCloud result(0, pc_flags::kXYZs | pc_flags::kRGBs);
       const DepthImageToPointCloud dut(
           camera_info, kConfiguredPixelType, scale.value_or(1.0));
+      std::cout << "making a context" << std::endl;
       auto context = dut.CreateDefaultContext();
+      std::cout << "made a context" << std::endl;
       context->FixInputPort(0, Value<ConfiguredImage>(image));
       if (camera_pose) {
         const Value<RigidTransformd> camera_pose_as_value(*camera_pose);
@@ -99,14 +101,20 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       std::cout << "not yet a thing" << std::endl;
       result = dut.get_output_port(0).Eval<PointCloud>(*context);
       std::cout << "did a thing" << std::endl;
+      std::cout << "resulting fields: " << result.fields().base_fields() << std::endl;
+      std::cout << "point cloud size: " << result.size() << std::endl;
       return result;
+//      std::cout << "please not here" << std::endl;
     } else {
+      std::cout << "not a system" << std::endl;
       PointCloud result;
+      std::cout << "gonna use static convert" << std::endl;
       DepthImageToPointCloud::Convert(
           camera_info, camera_pose, image, rgb_image, scale, &result);
+      std::cout << "resulting fields: " << result.fields().base_fields() << std::endl;
+      std::cout << "point cloud size: " << result.size() << std::endl;
       return result;
     }
-
   }
 
   static void DoConvert(
@@ -172,6 +180,7 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
           expected_x, expected_y, kDepthValue);
     }
   }
+  std::cout << "expected point cloud fields: " << expected_cloud.fields().base_fields() << std::endl;
 
   // This tolerance was determined empirically for Drake's supported platforms.
   constexpr float kDistanceTolerance = 1e-8;

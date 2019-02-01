@@ -171,6 +171,7 @@ void DepthImageToPointCloud::CalcOutput32F(
   DRAKE_THROW_UNLESS(image != nullptr);
   DoConvert(kXYZs | kRGBs, camera_info_, pose_or_null, *image, rgb_or_null,
             scale_, output);
+  std::cout << "conversion fields 32: " << output->fields().base_fields() << std::endl;
 }
 
 void DepthImageToPointCloud::CalcOutput16U(
@@ -184,6 +185,7 @@ void DepthImageToPointCloud::CalcOutput16U(
   DRAKE_THROW_UNLESS(image != nullptr);
   DoConvert(kXYZs | kRGBs, camera_info_, pose_or_null, *image, rgb_or_null,
       scale_, output);
+  std::cout << "conversion fields 16: " << output->fields().base_fields() << std::endl;
 }
 
 
