@@ -68,6 +68,7 @@ LIBDRAKE_COMPONENTS = [
     "//geometry/query_results",
     "//geometry/test_utilities:geometry_set_tester",  # unpackaged
     "//lcm",
+    "//manipulation/kuka_iiwa",
     "//manipulation/perception",
     "//manipulation/planner",
     "//manipulation/schunk_wsg",
