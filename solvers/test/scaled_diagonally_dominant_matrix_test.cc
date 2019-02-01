@@ -94,6 +94,10 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     EXPECT_TRUE(CompareMatrices(M_sum, X_val, tol));
   } else {
     EXPECT_FALSE(result.is_success());
+    EXPECT_TRUE(result.get_solution_result() ==
+                    SolutionResult::kInfeasibleConstraints ||
+                result.get_solution_result() ==
+                    SolutionResult::kInfeasible_Or_Unbounded);
   }
 }
 
@@ -230,6 +234,9 @@ GTEST_TEST(SdsosTest, NotSdsosPolynomial) {
 
   const MathematicalProgramResult result = Solve(prog);
   EXPECT_FALSE(result.is_success());
+  EXPECT_TRUE(
+      result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
+      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
 }
 }  // namespace solvers
 }  // namespace drake
