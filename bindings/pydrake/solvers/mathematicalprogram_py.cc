@@ -614,27 +614,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
   py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
       .def("num_outputs", &EvaluatorBase::num_outputs,
           doc.EvaluatorBase.num_outputs.doc)
-      .def(
-          "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc)
+      .def("num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc)
       .def("Eval",
-            [](const EvaluatorBase& self,
-               const Eigen::Ref<const Eigen::VectorXd>& x) {
+          [](const EvaluatorBase& self,
+              const Eigen::Ref<const Eigen::VectorXd>& x) {
             Eigen::VectorXd y;
             self.Eval(x, &y);
             return y;
           },
           py::arg("x"))
       .def("Eval",
-            [](const EvaluatorBase& self,
-               const Eigen::Ref<const AutoDiffVecXd>& x) {
+          [](const EvaluatorBase& self,
+              const Eigen::Ref<const AutoDiffVecXd>& x) {
             AutoDiffVecXd y;
             self.Eval(x, &y);
             return y;
           },
           py::arg("x"))
       .def("Eval",
-            [](const EvaluatorBase& self,
-               const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
+          [](const EvaluatorBase& self,
+              const Eigen::Ref<const VectorX<symbolic::Variable>>& x) {
             VectorX<symbolic::Expression> y;
             self.Eval(x, &y);
             return y;
