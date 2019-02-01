@@ -262,10 +262,8 @@ std::unique_ptr<RoadCurve> Connection::CreateRoadCurve() const {
           center, radius_, theta0_, d_theta_, elevation, superelevation,
           linear_tolerance_, scale_length_, computation_policy_);
     };
-    default: {
-      DRAKE_ABORT();
-    }
   }
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace multilane

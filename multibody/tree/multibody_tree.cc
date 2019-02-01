@@ -1111,7 +1111,7 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
       case JacobianWrtVariable::kV:
         return false;
     }
-    DRAKE_ABORT();  // NOTREACHED
+    DRAKE_UNREACHABLE();
   }();
   const int num_columns = wrt_qdot ? num_positions() : num_velocities();
   DRAKE_THROW_UNLESS(Jw_V_ABp_E->cols() == num_columns);
