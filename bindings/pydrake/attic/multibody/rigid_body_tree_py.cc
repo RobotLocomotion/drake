@@ -185,6 +185,22 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("DefineCollisionFilterGroup",
           &RigidBodyTree<double>::DefineCollisionFilterGroup, py::arg("name"),
           doc.RigidBodyTree.DefineCollisionFilterGroup.doc)
+      .def("collisionDetectFromPoints",
+          [](RigidBodyTree<double>& tree, const KinematicsCache<double>& cache,
+              const Eigen::Matrix3Xd& points, bool use_margins) {
+            Eigen::VectorXd phi;
+            Eigen::Matrix3Xd normal;
+            Eigen::Matrix3Xd x;
+            Eigen::Matrix3Xd body_x;
+            std::vector<int> body_idx;
+            tree.collisionDetectFromPoints(
+                cache, points, phi, normal, x, body_x, body_idx, use_margins);
+            return std::tuple<Eigen::VectorXd, Eigen::Matrix3Xd,
+                Eigen::Matrix3Xd, Eigen::Matrix3Xd, std::vector<int>>(
+                phi, normal, x, body_x, body_idx);
+          },
+          py::arg("cache"), py::arg("points"), py::arg("use_margins"),
+          doc.RigidBodyTree.collisionDetectFromPoints.doc)
       .def("FindCollisionElement", &RigidBodyTree<double>::FindCollisionElement,
           py::arg("id"), py::return_value_policy::reference,
           doc.RigidBodyTree.FindCollisionElement.doc)
@@ -422,9 +438,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         .def("doKinematics",
             [](const RigidBodyTree<double>& tree, const VectorX<T>& q,
                 const VectorX<T>& v) { return tree.doKinematics(q, v); },
-            doc.RigidBodyTree.doKinematics.doc_3args);
-    // CreateKinematicsCacheWithType
-    // ComputeMaximumDepthCollisionPoints
+            doc.RigidBodyTree.doKinematics.doc_3args)
+        // CreateKinematicsCacheWithType
+        .def("ComputeMaximumDepthCollisionPoints",
+            &RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<T>,
+            py::arg("cache"), py::arg("use_margins") = true,
+            py::arg("throw_if_missing_gradient") = true,
+            doc.RigidBodyTree.ComputeMaximumDepthCollisionPoints.doc);
     // Type (b) methods:
     tree_cls
         .def("transformPoints",
