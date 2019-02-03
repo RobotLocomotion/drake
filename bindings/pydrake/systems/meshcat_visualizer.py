@@ -68,9 +68,7 @@ class MeshcatVisualizer(LeafSystem):
                  draw_period=0.033333,
                  prefix="drake",
                  zmq_url="default",
-                 open_browser=None,
-                 draw_contact_force=False,
-                 plant=None):
+                 open_browser=None):
         """
         Args:
             scene_graph: A SceneGraph object.
@@ -90,8 +88,6 @@ class MeshcatVisualizer(LeafSystem):
                 default web browser.  The default value of None will open the
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
-            draw_contact_force: Set to True to visualize contact forces.
-            plant: the MultiBodyPlant object associated with scene_graph.
 
         Note: This call will not return until it connects to the
               meshcat-server.
@@ -100,6 +96,7 @@ class MeshcatVisualizer(LeafSystem):
 
         self.set_name('meshcat_visualizer')
         self._DeclarePeriodicPublish(draw_period, 0.0)
+        self.draw_period = draw_period
 
         # Pose bundle (from SceneGraph) input port.
         self._DeclareAbstractInputPort("lcm_visualization",
@@ -131,39 +128,6 @@ class MeshcatVisualizer(LeafSystem):
             event=PublishEvent(
                 trigger_type=TriggerType.kInitialization,
                 callback=on_initialize))
-
-        # contact
-        self.draw_contact_force = draw_contact_force
-        if draw_contact_force:
-            assert not(plant is None)
-            self.plant = plant
-            # Contact results input port from MultiBodyPlant
-            self._DeclareAbstractInputPort(
-                "contact_results", AbstractValue.Make(ContactResults()))
-
-            # A dictionary of contact_info objects.
-            self.contact_info_dict = dict()
-
-            # A dictionary of contact points in bodyB's body frame,
-            # sharing the same keys as contact_info_dict.
-            self.p_BC_dict = dict()
-
-            # contact_idx is used as keys in contact_info_dic and p_BC_dict,
-            # It is icremented whenever a there is a new contact.
-            self.contact_idx = 0
-            self.t_previous = 0.
-
-            # body_pose_dict stores the poses of all bodies in self.plant
-            #  and its assciated scene_graph.
-            # This dict is keyed by (body.model_index() + "::" + body.name()).
-            # This dictionary is created to facilitate searching for body poses
-            #  using the body's name and model instance index.
-            # It must be updated before drawing contact forces.
-            self.body_pose_dict = dict()
-
-            # Make force cylinders smaller at initialization.
-            self.force_cylinder_radial_scale = 1.
-            self.force_cylinder_longitudinal_scale = 100.
 
     def _parse_name(self, name):
         # Parse name, split on the first (required) occurrence of `::` to get
@@ -271,25 +235,101 @@ class MeshcatVisualizer(LeafSystem):
             self.vis[self.prefix][source_name][str(model_id)][frame_name]\
                 .set_transform(pose_matrix.matrix())
 
-            # update self.body_pose_dict
-            if self.draw_contact_force:
-                _, frame_name = frame_name.split("::")
-                key = str(model_id) + "::" + frame_name
-                self.body_pose_dict[key] = pose_matrix
 
-        # draw contact forces
-        if self.draw_contact_force:
-            self._draw_contact_forces(context)
+class MeshcatContactVisualizer(LeafSystem):
+    """
+    MeshcatContactVisualizer is a System block that visualizes contact
+    forces. It is connected to
+    1) the pose bundle output port of a SceneGraph, and
+    2) the contact results output port of the SceneGraph's associated
+        MultibodyPlant.
+    """
+    def __init__(self,
+                 meshcat_viz,
+                 force_threshold=0.,
+                 contact_force_scale=10,
+                 plant=None):
+        """
+        Args:
+            meshcat_viz: a MeshcatVisualizer object.
+            force_threshold: contact forces whose norms are smaller than
+                force_threshold are not displayed.
+            contact_force_scale: a contact force with norm F (in Newtons) is
+                displayed as a cylinder with length F/contact_force_scale
+                (in meters).
+            plant: the MultibodyPlant associated with meshcat_viz.scene_graph.
+        """
+        LeafSystem.__init__(self)
+        self.set_name('meshcat_contact_visualizer')
+        self._DeclarePeriodicPublish(meshcat_viz.draw_period, 0.0)
+
+        self.meshcat_viz = meshcat_viz
+        self.force_threshold = force_threshold
+        self.contact_force_scale = contact_force_scale
+        assert not (plant is None)
+        self.plant = plant
+
+        # Pose bundle (from SceneGraph) input port.
+        self._DeclareAbstractInputPort("lcm_visualization",
+                                       AbstractValue.Make(PoseBundle(0)))
+
+        # Contact results input port from MultiBodyPlant
+        self._DeclareAbstractInputPort(
+            "contact_results", AbstractValue.Make(ContactResults()))
+
+        # A dictionary of contact_info objects.
+        self.contact_info_dict = dict()
+
+        # A dictionary of contact points in bodyB's body frame,
+        # sharing the same keys as contact_info_dict.
+        self.p_BC_dict = dict()
+
+        # contact_idx is used as keys in contact_info_dic and p_BC_dict,
+        # It is icremented whenever a there is a new contact.
+        self.contact_idx = 0
+        self.t_previous = 0.
+
+        # body_pose_dict stores the poses of all bodies in self.plant
+        #  and its associated scene_graph.
+        # This dict is keyed by (int(body.model_index()), body.name()).
+        # This dictionary is created to facilitate searching for body poses
+        #  using the body's name and model instance index.
+        # It must be updated before drawing contact forces.
+        self.body_pose_dict = dict()
+
+        # Make force cylinders smaller at initialization.
+        self.force_cylinder_radial_scale = 1.
+        self.force_cylinder_longitudinal_scale = 100.
+
+    def _DoPublish(self, context, event):
+        LeafSystem._DoPublish(self, context, event)
+
+        pose_bundle = self.EvalAbstractInput(context, 0).get_value()
+
+        for frame_i in range(pose_bundle.get_num_poses()):
+            # SceneGraph currently sets the name in PoseBundle as
+            #    "get_source_name::frame_name".
+            [source_name, frame_name] = \
+                self.meshcat_viz._parse_name(
+                    pose_bundle.get_name(frame_i))
+            model_id = pose_bundle.get_model_instance_id(frame_i)
+            pose_matrix = pose_bundle.get_pose(frame_i)
+
+            _, frame_name = frame_name.split("::")
+            key = (int(model_id), frame_name)
+            self.body_pose_dict[key] = pose_matrix
+
+        self._draw_contact_forces(context)
 
     def _is_contact_new(self, contact_info, dt, p_BC):
-        '''
+        """
         contact_info: a contact_info object
         dt: elapsed simulation time since the last draw event.
         p_BC: the coordinate of contact point in bodyB frame.
         If contact_info is in self.contact_info_dict,
           return False and the key of the corresponding contact
           in self.contact_info_dict.
-        '''
+        """
         is_contact_new = True
         key_contact_dict = None
         for key, contact_info_i in self.contact_info_dict.iteritems():
@@ -304,11 +344,10 @@ class MeshcatVisualizer(LeafSystem):
             if are_bodies_same1 or are_bodies_same2:
                 # Reaching here means that contact_info_i and contact_info
                 # describe contact between the same pair of bodies.
-
                 v = np.sqrt(contact_info_i.separation_speed()**2 +
                             contact_info_i.slip_speed()**2)
 
-                if np.linalg.norm(p_BC - self.p_BC_dict[key]) < 0.005:
+                if np.linalg.norm(p_BC - self.p_BC_dict[key]) < v * dt:
                     is_contact_new = False
                     key_contact_dict = key
                     break
@@ -329,16 +368,19 @@ class MeshcatVisualizer(LeafSystem):
         # If True, update the magnitude and location of
         #   the contact_info in self.contact_info_dict.
         # If False, add the new contact_info to self.contact_info_dict
+        viz = self.meshcat_viz.vis
+        prefix = self.meshcat_viz.prefix
         for i_contact in range(contact_results.num_contacts()):
             contact_info_i = contact_results.contact_info(i_contact)
 
-            # Do not bother with small forces.
-            # if np.linalg.norm(contact_info_i.contact_force()) < 1.0:
-            #     continue
+            # Do not display small forces.
+            force_norm = np.linalg.norm(contact_info_i.contact_force())
+            if force_norm < self.force_threshold:
+                continue
 
             # contact point in frame B
             bodyB = self.plant.get_body(contact_info_i.bodyB_index())
-            bodyB_name = str(int(bodyB.model_instance())) + "::" + bodyB.name()
+            bodyB_name = (int(bodyB.model_instance()), bodyB.name())
 
             X_WB = self.body_pose_dict[bodyB_name]
             p_BC = X_WB.inverse().multiply(contact_info_i.contact_point())
@@ -352,7 +394,7 @@ class MeshcatVisualizer(LeafSystem):
                 is_contact_valid[new_key] = True
                 self.contact_info_dict[new_key] = contact_info_i
                 # create cylinders with small radius.
-                self.vis[self.prefix]["contact_forces"][new_key].set_object(
+                viz[prefix]["contact_forces"][new_key].set_object(
                     meshcat.geometry.Cylinder(
                         height=1./self.force_cylinder_longitudinal_scale,
                         radius=0.01/self.force_cylinder_radial_scale),
@@ -369,7 +411,7 @@ class MeshcatVisualizer(LeafSystem):
         # delete invalid contact forces
         for key, is_valid in is_contact_valid.iteritems():
             if not is_valid:
-                self.vis[self.prefix]["contact_forces"][key].delete()
+                viz[prefix]["contact_forces"][key].delete()
                 del self.contact_info_dict[key]
 
         # visualize all valid contact forces, and delete invalid contact forces
@@ -395,11 +437,11 @@ class MeshcatVisualizer(LeafSystem):
             T1[0:3, 0:3] = R
             T1[0:3, 3] = contact_info.contact_point()
 
-            self.vis[self.prefix]["contact_forces"][key]\
+            viz[prefix]["contact_forces"][key]\
                 .set_transform(T1.dot(T0))
 
         # update t_previous
         self.t_previous = t
 
     def _get_visual_magnitude(self, magnitude):
-        return magnitude / 5.
+        return magnitude / self.contact_force_scale

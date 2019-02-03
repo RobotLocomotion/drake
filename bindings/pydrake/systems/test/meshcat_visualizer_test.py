@@ -10,7 +10,10 @@ from pydrake.multibody.multibody_tree.multibody_plant import (
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    MeshcatVisualizer,
+    MeshcatContactVisualizer
+)
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
 
@@ -108,19 +111,29 @@ class TestMeshcat(unittest.TestCase):
         plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
-        visualizer = builder.AddSystem(
+        # Add meshcat visualizer
+        viz = builder.AddSystem(
             MeshcatVisualizer(scene_graph,
                               zmq_url=None,
-                              open_browser=False,
-                              draw_contact_force=True,
-                              plant=plant))
+                              open_browser=False))
         builder.Connect(
             scene_graph.get_pose_bundle_output_port(),
-            visualizer.get_input_port(0))
-        contact_input_port = visualizer.GetInputPort("contact_results")
+            viz.get_input_port(0))
+
+        # Add contact visualizer
+        contact_viz = builder.AddSystem(
+            MeshcatContactVisualizer(
+                meshcat_viz=viz,
+                force_threshold=0,
+                contact_force_scale=10,
+                plant=plant))
+        contact_input_port = contact_viz.GetInputPort("contact_results")
         builder.Connect(
             plant.GetOutputPort("contact_results"),
             contact_input_port)
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            contact_viz.GetInputPort("lcm_visualization"))
 
         diagram = builder.Build()
 
@@ -137,10 +150,10 @@ class TestMeshcat(unittest.TestCase):
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(1.0)
 
-        viz_context =\
-            diagram.GetMutableSubsystemContext(visualizer, diagram_context)
-        contact_results = visualizer.EvalAbstractInput(
-            viz_context,
+        contact_viz_context =\
+            diagram.GetMutableSubsystemContext(contact_viz, diagram_context)
+        contact_results = contact_viz.EvalAbstractInput(
+            contact_viz_context,
             contact_input_port.get_index()).get_value()
 
         self.assertTrue(contact_results.num_contacts() > 0)
