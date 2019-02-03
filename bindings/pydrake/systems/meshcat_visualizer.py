@@ -429,7 +429,7 @@ class MeshcatContactVisualizer(LeafSystem):
                 [0, visual_magnitude / 2, 0])
             T0[1, 1] = \
                 visual_magnitude * self.force_cylinder_longitudinal_scale
-            # "expland" cylinders to a visible size.
+            # "expand" cylinders to a visible size.
             T0[0, 0] *= self.force_cylinder_radial_scale
             T0[2, 2] *= self.force_cylinder_radial_scale
 
