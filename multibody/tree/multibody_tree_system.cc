@@ -171,13 +171,6 @@ void MultibodyTreeSystem<T>::Finalize() {
   already_finalized_ = true;
 }
 
-template <typename T>
-std::unique_ptr<systems::LeafContext<T>>
-MultibodyTreeSystem<T>::DoMakeLeafContext() const {
-  return std::make_unique<MultibodyTreeContext<T>>(tree_->get_topology(),
-                                                   is_discrete_);
-}
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

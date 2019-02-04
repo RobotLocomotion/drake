@@ -8,7 +8,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
@@ -57,8 +56,6 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   /// @name Methods to get and set the state for a QuaternionFloatingMobilizer
   /// @{
-  /// These methods throw an exception if the provided systems::Context does not
-  /// correspond to a valid MultibodyTreeContext.
 
   /// Gets the quaternion `q_FM` that represents the orientation of outboard
   /// frame M in the inboard frame F. Refer to the documentation for this class
@@ -188,28 +185,28 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// Refer to the Mobilizer class documentation for details.
   /// @{
   Isometry3<T> CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context) const override;
+      const systems::Context<T>& context) const override;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   void ProjectSpatialForce(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
   void MapVelocityToQDot(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
 
   void MapQDotToVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override;
   /// @}
@@ -219,10 +216,10 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// q_FM is the identity quaternion).
   Vector<double, 7> get_zero_position() const override;
 
-  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+  void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
-  void DoCalcNplusMatrix(const MultibodyTreeContext<T>& context,
+  void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
