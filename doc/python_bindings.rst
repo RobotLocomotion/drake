@@ -13,6 +13,9 @@ installed as a single package called ``pydrake``.
 
 .. _python-bindings-binary:
 
+Installation
+============
+
 Binary Installation for Python
 ------------------------------
 
@@ -45,6 +48,43 @@ macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
 
 Python 2.7 is currently the only supported version for the bindings supplied
 by the binary packages. To use Python 3.x, see below for building from source.
+
+Inside ``virtualenv``
+^^^^^^^^^^^^^^^^^^^^^
+
+At present, Drake is not installable via ``pip``. However, you can still
+incorporate its install tree into a ``virtualenv``
+`FHS <https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard>`_-like
+environment.
+
+An example for ``python2``, where you should replace ``<venv_path>`` and
+``<platform>``:
+
+.. code-block:: shell
+
+    # Setup drake, and run prerequisites.
+    curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
+    mkdir -p <venv_path>
+    tar -xvzf drake.tar.gz -C <venv_path> --strip-components=1
+    # - You may need `sudo` here.
+    <venv_path>/share/drake/setup/install_prereqs
+
+    # Setup a virtualenv over the drake install.
+    python2 -m virtualenv -p python2 <venv_path> --system-site-packages
+
+.. note::
+
+    You can extract Drake into an existing ``virtualenv`` tree if you have
+    already run ``install_prereqs``; however, you should ensure that you have
+    run ``install_prereqs``. Before you do this, you should capture / freeze
+    your current requirements to reproduce your environment if there are
+    conflicts.
+
+To check if this worked, follow the instructions as
+:ref:`shown below <using-python-bindings>`, but either:
+
+*   Use ``<venv_path>/bin/python`` instead of ``python``, or
+*   Source ``<venv_path>/bin/activate`` in your current shell session.
 
 Building the Python Bindings
 ----------------------------
@@ -87,10 +127,13 @@ As an example, continuing from the code snippets from above:
 .. _using-python-bindings:
 
 Using the Python Bindings
--------------------------
+=========================
 
-To use the Drake Python bindings, follow the steps above to install or build
-Drake. To check this:
+Check Installation
+------------------
+
+After following the above install steps, check to ensure you can import
+``pydrake``:
 
 .. code-block:: shell
 
@@ -193,7 +236,7 @@ explicitly refer to each symbol:
     simulator = pydrake.systems.analysis.Simulator(diagram)
 
 Differences with C++ API
-========================
+------------------------
 
 In general, the `Python API <pydrake/index.html#://>`_ should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:
