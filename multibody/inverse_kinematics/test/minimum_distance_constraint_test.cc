@@ -8,39 +8,56 @@
 namespace drake {
 namespace multibody {
 const double kEps = std::numeric_limits<double>::epsilon();
-// The penalty function explained in section II.C of Whole-body Motion planning
-// with Centroidal dynamics and full kinematics by Hongkai Dai, Andres
-// Valenzuela and Russ Tedrake.
+
+namespace {
+enum class PenaltyType {
+  kExponential,
+  kQuadratic,
+};
+
 template <typename T>
-T Penalty(const T& distance, double minimum_distance,
-          MinimumDistancePenaltyType penalty_type) {
+T QuadraticallySmoothedPenalty(const T& distance, double minimum_distance) {
   if (distance >= minimum_distance) {
     return 0;
+  }
+  const T x = distance / minimum_distance - 1;
+  if (x > -1) {
+    return x * x / 2;
   } else {
-    const T x = distance / minimum_distance - 1;
-    switch (penalty_type) {
-      case MinimumDistancePenaltyType::kExponentiallySmoothedHinge: {
-        using std::exp;
-        const T penalty = -x * exp(1.0 / x);
-        return penalty;
-      }
-      case MinimumDistancePenaltyType::kQuadraticallySmoothedHinge: {
-        if (x > -1) {
-          return x * x / 2;
-        } else {
-          return -0.5 - x;
-        }
-      }
-      default:
-        throw std::runtime_error("Should not reach here.");
-    }
+    return -0.5 - x;
   }
 }
+
+template <typename T>
+T ExponentiallySmoothdPenalty(const T& distance, double minimum_distance) {
+  if (distance >= minimum_distance) {
+    return 0;
+  }
+  const T x = distance / minimum_distance - 1;
+  using std::exp;
+  const T penalty = -x * exp(1.0 / x);
+  return penalty;
+}
+
+template <typename T>
+T Penalty(const T& distance, double minimum_distance,
+          PenaltyType penalty_type) {
+  switch (penalty_type) {
+    case PenaltyType::kQuadratic: {
+      return QuadraticallySmoothedPenalty(distance, minimum_distance);
+    }
+    case PenaltyType::kExponential: {
+      return ExponentiallySmoothdPenalty(distance, minimum_distance);
+    }
+    default: { throw std::runtime_error("Should not reach here."); }
+  }
+}
+}  // namespace
 
 AutoDiffVecXd EvalMinimumDistanceConstraintAutoDiff(
     const systems::Context<AutoDiffXd>& context,
     const MultibodyPlant<AutoDiffXd>& plant, double minimum_distance,
-    MinimumDistancePenaltyType penalty_type) {
+    PenaltyType penalty_type) {
   AutoDiffVecXd y(1);
   y(0).value() = 0;
   y(0).derivatives().resize(
@@ -98,7 +115,8 @@ void CheckMinimumDistanceConstraintEval(
     const MinimumDistanceConstraint& constraint,
     const Eigen::Ref<const AutoDiffVecXd>& x_autodiff,
     const MultibodyPlant<AutoDiffXd>& plant_autodiff,
-    systems::Context<AutoDiffXd>* context_autodiff, double tol) {
+    systems::Context<AutoDiffXd>* context_autodiff, double tol,
+    PenaltyType penalty_type) {
   Eigen::VectorXd y_double;
   constraint.Eval(math::autoDiffToValueMatrix(x_autodiff), &y_double);
   AutoDiffVecXd y_autodiff;
@@ -109,7 +127,7 @@ void CheckMinimumDistanceConstraintEval(
   const AutoDiffVecXd y_autodiff_expected =
       EvalMinimumDistanceConstraintAutoDiff(*context_autodiff, plant_autodiff,
                                             constraint.minimum_distance(),
-                                            constraint.penalty_type());
+                                            penalty_type);
   CompareAutoDiffVectors(y_autodiff, y_autodiff_expected, tol);
 }
 
@@ -134,7 +152,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
 
   void CheckConstraintEvalLargerThanMinimumDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
-      const Eigen::Vector3d p_WB2) const {
+      const Eigen::Vector3d p_WB2, PenaltyType penalty_type) const {
     // distance larger than minimum_distance;
     // The penalty should be 0, so is the gradient.
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
@@ -152,15 +170,15 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     EXPECT_TRUE(CompareMatrices(y_autodiff(0).derivatives(),
                                 Eigen::Matrix<double, 14, 1>::Zero()));
     CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
-                                       plant_context_autodiff_, 1E-12);
+                                       plant_context_autodiff_, 1E-12,
+                                       penalty_type);
   }
 
   void CheckConstraintEvalSmallerThanMinimumDistance(
       const MinimumDistanceConstraint& constraint, const Eigen::Vector3d& p_WB1,
-      const Eigen::Vector3d& p_WB2) const {
+      const Eigen::Vector3d& p_WB2, PenaltyType penalty_type) const {
     // distance smaller than the minimum_distance, we can compute the penalty
-    // and
-    // the gradient by hand.
+    // and the gradient by hand.
     const Eigen::Quaterniond sphere1_quaternion(1, 0, 0, 0);
     const Eigen::Quaterniond sphere2_quaternion(1, 0, 0, 0);
     Eigen::Matrix<double, 14, 1> q;
@@ -175,8 +193,7 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     Eigen::VectorXd y_double(1);
     constraint.Eval(q, &y_double);
     const double penalty_expected =
-        Penalty(distance_expected, constraint.minimum_distance(),
-                constraint.penalty_type());
+        Penalty(distance_expected, constraint.minimum_distance(), penalty_type);
     const double tol{5 * kEps};
     EXPECT_NEAR(y_double(0), penalty_expected, tol);
     // Test with a non-ideneity gradient.
@@ -200,9 +217,8 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
     const AutoDiffXd distance_autodiff =
         (p_WS1_autodiff - p_WS2_autodiff).norm() - AutoDiffXd(radius1_) -
         AutoDiffXd(radius2_);
-    const auto penalty_autodiff =
-        Penalty(distance_autodiff, constraint.minimum_distance(),
-                constraint.penalty_type());
+    const AutoDiffXd penalty_autodiff =
+        Penalty(distance_autodiff, constraint.minimum_distance(), penalty_type);
     AutoDiffVecXd y_autodiff;
     constraint.Eval(q_autodiff, &y_autodiff);
     // The exponential penalty function -x * e^{1/x} can introduce relatively
@@ -213,19 +229,23 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
                                 penalty_autodiff.derivatives(), gradient_tol));
     // Now evaluate the constraint using autodiff from start.
     CheckMinimumDistanceConstraintEval(constraint, q_autodiff, *plant_autodiff_,
-                                       plant_context_autodiff_, gradient_tol);
+                                       plant_context_autodiff_, gradient_tol,
+                                       penalty_type);
   }
 
-  void CheckConstraintEval(const MinimumDistanceConstraint& constraint) {
+  void CheckConstraintEval(const MinimumDistanceConstraint& constraint,
+                           PenaltyType penalty_type) {
     // Distance between the spheres are larger than minimum_distance
     Eigen::Vector3d p_WB1(0.2, 1.2, 0.3);
     Eigen::Vector3d p_WB2(1.2, -0.4, 2.3);
-    CheckConstraintEvalLargerThanMinimumDistance(constraint, p_WB1, p_WB2);
+    CheckConstraintEvalLargerThanMinimumDistance(constraint, p_WB1, p_WB2,
+                                                 penalty_type);
 
     // Two spheres are colliding.
     p_WB1 << 0.1, 0.2, 0.3;
     p_WB2 << 0.11, 0.21, 0.31;
-    CheckConstraintEvalSmallerThanMinimumDistance(constraint, p_WB1, p_WB2);
+    CheckConstraintEvalSmallerThanMinimumDistance(constraint, p_WB1, p_WB2,
+                                                  penalty_type);
 
     // Two spheres are separated, but their distance is smaller than
     // minimum_distance.
@@ -234,31 +254,30 @@ class TwoFreeSpheresMinimumDistanceTest : public TwoFreeSpheresTest {
             Eigen::Vector3d(1.0 / 3, 2.0 / 3, 2.0 / 3) *
                 (radius1_ + radius2_ + 0.5 * constraint.minimum_distance());
 
-    CheckConstraintEvalSmallerThanMinimumDistance(constraint, p_WB1, p_WB2);
+    CheckConstraintEvalSmallerThanMinimumDistance(constraint, p_WB1, p_WB2,
+                                                  penalty_type);
   }
 };
 
 TEST_F(TwoFreeSpheresMinimumDistanceTest, ExponentialPenalty) {
   const double minimum_distance(0.1);
-  const MinimumDistanceConstraint constraint(
-      plant_double_, minimum_distance, plant_context_double_,
-      MinimumDistancePenaltyType::kExponentiallySmoothedHinge);
+  const MinimumDistanceConstraint constraint(plant_double_, minimum_distance,
+                                             plant_context_double_,
+                                             ExponentiallySmoothedHingeLoss);
   CheckConstraintBounds(constraint);
 
-  CheckConstraintEval(constraint);
+  CheckConstraintEval(constraint, PenaltyType::kExponential);
 }
 
-TEST_F(TwoFreeSpheresMinimumDistanceTest, SmoothedHingePenalty) {
+TEST_F(TwoFreeSpheresMinimumDistanceTest, QuadraticallySmoothedHingePenalty) {
   const double minimum_distance(0.1);
+  // The default penalty type is smoothed hinge.
   const MinimumDistanceConstraint constraint(plant_double_, minimum_distance,
                                              plant_context_double_);
-  // The default penalty type is smoothed hinge.
-  EXPECT_EQ(constraint.penalty_type(),
-            MinimumDistancePenaltyType::kQuadraticallySmoothedHinge);
 
   CheckConstraintBounds(constraint);
 
-  CheckConstraintEval(constraint);
+  CheckConstraintEval(constraint, PenaltyType::kQuadratic);
 }
 
 GTEST_TEST(MinimumDistanceConstraintTest,

@@ -8,50 +8,40 @@
 namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
-// Implements the penalty function  γ(φᵢ/dₘᵢₙ - 1)
-// where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimum
-// allowable distance, and γ is a penalizing function.
-// Refer to MinimumDistancePenaltyType for the formulation of penalty function.
-// @param distance φᵢ in the documentation above.
-// @param distance_threshold dₘᵢₙ in the documentation above.
-// @param penalty the penalty γ.
-// @param dpenalty_ddistance The gradient dγ/dφᵢ.
-void Penalty(double distance, double distance_threshold,
-             MinimumDistancePenaltyType penalty_type, double* penalty,
-             double* dpenalty_ddistance) {
-  if (distance >= distance_threshold) {
+
+void ExponentiallySmoothedHingeLoss(double x, double* penalty,
+                                    double* dpenalty_dx) {
+  if (x >= 0) {
     *penalty = 0;
-    if (dpenalty_ddistance) {
-      *dpenalty_ddistance = 0;
+    if (dpenalty_dx) {
+      *dpenalty_dx = 0;
     }
   } else {
-    const double x = distance / distance_threshold - 1;
-    switch (penalty_type) {
-      case MinimumDistancePenaltyType::kExponentiallySmoothedHinge: {
-        // γ(x) = -x exp(1/x) if x < 0
-        const double exp_one_over_x = std::exp(1.0 / x);
-        *penalty = -x * exp_one_over_x;
-        if (dpenalty_ddistance) {
-          const double dpenalty_dx = -exp_one_over_x + exp_one_over_x / x;
-          *dpenalty_ddistance = dpenalty_dx / distance_threshold;
-        }
-        break;
+    const double exp_one_over_x = std::exp(1.0 / x);
+    *penalty = -x * exp_one_over_x;
+    if (dpenalty_dx) {
+      *dpenalty_dx = -exp_one_over_x + exp_one_over_x / x;
+    }
+  }
+}
+
+void QuadraticallySmoothedHingeLoss(double x, double* penalty,
+                                    double* dpenalty_dx) {
+  if (x >= 0) {
+    *penalty = 0;
+    if (dpenalty_dx) {
+      *dpenalty_dx = 0;
+    }
+  } else {
+    if (x > -1) {
+      *penalty = x * x / 2;
+      if (dpenalty_dx) {
+        *dpenalty_dx = x;
       }
-      case MinimumDistancePenaltyType::kQuadraticallySmoothedHinge: {
-        if (x > -1) {
-          *penalty = x * x / 2;
-          if (dpenalty_ddistance) {
-            const double dpenalty_dx = x;
-            *dpenalty_ddistance = dpenalty_dx / distance_threshold;
-          }
-        } else {
-          *penalty = -0.5 - x;
-          if (dpenalty_ddistance) {
-            const double dpenalty_dx = -1;
-            *dpenalty_ddistance = dpenalty_dx / distance_threshold;
-          }
-        }
-        break;
+    } else {
+      *penalty = -0.5 - x;
+      if (dpenalty_dx) {
+        *dpenalty_dx = -1;
       }
     }
   }
@@ -60,13 +50,13 @@ void Penalty(double distance, double distance_threshold,
 MinimumDistanceConstraint::MinimumDistanceConstraint(
     const multibody::MultibodyPlant<double>* const plant,
     double minimum_distance, systems::Context<double>* plant_context,
-    MinimumDistancePenaltyType penalty_type)
+    MinimumDistancePenaltyFunction penalty_function)
     : solvers::Constraint(1, RefFromPtrOrThrow(plant).num_positions(),
                           Vector1d(0), Vector1d(0)),
       plant_{RefFromPtrOrThrow(plant)},
       minimum_distance_{minimum_distance},
       plant_context_{plant_context},
-      penalty_type_{penalty_type} {
+      penalty_function_{penalty_function} {
   if (!plant_.geometry_source_is_registered()) {
     throw std::invalid_argument(
         "MinimumDistanceConstraint: MultibodyPlant has not registered its "
@@ -93,11 +83,12 @@ void AddPenalty(const MultibodyPlant<double>&, const systems::Context<double>&,
                 const Frame<double>&, const Frame<double>&,
                 const Eigen::Vector3d&, double distance,
                 double minimum_distance,
-                MinimumDistancePenaltyType penalty_type, const Eigen::Vector3d&,
-                const Eigen::Vector3d&,
+                MinimumDistancePenaltyFunction penalty_function,
+                const Eigen::Vector3d&, const Eigen::Vector3d&,
                 const Eigen::Ref<const Eigen::VectorXd>&, Eigen::VectorXd* y) {
   double penalty;
-  Penalty(distance, minimum_distance, penalty_type, &penalty, nullptr);
+  const double x = distance / minimum_distance - 1;
+  penalty_function(x, &penalty, nullptr);
   (*y)(0) += penalty;
 }
 
@@ -106,7 +97,7 @@ void AddPenalty(const MultibodyPlant<double>& plant,
                 const Frame<double>& frameA, const Frame<double>& frameB,
                 const Eigen::Vector3d& p_ACa, double distance,
                 double minimum_distance,
-                MinimumDistancePenaltyType penalty_type,
+                MinimumDistancePenaltyFunction penalty_function,
                 const Eigen::Vector3d& p_WCa, const Eigen::Vector3d& p_WCb,
                 const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) {
   // The distance is d = sign * |p_CbCa_B|, where the
@@ -114,9 +105,10 @@ void AddPenalty(const MultibodyPlant<double>& plant,
   // So the gradient ∂d/∂q = p_CbCa_W * ∂p_BCa_B/∂q / d
   // where p_CbCa_W = p_WCa - p_WCb = p_WA + R_WA * p_ACa - (p_WB + R_WB *
   // p_BCb)
-  double penalty, dpenalty_ddistance;
-  Penalty(distance, minimum_distance, penalty_type, &penalty,
-          &dpenalty_ddistance);
+  double penalty, dpenalty_dx;
+  const double penalty_x = distance / minimum_distance - 1;
+  penalty_function(penalty_x, &penalty, &dpenalty_dx);
+  const double dpenalty_ddistance = dpenalty_dx / minimum_distance;
 
   Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_BCa(6, plant.num_positions());
   plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frameA,
@@ -182,8 +174,8 @@ void MinimumDistanceConstraint::DoEvalGeneric(
       AddPenalty(plant_, *plant_context_, frameA, frameB,
                  inspector.X_FG(signed_distance_pair.id_A) *
                      signed_distance_pair.p_ACa,
-                 distance, minimum_distance_, penalty_type_, p_WCa, p_WCb, x,
-                 y);
+                 distance, minimum_distance_, penalty_function_, p_WCa, p_WCb,
+                 x, y);
     }
   }
 }
