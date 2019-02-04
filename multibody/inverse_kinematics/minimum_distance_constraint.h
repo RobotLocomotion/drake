@@ -9,21 +9,32 @@
 namespace drake {
 namespace multibody {
 enum class MinimumDistancePenaltyType {
-  kSmoothedHinge,  ///< A linear hinge loss, smoothed with a quadratic loss near
-                   ///< the origin. The formulation is in equation (6) of Loss
-                   ///< Functions for Preference Levels: Regression with
-                   ///< Discrete Ordered Lables.
-                   ///< The penalty is
-                   ///< γ(x) = 0 if x ≥ 0;
-                   ///< γ(x) = x²/2 if -1 < x < 0;
-                   ///< γ(x) = -0.5 - x if x ≤ -1
-  kExponential,    ///< A smoothed penalty function (differentiable everywhere)
-                   ///< that uses exponential functions. The fomulation is
-                   ///< described in section II.C of Whole-body Motion Planning
-                   ///< with Centroidal Dynamics and Full Kinematics.
-                   ///< The penalty is
-                   ///< γ(x) = 0 if x ≥ 0;
-                   ///< γ(x) = -x exp(1/x) if x < 0
+  ///< A linear hinge loss, smoothed with a quadratic loss near the origin. The
+  ///< formulation is in equation (6) of [1].
+  ///< The penalty is
+  ///< <pre>
+  ///<        ⎧  0        if x ≥ 0
+  ///< γ(x) = ⎨  x²/2     if -1 < x < 0
+  ///<        ⎩  -0.5 - x if x ≤ -1.
+  ///< </pre>
+  ///< [1] "Loss Functions for Preference Levels: Regression with Discrete
+  ///< Ordered Labels." by Jason Rennie and Nathan Srebro, Proceedings of IJCAI
+  ///< multidisciplinary workshop on Advances in preference handling.
+  kQuadraticallySmoothedHinge,
+
+  ///< A hinge loss function smoothed by exponential function. This loss
+  ///< function is differentiable everywhere. The fomulation is described in
+  ///< section II.C of [2]
+  ///< The penalty is
+  ///< <pre>
+  ///<        ⎧ 0            if x ≥ 0
+  ///< γ(x) = ⎨
+  ///<        ⎩  -x exp(1/x) if x < 0.
+  ///< </pre>
+  ///< [2] "Whole-body Motion Planning with Centroidal Dynamics and Full
+  ///< Kinematics" by Hongkai Dai, Andres Valenzuela and Russ Tedrake, IEEE-RAS
+  ///< International Conference on Humanoid Robots, 2014.
+  kExponentiallySmoothedHinge,
 };
 
 /**
@@ -58,14 +69,14 @@ class MinimumDistanceConstraint : public solvers::Constraint {
       const multibody::MultibodyPlant<double>* const plant,
       double minimum_distance, systems::Context<double>* plant_context,
       MinimumDistancePenaltyType penalty_type =
-          MinimumDistancePenaltyType::kSmoothedHinge);
+          MinimumDistancePenaltyType::kQuadraticallySmoothedHinge);
 
   ~MinimumDistanceConstraint() override {}
 
   /** Getter for the minimum distance. */
   double minimum_distance() const { return minimum_distance_; }
 
-  /** Getter for the penalyt function type. */
+  /** Getter for the penalty function type. */
   MinimumDistancePenaltyType penalty_type() const { return penalty_type_; }
 
  private:

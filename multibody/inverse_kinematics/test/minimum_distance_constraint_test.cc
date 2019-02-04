@@ -19,12 +19,12 @@ T Penalty(const T& distance, double minimum_distance,
   } else {
     const T x = distance / minimum_distance - 1;
     switch (penalty_type) {
-      case MinimumDistancePenaltyType::kExponential: {
+      case MinimumDistancePenaltyType::kExponentiallySmoothedHinge: {
         using std::exp;
         const T penalty = -x * exp(1.0 / x);
         return penalty;
       }
-      case MinimumDistancePenaltyType::kSmoothedHinge: {
+      case MinimumDistancePenaltyType::kQuadraticallySmoothedHinge: {
         if (x > -1) {
           return x * x / 2;
         } else {
@@ -242,7 +242,7 @@ TEST_F(TwoFreeSpheresMinimumDistanceTest, ExponentialPenalty) {
   const double minimum_distance(0.1);
   const MinimumDistanceConstraint constraint(
       plant_double_, minimum_distance, plant_context_double_,
-      MinimumDistancePenaltyType::kExponential);
+      MinimumDistancePenaltyType::kExponentiallySmoothedHinge);
   CheckConstraintBounds(constraint);
 
   CheckConstraintEval(constraint);
@@ -254,7 +254,7 @@ TEST_F(TwoFreeSpheresMinimumDistanceTest, SmoothedHingePenalty) {
                                              plant_context_double_);
   // The default penalty type is smoothed hinge.
   EXPECT_EQ(constraint.penalty_type(),
-            MinimumDistancePenaltyType::kSmoothedHinge);
+            MinimumDistancePenaltyType::kQuadraticallySmoothedHinge);
 
   CheckConstraintBounds(constraint);
 

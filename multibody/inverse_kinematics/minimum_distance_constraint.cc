@@ -8,22 +8,14 @@
 namespace drake {
 namespace multibody {
 using internal::RefFromPtrOrThrow;
-/**
- * Implements the penalty function  γ(φᵢ/dₘᵢₙ - 1)
- * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimum
- * allowable distance, and γ is a penalizing function.
- * If we use exponential penalty function, then γ takes the following form
- * γ(x) = 0 if x ≥ 0
- * γ(x) = -x exp(1/x) if x < 0
- * If we use the smoothed hinge loss function, then γ takes the following form
- * γ(x) = 0 if x ≥ 0
- * γ(x) = x²/2 if -1 < x < 0;
- * γ(x) = -0.5 - x if x ≤ -1
- * @param distance φᵢ in the documentation above.
- * @param distance_threshold dₘᵢₙ in the documentation above.
- * @param penalty the penalty γ.
- * @param dpenalty_ddistance The gradient dγ/dφᵢ.
- */
+// Implements the penalty function  γ(φᵢ/dₘᵢₙ - 1)
+// where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimum
+// allowable distance, and γ is a penalizing function.
+// Refer to MinimumDistancePenaltyType for the formulation of penalty function.
+// @param distance φᵢ in the documentation above.
+// @param distance_threshold dₘᵢₙ in the documentation above.
+// @param penalty the penalty γ.
+// @param dpenalty_ddistance The gradient dγ/dφᵢ.
 void Penalty(double distance, double distance_threshold,
              MinimumDistancePenaltyType penalty_type, double* penalty,
              double* dpenalty_ddistance) {
@@ -35,7 +27,7 @@ void Penalty(double distance, double distance_threshold,
   } else {
     const double x = distance / distance_threshold - 1;
     switch (penalty_type) {
-      case MinimumDistancePenaltyType::kExponential: {
+      case MinimumDistancePenaltyType::kExponentiallySmoothedHinge: {
         // γ(x) = -x exp(1/x) if x < 0
         const double exp_one_over_x = std::exp(1.0 / x);
         *penalty = -x * exp_one_over_x;
@@ -45,7 +37,7 @@ void Penalty(double distance, double distance_threshold,
         }
         break;
       }
-      case MinimumDistancePenaltyType::kSmoothedHinge: {
+      case MinimumDistancePenaltyType::kQuadraticallySmoothedHinge: {
         if (x > -1) {
           *penalty = x * x / 2;
           if (dpenalty_ddistance) {
