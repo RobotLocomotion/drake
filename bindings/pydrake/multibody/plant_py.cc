@@ -639,9 +639,11 @@ PYBIND11_MODULE(plant, m) {
   m.def("ConnectContactResultsToDrakeVisualizer",
       [](systems::DiagramBuilder<T>* builder,
           const MultibodyPlant<double>& plant, lcm::DrakeLcmInterface* lcm) {
-        drake::multibody::ConnectContactResultsToDrakeVisualizer(
+        return drake::multibody::ConnectContactResultsToDrakeVisualizer(
             builder, plant, lcm);
       },
+      // Keep alive, ownership: `return` keeps `builder` alive.
+      py::keep_alive<0, 1>(), py::keep_alive<0, 2>(), py_reference,
       py::arg("builder"), py::arg("plant"), py::arg("lcm") = nullptr);
 }  // NOLINT(readability/fn_size)
 

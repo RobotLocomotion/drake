@@ -38,6 +38,7 @@ from pydrake.systems.primitives import (
     PassThrough, PassThrough_,
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
+    Sine, Sine_,
     UniformRandomSource,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
@@ -78,6 +79,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(PassThrough_)
         self._check_instantiations(Saturation_)
         self._check_instantiations(SignalLogger_)
+        self._check_instantiations(Sine_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -371,3 +373,24 @@ class TestGeneral(unittest.TestCase):
         ZeroOrderHold(
             period_sec=0.1,
             abstract_model_value=AbstractValue.Make("Hello world"))
+
+    def test_sine(self):
+        # Test scalar output.
+        sine_source = Sine(amplitude=1, frequency=2, phase=3,
+                           size=1, is_time_based=True)
+        self.assertEqual(sine_source.get_output_port(0).size(), 1)
+        self.assertEqual(sine_source.get_output_port(1).size(), 1)
+        self.assertEqual(sine_source.get_output_port(2).size(), 1)
+
+        # Test vector output.
+        sine_source = Sine(amplitude=1, frequency=2, phase=3,
+                           size=3, is_time_based=True)
+        self.assertEqual(sine_source.get_output_port(0).size(), 3)
+        self.assertEqual(sine_source.get_output_port(1).size(), 3)
+        self.assertEqual(sine_source.get_output_port(2).size(), 3)
+
+        sine_source = Sine(amplitudes=np.ones(2), frequencies=np.ones(2),
+                           phases=np.ones(2), is_time_based=True)
+        self.assertEqual(sine_source.get_output_port(0).size(), 2)
+        self.assertEqual(sine_source.get_output_port(1).size(), 2)
+        self.assertEqual(sine_source.get_output_port(2).size(), 2)
