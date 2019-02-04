@@ -186,9 +186,9 @@ class MeshcatVisualizer(LeafSystem):
                     # Rotate to fix this misalignment
                     extra_rotation = tf.rotation_matrix(
                         math.pi/2., [1, 0, 0])
-                    element_local_tf[0:3, 0:3] = \
+                    element_local_tf[0:3, 0:3] = (
                         element_local_tf[0:3, 0:3].dot(
-                            extra_rotation[0:3, 0:3])
+                            extra_rotation[0:3, 0:3]))
                 elif geom.type == geom.MESH:
                     meshcat_geom = \
                         meshcat.geometry.ObjMeshGeometry.from_file(
@@ -207,14 +207,14 @@ class MeshcatVisualizer(LeafSystem):
                         val += (256**(2 - i)) * int(255 * rgb[i])
                     return val
 
-                self.vis[self.prefix][source_name][str(link.robot_num)][
-                    frame_name][str(j)]\
-                    .set_object(meshcat_geom,
-                                meshcat.geometry
-                                .MeshLambertMaterial(
-                                    color=Rgb2Hex(geom.color)))
-                self.vis[self.prefix][source_name][str(link.robot_num)][
-                    frame_name][str(j)].set_transform(element_local_tf)
+                cur_vis = (
+                    self.vis[self.prefix][source_name][str(link.robot_num)]
+                    [frame_name][str(j)])
+                cur_vis.set_object(
+                    meshcat_geom,
+                    meshcat.geometry.MeshLambertMaterial(
+                        color=Rgb2Hex(geom.color)))
+                cur_vis.set_transform(element_local_tf)
 
     def _DoPublish(self, context, event):
         # TODO(russt): Change this to declare a periodic event with a
