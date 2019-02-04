@@ -265,7 +265,7 @@ class MeshcatContactVisualizer(LeafSystem):
 
     def __init__(self,
                  meshcat_viz,
-                 force_threshold=0.,
+                 force_threshold=1e-2,
                  contact_force_scale=10,
                  plant=None):
         """
@@ -335,8 +335,10 @@ class MeshcatContactVisualizer(LeafSystem):
         assert isinstance(new, self._ContactState)
         for old in self._contacts:
             # Use order-insensitive comparison using `set`s.
-            old_bodies = {old.info.bodyA_index(), old.info.bodyB_index()}
-            new_bodies = {new.info.bodyA_index(), new.info.bodyB_index()}
+            old_bodies = {int(old.info.bodyA_index()),
+                          int(old.info.bodyB_index())}
+            new_bodies = {int(new.info.bodyA_index()),
+                          int(new.info.bodyB_index())}
             if old_bodies == new_bodies:
                 # Reaching here means that `old` and `new`
                 # describe contact between the same pair of bodies.
