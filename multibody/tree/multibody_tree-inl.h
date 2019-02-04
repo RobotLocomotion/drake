@@ -392,7 +392,6 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
   return index;
 }
 
-
 template <typename T>
 template <typename FromScalar>
 Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(const Frame<FromScalar>& frame) {

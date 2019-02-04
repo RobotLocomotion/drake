@@ -39,7 +39,6 @@ using systems::OutputPort;
 using systems::State;
 
 using drake::multibody::MultibodyForces;
-using drake::multibody::MultibodyTree;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;

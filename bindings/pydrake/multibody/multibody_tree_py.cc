@@ -68,7 +68,7 @@ void init_module(py::module m) {
   {
     // N.B. MultibodyTree will disappear from public API (#9366).
     // Do NOT add or change ANY methods or constructors.
-    using Class = MultibodyTree<T>;
+    using Class = internal::MultibodyTree<T>;
     constexpr auto& cls_doc = doc.internal.MultibodyTree;
     py::class_<Class> cls(m, "MultibodyTree", cls_doc.doc);
     // N.B. Since `MultibodyTree` is only reachable from Python via
@@ -93,7 +93,7 @@ void init_module(py::module m) {
             py::arg("model_instance"), py_reference_internal,
             cls_doc.GetModelInstanceName.doc)
         .def("GetPositionsAndVelocities",
-            [](const MultibodyTree<T>* self,
+            [](const internal::MultibodyTree<T>* self,
                 const Context<T>& context) -> Eigen::Ref<const VectorX<T>> {
               return self->GetPositionsAndVelocities(context);
             },
@@ -102,7 +102,7 @@ void init_module(py::module m) {
             py::keep_alive<0, 2>(), py::arg("context"),
             cls_doc.GetPositionsAndVelocities.doc_1args)
         .def("GetMutablePositionsAndVelocities",
-            [](const MultibodyTree<T>* self,
+            [](const internal::MultibodyTree<T>* self,
                 Context<T>* context) -> Eigen::Ref<VectorX<T>> {
               return self->GetMutablePositionsAndVelocities(context);
             },

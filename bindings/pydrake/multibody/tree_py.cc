@@ -221,7 +221,7 @@ PYBIND11_MODULE(tree, m) {
     py::class_<Class> cls(m, "MultibodyForces", doc.MultibodyForces.doc);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def(py::init([](const MultibodyTree<T>& tree) {
+    cls.def(py::init([](const internal::MultibodyTree<T>& tree) {
       WarnDeprecated("Please use `MultibodyForces(plant)` constructor.");
       return std::make_unique<MultibodyForces<T>>(tree);
     }),
