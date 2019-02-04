@@ -10,11 +10,11 @@ namespace internal {
 
 template <typename T>
 Isometry3<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>&) const { return X_FM_.cast<T>(); }
+    const systems::Context<T>&) const { return X_FM_.cast<T>(); }
 
 template <typename T>
 SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
   return SpatialVelocity<T>::Zero();
@@ -23,7 +23,7 @@ SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 WeldMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   return SpatialAcceleration<T>::Zero();
@@ -31,7 +31,7 @@ WeldMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void WeldMobilizer<T>::ProjectSpatialForce(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const SpatialForce<T>&,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
@@ -39,15 +39,15 @@ void WeldMobilizer<T>::ProjectSpatialForce(
 
 template <typename T>
 void WeldMobilizer<T>::DoCalcNMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>>) const {}
+    const systems::Context<T>&, EigenPtr<MatrixX<T>>) const {}
 
 template <typename T>
 void WeldMobilizer<T>::DoCalcNplusMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>>) const {}
+    const systems::Context<T>&, EigenPtr<MatrixX<T>>) const {}
 
 template <typename T>
 void WeldMobilizer<T>::MapVelocityToQDot(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -57,7 +57,7 @@ void WeldMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void WeldMobilizer<T>::MapQDotToVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);

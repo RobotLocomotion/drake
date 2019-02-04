@@ -16,7 +16,7 @@ drake_cc_package_library(
     name = "tree",
     deps = [
         ":articulated_body_inertia",
-        ":multibody_tree_context",
+        ":multibody_tree_caches",
         ":multibody_tree_core",
         ":multibody_tree_element",
         ":multibody_tree_indexes",
@@ -50,18 +50,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree_context",
+    name = "multibody_tree_caches",
     srcs = [
         "acceleration_kinematics_cache.cc",
         "articulated_body_inertia_cache.cc",
-        "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
         "articulated_body_inertia_cache.h",
-        "multibody_tree_context.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
     ],
@@ -144,7 +142,7 @@ drake_cc_library(
     # "//multibody/tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
-        ":multibody_tree_context",
+        ":multibody_tree_caches",
         ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":spatial_inertia",

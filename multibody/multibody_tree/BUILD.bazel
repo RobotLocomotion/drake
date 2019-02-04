@@ -21,7 +21,6 @@ drake_cc_package_library(
     deps = [
         ":articulated_body_inertia",
         ":forwarding_hdrs",
-        ":multibody_tree_context",
         ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
@@ -34,7 +33,6 @@ drake_cc_package_library(
 # Each of these aliases both `cc_library(name = "foo")` and `foo.h`.
 _RELATIVE_LABELS = [
     ":articulated_body_inertia",
-    ":multibody_tree_context",
     ":multibody_tree_element",
     ":multibody_tree_indexes",
     ":multibody_tree_topology",

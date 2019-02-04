@@ -20,7 +20,6 @@
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
@@ -1393,8 +1392,7 @@ class MultibodyTree {
   /// computation and therefore are named `CalcXXX()`, where `XXX` corresponds
   /// to the quantity or object of interest to be computed. They all take a
   /// `systems::Context` as an input argument storing the state of the multibody
-  /// system. A `std::bad_cast` exception is thrown if the passed context is not
-  /// a MultibodyTreeContext.
+  /// system.
   /// @{
 
   /// Computes into the position kinematics `pc` all the kinematic quantities
@@ -1916,12 +1914,128 @@ class MultibodyTree {
     return tree_system_->EvalVelocityKinematics(context);
   }
 
+  /// @name                 State access methods
+  /// These methods use information in the MultibodyTree to determine how to
+  /// locate the tree's state variables in a given Context or State.
+  //@{
+
   /// Returns true if we are using discrete state for positions and velocities;
   /// otherwise we're using continuous state.
   bool is_state_discrete() const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->is_discrete();
   }
+
+  /// Returns a const reference to the kinematic state vector stored in the
+  /// given Context as an `Eigen::VectorBlock<const VectorX<T>>`. This will
+  /// consist only of q and v partitions in that order.
+  Eigen::VectorBlock<const VectorX<T>> get_state_vector(
+      const systems::Context<T>& context) const;
+
+  /// This is a mutable-Context version of `get_state_vector()`.
+  /// @note Invalidates all q- or v-dependent cache entries.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
+      systems::Context<T>* context) const;
+
+  /// This is a mutable-State version of `get_state_vector()`.
+  /// @note This does not cause cache invalidation.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
+      systems::State<T>* state) const;
+
+  /// Returns a const reference to the position state vector q stored in the
+  /// given Context as an `Eigen::VectorBlock<const VectorX<T>>`.
+  Eigen::VectorBlock<const VectorX<T>> get_positions(
+      const systems::Context<T>& context) const;
+
+  /// This is a mutable-Context version of `get_positions()`.
+  /// @note Invalidates all q-dependent cache entries. (May also invalidate
+  ///       v-dependent cache entries.)
+  Eigen::VectorBlock<VectorX<T>> get_mutable_positions(
+      systems::Context<T>* context) const;
+
+  /// This is a mutable-State version of `get_positions()`.
+  /// @note This does not cause cache invalidation.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_positions(
+      systems::State<T>* state) const;
+
+  /// Returns a const reference to the velcoity state vector v stored in the
+  /// given Context as an `Eigen::VectorBlock<const VectorX<T>>`.
+  Eigen::VectorBlock<const VectorX<T>> get_velocities(
+      const systems::Context<T>& context) const;
+
+  /// This is a mutable-Context version of `get_velocities()`.
+  /// @note Invalidates all v-dependent cache entries. (May also invalidate
+  ///       q-dependent cache entries.)
+  Eigen::VectorBlock<VectorX<T>> get_mutable_velocities(
+      systems::Context<T>* context) const;
+
+  /// This is a mutable-State version of `get_velocities()`.
+  /// @note This does not cause cache invalidation.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_velocities(
+      systems::State<T>* state) const;
+
+  /// Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  /// referencing a segment in the state vector with its first element
+  /// at `start`.
+  template <int count>
+  Eigen::VectorBlock<const VectorX<T>, count> get_state_segment(
+      const systems::Context<T>& context, int start) const {
+    // (Comments here apply to similar methods below too.)
+    // We know that context is a LeafContext and therefore the
+    // continuous state vector must be a BasicVector.
+    // TODO(amcastro-tri): make use of VectorBase::get_contiguous_vector() once
+    // PR #6049 gets merged.
+    Eigen::VectorBlock<const VectorX<T>> x = get_state_vector(context);
+    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
+    // state is a BasicVector.
+    // If we do return xc.segment() directly, we would instead get a
+    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
+    return x.nestedExpression().template segment<count>(start);
+  }
+
+  /// This is a mutable-Context version of `get_state_segment<count>(start)`.
+  /// @note Invalidates all q- or v-dependent cache entries.
+  template <int count>
+  Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(
+      systems::Context<T>* context, int start) const {
+    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(context);
+    return x.nestedExpression().template segment<count>(start);
+  }
+
+  /// This is a mutable-State version of `get_state_segment<count>(start)`.
+  /// @note This does not cause cache invalidation.
+  template <int count>
+  Eigen::VectorBlock<VectorX<T>, count> get_mutable_state_segment(
+      systems::State<T>* state, int start) const {
+    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(&*state);
+    return x.nestedExpression().template segment<count>(start);
+  }
+
+  /// Returns a const fixed-size Eigen::VectorBlock of `count` elements
+  /// referencing a segment in the Context's state vector with its first element
+  /// at `start`.
+  Eigen::VectorBlock<const VectorX<T>> get_state_segment(
+      const systems::Context<T>& context, int start, int count) const {
+    Eigen::VectorBlock<const VectorX<T>> x = get_state_vector(context);
+    return x.nestedExpression().segment(start, count);
+  }
+
+  /// This is a mutable-Context version of `get_state_segment(start, count)`.
+  /// @note Invalidates all q- or v-dependent cache entries.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
+      systems::Context<T>* context, int start, int count) const {
+    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(context);
+    return x.nestedExpression().segment(start, count);
+  }
+
+  /// This is a mutable-State version of `get_state_segment(start, count)`.
+  /// @note This does not cause cache invalidation.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_state_segment(
+      systems::State<T>* state, int start, int count) const {
+    Eigen::VectorBlock<VectorX<T>> x = get_mutable_state_vector(&*state);
+    return x.nestedExpression().segment(start, count);
+  }
+  //@}
 
   /// (Internal use only) Informs the MultibodyTree how to access its resources
   /// within a Context.
@@ -1953,6 +2067,22 @@ class MultibodyTree {
 
   // Friend class to facilitate testing.
   friend class MultibodyTreeTester;
+
+  // Helpers for getting the full qv discrete state once we know we are using
+  // discrete state.
+  Eigen::VectorBlock<const VectorX<T>> get_discrete_state_vector(
+      const systems::Context<T>& context) const;
+
+  // Invalidates q- or v-dependent cache entries.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_discrete_state_vector(
+      systems::Context<T>* context) const;
+
+  // Does no invalidation.
+  Eigen::VectorBlock<VectorX<T>> get_mutable_discrete_state_vector(
+      systems::State<T>* state) const;
+
+  Eigen::VectorBlock<VectorX<T>> extract_qv_from_continuous(
+      systems::VectorBase<T>* continuous_qvz) const;
 
   // Finalizes the MultibodyTreeTopology of this tree.
   void FinalizeTopology();

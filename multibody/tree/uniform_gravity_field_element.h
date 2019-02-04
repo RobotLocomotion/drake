@@ -80,22 +80,22 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// will have zero potential energy when its the height of its center of mass
   /// is at the world's origin.
   T CalcPotentialEnergy(
-      const internal::MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc) const final;
 
   T CalcConservativePower(
-      const internal::MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc,
       const internal::VelocityKinematicsCache<T>& vc) const final;
 
   T CalcNonConservativePower(
-      const internal::MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc,
       const internal::VelocityKinematicsCache<T>& vc) const final;
 
  protected:
   void DoCalcAndAddForceContribution(
-      const internal::MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const internal::PositionKinematicsCache<T>& pc,
       const internal::VelocityKinematicsCache<T>& vc,
       MultibodyForces<T>* forces) const final;

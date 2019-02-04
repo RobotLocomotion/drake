@@ -29,7 +29,7 @@ LinearSpringDamper<T>::LinearSpringDamper(
 
 template <typename T>
 void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
@@ -77,7 +77,7 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcPotentialEnergy(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc) const {
   const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
   const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
@@ -96,7 +96,7 @@ T LinearSpringDamper<T>::CalcPotentialEnergy(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcConservativePower(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
   // Since the potential energy is:
@@ -128,7 +128,7 @@ T LinearSpringDamper<T>::CalcConservativePower(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcNonConservativePower(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
   // The rate at which the length of the spring changes.
