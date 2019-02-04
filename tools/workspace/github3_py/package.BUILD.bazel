@@ -1,0 +1,25 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+py_library(
+    name = "github3_py",
+    srcs = glob([
+        "src/github3/**",
+    ]) or fail("No match"),
+    imports = [
+        "src",
+    ],
+    deps = [
+        "@uritemplate_py",
+    ],
+)

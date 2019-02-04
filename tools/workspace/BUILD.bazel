@@ -16,6 +16,19 @@ py_library(
 )
 
 drake_py_binary(
+    name = "new_release",
+    srcs = [
+        "metadata.py",
+        "new_release.py",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":module_py",
+        "@github3_py",
+    ],
+)
+
+drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
     visibility = ["//visibility:public"],
@@ -70,6 +83,4 @@ install(
 
 check_licenses(_DRAKE_EXTERNAL_PACKAGE_INSTALLS)
 
-add_lint_tests(
-    python_lint_extra_srcs = ["metadata.py"],
-)
+add_lint_tests()
