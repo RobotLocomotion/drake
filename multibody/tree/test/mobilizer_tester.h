@@ -48,10 +48,6 @@ class MobilizerTester : public ::testing::Test {
         std::move(owned_tree_));
     context_ = system_->CreateDefaultContext();
 
-    // Performance critical queries take a MultibodyTreeContext to avoid dynamic
-    // casting.
-    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
-
     return mobilizer_ref;
   }
 
@@ -62,7 +58,6 @@ class MobilizerTester : public ::testing::Test {
   std::unique_ptr<MultibodyTreeSystem<double>> system_;
   std::unique_ptr<systems::Context<double>> context_;
   const RigidBody<double>* body_{nullptr};
-  MultibodyTreeContext<double>* mbt_context_{nullptr};
 
  private:
   // This unique_ptr is only valid between construction and the call to

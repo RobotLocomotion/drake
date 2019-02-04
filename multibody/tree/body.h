@@ -197,13 +197,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   /// (Advanced) Returns the mass of this body stored in `context`.
   virtual T get_mass(
-      const internal::MultibodyTreeContext<T> &context)const = 0;
+      const systems::Context<T> &context)const = 0;
 
   /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   /// of this body measured from this body's frame origin `Bo` and expressed in
   /// the body frame B.
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const internal::MultibodyTreeContext<T>& context) const = 0;
+      const systems::Context<T>& context) const = 0;
 
   /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
   /// frame origin `Bo` (not necessarily its center of mass) and expressed in
@@ -214,7 +214,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// describing its state of deformation. As a particular case, the spatial
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const internal::MultibodyTreeContext<T>& context) const = 0;
+      const systems::Context<T>& context) const = 0;
 
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.

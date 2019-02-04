@@ -469,14 +469,16 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_->set_angular_rate(context_.get(), theta2dot);
 
     // Set the state for the discrete model:
-    // Note: modeling elements such as joints, bodies, frames, etc. are agnostic
-    // to whether the state is discrete or continuous. Therefore, we are allowed
-    // to using the same modeling elements to set both `context` and
-    // `discrete_context`.
-    shoulder_->set_angle(discrete_context_.get(), theta1);
-    elbow_->set_angle(discrete_context_.get(), theta2);
-    shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
-    elbow_->set_angular_rate(discrete_context_.get(), theta2dot);
+    const RevoluteJoint<double>& discrete_shoulder =
+        discrete_plant_->GetJointByName<RevoluteJoint>(
+            parameters_.shoulder_joint_name());
+    const RevoluteJoint<double>& discrete_elbow =
+        discrete_plant_->GetJointByName<RevoluteJoint>(
+            parameters_.elbow_joint_name());
+    discrete_shoulder.set_angle(discrete_context_.get(), theta1);
+    discrete_elbow.set_angle(discrete_context_.get(), theta2);
+    discrete_shoulder.set_angular_rate(discrete_context_.get(), theta1dot);
+    discrete_elbow.set_angular_rate(discrete_context_.get(), theta2dot);
 
     plant_->CalcTimeDerivatives(*context_, derivatives_.get());
     auto updates = discrete_plant_->AllocateDiscreteVariables();
