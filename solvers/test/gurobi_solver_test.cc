@@ -54,6 +54,8 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     MathematicalProgramResult result;
     solver.Solve(*prog_, {}, solver_options, &result);
     EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasible_Or_Unbounded);
     // This code is defined in
     // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
@@ -65,6 +67,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     solver_options.SetOption(GurobiSolver::id(), "DualReductions", 0);
     solver.Solve(*prog_, {}, solver_options, &result);
     EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
     // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;

@@ -29,6 +29,8 @@ TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
     MathematicalProgramResult result;
     solver.Solve(*prog_, {}, {}, &result);
     EXPECT_FALSE(result.is_success());
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
     // LOCAL_INFEASIBILITY is defined in IpAlgTypes.hpp from Ipopt source file.
     const int LOCAL_INFEASIBILITY = 5;
     EXPECT_EQ(result.get_solver_details().GetValue<IpoptSolverDetails>().status,
@@ -127,6 +129,7 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       solver.Solve(prog, x_initial_guess, options, &result);
       // Expect to hit iteration limit
       EXPECT_FALSE(result.is_success());
+      EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
       // MAXITER_EXCEEDED is defined in IpAlgTypes.hpp from Ipopt source code.
       const int MAXITER_EXCEEDED = 1;
       EXPECT_EQ(
