@@ -157,3 +157,4 @@ class TestMeshcat(unittest.TestCase):
             contact_input_port.get_index()).get_value()
 
         self.assertGreater(contact_results.num_contacts(), 0)
+        self.assertEqual(contact_viz._contact_key_counter, 4)
