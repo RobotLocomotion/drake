@@ -5,7 +5,7 @@ import warnings
 
 from pydrake.lcm import DrakeMockLcm
 from pydrake.systems.framework import DiagramBuilder, InputPort, OutputPort
-from pydrake.util.deprecation import DrakeDeprecationWarning
+from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 class TestGeometry(unittest.TestCase):

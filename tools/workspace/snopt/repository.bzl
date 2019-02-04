@@ -7,6 +7,7 @@ load(
 load(
     "@drake//tools/workspace:execute.bzl",
     "execute_and_return",
+    "execute_or_fail",
 )
 
 def _execute(repo_ctx, mnemonic, *command):
@@ -62,6 +63,15 @@ def _setup_git(repo_ctx):
         remote = repo_ctx.attr.remote,
         commit = repo_ctx.attr.commit,
     )
+    patchfile = repo_ctx.path(
+        Label("@drake//tools/workspace/snopt:snopt-openmp.patch"),
+    ).realpath
+    execute_or_fail(repo_ctx, [
+        "patch",
+        "-p0",
+        "interfaces/src/snopt_wrapper.f90",
+        patchfile,
+    ])
     if repo_ctx.attr.use_drake_build_rules:
         # Disable any files that came from the upstream snopt source.
         _execute(repo_ctx, "find-and-mv", ["bash", "-c", """
@@ -92,6 +102,17 @@ def _extract_local_archive(repo_ctx, snopt_path):
         "--file",
         repo_ctx.path(snopt_path).realpath,
         "--strip-components=1",
+    ])
+    if result.error:
+        return result.error
+    patchfile = repo_ctx.path(
+        Label("@drake//tools/workspace/snopt:snopt-openmp.patch"),
+    ).realpath
+    result = execute_and_return(repo_ctx, [
+        "patch",
+        "-p0",
+        "interfaces/src/snopt_wrapper.f90",
+        patchfile,
     ])
     return result.error
 

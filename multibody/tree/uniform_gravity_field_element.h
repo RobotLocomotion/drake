@@ -105,6 +105,9 @@ class UniformGravityFieldElement : public ForceElement<T> {
   std::unique_ptr<ForceElement<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
+
  private:
   Vector3<double> g_W_;
 };
@@ -112,5 +115,5 @@ class UniformGravityFieldElement : public ForceElement<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::UniformGravityFieldElement)

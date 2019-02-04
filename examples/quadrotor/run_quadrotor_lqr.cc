@@ -81,6 +81,10 @@ int do_main() {
 
     simulator.Initialize();
     simulator.set_target_realtime_rate(FLAGS_simulation_real_time_rate);
+
+    // The following accuracy is necessary for the example to satisfy its
+    // ending state tolerances.
+    simulator.get_mutable_integrator()->set_target_accuracy(5e-5);
     simulator.StepTo(FLAGS_trial_duration);
 
     // Goal state verification.

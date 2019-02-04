@@ -118,6 +118,7 @@ void UnrevisedLemkeSolver<T>::Solve(
     const optional<SolverOptions>& solver_options,
     MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(prog.decision_variable_index());
   unused(initial_guess);
   unused(solver_options);
   // This solver imposes restrictions that its problem:

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -17,9 +18,16 @@ namespace lcm {
  * translators contained within the dictionary are guaranteed to remain in
  * existence throughout the lifespan of this object.
  */
-class LcmTranslatorDictionary {
+class
+DRAKE_DEPRECATED(
+    "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+    "and will be removed on 2019-05-01.")
+LcmTranslatorDictionary {
  public:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmTranslatorDictionary)
+#pragma GCC diagnostic pop
 
   /**
    * The constructor. The dictionary is initially empty.

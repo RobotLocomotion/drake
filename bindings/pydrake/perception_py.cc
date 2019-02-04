@@ -2,10 +2,10 @@
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
-#include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
 #include "drake/perception/point_cloud.h"
 

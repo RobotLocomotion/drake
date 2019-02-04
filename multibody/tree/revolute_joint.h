@@ -195,6 +195,10 @@ class RevoluteJoint final : public Joint<T> {
     return *this;
   }
 
+  void set_default_angle(double angle) {
+    get_mutable_mobilizer()->set_default_position(Vector1d{angle});
+  }
+
   void set_random_angle_distribution(const symbolic::Expression& angle) {
     get_mutable_mobilizer()->set_random_position_distribution(
         Vector1<symbolic::Expression>{angle});
@@ -315,6 +319,9 @@ class RevoluteJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
+
   // Make RevoluteJoint templated on every other scalar type a friend of
   // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of RevoluteJoint<T>.
@@ -360,5 +367,5 @@ class RevoluteJoint final : public Joint<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::RevoluteJoint)

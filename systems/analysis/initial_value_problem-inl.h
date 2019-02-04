@@ -161,8 +161,7 @@ VectorX<T> InitialValueProblem<T>::Solve(
   }
 
   // Integrates up to the requested time.
-  integrator_->IntegrateWithMultipleSteps(
-      tf - context_->get_time());
+  integrator_->IntegrateWithMultipleStepsToTime(tf);
 
   // Retrieves the state vector. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just
@@ -267,8 +266,7 @@ std::unique_ptr<DenseOutput<T>> InitialValueProblem<T>::DenseSolve(
   integrator_->StartDenseIntegration();
 
   // Steps the integrator through the entire interval.
-  integrator_->IntegrateWithMultipleSteps(
-      tf - context_->get_time());
+  integrator_->IntegrateWithMultipleStepsToTime(tf);
 
   // Stops dense integration to prevent future updates to
   // the dense output just built and yields it to the caller.

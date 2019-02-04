@@ -120,7 +120,7 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
       prog.SetInitialGuess(x, x_expected);
       solver.Solve(prog, x_expected, {}, &result);
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-      const auto& x_value = prog.GetSolution(x, result);
+      const auto& x_value = result.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
       EXPECT_NEAR(result.get_optimal_cost(), 0, 1E-6);
@@ -223,7 +223,7 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
       MathematicalProgramResult result;
       solver.Solve(prog, {}, {}, &result);
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-      const auto& x_value = prog.GetSolution(x, result);
+      const auto& x_value = result.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
       ExpectSolutionCostAccurate(prog, result, 1E-6);

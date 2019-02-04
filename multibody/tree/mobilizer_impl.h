@@ -56,12 +56,32 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int num_velocities() const final { return kNv;}
 
+  /// Sets the elements of the `state` associated with this Mobilizer to the
+  /// _zero_ state.  See Mobilizer::set_zero_state().
   void set_zero_state(const systems::Context<T>& context,
                       systems::State<T>* state) const final {
     get_mutable_positions(context, state) = get_zero_position();
     get_mutable_velocities(context, state).setZero();
   };
 
+  /// Sets the elements of the `state` associated with this Mobilizer to the
+  /// _default_ state.  See Mobilizer::set_default_state().
+  void set_default_state(const systems::Context<T>& context,
+                      systems::State<T>* state) const final {
+    get_mutable_positions(context, state) = get_default_position();
+    get_mutable_velocities(context, state).setZero();
+  };
+
+  /// Sets the default position of this Mobilizer to be used in subsequent
+  /// calls to set_default_state().
+  void set_default_position(const Eigen::Ref<const Vector<double,
+      compile_time_num_positions>>& position) {
+    default_position_.emplace(position);
+  }
+
+  /// Sets the elements of the `state` associated with this Mobilizer to a
+  /// _random_ state.  If no random distribution has been set, then `state` is
+  /// set to the _default_ state.
   void set_random_state(const systems::Context<T>& context,
                         systems::State<T>* state,
                         RandomGenerator* generator) const override {
@@ -71,7 +91,7 @@ class MobilizerImpl : public Mobilizer<T> {
       get_mutable_positions(context, state) = sample.template head<kNq>();
       get_mutable_velocities(context, state) = sample.template tail<kNv>();
     } else {
-      set_zero_state(context, state);
+      set_default_state(context, state);
     }
   }
 
@@ -123,12 +143,22 @@ class MobilizerImpl : public Mobilizer<T> {
   };
 
   /// Returns the zero configuration for the mobilizer.
-  virtual Eigen::Matrix<double, kNq, 1> get_zero_position() const {
-    return Eigen::Matrix<double, kNq, 1>::Zero();
+  virtual Vector<double, kNq> get_zero_position() const {
+    return Vector<double, kNq>::Zero();
+  }
+
+  /// Returns the default configuration for the mobilizer.  The default
+  /// configuration is the configuration used to populate the context in
+  /// MultibodyPlant::SetDefaultContext().
+  Vector<double, kNq> get_default_position() const {
+    if (default_position_) {
+      return *default_position_;
+    }
+    return get_zero_position();
   }
 
   /// Returns the current distribution governing the random samples drawn
-  /// for this mobilizer.
+  /// for this mobilizer if one has been set.
   const optional<Vector<symbolic::Expression, kNx>>&
   get_random_state_distribution() const {
     return random_state_distribution_;
@@ -265,6 +295,8 @@ class MobilizerImpl : public Mobilizer<T> {
   int get_velocities_start() const {
     return this->get_topology().velocities_start;
   }
+
+  optional<Vector<double, kNq>> default_position_{};
 
   // Note: this is maintained as a concatenated vector so that the evaluation
   // method can share the sampled values of any random variables that are

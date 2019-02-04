@@ -80,8 +80,8 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
         // thus the solution is less accurate.
         tol = 3E-3;
       }
-      EXPECT_NEAR(prog_.GetSolution(operand_result, result),
-                  operand_result_expected, tol);
+      EXPECT_NEAR(result.GetSolution(operand_result), operand_result_expected,
+                  tol);
 
       // Now update the objective to
       // min -b_and
@@ -89,8 +89,8 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
       cost.evaluator()->UpdateCoefficients(Vector1d(-1));
       result = Solve(prog_);
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-      EXPECT_NEAR(prog_.GetSolution(operand_result, result),
-                  operand_result_expected, tol);
+      EXPECT_NEAR(result.GetSolution(operand_result), operand_result_expected,
+                  tol);
     }
   }
 

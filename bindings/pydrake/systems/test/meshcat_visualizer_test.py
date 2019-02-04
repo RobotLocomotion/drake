@@ -4,8 +4,8 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
-from pydrake.multibody.multibody_tree import UniformGravityFieldElement
-from pydrake.multibody.multibody_tree.multibody_plant import (
+from pydrake.multibody.tree import UniformGravityFieldElement
+from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator

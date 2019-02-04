@@ -95,12 +95,15 @@ LcmSubscriberSystem::LcmSubscriberSystem(
     DrakeLcmInterface* lcm)
     : LcmSubscriberSystem(channel, &translator, nullptr, lcm) {}
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
     DrakeLcmInterface* lcm)
     : LcmSubscriberSystem(channel, translator_dictionary.GetTranslator(channel),
                           lcm) {}
+#pragma GCC diagnostic pop
 
 LcmSubscriberSystem::~LcmSubscriberSystem() {}
 

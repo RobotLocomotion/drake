@@ -47,7 +47,7 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
     Eigen::VectorXd x_expected(1);
     x_expected(0) = 1;
     MathematicalProgramResult result = Solve(prog, x_expected, solver_options);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-6));
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
   }
 }
 

@@ -48,7 +48,7 @@ GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
   // The solution should minimize the error ||b - A * x||₂
   // x_expected is computed as (Aᵀ*A)⁻¹*(Aᵀ*b)
   Eigen::Vector2d x_expected(12.0 / 27, 21.0 / 27);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-12,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-12,
                               MatrixCompareType::absolute));
   EXPECT_EQ(result.get_optimal_cost(),
             MathematicalProgram::kGlobalInfeasibleCost);
@@ -71,7 +71,7 @@ GTEST_TEST(testLinearSystemSolver, UnderDeterminedProblem) {
   // [2*I -Aᵀ] * [x] = [0]
   // [ A   0 ]   [λ]   [b]
   Eigen::Vector3d x_expected(5.0 / 11, -4.0 / 11, 17.0 / 11);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-12,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-12,
                               MatrixCompareType::absolute));
 }
 

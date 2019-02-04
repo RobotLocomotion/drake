@@ -239,31 +239,6 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_library(
-    name = "floating_body_plant",
-    testonly = 1,
-    srcs = ["test/floating_body_plant.cc"],
-    hdrs = ["test/floating_body_plant.h"],
-    deps = [
-        "//common:default_scalars",
-        "//multibody/plant",
-    ],
-)
-
-drake_cc_googletest(
-    name = "floating_body_test",
-    timeout = "moderate",
-    srcs = [
-        "test/floating_body_test.cc",
-    ],
-    deps = [
-        ":floating_body_plant",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/free_body",
-        "//systems/analysis:simulator",
-    ],
-)
-
 drake_cc_googletest(
     name = "tree_from_mobilizers_test",
     # Test timeout increased to not timeout in debug and when run with
@@ -363,7 +338,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["test/mobilizer_tester.h"],
     deps = [
-        "//multibody/plant",
+        ":tree",
     ],
 )
 

@@ -6,14 +6,12 @@ package, Meshcat:
 from __future__ import print_function
 import argparse
 import math
+import warnings
 import webbrowser
 import numpy as np
 
-import meshcat
-import meshcat.transformations as tf
-
 from drake import lcmt_viewer_load_robot
-from pydrake.util.eigen_geometry import Quaternion
+from pydrake.common.eigen_geometry import Quaternion
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
@@ -22,6 +20,15 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.rendering import PoseBundle
 from pydrake.multibody.multibody_tree.multibody_plant import ContactResults
+
+# TODO(eric.cousineau): Move this back to "third party" import positions
+# if/when PyCQA/pycodestyle#834 lands and is incorporated.
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore", category=ImportWarning,
+        message="can't resolve package from __spec__")
+    import meshcat
+import meshcat.transformations as tf  # noqa
 
 
 class MeshcatVisualizer(LeafSystem):

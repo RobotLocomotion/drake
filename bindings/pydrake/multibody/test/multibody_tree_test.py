@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 
-from pydrake.multibody.multibody_tree import (
+from pydrake.multibody.tree import (
     Body,
     BodyFrame,
     BodyIndex,
-    BodyNodeIndex,  # Deprecated
     ForceElement,
     ForceElementIndex,
     Frame,
@@ -14,37 +13,37 @@ from pydrake.multibody.multibody_tree import (
     JointActuator,
     JointActuatorIndex,
     JointIndex,
-    MobilizerIndex,  # Deprecated
     ModelInstanceIndex,
     MultibodyForces,
-    MultibodyTree,  # Deprecated
     RevoluteJoint,
     UniformGravityFieldElement,
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.multibody_tree.math import (
+from pydrake.multibody.math import (
     SpatialAcceleration,
     SpatialVelocity,
 )
-from pydrake.multibody.multibody_tree.multibody_plant import (
+from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ContactResults,
     MultibodyPlant,
     PointPairContactInfo,
 )
-from pydrake.multibody.multibody_tree.parsing import (
-    AddModelFromSdfFile,
-    Parser as DeprecatedParser,
-)
-from pydrake.multibody.parsing import (
-    Parser,
-)
+from pydrake.multibody.parsing import Parser
 from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
+# Soon to be deprecated modules.
+from pydrake.multibody.multibody_tree import (
+    BodyNodeIndex,
+    MobilizerIndex,
+    MultibodyTree,
+)
+from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 
+from pydrake.common.eigen_geometry import Isometry3
 from pydrake.geometry import (
     GeometryId,
     PenetrationAsPointPair,
@@ -52,7 +51,6 @@ from pydrake.geometry import (
     SceneGraph,
 )
 from pydrake.systems.framework import DiagramBuilder
-
 
 import copy
 import math
@@ -66,7 +64,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import (
     DrakeDeprecationWarning,
 )
-from pydrake.util.eigen_geometry import Isometry3
+from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
 
@@ -243,20 +241,6 @@ class TestMultibodyTree(unittest.TestCase):
             warnings.simplefilter("default", DrakeDeprecationWarning)
             result = AddModelFromSdfFile(plant=plant, file_name=sdf_file)
             self.assertIsInstance(result, ModelInstanceIndex)
-            self.assertEqual(len(w), 1)
-
-        plant = MultibodyPlant(time_step=0.01)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("default", DrakeDeprecationWarning)
-            result = DeprecatedParser(plant).AddModelFromFile(sdf_file)
-            self.assertIsInstance(result, ModelInstanceIndex)
-            self.assertEqual(len(w), 1)
-
-        plant = MultibodyPlant(time_step=0.01)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("default", DrakeDeprecationWarning)
-            result = DeprecatedParser(plant).AddAllModelsFromFile(sdf_file)
-            self.assertIsInstance(result, list)
             self.assertEqual(len(w), 1)
 
     def check_old_spelling_exists(self, value):

@@ -20,8 +20,8 @@ from sphinx.locale import _
 import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
 
-from pydrake.util.cpp_template import TemplateBase
-from pydrake.util.deprecation import DrakeDeprecationWarning
+from pydrake.common.cpp_template import TemplateBase
+from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 def rindex(s, sub):

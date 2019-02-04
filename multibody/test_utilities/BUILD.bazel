@@ -11,6 +11,17 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_library(
+    name = "floating_body_plant",
+    testonly = 1,
+    srcs = ["floating_body_plant.cc"],
+    hdrs = ["floating_body_plant.h"],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "spatial_kinematics",
     testonly = 1,
     srcs = [],

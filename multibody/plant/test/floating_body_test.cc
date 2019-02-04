@@ -3,7 +3,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
-#include "drake/multibody/tree/test/floating_body_plant.h"
+#include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"

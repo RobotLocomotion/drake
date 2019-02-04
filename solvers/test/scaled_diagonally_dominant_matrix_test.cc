@@ -68,7 +68,7 @@ void CheckSDDMatrix(const Eigen::Ref<const Eigen::MatrixXd>& X_val,
     symbolic::Environment env;
     for (int i = 0; i < prog.num_vars(); ++i) {
       env.insert(prog.decision_variable(i),
-                 prog.GetSolution(prog.decision_variable(i), result));
+                 result.GetSolution(prog.decision_variable(i)));
     }
     Eigen::MatrixXd M_sum(nx, nx);
     M_sum.setZero();

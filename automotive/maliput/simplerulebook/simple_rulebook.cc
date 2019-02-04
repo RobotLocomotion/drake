@@ -211,7 +211,7 @@ QueryResults SimpleRulebook::DoFindRules(
       } else if (id.s) {
         result.speed_limit.push_back(speed_limits_.at(*id.s));
       } else {
-        DRAKE_ABORT();
+        DRAKE_ABORT_MSG("IdVariant is empty");
       }
     }
   }

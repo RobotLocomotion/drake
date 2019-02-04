@@ -9,8 +9,8 @@ from pydrake.examples.manipulation_station import (
     ManipulationStationHardwareInterface
 )
 from pydrake.math import RigidTransform
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree import ModelInstanceIndex
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import ModelInstanceIndex
 from pydrake.multibody.parsing import Parser
 
 

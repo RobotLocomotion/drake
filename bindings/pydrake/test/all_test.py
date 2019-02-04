@@ -27,30 +27,43 @@ class TestAll(unittest.TestCase):
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
-        from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-        from pydrake.multibody.rigid_body_tree import RigidBodyTree
+        from pydrake.multibody.parsing import Parser
+        from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
         from pydrake.systems.analysis import Simulator
+        from pydrake.systems.framework import DiagramBuilder
 
-        tree = RigidBodyTree(
+        builder = DiagramBuilder()
+        plant, _ = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant).AddModelFromFile(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-        simulator = Simulator(RigidBodyPlant(tree))
+        plant.Finalize()
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
 
     def test_usage_all(self):
         from pydrake.all import (
-            FindResourceOrThrow, RigidBodyPlant, RigidBodyTree, Simulator)
+            AddMultibodyPlantSceneGraph, DiagramBuilder, FindResourceOrThrow,
+            Parser, Simulator)
 
-        tree = RigidBodyTree(
+        builder = DiagramBuilder()
+        plant, _ = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant).AddModelFromFile(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-        simulator = Simulator(RigidBodyPlant(tree))
+        plant.Finalize()
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
 
     def test_usage_all_explicit(self):
         import pydrake.all
 
-        tree = pydrake.multibody.rigid_body_tree.RigidBodyTree(
+        builder = pydrake.systems.framework.DiagramBuilder()
+        plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder)
+        pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
             pydrake.common.FindResourceOrThrow(
                 "drake/examples/pendulum/Pendulum.urdf"))
-        simulator = pydrake.systems.analysis.Simulator(
-            pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
+        plant.Finalize()
+        diagram = builder.Build()
+        simulator = pydrake.systems.analysis.Simulator(diagram)
 
     def test_symbols_subset(self):
         """Tests a subset of symbols provided by `drake.all`. At least one
@@ -65,6 +78,11 @@ class TestAll(unittest.TestCase):
             # attic
             # - solvers
             "RigidBodyConstraint",
+            # - systems
+            # - - controllers
+            "RbtInverseDynamics",
+            # - - sensors
+            "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
             # automotive
@@ -103,13 +121,17 @@ class TestAll(unittest.TestCase):
             "MakeAcrobotPlant",
             # - inverse_kinematics
             "InverseKinematics",
-            # - multibody_tree
-            "MultibodyPlant",
+            # - math
             "SpatialVelocity",
+            # - multibody_tree
+            "BodyNodeIndex",
+            "MultibodyTree",
             # - parsing
             "Parser",
             # - parsers
             "PackageMap",
+            # - plant
+            "MultibodyPlant",
             # - rigid_body_plant
             "RigidBodyPlant",
             # - rigid_body_tree
@@ -118,6 +140,8 @@ class TestAll(unittest.TestCase):
             # TODO(eric.cousineau): Avoid collision with `collision.Element`.
             # Import modules, since these names are generic.
             "Element",
+            # - tree
+            "MultibodyForces",
             # perception
             "PointCloud",
             # solvers
@@ -137,6 +161,8 @@ class TestAll(unittest.TestCase):
             "LeafSystem",
             # - analysis
             "Simulator",
+            # - controllers
+            "InverseDynamics",
             # - lcm
             "PySerializer",
             # - primitives
@@ -147,9 +173,6 @@ class TestAll(unittest.TestCase):
             "TemplateSystem",
             # - sensors
             "Image",
-            # util
-            "Isometry3",
-            "Quaternion",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.

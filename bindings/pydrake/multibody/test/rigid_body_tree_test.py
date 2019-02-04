@@ -9,18 +9,23 @@ import pydrake
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
 from pydrake.forwarddiff import jacobian
-from pydrake.multibody.collision import CollisionElement
-from pydrake.multibody.joints import PrismaticJoint, RevoluteJoint
-from pydrake.multibody.parsers import PackageMap
-from pydrake.multibody.rigid_body import RigidBody
-from pydrake.multibody.rigid_body_tree import (
+from pydrake.attic.multibody.collision import CollisionElement
+from pydrake.attic.multibody.joints import (
+    FixedJoint,
+    PrismaticJoint,
+    RevoluteJoint,
+    RollPitchYawFloatingJoint
+    )
+from pydrake.attic.multibody.parsers import PackageMap
+from pydrake.attic.multibody.rigid_body import RigidBody
+from pydrake.attic.multibody.rigid_body_tree import (
     AddFlatTerrainToWorld,
     RigidBodyFrame,
     RigidBodyTree,
     FloatingBaseType
     )
-import pydrake.multibody.shapes as shapes
-from pydrake.util.eigen_geometry import Isometry3
+import pydrake.attic.multibody.shapes as shapes
+from pydrake.common.eigen_geometry import Isometry3
 
 
 class TestRigidBodyTree(unittest.TestCase):
@@ -518,6 +523,20 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertEqual(revolute_joint_isom.get_num_positions(), 1)
         self.assertEqual(revolute_joint_isom.get_name(), name)
 
+        name = "fixed"
+        fixed_joint_np = FixedJoint(name, np.eye(4))
+        fixed_joint_isom = FixedJoint(name, Isometry3.Identity())
+        self.assertEqual(fixed_joint_isom.get_num_positions(), 0)
+        self.assertEqual(fixed_joint_isom.get_name(), name)
+
+        name = "rpy"
+        rpy_floating_joint_np = RollPitchYawFloatingJoint(
+            name, np.eye(4))
+        rpy_floating_joint_isom = RollPitchYawFloatingJoint(
+            name, Isometry3.Identity())
+        self.assertEqual(rpy_floating_joint_isom.get_num_positions(), 6)
+        self.assertEqual(rpy_floating_joint_isom.get_name(), name)
+
     def test_collision_element_api(self):
         # Verify construction from both Isometry3d and 4x4 arrays.
         box_element = shapes.Box([1.0, 1.0, 1.0])
@@ -581,3 +600,66 @@ class TestRigidBodyTree(unittest.TestCase):
         self.assertIsNotNone(
             rbt.FindCollisionElement(
                 body_2.get_collision_element_ids()[0]))
+
+    def test_rigid_body_tree_collision_api(self):
+        # This test creates a simple RBT with two spheres in simple
+        # collision and verifies collision-detection APIs.
+        rbt = RigidBodyTree()
+        world_body = rbt.world()
+
+        # Both bodies are unit-diameter spheres
+        # spaced 0.5m from each other along the x axis.
+        for k in range(2):
+            body = RigidBody()
+            body.set_name("body_{}".format(k))
+            joint = PrismaticJoint("x", np.eye(4),
+                                   np.array([1.0, 0., 0.]))
+            body.add_joint(world_body, joint)
+            body.set_spatial_inertia(np.eye(6))
+            rbt.add_rigid_body(body)
+
+            sphere_element = shapes.Sphere(0.5)
+            sphere_collision_element = CollisionElement(
+                sphere_element, np.eye(4))
+            sphere_collision_element.set_body(body)
+            rbt.addCollisionElement(sphere_collision_element, body, "default")
+
+        rbt.compile()
+        self.assertTrue(rbt.initialized())
+        self.assertEqual(rbt.get_num_positions(), 2)
+
+        q0 = np.array([-0.25, 0.25])
+        kinsol = rbt.doKinematics(q0)
+        # One point in each region of overlap:
+        # Sphere one is (), sphere two is []
+        # p0  (  p2  [  p3  ) p4 ] p5
+        points = np.array([[-1., -0.6, 0., 0.6, 1.],
+                           [0., 0., 0., 0., 0],
+                           [0., 0., 0., 0., 0]])
+        n_pts = points.shape[1]
+
+        phi, normal, x, body_x, body_idx = rbt.collisionDetectFromPoints(
+            cache=kinsol, points=points, use_margins=False)
+        # Check phi, but leave the other fields as API checks.
+        self.assertTrue(
+            np.allclose(phi, np.array([0.25, -0.15, -0.25, -0.15, 0.25])))
+        self.assertEqual(phi.shape[0], n_pts)
+        self.assertEqual(normal.shape, (3, n_pts))
+        self.assertEqual(x.shape, (3, n_pts))
+        self.assertEqual(normal.shape, (3, n_pts))
+
+        point_pairs = rbt.ComputeMaximumDepthCollisionPoints(
+            cache=kinsol, use_margins=False,
+            throw_if_missing_gradient=True)
+        self.assertEqual(len(point_pairs), 1)
+        pp = point_pairs[0]
+        self.assertEqual(rbt.FindCollisionElement(pp.idA), pp.elementA)
+        self.assertEqual(rbt.FindCollisionElement(pp.idB), pp.elementB)
+        possible_points = [np.array([0.5, 0., 0.]), np.array([-0.5, 0.0, 0.0])]
+        for pt in [pp.ptA, pp.ptB]:
+            self.assertTrue(
+                np.allclose(pt, np.array([0.5, 0., 0.])) or
+                np.allclose(pt, np.array([-0.5, 0., 0.])))
+        self.assertTrue(
+            np.allclose(np.abs(pp.normal), np.array([1., 0., 0.])))
+        self.assertEqual(pp.distance, -0.5)

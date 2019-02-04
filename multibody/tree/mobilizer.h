@@ -335,6 +335,10 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// represent a mathematicaly valid one. Consider for instance a quaternion
   /// mobilizer, for which its _zero_ position corresponds to the quaternion
   /// [1, 0, 0, 0].
+  ///
+  /// Note that the zero state may fall outside of the limits for any joints
+  /// associated with this mobilizer.
+  /// @see set_default_state().
   virtual void set_zero_state(const systems::Context<T>& context,
                               systems::State<T>* state) const = 0;
 
@@ -343,6 +347,16 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   void set_zero_configuration(systems::Context<T>* context) const {
     set_zero_state(*context, &context->get_mutable_state());
   }
+
+  /// Sets the `state` to the _default_ state (position and velocity) for
+  /// `this` mobilizer.  For example, the zero state for our standard IIWA
+  /// model has the arm pointing directly up; this is the correct definition of
+  /// the zero state (it is where our joint angles measure zero).  But we also
+  /// support a default state (perhaps a more comfortable initial configuration
+  /// of the IIWA), which need not be the zero state, that describes a state of
+  /// the Mobilizer to be used in e.g. MultibodyPlant::SetDefaultContext().
+  virtual void set_default_state(const systems::Context<T>& context,
+                                 systems::State<T>* state) const = 0;
 
   /// Sets the `state` to a (potentially) random position and velocity, by
   /// evaluating any random distributions that were declared (via e.g.
@@ -642,6 +656,9 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   /// in `tree_clone`.
   virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const = 0;
   /// @}
 
  private:

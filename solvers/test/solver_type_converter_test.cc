@@ -40,7 +40,7 @@ optional<SolverType> successor(optional<SolverType> solver_type) {
     case SolverType::kUnrevisedLemke:
       return nullopt;
   }
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 GTEST_TEST(SolverId, RoundTrip) {

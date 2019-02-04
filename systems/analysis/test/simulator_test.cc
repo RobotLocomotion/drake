@@ -23,6 +23,8 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/plants/spring_mass_system/spring_mass_system.h"
+#include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/signal_logger.h"
 
 using drake::systems::WitnessFunction;
@@ -1713,6 +1715,57 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   EXPECT_EQ(simulator.get_num_steps_taken(), 1);
 }
 
+// This test specifically tests for correct handling of issue #10443, in which
+// an event can be missed.
+GTEST_TEST(SimulatorTest, Issue10443) {
+  // NOTE: This bug arose from a "perfect storm" of conditions- which
+  // occurred due to the interactions of an error controlled integrator, the
+  // maximum step size setting, and the particular publish period used. The
+  // maintainer should assume that every line below is critical to reproducing
+  // those conditions.
+
+  // Log the output of a simple diagram containing a constant
+  // source and an integrator.
+  DiagramBuilder<double> builder;
+  const double kValue = 2.4;
+  const auto& source = *builder.AddSystem<ConstantVectorSource<double>>(kValue);
+  const int kSize = 1;
+  const auto& integrator = *builder.AddSystem<Integrator<double>>(kSize);
+  builder.Connect(source.get_output_port(),
+      integrator.get_input_port());
+
+  // Add a periodic logger.
+  const int kFrequency = 10;  // 10 cycles per second.
+  auto& periodic_logger = *builder.AddSystem<SignalLogger<double>>(kSize);
+  periodic_logger.set_publish_period(1.0 / kFrequency);
+  builder.Connect(integrator.get_output_port(),
+      periodic_logger.get_input_port());
+
+  // Finish constructing the Diagram.
+  std::unique_ptr<Diagram<double>> diagram = builder.Build();
+
+  // Construct the Simulator with an RK3 integrator and settings that reproduce
+  // the behavior.
+  Simulator<double> simulator(*diagram);
+  auto rk3 = std::make_unique<RungeKutta3Integrator<double>>(
+      *diagram, &simulator.get_mutable_context());
+  rk3->set_maximum_step_size(1.0 / kFrequency);
+  rk3->request_initial_step_size_target(1e-4);
+  rk3->set_target_accuracy(1e-4);
+  rk3->set_fixed_step_mode(false);
+  simulator.reset_integrator(std::move(rk3));
+
+  // Simulate.
+  const int kTime = 1;
+  simulator.StepTo(static_cast<double>(kTime));
+
+  // Should log exactly once every kPeriod, up to and including
+  // kTime.
+  Eigen::VectorBlock<const VectorX<double>> t_periodic =
+      periodic_logger.sample_times();
+  EXPECT_EQ(t_periodic.size(), kTime * kFrequency + 1);
+}
+
 // Verifies that an integrator will *not* stretch its integration step in the
 // case that a directed step would be before- but not too close- to an event.
 GTEST_TEST(SimulatorTest, NoStretchedStep) {
@@ -1780,10 +1833,12 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
 
   // Take a single step with the integrator.
   const double inf = std::numeric_limits<double>::infinity();
-  integrator->IntegrateAtMost(inf, 1.0, 1.0);
+  const Context<double>& context = integrator->get_context();
+  integrator->IntegrateNoFurtherThanTime(inf,
+      context.get_time() + 1.0, context.get_time() + 1.0);
 
   // Verify that the integrator has stepped before the event time.
-  EXPECT_LT(simulator.get_mutable_context().get_time(), event_time);
+  EXPECT_LT(context.get_time(), event_time);
 
   // Get the ideal next step size and verify that it is not NaN.
   const double ideal_next_step_size = integrator->get_ideal_next_step_size();
@@ -1794,10 +1849,11 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   simulator.get_mutable_context().set_time(event_time - desired_dt);
 
   // Step to the event time.
-  integrator->IntegrateAtMost(inf, desired_dt, inf);
+  integrator->IntegrateNoFurtherThanTime(
+    inf, context.get_time() + desired_dt, inf);
 
   // Verify that the context is at the event time.
-  EXPECT_EQ(simulator.get_context().get_time(), event_time);
+  EXPECT_EQ(context.get_time(), event_time);
 
   // Verify that artificial limiting did not change the ideal next step size.
   EXPECT_EQ(integrator->get_ideal_next_step_size(), ideal_next_step_size);

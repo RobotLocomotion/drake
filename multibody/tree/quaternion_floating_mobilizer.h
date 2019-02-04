@@ -216,7 +216,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
  protected:
   /// Sets `state` to store a configuration in which M coincides with F (i.e.
   /// q_FM is the identity quaternion).
-  Eigen::Matrix<double, 7, 1> get_zero_position() const override;
+  Vector<double, 7> get_zero_position() const override;
 
   void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
@@ -229,6 +229,9 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
   typedef MobilizerImpl<T, 7, 6> MobilizerBase;
@@ -275,5 +278,5 @@ DRAKE_DEPRECATED(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::QuaternionFloatingMobilizer)

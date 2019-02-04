@@ -6,9 +6,9 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/type_pack.h"
 #include "drake/multibody/joints/prismatic_joint.h"
 #include "drake/multibody/joints/revolute_joint.h"
 #include "drake/multibody/parsers/package_map.h"
@@ -33,12 +33,12 @@ PYBIND11_MODULE(rigid_body_tree, m) {
   namespace sdf = drake::parsers::sdf;
   using std::shared_ptr;
 
-  py::module::import("pydrake.multibody.collision");
-  py::module::import("pydrake.multibody.joints");
-  py::module::import("pydrake.multibody.parsers");
-  py::module::import("pydrake.multibody.rigid_body");
-  py::module::import("pydrake.multibody.shapes");
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.attic.multibody.collision");
+  py::module::import("pydrake.attic.multibody.joints");
+  py::module::import("pydrake.attic.multibody.parsers");
+  py::module::import("pydrake.attic.multibody.rigid_body");
+  py::module::import("pydrake.attic.multibody.shapes");
+  py::module::import("pydrake.common.eigen_geometry");
 
   constexpr auto& joints_doc = doc.drake.multibody.joints;
   py::enum_<FloatingBaseType>(
@@ -185,6 +185,22 @@ PYBIND11_MODULE(rigid_body_tree, m) {
       .def("DefineCollisionFilterGroup",
           &RigidBodyTree<double>::DefineCollisionFilterGroup, py::arg("name"),
           doc.RigidBodyTree.DefineCollisionFilterGroup.doc)
+      .def("collisionDetectFromPoints",
+          [](RigidBodyTree<double>& tree, const KinematicsCache<double>& cache,
+              const Eigen::Matrix3Xd& points, bool use_margins) {
+            Eigen::VectorXd phi;
+            Eigen::Matrix3Xd normal;
+            Eigen::Matrix3Xd x;
+            Eigen::Matrix3Xd body_x;
+            std::vector<int> body_idx;
+            tree.collisionDetectFromPoints(
+                cache, points, phi, normal, x, body_x, body_idx, use_margins);
+            return std::tuple<Eigen::VectorXd, Eigen::Matrix3Xd,
+                Eigen::Matrix3Xd, Eigen::Matrix3Xd, std::vector<int>>(
+                phi, normal, x, body_x, body_idx);
+          },
+          py::arg("cache"), py::arg("points"), py::arg("use_margins"),
+          doc.RigidBodyTree.collisionDetectFromPoints.doc)
       .def("FindCollisionElement", &RigidBodyTree<double>::FindCollisionElement,
           py::arg("id"), py::return_value_policy::reference,
           doc.RigidBodyTree.FindCollisionElement.doc)
@@ -422,9 +438,13 @@ PYBIND11_MODULE(rigid_body_tree, m) {
         .def("doKinematics",
             [](const RigidBodyTree<double>& tree, const VectorX<T>& q,
                 const VectorX<T>& v) { return tree.doKinematics(q, v); },
-            doc.RigidBodyTree.doKinematics.doc_3args);
-    // CreateKinematicsCacheWithType
-    // ComputeMaximumDepthCollisionPoints
+            doc.RigidBodyTree.doKinematics.doc_3args)
+        // CreateKinematicsCacheWithType
+        .def("ComputeMaximumDepthCollisionPoints",
+            &RigidBodyTree<double>::ComputeMaximumDepthCollisionPoints<T>,
+            py::arg("cache"), py::arg("use_margins") = true,
+            py::arg("throw_if_missing_gradient") = true,
+            doc.RigidBodyTree.ComputeMaximumDepthCollisionPoints.doc);
     // Type (b) methods:
     tree_cls
         .def("transformPoints",

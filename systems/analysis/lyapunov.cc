@@ -113,7 +113,7 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
   }
   drake::log()->info("Done solving program.");
 
-  return prog.GetSolution(params, result);
+  return result.GetSolution(params);
 }
 
 }  // namespace analysis

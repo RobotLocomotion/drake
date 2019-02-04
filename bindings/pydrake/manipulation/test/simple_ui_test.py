@@ -11,7 +11,7 @@ except ImportError:
     import Tkinter as tk
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import BasicVector
 

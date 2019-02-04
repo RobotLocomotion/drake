@@ -476,11 +476,20 @@ ModelInstanceIndex AddModelFromSpecification(
   // frame is not the world. At present, we assume the parent frame is the
   // world.
   const Isometry3d X_WM = ToIsometry3(model.Pose());
-  // Add a model frame given the instance name so that way any frames added to
-  // the model are associated with this instance.
-  const Frame<double>& model_frame =
+  // Add the SDF "model frame" given the model name so that way any frames added
+  // to the plant are associated with this current model instance.
+  // N.B. We mangle this name to dis-incentivize users from wanting to use
+  // this frame. At present, SDFormat does not concretely specify what the
+  // semantics of a "model frame" are. This current interpretation expects that
+  // the SDF "model frame" is where the model is *added*, and thus is going to
+  // be attached to the world, and cannot be welded to another body. This means
+  // the SDF "model frame" will not "follow" the other link of a body if that
+  // link is welded elsewhere.
+  const std::string sdf_model_frame_name =
+      "_" + model_name + "_sdf_model_frame";
+  const Frame<double>& sdf_model_frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          model_name, plant->world_frame(), X_WM, model_instance));
+          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
@@ -499,10 +508,10 @@ ModelInstanceIndex AddModelFromSpecification(
   // TODO(eric.cousineau): Address additional items:
   // - adding frames nested in other elements (joints, visuals, etc.)
   // - implicit frames for other elements (joints, visuals, etc.)
-  // - explicitly referring to model frame?
+  // - explicitly referring to SDF model frame?
   // See: https://bitbucket.org/osrf/sdformat/issues/200
   AddFramesFromSpecification(
-      model_instance, model.Element(), model_frame, plant);
+      model_instance, model.Element(), sdf_model_frame, plant);
 
   return model_instance;
 }

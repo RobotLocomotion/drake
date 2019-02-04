@@ -64,7 +64,7 @@ LinearFeasibilityProgram::LinearFeasibilityProgram(
 
 void LinearFeasibilityProgram::CheckSolution(
     const MathematicalProgramResult& result) const {
-  auto x_val = prog()->GetSolution(x_, result);
+  auto x_val = result.GetSolution(x_);
   Vector3d A_times_x(x_val(0) + 2 * x_val(1) + 3 * x_val(2),
                      x_val(1) - 2 * x_val(2), 0);
   EXPECT_GE(A_times_x(0), 0 - 1e-10);
@@ -72,7 +72,7 @@ void LinearFeasibilityProgram::CheckSolution(
   EXPECT_LE(A_times_x(1), 3 + 1E-10);
   EXPECT_LE(A_times_x(2), 0 + 1E-10);
   EXPECT_GE(A_times_x(2), 0 - 1E-10);
-  EXPECT_GE(prog()->GetSolution(x_(1), result), 1 - 1E-10);
+  EXPECT_GE(result.GetSolution(x_(1)), 1 - 1E-10);
 }
 
 LinearProgram0::LinearProgram0(CostForm cost_form,
@@ -136,7 +136,7 @@ void LinearProgram0::CheckSolution(
     const MathematicalProgramResult& result) const {
   const double tol = GetSolverSolutionDefaultCompareTolerance(
       SolverTypeConverter::IdToType(result.get_solver_id()).value());
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -179,7 +179,7 @@ void LinearProgram1::CheckSolution(
     const MathematicalProgramResult& result) const {
   const double tol = GetSolverSolutionDefaultCompareTolerance(
       SolverTypeConverter::IdToType(result.get_solver_id()).value());
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -269,7 +269,7 @@ void LinearProgram2::CheckSolution(
     const MathematicalProgramResult& result) const {
   const double tol = GetSolverSolutionDefaultCompareTolerance(
       SolverTypeConverter::IdToType(result.get_solver_id()).value());
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -353,7 +353,7 @@ void LinearProgram3::CheckSolution(
   if (solver_type == SolverType::kIpopt) {
     cost_tol = 1E-5;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, cost_tol);
 }
