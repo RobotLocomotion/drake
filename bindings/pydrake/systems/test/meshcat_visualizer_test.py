@@ -103,7 +103,7 @@ class TestMeshcat(unittest.TestCase):
         object_model = Parser(plant=plant).AddModelFromFile(object_file_path)
         table_model = Parser(plant=plant).AddModelFromFile(table_file_path)
 
-        # weld_table_to_world
+        # Weld table to world.
         plant.WeldFrames(
             A=plant.world_frame(),
             B=plant.GetFrameByName("link", table_model))
@@ -111,7 +111,7 @@ class TestMeshcat(unittest.TestCase):
         plant.AddForceElement(UniformGravityFieldElement())
         plant.Finalize()
 
-        # Add meshcat visualizer
+        # Add meshcat visualizer.
         viz = builder.AddSystem(
             MeshcatVisualizer(scene_graph,
                               zmq_url=None,
@@ -120,7 +120,7 @@ class TestMeshcat(unittest.TestCase):
             scene_graph.get_pose_bundle_output_port(),
             viz.get_input_port(0))
 
-        # Add contact visualizer
+        # Add contact visualizer.
         contact_viz = builder.AddSystem(
             MeshcatContactVisualizer(
                 meshcat_viz=viz,
@@ -133,7 +133,7 @@ class TestMeshcat(unittest.TestCase):
             contact_input_port)
         builder.Connect(
             scene_graph.get_pose_bundle_output_port(),
-            contact_viz.GetInputPort("lcm_visualization"))
+            contact_viz.GetInputPort("pose_bundle"))
 
         diagram = builder.Build()
 
@@ -156,4 +156,4 @@ class TestMeshcat(unittest.TestCase):
             contact_viz_context,
             contact_input_port.get_index()).get_value()
 
-        self.assertTrue(contact_results.num_contacts() > 0)
+        self.assertGreater(contact_results.num_contacts(), 0)

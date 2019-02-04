@@ -288,9 +288,9 @@ class MeshcatContactVisualizer(LeafSystem):
         self.set_name('meshcat_contact_visualizer')
         self._DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
         # Pose bundle (from SceneGraph) input port.
-        self._DeclareAbstractInputPort("lcm_visualization",
+        self._DeclareAbstractInputPort("pose_bundle",
                                        AbstractValue.Make(PoseBundle(0)))
-        # Contact results input port from MultiBodyPlant
+        # Contact results input port from MultibodyPlant
         self._DeclareAbstractInputPort(
             "contact_results", AbstractValue.Make(ContactResults()))
 
@@ -338,11 +338,13 @@ class MeshcatContactVisualizer(LeafSystem):
             old_bodies = {old.info.bodyA_index(), old.info.bodyB_index()}
             new_bodies = {new.info.bodyA_index(), new.info.bodyB_index()}
             if old_bodies == new_bodies:
-                # Reaching here means that contact_info_i and contact_info
+                # Reaching here means that `old` and `new`
                 # describe contact between the same pair of bodies.
-                v = np.sqrt(contact_info_i.separation_speed()**2 +
-                            contact_info_i.slip_speed()**2)
+                v = np.sqrt(old.info.separation_speed()**2 +
+                            old.info.slip_speed()**2)
                 if np.linalg.norm(new.p_BC - old.p_BC) < v * dt:
+                    old.info = new.info
+                    old.p_BC = new.p_BC
                     return old
         return None
 
@@ -355,10 +357,10 @@ class MeshcatContactVisualizer(LeafSystem):
             contact.needs_pruning = True
 
         # Check if every element in contact_results is already in
-        #   self.contact_info_dict.
+        #   self._contacts.
         # If True, update the magnitude and location of
-        #   the contact_info in self.contact_info_dict.
-        # If False, add the new contact_info to self.contact_info_dict
+        #   the _ContactState in self._contacts.
+        # If False, add the new contact to self._contacts
         vis = self._meshcat_viz.vis
         prefix = self._meshcat_viz.prefix
         for i_contact in range(contact_results.num_contacts()):
@@ -391,7 +393,7 @@ class MeshcatContactVisualizer(LeafSystem):
                         radius=0.01/self._force_cylinder_radial_scale),
                     meshcat.geometry.MeshLambertMaterial(color=0xff0000))
             else:
-                # conact is not new, but it's valid.
+                # contact is not new, but it's valid.
                 contact.needs_pruning = False
 
         # Prune old contact forces
