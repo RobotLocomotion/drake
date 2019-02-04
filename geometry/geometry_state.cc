@@ -899,9 +899,11 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // removed_index.
     InternalGeometry& moved_geometry =
         geometries_[geometry_index_to_id_map_[removed_index]];
-    geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
-                                          moved_geometry.is_dynamic(),
-                                          removed_index);
+    if (moved_geometry.has_proximity_role()) {
+      geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
+                                            moved_geometry.is_dynamic(),
+                                            removed_index);
+    }
   }
 
   if (geometry.has_proximity_role()) {
