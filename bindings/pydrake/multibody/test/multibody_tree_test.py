@@ -27,6 +27,8 @@ from pydrake.multibody.math import (
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ContactResults,
+    ContactResultsToLcmSystem,
+    ConnectContactResultsToDrakeVisualizer,
     MultibodyPlant,
     PointPairContactInfo,
 )
@@ -51,6 +53,7 @@ from pydrake.geometry import (
     SceneGraph,
 )
 from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue
 
 import copy
 import math
@@ -67,7 +70,9 @@ from pydrake.common.deprecation import (
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.systems.lcm import LcmPublisherSystem
 
+from drake import lcmt_contact_results_for_viz
 
 def get_index_class(cls):
     # Maps a class to its corresponding index class, accommdating inheritance.
@@ -791,6 +796,33 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(contact_results.num_contacts() == 1)
         self.assertTrue(
             isinstance(contact_results.contact_info(0), PointPairContactInfo))
+
+        # ContactResultsToLcmSystem
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+        contact_results_to_lcm = ContactResultsToLcmSystem(plant)
+        context = contact_results_to_lcm.CreateDefaultContext()
+        context.FixInputPort(0, AbstractValue.Make(contact_results))
+        output = contact_results_to_lcm.AllocateOutput()
+        contact_results_to_lcm.CalcOutput(context, output)
+        result = output.get_data(0).get_value()
+        self.assertTrue(contact_results.num_contacts() ==
+                        result.num_contacts())
+        self.assertIsInstance(result, lcmt_contact_results_for_viz)
+
+    def test_contact_to_visualizer(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(0.001))
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
+        self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_scene_graph_queries(self):
         builder = DiagramBuilder()
