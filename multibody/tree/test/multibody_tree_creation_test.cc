@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 /* clang-format on */
 
 #include <algorithm>

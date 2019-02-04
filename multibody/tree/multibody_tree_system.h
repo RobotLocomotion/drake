@@ -8,7 +8,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -18,6 +17,8 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+template<typename T> class MultibodyTree;
 
 /** This is a bare Drake System providing just enough functionality to allow
 standalone exercise of a MultibodyTree. MultibodyTree requires a few System
