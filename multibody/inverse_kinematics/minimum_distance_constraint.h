@@ -10,13 +10,12 @@ namespace drake {
 namespace multibody {
 /**
  * Computes the penalty function γ(x) and its derivatives dγ(x)/dx, where x is
- * the scaled (and shifted) signed distance. This function is used by
- * MinimumDistanceConstraint, in which we impose the constraint that the
- * pairwise distance are all no smaller than a distance threshold. We do this
- * with the constraint
+ * the scaled (and shifted) signed distance (x = distance / distance_threshold
+ * - 1). This function is used by MinimumDistanceConstraint, in which we impose
+ * the constraint that the pairwise distance are all no smaller than a distance
+ * threshold. We do this with the constraint
  * ∑ᵢ γ(dᵢ / distance_threshold - 1) = 0
- * where dᵢ is the signed distance between the i'th pair of geometries. γ(x) is
- * the penalty function on x = d / distance_threshold - 1.
+ * where dᵢ is the signed distance between the i'th pair of geometries.
  */
 using MinimumDistancePenaltyFunction =
     std::function<void(double x, double* penalty, double* dpenalty_dx)>;
