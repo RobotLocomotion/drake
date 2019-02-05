@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/solvers/binding.h"
 #include "drake/systems/optimization/system_constraint_wrapper.h"
 
 namespace drake {
@@ -51,6 +52,19 @@ class SystemConstraintAdapter {
             updater),
         x_size);
   }
+
+  /**
+   * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
+   * parse the constraint in the symbolic forms. Currently we support parsing
+   * the following symbolic forms:
+   * (1) bounding box ( lower <= x <= uppeer )
+   * (2) linear equality aᵀx = b
+   * (3) linear inequality lower <= aᵀx <= upper.
+   */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  CreateConstraintSymbolically(
+      SystemConstraintIndex index,
+      const Context<symbolic::Expression>& context) const;
 
  private:
   const System<double>* const system_double_;
