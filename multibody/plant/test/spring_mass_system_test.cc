@@ -10,6 +10,7 @@
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 
@@ -208,6 +209,12 @@ TEST_F(SpringMassSystemTest, OverDampedCase) {
 
   EXPECT_NEAR(
       slider_->get_translation(context), x_analytic, integration_accuracy);
+}
+
+TEST_F(SpringMassSystemTest, ScalarConversion) {
+  MakeSpringMassSystem(1.0, 1.0, 1.0);
+  EXPECT_TRUE(is_autodiffxd_convertible(plant_));
+  EXPECT_TRUE(is_symbolic_convertible(plant_));
 }
 
 }  // namespace

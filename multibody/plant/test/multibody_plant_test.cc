@@ -15,6 +15,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
@@ -1250,6 +1251,37 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   B << 0, 1 / (parameters.m()* parameters.l() * parameters.l());
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
   EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+}
+
+GTEST_TEST(MultibodyPlantTest, SymbolicPendulum) {
+  // Make the double-valued system.
+  PendulumParameters params;
+  const auto& m = params.m();
+  const auto& g = params.g();
+  const auto& l = params.l();
+  const auto& damping = params.damping();
+  auto pendulum_double = MakePendulumPlant(params);
+
+  // Make the symbolic system.
+  auto dut = MultibodyPlant<double>::ToSymbolic(*pendulum_double);
+  auto context = dut->CreateDefaultContext();
+
+  // Set the input and state to variables.
+  using T = symbolic::Expression;
+  symbolic::Variable tau("tau");
+  symbolic::Variable theta("theta");
+  symbolic::Variable thetadot("thetadot");
+  context->FixInputPort(
+      pendulum_double->get_actuation_input_port().get_index(),
+      Vector1<T>::Constant(tau));
+  context->SetContinuousState(Vector2<T>(theta, thetadot));
+
+  // Check the symbolic derivatives.
+  const auto& derivatives = dut->EvalTimeDerivatives(*context);
+  ASSERT_EQ(derivatives.size(), 2);
+  EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[0], thetadot);
+  EXPECT_PRED2(symbolic::test::ExprEqual, derivatives[1],
+      (tau - m * g * l * sin(theta) - damping * thetadot) / std::pow(l, 2));
 }
 
 TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
