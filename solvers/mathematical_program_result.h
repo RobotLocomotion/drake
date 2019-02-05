@@ -53,6 +53,7 @@ class MathematicalProgramResult final {
   /** Gets the decision variable values. */
   const Eigen::VectorXd& get_x_val() const { return x_val_; }
 
+  /** Gets SolutionResult. */
   SolutionResult get_solution_result() const { return solution_result_; }
 
   /** Sets the decision variable values. */
