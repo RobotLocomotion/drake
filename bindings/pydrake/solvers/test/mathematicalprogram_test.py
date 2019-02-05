@@ -266,7 +266,7 @@ class TestMathematicalProgram(unittest.TestCase):
         T_y_list = (float, AutoDiffXd, sym.Expression)
         evaluator = costs[0].evaluator()
         for x_i, T_y_i in zip(x_list, T_y_list):
-            y_i = evaluator.Eval(x=[x_i])
+            y_i = evaluator.Eval(x=[x_i, x_i])
             self.assertIsInstance(y_i[0], T_y_i)
 
     def test_matrix_variables(self):
