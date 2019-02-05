@@ -19,7 +19,7 @@ drake_cc_package_library(
         ":contact_info",
         ":contact_results",
         ":coulomb_friction",
-        ":externally_applied_force",
+        ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
         ":multibody_plant_core",
     ],
@@ -47,7 +47,7 @@ drake_cc_library(
     deps = [
         ":contact_results",
         ":coulomb_friction",
-        ":externally_applied_force",
+        ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
         "//common:default_scalars",
         "//geometry:geometry_ids",
@@ -138,9 +138,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "externally_applied_force",
-    srcs = ["externally_applied_force.cc"],
-    hdrs = ["externally_applied_force.h"],
+    name = "externally_applied_spatial_force",
+    srcs = ["externally_applied_spatial_force.cc"],
+    hdrs = ["externally_applied_spatial_force.h"],
     deps = [
         "//common:default_scalars",
         "//multibody/tree",

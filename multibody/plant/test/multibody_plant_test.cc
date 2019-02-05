@@ -28,7 +28,7 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/externally_applied_force.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
@@ -1307,7 +1307,7 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
  private:
   void CalcSpatialForceGravityCompensation(
       const Context<double>& context,
-      std::vector<ExternallyAppliedForce<double>>* output) const {
+      std::vector<ExternallyAppliedSpatialForce<double>>* output) const {
     const double g = UniformGravityFieldElement<double>::kDefaultStrength;
 
     // Verify that the links are in the expected order.
@@ -1326,31 +1326,32 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
         Vector3<double>::Zero() /* no torque */,
         link2.get_default_mass() * g / 2 * z_axis /* upward */);
 
-    // Arbitrary points on each link that we want to shift the application point
-    // of forces to. We introduce pairs of forces- each a negated version of the
-    // other- to cancel applied moments.
-    const Vector3<double> p_L1oL1q_W(1, 2, 3);
-    const Vector3<double> p_L1oL1r_W(-1, -2, -3);
-    const Vector3<double> p_L2oL2q_W(-1, 3, -5);
-    const Vector3<double> p_L2oL2r_W(1, -3, 5);
+    // One way to do gravity compensation for Link 1 is to apply forces of
+    // magnitude 1/2 * mass * gravity to two arbitrary points L1q and L1r on
+    // Link 1, where p_Lo_L1r = -p_Lo_L1q, and similarly for gravity
+    // compensation of link2.
+    const Vector3<double> p_L1oL1q_B(1, 2, 3);
+    const Vector3<double> p_L1oL1r_B = -p_L1oL1q_B;
+    const Vector3<double> p_L2oL2q_B(-1, 3, -5);
+    const Vector3<double> p_L2oL2r_B = -p_L2oL2q_B;
 
     output->resize(4 /* number of links */);
 
-    // Add the spatial forces to be applied to each link.
+    // For gravity compensation, apply two spatial forces to each link.
     (*output)[0].body_index = BodyIndex(1);
-    (*output)[0].p_BoBq_B = p_L1oL1q_W;
+    (*output)[0].p_BoBq_B = p_L1oL1q_B;
     (*output)[0].F_Bq_W = F_L1o_W;
 
     (*output)[1].body_index = BodyIndex(1);
-    (*output)[1].p_BoBq_B = p_L1oL1r_W;
+    (*output)[1].p_BoBq_B = p_L1oL1r_B;
     (*output)[1].F_Bq_W = F_L1o_W;
 
     (*output)[2].body_index = BodyIndex(2);
-    (*output)[2].p_BoBq_B = p_L2oL2q_W;
+    (*output)[2].p_BoBq_B = p_L2oL2q_B;
     (*output)[2].F_Bq_W = F_L2o_W;
 
     (*output)[3].body_index = BodyIndex(2);
-    (*output)[3].p_BoBq_B = p_L2oL2r_W;
+    (*output)[3].p_BoBq_B = p_L2oL2r_B;
     (*output)[3].F_Bq_W = F_L2o_W;
   }
 

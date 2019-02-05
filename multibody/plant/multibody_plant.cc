@@ -12,7 +12,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/plant/externally_applied_force.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -1084,14 +1084,15 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
-void MultibodyPlant<T>::AddAppliedExternalForces(
+void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  // Get the mutable body force vector.
+  // Get the mutable applied external spatial forces vector
+  // (a.k.a., body force vector).
   std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
 
   // Evaluate the input port; if it's not connected, return now.
   const auto* applied_input = this->template EvalInputValue<
-      std::vector<ExternallyAppliedForce<T>>>(
+      std::vector<ExternallyAppliedSpatialForce<T>>>(
           context, externally_applied_input_port_);
   if (!applied_input)
     return;
@@ -1239,7 +1240,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
-  AddAppliedExternalForces(context, &forces);
+  AddAppliedExternalSpatialForces(context, &forces);
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1366,7 +1367,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
-  AddAppliedExternalForces(context0, &forces0);
+  AddAppliedExternalSpatialForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 
@@ -1560,7 +1561,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Declare externally applied input force port.
   externally_applied_input_port_ = this->DeclareAbstractInputPort(
         "externally_applied_input",
-        Value<std::vector<ExternallyAppliedForce<T>>>()).get_index();
+        Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
 
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =

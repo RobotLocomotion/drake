@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 
 template <class T>
-struct ExternallyAppliedForce {
+struct ExternallyAppliedSpatialForce {
   /// The index of the body that the force is to be applied to.
   BodyIndex body_index;
 

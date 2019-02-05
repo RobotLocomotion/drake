@@ -2505,7 +2505,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// Returns a constant reference to the input port for applying spatial
   /// forces to bodies in the plant. The data type for the port is an
-  /// std::vector of ExternallyAppliedForce; any number of spatial forces
+  /// std::vector of ExternallyAppliedSpatialForce; any number of spatial forces
   /// can be applied to any number of bodies in the plant.
   const systems::InputPort<T>& get_externally_applied_input_port() const;
 
@@ -2976,7 +2976,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const override;
 
-  void AddAppliedExternalForces(
+  void AddAppliedExternalSpatialForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
   // Helper method to register geometry for a given body, either visual or
