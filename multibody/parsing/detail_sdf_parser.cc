@@ -357,6 +357,17 @@ void AddLinksFromSpecification(
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
 
+    // TODO(eric.cousineau): Figure out correct semantics for specifying a link
+    // pose.
+    // TODO(eric.cousineau): It'd be nice if we were able to tell if a user
+    // specified the tag, or if this is the default value. SDFormat hides this
+    // detail.
+    if (!ToIsometry3(link.Pose()).isApprox(Isometry3d::Identity())) {
+      drake::log()->warn(
+          "Specifying <pose/> directly in <link name='{}'/> is not yet "
+          "used by the MultibodyPlant SDF parser.", link.Name());
+    }
+
     // Get the link's inertia relative to the Bcm frame.
     // sdf::Link::Inertial() provides a representation for the SpatialInertia
     // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
