@@ -16,7 +16,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This class is one of the cache entries in MultibodyTreeContext. It holds the
+/// This class is one of the cache entries in the Context. It holds the
 /// kinematics results of computations that depend not only on the generalized
 /// positions of the system, but also on its generalized velocities.
 /// Velocity kinematics results include:

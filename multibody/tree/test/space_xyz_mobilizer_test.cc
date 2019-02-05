@@ -66,7 +66,7 @@ TEST_F(SpaceXYZMobilizerTest, ZeroState) {
   // an identity rigid transform.
   mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
   const RigidTransformd X_WB(
-      mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_));
+      mobilizer_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
@@ -81,11 +81,11 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
 
   // Compute N.
   MatrixX<double> N(3, 3);
-  mobilizer_->CalcNMatrix(*mbt_context_, &N);
+  mobilizer_->CalcNMatrix(*context_, &N);
 
   // Compute Nplus.
   MatrixX<double> Nplus(3, 3);
-  mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
   // Verify that Nplus is the inverse of N.
   MatrixX<double> N_x_Nplus = N * Nplus;

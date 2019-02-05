@@ -183,9 +183,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                       std::unique_ptr<MultibodyTree<T>> tree,
                       bool is_discrete);
 
-  // TODO(sherm1) Get rid of this and use just a plain Context<T>.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const final;
-
   // Use continuous state variables by default.
   bool is_discrete_{false};
 
