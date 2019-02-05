@@ -37,7 +37,8 @@ Ensure that you have the system dependencies:
 
     /opt/drake/share/drake/setup/install_prereqs
 
-Next, ensure that your ``PYTHONPATH`` is properly configured:
+Next, ensure that your ``PYTHONPATH`` is properly configured. For example, for
+the Python 2 bindings on all supported platforms:
 
 .. code-block:: shell
 
@@ -45,9 +46,6 @@ Next, ensure that your ``PYTHONPATH`` is properly configured:
 
 See :ref:`below <using-python-bindings>` for usage instructions. If using
 macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
-
-Python 2.7 is currently the only supported version for the bindings supplied
-by the binary packages. To use Python 3.x, see below for building from source.
 
 Inside ``virtualenv``
 ^^^^^^^^^^^^^^^^^^^^^
