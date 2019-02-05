@@ -158,7 +158,7 @@ std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
     // when the coefficient is 0, and remove it from
     // monomial_to_coefficient_map.
     DRAKE_DEMAND(coeff != 0);
-    double var_lower, var_upper;
+    double var_lower{}, var_upper{};
     if (coeff > 0) {
       var_lower = (lb - constant_term) / coeff;
       var_upper = (ub - constant_term) / coeff;
