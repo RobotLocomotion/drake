@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -13,6 +14,16 @@ namespace kuka_iiwa {
 
 /// Handles lcmt_iiwa_status messages from a LcmSubscriberSystem.
 ///
+/// Note that this system does not actually subscribe to an LCM channel. To
+/// receive the message, the input of this system should be connected to a
+/// systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_status>().
+///
+/// This system has one abstract-valued input port of type lcmt_iiwa_status.
+///
+/// This system has many vector-valued ouput ports, each of which has exactly
+/// num_joints elements.  The ports will output zeros until an input message is
+/// received.
+//
 /// @system{ IiwaStatusReceiver,
 ///   @input_port{lcmt_iiwa_status},
 ///   @output_port{position_commanded}
@@ -20,10 +31,8 @@ namespace kuka_iiwa {
 ///   @output_port{velocity_estimated}
 ///   @output_port{torque_commanded}
 ///   @output_port{torque_measured}
-///   @output_port{torque_external} }
-///
-/// All ports will output all zeros until a message is received.
-///
+///   @output_port{torque_external}
+/// }
 /// @see `lcmt_iiwa_status.lcm` for additional documentation.
 class IiwaStatusReceiver : public systems::LeafSystem<double> {
  public:
@@ -31,57 +40,46 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
 
   explicit IiwaStatusReceiver(int num_joints = kIiwaArmNumJoints);
 
-  const systems::OutputPort<double>& get_position_commanded_output_port()
-  const {
-    return this->get_output_port(position_commanded_output_port_);
-  }
+  /// @name Named accessors for this System's input and output ports.
+  //@{
+  const systems::InputPort<double>& get_input_port() const;
+  const systems::OutputPort<double>& get_position_commanded_output_port() const;
+  const systems::OutputPort<double>& get_position_measured_output_port() const;
+  const systems::OutputPort<double>& get_velocity_estimated_output_port() const;
+  const systems::OutputPort<double>& get_torque_commanded_output_port() const;
+  const systems::OutputPort<double>& get_torque_measured_output_port() const;
+  const systems::OutputPort<double>& get_torque_external_output_port() const;
+  //@}
 
-  const systems::OutputPort<double>& get_position_measured_output_port()
-  const {
-    return this->get_output_port(position_measured_output_port_);
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED(
+      "The state port is deprecated and will be removed on 2019-05-01. "
+      "Instead, use the position_measured and velocity_estimated ports.")
+  const systems::OutputPort<double>& get_state_output_port() const;
+  DRAKE_DEPRECATED(
+      "This method is deprecated and will be removed on 2019-05-01. "
+      "Instead, use get_input_port() with no arguments.")
+  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
+  const systems::InputPort<double>& get_input_port(int index) const {
+    return LeafSystem<double>::get_input_port(index);
   }
-
-  const systems::OutputPort<double>& get_velocity_estimated_output_port()
-  const {
-    return this->get_output_port(velocity_estimated_output_port_);
+  DRAKE_DEPRECATED(
+      "This method is deprecated and will be removed on 2019-05-01. "
+      "Instead, use the named port accessors.")
+  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
+  const systems::OutputPort<double>& get_output_port(int index) const {
+    return LeafSystem<double>::get_output_port(index);
   }
-
-  const systems::OutputPort<double>& get_torque_commanded_output_port()
-  const {
-    return this->get_output_port(torque_commanded_output_port_);
-  }
-
-  const systems::OutputPort<double>& get_torque_measured_output_port()
-  const {
-    return this->get_output_port(torque_measured_output_port_);
-  }
-
-  const systems::OutputPort<double>& get_torque_external_output_port()
-  const {
-    return this->get_output_port(torque_external_output_port_);
-  }
-
-  const systems::OutputPort<double>& get_state_output_port() const {
-    return this->get_output_port(state_output_port_);
-  }
+#endif  //  DRAKE_DOXYGEN_CXX
 
  private:
-  template <std::vector<double> drake::lcmt_iiwa_status::* field>
-  void CopyLcmVectorOut(const systems::Context<double>& context,
-                        systems::BasicVector<double>* output) const;
-
-  void OutputState(const systems::Context<double>& context,
-                   systems::BasicVector<double>* output) const;
+  template <std::vector<double> drake::lcmt_iiwa_status::*>
+  void CalcLcmOutput(const systems::Context<double>&,
+                     systems::BasicVector<double>*) const;
+  void CalcStateOutput(const systems::Context<double>&,
+                    systems::BasicVector<double>*) const;
 
   const int num_joints_;
-
-  const int position_commanded_output_port_{};
-  const int position_measured_output_port_{};
-  const int velocity_estimated_output_port_{};
-  const int torque_commanded_output_port_{};
-  const int torque_measured_output_port_{};
-  const int torque_external_output_port_{};
-  const int state_output_port_{};
 };
 
 }  // namespace kuka_iiwa

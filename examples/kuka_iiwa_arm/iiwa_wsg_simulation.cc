@@ -205,7 +205,7 @@ int DoMain() {
                   external_torque_converter->get_input_port(0));
   builder.Connect(external_torque_converter->get_output_port(0),
                   iiwa_status_sender->get_external_torque_input_port());
-  builder.Connect(iiwa_status_sender->get_output_port(0),
+  builder.Connect(iiwa_status_sender->get_output_port(),
                   iiwa_status_pub->get_input_port());
 
   auto wsg_command_sub = builder.AddSystem(

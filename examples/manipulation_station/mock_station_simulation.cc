@@ -68,8 +68,6 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   lcm.StartReceiveThread();
 
-  // TODO(russt): IiwaCommandReceiver should output positions, not
-  // state.  (We are adding delay twice in this current implementation).
   auto iiwa_command_subscriber = builder.AddSystem(
       kuka_iiwa_arm::MakeIiwaCommandLcmSubscriberSystem(
           kuka_iiwa_arm::kIiwaArmNumJoints, "IIWA_COMMAND", &lcm));
@@ -106,7 +104,7 @@ int do_main(int argc, char* argv[]) {
   auto iiwa_status_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm, 0.005 /* publish period */));
-  builder.Connect(iiwa_status->get_output_port(0),
+  builder.Connect(iiwa_status->get_output_port(),
                   iiwa_status_publisher->get_input_port());
 
   // Receive the WSG commands.

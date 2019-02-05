@@ -38,11 +38,11 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
   input_port_iiwa_plan_ =
       builder.ExportInput(robot_plan_interpolator_->get_plan_input_port());
   input_port_iiwa_status_ =
-      builder.ExportInput(status_receiver->get_input_port(0));
+      builder.ExportInput(status_receiver->get_input_port());
 
   // Export the output.
   output_port_iiwa_command_ =
-      builder.ExportOutput(command_sender->get_output_port(0));
+      builder.ExportOutput(command_sender->get_output_port());
 
   // Connect the subsystems.
   builder.Connect(status_receiver->get_state_output_port(),

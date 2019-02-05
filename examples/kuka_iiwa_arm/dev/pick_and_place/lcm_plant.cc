@@ -112,7 +112,7 @@ LcmPlant::LcmPlant(
 
     // Export iiwa status output port.
     output_port_iiwa_status_.push_back(
-        builder.ExportOutput(iiwa_status_sender->get_output_port(0)));
+        builder.ExportOutput(iiwa_status_sender->get_output_port()));
 
     auto wsg_controller = builder.AddSystem<SchunkWsgController>();
     wsg_controller->set_name("wsg_controller" + suffix);

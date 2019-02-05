@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -9,41 +10,60 @@ namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
-/// Creates and outputs lcmt_iiwa_command messages
+/// Creates and outputs lcmt_iiwa_command messages.
 ///
-/// This system has two vector-valued input ports, one for the
-/// commanded position (which must be connected) and one for commanded
-/// torque (which is optional).  If the torque input port is not
-/// connected, then no torque values will be emitted in the resulting
-/// message.
+/// Note that this system does not actually send the message an LCM channel. To
+/// send the message, the output of this system should be connected to a
+/// systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>().
 ///
-/// This system has one abstract valued output port that contains a
-/// systems::Value object templated on type `lcmt_iiwa_command`. Note that this
-/// system does not actually send this message on an LCM channel. To send the
-/// message, the output of this system should be connected to an input port of
-/// a systems::lcm::LcmPublisherSystem that accepts a
-/// systems::Value object templated on type `lcmt_iiwa_command`.
+/// This system has two vector-valued input ports, one for the commanded
+/// position (which must be connected) and one for commanded torque (which is
+/// optional).  If the torque input port is not connected, then no torque
+/// values will be emitted in the resulting message.
+///
+/// This system has one abstract-valued output port of type lcmt_iiwa_command.
+///
+/// @system {
+///   @input_port{position}
+///   @input_port{torque (optional)}
+///   @output_port{lcmt_iiwa_command}
+/// }
+///
+/// @see `lcmt_iiwa_command.lcm` for additional documentation.
 class IiwaCommandSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommandSender)
 
   explicit IiwaCommandSender(int num_joints = kIiwaArmNumJoints);
 
-  const systems::InputPort<double>& get_position_input_port() const {
-    return this->get_input_port(position_input_port_);
-  }
+  /// @name Named accessors for this System's input and output ports.
+  //@{
+  const systems::InputPort<double>& get_position_input_port() const;
+  const systems::InputPort<double>& get_torque_input_port() const;
+  const systems::OutputPort<double>& get_output_port() const;
+  //@}
 
-  const systems::InputPort<double>& get_torque_input_port() const {
-    return this->get_input_port(torque_input_port_);
+#ifndef DRAKE_DOXYGEN_CXX
+  DRAKE_DEPRECATED(
+      "This method is deprecated and will be removed on 2019-05-01. "
+      "Instead, use the named port accessors.")
+  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
+  const systems::InputPort<double>& get_input_port(int index) const {
+    return LeafSystem<double>::get_input_port(index);
   }
+  DRAKE_DEPRECATED(
+      "This method is deprecated and will be removed on 2019-05-01. "
+      "Instead, use get_output_port() with no arguments.")
+  // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
+  const systems::OutputPort<double>& get_output_port(int index) const {
+    return LeafSystem<double>::get_output_port(index);
+  }
+#endif  //  DRAKE_DOXYGEN_CXX
 
  private:
-  void OutputCommand(const systems::Context<double>& context,
-                     lcmt_iiwa_command* output) const;
+  void CalcOutput(const systems::Context<double>&, lcmt_iiwa_command*) const;
 
   const int num_joints_;
-  const int position_input_port_{};
-  const int torque_input_port_{};
 };
 
 }  // namespace kuka_iiwa

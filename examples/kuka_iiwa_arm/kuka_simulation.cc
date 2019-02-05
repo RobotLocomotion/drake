@@ -144,7 +144,7 @@ int DoMain() {
                         external_torque_converter->get_input_port(0));
   base_builder->Connect(external_torque_converter->get_output_port(0),
                         status_sender->get_external_torque_input_port());
-  base_builder->Connect(status_sender->get_output_port(0),
+  base_builder->Connect(status_sender->get_output_port(),
                         status_pub->get_input_port());
   // Connect the torque input in torque control
   if (FLAGS_torque_control) {
