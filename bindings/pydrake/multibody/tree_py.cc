@@ -251,6 +251,30 @@ PYBIND11_MODULE(tree, m) {
         .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
         .value("kV", Enum::kV, enum_doc.kV.doc);
   }
+
+  // Inertias
+  {
+    using Class = UnitInertia<T>;
+    constexpr auto& cls_doc = doc.UnitInertia;
+    py::class_<Class> cls(m, "UnitInertia", cls_doc.doc);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const T&, const T&, const T&>(),
+             py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"),
+             cls_doc.ctor.doc_3args);
+  }
+  {
+    using Class = SpatialInertia<T>;
+    constexpr auto& cls_doc = doc.SpatialInertia;
+    py::class_<Class> cls(m, "SpatialInertia", cls_doc.doc);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
+                      const UnitInertia<T>&>(),
+             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
+             cls_doc.ctor.doc_3args);
+  }
+
 }
 
 }  // namespace pydrake
