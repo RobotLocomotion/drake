@@ -132,7 +132,7 @@ Binding<Constraint> ParseConstraint(
   return CreateBinding(make_shared<LinearConstraint>(A, new_lb, new_ub), vars);
 }
 
-std::unique_ptr<Binding<Constraint>> ParseLinearConstraintIfPossible(
+std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
     const symbolic::Expression& e, double lb, double ub) {
   if (!e.is_polynomial()) {
     return std::unique_ptr<Binding<Constraint>>{nullptr};
@@ -143,9 +143,10 @@ std::unique_ptr<Binding<Constraint>> ParseLinearConstraintIfPossible(
   }
   // If p only has one indeterminates, then we can always return a bounding box
   // constraint.
-  double constant_term = 0;
   if (p.indeterminates().size() == 1) {
+    // We decompose the polynomial `p` into `constant_term + coeff * var`.
     double coeff = 0;
+    double constant_term = 0;
     for (const auto& term : p.monomial_to_coefficient_map()) {
       if (term.first.total_degree() == 0) {
         constant_term += get_constant_value(term.second);

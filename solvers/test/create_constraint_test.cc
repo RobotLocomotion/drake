@@ -266,20 +266,19 @@ TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
                std::runtime_error);
 }
 
-class ParseLinearConstraintIfPossibleTest : public ::testing::Test {
+class MaybeParseLinearConstraintTest : public ::testing::Test {
  public:
-  ParseLinearConstraintIfPossibleTest() { x_ << x0_, x1_, x2_; }
+  MaybeParseLinearConstraintTest() {}
 
  protected:
-  symbolic::Variable x0_{"x0"};
-  symbolic::Variable x1_{"x1"};
-  symbolic::Variable x2_{"x2"};
-  Vector3<symbolic::Variable> x_;
+  const symbolic::Variable x0_{"x0"};
+  const symbolic::Variable x1_{"x1"};
+  const symbolic::Variable x2_{"x2"};
+  const Vector3<symbolic::Variable> x_{x0_, x1_, x2_};
 };
 
-TEST_F(ParseLinearConstraintIfPossibleTest, TestBoundingBoxConstraint) {
+TEST_F(MaybeParseLinearConstraintTest, TestBoundingBoxConstraint) {
   // Parse a bounding box constraint
-
   auto check_bounding_box_constraint = [](
       const Binding<Constraint>& constraint, double lower_expected,
       double upper_expected, const symbolic::Variable& var) {
@@ -295,28 +294,26 @@ TEST_F(ParseLinearConstraintIfPossibleTest, TestBoundingBoxConstraint) {
   };
 
   check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(x0_, 1, 2)), 1, 2, x0_);
+      *(internal::MaybeParseLinearConstraint(x0_, 1, 2)), 1, 2, x0_);
   check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(-x0_, 1, 2)), -2, -1, x0_);
+      *(internal::MaybeParseLinearConstraint(-x0_, 1, 2)), -2, -1, x0_);
   check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(2 * x0_, 1, 2)), 0.5, 1, x0_);
+      *(internal::MaybeParseLinearConstraint(2 * x0_, 1, 2)), 0.5, 1, x0_);
   check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(-2 * x0_, 1, 2)), -1, -0.5,
+      *(internal::MaybeParseLinearConstraint(-2 * x0_, 1, 2)), -1, -0.5, x0_);
+  check_bounding_box_constraint(
+      *(internal::MaybeParseLinearConstraint(x0_ + 1, 1, 2)), 0, 1, x0_);
+  check_bounding_box_constraint(
+      *(internal::MaybeParseLinearConstraint(x0_ + 1 + 2, 1, 2)), -2, -1, x0_);
+  check_bounding_box_constraint(
+      *(internal::MaybeParseLinearConstraint(2 * x0_ + 1 + 2, 1, 2)), -1, -0.5,
       x0_);
   check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(x0_ + 1, 1, 2)), 0, 1, x0_);
-  check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(x0_ + 1 + 2, 1, 2)), -2, -1,
+      *(internal::MaybeParseLinearConstraint(-2 * x0_ + 1 + 2, 1, 2)), 0.5, 1,
       x0_);
-  check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(2 * x0_ + 1 + 2, 1, 2)), -1,
-      -0.5, x0_);
-  check_bounding_box_constraint(
-      *(internal::ParseLinearConstraintIfPossible(-2 * x0_ + 1 + 2, 1, 2)), 0.5,
-      1, x0_);
 }
 
-TEST_F(ParseLinearConstraintIfPossibleTest, TestLinearEqualityConstraint) {
+TEST_F(MaybeParseLinearConstraintTest, TestLinearEqualityConstraint) {
   // Parse linear equality constraint.
   auto check_linear_equality_constraint = [](
       const Binding<Constraint>& constraint,
@@ -337,22 +334,21 @@ TEST_F(ParseLinearConstraintIfPossibleTest, TestLinearEqualityConstraint) {
 
   // without a constant term in the expression.
   check_linear_equality_constraint(
-      *internal::ParseLinearConstraintIfPossible(x_(0) + 2 * x_(1), 1, 1),
+      *internal::MaybeParseLinearConstraint(x_(0) + 2 * x_(1), 1, 1),
       Eigen::RowVector2d(1, 2), Vector2<symbolic::Variable>(x_(0), x_(1)), 1);
 
   // with a constant term in the expression.
   check_linear_equality_constraint(
-      *internal::ParseLinearConstraintIfPossible(x_(0) + 2 * x_(1) + 2 + 1, 3,
-                                                 3),
+      *internal::MaybeParseLinearConstraint(x_(0) + 2 * x_(1) + 2 + 1, 3, 3),
       Eigen::RowVector2d(1, 2), Vector2<symbolic::Variable>(x_(0), x_(1)), 0);
 
   // Check a constant expression.
   check_linear_equality_constraint(
-      *internal::ParseLinearConstraintIfPossible(2, 3, 3),
-      Eigen::RowVectorXd(0), VectorX<symbolic::Variable>(0), 1);
+      *internal::MaybeParseLinearConstraint(2, 3, 3), Eigen::RowVectorXd(0),
+      VectorX<symbolic::Variable>(0), 1);
 }
 
-TEST_F(ParseLinearConstraintIfPossibleTest, TestLinearConstraint) {
+TEST_F(MaybeParseLinearConstraintTest, TestLinearConstraint) {
   // Parse linear inequality constraint.
   auto check_linear_constraint = [](
       const Binding<Constraint>& constraint,
@@ -374,30 +370,29 @@ TEST_F(ParseLinearConstraintIfPossibleTest, TestLinearConstraint) {
 
   // without a constant term in the expression.
   check_linear_constraint(
-      *internal::ParseLinearConstraintIfPossible(x_(0) + 2 * x_(1), 1, 2),
+      *internal::MaybeParseLinearConstraint(x_(0) + 2 * x_(1), 1, 2),
       Eigen::RowVector2d(1, 2), Vector2<symbolic::Variable>(x_(0), x_(1)), 1,
       2);
 
   // with a constant term in the expression.
-  check_linear_constraint(*internal::ParseLinearConstraintIfPossible(
-                              x_(0) + 2 * x_(1) + 2 + 1, 3, 4),
-                          Eigen::RowVector2d(1, 2),
-                          Vector2<symbolic::Variable>(x_(0), x_(1)), 0, 1);
+  check_linear_constraint(
+      *internal::MaybeParseLinearConstraint(x_(0) + 2 * x_(1) + 2 + 1, 3, 4),
+      Eigen::RowVector2d(1, 2), Vector2<symbolic::Variable>(x_(0), x_(1)), 0,
+      1);
 
   // Check a constant expression.
-  check_linear_constraint(*internal::ParseLinearConstraintIfPossible(2, 3, 4),
+  check_linear_constraint(*internal::MaybeParseLinearConstraint(2, 3, 4),
                           Eigen::RowVectorXd(0), VectorX<symbolic::Variable>(0),
                           1, 2);
   check_linear_constraint(
-      *internal::ParseLinearConstraintIfPossible(0 * x_(0) + 2, 3, 4),
+      *internal::MaybeParseLinearConstraint(0 * x_(0) + 2, 3, 4),
       Eigen::RowVectorXd(0), VectorX<symbolic::Variable>(0), 1, 2);
 }
 
-TEST_F(ParseLinearConstraintIfPossibleTest, NonlinearConstraint) {
-  EXPECT_EQ(
-      internal::ParseLinearConstraintIfPossible(x_(0) * x_(0), 1, 2).get(),
-      nullptr);
-  EXPECT_EQ(internal::ParseLinearConstraintIfPossible(sin(x_(0)), 1, 2).get(),
+TEST_F(MaybeParseLinearConstraintTest, NonlinearConstraint) {
+  EXPECT_EQ(internal::MaybeParseLinearConstraint(x_(0) * x_(0), 1, 2).get(),
+            nullptr);
+  EXPECT_EQ(internal::MaybeParseLinearConstraint(sin(x_(0)), 1, 2).get(),
             nullptr);
 }
 }  // namespace
