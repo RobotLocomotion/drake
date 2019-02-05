@@ -13,6 +13,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace pydrake {
@@ -51,6 +52,27 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
 
+  {
+    using Class = UnitInertia<T>;
+    constexpr auto& cls_doc = doc.UnitInertia;
+    py::class_<Class> cls(m, "UnitInertia", cls_doc.doc);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const T&, const T&, const T&>(),
+             py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"),
+             cls_doc.ctor.doc_3args);
+  }
+  {
+    using Class = SpatialInertia<T>;
+    constexpr auto& cls_doc = doc.SpatialInertia;
+    py::class_<Class> cls(m, "SpatialInertia", cls_doc.doc);
+    cls  // BR
+        .def(py::init(), cls_doc.ctor.doc_0args)
+        .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
+                      const UnitInertia<T>&>(),
+             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
+             cls_doc.ctor.doc_3args);
+  }
   {
     using Class = MultibodyPlant<T>;
     py::class_<Class, systems::LeafSystem<T>> cls(
@@ -101,6 +123,12 @@ PYBIND11_MODULE(plant, m) {
             },
             py_reference_internal, py::arg("frame"),
             doc.MultibodyPlant.AddFrame.doc)
+        .def("AddRigidBody",
+             [](Class* self, const std::string& name, const SpatialInertia<double>& M_BBo_B) -> auto& {
+              return self->AddRigidBody(name, M_BBo_B);
+             },
+             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
+             doc.MultibodyPlant.AddRigidBody.doc_2args)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
             py::arg("X_AB") = Isometry3<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
