@@ -52,9 +52,11 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
+#if 0
   DRAKE_DEPRECATED(
       "The state port is deprecated and will be removed on 2019-05-01. "
       "Instead, use the position_measured and velocity_estimated ports.")
+#endif
   const systems::OutputPort<double>& get_state_output_port() const;
   DRAKE_DEPRECATED(
       "This method is deprecated and will be removed on 2019-05-01. "
@@ -63,9 +65,11 @@ class IiwaStatusReceiver : public systems::LeafSystem<double> {
   const systems::InputPort<double>& get_input_port(int index) const {
     return LeafSystem<double>::get_input_port(index);
   }
+#if 0
   DRAKE_DEPRECATED(
       "This method is deprecated and will be removed on 2019-05-01. "
       "Instead, use the named port accessors.")
+#endif
   // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
   const systems::OutputPort<double>& get_output_port(int index) const {
     return LeafSystem<double>::get_output_port(index);

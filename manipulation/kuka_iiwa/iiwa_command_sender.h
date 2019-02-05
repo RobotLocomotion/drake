@@ -44,9 +44,11 @@ class IiwaCommandSender : public systems::LeafSystem<double> {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
+#if 0
   DRAKE_DEPRECATED(
       "This method is deprecated and will be removed on 2019-05-01. "
       "Instead, use the named port accessors.")
+#endif
   // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
   const systems::InputPort<double>& get_input_port(int index) const {
     return LeafSystem<double>::get_input_port(index);
