@@ -1318,33 +1318,40 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
 
     // Construct spatial forces applied at the center of mass of each link, with
     // no moment, and opposing gravity.
+    const Vector3<double> z_axis(0, 0, 1);
     SpatialForce<double> F_L1o_W(
         Vector3<double>::Zero() /* no torque */,
-        link1.get_default_mass() * g * Vector3<double>(0, 0, 1) /* upward */);
+        link1.get_default_mass() * g / 2 * z_axis /* upward */);
     SpatialForce<double> F_L2o_W(
         Vector3<double>::Zero() /* no torque */,
-        link2.get_default_mass() * g * Vector3<double>(0, 0, 1) /* upward */);
+        link2.get_default_mass() * g / 2 * z_axis /* upward */);
 
     // Arbitrary points on each link that we want to shift the application point
-    // of forces to.
+    // of forces to. We introduce pairs of forces- each a negated version of the
+    // other- to cancel applied moments.
     const Vector3<double> p_L1oL1q_W(1, 2, 3);
+    const Vector3<double> p_L1oL1r_W(-1, -2, -3);
     const Vector3<double> p_L2oL2q_W(-1, 3, -5);
+    const Vector3<double> p_L2oL2r_W(1, -3, 5);
 
-    // Shift the forces to these new points of application.
-    const SpatialForce<double> F_L1q_W = F_L1o_W.Shift(p_L1oL1q_W);
-    const SpatialForce<double> F_L2q_W = F_L2o_W.Shift(p_L2oL2q_W);
+    output->resize(4 /* number of links */);
 
-    output->resize(2 /* number of links */);
+    // Add the spatial forces to be applied to each link.
+    (*output)[0].body_index = BodyIndex(1);
+    (*output)[0].p_BoBq_B = p_L1oL1q_W;
+    (*output)[0].F_Bq_W = F_L1o_W;
 
-    // Add the spatial forces to be applied to each link, now putting the
-    // point of application *back* to the center-of-mass.
-    output->front().body_index = BodyIndex(1);
-    output->front().p_BoBq_B = -p_L1oL1q_W;
-    output->front().F_Bq_W = F_L1q_W;
+    (*output)[1].body_index = BodyIndex(1);
+    (*output)[1].p_BoBq_B = p_L1oL1r_W;
+    (*output)[1].F_Bq_W = F_L1o_W;
 
-    output->back().body_index = BodyIndex(2);
-    output->back().p_BoBq_B = -p_L2oL2q_W;
-    output->back().F_Bq_W = F_L2q_W;
+    (*output)[2].body_index = BodyIndex(2);
+    (*output)[2].p_BoBq_B = p_L2oL2q_W;
+    (*output)[2].F_Bq_W = F_L2o_W;
+
+    (*output)[3].body_index = BodyIndex(2);
+    (*output)[3].p_BoBq_B = p_L2oL2r_W;
+    (*output)[3].F_Bq_W = F_L2o_W;
   }
 
   const MultibodyPlant<double>* plant_{nullptr};
