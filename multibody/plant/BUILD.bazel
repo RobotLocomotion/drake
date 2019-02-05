@@ -143,7 +143,8 @@ drake_cc_library(
     hdrs = ["externally_applied_spatial_force.h"],
     deps = [
         "//common:default_scalars",
-        "//multibody/tree",
+        "//multibody/math:spatial_force",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 
@@ -153,6 +154,19 @@ drake_cc_googletest(
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "externally_applied_spatial_force_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 

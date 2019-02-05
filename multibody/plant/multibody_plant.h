@@ -2507,7 +2507,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// forces to bodies in the plant. The data type for the port is an
   /// std::vector of ExternallyAppliedSpatialForce; any number of spatial forces
   /// can be applied to any number of bodies in the plant.
-  const systems::InputPort<T>& get_externally_applied_input_port() const;
+  const systems::InputPort<T>& get_applied_spatial_force_input_port() const;
 
   /// @}
   // Closes Doxygen section "Actuation input"
@@ -3288,7 +3288,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ModelInstanceIndex actuated_instance_;
 
   // Port for externally applied spatial forces.
-  systems::InputPortIndex externally_applied_input_port_;
+  systems::InputPortIndex applied_spatial_force_input_port_;
 
   systems::OutputPortIndex continuous_state_output_port_;
   // A vector containing state output ports for each model instance indexed by

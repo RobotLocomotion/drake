@@ -1093,7 +1093,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
   // Evaluate the input port; if it's not connected, return now.
   const auto* applied_input = this->template EvalInputValue<
       std::vector<ExternallyAppliedSpatialForce<T>>>(
-          context, externally_applied_input_port_);
+          context, applied_spatial_force_input_port_);
   if (!applied_input)
     return;
 
@@ -1113,7 +1113,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const Vector3<T> p_BoBq_W = X_WB.rotation() * force_structure.p_BoBq_B;
 
     // Shift the spatial force from Bq to Bo.
-    F_BBo_W_array[body_node_index] += force_structure.F_Bq_W.Shift(p_BoBq_W);
+    F_BBo_W_array[body_node_index] += force_structure.F_Bq_W.Shift(-p_BoBq_W);
   }
 }
 
@@ -1558,9 +1558,9 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
-  // Declare externally applied input force port.
-  externally_applied_input_port_ = this->DeclareAbstractInputPort(
-        "externally_applied_input",
+  // Declare applied spatial force input force port.
+  applied_spatial_force_input_port_ = this->DeclareAbstractInputPort(
+        "applied_spatial_force_input",
         Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
 
   // Declare one output port for the entire state vector.
@@ -1697,9 +1697,9 @@ MultibodyPlant<T>::get_actuation_input_port(
 
 template <typename T>
 const systems::InputPort<T>&
-MultibodyPlant<T>::get_externally_applied_input_port() const {
+MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return systems::System<T>::get_input_port(externally_applied_input_port_);
+  return systems::System<T>::get_input_port(applied_spatial_force_input_port_);
 }
 
 template <typename T>
