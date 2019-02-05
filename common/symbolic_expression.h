@@ -1280,32 +1280,6 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
   typedef drake::symbolic::Expression ReturnType;
 };
 
-// Provide explicit (full) template specialization for LLDT::compute when the
-// Scalar is symbolic::Expression.  We have to list out all of the matrix sizes
-// that Drake happens to use (symbolically), because we cannot partially
-// specialize a template class template method.
-#define DRAKE_DISAVOW_LDLT(SomeMatrix)                          \
-template <>                                                     \
-template <>                                                     \
-inline                                                          \
-Eigen::LDLT<SomeMatrix>&                                        \
-Eigen::LDLT<SomeMatrix>::compute<SomeMatrix>(                   \
-    const EigenBase<SomeMatrix>&) {                             \
-  throw std::logic_error(                                       \
-      "Expression does not support LDLT decomposition ");       \
-}                                                               \
-template <>                                                     \
-template <>                                                     \
-inline                                                          \
-Eigen::LDLT<SomeMatrix>&                                        \
-Eigen::LDLT<SomeMatrix>::compute<Eigen::Ref<const SomeMatrix>>( \
-    const EigenBase<Eigen::Ref<const SomeMatrix>>&) {           \
-  throw std::logic_error(                                       \
-      "Expression does not support LDLT decomposition ");       \
-}
-DRAKE_DISAVOW_LDLT(drake::MatrixUpTo6<drake::symbolic::Expression>)
-#undef DRAKE_DISAVOW_LDLT
-
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
