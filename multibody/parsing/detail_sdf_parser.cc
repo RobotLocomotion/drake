@@ -50,6 +50,21 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
+// Fails fast if a user attempts to specify `<pose frame='...'/>` in an
+// unsupported location.
+// See https://bitbucket.org/osrf/sdformat/issues/200 for more information.
+void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
+  if (element->HasElement("pose")) {
+    sdf::ElementPtr pose = element->GetElement("pose");
+    const std::string frame_name = pose->Get<std::string>("frame");
+    if (!frame_name.empty()) {
+      throw std::runtime_error(
+          "<pose frame='{non-empty}'/> is presently not supported outside of "
+          "the <frame/> tag.");
+    }
+  }
+}
+
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
 // frame origin Bo and, expressed in body frame B, from an ignition::Inertial
 // object.
@@ -124,6 +139,7 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
     // Pose of the joint frame J in the frame of the child link C.
+    ThrowIfPoseFrameSpecified(joint_spec.Element());
     const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
     // Get the pose of the child link C in the model frame M.
     const Isometry3d X_MC =
@@ -238,16 +254,9 @@ void AddJointFromSpecification(
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
-  // TODO(amcastro-tri): Verify sdformat supports frame specifications
+  // TODO(eric.cousineau): Verify sdformat supports frame specifications
   // correctly.
-  // There are many ways by which a joint frame pose can be specified in SDF:
-  //  - <joint> <pose> </pose></joint>.
-  //  - <joint> <pose> <frame/> </pose></joint>.
-  //  - <joint> <frame> <pose> <frame/> </pose> </frame> </joint>.
-  // And combinations of the above?
-  // There is no way to verify at this level which one is supported or not.
-  // Here we trust that no mather how a user specified the file, joint.Pose()
-  // will ALWAYS return X_CJ.
+  ThrowIfPoseFrameSpecified(joint_spec.Element());
   const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
 
   // Get the pose of the child link C in the model frame M.
@@ -367,6 +376,8 @@ void AddLinksFromSpecification(
           "Specifying <pose/> directly in <link name='{}'/> is not yet "
           "used by the MultibodyPlant SDF parser.", link.Name());
     }
+    // Fail fast for `<pose frame='...'/>`.
+    ThrowIfPoseFrameSpecified(link.Element());
 
     // Get the link's inertia relative to the Bcm frame.
     // sdf::Link::Inertial() provides a representation for the SpatialInertia
@@ -374,6 +385,9 @@ void AddLinksFromSpecification(
     // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
     // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
     // necessarily aligned with B.
+    if (link.Element()->HasElement("inertial")) {
+      ThrowIfPoseFrameSpecified(link.Element()->GetElement("inertial"));
+    }
     const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
@@ -390,6 +404,7 @@ void AddLinksFromSpecification(
             *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(sdf_visual);
+        ThrowIfPoseFrameSpecified(sdf_visual.Element());
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -410,6 +425,7 @@ void AddLinksFromSpecification(
         const sdf::Collision& sdf_collision =
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+        ThrowIfPoseFrameSpecified(sdf_collision.Element());
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           const Isometry3d X_LG =
               MakeGeometryPoseFromSdfCollision(sdf_collision);
@@ -486,6 +502,7 @@ ModelInstanceIndex AddModelFromSpecification(
   // TODO(eric.cousineau): Ensure this generalizes to cases when the parent
   // frame is not the world. At present, we assume the parent frame is the
   // world.
+  ThrowIfPoseFrameSpecified(model.Element());
   const Isometry3d X_WM = ToIsometry3(model.Pose());
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
