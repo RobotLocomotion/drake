@@ -55,6 +55,10 @@ drake_cc_binary(
     name = "iiwa_box_simulation",
     srcs = ["iiwa_box_simulation.cc"],
     add_test_rule = 1,
+    copts = [
+        # TODO(jwnimmer-tri) Update this example, or delete it.
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         ":mydata",
         "//examples/kuka_iiwa_arm:models",

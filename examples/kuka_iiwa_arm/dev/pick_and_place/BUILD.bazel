@@ -44,6 +44,10 @@ drake_cc_library(
     hdrs = [
         "lcm_plant.h",
     ],
+    copts = [
+        # TODO(jwnimmer-tri) Update this example, or delete it.
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",

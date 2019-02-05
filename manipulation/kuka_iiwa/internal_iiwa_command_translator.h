@@ -26,7 +26,7 @@ class IiwaCommand : public systems::BasicVector<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IiwaCommand)
 
-  static constexpr double kUnitializedTime = 0;
+  static constexpr double kUnitializedTime = 0.0;
 
   // TODO(jwnimmer-tri) Remove this class after 2019-03-01.
   // There is no replacement -- these objects should never be needed anymore.

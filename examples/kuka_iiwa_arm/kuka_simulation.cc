@@ -130,28 +130,34 @@ int DoMain() {
 
   base_builder->Connect(command_sub->get_output_port(),
                         command_receiver->GetInputPort("command_message"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
+  // we should add velocity estimation into this simulation, not use state
+  // ports on the LCM systems (the KUKA doesn't use velocities).
   base_builder->Connect(command_receiver->get_commanded_state_output_port(),
                         controller->get_input_port_desired_state());
   base_builder->Connect(plant->get_output_port(0),
                         status_sender->get_state_input_port());
-  base_builder->Connect(command_receiver->get_output_port(0),
-                        status_sender->get_command_input_port());
+#pragma GCC diagnostic pop
+  base_builder->Connect(command_receiver->get_commanded_position_output_port(),
+                        status_sender->get_position_commanded_input_port());
   base_builder->Connect(controller->get_output_port_control(),
-                        status_sender->get_commanded_torque_input_port());
+                        status_sender->get_torque_commanded_input_port());
   base_builder->Connect(plant->torque_output_port(),
-                        status_sender->get_measured_torque_input_port());
+                        status_sender->get_torque_measured_input_port());
   base_builder->Connect(plant->contact_results_output_port(),
                         external_torque_converter->get_input_port(0));
   base_builder->Connect(external_torque_converter->get_output_port(0),
-                        status_sender->get_external_torque_input_port());
-  base_builder->Connect(status_sender->get_output_port(0),
+                        status_sender->get_torque_external_input_port());
+  base_builder->Connect(status_sender->get_output_port(),
                         status_pub->get_input_port());
   // Connect the torque input in torque control
   if (FLAGS_torque_control) {
     KukaTorqueController<double>* torque_controller =
         dynamic_cast<KukaTorqueController<double>*>(controller);
     DRAKE_DEMAND(torque_controller);
-    base_builder->Connect(command_receiver->get_output_port(1),
+    base_builder->Connect(command_receiver->get_commanded_torque_output_port(),
                           torque_controller->get_input_port_commanded_torque());
   }
 
