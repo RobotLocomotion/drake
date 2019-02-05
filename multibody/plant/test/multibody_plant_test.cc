@@ -1318,13 +1318,13 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
 
     // Construct spatial forces applied at the center of mass of each link, with
     // no moment, and opposing gravity.
-    const Vector3<double> z_axis(0, 0, 1);
+    const Vector3<double> up_W(0, 0, 1);
     SpatialForce<double> F_L1o_W(
         Vector3<double>::Zero() /* no torque */,
-        link1.get_default_mass() * g / 2 * z_axis /* upward */);
+        link1.get_default_mass() * g / 2 * up_W);
     SpatialForce<double> F_L2o_W(
         Vector3<double>::Zero() /* no torque */,
-        link2.get_default_mass() * g / 2 * z_axis /* upward */);
+        link2.get_default_mass() * g / 2 * up_W);
 
     // One way to do gravity compensation for Link 1 is to apply forces of
     // magnitude 1/2 * mass * gravity to two arbitrary points L1q and L1r on
