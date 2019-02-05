@@ -8,6 +8,7 @@ import argparse
 import math
 import warnings
 import webbrowser
+
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
@@ -19,7 +20,7 @@ from pydrake.systems.framework import (
     AbstractValue, LeafSystem, PublishEvent, TriggerType
 )
 from pydrake.systems.rendering import PoseBundle
-from pydrake.multibody.multibody_tree.multibody_plant import ContactResults
+from pydrake.multibody.plant import ContactResults
 
 # TODO(eric.cousineau): Move this back to "third party" import positions
 # if/when PyCQA/pycodestyle#834 lands and is incorporated.

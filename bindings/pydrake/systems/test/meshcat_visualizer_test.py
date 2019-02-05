@@ -15,7 +15,7 @@ from pydrake.systems.meshcat_visualizer import (
     MeshcatContactVisualizer
 )
 from pydrake.common.eigen_geometry import Isometry3
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.plant import MultibodyPlant
 
 
 class TestMeshcat(unittest.TestCase):
@@ -93,9 +93,10 @@ class TestMeshcat(unittest.TestCase):
         table_file_path = FindResourceOrThrow(
             "drake/examples/kuka_iiwa_arm/models/table/"
             "extra_heavy_duty_table_surface_only_collision.sdf")
-        table_top_z_in_world = 0.736 + 0.057 / 2
-        X_WObject = Isometry3.Identity()
-        X_WObject.set_translation([0, 0, table_top_z_in_world * 2])
+
+        # T: tabletop frame.
+        X_TObject = Isometry3.Identity()
+        X_TObject.set_translation([0, 0, 0.2])
 
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)
@@ -141,17 +142,22 @@ class TestMeshcat(unittest.TestCase):
         mbp_context = diagram.GetMutableSubsystemContext(
             plant, diagram_context)
 
+        X_WT = plant.CalcRelativeTransform(
+            mbp_context,
+            plant.world_frame(),
+            plant.GetFrameByName("top_center"))
+
         plant.SetFreeBodyPose(
             mbp_context,
             plant.GetBodyByName("base_link", object_model),
-            X_WObject)
+            X_WT.multiply(X_TObject))
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(1.0)
 
-        contact_viz_context =\
-            diagram.GetMutableSubsystemContext(contact_viz, diagram_context)
+        contact_viz_context = (
+            diagram.GetMutableSubsystemContext(contact_viz, diagram_context))
         contact_results = contact_viz.EvalAbstractInput(
             contact_viz_context,
             contact_input_port.get_index()).get_value()
