@@ -27,6 +27,8 @@ from pydrake.multibody.math import (
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ContactResults,
+    ContactResultsToLcmSystem,
+    ConnectContactResultsToDrakeVisualizer,
     MultibodyPlant,
     PointPairContactInfo,
 )
@@ -50,7 +52,7 @@ from pydrake.geometry import (
     SignedDistancePair,
     SceneGraph,
 )
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
 
 import copy
 import math
@@ -67,6 +69,7 @@ from pydrake.common.deprecation import (
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.systems.lcm import LcmPublisherSystem
 
 
 def get_index_class(cls):
@@ -791,6 +794,31 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(contact_results.num_contacts() == 1)
         self.assertTrue(
             isinstance(contact_results.contact_info(0), PointPairContactInfo))
+
+        # ContactResultsToLcmSystem
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+        contact_results_to_lcm = ContactResultsToLcmSystem(plant)
+        context = contact_results_to_lcm.CreateDefaultContext()
+        context.FixInputPort(0, AbstractValue.Make(contact_results))
+        output = contact_results_to_lcm.AllocateOutput()
+        contact_results_to_lcm.CalcOutput(context, output)
+        result = output.get_data(0)
+        self.assertIsInstance(result, AbstractValue)
+
+    def test_connect_contact_results(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(0.001))
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
+        self.assertIsInstance(publisher, LcmPublisherSystem)
 
     def test_scene_graph_queries(self):
         builder = DiagramBuilder()
