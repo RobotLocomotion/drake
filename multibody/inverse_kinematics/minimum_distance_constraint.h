@@ -9,8 +9,11 @@
 namespace drake {
 namespace multibody {
 /**
- * We will impose the constraint that the pairwise distance are all no smaller
- * than p distance threshold. We do this with the constraint
+ * Computes the penalty function γ(x) and its derivatives dγ(x)/dx, where x is
+ * the scaled (and shifted) signed distance. This function is used by
+ * MinimumDistanceConstraint, in which we impose the constraint that the
+ * pairwise distance are all no smaller than a distance threshold. We do this
+ * with the constraint
  * ∑ᵢ γ(dᵢ / distance_threshold - 1) = 0
  * where dᵢ is the signed distance between the i'th pair of geometries. γ(x) is
  * the penalty function on x = d / distance_threshold - 1.

@@ -180,8 +180,6 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
       double angle_upper);
 
-  // TODO(hongkai.dai): use a piecewise quadratic function as the default
-  // penalty function.
   // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
@@ -190,6 +188,8 @@ class InverseKinematics {
    * 1. Anchored (static) object and a dynamic object.
    * 2. A dynamic object and another dynamic object, if one is not the parent
    * link of the other.
+   * @see MinimumDistanceConstraint for more details on the constraint
+   * formulation.
    * @throws invalid_argument if the plant does not register its geometry
    * with a SceneGraph.
    */
