@@ -1879,6 +1879,126 @@ INSTANTIATE_TEST_CASE_P(SphereBoxConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentricTransform()));
 
+
+//
+// Tests the repeatability of the call to compute the signed distance between
+// closest pairs of dynamic objects when the objects keep the same poses.
+// Related to https://github.com/RobotLocomotion/drake/issues/10286
+//
+// 1. Define test data SignedDistancePairRepeatTestData.
+// 2. Define test fixture SignedDistancePairRepeatabilityTest that takes a
+//    parameter SignedDistancePairRepeatTestData.
+// 3. Define test procedure(s) TEST_P(,) of the test fixture.
+// 4. Instantiate the tests from the test data and the test fixture.
+//
+
+// Test data.
+class SignedDistancePairRepeatTestData {
+ public:
+  SignedDistancePairRepeatTestData(shared_ptr<const Shape> a,
+                             shared_ptr<const Shape> b,
+                             const RigidTransformd& X_WA,
+                             const RigidTransformd& X_WB)
+      : a_(a),
+        b_(b),
+        X_WA_(X_WA),
+        X_WB_(X_WB) {}
+
+  // Google Test uses this operator to report the test data in the log file
+  // when a test fails. The message only says we have two geometries and two
+  // poses without reporting their values.
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const SignedDistancePairRepeatTestData& obj) {
+    return os << "{geometry A, geometry B, X_WA, X_WB}" << std::flush;
+  }
+
+  shared_ptr<const Shape> a_;
+  shared_ptr<const Shape> b_;
+  const RigidTransformd X_WA_;
+  const RigidTransformd X_WB_;
+};
+
+std::vector<SignedDistancePairRepeatTestData>
+GenDistPairRepeatTestDataCylinderCylinder() {
+  const RigidTransformd& X_WA = RigidTransformd(Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd& X_WB = RigidTransformd(Vector3d(0.11, 0.21, 0.31));
+  const double radius_A = 0.1;
+  const double radius_B = 0.2;
+  const double length_A = 3.1;
+  const double length_B = 3.2;
+  auto cylinder_A = make_shared<const Cylinder>(radius_A, length_A);
+  auto cylinder_B = make_shared<const Cylinder>(radius_B, length_B);
+  std::vector<SignedDistancePairRepeatTestData> test_data;
+  test_data.emplace_back(cylinder_A, cylinder_B, X_WA, X_WB);
+  return test_data;
+}
+
+std::vector<SignedDistancePairRepeatTestData>
+GenDistPairRepeatTestDataSphereSphere() {
+  const RigidTransformd& X_WA = RigidTransformd(Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd& X_WB = RigidTransformd(Vector3d(0.11, 0.21, 0.31));
+  const double radius_A = 0.1;
+  const double radius_B = 0.2;
+  auto sphere_A = make_shared<const Sphere>(radius_A);
+  auto sphere_B = make_shared<const Sphere>(radius_B);
+  std::vector<SignedDistancePairRepeatTestData> test_data;
+  test_data.emplace_back(sphere_A, sphere_B, X_WA, X_WB);
+  return test_data;
+}
+
+// Test fixture.
+class SignedDistancePairRepeatabilityTest
+    : public testing::TestWithParam<SignedDistancePairRepeatTestData> {
+ public:
+  SignedDistancePairRepeatabilityTest() {
+    auto data = GetParam();
+    engine_.AddDynamicGeometry(*(data.a_), GeometryIndex(0));
+    engine_.AddDynamicGeometry(*(data.b_), GeometryIndex(1));
+    geometry_map_.push_back(GeometryId::get_new_id());
+    geometry_map_.push_back(GeometryId::get_new_id());
+    X_WG_.push_back(data.X_WA_.GetAsIsometry3());
+    X_WG_.push_back(data.X_WB_.GetAsIsometry3());
+    geometry_indices_.push_back(GeometryIndex(0));
+    geometry_indices_.push_back(GeometryIndex(1));
+  }
+
+ protected:
+  ProximityEngine<double> engine_;
+  std::vector<GeometryId> geometry_map_;
+  std::vector<Isometry3d> X_WG_;
+  std::vector<GeometryIndex> geometry_indices_;
+};
+
+// Test procedure.
+TEST_P(SignedDistancePairRepeatabilityTest, SinglePair) {
+  engine_.UpdateWorldPoses(X_WG_, geometry_indices_);
+  const auto results =
+      engine_.ComputeSignedDistancePairwiseClosestPoints(geometry_map_);
+  ASSERT_EQ(results.size(), 1);
+  const double kSignedDistanceFirstCall = results[0].distance;
+
+  // Repeat the computation many times and make sure we always get exactly
+  // the same signed distance as the first one above. No tolerance.
+  const int kRepeat = 7;
+  for (int count = 1; count <= kRepeat; ++count) {
+    engine_.UpdateWorldPoses(X_WG_, geometry_indices_);
+    const auto repeat_results =
+        engine_.ComputeSignedDistancePairwiseClosestPoints(geometry_map_);
+    ASSERT_EQ(repeat_results.size(), 1);
+    // Compare using all the bits of `double`.
+    ASSERT_EQ(kSignedDistanceFirstCall, repeat_results[0].distance)
+      << "Repeated call did not give exactly the same signed distance.";
+  }
+}
+
+// Instantiate the tests.
+INSTANTIATE_TEST_CASE_P(SphereSphere,
+    SignedDistancePairRepeatabilityTest,
+    testing::ValuesIn(GenDistPairRepeatTestDataSphereSphere()));
+INSTANTIATE_TEST_CASE_P(CylinderCylinder,
+    SignedDistancePairRepeatabilityTest,
+    testing::ValuesIn(GenDistPairRepeatTestDataCylinderCylinder()));
+
 // Given a sphere S and box B. The box's height and depth are large (much larger
 // than the diameter of the sphere), but the box's *width* is *less* than the
 // sphere diameter. The sphere will contact it such that it's penetration is
