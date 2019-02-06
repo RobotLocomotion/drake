@@ -246,7 +246,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
 
   drake::log()->info("Solving linear program.");
   const solvers::MathematicalProgramResult result = Solve(prog);
-  if (result.get_solution_result() != solvers::SolutionResult::kSolutionFound) {
+  if (!result.is_success()) {
     drake::log()->error("No solution found.  SolutionResult = " +
                         to_string(result.get_solution_result()));
   }

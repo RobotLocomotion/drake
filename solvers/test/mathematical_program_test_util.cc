@@ -16,8 +16,8 @@ MathematicalProgramResult RunSolver(
 
   MathematicalProgramResult result{};
   solver.Solve(prog, initial_guess, {}, &result);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-  if (result.get_solution_result() != SolutionResult::kSolutionFound) {
+  EXPECT_TRUE(result.is_success());
+  if (!result.is_success()) {
     throw std::runtime_error(
         "Solver " + solver.solver_id().name() + " fails to find the solution");
   }

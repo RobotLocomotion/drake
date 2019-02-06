@@ -268,7 +268,7 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
     // The MathematicalProgramResult should meet tolerances.
     for (const auto& per_thread_data_vec : {single_threaded, multi_threaded}) {
       const auto& result = per_thread_data_vec[i].result;
-      EXPECT_EQ(result.get_solution_result(), drake::solvers::kSolutionFound);
+      EXPECT_TRUE(result.is_success());
       EXPECT_TRUE(CompareMatrices(
           result.get_x_val(), Eigen::Vector2d(0, 1), 1E-6));
       EXPECT_NEAR(result.get_optimal_cost(), 2, 1E-6);

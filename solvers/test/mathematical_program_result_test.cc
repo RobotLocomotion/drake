@@ -24,7 +24,7 @@ class MathematicalProgramResultTest : public ::testing::Test {
 
 TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
   MathematicalProgramResult result;
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
+  EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
   DRAKE_EXPECT_THROWS_MESSAGE(result.get_solver_details(), std::logic_error,
@@ -47,7 +47,7 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   const double cost = 1;
   result.set_optimal_cost(cost);
   result.set_solver_id(SolverId("foo"));
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");

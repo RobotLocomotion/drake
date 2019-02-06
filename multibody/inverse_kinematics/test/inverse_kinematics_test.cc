@@ -231,8 +231,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
   auto solve_and_check = [&]() {
     const solvers::MathematicalProgramResult result =
         Solve(ik.prog(), ik.prog().initial_guess());
-    EXPECT_EQ(result.get_solution_result(),
-              solvers::SolutionResult::kSolutionFound);
+    EXPECT_TRUE(result.is_success());
 
     const Eigen::Vector3d p_WB1 = result.GetSolution(ik.q().segment<3>(4));
     const Eigen::Quaterniond quat_WB1(

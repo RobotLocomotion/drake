@@ -25,6 +25,10 @@ const AbstractValue& MathematicalProgramResult::get_solver_details() const {
   return *solver_details_;
 }
 
+bool MathematicalProgramResult::is_success() const {
+  return solution_result_ == SolutionResult::kSolutionFound;
+}
+
 SolverResult MathematicalProgramResult::ConvertToSolverResult() const {
   SolverResult solver_result(solver_id_);
   if (x_val_.size() != 0) {

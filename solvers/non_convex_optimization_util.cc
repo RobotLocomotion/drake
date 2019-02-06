@@ -45,7 +45,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> DecomposeNonConvexQuadraticForm(
   // Due to positive definiteness, both trace(Q1) and trace(Q2) are
   // non-negative, so min(max(trace(Q1), trace(Q2)) is lower bounded. Hence,
   // this optimal cost is not un-bounded.
-  DRAKE_DEMAND(result.get_solution_result() == SolutionResult::kSolutionFound);
+  DRAKE_DEMAND(result.is_success());
   auto Q1_sol = result.GetSolution(Q1);
   auto Q2_sol = result.GetSolution(Q2);
   return std::make_pair(Q1_sol, Q2_sol);

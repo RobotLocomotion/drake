@@ -84,7 +84,7 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
     MathematicalProgramResult result = Solve(prog);
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+    EXPECT_TRUE(result.is_success());
     const auto x_val = result.GetSolution(x);
     const auto y_val = result.GetSolution(y);
     // Choose 1e-6 as the precision, since that is the default minor feasibility
