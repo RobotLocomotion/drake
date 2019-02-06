@@ -386,10 +386,8 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
-        "//bindings/pydrake/attic/systems:controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
@@ -442,10 +440,7 @@ drake_py_unittest(
     data = [
         "//systems/sensors:test_models",
     ],
-    deps = [
-        ":sensors_py",
-        "//bindings/pydrake/attic/systems:sensors_py",
-    ],
+    deps = [":sensors_py"],
 )
 
 drake_py_unittest(

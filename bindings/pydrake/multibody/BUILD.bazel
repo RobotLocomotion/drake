@@ -197,53 +197,6 @@ filegroup(
 )
 
 drake_py_unittest(
-    name = "rigid_body_plant_test",
-    data = ["//examples/pendulum:models"],
-    deps = [
-        ":rigid_body_plant_py",
-        ":rigid_body_tree_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "shapes_test",
-    data = ["//examples/quadrotor:models"],
-    deps = [
-        ":shapes_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "rigid_body_tree_test",
-    data = [
-        "//examples/atlas:models",
-        "//examples/pendulum:models",
-        "//examples/simple_four_bar:models",
-    ],
-    deps = [
-        ":collision_py",
-        ":joints_py",
-        ":parsers_py",
-        ":rigid_body_py",
-        ":rigid_body_tree_py",
-        ":shapes_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "parsers_test",
-    data = [
-        "//examples/acrobot:models",
-        "//examples/atlas:models",
-        "//examples/pr2:models",
-    ],
-    deps = [
-        ":parsers_py",
-        ":rigid_body_tree_py",
-    ],
-)
-
-drake_py_unittest(
     name = "parsing_test",
     data = [
         "//examples/atlas:models",

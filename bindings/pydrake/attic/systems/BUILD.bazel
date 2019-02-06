@@ -12,6 +12,7 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -27,7 +28,7 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:module_py",
+        "//bindings/pydrake/attic:module_py",
     ],
 )
 
@@ -85,8 +86,27 @@ install(
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
-# NOTE: Unittests on `attic` should not move until the forwarding modules
-# outside of the attic are deprecated!
+drake_py_unittest(
+    name = "controllers_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":controllers_py",
+        "//bindings/pydrake/multibody:rigid_body_tree_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "sensors_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
+    deps = [
+        ":sensors_py",
+        "//bindings/pydrake/systems:sensors_py",
+    ],
+)
 
 drake_py_binary(
     name = "rgbd_camera_example",
