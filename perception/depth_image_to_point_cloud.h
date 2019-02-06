@@ -20,17 +20,20 @@ namespace perception {
 ///
 /// @system{ DepthImageToPointCloud,
 ///          @input_port{depth_image}
+///          @input_port{rgb_image (optional)}
 ///          @input_port{camera_pose (optional)},
 ///          @output_port{point_cloud}
 /// }
 ///
-/// The system has an input port that takes a depth image and an additional
-/// optional input port that takes the camera_pose, X_PC.  If the camera_pose
-/// input is connected, then the point cloud is represented in the parent frame
-/// (e.g., if camera_pose is the pose of the camera in the world frame, then
-/// the point_cloud output will be a PointCloud in the world frame).  If the
-/// camera_pose input is not connected, the PointCloud will be represented in
-/// the camera frame.
+/// The system has an input port that takes a depth image, an optional input
+/// port that takes an RGB image, and an additional optional input port that
+/// takes the camera_pose, X_PC.  If the camera_pose input is connected, then
+/// the point cloud is represented in the parent frame (e.g., if camera_pose is
+/// the pose of the camera in the world frame, then the point_cloud output will
+/// be a PointCloud in the world frame).  If the camera_pose input is not
+/// connected, the PointCloud will be represented in the camera frame.  Note
+/// that if an RGB image is provided, it must be in the same frame as the depth
+/// image.
 ///
 /// If a pixel is NaN, the converted point will be (NaN, NaN, NaN).  If a pixel
 /// is kTooClose or kTooFar (as defined by ImageTraits), the converted point
@@ -62,6 +65,11 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
     return this->get_input_port(depth_image_input_port_);
   }
 
+  /// Returns the abstract valued input port that expects an ImageRgba8U.
+  const systems::InputPort<double>& rgb_image_input_port() const {
+    return this->get_input_port(rgb_image_input_port_);
+  }
+
   /// Returns the abstract valued input port that expects X_PC as a
   /// RigidTransformd.  (This input port does not necessarily need to be
   /// connected; refer to the class overview for details.)
@@ -70,7 +78,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   }
 
   /// Returns the abstract valued output port that provides a PointCloud.
-  /// Only the XYZ channel of the point cloud is present.
+  /// Only the XYZ and RGB channels of the point cloud are present.
   const systems::OutputPort<double>& point_cloud_output_port() const {
     return LeafSystem<double>::get_output_port(0);
   }
@@ -88,6 +96,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
       const systems::sensors::CameraInfo& camera_info,
       const optional<math::RigidTransformd>& camera_pose,
       const systems::sensors::ImageDepth32F& depth_image,
+      const optional<systems::sensors::ImageRgba8U>& rgb_image,
       const optional<float>& scale,
       PointCloud* cloud);
 
@@ -104,6 +113,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
       const systems::sensors::CameraInfo& camera_info,
       const optional<math::RigidTransformd>& camera_pose,
       const systems::sensors::ImageDepth16U& depth_image,
+      const optional<systems::sensors::ImageRgba8U>& rgb_image,
       const optional<float>& scale,
       PointCloud* cloud);
 
@@ -117,6 +127,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   const float scale_;
 
   systems::InputPortIndex depth_image_input_port_{};
+  systems::InputPortIndex rgb_image_input_port_{};
   systems::InputPortIndex camera_pose_input_port_{};
 };
 
