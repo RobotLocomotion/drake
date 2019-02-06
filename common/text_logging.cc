@@ -31,6 +31,7 @@ std::shared_ptr<logging::logger> onetime_create_log() {
     // instead of co-mingling their character bytes.
     wrapper->add_sink(std::make_shared<spdlog::sinks::stderr_sink_mt>());
     result = std::make_shared<logging::logger>("console", std::move(wrapper));
+    result->set_level(spdlog::level::info);
   }
   return result;
 }
