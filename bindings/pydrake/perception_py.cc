@@ -128,6 +128,8 @@ void init_perception(py::module m) {
             py::arg("scale") = 1.0, cls_doc.ctor.doc)
         .def("depth_image_input_port", &Class::depth_image_input_port,
             py_reference_internal, cls_doc.depth_image_input_port.doc)
+        .def("rgb_image_input_port", &Class::rgb_image_input_port,
+             py_reference_internal, cls_doc.rgb_image_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,
             py_reference_internal, cls_doc.point_cloud_output_port.doc);
   }
