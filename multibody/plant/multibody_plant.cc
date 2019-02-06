@@ -1560,7 +1560,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 
   // Declare applied spatial force input force port.
   applied_spatial_force_input_port_ = this->DeclareAbstractInputPort(
-        "applied_spatial_force_input",
+        "applied_spatial_force",
         Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
 
   // Declare one output port for the entire state vector.
