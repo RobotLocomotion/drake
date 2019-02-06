@@ -392,8 +392,8 @@ class MeshcatContactVisualizer(LeafSystem):
                 # create cylinders with small radius.
                 vis[prefix]["contact_forces"][new_contact.key].set_object(
                     meshcat.geometry.Cylinder(
-                        height=1./self._force_cylinder_longitudinal_scale,
-                        radius=0.01/self._force_cylinder_radial_scale),
+                        height=1. / self._force_cylinder_longitudinal_scale,
+                        radius=0.01 / self._force_cylinder_radial_scale),
                     meshcat.geometry.MeshLambertMaterial(color=0xff0000))
             else:
                 # contact is not new, but it's valid.
@@ -410,7 +410,7 @@ class MeshcatContactVisualizer(LeafSystem):
             # Compute pose of contact cylinder `C` in world frame `W`.
             R = np.zeros((3, 3))
             magnitude = np.linalg.norm(contact.info.contact_force())
-            y = contact.info.contact_force()/magnitude
+            y = contact.info.contact_force() / magnitude
             R[:, 1] = y
             R[:, 0] = [0, -y[2], y[1]]
             R[:, 2] = np.cross(R[:, 0], y)
