@@ -19,24 +19,11 @@ Similarly, it provides:
 If you want to log objects that are expensive to serialize, these macros will
 not be compiled if debugging is turned off (-DNDEBUG is set):
 <pre>
-  SPDLOG_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
-  SPDLOG_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
+  SPDLOG_LOGGER_TRACE(drake::log(), "message: {}", something_conditionally_compiled);
+  SPDLOG_LOGGER_DEBUG(drake::log(), "message: {}", something_conditionally_compiled);
 </pre>
-Note that if you are running with NDEBUG _undefined_, so that these two macros
-are expanded, the arguments will be evaluated even if logging is disabled. If
-you want to avoid that cost, Drake provides macros that provide the same
-functionality but won't evaluate the arguments unless they are actually going
-to be logged:
-<pre>
-  DRAKE_SPDLOG_TRACE(drake::log(),
-                     "message: {}", something_conditionally_compiled);
-  DRAKE_SPDLOG_DEBUG(drake::log(),
-                     "message: {}", something_conditionally_compiled);
-</pre>
-We suggest using the Drake versions of these macros everywhere so that you don't
-have to decide when the argument-evaluation cost is going to be excessive.
 
-The format string syntax is fmtlib; see http://fmtlib.net/5.2.1/syntax.html.
+The format string syntax is fmtlib; see http://fmtlib.net/5.3.0/syntax.html.
 In particular, any class that overloads `operator<<` for `ostream` can be
 printed without any special handling.
 */
@@ -47,21 +34,17 @@ printed without any special handling.
 // if and only if Drake is being compiled in debug mode.  When not in debug
 // mode, they are no-ops and their arguments are not evaluated.
 #ifndef NDEBUG
-#define SPDLOG_DEBUG_ON 1
-#define SPDLOG_TRACE_ON 1
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
+// TODO(jwnimmer-tri) Deprecate these Drake-specific aliases.
 #define DRAKE_SPDLOG_TRACE(logger, ...)            \
   do {                                             \
-    if (logger->level() <= spdlog::level::trace) { \
-      SPDLOG_TRACE(logger, __VA_ARGS__);           \
-    }                                              \
+    SPDLOG_LOGGER_TRACE(logger, __VA_ARGS__);      \
   } while (0)
 
 #define DRAKE_SPDLOG_DEBUG(logger, ...)            \
   do {                                             \
-    if (logger->level() <= spdlog::level::debug) { \
-      SPDLOG_DEBUG(logger, __VA_ARGS__);           \
-    }                                              \
+    SPDLOG_LOGGER_DEBUG(logger, __VA_ARGS__);      \
   } while (0)
 #else
 #define DRAKE_SPDLOG_TRACE(logger, ...)
@@ -72,6 +55,13 @@ printed without any special handling.
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 /* clang-format on */
+
+// Backfill a flag day API change from spdlog.
+// TODO(jwnimmer-tri) Update Drake to use the newer APIs only.
+#undef SPDLOG_DEBUG
+#undef SPDLOG_TRACE
+#define SPDLOG_DEBUG SPDLOG_LOGGER_DEBUG
+#define SPDLOG_TRACE SPDLOG_LOGGER_TRACE
 
 #else  // HAVE_SPDLOG
 
