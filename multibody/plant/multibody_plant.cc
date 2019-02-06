@@ -1208,7 +1208,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // If there are any generalized forces applied, add them.
   const BasicVector<T>* tau_applied =
-      this->EvalVectorInput(context, generalized_forces_input_port_);
+      this->EvalVectorInput(context, applied_generalized_force_input_port_);
   if (tau_applied)
     forces.mutable_generalized_forces() += tau_applied->get_value();
 
@@ -1528,8 +1528,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   }
 
   // Declare the generalized force input port.
-  generalized_forces_input_port_ = this->DeclareVectorInputPort(
-      "generalized_forces",
+  applied_generalized_force_input_port_ = this->DeclareVectorInputPort(
+      "applied_generalized_force",
       systems::BasicVector<T>(num_velocities())).get_index();
 
   // Declare one output port for the entire state vector.
@@ -1654,9 +1654,9 @@ MultibodyPlant<T>::get_actuation_input_port() const {
 
 template <typename T>
 const systems::InputPort<T>&
-MultibodyPlant<T>::get_generalized_forces_input_port() const {
+MultibodyPlant<T>::get_applied_generalized_force_input_port() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  return this->get_input_port(generalized_forces_input_port_);
+  return this->get_input_port(applied_generalized_force_input_port_);
 }
 
 template <typename T>
