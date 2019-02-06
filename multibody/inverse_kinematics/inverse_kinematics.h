@@ -180,8 +180,6 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
       double angle_upper);
 
-  // TODO(hongkai.dai): use a piecewise quadratic function as the default
-  // penalty function.
   // TODO(hongkai.dai): remove this documentation.
   /**
    * Adds the constraint that the pairwise distance between objects should be no
@@ -190,16 +188,8 @@ class InverseKinematics {
    * 1. Anchored (static) object and a dynamic object.
    * 2. A dynamic object and another dynamic object, if one is not the parent
    * link of the other.
-   * The formulation of the constraint is
-   * ∑ γ(φᵢ/dₘᵢₙ - 1) = 0
-   * where φᵢ is the signed distance of the i'th pair, dₘᵢₙ is the minimal
-   * allowable distance, and γ is a penalizing function defined as
-   * γ(x) = 0 if x ≥ 0
-   * γ(x) = -x exp(1/x) if x < 0
-   * This formulation is described in section II.C of Whole-body Motion Planning
-   * with Centroidal Dynamics and Full Kinematics by Hongkai Dai, Andres
-   * Valenzuela and Russ Tedrake, 2014 IEEE-RAS International Conference on
-   * Humanoid Robots.
+   * @see MinimumDistanceConstraint for more details on the constraint
+   * formulation.
    * @throws invalid_argument if the plant does not register its geometry
    * with a SceneGraph.
    */
