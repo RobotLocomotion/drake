@@ -256,7 +256,7 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "multibody_tree_test",
+    name = "plant_test",
     data = [
         ":models",
         "//examples/double_pendulum:models",
@@ -267,7 +267,14 @@ drake_py_unittest(
     deps = [
         ":benchmarks_py",
         ":multibody_tree_py",
+        ":plant_py",
+        ":tree_py",
     ],
+)
+
+drake_py_unittest(
+    name = "math_test",
+    deps = [":math_py"],
 )
 
 drake_py_unittest(
