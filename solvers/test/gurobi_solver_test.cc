@@ -53,6 +53,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     solver_options.SetOption(GurobiSolver::id(), "DualReductions", 1);
     MathematicalProgramResult result;
     solver.Solve(*prog_, {}, solver_options, &result);
+    EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasible_Or_Unbounded);
     // This code is defined in
@@ -65,6 +66,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
 
     solver_options.SetOption(GurobiSolver::id(), "DualReductions", 0);
     solver.Solve(*prog_, {}, solver_options, &result);
+    EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
     // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
@@ -119,7 +121,7 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
       x_expected[0] = x_expected0_to_test[i];
       prog.SetInitialGuess(x, x_expected);
       solver.Solve(prog, x_expected, {}, &result);
-      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+      EXPECT_TRUE(result.is_success());
       const auto& x_value = result.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));
@@ -222,7 +224,7 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
 
       MathematicalProgramResult result;
       solver.Solve(prog, {}, {}, &result);
-      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+      EXPECT_TRUE(result.is_success());
       const auto& x_value = result.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
                                   MatrixCompareType::absolute));

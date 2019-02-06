@@ -13,7 +13,6 @@
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
-#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
@@ -190,7 +189,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// for the parent node (and, by recursive precondition, all predecessor nodes
   /// in the tree.)
   void CalcPositionKinematicsCache_BaseToTip(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {
     // This method must not be called for the "world" body node.
     DRAKE_ASSERT(topology_.body != world_index());
@@ -253,7 +252,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcVelocityKinematicsCache().
   void CalcVelocityKinematicsCache_BaseToTip(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       VelocityKinematicsCache<T>* vc) const {
@@ -397,7 +396,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcAccelerationKinematicsCache().
   void CalcSpatialAcceleration_BaseToTip(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       const VectorX<T>& mbt_vdot,
@@ -599,7 +598,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
   void CalcInverseDynamics_TipToBase(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       const std::vector<SpatialAcceleration<T>>& A_WB_array,
@@ -786,7 +785,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   /// @pre The position kinematics cache `pc` was already updated to be in sync
   /// with `context` by MultibodyTree::CalcPositionKinematicsCache().
   void CalcAcrossNodeGeometricJacobianExpressedInWorld(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       EigenPtr<MatrixX<T>> H_PB_W) const {
     // Checks on the input arguments.
@@ -893,7 +892,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   ///
   /// @throws std::exception when called on the _root_ node or `abc` is nullptr.
   void CalcArticulatedBodyInertiaCache_TipToBase(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const Eigen::Ref<const MatrixUpTo6<T>>& H_PB_W,
       ArticulatedBodyInertiaCache<T>* abc) const {
@@ -1073,8 +1072,8 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // Helpers to access the state.
   // Returns an Eigen expression of the vector of generalized velocities.
   Eigen::VectorBlock<const VectorX<T>> get_mobilizer_velocities(
-      const MultibodyTreeContext<T>& context) const {
-    return context.get_state_segment(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().get_state_segment(context,
         topology_.mobilizer_velocities_start,
         topology_.num_mobilizer_velocities);
   }
@@ -1306,7 +1305,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // - We are in a base-to-tip recursion and therefore `X_PF(qb_P)` and `X_WP`
   //   have already been updated.
   void CalcAcrossMobilizerBodyPoses_BaseToTip(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {
     // Body for this node.
     const Body<T>& body_B = body();
@@ -1371,7 +1370,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   // provide a valid PositionKinematicsCache pointer, otherwise this method
   // aborts in Debug builds.
   void CalcAcrossMobilizerPositionKinematicsCache(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       PositionKinematicsCache<T>* pc) const {
     DRAKE_ASSERT(pc != nullptr);
     Isometry3<T>& X_FM = get_mutable_X_FM(pc);
@@ -1390,7 +1389,7 @@ class BodyNode : public MultibodyTreeElement<BodyNode<T>, BodyNodeIndex> {
   //   2. b_Bo = 0 when w_WB = 0.
   //   3. b_Bo.translational() = 0 when Bo = Bcm (p_BoBcm = 0).
   void CalcBodySpatialForceGivenItsSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const PositionKinematicsCache<T>& pc,
       const VelocityKinematicsCache<T>& vc,
       const SpatialAcceleration<T>& A_WB, SpatialForce<T>* Ftot_BBo_W_ptr)

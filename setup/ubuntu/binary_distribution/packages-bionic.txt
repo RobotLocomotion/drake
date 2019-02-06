@@ -39,6 +39,7 @@ python-six
 python-tk
 python-tornado
 python-u-msgpack
+python-virtualenv
 python-yaml
 python-zmq
 python3
@@ -50,6 +51,7 @@ python3-six
 python3-tk
 python3-tornado
 python3-u-msgpack
+python3-virtualenv
 python3-yaml
 python3-zmq
 qtbase5-dev

@@ -45,6 +45,9 @@ Most third-party software used by Drake will be incorporated via files named
 (`boost`, `eigen`, `vtk`, etc.).  Consult that file to check which download or
 installation helper is used; find the helper in the the list below to continue.
 
+Drake maintainers can use the bazel-bin/tools/workspace/new_release tool to
+report any out-of-date externals.
+
 ## Updating github_archive software versions
 
 For software downloaded from github.com and compiled from source, there are two

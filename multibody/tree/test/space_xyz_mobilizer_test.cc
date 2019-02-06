@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
@@ -66,7 +66,7 @@ TEST_F(SpaceXYZMobilizerTest, ZeroState) {
   // an identity rigid transform.
   mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
   const RigidTransformd X_WB(
-      mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_));
+      mobilizer_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
@@ -81,11 +81,11 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
 
   // Compute N.
   MatrixX<double> N(3, 3);
-  mobilizer_->CalcNMatrix(*mbt_context_, &N);
+  mobilizer_->CalcNMatrix(*context_, &N);
 
   // Compute Nplus.
   MatrixX<double> Nplus(3, 3);
-  mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
   // Verify that Nplus is the inverse of N.
   MatrixX<double> N_x_Nplus = N * Nplus;

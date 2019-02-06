@@ -1231,16 +1231,15 @@ bool Simulator<T>::IntegrateContinuousState(
     case IntegratorBase<T>::kTimeHasAdvanced:
     case IntegratorBase<T>::kReachedBoundaryTime:
       return false;           // Did not hit a time for a timed event.
-      break;
 
-    default:DRAKE_ABORT_MSG("Unexpected integrator result.");
+    case IntegratorBase<T>::kReachedZeroCrossing:
+    case IntegratorBase<T>::kReachedStepLimit:
+      throw std::logic_error("Unexpected integrator result");
   }
 
   // TODO(sherm1) Constraint projection goes here.
 
-  // Should never get here.
-  DRAKE_ABORT();
-  return false;
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace systems

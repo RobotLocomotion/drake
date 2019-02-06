@@ -197,7 +197,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
       "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
   const Isometry3d X_MF3 = RigidTransformd(
       Vector3d(0.7, 0.8, 0.9)).GetAsIsometry3();
-  check_frame("instance1", "model_scope_model_frame_implicit", X_MF3);
+  check_frame(
+      "_instance1_sdf_model_frame", "model_scope_model_frame_implicit", X_MF3);
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint

@@ -254,7 +254,7 @@ parser.add_argument(
     help="Time constant for the first order low pass filter applied to"
          "the teleop commands")
 parser.add_argument(
-    "--velocity_limit_factor", type=float, default=0.15,
+    "--velocity_limit_factor", type=float, default=1.0,
     help="This value, typically between 0 and 1, further limits the iiwa14 "
          "joint velocities. It multiplies each of the seven pre-defined "
          "joint velocity limits. "

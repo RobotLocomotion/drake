@@ -156,7 +156,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     }
   }
 
-  DRAKE_ABORT_MSG("NOTREACHED");
+  DRAKE_UNREACHABLE();
 }
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(

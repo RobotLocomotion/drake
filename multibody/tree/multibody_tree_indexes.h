@@ -52,11 +52,25 @@ using ModelInstanceIndex = TypeSafeIndex<class ModelInstanceTag>;
 // Note:
 //   static global variables are strongly discouraged by the C++ style guide:
 // https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-// For this reason, we create and return an instance of BodyIndex
+// For this reason, we create and return an instance of pre-defined indices
 // instead of using a static variable.
+
 /// For every MultibodyTree the **world** body _always_ has this unique index
 /// and it is always zero.
 inline BodyIndex world_index() { return BodyIndex(0); }
+
+/// Returns the model instance containing the *world* body.  For
+/// every MultibodyTree the **world** body _always_ has this unique
+/// model instance and it is always zero (as described in #3088).
+inline ModelInstanceIndex world_model_instance() {
+  return ModelInstanceIndex(0);
+}
+
+/// Returns the model instance which contains all tree elements with
+/// no explicit model instance specified.
+inline ModelInstanceIndex default_model_instance() {
+  return ModelInstanceIndex(1);
+}
 
 }  // namespace multibody
 }  // namespace drake

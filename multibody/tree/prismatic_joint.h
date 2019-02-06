@@ -30,6 +30,7 @@ namespace multibody {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -138,9 +139,6 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   /// @name Context-dependent value access
-  ///
-  /// These methods require the provided context to be an instance of
-  /// MultibodyTreeContext. Failure to do so leads to a std::logic_error.
   /// @{
 
   /// Gets the translation distance of `this` mobilizer from `context`.
@@ -279,6 +277,9 @@ class PrismaticJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const final;
+
   // Make PrismaticJoint templated on every other scalar type a friend of
   // PrismaticJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of PrismaticJoint<T>.
@@ -325,5 +326,5 @@ class PrismaticJoint final : public Joint<T> {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::PrismaticJoint)

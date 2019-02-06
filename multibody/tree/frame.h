@@ -7,7 +7,6 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/multibody/math/spatial_velocity.h"
 #include "drake/multibody/tree/frame_base.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
@@ -203,6 +202,9 @@ class Frame : public FrameBase<T> {
   /// Clones this %Frame (templated on T) to a frame templated on AutoDiffXd.
   virtual std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
+
+  virtual std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
 
  private:

@@ -483,11 +483,9 @@ void ManipulationStation<T>::Finalize() {
       // the picking bin.
       q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
 
-      RandomGenerator generator;
       std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
           y(-0.8, -.55), z(0.3, 0.35);
-      const Vector3<symbolic::Expression> xyz{x(generator), y(generator),
-                                              z(generator)};
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto body_index : object_ids_) {
         const multibody::Body<T>& body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);

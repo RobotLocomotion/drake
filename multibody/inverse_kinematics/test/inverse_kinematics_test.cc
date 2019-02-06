@@ -231,8 +231,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
   auto solve_and_check = [&]() {
     const solvers::MathematicalProgramResult result =
         Solve(ik.prog(), ik.prog().initial_guess());
-    EXPECT_EQ(result.get_solution_result(),
-              solvers::SolutionResult::kSolutionFound);
+    EXPECT_TRUE(result.is_success());
 
     const Eigen::Vector3d p_WB1 = result.GetSolution(ik.q().segment<3>(4));
     const Eigen::Quaterniond quat_WB1(
@@ -247,11 +246,10 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
     const Eigen::Vector3d p_WS2 =
         p_WB2 + quat_WB2.toRotationMatrix() * X_B2S2_.translation();
     // This large error is due to the derivative of the penalty function(i.e.,
-    // the gradient ∂penalty/∂distance) being small near minimal_distance. For
-    // example, when the minimal_distance = 0.1, and the actual distance is
-    // 0.095, the derivative is 5E-7. Hence a small violation on the penalty
-    // leads to a large violation on the minimal_distance.
-    const double tol = 1e-2;
+    // the gradient ∂penalty/∂distance) being small near minimal_distance. Hence
+    // a small violation on the penalty leads to a large violation on the
+    // minimum_distance.
+    const double tol = 2e-4;
     EXPECT_GE((p_WS1 - p_WS2).norm() - radius1_ - radius2_, min_distance - tol);
   };
 

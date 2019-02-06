@@ -2,7 +2,6 @@
 
 from pydrake.multibody.tree import (
     Body,
-    BodyFrame,
     BodyIndex,
     ForceElement,
     ForceElementIndex,
@@ -20,13 +19,12 @@ from pydrake.multibody.tree import (
     WeldJoint,
     world_index,
 )
-from pydrake.multibody.math import (
-    SpatialAcceleration,
-    SpatialVelocity,
-)
+from pydrake.multibody.math import SpatialVelocity
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
     ContactResults,
+    ContactResultsToLcmSystem,
+    ConnectContactResultsToDrakeVisualizer,
     MultibodyPlant,
     PointPairContactInfo,
 )
@@ -50,7 +48,7 @@ from pydrake.geometry import (
     SignedDistancePair,
     SceneGraph,
 )
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
 
 import copy
 import math
@@ -67,6 +65,7 @@ from pydrake.common.deprecation import (
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.systems.lcm import LcmPublisherSystem
 
 
 def get_index_class(cls):
@@ -84,32 +83,7 @@ def get_index_class(cls):
     raise RuntimeError("Unknown class: {}".format(cls))
 
 
-class TestMultibodyTreeMath(unittest.TestCase):
-    def check_spatial_vector(self, cls, rotation_name, translation_name):
-        vec = cls()
-        # - Accessors.
-        self.assertTrue(isinstance(vec.rotational(), np.ndarray))
-        self.assertTrue(isinstance(vec.translational(), np.ndarray))
-        self.assertEqual(vec.rotational().shape, (3,))
-        self.assertEqual(vec.translational().shape, (3,))
-        # - Fully-parameterized constructor.
-        rotation_expected = [0.1, 0.3, 0.5]
-        translation_expected = [0., 1., 2.]
-        kwargs = {
-            rotation_name: rotation_expected,
-            translation_name: translation_expected,
-        }
-        vec1 = cls(**kwargs)
-        self.assertTrue(np.allclose(vec1.rotational(), rotation_expected))
-        self.assertTrue(
-            np.allclose(vec1.translational(), translation_expected))
-
-    def test_spatial_vector_types(self):
-        self.check_spatial_vector(SpatialVelocity, 'w', 'v')
-        self.check_spatial_vector(SpatialAcceleration, 'alpha', 'a')
-
-
-class TestMultibodyTree(unittest.TestCase):
+class TestPlant(unittest.TestCase):
     def test_type_safe_indices(self):
         self.assertEqual(world_index(), BodyIndex(0))
 
@@ -792,6 +766,31 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertTrue(
             isinstance(contact_results.contact_info(0), PointPairContactInfo))
 
+        # ContactResultsToLcmSystem
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant = MultibodyPlant()
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+        contact_results_to_lcm = ContactResultsToLcmSystem(plant)
+        context = contact_results_to_lcm.CreateDefaultContext()
+        context.FixInputPort(0, AbstractValue.Make(contact_results))
+        output = contact_results_to_lcm.AllocateOutput()
+        contact_results_to_lcm.CalcOutput(context, output)
+        result = output.get_data(0)
+        self.assertIsInstance(result, AbstractValue)
+
+    def test_connect_contact_results(self):
+        file_name = FindResourceOrThrow(
+            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        builder = DiagramBuilder()
+        plant = builder.AddSystem(MultibodyPlant(0.001))
+        Parser(plant).AddModelFromFile(file_name)
+        plant.Finalize()
+
+        publisher = ConnectContactResultsToDrakeVisualizer(builder, plant)
+        self.assertIsInstance(publisher, LcmPublisherSystem)
+
     def test_scene_graph_queries(self):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
@@ -819,16 +818,6 @@ class TestMultibodyTree(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
-
-    def test_new_spellings(self):
-        from pydrake.multibody import math
-        math.SpatialVelocity
-        from pydrake.multibody import plant
-        plant.MultibodyPlant
-        from pydrake.multibody import tree
-        tree.Body
-        # Check for soon-to-be deprecated symbols (#9366).
-        self.assertFalse(hasattr(tree, "MultibodyTree"))
 
     def test_deprecated_tree_api(self):
         plant = MultibodyPlant()

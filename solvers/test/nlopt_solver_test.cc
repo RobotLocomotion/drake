@@ -16,7 +16,7 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
   if (solver.available()) {
     MathematicalProgramResult result;
     solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_optimal_cost(),
               -std::numeric_limits<double>::infinity());
     SolverOptions solver_options;

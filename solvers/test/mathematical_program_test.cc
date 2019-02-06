@@ -2820,7 +2820,7 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
   prog.AddCost(x(0) + x(1));
   const MathematicalProgramResult result =
       Solve(prog, Eigen::Vector2d(-0.5, -0.5));
-  EXPECT_EQ(result.get_solution_result(), kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.get_x_val(),
                               Vector2d::Constant(-std::sqrt(2.) / 2.), 1e-6));
 }

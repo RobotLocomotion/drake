@@ -1,5 +1,6 @@
 #include "drake/systems/primitives/linear_system.h"
 
+#include <fmt/format.h>
 #include <string>
 #include <utility>
 
@@ -114,8 +115,8 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  const InputPort<AutoDiffXd>* input_port = nullptr;
   // By default, use the first input / output ports (if they exist).
+  const InputPort<AutoDiffXd>* input_port = nullptr;
   if (input_port_index == kUseFirstInputIfItExists) {
     if (system.get_num_input_ports() > 0) {
       input_port = &(autodiff_system->get_input_port(0));
@@ -126,8 +127,9 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   } else if (input_port_index != kNoInput) {
     DRAKE_ABORT_MSG("Invalid input_port_index specified.");
   }
-  const OutputPort<AutoDiffXd>* output_port = nullptr;
+
   // By default, use the first input / output ports (if they exist).
+  const OutputPort<AutoDiffXd>* output_port = nullptr;
   if (output_port_index == kUseFirstOutputIfItExists) {
     if (system.get_num_output_ports() > 0) {
       output_port = &(autodiff_system->get_output_port(0));
@@ -137,6 +139,14 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     output_port = &(autodiff_system->get_output_port(output_port_index));
   } else if (output_port_index != kNoOutput) {
     DRAKE_ABORT_MSG("Invalid output_port_index specified.");
+  }
+
+  // Verify that the input port is not abstract valued.
+  if (input_port &&
+      input_port->get_data_type() == PortDataType::kAbstractValued) {
+    throw std::logic_error(
+        "Port requested for differentiation is abstract, and differentiation "
+        "of abstract ports is not supported.");
   }
 
   const int num_inputs = input_port ? input_port->size() : 0;
@@ -150,10 +160,27 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
                  : context.get_discrete_state(0).get_value());
   const int num_states = x0.size();
 
-  // Must have some values for all of the inputs.
-  for (int index = 0; index < system.get_num_input_ports(); index++) {
-    Eigen::VectorXd u = system.EvalEigenVectorInput(context, index);
-    autodiff_context->FixInputPort(index, u.cast<AutoDiffXd>());
+  // Fix autodiff'd versions of the inputs to the autodiff'd Context.
+  for (int i = 0; i < system.get_num_input_ports(); ++i) {
+    const InputPortBase& input_port_i = system.get_input_port_base(
+        InputPortIndex(i));
+
+    // Look for abstract valued port.
+    if (input_port_i.get_data_type() == PortDataType::kAbstractValued) {
+      if (system.EvalAbstractInput(context, i)) {
+        throw std::logic_error(fmt::format(
+            "Unable to linearize system with connected abstract port ({})",
+            input_port_i.get_name()));
+      }
+      continue;
+    }
+
+    // Must be a vector valued port. First look to see whether it's connected.
+    const BasicVector<double>* u_eval = system.EvalVectorInput(context, i);
+    if (u_eval) {
+      Eigen::VectorBlock<const VectorX<double>> u = u_eval->get_value();
+      autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
+    }
   }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);

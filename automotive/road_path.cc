@@ -1,5 +1,6 @@
 #include "drake/automotive/road_path.h"
 
+#include <stdexcept>
 #include <vector>
 
 #include "drake/automotive/maliput/api/branch_point.h"
@@ -40,7 +41,8 @@ template <typename T>
 const T RoadPath<T>::GetClosestPathPosition(const Vector3<T>& geo_pos,
                                             const T& s_guess) const {
   unused(geo_pos, s_guess);
-  DRAKE_ABORT();
+  throw std::runtime_error(
+      "RoadPath<T>::GetClosestPathPosition is not implemented");
 }
 
 template <typename T>

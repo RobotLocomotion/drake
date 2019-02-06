@@ -13,7 +13,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-/// This class is one of the cache entries in MultibodyTreeContext. It holds the
+/// This class is one of the cache entries in the Context. It holds the
 /// kinematics results of computations that only depend on the generalized
 /// positions of the system.
 /// Kinematics results include:
@@ -32,6 +32,7 @@ namespace internal {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template <typename T>
@@ -155,5 +156,5 @@ DRAKE_DEPRECATED(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::PositionKinematicsCache)
