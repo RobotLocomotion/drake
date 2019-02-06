@@ -402,6 +402,10 @@ PYBIND11_MODULE(plant, m) {
         .def("RegisterAsSourceForSceneGraph",
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
+        .def("RegisterCollisionGeometry", &Class::RegisterCollisionGeometry,
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            doc.MultibodyPlant.RegisterCollisionGeometry.doc)
         .def("get_source_id", &Class::get_source_id,
             doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
