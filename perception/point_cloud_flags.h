@@ -14,6 +14,7 @@ namespace perception {
 namespace pc_flags {
 
 typedef int BaseFieldT;
+// N.B. Ensure this is reflected in `operator<<`.
 /// Indicates the data the point cloud stores.
 enum BaseField : int {
   kNone = 0,

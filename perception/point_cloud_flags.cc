@@ -30,6 +30,10 @@ std::ostream& operator<<(std::ostream& os, const Fields& fields) {
   std::vector<std::string> values;
   if (fields.contains(pc_flags::kXYZs))
     values.push_back("kXYZs");
+  if (fields.contains(pc_flags::kNormals))
+    values.push_back("kNormals");
+  if (fields.contains(pc_flags::kRGBs))
+    values.push_back("kRGBs");
   if (fields.has_descriptor()) {
     values.push_back(fields.descriptor_type().name());
   }
