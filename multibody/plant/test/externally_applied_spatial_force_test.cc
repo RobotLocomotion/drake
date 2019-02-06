@@ -2,16 +2,11 @@
 
 #include <functional>
 #include <limits>
-#include <memory>
-#include <set>
-#include <tuple>
 #include <utility>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -20,13 +15,9 @@
 
 namespace drake {
 
-using Eigen::Vector3d;
-using geometry::SceneGraph;
 using multibody::Parser;
 using systems::ConstantVectorSource;
 using systems::Context;
-using systems::DiagramBuilder;
-using systems::Diagram;
 using systems::VectorBase;
 
 namespace multibody {
@@ -55,29 +46,30 @@ class AcrobotGravityCompensator : public systems::LeafSystem<double> {
     ASSERT_EQ(&link1, &plant_->GetBodyByName("Link1"));
     ASSERT_EQ(&link2, &plant_->GetBodyByName("Link2"));
 
-    // Get the two vectors from the body frames of the links to their
-    // respective centers-of-mass.
+    // Get position vector from L1o (link1 origin) to L1cm (link1
+    // center-of-mass), expressed in link1 frame, and do the same for the
+    // position vector from L2o to L2cm.
     const Vector3<double> p_L1oL1cm_L1 = link1.default_com();
     const Vector3<double> p_L2oL2cm_L2 = link2.default_com();
 
-    // One way to do gravity compensation for Link 1 is to apply forces of
+    // One way to do gravity compensation for link1 is to apply forces of
     // magnitude 1/2 * mass * gravity to two arbitrary points L1q and L1r on
-    // Link 1, where p_Lo_L1r = -p_Lo_L1q, and similarly for gravity
+    // link1, where p_Lcm_L1r = -p_Lcm_L1q, and similarly for gravity
     // compensation of link2.
     const Vector3<double> p_L1cmL1q_L1(1, 2, 3);
     const Vector3<double> p_L1cmL1r_L1 = -p_L1cmL1q_L1;
     const Vector3<double> p_L2cmL2q_L2(-1, 3, -5);
     const Vector3<double> p_L2cmL2r_L2 = -p_L2cmL2q_L2;
 
-    // Construct vectors from the body frame origins to points p and q,
-    // expressed in their respective body frames.
+    // Construct position vectors from L1o to L1q and from L1o to L1r,
+    // expressed in link1 frame and do the same for position vectors on link2.
     const Vector3<double> p_L1oL1q_L1 = p_L1oL1cm_L1 + p_L1cmL1q_L1;
     const Vector3<double> p_L1oL1r_L1 = p_L1oL1cm_L1 + p_L1cmL1r_L1;
     const Vector3<double> p_L2oL2q_L2 = p_L2oL2cm_L2 + p_L2cmL2q_L2;
     const Vector3<double> p_L2oL2r_L2 = p_L2oL2cm_L2 + p_L2cmL2r_L2;
 
-    // Construct spatial forces applied at points q and r of each link, with
-    // no moment, and opposing gravity.
+    // Construct position vectors from L1o to L1q and from L1o to L1r,
+    // all expressed in link1 frame. Do the same for position vectors on link2.
     const Vector3<double> up_W(0, 0, 1);
     const SpatialForce<double> F_L1q_W(
         Vector3<double>::Zero() /* no torque */,
