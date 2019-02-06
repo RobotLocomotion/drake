@@ -33,13 +33,6 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
-# Soon to be deprecated modules.
-from pydrake.multibody.multibody_tree import (
-    BodyNodeIndex,
-    MobilizerIndex,
-    MultibodyTree,
-)
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.geometry import (
@@ -66,6 +59,21 @@ from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.lcm import LcmPublisherSystem
+
+# Deprecated modules.
+# N.B. Place `with` afterwards to avoid needing to place `#noqa` on other
+# modules. Additionally, assert length of warnings here rather than in the test
+# so that we do not have to worry about whether a module has already been
+# loaded.
+with warnings.catch_warnings(record=True) as w:
+    warnings.simplefilter("default", DrakeDeprecationWarning)
+    from pydrake.multibody.multibody_tree import (
+        BodyNodeIndex,
+        MobilizerIndex,
+        MultibodyTree,
+    )
+    from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+    assert len(w) == 3, len(w)
 
 
 def get_index_class(cls):

@@ -11,9 +11,8 @@ with warnings.catch_warnings():
     from .rigid_body_tree import *
     from .rigid_body import *
     from .shapes import *
-
-# - Shuffle (#9314. #9366)
-from .multibody_tree.all import *  # noqa
+    # - Shuffle (#9314. #9366)
+    from .multibody_tree.all import *  # noqa
 
 # Normal symbols.
 from .inverse_kinematics import *  # noqa
