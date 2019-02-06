@@ -3,19 +3,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.rigid_body_tree import (
+from pydrake.attic.multibody.rigid_body_tree import (
     AddModelInstanceFromUrdfFile,
     FloatingBaseType,
     RigidBodyTree,
     RigidBodyFrame,
     )
-from pydrake.systems.framework import (
-    BasicVector,
-    )
-from pydrake.systems.sensors import (
-    CameraInfo,
-    RgbdCamera,
-    )
+from pydrake.systems.framework import BasicVector
+from pydrake.systems.sensors import CameraInfo
+from pydrake.attic.systems.sensors import RgbdCamera
 
 # Create tree describing scene.
 urdf_path = FindResourceOrThrow(

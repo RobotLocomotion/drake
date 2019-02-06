@@ -10,6 +10,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
 )
 
@@ -86,6 +87,17 @@ install(
 
 # NOTE: Unittests on `attic` should not move until the forwarding modules
 # outside of the attic are deprecated!
+
+drake_py_binary(
+    name = "rgbd_camera_example",
+    srcs = ["rgbd_camera_example.py"],
+    data = [
+        "//multibody:models",
+    ],
+    deps = [
+        ":sensors_py",
+    ],
+)
 
 add_lint_tests(
     cpplint_data = ["//bindings/pydrake:.clang-format"],
