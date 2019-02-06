@@ -299,7 +299,7 @@ class MeshcatContactVisualizer(LeafSystem):
         self._force_cylinder_radial_scale = 1.
         self._force_cylinder_longitudinal_scale = 100.
 
-        # Undeclared state.
+        # This system has undeclared states, see #4330.
         # - All contacts (previous and current), of type `_ContactState`.
         self._contacts = []
         # - Unique key for contacts in meshcat.
