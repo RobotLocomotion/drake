@@ -2503,6 +2503,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
 
+  /// Returns a constant reference to the input port for applying spatial
+  /// forces to bodies in the plant. The data type for the port is an
+  /// std::vector of ExternallyAppliedSpatialForce; any number of spatial forces
+  /// can be applied to any number of bodies in the plant.
+  const systems::InputPort<T>& get_applied_spatial_force_input_port() const;
+
   /// @}
   // Closes Doxygen section "Actuation input"
 
@@ -2970,6 +2976,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const Eigen::Ref<const VectorX<T>>& generalized_velocity,
       systems::VectorBase<T>* qdot) const override;
 
+  void AddAppliedExternalSpatialForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const;
+
   // Helper method to register geometry for a given body, either visual or
   // collision. The registration includes:
   // 1. Register a frame for this body if not already done so. The body gets
@@ -3277,6 +3286,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // If only one model instance has actuated dofs, remember it here.  If
   // multiple instances have actuated dofs, this index will not be valid.
   ModelInstanceIndex actuated_instance_;
+
+  // Port for externally applied spatial forces.
+  systems::InputPortIndex applied_spatial_force_input_port_;
 
   systems::OutputPortIndex continuous_state_output_port_;
   // A vector containing state output ports for each model instance indexed by
