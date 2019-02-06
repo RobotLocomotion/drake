@@ -165,6 +165,15 @@ PYBIND11_MODULE(tree, m) {
     py::class_<Class, Joint<T>> cls(
         m, "PrismaticJoint", doc.PrismaticJoint.doc);
     cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                 const Vector3<T>&, double, double, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("axis"),
+            py::arg("pos_lower_limit") =
+                -std::numeric_limits<double>::infinity(),
+            py::arg("pos_upper_limit") =
+                std::numeric_limits<double>::infinity(),
+            py::arg("damping") = 0, doc.RevoluteJoint.ctor.doc_7args)
         .def("get_translation", &Class::get_translation, py::arg("context"),
             doc.PrismaticJoint.get_translation.doc)
         .def("set_translation", &Class::set_translation, py::arg("context"),
