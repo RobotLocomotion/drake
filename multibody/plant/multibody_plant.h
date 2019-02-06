@@ -2528,7 +2528,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns a constant reference to the output port for the full continuous
-  /// state `x = [q v]` of the model. The ordering of q is determined
+  /// state `x = [q v]` of the model.
   /// @pre Finalize() was already called on `this` plant.
   const systems::OutputPort<T>& get_continuous_state_output_port() const;
 
