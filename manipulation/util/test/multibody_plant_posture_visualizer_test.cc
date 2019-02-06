@@ -23,5 +23,16 @@ GTEST_TEST(MultibodyPlantPostureVisualizer, Test1) {
   q << 0.4, 0.4, 0.4, -0.4, 0.4, 0.4, 0.4;
   visualizer.VisualizePosture(q);
 }
+
+GTEST_TEST(MultibodyPlantPostureVisualizer, Test2) {
+  const std::string file_path =
+      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf";
+  MultibodyPlantPostureVisualizer visualizer(file_path);
+  // Now the IIWA robot base it not welded to the ground, so it has 14
+  // generalized positions, 7 for the base, and 7 for the joints.
+  Eigen::Matrix<double, 14, 1> q;
+  q << 1, 0, 0, 0, 0, 0, 0, 0.2, -0.3, 0.5, 0.6, -0.1, 0.4, 0.5;
+  visualizer.VisualizePosture(q);
+}
 }  // namespace manipulation
 }  // namespace drake

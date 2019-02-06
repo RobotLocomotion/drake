@@ -91,8 +91,10 @@ drake_cc_library(
     srcs = ["multibody_plant_posture_visualizer.cc"],
     hdrs = ["multibody_plant_posture_visualizer.h"],
     deps = [
+        "//common:find_resource",
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
+        "//multibody/parsing:parser",
         "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
@@ -132,6 +134,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "multibody_plant_posture_visualizer_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
         ":multibody_plant_posture_visualizer",
         "//common:find_resource",
