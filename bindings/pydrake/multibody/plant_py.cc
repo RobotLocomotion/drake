@@ -616,6 +616,14 @@ PYBIND11_MODULE(plant, m) {
             py_reference_internal);
   }
 
+  // CoulombFriction
+  {
+    using Class = CoulombFriction<T>;
+    py::class_<Class>(m, "CoulombFriction")
+        .def(py::init<const T&, const T&>(), py::arg("static_friction"),
+            py::arg("dynamic_friction"), doc.CoulombFriction.ctor.doc_2args);
+  }
+
   m.def("AddMultibodyPlantSceneGraph",
       [](systems::DiagramBuilder<T>* builder,
           std::unique_ptr<MultibodyPlant<T>> plant,
