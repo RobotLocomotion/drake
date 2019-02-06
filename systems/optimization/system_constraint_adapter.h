@@ -56,10 +56,11 @@ class SystemConstraintAdapter {
   /**
    * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
    * parse the constraint in the symbolic forms. Currently we support parsing
-   * the following symbolic forms:
+   * the following forms:
    * (1) bounding box ( lower <= x <= uppeer )
    * (2) linear equality aᵀx = b
    * (3) linear inequality lower <= aᵀx <= upper.
+   * (4) generic nonlinear constraint lower <= f(x) <= upper
    */
   std::vector<solvers::Binding<solvers::Constraint>>
   CreateConstraintSymbolically(

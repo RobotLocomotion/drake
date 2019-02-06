@@ -14,6 +14,9 @@ SystemConstraintAdapter::SystemConstraintAdapter(
   DRAKE_DEMAND(system);
 }
 
+struct UpdateSymbolicContextFromDecisionVariablesFunction {
+  
+};
 std::vector<solvers::Binding<solvers::Constraint>>
 SystemConstraintAdapter::CreateConstraintSymbolically(
     SystemConstraintIndex index,
@@ -28,15 +31,37 @@ SystemConstraintAdapter::CreateConstraintSymbolically(
   VectorX<symbolic::Expression> constraint_val(system_constraint.size());
   // Evaluate the constraint as symbolic expressions.
   system_constraint.Calc(context, &constraint_val);
-  std::vector<solvers::Binding<solvers::Constraint>> symbolic_constraints;
-  symbolic_constraints.reserve(constraint_val.size());
+  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  constraints.reserve(constraint_val.size());
   // Parse the symbolic expression to constraint.
+  // If the symbolic expression have some special structures (for example, being
+  // linear), then we can create a
+  // LinearConstraint/LinearEqualityConstraint/BoundingBoxConstraint. If the
+  // symbolic expression exhibits no structure that can be parsed to a special
+  // derived class of solvers::Constraint, then we will return a
+  // SystemConstraintWrapper as a generic nonlinear constraint, which contains
+  // *all* the rows in @p constraint_val, that cannot be parsed to special
+  // derived class of solvers::Constraint.
+
+  // generic_constraint_rows stores the rows in @p constraint_val, whose
+  // symbolic expression will be regarded as generic constraint.
+  std::vector<int> generic_constraint_rows;
+  generic_constraint_rows.reserve(constraint_val.size());
   for (int i = 0; i < constraint_val.size(); ++i) {
-    solvers::internal::ParseConstraint(constraint_val(i),
-                                       system_constraint.bounds().lower()(i),
-                                       system_constraint.bounds().upper()(i));
+    std::unique_ptr<solvers::Binding<solvers::Constraint>> linear_constraint =
+        solvers::internal::MaybeParseLinearConstraint(
+            constraint_val(i), system_constraint.bounds().lower()(i),
+            system_constraint.bounds().upper()(i));
+    if (linear_constraint) {
+      constraints.push_back(*linear_constraint);
+    } else {
+      // TODO(hongkai.dai): parse second order cone constraint.
+      generic_constraint_rows.push_back(i);
+    }
   }
-  return symbolic_constraints;
+  if (!generic_constraint_rows.empty()) {
+  }
+  return constraints;
 }
 
 }  // namespace systems
