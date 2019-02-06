@@ -402,6 +402,15 @@ PYBIND11_MODULE(plant, m) {
         .def("RegisterAsSourceForSceneGraph",
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
+        .def("RegisterVisualGeometry",
+            overload_cast_explicit<geometry::GeometryId, const Body<T>&,
+                const Isometry3<double>&, const geometry::Shape&,
+                const std::string&, const Vector4<double>&,
+                geometry::SceneGraph<T>*>(&Class::RegisterVisualGeometry),
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
+            doc.MultibodyPlant.RegisterVisualGeometry
+                .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
         .def("RegisterCollisionGeometry", &Class::RegisterCollisionGeometry,
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
