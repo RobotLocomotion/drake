@@ -108,13 +108,13 @@ dreal_repository = repository_rule(
         "filenames": attr.string_list(
             default = [
                 "d/dreal/dreal_{}_amd64.deb".format(DREAL_VERSION),
-                "libi/libibex-dev/libibex-dev_{}.20180926230121.git86ee783bd871c310058bbbdb9a4247a612fe6eda~16.04_amd64.deb".format(IBEX_VERSION),  # noqa
+                "libi/libibex-dev/libibex-dev_{}.20181130120337.git65fc3b6c28ea49cb2da7e9b693add6ba7c5fc4ae~16.04_amd64.deb".format(IBEX_VERSION),  # noqa
             ],
         ),
         "sha256s": attr.string_list(
             default = [
-                "667392dfccfde3f175021cb47923b645b7d6dd8526ed1b30e2bf4823523ecaeb",  # noqa
-                "5dae633a20bb52631d67faaaa4007fd287db34cfa5ddf4067b07387237ce2c14",  # noqa
+                "7e751c5fb0039361d5cc19f730cbf234e07a75fd8e0dc320e0f13f55e37c8075",  # noqa
+                "865db247f0a4fd97d41da07abf917faea444c91647178c17fc4fdb9a9b15d3b2",  # noqa
             ],
         ),
         "build_file": attr.label(
