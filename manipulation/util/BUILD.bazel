@@ -20,6 +20,7 @@ drake_cc_package_library(
     deps = [
         ":bot_core_lcm_encode_decode",
         ":moving_average_filter",
+        ":multibody_plant_posture_visualizer",
         ":trajectory_utils",
     ],
 )
@@ -85,6 +86,21 @@ drake_py_binary(
     srcs = ["meshlab_to_sdf.py"],
 )
 
+drake_cc_library(
+    name = "multibody_plant_posture_visualizer",
+    srcs = ["multibody_plant_posture_visualizer.cc"],
+    hdrs = ["multibody_plant_posture_visualizer.h"],
+    deps = [
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//systems/rendering:multibody_position_to_geometry_pose",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -111,6 +127,15 @@ drake_cc_googletest(
         ":moving_average_filter",
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_posture_visualizer_test",
+    deps = [
+        ":multibody_plant_posture_visualizer",
+        "//common:find_resource",
+        "//multibody/parsing:parser",
     ],
 )
 
