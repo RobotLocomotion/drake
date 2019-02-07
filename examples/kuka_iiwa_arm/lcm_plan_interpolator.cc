@@ -38,19 +38,25 @@ LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,
   input_port_iiwa_plan_ =
       builder.ExportInput(robot_plan_interpolator_->get_plan_input_port());
   input_port_iiwa_status_ =
-      builder.ExportInput(status_receiver->get_input_port(0));
+      builder.ExportInput(status_receiver->get_input_port());
 
   // Export the output.
   output_port_iiwa_command_ =
-      builder.ExportOutput(command_sender->get_output_port(0));
+      builder.ExportOutput(command_sender->get_output_port());
 
   // Connect the subsystems.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
+  // we should add commanded velocity estimation into the estimator, not use
+  // the state ports on the LCM systems (the KUKA doesn't use velocities).
   builder.Connect(status_receiver->get_state_output_port(),
                   robot_plan_interpolator_->get_state_input_port());
+#pragma GCC diagnostic pop
   builder.Connect(robot_plan_interpolator_->get_output_port(0),
                   target_demux->get_input_port(0));
   builder.Connect(target_demux->get_output_port(0),
-                  command_sender->get_input_port(0));
+                  command_sender->get_position_input_port());
 
   // Build the system.
   builder.BuildInto(this);
