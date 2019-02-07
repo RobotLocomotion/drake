@@ -646,10 +646,10 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns a ticket indicating dependence on all source values that may
   affect configuration-dependent computations. In particular, this category
-  _does not_ include time, generalized velocities v, or input ports.
-  Generalized coordinates q are included, as well as any discrete state
-  variables that have been declared as configuration variables, and
-  configuration-affecting parameters. Finally we assume that
+  _does not_ include time, generalized velocities v, miscellaneous continuous
+  state variables z, or input ports. Generalized coordinates q are included, as
+  well as any discrete state variables that have been declared as configuration
+  variables, and configuration-affecting parameters. Finally we assume that
   the accuracy setting may affect some configuration-dependent computations.
   Examples: a parameter that affects length may change the computation of an
   end-effector location. A change in accuracy requirement may require
@@ -658,8 +658,8 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @note Currently there is no way to declare specific variables and parameters
   to be configuration-affecting so we include all state variables and
-  parameters except for generalized velocities v. */
-  // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
+  parameters except for state variables v and z. */
+  // TODO(sherm1) Remove the above note once #9171 is resolved.
   // The configuration_tracker implementation in ContextBase must be kept
   // up to date with the above API contract.
   static DependencyTicket configuration_ticket() {
@@ -674,8 +674,8 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @note Currently there is no way to declare specific variables and parameters
   to be configuration- or velocity-affecting so we include all state variables
-  and parameters. */
-  // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
+  and parameters except for state variables z. */
+  // TODO(sherm1) Remove the above note once #9171 is resolved.
   static DependencyTicket kinematics_ticket() {
     return DependencyTicket(internal::kKinematicsTicket);
   }

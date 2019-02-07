@@ -52,56 +52,72 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 }
 
 template <class T>
-bool RungeKutta3Integrator<T>::DoStep(const T& dt) {
+bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   using std::abs;
+  Context<T>& context = *this->get_mutable_context();
+  const T t0 = context.get_time();
+  const T t1 = t0 + h;
 
-  // Find the continuous state xc within the Context, just once.
-  VectorBase<T>& xc = this->get_mutable_context()
-                          ->get_mutable_continuous_state_vector();
-  const VectorX<T> xt0 = xc.CopyToVector();
+  // TODO(sherm1) Consider moving this notation description to IntegratorBase
+  //              when it is more widely adopted.
+  // Notation: we're using numeric subscripts for times t₀ and t₁, and
+  // lower-case letter superscripts like t⁽ᵃ⁾ and t⁽ᵇ⁾ to indicate values
+  // for intermediate stages of which there are two here, a and b.
+  // State x₀ = {xc₀, xd₀, xa₀}. We modify only t and xc here, but
+  // derivative calculations depend on everything in the context, including t,
+  // x and inputs u (which may depend on t and x).
+  // Define x⁽ᵃ⁾ ≜ {xc⁽ᵃ⁾, xd₀, xa₀} and u⁽ᵃ⁾ ≜ u(t⁽ᵃ⁾, x⁽ᵃ⁾).
 
-  // Setup ta and tb.
-  T ta = this->get_context().get_time();
-  T tb = ta + dt;
+  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
+  // into a temporary since we'll be calculating more derivatives below.
+  derivs0_->get_mutable_vector().SetFrom(
+      this->EvalTimeDerivatives(context).get_vector());
+  const VectorBase<T>& xcdot0 = derivs0_->get_vector();
 
-  // Get the context.
-  auto& context = this->get_context();
+  // Compute the first intermediate state and derivative
+  // (at t⁽ᵃ⁾=t₀+h/2, x⁽ᵃ⁾, u⁽ᵃ⁾).
+  // This call invalidates t- and xc-dependent cache entries.
+  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
+      t0 + h / 2);                     // t⁽ᵃ⁾ ← t₀ + h/2
+  xc.CopyToPreSizedVector(save_xc0_);  // Save xc₀ while we can.
+  xc.PlusEqScaled(h / 2, xcdot0);      // xc⁽ᵃ⁾ ← xc₀ + h/2 xcdot₀
 
-  // Get the derivative at the current state (x0) and time (t0).
-  this->CalcTimeDerivatives(context, derivs0_.get());
-  const auto& xcdot0 = derivs0_->get_vector();
+  derivs1_->get_mutable_vector().SetFrom(
+      this->EvalTimeDerivatives(context).get_vector());
+  const VectorBase<T>& xcdot_a = derivs1_->get_vector();  // xcdot⁽ᵃ⁾
 
-  // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
-  this->get_mutable_context()->set_time(ta + dt * 0.5);
-  xc.PlusEqScaled(dt * 0.5, xcdot0);
-  this->CalcTimeDerivatives(context, derivs1_.get());
-  const auto& xcdot1 = derivs1_->get_vector();
+  // Compute the second intermediate state and derivative
+  // (at t⁽ᵇ⁾=t₁, x⁽ᵇ⁾, u⁽ᵇ⁾).
+  // This call invalidates t- and xc-dependent cache entries.
+  context.SetTimeAndNoteContinuousStateChange(t1);
+  // xcⱼ ← xc₀ - h xcdot₀ + 2 h xcdot⁽ᵃ⁾
+  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  xc.PlusEqScaled({{-h, xcdot0}, {2 * h, xcdot_a}});
+  const VectorBase<T>& xcdot_b =  // xcdot⁽ᵇ⁾
+      this->EvalTimeDerivatives(context).get_vector();
 
-  // Compute the second intermediate state and derivative (at t=1, x(1)).
-  this->get_mutable_context()->set_time(tb);
-  xc.SetFromVector(xt0);
-  xc.PlusEqScaled({{-dt, xcdot0}, {dt * 2, xcdot1}});
-  this->CalcTimeDerivatives(context, derivs2_.get());
-  const auto& xcdot2 = derivs2_->get_vector();
+  // Calculate the final O(h³) state at t₁.
+  context.NoteContinuousStateChange();
+  // xc₁ ← xc₀ + h/6 xcdot₀ + 2/3 h xcdot⁽ᵃ⁾ + h/6 xcdot⁽ᵇ⁾
+  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  const T h6 = h / 6.0;
+  xc.PlusEqScaled({{h6,     xcdot0},
+                   {4 * h6, xcdot_a},
+                   {h6,     xcdot_b}});
 
-  // calculate the state at dt.
-  const double kOneSixth = 1.0 / 6.0;
-  xc.SetFromVector(xt0);
-  xc.PlusEqScaled({{dt * kOneSixth, xcdot0},
-                    {4.0 * dt * kOneSixth, xcdot1},
-                    {dt * kOneSixth, xcdot2}});
-
-  // If the state of the system has changed, the error estimate will no
-  // longer be sized correctly. Verify that the error estimate is the
-  // correct size.
+  // If the size of the system has changed, the error estimate will no longer
+  // be sized correctly. Verify that the error estimate is the correct size.
   DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
 
   // Calculate the error estimate using an Eigen vector then copy it to the
   // continuous state vector, where the various state components can be
   // analyzed.
-  err_est_vec_ = -xt0;
-  xcdot0.ScaleAndAddToVector(-dt, err_est_vec_);
-  xc.ScaleAndAddToVector(1.0, err_est_vec_);
+  // ε = | xc₁ - (xc₀ + h xcdot⁽ᵃ⁾) | = | xc₀ + h xcdot⁽ᵃ⁾ - xc₁ |
+  err_est_vec_ = save_xc0_;  // ε ← xc₀
+  // TODO(sherm1) This is xcdot₀, not xcdot⁽ᵃ⁾! Should be xcdot_a; issue #10633.
+  xcdot0.ScaleAndAddToVector(h, err_est_vec_);      // ε += h xcdot₀   (WRONG!)
+  // xcdot_a.ScaleAndAddToVector(h, err_est_vec_);  // ε += h xcdot⁽ᵃ⁾ (RIGHT!)
+  xc.ScaleAndAddToVector(-1.0, err_est_vec_);       // ε -= xc₁
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 

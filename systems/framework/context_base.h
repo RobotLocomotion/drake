@@ -338,6 +338,13 @@ class ContextBase : public internal::ContextMessageInterface {
   changed, likely because someone has asked to modify continuous state xc. */
   void NoteAllContinuousStateChanged(int64_t change_event) {
     NoteAllQChanged(change_event);
+    NoteAllVZChanged(change_event);
+  }
+
+  /** Notifies the local v and z trackers that each of them may have
+  changed, likely because someone has asked to modify just the first-order
+  state variables in xc. */
+  void NoteAllVZChanged(int64_t change_event) {
     NoteAllVChanged(change_event);
     NoteAllZChanged(change_event);
   }

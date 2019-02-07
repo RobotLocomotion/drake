@@ -42,6 +42,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Setup integration step.
   const double dt  = 1e-3;
@@ -59,6 +60,7 @@ GTEST_TEST(IntegratorTest, ErrorEst) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
   RungeKutta2Integrator<double> integrator(
       spring_mass, dt, context.get());
 
@@ -94,6 +96,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Create the integrator.
   const double dt = 1.0/1024;

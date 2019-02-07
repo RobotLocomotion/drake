@@ -67,7 +67,8 @@ class RungeKutta3Integrator final : public IntegratorBase<T> {
       : IntegratorBase<T>(system, context) {
     derivs0_ = system.AllocateTimeDerivatives();
     derivs1_ = system.AllocateTimeDerivatives();
-    derivs2_ = system.AllocateTimeDerivatives();
+    err_est_vec_.resize(derivs0_->size());
+    save_xc0_.resize(derivs0_->size());
   }
 
   /**
@@ -80,15 +81,18 @@ class RungeKutta3Integrator final : public IntegratorBase<T> {
 
  private:
   void DoInitialize() override;
-  bool DoStep(const T& dt) override;
+  bool DoStep(const T& h) override;
 
   // Vector used in error estimate calculations.
   VectorX<T> err_est_vec_;
 
+  // Vector used to save initial value of xc.
+  VectorX<T> save_xc0_;
+
   // These are pre-allocated temporaries for use by integration. They store
   // the derivatives computed at various points within the integration
   // interval.
-  std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_, derivs2_;
+  std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
 };
 }  // namespace systems
 }  // namespace drake
