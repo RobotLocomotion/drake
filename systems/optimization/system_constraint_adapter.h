@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/solvers/binding.h"
 #include "drake/systems/optimization/system_constraint_wrapper.h"
@@ -60,12 +61,24 @@ class SystemConstraintAdapter {
    * (1) bounding box ( lower <= x <= uppeer )
    * (2) linear equality aᵀx = b
    * (3) linear inequality lower <= aᵀx <= upper.
-   * (4) generic nonlinear constraint lower <= f(x) <= upper
+   * If the SystemConstraint cannot be parsed to the forms above, then return
+   * false, and clear @p constraints. Otherwise return true.
+   * @param index The index of the constraint in the System object.
+   * @param context The context used to evaluate the SystemConstraint.
+   * @param constraints constraints[i] is the i'th row of the SystemConstraint
+   * evaluation result.
+   * @return is_success If the SystemConstraint can be parsed symbolically to
+   * the form above.
    */
-  std::vector<solvers::Binding<solvers::Constraint>>
-  CreateConstraintSymbolically(
-      SystemConstraintIndex index,
-      const Context<symbolic::Expression>& context) const;
+  bool MaybeCreateConstraintSymbolically(
+      SystemConstraintIndex index, const Context<symbolic::Expression>& context,
+      std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
+
+  /**
+   * Returns the symbolic system. Throws a runtime error if the system cannot be
+   * instantiated with symbolic::Expression.
+   */
+  const System<symbolic::Expression>& system_symbolic() const;
 
  private:
   const System<double>* const system_double_;
