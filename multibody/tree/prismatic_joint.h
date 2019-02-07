@@ -189,6 +189,16 @@ class PrismaticJoint final : public Joint<T> {
 
   /// @}
 
+  void set_default_translation(double translation) {
+    get_mutable_mobilizer()->set_default_position(Vector1d{translation});
+  }
+
+  void set_random_translation_distribution(
+      const symbolic::Expression& translation) {
+    get_mutable_mobilizer()->set_random_position_distribution(
+        Vector1<symbolic::Expression>{translation});
+  }
+
   /// Adds into `multibody_forces` a given `force`, in Newtons, for `this` joint
   /// that is to be applied along the joint's axis. The force is defined to be
   /// positive in the direction along this joint's axis.
