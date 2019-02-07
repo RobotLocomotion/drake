@@ -105,6 +105,17 @@ class VectorBase {
     return vec;
   }
 
+  /// Copies the entire state to a pre-sized vector with no semantics.
+  ///
+  /// Implementations should ensure this operation is O(N) in the size of the
+  /// value.
+  virtual void CopyToPreSizedVector(Eigen::Ref<VectorX<T>> vec) const {
+    DRAKE_THROW_UNLESS(vec.rows() == size());
+    for (int i = 0; i < size(); ++i) {
+      vec[i] = GetAtIndex(i);
+    }
+  }
+
   /// Adds a scaled version of this vector to Eigen vector @p vec, which
   /// must be the same size.
   ///

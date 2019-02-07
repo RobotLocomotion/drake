@@ -22,6 +22,9 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   auto context_dbl = spring_mass_dbl.CreateDefaultContext();
   auto context_ad = spring_mass_ad.CreateDefaultContext();
 
+  context_dbl->EnableCaching();
+  context_ad->EnableCaching();
+
   // Create the integrator as a double and as an autodiff type
   ExplicitEulerIntegrator<double> int_dbl(spring_mass_dbl, dt,
                                           context_dbl.get());
@@ -44,6 +47,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(
@@ -65,6 +69,8 @@ GTEST_TEST(IntegratorTest, InvalidDts) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
+
   ExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());
   integrator.Initialize();
@@ -86,6 +92,8 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
+
   ExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());
 
@@ -107,6 +115,7 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Set a large magnitude time.
   context->set_time(1e10);
@@ -140,6 +149,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Setup the integration size and infinity.
   const double dt = 1e-6;
@@ -197,6 +207,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
   const double max_dt = .01;
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
   context->set_time(0.0);
   double t = 0.0;
   // Create the integrator.
