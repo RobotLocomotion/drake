@@ -23,7 +23,9 @@ using systems::controllers::InverseDynamicsController;
 namespace multibody {
 namespace {
 
-// Verifies the applied generalized input force port.
+// Verifies the applied generalized input force port by checking that the output
+// of an inverse dynamics controller applied to two Iiwa's can be piped back
+// into the plant and the correct derivatives obtained.
 GTEST_TEST(MultibodyPlantTest, CheckGeneralizedAppliedForceInput) {
   // Load two Iiwa models.
   const std::string full_name = FindResourceOrThrow(
