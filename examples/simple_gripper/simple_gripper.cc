@@ -268,7 +268,9 @@ int do_main() {
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
+  // (Currently only available when time stepping.)
+  if (FLAGS_time_stepping)
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
@@ -347,6 +349,7 @@ int do_main() {
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>* integrator{nullptr};
+
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
@@ -380,17 +383,24 @@ int do_main() {
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
 
-  // Print some stats for variable time step integrators.
-  fmt::print("Integrator stats:\n");
-  fmt::print("Number of time steps taken = {:d}\n",
-             integrator->get_num_steps_taken());
-  if (!integrator->get_fixed_step_mode()) {
-    fmt::print("Initial time step taken = {:10.6g} s\n",
-               integrator->get_actual_initial_step_size_taken());
-    fmt::print("Largest time step taken = {:10.6g} s\n",
-               integrator->get_largest_step_size_taken());
-    fmt::print("Smallest adapted step size = {:10.6g} s\n",
-               integrator->get_smallest_adapted_step_size_taken());
+  if (FLAGS_time_stepping) {
+    fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
+    fmt::print("Number of time steps taken = {:d}\n",
+               simulator.get_num_steps_taken());
+  } else {
+    fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
+    fmt::print("Number of time steps taken = {:d}\n",
+               integrator->get_num_steps_taken());
+    if (!integrator->get_fixed_step_mode()) {
+      fmt::print("Initial time step taken = {:10.6g} s\n",
+                 integrator->get_actual_initial_step_size_taken());
+      fmt::print("Largest time step taken = {:10.6g} s\n",
+                 integrator->get_largest_step_size_taken());
+      fmt::print("Smallest adapted step size = {:10.6g} s\n",
+                 integrator->get_smallest_adapted_step_size_taken());
+      fmt::print("Number of steps shrunk due to error control = {:d}\n",
+                 integrator->get_num_step_shrinkages_from_error_control());
+    }
   }
 
   return 0;
