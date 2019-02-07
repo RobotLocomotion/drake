@@ -408,3 +408,8 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(type(value_abs), type(model_value))
         self.assertEqual(type(value_abs.get_value().get_value()), np.ndarray)
         np.testing.assert_equal(value_abs.get_value().get_value(), np_value)
+
+        basic = output_port.EvalBasicVector(context)
+        self.assertEqual(type(basic), BasicVector)
+        self.assertEqual(type(basic.get_value()), np.ndarray)
+        np.testing.assert_equal(basic.get_value(), np_value)

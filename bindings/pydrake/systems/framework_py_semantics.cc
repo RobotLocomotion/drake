@@ -272,7 +272,17 @@ void DefineFrameworkPySemantics(py::module m) {
                   py::cast(&self->EvalAbstract(context), py_reference);
               return value_ref.attr("get_value")();
             },
-            doc.OutputPort.Eval.doc);
+            doc.OutputPort.Eval.doc)
+        .def("EvalBasicVector",
+            static_cast<const BasicVector<T>& (
+                OutputPort<T>::*)(const Context<T>&)const>(
+                &OutputPort<T>::Eval),
+            py::arg("context"),
+            "(Advanced.) Returns the value of this output port, typed "
+            "as a BasicVector. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts a BasicVector.",
+            py_reference_internal);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
