@@ -7,12 +7,10 @@
 
 
 //------------------------------------------------------------------------------
-// TODO(sherm1) Change Collision Concepts title here when #9467 is fixed.
 /** @addtogroup multibody Multibody Dynamics
   @{
     @ingroup algorithms
     @defgroup multibody_concepts Multibody Dynamics Concepts
-    @defgroup collision_concepts Collision Concepts (RigidBodyPlant only)
   @}
  */
 
