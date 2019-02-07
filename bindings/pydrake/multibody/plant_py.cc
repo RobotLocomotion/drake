@@ -103,11 +103,10 @@ PYBIND11_MODULE(plant, m) {
             py_reference_internal, py::arg("frame"),
             doc.MultibodyPlant.AddFrame.doc)
         .def("AddRigidBody",
-             [](Class* self, const std::string& name, const SpatialInertia<double>& M_BBo_B) -> auto& {
-              return self->AddRigidBody(name, M_BBo_B);
-             },
-             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
-             doc.MultibodyPlant.AddRigidBody.doc_2args)
+            py::overload_cast<const std::string&,
+                const SpatialInertia<double>&>(&Class::AddRigidBody),
+            py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
+            doc.MultibodyPlant.AddRigidBody.doc_2args)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
             py::arg("X_AB") = Isometry3<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
@@ -403,10 +402,10 @@ PYBIND11_MODULE(plant, m) {
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
         .def("RegisterVisualGeometry",
-            overload_cast_explicit<geometry::GeometryId, const Body<T>&,
-                const Isometry3<double>&, const geometry::Shape&,
-                const std::string&, const Vector4<double>&,
-                geometry::SceneGraph<T>*>(&Class::RegisterVisualGeometry),
+            py::overload_cast<const Body<T>&, const Isometry3<double>&,
+                const geometry::Shape&, const std::string&,
+                const Vector4<double>&, geometry::SceneGraph<T>*>(
+                &Class::RegisterVisualGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterVisualGeometry
