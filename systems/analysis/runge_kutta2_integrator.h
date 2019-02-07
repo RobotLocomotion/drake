@@ -34,7 +34,6 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
       IntegratorBase<T>(system, context) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs0_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
-    derivs1_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
   }
 
   /**
@@ -48,38 +47,47 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
  private:
   bool DoStep(const T& dt) override;
 
-  // These are pre-allocated temporaries for use by integration
-  std::unique_ptr<ContinuousState<T>> derivs0_, derivs1_;
+  // A pre-allocated temporary for use by integration.
+  std::unique_ptr<ContinuousState<T>> derivs0_;
 };
 
 /**
- * Integrates the system forward in time by dt. This value is determined
- * by IntegratorBase::Step().
+ * Integrates the system forward in time from the current time t₀ to
+ * t₁ = t₀ + dt. The value of dt is determined by IntegratorBase::Step().
+ *
+ * The Butcher tableaux for this integrator follows: <pre>
+ *
+ *     0  |
+ *     1  | 1
+ *     -----------------
+ *          1/2     1/2
+ * </pre>
  */
 template <class T>
 bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
-  // Find the continuous state xc within the Context, just once.
-  auto context = IntegratorBase<T>::get_mutable_context();
-  VectorBase<T>& xc = context->get_mutable_continuous_state_vector();
+  Context<T>* const context = IntegratorBase<T>::get_mutable_context();
 
-  // TODO(sherm1) This should be calculating into the cache so that
-  // Publish() doesn't have to recalculate if it wants to output derivatives.
-  this->CalcTimeDerivatives(*context, derivs0_.get());
+  // Evaluate derivative xcdot(t₀) ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
+  // into a temporary since we'll be calculating another derivative below.
+  derivs0_->get_mutable_vector().SetFrom(
+      this->EvalTimeDerivatives(*context).get_vector());
+  const VectorBase<T>& xcdot0 = derivs0_->get_vector();
 
   // First stage is an explicit Euler step:
   // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
-  const auto& xcdot0 = derivs0_->get_vector();
-  xc.PlusEqScaled(dt, xcdot0);  // xc += dt * xcdot0
-  T t = IntegratorBase<T>::get_context().get_time() + dt;
-  IntegratorBase<T>::get_mutable_context()->set_time(t);
+  // This call invalidates t- and xc-dependent cache entries.
+  VectorBase<T>& xc = context->SetTimeAndGetMutableContinuousStateVector(
+      context->get_time() + dt);  // t ← t₁ = t₀ + h
+  xc.PlusEqScaled(dt, xcdot0);    // xc' = xc₀ + dt * xcdot0
 
-  // use derivative at t+dt
-  this->CalcTimeDerivatives(*context, derivs1_.get());
-  const auto& xcdot1 = derivs1_->get_vector();
+  // Evaluate derivative xcdot₁ ← xcdot(t₁, x', u').
+  const VectorBase<T>& xcdot1 =
+      this->EvalTimeDerivatives(*context).get_vector();
 
-  // TODO(sherm1) Use better operators when available.
-  xc.PlusEqScaled(dt / 2, xcdot1);
-  xc.PlusEqScaled(-dt / 2, xcdot0);
+  // Invalidates xc-dependent context entries; time doesn't change here.
+  context->NoteContinuousStateChange();
+  // xc₁ = xc₀ + dt * (xcdot0 + xcdot1)/2 = xc' + dt * (xcdot1 - xcdot0)/2
+  xc.PlusEqScaled({{dt / 2, xcdot1}, {-dt / 2, xcdot0}});
 
   // RK2 always succeeds at taking the step.
   return true;
