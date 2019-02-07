@@ -37,8 +37,6 @@ class SystemConstraintAdapter {
    * context. Hence we use @p UpdateContextFromDecisionVariablesGeneric to
    * select the decision variables inside @p context. The unselected variables
    * will remain to its values stored in @p context.
-   * TODO(hongkai.dai): add another function to parse the system constraint to
-   * linear/quadratic/second-order-cone etc using symbolic expression.
    */
   template <typename UpdateContextFromDecisionVariablesGenericFunction>
   std::shared_ptr<SystemConstraintWrapper> Create(
@@ -59,8 +57,8 @@ class SystemConstraintAdapter {
    * parse the constraint in the symbolic forms. Currently we support parsing
    * the following forms:
    * (1) bounding box ( lower <= x <= uppeer )
-   * (2) linear equality aᵀx = b
-   * (3) linear inequality lower <= aᵀx <= upper.
+   * (2) linear equality ( aᵀx = b )
+   * (3) linear inequality ( lower <= aᵀx <= upper )
    * If the SystemConstraint cannot be parsed to the forms above, then return
    * false, and clear @p constraints. Otherwise return true.
    * @param index The index of the constraint in the System object.
@@ -68,8 +66,12 @@ class SystemConstraintAdapter {
    * @param constraints constraints[i] is the i'th row of the SystemConstraint
    * evaluation result.
    * @return is_success If the SystemConstraint can be parsed symbolically to
-   * the form above.
+   * the form above. The failure could come from either the system is not
+   * instantiated in the symbolic::Expression, or the constraint cannot be
+   * parsed to the form above.
    */
+  // TODO(hongkai.dai): support parsing second-order-cone or quadratic
+  // constraint.
   bool MaybeCreateConstraintSymbolically(
       SystemConstraintIndex index, const Context<symbolic::Expression>& context,
       std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;

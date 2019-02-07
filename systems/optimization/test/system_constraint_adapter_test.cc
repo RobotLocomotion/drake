@@ -203,8 +203,7 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
   // x(0) + 2 * x(1) = 3
   ExternalSystemConstraint system_constraint =
       ExternalSystemConstraint::MakeForAllScalars(
-          "constraint", SystemConstraintBounds(Eigen::Vector3d(0, 1, 3),
-                                               Eigen::Vector3d(5, 4, 3)),
+          "constraint", {Eigen::Vector3d(0, 1, 3), Eigen::Vector3d(5, 4, 3)},
           [](const auto& system, const auto& context, auto* value) {
             auto x = context.get_continuous_state_vector().CopyToVector();
             (*value)(0) = x(0) + 1;
@@ -219,47 +218,47 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
 
   auto context_symbolic = adapter.system_symbolic().CreateDefaultContext();
 
-  const symbolic::Variable x0("x0");
-  const symbolic::Variable x1("x1");
+  const symbolic::Variable a("a");
+  const symbolic::Variable b("b");
 
   context_symbolic->get_mutable_continuous_state_vector().SetFromVector(
-      Vector2<symbolic::Expression>(x0, x1));
+      Vector2<symbolic::Expression>(a, b));
 
   std::vector<solvers::Binding<solvers::Constraint>> constraints;
   EXPECT_TRUE(adapter.MaybeCreateConstraintSymbolically(
       system_constraint_index, *context_symbolic, &constraints));
-  EXPECT_EQ(constraints.size(), 3);
-  CheckBoundingBoxConstraint(constraints[0], x0, -1, 4);
-  CheckLinearConstraint(constraints[1], Vector2<symbolic::Variable>(x0, x1),
+  ASSERT_EQ(constraints.size(), 3);
+  CheckBoundingBoxConstraint(constraints[0], a, -1, 4);
+  CheckLinearConstraint(constraints[1], Vector2<symbolic::Variable>(a, b),
                         Eigen::RowVector2d(2, 1), Vector1d(1), Vector1d(4));
   CheckLinearEqualityConstraint(constraints[2],
-                                Vector2<symbolic::Variable>(x0, x1),
+                                Vector2<symbolic::Variable>(a, b),
                                 Eigen::RowVector2d(1, 2), Vector1d(3));
 
-  // Now test context.x = [x0 + x1; 1]. Namely it contains both expression
+  // Now test context.x = [a + b; 1]. Namely it contains both expression
   // and constant.
   context_symbolic->get_mutable_continuous_state().SetFromVector(
-      Vector2<symbolic::Expression>(x0 + x1, 1));
+      Vector2<symbolic::Expression>(a + b, 1));
   // The newly generated constraint should be
-  // -1 <= x0 + x1 <= 4
-  // 0 <= 2 * x0 + 2 * x1 <= 3
-  // x0 + x1 = 1
+  // -1 <= a + b <= 4
+  // 0 <= 2 * a + 2 * b <= 3
+  // a + b = 1
   constraints.clear();
   EXPECT_TRUE(adapter.MaybeCreateConstraintSymbolically(
       system_constraint_index, *context_symbolic, &constraints));
   EXPECT_EQ(constraints.size(), 3);
-  CheckLinearConstraint(constraints[0], Vector2<symbolic::Variable>(x0, x1),
+  CheckLinearConstraint(constraints[0], Vector2<symbolic::Variable>(a, b),
                         Eigen::RowVector2d(1, 1), Vector1d(-1), Vector1d(4));
-  CheckLinearConstraint(constraints[1], Vector2<symbolic::Variable>(x0, x1),
+  CheckLinearConstraint(constraints[1], Vector2<symbolic::Variable>(a, b),
                         Eigen::RowVector2d(2, 2), Vector1d(0), Vector1d(3));
   CheckLinearEqualityConstraint(constraints[2],
-                                Vector2<symbolic::Variable>(x0, x1),
+                                Vector2<symbolic::Variable>(a, b),
                                 Eigen::RowVector2d(1, 1), Vector1d(1));
 
-  // Now test a new context with context.x = [x0^2, 1]. Hence the constraints
+  // Now test a new context with context.x = [a^2, 1]. Hence the constraints
   // are nonlinear
   context_symbolic->get_mutable_continuous_state().SetFromVector(
-      Vector2<symbolic::Expression>(x0 * x0, 1));
+      Vector2<symbolic::Expression>(a * a, 1));
   constraints.clear();
   EXPECT_FALSE(adapter.MaybeCreateConstraintSymbolically(
       system_constraint_index, *context_symbolic, &constraints));

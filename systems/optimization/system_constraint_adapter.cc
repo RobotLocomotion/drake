@@ -18,9 +18,8 @@ bool SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
     SystemConstraintIndex index, const Context<symbolic::Expression>& context,
     std::vector<solvers::Binding<solvers::Constraint>>* constraints) const {
   if (!system_symbolic_) {
-    throw std::runtime_error(
-        "SystemConstraintAdapter: cannot create the constraint symbolically, "
-        "since the system is not instantiated with symbolic expression.");
+    constraints->clear();
+    return false;
   }
   DRAKE_DEMAND(constraints->empty());
   const SystemConstraint<symbolic::Expression>& system_constraint =
