@@ -7,18 +7,9 @@
 
 
 //------------------------------------------------------------------------------
-// TODO(sherm1) Change Collision Concepts title here when #9467 is fixed.
 /** @addtogroup multibody Multibody Dynamics
-  @{
-    @ingroup algorithms
-    @defgroup multibody_concepts Multibody Dynamics Concepts
-    @defgroup collision_concepts Collision Concepts (RigidBodyPlant only)
-  @}
- */
-
-//------------------------------------------------------------------------------
-/** @addtogroup multibody_concepts
 @{
+    @ingroup algorithms
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -67,7 +58,7 @@ Next topic: @ref multibody_notation
 
 //------------------------------------------------------------------------------
 /** @addtogroup multibody_notation
-@ingroup multibody_concepts
+@ingroup multibody
 
 Drake uses consistent terminology and notation for multibody mechanics
 - for clear communication among Drake programmers and users,
@@ -425,7 +416,7 @@ Next topic: @ref multibody_spatial_algebra
 
 //------------------------------------------------------------------------------
 /** @addtogroup multibody_spatial_algebra
-@ingroup multibody_concepts
+@ingroup multibody
 
 Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group
