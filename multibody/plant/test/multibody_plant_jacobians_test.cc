@@ -105,11 +105,13 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
 
   // For a system with n generalized positions (generalized coordinates),
   // compute the 6xn matrix for Ep's spatial velocity Jacobian in W (world).
-  MatrixX<double> Jq_V_WEp(6, plant_->num_positions());
-  plant_->CalcJacobianSpatialVelocity(
-      *context_, JacobianWrtVariable::kQDot,
-      end_effector_link_->body_frame(), p_EoEp_E, plant_->world_frame(),
-      plant_->world_frame(), &Jq_V_WEp);
+  const int num_generalized_positions = plant_->num_positions();
+  MatrixX<double> Jq_V_WEp(6, num_generalized_positions);
+  const Frame<double>& end_effector_frame = end_effector_link_->body_frame();
+  const Frame<double>& world_frame = plant_->world_frame();
+  plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kQDot,
+                                      end_effector_frame, p_EoEp_E, world_frame,
+                                      world_frame, &Jq_V_WEp);
 
   // Alternatively, compute the spatial Jacobian by taking the gradient of the
   // spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_V_WEp * q̇.
@@ -152,18 +154,28 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(Jq_V_WEp, Jq_V_WEp_autodiff, kTolerance,
                               MatrixCompareType::relative));
 
-  // Also compute the 3xn matrix for Ep's velocity Jacobian in W (world).
-  MatrixX<double> Jq_v_WEp(3, plant_->num_positions());
-  plant_->CalcJacobianVelocity(
-      *context_, JacobianWrtVariable::kQDot,
-      end_effector_link_->body_frame(), p_EoEp_E, plant_->world_frame(),
-      plant_->world_frame(), &Jq_v_WEp);
+  // Also test CalcJacobianAngularVelocity by calculating the 3xn matrix for
+  // E's angular velocity Jacobian in W (world) and ensuring this is the first
+  // 3 rows of the spatial velocity Jacobian Jq_V_WEp.
+  MatrixX<double> Jq_w_WE(3, num_generalized_positions);
+  plant_->CalcJacobianAngularVelocity(*context_, JacobianWrtVariable::kQDot,
+                                      end_effector_frame, world_frame,
+                                      world_frame, &Jq_w_WE);
+  MatrixX<double> top_three_rows(3, num_generalized_positions);
+  top_three_rows = Jq_V_WEp.template topRows<3>();
+  EXPECT_TRUE(CompareMatrices(Jq_w_WE, top_three_rows, kTolerance,
+                              MatrixCompareType::relative));
 
-  // Test that the velocity Jacobian Jq_v_WEp is the last 3 rows of
-  // the spatial velocity Jacobian Jq_V_WEp.
-  MatrixX<double> bottom_rows(3, plant_->num_positions());
-  bottom_rows = Jq_v_WEp.template bottomRows<3>();
-  EXPECT_TRUE(CompareMatrices(Jq_v_WEp, bottom_rows, kTolerance,
+  // Also test CalcJacobianVelocity by calculating the 3xn matrix for point Ep's
+  // translational velocity Jacobian in W (world) and ensuring this is the last
+  // 3 rows of the spatial velocity Jacobian Jq_V_WEp.
+  MatrixX<double> Jq_v_WEp(3, num_generalized_positions);
+  plant_->CalcJacobianVelocity(*context_, JacobianWrtVariable::kQDot,
+                               end_effector_frame, p_EoEp_E, world_frame,
+                               world_frame, &Jq_v_WEp);
+  MatrixX<double> bottom_three_rows(3, num_generalized_positions);
+  bottom_three_rows = Jq_v_WEp.template bottomRows<3>();
+  EXPECT_TRUE(CompareMatrices(Jq_v_WEp, bottom_three_rows, kTolerance,
                               MatrixCompareType::relative));
 }
 

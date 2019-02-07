@@ -1795,31 +1795,82 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         context, with_respect_to, frame_B, p_BP, frame_A, frame_E, Jw_ABp_E);
   }
 
-  /// For a point Bp of (fixed/welded to) a frame B whose velocity in a frame A
-  /// is characterized by motion scalars s₁, ... sₙ, P's velocity Jacobian in A
-  /// with respect to s₁, ... sₙ is defined as
+  /// Returns a frame B's angular velocity Jacobian in a frame A with respect to
+  /// a set 𝑠 of "speed" scalars, where 𝑠 is either v₁ ... vₙ (generalized
+  /// velocities) or q̇₁ ... q̇ₙ (time-derivatives of generalized positions).
+  /// When a frame B's angular velocity `w_AB` in a frame A is characterized by
+  /// a set 𝑠 of speed scalars s₁, ... sₙ, B's angular velocity Jacobian in A
+  /// with respect to 𝑠 is defined as
+  /// <pre>
+  ///      Js_w_AB = [ D(w_AB, s₁),  ...  D(w_AB, sₙ)]
+  /// </pre>
+  /// B's angular velocity in A is linear in s₁, ... sₙ and can be written
+  /// `w_AB = Js_w_AB ⋅ s`  where s is the n x 1 column matrix [s₁ ... sₙ]
+  ///
+  /// @param[in] context The context containing the state of the model.
+  /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kV or
+  /// JacobianWrtVariable::kQDot, indicating whether the Jacobian `Js_w_AB`
+  /// is partial derivatives with respect to v₁ ... vₙ (generalized velocities)
+  /// or with respect to q̇₁ ... q̇ₙ (time-derivatives of generalized positions).
+  /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
+  /// @param[in] frame_A The frame A in `w_AB` (B's angular velocity in A).
+  /// @param[in] frame_E The frame in which `w_AB` is expressed on input and
+  /// the frame in which the Jacobian `Js_w_AB` is expressed on output.
+  /// @param[out] Js_w_AB_E Frame B's angular velocity Jacobian in frame A with
+  /// respect to 𝑠 (which is v₁ ... vₙ or q̇₁ ... q̇ₙ), expressed in frame E.
+  /// The Jacobian is a function of only generalized positions q₁ ... qₙ (which
+  /// are pulled from the context).  The previous definition shows `Js_w_AB_E`
+  /// is a matrix of size `3 x n`, where n is the number of elements in 𝑠.
+  /// @throws std::exception if `Js_w_AB_E` is nullptr or not of size `3 x n`.
+  void CalcJacobianAngularVelocity(
+      const systems::Context<T>& context,
+      JacobianWrtVariable with_respect_to,
+      const Frame<T>& frame_B, const Frame<T>& frame_A, const Frame<T>& frame_E,
+      EigenPtr<MatrixX<T>> Js_w_AB_E) const {
+    DRAKE_THROW_UNLESS(Js_w_AB_E != nullptr);
+    DRAKE_THROW_UNLESS(Js_w_AB_E->rows() == 3);
+
+    // Reserve space for frame B's spatial velocity Jacobian in frame A.
+    const int num_cols = Js_w_AB_E->cols();
+    MatrixX<T> Js_V_ABo_E(6, num_cols);
+
+    // Calculate B's spatial velocity Jacobian in A, expressed in frame E.
+    const Vector3<T> p_BoBo_B = Vector3<T>::Zero();
+    CalcJacobianSpatialVelocity(context, with_respect_to, frame_B, p_BoBo_B,
+                                frame_A, frame_E, &Js_V_ABo_E);
+
+    // Extract the rotational part of the spatial velocity Jacobian.
+    *Js_w_AB_E = Js_V_ABo_E.template topRows<3>();
+  }
+
+  /// Returns a point's velocity Jacobian in a reference frame A with respect to
+  /// a set 𝑠 of "speed" scalars, where 𝑠 is either v₁ ... vₙ (generalized
+  /// velocities) or q̇₁ ... q̇ₙ (time-derivatives of generalized positions).
+  /// For a point Bp of (fixed/welded to) a frame B whose velocity `v_ABp` in a
+  /// frame A is characterized by a set 𝑠 of speed scalars s₁, ... sₙ,
+  /// Bp's velocity Jacobian in A with respect to 𝑠 is defined as
   /// <pre>
   ///      Js_v_ABp = [ D(v_ABp, s₁),  ...  D(v_ABp, sₙ)]
   /// </pre>
-  /// Point Bp's velocity in A is linear in x₁, ... xₙ and can be written
-  /// `v_ABp = Js_v_ABp ⋅ s` where s is the n x 1 column matrix [s₁; ... sₙ]
+  /// Point Bp's velocity in A is linear in s₁, ... sₙ and can be written
+  /// `v_ABp = Js_v_ABp ⋅ s`  where s is the n x 1 column matrix [s₁ ... sₙ]
   ///
   /// @param[in] context The context containing the state of the model.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kV or
   /// JacobianWrtVariable::kQDot, indicating whether the Jacobian `Js_v_ABp`
-  /// is partial derivatives with respect to generalized velocities v₁ ... vₙ
+  /// is partial derivatives with respect to v₁ ... vₙ (generalized velocities)
   /// or with respect to q̇₁ ... q̇ₙ (time-derivatives of generalized positions).
   /// @param[in] frame_B The frame on which point Bp is fixed/welded.
   /// @param[in] p_BoBp_B The position vector from Bo (frame_B's origin) to
-  ///   point Bp, expressed in frame B.
+  ///   point Bp (which is regarded as fixed to B), expressed in frame B.
   /// @param[in] frame_A The frame that measures `v_ABp` (Bp's velocity in A).
-  /// @param[in] frame_E The frame in which the `v_ABp` is expressed on input
-  /// (hence `v_ABp_E` is input) and the frame in which the Jacobian is output.
-  /// @param[out] Js_v_ABp_E Point Bp's velocity Jacobian in A with respect to
-  /// s (which is either v₁ ... vₙ or q̇₁ ... q̇ₙ), expressed in frame E.  This
-  /// Jacobian is a function of only generalized positions q₁ ... qₙ, which are
-  /// pulled from the context.  The previous definition shows `Js_v_ABp_E` is a
-  /// matrix of size `3 x n`, where n is the number of elements in `s`.
+  /// @param[in] frame_E The frame in which `v_ABp` is expressed on input and
+  /// the frame in which the Jacobian `Js_v_ABp` is expressed on output.
+  /// @param[out] Js_v_ABp_E Point Bp's velocity Jacobian in frame A with
+  /// respect to 𝑠 (which is v₁ ... vₙ or q̇₁ ... q̇ₙ), expressed in frame E.
+  /// The Jacobian is a function of only generalized positions q₁ ... qₙ (which
+  /// are pulled from the context).  The previous definition shows `Js_v_ABp_E`
+  /// is a matrix of size `3 x n`, where n is the number of elements in 𝑠.
   /// @throws std::exception if `Js_v_ABp_E` is nullptr or not of size `3 x n`.
   void CalcJacobianVelocity(
       const systems::Context<T>& context,
@@ -1830,13 +1881,15 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     DRAKE_THROW_UNLESS(Js_v_ABp_E != nullptr);
     DRAKE_THROW_UNLESS(Js_v_ABp_E->rows() == 3);
 
-    // Determine Bp's spatial velocity in A, expressed in E.
+    // Reserve space for point Bp's spatial velocity Jacobian in frame A.
     const int num_cols = Js_v_ABp_E->cols();
     MatrixX<T> Js_V_ABp_E(6, num_cols);
+
+    // Calculate Bp's spatial velocity Jacobian in A, expressed in frame E.
     CalcJacobianSpatialVelocity(context, with_respect_to, frame_B, p_BoBp_B,
                                 frame_A, frame_E, &Js_V_ABp_E);
 
-    // Extract the translational velocity part of the spatial velocity.
+    // Extract the translational part of the spatial velocity Jacobian.
     *Js_v_ABp_E = Js_V_ABp_E.template bottomRows<3>();
   }
 
