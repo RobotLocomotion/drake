@@ -1172,32 +1172,36 @@ class IntegratorBase {
    */
 
  protected:
-  /// Resets any statistics particular to a specific integrator. The default
-  /// implementation of this function does nothing. If your integrator
-  /// collects its own statistics, you should re-implement this method and
-  /// reset them there.
+  /**
+   * Resets any statistics particular to a specific integrator. The default
+   * implementation of this function does nothing. If your integrator
+   * collects its own statistics, you should re-implement this method and
+   * reset them there.
+   */
   virtual void DoResetStatistics() {}
 
-  /// Evaluates the derivative function (and updates call statistics).
-  /// Subclasses should call this function rather than calling
-  /// system.CalcTimeDerivatives() directly.
-  void CalcTimeDerivatives(const Context<T>& context,
-                           ContinuousState<T>* dxdt) {
-    get_system().CalcTimeDerivatives(context, dxdt);
+  /**
+   * Evaluates the derivative function and updates call statistics.
+   * Subclasses should call this function rather than calling
+   * system.EvalTimeDerivatives() directly.
+   */
+  const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
     ++num_ode_evals_;
+    return get_system().EvalTimeDerivatives(context);
   }
 
-  /// Evaluates the derivative function (and updates call statistics).
-  /// Subclasses should call this function rather than calling
-  /// system.CalcTimeDerivatives() directly. This version of this function
-  /// exists to allow integrators to count AutoDiff'd systems in derivative
-  /// function evaluations.
+  /**
+   * Evaluates the derivative function (and updates call statistics).
+   * Subclasses should call this function rather than calling
+   * system.EvalTimeDerivatives() directly. This version of this function
+   * exists to allow integrators to include AutoDiff'd systems in derivative
+   * function evaluations.
+   */
   template <typename U>
-  void CalcTimeDerivatives(const System<U>& system,
-                           const Context<U>& context,
-                           ContinuousState<U>* dxdt) {
-    system.CalcTimeDerivatives(context, dxdt);
+  const ContinuousState<U>& EvalTimeDerivatives(const System<U>& system,
+                                                const Context<U>& context) {
     ++num_ode_evals_;
+    return system.EvalTimeDerivatives(context);
   }
 
   /**
@@ -1209,18 +1213,20 @@ class IntegratorBase {
    */
   void set_accuracy_in_use(double accuracy) { accuracy_in_use_ = accuracy; }
 
-  /// Generic code for validating (and resetting, if need be) the integrator
-  /// working accuracy for error controlled integrators. This method is
-  /// intended to be called from an integrator's DoInitialize() method.
-  /// @param default_accuracy a reasonable default accuracy setting for this
-  ///        integrator.
-  /// @param loosest_accuracy the loosest accuracy that this integrator should
-  ///        support.
-  /// @param max_step_fraction a fraction of the maximum step size to use when
-  ///        setting the integrator accuracy and the user has not specified
-  ///        accuracy directly.
-  /// @throws std::logic_error if neither the initial step size target nor
-  ///         the maximum step size has been set.
+  /**
+   * Generic code for validating (and resetting, if need be) the integrator
+   * working accuracy for error controlled integrators. This method is
+   * intended to be called from an integrator's DoInitialize() method.
+   * @param default_accuracy a reasonable default accuracy setting for this
+   *        integrator.
+   * @param loosest_accuracy the loosest accuracy that this integrator should
+   *        support.
+   * @param max_step_fraction a fraction of the maximum step size to use when
+   *        setting the integrator accuracy and the user has not specified
+   *        accuracy directly.
+   * @throws std::logic_error if neither the initial step size target nor
+   *         the maximum step size has been set.
+   */
   void InitializeAccuracy(double default_accuracy, double loosest_accuracy,
                           double max_step_fraction) {
     using std::isnan;
@@ -1721,7 +1727,7 @@ T IntegratorBase<T>::CalcStateChangeNorm(
     const ContinuousState<T>& dx_state) const {
   using std::max;
   const Context<T>& context = get_context();
-  const auto& system = get_system();
+  const System<T>& system = get_system();
 
   // Get weighting matrices.
   const auto& qbar_v_weight = this->get_generalized_state_weight_vector();

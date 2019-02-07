@@ -93,7 +93,7 @@ class VectorBase {
     }
   }
 
-  /// Copies the entire state to a vector with no semantics.
+  /// Copies this entire %VectorBase into a contiguous Eigen Vector.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates only the O(N) memory that it returns.
@@ -103,6 +103,18 @@ class VectorBase {
       vec[i] = GetAtIndex(i);
     }
     return vec;
+  }
+
+  /// Copies this entire %VectorBase into a pre-sized Eigen Vector.
+  ///
+  /// Implementations should ensure this operation is O(N) in the size of the
+  /// value.
+  /// @throws std::exception if `vec` is the wrong size.
+  virtual void CopyToPreSizedVector(Eigen::Ref<VectorX<T>> vec) const {
+    DRAKE_THROW_UNLESS(vec.rows() == size());
+    for (int i = 0; i < size(); ++i) {
+      vec[i] = GetAtIndex(i);
+    }
   }
 
   /// Adds a scaled version of this vector to Eigen vector @p vec, which
