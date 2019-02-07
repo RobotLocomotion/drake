@@ -16,7 +16,7 @@ drake_cc_package_library(
     name = "tree",
     deps = [
         ":articulated_body_inertia",
-        ":multibody_tree_context",
+        ":multibody_tree_caches",
         ":multibody_tree_core",
         ":multibody_tree_element",
         ":multibody_tree_indexes",
@@ -50,18 +50,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_tree_context",
+    name = "multibody_tree_caches",
     srcs = [
         "acceleration_kinematics_cache.cc",
         "articulated_body_inertia_cache.cc",
-        "multibody_tree_context.cc",
         "position_kinematics_cache.cc",
         "velocity_kinematics_cache.cc",
     ],
     hdrs = [
         "acceleration_kinematics_cache.h",
         "articulated_body_inertia_cache.h",
-        "multibody_tree_context.h",
         "position_kinematics_cache.h",
         "velocity_kinematics_cache.h",
     ],
@@ -80,7 +78,6 @@ drake_cc_library(
     srcs = [],
     hdrs = [
         "multibody_tree_element.h",
-        "multibody_tree_forward_decl.h",
     ],
     deps = [
         ":multibody_tree_topology",
@@ -128,6 +125,7 @@ drake_cc_library(
         "model_instance.h",
         "multibody_forces.h",
         "multibody_tree.h",
+        "multibody_tree-inl.h",
         "multibody_tree_system.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
@@ -144,7 +142,7 @@ drake_cc_library(
     # "//multibody/tree" broadly, not just ":multibody_tree_core".
     visibility = ["//visibility:private"],
     deps = [
-        ":multibody_tree_context",
+        ":multibody_tree_caches",
         ":multibody_tree_element",
         ":multibody_tree_indexes",
         ":spatial_inertia",
@@ -233,31 +231,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":free_rotating_body_plant",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/benchmarks/free_body",
-        "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_library(
-    name = "floating_body_plant",
-    testonly = 1,
-    srcs = ["test/floating_body_plant.cc"],
-    hdrs = ["test/floating_body_plant.h"],
-    deps = [
-        "//common:default_scalars",
-        "//multibody/plant",
-    ],
-)
-
-drake_cc_googletest(
-    name = "floating_body_test",
-    timeout = "moderate",
-    srcs = [
-        "test/floating_body_test.cc",
-    ],
-    deps = [
-        ":floating_body_plant",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/free_body",
         "//systems/analysis:simulator",
@@ -363,7 +336,7 @@ drake_cc_library(
     testonly = 1,
     hdrs = ["test/mobilizer_tester.h"],
     deps = [
-        "//multibody/plant",
+        ":tree",
     ],
 )
 

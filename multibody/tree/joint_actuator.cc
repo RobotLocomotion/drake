@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/joint_actuator.h"
 
-#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -62,6 +61,14 @@ JointActuator<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>&) const {
   return std::unique_ptr<JointActuator<AutoDiffXd>>(
       new JointActuator<AutoDiffXd>(name_, joint_index_));
+}
+
+template <typename T>
+std::unique_ptr<JointActuator<symbolic::Expression>>
+JointActuator<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>&) const {
+  return std::unique_ptr<JointActuator<symbolic::Expression>>(
+      new JointActuator<symbolic::Expression>(name_, joint_index_));
 }
 
 }  // namespace multibody

@@ -36,8 +36,6 @@ then in Python you would do:
 
 Some (but not all) exceptions:
 
-- Some of `drake/common` is incorporated into `pydrake.util`. (This will be
-remedied in the future.)
 - `drake/multibody/rigid_body_tree.h` is actually contained in the module
 `pydrake.multibody.rigid_body_tree`.
 - `drake/solvers/mathematical_program.h` is actually contained in the module
@@ -378,7 +376,9 @@ inline void ExecuteExtraPythonCode(py::module m) {
     }                                                                     \
   }
 #else  // PY_MAJOR_VERSION >= 3
-#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable)
+// N.B. Still use the variable to ensure it's valid code.
+#define PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(variable) \
+  { (void)variable; }
 #endif  // PY_MAJOR_VERSION >= 3
 
 }  // namespace pydrake

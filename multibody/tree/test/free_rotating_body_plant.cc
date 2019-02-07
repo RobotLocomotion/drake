@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 
 namespace drake {
 namespace multibody {
@@ -152,5 +153,5 @@ SpatialVelocity<T> FreeRotatingBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::test::FreeRotatingBodyPlant)

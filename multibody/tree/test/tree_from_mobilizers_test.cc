@@ -1,5 +1,5 @@
 // clang-format: off
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 // clang-format: on
 
 #include <functional>
@@ -485,22 +485,18 @@ TEST_F(PendulumTests, CreateContext) {
   std::unique_ptr<Context<double>> context;
   EXPECT_NO_THROW(context = system.CreateDefaultContext());
 
-  // Tests MultibodyTreeContext accessors.
-  auto mbt_context =
-      dynamic_cast<MultibodyTreeContext<double>*>(context.get());
-  ASSERT_TRUE(mbt_context != nullptr);
+  // Tests MultibodyTree state accessors.
+  const auto& tree = GetInternalTree(system);
 
   // Verifies the correct number of generalized positions and velocities.
-  EXPECT_EQ(mbt_context->get_positions().size(), 2);
-  EXPECT_EQ(mbt_context->get_mutable_positions().size(), 2);
-  EXPECT_EQ(mbt_context->get_velocities().size(), 2);
-  EXPECT_EQ(mbt_context->get_mutable_velocities().size(), 2);
+  EXPECT_EQ(tree.get_positions(*context).size(), 2);
+  EXPECT_EQ(tree.get_mutable_positions(&*context).size(), 2);
+  EXPECT_EQ(tree.get_velocities(*context).size(), 2);
+  EXPECT_EQ(tree.get_mutable_velocities(&*context).size(), 2);
 
   // Verifies methods to retrieve fixed-sized segments of the state.
-  EXPECT_EQ(mbt_context->get_state_segment<1>(1).size(), 1);
-  EXPECT_EQ(mbt_context->get_mutable_state_segment<1>(1).size(), 1);
-
-  const auto& tree = GetInternalTree(system);
+  EXPECT_EQ(tree.get_state_segment<1>(*context, 1).size(), 1);
+  EXPECT_EQ(tree.get_mutable_state_segment<1>(&*context, 1).size(), 1);
 
   // Set the poses of each body in the position kinematics cache to have an
   // arbitrary value that we can use for unit testing. In practice the poses in
@@ -535,8 +531,6 @@ class PendulumKinematicTests : public PendulumTests {
     // Only for testing, in this case we do know our Joint model IS a
     // RevoluteMobilizer.
     elbow_mobilizer_ = JointTester::get_mobilizer(*elbow_joint_);
-    mbt_context_ =
-        dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
   }
 
   /// Verifies that we can compute the mass matrix of the system using inverse
@@ -749,7 +743,6 @@ class PendulumKinematicTests : public PendulumTests {
  protected:
   std::unique_ptr<MultibodyTreeSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
-  MultibodyTreeContext<double>* mbt_context_;
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{
       Vector3d::UnitZ() /* Plane normal */, Vector3d::UnitY() /* Up vector */,
@@ -879,8 +872,8 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       EXPECT_EQ(elbow_joint_->get_angle(*context_), elbow_angle);
 
       // Verify this matches the corresponding entries in the context.
-      EXPECT_EQ(mbt_context_->get_positions()(0), shoulder_angle);
-      EXPECT_EQ(mbt_context_->get_positions()(1), elbow_angle);
+      EXPECT_EQ(tree().get_positions(*context_)(0), shoulder_angle);
+      EXPECT_EQ(tree().get_positions(*context_)(1), elbow_angle);
 
       tree().CalcPositionKinematicsCache(*context_, &pc);
 

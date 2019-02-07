@@ -193,6 +193,8 @@ drake_cc_library(
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
         "symbolic_formula_visitor.h",
+        "symbolic_ldlt.cc",
+        "symbolic_ldlt.h",
         "symbolic_monomial.cc",
         "symbolic_monomial.h",
         "symbolic_monomial_util.cc",
@@ -974,6 +976,15 @@ drake_cc_googletest(
         ":symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_ldlt_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

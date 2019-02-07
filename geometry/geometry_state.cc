@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
@@ -180,6 +181,12 @@ bool GeometryState<T>::BelongsToSource(FrameId frame_id,
 }
 
 template <typename T>
+const std::string& GeometryState<T>::GetOwningSourceName(FrameId id) const {
+  SourceId source_id = get_source_id(id);
+  return source_names_.at(source_id);
+}
+
+template <typename T>
 const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
@@ -272,6 +279,12 @@ bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
   // If this fails, the geometry_id is not valid and an exception is thrown.
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.belongs_to_source(source_id);
+}
+
+template <typename T>
+const std::string& GeometryState<T>::GetOwningSourceName(GeometryId id) const {
+  SourceId source_id = get_source_id(id);
+  return source_names_.at(source_id);
 }
 
 template <typename T>
@@ -602,10 +615,44 @@ bool GeometryState<T>::IsValidGeometryName(
   return NameIsUnique(frame_id, role, name);
 }
 
+namespace {
+// Small class for identifying mesh geometries.
+class MeshIdentifier final : public ShapeReifier {
+ public:
+  bool is_mesh() const { return is_mesh_; }
+
+  // Implementation of ShapeReifier interface.
+  void ImplementGeometry(const Sphere&, void*) final {}
+  void ImplementGeometry(const Cylinder&, void*) final {}
+  void ImplementGeometry(const HalfSpace&, void*) final {}
+  void ImplementGeometry(const Box&, void*) final {}
+  void ImplementGeometry(const Mesh& mesh, void*) final {
+    is_mesh_ = true;
+    drake::log()->warn("Meshes are _not_ supported for proximity: ({})",
+                       mesh.filename());
+  }
+  void ImplementGeometry(const Convex&, void*) final {}
+
+ private:
+  bool is_mesh_{false};
+};
+}  // namespace
+
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
                                   ProximityProperties properties) {
+  // TODO(SeanCurtis-TRI): When meshes are supported for proximity roles, remove
+  // this test and the MeshIdentifier class.
+  {
+    const InternalGeometry* g = GetGeometry(geometry_id);
+    if (g) {
+      MeshIdentifier identifier;
+      g->shape().Reify(&identifier);
+      if (identifier.is_mesh()) return;
+    }
+  }
+
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kProximity);
 
@@ -807,6 +854,16 @@ SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
 }
 
 template <typename T>
+SourceId GeometryState<T>::get_source_id(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry == nullptr) {
+    throw std::logic_error("Geometry id " + to_string(id) +
+                           " does not map to a registered geometry");
+  }
+  return geometry->source_id();
+}
+
+template <typename T>
 void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
                                                RemoveGeometryOrigin caller) {
   const InternalGeometry& geometry = GetValueOrThrow(geometry_id, geometries_);
@@ -842,9 +899,11 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // removed_index.
     InternalGeometry& moved_geometry =
         geometries_[geometry_index_to_id_map_[removed_index]];
-    geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
-                                          moved_geometry.is_dynamic(),
-                                          removed_index);
+    if (moved_geometry.has_proximity_role()) {
+      geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
+                                            moved_geometry.is_dynamic(),
+                                            removed_index);
+    }
   }
 
   if (geometry.has_proximity_role()) {

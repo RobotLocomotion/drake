@@ -8,35 +8,66 @@
 namespace drake {
 namespace solvers {
 namespace {
-GTEST_TEST(MathematicalProgramResultTest, DefaultConstructor) {
+class MathematicalProgramResultTest : public ::testing::Test {
+ public:
+  MathematicalProgramResultTest()
+      : x0_{"x0"}, x1_{"x1"}, decision_variable_index_{} {
+    decision_variable_index_.emplace(x0_.get_id(), 0);
+    decision_variable_index_.emplace(x1_.get_id(), 1);
+  }
+
+ protected:
+  symbolic::Variable x0_;
+  symbolic::Variable x1_;
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_;
+};
+
+TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
   MathematicalProgramResult result;
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
+  EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
   DRAKE_EXPECT_THROWS_MESSAGE(result.get_solver_details(), std::logic_error,
                               "The solver_details has not been set yet.");
 }
 
-GTEST_TEST(MathematicalProgramResultTest, Setters) {
+TEST_F(MathematicalProgramResultTest, Setters) {
   MathematicalProgramResult result;
+  result.set_decision_variable_index(decision_variable_index_);
   result.set_solution_result(SolutionResult::kSolutionFound);
-  const Eigen::Vector2d x_val(0, 0);
+  const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
+  EXPECT_EQ(result.GetSolution(x0_), x_val(0));
+  EXPECT_EQ(result.GetSolution(x1_), x_val(1));
+  EXPECT_EQ(result.GetSolution(Vector2<symbolic::Variable>(x0_, x1_)), x_val);
+  DRAKE_EXPECT_THROWS_MESSAGE(result.set_x_val(Eigen::Vector3d::Zero()),
+                              std::invalid_argument,
+                              "MathematicalProgramResult::set_x_val, the "
+                              "dimension of x_val is 3, expected 2");
   const double cost = 1;
   result.set_optimal_cost(cost);
   result.set_solver_id(SolverId("foo"));
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");
+
+  // Getting solution for a variable y not in decision_variable_index_.
+  symbolic::Variable y("y");
+  DRAKE_EXPECT_THROWS_MESSAGE(result.GetSolution(y), std::invalid_argument,
+                              "MathematicalProgramResult::GetSolution, y is "
+                              "not captured by the decision_variable_index "
+                              "map, passed in "
+                              "set_decision_variable_index\\(\\).");
 }
 
 struct DummySolverDetails {
   int data{0};
 };
 
-GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
+TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   MathematicalProgramResult result;
+  result.set_decision_variable_index(decision_variable_index_);
   const int data = 1;
   DummySolverDetails& dummy_solver_details =
       result.SetSolverDetailsType<DummySolverDetails>();
@@ -58,8 +89,9 @@ GTEST_TEST(MathematicalProgramResultTest, SetSolverDetails) {
             data);
 }
 
-GTEST_TEST(MathematicalProgramResultTest, ConvertToSolverResult) {
+TEST_F(MathematicalProgramResultTest, ConvertToSolverResult) {
   MathematicalProgramResult result;
+  result.set_decision_variable_index(decision_variable_index_);
   result.set_solver_id(SolverId("foo"));
   result.set_optimal_cost(2);
   // The x_val is not set. So solver_result.decision_variable_values should be

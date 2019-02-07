@@ -588,7 +588,7 @@ class LeafSystem : public System<T> {
   /// default implementation of AllocateParameters uses model_vector.Clone(),
   /// and the default implementation of SetDefaultParameters() will reset
   /// parameters to their model vectors.  If the @p model_vector declares any
-  /// VectorBase::CalcInequalityConstraint() constraints, they will be
+  /// VectorBase::GetElementBounds() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).  Returns the index of the new parameter.
   int DeclareNumericParameter(const BasicVector<T>& model_vector) {
@@ -1405,7 +1405,7 @@ class LeafSystem : public System<T> {
   /// generalized positions, @p num_v generalized velocities, and @p num_z
   /// miscellaneous state variables, stored in a vector cloned from
   /// @p model_vector. Aborts if @p model_vector has the wrong size. If the
-  /// @p model_vector declares any VectorBase::CalcInequalityConstraint()
+  /// @p model_vector declares any VectorBase::GetElementBounds()
   /// constraints, they will be re-declared as inequality constraints on this
   /// system (see DeclareInequalityConstraint()).
   void DeclareContinuousState(const BasicVector<T>& model_vector, int num_q,
@@ -1510,7 +1510,7 @@ class LeafSystem : public System<T> {
   /// model_vector. If the port is intended to model a random noise or
   /// disturbance input, @p random_type can (optionally) be used to label it
   /// as such.  If the @p model_vector declares any
-  /// VectorBase::CalcInequalityConstraint() constraints, they will be
+  /// VectorBase::GetElementBounds() constraints, they will be
   /// re-declared as inequality constraints on this system (see
   /// DeclareInequalityConstraint()).
   ///
@@ -2529,7 +2529,7 @@ class LeafSystem : public System<T> {
     };
   }
 
-  // If @p model_vector's CalcInequalityConstraint provides any constraints,
+  // If @p model_vector's GetElementBounds provides any constraints,
   // then declares inequality constraints on `this` using a calc function that
   // obtains a VectorBase from a Context using @p get_vector_from_context and
   // then compares the runtime value against the declaration-time

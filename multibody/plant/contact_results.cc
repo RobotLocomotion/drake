@@ -2,8 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/default_scalars.h"
-
 namespace drake {
 namespace multibody {
 

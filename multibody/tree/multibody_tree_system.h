@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/velocity_kinematics_cache.h"
 #include "drake/systems/framework/cache_entry.h"
@@ -17,6 +17,8 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+template<typename T> class MultibodyTree;
 
 /** This is a bare Drake System providing just enough functionality to allow
 standalone exercise of a MultibodyTree. MultibodyTree requires a few System
@@ -63,11 +65,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   @throws std::logic_error if `tree` is null. */
   explicit MultibodyTreeSystem(std::unique_ptr<MultibodyTree<T>> tree,
-                               bool is_discrete = false)
-      : MultibodyTreeSystem(
-            systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
-            false,  // Null tree is not allowed here.
-            std::move(tree), is_discrete) {}
+                               bool is_discrete = false);
 
   /** Scalar-converting copy constructor. See @ref system_scalar_conversion. */
   template <typename U>
@@ -131,11 +129,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   /** Default constructor allocates a MultibodyTree, with the intent that it
   will be filled in later, using mutable_tree() for access. You must call
   Finalize() when done before performing any computations. */
-  explicit MultibodyTreeSystem(bool is_discrete = false)
-      : MultibodyTreeSystem(
-            systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
-            true,  // Null tree is OK.
-            nullptr, is_discrete) {}
+  explicit MultibodyTreeSystem(bool is_discrete = false);
 
   /**  Constructor that specifies scalar-type conversion support.
   If `tree` is given, we'll finalize it. Otherwise, we'll allocate an
@@ -147,9 +141,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       kinematics. Otherwise uses continuous state variables q and v. */
   MultibodyTreeSystem(systems::SystemScalarConverter converter,
                       std::unique_ptr<MultibodyTree<T>> tree,
-                      bool is_discrete = false)
-      : MultibodyTreeSystem(converter, true,  // Null tree is OK here.
-                            std::move(tree), is_discrete) {}
+                      bool is_discrete = false);
 
   template <typename U>
   friend const MultibodyTree<U>& GetInternalTree(
@@ -191,9 +183,6 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
                       std::unique_ptr<MultibodyTree<T>> tree,
                       bool is_discrete);
 
-  // TODO(sherm1) Get rid of this and use just a plain Context<T>.
-  std::unique_ptr<systems::LeafContext<T>> DoMakeLeafContext() const final;
-
   // Use continuous state variables by default.
   bool is_discrete_{false};
 
@@ -224,14 +213,5 @@ DRAKE_DEPRECATED(
 }  // namespace multibody
 }  // namespace drake
 
-// Disable support for symbolic evaluation.
-// TODO(amcastro-tri): Allow symbolic evaluation once MultibodyTree supports it.
-namespace drake {
-namespace systems {
-namespace scalar_conversion {
-template <>
-struct Traits<drake::multibody::internal::MultibodyTreeSystem> :
-    public NonSymbolicTraits {};
-}  // namespace scalar_conversion
-}  // namespace systems
-}  // namespace drake
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::internal::MultibodyTreeSystem)

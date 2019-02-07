@@ -21,6 +21,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/math/matrix_util.h"
@@ -2819,8 +2820,8 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
   prog.AddCost(x(0) + x(1));
   const MathematicalProgramResult result =
       Solve(prog, Eigen::Vector2d(-0.5, -0.5));
-  EXPECT_EQ(result.get_solution_result(), kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result),
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.get_x_val(),
                               Vector2d::Constant(-std::sqrt(2.) / 2.), 1e-6));
 }
 
@@ -2935,22 +2936,27 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   auto x = prog.NewContinuousVariables<2>();
 
   MathematicalProgramResult result;
+  result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(Eigen::Vector2d(1, 2));
 
-  // GetSolution(var, result) retrieves solution from `result`, GetSolution(var)
+  // result.GetSolution(var) retrieves solution from `result`, GetSolution(var)
   // retrieves the solution stored in prog. They should not be equal.
-  EXPECT_NE(prog.GetSolution(x(0), result), prog.GetSolution(x(0)));
-  EXPECT_NE(prog.GetSolution(x(1), result), prog.GetSolution(x(1)));
+  // TODO(hongkai.dai): remove these two lines when MathematicalProgram do not
+  // store the result.
+  EXPECT_NE(result.GetSolution(x(0)), prog.GetSolution(x(0)));
+  EXPECT_NE(result.GetSolution(x(1)), prog.GetSolution(x(1)));
 
-  EXPECT_EQ(prog.GetSolution(x(0), result), 1);
-  EXPECT_EQ(prog.GetSolution(x(1), result), 2);
+  EXPECT_EQ(result.GetSolution(x(0)), 1);
+  EXPECT_EQ(result.GetSolution(x(1)), 2);
   EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(Vector3<symbolic::Variable>(x(0), x(1), x(1)), result),
+      result.GetSolution(Vector3<symbolic::Variable>(x(0), x(1), x(1))),
       Eigen::Vector3d(1, 2, 2)));
 
   // If result.get_x_val has wrong dimension, expect to throw an error.
-  result.set_x_val(Eigen::Vector3d::Zero());
-  EXPECT_THROW(prog.GetSolution(x(0), result), std::invalid_argument);
+  DRAKE_EXPECT_THROWS_MESSAGE(result.set_x_val(Eigen::Vector3d::Zero()),
+                              std::invalid_argument,
+                              "MathematicalProgramResult::set_x_val, the "
+                              "dimension of x_val is 3, expected 2");
 }
 
 void CheckNewNonnegativePolynomial(

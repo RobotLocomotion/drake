@@ -73,8 +73,8 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
   rk2.Initialize();
   const double t_final = 1.0;
   const int n_steps = t_final / dt;
-  for (int i = 0; i < n_steps; ++i)
-    rk2.IntegrateWithSingleFixedStep(dt);
+  for (int i = 1; i <= n_steps; ++i)
+    rk2.IntegrateWithSingleFixedStepToTime(i * dt);
 
   // Re-integrate with RK3.
   std::unique_ptr<Context<double>> rk3_context = MakePlantContext();
@@ -85,7 +85,7 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
 
   // Verify that IntegrateWithMultipleSteps works.
   const double tol = std::numeric_limits<double>::epsilon();
-  rk3.IntegrateWithMultipleSteps(t_final - rk3_context->get_time());
+  rk3.IntegrateWithMultipleStepsToTime(t_final);
   EXPECT_NEAR(rk3_context->get_time(), t_final, tol);
 
   // Verify that the final states are "close".
@@ -114,15 +114,17 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
 
   const double t_final = 1.0;
   // Arbitrary step, valid as long as it doesn't match the same
-  // steps taken by the integrator. otherwise, dense output accuracy
+  // steps taken by the integrator. Otherwise, dense output accuracy
   // would not be checked.
-  const double t_step = t_final / 100.;
-  for (double t = 0.; t <= t_final ; t += t_step) {
+  const double dt = 0.01;
+  const int n_steps = t_final / dt;
+  for (int i = 1; i < n_steps; ++i) {
     // Integrate the whole step.
-    rk3.IntegrateWithMultipleSteps(t_step);
+    rk3.IntegrateWithMultipleStepsToTime(i * dt);
+
     // Check solution.
     EXPECT_TRUE(CompareMatrices(
-        rk3.get_dense_output()->Evaluate(t + t_step),
+        rk3.get_dense_output()->Evaluate(context->get_time()),
         plant_->GetPositionsAndVelocities(*context),
         rk3.get_accuracy_in_use(),
         MatrixCompareType::relative));
@@ -134,7 +136,7 @@ TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   EXPECT_FALSE(rk3.get_dense_output());
 
   // Integrate one more step.
-  rk3.IntegrateWithMultipleSteps(t_step);
+  rk3.IntegrateWithMultipleStepsToTime(t_final);
 
   // Verify that the dense output was not updated.
   EXPECT_LT(rk3_dense_output->end_time(), context->get_time());

@@ -2,6 +2,7 @@
 
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
@@ -92,16 +93,17 @@ namespace multibody {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 template<typename T>
 class ArticulatedBodyInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertia)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(ArticulatedBodyInertia)
 
   /// Default ArticulatedBodyInertia constructor initializes all matrix values
   /// to NaN for a quick detection of uninitialized values.
-  ArticulatedBodyInertia() = default;
+  ArticulatedBodyInertia();
 
   /// Constructs an articulated body inertia for an articulated body consisting
   /// of a single rigid body given its spatial inertia. From an input spatial
@@ -363,5 +365,15 @@ class ArticulatedBodyInertia {
   }
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+ArticulatedBodyInertia<T>::ArticulatedBodyInertia() = default;
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertia)
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::ArticulatedBodyInertia)

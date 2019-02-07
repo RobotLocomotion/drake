@@ -449,6 +449,7 @@ TRANSLATOR_HH_PREAMBLE = """
 
 #include "%(cxx_include_path)s/%(snake)s.h"
 #include "%(lcm_package)s/lcmt_%(snake)s_t.hpp"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 %(opening_namespace)s
@@ -459,7 +460,11 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class %(camel)sTranslator final
+class
+    DRAKE_DEPRECATED(
+        "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+        "and will be removed on 2019-05-01.")
+    %(camel)sTranslator final
     : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()

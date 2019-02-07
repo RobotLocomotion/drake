@@ -24,7 +24,7 @@ PYBIND11_MODULE(math, m) {
   m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
 
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.common.eigen_geometry");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar

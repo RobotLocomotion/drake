@@ -33,7 +33,6 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
 #include "drake/solvers/indeterminate.h"
-#include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/solvers/program_attribute.h"
 #include "drake/solvers/solution_result.h"
@@ -2668,43 +2667,6 @@ class MathematicalProgram {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
-   * Gets the solution of an Eigen matrix of decision variables.
-   * @tparam Derived An Eigen matrix containing Variable.
-   * @param var The decision variables.
-   * @param result The result returned from the solver. @note This function
-   * doesn't use the decision variable values stored inside
-   * solvers::MathematicalProgram.
-   * @return The value of the decision variable after solving the problem.
-   */
-  template <typename Derived>
-  typename std::enable_if<
-      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
-      Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                    Derived::ColsAtCompileTime>>::type
-  GetSolution(const Eigen::MatrixBase<Derived>& var,
-              const MathematicalProgramResult& result) const {
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
-        value(var.rows(), var.cols());
-    for (int i = 0; i < var.rows(); ++i) {
-      for (int j = 0; j < var.cols(); ++j) {
-        value(i, j) = GetSolution(var(i, j), result);
-      }
-    }
-    return value;
-  }
-
-  /**
-   * Gets the value of a single decision variable.
-   * @param var The symbolic variable as a decision variable of the program.
-   * @param result The result returned from calling the solver.
-   * @throws std::invalid_argument if result.get_x_vals().rows() !=
-   * num_vars().
-   */
-  double GetSolution(const symbolic::Variable& var,
-                     const MathematicalProgramResult& result) const;
-
-  /**
    * Replaces the variables in an expression with the solutions to the
    * variables, returns the expression after substitution.
    * @throws std::runtime_error if some variables in the expression @p e are NOT
@@ -2879,6 +2841,15 @@ class MathematicalProgram {
   /// cost/constraint/variable types in the program.
   const ProgramAttributes& required_capabilities() const {
     return required_capabilities_;
+  }
+
+  /**
+   * Returns the mapping from a decision variable to its index in the vector,
+   * containing all the decision variables in the optimization program.
+   */
+  const std::unordered_map<symbolic::Variable::Id, int>&
+  decision_variable_index() const {
+    return decision_variable_index_;
   }
 
  private:

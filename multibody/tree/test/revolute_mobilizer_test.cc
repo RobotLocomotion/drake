@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
@@ -80,6 +80,18 @@ TEST_F(RevoluteMobilizerTest, ZeroState) {
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 }
 
+TEST_F(RevoluteMobilizerTest, DefaultPosition) {
+  RevoluteMobilizer<double>* mutable_mobilizer =
+      &mutable_tree().get_mutable_variant(*mobilizer_);
+
+  EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
+
+  mutable_mobilizer->set_default_position(Vector1d{.4});
+  mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
+
+  EXPECT_EQ(mobilizer_->get_angle(*context_), .4);
+}
+
 TEST_F(RevoluteMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;
@@ -122,7 +134,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   const double angle = 1.5;
   mobilizer_->set_angle(context_.get(), angle);
   const RigidTransformd X_FM(
-      mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_));
+      mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
   const RigidTransformd X_FM_expected(
       RotationMatrixd(AngleAxisd(angle, axis_F_.normalized())));
@@ -139,7 +151,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const double angular_rate = 1.5;
   const SpatialVelocity<double> V_FM =
       mobilizer_->CalcAcrossMobilizerSpatialVelocity(
-          *mbt_context_, Vector1d(angular_rate));
+          *context_, Vector1d(angular_rate));
 
   const SpatialVelocity<double> V_FM_expected(
       axis_F_.normalized() * angular_rate, Vector3d::Zero());
@@ -154,7 +166,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const double angular_acceleration = 1.5;
   const SpatialAcceleration<double> A_FM =
       mobilizer_->CalcAcrossMobilizerSpatialAcceleration(
-          *mbt_context_, Vector1d(angular_acceleration));
+          *context_, Vector1d(angular_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
       axis_F_.normalized() * angular_acceleration, Vector3d::Zero());
@@ -170,7 +182,7 @@ TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector1d tau;
-  mobilizer_->ProjectSpatialForce(*mbt_context_, F_Mo_F, tau);
+  mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
   // Only the torque along axis_F does work.
   const double tau_expected = torque_Mo_F.dot(axis_F_.normalized());
@@ -180,11 +192,11 @@ TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
 TEST_F(RevoluteMobilizerTest, MapVelocityToQDotAndBack) {
   Vector1d v(1.5);
   Vector1d qdot;
-  mobilizer_->MapVelocityToQDot(*mbt_context_, v, &qdot);
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
   EXPECT_NEAR(qdot(0), v(0), kTolerance);
 
   qdot(0) = -std::sqrt(2);
-  mobilizer_->MapQDotToVelocity(*mbt_context_, qdot, &v);
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_NEAR(v(0), qdot(0), kTolerance);
 }
 
@@ -196,12 +208,12 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
 
   // Compute N.
   MatrixX<double> N(1, 1);
-  mobilizer_->CalcNMatrix(*mbt_context_, &N);
+  mobilizer_->CalcNMatrix(*context_, &N);
   EXPECT_EQ(N(0, 0), 1.0);
 
   // Compute Nplus.
   MatrixX<double> Nplus(1, 1);
-  mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 

@@ -117,7 +117,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Integrate for 1 second.
   const double t_final = 1.0;
-  integrator.IntegrateWithMultipleSteps(t_final);
+  integrator.IntegrateWithMultipleStepsToTime(t_final);
   EXPECT_NEAR(context->get_time(), t_final, dt);  // Should be exact.
 
   // Get the final position and velocity.

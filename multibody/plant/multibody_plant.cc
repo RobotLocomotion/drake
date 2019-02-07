@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -13,6 +12,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -40,7 +40,6 @@ using systems::OutputPort;
 using systems::State;
 
 using drake::multibody::MultibodyForces;
-using drake::multibody::MultibodyTree;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -1084,6 +1083,40 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
+void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  // Get the mutable applied external spatial forces vector
+  // (a.k.a., body force vector).
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
+
+  // Evaluate the input port; if it's not connected, return now.
+  const auto* applied_input = this->template EvalInputValue<
+      std::vector<ExternallyAppliedSpatialForce<T>>>(
+          context, applied_spatial_force_input_port_);
+  if (!applied_input)
+    return;
+
+  // Loop over all forces.
+  for (const auto& force_structure : *applied_input) {
+    const BodyIndex body_index = force_structure.body_index;
+    const Body<T>& body = get_body(body_index);
+    const auto body_node_index = body.node_index();
+
+    // Get the pose for this body in the world frame.
+    // TODO(amcastro) When we can evaluate body poses and return a reference
+    // to a RigidTransform, use that reference here instead.
+    math::RigidTransform<T> X_WB(EvalBodyPoseInWorld(context, body));
+
+    // Get the position vector from the body origin (Bo) to the point of
+    // force application (Bq), expressed in the world frame (W).
+    const Vector3<T> p_BoBq_W = X_WB.rotation() * force_structure.p_BoBq_B;
+
+    // Shift the spatial force from Bq to Bo.
+    F_BBo_W_array[body_node_index] += force_structure.F_Bq_W.Shift(-p_BoBq_W);
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
@@ -1206,6 +1239,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
+  AddAppliedExternalSpatialForces(context, &forces);
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1332,6 +1366,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
+  AddAppliedExternalSpatialForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 
@@ -1522,6 +1557,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
+  // Declare applied spatial force input force port.
+  applied_spatial_force_input_port_ = this->DeclareAbstractInputPort(
+        "applied_spatial_force",
+        Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
+
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
@@ -1652,6 +1692,13 @@ MultibodyPlant<T>::get_actuation_input_port(
   DRAKE_THROW_UNLESS(num_actuated_dofs(model_instance) > 0);
   return systems::System<T>::get_input_port(
       instance_actuation_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::InputPort<T>&
+MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_input_port(applied_spatial_force_input_port_);
 }
 
 template <typename T>

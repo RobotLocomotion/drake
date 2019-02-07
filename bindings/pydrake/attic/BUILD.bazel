@@ -10,6 +10,7 @@ load(
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
+    "drake_py_unittest",
 )
 
 package(default_visibility = [
@@ -30,7 +31,9 @@ drake_py_library(
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
+    "//bindings/pydrake/attic/multibody",
     "//bindings/pydrake/attic/solvers",
+    "//bindings/pydrake/attic/systems",
 ]
 
 PY_LIBRARIES = [
@@ -55,6 +58,18 @@ install(
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+)
+
+drake_py_unittest(
+    name = "attic_forwarding_test",
+    deps = [
+        "//bindings/pydrake/attic/multibody",
+        "//bindings/pydrake/attic/solvers",
+        "//bindings/pydrake/attic/systems",
+        "//bindings/pydrake/multibody",
+        "//bindings/pydrake/solvers",
+        "//bindings/pydrake/systems",
+    ],
 )
 
 add_lint_tests(

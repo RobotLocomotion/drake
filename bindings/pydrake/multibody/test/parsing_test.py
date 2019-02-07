@@ -9,10 +9,10 @@ import os
 import unittest
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.multibody_tree import (
+from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
-from pydrake.multibody.multibody_tree.multibody_plant import (
+from pydrake.multibody.plant import (
     MultibodyPlant,
 )
 

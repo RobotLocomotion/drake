@@ -76,8 +76,19 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   for (int i = 0; i < kDim; ++i) {
     EXPECT_EQ(value[i], i);
   }
+
+  // Confirm that the unit test sugar used by pydrake is another equally-valid
+  // way to read messages.
+  auto new_context = dut->CreateDefaultContext();
+  dut->CopyLatestMessageInto(&new_context->get_mutable_state());
+  const auto& new_y = dut->get_output_port().EvalEigenVector(*new_context);
+  for (int i = 0; i < kDim; ++i) {
+    EXPECT_EQ(new_y[i], i);
+  }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // Instantiates LCM.
@@ -100,7 +111,10 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
   TestSubscriber(&lcm, channel_name, &dut);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // Instantiates LCM.
@@ -127,9 +141,10 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 
   TestSubscriber(&lcm, channel_name, &dut);
 }
+#pragma GCC diagnostic pop
 
 struct SampleData {
-  const lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
+  lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
 
   void MockPublish(
       drake::lcm::DrakeMockLcm* lcm, const std::string& channel_name) const {
@@ -189,6 +204,16 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   ASSERT_NE(abstract_value, nullptr);
   auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
+
+  // Smaller messages should also work.
+  SampleData smaller_data;
+  smaller_data.value = lcmt_drake_signal{1, {1.0}, {"x"}, 12345};
+  smaller_data.MockPublish(&lcm, channel_name);
+  EvalOutputHelper(*dut, context.get(), output.get());
+  const AbstractValue* small_abstract_value = output->get_data(0);
+  ASSERT_NE(small_abstract_value, nullptr);
+  auto small_value = small_abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  EXPECT_TRUE(CompareLcmtDrakeSignalMessages(small_value, smaller_data.value));
 }
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
@@ -234,6 +259,8 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
       future_message.get(), sample_data.value));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Subscribe and output a custom VectorBase type.
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   const std::string kChannelName = "dummy";
@@ -272,6 +299,7 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     EXPECT_EQ(sample_vector.GetAtIndex(i), custom_output->GetAtIndex(i));
   }
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace lcm

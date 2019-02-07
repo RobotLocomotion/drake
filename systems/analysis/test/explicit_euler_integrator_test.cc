@@ -32,7 +32,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   EXPECT_THROW(int_dbl.request_initial_step_size_target(1.0), std::logic_error);
 
   // Verify that attempting to integrate in variable step mode fails.
-  EXPECT_THROW(int_dbl.IntegrateWithMultipleSteps(1.0), std::logic_error);
+  EXPECT_THROW(int_dbl.IntegrateWithMultipleStepsToTime(1.0), std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
@@ -54,7 +54,9 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   EXPECT_EQ(context->get_time(), 3.);\
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.IntegrateAtMost(dt, dt, dt), std::logic_error);
+  const double t_final = context->get_time() + dt;
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(
+      t_final, t_final, t_final), std::logic_error);
 }
 
 /// Checks that the integrator can catch invalid dt's.
@@ -67,10 +69,15 @@ GTEST_TEST(IntegratorTest, InvalidDts) {
       spring_mass, dt, context.get());
   integrator.Initialize();
 
-  EXPECT_NO_THROW(integrator.IntegrateAtMost(dt, dt, dt));
-  EXPECT_THROW(integrator.IntegrateAtMost(dt, -1, dt), std::logic_error);
-  EXPECT_THROW(integrator.IntegrateAtMost(-1, dt, dt), std::logic_error);
-  EXPECT_THROW(integrator.IntegrateAtMost(dt, dt, -1), std::logic_error);
+  const double t_final = context->get_time() + dt;
+  EXPECT_NO_THROW(
+    integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final));
+  EXPECT_THROW(integrator.
+      IntegrateNoFurtherThanTime(t_final, -1, t_final), std::logic_error);
+  EXPECT_THROW(integrator.
+      IntegrateNoFurtherThanTime(-1, t_final, t_final), std::logic_error);
+  EXPECT_THROW(integrator.
+      IntegrateNoFurtherThanTime(t_final, t_final, -1), std::logic_error);
 }
 
 /// Verifies error estimation is unsupported.
@@ -115,7 +122,7 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
   integrator.Initialize();
 
   // Take a fixed integration step.
-  integrator.IntegrateWithSingleFixedStep(dt);
+  integrator.IntegrateWithSingleFixedStepToTime(context->get_time() + dt);
 }
 
 // Try a purely continuous system with no sampling.
@@ -161,7 +168,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double t_final = 1.0;
   double t;
   for (t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    integrator.IntegrateAtMost(inf, inf, dt);
+    integrator.IntegrateNoFurtherThanTime(inf, inf, t_final);
 
   EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
 
@@ -200,9 +207,12 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // The step ends on the next publish time.
   {
     const double publish_dt = 0.005;
+    const double publish_time = context->get_time() + publish_dt;
     const double update_dt = 0.007;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateAtMost(publish_dt, update_dt, infinity);
+        integrator.IntegrateNoFurtherThanTime(
+            publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedPublishTime, result);
     EXPECT_EQ(publish_dt, context->get_time());
     t = context->get_time();
@@ -211,9 +221,12 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // The step ends on the next update time.
   {
     const double publish_dt = 0.0013;
+    const double publish_time = context->get_time() + publish_dt;
     const double update_dt = 0.0011;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateAtMost(publish_dt, update_dt, infinity);
+        integrator.IntegrateNoFurtherThanTime(
+            publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
     EXPECT_EQ(t + update_dt, context->get_time());
     t = context->get_time();
@@ -223,9 +236,12 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // times are too far in the future.
   {
     const double publish_dt = 0.17;
+    const double publish_time = context->get_time() + publish_dt;
     const double update_dt = 0.19;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateAtMost(publish_dt, update_dt, infinity);
+        integrator.IntegrateNoFurtherThanTime(
+            publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kTimeHasAdvanced, result);
     EXPECT_EQ(t + max_dt, context->get_time());
     t = context->get_time();
@@ -238,9 +254,12 @@ GTEST_TEST(IntegratorTest, StepSize) {
   //                 settable.
   {
     const double publish_dt = 42.0;
+    const double publish_time = context->get_time() + publish_dt;
     const double update_dt = 0.01001;
+    const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateAtMost(publish_dt, update_dt, infinity);
+        integrator.IntegrateNoFurtherThanTime(
+            publish_time, update_time, infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
     EXPECT_EQ(t + update_dt, context->get_time());
     t = context->get_time();
@@ -249,7 +268,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // The step ends on the simulation end time.
   {
     const double boundary_dt = 0.0009;
-    integrator.IntegrateWithSingleFixedStep(boundary_dt);
+    const double boundary_time = context->get_time() + boundary_dt;
+    integrator.IntegrateWithSingleFixedStepToTime(boundary_time);
     EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
   }
@@ -257,10 +277,14 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // The step ends on the simulation end time because it's shortest.
   {
     const double publish_dt = 0.0013;
+    const double publish_time = context->get_time() + publish_dt;
     const double update_dt = 0.0011;
+    const double update_time = context->get_time() + update_dt;
     const double boundary_dt = 0.0009;
+    const double boundary_time = context->get_time() + boundary_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateAtMost(publish_dt, update_dt, boundary_dt);
+        integrator.IntegrateNoFurtherThanTime(
+            publish_time, update_time, boundary_time);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
     EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
@@ -273,10 +297,14 @@ GTEST_TEST(IntegratorTest, StepSize) {
   //                 settable.
   {
     const double publish_dt = 42.0;
+    const double publish_time = context->get_time() + publish_dt;
     const double update_dt = 0.01001;
+    const double update_time = context->get_time() + update_dt;
     const double boundary_dt = 0.01;
+    const double boundary_time = context->get_time() + boundary_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateAtMost(publish_dt, update_dt, boundary_dt);
+        integrator.IntegrateNoFurtherThanTime(
+            publish_time, update_time, boundary_time);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
     EXPECT_EQ(t + boundary_dt, context->get_time());
   }

@@ -63,6 +63,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   const FrameId frame_id = tester.mutable_state().RegisterFrame(
       source_id, GeometryFrame("frame", Isometry3<double>::Identity()));
   inspector.BelongsToSource(frame_id, source_id);
+  inspector.GetOwningSourceName(frame_id);
   inspector.GetName(frame_id);
   inspector.GetFrameGroup(frame_id);
   inspector.NumGeometriesForFrame(frame_id);
@@ -77,6 +78,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
 
   // Geometries and their properties.
   inspector.BelongsToSource(geometry_id, source_id);
+  inspector.GetOwningSourceName(geometry_id);
   inspector.GetFrameId(geometry_id);
   inspector.GetName(geometry_id);
   inspector.GetShape(geometry_id);

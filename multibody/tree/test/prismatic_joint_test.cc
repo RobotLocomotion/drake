@@ -3,7 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/common/symbolic.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -44,10 +45,11 @@ class PrismaticJointTest : public ::testing::Test {
         "Joint1", model->world_body(), {}, *body1_, {}, Vector3d::UnitZ(),
         kPositionLowerLimit, kPositionUpperLimit, kDamping);
     Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
-    mutable_joint.set_velocity_limits(
+    mutable_joint1_ = dynamic_cast<PrismaticJoint<double>*>(&mutable_joint);
+    mutable_joint1_->set_velocity_limits(
         Vector1<double>::Constant(kVelocityLowerLimit),
         Vector1<double>::Constant(kVelocityUpperLimit));
-    mutable_joint.set_acceleration_limits(
+    mutable_joint1_->set_acceleration_limits(
         Vector1<double>::Constant(kAccelerationLowerLimit),
         Vector1<double>::Constant(kAccelerationUpperLimit));
 
@@ -68,6 +70,7 @@ class PrismaticJointTest : public ::testing::Test {
 
   const RigidBody<double>* body1_{nullptr};
   const PrismaticJoint<double>* joint1_{nullptr};
+  PrismaticJoint<double>* mutable_joint1_{nullptr};
 };
 
 // Verify the expected number of dofs.
@@ -160,6 +163,22 @@ TEST_F(PrismaticJointTest, Clone) {
   EXPECT_EQ(joint1_clone.acceleration_upper_limits(),
             joint1_->acceleration_upper_limits());
   EXPECT_EQ(joint1_clone.damping(), joint1_->damping());
+}
+
+TEST_F(PrismaticJointTest, RandomTranslationTest) {
+  // Calling SetRandomContext before setting the distribution results in the
+  // zero state.
+  RandomGenerator generator;
+  tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
+  EXPECT_EQ(joint1_->get_translation(*context_), 0.);
+
+  // Setup distribution for random initial conditions.
+  std::uniform_real_distribution<symbolic::Expression> uniform(
+      1.0, kPositionUpperLimit);
+  mutable_joint1_->set_random_translation_distribution(uniform());
+  tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);
+  EXPECT_LE(1.0, joint1_->get_translation(*context_));
+  EXPECT_GE(kPositionUpperLimit, joint1_->get_translation(*context_));
 }
 
 }  // namespace

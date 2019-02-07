@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/position_kinematics_cache.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -74,9 +74,6 @@ class SpringDamperTester : public ::testing::Test {
     system_ = std::make_unique<MultibodyTreeSystem<double>>(std::move(model));
     context_ = system_->CreateDefaultContext();
 
-    mbt_context_ = dynamic_cast<MultibodyTreeContext<double>*>(context_.get());
-    ASSERT_TRUE(mbt_context_ != nullptr);
-
     context_->EnableCaching();
 
     forces_ = std::make_unique<MultibodyForces<double>>(tree());
@@ -90,7 +87,7 @@ class SpringDamperTester : public ::testing::Test {
   void CalcSpringDamperForces() const {
     forces_->SetZero();
     spring_damper_->CalcAndAddForceContribution(
-        *mbt_context_, tree().EvalPositionKinematics(*context_),
+        *context_, tree().EvalPositionKinematics(*context_),
         tree().EvalVelocityKinematics(*context_), forces_.get());
   }
 
@@ -109,7 +106,6 @@ class SpringDamperTester : public ::testing::Test {
  protected:
   std::unique_ptr<MultibodyTreeSystem<double>> system_;
   std::unique_ptr<Context<double>> context_;
-  MultibodyTreeContext<double>* mbt_context_{nullptr};
 
   const RigidBody<double>* bodyA_{nullptr};
   const RigidBody<double>* bodyB_{nullptr};
@@ -148,7 +144,7 @@ TEST_F(SpringDamperTester, RestLength) {
 
   // Verify the potential energy is zero.
   const double potential_energy = spring_damper_->CalcPotentialEnergy(
-      *mbt_context_, tree().EvalPositionKinematics(*context_));
+      *context_, tree().EvalPositionKinematics(*context_));
   EXPECT_NEAR(potential_energy, 0.0, kTolerance);
 }
 
@@ -185,13 +181,13 @@ TEST_F(SpringDamperTester, LengthLargerThanRestLength) {
   const double potential_energy_expected =
       0.5 * stiffness_ * (length - free_length_) * (length - free_length_);
   const double potential_energy = spring_damper_->CalcPotentialEnergy(
-      *mbt_context_, tree().EvalPositionKinematics(*context_));
+      *context_, tree().EvalPositionKinematics(*context_));
   EXPECT_NEAR(potential_energy, potential_energy_expected, kTolerance);
 
   // Since the spring configuration is static, that is velocities are zero, we
   // expect zero conservative and non-conservative power.
   const double conservative_power = spring_damper_->CalcConservativePower(
-      *mbt_context_, tree().EvalPositionKinematics(*context_),
+      *context_, tree().EvalPositionKinematics(*context_),
       tree().EvalVelocityKinematics(*context_));
   EXPECT_NEAR(conservative_power, 0.0, kTolerance);
 }
@@ -263,7 +259,7 @@ TEST_F(SpringDamperTester, Power) {
   SetSliderState(length, length_dot);
 
   const double conservative_power = spring_damper_->CalcConservativePower(
-      *mbt_context_, tree().EvalPositionKinematics(*context_),
+      *context_, tree().EvalPositionKinematics(*context_),
       tree().EvalVelocityKinematics(*context_));
   const double conservative_power_expected =
       -stiffness_ * (length - free_length_) * length_dot;
@@ -271,7 +267,7 @@ TEST_F(SpringDamperTester, Power) {
 
   const double non_conservative_power =
       spring_damper_->CalcNonConservativePower(
-          *mbt_context_, tree().EvalPositionKinematics(*context_),
+          *context_, tree().EvalPositionKinematics(*context_),
           tree().EvalVelocityKinematics(*context_));
   const double non_conservative_power_expected =
       -damping_ * length_dot * length_dot;

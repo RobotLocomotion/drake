@@ -222,7 +222,7 @@ GTEST_TEST(RotationTest, TestInnerFacetsAndHalfSpace) {
   prog.AddLinearConstraint(n.dot(x) >= d);
   prog.AddBoundingBoxConstraint(bmin, bmax, x);
   const MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 }
 
 // Test a number of closed-form solutions for the intersection of a box in the

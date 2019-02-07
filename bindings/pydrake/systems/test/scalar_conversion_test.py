@@ -6,7 +6,7 @@ import unittest
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import LeafSystem_, SystemScalarConverter
-from pydrake.util.cpp_template import TemplateClass
+from pydrake.common.cpp_template import TemplateClass
 
 
 @mut.TemplateSystem.define("Example_")

@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -29,6 +30,7 @@ namespace multibody {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -137,9 +139,6 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   /// @name Context-dependent value access
-  ///
-  /// These methods require the provided context to be an instance of
-  /// MultibodyTreeContext. Failure to do so leads to a std::logic_error.
   /// @{
 
   /// Gets the translation distance of `this` mobilizer from `context`.
@@ -189,6 +188,16 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   /// @}
+
+  void set_default_translation(double translation) {
+    get_mutable_mobilizer()->set_default_position(Vector1d{translation});
+  }
+
+  void set_random_translation_distribution(
+      const symbolic::Expression& translation) {
+    get_mutable_mobilizer()->set_random_position_distribution(
+        Vector1<symbolic::Expression>{translation});
+  }
 
   /// Adds into `multibody_forces` a given `force`, in Newtons, for `this` joint
   /// that is to be applied along the joint's axis. The force is defined to be
@@ -278,6 +287,9 @@ class PrismaticJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const final;
+
   // Make PrismaticJoint templated on every other scalar type a friend of
   // PrismaticJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of PrismaticJoint<T>.
@@ -323,3 +335,6 @@ class PrismaticJoint final : public Joint<T> {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::PrismaticJoint)

@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_sample_t.hpp"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/tools/vector_gen/test/gen/sample.h"
@@ -18,7 +19,9 @@ namespace test {
  * Translates between LCM message objects and VectorBase objects for the
  * Sample type.
  */
-class SampleTranslator final
+class DRAKE_DEPRECATED(
+    "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+    "and will be removed on 2019-05-01.") SampleTranslator final
     : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   SampleTranslator()

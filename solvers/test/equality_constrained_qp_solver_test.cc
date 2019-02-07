@@ -36,7 +36,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
-  auto x_value = prog.GetSolution(x, result);
+  auto x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(0.0, result.get_optimal_cost(), 1e-10);
@@ -54,8 +54,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 2.0;
   VectorXd actual_answer(3);
-  x_value = prog.GetSolution(x, result);
-  const auto& y_value = prog.GetSolution(y, result);
+  x_value = result.GetSolution(x);
+  const auto& y_value = result.GetSolution(y);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
@@ -89,7 +89,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
-  auto x_value = prog.GetSolution(x, result);
+  auto x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
 
@@ -110,8 +110,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
   VectorXd actual_answer(3);
-  x_value = prog.GetSolution(x, result);
-  auto y_value = prog.GetSolution(y, result);
+  x_value = result.GetSolution(x);
+  auto y_value = result.GetSolution(y);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
@@ -132,8 +132,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   EqualityConstrainedQPSolver equality_qp_solver;
   MathematicalProgramResult result;
   equality_qp_solver.Solve(prog, {}, {}, &result);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(x(0), result), 0.5, 1E-10);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(0)), 0.5, 1E-10);
   EXPECT_NEAR(result.get_optimal_cost(), -0.25, 1E-10);
 }
 
@@ -334,8 +334,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
       EqualityConstrainedQPSolver::id(),
       EqualityConstrainedQPSolver::FeasibilityTolOptionName(), 0.1 * tol);
   equality_qp_solver.Solve(prog, {}, solver_options, &math_prog_result);
-  EXPECT_EQ(math_prog_result.get_solution_result(),
-            SolutionResult::kInfeasibleConstraints);
+  EXPECT_FALSE(math_prog_result.is_success());
 }
 
 // min x'*x + x0 + x1 + 1
@@ -351,10 +350,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
 
   MathematicalProgramResult result;
   result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result),
-                              Eigen::Vector2d(-.5, -.5), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector2d(-.5, -.5), 1e-6));
   EXPECT_EQ(result.get_optimal_cost(), .5);
 }
 

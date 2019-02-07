@@ -89,6 +89,8 @@ void TestPublisher(const std::string& channel_name, lcm::DrakeMockLcm* lcm,
       time);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Test that failure to specify an LCM interface results in an internal one
 // of being allocated. Can't check for operation in this case
 // since we won't have a mock LCM to look at.
@@ -107,7 +109,10 @@ GTEST_TEST(LcmPublisherSystemTest, DefaultLcmTest) {
   LcmPublisherSystem dut2(channel_name, translator, nullptr);
   EXPECT_TRUE(is_dynamic_castable<DrakeLcm>(&dut2.lcm()));
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Test that an initialization publisher gets invoked properly by an
 // initialization event, and that the initialization event doesn't cause
 // publishing.
@@ -146,7 +151,10 @@ GTEST_TEST(LcmPublisherSystemTest, TestInitializationEvent) {
   // Nothing should have been published to this channel.
   EXPECT_FALSE(mock_lcm.get_last_publication_time(channel_name));
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests LcmPublisherSystem using a translator.
 GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
   lcm::DrakeMockLcm lcm;
@@ -161,7 +169,10 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTest) {
 
   TestPublisher(channel_name, &lcm, &dut);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests LcmPublisherSystem using a dictionary that contains a translator.
 GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
   lcm::DrakeMockLcm lcm;
@@ -183,6 +194,7 @@ GTEST_TEST(LcmPublisherSystemTest, PublishTestUsingDictionary) {
 
   TestPublisher(channel_name, &lcm, &dut);
 }
+#pragma GCC diagnostic pop
 
 // Tests LcmPublisherSystem using a Serializer.
 GTEST_TEST(LcmPublisherSystemTest, SerializerTest) {
@@ -342,6 +354,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
   EXPECT_EQ(simulator.get_num_steps_taken(), 2);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(LcmPublisherSystemTest, OwnedTranslatorTest) {
   lcm::DrakeMockLcm lcm;
   const std::string channel_name = "my_channel";
@@ -351,7 +365,10 @@ GTEST_TEST(LcmPublisherSystemTest, OwnedTranslatorTest) {
 
   TestPublisher(channel_name, &lcm, &dut);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Publish from a custom VectorBase type.
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   const std::string channel_name = "dummy";
@@ -367,6 +384,7 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
       dut.AllocateInputVector(dut.get_input_port());
   EXPECT_TRUE(is_dynamic_castable<Expected>(input_storage.get()));
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace lcm

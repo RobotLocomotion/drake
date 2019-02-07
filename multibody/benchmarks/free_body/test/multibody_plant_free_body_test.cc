@@ -15,10 +15,10 @@
 #include "drake/math/quaternion.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/benchmarks/free_body/free_body.h"
+#include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree.h"
-#include "drake/multibody/tree/test/floating_body_plant.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 
@@ -183,8 +183,9 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
     const double t = context->get_time();
     if (t >= t_final_minus_epsilon) break;
 
-    const double dt = (t + dt_max > t_final) ? (t_final - t) : dt_max;
-    rk3.IntegrateAtMost(dt, dt, dt);    // Step forward by at most dt.
+    // Step forward by at most dt.
+    const double t_max = std::min(t + dt_max, t_final);
+    rk3.IntegrateNoFurtherThanTime(t_max, t_max, t_max);
   }
 }
 

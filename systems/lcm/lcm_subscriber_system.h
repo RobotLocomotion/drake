@@ -31,10 +31,9 @@ namespace lcm {
  * To process a LCM message, CalcNextUpdateTime() needs to be called first to
  * check for new messages and schedule a callback event if a new LCM message
  * has arrived. The message is then processed and stored in the Context by
- * CalcDiscreteVariableUpdates() or CalcUnrestrictedUpdate() depending on the
- * output type. When this system is evaluated by the Simulator, all these
- * operations are taken care of by the Simulator. On the other hand, the user
- * needs to manually replicate this process without the Simulator.
+ * CalcUnrestrictedUpdate(). When this system is evaluated by the Simulator,
+ * all these operations are taken care of by the Simulator. On the other hand,
+ * the user needs to manually replicate this process without the Simulator.
  *
  * If LCM service in use is a drake::lcm::DrakeLcmLog (not live operation),
  * then see drake::systems::lcm::LcmLogPlaybackSystem for a helper to advance
@@ -65,7 +64,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /**
    * (Experimental.) Factory method like Make(channel, lcm), but the result
-   * only accepts fixed-size LCM messages.  The subscriber returned by this
+   * only accepts bounded-size LCM messages.  The subscriber returned by this
    * method may perform better than the subscriber returned by a plain Make.
    * (To avoid issue #10149, this fixed-size subscriber will store the message
    * as discrete-state bytes, instead of a deserialized abstract value.)  Once
@@ -73,7 +72,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * deprecation period.
    *
    * @param exemplar A sample message value; all messages received by this
-   * System must be exactly this encoded size.
+   * System must be no larger than this encoded size.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmSubscriberSystem> MakeFixedSize(
@@ -101,40 +100,20 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
-  /**
-   * Constructor that returns a subscriber System that provides vector data on
-   * its sole vector-valued output port.  The message contents are mapped to
-   * vector data by the @p translator.
-   *
-   * @param[in] channel The LCM channel on which to subscribe.
-   *
-   * @param[in] translator A reference to the translator that converts between
-   * LCM message objects and `drake::systems::VectorBase` objects. The
-   * reference must remain valid for the lifetime of this `LcmSubscriberSystem`
-   * object.
-   *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
-   */
-  LcmSubscriberSystem(const std::string& channel,
-                      const LcmAndVectorBaseTranslator& translator,
-                      drake::lcm::DrakeLcmInterface* lcm);
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
+  LcmSubscriberSystem(const std::string&, const LcmAndVectorBaseTranslator&,
+                      drake::lcm::DrakeLcmInterface*);
 
-  /**
-   * Constructor that returns a subscriber System that provides vector data on
-   * its sole vector-valued output port.  The message contents are mapped to
-   * vector data by the a translator found in the @p translator_dictionary.
-   *
-   * @param[in] channel The LCM channel on which to subscribe.
-   *
-   * @param[in] translator_dictionary A dictionary for obtaining the appropriate
-   * translator for a particular LCM channel. The reference must remain valid
-   * for the lifetime of this `LcmSubscriberSystem` object.
-   *
-   * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
-   */
-  LcmSubscriberSystem(const std::string& channel,
-                      const LcmTranslatorDictionary& translator_dictionary,
-                      drake::lcm::DrakeLcmInterface* lcm);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
+  LcmSubscriberSystem(const std::string&, const LcmTranslatorDictionary&,
+                      drake::lcm::DrakeLcmInterface*);
+#pragma GCC diagnostic pop
 
   ~LcmSubscriberSystem() override;
 
@@ -143,13 +122,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   const std::string& get_channel_name() const;
 
-  /**
-   * Returns the translator used by this subscriber. This translator can be used
-   * to translate a BasicVector into a serialized LCM message, which is then
-   * passed to DrakeMockLcm::InduceSubscriberCallback(). This mimics a message
-   * reception by an LCM subscriber and is useful for unit testing.
-   * @pre this system is using a vector-valued port (not abstract-valued).
-   */
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
   const LcmAndVectorBaseTranslator& get_translator() const;
 
   /// Returns the sole output port.
@@ -158,11 +133,8 @@ class LcmSubscriberSystem : public LeafSystem<double> {
     return LeafSystem<double>::get_output_port(0);
   }
 
-  DRAKE_DEPRECATED("Don't use the indexed overload; use the no-arg overload.")
-  const OutputPort<double>& get_output_port(int index) const {
-    DRAKE_THROW_UNLESS(index == 0);
-    return get_output_port();
-  }
+  // Don't use the indexed overload; use the no-arg overload.
+  void get_output_port(int index) = delete;
 
   // This system has no input ports.
   void get_input_port(int) = delete;
@@ -176,6 +148,13 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    */
   int WaitForMessage(
       int old_message_count, AbstractValue* message = nullptr) const;
+
+  /**
+   * (Advanced.) Writes the most recently received message (and message count)
+   * into @p state.  If no messages have been received, only the message count
+   * is updated.  This is primarily useful for unit testing.
+   */
+  void CopyLatestMessageInto(State<double>* state) const;
 
   /**
    * Returns the internal message counter. Meant to be used with
@@ -200,20 +179,12 @@ class LcmSubscriberSystem : public LeafSystem<double> {
     ProcessMessageAndStoreToAbstractState(&state->get_mutable_abstract_state());
   }
 
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override;
-
   void DoCalcDiscreteVariableUpdates(
       const Context<double>&,
       const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
       DiscreteValues<double>* discrete_state) const override {
     ProcessMessageAndStoreToDiscreteState(discrete_state);
   }
-
-  std::unique_ptr<DiscreteValues<double>> AllocateDiscreteState()
-      const override;
-
-  void SetDefaultState(const Context<double>& context,
-                       State<double>* state) const override;
 
  private:
   // All constructors delegate to here.

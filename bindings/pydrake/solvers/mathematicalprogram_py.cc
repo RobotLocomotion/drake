@@ -7,11 +7,11 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/bindings/pydrake/util/deprecation_pybind.h"
-#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_type_converter.h"
 
@@ -609,12 +609,28 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
 
-  // TODO(eric.cousineau): Expose Eval() in a Python-friendly fashion.
-  py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
-      .def("num_outputs", &EvaluatorBase::num_outputs,
-          doc.EvaluatorBase.num_outputs.doc)
-      .def(
-          "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc);
+  {
+    using Class = EvaluatorBase;
+    constexpr auto& cls_doc = doc.EvaluatorBase;
+    py::class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
+    cls  // BR
+        .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
+        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc);
+    auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
+      using T_x = decltype(dummy_x);
+      using T_y = decltype(dummy_y);
+      cls.def("Eval",
+          [](const Class& self, const Eigen::Ref<const VectorX<T_x>>& x) {
+            VectorX<T_y> y;
+            self.Eval(x, &y);
+            return y;
+          },
+          py::arg("x"), cls_doc.Eval.doc);
+    };
+    bind_eval(double{}, double{});
+    bind_eval(AutoDiffXd{}, AutoDiffXd{});
+    bind_eval(symbolic::Variable{}, symbolic::Expression{});
+  }
 
   RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase")
       .def(py::init([](py::object binding) {

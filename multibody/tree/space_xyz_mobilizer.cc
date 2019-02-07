@@ -3,7 +3,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/common/eigen_autodiff_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -16,17 +15,13 @@ namespace internal {
 template <typename T>
 Vector3<T> SpaceXYZMobilizer<T>::get_angles(
     const systems::Context<T>& context) const {
-  const MultibodyTreeContext<T>& mbt_context =
-      this->GetMultibodyTreeContextOrThrow(context);
-  return this->get_positions(mbt_context);
+  return this->get_positions(context);
 }
 
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto q = this->get_mutable_positions(&mbt_context);
+  auto q = this->get_mutable_positions(&*context);
   q = angles;
   return *this;
 }
@@ -34,9 +29,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angles(
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
     systems::Context<T>* context, const Matrix3<T>& R_FM) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto q = this->get_mutable_positions(&mbt_context);
+  auto q = this->get_mutable_positions(&*context);
   DRAKE_ASSERT(q.size() == kNq);
   // Project matrix to closest orthonormal matrix in case the user provides a
   // rotation matrix with round-off errors.
@@ -48,10 +41,8 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::SetFromRotationMatrix(
 
 template <typename T>
 Vector3<T> SpaceXYZMobilizer<T>::get_angular_velocity(
-    const systems::Context<T> &context) const {
-  const MultibodyTreeContext<T>& mbt_context =
-      this->GetMultibodyTreeContextOrThrow(context);
-  return this->get_velocities(mbt_context);
+    const systems::Context<T>& context) const {
+  return this->get_velocities(context);
 }
 
 template <typename T>
@@ -62,9 +53,9 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 
 template <typename T>
 const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
-    const systems::Context<T>& context, const Vector3<T>& w_FM,
+    const systems::Context<T>&, const Vector3<T>& w_FM,
     systems::State<T>* state) const {
-  auto v = this->get_mutable_velocities(context, state);
+  auto v = this->get_mutable_velocities(state);
   DRAKE_ASSERT(v.size() == kNv);
   v = w_FM;
   return *this;
@@ -72,7 +63,7 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 
 template <typename T>
 Isometry3<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>& context) const {
+    const systems::Context<T>& context) const {
   const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
   DRAKE_ASSERT(rpy.size() == kNq);
   Isometry3<T> X_FM = Isometry3<T>::Identity();
@@ -84,7 +75,7 @@ Isometry3<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
   return SpatialVelocity<T>(v, Vector3<T>::Zero());
@@ -93,7 +84,7 @@ SpatialVelocity<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   return SpatialAcceleration<T>(vdot, Vector3<T>::Zero());
@@ -101,7 +92,7 @@ SpaceXYZMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void SpaceXYZMobilizer<T>::ProjectSpatialForce(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
@@ -110,7 +101,7 @@ void SpaceXYZMobilizer<T>::ProjectSpatialForce(
 
 template <typename T>
 void SpaceXYZMobilizer<T>::DoCalcNMatrix(
-    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> N) const {
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> N) const {
   using std::sin;
   using std::cos;
   using std::abs;
@@ -155,7 +146,7 @@ void SpaceXYZMobilizer<T>::DoCalcNMatrix(
 
 template <typename T>
 void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
-    const MultibodyTreeContext<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> Nplus) const {
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
   // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
@@ -184,7 +175,7 @@ void SpaceXYZMobilizer<T>::DoCalcNplusMatrix(
 
 template <typename T>
 void SpaceXYZMobilizer<T>::MapVelocityToQDot(
-    const MultibodyTreeContext<T>& context,
+    const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -270,7 +261,7 @@ void SpaceXYZMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void SpaceXYZMobilizer<T>::MapQDotToVelocity(
-    const MultibodyTreeContext<T>& context,
+    const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
@@ -359,10 +350,16 @@ SpaceXYZMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class SpaceXYZMobilizer<double>;
-template class SpaceXYZMobilizer<AutoDiffXd>;
+template <typename T>
+std::unique_ptr<Mobilizer<symbolic::Expression>>
+SpaceXYZMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
 
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::SpaceXYZMobilizer)

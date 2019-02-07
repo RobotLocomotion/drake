@@ -17,6 +17,7 @@
 #include "drake/multibody/rigid_body_plant/create_load_robot_message.h"
 #include "drake/multibody/rigid_body_plant/viewer_draw_translator.h"
 #include "drake/multibody/rigid_body_tree.h"
+#include "drake/systems/framework/basic_vector.h"
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;

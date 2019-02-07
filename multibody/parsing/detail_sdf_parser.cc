@@ -50,6 +50,21 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
+// Fails fast if a user attempts to specify `<pose frame='...'/>` in an
+// unsupported location.
+// See https://bitbucket.org/osrf/sdformat/issues/200 (tracked by #10590).
+void ThrowIfPoseFrameSpecified(sdf::ElementPtr element) {
+  if (element->HasElement("pose")) {
+    sdf::ElementPtr pose = element->GetElement("pose");
+    const std::string frame_name = pose->Get<std::string>("frame");
+    if (!frame_name.empty()) {
+      throw std::runtime_error(
+          "<pose frame='{non-empty}'/> is presently not supported outside of "
+          "the <frame/> tag.");
+    }
+  }
+}
+
 // Helper method to extract the SpatialInertia M_BBo_B of body B, about its body
 // frame origin Bo and, expressed in body frame B, from an ignition::Inertial
 // object.
@@ -124,6 +139,7 @@ Vector3d ExtractJointAxis(const sdf::Model& model_spec,
   Vector3d axis_J = ToVector3(axis->Xyz());
   if (axis->UseParentModelFrame()) {
     // Pose of the joint frame J in the frame of the child link C.
+    ThrowIfPoseFrameSpecified(joint_spec.Element());
     const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
     // Get the pose of the child link C in the model frame M.
     const Isometry3d X_MC =
@@ -238,19 +254,14 @@ void AddJointFromSpecification(
 
   // Get the pose of frame J in the frame of the child link C, as specified in
   // <joint> <pose> ... </pose></joint>.
-  // TODO(amcastro-tri): Verify sdformat supports frame specifications
+  // TODO(eric.cousineau): Verify sdformat supports frame specifications
   // correctly.
-  // There are many ways by which a joint frame pose can be specified in SDF:
-  //  - <joint> <pose> </pose></joint>.
-  //  - <joint> <pose> <frame/> </pose></joint>.
-  //  - <joint> <frame> <pose> <frame/> </pose> </frame> </joint>.
-  // And combinations of the above?
-  // There is no way to verify at this level which one is supported or not.
-  // Here we trust that no mather how a user specified the file, joint.Pose()
-  // will ALWAYS return X_CJ.
+  ThrowIfPoseFrameSpecified(joint_spec.Element());
   const Isometry3d X_CJ = ToIsometry3(joint_spec.Pose());
 
   // Get the pose of the child link C in the model frame M.
+  // TODO(eric.cousineau): Figure out how to use link poses when they are NOT
+  // connected to a joint.
   const Isometry3d X_MC =
       ToIsometry3(model_spec.LinkByName(joint_spec.ChildLinkName())->Pose());
 
@@ -357,12 +368,18 @@ void AddLinksFromSpecification(
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
 
+    // Fail fast for `<pose frame='...'/>`.
+    ThrowIfPoseFrameSpecified(link.Element());
+
     // Get the link's inertia relative to the Bcm frame.
     // sdf::Link::Inertial() provides a representation for the SpatialInertia
     // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
     // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
     // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
     // necessarily aligned with B.
+    if (link.Element()->HasElement("inertial")) {
+      ThrowIfPoseFrameSpecified(link.Element()->GetElement("inertial"));
+    }
     const ignition::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
@@ -379,6 +396,7 @@ void AddLinksFromSpecification(
             *link.VisualByIndex(visual_index), package_map, root_dir);
         unique_ptr<GeometryInstance> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(sdf_visual);
+        ThrowIfPoseFrameSpecified(sdf_visual.Element());
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
         if (geometry_instance) {
@@ -399,6 +417,7 @@ void AddLinksFromSpecification(
         const sdf::Collision& sdf_collision =
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+        ThrowIfPoseFrameSpecified(sdf_collision.Element());
         if (sdf_geometry.Type() != sdf::GeometryType::EMPTY) {
           const Isometry3d X_LG =
               MakeGeometryPoseFromSdfCollision(sdf_collision);
@@ -475,12 +494,22 @@ ModelInstanceIndex AddModelFromSpecification(
   // TODO(eric.cousineau): Ensure this generalizes to cases when the parent
   // frame is not the world. At present, we assume the parent frame is the
   // world.
+  ThrowIfPoseFrameSpecified(model.Element());
   const Isometry3d X_WM = ToIsometry3(model.Pose());
-  // Add a model frame given the instance name so that way any frames added to
-  // the model are associated with this instance.
-  const Frame<double>& model_frame =
+  // Add the SDF "model frame" given the model name so that way any frames added
+  // to the plant are associated with this current model instance.
+  // N.B. We mangle this name to dis-incentivize users from wanting to use
+  // this frame. At present, SDFormat does not concretely specify what the
+  // semantics of a "model frame" are. This current interpretation expects that
+  // the SDF "model frame" is where the model is *added*, and thus is going to
+  // be attached to the world, and cannot be welded to another body. This means
+  // the SDF "model frame" will not "follow" the other link of a body if that
+  // link is welded elsewhere.
+  const std::string sdf_model_frame_name =
+      "_" + model_name + "_sdf_model_frame";
+  const Frame<double>& sdf_model_frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          model_name, plant->world_frame(), X_WM, model_instance));
+          sdf_model_frame_name, plant->world_frame(), X_WM, model_instance));
 
   // TODO(eric.cousineau): Register frames from SDF once we have a pose graph.
   AddLinksFromSpecification(
@@ -499,10 +528,10 @@ ModelInstanceIndex AddModelFromSpecification(
   // TODO(eric.cousineau): Address additional items:
   // - adding frames nested in other elements (joints, visuals, etc.)
   // - implicit frames for other elements (joints, visuals, etc.)
-  // - explicitly referring to model frame?
+  // - explicitly referring to SDF model frame?
   // See: https://bitbucket.org/osrf/sdformat/issues/200
   AddFramesFromSpecification(
-      model_instance, model.Element(), model_frame, plant);
+      model_instance, model.Element(), sdf_model_frame, plant);
 
   return model_instance;
 }

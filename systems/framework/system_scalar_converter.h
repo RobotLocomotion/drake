@@ -250,7 +250,7 @@ static std::unique_ptr<System<T>> Make(
     bool, const System<U>&, std::false_type) {
   // AddIfSupported is guaranteed not to call us, but we *will* be compiled,
   // so we have to have some kind of function body.
-  DRAKE_ABORT();
+  throw std::logic_error("system_scalar_converter_detail");
 }
 }  // namespace system_scalar_converter_detail
 

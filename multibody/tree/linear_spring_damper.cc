@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -30,7 +29,7 @@ LinearSpringDamper<T>::LinearSpringDamper(
 
 template <typename T>
 void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc,
     MultibodyForces<T>* forces) const {
@@ -78,7 +77,7 @@ void LinearSpringDamper<T>::DoCalcAndAddForceContribution(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcPotentialEnergy(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc) const {
   const Isometry3<T>& X_WA = pc.get_X_WB(bodyA().node_index());
   const Isometry3<T>& X_WB = pc.get_X_WB(bodyB().node_index());
@@ -97,7 +96,7 @@ T LinearSpringDamper<T>::CalcPotentialEnergy(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcConservativePower(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
   // Since the potential energy is:
@@ -129,7 +128,7 @@ T LinearSpringDamper<T>::CalcConservativePower(
 
 template <typename T>
 T LinearSpringDamper<T>::CalcNonConservativePower(
-    const internal::MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const internal::PositionKinematicsCache<T>& pc,
     const internal::VelocityKinematicsCache<T>& vc) const {
   // The rate at which the length of the spring changes.
@@ -167,6 +166,13 @@ template <typename T>
 std::unique_ptr<ForceElement<AutoDiffXd>>
 LinearSpringDamper<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<ForceElement<symbolic::Expression>>
+LinearSpringDamper<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
@@ -221,9 +227,8 @@ T LinearSpringDamper<T>::CalcLengthTimeDerivative(
   return length_dot;
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class LinearSpringDamper<double>;
-template class LinearSpringDamper<AutoDiffXd>;
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::LinearSpringDamper)

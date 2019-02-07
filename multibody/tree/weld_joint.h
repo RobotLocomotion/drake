@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
@@ -97,6 +98,9 @@ class WeldJoint final : public Joint<T> {
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
+  std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&x) const override;
+
   // Make WeldJoint templated on every other scalar type a friend of
   // WeldJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of WeldJoint<T>.
@@ -138,3 +142,6 @@ class WeldJoint final : public Joint<T> {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::WeldJoint)

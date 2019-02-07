@@ -36,6 +36,7 @@ drake_cc_library(
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
+        "//manipulation/kuka_iiwa:iiwa_constants",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -54,6 +55,7 @@ drake_cc_library(
         "//attic/multibody/rigid_body_plant:contact_results",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
+        "//manipulation/kuka_iiwa",
         "//systems/framework:leaf_system",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:translator",
@@ -231,7 +233,6 @@ drake_cc_googletest(
     deps = [
         ":iiwa_lcm",
         "//attic/manipulation/util:world_sim_tree_builder",
-        "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
     ],
 )

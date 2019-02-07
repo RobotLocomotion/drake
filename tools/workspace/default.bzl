@@ -21,6 +21,7 @@ load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/freetype2:repository.bzl", "freetype2_repository")  # noqa
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
+load("@drake//tools/workspace/github3_py:repository.bzl", "github3_py_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
 load("@drake//tools/workspace/godotengine:repository.bzl", "godotengine_repository")  # noqa
@@ -70,6 +71,7 @@ load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repo
 load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml:repository.bzl", "tinyxml_repository")
 load("@drake//tools/workspace/u_msgpack_python:repository.bzl", "u_msgpack_python_repository")  # noqa
+load("@drake//tools/workspace/uritemplate_py:repository.bzl", "uritemplate_py_repository")  # noqa
 load("@drake//tools/workspace/vtk:repository.bzl", "vtk_repository")
 load("@drake//tools/workspace/yaml_cpp:repository.bzl", "yaml_cpp_repository")
 load("@drake//tools/workspace/zlib:repository.bzl", "zlib_repository")
@@ -124,6 +126,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gflags_repository(name = "gflags")
     if "gfortran" not in excludes:
         gfortran_repository(name = "gfortran")
+    if "github3_py" not in excludes:
+        github3_py_repository(name = "github3_py", mirrors = mirrors)
     if "glew" not in excludes:
         glew_repository(name = "glew")
     if "glib" not in excludes:
@@ -222,6 +226,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         tinyxml_repository(name = "tinyxml")
     if "u_msgpack_python" not in excludes:
         u_msgpack_python_repository(name = "u_msgpack_python", mirrors = mirrors)  # noqa
+    if "uritemplate_py" not in excludes:
+        uritemplate_py_repository(name = "uritemplate_py", mirrors = mirrors)
     if "vtk" not in excludes:
         vtk_repository(name = "vtk", mirrors = mirrors)
     if "yaml_cpp" not in excludes:

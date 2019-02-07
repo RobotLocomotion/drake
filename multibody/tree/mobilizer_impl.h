@@ -11,7 +11,6 @@
 #include "drake/common/symbolic.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
@@ -56,22 +55,42 @@ class MobilizerImpl : public Mobilizer<T> {
   /// Returns the number of generalized velocities granted by this mobilizer.
   int num_velocities() const final { return kNv;}
 
-  void set_zero_state(const systems::Context<T>& context,
+  /// Sets the elements of the `state` associated with this Mobilizer to the
+  /// _zero_ state.  See Mobilizer::set_zero_state().
+  void set_zero_state(const systems::Context<T>&,
                       systems::State<T>* state) const final {
-    get_mutable_positions(context, state) = get_zero_position();
-    get_mutable_velocities(context, state).setZero();
+    get_mutable_positions(&*state) = get_zero_position();
+    get_mutable_velocities(&*state).setZero();
   };
 
+  /// Sets the elements of the `state` associated with this Mobilizer to the
+  /// _default_ state.  See Mobilizer::set_default_state().
+  void set_default_state(const systems::Context<T>&,
+                         systems::State<T>* state) const final {
+    get_mutable_positions(&*state) = get_default_position();
+    get_mutable_velocities(&*state).setZero();
+  };
+
+  /// Sets the default position of this Mobilizer to be used in subsequent
+  /// calls to set_default_state().
+  void set_default_position(const Eigen::Ref<const Vector<double,
+      compile_time_num_positions>>& position) {
+    default_position_.emplace(position);
+  }
+
+  /// Sets the elements of the `state` associated with this Mobilizer to a
+  /// _random_ state.  If no random distribution has been set, then `state` is
+  /// set to the _default_ state.
   void set_random_state(const systems::Context<T>& context,
                         systems::State<T>* state,
                         RandomGenerator* generator) const override {
     if (random_state_distribution_) {
       const Vector<double, kNx> sample = Evaluate(
           *random_state_distribution_, symbolic::Environment{}, generator);
-      get_mutable_positions(context, state) = sample.template head<kNq>();
-      get_mutable_velocities(context, state) = sample.template tail<kNv>();
+      get_mutable_positions(state) = sample.template head<kNq>();
+      get_mutable_velocities(state) = sample.template tail<kNv>();
     } else {
-      set_zero_state(context, state);
+      set_default_state(context, state);
     }
   }
 
@@ -123,135 +142,81 @@ class MobilizerImpl : public Mobilizer<T> {
   };
 
   /// Returns the zero configuration for the mobilizer.
-  virtual Eigen::Matrix<double, kNq, 1> get_zero_position() const {
-    return Eigen::Matrix<double, kNq, 1>::Zero();
+  virtual Vector<double, kNq> get_zero_position() const {
+    return Vector<double, kNq>::Zero();
+  }
+
+  /// Returns the default configuration for the mobilizer.  The default
+  /// configuration is the configuration used to populate the context in
+  /// MultibodyPlant::SetDefaultContext().
+  Vector<double, kNq> get_default_position() const {
+    if (default_position_) {
+      return *default_position_;
+    }
+    return get_zero_position();
   }
 
   /// Returns the current distribution governing the random samples drawn
-  /// for this mobilizer.
+  /// for this mobilizer if one has been set.
   const optional<Vector<symbolic::Expression, kNx>>&
   get_random_state_distribution() const {
     return random_state_distribution_;
   }
-  /// @name Helper methods to retrieve entries from MultibodyTreeContext.
 
+  /// @name    Helper methods to retrieve entries from the Context.
+  //@{
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<const VectorX<T>, kNq> get_positions(
-      const MultibodyTreeContext<T>& context) const {
-    return context.template get_state_segment<kNq>(
-        this->get_positions_start());
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().template get_state_segment<kNq>(
+        context, this->get_positions_start());
   }
 
   /// Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
-      MultibodyTreeContext<T>* context) const {
-    return context->template get_mutable_state_segment<kNq>(
-        this->get_positions_start());
-  }
-
-  /// Returns a mutable reference to the state vector stored in `state` as an
-  /// Eigen::VectorBlock<VectorX<T>>.
-  Eigen::VectorBlock<VectorX<T>> get_mutable_state_vector(
-      const systems::Context<T>& context, systems::State<T>* state) const {
-    systems::BasicVector<T>& state_vector =
-        is_state_discrete(context) ?
-        state->get_mutable_discrete_state().get_mutable_vector() :
-        dynamic_cast<systems::BasicVector<T>&>(
-            state->get_mutable_continuous_state().get_mutable_vector());
-    return state_vector.get_mutable_value();
+      systems::Context<T>* context) const {
+    return this->get_parent_tree().template get_mutable_state_segment<kNq>(
+        &*context, this->get_positions_start());
   }
 
   /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// positions.
   Eigen::VectorBlock<VectorX<T>, kNq> get_mutable_positions(
-      const systems::Context<T>& context, systems::State<T>* state) const {
-    Eigen::VectorBlock<VectorX<T>> xc =
-        get_mutable_state_vector(context, state);
-    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
-    // state is a BasicVector.
-    // If we do return xc.segment() directly, we would instead get a
-    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
-    return xc.nestedExpression().template segment<kNq>(
-        this->get_positions_start());
+      systems::State<T>* state) const {
+    return this->get_parent_tree().template get_mutable_state_segment<kNq>(
+        &*state, this->get_positions_start());
   }
 
   /// Helper variant to return a const fixed-size Eigen::VectorBlock referencing
   /// the segment in the `state` corresponding to `this` mobilizer's generalized
   /// velocities.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
-      const systems::Context<T>& context, systems::State<T>* state) const {
-    Eigen::VectorBlock<VectorX<T>> xc =
-        get_mutable_state_vector(context, state);
-    // xc.nestedExpression() resolves to "VectorX<T>&" since the continuous
-    // state is a BasicVector.
-    // If we do return xc.segment() directly, we would instead get a
-    // Block<Block<VectorX>>, which is very different from Block<VectorX>.
-    return xc.nestedExpression().template segment<kNv>(
-        this->get_velocities_start());
+      systems::State<T>* state) const {
+    return this->get_parent_tree().template get_mutable_state_segment<kNv>(
+        &*state, this->get_velocities_start());
   }
 
   /// Helper to return a const fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<const VectorX<T>, kNv> get_velocities(
-      const MultibodyTreeContext<T>& context) const {
-    return context.template get_state_segment<kNv>(
+      const systems::Context<T>& context) const {
+    return this->get_parent_tree().template get_state_segment<kNv>(context,
         this->get_velocities_start());
   }
 
   /// Helper to return a mutable fixed-size Eigen::VectorBlock referencing the
   /// segment in the state vector corresponding to `this` mobilizer's state.
   Eigen::VectorBlock<VectorX<T>, kNv> get_mutable_velocities(
-      MultibodyTreeContext<T>* context) const {
-    return context->template get_mutable_state_segment<kNv>(
-        this->get_velocities_start());
-  }
-  /// @}
-
-  /// Helper method to retrieve a const reference to the MultibodyTreeContext
-  /// object referenced by `context`.
-  /// @throws std::logic_error if `context` is not a MultibodyTreeContext
-  /// object.
-  static const MultibodyTreeContext<T>& GetMultibodyTreeContextOrThrow(
-      const systems::Context<T>& context) {
-    // TODO(amcastro-tri): Implement this in terms of
-    // MultibodyTree::GetMultibodyTreeContextOrThrow() with additional validity
-    // checks.
-    const MultibodyTreeContext<T>* mbt_context =
-        dynamic_cast<const MultibodyTreeContext<T>*>(&context);
-    if (mbt_context == nullptr) {
-      throw std::logic_error("The provided systems::Context is not a"
-                             "drake::multibody::MultibodyTreeContext.");
-    }
-    return *mbt_context;
-  }
-
-  /// Helper method to retrieve a mutable pointer to the MultibodyTreeContext
-  /// object referenced by `context`.
-  /// @throws std::logic_error if `context` is not a MultibodyTreeContext
-  /// object.
-  MultibodyTreeContext<T>& GetMutableMultibodyTreeContextOrThrow(
       systems::Context<T>* context) const {
-    // TODO(amcastro-tri): Implement this in terms of
-    // MultibodyTree::GetMutableMultibodyTreeContextOrThrow().
-    MultibodyTreeContext<T>* mbt_context =
-        dynamic_cast<MultibodyTreeContext<T>*>(context);
-    if (mbt_context == nullptr) {
-      throw std::logic_error("The provided systems::Context is not a "
-                             "drake::multibody::MultibodyTreeContext.");
-    }
-    return *mbt_context;
+    return this->get_parent_tree().template get_mutable_state_segment<kNv>(
+        &*context, this->get_velocities_start());
   }
+  //@}
 
  private:
-  /// Helper that returns `true` if the state of the multibody system is stored
-  /// as discrete state.
-  static bool is_state_discrete(const systems::Context<T>& context) {
-    return GetMultibodyTreeContextOrThrow(context).is_state_discrete();
-  }
-
   // Returns the index in the global array of generalized coordinates in the
   // MultibodyTree model to the first component of the generalized coordinates
   // vector that corresponds to this mobilizer.
@@ -265,6 +230,8 @@ class MobilizerImpl : public Mobilizer<T> {
   int get_velocities_start() const {
     return this->get_topology().velocities_start;
   }
+
+  optional<Vector<double, kNq>> default_position_{};
 
   // Note: this is maintained as a concatenated vector so that the evaluation
   // method can share the sampled values of any random variables that are

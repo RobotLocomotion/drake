@@ -336,6 +336,7 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
                         const optional<SolverOptions>& solver_options,
                         MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(prog.decision_variable_index());
   const int nx = prog.num_vars();
 
   // Load the algo to use and the size.

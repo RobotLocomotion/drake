@@ -3,10 +3,9 @@
 #include <memory>
 #include <string>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -106,6 +105,9 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @pre The parent frame to this frame already has a clone in `tree_clone`.
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
   /// @}
 
  private:
@@ -124,3 +126,6 @@ class FixedOffsetFrame final : public Frame<T> {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::FixedOffsetFrame)

@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
 namespace drake {
@@ -783,7 +782,6 @@ T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
 }  // namespace multibody
 }  // namespace drake
 
-// Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     struct ::drake::multibody::internal::DirectionChangeLimiter)
 

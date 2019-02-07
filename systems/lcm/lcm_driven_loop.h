@@ -142,6 +142,8 @@ class LcmDrivenLoop {
    * time) has already been properly initialized by the caller if necessary.
    * @param stop_time End time in seconds relative to the time stamp in the
    * driving Lcm message.
+   * @note If the latest driving time is the same as `stop_time`, then no
+   * stepping will occur.
    */
   void RunToSecondsAssumingInitialized(
       double stop_time = std::numeric_limits<double>::infinity());

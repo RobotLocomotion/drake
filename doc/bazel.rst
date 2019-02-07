@@ -176,7 +176,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 8.0.0
  * MOSEK 8.1
- * SNOPT 7.6
+ * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
    solvers/test/snopt_solver_test.cc.
@@ -240,8 +240,8 @@ Using your own source archive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
-   named ``snopt7.6.tar.gz``).
-2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.6.tar.gz``
+   named ``snopt7.4.tar.gz``).
+2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.4.tar.gz``
 
 Using the RobotLocomotion git repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -261,6 +261,20 @@ The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
+
+Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
+
+ - The ``--config snopt_f2c`` option selects the legacy bindings that use the
+   f2c compiler; these bindings will be removed on 2019-05-01.
+ - The ``--config snopt_fortran`` option selects the bindings that use the
+   gfortran compiler; these bindings will be supported for the foreseeable
+   future.
+ - The ``--config snopt`` option selects a default choice (currently f2c, but
+   will soon change to gfortran).
+
+The gfortran bindings are superior in several ways (such as being threadsafe),
+but have a known problem with unbounded linear programs (see drake issue
+`#10423 <https://github.com/RobotLocomotion/drake/issues/10423>`_).
 
 Optional Tools
 ==============

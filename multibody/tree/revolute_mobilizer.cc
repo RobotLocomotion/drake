@@ -3,7 +3,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/common/autodiff.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -13,9 +12,7 @@ namespace internal {
 template <typename T>
 const T& RevoluteMobilizer<T>::get_angle(
     const systems::Context<T>& context) const {
-  const MultibodyTreeContext<T>& mbt_context =
-      this->GetMultibodyTreeContextOrThrow(context);
-  auto q = this->get_positions(mbt_context);
+  auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
   return q.coeffRef(0);
 }
@@ -23,9 +20,7 @@ const T& RevoluteMobilizer<T>::get_angle(
 template <typename T>
 const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
     systems::Context<T>* context, const T& angle) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto q = this->get_mutable_positions(&mbt_context);
+  auto q = this->get_mutable_positions(&*context);
   DRAKE_ASSERT(q.size() == kNq);
   q[0] = angle;
   return *this;
@@ -34,19 +29,15 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angle(
 template <typename T>
 const T& RevoluteMobilizer<T>::get_angular_rate(
     const systems::Context<T> &context) const {
-  const MultibodyTreeContext<T>& mbt_context =
-      this->GetMultibodyTreeContextOrThrow(context);
-  const auto& v = this->get_velocities(mbt_context);
+  const auto& v = this->get_velocities(context);
   DRAKE_ASSERT(v.size() == kNv);
   return v.coeffRef(0);
 }
 
 template <typename T>
 const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
-    systems::Context<T> *context, const T& theta_dot) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto v = this->get_mutable_velocities(&mbt_context);
+    systems::Context<T>* context, const T& theta_dot) const {
+  auto v = this->get_mutable_velocities(&*context);
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = theta_dot;
   return *this;
@@ -54,7 +45,7 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
 
 template <typename T>
 Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>& context) const {
+    const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == 1);
   const Eigen::AngleAxis<T> angle_axis(q[0], axis_F_);
@@ -64,7 +55,7 @@ Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
   return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
@@ -73,7 +64,7 @@ SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   return SpatialAcceleration<T>(vdot[0] * axis_F_, Vector3<T>::Zero());
@@ -81,7 +72,7 @@ RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void RevoluteMobilizer<T>::ProjectSpatialForce(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
@@ -93,19 +84,19 @@ void RevoluteMobilizer<T>::ProjectSpatialForce(
 
 template <typename T>
 void RevoluteMobilizer<T>::DoCalcNMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> N) const {
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> N) const {
   (*N)(0, 0) = 1.0;
 }
 
 template <typename T>
 void RevoluteMobilizer<T>::DoCalcNplusMatrix(
-      const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> Nplus) const {
+      const systems::Context<T>&, EigenPtr<MatrixX<T>> Nplus) const {
   (*Nplus)(0, 0) = 1.0;
 }
 
 template <typename T>
 void RevoluteMobilizer<T>::MapVelocityToQDot(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -116,7 +107,7 @@ void RevoluteMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void RevoluteMobilizer<T>::MapQDotToVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
@@ -150,10 +141,16 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class RevoluteMobilizer<double>;
-template class RevoluteMobilizer<AutoDiffXd>;
+template <typename T>
+std::unique_ptr<Mobilizer<symbolic::Expression>>
+RevoluteMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
 
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::RevoluteMobilizer)
