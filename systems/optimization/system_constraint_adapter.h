@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_optional.h"
 #include "drake/solvers/binding.h"
 #include "drake/systems/optimization/system_constraint_wrapper.h"
 
@@ -52,29 +53,32 @@ class SystemConstraintAdapter {
         x_size);
   }
 
+  // TODO(hongkai.dai): support parsing second-order-cone or quadratic
+  // constraint.
   /**
    * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
    * parse the constraint in the symbolic forms. Currently we support parsing
    * the following forms:
-   * (1) bounding box ( lower <= x <= uppeer )
-   * (2) linear equality ( aᵀx = b )
-   * (3) linear inequality ( lower <= aᵀx <= upper )
+   *
+   *  1. bounding box ( lower <= x <= upper )
+   *  2. linear equality ( aᵀx = b )
+   *  3. linear inequality ( lower <= aᵀx <= upper )
+   *
    * If the SystemConstraint cannot be parsed to the forms above, then return
    * false, and clear @p constraints. Otherwise return true.
    * @param index The index of the constraint in the System object.
    * @param context The context used to evaluate the SystemConstraint.
-   * @param constraints constraints[i] is the i'th row of the SystemConstraint
-   * evaluation result.
-   * @return is_success If the SystemConstraint can be parsed symbolically to
-   * the form above. The failure could come from either the system is not
-   * instantiated in the symbolic::Expression, or the constraint cannot be
-   * parsed to the form above.
+   * @retval constraints If the SystemConstraint can be parsed to the constraint
+   * in the above forms, then constraints.value()[i] is the i'th row of the
+   * SystemConstraint evaluation result; if the SystemConstraint cannot be
+   * parsed in the above forms (either due to the System is not instantiated
+   * with symbolic::Expression, or the constraint is not linear), then
+   * constraints.has_value() = false.
    */
-  // TODO(hongkai.dai): support parsing second-order-cone or quadratic
-  // constraint.
-  bool MaybeCreateConstraintSymbolically(
-      SystemConstraintIndex index, const Context<symbolic::Expression>& context,
-      std::vector<solvers::Binding<solvers::Constraint>>* constraints) const;
+  optional<std::vector<solvers::Binding<solvers::Constraint>>>
+  MaybeCreateConstraintSymbolically(
+      SystemConstraintIndex index,
+      const Context<symbolic::Expression>& context) const;
 
   /**
    * Returns the symbolic system. Throws a runtime error if the system cannot be

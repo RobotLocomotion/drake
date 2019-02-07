@@ -224,14 +224,15 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
   context_symbolic->get_mutable_continuous_state_vector().SetFromVector(
       Vector2<symbolic::Expression>(a, b));
 
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
-  EXPECT_TRUE(adapter.MaybeCreateConstraintSymbolically(
-      system_constraint_index, *context_symbolic, &constraints));
-  ASSERT_EQ(constraints.size(), 3);
-  CheckBoundingBoxConstraint(constraints[0], a, -1, 4);
-  CheckLinearConstraint(constraints[1], Vector2<symbolic::Variable>(a, b),
+  auto constraints = adapter.MaybeCreateConstraintSymbolically(
+      system_constraint_index, *context_symbolic);
+  EXPECT_TRUE(constraints.has_value());
+  ASSERT_EQ(constraints->size(), 3);
+  CheckBoundingBoxConstraint(constraints.value()[0], a, -1, 4);
+  CheckLinearConstraint(constraints.value()[1],
+                        Vector2<symbolic::Variable>(a, b),
                         Eigen::RowVector2d(2, 1), Vector1d(1), Vector1d(4));
-  CheckLinearEqualityConstraint(constraints[2],
+  CheckLinearEqualityConstraint(constraints.value()[2],
                                 Vector2<symbolic::Variable>(a, b),
                                 Eigen::RowVector2d(1, 2), Vector1d(3));
 
@@ -243,15 +244,17 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
   // -1 <= a + b <= 4
   // 0 <= 2 * a + 2 * b <= 3
   // a + b = 1
-  constraints.clear();
-  EXPECT_TRUE(adapter.MaybeCreateConstraintSymbolically(
-      system_constraint_index, *context_symbolic, &constraints));
-  EXPECT_EQ(constraints.size(), 3);
-  CheckLinearConstraint(constraints[0], Vector2<symbolic::Variable>(a, b),
+  constraints = adapter.MaybeCreateConstraintSymbolically(
+      system_constraint_index, *context_symbolic);
+  EXPECT_TRUE(constraints.has_value());
+  EXPECT_EQ(constraints->size(), 3);
+  CheckLinearConstraint(constraints.value()[0],
+                        Vector2<symbolic::Variable>(a, b),
                         Eigen::RowVector2d(1, 1), Vector1d(-1), Vector1d(4));
-  CheckLinearConstraint(constraints[1], Vector2<symbolic::Variable>(a, b),
+  CheckLinearConstraint(constraints.value()[1],
+                        Vector2<symbolic::Variable>(a, b),
                         Eigen::RowVector2d(2, 2), Vector1d(0), Vector1d(3));
-  CheckLinearEqualityConstraint(constraints[2],
+  CheckLinearEqualityConstraint(constraints.value()[2],
                                 Vector2<symbolic::Variable>(a, b),
                                 Eigen::RowVector2d(1, 1), Vector1d(1));
 
@@ -259,10 +262,9 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
   // are nonlinear
   context_symbolic->get_mutable_continuous_state().SetFromVector(
       Vector2<symbolic::Expression>(a * a, 1));
-  constraints.clear();
-  EXPECT_FALSE(adapter.MaybeCreateConstraintSymbolically(
-      system_constraint_index, *context_symbolic, &constraints));
-  EXPECT_TRUE(constraints.empty());
+  constraints = adapter.MaybeCreateConstraintSymbolically(
+      system_constraint_index, *context_symbolic);
+  EXPECT_FALSE(constraints.has_value());
 }
 }  // namespace systems
 }  // namespace drake

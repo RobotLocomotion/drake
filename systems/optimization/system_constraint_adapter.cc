@@ -14,20 +14,20 @@ SystemConstraintAdapter::SystemConstraintAdapter(
   DRAKE_DEMAND(system);
 }
 
-bool SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
-    SystemConstraintIndex index, const Context<symbolic::Expression>& context,
-    std::vector<solvers::Binding<solvers::Constraint>>* constraints) const {
+optional<std::vector<solvers::Binding<solvers::Constraint>>>
+SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
+    SystemConstraintIndex index,
+    const Context<symbolic::Expression>& context) const {
   if (!system_symbolic_) {
-    constraints->clear();
-    return false;
+    return {};
   }
-  DRAKE_DEMAND(constraints->empty());
   const SystemConstraint<symbolic::Expression>& system_constraint =
       system_symbolic_->get_constraint(index);
   VectorX<symbolic::Expression> constraint_val(system_constraint.size());
   // Evaluate the constraint as symbolic expressions.
   system_constraint.Calc(context, &constraint_val);
-  constraints->reserve(constraint_val.size());
+  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  constraints.reserve(constraint_val.size());
   // Parse the symbolic expression to constraint.
   // If the symbolic expression have some special structures (for example, being
   // linear), then we can create a
@@ -40,7 +40,7 @@ bool SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
             constraint_val(i), system_constraint.bounds().lower()(i),
             system_constraint.bounds().upper()(i));
     if (linear_constraint) {
-      constraints->push_back(*linear_constraint);
+      constraints.push_back(*linear_constraint);
     } else {
       // TODO(hongkai.dai): parse second order cone constraint.
       is_success = false;
@@ -48,9 +48,9 @@ bool SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
     }
   }
   if (!is_success) {
-    constraints->clear();
+    return {};
   }
-  return is_success;
+  return constraints;
 }
 
 const System<symbolic::Expression>& SystemConstraintAdapter::system_symbolic()
