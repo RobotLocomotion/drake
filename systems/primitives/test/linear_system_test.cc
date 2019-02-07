@@ -397,7 +397,13 @@ GTEST_TEST(TestLinearize, LinearizingWithMixedInputs) {
   EmptyStateSystemWithMixedInputs<double> system;
   auto context = system.CreateDefaultContext();
 
-  // First check without the abstract input port connected.
+  // First check without the vector-valued input port connected.
+  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
+      "Vector-valued input port.*must be either fixed or connected to "
+          "the output of another system.");
+
+  // Now check with the vector-valued input port connect but without the
+  // abstract input port connected.
   context->FixInputPort(0, Vector1<double>(0.0));
   EXPECT_NO_THROW(Linearize(system, *context));
 
