@@ -99,7 +99,36 @@ drake_cc_library(
 
 # === test/ ===
 
-# TODO(jwnimmer-tri) All of the unit tests for these still live inside
-# //examples; we should relocate them here.
+drake_cc_googletest(
+    name = "iiwa_command_receiver_test",
+    deps = [
+        ":iiwa_command_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_command_sender_test",
+    deps = [
+        ":iiwa_command_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_status_receiver_test",
+    deps = [
+        ":iiwa_status_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_status_sender_test",
+    deps = [
+        ":iiwa_status_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
 
 add_lint_tests()

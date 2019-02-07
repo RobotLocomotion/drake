@@ -49,7 +49,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
                       "iiwa_position");
   builder.ExportInput(iiwa_command_sender->get_torque_input_port(),
                       "iiwa_feedforward_torque");
-  builder.Connect(iiwa_command_sender->get_output_port(0),
+  builder.Connect(iiwa_command_sender->get_output_port(),
                   iiwa_command_publisher->get_input_port());
 
   // Receive IIWA status and populate the output ports.
@@ -75,7 +75,7 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
   builder.ExportOutput(iiwa_status_receiver->get_torque_external_output_port(),
                        "iiwa_torque_external");
   builder.Connect(iiwa_status_subscriber_->get_output_port(),
-                  iiwa_status_receiver->get_input_port(0));
+                  iiwa_status_receiver->get_input_port());
 
   // Publish WSG command.
   auto wsg_command_sender =

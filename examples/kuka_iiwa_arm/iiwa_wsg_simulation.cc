@@ -188,24 +188,34 @@ int DoMain() {
 
   builder.Connect(iiwa_command_sub->get_output_port(),
                   iiwa_command_receiver->GetInputPort("command_message"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
+  // we should add commanded velocity estimation into the estimator, not use
+  // the state ports on the LCM systems (the KUKA doesn't use velocities).
   builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                   model->get_input_port_iiwa_state_command());
+#pragma GCC diagnostic pop
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
                   model->get_input_port_iiwa_acceleration_command());
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The state estimator should have a velocity port.
   builder.Connect(model->get_output_port_iiwa_state(),
                   iiwa_status_sender->get_state_input_port());
-  builder.Connect(iiwa_command_receiver->get_output_port(0),
-                  iiwa_status_sender->get_command_input_port());
+#pragma GCC diagnostic pop
+  builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
+                  iiwa_status_sender->get_position_commanded_input_port());
   builder.Connect(model->get_output_port_computed_torque(),
-                  iiwa_status_sender->get_commanded_torque_input_port());
+                  iiwa_status_sender->get_torque_commanded_input_port());
   builder.Connect(model->get_output_port_iiwa_measured_torque(),
-                  iiwa_status_sender->get_measured_torque_input_port());
+                  iiwa_status_sender->get_torque_measured_input_port());
   builder.Connect(model->get_output_port_contact_results(),
                   external_torque_converter->get_input_port(0));
   builder.Connect(external_torque_converter->get_output_port(0),
-                  iiwa_status_sender->get_external_torque_input_port());
-  builder.Connect(iiwa_status_sender->get_output_port(0),
+                  iiwa_status_sender->get_torque_external_input_port());
+  builder.Connect(iiwa_status_sender->get_output_port(),
                   iiwa_status_pub->get_input_port());
 
   auto wsg_command_sub = builder.AddSystem(

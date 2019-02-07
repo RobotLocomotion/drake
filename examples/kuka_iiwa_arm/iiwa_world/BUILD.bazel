@@ -38,6 +38,10 @@ drake_cc_binary(
     name = "multi_arm_with_gripper_demo",
     srcs = ["multi_arm_with_gripper_demo.cc"],
     add_test_rule = 1,
+    copts = [
+        # TODO(jwnimmer-tri) Update this example, or delete it.
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",

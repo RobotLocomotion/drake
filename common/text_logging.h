@@ -166,5 +166,28 @@ namespace logging {
 /// value is an empty class.
 sink* get_dist_sink();
 
+/// When constructed, logs a message (at "warn" severity); the destructor is
+/// guaranteed to be trivial.  This is useful for declaring an instance of this
+/// class as a function-static global, so that a warning is logged the first
+/// time the program encounters some code, but does not repeat the warning on
+/// subsequent encounters within the same process.
+///
+/// For example:
+/// <pre>
+/// double* SanityCheck(double* data) {
+///   if (!data) {
+///     static const logging::Warn log_once("Bad data!");
+///     return alternative_data();
+///   }
+///   return data;
+/// }
+/// </pre>
+struct Warn {
+  template <typename... Args>
+  Warn(const char* a, const Args&... b) {
+    drake::log()->warn(a, b...);
+  }
+};
+
 }  // namespace logging
 }  // namespace drake
