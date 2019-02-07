@@ -30,6 +30,7 @@ using multibody::JointActuator;
 using multibody::RevoluteJoint;
 using multibody::UniformGravityFieldElement;
 using systems::Context;
+using systems::DiagramBuilder;
 
 namespace examples {
 namespace multibody {
@@ -54,32 +55,38 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   const std::string full_name = FindResourceOrThrow(file_name);
   // LinearQuadraticRegulator() below requires the controller's model of the
   // plant to only have a single input port corresponding to the actuation.
-  // Therefore we create a new model that meets this requirement. (a model
-  // created along with a SceneGraph for simulation would also have input ports
-  // to interact with that SceneGraph).
-  MultibodyPlant<double> acrobot;
-  Parser parser(&acrobot);
+  // We create a Diagram with a single exported output to meet this requirement.
+  DiagramBuilder<double> builder;
+  auto acrobot = builder.AddSystem<MultibodyPlant<double>>();
+  Parser parser(acrobot);
   parser.AddModelFromFile(full_name);
   // Add gravity to the model.
-  acrobot.AddForceElement<UniformGravityFieldElement>();
+  acrobot->AddForceElement<UniformGravityFieldElement>();
   // We are done defining the model.
-  acrobot.Finalize();
+  acrobot->Finalize();
+
+  // Export only the actuation port.
+  builder.ExportInput(acrobot->get_actuation_input_port());
+  auto encapsulated_acrobot = builder.Build();
 
   const RevoluteJoint<double>& shoulder =
-      acrobot.GetJointByName<RevoluteJoint>("ShoulderJoint");
+      acrobot->GetJointByName<RevoluteJoint>("ShoulderJoint");
   const RevoluteJoint<double>& elbow =
-      acrobot.GetJointByName<RevoluteJoint>("ElbowJoint");
-  std::unique_ptr<Context<double>> context = acrobot.CreateDefaultContext();
+      acrobot->GetJointByName<RevoluteJoint>("ElbowJoint");
+  std::unique_ptr<Context<double>> context =
+      encapsulated_acrobot->CreateDefaultContext();
+  Context<double>& acrobot_context =
+      encapsulated_acrobot->GetMutableSubsystemContext(*acrobot, context.get());
 
   // Set nominal actuation torque to zero.
   context->FixInputPort(0, Vector1d::Constant(0.0));
 
-  shoulder.set_angle(context.get(), M_PI);
-  shoulder.set_angular_rate(context.get(), 0.0);
-  elbow.set_angle(context.get(), 0.0);
-  elbow.set_angular_rate(context.get(), 0.0);
+  shoulder.set_angle(&acrobot_context, M_PI);
+  shoulder.set_angular_rate(&acrobot_context, 0.0);
+  elbow.set_angle(&acrobot_context, 0.0);
+  elbow.set_angular_rate(&acrobot_context, 0.0);
 
-  // Setup LQR Cost matrices (penalize position error 10x more than velocity
+  // Set up LQR Cost matrices (penalize position error 10x more than velocity
   // to roughly address difference in units, using sqrt(g/l) as the time
   // constant.
   Eigen::Matrix4d Q = Eigen::Matrix4d::Identity();
@@ -88,7 +95,7 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   Vector1d R = Vector1d::Constant(1);
 
   return systems::controllers::LinearQuadraticRegulator(
-      acrobot, *context, Q, R);
+      *encapsulated_acrobot, *context, Q, R);
 }
 
 int do_main() {

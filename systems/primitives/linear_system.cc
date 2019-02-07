@@ -1,11 +1,11 @@
 #include "drake/systems/primitives/linear_system.h"
 
-#include <fmt/format.h>
 #include <string>
 #include <utility>
 
 #include <Eigen/Dense>
 #include <Eigen/LU>
+#include <fmt/format.h>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
