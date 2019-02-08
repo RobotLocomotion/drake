@@ -56,7 +56,8 @@ class MeshcatVisualizer(LeafSystem):
 
             if args.meshcat:
                 meshcat = builder.AddSystem(MeshcatVisualizer(
-                        scene_graph, zmq_url=args.meshcat))
+                        scene_graph, zmq_url=args.meshcat,
+                        open_browser=args.open_browser))
         """
         parser.add_argument(
             "--meshcat", nargs='?', metavar='zmq_url', const="new",
@@ -67,6 +68,10 @@ class MeshcatVisualizer(LeafSystem):
                  "connect to an existing meshcat-server at the specified "
                  "url.  Use --meshcat=default to connect to the "
                  "meshcat-server running at the default url.")
+
+        parser.add_argument(
+            "--open_browser", action='store_true', default=False,
+            help="Open a browser when creating a new meshcat-server.")
 
     def __init__(self,
                  scene_graph,
