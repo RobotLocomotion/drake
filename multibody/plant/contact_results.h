@@ -15,12 +15,7 @@ namespace multibody {
  A container class storing the contact results information for each contact
  pair for a given state of the simulation.
 
- @tparam T      The scalar type. It must be a valid Eigen scalar.
-
- Instantiated templates for the following ScalarTypes are provided:
-
- - double
- - AutoDiffXd
+ @tparam T Must be one of drake's default scalar types.
  */
 template <typename T>
 class ContactResults {
@@ -66,5 +61,5 @@ using ContactResults = ::drake::multibody::ContactResults<T>;
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::ContactResults)
