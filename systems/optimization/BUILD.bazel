@@ -35,6 +35,8 @@ drake_cc_library(
     hdrs = ["system_constraint_adapter.h"],
     deps = [
         ":system_constraint_wrapper",
+        "//solvers:binding",
+        "//solvers:create_constraint",
     ],
 )
 

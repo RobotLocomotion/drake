@@ -23,7 +23,7 @@ struct DummySystemUpdater1 {
   }
 };
 
-GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
+GTEST_TEST(SystemConstraintAdapterTest, CreateSystemConstraintWrapper) {
   DummySystem<double> system;
 
   SystemConstraintAdapter adapter(&system);
@@ -72,7 +72,7 @@ GTEST_TEST(SystemConstraintAdapter, CreateSystemConstraintWrapper) {
   EXPECT_TRUE(CompareMatrices(y_val2, y_val2_expected, 3 * kEps));
 }
 
-GTEST_TEST(SystemConstraintAdapter, SolveDummySystemConstraint) {
+GTEST_TEST(SystemConstraintAdapterTest, SolveDummySystemConstraint) {
   DummySystem<double> system;
 
   SystemConstraintAdapter adapter(&system);
@@ -144,6 +144,127 @@ GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {
   const double tol{1E-6};
   EXPECT_LE(result.GetSolution(x(1)), 5 + tol);
   EXPECT_GE(result.GetSolution(x(1)), -5 - tol);
+}
+
+void CheckBoundingBoxConstraint(
+    const solvers::Binding<solvers::Constraint>& constraint,
+    const symbolic::Variable& var, double lower, double upper,
+    double tol = 1E-14) {
+  const auto bounding_box =
+      solvers::internal::BindingDynamicCast<solvers::BoundingBoxConstraint>(
+          constraint);
+  EXPECT_EQ(bounding_box.variables().size(), 1);
+  EXPECT_EQ(bounding_box.variables()(0), var);
+  EXPECT_NEAR(bounding_box.evaluator()->lower_bound()(0), lower, tol);
+  EXPECT_NEAR(bounding_box.evaluator()->upper_bound()(0), upper, tol);
+}
+
+void CheckLinearConstraint(
+    const solvers::Binding<solvers::Constraint>& constraint,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& lower,
+    const Eigen::Ref<const Eigen::VectorXd>& upper, double tol = 1E-14) {
+  const auto linear_constraint =
+      solvers::internal::BindingDynamicCast<solvers::LinearConstraint>(
+          constraint);
+  EXPECT_EQ(linear_constraint.variables(), vars);
+  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->A(), A, tol));
+  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->lower_bound(),
+                              lower, tol));
+  EXPECT_TRUE(CompareMatrices(linear_constraint.evaluator()->upper_bound(),
+                              upper, tol));
+}
+
+void CheckLinearEqualityConstraint(
+    const solvers::Binding<solvers::Constraint>& constraint,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& vars,
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& rhs, double tol = 1E-14) {
+  const auto linear_eq_constraint =
+      solvers::internal::BindingDynamicCast<solvers::LinearEqualityConstraint>(
+          constraint);
+  EXPECT_EQ(linear_eq_constraint.variables(), vars);
+  EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->A(), A, tol));
+  EXPECT_TRUE(CompareMatrices(linear_eq_constraint.evaluator()->lower_bound(),
+                              rhs, tol));
+}
+
+GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
+  Eigen::Matrix2d A;
+  A << 0, 1, 0, 0;
+  LinearSystem<double> double_integrator(A, Eigen::Vector2d(0, 1),
+                                         Eigen::Matrix2d::Identity(),
+                                         Eigen::Vector2d::Zero());
+
+  // Create an arbitrary external constraint with linear forms.
+  // 0 <= x(0) + 1 <= 5
+  // 1 <= 2 * x(0) + x(1) <= 4
+  // x(0) + 2 * x(1) = 3
+  ExternalSystemConstraint system_constraint =
+      ExternalSystemConstraint::MakeForAllScalars(
+          "constraint", {Eigen::Vector3d(0, 1, 3), Eigen::Vector3d(5, 4, 3)},
+          [](const auto& system, const auto& context, auto* value) {
+            auto x = context.get_continuous_state_vector().CopyToVector();
+            (*value)(0) = x(0) + 1;
+            (*value)(1) = 2 * x(0) + x(1);
+            (*value)(2) = x(0) + 2 * x(1);
+          });
+
+  const SystemConstraintIndex system_constraint_index =
+      double_integrator.AddExternalConstraint(system_constraint);
+
+  SystemConstraintAdapter adapter(&double_integrator);
+
+  auto context_symbolic = adapter.system_symbolic().CreateDefaultContext();
+
+  const symbolic::Variable a("a");
+  const symbolic::Variable b("b");
+
+  context_symbolic->get_mutable_continuous_state_vector().SetFromVector(
+      Vector2<symbolic::Expression>(a, b));
+
+  auto constraints = adapter.MaybeCreateConstraintSymbolically(
+      system_constraint_index, *context_symbolic);
+  EXPECT_TRUE(constraints.has_value());
+  ASSERT_EQ(constraints->size(), 3);
+  CheckBoundingBoxConstraint(constraints.value()[0], a, -1, 4);
+  CheckLinearConstraint(constraints.value()[1],
+                        Vector2<symbolic::Variable>(a, b),
+                        Eigen::RowVector2d(2, 1), Vector1d(1), Vector1d(4));
+  CheckLinearEqualityConstraint(constraints.value()[2],
+                                Vector2<symbolic::Variable>(a, b),
+                                Eigen::RowVector2d(1, 2), Vector1d(3));
+
+  // Now test context.x = [a + b; 1]. Namely it contains both expression
+  // and constant.
+  context_symbolic->get_mutable_continuous_state().SetFromVector(
+      Vector2<symbolic::Expression>(a + b, 1));
+  // The newly generated constraint should be
+  // -1 <= a + b <= 4
+  // 0 <= 2 * a + 2 * b <= 3
+  // a + b = 1
+  constraints = adapter.MaybeCreateConstraintSymbolically(
+      system_constraint_index, *context_symbolic);
+  EXPECT_TRUE(constraints.has_value());
+  EXPECT_EQ(constraints->size(), 3);
+  CheckLinearConstraint(constraints.value()[0],
+                        Vector2<symbolic::Variable>(a, b),
+                        Eigen::RowVector2d(1, 1), Vector1d(-1), Vector1d(4));
+  CheckLinearConstraint(constraints.value()[1],
+                        Vector2<symbolic::Variable>(a, b),
+                        Eigen::RowVector2d(2, 2), Vector1d(0), Vector1d(3));
+  CheckLinearEqualityConstraint(constraints.value()[2],
+                                Vector2<symbolic::Variable>(a, b),
+                                Eigen::RowVector2d(1, 1), Vector1d(1));
+
+  // Now test a new context with context.x = [a^2, 1]. Hence the constraints
+  // are nonlinear
+  context_symbolic->get_mutable_continuous_state().SetFromVector(
+      Vector2<symbolic::Expression>(a * a, 1));
+  constraints = adapter.MaybeCreateConstraintSymbolically(
+      system_constraint_index, *context_symbolic);
+  EXPECT_FALSE(constraints.has_value());
 }
 }  // namespace systems
 }  // namespace drake
