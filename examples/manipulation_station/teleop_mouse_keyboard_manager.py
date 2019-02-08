@@ -3,7 +3,7 @@ import pygame
 from pygame.locals import *
 
 
-class TeleopKeyboardMouseManager():
+class TeleopMouseKeyboardManager():
 
     def __init__(self):
 
