@@ -4,6 +4,11 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
+    "//tools/lint:python_lint.bzl",
+    "PYTHON_LINT_IGNORE_DEFAULT",
+    "python_lint",
+)
+load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
@@ -138,6 +143,13 @@ sh_test(
     data = [
         ":clang-format-includes",
     ],
+)
+
+# Exercise `ignore` for `python_lint`.
+python_lint(
+    existing_rules = [],
+    extra_srcs = ["test/python_lint_ignore_example.py"],
+    ignore = ["E402"],
 )
 
 add_lint_tests()
