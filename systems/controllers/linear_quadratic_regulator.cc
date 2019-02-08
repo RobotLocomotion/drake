@@ -149,7 +149,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
           ? context.get_continuous_state_vector().CopyToVector()
           : context.get_discrete_state(0).CopyToVector();
 
-  const auto& u0 = system.EvalEigenVectorInput(context, 0);
+  const auto& u0 = system.get_input_port(0).Eval(context);
 
   // Return the affine controller: u = u0 - K(x-x0).
   return std::make_unique<systems::AffineSystem<double>>(

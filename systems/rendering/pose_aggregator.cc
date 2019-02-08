@@ -67,16 +67,15 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
 
   const int num_ports = this->get_num_input_ports();
   for (int port_index = 0; port_index < num_ports; ++port_index) {
+    const auto& port = this->get_input_port(port_index);
     const InputRecord& record = input_records_[port_index];
     const int num_poses = record.num_poses;
     switch (record.type) {
       case InputRecord::kSinglePose: {
-        const PoseVector<T>* value =
-            this->template EvalVectorInput<PoseVector>(context, port_index);
-        DRAKE_ASSERT(value != nullptr);
+        const auto& value = port.template Eval<PoseVector<T>>(context);
         DRAKE_ASSERT(pose_index < bundle.get_num_poses());
         bundle.set_name(pose_index, record.name);
-        bundle.set_pose(pose_index, value->get_isometry());
+        bundle.set_pose(pose_index, value.get_isometry());
         bundle.set_model_instance_id(pose_index, record.model_instance_id);
         pose_index++;
         break;
@@ -88,9 +87,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
         DRAKE_ASSERT(input_records_[port_index - 1].type ==
                      InputRecord::kSinglePose);
 
-        const FrameVelocity<T>* value =
-            this->template EvalVectorInput<FrameVelocity>(context, port_index);
-        DRAKE_ASSERT(value != nullptr);
+        const auto& value = port.template Eval<FrameVelocity<T>>(context);
         const int prev_pose_index = pose_index - 1;
         DRAKE_ASSERT(bundle.get_name(prev_pose_index) == record.name);
         const int last_model_instance_id =
@@ -99,24 +96,23 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
 
         // Write the velocity to the previous pose_index, and do not increment
         // the pose_index, because this input was not a pose.
-        bundle.set_velocity(prev_pose_index, *value);
+        bundle.set_velocity(prev_pose_index, value);
         break;
       }
       case InputRecord::kBundle: {
         // Concatenate the poses of the input pose bundle into the output.
         // TODO(david-german-tri): Accept PoseBundles of variable width, with
         // variable names.
-        const PoseBundle<T>* value =
-            this->template EvalInputValue<PoseBundle<T>>(context, port_index);
-        DRAKE_ASSERT(num_poses == value->get_num_poses());
+        const auto& value = port.template Eval<PoseBundle<T>>(context);
+        DRAKE_ASSERT(num_poses == value.get_num_poses());
         const std::string& bundle_name = record.name;
         for (int j = 0; j < num_poses; ++j) {
           DRAKE_ASSERT(pose_index < bundle.get_num_poses());
-          bundle.set_pose(pose_index, value->get_pose(j));
-          bundle.set_velocity(pose_index, value->get_velocity(j));
-          bundle.set_name(pose_index, bundle_name + "::" + value->get_name(j));
+          bundle.set_pose(pose_index, value.get_pose(j));
+          bundle.set_velocity(pose_index, value.get_velocity(j));
+          bundle.set_name(pose_index, bundle_name + "::" + value.get_name(j));
           bundle.set_model_instance_id(pose_index,
-                                       value->get_model_instance_id(j));
+                                       value.get_model_instance_id(j));
           pose_index++;
         }
         break;

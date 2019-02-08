@@ -337,7 +337,7 @@ station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-    station_context).get_value()
+    station_context)
 differential_ik.parameters.set_nominal_joint_position(q0)
 
 teleop.SetPose(differential_ik.ForwardKinematics(q0))
@@ -345,7 +345,7 @@ filter.set_initial_output_value(
     diagram.GetMutableSubsystemContext(
         filter, simulator.get_mutable_context()),
     teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
-        teleop, simulator.get_mutable_context())).get_value())
+        teleop, simulator.get_mutable_context())))
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
 

@@ -80,9 +80,7 @@ void TimeVaryingAffineSystem<T>::CalcOutputY(
   }
 
   if (num_inputs_ > 0) {
-    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const auto& u = input->get_value();
+    const auto& u = get_input_port().Eval(context);
     const MatrixX<T> Dt = D(t);
     DRAKE_DEMAND(Dt.rows() == num_outputs_ && Dt.cols() == num_inputs_);
     y += Dt * u;
@@ -109,9 +107,7 @@ void TimeVaryingAffineSystem<T>::DoCalcTimeDerivatives(
   xdot += At * x;
 
   if (num_inputs_ > 0) {
-    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const auto& u = input->get_value();
+    const auto& u = get_input_port().Eval(context);
 
     const MatrixX<T> Bt = B(t);
     DRAKE_DEMAND(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
@@ -142,9 +138,7 @@ void TimeVaryingAffineSystem<T>::DoCalcDiscreteVariableUpdates(
   xn += At * x;
 
   if (num_inputs_ > 0) {
-    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const auto& u = input->get_value();
+    const auto& u = get_input_port().Eval(context);
 
     const MatrixX<T> Bt = B(t);
     DRAKE_DEMAND(Bt.rows() == num_states_ && Bt.cols() == num_inputs_);
@@ -251,9 +245,7 @@ void AffineSystem<T>::CalcOutputY(const Context<T>& context,
   y = C_ * x + y0_;
 
   if (this->num_inputs()) {
-    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const auto& u = input->get_value();
+    const auto& u = this->get_input_port().Eval(context);
     y += D_ * u;
   }
 }
@@ -270,9 +262,7 @@ void AffineSystem<T>::DoCalcTimeDerivatives(
   VectorX<T> xdot = A_ * x + f0_;
 
   if (this->num_inputs() > 0) {
-    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const auto& u = input->get_value();
+    const auto& u = this->get_input_port().Eval(context);
 
     xdot += B_ * u;
   }
@@ -291,9 +281,7 @@ void AffineSystem<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> xnext = A_ * x + f0_;
 
   if (this->num_inputs() > 0) {
-    const BasicVector<T>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const auto& u = input->get_value();
+    const auto& u = this->get_input_port().Eval(context);
 
     xnext += B_ * u;
   }

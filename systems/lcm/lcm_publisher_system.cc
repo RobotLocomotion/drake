@@ -16,10 +16,6 @@ namespace lcm {
 using drake::lcm::DrakeLcmInterface;
 using drake::lcm::DrakeLcm;
 
-namespace {
-const int kPortIndex = 0;
-}  // namespace
-
 // TODO(jwnimmer-tri) The "serializer xor translator" disjoint implementations
 // within the method bodies below are not ideal, because of the code smell, and
 // because it is likely confusing for users.  We should take further steps to
@@ -164,15 +160,11 @@ EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
   // Converts the input into LCM message bytes.
   std::vector<uint8_t> message_bytes;
   if (translator_ != nullptr) {
-    const VectorBase<double>* const input_vector =
-        this->EvalVectorInput(context, kPortIndex);
-    DRAKE_ASSERT(input_vector != nullptr);
-    translator_->Serialize(context.get_time(), *input_vector, &message_bytes);
+    const auto& input = get_input_port().Eval<BasicVector<double>>(context);
+    translator_->Serialize(context.get_time(), input, &message_bytes);
   } else {
-    const AbstractValue* const input_value =
-        this->EvalAbstractInput(context, kPortIndex);
-    DRAKE_ASSERT(input_value != nullptr);
-    serializer_->Serialize(*input_value, &message_bytes);
+    const AbstractValue& input = get_input_port().Eval<AbstractValue>(context);
+    serializer_->Serialize(input, &message_bytes);
   }
 
   // Publishes onto the specified LCM channel.

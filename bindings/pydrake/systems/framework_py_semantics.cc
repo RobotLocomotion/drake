@@ -258,25 +258,46 @@ void DefineFrameworkPySemantics(py::module m) {
 
     DefineTemplateClassWithDefault<OutputPort<T>>(
         m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
-        .def("size", &OutputPort<T>::size, doc.OutputPortBase.size.doc)
+        .def("size", &OutputPort<T>::size, doc.PortBase.size.doc)
+        .def("get_data_type", &OutputPort<T>::get_data_type,
+            doc.PortBase.get_data_type.doc)
         .def("get_index", &OutputPort<T>::get_index,
             doc.OutputPortBase.get_index.doc)
-        .def("EvalAbstract", &OutputPort<T>::EvalAbstract,
-            doc.OutputPort.EvalAbstract.doc, py_reference_internal)
         .def("Eval",
-            [](const OutputPort<T>* self, const Context<T>& context) {
-              // Use type-erased signature to get value.
-              // TODO(eric.cousineau): Figure out why `py_reference` is
-              // necessary below (#9398).
-              py::object value_ref =
-                  py::cast(&self->EvalAbstract(context), py_reference);
-              return value_ref.attr("get_value")();
+            [](const OutputPort<T>* self, const Context<T>& c) {
+              switch (self->get_data_type()) {
+                case kVectorValued: {
+                  const VectorX<T> eigen_copy = self->Eval(c);
+                  return py::cast(eigen_copy);
+                }
+                case kAbstractValued: {
+                  const auto& abstract = self->template Eval<AbstractValue>(c);
+                  // TODO(#9398): Figure out why `py_reference` is necessary.
+                  py::object value_ref = py::cast(&abstract, py_reference);
+                  return value_ref.attr("get_value")();
+                }
+              }
+              DRAKE_UNREACHABLE();
             },
             doc.OutputPort.Eval.doc)
+        .def("EvalAbstract",
+            [](const OutputPort<T>* self, const Context<T>& c) {
+              const auto& abstract = self->template Eval<AbstractValue>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&abstract, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this output port, typed "
+            "as an AbstractValue. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts an AbstractValue.",
+            py_reference_internal)
         .def("EvalBasicVector",
-            static_cast<const BasicVector<T>& (
-                OutputPort<T>::*)(const Context<T>&)const>(
-                &OutputPort<T>::Eval),
+            [](const OutputPort<T>* self, const Context<T>& c) {
+              const auto& basic = self->template Eval<BasicVector<T>>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&basic, py_reference);
+            },
             py::arg("context"),
             "(Advanced.) Returns the value of this output port, typed "
             "as a BasicVector. Most users should call Eval() instead. "
@@ -296,11 +317,52 @@ void DefineFrameworkPySemantics(py::module m) {
 
     DefineTemplateClassWithDefault<InputPort<T>>(
         m, "InputPort", GetPyParam<T>(), doc.InputPort.doc)
-        .def("size", &InputPort<T>::size, doc.InputPortBase.size.doc)
+        .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
         .def("get_data_type", &InputPort<T>::get_data_type,
-            doc.InputPortBase.get_data_type.doc)
+            doc.PortBase.get_data_type.doc)
         .def("get_index", &InputPort<T>::get_index,
-            doc.InputPortBase.get_index.doc);
+            doc.InputPortBase.get_index.doc)
+        .def("Eval",
+            [](const InputPort<T>* self, const Context<T>& c) {
+              switch (self->get_data_type()) {
+                case kVectorValued: {
+                  const VectorX<T> eigen = self->Eval(c);
+                  return py::cast(eigen);
+                }
+                case kAbstractValued: {
+                  const auto& abstract = self->template Eval<AbstractValue>(c);
+                  // TODO(#9398): Figure out why `py_reference` is necessary.
+                  py::object value_ref = py::cast(&abstract, py_reference);
+                  return value_ref.attr("get_value")();
+                }
+              }
+              DRAKE_UNREACHABLE();
+            },
+            doc.InputPort.Eval.doc)
+        .def("EvalAbstract",
+            [](const InputPort<T>* self, const Context<T>& c) {
+              const auto& abstract = self->template Eval<AbstractValue>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&abstract, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this input port, typed "
+            "as an AbstractValue. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts an AbstractValue.",
+            py_reference_internal)
+        .def("EvalBasicVector",
+            [](const InputPort<T>* self, const Context<T>& c) {
+              const auto& basic = self->template Eval<BasicVector<T>>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&basic, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this input port, typed "
+            "as a BasicVector. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts a BasicVector.",
+            py_reference_internal);
 
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(

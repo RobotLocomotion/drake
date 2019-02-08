@@ -93,9 +93,9 @@ void IiwaStatusReceiver::CalcStateOutput(
     const Context<double>& context, BasicVector<double>* output) const {
   auto output_block = output->get_mutable_value();
   output_block.head(num_joints_) =
-      get_position_measured_output_port().EvalEigenVector(context);
+      get_position_measured_output_port().Eval(context);
   output_block.tail(num_joints_) =
-      get_velocity_estimated_output_port().EvalEigenVector(context);
+      get_velocity_estimated_output_port().Eval(context);
 }
 
 }  // namespace kuka_iiwa

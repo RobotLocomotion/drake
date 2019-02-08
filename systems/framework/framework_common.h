@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -99,6 +100,19 @@ class ContextBase;
 class InputPortBase;
 
 namespace internal {
+
+// A utility to call the package-private constructor of some framework classes.
+class FrameworkFactory {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameworkFactory)
+  FrameworkFactory() = delete;
+  ~FrameworkFactory() = delete;
+
+  template <typename T, typename... Args>
+  static std::unique_ptr<T> Make(Args... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  }
+};
 
 // TODO(sherm1) These interface classes shouldn't be here -- split into their
 // own headers. As written they obscure the limited use of these interfaces
