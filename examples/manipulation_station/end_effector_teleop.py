@@ -144,7 +144,6 @@ class EndEffectorTeleop(LeafSystem):
         output.SetAtIndex(5, self.z.get())
 
 
-
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument(
     "--target_realtime_rate", type=float, default=1.0,
