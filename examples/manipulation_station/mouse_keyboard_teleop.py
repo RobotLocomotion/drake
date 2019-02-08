@@ -19,7 +19,7 @@ from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 
 from differential_ik import DifferentialIK
-from teleop_keyboard_mouse_manager import TeleopKeyboardMouseManager
+from teleop_mouse_keyboard_manager import TeleopMouseKeyboardManager
 
 
 class MouseKeyboardTeleop(LeafSystem):
@@ -36,7 +36,7 @@ class MouseKeyboardTeleop(LeafSystem):
         #       time step causes more lag in the response.
         self._DeclarePeriodicPublish(0.01, 0.0)
 
-        self.teleop_manager = TeleopKeyboardMouseManager()
+        self.teleop_manager = TeleopMouseKeyboardManager()
         self.roll = self.pitch = self.yaw = 0
         self.x = self.y = self.z = 0
         self.gripper_max = 0.107
