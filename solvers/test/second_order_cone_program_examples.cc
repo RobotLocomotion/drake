@@ -81,7 +81,7 @@ TestEllipsoidsSeparation::TestEllipsoidsSeparation() {
 }
 
 void TestEllipsoidsSeparation::SolveAndCheckSolution(
-    const MathematicalProgramSolverInterface& solver, double tol) {
+    const SolverInterface& solver, double tol) {
   MathematicalProgramResult result = RunSolver(prog_, solver);
 
   // Check the solution.
@@ -218,7 +218,7 @@ TestQPasSOCP::TestQPasSOCP() {
 }
 
 void TestQPasSOCP::SolveAndCheckSolution(
-    const MathematicalProgramSolverInterface& solver, double tol) {
+    const SolverInterface& solver, double tol) {
   MathematicalProgramResult result;
   result = RunSolver(prog_socp_, solver);
   const auto& x_socp_value = result.GetSolution(x_socp_);
@@ -299,7 +299,7 @@ TestFindSpringEquilibrium::TestFindSpringEquilibrium() {
 }
 
 void TestFindSpringEquilibrium::SolveAndCheckSolution(
-    const MathematicalProgramSolverInterface& solver, double tol) {
+    const SolverInterface& solver, double tol) {
   const MathematicalProgramResult result = RunSolver(prog_, solver);
 
   const optional<SolverId> solver_id = result.get_solver_id();

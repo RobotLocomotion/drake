@@ -3,6 +3,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
@@ -11,15 +12,16 @@
 
 namespace drake {
 namespace solvers {
+
+// TODO(jwnimmer-tri) Once MathematicalProgram no longer has a SolverInterface,
+// we can change this to an include statement instead of forward declaration.
 class MathematicalProgram;
 
 /// Interface used by implementations of individual solvers.
-class MathematicalProgramSolverInterface {
+class SolverInterface {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MathematicalProgramSolverInterface)
-
-  MathematicalProgramSolverInterface() = default;
-  virtual ~MathematicalProgramSolverInterface() = default;
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverInterface)
+  virtual ~SolverInterface();
 
   /// Returns true iff this solver was enabled at compile-time.
   virtual bool available() const = 0;
@@ -50,7 +52,14 @@ class MathematicalProgramSolverInterface {
   /// capability.
   virtual bool AreProgramAttributesSatisfied(
       const MathematicalProgram& prog) const = 0;
+
+ protected:
+  SolverInterface();
 };
+
+using MathematicalProgramSolverInterface
+    DRAKE_DEPRECATED("This alias will be removed on 2019-05-01.")
+    = SolverInterface;
 
 }  // namespace solvers
 }  // namespace drake

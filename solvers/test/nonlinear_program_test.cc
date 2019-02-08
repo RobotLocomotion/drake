@@ -17,9 +17,9 @@
 #include "drake/solvers/constraint.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solver_interface.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/optimization_examples.h"
 
@@ -48,7 +48,7 @@ void RunNonlinearProgram(const MathematicalProgram& prog,
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 
-  std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
+  std::pair<const char*, SolverInterface*> solvers[] = {
       std::make_pair("SNOPT", &snopt_solver),
       std::make_pair("NLopt", &nlopt_solver),
       std::make_pair("Ipopt", &ipopt_solver)};
@@ -472,7 +472,7 @@ GTEST_TEST(testNonlinearProgram, CallbackTest) {
   NloptSolver nlopt_solver;
   SnoptSolver snopt_solver;
 
-  std::pair<const char*, MathematicalProgramSolverInterface*> solvers[] = {
+  std::pair<const char*, SolverInterface*> solvers[] = {
       std::make_pair("SNOPT", &snopt_solver),
       std::make_pair("NLopt", &nlopt_solver),
       std::make_pair("Ipopt", &ipopt_solver)};

@@ -33,13 +33,13 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::LorentzConeConstraint;
 using solvers::MathematicalProgram;
-using solvers::MathematicalProgramSolverInterface;
 using solvers::MatrixXDecisionVariable;
 using solvers::MatrixXIndeterminate;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticCost;
 using solvers::SolutionResult;
 using solvers::SolverId;
+using solvers::SolverInterface;
 using solvers::SolverType;
 using solvers::SolverTypeConverter;
 using solvers::VariableRefList;
@@ -174,28 +174,23 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       py::module::import("pydrake.symbolic").attr("Expression");
   py::object formula = py::module::import("pydrake.symbolic").attr("Formula");
 
-  py::class_<MathematicalProgramSolverInterface>(m,
-      "MathematicalProgramSolverInterface",
-      doc.MathematicalProgramSolverInterface.doc)
-      .def("available", &MathematicalProgramSolverInterface::available,
-          doc.MathematicalProgramSolverInterface.available.doc)
-      .def("solver_id", &MathematicalProgramSolverInterface::solver_id,
-          doc.MathematicalProgramSolverInterface.solver_id.doc)
+  py::class_<SolverInterface>(m, "SolverInterface", doc.SolverInterface.doc)
+      .def("available", &SolverInterface::available,
+          doc.SolverInterface.available.doc)
+      .def("solver_id", &SolverInterface::solver_id,
+          doc.SolverInterface.solver_id.doc)
       .def("Solve",
           // NOLINTNEXTLINE(whitespace/parens)
-          static_cast<SolutionResult (MathematicalProgramSolverInterface::*)(
-              MathematicalProgram&) const>(
-              &MathematicalProgramSolverInterface::Solve),
-          py::arg("prog"),
-          doc.MathematicalProgramSolverInterface.Solve.doc_1args)
+          static_cast<SolutionResult (SolverInterface::*)(MathematicalProgram&)
+                  const>(&SolverInterface::Solve),
+          py::arg("prog"), doc.SolverInterface.Solve.doc_1args)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
-          [](const MathematicalProgramSolverInterface& self) {
+          [](const SolverInterface& self) {
             return SolverTypeConverter::IdToType(self.solver_id());
           })
-      .def("SolverName", [](const MathematicalProgramSolverInterface& self) {
-        return self.solver_id().name();
-      });
+      .def("SolverName",
+          [](const SolverInterface& self) { return self.solver_id().name(); });
 
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
       .def("name", &SolverId::name, doc.SolverId.name.doc);

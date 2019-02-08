@@ -16,7 +16,7 @@ PYBIND11_MODULE(ipopt, m) {
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<IpoptSolver, MathematicalProgramSolverInterface>(
+  py::class_<IpoptSolver, SolverInterface>(
       m, "IpoptSolver", doc.IpoptSolver.doc)
       .def(py::init<>(), doc.IpoptSolver.ctor.doc);
 }

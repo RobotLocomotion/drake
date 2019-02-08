@@ -54,7 +54,7 @@ class OptimizationProgram {
 
   double GetSolverSolutionDefaultCompareTolerance(SolverType solver_type) const;
 
-  void RunProblem(MathematicalProgramSolverInterface* solver);
+  void RunProblem(SolverInterface* solver);
 
  private:
   CostForm cost_form_;
@@ -579,7 +579,7 @@ class ConvexCubicProgramExample : public MathematicalProgram {
  * A simple non-convex problem with a quadratic equality constraint
  * min 0
  * s.t xᵀx = 1
- * This test is meant to verify that we can add a quadratic constraint to a 
+ * This test is meant to verify that we can add a quadratic constraint to a
  * program, and solve it through nonlinear optimization.
  */
 class UnitLengthProgramExample : public MathematicalProgram {

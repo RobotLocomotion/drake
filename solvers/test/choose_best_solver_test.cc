@@ -40,13 +40,12 @@ class ChooseBestSolverTest : public ::testing::Test {
     EXPECT_EQ(solver_id, expected_solver_id);
   }
 
-  void CheckMakeSolver(const MathematicalProgramSolverInterface& solver) const {
+  void CheckMakeSolver(const SolverInterface& solver) const {
     auto new_solver = MakeSolver(solver.solver_id());
     EXPECT_EQ(new_solver->solver_id(), solver.solver_id());
   }
 
-  void CheckBestSolver(
-      const std::vector<MathematicalProgramSolverInterface*>& solvers) {
+  void CheckBestSolver(const std::vector<SolverInterface*>& solvers) {
     bool is_any_solver_available = false;
     for (const auto solver : solvers) {
       if (solver->available()) {

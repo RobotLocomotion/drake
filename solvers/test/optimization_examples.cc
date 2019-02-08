@@ -63,8 +63,7 @@ OptimizationProgram::OptimizationProgram(CostForm cost_form,
       prog_(std::make_unique<MathematicalProgram>()),
       initial_guess_{} {}
 
-void OptimizationProgram::RunProblem(
-    MathematicalProgramSolverInterface* solver) {
+void OptimizationProgram::RunProblem(SolverInterface* solver) {
   if (solver->available()) {
     EXPECT_FALSE(prog_->GetSolverId());
     const MathematicalProgramResult result =
