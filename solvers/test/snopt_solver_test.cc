@@ -81,17 +81,24 @@ GTEST_TEST(SnoptTest, TestSetOption) {
       x);
 
   // Arbitrary initial guess.
-  prog.SetInitialGuess(x, Eigen::Vector3d(10, 20, 30));
+  Eigen::VectorXd x_init(3);
+  x_init << 10, 20, 30;
+  prog.SetInitialGuess(x, x_init);
 
   SnoptSolver solver;
   // Make sure the default setting can solve the problem.
-  SolutionResult result = solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  MathematicalProgramResult result;
+  solver.Solve(prog, x_init, {}, &result);
+  EXPECT_TRUE(result.is_success());
 
   // The program is infeasible after one major iteration.
   prog.SetSolverOption(SnoptSolver::id(), "Major iterations limit", 1);
-  result = solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kIterationLimit);
+  solver.Solve(prog, x_init, {}, &result);
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+  // This exit condition is defined in Snopt user guide.
+  const int kMajorIterationLimitReached = 32;
+  EXPECT_EQ(result.get_solver_details().GetValue<SnoptSolverDetails>().info,
+            kMajorIterationLimitReached);
 }
 
 GTEST_TEST(SnoptTest, TestPrintFile) {
@@ -272,8 +279,8 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
       EXPECT_TRUE(CompareMatrices(
           result.get_x_val(), Eigen::Vector2d(0, 1), 1E-6));
       EXPECT_NEAR(result.get_optimal_cost(), 2, 1E-6);
-      // TODO(jwnimmer-tri) Once we port SnoptSolverDetails from Anzu to Drake,
-      // then we should check that EXPECT_EQ(details.snopt_status, 1) here.
+      EXPECT_EQ(result.get_solver_details().GetValue<SnoptSolverDetails>().info,
+                1);
     }
 
     // The print file contents should be the same for single vs multi.
