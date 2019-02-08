@@ -12,7 +12,7 @@ from pydrake.examples.manipulation_station import \
     (ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.manipulation.simple_ui import JointSliders, SchunkWsgButtons
-from pydrake.multibody.parsing import Parser
+# from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
@@ -55,7 +55,8 @@ else:
                            station.GetOutputPort("pose_bundle"))
     if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat))
+                station.get_scene_graph(), zmq_url=args.meshcat,
+                open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
 
