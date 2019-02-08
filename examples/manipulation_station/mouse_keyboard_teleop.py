@@ -19,7 +19,86 @@ from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.util.eigen_geometry import Isometry3, AngleAxis
 
 from differential_ik import DifferentialIK
-from teleop_mouse_keyboard_manager import TeleopMouseKeyboardManager
+import sys
+import pygame
+from pygame.locals import *
+
+
+def print_instructions():
+    print("")
+    print("END EFFECTOR CONTROL")
+    print("mouse left/right   - move in the manipulation station's y/z plane")
+    print("w / s              - move forward/back this y/z plane")
+    print("mouse buttons      - roll left/right")
+    print("side mouse buttons - yaw left/right")
+    print("a / d              - pitch up/down")
+    print("")
+    print("")
+    print("GRIPPER CONTROL")
+    print("mouse wheel        - open/close gripper")
+    print("")
+    print("escape             - quit")
+
+class TeleopMouseKeyboardManager():
+
+    def __init__(self):
+
+        pygame.init()
+        # We don't actually want a screen, but I can't get this to work without a tiny screen.
+        # Setting it to 1 pixel
+        screen_size = 1 
+        self.screen = pygame.display.set_mode((screen_size, screen_size))
+
+        # These will "grab focus" of the mouse
+        pygame.event.set_grab(True)
+        pygame.mouse.set_visible(False)
+
+        self.side_button_back_DOWN = False
+        self.side_button_fwd_DOWN = False
+
+     
+    def get_events(self):
+        mouse_wheel_up = mouse_wheel_down = False
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                sys.exit(0)
+            elif event.type == KEYDOWN and event.key == K_ESCAPE:
+                sys.exit(0)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 4:   
+                    mouse_wheel_up = True
+                if event.button == 5:   
+                    mouse_wheel_down = True
+                if event.button == 8:
+                    self.side_button_back_DOWN = True
+                if event.button == 9:
+                    self.side_button_fwd_DOWN = True
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 8:
+                    self.side_button_back_DOWN = False
+                if event.button == 9:
+                    self.side_button_fwd_DOWN = False
+
+        keys = pygame.key.get_pressed()
+        delta_x, delta_y = pygame.mouse.get_rel()
+        left_mouse_button, _, right_mouse_button = pygame.mouse.get_pressed()
+
+        events = dict()
+        events["delta_x"] = delta_x
+        events["delta_y"] = delta_y
+        events["w"] = keys[K_w]
+        events["a"] = keys[K_a]
+        events["s"] = keys[K_s]
+        events["d"] = keys[K_d]
+        events["r"] = keys[K_r]
+        events["mouse_wheel_up"] = mouse_wheel_up
+        events["mouse_wheel_down"] = mouse_wheel_down
+        events["left_mouse_button"] = left_mouse_button
+        events["right_mouse_button"] = right_mouse_button
+        events["side_button_back"] = self.side_button_back_DOWN
+        events["side_button_forward"] = self.side_button_fwd_DOWN
+        return events 
 
 
 class MouseKeyboardTeleop(LeafSystem):
@@ -251,4 +330,6 @@ differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
 simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
+
+print_instructions()
 simulator.StepTo(args.duration)
