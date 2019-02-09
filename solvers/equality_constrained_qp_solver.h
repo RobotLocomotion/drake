@@ -3,12 +3,12 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
 
-class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
+class EqualityConstrainedQPSolver : public SolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EqualityConstrainedQPSolver)
 
@@ -44,7 +44,7 @@ class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
 
   SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 
   bool AreProgramAttributesSatisfied(

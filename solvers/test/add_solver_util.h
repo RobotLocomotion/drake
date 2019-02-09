@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -15,7 +15,7 @@ namespace test {
 
 template <typename Solver>
 void AddSolverIfAvailable(
-    std::list<std::unique_ptr<MathematicalProgramSolverInterface>>*
+    std::list<std::unique_ptr<SolverInterface>>*
     solver_list) {
   auto solver = std::make_unique<Solver>();
   if (solver->available()) {

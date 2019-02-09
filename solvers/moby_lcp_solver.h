@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 // TODO(jwnimmer-tri): This class should be renamed MobyLcpSolver to comply with
 //                     style guide.
@@ -26,7 +26,7 @@ class MobyLcpSolverId {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolverId);
   MobyLcpSolverId() = delete;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 };
 
@@ -67,7 +67,7 @@ class MobyLcpSolverId {
 /// * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
 ///                     Programming. Heldermann Verlag, 1988.
 template <class T>
-class MobyLCPSolver : public MathematicalProgramSolverInterface {
+class MobyLCPSolver : public SolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
 

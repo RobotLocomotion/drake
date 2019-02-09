@@ -26,8 +26,7 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
 }
 
 namespace {
-std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
-    const SolverId& solver_id) {
+std::unique_ptr<SolverInterface> MakeSolver(const SolverId& solver_id) {
   if (solver_id == GurobiSolver::id() || solver_id == ScsSolver::id()) {
     if (solver_id == GurobiSolver::id()) {
       auto solver = std::make_unique<GurobiSolver>();
@@ -116,8 +115,7 @@ void AddVectorOfConstraintsToProgram(
 
 SolutionResult SolveProgramWithSolver(MathematicalProgram* prog,
                                       const SolverId& solver_id) {
-  std::unique_ptr<MathematicalProgramSolverInterface> solver =
-      MakeSolver(solver_id);
+  std::unique_ptr<SolverInterface> solver = MakeSolver(solver_id);
   DRAKE_ASSERT(solver.get());
   return solver->Solve(*prog);
 }

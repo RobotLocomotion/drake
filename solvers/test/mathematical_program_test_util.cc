@@ -7,7 +7,7 @@ namespace solvers {
 namespace test {
 MathematicalProgramResult RunSolver(
     const MathematicalProgram& prog,
-    const MathematicalProgramSolverInterface& solver,
+    const SolverInterface& solver,
     const optional<Eigen::VectorXd>& initial_guess) {
   if (!solver.available()) {
     throw std::runtime_error(
