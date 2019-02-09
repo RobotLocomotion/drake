@@ -1879,70 +1879,59 @@ INSTANTIATE_TEST_CASE_P(SphereBoxConcentricTransform,
     SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentricTransform()));
 
-
 //
 // Tests the repeatability of the call to compute the signed distance between
 // closest pairs of dynamic objects when the objects keep the same poses.
 // Related to https://github.com/RobotLocomotion/drake/issues/10286
 //
+// We use value-parameterized tests to generate data on many kinds of
+// pairs of shapes. We separate the code to generate test data from the test
+// fixture and the test procedure for modularity.
+//
+// The test is organized in the following way:
 // 1. Define test data SignedDistancePairRepeatTestData.
 // 2. Define test fixture SignedDistancePairRepeatabilityTest that takes a
-//    parameter SignedDistancePairRepeatTestData.
-// 3. Define test procedure(s) TEST_P(,) of the test fixture.
+//    parameter of type SignedDistancePairRepeatTestData.
+// 3. Define test procedure TEST_P() of the test fixture.
 // 4. Instantiate the tests from the test data and the test fixture.
 //
 
 // Test data.
-class SignedDistancePairRepeatTestData {
- public:
+struct SignedDistancePairRepeatTestData {
   SignedDistancePairRepeatTestData(shared_ptr<const Shape> a,
-                             shared_ptr<const Shape> b,
-                             const RigidTransformd& X_WA,
-                             const RigidTransformd& X_WB)
-      : a_(a),
-        b_(b),
-        X_WA_(X_WA),
-        X_WB_(X_WB) {}
+                                   shared_ptr<const Shape> b,
+                                   const RigidTransformd& X_WA_in,
+                                   const RigidTransformd& X_WB_in)
+      : shape_A(a), shape_B(b), X_WA(X_WA_in), X_WB(X_WB_in) {}
 
-  // Google Test uses this operator to report the test data in the log file
-  // when a test fails. The message only says we have two geometries and two
-  // poses without reporting their values.
-  friend std::ostream& operator<<(std::ostream& os,
-                                  const SignedDistancePairRepeatTestData& obj) {
-    return os << "{geometry A, geometry B, X_WA, X_WB}" << std::flush;
-  }
-
-  shared_ptr<const Shape> a_;
-  shared_ptr<const Shape> b_;
-  const RigidTransformd X_WA_;
-  const RigidTransformd X_WB_;
+  shared_ptr<const Shape> shape_A;
+  shared_ptr<const Shape> shape_B;
+  RigidTransformd X_WA;
+  RigidTransformd X_WB;
 };
 
 std::vector<SignedDistancePairRepeatTestData>
-GenDistPairRepeatTestDataCylinderCylinder() {
-  const RigidTransformd& X_WA = RigidTransformd(Vector3d(0.1, 0.2, 0.3));
-  const RigidTransformd& X_WB = RigidTransformd(Vector3d(0.11, 0.21, 0.31));
-  const double radius_A = 0.1;
-  const double radius_B = 0.2;
-  const double length_A = 3.1;
-  const double length_B = 3.2;
-  auto cylinder_A = make_shared<const Cylinder>(radius_A, length_A);
-  auto cylinder_B = make_shared<const Cylinder>(radius_B, length_B);
+GenDistPairRepeatabilityTestData() {
+  std::vector<shared_ptr<const Shape>> shapes_A{
+      make_shared<const Sphere>(0.1),
+      make_shared<const Box>(0.1, 0.2, 0.3),
+      make_shared<const Cylinder>(0.1, 3.1),
+      make_shared<const Convex>(
+          drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+          1.0)};
+  std::vector<shared_ptr<const Shape>> shapes_B{
+      make_shared<const Sphere>(0.2),
+      make_shared<const Box>(0.11, 0.21, 0.31),
+      make_shared<const Cylinder>(0.2, 3.2),
+      make_shared<const Convex>(
+          drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+          1.1)};
+  const RigidTransformd X_WA = RigidTransformd(Vector3d(0.1, 0.2, 0.3));
+  const RigidTransformd X_WB = RigidTransformd(Vector3d(0.11, 0.21, 0.31));
   std::vector<SignedDistancePairRepeatTestData> test_data;
-  test_data.emplace_back(cylinder_A, cylinder_B, X_WA, X_WB);
-  return test_data;
-}
-
-std::vector<SignedDistancePairRepeatTestData>
-GenDistPairRepeatTestDataSphereSphere() {
-  const RigidTransformd& X_WA = RigidTransformd(Vector3d(0.1, 0.2, 0.3));
-  const RigidTransformd& X_WB = RigidTransformd(Vector3d(0.11, 0.21, 0.31));
-  const double radius_A = 0.1;
-  const double radius_B = 0.2;
-  auto sphere_A = make_shared<const Sphere>(radius_A);
-  auto sphere_B = make_shared<const Sphere>(radius_B);
-  std::vector<SignedDistancePairRepeatTestData> test_data;
-  test_data.emplace_back(sphere_A, sphere_B, X_WA, X_WB);
+  for (shared_ptr<const Shape>& a : shapes_A)
+    for (shared_ptr<const Shape>& b : shapes_B)
+      test_data.emplace_back(a, b, X_WA, X_WB);
   return test_data;
 }
 
@@ -1952,12 +1941,12 @@ class SignedDistancePairRepeatabilityTest
  public:
   SignedDistancePairRepeatabilityTest() {
     auto data = GetParam();
-    engine_.AddDynamicGeometry(*(data.a_), GeometryIndex(0));
-    engine_.AddDynamicGeometry(*(data.b_), GeometryIndex(1));
+    engine_.AddDynamicGeometry(*(data.shape_A), GeometryIndex(0));
+    engine_.AddDynamicGeometry(*(data.shape_B), GeometryIndex(1));
     geometry_map_.push_back(GeometryId::get_new_id());
     geometry_map_.push_back(GeometryId::get_new_id());
-    X_WG_.push_back(data.X_WA_.GetAsIsometry3());
-    X_WG_.push_back(data.X_WB_.GetAsIsometry3());
+    X_WG_.push_back(data.X_WA.GetAsIsometry3());
+    X_WG_.push_back(data.X_WB.GetAsIsometry3());
     geometry_indices_.push_back(GeometryIndex(0));
     geometry_indices_.push_back(GeometryIndex(1));
   }
@@ -1987,17 +1976,14 @@ TEST_P(SignedDistancePairRepeatabilityTest, SinglePair) {
     ASSERT_EQ(repeat_results.size(), 1);
     // Compare using all the bits of `double`.
     ASSERT_EQ(kSignedDistanceFirstCall, repeat_results[0].distance)
-      << "Repeated call did not give exactly the same signed distance.";
+        << "Repeated call did not give exactly the same signed distance.";
   }
 }
 
 // Instantiate the tests.
-INSTANTIATE_TEST_CASE_P(SphereSphere,
-    SignedDistancePairRepeatabilityTest,
-    testing::ValuesIn(GenDistPairRepeatTestDataSphereSphere()));
-INSTANTIATE_TEST_CASE_P(CylinderCylinder,
-    SignedDistancePairRepeatabilityTest,
-    testing::ValuesIn(GenDistPairRepeatTestDataCylinderCylinder()));
+INSTANTIATE_TEST_CASE_P(RepeatabilityTest, SignedDistancePairRepeatabilityTest,
+                        testing::ValuesIn(GenDistPairRepeatabilityTestData()));
+
 
 // Given a sphere S and box B. The box's height and depth are large (much larger
 // than the diameter of the sphere), but the box's *width* is *less* than the
