@@ -9,12 +9,12 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
 
-class DrealSolver : public MathematicalProgramSolverInterface {
+class DrealSolver : public SolverInterface {
  public:
   using Interval = dreal::Box::Interval;
   using IntervalBox = std::unordered_map<symbolic::Variable, Interval>;
@@ -45,7 +45,7 @@ class DrealSolver : public MathematicalProgramSolverInterface {
 
   SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 
   bool AreProgramAttributesSatisfied(

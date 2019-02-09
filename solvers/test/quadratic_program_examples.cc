@@ -378,7 +378,7 @@ void QuadraticProgram4::CheckSolution(
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
-void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
+void TestQPonUnitBallExample(const SolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
 

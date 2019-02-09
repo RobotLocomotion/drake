@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -18,7 +18,7 @@ struct NloptSolverDetails {
   int status{};
 };
 
-class NloptSolver : public MathematicalProgramSolverInterface {
+class NloptSolver : public SolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NloptSolver)
 
@@ -40,7 +40,7 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 
   bool AreProgramAttributesSatisfied(
