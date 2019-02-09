@@ -23,20 +23,20 @@ import sys
 import pygame
 from pygame.locals import *
 
-
 def print_instructions():
     print("")
     print("END EFFECTOR CONTROL")
     print("mouse left/right   - move in the manipulation station's y/z plane")
-    print("w / s              - move forward/back this y/z plane")
     print("mouse buttons      - roll left/right")
-    print("side mouse buttons - yaw left/right")
+    print("w / s              - move forward/back this y/z plane")
+    print("q / e              - yaw left/right (also can use mouse side buttons)")
     print("a / d              - pitch up/down")
-    print("")
     print("")
     print("GRIPPER CONTROL")
     print("mouse wheel        - open/close gripper")
     print("")
+    print("space              - switch out of teleop mode")
+    print("alt+tab then enter - return to teleop mode")
     print("escape             - quit")
 
 class TeleopMouseKeyboardManager():
@@ -46,17 +46,21 @@ class TeleopMouseKeyboardManager():
         pygame.init()
         # We don't actually want a screen, but I can't get this to work without a tiny screen.
         # Setting it to 1 pixel
-        screen_size = 1 
+        screen_size = 1
         self.screen = pygame.display.set_mode((screen_size, screen_size))
-
-        # These will "grab focus" of the mouse
-        pygame.event.set_grab(True)
-        pygame.mouse.set_visible(False)
 
         self.side_button_back_DOWN = False
         self.side_button_fwd_DOWN = False
+        self.grab_mouse_focus()
 
-     
+    def grab_mouse_focus(self):
+        pygame.event.set_grab(True)
+        pygame.mouse.set_visible(False)
+
+    def release_mouse_focus(self):
+        pygame.event.set_grab(False)
+        pygame.mouse.set_visible(True)
+
     def get_events(self):
         mouse_wheel_up = mouse_wheel_down = False
 
@@ -84,6 +88,11 @@ class TeleopMouseKeyboardManager():
         delta_x, delta_y = pygame.mouse.get_rel()
         left_mouse_button, _, right_mouse_button = pygame.mouse.get_pressed()
 
+        if keys[K_RETURN]:
+            self.grab_mouse_focus()
+        if keys[K_SPACE]:
+            self.release_mouse_focus()
+
         events = dict()
         events["delta_x"] = delta_x
         events["delta_y"] = delta_y
@@ -92,6 +101,8 @@ class TeleopMouseKeyboardManager():
         events["s"] = keys[K_s]
         events["d"] = keys[K_d]
         events["r"] = keys[K_r]
+        events["q"] = keys[K_q]
+        events["e"] = keys[K_e]
         events["mouse_wheel_up"] = mouse_wheel_up
         events["mouse_wheel_down"] = mouse_wheel_down
         events["left_mouse_button"] = left_mouse_button
@@ -119,7 +130,7 @@ class MouseKeyboardTeleop(LeafSystem):
         self.roll = self.pitch = self.yaw = 0
         self.x = self.y = self.z = 0
         self.gripper_max = 0.107
-        self.gripper_min = 0.02
+        self.gripper_min = 0.01
         self.gripper_goal = self.gripper_max
 
     def SetPose(self, pose):
@@ -171,9 +182,9 @@ class MouseKeyboardTeleop(LeafSystem):
         self.roll = np.clip(self.roll, a_min = -2 * np.pi, a_max = 2 * np.pi)
         
         yaw_scale = 0.0003
-        if events["side_button_back"]:
+        if events["side_button_back"] or events["q"]:
             self.yaw += yaw_scale
-        if events["side_button_forward"]:
+        if events["side_button_forward"] or events["e"]:
             self.yaw -= yaw_scale
         self.yaw = np.clip(self.yaw, a_min = -2 * np.pi, a_max = 2 * np.pi)
 
