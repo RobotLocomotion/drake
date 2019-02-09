@@ -19,19 +19,19 @@ class ParseTest : public testing::TestWithParam<std::string> {};
 
 TEST_P(ParseTest, Quantities) {
   const std::string file_extension = GetParam();
-  const std::string kPathRight(FindResourceOrThrow(fmt::format(
+  const std::string path_right = FindResourceOrThrow(fmt::format(
       "drake/manipulation/models/allegro_hand_description/{}/"
-      "allegro_hand_description_right.{}", file_extension, file_extension)));
-  const std::string kPathLeft(FindResourceOrThrow(fmt::format(
+      "allegro_hand_description_right.{}", file_extension, file_extension));
+  const std::string path_left = FindResourceOrThrow(fmt::format(
       "drake/manipulation/models/allegro_hand_description/{}/"
-      "allegro_hand_description_left.{}", file_extension, file_extension)));
+      "allegro_hand_description_left.{}", file_extension, file_extension));
 
   MultibodyPlant<double> plant;
   Parser parser(&plant);
   const ModelInstanceIndex right_hand_index =
-      parser.AddModelFromFile(kPathRight);
+      parser.AddModelFromFile(path_right);
   const ModelInstanceIndex left_hand_index =
-      parser.AddModelFromFile(kPathLeft);
+      parser.AddModelFromFile(path_left);
   plant.Finalize();
 
   // MultibodyPlant always creates at least two model instances, one for the
