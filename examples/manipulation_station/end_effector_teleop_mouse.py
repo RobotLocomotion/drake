@@ -23,13 +23,15 @@ import sys
 import pygame
 from pygame.locals import *
 
+
 def print_instructions():
     print("")
     print("END EFFECTOR CONTROL")
     print("mouse left/right   - move in the manipulation station's y/z plane")
     print("mouse buttons      - roll left/right")
     print("w / s              - move forward/back this y/z plane")
-    print("q / e              - yaw left/right (also can use mouse side buttons)")
+    print("q / e              - yaw left/right \
+                                (also can use mouse side buttons)")
     print("a / d              - pitch up/down")
     print("")
     print("GRIPPER CONTROL")
@@ -39,13 +41,15 @@ def print_instructions():
     print("alt+tab then enter - return to teleop mode")
     print("escape             - quit")
 
+
 class TeleopMouseKeyboardManager():
 
     def __init__(self):
 
         pygame.init()
-        # We don't actually want a screen, but I can't get this to work without a tiny screen.
-        # Setting it to 1 pixel
+        # We don't actually want a screen, but
+        # I can't get this to work without a tiny screen.
+        # Setting it to 1 pixel.
         screen_size = 1
         self.screen = pygame.display.set_mode((screen_size, screen_size))
 
@@ -70,9 +74,9 @@ class TeleopMouseKeyboardManager():
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 sys.exit(0)
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 4:   
+                if event.button == 4:
                     mouse_wheel_up = True
-                if event.button == 5:   
+                if event.button == 5:
                     mouse_wheel_down = True
                 if event.button == 8:
                     self.side_button_back_DOWN = True
@@ -109,7 +113,7 @@ class TeleopMouseKeyboardManager():
         events["right_mouse_button"] = right_mouse_button
         events["side_button_back"] = self.side_button_back_DOWN
         events["side_button_forward"] = self.side_button_fwd_DOWN
-        return events 
+        return events
 
 
 class MouseKeyboardTeleop(LeafSystem):
@@ -145,7 +149,7 @@ class MouseKeyboardTeleop(LeafSystem):
         """
         @param rpy is a 3 element vector of roll, pitch, yaw.
         """
-        self.roll= rpy.roll_angle()
+        self.roll = rpy.roll_angle()
         self.pitch = rpy.pitch_angle()
         self.yaw = rpy.yaw_angle()
 
@@ -161,7 +165,7 @@ class MouseKeyboardTeleop(LeafSystem):
         scale_down = 0.0001
         delta_x = events["delta_x"]*-scale_down
         delta_y = events["delta_y"]*-scale_down
-        
+
         forward_scale = 0.00005
         delta_forward = 0.0
         if events["w"]:
@@ -179,21 +183,21 @@ class MouseKeyboardTeleop(LeafSystem):
             self.roll += roll_scale
         if events["right_mouse_button"]:
             self.roll -= roll_scale
-        self.roll = np.clip(self.roll, a_min = -2 * np.pi, a_max = 2 * np.pi)
-        
+        self.roll = np.clip(self.roll, a_min=-2*np.pi, a_max=2*np.pi)
+
         yaw_scale = 0.0003
         if events["side_button_back"] or events["q"]:
             self.yaw += yaw_scale
         if events["side_button_forward"] or events["e"]:
             self.yaw -= yaw_scale
-        self.yaw = np.clip(self.yaw, a_min = -2 * np.pi, a_max = 2 * np.pi)
+        self.yaw = np.clip(self.yaw, a_min=-2*np.pi, a_max=2*np.pi)
 
         pitch_scale = 0.0003
         if events["d"]:
             self.pitch += pitch_scale
         if events["a"]:
             self.pitch -= pitch_scale
-        self.pitch = np.clip(self.pitch, a_min = -2 * np.pi, a_max = 2 * np.pi)
+        self.pitch = np.clip(self.pitch, a_min=-2*np.pi, a_max=2*np.pi)
 
     def SetGripperFromEvents(self, events):
         gripper_scale = 0.01
@@ -201,7 +205,9 @@ class MouseKeyboardTeleop(LeafSystem):
             self.gripper_goal += gripper_scale
         if events["mouse_wheel_down"]:
             self.gripper_goal -= gripper_scale
-        self.gripper_goal = np.clip(self.gripper_goal, a_min = self.gripper_min, a_max = self.gripper_max) 
+        self.gripper_goal = np.clip(self.gripper_goal,
+                                    a_min=self.gripper_min,
+                                    a_max=self.gripper_max)
 
     def CalcPositionOutput(self, context, output):
         output.SetAtIndex(0, self.gripper_goal)
@@ -302,7 +308,8 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
 
 teleop = builder.AddSystem(MouseKeyboardTeleop())
 if args.test:
-    teleop.teleop_manager.release_mouse_focus()  # Let go of mouse focus for testing
+    # Don't let mouse grab focus during testing.
+    teleop.teleop_manager.release_mouse_focus()
 filter = builder.AddSystem(
     FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
