@@ -14,14 +14,14 @@ package(
 )
 
 drake_cc_library(
-    name = "multibody_graph_maker",
+    name = "multibody_graph_modeler",
     srcs = [
-        "multibody_graph.cc",
-        "multibody_graph_maker.cc",
+        "multibody_tree_model.cc",
+        "multibody_graph_modeler.cc",
     ],
     hdrs = [
-        "multibody_graph.h",
-        "multibody_graph_maker.h",
+        "multibody_tree_model.h",
+        "multibody_graph_modeler.h",
     ],
     deps = [
         "//common:essential",
@@ -31,9 +31,9 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
-    name = "multibody_graph_maker_test",
+    name = "multibody_graph_modeler_test",
     deps = [
-        ":multibody_graph_maker",
+        ":multibody_graph_modeler",
         "//common/test_utilities:expect_throws_message",
     ],
 )

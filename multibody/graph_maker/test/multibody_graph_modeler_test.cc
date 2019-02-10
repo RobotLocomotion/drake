@@ -1,4 +1,4 @@
-/* Adapted for Drake from Simbody's MultibodyGraphMaker class.
+/* Adapted for Drake from Simbody's MultibodyGraphModeler class.
 Portions copyright (c) 2017 Stanford University and the Authors.
 Authors: Chris Dembia
 
@@ -6,12 +6,12 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
-#include "drake/multibody/graph_maker/multibody_graph_maker.h"
+#include "drake/multibody/graph_maker/multibody_graph_modeler.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/graph_maker/multibody_graph.h"
+#include "drake/multibody/graph_maker/multibody_tree_model.h"
 
 namespace drake {
 namespace multibody {
@@ -20,19 +20,19 @@ namespace {
 constexpr double kMassless = 0.0;
 constexpr double kNonzeroMass = 1.8;
 
-using LinkNum = MultibodyGraph::LinkNum;
-using JointNum = MultibodyGraph::JointNum;
-using JointTypeNum = MultibodyGraph::JointTypeNum;
+using LinkNum = MultibodyTreeModel::LinkNum;
+using JointNum = MultibodyTreeModel::JointNum;
+using JointTypeNum = MultibodyTreeModel::JointTypeNum;
 
-using BodyNum = MultibodyGraph::BodyNum;
-using MobilizerNum = MultibodyGraph::MobilizerNum;
-using ConstraintNum = MultibodyGraph::ConstraintNum;
+using BodyNum = MultibodyTreeModel::BodyNum;
+using MobilizerNum = MultibodyTreeModel::MobilizerNum;
+using ConstraintNum = MultibodyTreeModel::ConstraintNum;
 
 // Test a straightforward serial chain of massful links connected by
 // pin joints: world->link1->link2->link3->link4->link5
 // Should produce the obvious multibody tree.
-GTEST_TEST(MultibodyGraphMaker, SerialChain) {
-  MultibodyGraphMaker maker(false);  // Don't use Drake defaults.
+GTEST_TEST(MultibodyGraphModeler, SerialChain) {
+  MultibodyGraphModeler maker(false);  // Don't use Drake defaults.
   maker.AddLink("world");
   maker.RegisterJointType("pin", 1, 1);
 
@@ -48,7 +48,7 @@ GTEST_TEST(MultibodyGraphMaker, SerialChain) {
   maker.AddJoint("pin4", "pin", "link3", "link4");
   maker.AddJoint("pin5", "pin", "link4", "link5");
 
-  auto graph = maker.MakeGraph();
+  auto graph = maker.MakeTreeModel();
 
   // First, some basic tests.
   EXPECT_EQ(maker.num_joint_types(), 3);  // include weld and free.
@@ -81,11 +81,11 @@ GTEST_TEST(MultibodyGraphMaker, SerialChain) {
 // This test ensures that the graph maker produces the same topology for a
 // 5-body chain of pin joints (world-link1-link2-link3-link4-link5) whether or
 // not link2 is massless.
-GTEST_TEST(MultibodyGraphMaker, IntermediateMasslessBody) {
-  MultibodyGraphMaker maker;
+GTEST_TEST(MultibodyGraphModeler, IntermediateMasslessBody) {
+  MultibodyGraphModeler maker;
 
   maker.AddLink("link1");
-  maker.AddLink("link2", MultibodyGraph::kMustNotBeTerminalBody);
+  maker.AddLink("link2", MultibodyTreeModel::kMustNotBeTerminalBody);
   maker.AddLink("link3");
   maker.AddLink("link4");
   maker.AddLink("link5");
@@ -97,8 +97,8 @@ GTEST_TEST(MultibodyGraphMaker, IntermediateMasslessBody) {
   maker.AddJoint("pin5", "revolute", "link4", "link5");
 
   maker.DumpInput(std::cout);
-  auto graph = maker.MakeGraph();
-  graph->DumpGraph(std::cout);
+  auto graph = maker.MakeTreeModel();
+  graph->DumpTreeModel(std::cout);
 
   EXPECT_EQ(graph->num_mobilizers(), 5);
   for (MobilizerNum i(0); i < graph->num_mobilizers(); ++i) {
@@ -115,20 +115,20 @@ GTEST_TEST(MultibodyGraphMaker, IntermediateMasslessBody) {
 }
 
 // Terminal massless bodies are not allowed (unless welded to a massful body).
-GTEST_TEST(MultibodyGraphMaker, TerminalMasslessBody) {
-  MultibodyGraphMaker maker;
+GTEST_TEST(MultibodyGraphModeler, TerminalMasslessBody) {
+  MultibodyGraphModeler maker;
 
-  maker.AddLink("link1", MultibodyGraph::kMustNotBeTerminalBody);
+  maker.AddLink("link1", MultibodyTreeModel::kMustNotBeTerminalBody);
   maker.AddJoint("pin1", "revolute", "world", "link1");
-  EXPECT_THROW(maker.MakeGraph(), std::runtime_error);
+  EXPECT_THROW(maker.MakeTreeModel(), std::runtime_error);
 
   // If the terminal massless body is welded, then there's no issue.
   maker.DeleteJoint("pin1");
   maker.AddJoint("pin1", "weld", "world", "link1");
-  EXPECT_NO_THROW(maker.MakeGraph());
+  EXPECT_NO_THROW(maker.MakeTreeModel());
 }
 
-// This is a basic test for how MultibodyGraphMaker handles a system with a
+// This is a basic test for how MultibodyGraphModeler handles a system with a
 // loop (four-bar linkage). We have the input four-bar linkage:
 //    world-->link1-->link2-->link3-->world
 // We get
@@ -137,8 +137,8 @@ GTEST_TEST(MultibodyGraphMaker, TerminalMasslessBody) {
 // and a weld constraint link3##link3_slave. Note that the link3-->world joint
 // had to be reversed. See the next test for what should happen if link3 is
 // massless.
-GTEST_TEST(MultibodyGraphMaker, HasLoop) {
-  MultibodyGraphMaker maker(false);  // Don't use Drake defaults.
+GTEST_TEST(MultibodyGraphModeler, HasLoop) {
+  MultibodyGraphModeler maker(false);  // Don't use Drake defaults.
   maker.RegisterJointType("pin", 1, 1);
   maker.AddLink("world");
   for (int i = 1; i <= 3; ++i)
@@ -150,8 +150,8 @@ GTEST_TEST(MultibodyGraphMaker, HasLoop) {
   maker.AddJoint("pin4", "pin", "link3", "world");
 
   maker.DumpInput(std::cout);
-  auto graph = maker.MakeGraph();
-  graph->DumpGraph(std::cout);
+  auto graph = maker.MakeTreeModel();
+  graph->DumpTreeModel(std::cout);
 
   EXPECT_EQ(maker.num_links(), 4);
   EXPECT_EQ(maker.num_joints(), 4);
@@ -216,13 +216,13 @@ GTEST_TEST(MultibodyGraphMaker, HasLoop) {
 //    world-->link1-->link2-->link3  world-->#link3_slave
 // and a weld constraint link3##link3_slave. That structure avoids making
 // massless link2 a terminal body.
-GTEST_TEST(MultibodyGraphMaker, HasLoopWithMasslessBody) {
-  MultibodyGraphMaker maker(false);  // Don't use Drake defaults.
+GTEST_TEST(MultibodyGraphModeler, HasLoopWithMasslessBody) {
+  MultibodyGraphModeler maker(false);  // Don't use Drake defaults.
   maker.RegisterJointType("pin", 1, 1);
   maker.AddLink("world");
   maker.AddLink("link1");
   maker.AddLink("link2");
-  maker.AddLink("link3", MultibodyGraph::kMustNotBeTerminalBody);
+  maker.AddLink("link3", MultibodyTreeModel::kMustNotBeTerminalBody);
 
   maker.AddJoint("pin1", "pin", "world", "link1");
   maker.AddJoint("pin2", "pin", "link1", "link2");
@@ -230,8 +230,8 @@ GTEST_TEST(MultibodyGraphMaker, HasLoopWithMasslessBody) {
   maker.AddJoint("pin4", "pin", "link3", "world");
 
   maker.DumpInput(std::cout);
-  auto graph = maker.MakeGraph();
-  graph->DumpGraph(std::cout);
+  auto graph = maker.MakeTreeModel();
+  graph->DumpTreeModel(std::cout);
 
   EXPECT_EQ(maker.num_links(), 4);
   EXPECT_EQ(maker.num_joints(), 4);
@@ -275,12 +275,12 @@ GTEST_TEST(MultibodyGraphMaker, HasLoopWithMasslessBody) {
   EXPECT_EQ(constraint.joint_num(), 1);  // Needed for the link1->link2 joint.
 
   // Now make link3 massful and link2 massless.
-  maker.ChangeLinkFlags("link3", MultibodyGraph::kDefaultLinkFlags);
-  maker.ChangeLinkFlags("link2", MultibodyGraph::kMustNotBeTerminalBody);
+  maker.ChangeLinkFlags("link3", MultibodyTreeModel::kDefaultLinkFlags);
+  maker.ChangeLinkFlags("link2", MultibodyTreeModel::kMustNotBeTerminalBody);
 
   maker.DumpInput(std::cout);
-  auto graph2 = maker.MakeGraph();
-  graph2->DumpGraph(std::cout);
+  auto graph2 = maker.MakeTreeModel();
+  graph2->DumpTreeModel(std::cout);
 
   // Resulting mobilizers:
   // 0: pin1 world->link1
@@ -292,7 +292,7 @@ GTEST_TEST(MultibodyGraphMaker, HasLoopWithMasslessBody) {
   EXPECT_EQ(graph2->get_mobilizer(MobilizerNum(2)).level(), 3);
   EXPECT_EQ(graph2->get_mobilizer(MobilizerNum(3)).level(), 1);
 
-  for (MultibodyGraph::MobilizerNum i(0); i < graph2->num_mobilizers(); ++i) {
+  for (MultibodyTreeModel::MobilizerNum i(0); i < graph2->num_mobilizers(); ++i) {
     const auto& mobilizer = graph2->get_mobilizer(i);
     EXPECT_FALSE(mobilizer.is_added_base_mobilizer());
     // The 4th mobilizer is a slave mobilizer (child body is a slave).
@@ -314,8 +314,8 @@ GTEST_TEST(MultibodyGraphMaker, HasLoopWithMasslessBody) {
 // The base body choice heuristic is:
 //   - pick the first body that has no parent
 //   - if all bodies have a parent, then pick one with the most children
-GTEST_TEST(MultibodyGraphMaker, ChooseBaseBody) {
-  MultibodyGraphMaker maker(false);  // Don't use Drake defaults.
+GTEST_TEST(MultibodyGraphModeler, ChooseBaseBody) {
+  MultibodyGraphModeler maker(false);  // Don't use Drake defaults.
   maker.RegisterJointType("pin", 1, 1);
   maker.AddLink("ground");  // Instead of "world".
 
@@ -339,8 +339,8 @@ GTEST_TEST(MultibodyGraphMaker, ChooseBaseBody) {
   maker.AddJoint("joint4", "pin", "link4", "link7");
 
   maker.DumpInput(std::cout);
-  auto graph = maker.MakeGraph();
-  graph->DumpGraph(std::cout);
+  auto graph = maker.MakeTreeModel();
+  graph->DumpTreeModel(std::cout);
 
   const MobilizerNum zero(0), one(1);
   EXPECT_EQ(graph->get_mobilizer(zero).get_joint_type_name(), "free");
@@ -373,8 +373,8 @@ GTEST_TEST(MultibodyGraphMaker, ChooseBaseBody) {
 
   maker.AddJoint("joint5", "pin", "link7", "link3");
   maker.DumpInput(std::cout);
-  auto graph2 = maker.MakeGraph();
-  graph2->DumpGraph(std::cout);
+  auto graph2 = maker.MakeTreeModel();
+  graph2->DumpTreeModel(std::cout);
 
   EXPECT_EQ(graph2->num_mobilizers(), 8);
   EXPECT_EQ(graph2->num_bodies(), 9);  // Added one slave.
@@ -391,8 +391,8 @@ GTEST_TEST(MultibodyGraphMaker, ChooseBaseBody) {
 
 // Test that a multiloop system can be resolved by chopping up one input body
 // into more than one slave.
-GTEST_TEST(MultibodyGraphMaker, MultipleSlaves) {
-  MultibodyGraphMaker maker;  // Use Drake defaults.
+GTEST_TEST(MultibodyGraphModeler, MultipleSlaves) {
+  MultibodyGraphModeler maker;  // Use Drake defaults.
 
   // A three-loop system with link3 involved in every loop.
   //       +-0-> link2
@@ -430,15 +430,15 @@ GTEST_TEST(MultibodyGraphMaker, MultipleSlaves) {
   EXPECT_EQ(maker.num_joints(), 7);  // No free joint to World yet.
 
   maker.DumpInput(std::cout);
-  auto graph = maker.MakeGraph();
-  graph->DumpGraph(std::cout);
+  auto graph = maker.MakeTreeModel();
+  graph->DumpTreeModel(std::cout);
 
   const LinkNum link3_num = maker.FindLinkNum("link3");
-  const MultibodyGraphMaker::Link& link3 = maker.get_link(link3_num);
+  const MultibodyGraphModeler::Link& link3 = maker.get_link(link3_num);
   EXPECT_EQ(link3.num_children(), 0);  // As input.
   EXPECT_EQ(link3.num_parents(), 4);
 
-  const MultibodyGraph::Body& body3 = graph->link_to_body(link3_num);
+  const MultibodyTreeModel::Body& body3 = graph->link_to_body(link3_num);
 
   EXPECT_TRUE(body3.is_master());
   EXPECT_FALSE(body3.is_slave());
@@ -482,8 +482,8 @@ GTEST_TEST(MultibodyGraphMaker, MultipleSlaves) {
 //                                 ->link6->world
 // Here link1, link6, link7, and link9 should be the chosen base bodies (link6
 // because it is already attached to world).
-GTEST_TEST(MultibodyGraphMaker, MultipleSubtrees) {
-  MultibodyGraphMaker maker;
+GTEST_TEST(MultibodyGraphModeler, MultipleSubtrees) {
+  MultibodyGraphModeler maker;
   for (int i = 1; i <= 9; ++i) {
     maker.AddLink("link" + std::to_string(i));
   }
@@ -495,8 +495,8 @@ GTEST_TEST(MultibodyGraphMaker, MultipleSubtrees) {
   maker.AddJoint("joint5", "prismatic", "link7", "link8");
 
   maker.DumpInput(std::cout);
-  auto graph = maker.MakeGraph();
-  graph->DumpGraph(std::cout);
+  auto graph = maker.MakeTreeModel();
+  graph->DumpTreeModel(std::cout);
 
   // link6 comes first since it was already attached to World.
   EXPECT_EQ(
@@ -531,8 +531,8 @@ GTEST_TEST(MultibodyGraphMaker, MultipleSubtrees) {
 // Body and joint numbers should change also.
 //
 // Also tests Clear() and ClearGraph().
-GTEST_TEST(MultibodyGraphMaker, DeleteBodiesAndClear) {
-  MultibodyGraphMaker maker;
+GTEST_TEST(MultibodyGraphModeler, DeleteBodiesAndClear) {
+  MultibodyGraphModeler maker;
   for (int i = 1; i <= 3; ++i) maker.AddLink("link" + std::to_string(i));
   maker.AddJoint("joint0", "prismatic", "link1", "link2");
   maker.AddJoint("joint1", "revolute", "link2", "link3");
@@ -546,7 +546,7 @@ GTEST_TEST(MultibodyGraphMaker, DeleteBodiesAndClear) {
   EXPECT_EQ(maker.FindJointNum("joint0"), 0);
   EXPECT_EQ(maker.FindJointNum("joint1"), 1);
 
-  auto graph = maker.MakeGraph();
+  auto graph = maker.MakeTreeModel();
   EXPECT_EQ(graph->FindBaseBodies(),
             std::vector<BodyNum>({BodyNum(1)}));  // link1
 
@@ -564,7 +564,7 @@ GTEST_TEST(MultibodyGraphMaker, DeleteBodiesAndClear) {
   EXPECT_EQ(maker.FindLinkNum("link3"), 2);
   EXPECT_EQ(maker.FindJointNum("joint1"), 0);
 
-  auto graph2 = maker.MakeGraph();
+  auto graph2 = maker.MakeTreeModel();
   EXPECT_EQ(graph2->FindBaseBodies(),
             std::vector<BodyNum>({BodyNum(1)}));  // link2
 
@@ -588,7 +588,7 @@ GTEST_TEST(MultibodyGraphMaker, DeleteBodiesAndClear) {
   EXPECT_EQ(maker.FindLinkNum("link1"), 1);
   EXPECT_EQ(maker.FindLinkNum("link3"), 2);
 
-  auto graph3 = maker.MakeGraph();
+  auto graph3 = maker.MakeTreeModel();
   EXPECT_EQ(graph3->FindBaseBodies(),
             std::vector<BodyNum>({BodyNum(1), BodyNum(2)}));  // link1
 }
@@ -597,22 +597,22 @@ GTEST_TEST(MultibodyGraphMaker, DeleteBodiesAndClear) {
 // to world.
 //            link1<--link2<--link3-->link4-->link5
 // Here link3 should be the base body.
-GTEST_TEST(MultibodyGraphMaker, ReplaceJoint) {
-  MultibodyGraphMaker maker;
+GTEST_TEST(MultibodyGraphModeler, ReplaceJoint) {
+  MultibodyGraphModeler maker;
   for (int i = 1; i <= 5; ++i) maker.AddLink("link" + std::to_string(i));
   maker.AddJoint("joint0", "revolute", "link2", "link1");
   maker.AddJoint("joint1", "revolute", "link3", "link2");
   maker.AddJoint("joint2", "revolute", "link3", "link4");
   maker.AddJoint("joint3", "revolute", "link4", "link5");
-  auto graph = maker.MakeGraph();
+  auto graph = maker.MakeTreeModel();
 
   EXPECT_EQ(graph->FindBaseBody(BodyNum(1)), 3);  // link1's base body is link3.
   EXPECT_EQ(graph->FindBaseBodies(), std::vector<BodyNum>({BodyNum(3)}));
 
   // Now replace link3's free joint with a weld.
   maker.AddJoint("joint5", "weld", "world", maker.get_link(LinkNum(3)).name());
-  auto graph2 = maker.MakeGraph();
-  graph2->DumpGraph(std::cout);
+  auto graph2 = maker.MakeTreeModel();
+  graph2->DumpTreeModel(std::cout);
 
   // Expected mobilizers:
   // 0 world->link3 (weld)
@@ -624,7 +624,7 @@ GTEST_TEST(MultibodyGraphMaker, ReplaceJoint) {
   std::vector<int> expect_inboard({0, 3, 3, 2, 4});
   std::vector<int> expect_outboard({3, 2, 4, 1, 5});
   for (MobilizerNum i(0); i < graph2->num_mobilizers(); ++i) {
-    const MultibodyGraph::Mobilizer& mobilizer = graph2->get_mobilizer(i);
+    const MultibodyTreeModel::Mobilizer& mobilizer = graph2->get_mobilizer(i);
     EXPECT_EQ(mobilizer.inboard_body_num(), expect_inboard[i]);
     EXPECT_EQ(mobilizer.outboard_body_num(), expect_outboard[i]);
     EXPECT_EQ(mobilizer.get_joint_type_name(), (i == 0 ? "weld" : "revolute"));

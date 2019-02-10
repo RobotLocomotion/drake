@@ -1,16 +1,18 @@
 #pragma once
 
-/* Adapted for Drake from Simbody's MultibodyGraphMaker class.
+/* Adapted for Drake from Simbody's MultibodyGraphModeler class.
 Portions copyright (c) 2013-14 Stanford University and the Authors.
 Authors: Michael Sherman
 Contributors: Kevin He
+
+Modifications copyright (c) 2019 Toyota Research Institute, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
 /** @file
-Declares the MultibodyGraphMaker class for use in constructing a
+Declares the MultibodyGraphModeler class for use in constructing a
 spanning-tree-plus-constraints representation of a multibody system from a
 list of its links and joints. */
 
@@ -21,19 +23,23 @@ list of its links and joints. */
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/graph_maker/multibody_graph.h"
+#include "drake/common/drake_optional.h"
+#include "drake/multibody/graph_maker/multibody_tree_model.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
 namespace multibody {
 
 //==============================================================================
-//                          MULTIBODY GRAPH MAKER
+//                          MULTIBODY GRAPH MODELER
 //==============================================================================
-/** Construct a reasonably good spanning-tree-plus-constraints structure for
-modeling a given set of links and joints with a generalized coordinate
-multibody system like Drake or Simbody. The idea is to map a directed graph
+/** Defines a multibody graph consisting of links interconnected by joints and
+provides the ability to model that as a spanning-tree-plus-constraints for
+computation using generalized coordinates. The idea is to map a directed graph
 of _links_ and _joints_, that is possibly cyclic and disconnected, to an output
 graph consisting of a fully-connected tree of _bodies_ and _mobilizers_, plus a
 set of _constraints_ to enforce loop connectivity. This is particularly useful
@@ -44,25 +50,26 @@ Here is a usage example, assuming the given input is: <pre>
        link1 <-- link2 <-- link3 --> link4 --> link5
 </pre> where the arrows represent revolute joints and point from the "parent"
 link to the "child" link. Note that no explicit connection to World (link 0) has
-been given, so we're expecting the %MultibodyGraphMaker to add one.
+been given, so we're expecting the %MultibodyGraphModeler to add one in the
+generated tree model.
 @code
-  MultibodyGraphMaker maker;
+  MultibodyGraphModeler maker;
   // "world" is link 0
-  maker.AddLink("link1", 1.);  // name and mass
-  maker.AddLink("link2", 1.);
-  maker.AddLink("link3", 1.);
-  maker.AddLink("link4", 1.);
-  maker.AddLink("link5", 1.);
+  maker.AddLink("link1");  // name (optional flags)
+  maker.AddLink("link2");
+  maker.AddLink("link3");
+  maker.AddLink("link4");
+  maker.AddLink("link5");
   maker.AddJoint("joint0", "revolute", "link2", "link1");  // parent, child
   maker.AddJoint("joint1", "revolute", "link3", "link2");
   maker.AddJoint("joint2", "revolute", "link3", "link4");
   maker.AddJoint("joint3", "revolute", "link4", "link5");
-  std::unique_ptr<MultibodyGraph> graph = maker.MakeGraph();
+  std::unique_ptr<MultibodyTreeModel> model = maker.MakeTreeModel();
 
-  for (int i=0; i < graph.num_mobilizers(); ++i) {
-    auto& mobilizer = graph.get_mobilizer(i);
-    auto& inb = graph.body(mobilizer.inboard_body_num());
-    auto& outb = graph.body(mobilizer.outboard_body_num());
+  for (int i=0; i < model.num_mobilizers(); ++i) {
+    auto& mobilizer = model.get_mobilizer(i);
+    auto& inb = model.body(mobilizer.inboard_body_num());
+    auto& outb = model.body(mobilizer.outboard_body_num());
     std::cout << i << ": " << inb.name() << " --> " << outb.name()
               << " (" << mobilizer.get_joint_type_name() << ")\n";
   }
@@ -82,13 +89,14 @@ _print_ it.
 
 <h3>Explanation</h3>
 Each link has a unique name; each joint connects two distinct links with one
-designated as the "parent" link and the other the "child" link. We will output
-a spanning tree with World as the root, with a body corresponding to every link,
+designated as the "parent" link and the other the "child" link. The generated
+model (of type MultibodyTreeModel) will include a spanning tree with World as
+the root, with a body corresponding to every link,
 and containing a mobilizer for every body. You can also think of this graph as a
 forest of trees each with a "base body" as its root, where a base body is a
 body directly connected to World (often by a "free" or "floating" joint).
 
-There is a mobilizer in the generated graph corresponding to each of
+There is a mobilizer in the generated tree model corresponding to each of
 the joints from the input, with an "inboard" (topologically closer to World)
 and "outboard" (further from World) body, chosen from the parent and child
 bodies of the joint but possibly reordered in which case the mobilizer is
@@ -126,7 +134,7 @@ is, more than one mobilized body may correspond to the same input link.
 mobilizers having been added to connect base bodies to World.
   -# Statistics, diagnostics, and introspection of the resulting trees.
 
-Then to build a multibody model
+Then to build a multibody system
   -# Run through the generated mobilizers in order, adding one mobilized body to
 the tree each time, using "reversed" mobilizers if appropriate (that just
 affects the interpretation of the generalized coordinates). Mass properties and
@@ -144,7 +152,7 @@ joint constraints as indicated.
 
 The first link added (link 0) is assumed to be World and its name is used for
 recognizing World connections later in joints. If you accept the Drake defaults,
-that body will be named "world". The default names for Weld (0 dof) and Free
+that link will be named "world". The default names for Weld (0 dof) and Free
 (6 dof) joints are, not surprisingly, "weld" and "free" but you can change them.
 
 <h3>Loop joints</h3>
@@ -192,88 +200,96 @@ attempt to find a body that does not ever appear as a child in the input.
 Failing that, pick the body that has the most children. In case of tie, pick
 the first body among the tied ones.
 
-<h3>World body</h3>
-The first link defined in the input will be interpreted as the World body.
-Its name will be used to recognize joints that connect other bodies to World.
+<h3>World link</h3>
+The first link defined in the input will be interpreted as the World link.
+Its name will be used to recognize joints that connect other links to World.
 Typical names are "world" or "ground". If you accept the Drake defaults, the
-World body will be predefined as body zero and will be named "world".
+World link will be predefined as link zero and will be named "world". The
+World link in the input graph is identical to the World body in the generated
+spanning tree.
 
 <h3>Levels</h3>
 Each body in the spanning tree will be assigned a level, an integer that
 measures how many edges must be traversed to get from that body to World.
 World is at level 0, bodies that have a direct connection to World (base
 bodies) are at level 1, bodies whose mobilizer connects them to base bodies
-are at level 2, and so on. Multibody models need to be constructed in order
+are at level 2, and so on. Multibody systems need to be constructed in order
 of increasing level, so that the inboard body is already in the tree when the
 outboard body is added. We consider the level of a mobilizer to be
 the same as the level of its outboard body. Loop joints are not mobilizers and
 do not have a level. */
-class MultibodyGraphMaker {
+class MultibodyGraphModeler {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyGraphMaker)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyGraphModeler)
 
-  using LinkNum = MultibodyGraph::LinkNum;
-  using JointNum = MultibodyGraph::JointNum;
-  using JointTypeNum = MultibodyGraph::JointTypeNum;
+  using LinkNum = MultibodyTreeModel::LinkNum;
+  using JointNum = MultibodyTreeModel::JointNum;
+  using JointTypeNum = MultibodyTreeModel::JointTypeNum;
+
+  using LinkFlags = MultibodyTreeModel::LinkFlags;
+  using JointFlags = MultibodyTreeModel::JointFlags;
+  using JointTypeFlags = MultibodyTreeModel::JointTypeFlags;
 
   // Local classes.
   class Link;
   class Joint;
   class JointType;
 
-  /** Construct an empty %MultibodyGraphMaker object and set the default
+  /** Construct an empty %MultibodyGraphModeler object and set the default
   names for Weld and Free joints to "weld" and "free". Also sets up Drake's
   World body (named "world") and supported joint types, unless
   `use_drake_defaults` is set `false`. In that case the first added link (link
   number 0) is the World body and its name is used to represent World. */
-  explicit MultibodyGraphMaker(bool use_drake_defaults = true);
+  explicit MultibodyGraphModeler(bool use_drake_defaults = true);
 
-  /** Restores this %MultibodyGraphMaker object to its just-constructed
+  /** Restores this %MultibodyGraphModeler object to its just-constructed
   condition. See the constructor documentation for the meaning of the
   parameter. */
   void Clear(bool use_drake_defaults = true);
 
   /** @name         Define the input graph (links and joints)
-  Methods in this section are used to inform %MultibodyGraphMaker about the
+  Methods in this section are used to inform %MultibodyGraphModeler about the
   links and joints as given, typically in an .sdf or .urdf file. You
   can also inspect the set of links and joints, and remove links and joints
   from an existing specification. */
   //@{
 
   /** Add a new link to the set of input links. Each of these will produce at
-  least one Body in the MultibodyGraph.
-  @param[in]      name
+  least one Body in the MultibodyTreeModel.
+  @param[in]      link_name
       A unique string identifying this link. There are no other restrictions
-      on the contents of `name`. If this %MultibodyGraphMaker was constructed
+      on the contents of `name`. If this %MultibodyGraphModeler was constructed
       without Drake defaults, the first link you add is considered to be
       World, and its name is remembered and recognized when used in joints.
-  @param[in]      mass
-      The mass here is used as a graph-building hint. If the link is massless,
-      or has a very small mass compared to other links, set mass=0
-      so that the algorithm can avoid making this a terminal body in the
-      generated graph. The algorithm might also use `mass` to preferentially
-      choose heavier bodies as terminal to improve conditioning.
-  @param[in]      must_be_base_body
-      If you feel strongly that this link should be able to move freely with
-      respect to World, set this flag so that the algorithm will connect it
-      to World by a Free mobilizer before attempting to build the rest of the
-      tree. Alternatively, provide a joint that connects this link directly
-      to World, in which case you should _not_ set this flag.
+  @param[in]      model_instance
+      The model instance to which this link belongs. If none is specified then
+      the body belongs to the default model instance. This is simply a tag that
+      is carried with the link and bodies generated from it; it has no effect
+      on the structure of the generated tree model. However, it does permit
+      queries that return only elements of a particular model instance.
+  @param[in]      flags
+      Optional flags affecting the generated tree model. Flags can be used to
+      designate a link as static, to require that it not be used as a terminal
+      body in the graph (because it is effectively massless), or to require
+      that the resulting body is a base body (that is, connected directly to
+      World).
   @param[in]      user_ref
-      This is a generic user reference pointer that is kept with the associated
+      A generic user reference pointer that is kept with the associated
       link and can be used by the caller to map back to their own data
       structure containing additional link information.
   @see DeleteLink() */
-  void AddLink(
-      const std::string& name, ModelInstanceIndex model_instance,
-      MultibodyGraph::LinkFlags flags = MultibodyGraph::kDefaultLinkFlags,
-      void* user_ref = nullptr);
+  void AddLink(const std::string& link_name, ModelInstanceIndex model_instance,
+               MultibodyTreeModel::LinkFlags flags =
+                   MultibodyTreeModel::kDefaultLinkFlags,
+               void* user_ref = nullptr);
 
-  void AddLink(
-      const std::string& name,
-      MultibodyGraph::LinkFlags flags = MultibodyGraph::kDefaultLinkFlags,
-      void* user_ref = nullptr) {
-    AddLink(name, {}, flags, user_ref);
+  /** Convenience overload that puts the link into the default model
+  instance. */
+  void AddLink(const std::string& name,
+               MultibodyTreeModel::LinkFlags flags =
+                   MultibodyTreeModel::kDefaultLinkFlags,
+               void* user_ref = nullptr) {
+    AddLink(name, default_model_instance(), flags, user_ref);
   }
 
   /** Delete a link from the set of input links. All the joints that
@@ -287,10 +303,16 @@ class MultibodyGraphMaker {
   bool DeleteLink(const std::string& name);
 
   /** Add a new joint to the set of input joints. Each of these will produce
-  a mobilizer or constraint in the generated graph.
+  a mobilizer or constraint in the generated tree model.
   @param[in]      name
-      A string uniquely identifying this joint. There are no other
-      restrictions on the contents of `name`.
+      A string uniquely identifying this joint within its model instance. There
+      are no other restrictions on the contents of `name`.
+  @param[in]      model_instance
+      The model instance to which this joint belongs. If none is specified then
+      the joint belongs to the default model instance. This is simply a tag that
+      is carried with the joint and mobilizers generated from it; it has no
+      effect on the structure of the generated tree model. However, it does
+      permit queries that return only elements of a particular model instance.
   @param[in]      type
       A string designating the type of this joint, such as "revolute" or
       "ball". This must be chosen from the set of joint types previously
@@ -305,9 +327,10 @@ class MultibodyGraphMaker {
       AddLink() call, or it must be the designated name for the World body.
       It must be distinct from `parent_link_name`. If possible, this will be
       used as the outboard body for the corresponding mobilizer.
-  @param[in]      must_be_constraint
+  @param[in]      flags
       If you feel strongly that this joint should be implemented using
-      constraints rather than a mobilizer, set this flag. In that case the joint
+      a constraint rather than a mobilizer (not common), provide the flag
+      MultibodyTreeModel::kMustBeConstraint. In that case the joint
       will not appear in the list of joints that are candidates to be modeled
       as mobilizers in a multibody tree. Only after the tree has been
       successfully built will this joint be added, either using a constraint
@@ -320,18 +343,21 @@ class MultibodyGraphMaker {
       and can be used by the caller to map back to their own data
       structure containing additional joint information.
   @see DeleteJoint() */
-  void AddJoint(
-      const std::string& name, ModelInstanceIndex model_instance,
-      const std::string& type, const std::string& parent_link_name,
-      const std::string& child_link_name,
-      MultibodyGraph::JointFlags flags = MultibodyGraph::kDefaultJointFlags,
-      void* user_ref = nullptr);
+  void AddJoint(const std::string& name, ModelInstanceIndex model_instance,
+                const std::string& type, const std::string& parent_link_name,
+                const std::string& child_link_name,
+                MultibodyTreeModel::JointFlags flags =
+                    MultibodyTreeModel::kDefaultJointFlags,
+                void* user_ref = nullptr);
 
-  void AddJoint(
-      const std::string& name, const std::string& type,
-      const std::string& parent_link_name, const std::string& child_link_name,
-      MultibodyGraph::JointFlags flags = MultibodyGraph::kDefaultJointFlags,
-      void* user_ref = nullptr) {
+  /** Convenience overload that puts the joint into the default model
+  instance. */
+  void AddJoint(const std::string& name, const std::string& type,
+                const std::string& parent_link_name,
+                const std::string& child_link_name,
+                MultibodyTreeModel::JointFlags flags =
+                    MultibodyTreeModel::kDefaultJointFlags,
+                void* user_ref = nullptr) {
     AddJoint(name, {}, type, parent_link_name, child_link_name, flags,
              user_ref);
   }
@@ -343,16 +369,21 @@ class MultibodyGraphMaker {
   @param[in]      name
       A string uniquely identifying this joint. There are no other
       restrictions on the contents of `name`.
+  @param[in]      model_instance
+      The model instance to which this joint belongs. If none is specified then
+      the joint belongs to the default model instance.
   @returns `true` if the joint is successfully deleted, `false` if it
       didn't exist. */
-  bool DeleteJoint(const std::string& name);
+  bool DeleteJoint(const std::string& name,
+                   ModelInstanceIndex model_instance = {});
 
   /** (Advanced) Change the flags for an existing link. May cause a different
   graph to be generated on the next call to GenerateGraph(). This method
   exists primarily for testing purposes; normally the mass provided when the
   link is added remains unchanged. */
   void ChangeLinkFlags(const std::string& name,
-                       MultibodyGraph::LinkFlags flags);
+                       ModelInstanceIndex model_instance,
+                       MultibodyTreeModel::LinkFlags flags);
 
   /** Returns the name we recognize as the World (or Ground) link. This is
   the name that was provided in the first AddLink() call. */
@@ -366,9 +397,9 @@ class MultibodyGraphMaker {
   void DumpInput(std::ostream& output_stream) const;
   //@}
 
-  /** Generate a new multibody graph from the input data. Throws an
+  /** Generate a new multibody tree model from the input data. Throws an
   std::runtime_error if it fails, with a message in the what() string. */
-  std::unique_ptr<MultibodyGraph> MakeGraph();
+  std::unique_ptr<MultibodyTreeModel> MakeTreeModel();
 
   /** @name             Inspect the links and joints
   Methods in this section allow introspection of the input objects. */
@@ -386,16 +417,18 @@ class MultibodyGraphMaker {
   }
 
   /** Returns the link number assigned to the input link with the given name.
-  Returns an invalid LinkNum if the link name is not recognized. */
-  LinkNum FindLinkNum(const std::string& link_name) const {
-    std::map<std::string, LinkNum>::const_iterator p =
-        link_name_to_num_.find(link_name);
-    return p == link_name_to_num_.end() ? LinkNum() : p->second;
+  The name must be globally unique if no model instance is given, otherwise it
+  must be present in the given model instance. Throws std::logic_error if
+  the name is not recognized or not unique when required to be. */
+  LinkNum FindLinkNum(
+      const std::string& link_name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
+    return model_instance ? GetLinkNumFromNameAndInstance(
+                                link_name, *model_instance, __func__)
+                          : GetUniqueLinkNumFromName(link_name, __func__);
   }
 
-  /** Returns the number of input joints. Don't confuse
-  these with mobilizers, which are a possible implementation of joints
-  chosen to form a spanning tree connecting all the bodies. */
+  /** Returns the number of input joints. */
   int num_joints() const { return static_cast<int>(joints_.size()); }
 
   /** Gets a Joint object by its assigned number. */
@@ -405,16 +438,20 @@ class MultibodyGraphMaker {
   }
 
   /** Returns the joint number assigned to the input joint with the given name.
-  Returns an invalid JointNum if the joint name is not recognized. */
-  JointNum FindJointNum(const std::string& joint_name) const {
-    std::map<std::string, JointNum>::const_iterator p =
-        joint_name_to_num_.find(joint_name);
-    return p == joint_name_to_num_.end() ? JointNum() : p->second;
+  The name must be globally unique if no model instance is given, otherwise it
+  must be present in the given model instance. Throws std::logic_error if
+  the name is not recognized or not unique when required to be. */
+  JointNum FindJointNum(
+      const std::string& joint_name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
+    return model_instance ? GetJointNumFromNameAndInstance(
+                                joint_name, *model_instance, __func__)
+                          : GetUniqueJointNumFromName(joint_name, __func__);
   }
   //@}
 
   /** @name         Specify and inspect available joint types
-  Use the methods in this section to inform %MultibodyGraphMaker about the
+  Use the methods in this section to inform %MultibodyGraphModeler about the
   available joint types in your multibody code. You can also inspect what has
   been defined already. Some joint types are predefined if you accept the
   Drake defaults at construction. */
@@ -426,16 +463,16 @@ class MultibodyGraphMaker {
   @param[in]      name
       A unique string identifying a joint type, such as "pin" or "prismatic".
   @param[in]      num_q
-      The number of generalized coordinates (positions) for this joint type.
-      Must be greater than or equal to `num_v`.
+      The number of generalized coordinates (positions) to be included in the
+      model for this joint type. Must be greater than or equal to `num_v`.
   @param[in]      num_v
-      The number of generalized velocities (degrees of freedom) for this joint
-      type. Must be less than or equal to `num_q`.
+      The number of generalized velocities (degrees of freedom) to be included
+      in the model for this joint type. Must be less than or equal to `num_q`.
   @param[in]      flags
-      You can set this to `MultibodyGraph::kOkToUseAsJointConstraint` which
-      mean that, in addition to a mobilizer of this type, you have
-      available a constraint-based joint that is just as good. If so
-      %MultibodyGraphMaker will propose using that constraint rather than
+      You can set this to `MultibodyTreeModel::kOkToUseAsJointConstraint` which
+      means that, in addition to a mobilizer of this type, your multibody code
+      has available a constraint-based joint that is just as good. If so
+      %MultibodyGraphModeler will propose using that constraint rather than
       cutting a link to break a loop. Typically used only for ball (spherical)
       joints.
   @param[in]      user_ref
@@ -444,20 +481,20 @@ class MultibodyGraphMaker {
       structure containing more joint type information.
   @retval JointTypeNum Small integer joint type number used for referencing. */
   JointTypeNum RegisterJointType(const std::string& name, int num_q, int num_v,
-                                 MultibodyGraph::JointTypeFlags flags =
-                                     MultibodyGraph::kDefaultJointTypeFlags,
+                                 MultibodyTreeModel::JointTypeFlags flags =
+                                     MultibodyTreeModel::kDefaultJointTypeFlags,
                                  void* user_ref = nullptr);
 
   /** Change the name to be used to identify the weld joint type (0 dof) and
   weld loop constraint type (6 constraints). The default is "weld". Changing
-  this name clears and reinitializes this %MultibodyGraphMaker object. */
+  this name clears and reinitializes this %MultibodyGraphModeler object. */
   void SetWeldJointTypeName(const std::string& name) {
     weld_type_name_ = name;
   }
 
   /** Changes the name to be used to identify the free (6 dof) joint type and
   free (0 constraints) loop constraint type. The default is "free". Changing
-  this name clears and reinitializes this %MultibodyGraphMaker object. */
+  this name clears and reinitializes this %MultibodyGraphModeler object. */
   void SetFreeJointTypeName(const std::string& name) {
     free_type_name_ = name;
   }
@@ -495,46 +532,76 @@ class MultibodyGraphMaker {
  private:
   // Get writable access to links and joints.
   Link& get_mutable_link(LinkNum link_num) { return links_[link_num]; }
-  Joint& get_mutable_joint(int joint_num) { return joints_[joint_num]; }
-  Joint& GetMutableJointByName(const std::string& name) {
-    return joints_[joint_name_to_num_[name]];
-  }
+  Joint& get_mutable_joint(JointNum joint_num) { return joints_[joint_num]; }
 
-  LinkNum ChooseNewBaseLink(const MultibodyGraph& graph) const;
-  MultibodyGraph::MobilizerNum AddMobilizerForJoint(JointNum joint_num,
-                                                    MultibodyGraph* graph);
+  // Returns the model_instance->link_num map for all links with this name,
+  // if any, otherwise nullptr.
+  const std::map<ModelInstanceIndex, LinkNum>* GetAllLinkNumsFromName(
+      const std::string& link_name) const;
+
+  // Returns the link_num for the a link name in a model instance.
+  LinkNum GetLinkNumFromNameAndInstance(const std::string& link_name,
+                                        ModelInstanceIndex model_instance,
+                                        const char* func) const;
+
+  // Returns the link_num for this link name, which must appear in only one
+  // model instance.
+  LinkNum GetUniqueLinkNumFromName(const std::string& name,
+                                   const char* func) const;
+
+  // Returns the model_instance->joint_num map for all joints with this name,
+  // if any, otherwise nullptr.
+  const std::map<ModelInstanceIndex, JointNum>* GetAllJointNumsFromName(
+      const std::string& joint_name) const;
+
+  // Returns the joint_num for the a joint name in a model instance.
+  JointNum GetJointNumFromNameAndInstance(const std::string& joint_name,
+      ModelInstanceIndex model_instance, const char* func) const;
+
+  // Returns the joint_num for this joint name, which must appear in only one
+  // model instance.
+  JointNum GetUniqueJointNumFromName(const std::string& joint_name,
+                                     const char* func) const;
+
+  LinkNum ChooseNewBaseLink(const MultibodyTreeModel& graph) const;
+  MultibodyTreeModel::MobilizerNum AddMobilizerForJoint(JointNum joint_num,
+                                                    MultibodyTreeModel* graph);
   JointNum FindHeaviestUnassignedForwardJoint(
-      LinkNum parent_link_num, const MultibodyGraph& graph) const;
+      LinkNum parent_link_num, const MultibodyTreeModel& graph) const;
   JointNum FindHeaviestUnassignedReverseJoint(
-      LinkNum parent_link_num, const MultibodyGraph& graph) const;
-  void GrowTree(int start_level, MultibodyGraph* graph);
-  void BreakLoops(MultibodyGraph* graph);
+      LinkNum parent_link_num, const MultibodyTreeModel& graph) const;
+  void GrowTree(int start_level, MultibodyTreeModel* graph);
+  void BreakLoops(MultibodyTreeModel* graph);
   bool LinksAreConnected(LinkNum link1_num, LinkNum link2_num) const;
 
   // Clear everything except for default names.
   void ClearContainers() {
-    links_.clear();
-    joints_.clear();
     joint_types_.clear();
-    link_name_to_num_.clear();
-    joint_name_to_num_.clear();
     joint_type_name_to_num_.clear();
+    links_.clear();
+    link_name_to_num_.clear();
+    joints_.clear();
+    joint_name_to_num_.clear();
   }
 
   std::string weld_type_name_, free_type_name_;
-  std::vector<Link> links_;   // world + input bodies
-  std::vector<Joint> joints_;  // input joints
   std::vector<JointType> joint_types_;
-  std::map<std::string, LinkNum> link_name_to_num_;
-  std::map<std::string, JointNum> joint_name_to_num_;
   std::map<std::string, JointTypeNum> joint_type_name_to_num_;
+
+  std::vector<Link> links_;   // world + input bodies
+  std::map<std::string, std::map<ModelInstanceIndex, LinkNum>>
+      link_name_to_num_;
+
+  std::vector<Joint> joints_;  // input joints
+  std::map<std::string, std::map<ModelInstanceIndex, JointNum>>
+      joint_name_to_num_;
 };
 
 //------------------------------------------------------------------------------
-//                      MULTIBODY GRAPH MAKER :: LINK
+//                      MULTIBODY GRAPH MODELER :: LINK
 //------------------------------------------------------------------------------
 /** Local class that collects information about links in the input. */
-class MultibodyGraphMaker::Link {
+class MultibodyGraphModeler::Link {
  public:
   /** Returns the number of joints that specify this link as their parent
   link. This refers to the input parent/child designation _not_ necessarily
@@ -554,13 +621,13 @@ class MultibodyGraphMaker::Link {
 
   const std::string& name() const { return name_; }
   ModelInstanceIndex model_instance() const { return model_instance_; }
-  MultibodyGraph::LinkFlags flags() const { return flags_; }
+  MultibodyTreeModel::LinkFlags flags() const { return flags_; }
   bool must_be_nonterminal() const {
-    return flags_ & MultibodyGraph::kMustNotBeTerminalBody;
+    return flags_ & MultibodyTreeModel::kMustNotBeTerminalBody;
   }
-  bool is_static() const { return flags_ & MultibodyGraph::kStaticLink; }
+  bool is_static() const { return flags_ & MultibodyTreeModel::kStaticLink; }
   bool must_be_base_body() const {
-    return flags_ & MultibodyGraph::kMustBeBaseBody;
+    return flags_ & MultibodyTreeModel::kMustBeBaseBody;
   }
   void* user_ref() const { return user_ref_; }
 
@@ -577,16 +644,16 @@ class MultibodyGraphMaker::Link {
   }
 
   /** Changes the flags for this link. */
-  void set_flags(MultibodyGraph::LinkFlags flags) {
+  void set_flags(MultibodyTreeModel::LinkFlags flags) {
     flags_ = flags;
   }
 
  private:
-  // Restrict construction and modification to only MultibodyGraphMaker.
-  friend class MultibodyGraphMaker;
+  // Restrict construction and modification to only MultibodyGraphModeler.
+  friend class MultibodyGraphModeler;
 
   Link(const std::string& name, ModelInstanceIndex model_instance,
-       MultibodyGraph::LinkFlags flags, void* user_ref)
+       MultibodyTreeModel::LinkFlags flags, void* user_ref)
       : name_(name),
         model_instance_(model_instance),
         flags_(flags),
@@ -615,7 +682,7 @@ class MultibodyGraphMaker::Link {
   // Inputs
   std::string name_;
   ModelInstanceIndex model_instance_;
-  MultibodyGraph::LinkFlags flags_{MultibodyGraph::kDefaultLinkFlags};
+  MultibodyTreeModel::LinkFlags flags_{MultibodyTreeModel::kDefaultLinkFlags};
   void* user_ref_;
 
   // How this link appears in joints (input and added).
@@ -624,16 +691,16 @@ class MultibodyGraphMaker::Link {
 };
 
 //------------------------------------------------------------------------------
-//                      MULTIBODY GRAPH MAKER :: JOINT
+//                      MULTIBODY GRAPH MODELER :: JOINT
 //------------------------------------------------------------------------------
 /** Local class that collects information about input joints. */
-class MultibodyGraphMaker::Joint {
+class MultibodyGraphModeler::Joint {
  public:
   const std::string& name() const { return name_; }
   ModelInstanceIndex model_instance() const { return model_instance_; }
-  MultibodyGraph::JointFlags flags() const { return flags_; }
+  JointFlags flags() const { return flags_; }
   bool must_be_constraint() const {
-    return flags_ & MultibodyGraph::kMustBeConstraint;
+    return flags_ & MultibodyTreeModel::kMustBeConstraint;
   }
   void* user_ref() const { return user_ref_; }
 
@@ -641,13 +708,15 @@ class MultibodyGraphMaker::Joint {
   LinkNum child_link_num() const { return child_link_num_; }
   JointTypeNum joint_type_num() const { return joint_type_num_; }
 
+  JointNum joint_num() const { return joint_num_; }
+
  private:
-  // Restrict construction and modification to only MultibodyGraphMaker.
-  friend class MultibodyGraphMaker;
+  // Restrict construction and modification to only MultibodyGraphModeler.
+  friend class MultibodyGraphModeler;
 
   Joint(const std::string& name, ModelInstanceIndex model_instance,
         JointTypeNum joint_type_num, LinkNum parent_link_num,
-        LinkNum child_link_num, MultibodyGraph::JointFlags flags,
+        LinkNum child_link_num, MultibodyTreeModel::JointFlags flags,
         void* user_ref)
       : name_(name),
         model_instance_(model_instance),
@@ -668,37 +737,40 @@ class MultibodyGraphMaker::Joint {
   std::string name_;
   ModelInstanceIndex model_instance_;
   JointTypeNum joint_type_num_;
-  MultibodyGraph::JointFlags flags_;
+  MultibodyTreeModel::JointFlags flags_;
   void* user_ref_{nullptr};
 
   LinkNum parent_link_num_;
   LinkNum child_link_num_;
+
+  // Assigned index.
+  JointNum joint_num_;
 };
 
 //------------------------------------------------------------------------------
-//                   MULTIBODY GRAPH MAKER :: JOINT TYPE
+//                   MULTIBODY GRAPH MODELER :: JOINT TYPE
 //------------------------------------------------------------------------------
 /** Local class that defines the properties of a known joint type. */
-class MultibodyGraphMaker::JointType {
+class MultibodyGraphModeler::JointType {
  public:
   const std::string& name() const { return name_; }
   int num_q() const { return num_q_; }
   int num_v() const { return num_v_; }
   bool have_good_joint_constraint_available() const {
-    return flags_ & MultibodyGraph::kOkToUseAsJointConstraint;
+    return flags_ & MultibodyTreeModel::kOkToUseAsJointConstraint;
   }
   void* user_ref() const { return user_ref_; }
 
-  MultibodyGraph::JointTypeNum joint_type_num() const {
+  JointTypeNum joint_type_num() const {
     return joint_type_num_;
   }
 
  private:
-  // Restrict construction to only MultibodyGraphMaker.
-  friend class MultibodyGraphMaker;
+  // Restrict construction to only MultibodyGraphModeler.
+  friend class MultibodyGraphModeler;
 
   JointType(const std::string& name, int num_q, int num_v,
-            MultibodyGraph::JointTypeFlags flags,
+            MultibodyTreeModel::JointTypeFlags flags,
             void* user_ref, JointTypeNum joint_type_num)
       : name_(name),
         num_q_(num_q),
@@ -710,11 +782,11 @@ class MultibodyGraphMaker::JointType {
   std::string name_;
   int num_q_{-1};
   int num_v_{-1};
-  MultibodyGraph::JointTypeFlags flags_{MultibodyGraph::kDefaultJointTypeFlags};
+  MultibodyTreeModel::JointTypeFlags flags_{MultibodyTreeModel::kDefaultJointTypeFlags};
   void* user_ref_{nullptr};
 
   // Assigned index.
-  MultibodyGraph::JointTypeNum joint_type_num_;
+  JointTypeNum joint_type_num_;
 };
 
 }  // namespace multibody

@@ -1,4 +1,4 @@
-/* Adapted for Drake from Simbody's MultibodyGraphMaker class.
+/* Adapted for Drake from Simbody's MultibodyGraphModeler class.
 Portions copyright (c) 2013-14 Stanford University and the Authors.
 Authors: Michael Sherman
 Contributors: Kevin He
@@ -7,7 +7,7 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
-#include "drake/multibody/graph_maker/multibody_graph.h"
+#include "drake/multibody/graph_maker/multibody_tree_model.h"
 
 #include <algorithm>
 #include <exception>
@@ -38,37 +38,37 @@ void add_if_flag(FlagsType or_flags, FlagsType test_flag, const char* flag_name,
 }
 }  // namespace
 
-std::string to_string(MultibodyGraph::LinkFlags flags) {
+std::string to_string(MultibodyTreeModel::LinkFlags flags) {
   std::string out;
   if (flags == 0) {
     out = "default";
   } else {
-    add_if_flag(flags, MultibodyGraph::kStaticLink, "static", &out);
-    add_if_flag(flags, MultibodyGraph::kMustBeBaseBody, "must_be_base_body",
+    add_if_flag(flags, MultibodyTreeModel::kStaticLink, "static", &out);
+    add_if_flag(flags, MultibodyTreeModel::kMustBeBaseBody, "must_be_base_body",
                 &out);
-    add_if_flag(flags, MultibodyGraph::kMustNotBeTerminalBody,
+    add_if_flag(flags, MultibodyTreeModel::kMustNotBeTerminalBody,
                 "must_be_nonterminal", &out);
   }
   return out;
 }
 
-std::string to_string(MultibodyGraph::JointFlags flags) {
+std::string to_string(MultibodyTreeModel::JointFlags flags) {
   std::string out;
   if (flags == 0) {
     out = "default";
   } else {
-    add_if_flag(flags, MultibodyGraph::kMustBeConstraint, "must_be_constraint",
+    add_if_flag(flags, MultibodyTreeModel::kMustBeConstraint, "must_be_constraint",
                 &out);
   }
   return out;
 }
 
-std::string to_string(MultibodyGraph::JointTypeFlags flags) {
+std::string to_string(MultibodyTreeModel::JointTypeFlags flags) {
   std::string out;
   if (flags == 0) {
     out = "default";
   } else {
-    add_if_flag(flags, MultibodyGraph::kOkToUseAsJointConstraint,
+    add_if_flag(flags, MultibodyTreeModel::kOkToUseAsJointConstraint,
                 "ok_to_use_as_loop_joint", &out);
   }
   return out;
@@ -78,7 +78,7 @@ std::string to_string(MultibodyGraph::JointTypeFlags flags) {
 //                         ADD TO MULTIBODY GRAPH
 //------------------------------------------------------------------------------
 
-auto MultibodyGraph::AddJointType(std::string joint_type_name,
+auto MultibodyTreeModel::AddJointType(std::string joint_type_name,
                                   void* joint_type_user_ref) -> JointTypeNum {
   const JointTypeNum joint_type_num(num_joint_types());
   joint_type_info_.push_back(
@@ -86,14 +86,14 @@ auto MultibodyGraph::AddJointType(std::string joint_type_name,
   return joint_type_num;
 }
 
-auto MultibodyGraph::AddLinkInfo(std::string link_name, void* link_user_ref)
+auto MultibodyTreeModel::AddLinkInfo(std::string link_name, void* link_user_ref)
     -> LinkNum {
   const LinkNum link_num(num_links());
   link_info_.push_back(LinkInfo(std::move(link_name), link_user_ref));
   return link_num;
 }
 
-auto MultibodyGraph::AddJointInfo(std::string joint_name,
+auto MultibodyTreeModel::AddJointInfo(std::string joint_name,
                                   JointTypeNum joint_type_num,
                                   void* joint_user_ref) -> JointNum {
   const JointNum joint_num(num_joints());
@@ -102,7 +102,7 @@ auto MultibodyGraph::AddJointInfo(std::string joint_name,
   return joint_num;
 }
 
-auto MultibodyGraph::AddBodyFromLink(LinkNum link_num) -> BodyNum {
+auto MultibodyTreeModel::AddBodyFromLink(LinkNum link_num) -> BodyNum {
   const BodyNum body_num(num_bodies());
   bodies_.push_back(Body(link_num, this));
   LinkInfo& link_info = link_info_[link_num];
@@ -119,7 +119,7 @@ auto MultibodyGraph::AddBodyFromLink(LinkNum link_num) -> BodyNum {
 //------------------------------------------------------------------------------
 //                       ADD MOBILIZER FROM JOINT
 //------------------------------------------------------------------------------
-auto MultibodyGraph::AddMobilizerFromJoint(JointNum joint_num,
+auto MultibodyTreeModel::AddMobilizerFromJoint(JointNum joint_num,
                                            BodyNum inboard_body_num,
                                            BodyNum outboard_body_num,
                                            bool is_reversed) -> MobilizerNum {
@@ -145,7 +145,7 @@ auto MultibodyGraph::AddMobilizerFromJoint(JointNum joint_num,
 // Connect the given body to World by a free mobilizer with inboard body
 // World and outboard body the given body. This makes the body a base body
 // (level 1 body) for some subtree of the multibody graph.
-auto MultibodyGraph::ConnectBodyToWorld(BodyNum body_num, bool is_static)
+auto MultibodyTreeModel::ConnectBodyToWorld(BodyNum body_num, bool is_static)
     -> MobilizerNum {
   Body& body = get_mutable_body(body_num);
   DRAKE_ASSERT(!body.is_in_tree());
@@ -169,7 +169,7 @@ auto MultibodyGraph::ConnectBodyToWorld(BodyNum body_num, bool is_static)
 //------------------------------------------------------------------------------
 //                       ADD CONSTRAINT FROM JOINT
 //------------------------------------------------------------------------------
-auto MultibodyGraph::AddConstraintFromJoint(JointNum joint_num,
+auto MultibodyTreeModel::AddConstraintFromJoint(JointNum joint_num,
                                             BodyNum parent_body_num,
                                             BodyNum child_body_num)
     -> ConstraintNum {
@@ -185,7 +185,7 @@ auto MultibodyGraph::AddConstraintFromJoint(JointNum joint_num,
   return constraint_num;
 }
 
-auto MultibodyGraph::AddSlaveWeldConstraint(std::string constraint_name,
+auto MultibodyTreeModel::AddSlaveWeldConstraint(std::string constraint_name,
                                             JointNum joint_num,
                                             BodyNum master_body_num,
                                             BodyNum slave_body_num)
@@ -208,7 +208,7 @@ auto MultibodyGraph::AddSlaveWeldConstraint(std::string constraint_name,
 // Create a new slave body for the given master, and add it to the list of
 // bodies. Does not create the related loop constraint. The body
 // number assigned to the slave is returned.
-auto MultibodyGraph::SplitBody(BodyNum master_body_num) -> BodyNum {
+auto MultibodyTreeModel::SplitBody(BodyNum master_body_num) -> BodyNum {
   // First slave is number 1, slave 0 is the master.
   const Body& master = body(master_body_num);
   std::string slave_name =
@@ -227,36 +227,36 @@ auto MultibodyGraph::SplitBody(BodyNum master_body_num) -> BodyNum {
 //------------------------------------------------------------------------------
 //                               DUMP GRAPH
 //------------------------------------------------------------------------------
-void MultibodyGraph::DumpGraph(std::ostream& o) const {
+void MultibodyTreeModel::DumpTreeModel(std::ostream& out) const {
   // constexpr int kBufSize = 1024;
-  o << "\nMULTIBODY GRAPH\n";
-  o << "---------------\n";
-  o << "\n" << num_bodies() << " BODIES:\n";
-  o << "body@lev: mob name\n";
+  out << "\nMULTIBODY GRAPH\n";
+  out << "---------------\n";
+  out << "\n" << num_bodies() << " BODIES:\n";
+  out << "body@lev: mob name\n";
   for (BodyNum body_num(0); body_num < num_bodies(); ++body_num) {
     const Body& body = this->body(body_num);
     const std::string inb_mob = body.is_world_body()
                                     ? std::string("--")
                                     : fmt::format("{}", body.mobilizer_num());
-    o << fmt::format("{}{:<3}@{:3}: {:3} {}",
+    out << fmt::format("{}{:<3}@{:3}: {:3} {}",
                      body.is_master() ? "M" : (body.is_slave() ? "S" : " "),
                      body_num, body.level(), inb_mob, body.name());
-    if (body.is_slave()) o << fmt::format(" master={}", body.master_body_num());
+    if (body.is_slave()) out << fmt::format(" master={}", body.master_body_num());
     if (body.num_outboard_mobilizers()) {
-      o << "  outboard mob=[";
+      out << "  outboard mob=[";
       for (int j = 0; j < body.num_outboard_mobilizers(); ++j)
-        o << " " << body.outboard_mobilizers()[j];
-      o << "]";
+        out << " " << body.outboard_mobilizers()[j];
+      out << "]";
     }
     if (body.num_slaves()) {
-      o << "  slaves=[";
-      for (int j = 0; j < body.num_slaves(); ++j) o << " " << body.slaves()[j];
-      o << "]";
+      out << "  slaves=[";
+      for (int j = 0; j < body.num_slaves(); ++j) out << " " << body.slaves()[j];
+      out << "]";
     }
-    o << "\n";
+    out << "\n";
   }
 
-  o << "\n" << num_mobilizers() << " MOBILIZERS:\n";
+  out << "\n" << num_mobilizers() << " MOBILIZERS:\n";
   for (MobilizerNum i(0); i < num_mobilizers(); ++i) {
     const Mobilizer& mo = get_mobilizer(i);
     const Body& inb = body(mo.inboard_body_num());
@@ -264,32 +264,32 @@ void MultibodyGraph::DumpGraph(std::ostream& o) const {
     const std::string joint_num = mo.joint_num().is_valid()
                                 ? fmt::format("{}", mo.joint_num())
                                 : std::string("--");
-    o << fmt::format("{:2} {:2}: {:20} {:20}->{:<20} {:10} {:2} {:3}\n", i,
+    out << fmt::format("{:2} {:2}: {:20} {:20}->{:<20} {:10} {:2} {:3}\n", i,
                      mo.level(), mo.name(), inb.name(), outb.name(),
                      mo.get_joint_type_name(), joint_num,
                      (mo.is_reversed_from_joint() ? "REV" : ""));
   }
 
-  o << "\n" << num_constraints() << " LOOP CONSTRAINTS:\n";
+  out << "\n" << num_constraints() << " LOOP CONSTRAINTS:\n";
   for (ConstraintNum i(0); i < num_constraints(); ++i) {
     const Constraint& lc = get_constraint(i);
     const Body& parent = body(lc.parent_body_num());
     const Body& child = body(lc.child_body_num());
-    o << fmt::format("{}: {}({}) parent={} child={} joint_num={}\n", i,
+    out << fmt::format("{}: {}({}) parent={} child={} joint_num={}\n", i,
                      lc.name(), lc.constraint_type_name(), parent.name(),
                      child.name(), lc.joint_num());
   }
 
   std::vector<BodyNum> base_bodies = FindBaseBodies();
-  o << "\n" << base_bodies.size() << " BASE BODIES:\n";
-  for (BodyNum body_num : base_bodies) o << " " << body(body_num).name();
-  o << "\n---------- END OF MULTIBODY GRAPH.\n\n";
+  out << "\n" << base_bodies.size() << " BASE BODIES:\n";
+  for (BodyNum body_num : base_bodies) out << " " << body(body_num).name();
+  out << "\n---------- END OF MULTIBODY GRAPH.\n\n";
 }
 
 //------------------------------------------------------------------------------
 //                            FIND BASE BODIES
 //------------------------------------------------------------------------------
-auto MultibodyGraph::FindBaseBodies() const -> std::vector<BodyNum> {
+auto MultibodyTreeModel::FindBaseBodies() const -> std::vector<BodyNum> {
   std::vector<BodyNum> base_bodies;
   for (const auto& mobilizer : mobilizers_) {
     if (mobilizer.level() != 1) continue;
@@ -298,7 +298,7 @@ auto MultibodyGraph::FindBaseBodies() const -> std::vector<BodyNum> {
   return base_bodies;
 }
 
-auto MultibodyGraph::FindBaseBody(BodyNum body_num) const -> BodyNum {
+auto MultibodyTreeModel::FindBaseBody(BodyNum body_num) const -> BodyNum {
   std::vector<BodyNum> path_bodies = FindPathToWorld(body_num);
   return path_bodies.empty() ? BodyNum() : path_bodies.back();
 }
@@ -306,7 +306,7 @@ auto MultibodyGraph::FindBaseBody(BodyNum body_num) const -> BodyNum {
 //------------------------------------------------------------------------------
 //                            FIND PATH TO WORLD
 //------------------------------------------------------------------------------
-auto MultibodyGraph::FindPathToWorld(BodyNum body_num) const
+auto MultibodyTreeModel::FindPathToWorld(BodyNum body_num) const
     -> std::vector<BodyNum> {
   DRAKE_DEMAND(body_num.is_valid());
   std::vector<BodyNum> path_bodies;
@@ -324,7 +324,7 @@ auto MultibodyGraph::FindPathToWorld(BodyNum body_num) const
 //------------------------------------------------------------------------------
 // Return true if there is a mobilizer between two bodies given by body number,
 // regardless of inboard/outboard ordering.
-bool MultibodyGraph::BodiesAreConnectedByMobilizer(BodyNum body1_num,
+bool MultibodyTreeModel::BodiesAreConnectedByMobilizer(BodyNum body1_num,
                                                    BodyNum body2_num) const {
   const Body& body1 = body(body1_num);
   if (get_mobilizer(body1.mobilizer_num()).inboard_body_num() == body2_num)
@@ -342,7 +342,7 @@ bool MultibodyGraph::BodiesAreConnectedByMobilizer(BodyNum body1_num,
 //------------------------------------------------------------------------------
 // Return true if there is a joint constraint between two bodies given by
 // body number, regardless of parent/child ordering.
-bool MultibodyGraph::BodiesAreConnectedByJointConstraint(
+bool MultibodyTreeModel::BodiesAreConnectedByJointConstraint(
     BodyNum body1_num, BodyNum body2_num) const {
   const Body& body1 = body(body1_num);
   for (ConstraintNum constraint_num : body1.joint_constraints()) {

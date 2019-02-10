@@ -1,4 +1,4 @@
-/* Adapted for Drake from Simbody's MultibodyGraphMaker class.
+/* Adapted for Drake from Simbody's MultibodyGraphModeler class.
 Portions copyright (c) 2013-14 Stanford University and the Authors.
 Authors: Michael Sherman
 Contributors: Kevin He
@@ -7,7 +7,7 @@ Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
-#include "drake/multibody/graph_maker/multibody_graph_maker.h"
+#include "drake/multibody/graph_maker/multibody_graph_modeler.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -23,7 +23,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/multibody/graph_maker/multibody_graph.h"
+#include "drake/multibody/graph_maker/multibody_tree_model.h"
 
 using std::cout;
 using std::endl;
@@ -34,7 +34,7 @@ namespace multibody {
 //------------------------------------------------------------------------------
 //                              CONSTRUCTOR
 //------------------------------------------------------------------------------
-MultibodyGraphMaker::MultibodyGraphMaker(bool use_drake_defaults)
+MultibodyGraphModeler::MultibodyGraphModeler(bool use_drake_defaults)
     : weld_type_name_("weld"), free_type_name_("free") {
   Clear(use_drake_defaults);
 }
@@ -42,19 +42,19 @@ MultibodyGraphMaker::MultibodyGraphMaker(bool use_drake_defaults)
 //------------------------------------------------------------------------------
 //                                 CLEAR
 //------------------------------------------------------------------------------
-void MultibodyGraphMaker::Clear(bool use_drake_defaults) {
+void MultibodyGraphModeler::Clear(bool use_drake_defaults) {
   ClearContainers();
   RegisterJointType(weld_type_name_, 0, 0);
   RegisterJointType(free_type_name_, 7, 6);
 
   if (use_drake_defaults) {
-    AddLink("world", ModelInstanceIndex(0), MultibodyGraph::kStaticLink);
+    AddLink("world", ModelInstanceIndex(0), MultibodyTreeModel::kStaticLink);
     // These are the names used in .sdf files.
     RegisterJointType("revolute", 1, 1);
     RegisterJointType("prismatic", 1, 1);
     // TODO(sherm1) Should allow for a loop ball joint as soon as one is
     // available (change flag to kOkToUseAsJointConstraint).
-    RegisterJointType("ball", 4, 3, MultibodyGraph::kDefaultJointTypeFlags);
+    RegisterJointType("ball", 4, 3, MultibodyTreeModel::kDefaultJointTypeFlags);
     RegisterJointType("fixed", 0, 0);  // .sdf for "weld".
 
     // "weld" and "free" are always present.
@@ -64,7 +64,7 @@ void MultibodyGraphMaker::Clear(bool use_drake_defaults) {
 //------------------------------------------------------------------------------
 //                            WORLD LINK NAME
 //------------------------------------------------------------------------------
-const std::string& MultibodyGraphMaker::world_link_name() const {
+const std::string& MultibodyGraphModeler::world_link_name() const {
   if (links_.empty())
     throw std::logic_error(
         "get_world_link_name(): you can't call this until you have called "
@@ -75,9 +75,9 @@ const std::string& MultibodyGraphMaker::world_link_name() const {
 //------------------------------------------------------------------------------
 //                          REGISTER JOINT TYPE
 //------------------------------------------------------------------------------
-auto MultibodyGraphMaker::RegisterJointType(
+auto MultibodyGraphModeler::RegisterJointType(
     const std::string& name, int num_q, int num_v,
-    MultibodyGraph::JointTypeFlags flags, void* user_ref) -> JointTypeNum {
+    MultibodyTreeModel::JointTypeFlags flags, void* user_ref) -> JointTypeNum {
   if (!(0 <= num_q && num_q <= 7 && 0 <= num_v && num_v <= 6 && num_v <= num_q))
     throw std::runtime_error(
         fmt::format("RegisterJointType(): Illegal joint state specification "
@@ -103,34 +103,40 @@ auto MultibodyGraphMaker::RegisterJointType(
 //------------------------------------------------------------------------------
 //                                 ADD LINK
 //------------------------------------------------------------------------------
-void MultibodyGraphMaker::AddLink(const std::string& name,
+void MultibodyGraphModeler::AddLink(const std::string& link_name,
                                   ModelInstanceIndex model_instance,
-                                  MultibodyGraph::LinkFlags flags,
+                                  MultibodyTreeModel::LinkFlags flags,
                                   void* user_ref) {
+  if (!model_instance.is_valid())
+    model_instance = default_model_instance();
+
+
+
+
   // Reject duplicate body name.
   std::map<std::string, LinkNum>::const_iterator p =
-      link_name_to_num_.find(name);
+      link_name_to_num_.find(link_name);
   if (p != link_name_to_num_.end())
-    throw std::runtime_error("AddLink(): Duplicate link name '" + name + "'");
+    throw std::runtime_error("AddLink(): Duplicate link name '" + link_name + "'");
 
   const LinkNum link_num(num_links());  // next available
-  link_name_to_num_[name] = link_num;   // provide fast name lookup
+  link_name_to_num_[link_name] = link_num;   // provide fast name lookup
 
   // Can't use emplace_back below because the constructor is private.
   if (link_num ==
       world_link_num()) {  // First link is World; use only the name and ref.
-    links_.push_back(Link(name, ModelInstanceIndex(0),
-                          MultibodyGraph::kStaticLink, user_ref));
+    links_.push_back(Link(link_name, ModelInstanceIndex(0),
+                          MultibodyTreeModel::kStaticLink, user_ref));
   } else {  // This is a real link.
-    links_.push_back(Link(name, model_instance, flags, user_ref));
+    links_.push_back(Link(link_name, model_instance, flags, user_ref));
   }
 }
 
 //------------------------------------------------------------------------------
 //                             CHANGE LINK FLAGS
 //------------------------------------------------------------------------------
-void MultibodyGraphMaker::ChangeLinkFlags(const std::string& name,
-                                          MultibodyGraph::LinkFlags flags) {
+void MultibodyGraphModeler::ChangeLinkFlags(const std::string& name,
+                                          MultibodyTreeModel::LinkFlags flags) {
   const LinkNum link_num = FindLinkNum(name);
   if (!link_num.is_valid()) {
     throw std::logic_error("ChangeLinkMass(): link '" + name + "' not found.");
@@ -143,7 +149,7 @@ void MultibodyGraphMaker::ChangeLinkFlags(const std::string& name,
 //------------------------------------------------------------------------------
 //                                 DELETE LINK
 //------------------------------------------------------------------------------
-bool MultibodyGraphMaker::DeleteLink(const std::string& name) {
+bool MultibodyGraphModeler::DeleteLink(const std::string& name) {
   // Reject non-existing link name.
   std::map<std::string, LinkNum>::iterator p = link_name_to_num_.find(name);
   if (p == link_name_to_num_.end()) return false;
@@ -182,12 +188,12 @@ bool MultibodyGraphMaker::DeleteLink(const std::string& name) {
 //------------------------------------------------------------------------------
 //                                ADD JOINT
 //------------------------------------------------------------------------------
-void MultibodyGraphMaker::AddJoint(const std::string& name,
+void MultibodyGraphModeler::AddJoint(const std::string& name,
                                    ModelInstanceIndex model_instance,
                                    const std::string& type,
                                    const std::string& parent_link_name,
                                    const std::string& child_link_name,
-                                   MultibodyGraph::JointFlags flags,
+                                   MultibodyTreeModel::JointFlags flags,
                                    void* user_ref) {
   // Reject duplicate joint name, unrecognized type or body names.
   std::map<std::string, JointNum>::const_iterator p =
@@ -230,7 +236,7 @@ void MultibodyGraphMaker::AddJoint(const std::string& name,
 //------------------------------------------------------------------------------
 //                                DELETE JOINT
 //------------------------------------------------------------------------------
-bool MultibodyGraphMaker::DeleteJoint(const std::string& name) {
+bool MultibodyGraphModeler::DeleteJoint(const std::string& name) {
   std::map<std::string, JointNum>::iterator p = joint_name_to_num_.find(name);
   if (p == joint_name_to_num_.end()) return false;
 
@@ -286,7 +292,7 @@ bool MultibodyGraphMaker::DeleteJoint(const std::string& name) {
 //------------------------------------------------------------------------------
 //                               DUMP INPUT
 //------------------------------------------------------------------------------
-void MultibodyGraphMaker::DumpInput(std::ostream& o) const {
+void MultibodyGraphModeler::DumpInput(std::ostream& o) const {
   o << "\nMULTIBODY GRAPH MAKER INPUT\n";
   o << "---------------------------\n";
   o << "\n" << num_links() << " LINKS:\n";
@@ -322,8 +328,8 @@ void MultibodyGraphMaker::DumpInput(std::ostream& o) const {
 //------------------------------------------------------------------------------
 //                              GENERATE GRAPH
 //------------------------------------------------------------------------------
-std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
-  std::unique_ptr<MultibodyGraph> graph(new MultibodyGraph());
+std::unique_ptr<MultibodyTreeModel> MultibodyGraphModeler::MakeTreeModel() {
+  std::unique_ptr<MultibodyTreeModel> graph(new MultibodyTreeModel());
 
   // Link and Joint inputs have been supplied. Link 0 is World.
 
@@ -355,7 +361,7 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
   // By construction, body numbers are the same as their corresponding
   // link numbers.
   for (LinkNum link_num(0); link_num < num_links(); ++link_num) {
-    const MultibodyGraph::BodyNum body_num = graph->AddBodyFromLink(link_num);
+    const MultibodyTreeModel::BodyNum body_num = graph->AddBodyFromLink(link_num);
     DRAKE_DEMAND(body_num.to_int() == link_num.to_int());
   }
 
@@ -373,7 +379,7 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
     if (link.must_be_nonterminal()) {
       if (link.num_joints() == 0) {
         throw std::runtime_error(
-            "MakeGraph(): link " + link.name() +
+            "MakeTreeModel(): link " + link.name() +
             " must be nonterminal but it is free free (no joint). Must be"
             " internal or welded to a terminal-ok link.");
       }
@@ -385,7 +391,7 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
         const JointType& joint_type = get_joint_type(joint.joint_type_num());
         if (joint_type.num_v() > 0) {
           throw std::runtime_error(
-              "MakeGraph(): link " + link.name() +
+              "MakeTreeModel(): link " + link.name() +
               " must be nonterminal but is not internal and not welded to"
               " a terminal-ok link.");
         }
@@ -395,7 +401,7 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
     // Attach the body of must-be-base-body links to World.
     if (link.must_be_base_body() &&
         !LinksAreConnected(link_num, world_link_num())) {
-      const MultibodyGraph::BodyNum body_num{
+      const MultibodyTreeModel::BodyNum body_num{
           link_num.to_int()};  // By construction.
       graph->ConnectBodyToWorld(body_num, false /* not static */);
     }
@@ -426,6 +432,100 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
 }
 
 //------------------------------------------------------------------------------
+//                        GET LINK NUM FROM NAME
+//------------------------------------------------------------------------------
+auto MultibodyGraphModeler::GetAllLinkNumsFromName(const std::string& link_name)
+    const -> const std::map<ModelInstanceIndex, LinkNum>* {
+  const auto link_nums = link_name_to_num_.find(link_name);
+  if (link_nums == link_name_to_num_.end()) return nullptr;
+  const auto& instance_map = link_nums->second;
+  DRAKE_DEMAND(!instance_map.empty());
+  return &instance_map;
+}
+
+auto MultibodyGraphModeler::GetLinkNumFromNameAndInstance(
+    const std::string& link_name, ModelInstanceIndex model_instance,
+    const char* func) const -> LinkNum {
+  DRAKE_DEMAND(model_instance.is_valid());
+
+  if (auto instance_map = GetAllLinkNumsFromName(link_name)) {
+    const auto entry = instance_map->find(model_instance);
+    if (entry != instance_map->end()) {
+      DRAKE_DEMAND(entry->second.is_valid());
+      return entry->second;
+    }
+  }
+
+  throw std::logic_error(
+      fmt::format("{}: link '{}' not found in model_instance {}.", func,
+                  link_name, model_instance));
+}
+
+auto MultibodyGraphModeler::GetUniqueLinkNumFromName(const std::string& link_name,
+                                                   const char* func) const
+    -> LinkNum {
+  auto instance_map = GetAllLinkNumsFromName(link_name);
+
+  if (instance_map && instance_map->size() == 1) {
+    const LinkNum link_num = instance_map->cbegin()->second;
+    DRAKE_DEMAND(link_num.is_valid());
+    return link_num;
+  }
+
+  throw std::logic_error(
+      fmt::format("{}: link name '{}' not unique. It appears in {} "
+                  "model instances. Provide a model instance to "
+                  "disambiguate.",
+                  func, link_name, instance_map->size()));
+}
+
+//------------------------------------------------------------------------------
+//                        GET JOINT NUM FROM NAME
+//------------------------------------------------------------------------------
+auto MultibodyGraphModeler::GetAllJointNumsFromName(const std::string& joint_name,
+                                                  const char* func) const
+    -> const std::map<ModelInstanceIndex, JointNum>& {
+  const auto joint_nums = joint_name_to_num_.find(joint_name);
+  if (joint_nums == joint_name_to_num_.end()) {
+    throw std::logic_error(
+        fmt::format("{}: joint '{}' not found.", func, joint_name));
+  }
+  const auto& instance_map = joint_nums->second;
+  DRAKE_DEMAND(!instance_map.empty());
+  return instance_map;
+}
+
+auto MultibodyGraphModeler::GetJointNumFromNameAndInstance(
+    const std::string& joint_name, ModelInstanceIndex model_instance,
+    const char* func) const -> JointNum {
+  DRAKE_DEMAND(model_instance.is_valid());
+  const auto& instance_map = GetAllJointNumsFromName(joint_name, func);
+  const auto entry = instance_map.find(model_instance);
+  if (entry == instance_map.end()) {
+    throw std::logic_error(
+        fmt::format("{}: joint '{}' not found in model_instance {}.", func,
+                    joint_name, model_instance));
+  }
+  DRAKE_DEMAND(entry->second.is_valid());
+  return entry->second;
+}
+
+auto MultibodyGraphModeler::GetUniqueJointNumFromName(
+    const std::string& joint_name, const char* func) const -> JointNum {
+  const auto& instance_map = GetAllJointNumsFromName(joint_name, func);
+  if (instance_map.size() > 1) {
+    throw std::logic_error(
+        fmt::format("{}: joint name '{}' not unique. It appears in {} "
+                    "model instances. Provide a model instance to "
+                    "disambiguate.",
+                    func, joint_name, instance_map.size()));
+  }
+  const JointNum joint_num = instance_map.cbegin()->second;
+  DRAKE_DEMAND(joint_num.is_valid());
+  return joint_num;
+}
+
+//------------------------------------------------------------------------------
 //                          CHOOSE NEW BASE LINK
 //------------------------------------------------------------------------------
 // We've tried to build the tree but might not have succeeded in using
@@ -443,8 +543,8 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
 // those we pick the one with the most children.
 //
 // Note that any must-be-base-body links get attached to World before anything
-// else; that is done at the start of MakeGraph() rather than here.
-auto MultibodyGraphMaker::ChooseNewBaseLink(const MultibodyGraph& graph) const
+// else; that is done at the start of MakeTreeModel() rather than here.
+auto MultibodyGraphModeler::ChooseNewBaseLink(const MultibodyTreeModel& graph) const
     -> LinkNum {
   LinkNum best_link;
   int num_children = -1;
@@ -453,7 +553,7 @@ auto MultibodyGraphMaker::ChooseNewBaseLink(const MultibodyGraph& graph) const
   // becomes expensive, start after the last-found base link.
   for (LinkNum link_num(1); link_num < num_links(); ++link_num) {
     const Link& link = links_[link_num];
-    const MultibodyGraph::Body& body =
+    const MultibodyTreeModel::Body& body =
         graph.body(graph.link_to_body_num(link_num));
     if (body.is_in_tree()) continue;  // Unavailable.
 
@@ -478,8 +578,8 @@ auto MultibodyGraphMaker::ChooseNewBaseLink(const MultibodyGraph& graph) const
 // the unattached body (which will be the mobilizer's outboard body) to the
 // tree. The mobilizer number is returned and also recorded in the joint
 // and outboard body.
-MultibodyGraph::MobilizerNum MultibodyGraphMaker::AddMobilizerForJoint(
-    JointNum joint_num, MultibodyGraph* graph) {
+MultibodyTreeModel::MobilizerNum MultibodyGraphModeler::AddMobilizerForJoint(
+    JointNum joint_num, MultibodyTreeModel* graph) {
   Joint& joint = get_mutable_joint(joint_num);
   DRAKE_DEMAND(!joint.must_be_constraint());  // can't be a tree joint
   DRAKE_DEMAND(!graph->joint_info(joint_num).has_mobilizer());  // already done
@@ -487,17 +587,17 @@ MultibodyGraph::MobilizerNum MultibodyGraphMaker::AddMobilizerForJoint(
   const LinkNum parent_link_num = joint.parent_link_num();
   const LinkNum child_link_num = joint.child_link_num();
 
-  const MultibodyGraph::BodyNum parent_body_num =
+  const MultibodyTreeModel::BodyNum parent_body_num =
       graph->link_to_body_num(parent_link_num);
-  const MultibodyGraph::BodyNum child_body_num =
+  const MultibodyTreeModel::BodyNum child_body_num =
       graph->link_to_body_num(child_link_num);
-  MultibodyGraph::Body& parent_body = graph->get_mutable_body(parent_body_num);
-  MultibodyGraph::Body& child_body = graph->get_mutable_body(parent_body_num);
+  MultibodyTreeModel::Body& parent_body = graph->get_mutable_body(parent_body_num);
+  MultibodyTreeModel::Body& child_body = graph->get_mutable_body(parent_body_num);
 
   // Exactly one of these must already be in the tree.
   DRAKE_DEMAND(parent_body.is_in_tree() ^ child_body.is_in_tree());
 
-  MultibodyGraph::MobilizerNum mobilizer_num;
+  MultibodyTreeModel::MobilizerNum mobilizer_num;
   if (parent_body.is_in_tree()) {
     // Child is outboard body (forward joint)
     mobilizer_num = graph->AddMobilizerFromJoint(
@@ -519,10 +619,10 @@ MultibodyGraph::MobilizerNum MultibodyGraphMaker::AddMobilizerForJoint(
 // as a terminal body (has mass). (The idea is that this would be a good
 // direction to extend the chain.) Returns an invalid joint number if this link
 // has no children.
-auto MultibodyGraphMaker::FindHeaviestUnassignedForwardJoint(
-    LinkNum parent_link_num, const MultibodyGraph& graph) const -> JointNum {
+auto MultibodyGraphModeler::FindHeaviestUnassignedForwardJoint(
+    LinkNum parent_link_num, const MultibodyTreeModel& graph) const -> JointNum {
   const Link& parent_link = get_link(parent_link_num);
-  const MultibodyGraph::Body& inboard_body =
+  const MultibodyTreeModel::Body& inboard_body =
       graph.link_to_body(parent_link_num);
   DRAKE_DEMAND(inboard_body.is_in_tree());
 
@@ -536,7 +636,7 @@ auto MultibodyGraphMaker::FindHeaviestUnassignedForwardJoint(
       continue;  // already in the tree
 
     const Link& child_link = get_link(joint.child_link_num());
-    const MultibodyGraph::Body& child_body =
+    const MultibodyTreeModel::Body& child_body =
         graph.link_to_body(joint.child_link_num());
 
     if (child_body.is_in_tree()) continue;  // this is a loop joint
@@ -555,10 +655,10 @@ auto MultibodyGraphMaker::FindHeaviestUnassignedForwardJoint(
 // Same as previous method, but now we are looking for unassigned joints where
 // the given link serves as the child so we would have to reverse the joint to
 // add it to the tree. (This is less desirable so is a fallback.)
-auto MultibodyGraphMaker::FindHeaviestUnassignedReverseJoint(
-    LinkNum child_link_num, const MultibodyGraph& graph) const -> JointNum {
+auto MultibodyGraphModeler::FindHeaviestUnassignedReverseJoint(
+    LinkNum child_link_num, const MultibodyTreeModel& graph) const -> JointNum {
   const Link& child_link = get_link(child_link_num);
-  const MultibodyGraph::Body& outboard_body =
+  const MultibodyTreeModel::Body& outboard_body =
       graph.link_to_body(child_link_num);
   DRAKE_DEMAND(outboard_body.is_in_tree());
 
@@ -572,7 +672,7 @@ auto MultibodyGraphMaker::FindHeaviestUnassignedReverseJoint(
       continue;  // already in the tree
 
     const Link& parent_link = get_link(joint.parent_link_num());
-    const MultibodyGraph::Body& parent_body =
+    const MultibodyTreeModel::Body& parent_body =
         graph.link_to_body(joint.parent_link_num());
 
     if (parent_body.is_in_tree()) continue;  // this is a loop joint
@@ -611,7 +711,7 @@ auto MultibodyGraphMaker::FindHeaviestUnassignedReverseJoint(
 //
 // TODO(sherm1): keep a list of unprocessed joints so we don't have to go
 // through all of them again at each level.
-void MultibodyGraphMaker::GrowTree(int start_level, MultibodyGraph* graph) {
+void MultibodyGraphModeler::GrowTree(int start_level, MultibodyTreeModel* graph) {
   // Record the joints for which we added mobilizers during this subtree
   // sweep. That way if we jumped levels ahead due to massless bodies we
   // can take credit and keep going rather than quit.
@@ -622,14 +722,14 @@ void MultibodyGraphMaker::GrowTree(int start_level, MultibodyGraph* graph) {
       // See if this joint is at the right level (meaning its inboard
       // body is at level-1) and is available to become a mobilizer.
       const Joint& joint = get_joint(joint_num);
-      const MultibodyGraph::JointInfo& joint_info =
+      const MultibodyTreeModel::JointInfo& joint_info =
           graph->joint_info(joint_num);
       if (joint_info.has_mobilizer()) {
         // Already done -- one of ours?
         if (joints_added.count(joint_num)) {
           // We added it during this GrowTree() call -- is it at
           // the current level?
-          const MultibodyGraph::Mobilizer& mobilizer =
+          const MultibodyTreeModel::Mobilizer& mobilizer =
               graph->get_mobilizer(joint_info.mobilizer_num());
           if (mobilizer.level() == level)
             any_mobilizer_added = true;  // Added one at level.
@@ -642,13 +742,13 @@ void MultibodyGraphMaker::GrowTree(int start_level, MultibodyGraph* graph) {
       const Link& parent_link = get_link(joint.parent_link_num());
       const Link& child_link = get_link(joint.child_link_num());
 
-      const MultibodyGraph::BodyNum parent_body_num =
+      const MultibodyTreeModel::BodyNum parent_body_num =
           graph->link_to_body_num(joint.parent_link_num());
-      const MultibodyGraph::BodyNum child_body_num =
+      const MultibodyTreeModel::BodyNum child_body_num =
           graph->link_to_body_num(joint.child_link_num());
 
-      const MultibodyGraph::Body& parent_body = graph->body(parent_body_num);
-      const MultibodyGraph::Body& child_body = graph->body(child_body_num);
+      const MultibodyTreeModel::Body& parent_body = graph->body(parent_body_num);
+      const MultibodyTreeModel::Body& child_body = graph->body(child_body_num);
 
       // Exactly one of parent or child body must already be in the tree.
       if (!(parent_body.is_in_tree() ^ child_body.is_in_tree())) continue;
@@ -657,7 +757,7 @@ void MultibodyGraphMaker::GrowTree(int start_level, MultibodyGraph* graph) {
       // branch lengths. However, if our outboard body is massless we don't
       // want to risk it ending up as terminal so keep going in that case.
       LinkNum inboard_link_num, outboard_link_num;
-      MultibodyGraph::BodyNum inboard_body_num, outboard_body_num;
+      MultibodyTreeModel::BodyNum inboard_body_num, outboard_body_num;
       if (parent_body.is_in_tree()) {
         if (!child_link.must_be_nonterminal() &&
             parent_body.level() != level - 1)
@@ -676,7 +776,7 @@ void MultibodyGraphMaker::GrowTree(int start_level, MultibodyGraph* graph) {
         outboard_body_num = parent_body_num;
       }
 
-      MultibodyGraph::MobilizerNum mobilizer_num = graph->AddMobilizerFromJoint(
+      MultibodyTreeModel::MobilizerNum mobilizer_num = graph->AddMobilizerFromJoint(
           joint_num, inboard_body_num, outboard_body_num,
           child_body.is_in_tree());
 
@@ -781,16 +881,16 @@ void MultibodyGraphMaker::GrowTree(int start_level, MultibodyGraph* graph) {
 // slave to its master (the original split body). If the child is World, we
 // must reverse the mobilizer since World must always be the inboard body. In
 // that case the split body is the parent.
-void MultibodyGraphMaker::BreakLoops(MultibodyGraph* graph) {
+void MultibodyGraphModeler::BreakLoops(MultibodyTreeModel* graph) {
   for (JointNum joint_num(0); joint_num < num_joints(); ++joint_num) {
     const Joint& joint = joints_[joint_num];
     if (graph->joint_info(joint_num).has_mobilizer()) continue;  // already done
 
     const LinkNum parent_link_num = joint.parent_link_num();
     const LinkNum child_link_num = joint.child_link_num();
-    const MultibodyGraph::BodyNum parent_body_num =
+    const MultibodyTreeModel::BodyNum parent_body_num =
         graph->link_to_body_num(parent_link_num);
-    const MultibodyGraph::BodyNum child_body_num =
+    const MultibodyTreeModel::BodyNum child_body_num =
         graph->link_to_body_num(child_link_num);
     DRAKE_DEMAND(graph->body(parent_body_num).is_in_tree() &&
                  graph->body(child_body_num).is_in_tree());
@@ -817,11 +917,11 @@ void MultibodyGraphMaker::BreakLoops(MultibodyGraph* graph) {
       inboard_link_num = child_link_num;  // That is, World.
       is_reversed = true;
     }
-    const MultibodyGraph::BodyNum split_body_num =
+    const MultibodyTreeModel::BodyNum split_body_num =
         graph->link_to_body_num(split_link_num);
-    const MultibodyGraph::BodyNum inboard_body_num =
+    const MultibodyTreeModel::BodyNum inboard_body_num =
         graph->link_to_body_num(inboard_link_num);
-    const MultibodyGraph::BodyNum slave_body_num =
+    const MultibodyTreeModel::BodyNum slave_body_num =
         graph->SplitBody(split_body_num);
 
     // Mobilize the slave body.
@@ -842,7 +942,7 @@ void MultibodyGraphMaker::BreakLoops(MultibodyGraph* graph) {
 //------------------------------------------------------------------------------
 // Return true if there is a joint between two links given by link number,
 // regardless of parent/child ordering.
-bool MultibodyGraphMaker::LinksAreConnected(LinkNum link1_num,
+bool MultibodyGraphModeler::LinksAreConnected(LinkNum link1_num,
                                             LinkNum link2_num) const {
   const Link& link1 = get_link(link1_num);
   for (JointNum joint_num : link1.joints_as_parent()) {

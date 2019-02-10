@@ -1,17 +1,19 @@
 #pragma once
 
-/* Adapted for Drake from Simbody's MultibodyGraphMaker class.
+/* Adapted for Drake from Simbody's MultibodyGraphModeler class.
 Portions copyright (c) 2013-14 Stanford University and the Authors.
 Authors: Michael Sherman
 Contributors: Kevin He
+
+Modifications copyright (c) 2019 Toyota Research Institute, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
 
 /** @file
-Declares the MultibodyGraph class that contains the result from an invocation
-of MultibodyGraphMaker::GenerateGraph(). */
+Declares the MultibodyTreeModel class that contains the result from an invocation
+of MultibodyGraphModeler::MakeTreeModel(). */
 
 #include <iosfwd>
 #include <map>
@@ -28,13 +30,13 @@ namespace drake {
 namespace multibody {
 
 //==============================================================================
-//                             MULTIBODY GRAPH
+//                           MULTIBODY TREE MODEL
 //==============================================================================
-/** Holds a result from MultibodyGraphMaker. Only MultibodyGraphMaker may
+/** Holds a result from MultibodyGraphModeler. Only MultibodyGraphModeler may
 create one of these.
 
 Contains an abbreviated summary of the links and joints forming the input
-graph that was in place when this %MultibodyGraph was generated, and
+graph that was in place when this %MultibodyTreeModel was generated, and
 the resulting model as a spanning tree plus constraints. The model consists of
  - one or more _bodies_ for each input _link_,
  - one _mobilizer_ for each of the bodies, forming a tree, and
@@ -52,7 +54,8 @@ mobilizer's outboard body. Depending on parent/child ordering in the input, that
 is not always possible, so the joint's mobilizer will be marked as "reversed"
 meaning inboard=child and outboard=parent instead. There will be more mobilizers
 than joints in general, since free links in the input will have a "free" (6 dof)
-mobilizer.
+mobilizer, and static links in the input will have a "weld" (0 dof) mobilizer
+("immobilizer" might be a better word :).
 
 When possible we use a mobilizer to model a joint by the degrees of freedom it
 permits. However, we can instead use a joint constraint to model a joint by the
@@ -60,12 +63,12 @@ restrictions it imposes. Most commonly we use only weld constraints that we have
 added to attach master and slave bodies, although some efficiency gains are
 possible by using other joint constraints when available.
 */
-class MultibodyGraph {
+class MultibodyTreeModel {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyGraph)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyTreeModel)
 
-  /** Boolean properties of a link that can affect the resulting graph. These
-  may be or-ed together and the result type is still LinkFlags. */
+  /** Boolean properties of a link that can affect the resulting tree model.
+  These may be or-ed together and the result type is still LinkFlags. */
   enum LinkFlags : unsigned {
     kDefaultLinkFlags = 0b0000,
     kStaticLink = 0b0001,
@@ -73,14 +76,14 @@ class MultibodyGraph {
     kMustNotBeTerminalBody = 0b0100,
   };
 
-  /** Boolean properties of a joint that can affect the resulting graph. */
+  /** Boolean properties of a joint that can affect the resulting tree model. */
   enum JointFlags : unsigned {
     kDefaultJointFlags = 0b0000,
     kMustBeConstraint = 0b0001,
   };
 
   /** Boolean properties of a joint _type_ that can affect the resulting
-  graph. */
+  tree model. */
   enum JointTypeFlags : unsigned {
     kDefaultJointTypeFlags = 0b0000,
     kOkToUseAsJointConstraint = 0b0001,
@@ -101,33 +104,18 @@ class MultibodyGraph {
   class JointInfo;
   class JointTypeInfo;
 
-  /** Returns the BodyNum of the master body being used to model the
-  given link. */
-  inline BodyNum link_to_body_num(LinkNum link_num) const;
-
-  /** Returns the LinkNum associated with this body, if any. */
-  inline LinkNum body_to_link_num(BodyNum body_num) const;
-
-  const Body& link_to_body(LinkNum link_num) const {
-    return body(link_to_body_num(link_num));
-  }
-
-  /** @name               Work with the generated graph
-  Methods in this section manipulate the generated multibody graph consisting of
-  bodies (input links and additional slaves), mobilizers (input joints plus
-  additional connections to World), and loop constraints. */
+  /** @name               Work with the generated tree model
+  Methods in this section manipulate the generated multibody tree model
+  consisting of bodies (from input links and additional slaves), mobilizers
+  (from input joints plus additional connections to World), and loop
+  constraints. */
   //@{
 
-  /** Output a text representation of the multibody graph for debugging. */
-  void DumpGraph(std::ostream& out) const;
+  /** Output a text representation of the multibody tree model for debugging. */
+  void DumpTreeModel(std::ostream& out) const;
 
   /** Returns the number of mobilizers (tree joints) in the spanning forest.
-  These are numbered in order of level, such that branches are built from
-  World outboard. The 0th mobilizer has level 0 and
-  is just a placeholder for World's immobile connection to the universe.
-  After that come the base mobilizers at level 1, then mobilizers that
-  connect children to base bodies at level 2, and so on. This is also the
-  number of mobilized bodies, including World and slave bodies. */
+  This is also the number of mobilized bodies, including slave bodies. */
   int num_mobilizers() const { return static_cast<int>(mobilizers_.size()); }
 
   /** Gets a Mobilizer object by its mobilizer number, ordered outwards by
@@ -141,16 +129,15 @@ class MultibodyGraph {
   by cutting a body to make a slave body, and those where the joint itself
   was implemented using a constraint rather than a mobilizer plus a slave.
   The latter occurs only if we're told there is a perfectly good loop joint
-  constraint available; typically that applies for ball joints and not much
-  else. */
+  constraint available; typically that applies for ball (spherical) joints and
+  not much else. */
   int num_constraints() const {
     return static_cast<int>(constraints_.size());
   }
 
   /** Gets a loop constraint by its assigned number. These are assigned in
   an arbitrary order. */
-  const Constraint& get_constraint(
-      ConstraintNum loop_constraint_num) const {
+  const Constraint& get_constraint(ConstraintNum loop_constraint_num) const {
     return constraints_[loop_constraint_num];
   }
 
@@ -159,13 +146,13 @@ class MultibodyGraph {
   int num_bodies() const { return static_cast<int>(bodies_.size()); }
 
   /** Gets a Body object by its assigned number. These are assigned first to
-  World (body 0), then input links, then we add slave bodies created by link
-  splitting after that. */
+  World (body 0), then bodies representing input links, then we add slave bodies
+  created by link splitting after that. */
   const Body& body(BodyNum body_num) const { return bodies_[body_num]; }
 
   /** Returns the body number assigned to the input link with the given name.
   Returns an invalid BodyNum if the link name is not recognized. You can't look
-  up by name slave bodies that were added by the graph-making algorithm. */
+  up by name slave bodies that were added by the model-making algorithm. */
   BodyNum FindLinkBodyNum(const std::string& link_name) const {
     std::map<std::string, BodyNum>::const_iterator p =
         link_name_to_body_num_.find(link_name);
@@ -173,7 +160,7 @@ class MultibodyGraph {
   }
 
   /** Returns the set of base bodies (bodies connected directly to World) in
-  the generated multibody graph. These are ordered by increasing mobilizer
+  the generated multibody model. These are ordered by increasing mobilizer
   number of their base mobilizers. */
   std::vector<BodyNum> FindBaseBodies() const;
 
@@ -187,6 +174,18 @@ class MultibodyGraph {
   Will have just one element if `body_num` is a base body, and be empty if
   `body_num` is the World body. */
   std::vector<BodyNum> FindPathToWorld(BodyNum body_num) const;
+
+  /** Returns the BodyNum of the master body being used to model the
+  given link. */
+  inline BodyNum link_to_body_num(LinkNum link_num) const;
+
+  /** Returns the LinkNum associated with this body, if any. */
+  inline LinkNum body_to_link_num(BodyNum body_num) const;
+
+  /** Returns the master Body being used to model the given link. */
+  const Body& link_to_body(LinkNum link_num) const {
+    return body(link_to_body_num(link_num));
+  }
   //@}
 
   int num_links() const { return static_cast<int>(link_info_.size()); }
@@ -216,13 +215,13 @@ class MultibodyGraph {
   JointTypeNum free_joint_type_num() const { return JointTypeNum(1); }
 
  private:
-  // Only MultibodyGraphMaker can make a MultibodyGraph.
-  friend class MultibodyGraphMaker;
+  // Only MultibodyGraphModeler can make a MultibodyTreeModel.
+  friend class MultibodyGraphModeler;
 
-  // Construct an empty %MultibodyGraph.
-  MultibodyGraph() = default;
+  // Construct an empty %MultibodyTreeModel.
+  MultibodyTreeModel() = default;
 
-  // Restores this %MultibodyGraph object to its just-constructed
+  // Restores this %MultibodyTreeModel object to its just-constructed
   // condition.
   void Clear();
 
@@ -267,35 +266,35 @@ class MultibodyGraph {
   bool BodiesAreConnectedByJointConstraint(BodyNum body1_num,
                                            BodyNum body2_num) const;
 
-  // Calculated by MultibodyGraphMaker::MakeGraph().
+  // Calculated by MultibodyGraphModeler::MakeTreeModel().
   // Index by BodyNum, MobilizerNum, ConstraintNum, resp.
-  std::vector<Body> bodies_;                 // world + input bodies + slaves
-  std::vector<Mobilizer> mobilizers_;        // mobilized bodies
+  std::vector<Body> bodies_;             // world + input bodies + slaves
+  std::vector<Mobilizer> mobilizers_;    // mobilized bodies
   std::vector<Constraint> constraints_;  // master/slave welds, loop joints
 
-  // Information about links, modified as graph is built. Order and numbering
-  // here are identical to links in MultibodyGraphMaker at the time this
-  // graph was generated.
+  // Information about links, modified as model is built. Order and numbering
+  // here are identical to links in MultibodyGraphModeler at the time this
+  // model was generated.
   std::map<std::string, BodyNum> link_name_to_body_num_;
   std::vector<LinkInfo> link_info_;  // Index by LinkNum.
 
-  // Information about joints, modified as graph is built. Order and numbering
-  // here are identical to joints in MultibodyGraphMaker at the time this
-  // graph was generated. Index by JointNum.
+  // Information about joints, modified as model is built. Order and numbering
+  // here are identical to joints in MultibodyGraphModeler at the time this
+  // model was generated. Index by JointNum.
   std::vector<JointInfo> joint_info_;
 
   // Information about joint types. Order and numbering here is identical to
-  // joint types in MultibodyGraphMaker at the time this graph was generated.
+  // joint types in MultibodyGraphModeler at the time this model was generated.
   // Index by JointTypeNum.
   std::vector<JointTypeInfo> joint_type_info_;
 };
 
 //------------------------------------------------------------------------------
-//                    MULTIBODY GRAPH :: LINK INFO
+//                    MULTIBODY TREE MODEL :: LINK INFO
 //------------------------------------------------------------------------------
 /** Local class that collects information about how we modeled a given
 input link. */
-class MultibodyGraph::LinkInfo {
+class MultibodyTreeModel::LinkInfo {
  public:
   // Move only.
   LinkInfo(const LinkInfo&) = delete;
@@ -308,7 +307,7 @@ class MultibodyGraph::LinkInfo {
   BodyNum master_body_num() const { return master_body_num_; }
 
  private:
-  friend class MultibodyGraph;
+  friend class MultibodyTreeModel;
 
   LinkInfo(std::string link_name, void* user_ref)
       : link_name_(std::move(link_name)),
@@ -323,16 +322,16 @@ class MultibodyGraph::LinkInfo {
   std::string link_name_;
   void* user_ref_{nullptr};
 
-  // Determined during graph generation.
+  // Determined during model generation.
   BodyNum master_body_num_;
 };
 
 //------------------------------------------------------------------------------
-//                   MULTIBODY GRAPH :: JOINT INFO
+//                   MULTIBODY TREE MODEL :: JOINT INFO
 //------------------------------------------------------------------------------
 /** Local class that collects information about how we modeled a given
 input joint. */
-class MultibodyGraph::JointInfo {
+class MultibodyTreeModel::JointInfo {
  public:
   // Move only.
   JointInfo(const JointInfo&) = delete;
@@ -355,7 +354,7 @@ class MultibodyGraph::JointInfo {
   ConstraintNum constraint_num() const { return constraint_num_; }
 
  private:
-  friend class MultibodyGraph;
+  friend class MultibodyTreeModel;
   JointInfo(std::string joint_name, JointTypeNum joint_type_num, void* user_ref)
       : joint_name_(std::move(joint_name)),
         joint_type_num_(joint_type_num),
@@ -370,17 +369,17 @@ class MultibodyGraph::JointInfo {
   JointTypeNum joint_type_num_;
   void* user_ref_{nullptr};
 
-  // Determined during graph generation (only one of these will be valid).
+  // Determined during model generation (only one of these will be valid).
   MobilizerNum mobilizer_num_;    // If modeled with a mobilizer.
   ConstraintNum constraint_num_;  // If modeled with a constraint.
 };
 
 //------------------------------------------------------------------------------
-//                   MULTIBODY GRAPH :: JOINT TYPE INFO
+//                   MULTIBODY TREE MODEL :: JOINT TYPE INFO
 //------------------------------------------------------------------------------
 /** Local class that holds joint type information we can reference from
 mobilizers and joint constraints. */
-class MultibodyGraph::JointTypeInfo {
+class MultibodyTreeModel::JointTypeInfo {
  public:
   // Move only.
   JointTypeInfo(const JointTypeInfo&) = delete;
@@ -402,11 +401,11 @@ class MultibodyGraph::JointTypeInfo {
   const std::string& constraint_type_name() const { return joint_type_name_; }
 
   /** Return the user reference pointer for this joint type if one was provided
-  in MultibodyGraphMaker. */
+  in MultibodyGraphModeler. */
   void* user_ref() const { return user_ref_; }
 
  private:
-  friend class MultibodyGraph;
+  friend class MultibodyTreeModel;
 
   JointTypeInfo(const std::string& name, void* user_ref)
       : joint_type_name_(name), user_ref_(user_ref) {}
@@ -416,11 +415,11 @@ class MultibodyGraph::JointTypeInfo {
 };
 
 //------------------------------------------------------------------------------
-//                         MULTIBODY GRAPH :: BODY
+//                         MULTIBODY TREE MODEL :: BODY
 //------------------------------------------------------------------------------
 /** Local class that accumulates modeling information and represents bodies as
 the multibody tree is generated. */
-class MultibodyGraph::Body {
+class MultibodyTreeModel::Body {
  public:
   // Move only.
   Body(const Body&) = delete;
@@ -429,9 +428,9 @@ class MultibodyGraph::Body {
   Body& operator=(Body&&) = default;
 
   /** Returns the number of fragments into which we had to break the
-  corresponding link.
-  Normally this is just one, meaning we didn't break the link, but master bodies
-  that have slaves will return the number of slaves plus one. */
+  corresponding link. Normally this is just one, meaning we didn't break the
+  link, but master bodies that have slaves will return the number of slaves
+  plus one. */
   int num_fragments() const { return 1 + num_slaves(); }
 
   /** Returns the number of slave bodies associated with this master body.
@@ -455,7 +454,7 @@ class MultibodyGraph::Body {
   const std::string& name() const { return name_; }
 
   /** Returns `true` if this body has already been assigned a place in
-  the multibody tree. This will be true for all bodies once graph
+  the multibody tree. This will be true for all bodies once model
   building is complete. */
   bool is_in_tree() const { return level_ >= 0; }
 
@@ -466,7 +465,7 @@ class MultibodyGraph::Body {
   int level() const { return level_; }
 
   /** Returns the unique mobilizer (by number) for which this body is the
-  outboard body, or an invalid MobilizerNum if the multibody graph has not yet
+  outboard body, or an invalid MobilizerNum if the multibody tree has not yet
   been generated. */
   MobilizerNum mobilizer_num() const { return mobilizer_num_; }
 
@@ -503,21 +502,21 @@ class MultibodyGraph::Body {
   LinkNum link_num() const { return link_num_; }
 
  private:
-  // Restrict construction and modification to only MultibodyGraph.
-  friend class MultibodyGraph;
+  // Restrict construction and modification to only MultibodyTreeModel.
+  friend class MultibodyTreeModel;
 
   // Create a body that directly models a link.
-  Body(LinkNum link_num, MultibodyGraph* graph)
-      : name_(graph->link_info(link_num).link_name()),
+  Body(LinkNum link_num, MultibodyTreeModel* model)
+      : name_(model->link_info(link_num).link_name()),
         link_num_(link_num),
-        graph_(graph) {}
+        model_(model) {}
 
   // Create a slave body for the given master.
-  Body(std::string name, BodyNum master_body_num, MultibodyGraph* graph)
+  Body(std::string name, BodyNum master_body_num, MultibodyTreeModel* model)
       : name_(std::move(name)),
-        link_num_(graph->body(master_body_num).link_num()),
+        link_num_(model->body(master_body_num).link_num()),
         master_body_num_(master_body_num),
-        graph_(graph) {}
+        model_(model) {}
 
   void set_level(int level) { level_ = level; }
   void set_mobilizer_num(MobilizerNum mobilizer_num) {
@@ -559,16 +558,16 @@ class MultibodyGraph::Body {
   BodyNum master_body_num_;      // valid if this is a slave.
   std::vector<BodyNum> slaves_;  // Slave links, if this is a master.
 
-  MultibodyGraph* const graph_{nullptr};  // just a reference to container
+  MultibodyTreeModel* const model_{nullptr};  // just a reference to container
 };
 
 //------------------------------------------------------------------------------
-//                   MULTIBODY GRAPH :: MOBILIZER
+//                   MULTIBODY TREE MODEL :: MOBILIZER
 //------------------------------------------------------------------------------
 /** Local class that represents one of the mobilizers (tree joints) in the
 generated spanning tree. There is always a corresponding joint, although that
 joint might be a world-to-link free joint that was added automatically. */
-class MultibodyGraph::Mobilizer {
+class MultibodyTreeModel::Mobilizer {
  public:
   // Move only.
   Mobilizer(const Mobilizer&) = delete;
@@ -595,7 +594,7 @@ class MultibodyGraph::Mobilizer {
 
   /** Return true if this mobilizer represents one of the input joints but
   the sense of inboard->outboard is reversed from the parent->child sense
-  defined in the input joint. In that case you should use a reverse joint
+  defined in the input joint. In that case you should use a reverse mobilizer
   when you build the system. */
   bool is_reversed_from_joint() const { return is_reversed_; }
 
@@ -604,7 +603,7 @@ class MultibodyGraph::Mobilizer {
   int level() const { return level_; }
 
   /** Return true if this mobilizer does not represent one of the input
-  joints, but is instead a joint we added connecting a base body to World.
+  joints, but is instead a mobilizer we added connecting a base body to World.
   If this returns true, the inboard body is always World. When you
   create this mobilizer, the joint frames should be identity, that is, the
   joint should connect the World frame to the outboard body frame. */
@@ -612,13 +611,13 @@ class MultibodyGraph::Mobilizer {
 
   /** Get the mobilizer type name. These are mapped from joint type names. */
   const std::string& get_joint_type_name() const {
-    return graph_->joint_type_info(mobilizer_type_num_).mobilizer_type_name();
+    return model_->joint_type_info(mobilizer_type_num_).mobilizer_type_name();
   }
 
   /** Return true if the outboard body of this mobilizer is a slave we
-  created in order to cut a loop, rather than one of the input bodies. */
+  created in order to cut a loop, rather than one of the input links. */
   bool is_slave_mobilizer() const {
-    return graph_->body(outboard_body_num_).is_slave();
+    return model_->body(outboard_body_num_).is_slave();
   }
 
   /** Return the number of fragments into which we chopped the outboard body
@@ -627,56 +626,56 @@ class MultibodyGraph::Mobilizer {
   body's mass properties by this number to obtain the mass and inertia to be
   assigned to each of the body fragments. */
   int num_fragments() const {
-    return graph_->body(outboard_master_body_num()).num_fragments();
+    return model_->body(outboard_master_body_num()).num_fragments();
   }
 
   /** Returns the body number of the master body for this mobilizer's outboard
   body, which might be a slave. If the outboard body is not a slave body, then
   this returns the same value as outboard_body_num(). */
   BodyNum outboard_master_body_num() const {
-    const Body& outboard_body = graph_->body(outboard_body_num_);
+    const Body& outboard_body = model_->body(outboard_body_num_);
     return outboard_body.is_slave() ? outboard_body.master_body_num()
                                     : outboard_body_num_;
   }
 
  private:
-  // Restrict construction to only MultibodyGraph.
-  friend class MultibodyGraph;
+  // Restrict construction to only MultibodyTreeModel.
+  friend class MultibodyTreeModel;
 
   // Construct a mobilizer that directly represents an input joint.
   Mobilizer(JointNum joint_num, int level, BodyNum inboard_body_num,
-            BodyNum outboard_body_num, bool is_reversed, MultibodyGraph* graph)
+            BodyNum outboard_body_num, bool is_reversed, MultibodyTreeModel* model)
       : joint_num_(joint_num),
         is_reversed_(is_reversed),
         level_(level),
         inboard_body_num_(inboard_body_num),
         outboard_body_num_(outboard_body_num),
-        graph_(graph) {
+        model_(model) {
     DRAKE_DEMAND(joint_num_.is_valid());
     DRAKE_DEMAND(level_ >= 0);
     DRAKE_DEMAND(inboard_body_num_.is_valid());
     DRAKE_DEMAND(outboard_body_num_.is_valid());
-    DRAKE_DEMAND(graph_ != nullptr);
+    DRAKE_DEMAND(model_ != nullptr);
 
-    name_ = graph->joint_info(joint_num).joint_name();
-    mobilizer_type_num_ = graph->joint_info(joint_num).joint_type_num();
+    name_ = model->joint_info(joint_num).joint_name();
+    mobilizer_type_num_ = model->joint_info(joint_num).joint_type_num();
   }
 
   // Construct a mobilizer for which there is no input joint counterpart.
   Mobilizer(std::string name, JointTypeNum joint_type_num, int level,
             BodyNum inboard_body_num, BodyNum outboard_body_num,
-            MultibodyGraph* graph)
+            MultibodyTreeModel* model)
       : name_(std::move(name)),
         mobilizer_type_num_(joint_type_num),
         level_(level),
         inboard_body_num_(inboard_body_num),
         outboard_body_num_(outboard_body_num),
-        graph_(graph) {
+        model_(model) {
     DRAKE_DEMAND(mobilizer_type_num_.is_valid());
     DRAKE_DEMAND(level_ >= 0);
     DRAKE_DEMAND(inboard_body_num_.is_valid());
     DRAKE_DEMAND(outboard_body_num_.is_valid());
-    DRAKE_DEMAND(graph_ != nullptr);
+    DRAKE_DEMAND(model_ != nullptr);
   }
 
   std::string name_;  // Will be input joint name if possible.
@@ -691,15 +690,15 @@ class MultibodyGraph::Mobilizer {
   BodyNum inboard_body_num_;   // might be World
   BodyNum outboard_body_num_;  // might be a slave body; can't be World
 
-  MultibodyGraph* const graph_{nullptr};  // just a reference to container
+  MultibodyTreeModel* const model_{nullptr};  // just a reference to container
 };
 
 //------------------------------------------------------------------------------
-//                      MULTIBODY GRAPH :: CONSTRAINT
+//                    MULTIBODY TREE MODEL :: CONSTRAINT
 //------------------------------------------------------------------------------
 /** Local class that represents one of the constraints that were added to close
 topological loops that were cut to form the spanning tree. */
-class MultibodyGraph::Constraint {
+class MultibodyTreeModel::Constraint {
  public:
   const std::string& name() const { return name_; }
 
@@ -707,7 +706,7 @@ class MultibodyGraph::Constraint {
   used here. This will be either the type name of the associated joint, or the
   type name of a weld joint if this is a master/slave weld. */
   const std::string& constraint_type_name() const {
-    return graph_->joint_type_info(constraint_type_num_).constraint_type_name();
+    return model_->joint_type_info(constraint_type_num_).constraint_type_name();
   }
 
   /** Returns the parent body number from the modeled input joint, or the
@@ -723,38 +722,38 @@ class MultibodyGraph::Constraint {
   JointNum joint_num() const { return joint_num_; }
 
  private:
-  // Restrict construction to only MultibodyGraph.
-  friend class MultibodyGraph;
+  // Restrict construction to only MultibodyTreeModel.
+  friend class MultibodyTreeModel;
 
   // Construct a constraint that directly represents an input joint.
   Constraint(JointNum joint_num, BodyNum parent_body_num,
-                 BodyNum child_body_num, MultibodyGraph* graph)
+                 BodyNum child_body_num, MultibodyTreeModel* model)
       : joint_num_(joint_num),
         parent_body_num_(parent_body_num),
         child_body_num_(child_body_num),
-        graph_(graph) {
+        model_(model) {
     DRAKE_DEMAND(joint_num.is_valid());
     DRAKE_DEMAND(parent_body_num.is_valid() && child_body_num.is_valid());
-    DRAKE_DEMAND(graph != nullptr);
+    DRAKE_DEMAND(model != nullptr);
 
-    name_ = graph->joint_info(joint_num).joint_name();
-    constraint_type_num_ = graph->joint_info(joint_num).joint_type_num();
+    name_ = model->joint_info(joint_num).joint_name();
+    constraint_type_num_ = model->joint_info(joint_num).joint_type_num();
   }
 
   // Construct a constraint that does not directly represent an input joint,
   // but may be associated with one.
   Constraint(std::string name, JointTypeNum joint_type_num,
                  JointNum joint_num, BodyNum parent_body_num,
-                 BodyNum child_body_num, MultibodyGraph* graph)
+                 BodyNum child_body_num, MultibodyTreeModel* model)
       : name_(std::move(name)),
         constraint_type_num_(joint_type_num),
         joint_num_(joint_num),
         parent_body_num_(parent_body_num),
         child_body_num_(child_body_num),
-        graph_(graph) {
+        model_(model) {
     DRAKE_DEMAND(joint_type_num.is_valid());
     DRAKE_DEMAND(parent_body_num.is_valid() && child_body_num.is_valid());
-    DRAKE_DEMAND(graph_ != nullptr);
+    DRAKE_DEMAND(model_ != nullptr);
   }
 
   std::string name_;  // Will be input joint name if possible.
@@ -765,41 +764,41 @@ class MultibodyGraph::Constraint {
   BodyNum parent_body_num_;  // parent from the joint, or master body
   BodyNum child_body_num_;   // child from the joint, or slave body
 
-  MultibodyGraph* graph_{nullptr};  // just a reference to container
+  MultibodyTreeModel* model_{nullptr};  // just a reference to container
 };
 
-inline auto MultibodyGraph::link_to_body_num(LinkNum link_num) const
+inline auto MultibodyTreeModel::link_to_body_num(LinkNum link_num) const
     -> BodyNum {
   const LinkInfo& link_info = this->link_info(link_num);
   return link_info.master_body_num();
 }
 
-inline auto MultibodyGraph::body_to_link_num(BodyNum body_num) const
+inline auto MultibodyTreeModel::body_to_link_num(BodyNum body_num) const
     -> LinkNum {
   const Body& body = this->body(body_num);
   return body.link_num();
 }
 
-inline const std::string& MultibodyGraph::world_body_name() const {
+inline const std::string& MultibodyTreeModel::world_body_name() const {
   DRAKE_DEMAND(!bodies_.empty());  // World should always be here.
   return body(BodyNum(0)).name();
 }
 
-inline MultibodyGraph::LinkFlags operator|(MultibodyGraph::LinkFlags left,
-                                           MultibodyGraph::LinkFlags right) {
-  return static_cast<MultibodyGraph::LinkFlags>(static_cast<unsigned>(left) |
+inline MultibodyTreeModel::LinkFlags operator|(MultibodyTreeModel::LinkFlags left,
+                                           MultibodyTreeModel::LinkFlags right) {
+  return static_cast<MultibodyTreeModel::LinkFlags>(static_cast<unsigned>(left) |
                                                 static_cast<unsigned>(right));
 }
 
-inline MultibodyGraph::LinkFlags operator&(MultibodyGraph::LinkFlags left,
-                                           MultibodyGraph::LinkFlags right) {
-  return static_cast<MultibodyGraph::LinkFlags>(static_cast<unsigned>(left) &
+inline MultibodyTreeModel::LinkFlags operator&(MultibodyTreeModel::LinkFlags left,
+                                           MultibodyTreeModel::LinkFlags right) {
+  return static_cast<MultibodyTreeModel::LinkFlags>(static_cast<unsigned>(left) &
       static_cast<unsigned>(right));
 }
 
-std::string to_string(MultibodyGraph::LinkFlags);
-std::string to_string(MultibodyGraph::JointFlags);
-std::string to_string(MultibodyGraph::JointTypeFlags);
+std::string to_string(MultibodyTreeModel::LinkFlags);
+std::string to_string(MultibodyTreeModel::JointFlags);
+std::string to_string(MultibodyTreeModel::JointTypeFlags);
 
 }  // namespace multibody
 }  // namespace drake
