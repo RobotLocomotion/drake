@@ -5,6 +5,8 @@ Portions copyright (c) 2013-14 Stanford University and the Authors.
 Authors: Michael Sherman
 Contributors: Kevin He
 
+Modifications copyright (c) 2019 Toyota Research Institute, Inc.
+
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
@@ -21,9 +23,13 @@ list of its links and joints. */
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_optional.h"
 #include "drake/multibody/graph_maker/multibody_graph.h"
+#include "drake/multibody/tree/model_instance.h"
 
 namespace drake {
 namespace multibody {
@@ -48,11 +54,11 @@ been given, so we're expecting the %MultibodyGraphMaker to add one.
 @code
   MultibodyGraphMaker maker;
   // "world" is link 0
-  maker.AddLink("link1", 1.);  // name and mass
-  maker.AddLink("link2", 1.);
-  maker.AddLink("link3", 1.);
-  maker.AddLink("link4", 1.);
-  maker.AddLink("link5", 1.);
+  maker.AddLink("link1");  // name (optional flags)
+  maker.AddLink("link2");
+  maker.AddLink("link3");
+  maker.AddLink("link4");
+  maker.AddLink("link5");
   maker.AddJoint("joint0", "revolute", "link2", "link1");  // parent, child
   maker.AddJoint("joint1", "revolute", "link3", "link2");
   maker.AddJoint("joint2", "revolute", "link3", "link4");
@@ -216,6 +222,10 @@ class MultibodyGraphMaker {
   using JointNum = MultibodyGraph::JointNum;
   using JointTypeNum = MultibodyGraph::JointTypeNum;
 
+  using LinkFlags = MultibodyGraph::LinkFlags;
+  using JointFlags = MultibodyGraph::JointFlags;
+  using JointTypeFlags = MultibodyGraph::JointTypeFlags;
+
   // Local classes.
   class Link;
   class Joint;
@@ -242,38 +252,40 @@ class MultibodyGraphMaker {
 
   /** Add a new link to the set of input links. Each of these will produce at
   least one Body in the MultibodyGraph.
-  @param[in]      name
+  @param[in]      link_name
       A unique string identifying this link. There are no other restrictions
       on the contents of `name`. If this %MultibodyGraphMaker was constructed
       without Drake defaults, the first link you add is considered to be
       World, and its name is remembered and recognized when used in joints.
-  @param[in]      mass
-      The mass here is used as a graph-building hint. If the link is massless,
-      or has a very small mass compared to other links, set mass=0
-      so that the algorithm can avoid making this a terminal body in the
-      generated graph. The algorithm might also use `mass` to preferentially
-      choose heavier bodies as terminal to improve conditioning.
-  @param[in]      must_be_base_body
-      If you feel strongly that this link should be able to move freely with
-      respect to World, set this flag so that the algorithm will connect it
-      to World by a Free mobilizer before attempting to build the rest of the
-      tree. Alternatively, provide a joint that connects this link directly
-      to World, in which case you should _not_ set this flag.
+  @param[in]      model_instance
+      The model instance to which this link belongs. If none is specified then
+      the body belongs to the default model instance. This is simply a tag that
+      is carried with the link and bodies generated from it; it has no effect
+      on the structure of the generated graph. However, it does permit queries
+      that return only elements of a particular model instance.
+  @param[in]      flags
+      Optional flags affecting the generated graph. Flags can be used to
+      designate a link as static, to require that it not be used as a terminal
+      body in the graph (because it is effectively massless), or to require
+      that the resulting body is a base body (that is, connected directly to
+      World).
   @param[in]      user_ref
-      This is a generic user reference pointer that is kept with the associated
+      A generic user reference pointer that is kept with the associated
       link and can be used by the caller to map back to their own data
       structure containing additional link information.
   @see DeleteLink() */
   void AddLink(
-      const std::string& name, ModelInstanceIndex model_instance,
+      const std::string& link_name, ModelInstanceIndex model_instance,
       MultibodyGraph::LinkFlags flags = MultibodyGraph::kDefaultLinkFlags,
       void* user_ref = nullptr);
 
+  /** Convenience overload that puts the link into the default model
+  instance. */
   void AddLink(
       const std::string& name,
       MultibodyGraph::LinkFlags flags = MultibodyGraph::kDefaultLinkFlags,
       void* user_ref = nullptr) {
-    AddLink(name, {}, flags, user_ref);
+    AddLink(name, default_model_instance(), flags, user_ref);
   }
 
   /** Delete a link from the set of input links. All the joints that
@@ -289,8 +301,14 @@ class MultibodyGraphMaker {
   /** Add a new joint to the set of input joints. Each of these will produce
   a mobilizer or constraint in the generated graph.
   @param[in]      name
-      A string uniquely identifying this joint. There are no other
-      restrictions on the contents of `name`.
+      A string uniquely identifying this joint within its model instance. There
+      are no other restrictions on the contents of `name`.
+  @param[in]      model_instance
+      The model instance to which this joint belongs. If none is specified then
+      the joint belongs to the default model instance. This is simply a tag that
+      is carried with the joint and mobilizers generated from it; it has no
+      effect on the structure of the generated graph. However, it does permit
+      queries that return only elements of a particular model instance.
   @param[in]      type
       A string designating the type of this joint, such as "revolute" or
       "ball". This must be chosen from the set of joint types previously
@@ -305,9 +323,10 @@ class MultibodyGraphMaker {
       AddLink() call, or it must be the designated name for the World body.
       It must be distinct from `parent_link_name`. If possible, this will be
       used as the outboard body for the corresponding mobilizer.
-  @param[in]      must_be_constraint
+  @param[in]      flags
       If you feel strongly that this joint should be implemented using
-      constraints rather than a mobilizer, set this flag. In that case the joint
+      a constraint rather than a mobilizer (not common), provide the flag
+      MultibodyGraph::kMustBeConstraint. In that case the joint
       will not appear in the list of joints that are candidates to be modeled
       as mobilizers in a multibody tree. Only after the tree has been
       successfully built will this joint be added, either using a constraint
@@ -327,6 +346,8 @@ class MultibodyGraphMaker {
       MultibodyGraph::JointFlags flags = MultibodyGraph::kDefaultJointFlags,
       void* user_ref = nullptr);
 
+  /** Convenience overload that puts the joint into the default model
+  instance. */
   void AddJoint(
       const std::string& name, const std::string& type,
       const std::string& parent_link_name, const std::string& child_link_name,
@@ -343,15 +364,20 @@ class MultibodyGraphMaker {
   @param[in]      name
       A string uniquely identifying this joint. There are no other
       restrictions on the contents of `name`.
+  @param[in]      model_instance
+      The model instance to which this joint belongs. If none is specified then
+      the joint belongs to the default model instance.
   @returns `true` if the joint is successfully deleted, `false` if it
       didn't exist. */
-  bool DeleteJoint(const std::string& name);
+  bool DeleteJoint(const std::string& name,
+                   ModelInstanceIndex model_instance = {});
 
   /** (Advanced) Change the flags for an existing link. May cause a different
   graph to be generated on the next call to GenerateGraph(). This method
   exists primarily for testing purposes; normally the mass provided when the
   link is added remains unchanged. */
   void ChangeLinkFlags(const std::string& name,
+                       ModelInstanceIndex model_instance,
                        MultibodyGraph::LinkFlags flags);
 
   /** Returns the name we recognize as the World (or Ground) link. This is
@@ -386,11 +412,15 @@ class MultibodyGraphMaker {
   }
 
   /** Returns the link number assigned to the input link with the given name.
-  Returns an invalid LinkNum if the link name is not recognized. */
-  LinkNum FindLinkNum(const std::string& link_name) const {
-    std::map<std::string, LinkNum>::const_iterator p =
-        link_name_to_num_.find(link_name);
-    return p == link_name_to_num_.end() ? LinkNum() : p->second;
+  The name must be globally unique if no model instance is given, otherwise it
+  must be present in the given model instance. Throws std::logic_error if
+  the name is not recognized or not unique when required to be. */
+  LinkNum FindLinkNum(
+      const std::string& link_name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
+    return model_instance ? GetLinkNumFromNameAndInstance(
+                                link_name, *model_instance, __func__)
+                          : GetUniqueLinkNumFromName(link_name, __func__);
   }
 
   /** Returns the number of input joints. Don't confuse
@@ -405,11 +435,15 @@ class MultibodyGraphMaker {
   }
 
   /** Returns the joint number assigned to the input joint with the given name.
-  Returns an invalid JointNum if the joint name is not recognized. */
-  JointNum FindJointNum(const std::string& joint_name) const {
-    std::map<std::string, JointNum>::const_iterator p =
-        joint_name_to_num_.find(joint_name);
-    return p == joint_name_to_num_.end() ? JointNum() : p->second;
+  The name must be globally unique if no model instance is given, otherwise it
+  must be present in the given model instance. Throws std::logic_error if
+  the name is not recognized or not unique when required to be. */
+  JointNum FindJointNum(
+      const std::string& joint_name,
+      optional<ModelInstanceIndex> model_instance = nullopt) const {
+    return model_instance ? GetJointNumFromNameAndInstance(
+                                joint_name, *model_instance, __func__)
+                          : GetUniqueJointNumFromName(joint_name, __func__);
   }
   //@}
 
@@ -495,10 +529,36 @@ class MultibodyGraphMaker {
  private:
   // Get writable access to links and joints.
   Link& get_mutable_link(LinkNum link_num) { return links_[link_num]; }
-  Joint& get_mutable_joint(int joint_num) { return joints_[joint_num]; }
-  Joint& GetMutableJointByName(const std::string& name) {
-    return joints_[joint_name_to_num_[name]];
-  }
+  Joint& get_mutable_joint(JointNum joint_num) { return joints_[joint_num]; }
+
+  // Returns the model_instance->link_num map for all links with this name,
+  // if any, otherwise nullptr.
+  const std::map<ModelInstanceIndex, LinkNum>* GetAllLinkNumsFromName(
+      const std::string& link_name) const;
+
+  // Returns the link_num for the a link name in a model instance.
+  LinkNum GetLinkNumFromNameAndInstance(const std::string& link_name,
+                                        ModelInstanceIndex model_instance,
+                                        const char* func) const;
+
+  // Returns the link_num for this link name, which must appear in only one
+  // model instance.
+  LinkNum GetUniqueLinkNumFromName(const std::string& name,
+                                   const char* func) const;
+
+  // Returns the model_instance->joint_num map for all joints with this name,
+  // if any, otherwise nullptr.
+  const std::map<ModelInstanceIndex, JointNum>* GetAllJointNumsFromName(
+      const std::string& joint_name) const;
+
+  // Returns the joint_num for the a joint name in a model instance.
+  JointNum GetJointNumFromNameAndInstance(const std::string& joint_name,
+      ModelInstanceIndex model_instance, const char* func) const;
+
+  // Returns the joint_num for this joint name, which must appear in only one
+  // model instance.
+  JointNum GetUniqueJointNumFromName(const std::string& joint_name,
+                                     const char* func) const;
 
   LinkNum ChooseNewBaseLink(const MultibodyGraph& graph) const;
   MultibodyGraph::MobilizerNum AddMobilizerForJoint(JointNum joint_num,
@@ -513,21 +573,25 @@ class MultibodyGraphMaker {
 
   // Clear everything except for default names.
   void ClearContainers() {
-    links_.clear();
-    joints_.clear();
     joint_types_.clear();
-    link_name_to_num_.clear();
-    joint_name_to_num_.clear();
     joint_type_name_to_num_.clear();
+    links_.clear();
+    link_name_to_num_.clear();
+    joints_.clear();
+    joint_name_to_num_.clear();
   }
 
   std::string weld_type_name_, free_type_name_;
-  std::vector<Link> links_;   // world + input bodies
-  std::vector<Joint> joints_;  // input joints
   std::vector<JointType> joint_types_;
-  std::map<std::string, LinkNum> link_name_to_num_;
-  std::map<std::string, JointNum> joint_name_to_num_;
   std::map<std::string, JointTypeNum> joint_type_name_to_num_;
+
+  std::vector<Link> links_;   // world + input bodies
+  std::map<std::string, std::map<ModelInstanceIndex, LinkNum>>
+      link_name_to_num_;
+
+  std::vector<Joint> joints_;  // input joints
+  std::map<std::string, std::map<ModelInstanceIndex, JointNum>>
+      joint_name_to_num_;
 };
 
 //------------------------------------------------------------------------------
@@ -631,7 +695,7 @@ class MultibodyGraphMaker::Joint {
  public:
   const std::string& name() const { return name_; }
   ModelInstanceIndex model_instance() const { return model_instance_; }
-  MultibodyGraph::JointFlags flags() const { return flags_; }
+  JointFlags flags() const { return flags_; }
   bool must_be_constraint() const {
     return flags_ & MultibodyGraph::kMustBeConstraint;
   }
@@ -640,6 +704,8 @@ class MultibodyGraphMaker::Joint {
   LinkNum parent_link_num() const { return parent_link_num_; }
   LinkNum child_link_num() const { return child_link_num_; }
   JointTypeNum joint_type_num() const { return joint_type_num_; }
+
+  JointNum joint_num() const { return joint_num_; }
 
  private:
   // Restrict construction and modification to only MultibodyGraphMaker.
@@ -673,6 +739,9 @@ class MultibodyGraphMaker::Joint {
 
   LinkNum parent_link_num_;
   LinkNum child_link_num_;
+
+  // Assigned index.
+  JointNum joint_num_;
 };
 
 //------------------------------------------------------------------------------
@@ -689,7 +758,7 @@ class MultibodyGraphMaker::JointType {
   }
   void* user_ref() const { return user_ref_; }
 
-  MultibodyGraph::JointTypeNum joint_type_num() const {
+  JointTypeNum joint_type_num() const {
     return joint_type_num_;
   }
 
@@ -714,7 +783,7 @@ class MultibodyGraphMaker::JointType {
   void* user_ref_{nullptr};
 
   // Assigned index.
-  MultibodyGraph::JointTypeNum joint_type_num_;
+  JointTypeNum joint_type_num_;
 };
 
 }  // namespace multibody

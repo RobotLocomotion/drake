@@ -5,6 +5,8 @@ Portions copyright (c) 2013-14 Stanford University and the Authors.
 Authors: Michael Sherman
 Contributors: Kevin He
 
+Modifications copyright (c) 2019 Toyota Research Institute, Inc.
+
 Licensed under the Apache License, Version 2.0 (the "License"); you may
 not use this file except in compliance with the License. You may obtain a
 copy of the License at http://www.apache.org/licenses/LICENSE-2.0. */
@@ -52,7 +54,8 @@ mobilizer's outboard body. Depending on parent/child ordering in the input, that
 is not always possible, so the joint's mobilizer will be marked as "reversed"
 meaning inboard=child and outboard=parent instead. There will be more mobilizers
 than joints in general, since free links in the input will have a "free" (6 dof)
-mobilizer.
+mobilizer, and static links in the input will have a "weld" (0 dof) mobilizer
+("immobilizer" might be a better word :).
 
 When possible we use a mobilizer to model a joint by the degrees of freedom it
 permits. However, we can instead use a joint constraint to model a joint by the
@@ -101,17 +104,6 @@ class MultibodyGraph {
   class JointInfo;
   class JointTypeInfo;
 
-  /** Returns the BodyNum of the master body being used to model the
-  given link. */
-  inline BodyNum link_to_body_num(LinkNum link_num) const;
-
-  /** Returns the LinkNum associated with this body, if any. */
-  inline LinkNum body_to_link_num(BodyNum body_num) const;
-
-  const Body& link_to_body(LinkNum link_num) const {
-    return body(link_to_body_num(link_num));
-  }
-
   /** @name               Work with the generated graph
   Methods in this section manipulate the generated multibody graph consisting of
   bodies (input links and additional slaves), mobilizers (input joints plus
@@ -122,12 +114,7 @@ class MultibodyGraph {
   void DumpGraph(std::ostream& out) const;
 
   /** Returns the number of mobilizers (tree joints) in the spanning forest.
-  These are numbered in order of level, such that branches are built from
-  World outboard. The 0th mobilizer has level 0 and
-  is just a placeholder for World's immobile connection to the universe.
-  After that come the base mobilizers at level 1, then mobilizers that
-  connect children to base bodies at level 2, and so on. This is also the
-  number of mobilized bodies, including World and slave bodies. */
+  This is also the number of mobilized bodies, including slave bodies. */
   int num_mobilizers() const { return static_cast<int>(mobilizers_.size()); }
 
   /** Gets a Mobilizer object by its mobilizer number, ordered outwards by
@@ -141,16 +128,15 @@ class MultibodyGraph {
   by cutting a body to make a slave body, and those where the joint itself
   was implemented using a constraint rather than a mobilizer plus a slave.
   The latter occurs only if we're told there is a perfectly good loop joint
-  constraint available; typically that applies for ball joints and not much
-  else. */
+  constraint available; typically that applies for ball (spherical) joints and
+  not much else. */
   int num_constraints() const {
     return static_cast<int>(constraints_.size());
   }
 
   /** Gets a loop constraint by its assigned number. These are assigned in
   an arbitrary order. */
-  const Constraint& get_constraint(
-      ConstraintNum loop_constraint_num) const {
+  const Constraint& get_constraint(ConstraintNum loop_constraint_num) const {
     return constraints_[loop_constraint_num];
   }
 
@@ -187,6 +173,18 @@ class MultibodyGraph {
   Will have just one element if `body_num` is a base body, and be empty if
   `body_num` is the World body. */
   std::vector<BodyNum> FindPathToWorld(BodyNum body_num) const;
+
+  /** Returns the BodyNum of the master body being used to model the
+  given link. */
+  inline BodyNum link_to_body_num(LinkNum link_num) const;
+
+  /** Returns the LinkNum associated with this body, if any. */
+  inline LinkNum body_to_link_num(BodyNum body_num) const;
+
+  /** Returns the master Body being used to model the given link. */
+  const Body& link_to_body(LinkNum link_num) const {
+    return body(link_to_body_num(link_num));
+  }
   //@}
 
   int num_links() const { return static_cast<int>(link_info_.size()); }
@@ -269,8 +267,8 @@ class MultibodyGraph {
 
   // Calculated by MultibodyGraphMaker::MakeGraph().
   // Index by BodyNum, MobilizerNum, ConstraintNum, resp.
-  std::vector<Body> bodies_;                 // world + input bodies + slaves
-  std::vector<Mobilizer> mobilizers_;        // mobilized bodies
+  std::vector<Body> bodies_;             // world + input bodies + slaves
+  std::vector<Mobilizer> mobilizers_;    // mobilized bodies
   std::vector<Constraint> constraints_;  // master/slave welds, loop joints
 
   // Information about links, modified as graph is built. Order and numbering
@@ -429,9 +427,9 @@ class MultibodyGraph::Body {
   Body& operator=(Body&&) = default;
 
   /** Returns the number of fragments into which we had to break the
-  corresponding link.
-  Normally this is just one, meaning we didn't break the link, but master bodies
-  that have slaves will return the number of slaves plus one. */
+  corresponding link. Normally this is just one, meaning we didn't break the
+  link, but master bodies that have slaves will return the number of slaves
+  plus one. */
   int num_fragments() const { return 1 + num_slaves(); }
 
   /** Returns the number of slave bodies associated with this master body.

@@ -103,26 +103,32 @@ auto MultibodyGraphMaker::RegisterJointType(
 //------------------------------------------------------------------------------
 //                                 ADD LINK
 //------------------------------------------------------------------------------
-void MultibodyGraphMaker::AddLink(const std::string& name,
+void MultibodyGraphMaker::AddLink(const std::string& link_name,
                                   ModelInstanceIndex model_instance,
                                   MultibodyGraph::LinkFlags flags,
                                   void* user_ref) {
+  if (!model_instance.is_valid())
+    model_instance = default_model_instance();
+
+
+
+
   // Reject duplicate body name.
   std::map<std::string, LinkNum>::const_iterator p =
-      link_name_to_num_.find(name);
+      link_name_to_num_.find(link_name);
   if (p != link_name_to_num_.end())
-    throw std::runtime_error("AddLink(): Duplicate link name '" + name + "'");
+    throw std::runtime_error("AddLink(): Duplicate link name '" + link_name + "'");
 
   const LinkNum link_num(num_links());  // next available
-  link_name_to_num_[name] = link_num;   // provide fast name lookup
+  link_name_to_num_[link_name] = link_num;   // provide fast name lookup
 
   // Can't use emplace_back below because the constructor is private.
   if (link_num ==
       world_link_num()) {  // First link is World; use only the name and ref.
-    links_.push_back(Link(name, ModelInstanceIndex(0),
+    links_.push_back(Link(link_name, ModelInstanceIndex(0),
                           MultibodyGraph::kStaticLink, user_ref));
   } else {  // This is a real link.
-    links_.push_back(Link(name, model_instance, flags, user_ref));
+    links_.push_back(Link(link_name, model_instance, flags, user_ref));
   }
 }
 
@@ -423,6 +429,100 @@ std::unique_ptr<MultibodyGraph> MultibodyGraphMaker::MakeGraph() {
   BreakLoops(&*graph);
 
   return graph;
+}
+
+//------------------------------------------------------------------------------
+//                        GET LINK NUM FROM NAME
+//------------------------------------------------------------------------------
+auto MultibodyGraphMaker::GetAllLinkNumsFromName(const std::string& link_name)
+    const -> const std::map<ModelInstanceIndex, LinkNum>* {
+  const auto link_nums = link_name_to_num_.find(link_name);
+  if (link_nums == link_name_to_num_.end()) return nullptr;
+  const auto& instance_map = link_nums->second;
+  DRAKE_DEMAND(!instance_map.empty());
+  return &instance_map;
+}
+
+auto MultibodyGraphMaker::GetLinkNumFromNameAndInstance(
+    const std::string& link_name, ModelInstanceIndex model_instance,
+    const char* func) const -> LinkNum {
+  DRAKE_DEMAND(model_instance.is_valid());
+
+  if (auto instance_map = GetAllLinkNumsFromName(link_name)) {
+    const auto entry = instance_map->find(model_instance);
+    if (entry != instance_map->end()) {
+      DRAKE_DEMAND(entry->second.is_valid());
+      return entry->second;
+    }
+  }
+
+  throw std::logic_error(
+      fmt::format("{}: link '{}' not found in model_instance {}.", func,
+                  link_name, model_instance));
+}
+
+auto MultibodyGraphMaker::GetUniqueLinkNumFromName(const std::string& link_name,
+                                                   const char* func) const
+    -> LinkNum {
+  auto instance_map = GetAllLinkNumsFromName(link_name);
+
+  if (instance_map && instance_map->size() == 1) {
+    const LinkNum link_num = instance_map->cbegin()->second;
+    DRAKE_DEMAND(link_num.is_valid());
+    return link_num;
+  }
+
+  throw std::logic_error(
+      fmt::format("{}: link name '{}' not unique. It appears in {} "
+                  "model instances. Provide a model instance to "
+                  "disambiguate.",
+                  func, link_name, instance_map->size()));
+}
+
+//------------------------------------------------------------------------------
+//                        GET JOINT NUM FROM NAME
+//------------------------------------------------------------------------------
+auto MultibodyGraphMaker::GetAllJointNumsFromName(const std::string& joint_name,
+                                                  const char* func) const
+    -> const std::map<ModelInstanceIndex, JointNum>& {
+  const auto joint_nums = joint_name_to_num_.find(joint_name);
+  if (joint_nums == joint_name_to_num_.end()) {
+    throw std::logic_error(
+        fmt::format("{}: joint '{}' not found.", func, joint_name));
+  }
+  const auto& instance_map = joint_nums->second;
+  DRAKE_DEMAND(!instance_map.empty());
+  return instance_map;
+}
+
+auto MultibodyGraphMaker::GetJointNumFromNameAndInstance(
+    const std::string& joint_name, ModelInstanceIndex model_instance,
+    const char* func) const -> JointNum {
+  DRAKE_DEMAND(model_instance.is_valid());
+  const auto& instance_map = GetAllJointNumsFromName(joint_name, func);
+  const auto entry = instance_map.find(model_instance);
+  if (entry == instance_map.end()) {
+    throw std::logic_error(
+        fmt::format("{}: joint '{}' not found in model_instance {}.", func,
+                    joint_name, model_instance));
+  }
+  DRAKE_DEMAND(entry->second.is_valid());
+  return entry->second;
+}
+
+auto MultibodyGraphMaker::GetUniqueJointNumFromName(
+    const std::string& joint_name, const char* func) const -> JointNum {
+  const auto& instance_map = GetAllJointNumsFromName(joint_name, func);
+  if (instance_map.size() > 1) {
+    throw std::logic_error(
+        fmt::format("{}: joint name '{}' not unique. It appears in {} "
+                    "model instances. Provide a model instance to "
+                    "disambiguate.",
+                    func, joint_name, instance_map.size()));
+  }
+  const JointNum joint_num = instance_map.cbegin()->second;
+  DRAKE_DEMAND(joint_num.is_valid());
+  return joint_num;
 }
 
 //------------------------------------------------------------------------------
