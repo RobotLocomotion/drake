@@ -302,7 +302,7 @@ builder.Connect(differential_ik.GetOutputPort("joint_position_desired"),
 
 teleop = builder.AddSystem(MouseKeyboardTeleop())
 if args.test:
-    teleop.window.withdraw()  # Don't display the window when testing.
+    teleop.teleop_manager.release_mouse_focus()  # Let go of mouse focus for testing
 filter = builder.AddSystem(
     FirstOrderLowPassFilter(time_constant=args.filter_time_const, size=6))
 
