@@ -184,10 +184,11 @@ const int kUseFirstOutputIfItExists = -4;
 /// @throws std::runtime_error if the system if the system is not (only)
 /// continuous or (only) discrete time with a single periodic update.
 ///
-/// @note All inputs in the Context must be connected, either to the
+/// @note All _vector_ inputs in the system must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
 /// reference to a subsystem in a Diagram), or to a constant value using, e.g.
-///   context->FixInputPort(0,default_input);
+/// `context->FixInputPort(0,default_input)`. Any _abstract_ inputs in the
+/// system must be unconnected.
 ///
 /// @note The inputs, states, and outputs of the returned system are NOT the
 /// same as the original system.  Denote x0,u0 as the nominal state and input
@@ -235,8 +236,10 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 /// @param output_port_index A valid output port index for @p system or
 /// kNoOutput or (default) kUseFirstOutputIfItExists.
 /// @returns An AffineSystem at this linearization point.
-/// @throws std::runtime_error if the system if the system is not (only)
-/// continuous or (only) discrete time with a single periodic update.
+/// @throws if any abstract inputs are connected, if any
+///         vector-valued inputs are unconnected, if the system is not (only)
+///         continuous or not (only) discrete time with a single periodic
+///         update.
 ///
 /// Note that x, u and y are in the same coordinate system as the original
 /// @p system, since the terms involving @f$ x_0, u_0 @f$ reside in

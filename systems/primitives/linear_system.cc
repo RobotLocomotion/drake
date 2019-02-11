@@ -177,10 +177,13 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
     // Must be a vector valued port. First look to see whether it's connected.
     const BasicVector<double>* u_eval = system.EvalVectorInput(context, i);
-    if (u_eval) {
-      Eigen::VectorBlock<const VectorX<double>> u = u_eval->get_value();
-      autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
+    if (!u_eval) {
+      throw std::logic_error(fmt::format(
+          "Vector-valued input port {} must be either fixed or connected to "
+          "the output of another system.", input_port_i.get_name()));
     }
+    Eigen::VectorBlock<const VectorX<double>> u = u_eval->get_value();
+    autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
   }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);

@@ -1376,6 +1376,12 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 
+  // If there are any generalized forces applied, add them.
+  const BasicVector<T>* tau_applied =
+      this->EvalVectorInput(context0, applied_generalized_force_input_port_);
+  if (tau_applied)
+    forces0.mutable_generalized_forces() += tau_applied->get_value();
+
   // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
   const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
       CalcPointPairPenetrations(context0);
