@@ -1242,7 +1242,7 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   AddJointActuationForces(context, &forces);
   AddAppliedExternalSpatialForces(context, &forces);
 
-  // If there are any generalized forces applied, add them.
+  // If there are applied generalized forces, add them.
   const BasicVector<T>* tau_applied =
       this->EvalVectorInput(context, applied_generalized_force_input_port_);
   if (tau_applied)
