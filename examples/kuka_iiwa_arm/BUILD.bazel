@@ -300,20 +300,8 @@ install(
     visibility = ["//visibility:public"],
 )
 
-filegroup(
-    name = "director_configs",
-    srcs = glob([
-        "*.csv",
-        "*.json",
-    ]),
-)
-
 install(
     name = "install_data",
-    data = [
-        ":director_configs",
-    ],
-    data_dest = "share/drake/" + package_name(),
     visibility = ["//visibility:public"],
     deps = [
         "//examples/kuka_iiwa_arm/models:install_data",
