@@ -48,6 +48,8 @@ master_doc = 'index'
 #
 html_theme = 'sphinx_rtd_theme'
 
+html_static_path = ['_static']
+
 html_copy_source = False
 
 html_show_copyright = False

@@ -13,6 +13,7 @@ drake_py_binary(
     ],
     add_test_rule = 1,
     data = [
+        "_static/css/custom.css",
         "conf.py",
     ],
     imports = ["."],
