@@ -183,7 +183,7 @@ T LinearSpringDamper<T>::SafeSoftNorm(const Vector3<T> &x) const {
       std::numeric_limits<double>::epsilon() * free_length();
   const double epsilon_length_squared = epsilon_length * epsilon_length;
   const T x2 = x.squaredNorm();
-  if (x2 < epsilon_length_squared) {
+  if (scalar_predicate<T>::is_bool && (x2 < epsilon_length_squared)) {
     throw std::runtime_error("The length of the spring became nearly zero. "
                                  "Revisit your model to avoid this situation.");
   }
