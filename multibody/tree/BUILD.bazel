@@ -133,7 +133,7 @@ drake_cc_library(
         "quaternion_floating_mobilizer.h",
         "revolute_joint.h",
         "revolute_mobilizer.h",
-        "revolute_spring.h",        
+        "revolute_spring.h",
         "rigid_body.h",
         "space_xyz_mobilizer.h",
         "uniform_gravity_field_element.h",

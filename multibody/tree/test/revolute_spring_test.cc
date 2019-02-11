@@ -128,7 +128,7 @@ TEST_F(SpringTester, DeltaLength) {
       Vector3<double>::Zero());
   EXPECT_TRUE(CompareMatrices(generalized_forces, expected_generalized_forces,
       kTolerance, MatrixCompareType::relative));
-  
+
   // Verify the value of the potential energy.
   const double potential_energy_expected =
       0.5 * stiffness_ * (length - free_length_) * (length - free_length_);
