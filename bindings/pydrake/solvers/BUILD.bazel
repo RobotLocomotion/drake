@@ -92,6 +92,14 @@ drake_pybind_library(
     py_deps = [":mathematicalprogram_py"],
 )
 
+drake_pybind_library(
+    name = "snopt_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_srcs = ["snopt_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
 PY_LIBRARIES_ATTIC_ALIASES = [
     ":ik_py",
 ]
@@ -109,6 +117,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":mathematicalprogram_py",
     ":mosek_py",
     ":osqp_py",
+    ":snopt_py",
 ]
 
 PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
