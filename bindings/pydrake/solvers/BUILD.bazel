@@ -180,6 +180,7 @@ drake_py_unittest(
     deps = [
         ":gurobi_py",
         ":mathematicalprogram_py",
+        ":snopt_py",
     ],
 )
 
