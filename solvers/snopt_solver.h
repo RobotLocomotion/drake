@@ -11,7 +11,7 @@ namespace solvers {
 /**
  * The details of SNOPT solvers after calling Solve function. The users can get
  * the details by
- * MathematicalProgramResult::get_solver_details().GetValue<IpoptSolverDetails>();
+ * MathematicalProgramResult::get_solver_details().GetValue<SnoptSolverDetails>();
  */
 struct SnoptSolverDetails {
   /**

@@ -90,6 +90,10 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   MathematicalProgramResult result;
   solver.Solve(prog, x_init, {}, &result);
   EXPECT_TRUE(result.is_success());
+  SnoptSolverDetails solver_details =
+      result.get_solver_details().GetValue<SnoptSolverDetails>();
+  EXPECT_TRUE(CompareMatrices(solver_details.F,
+                              Eigen::Vector2d(-std::sqrt(3), 1), 1E-6));
 
   // The program is infeasible after one major iteration.
   prog.SetSolverOption(SnoptSolver::id(), "Major iterations limit", 1);
@@ -97,8 +101,11 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
   // This exit condition is defined in Snopt user guide.
   const int kMajorIterationLimitReached = 32;
-  EXPECT_EQ(result.get_solver_details().GetValue<SnoptSolverDetails>().info,
-            kMajorIterationLimitReached);
+  solver_details = result.get_solver_details().GetValue<SnoptSolverDetails>();
+  EXPECT_EQ(solver_details.info, kMajorIterationLimitReached);
+  EXPECT_EQ(solver_details.xmul.size(), 3);
+  EXPECT_EQ(solver_details.Fmul.size(), 2);
+  EXPECT_EQ(solver_details.F.size(), 2);
 }
 
 GTEST_TEST(SnoptTest, TestPrintFile) {

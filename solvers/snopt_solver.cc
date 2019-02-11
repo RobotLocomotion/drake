@@ -958,17 +958,23 @@ void SolveWithGivenOptions(
   }
   // Actual solve.
   const char problem_name[] = "drake_problem";
+  // clang-format off
   Snopt::snkera(Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
                 nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
                 nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
-                iAfun.data(), jAvar.data(), lenA, A.data(), iGfun.data(),
-                jGvar.data(), lenG, xlow.data(), xupp.data(), Flow.data(),
-                Fupp.data(), x.data(), xstate.data(),
-                solver_details->xmul.data(), solver_details->F.data(),
-                Fstate.data(), solver_details->Fmul.data(), snopt_status, &nS,
-                &nInf, &sInf, &miniw, &minrw, storage.iu(), storage.leniu(),
-                storage.ru(), storage.lenru(), storage.iw(), storage.leniw(),
+                iAfun.data(), jAvar.data(), lenA, A.data(),
+                iGfun.data(), jGvar.data(), lenG,
+                xlow.data(), xupp.data(),
+                Flow.data(), Fupp.data(),
+                x.data(), xstate.data(), solver_details->xmul.data(),
+                solver_details->F.data(), Fstate.data(),
+                solver_details->Fmul.data(),
+                snopt_status, &nS, &nInf, &sInf, &miniw, &minrw,
+                storage.iu(), storage.leniu(),
+                storage.ru(), storage.lenru(),
+                storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw());
+  // clang-format on
 
   *x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
   *objective = solver_details->F(0);
