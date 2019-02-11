@@ -2,6 +2,7 @@ from __future__ import print_function, absolute_import
 
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
+from pydrake.solvers.snopt import SnoptSolver
 from pydrake.solvers.mathematicalprogram import SolverType
 
 import unittest
@@ -13,6 +14,8 @@ import pydrake
 from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.symbolic as sym
+
+SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
 
 class TestQP:
@@ -425,6 +428,9 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.SetInitialGuessForAllVariables(x0)
         check_and_reset()
 
+    @unittest.skipIf(
+        SNOPT_NO_GUROBI,
+        "SNOPT is unable to solve this problem (#10653).")
     def test_lorentz_cone_constraint(self):
         # Set Up Mathematical Program
         prog = mp.MathematicalProgram()
