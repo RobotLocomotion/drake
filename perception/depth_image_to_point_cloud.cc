@@ -65,6 +65,10 @@ void DoConvert(const optional<pc_flags::BaseFieldT>& exact_base_fields,
     output->resize(depth_image.size(), skip_initialize);
   }
   Eigen::Ref<Matrix3Xf> output_xyz = output->mutable_xyzs();
+  optional<Eigen::Ref<Matrix3X<uint8_t>>> output_rgb;
+  if (color_image) {
+    output_rgb = output->mutable_rgbs();
+  }
 
   const int height = depth_image.height();
   const int width = depth_image.width();
@@ -87,12 +91,12 @@ void DoConvert(const optional<pc_flags::BaseFieldT>& exact_base_fields,
         // N.B. This clause handles both true depths *and* NaNs.
         output_xyz.col(col) =
             X_PC * Vector3f(scale * z * (u - cx) * fx_inv,
-                            scale * z * (v - cy) * fy_inv, scale * z);
+                            scale * z * (v - cy) * fy_inv,
+                            scale * z);
       }
       if (color_image) {
-        Eigen::Ref<Matrix3X<uint8_t>> output_rgb = output->mutable_rgbs();
         const auto color = color_image->at(u, v);
-        output_rgb.col(col) = Vector3<uint8_t>(color[0], color[1], color[2]);
+        output_rgb->col(col) = Vector3<uint8_t>(color[0], color[1], color[2]);
       }
     }
   }
@@ -162,8 +166,8 @@ void DepthImageToPointCloud::CalcOutput32F(
   const auto* const pose_or_null =
       this->EvalInputValue<RigidTransformd>(context, camera_pose_input_port_);
   DRAKE_THROW_UNLESS(depth_image != nullptr);
-  DoConvert(optional<pc_flags::BaseFieldT>(fields_), camera_info_, pose_or_null,
-            *depth_image, color_image_or_null, scale_, output);
+  DoConvert(fields_, camera_info_, pose_or_null, *depth_image,
+            color_image_or_null, scale_, output);
 }
 
 void DepthImageToPointCloud::CalcOutput16U(
@@ -175,8 +179,8 @@ void DepthImageToPointCloud::CalcOutput16U(
   const auto* const pose_or_null =
       this->EvalInputValue<RigidTransformd>(context, camera_pose_input_port_);
   DRAKE_THROW_UNLESS(depth_image != nullptr);
-  DoConvert(optional<pc_flags::BaseFieldT>(fields_), camera_info_, pose_or_null,
-            *depth_image, color_image_or_null, scale_, output);
+  DoConvert(fields_, camera_info_, pose_or_null, *depth_image,
+            color_image_or_null, scale_, output);
 }
 
 }  // namespace perception

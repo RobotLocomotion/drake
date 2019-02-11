@@ -79,7 +79,8 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   }
 
   /// Returns the abstract valued output port that provides a PointCloud.
-  /// Only the channels contained in fields_ are present.
+  /// Only the channels passed into the constructor argument "fields" are
+  /// present.
   const systems::OutputPort<double>& point_cloud_output_port() const {
     return LeafSystem<double>::get_output_port(0);
   }
@@ -90,9 +91,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   ///
   /// @param[in,out] cloud Destination for point data; must not be nullptr.
   /// The `cloud` will be resized to match the size of the depth image.  The
-  /// `cloud` must have the XYZ channel enabled.  If other channels such as RGB
-  /// are present, their existing data will only be disturbed insofar as we
-  /// need to resize the cloud, obeying the the PointCloud::resize() semantics.
+  /// `cloud` must have the XYZ channel enabled.
   static void Convert(
       const systems::sensors::CameraInfo& camera_info,
       const optional<math::RigidTransformd>& camera_pose,
@@ -106,9 +105,7 @@ class DepthImageToPointCloud final : public systems::LeafSystem<double> {
   ///
   /// @param[in,out] cloud Destination for point data; must not be nullptr.
   /// The `cloud` will be resized to match the size of the depth image.  The
-  /// `cloud` must have the XYZ channel enabled.  If other channels such as RGB
-  /// are present, their existing data will only be disturbed insofar as we
-  /// need to resize the cloud, obeying the the PointCloud::resize() semantics.
+  /// `cloud` must have the XYZ channel enabled.
   static void Convert(
       const systems::sensors::CameraInfo& camera_info,
       const optional<math::RigidTransformd>& camera_pose,

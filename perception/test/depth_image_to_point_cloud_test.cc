@@ -109,23 +109,17 @@ class DepthImageToPointCloudTest : public ::testing::Test {
     return image;
   }
 
-  static ImageRgba8U MakeRgbImage(const int width, const int height,
-                                  const int red_value, const int green_value,
-                                  const int blue_value) {
+  static ImageRgba8U MakeRgbaImage(const int width, const int height,
+                                   const int red_value, const int green_value,
+                                   const int blue_value) {
     // Create an image where every pixel is the same color.  Note that the alpha
     // channel is not used since PointClouds don't yet support alphas.
-    const auto& reds =
-        MatrixX<uint8_t>::Constant(width, height, red_value).eval();
-    const auto& greens =
-        MatrixX<uint8_t>::Constant(width, height, green_value).eval();
-    const auto& blues =
-        MatrixX<uint8_t>::Constant(width, height, blue_value).eval();
-    ImageRgba8U image(reds.rows(), reds.cols());
+    ImageRgba8U image(width, height);
     for (int v = 0; v < image.height(); ++v) {
       for (int u = 0; u < image.width(); ++u) {
-        image.at(u, v)[0] = reds(u, v);
-        image.at(u, v)[1] = greens(u, v);
-        image.at(u, v)[2] = blues(u, v);
+        image.at(u, v)[0] = static_cast<uint8_t>(red_value);
+        image.at(u, v)[1] = static_cast<uint8_t>(green_value);
+        image.at(u, v)[2] = static_cast<uint8_t>(blue_value);
       }
     }
     return image;
@@ -147,7 +141,7 @@ class DepthImageToPointCloudTest : public ::testing::Test {
                                        scale.value_or(1.0), kFields);
       auto context = dut.CreateDefaultContext();
       context->FixInputPort(0, Value<ConfiguredImage>(depth_image));
-      if (kFields > pc_flags::kRGBs) {
+      if (kFields & pc_flags::kRGBs) {
         context->FixInputPort(1, Value<ImageRgba8U>(*color_image));
       }
       if (camera_pose) {
@@ -178,7 +172,7 @@ class DepthImageToPointCloudTest : public ::testing::Test {
                                        scale.value_or(1.0), kFields);
       auto context = dut.CreateDefaultContext();
       context->FixInputPort(0, Value<ConfiguredImage>(depth_image));
-      if (kFields > pc_flags::kRGBs) {
+      if (kFields & pc_flags::kRGBs) {
         context->FixInputPort(1, Value<ImageRgba8U>(*color_image));
       }
       if (camera_pose) {
@@ -204,37 +198,37 @@ TYPED_TEST_CASE(DepthImageToPointCloudTest, AllConfigs);
 TYPED_TEST(DepthImageToPointCloudTest, Basic) {
   using Pixel = typename TestFixture::Pixel;
 
-  static constexpr int kDepthWidth = 60;
-  static constexpr int kDepthHeight = 40;
+  static constexpr int kImageWidth = 60;
+  static constexpr int kImageHeight = 40;
   static constexpr float kFocal = 500.0f;
 
   // Camera settings.
-  const CameraInfo camera(kDepthWidth, kDepthHeight, kFocal, kFocal,
-                          kDepthWidth * 0.5, kDepthHeight * 0.5);
+  const CameraInfo camera(kImageWidth, kImageHeight, kFocal, kFocal,
+                          kImageWidth * 0.5, kImageHeight * 0.5);
 
   // A constant-value depth image.
   constexpr Pixel kDepthValue = 1;
   const auto& depth_image =
-      MatrixX<Pixel>::Constant(kDepthWidth, kDepthHeight, kDepthValue).eval();
+      MatrixX<Pixel>::Constant(kImageWidth, kImageHeight, kDepthValue).eval();
 
   // A constant-value RGB image.
   constexpr uint8_t kRedValue = 0;
   constexpr uint8_t kGreenValue = 127;
   constexpr uint8_t kBlueValue = 255;
-  const auto& color_image = this->MakeRgbImage(
-      kDepthWidth, kDepthHeight, kRedValue, kGreenValue, kBlueValue);
+  const auto& color_image = this->MakeRgbaImage(
+      kImageWidth, kImageHeight, kRedValue, kGreenValue, kBlueValue);
 
   // The expected resulting point cloud.
-  PointCloud expected_cloud(kDepthWidth * kDepthHeight, TestFixture::kFields);
+  PointCloud expected_cloud(kImageWidth * kImageHeight, TestFixture::kFields);
   for (int v = 0; v < depth_image.cols(); ++v) {
     for (int u = 0; u < depth_image.rows(); ++u) {
       const int i = v * depth_image.rows() + u;
-      const double expected_x = kDepthValue * (u - kDepthWidth * 0.5) / kFocal;
-      const double expected_y = kDepthValue * (v - kDepthHeight * 0.5) / kFocal;
+      const double expected_x = kDepthValue * (u - kImageWidth * 0.5) / kFocal;
+      const double expected_y = kDepthValue * (v - kImageHeight * 0.5) / kFocal;
       expected_cloud.mutable_xyzs().col(i) =
           Vector3f(expected_x, expected_y, kDepthValue);
 
-      if (TestFixture::kFields > pc_flags::kRGBs) {
+      if (TestFixture::kFields & pc_flags::kRGBs) {
         expected_cloud.mutable_rgbs().col(i) =
             Vector3<uint8_t>(kRedValue, kGreenValue, kBlueValue);
       }
@@ -247,7 +241,7 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
   PointCloud result(0, TestFixture::kFields);
 
   // Without a pose offset nor a scale factor.
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
@@ -258,7 +252,7 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
                               kDistanceTolerance));
 
   // Now with scale factor.
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.001);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
   } else {
@@ -270,7 +264,7 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
   // Now with a pose offset -- just check the z values.
   const auto& pose = this->z_translation_;
   const auto& expected_z_row = expected_cloud.xyzs().row(2).array().eval();
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, pose, depth_image, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
   } else {
@@ -281,7 +275,7 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
       kDistanceTolerance));
 
   // With both scale and pose offset -- just check the z values.
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, pose, depth_image, color_image, 0.001);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
   } else {
@@ -321,11 +315,11 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
   Matrix3X<uint8_t> expected_colors(3, 1);
   expected_colors << kRedValue, kGreenValue, kBlueValue;
   const auto& color_image =
-      this->MakeRgbImage(1, 1, kRedValue, kGreenValue, kBlueValue);
+      this->MakeRgbaImage(1, 1, kRedValue, kGreenValue, kBlueValue);
 
   PointCloud result(0, TestFixture::kFields);
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -334,7 +328,7 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.1);
     EXPECT_EQ(result.rgbs(), expected_colors);
   } else {
@@ -342,7 +336,7 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, pose, depth_image, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_colors);
   } else {
@@ -350,7 +344,7 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, pose, depth_image, color_image, 0.1);
     EXPECT_EQ(result.rgbs(), expected_colors);
   } else {
@@ -378,13 +372,13 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   Matrix3X<uint8_t> expected_colors(3, 1);
   expected_colors << kRedValue, kGreenValue, kBlueValue;
   const auto& color_image =
-      this->MakeRgbImage(1, 1, kRedValue, kGreenValue, kBlueValue);
+      this->MakeRgbaImage(1, 1, kRedValue, kGreenValue, kBlueValue);
 
   PointCloud result(0, TestFixture::kFields);
 
   // Test all combinations of {without pose, with pose} x {near, far} x
   // {without scale, with scale}.
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, nullopt, depth_image_near, color_image,
                              nullopt);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -394,7 +388,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, nullopt, depth_image_near, color_image, 0.1);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -403,7 +397,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, nullopt, depth_image_far, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -413,7 +407,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, nullopt, depth_image_far, color_image, 0.1);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -422,7 +416,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, pose, depth_image_near, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -431,7 +425,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, pose, depth_image_near, color_image, 0.1);
     EXPECT_EQ(result.rgbs(), expected_colors);
   } else {
@@ -439,7 +433,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result =
         this->DoConvert(camera, pose, depth_image_far, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_colors);
@@ -448,7 +442,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     result = this->DoConvert(camera, pose, depth_image_far, color_image, 0.1);
     EXPECT_EQ(result.rgbs(), expected_colors);
   } else {
@@ -472,14 +466,14 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
   Matrix3X<uint8_t> expected_colors(3, 1);
   expected_colors << kRedValue, kGreenValue, kBlueValue;
   const auto& color_image =
-      this->MakeRgbImage(1, 1, kRedValue, kGreenValue, kBlueValue);
+      this->MakeRgbaImage(1, 1, kRedValue, kGreenValue, kBlueValue);
 
   // N.B. A local variable is made to avoid linker errors.
   const pc_flags::Fields fields = TestFixture::kFields;
 
   // Starting from default storage, check the point cloud result.
   abstract_value = std::make_unique<Value<PointCloud>>(0, fields);
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
                     abstract_value.get());
   } else {
@@ -489,13 +483,13 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
   cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
   EXPECT_EQ(cloud->fields(), fields);
   EXPECT_TRUE(CompareMatrices(cloud->xyzs(), Vector3f(-0.5, -0.5, 1)));
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     EXPECT_EQ(cloud->rgbs(), expected_colors);
   }
 
   // If the storage was the wrong size, then Calc should be able to resize it.
   abstract_value = std::make_unique<Value<PointCloud>>(22, fields);
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
                     abstract_value.get());
   } else {
@@ -505,7 +499,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
   cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
   EXPECT_EQ(cloud->fields(), fields);
   EXPECT_TRUE(CompareMatrices(cloud->xyzs(), Vector3f(-0.5, -0.5, 1)));
-  if (TestFixture::kFields > pc_flags::kRGBs) {
+  if (TestFixture::kFields & pc_flags::kRGBs) {
     EXPECT_EQ(cloud->rgbs(), expected_colors);
   }
 
@@ -517,7 +511,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
     // resetting the set of channels, in which case this test should change.)
     abstract_value = std::make_unique<Value<PointCloud>>(
         1, pc_flags::kXYZs | pc_flags::kNormals);
-    if (TestFixture::kFields > pc_flags::kRGBs) {
+    if (TestFixture::kFields & pc_flags::kRGBs) {
       EXPECT_THROW(this->DoConvert(camera, nullopt, depth_image, color_image,
                                    nullopt, abstract_value.get()),
                    std::exception);
@@ -528,7 +522,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
     }
   } else {
     abstract_value = std::make_unique<Value<PointCloud>>(1, fields);
-    if (TestFixture::kFields > pc_flags::kRGBs) {
+    if (TestFixture::kFields & pc_flags::kRGBs) {
       this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
                       abstract_value.get());
     } else {
@@ -538,7 +532,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
     cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
     EXPECT_EQ(cloud->fields(), fields);
     EXPECT_TRUE(CompareMatrices(cloud->xyzs(), Vector3f(-0.5, -0.5, 1)));
-    if (TestFixture::kFields > pc_flags::kRGBs) {
+    if (TestFixture::kFields & pc_flags::kRGBs) {
       EXPECT_EQ(cloud->rgbs(), expected_colors);
     }
   }
