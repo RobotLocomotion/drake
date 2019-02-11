@@ -165,8 +165,10 @@ const int kUseFirstOutputIfItExists = -4;
 /// This method currently supports linearizing around at most a single vector
 /// input port and at most a single vector output port.  For systems with
 /// more ports, use @p input_port_index and @p output_port_index to select
-/// the input for the newly constructed system.  Any additional input ports
-/// will be treated as constants (fixed at the value specified in @p context).
+/// the input for the newly constructed system.  Any additional _vector_
+/// input ports will be treated as constants (fixed at the value specified in
+/// `context`). Abstract-valued input ports must be unconnected (i.e., the
+/// system must treat the port as optional and it must be used).
 ///
 /// @param system The system or subsystem to linearize.
 /// @param context Defines the nominal operating point about which the system
@@ -179,16 +181,16 @@ const int kUseFirstOutputIfItExists = -4;
 /// the derivative vector isZero at the nominal operating point.  @default 1e-6.
 /// @returns A LinearSystem that approximates the original system in the
 /// vicinity of the operating point.  See note below.
-/// @throws std::runtime_error if the system the operating point is not an
+/// @throws std::runtime_error if the operating point is not an
 /// equilibrium point of the system (within the specified tolerance)
-/// @throws std::runtime_error if the system if the system is not (only)
+/// @throws std::runtime_error if the system is not (only)
 /// continuous or (only) discrete time with a single periodic update.
 ///
 /// @note All _vector_ inputs in the system must be connected, either to the
 /// output of some upstream System within a Diagram (e.g., if system is a
 /// reference to a subsystem in a Diagram), or to a constant value using, e.g.
 /// `context->FixInputPort(0,default_input)`. Any _abstract_ inputs in the
-/// system must be unconnected.
+/// system must be unconnected (the port must be both optional and unused).
 ///
 /// @note The inputs, states, and outputs of the returned system are NOT the
 /// same as the original system.  Denote x0,u0 as the nominal state and input

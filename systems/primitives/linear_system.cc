@@ -169,7 +169,8 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     if (input_port_i.get_data_type() == PortDataType::kAbstractValued) {
       if (system.EvalAbstractInput(context, i)) {
         throw std::logic_error(fmt::format(
-            "Unable to linearize system with connected abstract port ({})",
+            "Unable to linearize system with connected abstract port ({}) - "
+            "connected abstract ports not yet supported.",
             input_port_i.get_name()));
       }
       continue;
