@@ -25,7 +25,9 @@ namespace {
 
 // Verifies the applied generalized input force port by checking that the output
 // of an inverse dynamics controller applied to two Iiwa's can be piped back
-// into the plant and the correct derivatives obtained.
+// into the plant and the correct derivatives obtained. Specifically, this test
+// verifies that gravity compensation produces no acceleration (i.e., velocity
+// derivatives should be zero).
 GTEST_TEST(MultibodyPlantTest, CheckGeneralizedAppliedForceInput) {
   // Load two Iiwa models.
   const std::string full_name = FindResourceOrThrow(
@@ -52,18 +54,12 @@ GTEST_TEST(MultibodyPlantTest, CheckGeneralizedAppliedForceInput) {
 
   // Add the inverse dynamics controller.
   auto id_controller = builder.AddSystem<InverseDynamicsController<double>>(
-      *plant, kp, ki, kd, true /* has reference acceleration */);
-
-  // Set the ID controller to effectively counteract gravity.
-  auto qdd_des_source = builder.AddSystem<ConstantVectorSource<double>>(
-      VectorX<double>::Zero(nv));
+      *plant, kp, ki, kd, false /* reference acceleration is zero */);
 
   // Connect the ID controller to the MBP.
   builder.Connect(
       id_controller->get_output_port_control(),
       plant->get_applied_generalized_force_input_port());
-  builder.Connect(qdd_des_source->get_output_port(),
-                  id_controller->get_input_port_desired_acceleration());
   builder.Connect(plant->get_continuous_state_output_port(),
                   id_controller->get_input_port_estimated_state());
   builder.Connect(plant->get_continuous_state_output_port(),

@@ -2504,7 +2504,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance) const;
 
   /// Returns a constant reference to the vector-valued input port for applied
-  /// generalized forces, which are accumulated directly into `tau`
+  /// generalized forces, and the vector will be added directly into `tau`
   /// (see @ref equations_of_motion). This vector is ordered using the same
   /// convention as the plant velocities: you can set the generalized forces
   /// that will be applied to model instance i using, e.g.,

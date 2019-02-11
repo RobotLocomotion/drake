@@ -1376,7 +1376,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   AddJointLimitsPenaltyForces(context0, &forces0);
 
-  // If there are any generalized forces applied, add them.
+  // If there are applied generalized forces, add them.
   const BasicVector<T>* tau_applied =
       this->EvalVectorInput(context0, applied_generalized_force_input_port_);
   if (tau_applied)
