@@ -138,7 +138,8 @@ class MathematicalProgramResult final {
   double GetSolution(const symbolic::Variable& var) const;
 
  private:
-  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
+  optional<std::unordered_map<symbolic::Variable::Id, int>>
+      decision_variable_index_{};
   SolutionResult solution_result_{};
   Eigen::VectorXd x_val_;
   double optimal_cost_{};
