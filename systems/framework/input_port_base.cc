@@ -2,33 +2,36 @@
 
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace systems {
 
-InputPortBase::InputPortBase(SystemBase* owning_system, std::string name,
-                             InputPortIndex index, DependencyTicket ticket,
-                             PortDataType data_type, int size,
-                             const optional<RandomDistribution>& random_type)
-    : owning_system_(*owning_system),
-      index_(index),
-      ticket_(ticket),
-      data_type_(data_type),
-      size_(size),
-      name_(std::move(name)),
+InputPortBase::InputPortBase(
+    internal::SystemMessageInterface* owning_system, std::string name,
+    InputPortIndex index, DependencyTicket ticket,
+    PortDataType data_type, int size,
+    const optional<RandomDistribution>& random_type,
+    EvalAbstractCallback eval)
+    : PortBase("Input", owning_system, std::move(name), index, ticket,
+               data_type, size),
+      eval_(std::move(eval)),
       random_type_(random_type) {
-  DRAKE_DEMAND(owning_system != nullptr);
-  DRAKE_DEMAND(!name_.empty());
-  if (size_ == kAutoSize) {
-    DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
-  }
-  if (is_random() && data_type_ != kVectorValued) {
+  if (is_random() && data_type != kVectorValued) {
     DRAKE_ABORT_MSG("Random input ports must be vector valued.");
   }
+  DRAKE_DEMAND(eval_ != nullptr);
 }
 
 InputPortBase::~InputPortBase() = default;
+
+void InputPortBase::ThrowRequiredMissing() const {
+  throw std::logic_error(fmt::format(
+      "InputPort::Eval(): required {} is not connected",
+      GetFullDescription()));
+}
 
 }  // namespace systems
 }  // namespace drake

@@ -536,7 +536,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   void GetGraphvizInputPortToken(const InputPort<T>& port,
                                  int max_depth,
                                  std::stringstream* dot) const final {
-    DRAKE_DEMAND(port.get_system() == this);
+    DRAKE_DEMAND(&port.get_system() == this);
     // Note: ports are rendered in a fundamentally different way depending on
     // max_depth.
     if (max_depth > 0) {
@@ -1488,7 +1488,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     const int port_index = port.second;
     const auto& source_output_port = sys->get_output_port(port_index);
     // TODO(sherm1) Use implicit_cast when available (from abseil).
-    auto diagram_port = std::make_unique<DiagramOutputPort<T>>(
+    auto diagram_port = internal::FrameworkFactory::Make<DiagramOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<SystemBase*>(this)
         std::move(name), OutputPortIndex(this->get_num_output_ports()),
@@ -1509,7 +1509,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     SPDLOG_TRACE(log(), "Evaluating output for subsystem {}, port {}",
                  system->GetSystemPathname(), port_index);
     const Context<T>& subsystem_context = context.GetSubsystemContext(i);
-    return port.EvalAbstract(subsystem_context);
+    return port.template Eval<AbstractValue>(subsystem_context);
   }
 
   // Converts an InputPortLocator to a DiagramContext::InputPortIdentifier.

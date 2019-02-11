@@ -41,6 +41,7 @@ drake_cc_package_library(
         ":output_port",
         ":output_port_base",
         ":parameters",
+        ":port_base",
         ":single_output_vector_source",
         ":state",
         ":system",
@@ -254,6 +255,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "port_base",
+    srcs = [
+        "port_base.cc",
+    ],
+    hdrs = [
+        "port_base.h",
+    ],
+    deps = [
+        ":framework_common",
+        ":vector",
+        "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "input_port_base",
     srcs = [
         "input_port_base.cc",
@@ -262,7 +278,10 @@ drake_cc_library(
         "input_port_base.h",
     ],
     deps = [
+        ":context_base",
         ":framework_common",
+        ":port_base",
+        "//common:nice_type_name",
         "//common:random",
     ],
 )
@@ -277,6 +296,8 @@ drake_cc_library(
     ],
     deps = [
         ":framework_common",
+        ":port_base",
+        "//common:nice_type_name",
     ],
 )
 
@@ -349,6 +370,7 @@ drake_cc_library(
         "input_port.h",
     ],
     deps = [
+        ":context",
         ":input_port_base",
         "//common:default_scalars",
         "//common:essential",
@@ -802,6 +824,16 @@ drake_cc_googletest(
     deps = [
         ":system_output",
         "//common:essential",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "input_port_test",
+    deps = [
+        ":input_port",
+        ":leaf_system",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
     ],
 )

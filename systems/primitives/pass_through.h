@@ -150,18 +150,16 @@ void PassThrough<T>::DoCalcVectorOutput(
       const Context<T>& context,
       BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
-  const BasicVector<T>& input = *this->EvalVectorInput(context, 0);
+  const auto& input = get_input_port().Eval(context);
   DRAKE_ASSERT(input.size() == output->size());
-  output->SetFrom(input);
+  output->SetFromVector(input);
 }
 
 template <typename T>
 void PassThrough<T>::DoCalcAbstractOutput(const Context<T>& context,
                                           AbstractValue* output) const {
   DRAKE_ASSERT(is_abstract());
-  const AbstractValue& input =
-      *this->EvalAbstractInput(context, 0);
-  output->SetFrom(input);
+  output->SetFrom(this->get_input_port().template Eval<AbstractValue>(context));
 }
 
 template <typename T>

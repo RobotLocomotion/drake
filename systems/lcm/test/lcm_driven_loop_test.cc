@@ -45,11 +45,10 @@ class DummySys : public systems::LeafSystem<double> {
 
   void CalcTimestamp(const systems::Context<double>& context,
                      systems::BasicVector<double>* output) const {
-    const lcmt_drake_signal* msg =
-        EvalInputValue<lcmt_drake_signal>(context, 0);
-
+    const lcmt_drake_signal& msg =
+        this->get_input_port(0).Eval<lcmt_drake_signal>(context);
     auto out_vector = output->get_mutable_value();
-    out_vector(0) = static_cast<double>(msg->timestamp) / 1e3;
+    out_vector(0) = static_cast<double>(msg.timestamp) / 1e3;
   }
 };
 

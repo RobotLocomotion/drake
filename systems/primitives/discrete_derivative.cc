@@ -50,7 +50,7 @@ void DiscreteDerivative<T>::DoCalcDiscreteVariableUpdates(
     drake::systems::DiscreteValues<T>* discrete_state) const {
   // x₀[n+1] = u[n].
   discrete_state->get_mutable_vector().get_mutable_value().head(n_) =
-      this->EvalEigenVectorInput(context, 0);
+      get_input_port().Eval(context);
 
   // x₁[n+1] = x₀[n].
   discrete_state->get_mutable_vector().get_mutable_value().tail(n_) =

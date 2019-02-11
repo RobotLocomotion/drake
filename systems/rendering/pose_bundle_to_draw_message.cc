@@ -19,8 +19,7 @@ PoseBundleToDrawMessage::~PoseBundleToDrawMessage() {}
 void PoseBundleToDrawMessage::CalcViewerDrawMessage(
     const Context<double>& context, lcmt_viewer_draw* output) const {
   const PoseBundle<double>& poses =
-      this->EvalAbstractInput(context, 0)
-          ->template GetValue<PoseBundle<double>>();
+      this->get_input_port(0).Eval<PoseBundle<double>>(context);
 
   lcmt_viewer_draw& message = *output;
 
