@@ -122,9 +122,12 @@ drake_cc_binary(
     name = "print_symbolic_dynamics",
     srcs = ["print_symbolic_dynamics.cc"],
     add_test_rule = 1,
+    data = [":models"],
     deps = [
         ":pendulum_plant",
         "//common:symbolic",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

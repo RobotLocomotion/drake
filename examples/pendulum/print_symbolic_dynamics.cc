@@ -1,31 +1,79 @@
 #include <iostream>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/symbolic.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 // A simple example of extracting the symbolic dynamics of the pendulum system,
 // and printing them to std::out.
+
+using drake::symbolic::Expression;
+using drake::symbolic::Variable;
+using drake::multibody::MultibodyPlant;
+using drake::multibody::Parser;
+using drake::multibody::UniformGravityFieldElement;
+using drake::systems::System;
 
 namespace drake {
 namespace examples {
 namespace pendulum {
 namespace {
 
-int DoMain() {
-  PendulumPlant<symbolic::Expression> system;
+// Obtains the dynamics using PendulumPlant (a System that directly models the
+// dynamics).
+VectorX<Expression> PendulumPlantDynamics() {
+  // Load the Pendulum.urdf into a symbolic PendulumPlant.
+  PendulumPlant<Expression> symbolic_plant;
 
-  auto context = system.CreateDefaultContext();
+  // Obtain the symbolic dynamics.
+  auto context = symbolic_plant.CreateDefaultContext();
   context->FixInputPort(
-      0, Vector1<symbolic::Expression>::Constant(symbolic::Variable("tau")));
+      0, Vector1<Expression>::Constant(Variable("tau")));
   context->get_mutable_continuous_state_vector().SetAtIndex(
-      0, symbolic::Variable("theta"));
+      0, Variable("theta"));
   context->get_mutable_continuous_state_vector().SetAtIndex(
-      1, symbolic::Variable("thetadot"));
+      1, Variable("thetadot"));
+  const auto& derivatives = symbolic_plant.EvalTimeDerivatives(*context);
+  return derivatives.CopyToVector();
+}
 
-  auto derivatives = system.AllocateTimeDerivatives();
-  system.CalcTimeDerivatives(*context, derivatives.get());
+// Obtains the dynamics using MultibodyPlant configured to model a pendulum.
+VectorX<Expression> MultibodyPlantDynamics() {
+  // Load the Pendulum.urdf into a symbolic MultibodyPlant.
+  const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
+  MultibodyPlant<double> plant;
+  plant.AddForceElement<UniformGravityFieldElement>();
+  Parser parser(&plant);
+  parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base_part2"));
+  plant.Finalize();
+  auto symbolic_plant_ptr = System<double>::ToSymbolic(plant);
+  const MultibodyPlant<Expression>& symbolic_plant = *symbolic_plant_ptr;
 
-  std::cout << derivatives->CopyToVector() << "\n";
+  // Obtain the symbolic dynamics.
+  auto context = symbolic_plant.CreateDefaultContext();
+  context->FixInputPort(
+      0, Vector1<Expression>::Constant(Variable("tau")));
+  symbolic_plant.SetPositionsAndVelocities(
+      context.get(), Vector2<Expression>(
+          Variable("theta"), Variable("thetadot")));
+  const auto& derivatives = symbolic_plant.EvalTimeDerivatives(*context);
+  return derivatives.CopyToVector();
+}
+
+int main() {
+  std::cout << "PendulumPlantDynamics:\n";
+  auto dynamics = PendulumPlantDynamics();
+  std::cout << "d/dt theta    = " << dynamics[0] << "\n";
+  std::cout << "d/dt thetadot = " << dynamics[1] << "\n";
+  std::cout << "\n";
+
+  std::cout << "MultibodyPlantDynamics:\n";
+  dynamics = MultibodyPlantDynamics();
+  std::cout << "d/dt theta    = " << dynamics[0] << "\n";
+  std::cout << "d/dt thetadot = " << dynamics[1] << "\n";
 
   return 0;
 }
@@ -36,5 +84,5 @@ int DoMain() {
 }  // namespace drake
 
 int main() {
-  return drake::examples::pendulum::DoMain();
+  return drake::examples::pendulum::main();
 }
