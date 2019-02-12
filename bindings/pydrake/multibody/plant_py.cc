@@ -95,6 +95,12 @@ PYBIND11_MODULE(plant, m) {
             },
             py::arg("joint"), py_reference_internal,
             doc.MultibodyPlant.AddJoint.doc_1args)
+        .def("AddFrame",
+            [](Class * self, std::unique_ptr<Frame<double>> frame) -> auto& {
+              return self->AddFrame(std::move(frame));
+            },
+            py_reference_internal, py::arg("frame"),
+            doc.MultibodyPlant.AddFrame.doc)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
             py::arg("X_AB") = Isometry3<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
@@ -401,7 +407,10 @@ PYBIND11_MODULE(plant, m) {
             &Class::geometry_source_is_registered,
             doc.MultibodyPlant.geometry_source_is_registered.doc)
         .def("GetBodyFromFrameId", &Class::GetBodyFromFrameId,
-            py_reference_internal, doc.MultibodyPlant.GetBodyFromFrameId.doc);
+            py_reference_internal, doc.MultibodyPlant.GetBodyFromFrameId.doc)
+        .def("GetBodyFrameIdIfExists", &Class::GetBodyFrameIdIfExists,
+            py::arg("body_index"), py_reference_internal,
+            doc.MultibodyPlant.GetBodyFrameIdIfExists.doc);
     // Port accessors.
     cls  // BR
         .def("get_actuation_input_port",

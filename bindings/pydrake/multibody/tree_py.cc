@@ -3,6 +3,7 @@
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -77,13 +78,25 @@ PYBIND11_MODULE(tree, m) {
     BindMultibodyTreeElementMixin(&cls);
     cls  // BR
         .def("name", &Class::name, doc.Frame.name.doc)
-        .def("body", &Class::body, py_reference_internal, doc.Frame.body.doc);
+        .def("body", &Class::body, py_reference_internal, doc.Frame.body.doc)
+        .def("GetFixedPoseInBodyFrame", &Frame<double>::GetFixedPoseInBodyFrame,
+            doc.Frame.GetFixedPoseInBodyFrame.doc);
   }
 
   {
     using Class = BodyFrame<T>;
     py::class_<Class, Frame<T>> cls(m, "BodyFrame", doc.BodyFrame.doc);
     // No need to re-bind element mixins from `Frame`.
+  }
+
+  {
+    using Class = FixedOffsetFrame<T>;
+    constexpr auto& cls_doc = doc.FixedOffsetFrame;
+    py::class_<Class, Frame<T>>(m, "FixedOffsetFrame", cls_doc.doc)
+        .def(py::init<const std::string&, const Frame<double>&,
+                 const Isometry3<double>&, optional<ModelInstanceIndex>>(),
+            py::arg("name"), py::arg("P"), py::arg("X_PF"),
+            py::arg("model_instance") = nullopt, cls_doc.ctor.doc_4args);
   }
 
   // Bodies.
