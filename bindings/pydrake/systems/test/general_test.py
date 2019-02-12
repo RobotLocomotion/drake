@@ -418,7 +418,8 @@ class TestGeneral(unittest.TestCase):
         model_value = AbstractValue.Make("Hello World")
         system = PassThrough(copy.copy(model_value))
         context = system.CreateDefaultContext()
-        context.FixInputPort(0, copy.copy(model_value))
+        fixed = context.FixInputPort(0, copy.copy(model_value))
+        self.assertIsInstance(fixed.GetMutableData(), AbstractValue)
         input_port = system.get_input_port(0)
 
         value = input_port.Eval(context)
