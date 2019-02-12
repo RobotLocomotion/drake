@@ -52,4 +52,19 @@ drake_py_binary(
     deps = [":sphinx_base"],
 )
 
-add_lint_tests(python_lint_exclude = [":conf.py"])
+drake_py_binary(
+    name = "doxygen",
+    srcs = [
+        "doxygen_main.py",
+    ],
+    data = [
+        "//:.bazelproject",
+        "@bazel_tools//tools/python/runfiles",
+        "@doxygen",
+    ],
+)
+
+add_lint_tests(
+    python_lint_exclude = [":conf.py"],
+    python_lint_extra_srcs = [":doxygen.py"],
+)
