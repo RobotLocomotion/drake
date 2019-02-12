@@ -52,7 +52,7 @@ TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
     const auto& port = leaf.get_output_port(i);
     const int size = (&port == &state_port()) ? (2 * N) : N;
     EXPECT_TRUE(CompareMatrices(
-        port.EvalEigenVector(context_),
+        port.Eval(context_),
         VectorXd::Zero(size)));
   }
 
@@ -77,28 +77,28 @@ TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
 
   // Confirm that real message values are output correctly.
   EXPECT_TRUE(CompareMatrices(
-      dut_.get_position_commanded_output_port().EvalEigenVector(context_),
+      dut_.get_position_commanded_output_port().Eval(context_),
       position_commanded));
   EXPECT_TRUE(CompareMatrices(
-      dut_.get_position_measured_output_port().EvalEigenVector(context_),
+      dut_.get_position_measured_output_port().Eval(context_),
       position_measured));
   EXPECT_TRUE(CompareMatrices(
-      dut_.get_velocity_estimated_output_port().EvalEigenVector(context_),
+      dut_.get_velocity_estimated_output_port().Eval(context_),
       velocity_estimated));
   EXPECT_TRUE(CompareMatrices(
-      dut_.get_torque_commanded_output_port().EvalEigenVector(context_),
+      dut_.get_torque_commanded_output_port().Eval(context_),
       torque_commanded));
   EXPECT_TRUE(CompareMatrices(
-      dut_.get_torque_measured_output_port().EvalEigenVector(context_),
+      dut_.get_torque_measured_output_port().Eval(context_),
       torque_measured));
   EXPECT_TRUE(CompareMatrices(
-      dut_.get_torque_external_output_port().EvalEigenVector(context_),
+      dut_.get_torque_external_output_port().Eval(context_),
       torque_external));
   EXPECT_TRUE(CompareMatrices(
-      state_port().EvalEigenVector(context_).head(N),
+      state_port().Eval(context_).head(N),
       position_measured));
   EXPECT_TRUE(CompareMatrices(
-      state_port().EvalEigenVector(context_).tail(N),
+      state_port().Eval(context_).tail(N),
       velocity_estimated));
 }
 

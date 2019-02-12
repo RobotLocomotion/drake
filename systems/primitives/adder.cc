@@ -32,8 +32,7 @@ void Adder<T>::CalcSum(const Context<T>& context,
 
   // Sum each input port into the output.
   for (int i = 0; i < context.get_num_input_ports(); i++) {
-    const BasicVector<T>* input_vector = this->EvalVectorInput(context, i);
-    sum_vector += input_vector->get_value();
+    sum_vector += this->get_input_port(i).Eval(context);
   }
 }
 

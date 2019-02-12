@@ -93,7 +93,7 @@ class VectorSystem : public LeafSystem<T> {
       const Context<T>& context) const {
     // Obtain the block form of u (or the empty vector).
     if (this->get_num_input_ports() > 0) {
-      return this->EvalEigenVectorInput(context, 0);
+      return this->get_input_port().Eval(context);
     }
     static const never_destroyed<VectorX<T>> empty_vector(0);
     return empty_vector.access().segment(0, 0);

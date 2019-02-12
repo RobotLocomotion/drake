@@ -576,7 +576,7 @@ TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
   for (int i = 0; i < kSize; ++i) {
     const auto& input_port = diagram_->get_input_port(i);
-    EXPECT_EQ(diagram_.get(), input_port.get_system());
+    EXPECT_EQ(diagram_.get(), &input_port.get_system());
     EXPECT_EQ(kVectorValued, input_port.get_data_type());
     EXPECT_EQ(kSize, input_port.size());
   }

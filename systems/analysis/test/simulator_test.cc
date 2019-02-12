@@ -1167,9 +1167,7 @@ class SimpleHybridSystem : public LeafSystem<double> {
   EventStatus Update(
       const Context<double>& context,
       DiscreteValues<double>* x_next) const {
-    const BasicVector<double>* input = this->EvalVectorInput(context, 0);
-    DRAKE_DEMAND(input);
-    const double u = input->get_value()[0];  // u(t)
+    const double u = this->get_input_port(0).Eval(context)[0];  // u(t)
     double x = context.get_discrete_state()[0];  // x_n
     (*x_next)[0] = x + u;
     return EventStatus::Succeeded();
@@ -1282,7 +1280,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
                                            const DiscreteUpdateEvent<double>&,
                                            DiscreteValues<double>* x_np1) {
           const double x_n = get_x(context);
-          const double u = EvalVectorInput(context, 0)->GetAtIndex(0);
+          const double u = get_input_port(0).Eval(context)[0];
           x_np1->get_mutable_vector()[0] = x_n + u;  // x_{n+1} = x_n + u(t)
         }));
   }

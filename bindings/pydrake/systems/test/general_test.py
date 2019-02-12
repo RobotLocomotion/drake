@@ -55,6 +55,7 @@ from pydrake.systems.primitives import (
     ConstantVectorSource, ConstantVectorSource_,
     Integrator,
     LinearSystem,
+    PassThrough,
     SignalLogger,
     )
 
@@ -400,9 +401,8 @@ class TestGeneral(unittest.TestCase):
         output_port = source.get_output_port(0)
 
         value = output_port.Eval(context)
-        self.assertEqual(type(value), type(model_value.get_value()))
-        self.assertEqual(type(value.get_value()), np.ndarray)
-        np.testing.assert_equal(value.get_value(), np_value)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np_value)
 
         value_abs = output_port.EvalAbstract(context)
         self.assertEqual(type(value_abs), type(model_value))
@@ -410,6 +410,43 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(value_abs.get_value().get_value(), np_value)
 
         basic = output_port.EvalBasicVector(context)
+        self.assertEqual(type(basic), BasicVector)
+        self.assertEqual(type(basic.get_value()), np.ndarray)
+        np.testing.assert_equal(basic.get_value(), np_value)
+
+    def test_abstract_input_port_eval(self):
+        model_value = AbstractValue.Make("Hello World")
+        system = PassThrough(copy.copy(model_value))
+        context = system.CreateDefaultContext()
+        context.FixInputPort(0, copy.copy(model_value))
+        input_port = system.get_input_port(0)
+
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, model_value.get_value())
+
+        value_abs = input_port.EvalAbstract(context)
+        self.assertEqual(type(value_abs), type(model_value))
+        self.assertEqual(value_abs.get_value(), model_value.get_value())
+
+    def test_vector_input_port_eval(self):
+        np_value = np.array([1., 2., 3.])
+        model_value = AbstractValue.Make(BasicVector(np_value))
+        system = PassThrough(len(np_value))
+        context = system.CreateDefaultContext()
+        context.FixInputPort(0, np_value)
+        input_port = system.get_input_port(0)
+
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np_value)
+
+        value_abs = input_port.EvalAbstract(context)
+        self.assertEqual(type(value_abs), type(model_value))
+        self.assertEqual(type(value_abs.get_value().get_value()), np.ndarray)
+        np.testing.assert_equal(value_abs.get_value().get_value(), np_value)
+
+        basic = input_port.EvalBasicVector(context)
         self.assertEqual(type(basic), BasicVector)
         self.assertEqual(type(basic.get_value()), np.ndarray)
         np.testing.assert_equal(basic.get_value(), np_value)

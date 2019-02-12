@@ -71,19 +71,19 @@ class IiwaCommandReceiverTest : public testing::TestWithParam<int> {
 
   VectorXd position() const {
     const auto& port = dut_.get_commanded_position_output_port();
-    const VectorXd result = port.EvalEigenVector(context_);
+    const VectorXd result = port.Eval(context_);
     EXPECT_EQ(state().head(N), result);  // Sanity check the deprecated output.
     return result;
   }
 
   VectorXd torque() const {
-    return dut_.get_commanded_torque_output_port().EvalEigenVector(context_);
+    return dut_.get_commanded_torque_output_port().Eval(context_);
   }
 
   VectorXd state() const {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return dut_.get_commanded_state_output_port().EvalEigenVector(context_);
+    return dut_.get_commanded_state_output_port().Eval(context_);
 #pragma GCC diagnostic pop
   }
 

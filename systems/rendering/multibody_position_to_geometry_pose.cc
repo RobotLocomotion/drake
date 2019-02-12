@@ -40,7 +40,7 @@ void MultibodyPositionToGeometryPose<T>::CalcGeometryPose(
   // TODO(eric.cousineau): Place `plant_context_` in the cache of `context`,
   // and remove mutable member.
   plant_.GetMutablePositions(plant_context_.get()) =
-      this->EvalEigenVectorInput(context, 0);
+      get_input_port().Eval(context);
 
   // Evaluate the plant's output port.
   plant_.get_geometry_poses_output_port().Calc(*plant_context_, output);
