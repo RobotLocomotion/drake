@@ -1,7 +1,6 @@
-#!/usr/bin/env python2
-
 """Command-line tool to generate Drake's Doxygen content.
 
+See drake/doc/documentation_instructions.rst for instructions and usage hints.
 """
 
 from __future__ import print_function
@@ -13,35 +12,32 @@ from os.path import dirname
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from six import iteritems
+from bazel_tools.tools.python.runfiles import runfiles
 
-def _get_drake_workspace():
-    """Find and return the path to the drake workspace."""
 
-    result = dirname(dirname(os.path.abspath(sys.argv[0])))
-    if not os.path.exists(os.path.join(result, "WORKSPACE")):
-        raise RuntimeError("Could not place drake at " + result)
-    return result
-
-def _run_doxygen(args):
-    # Find our programs.
+def _run_doxygen(drake_workspace, args):
+    # Find 'doxygen' using runfiles.
+    doxygen = runfiles.Create().Rlocation("doxygen/doxygen")
+    assert os.path.exists(doxygen), doxygen
+    # Find 'dot' using Drake's default path (for this platform).
     if sys.platform == "darwin":
         path = "/usr/local/bin:/usr/bin:/bin"
     else:
         path = "/usr/bin:/bin"
     env = {"PATH": path}
-    doxygen = subprocess.check_output(["which", "doxygen"], env=env).strip()
     dot = subprocess.check_output(["which", "dot"], env=env).strip()
 
     # Prepare the input and output folders.  We will copy the requested input
     # file(s) into a temporary scratch directory, so that Doxygen doesn't root
     # around in the drake_workspace (which is extremely slow).
-    drake_workspace = _get_drake_workspace()
-    binary_dir = os.path.join(drake_workspace, "build/drake/doc")
-    input_root = os.path.join(binary_dir, "input")
-    if os.path.exists(input_root):
-        shutil.rmtree(input_root)
+    out_dir = os.path.abspath(args.out_dir)
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    working_dir = os.path.join(drake_workspace, "doxygen_tmp")
+    input_root = os.path.join(working_dir, "input")
     source_root = os.path.join(input_root, "drake")
     os.makedirs(source_root)
     shutil.copytree(
@@ -61,14 +57,25 @@ def _run_doxygen(args):
         assert not rel_x.startswith(".."), rel_x
 
         # Skip bad things.
-        if rel_x.startswith("."): continue
-        if rel_x.startswith("bazel"): continue
-        if rel_x.startswith("build"): continue
-        if rel_x.startswith("cmake"): continue
-        if rel_x.startswith("doc"): continue  # N.B. Done above.
-        if rel_x.startswith("setup"): continue
-        if rel_x.startswith("third_party"): continue
-        if rel_x.startswith("tools"): continue
+        if rel_x.startswith("."):
+            continue
+        if rel_x.startswith("bazel"):
+            continue
+        if rel_x.startswith("build"):
+            continue
+        if rel_x.startswith("cmake"):
+            continue
+        if rel_x.startswith("doc"):
+            # N.B. Done above.
+            continue
+        if rel_x.startswith("doxygen_tmp"):
+            continue
+        if rel_x.startswith("setup"):
+            continue
+        if rel_x.startswith("third_party"):
+            continue
+        if rel_x.startswith("tools"):
+            continue
 
         # Copy the workspace files into the input scratch dir.
         target = os.path.join(source_root, rel_x)
@@ -92,7 +99,8 @@ def _run_doxygen(args):
     # Populate the definitions dict needed by Doxygen_CXX.in.
     definitions = OrderedDict()
     definitions["INPUT_ROOT"] = input_root
-    definitions["BINARY_DIR"] = binary_dir
+    definitions["OUTPUT_DIRECTORY"] = out_dir
+    definitions["WARN_LOGFILE"] = os.path.join(out_dir, "doxygen.log")
     if args.quick:
         definitions["DOXYGEN_DOT_FOUND"] = "NO"
         definitions["DOXYGEN_DOT_EXECUTABLE"] = ""
@@ -104,12 +112,9 @@ def _run_doxygen(args):
 
     # Create Doxyfile_CXX.
     in_filename = os.path.join(drake_workspace, "doc/Doxyfile_CXX.in")
-    doxyfile = os.path.join(binary_dir, "Doxyfile_CXX")
-    # N.B. If we executed `cmake_configure_file.py` under `bazel-bin`, it would
-    # require that users do some form of `bazel build`, which would require an
-    # explicit change to the doxygen building workflow.
-    # TODO(eric.cousineau): Try to wrap at least bits of this in Bazel to
-    # minimize this constraint.
+    doxyfile = os.path.join(working_dir, "Doxyfile_CXX")
+    # TODO(eric.cousineau): Import cmake_configure_file as a py_library,
+    # instead of shelling out to it.
     subprocess.check_call(
         [sys.executable,
          os.path.join(
@@ -122,25 +127,32 @@ def _run_doxygen(args):
     # Run Doxygen.
     print("Building C++ Doxygen documentation...")
     sys.stdout.flush()
-    subprocess.check_call([doxygen, doxyfile], cwd=binary_dir)
-    shutil.rmtree(input_root)  # Don't let Bazel find the build/input copy.
+    subprocess.check_call([doxygen, doxyfile], cwd=working_dir)
+    shutil.rmtree(working_dir)
     print("done")
-    print("See file://%s/doxygen_cxx/html/index.html" % binary_dir)
+    print("See file://%s/html/index.html" % out_dir)
 
 
 def main():
+    drake_workspace = os.path.dirname(
+        runfiles.Create().Rlocation("drake/.bazelproject"))
+    assert os.path.exists(drake_workspace), drake_workspace
     parser = argparse.ArgumentParser(
         description=__doc__.strip())
     parser.add_argument(
         '--quick', action='store_true', default=False,
-        help="Disable slow features (e.g., all graphs)")
+        help="Disable slow features (e.g., all graphs).")
+    parser.add_argument(
+        "--out_dir", type=str, metavar="DIR", default=os.path.join(
+            drake_workspace, "build/drake/doc/doxygen_cxx"),
+        help="Output directory. Does not have to exist beforehand.")
     parser.add_argument(
         'inputs', nargs='*',
         help="Process only these files and/or directories; "
         "most useful using shell globbing, e.g., "
-        "doxygen.py --quick systems/framework/*leaf*.h")
+        "bazel-bin/doc/doxygen --quick systems/framework/*leaf*.h.")
     args = parser.parse_args()
-    _run_doxygen(args)
+    _run_doxygen(drake_workspace, args)
 
 
 if __name__ == '__main__':
