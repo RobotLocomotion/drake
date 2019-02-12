@@ -136,6 +136,12 @@ class DiagramBuilder {
   }
 
   /// Declares that input port @p dest is connected to output port @p src.
+  /// @note The connection created between @p src and @p dest via a call to
+  /// this method can be effectively overridden by any subsequent call to
+  /// Context::FixInputPort(). That is, calling Context::FixInputPort() on an
+  /// already connected input port causes the resultant
+  /// FixedInputPortValue to override any other value present on that
+  /// port.
   void Connect(const OutputPort<T>& src,
                const InputPort<T>& dest) {
     InputPortLocator dest_id{&dest.get_system(), dest.get_index()};
@@ -181,6 +187,12 @@ class DiagramBuilder {
 
   /// Declares that sole input port on the @p dest system is connected to sole
   /// output port on the @p src system.
+  /// @note The connection created between @p src and @p dest via a call to
+  /// this method can be effectively overridden by any subsequent call to
+  /// Context::FixInputPort(). That is, calling Context::FixInputPort() on an
+  /// already connected input port causes the resultant
+  /// FixedInputPortValue to override any other value present on that
+  /// port.
   /// @throws std::exception if the sole-port precondition is not met (i.e.,
   /// if @p dest has no input ports, or @p dest has more than one input port,
   /// or @p src has no output ports, or @p src has more than one output port).
