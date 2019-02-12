@@ -8,6 +8,32 @@
 namespace drake {
 namespace solvers {
 
+/**
+ * The details of SNOPT solvers after calling Solve function. The users can get
+ * the details by
+ * MathematicalProgramResult::get_solver_details().GetValue<SnoptSolverDetails>();
+ */
+struct SnoptSolverDetails {
+  /**
+   * The exit condition of the solver. Please refer to section "EXIT conditions"
+   * in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
+   * Programming" by Philip E. Gill to interprete the exit condition.
+   */
+  int info{};
+
+  /** The final value of the dual variables for the bound constraint x_lower <=
+   * x <= x_upper.
+   */
+  Eigen::VectorXd xmul;
+  /** The final value of the vector of problem functions F(x).
+   */
+  Eigen::VectorXd F;
+  /** The final value of the dual variables (Lagrange multipliers) for the
+   * general constraints F_lower <= F(x) <= F_upper.
+   */
+  Eigen::VectorXd Fmul;
+};
+
 class SnoptSolver : public SolverInterface  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver)
