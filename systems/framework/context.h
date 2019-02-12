@@ -183,13 +183,6 @@ class Context : public ContextBase {
     return parameters_->num_numeric_parameter_groups();
   }
 
-  DRAKE_DEPRECATED(
-      "Use num_numeric_parameter_groups().  This method will be removed after "
-      "2/15/19.")
-  int num_numeric_parameters() const {
-    return num_numeric_parameter_groups();
-  }
-
   /// Returns a const reference to the vector-valued parameter at @p index.
   /// @pre @p index must identify an existing parameter.
   const BasicVector<T>& get_numeric_parameter(int index) const {

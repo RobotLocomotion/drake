@@ -163,20 +163,6 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   return ret;
 }
 
-// Computes 3x3 matrix from associated quaternion representation.
-// @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
-// @param[in] quaternion 4 x 1 unit length quaternion, i.e., [w; x; y; z].
-// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-template <typename Derived>
-DRAKE_DEPRECATED("Use  math::RotationMatrix(Eigen::Quaternion). "
-                 "Code will be deleted after February 5, 2019.")
-Matrix3<typename Derived::Scalar> quat2rotmat(
-    const Eigen::MatrixBase<Derived>& v) {
-  const Eigen::Quaternion<typename Derived::Scalar> q(v(0), v(1), v(2), v(3));
-  const RotationMatrix<typename Derived::Scalar> R(q);
-  return R.matrix();
-}
-
 /**
  * This function tests whether a quaternion is in "canonical form" meaning that
  * it tests whether the quaternion [w, x, y, z] has a non-negative w value.
