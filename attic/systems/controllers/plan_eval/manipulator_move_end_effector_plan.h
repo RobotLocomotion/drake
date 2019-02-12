@@ -63,7 +63,7 @@ class ManipulatorMoveEndEffectorPlan : public GenericPlan<T> {
           robot_stauts,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
-      const systems::AbstractValue& plan) override;
+      const AbstractValue& plan) override;
 
  private:
   GenericPlan<T>* CloneGenericPlanDerived() const override;

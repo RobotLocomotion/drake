@@ -8,10 +8,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

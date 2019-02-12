@@ -16,7 +16,6 @@
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
-#include "drake/systems/framework/value.h"
 
 using Eigen::VectorXd;
 

@@ -17,7 +17,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 
 // TODO(edrumwri,sherm1) This code is currently written out mostly in scalars
 // but should be done in 2D vectors instead to make it more compact, easier to

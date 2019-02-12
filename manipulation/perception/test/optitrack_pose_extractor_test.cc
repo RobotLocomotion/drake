@@ -10,7 +10,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace manipulation {
@@ -37,8 +36,8 @@ class OptitrackPoseTest : public ::testing::Test {
 
   Isometry3<double> UpdateStateCalcOutput(
       const optitrack::optitrack_frame_t& input_frame) {
-    std::unique_ptr<systems::AbstractValue> input(
-        new systems::Value<optitrack::optitrack_frame_t>());
+    std::unique_ptr<AbstractValue> input(
+        new Value<optitrack::optitrack_frame_t>());
     input->SetValue(input_frame);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
 

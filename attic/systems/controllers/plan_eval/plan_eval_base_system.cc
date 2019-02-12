@@ -41,7 +41,7 @@ PlanEvalBaseSystem::PlanEvalBaseSystem(
   set_name("PlanEval");
 
   abs_state_index_qp_input_ =
-      DeclareAbstractState(systems::AbstractValue::Make<QpInput>(QpInput()));
+      DeclareAbstractState(AbstractValue::Make<QpInput>(QpInput()));
 }
 
 void PlanEvalBaseSystem::CopyOutQpInput(const systems::Context<double>& context,

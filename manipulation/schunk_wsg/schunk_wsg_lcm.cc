@@ -61,7 +61,7 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
   lcmt_schunk_wsg_command uninitialized_message{};
   this->DeclareAbstractInputPort(
       "command_message",
-      systems::Value<lcmt_schunk_wsg_command>(uninitialized_message));
+      Value<lcmt_schunk_wsg_command>(uninitialized_message));
 }
 
 void SchunkWsgCommandReceiver::EvalInput(
@@ -76,7 +76,7 @@ void SchunkWsgCommandReceiver::EvalInput(
   SchunkWsgCommand<double> decoded_command;
 #pragma GCC diagnostic pop
   if (!wsg_command) {
-    const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
+    const AbstractValue* input = this->EvalAbstractInput(context, 1);
     DRAKE_THROW_UNLESS(input != nullptr);
     const auto& command_msg = input->GetValue<lcmt_schunk_wsg_command>();
     std::vector<uint8_t> bytes(command_msg.getEncodedSize());
@@ -167,13 +167,13 @@ SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
                                  &SchunkWsgStatusReceiver::CopyForceOut)
                              .get_index()) {
   this->DeclareAbstractInputPort("lcmt_schunk_wsg_status",
-                                 systems::Value<lcmt_schunk_wsg_status>());
+                                 Value<lcmt_schunk_wsg_status>());
 }
 
 void SchunkWsgStatusReceiver::CopyStateOut(
     const drake::systems::Context<double>& context,
     drake::systems::BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_schunk_wsg_status>();
 
@@ -184,7 +184,7 @@ void SchunkWsgStatusReceiver::CopyStateOut(
 void SchunkWsgStatusReceiver::CopyForceOut(
     const drake::systems::Context<double>& context,
     drake::systems::BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_schunk_wsg_status>();
 

@@ -3,13 +3,11 @@
 #include <memory>
 
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace multibody {
 
 using systems::Context;
-using systems::Value;
 
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(

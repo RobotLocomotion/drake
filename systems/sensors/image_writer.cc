@@ -144,7 +144,7 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
 
   // Now configure the system for the valid port declaration.
   const auto& port =
-      DeclareAbstractInputPort(port_name, systems::Value<Image<kPixelType>>());
+      DeclareAbstractInputPort(port_name, Value<Image<kPixelType>>());
 
   PublishEvent<double> event(
       TriggerType::kPeriodic,

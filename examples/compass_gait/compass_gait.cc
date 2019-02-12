@@ -20,7 +20,7 @@ CompassGait<T>::CompassGait()
   // Abstract state for indicating that the left foot is the stance foot.  This
   // is only used for the visualization output.
   bool left_stance = true;
-  this->DeclareAbstractState(systems::AbstractValue::Make(left_stance));
+  this->DeclareAbstractState(AbstractValue::Make(left_stance));
 
   // The minimal state of the system.
   this->DeclareVectorOutputPort(CompassGaitContinuousState<T>(),

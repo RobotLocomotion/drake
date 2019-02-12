@@ -21,7 +21,7 @@ PurePursuitController<T>::PurePursuitController()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<automotive::PurePursuitController>{}),
       lane_index_{this->DeclareAbstractInputPort(
-          systems::kUseDefaultName, systems::Value<LaneDirection>())
+          systems::kUseDefaultName, Value<LaneDirection>())
               .get_index()},
       ego_pose_index_{
           this->DeclareVectorInputPort(PoseVector<T>{})

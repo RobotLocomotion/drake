@@ -7,9 +7,9 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

@@ -45,7 +45,6 @@ class SceneGraphTester {
 
 namespace dev {
 
-using systems::AbstractValue;
 using systems::Context;
 using systems::InputPort;
 using systems::LeafContext;
@@ -54,7 +53,6 @@ using systems::rendering::PoseBundle;
 using systems::SystemOutput;
 using systems::SystemSymbolicInspector;
 using systems::SystemTypeTag;
-using systems::Value;
 using std::make_unique;
 using std::vector;
 

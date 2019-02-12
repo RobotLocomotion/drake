@@ -14,12 +14,12 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port_base.h"
 #include "drake/systems/framework/system_base.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

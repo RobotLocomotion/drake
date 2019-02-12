@@ -130,7 +130,7 @@ drake_cc_library(
     hdrs = ["geometry_properties.h"],
     deps = [
         "//common:essential",
-        "//systems/framework:value",
+        "//common:value",
         "@fmt",
     ],
 )

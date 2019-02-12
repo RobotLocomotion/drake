@@ -92,7 +92,7 @@ template <typename T>
 void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
     const RobotKinematicState<T>& robot_status, const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
-    const systems::AbstractValue& plan) {
+    const AbstractValue& plan) {
   unused(paramset);
 
   const auto& msg = plan.GetValueOrThrow<robotlocomotion::robot_plan_t>();

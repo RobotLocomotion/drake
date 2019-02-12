@@ -7,7 +7,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 
 using std::make_unique;
 

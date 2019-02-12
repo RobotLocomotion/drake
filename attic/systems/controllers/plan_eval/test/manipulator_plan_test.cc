@@ -183,7 +183,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
 
   // Handles the new plan.
   {
-    systems::Value<lcmt_manipulator_plan_move_end_effector> msg_as_value(msg);
+    Value<lcmt_manipulator_plan_move_end_effector> msg_as_value(msg);
     dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
                             msg_as_value);
 
@@ -245,7 +245,7 @@ TEST_F(ManipPlanTest, MoveEndEffectorHandleMessageTest) {
 
   // Handles the new plan.
   {
-    systems::Value<lcmt_manipulator_plan_move_end_effector> msg_as_value(msg);
+    Value<lcmt_manipulator_plan_move_end_effector> msg_as_value(msg);
     dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
                             msg_as_value);
 

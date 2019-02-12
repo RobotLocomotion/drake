@@ -111,7 +111,7 @@ class TransformPointCloudTest : public ::testing::Test {
   std::shared_ptr<RigidBodyFrame<double>> frame_;
   std::unique_ptr<TransformPointCloud> transformer_;
   std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<systems::AbstractValue> output_;
+  std::unique_ptr<AbstractValue> output_;
   VectorX<double> state_input_;
   std::unique_ptr<PointCloud> cloud_input_;
 
@@ -133,7 +133,7 @@ class TransformPointCloudTest : public ::testing::Test {
 
     context_ = transformer_->CreateDefaultContext();
     context_->FixInputPort(
-        0, systems::AbstractValue::Make<PointCloud>(*cloud_input_.get()));
+        0, AbstractValue::Make<PointCloud>(*cloud_input_.get()));
     context_->FixInputPort(1, state_input_);
   }
 };
