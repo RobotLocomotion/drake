@@ -8,7 +8,7 @@ PROJECT_NAME           = Drake
 PROJECT_NUMBER         =
 PROJECT_BRIEF          =
 PROJECT_LOGO           =
-OUTPUT_DIRECTORY       = "@BINARY_DIR@/doxygen_cxx"
+OUTPUT_DIRECTORY       = "@OUTPUT_DIRECTORY@"
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
 OUTPUT_LANGUAGE        = English
@@ -112,7 +112,7 @@ WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = YES
 WARN_AS_ERROR          = NO
 WARN_FORMAT            = "$file:$line: $text"
-WARN_LOGFILE           = "@BINARY_DIR@/doxygen_cxx.log"
+WARN_LOGFILE           = "@WARN_LOGFILE@"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
@@ -154,8 +154,6 @@ REFERENCES_LINK_SOURCE = YES
 SOURCE_TOOLTIPS        = YES
 USE_HTAGS              = NO
 VERBATIM_HEADERS       = NO
-CLANG_ASSISTED_PARSING = NO
-CLANG_OPTIONS          =
 #---------------------------------------------------------------------------
 # Configuration options related to the alphabetical class index
 #---------------------------------------------------------------------------
