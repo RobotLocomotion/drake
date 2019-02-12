@@ -72,9 +72,7 @@ const OutPort& IiwaStatusReceiver::get_state_output_port() const {
 template <std::vector<double> drake::lcmt_iiwa_status::* field_ptr>
 void IiwaStatusReceiver::CalcLcmOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const auto* input = this->EvalInputValue<lcmt_iiwa_status>(context, 0);
-  DRAKE_THROW_UNLESS(input != nullptr);
-  const auto& status = *input;
+  const auto& status = get_input_port().Eval<lcmt_iiwa_status>(context);
 
   // If we're using a default constructed message (i.e., we haven't received
   // any status message yet), output zero.

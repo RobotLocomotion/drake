@@ -53,13 +53,11 @@ SchunkWsgPdController::SchunkWsgPdController(double kp_command,
 Vector2d SchunkWsgPdController::CalcGeneralizedForce(
     const drake::systems::Context<double>& context) const {
   // Read the input ports.
-  const auto& desired_state =
-      this->EvalEigenVectorInput(context, desired_state_input_port_);
-  const double force_limit =
-      this->EvalEigenVectorInput(context, force_limit_input_port_)[0];
+  const auto& desired_state = get_desired_state_input_port().Eval(context);
+  const double force_limit = get_force_limit_input_port().Eval(context)[0];
   // TODO(russt): Declare a proper input constraint.
   DRAKE_DEMAND(force_limit > 0);
-  const auto& state = this->EvalEigenVectorInput(context, state_input_port_);
+  const auto& state = get_state_input_port().Eval(context);
 
   // f₀+f₁ = -kp_constraint*(q₀+q₁) - kd_constraint*(v₀+v₁).
   const double f0_plus_f1 = -kp_constraint_ * (state[0] + state[1]) -
