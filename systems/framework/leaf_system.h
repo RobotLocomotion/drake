@@ -477,7 +477,7 @@ class LeafSystem : public System<T> {
                                  int max_depth,
                                  std::stringstream *dot) const final {
     unused(max_depth);
-    DRAKE_DEMAND(port.get_system() == this);
+    DRAKE_DEMAND(&port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
   }
 
@@ -1664,16 +1664,8 @@ class LeafSystem : public System<T> {
     // Caution: "name" is empty now.
     MaybeDeclareVectorBaseInequalityConstraint(
         "output " + std::to_string(int{port.get_index()}), model_vector,
-        [&port, storage = std::shared_ptr<AbstractValue>{}](
-            const Context<T>& context) mutable -> const VectorBase<T>& {
-          // Because we must return a VectorBase by const reference, our lambda
-          // object needs a member field to maintain storage for our result.
-          // We must use a shared_ptr not because we share storage, but because
-          // our lambda must be copyable.  This will go away once Eval works.
-          storage = port.Allocate();
-          // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
-          port.Calc(context, storage.get());
-          return storage->GetValue<BasicVector<T>>();
+        [&port](const Context<T>& context) -> const VectorBase<T>& {
+          return port.template Eval<BasicVector<T>>(context);
         });
     return port;
   }
@@ -2499,7 +2491,7 @@ class LeafSystem : public System<T> {
     // the cache entry; the port's tracker will be subscribed to the cache
     // entry's tracker when a Context is created.
     // TODO(sherm1) Use implicit_cast when available (from abseil).
-    auto port = std::make_unique<LeafOutputPort<T>>(
+    auto port = internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         std::move(name),

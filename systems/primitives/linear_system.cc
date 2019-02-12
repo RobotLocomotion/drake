@@ -156,13 +156,13 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
         PortDataType::kAbstractValued) {
       continue;
     }
-    Eigen::VectorXd u = system.EvalEigenVectorInput(context, index);
+    Eigen::VectorXd u = system.get_input_port(index).Eval(context);
     autodiff_context->FixInputPort(index, u.cast<AutoDiffXd>());
   }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (input_port) {
-    u0 = system.EvalEigenVectorInput(context, input_port->get_index());
+    u0 = system.get_input_port(input_port->get_index()).Eval(context);
   }
 
   auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);

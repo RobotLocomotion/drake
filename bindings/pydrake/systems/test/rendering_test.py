@@ -151,6 +151,8 @@ class TestRendering(unittest.TestCase):
         self.assertEqual(port3.get_data_type(), PortDataType.kAbstractValued)
 
         # - CalcOutput.
+        self.assertEqual(aggregator.get_output_port(0).get_data_type(),
+                         PortDataType.kAbstractValued)
         context = aggregator.CreateDefaultContext()
         output = aggregator.AllocateOutput()
 

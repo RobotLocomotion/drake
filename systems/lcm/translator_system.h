@@ -27,10 +27,7 @@ struct DataTypeTraits<DataType, true> {
   // and is of type DataType.
   static const DataType& get_data(const System<double>& sys,
                                   const Context<double>& context) {
-    const DataType* const vector =
-        dynamic_cast<const DataType*>(sys.EvalVectorInput(context, 0));
-    DRAKE_DEMAND(vector != nullptr);
-    return *vector;
+    return sys.get_input_port(0).template Eval<DataType>(context);
   }
 };
 /// @endcond

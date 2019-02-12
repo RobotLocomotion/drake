@@ -1185,10 +1185,10 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   context->set_time(context->get_time() + 1.);
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
-  (void)port2.EvalAbstract(*context);  // Recalculate.
+  (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 3);
-  (void)port2.EvalAbstract(*context);  // "Recalculate" (should do nothing).
+  (void)port2.template Eval<AbstractValue>(*context);  // Should do nothing.
   EXPECT_EQ(cacheval2.serial_number(), 3);
 
   // Should invalidate accuracy- and everything-dependents. Note that the
@@ -1196,7 +1196,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   EXPECT_FALSE(context->get_accuracy());  // None set initially.
   context->set_accuracy(.000025);  // This is a change.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
-  (void)port2.EvalAbstract(*context);  // Recalculate.
+  (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 4);
 

@@ -50,18 +50,18 @@ class DummySys : public LeafSystem<double> {
 
  private:
   EventStatus SaveMessage(const Context<double>& context) const {
-    const lcmt_drake_signal* msg =
-        EvalInputValue<lcmt_drake_signal>(context, 0);
+    const lcmt_drake_signal& msg =
+        this->get_input_port(0).Eval<lcmt_drake_signal>(context);
 
     bool is_new_msg = false;
-    if (received_msgs_.empty() && msg->timestamp != 0) is_new_msg = true;
+    if (received_msgs_.empty() && msg.timestamp != 0) is_new_msg = true;
     if (!received_msgs_.empty() &&
-        (msg->timestamp != received_msgs_.back().timestamp)) {
+        (msg.timestamp != received_msgs_.back().timestamp)) {
       is_new_msg = true;
     }
 
     if (is_new_msg) {
-      received_msgs_.push_back(*msg);
+      received_msgs_.push_back(msg);
 
       // The diagram that this system is embedded in works the following way:
       // The LCM Subscriber system receives a message and then requests an

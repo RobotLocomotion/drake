@@ -28,12 +28,10 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
         return Value<Output>::Make(result);
       },
       [this, frame_id](const Context<T>& context, AbstractValue* calculated) {
-        const Input* input =
-            this->template EvalVectorInput<PoseVector>(context, 0);
-        DRAKE_DEMAND(input != nullptr);
+        const Input& input = get_input_port().template Eval<Input>(context);
         Output& output = calculated->GetMutableValueOrThrow<Output>();
         output.clear();
-        output.set_value(frame_id, input->get_isometry());
+        output.set_value(frame_id, input.get_isometry());
       });
 }
 

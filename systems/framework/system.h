@@ -492,6 +492,7 @@ class System : public SystemBase {
     return entry.Eval<T>(context);
   }
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /// Returns the value of the vector-valued input port with the given
   /// `port_index` as a BasicVector or a specific subclass `Vec` derived from
   /// BasicVector. Causes the value to become up to date first if necessary. See
@@ -534,6 +535,7 @@ class System : public SystemBase {
     return value;
   }
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /// Returns the value of the vector-valued input port with the given
   /// `port_index` as an %Eigen vector. Causes the value to become up to date
   /// first if necessary. See EvalAbstractInput() for more information.
@@ -1714,9 +1716,12 @@ class System : public SystemBase {
     const InputPortIndex port_index(get_num_input_ports());
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
-    this->AddInputPort(std::make_unique<InputPort<T>>(
+    auto eval = [this, port_index](const ContextBase& context_base) {
+      return this->EvalAbstractInput(context_base, port_index);
+    };
+    this->AddInputPort(internal::FrameworkFactory::Make<InputPort<T>>(
         this, this, NextInputPortName(std::move(name)), port_index, port_ticket,
-        type, size, random_type));
+        type, size, random_type, std::move(eval)));
     return get_input_port(port_index);
   }
 

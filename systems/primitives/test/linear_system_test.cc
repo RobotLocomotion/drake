@@ -606,8 +606,8 @@ class MimoSystem final : public LeafSystem<T> {
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     derivatives->SetFromVector(A_ * x + B0_ * u0 + B1_ * u1);
@@ -617,8 +617,8 @@ class MimoSystem final : public LeafSystem<T> {
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     discrete_state->get_mutable_vector(0).SetFromVector(A_ * x + B0_ * u0 +
@@ -626,16 +626,16 @@ class MimoSystem final : public LeafSystem<T> {
   }
 
   void CalcOutput0(const Context<T>& context, BasicVector<T>* output) const {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     output->SetFromVector(C0_ * x + D00_ * u0 + D01_ * u1);
   }
 
   void CalcOutput1(const Context<T>& context, BasicVector<T>* output) const {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     output->SetFromVector(C1_ * x + D10_ * u0 + D11_ * u1);

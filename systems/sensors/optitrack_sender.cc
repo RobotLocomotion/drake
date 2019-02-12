@@ -46,13 +46,12 @@ void OptitrackLcmFrameSender::PopulatePoseMessage(
   output->num_rigid_bodies = num_rigid_bodies_;
   output->rigid_bodies.resize(static_cast<size_t>(num_rigid_bodies_));
 
-  const geometry::FramePoseVector<double>* poses =
-      this->EvalInputValue<geometry::FramePoseVector<double>>(
-          context, pose_input_port_index_);
+  const auto& poses = get_optitrack_input_port().
+      Eval<geometry::FramePoseVector<double>>(context);
 
   int output_index = 0;
   for (const auto& frame : frame_map_) {
-    const Eigen::Isometry3d& pose = poses->value(frame.first);
+    const Eigen::Isometry3d& pose = poses.value(frame.first);
     output->rigid_bodies[output_index].id = frame.second.second;
     PopulateRigidBody(pose, &(output->rigid_bodies[output_index++]));
   }

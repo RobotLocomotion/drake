@@ -227,10 +227,7 @@ LcmImageArrayToImages::LcmImageArrayToImages()
 
 void LcmImageArrayToImages::CalcColorImage(
     const Context<double>& context, ImageRgba8U* color_image) const {
-  const systems::AbstractValue* input =
-      this->EvalAbstractInput(context, image_array_t_input_port_index_);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& images = input->GetValue<image_array_t>();
+  const auto& images = image_array_t_input_port().Eval<image_array_t>(context);
 
   // Look through the image array and just grab the first color image.
   const image_t* lcm_image = nullptr;
@@ -270,10 +267,7 @@ void LcmImageArrayToImages::CalcColorImage(
 
 void LcmImageArrayToImages::CalcDepthImage(
     const Context<double>& context, ImageDepth32F* depth_image) const {
-  const systems::AbstractValue* input =
-      this->EvalAbstractInput(context, image_array_t_input_port_index_);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& images = input->GetValue<image_array_t>();
+  const auto& images = image_array_t_input_port().Eval<image_array_t>(context);
 
   // Look through the image array and just grab the first depth image.
   const image_t* lcm_image = nullptr;
