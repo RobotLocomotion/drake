@@ -446,6 +446,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// `q_v` is not equal to `num_positions() + num_velocities()`.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, const VectorX<T>& q_v) const {
+    DRAKE_DEMAND(q_v.size() == (num_positions() + num_velocities()));
     internal_tree().GetMutablePositionsAndVelocities(context) = q_v;
   }
 
