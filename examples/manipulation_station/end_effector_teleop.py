@@ -287,7 +287,8 @@ else:
                            station.GetOutputPort("pose_bundle"))
     if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
-            station.get_scene_graph(), zmq_url=args.meshcat))
+            station.get_scene_graph(), zmq_url=args.meshcat,
+            open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
 
