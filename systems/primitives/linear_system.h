@@ -168,7 +168,7 @@ const int kUseFirstOutputIfItExists = -4;
 /// the input for the newly constructed system.  Any additional _vector_
 /// input ports will be treated as constants (fixed at the value specified in
 /// `context`). Abstract-valued input ports must be unconnected (i.e., the
-/// system must treat the port as optional and it must be used).
+/// system must treat the port as optional and it must be unused).
 ///
 /// @param system The system or subsystem to linearize.
 /// @param context Defines the nominal operating point about which the system

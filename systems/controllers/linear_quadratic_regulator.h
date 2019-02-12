@@ -121,18 +121,21 @@ std::unique_ptr<LinearSystem<double>> LinearQuadraticRegulator(
 /// @param R A symmetric positive definite cost matrix of size num_inputs x
 /// num_inputs.
 /// @param N A cost matrix of size num_states x num_inputs.
+/// @param int_port_index The index of the input port to linearize around.
 /// @returns A system implementing the optimal controller in the original system
 /// coordinates.
 ///
 /// @throws std::runtime_error if R is not positive definite.
 /// @ingroup control_systems
+/// @see drake::systems::Linearize()
 ///
 std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N =
-        Eigen::Matrix<double, 0, 0>::Zero());
+        Eigen::Matrix<double, 0, 0>::Zero(),
+    int input_port_index = kUseFirstInputIfItExists);
 
 }  // namespace controllers
 }  // namespace systems
