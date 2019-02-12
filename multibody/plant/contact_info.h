@@ -24,12 +24,7 @@ namespace multibody {
     - Separation speed.
     - Slip speed.
 
- @tparam T      The scalar type. It must be a valid Eigen scalar.
-
- Instantiated templates for the following ScalarTypes are provided:
-
- - double
- - AutoDiffXd
+ @tparam T Must be one of drake's default scalar types.
  */
 template <typename T>
 class PointPairContactInfo {
@@ -127,5 +122,5 @@ using PointPairContactInfo
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::PointPairContactInfo)

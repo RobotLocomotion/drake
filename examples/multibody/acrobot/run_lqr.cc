@@ -94,7 +94,8 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   Vector1d R = Vector1d::Constant(1);
 
   return systems::controllers::LinearQuadraticRegulator(
-      acrobot, *context, Q, R, Eigen::Matrix<double, 0, 0>::Zero(),
+      acrobot, *context, Q, R,
+      Eigen::Matrix<double, 0, 0>::Zero() /* No cross state/control costs */,
       actuation_port_index);
 }
 

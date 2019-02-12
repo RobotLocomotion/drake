@@ -133,7 +133,7 @@ PYBIND11_MODULE(math, m) {
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
-  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw")
+  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw", doc.RollPitchYaw.doc)
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("other"))
       .def(py::init<const Vector3<T>>(), py::arg("rpy"),
           doc.RollPitchYaw.ctor.doc_1args_rpy)

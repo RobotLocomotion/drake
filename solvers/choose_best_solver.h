@@ -18,7 +18,6 @@ SolverId ChooseBestSolver(const MathematicalProgram& prog);
  * Given the solver ID, create the solver with the matching ID.
  * @throw invalid_argument if there is no matching solver.
  */
-std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
-    const SolverId& id);
+std::unique_ptr<SolverInterface> MakeSolver(const SolverId& id);
 }  // namespace solvers
 }  // namespace drake

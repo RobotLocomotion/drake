@@ -33,7 +33,8 @@ The contents of the website are also available via
 To generate the C++ API documentation::
 
     $ cd drake
-    $ doc/doxygen.py [--quick]
+    $ bazel build //doc:doxygen
+    $ bazel-bin/doc/doxygen [--quick]
 
 To generate the Python API documentation::
 

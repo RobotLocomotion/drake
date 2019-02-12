@@ -187,10 +187,11 @@ void ImageToLcmImageArrayT::CalcImageArray(
   msg->images.clear();
 
   for (int i = 0; i < get_num_input_ports(); i++) {
-    const AbstractValue* image_value = this->EvalAbstractInput(context, i);
+    const auto& image_value = this->get_input_port(i).
+        template Eval<AbstractValue>(context);
 
     image_t image_msg;
-    PackImageToLcmImageT(*image_value, input_port_pixel_type_[i],
+    PackImageToLcmImageT(image_value, input_port_pixel_type_[i],
                          msg->header.utime, this->get_input_port(i).get_name(),
                          &image_msg, do_compress_);
     msg->images.push_back(image_msg);

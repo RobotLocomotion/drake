@@ -114,6 +114,7 @@ class SystemBase : public internal::SystemMessageInterface {
   scalar type-specific input port access. */
   //@{
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /** Returns the value of the input port with the given `port_index` as an
   AbstractValue, which is permitted for ports of any type. Causes the value to
   become up to date first if necessary, delegating to our parent Diagram.
@@ -133,6 +134,7 @@ class SystemBase : public internal::SystemMessageInterface {
     return EvalAbstractInputImpl(__func__, context, port);
   }
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /** Returns the value of an abstract-valued input port with the given
   `port_index` as a value of known type `V`. Causes the value to become
   up to date first if necessary. See EvalAbstractInput() for

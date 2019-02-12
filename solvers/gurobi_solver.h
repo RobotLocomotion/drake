@@ -7,7 +7,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -31,7 +31,7 @@ struct GurobiSolverDetails {
   double objective_bound{NAN};
 };
 
-class GurobiSolver : public MathematicalProgramSolverInterface {
+class GurobiSolver : public SolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
 
@@ -133,7 +133,7 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
 
   SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 
   bool AreProgramAttributesSatisfied(

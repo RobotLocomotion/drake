@@ -42,7 +42,7 @@ void Demultiplexer<T>::CopyToOutput(const Context<T>& context,
 
   // TODO(amcastro-tri): the output should simply reference the input port's
   // value to avoid copy.
-  auto in_vector = System<T>::EvalEigenVectorInput(context, 0);
+  auto in_vector = this->get_input_port(0).Eval(context);
   auto out_vector = output->get_mutable_value();
   out_vector = in_vector.segment(port_index * out_size, out_size);
 }

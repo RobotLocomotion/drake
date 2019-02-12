@@ -55,7 +55,8 @@ else:
                            station.GetOutputPort("pose_bundle"))
     if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
-                station.get_scene_graph(), zmq_url=args.meshcat))
+                station.get_scene_graph(), zmq_url=args.meshcat,
+                open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
 
@@ -87,7 +88,7 @@ station_context.FixInputPort(station.GetInputPort(
 
 # Eval the output port once to read the initial positions of the IIWA.
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-    station_context).get_value()
+    station_context)
 teleop.set_position(q0)
 filter.set_initial_output_value(diagram.GetMutableSubsystemContext(
     filter, simulator.get_mutable_context()), q0)

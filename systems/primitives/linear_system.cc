@@ -162,12 +162,12 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
   // Fix autodiff'd versions of the inputs to the autodiff'd Context.
   for (int i = 0; i < system.get_num_input_ports(); ++i) {
-    const InputPortBase& input_port_i = system.get_input_port_base(
-        InputPortIndex(i));
+    const InputPort<double>& input_port_i =
+        system.get_input_port(InputPortIndex(i));
 
     // Look for abstract valued port.
     if (input_port_i.get_data_type() == PortDataType::kAbstractValued) {
-      if (system.EvalAbstractInput(context, i)) {
+      if (input_port_i.HasValue(context)) {
         throw std::logic_error(fmt::format(
             "Unable to linearize system with connected abstract port ({}) - "
             "connected abstract ports not yet supported.",
@@ -177,19 +177,18 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     }
 
     // Must be a vector valued port. First look to see whether it's connected.
-    const BasicVector<double>* u_eval = system.EvalVectorInput(context, i);
-    if (!u_eval) {
+    if (!input_port_i.HasValue(context)) {
       throw std::logic_error(fmt::format(
           "Vector-valued input port {} must be either fixed or connected to "
           "the output of another system.", input_port_i.get_name()));
     }
-    Eigen::VectorBlock<const VectorX<double>> u = u_eval->get_value();
+    Eigen::VectorBlock<const VectorX<double>> u = input_port_i.Eval(context);
     autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
   }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
   if (input_port) {
-    u0 = system.EvalEigenVectorInput(context, input_port->get_index());
+    u0 = system.get_input_port(input_port->get_index()).Eval(context);
   }
 
   auto autodiff_args = math::initializeAutoDiffTuple(x0, u0);

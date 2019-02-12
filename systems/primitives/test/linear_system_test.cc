@@ -185,24 +185,6 @@ class TestLinearizeFromAffine : public ::testing::Test {
   std::unique_ptr<AffineSystem<double>> discrete_system_;
 };
 
-// An AffineSystem augmented with an abstract input port.
-class AffineSystemAugmentedWithAbstractInput : public AffineSystem<double> {
- public:
-  AffineSystemAugmentedWithAbstractInput(
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::MatrixXd>& B,
-      const Eigen::Ref<const Eigen::VectorXd>& f0,
-      const Eigen::Ref<const Eigen::MatrixXd>& C,
-      const Eigen::Ref<const Eigen::MatrixXd>& D,
-      const Eigen::Ref<const Eigen::VectorXd>& y0,
-      double time_period = 0.0) :
-      AffineSystem(A, B, f0, C, D, y0, time_period) {
-    this->DeclareAbstractInputPort(
-        "dummy",
-        Value<std::vector<double>>() /* Arbitrary data type */);
-  }
-};
-
 // Test that linearizing a continuous-time affine system returns the original
 // A,B,C,D matrices.
 TEST_F(TestLinearizeFromAffine, ContinuousAtEquilibrium) {
@@ -354,7 +336,7 @@ class EmptyStateSystemWithAbstractInput final : public LeafSystem<T> {
         "dummy", Value<std::vector<double>>() /* Arbitrary data type */);
   }
 
-  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  // Scalar-converting copy constructor. See @ref system_scalar_conversion.
   template <typename U>
   explicit EmptyStateSystemWithAbstractInput(
       const EmptyStateSystemWithAbstractInput<U>&)
@@ -695,8 +677,8 @@ class MimoSystem final : public LeafSystem<T> {
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     derivatives->SetFromVector(A_ * x + B0_ * u0 + B1_ * u1);
@@ -706,8 +688,8 @@ class MimoSystem final : public LeafSystem<T> {
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>&,
       DiscreteValues<T>* discrete_state) const final {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     discrete_state->get_mutable_vector(0).SetFromVector(A_ * x + B0_ * u0 +
@@ -715,16 +697,16 @@ class MimoSystem final : public LeafSystem<T> {
   }
 
   void CalcOutput0(const Context<T>& context, BasicVector<T>* output) const {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     output->SetFromVector(C0_ * x + D00_ * u0 + D01_ * u1);
   }
 
   void CalcOutput1(const Context<T>& context, BasicVector<T>* output) const {
-    Vector1<T> u0 = this->EvalVectorInput(context, 0)->CopyToVector();
-    Vector3<T> u1 = this->EvalVectorInput(context, 1)->CopyToVector();
+    Vector1<T> u0 = this->get_input_port(0).Eval(context);
+    Vector3<T> u1 = this->get_input_port(1).Eval(context);
     Vector2<T> x = get_state_vector(context);
 
     output->SetFromVector(C1_ * x + D10_ * u0 + D11_ * u1);

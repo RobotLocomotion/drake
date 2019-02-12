@@ -211,6 +211,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "multibody_plant_symbolic_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:symbolic_test_util",
+        "//multibody/benchmarks/pendulum",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
 drake_cc_library(
     name = "kuka_iiwa_model_tests",
     testonly = 1,
@@ -344,7 +354,9 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":plant",
+        "//common/test_utilities:symbolic_test_util",
         "//systems/analysis:simulator",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

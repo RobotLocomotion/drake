@@ -3,12 +3,38 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
 
-class SnoptSolver : public MathematicalProgramSolverInterface  {
+/**
+ * The details of SNOPT solvers after calling Solve function. The users can get
+ * the details by
+ * MathematicalProgramResult::get_solver_details().GetValue<SnoptSolverDetails>();
+ */
+struct SnoptSolverDetails {
+  /**
+   * The exit condition of the solver. Please refer to section "EXIT conditions"
+   * in "User's Guide for SNOPT Version 7: Software for Large-Scale Nonlinear
+   * Programming" by Philip E. Gill to interprete the exit condition.
+   */
+  int info{};
+
+  /** The final value of the dual variables for the bound constraint x_lower <=
+   * x <= x_upper.
+   */
+  Eigen::VectorXd xmul;
+  /** The final value of the vector of problem functions F(x).
+   */
+  Eigen::VectorXd F;
+  /** The final value of the dual variables (Lagrange multipliers) for the
+   * general constraints F_lower <= F(x) <= F_upper.
+   */
+  Eigen::VectorXd Fmul;
+};
+
+class SnoptSolver : public SolverInterface  {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver)
 
@@ -30,7 +56,7 @@ class SnoptSolver : public MathematicalProgramSolverInterface  {
 
   SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 
   bool AreProgramAttributesSatisfied(

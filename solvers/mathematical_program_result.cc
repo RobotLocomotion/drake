@@ -39,11 +39,11 @@ SolverResult MathematicalProgramResult::ConvertToSolverResult() const {
 }
 
 void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
-  DRAKE_DEMAND(decision_variable_index_.size() > 0);
-  if (x_val.size() != static_cast<int>(decision_variable_index_.size())) {
+  DRAKE_DEMAND(decision_variable_index_.has_value());
+  if (x_val.size() != static_cast<int>(decision_variable_index_->size())) {
     std::stringstream oss;
     oss << "MathematicalProgramResult::set_x_val, the dimension of x_val is "
-        << x_val.size() << ", expected " << decision_variable_index_.size();
+        << x_val.size() << ", expected " << decision_variable_index_->size();
     throw std::invalid_argument(oss.str());
   }
   x_val_ = x_val;
@@ -51,9 +51,9 @@ void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
 
 double MathematicalProgramResult::GetSolution(
     const symbolic::Variable& var) const {
-  DRAKE_DEMAND(decision_variable_index_.size() > 0);
-  auto it = decision_variable_index_.find(var.get_id());
-  if (it == decision_variable_index_.end()) {
+  DRAKE_DEMAND(decision_variable_index_.has_value());
+  auto it = decision_variable_index_->find(var.get_id());
+  if (it == decision_variable_index_->end()) {
     std::stringstream oss;
     oss << "MathematicalProgramResult::GetSolution, " << var
         << " is not captured by the decision_variable_index map, passed in "
@@ -61,7 +61,7 @@ double MathematicalProgramResult::GetSolution(
     throw std::invalid_argument(oss.str());
   }
   DRAKE_DEMAND(x_val_.size() ==
-               static_cast<int>(decision_variable_index_.size()));
+               static_cast<int>(decision_variable_index_->size()));
   return x_val_[it->second];
 }
 }  // namespace solvers

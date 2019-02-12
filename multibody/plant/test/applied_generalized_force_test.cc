@@ -124,6 +124,9 @@ TEST_P(MultibodyPlantGeneralizedAppliedForceTest,
     auto derivatives = context().get_continuous_state().Clone();
     diagram().CalcTimeDerivatives(context(), derivatives.get());
     const VectorBase<double>& derivatives_vector = derivatives->get_vector();
+
+    // Time-derivatives of velocities start immediately after positions in the
+    // continuous state vector.
     for (int i = plant().num_positions(); i < derivatives->size(); ++i)
       EXPECT_NEAR(derivatives_vector[i], 0.0, eps);
   } else {
@@ -134,6 +137,9 @@ TEST_P(MultibodyPlantGeneralizedAppliedForceTest,
     const VectorBase<double>& new_discrete_state_vector =
         new_discrete_state->get_vector();
     diagram().CalcDiscreteVariableUpdates(context(), new_discrete_state.get());
+
+    // Velocities start immediately after positions in the discrete state
+    // vector.
     for (int i = plant().num_positions(); i < new_discrete_state_vector.size();
          ++i)
       EXPECT_NEAR(new_discrete_state_vector[i] - discrete_state_vector[i], 0.0,
