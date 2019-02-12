@@ -152,8 +152,7 @@ PYBIND11_MODULE(controllers, m) {
           &LinearQuadraticRegulator),
       py::arg("system"), py::arg("context"), py::arg("Q"), py::arg("R"),
       py::arg("N") = Eigen::Matrix<double, 0, 0>::Zero(),
-      py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
-      doc.LinearQuadraticRegulator.doc_6args);
+      py::arg("input_port_index") = 0, doc.LinearQuadraticRegulator.doc_6args);
 
   ExecuteExtraPythonCode(m);
 }

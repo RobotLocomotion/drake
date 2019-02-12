@@ -135,7 +135,7 @@ std::unique_ptr<AffineSystem<double>> LinearQuadraticRegulator(
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::MatrixXd>& N =
         Eigen::Matrix<double, 0, 0>::Zero(),
-    int input_port_index = kUseFirstInputIfItExists);
+    int input_port_index = 0);
 
 }  // namespace controllers
 }  // namespace systems

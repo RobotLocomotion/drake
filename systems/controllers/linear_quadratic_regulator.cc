@@ -91,23 +91,6 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
       system.time_period());
 }
 
-// Returns the single vector-valued input port of a System and aborts if there
-// is not exactly one such port.
-InputPortIndex FindSingleVectorValuedInputPort(
-  const System<double>& system) {
-  InputPortIndex port_index;
-  for (InputPortIndex i(0); i < system.get_num_input_ports(); ++i) {
-    if (system.get_input_port_base(i).get_data_type() ==
-        PortDataType::kVectorValued) {
-      DRAKE_DEMAND(!port_index.is_valid());
-      port_index = i;
-    }
-  }
-
-  DRAKE_DEMAND(port_index.is_valid());
-  return port_index;
-}
-
 std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
@@ -117,13 +100,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   // TODO(russt): accept optional additional argument to return the cost-to-go
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
-  const int num_inputs = [input_port_index, &system]() {
-    if (input_port_index == kUseFirstInputIfItExists) {
-      return system.get_input_port(0).size();
-    } else {
-      return system.get_input_port(input_port_index).size();
-    }
-  }();
+  const int num_inputs = system.get_input_port(input_port_index).size();
   const int num_states = context.get_num_total_states();
   DRAKE_DEMAND(num_states > 0);
   // The Linearize method call below will verify that the system has either
