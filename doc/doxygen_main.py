@@ -1,7 +1,6 @@
-#!/usr/bin/env python2
-
 """Command-line tool to generate Drake's Doxygen content.
 
+See drake/doc/documentation_instructions.rst for instructions and usage hints.
 """
 
 from __future__ import print_function
@@ -15,29 +14,27 @@ import subprocess
 import sys
 
 from six import iteritems
+from bazel_tools.tools.python.runfiles import runfiles
 
-def _get_drake_workspace():
-    """Find and return the path to the drake workspace."""
-
-    result = dirname(dirname(os.path.abspath(sys.argv[0])))
-    if not os.path.exists(os.path.join(result, "WORKSPACE")):
-        raise RuntimeError("Could not place drake at " + result)
-    return result
 
 def _run_doxygen(args):
-    # Find our programs.
+    # Find 'doxygen' using runfiles.
+    doxygen = runfiles.Create().Rlocation("doxygen/doxygen")
+    assert os.path.exists(doxygen), doxygen
+    # Find 'dot' using Drake's default path (for this platform).
     if sys.platform == "darwin":
         path = "/usr/local/bin:/usr/bin:/bin"
     else:
         path = "/usr/bin:/bin"
     env = {"PATH": path}
-    doxygen = subprocess.check_output(["which", "doxygen"], env=env).strip()
     dot = subprocess.check_output(["which", "dot"], env=env).strip()
 
     # Prepare the input and output folders.  We will copy the requested input
     # file(s) into a temporary scratch directory, so that Doxygen doesn't root
     # around in the drake_workspace (which is extremely slow).
-    drake_workspace = _get_drake_workspace()
+    drake_workspace = os.path.dirname(
+        runfiles.Create().Rlocation("drake/.bazelproject"))
+    assert os.path.exists(drake_workspace), drake_workspace
     binary_dir = os.path.join(drake_workspace, "build/drake/doc")
     input_root = os.path.join(binary_dir, "input")
     if os.path.exists(input_root):
@@ -61,14 +58,23 @@ def _run_doxygen(args):
         assert not rel_x.startswith(".."), rel_x
 
         # Skip bad things.
-        if rel_x.startswith("."): continue
-        if rel_x.startswith("bazel"): continue
-        if rel_x.startswith("build"): continue
-        if rel_x.startswith("cmake"): continue
-        if rel_x.startswith("doc"): continue  # N.B. Done above.
-        if rel_x.startswith("setup"): continue
-        if rel_x.startswith("third_party"): continue
-        if rel_x.startswith("tools"): continue
+        if rel_x.startswith("."):
+            continue
+        if rel_x.startswith("bazel"):
+            continue
+        if rel_x.startswith("build"):
+            continue
+        if rel_x.startswith("cmake"):
+            continue
+        if rel_x.startswith("doc"):
+            # N.B. Done above.
+            continue
+        if rel_x.startswith("setup"):
+            continue
+        if rel_x.startswith("third_party"):
+            continue
+        if rel_x.startswith("tools"):
+            continue
 
         # Copy the workspace files into the input scratch dir.
         target = os.path.join(source_root, rel_x)
@@ -138,7 +144,7 @@ def main():
         'inputs', nargs='*',
         help="Process only these files and/or directories; "
         "most useful using shell globbing, e.g., "
-        "doxygen.py --quick systems/framework/*leaf*.h")
+        "bazel-bin/doc/doxygen --quick systems/framework/*leaf*.h")
     args = parser.parse_args()
     _run_doxygen(args)
 
