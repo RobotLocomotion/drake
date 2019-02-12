@@ -73,8 +73,9 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   std::unique_ptr<Context<double>> context = acrobot.CreateDefaultContext();
 
   // Set nominal actuation torque to zero.
-  context->FixInputPort(acrobot.get_actuation_input_port().get_index(),
-                        Vector1d::Constant(0.0));
+  const int actuation_port_index =
+      acrobot.get_actuation_input_port().get_index();
+  context->FixInputPort(actuation_port_index, Vector1d::Constant(0.0));
   context->FixInputPort(
       acrobot.get_applied_generalized_force_input_port().get_index(),
       Vector2d::Constant(0.0));
@@ -93,7 +94,8 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   Vector1d R = Vector1d::Constant(1);
 
   return systems::controllers::LinearQuadraticRegulator(
-      acrobot, *context, Q, R);
+      acrobot, *context, Q, R, Eigen::Matrix<double, 0, 0>::Zero(),
+      actuation_port_index);
 }
 
 int do_main() {
