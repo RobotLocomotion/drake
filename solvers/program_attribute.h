@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ostream>
+#include <string>
 #include <unordered_set>
 
 #include "drake/common/hash.h"
@@ -39,5 +41,11 @@ using ProgramAttributes = std::unordered_set<ProgramAttribute, DefaultHash>;
  */
 bool AreRequiredAttributesSupported(const ProgramAttributes& required,
                                     const ProgramAttributes& supported);
+
+std::string to_string(const ProgramAttribute&);
+std::ostream& operator<<(std::ostream&, const ProgramAttribute&);
+std::string to_string(const ProgramAttributes&);
+std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
+
 }  // namespace solvers
 }  // namespace drake
