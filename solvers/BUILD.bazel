@@ -56,6 +56,7 @@ drake_cc_package_library(
         ":snopt_solver",
         ":solution_result",
         ":solve",
+        ":solver_base",
         ":solver_id",
         ":solver_options",
         ":solver_result",
@@ -572,6 +573,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "solver_base",
+    srcs = [
+        "solver_base.cc",
+    ],
+    hdrs = [
+        "solver_base.h",
+    ],
+    deps = [
+        ":mathematical_program_lite",
+    ],
+)
+
+drake_cc_library(
     name = "solve",
     srcs = ["solve.cc"],
     hdrs = ["solve.h"],
@@ -589,6 +603,7 @@ drake_cc_library(
     hdrs = ["equality_constrained_qp_solver.h"],
     deps = [
         ":mathematical_program_lite",
+        ":solver_base",
         "//common:essential",
     ],
 )
@@ -1286,6 +1301,13 @@ drake_cc_binary(
 )
 
 drake_cc_googletest(
+    name = "program_attribute_test",
+    deps = [
+        ":program_attribute",
+    ],
+)
+
+drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_limit_test",
     timeout = "long",
     tags = gurobi_test_tags() + [
@@ -1328,6 +1350,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "@spruce",
+    ],
+)
+
+drake_cc_googletest(
+    name = "solver_base_test",
+    deps = [
+        ":solver_base",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
