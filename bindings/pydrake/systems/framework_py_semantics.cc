@@ -75,7 +75,10 @@ void DefineFrameworkPySemantics(py::module m) {
   BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
 
   py::class_<FixedInputPortValue>(
-      m, "FixedInputPortValue", doc.FixedInputPortValue.doc);
+      m, "FixedInputPortValue", doc.FixedInputPortValue.doc)
+      .def("GetMutableData", &FixedInputPortValue::GetMutableData,
+          // TODO(#9398): Why is `py_reference` necessary?
+          py_reference_internal, doc.FixedInputPortValue.GetMutableData.doc);
 
   using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
   // N.B. `AbstractValues` provides the ability to reference non-owned values,

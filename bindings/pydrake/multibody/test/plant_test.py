@@ -3,6 +3,7 @@
 from pydrake.multibody.tree import (
     Body,
     BodyIndex,
+    FixedOffsetFrame,
     ForceElement,
     ForceElementIndex,
     Frame,
@@ -712,6 +713,15 @@ class TestPlant(unittest.TestCase):
         for joint in joints:
             self._test_joint_api(joint)
 
+    def test_multibody_add_frame(self):
+        plant = MultibodyPlant()
+        frame = plant.AddFrame(frame=FixedOffsetFrame(
+            name="frame", P=plant.world_frame(), X_PF=Isometry3.Identity(),
+            model_instance=None))
+        self.assertIsInstance(frame, Frame)
+        np.testing.assert_equal(
+            np.eye(4), frame.GetFixedPoseInBodyFrame().matrix())
+
     def test_multibody_dynamics(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
@@ -821,7 +831,15 @@ class TestPlant(unittest.TestCase):
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair)
         inspector = query_object.inspector()
-        bodies = {plant.GetBodyFromFrameId(inspector.GetFrameId(id_))
+
+        def get_body_from_frame_id(frame_id):
+            # Get body from frame id, and check inverse method.
+            body = plant.GetBodyFromFrameId(frame_id)
+            self.assertEqual(
+                plant.GetBodyFrameIdIfExists(body.index()), frame_id)
+            return body
+
+        bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))
                   for id_ in [point_pair.id_A, point_pair.id_B]}
         self.assertSetEqual(
             bodies,
