@@ -14,41 +14,32 @@ namespace multibody {
 template <typename T> class Body;
 
 /// This %ForceElement models a torsional spring attached to a RevoluteJoint
-/// to the two bodies attached to the joint,  applies equal and opposite torques
+/// and applies a generalized force corresponding with that joint
 /// <pre>
-///   tau = k⋅(free_length - q)
+///   τ = -k⋅(θ - θ₀)
 /// </pre>
-/// where q_0 is the nominal joint position. Note that joint damping exists
+/// where θ₀ is the nominal joint position. Note that joint damping exists
 /// within the RevoluteJoint itself, and so is not included here.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam T Must be one of drake's default scalar types.
 template <typename T>
 class RevoluteSpring final : public ForceElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteSpring)
 
   /// Constructor for a spring attached to the given joint
-  /// @param[in] free_length
-  ///   The free length of the spring q_0, in radians, at which the spring
+  /// @param[in] nominal_angle
+  ///   The nominal angle of the spring  θ₀, in radians, at which the spring
   ///   applies no moment.
   /// @param[in] stiffness
   ///   The stiffness k of the spring in N⋅m/rad. It must be non-negative.
   /// Refer to this class's documentation for further details.
-  RevoluteSpring(const RevoluteJoint<T>& joint, double free_length,
+  RevoluteSpring(const RevoluteJoint<T>& joint, double nominal_angle,
                  double stiffness);
 
   const Joint<T>& joint() const { return joint_; }
 
-  double free_length() const { return free_length_; }
+  double nominal_angle() const { return nominal_angle_; }
 
   double stiffness() const { return stiffness_; }
 
@@ -89,7 +80,7 @@ class RevoluteSpring final : public ForceElement<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
   const RevoluteJoint<T>& joint_;
-  double free_length_;
+  double nominal_angle_;
   double stiffness_;
 };
 

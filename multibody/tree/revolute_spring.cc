@@ -12,10 +12,10 @@ namespace multibody {
 
 template <typename T>
 RevoluteSpring<T>::RevoluteSpring(const RevoluteJoint<T>& joint,
-                                  double free_length, double stiffness) :
+                                  double nominal_angle, double stiffness) :
     ForceElement<T>(joint.model_instance()),
     joint_(joint),
-    free_length_(free_length),
+    nominal_angle_(nominal_angle),
     stiffness_(stiffness) {}
 
 template <typename T>
@@ -24,8 +24,7 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
     const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&,
     MultibodyForces<T>* forces) const {
-
-  const T delta = free_length_ - joint_.get_angle(context);
+  const T delta = nominal_angle_ - joint_.get_angle(context);
   const T torque = stiffness_ * delta;
   joint_.AddInTorque(context, torque, forces);
 }
@@ -33,8 +32,7 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
 template <typename T>
 T RevoluteSpring<T>::CalcPotentialEnergy(const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>&) const {
-
-  const T delta = free_length_ - joint_.get_angle(context);
+  const T delta = nominal_angle_ - joint_.get_angle(context);
 
   return 0.5 * stiffness_ * delta * delta;
 }
@@ -44,12 +42,12 @@ T RevoluteSpring<T>::CalcConservativePower(const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&) const {
   // Since the potential energy is:
-  //  V = 1/2⋅k⋅(q-q₀)²
+  //  V = 1/2⋅k⋅(θ₀-θ)²
   // The conservative power is defined as:
-  //  Pc = -d(V)/dt, or -k
+  //  Pc = -d(V)/dt, or -k⋅(θ₀-θ)⋅dθ/dt
   // being positive when the potential energy decreases.
 
-  const T delta = free_length_ - joint_.get_angle(context);
+  const T delta = nominal_angle_ - joint_.get_angle(context);
   const T delta_dot = -joint_.get_angular_rate(context);
 
   // Since V = 1/2⋅k⋅(q-q₀)² we have that, from its definition:
@@ -73,11 +71,11 @@ RevoluteSpring<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
   const RevoluteJoint<ToScalar>& joint_clone =
       dynamic_cast<const RevoluteJoint<ToScalar>&>(
-          tree_clone.get_joint(joint().index()));
+          tree_clone.get_variant(joint()));
 
   // Make the clone.
   auto spring_clone = std::make_unique<RevoluteSpring<ToScalar>>(
-      joint_clone, free_length(), stiffness());
+      joint_clone, nominal_angle(), stiffness());
 
   return std::move(spring_clone);
 }
