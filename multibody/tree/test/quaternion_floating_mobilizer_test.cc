@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -100,7 +101,8 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   }
 
   // Set position to be random, but not velocity (yet).
-  mutable_mobilizer->set_random_quaternion_distribution_to_uniform();
+  mutable_mobilizer->set_random_quaternion_distribution(
+      math::UniformlyRandomQuaternion<symbolic::Expression>(&generator));
   mutable_mobilizer->set_random_position_distribution(position_distribution);
   mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
                                       &generator);

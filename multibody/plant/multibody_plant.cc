@@ -11,6 +11,7 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/math/orthonormal_basis.h"
+#include "drake/math/random_rotation.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -252,6 +253,15 @@ MultibodyPlant<T>::MultibodyPlant(
   DRAKE_THROW_UNLESS(time_step >= 0);
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
+}
+
+template<typename T>
+void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
+    const Body<T>& body) {
+  RandomGenerator generator;
+  auto q_FM =
+      math::UniformlyRandomQuaternion<symbolic::Expression>(&generator);
+  SetFreeBodyRandomRotationDistribution(body, q_FM);
 }
 
 template<typename T>

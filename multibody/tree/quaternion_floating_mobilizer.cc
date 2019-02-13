@@ -4,7 +4,6 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
@@ -97,16 +96,14 @@ void QuaternionFloatingMobilizer<T>::set_random_position_distribution(
 
 template <typename T>
 void QuaternionFloatingMobilizer<
-    T>::set_random_quaternion_distribution_to_uniform() {
+    T>::set_random_quaternion_distribution(
+        const Eigen::Quaternion<symbolic::Expression>& q_FM) {
   Vector<symbolic::Expression, kNq> positions;
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {
     positions = get_zero_position().template cast<symbolic::Expression>();
   }
-  RandomGenerator generator;
-  auto q_FM =
-      math::UniformlyRandomQuaternion<symbolic::Expression>(&generator);
   positions[0] = q_FM.w();
   positions.template segment<3>(1) = q_FM.vec();
   MobilizerBase::set_random_position_distribution(positions);
