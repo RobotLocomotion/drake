@@ -27,10 +27,10 @@ class GeometryContext final : public systems::LeafContext<T> {
   explicit GeometryContext(int geometry_state_index);
 
   /** Returns a mutable reference of the underlying geometry state. */
-  GeometryState<T>& get_mutable_geometry_state();
+  GeometryState<double>& get_mutable_geometry_state();
 
   /** Returns a const reference of the underlying geometry state. */
-  const GeometryState<T>& get_geometry_state() const;
+  const GeometryState<double>& get_geometry_state() const;
 
  private:
   // The index of the geometry state abstract state.

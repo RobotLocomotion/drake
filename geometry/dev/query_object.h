@@ -79,7 +79,7 @@ class QueryObject {
 
   /** Provides an inspector for the topological structure of the underlying
    scene graph data (see SceneGraphInspector for details).  */
-  const SceneGraphInspector<T>& inspector() const {
+  const SceneGraphInspector<double>& inspector() const {
     return inspector_;
   }
 
@@ -92,12 +92,12 @@ class QueryObject {
   /** Reports the pose of the given frame relative to the world frame (i.e.,
    `X_WF`.
    @throws std::logic_error if `frame_id` is not a valid frame.   */
-  const Isometry3<T>& GetPoseInWorld(FrameId frame_id) const;
+  const Isometry3<double>& GetPoseInWorld(FrameId frame_id) const;
 
   /** Reports the pose of the given geometry relative to the world frame (i.e.,
    `X_WG`.
    @throws std::logic_error if `geometry_id` is not a valid frame.   */
-  const Isometry3<T>& GetPoseInWorld(GeometryId geometry_id) const;
+  const Isometry3<double>& GetPoseInWorld(GeometryId geometry_id) const;
 
   //@}
 
@@ -271,7 +271,7 @@ class QueryObject {
   // Convenience class for testing.
   friend class QueryObjectTester;
 
-  const GeometryState<T>& geometry_state() const;
+  const GeometryState<double>& geometry_state() const;
 
   void set(const GeometryContext<T>* context,
            const SceneGraph<T>* scene_graph) {
@@ -313,7 +313,7 @@ class QueryObject {
   // context).
   const GeometryContext<T>* context_{nullptr};
   const SceneGraph<T>* scene_graph_{nullptr};
-  SceneGraphInspector<T> inspector_;
+  SceneGraphInspector<double> inspector_;
 };
 
 }  // namespace dev

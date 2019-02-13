@@ -639,7 +639,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // A raw pointer to the default geometry state (which serves as the model for
   // allocating contexts for this system). The instance is owned by
   // model_abstract_states_.
-  GeometryState<T>* initial_state_{};
+  GeometryState<double>* initial_state_{};
   SceneGraphInspector<T> model_inspector_;
 
   // TODO(SeanCurtis-TRI): Get rid of this.

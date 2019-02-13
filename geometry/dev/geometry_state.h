@@ -744,7 +744,7 @@ class GeometryState {
   friend class internal::GeometryVisualizationImpl;
 
   // Allow SceneGraph unique access to the state members to perform queries.
-  friend class SceneGraph<T>;
+  template <typename> friend class SceneGraph;
 
   // Friend declaration so that the internals of the state can be confirmed in
   // unit tests.
@@ -769,6 +769,26 @@ class GeometryState {
   // @throws std::logic_error  If the ids are invalid as defined by
   // ValidateFrameIds().
   void SetFramePoses(const FramePoseVector<T>& poses);
+
+  // Sets the kinematics poses, but with scalar conversion.
+  template <typename U>
+  std::enable_if_t<!std::is_same<U, T>::value>
+  SetFramePoses(const FramePoseVector<U>& other) {
+    std::vector<FrameId> ids;
+    ids.reserve(other.size());
+    for (FrameId id : other.frame_ids()) {
+      ids.push_back(id);
+    }
+    FramePoseVector<T> poses(other.source_id(), ids);
+    poses.clear();
+    for (FrameId id : other.frame_ids()) {
+      const Isometry3<U>& other_value = other.value(id);
+      const Isometry3<T> value(other_value.matrix().unaryExpr(
+          [](const auto& elem) { return ExtractDoubleOrThrow(elem); }));
+      poses.set_value(id, value);
+    }
+    SetFramePoses(poses);
+  }
 
   // Confirms that the set of ids provided include _all_ of the frames
   // registered to the set's source id and that no extra frames are included.

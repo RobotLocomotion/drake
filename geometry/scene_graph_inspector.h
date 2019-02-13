@@ -87,7 +87,7 @@ class SceneGraphInspector {
    @endcode
 
    This includes the id for the world frame.  */
-  typename GeometryState<T>::FrameIdRange all_frame_ids() const {
+  typename GeometryState<double>::FrameIdRange all_frame_ids() const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_frame_ids();
   }
@@ -346,8 +346,8 @@ class SceneGraphInspector {
  private:
   // Only SceneGraph and QueryObject instances can construct
   // SceneGraphInspector instances.
-  friend class SceneGraph<T>;
-  friend class QueryObject<T>;
+  template <typename> friend class SceneGraph;
+  template <typename> friend class QueryObject;
 
   // Testing utility.
   friend class SceneGraphInspectorTester;
@@ -358,9 +358,9 @@ class SceneGraphInspector {
   // Sets the scene graph data to inspect -- the inspector does _not_ own the
   // data and expects that the lifespan of the provided data is longer than
   // the inspector.
-  void set(const GeometryState<T>* state) { state_ = state; }
+  void set(const GeometryState<double>* state) { state_ = state; }
 
-  const GeometryState<T>* state_{nullptr};
+  const GeometryState<double>* state_{nullptr};
 };
 
 }  // namespace geometry

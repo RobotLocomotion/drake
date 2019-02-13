@@ -154,8 +154,8 @@ class SceneGraphInspector {
  private:
   // Only SceneGraph and QueryObject instances can construct
   // SceneGraphInspector instances.
-  friend class SceneGraph<T>;
-  friend class QueryObject<T>;
+  template <typename> friend class SceneGraph;
+  template <typename> friend class QueryObject;
 
   // Testing utility.
   friend class SceneGraphInspectorTester;

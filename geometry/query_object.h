@@ -80,7 +80,7 @@ class QueryObject {
 
   /** Provides an inspector for the topological structure of the underlying
    scene graph data (see SceneGraphInspector for details).  */
-  const SceneGraphInspector<T>& inspector() const {
+  const SceneGraphInspector<double>& inspector() const {
     return inspector_;
   }
 
@@ -266,7 +266,7 @@ class QueryObject {
   // Convenience class for testing.
   friend class QueryObjectTester;
 
-  const GeometryState<T>& geometry_state() const;
+  const GeometryState<double>& geometry_state() const;
 
   void set(const GeometryContext<T>* context,
            const SceneGraph<T>* scene_graph) {
@@ -308,7 +308,7 @@ class QueryObject {
   // context).
   const GeometryContext<T>* context_{nullptr};
   const SceneGraph<T>* scene_graph_{nullptr};
-  SceneGraphInspector<T> inspector_;
+  SceneGraphInspector<double> inspector_;
 };
 
 }  // namespace geometry

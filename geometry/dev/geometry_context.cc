@@ -12,15 +12,15 @@ GeometryContext<T>::GeometryContext(int geometry_state_index)
       geometry_state_index_(geometry_state_index) {}
 
 template<typename T>
-GeometryState<T>& GeometryContext<T>::get_mutable_geometry_state() {
+GeometryState<double>& GeometryContext<T>::get_mutable_geometry_state() {
   return this->get_mutable_state()
-      .template get_mutable_abstract_state<GeometryState<T>>(
+      .template get_mutable_abstract_state<GeometryState<double>>(
           geometry_state_index_);
 }
 
 template<typename T>
-const GeometryState<T>& GeometryContext<T>::get_geometry_state() const {
-  return this->get_state().template get_abstract_state<GeometryState<T>>(
+const GeometryState<double>& GeometryContext<T>::get_geometry_state() const {
+  return this->get_state().template get_abstract_state<GeometryState<double>>(
       geometry_state_index_);
 }
 

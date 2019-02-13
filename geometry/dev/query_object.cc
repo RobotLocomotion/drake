@@ -26,21 +26,22 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>&) {
 }
 
 template <typename T>
-const Isometry3<T>& QueryObject<T>::GetPoseInWorld(FrameId frame_id) const {
+const Isometry3<double>& QueryObject<T>::GetPoseInWorld(
+    FrameId frame_id) const {
   ThrowIfDefault();
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.get_pose_in_world(frame_id);
 }
 
 template <typename T>
-const Isometry3<T>& QueryObject<T>::GetPoseInWorld(
+const Isometry3<double>& QueryObject<T>::GetPoseInWorld(
     GeometryId geometry_id) const {
   ThrowIfDefault();
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.get_pose_in_world(geometry_id);
 }
 
@@ -67,7 +68,7 @@ void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.RenderColorImage(camera, X_WC, color_image_out, show_window);
 }
 
@@ -81,7 +82,7 @@ void QueryObject<T>::RenderColorImage(const CameraProperties& camera,
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.RenderColorImage(camera, parent_frame, X_PC, color_image_out,
                                 show_window);
 }
@@ -94,7 +95,7 @@ void QueryObject<T>::RenderDepthImage(
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.RenderDepthImage(camera, X_WC, depth_image_out);
 }
 
@@ -107,7 +108,7 @@ void QueryObject<T>::RenderDepthImage(const DepthCameraProperties& camera,
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.RenderDepthImage(camera, parent_frame, X_PC, depth_image_out);
 }
 
@@ -120,7 +121,7 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.RenderLabelImage(camera, X_WC, label_image_out, show_window);
 }
 
@@ -134,13 +135,13 @@ void QueryObject<T>::RenderLabelImage(const CameraProperties& camera,
 
   // TODO(SeanCurtis-TRI): Modify this when the cache system is in place.
   scene_graph_->FullPoseUpdate(*context_);
-  const GeometryState<T>& state = context_->get_geometry_state();
+  const GeometryState<double>& state = context_->get_geometry_state();
   return state.RenderLabelImage(camera, parent_frame, X_PC, label_image_out,
                                 show_window);
 }
 
 template <typename T>
-const GeometryState<T>& QueryObject<T>::geometry_state() const {
+const GeometryState<double>& QueryObject<T>::geometry_state() const {
   // TODO(SeanCurtis-TRI): Handle the "baked" query object case.
   DRAKE_DEMAND(scene_graph_ != nullptr);
   DRAKE_DEMAND(context_ != nullptr);

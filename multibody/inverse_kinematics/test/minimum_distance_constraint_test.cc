@@ -79,7 +79,7 @@ AutoDiffVecXd EvalMinimumDistanceConstraintAutoDiff(
       const double sign = distance > 0 ? 1 : -1;
 
       Vector3<AutoDiffXd> p_WCa, p_WCb;
-      const geometry::SceneGraphInspector<AutoDiffXd>& inspector =
+      const geometry::SceneGraphInspector<double>& inspector =
           query_object.inspector();
       const geometry::FrameId frame_A_id =
           inspector.GetFrameId(signed_distance_pair.id_A);

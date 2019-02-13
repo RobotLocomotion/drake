@@ -31,53 +31,12 @@ using std::vector;
 // https://github.com/RobotLocomotion/drake/issues/8959
 #define GS_THROW_IF_CONTEXT_ALLOCATED ThrowIfContextAllocated(__FUNCTION__);
 
-namespace {
-template <typename T>
-class GeometryStateValue final : public Value<GeometryState<T>> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GeometryStateValue)
-
-  GeometryStateValue() = default;
-  explicit GeometryStateValue(const GeometryState<T>& state)
-      : Value<GeometryState<T>>(state) {}
-
-  std::unique_ptr<AbstractValue> Clone() const override {
-    return make_unique<GeometryStateValue<T>>(this->get_value());
-  }
-
-  void SetFrom(const AbstractValue& other) override {
-    if (!do_double_assign(other)) {
-      Value<GeometryState<T>>::SetFrom(other);
-    }
-  }
-
-  void SetFromOrThrow(const AbstractValue& other) override {
-    if (!do_double_assign(other)) {
-      Value<GeometryState<T>>::SetFromOrThrow(other);
-    }
-  }
-
- private:
-  bool do_double_assign(const AbstractValue& other) {
-    const GeometryStateValue<double>* double_value =
-        dynamic_cast<const GeometryStateValue<double>*>(&other);
-    if (double_value) {
-      this->get_mutable_value() = double_value->get_value();
-      return true;
-    }
-    return false;
-  }
-
-  template <typename>
-  friend class GeometryStateValue;
-};
-}  // namespace
-
 template <typename T>
 SceneGraph<T>::SceneGraph()
     : LeafSystem<T>(SystemTypeTag<geometry::SceneGraph>{}) {
-  auto state_value = make_unique<GeometryStateValue<T>>();
-  initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
+  auto state_value = make_unique<Value<GeometryState<double>>>();
+  initial_state_ =
+      &state_value->template GetMutableValue<GeometryState<double>>();
   model_inspector_.set(initial_state_);
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
@@ -98,7 +57,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   // system that hasn't had its context allocated yet. We want the converted
   // system to persist the same state.
   if (other.initial_state_ != nullptr) {
-    *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
+    *initial_state_ = *other.initial_state_;
     model_inspector_.set(initial_state_);
   }
   context_has_been_allocated_ = other.context_has_been_allocated_;
@@ -364,7 +323,8 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   }
 
   for (FrameId f_id : dynamic_frames) {
-    output->set_pose(i, g_state.get_pose_in_world(f_id));
+    const Isometry3<double>& X_WF = g_state.get_pose_in_world(f_id);
+    output->set_pose(i, X_WF.template cast<T>());
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
   }
@@ -379,8 +339,9 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
 
   using std::to_string;
 
-  const GeometryState<T>& state = context.get_geometry_state();
-  GeometryState<T>& mutable_state = const_cast<GeometryState<T>&>(state);
+  const GeometryState<double>& state = context.get_geometry_state();
+  GeometryState<double>& mutable_state =
+      const_cast<GeometryState<double>&>(state);
 
   auto throw_error = [](SourceId source_id, const std::string& origin) {
     throw std::logic_error("Source " + to_string(source_id) +

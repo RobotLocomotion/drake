@@ -366,15 +366,15 @@ class Value : public AbstractValue {
     return std::make_unique<Value<T>>(get_value());
   }
 
-  void SetFrom(const AbstractValue& other) override {
+  void SetFrom(const AbstractValue& other) final {
     value_ = Traits::to_storage(other.GetValue<T>());
   }
 
-  void SetFromOrThrow(const AbstractValue& other) override {
+  void SetFromOrThrow(const AbstractValue& other) final {
     value_ = Traits::to_storage(other.GetValueOrThrow<T>());
   }
 
-  const std::type_info& type_info() const override {
+  const std::type_info& type_info() const final {
     return typeid(get_value());
   }
 

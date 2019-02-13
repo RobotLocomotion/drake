@@ -449,7 +449,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   /** Returns an inspector on the system's *model* scene graph data.
    @throw std::logic_error If a context has been allocated.*/
-  const SceneGraphInspector<T>& model_inspector() const;
+  const SceneGraphInspector<double>& model_inspector() const;
 
   /** @name         Collision filtering
    @anchor scene_graph_collision_filtering
@@ -579,8 +579,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   // A raw pointer to the default geometry state (which serves as the model for
   // allocating contexts for this system). The instance is owned by
   // model_abstract_states_.
-  GeometryState<T>* initial_state_{};
-  SceneGraphInspector<T> model_inspector_;
+  GeometryState<double>* initial_state_{};
+  SceneGraphInspector<double> model_inspector_;
 
   // TODO(SeanCurtis-TRI): Get rid of this.
   mutable bool context_has_been_allocated_{false};
