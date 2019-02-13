@@ -122,7 +122,6 @@ class TestSystem : public LeafSystem<double> {
  public:
   // Make methods available.
   using LeafSystem::DeclareInputPort;
-  using LeafSystem::EvalVectorInput;
 };
 
 //      +-------------------------+

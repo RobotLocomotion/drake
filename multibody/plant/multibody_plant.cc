@@ -912,9 +912,8 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
           "However its query input port (get_geometry_query_input_port()) "
           "is not connected.");
     }
-    const geometry::QueryObject<double>& query_object =
-        this->EvalAbstractInput(context, geometry_query_port_)
-            ->template GetValue<geometry::QueryObject<double>>();
+    const auto& query_object = get_geometry_query_input_port().
+        Eval<geometry::QueryObject<double>>(context);
     return query_object.ComputePointPairPenetration();
   }
   return std::vector<PenetrationAsPointPair<double>>();
@@ -1239,9 +1238,9 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     if (instance_num_dofs == 0) {
       continue;
     }
-    Eigen::VectorBlock<const VectorX<T>> u_instance =
-        this->EvalEigenVectorInput(
-            context, instance_actuation_ports_[model_instance_index]);
+    const auto& input_port = this->get_input_port(
+        instance_actuation_ports_[model_instance_index]);
+    const auto& u_instance = input_port.Eval(context);
     actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
     u_offset += instance_num_dofs;
   }

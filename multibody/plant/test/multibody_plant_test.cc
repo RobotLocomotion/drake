@@ -868,13 +868,8 @@ class SphereChainScenario {
   std::vector<geometry::PenetrationAsPointPair<double>>
   ComputePointPairPenetration() const {
     // Grab query object to test for collisions.
-    const geometry::QueryObject<double>& query_object =
-        plant_
-            ->EvalAbstractInput(
-                *plant_context_,
-                plant_->get_geometry_query_input_port().get_index())
-            ->GetValue<geometry::QueryObject<double>>();
-
+    const auto& query_object = plant_->get_geometry_query_input_port().
+        Eval<geometry::QueryObject<double>>(*plant_context_);
     return query_object.ComputePointPairPenetration();
   }
 
