@@ -10,9 +10,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

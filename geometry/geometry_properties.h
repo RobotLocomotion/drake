@@ -9,7 +9,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/systems/framework/value.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace geometry {
@@ -207,7 +207,7 @@ namespace geometry {
      specified default.
 
  Working with properties in this manner requires knowledge of how to work with
- systems::AbstractValue.
+ AbstractValue.
 
  ```
  const ProximityProperties& properties = FunctionThatReturnsProperties();
@@ -227,8 +227,7 @@ class GeometryProperties {
 
   /** The properties for a single group as a property name-value map.  */
   using Group =
-      std::unordered_map<std::string,
-                         copyable_unique_ptr<systems::AbstractValue>>;
+      std::unordered_map<std::string, copyable_unique_ptr<AbstractValue>>;
 
   /** Reports if the given named group is part of this property set.  */
   bool HasGroup(const std::string& group_name) const {
@@ -254,7 +253,7 @@ class GeometryProperties {
    @param value        The value to assign to the property.
    @throws std::logic_error if `name` already exists in the group `group_name`.
    @tparam ValueType   The type of data to store with the attribute -- must be
-                       copy constructible or cloneable (see systems::Value).  */
+                       copy constructible or cloneable (see Value).  */
   template <typename ValueType>
   void AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
@@ -268,7 +267,7 @@ class GeometryProperties {
     Group& group = iter->second;
     auto value_iter = group.find(name);
     if (value_iter == group.end()) {
-      group[name] = std::make_unique<systems::Value<ValueType>>(value);
+      group[name] = std::make_unique<Value<ValueType>>(value);
       return;
     }
     throw std::logic_error(fmt::format(

@@ -1822,7 +1822,7 @@ using ModelQueryObject = typename std::conditional<
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
-      "geometry_query", systems::Value<ModelQueryObject<T>>{}).get_index();
+      "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
   // Allocate pose port.
   // TODO(eric.cousineau): Simplify this logic.
   typename systems::LeafOutputPort<T>::AllocCallback pose_alloc = [this]() {
@@ -1833,11 +1833,11 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
       if (it.first == world_index()) continue;
       ids.push_back(it.second);
     }
-    return systems::AbstractValue::Make(
+    return AbstractValue::Make(
         FramePoseVector<T>(*this->source_id_, ids));
   };
   typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
-      const Context<T>& context, systems::AbstractValue* value) {
+      const Context<T>& context, AbstractValue* value) {
     this->CalcFramePoseOutput(
         context, &value->GetMutableValue<FramePoseVector<T>>());
   };

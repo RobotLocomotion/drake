@@ -239,7 +239,7 @@ void LcmSubscriberSystem::CalcTranslatorOutputValue(
 
 // This is only called if our output port is abstract-valued, because we are
 // using a serializer.
-std::unique_ptr<systems::AbstractValue>
+std::unique_ptr<AbstractValue>
 LcmSubscriberSystem::AllocateSerializerOutputValue() const {
   DRAKE_DEMAND(serializer_ != nullptr);
   return serializer_->CreateDefaultValue();

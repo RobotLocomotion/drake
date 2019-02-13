@@ -51,8 +51,8 @@ class PoseSmootherTest : public ::testing::Test {
 
   CombinedState UpdateStateCalcOutput(
       const Isometry3d& input_pose, double input_time) {
-    std::unique_ptr<systems::AbstractValue> input(
-        systems::AbstractValue::Make(Isometry3<double>::Identity()));
+    std::unique_ptr<AbstractValue> input(
+        AbstractValue::Make(Isometry3<double>::Identity()));
     input->SetValue(input_pose);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
     context_->set_time(input_time);

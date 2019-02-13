@@ -17,8 +17,6 @@ using drake::systems::sensors::ImageDepth16U;
 using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageTraits;
 using drake::systems::sensors::InvalidDepth;
-using drake::systems::AbstractValue;
-using drake::systems::Value;
 
 namespace drake {
 namespace perception {

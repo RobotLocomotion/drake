@@ -14,8 +14,6 @@ using Eigen::Vector3d;
 using Eigen::Vector3f;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
-using drake::systems::AbstractValue;
-using drake::systems::Value;
 using drake::systems::sensors::CameraInfo;
 using drake::systems::sensors::Image;
 using drake::systems::sensors::ImageTraits;

@@ -40,7 +40,7 @@ GTEST_TEST(IiwaLcmTest, IiwaContactResultsToExternalTorque) {
   contact_results.set_generalized_contact_force(expected);
 
   context->FixInputPort(0,
-      systems::AbstractValue::Make<systems::ContactResults<double>>(
+      AbstractValue::Make<systems::ContactResults<double>>(
           contact_results));
 
   // Check output.

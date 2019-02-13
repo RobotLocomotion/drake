@@ -16,8 +16,8 @@ values. */
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

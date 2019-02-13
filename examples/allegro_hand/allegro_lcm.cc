@@ -18,7 +18,7 @@ AllegroCommandReceiver::AllegroCommandReceiver(int num_joints)
     : num_joints_(num_joints) {
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<lcmt_allegro_command>{});
+      Value<lcmt_allegro_command>{});
   state_output_port_ = this->DeclareVectorOutputPort(
       systems::BasicVector<double>(num_joints_ * 2),
       [this](const Context<double>& c, BasicVector<double>* o) {
@@ -47,7 +47,7 @@ void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_allegro_command>();
 

@@ -63,7 +63,6 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::Parser;
-using systems::AbstractValue;
 using systems::BasicVector;
 using systems::ConstantVectorSource;
 using systems::Context;

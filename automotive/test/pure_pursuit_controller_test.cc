@@ -43,7 +43,7 @@ class PurePursuitControllerTest : public ::testing::Test {
   void SetDefaultInputs(const double y_position, const double yaw) {
     // Set the LaneId.
     context_->FixInputPort(dut_->lane_input().get_index(),
-                           systems::AbstractValue::Make(*lane_direction_));
+                           AbstractValue::Make(*lane_direction_));
 
     // Set the ego car's pose.
     auto ego_pose = std::make_unique<PoseVector<double>>();
@@ -90,7 +90,7 @@ TEST_F(PurePursuitControllerTest, ToAutoDiff) {
     auto other_derivatives = other_dut.AllocateTimeDerivatives();
 
     other_context->FixInputPort(dut_->lane_input().get_index(),
-                                systems::AbstractValue::Make(*lane_direction_));
+                                AbstractValue::Make(*lane_direction_));
     auto ego_pose = std::make_unique<PoseVector<AutoDiffXd>>();
     other_context->FixInputPort(dut_->ego_pose_input().get_index(),
                                 std::move(ego_pose));

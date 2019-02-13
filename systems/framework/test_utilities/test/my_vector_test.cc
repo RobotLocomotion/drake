@@ -4,7 +4,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
-#include "drake/systems/framework/value.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {

@@ -19,6 +19,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/unused.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -31,7 +32,6 @@
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
-#include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
 namespace drake {
@@ -1606,7 +1606,7 @@ class LeafSystem : public System<T> {
   /// ports, the type must be copy constructible or cloneable. For
   /// methods below that are not given an explicit model value or construction
   /// ("make") method, the underlying type must be default constructible.
-  /// @see drake::systems::Value for more about abstract values.
+  /// @see drake::Value for more about abstract values.
   ///
   /// A list of prerequisites may be provided for the calculator function to
   /// avoid unnecessary recomputation. If no prerequisites are provided, the
@@ -1733,7 +1733,7 @@ class LeafSystem : public System<T> {
   /// where `MySystem` must be a class derived from `LeafSystem<T>`.
   /// `OutputType` must be such that `Value<OutputType>` is permitted.
   /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
+  /// @see drake::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
       variant<std::string, UseDefaultName> name, const OutputType& model_value,
@@ -1771,7 +1771,7 @@ class LeafSystem : public System<T> {
   /// allocation (not common), use one of the other signatures to explicitly
   /// provide a method for the allocator to call; that method can then invoke
   /// the `OutputType` default constructor.
-  /// @see drake::systems::Value
+  /// @see drake::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
       variant<std::string, UseDefaultName> name,
@@ -1798,7 +1798,7 @@ class LeafSystem : public System<T> {
   /// may be any concrete type such that `Value<OutputType>` is permitted.
   /// See alternate signature if your allocator method needs a Context.
   /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
+  /// @see drake::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
       variant<std::string, UseDefaultName> name,

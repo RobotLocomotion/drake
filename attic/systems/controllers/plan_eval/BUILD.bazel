@@ -35,7 +35,6 @@ drake_cc_library(
         "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
         "//manipulation/util:trajectory_utils",
         "//systems/controllers:setpoint",
-        "//systems/framework:value",
     ],
 )
 

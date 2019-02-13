@@ -40,8 +40,7 @@ IdmController<T>::IdmController(const RoadGeometry& road,
       ego_velocity_index_(
           this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()),
       traffic_index_(this->DeclareAbstractInputPort(
-          systems::kUseDefaultName, systems::Value<PoseBundle<T>>())
-              .get_index()),
+          systems::kUseDefaultName, Value<PoseBundle<T>>()).get_index()),
       acceleration_index_(
           this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
                                         &IdmController::CalcAcceleration)
@@ -51,7 +50,7 @@ IdmController<T>::IdmController(const RoadGeometry& road,
   // a caching scheme once #4364 lands, preventing the need to use abstract
   // states and periodic sampling time.
   if (road_position_strategy == RoadPositionStrategy::kCache) {
-    this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(
+    this->DeclareAbstractState(AbstractValue::Make<RoadPosition>(
         RoadPosition()));
     this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
   }

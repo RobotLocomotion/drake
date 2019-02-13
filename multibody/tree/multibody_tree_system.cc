@@ -114,11 +114,11 @@ void MultibodyTreeSystem<T>::Finalize() {
   auto& position_kinematics_cache_entry = this->DeclareCacheEntry(
       std::string("position kinematics"),
       [tree = tree_.get()]() {
-        return systems::AbstractValue::Make(
+        return AbstractValue::Make(
             PositionKinematicsCache<T>(tree->get_topology()));
       },
       [tree = tree_.get()](const systems::ContextBase& context_base,
-                           systems::AbstractValue* cache_value) {
+                           AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& position_cache =
             cache_value->GetMutableValue<PositionKinematicsCache<T>>();
@@ -132,11 +132,11 @@ void MultibodyTreeSystem<T>::Finalize() {
   auto& velocity_kinematics_cache_entry = this->DeclareCacheEntry(
       std::string("velocity kinematics"),
       [tree = tree_.get()]() {
-        return systems::AbstractValue::Make(
+        return AbstractValue::Make(
             VelocityKinematicsCache<T>(tree->get_topology()));
       },
       [tree = tree_.get()](const systems::ContextBase& context_base,
-                           systems::AbstractValue* cache_value) {
+                           AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& velocity_cache =
             cache_value->GetMutableValue<VelocityKinematicsCache<T>>();
@@ -152,11 +152,11 @@ void MultibodyTreeSystem<T>::Finalize() {
   auto& H_PB_W_cache_entry = this->DeclareCacheEntry(
       std::string("H_PB_W(q)"),
       [tree = tree_.get()]() {
-        return systems::AbstractValue::Make(
+        return AbstractValue::Make(
             std::vector<Vector6<T>>(tree->num_velocities()));
       },
       [tree = tree_.get()](const systems::ContextBase& context_base,
-                           systems::AbstractValue* cache_value) {
+                           AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& H_PB_W_cache =
             cache_value->GetMutableValue<std::vector<Vector6<T>>>();

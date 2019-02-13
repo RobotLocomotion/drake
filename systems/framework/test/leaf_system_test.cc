@@ -1311,9 +1311,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
 
   // Mess with the abstract values on the context.
-  drake::systems::AbstractValues& values =
-      context->get_mutable_abstract_state();
-  drake::systems::AbstractValue& value = values.get_mutable_value(1);
+  AbstractValues& values = context->get_mutable_abstract_state();
+  AbstractValue& value = values.get_mutable_value(1);
   EXPECT_NO_THROW(value.SetValue<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
 

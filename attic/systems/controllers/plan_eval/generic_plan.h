@@ -7,12 +7,12 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/value.h"
 #include "drake/manipulation/util/trajectory_utils.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/param_parser.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/robot_kinematic_state.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -46,7 +46,7 @@ typedef std::unordered_set<const RigidBody<double>*> ContactState;
  *
  * For this class, the low level controller of choice is QPController. So the
  * output of this class is an QpInput. The behavioral level inputs are type
- * erased and stored in systems::AbstractValue. Derived classes are responsible
+ * erased and stored in AbstractValue. Derived classes are responsible
  * for recovering the proper plan type.
  */
 template <typename T>
@@ -122,7 +122,7 @@ class GenericPlan {
           robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
-      const systems::AbstractValue& plan) {
+      const AbstractValue& plan) {
     // Checks parameters and throw if they are incompatible.
     CheckCompatibilityAndThrow(robot_status.get_robot(), paramset,
                                alias_groups);
@@ -272,7 +272,7 @@ class GenericPlan {
           robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
-      const systems::AbstractValue& plan) = 0;
+      const AbstractValue& plan) = 0;
 
   /**
    * Custom QpInput updates can be implemented here.

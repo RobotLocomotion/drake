@@ -32,7 +32,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   const int message_input_id = dut.GetInputPort("command_message").get_index();
   context->FixInputPort(
       message_input_id,
-      systems::AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
+      AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
   EXPECT_EQ(dut.get_position_output_port()
                 .Eval<BasicVector<double>>(*context)
                 .GetAtIndex(0),
@@ -49,7 +49,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   initial_command.force = 40;
   context->FixInputPort(
       message_input_id,
-      systems::AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
+      AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
   EXPECT_EQ(dut.get_position_output_port()
                 .Eval<BasicVector<double>>(*context)
                 .GetAtIndex(0),
@@ -88,7 +88,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   // initialization via {}, as used in LcmSubscriberSystem).
   lcmt_schunk_wsg_status status{};
   context->FixInputPort(
-      0, systems::AbstractValue::Make<lcmt_schunk_wsg_status>(status));
+      0, AbstractValue::Make<lcmt_schunk_wsg_status>(status));
   EXPECT_TRUE(CompareMatrices(dut.get_state_output_port()
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value(),
@@ -104,7 +104,7 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   status.actual_speed_mm_per_s = 324;
   status.actual_force = 40;
   context->FixInputPort(
-      0, systems::AbstractValue::Make<lcmt_schunk_wsg_status>(status));
+      0, AbstractValue::Make<lcmt_schunk_wsg_status>(status));
   EXPECT_TRUE(CompareMatrices(dut.get_state_output_port()
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value(),

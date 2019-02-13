@@ -39,7 +39,7 @@ void controller_loop() {
           systems::lcm::UtimeMessageToSeconds<bot_core::robot_state_t>>());
 
   // Initializes based on the first received message.
-  const systems::AbstractValue& first_msg = loop.WaitForMessage();
+  const AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
   loop.get_mutable_context().set_time(msg_time);

@@ -298,7 +298,7 @@ class SystemBase : public internal::SystemMessageInterface {
   constructible or cloneable. For methods below that are not given an explicit
   model value or construction ("make") method, the underlying type must also be
   default constructible.
-  @see drake::systems::Value for more about abstract values. */
+  @see drake::Value for more about abstract values. */
   //@{
 
   /// @anchor DeclareCacheEntry_primary
@@ -353,7 +353,7 @@ class SystemBase : public internal::SystemMessageInterface {
   arguments will be deduced and do not need to be specified. See the
   @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
   for more information about the parameters and behavior.
-  @see drake::systems::Value */
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description,
@@ -374,7 +374,7 @@ class SystemBase : public internal::SystemMessageInterface {
   arguments will be deduced and do not need to be specified. See the
   @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
   above for more information about the parameters and behavior.
-  @see drake::systems::Value */
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
@@ -418,7 +418,7 @@ class SystemBase : public internal::SystemMessageInterface {
   each allocation (not common), use one of the other signatures to explicitly
   provide a method for the allocator to call; that method can then invoke
   the `ValueType` default constructor each time it is called.
-  @see drake::systems::Value */
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description,

@@ -73,7 +73,7 @@ class DummyPlan : public GenericPlan<T> {
   void HandlePlanGenericPlanDerived(
       const RobotKinematicState<T>& robot_stauts,
       const ParamSet& paramset, const RigidBodyTreeAliasGroups<T>& alias_groups,
-      const systems::AbstractValue& plan) override {}
+      const AbstractValue& plan) override {}
 
   void UpdateQpInputGenericPlanDerived(
       const RobotKinematicState<T>& robot_status,
@@ -112,7 +112,7 @@ class DummyPlanTest : public GenericPlanTest {
     EXPECT_THROW(dut_->ModifyPlan(*robot_status_, *params_, *alias_groups_),
                  std::logic_error);
     EXPECT_THROW(dut_->HandlePlan(*robot_status_, *params_, *alias_groups_,
-                                  systems::Value<int>(10)),
+                                  Value<int>(10)),
                  std::logic_error);
     QpInput qp_input;
     EXPECT_THROW(dut_->UpdateQpInput(*robot_status_, *params_, *alias_groups_,

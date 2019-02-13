@@ -19,7 +19,6 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

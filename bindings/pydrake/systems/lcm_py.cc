@@ -22,7 +22,6 @@ namespace pydrake {
 using lcm::DrakeLcm;
 using lcm::DrakeLcmInterface;
 using pysystems::pylcm::BindCppSerializers;
-using systems::AbstractValue;
 using systems::lcm::LcmMessageToTimeInterface;
 using systems::lcm::SerializerInterface;
 

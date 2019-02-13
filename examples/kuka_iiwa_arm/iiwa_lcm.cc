@@ -50,7 +50,7 @@ IiwaContactResultsToExternalTorque::IiwaContactResultsToExternalTorque(
 
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<systems::ContactResults<double>>{});
+      Value<systems::ContactResults<double>>{});
 
   this->DeclareVectorOutputPort(
       systems::BasicVector<double>(length),

@@ -95,7 +95,7 @@ class IdmControllerTest
     traffic_poses.set_velocity(kLeadIndex, lead_velocity);
     traffic_poses.set_pose(kEgoIndex, Eigen::Isometry3d(translation_ego));
     context_->FixInputPort(traffic_input_index_,
-                           systems::AbstractValue::Make(traffic_poses));
+                           AbstractValue::Make(traffic_poses));
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
@@ -255,7 +255,7 @@ TEST_P(IdmControllerTest, ToAutoDiff) {
     poses.set_velocity(0, traffic_velocity);
     poses.set_pose(0, Isometry3<AutoDiffXd>(translation));
     other_context->FixInputPort(traffic_input_index_,
-                                systems::AbstractValue::Make(poses));
+                                AbstractValue::Make(poses));
 
     const auto result =
         other_output->get_vector_data(acceleration_output_index_);
