@@ -126,12 +126,12 @@ class DepthImageToPointCloudTest : public ::testing::Test {
   }
 
   static bool CompareClouds(const PointCloud& result_cloud,
-                           const PointCloud& expected_cloud,
-                           const float xyz_tol=1e-16) {
+                            const PointCloud& expected_cloud,
+                            const float xyz_tol = 1e-16) {
     bool equal = true;
 
-    equal = equal && CompareMatrices(
-        result_cloud.xyzs(), expected_cloud.xyzs(), xyz_tol);
+    equal = equal && CompareMatrices(result_cloud.xyzs(), expected_cloud.xyzs(),
+                                     xyz_tol);
 
     equal = equal && (result_cloud.has_rgbs() == expected_cloud.has_rgbs());
 
@@ -269,8 +269,8 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
 
   // Without a pose offset nor a scale factor.
   result = this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
-  EXPECT_TRUE(TestFixture::CompareClouds(
-      result, expected_cloud, kDistanceTolerance));
+  EXPECT_TRUE(
+      TestFixture::CompareClouds(result, expected_cloud, kDistanceTolerance));
 
   // Now with scale factor.
   result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.001);
@@ -279,7 +279,6 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud.xyzs() * 0.001,
                               kDistanceTolerance));
-
 
   // Now with a pose offset -- just check the z values.
   const auto& pose = this->z_translation_;
@@ -339,10 +338,8 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
 
   PointCloud result(0, TestFixture::kFields);
 
-  result =
-      this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
+  result = this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
   EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
-
 
   result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.1);
   EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
@@ -391,7 +388,7 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
   EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
   result =
-    this->DoConvert(camera, nullopt, depth_image_far, color_image, nullopt);
+      this->DoConvert(camera, nullopt, depth_image_far, color_image, nullopt);
   EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
   result = this->DoConvert(camera, nullopt, depth_image_far, color_image, 0.1);
