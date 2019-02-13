@@ -614,6 +614,7 @@ drake_cc_library(
     hdrs = ["linear_system_solver.h"],
     deps = [
         ":mathematical_program_lite",
+        ":solver_base",
         "//common:essential",
     ],
 )
@@ -624,6 +625,7 @@ drake_cc_library(
     hdrs = ["unrevised_lemke_solver.h"],
     deps = [
         ":mathematical_program_lite",
+        ":solver_base",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -635,6 +637,7 @@ drake_cc_library(
     hdrs = ["moby_lcp_solver.h"],
     deps = [
         ":mathematical_program_lite",
+        ":solver_base",
         "//common:essential",
     ],
 )
@@ -648,6 +651,7 @@ drake_cc_library(
     hdrs = ["dreal_solver.h"],
     deps = [
         ":mathematical_program_lite",
+        ":solver_base",
         "//common:essential",
         "@dreal",
     ],
@@ -753,24 +757,28 @@ drake_cc_library(
         # This is Drake's default flavor; currently f2c.
         "//tools:with_snopt": [
             ":mathematical_program_lite",
+            ":solver_base",
             "//math:autodiff",
             "@snopt//:snopt_c",
         ],
         # This is always the Fortran flavor.
         "//tools:with_snopt_fortran": [
             ":mathematical_program_lite",
+            ":solver_base",
             "//math:autodiff",
             "@snopt//:snopt_cwrap",
         ],
         # This is always the f2c flavor.
         "//tools:with_snopt_f2c": [
             ":mathematical_program_lite",
+            ":solver_base",
             "//math:autodiff",
             "@snopt//:snopt_c",
         ],
         # This is when SNOPT is disabled / unavailable.
         "//conditions:default": [
             ":mathematical_program_lite",
+            ":solver_base",
         ],
     }),
 )
@@ -792,11 +800,13 @@ drake_cc_library(
         "//conditions:default": [
             "@ipopt",
             ":mathematical_program_lite",
+            ":solver_base",
             "//common:unused",
             "//math:autodiff",
         ],
         "//tools:no_ipopt": [
             ":mathematical_program_lite",
+            ":solver_base",
         ],
     }),
 )
@@ -818,10 +828,12 @@ drake_cc_library(
         "//conditions:default": [
             ":mathematical_program_lite",
             "//math:autodiff",
+            ":solver_base",
             "@nlopt",
         ],
         "//tools:no_nlopt": [
             ":mathematical_program_lite",
+            ":solver_base",
         ],
     }),
 )
@@ -842,11 +854,13 @@ drake_cc_library(
     deps = select({
         "//conditions:default": [
             ":mathematical_program_lite",
+            ":solver_base",
             "//math:eigen_sparse_triplet",
             "@osqp",
         ],
         "//tools:no_osqp": [
             ":mathematical_program_lite",
+            ":solver_base",
         ],
     }),
 )
@@ -867,12 +881,14 @@ drake_cc_library(
     deps = select({
         "//conditions:default": [
             ":mathematical_program_lite",
+            ":solver_base",
             "//common:essential",
             "//math:eigen_sparse_triplet",
             "@scs//:scsdir",
         ],
         "//tools:no_scs": [
             ":mathematical_program_lite",
+            ":solver_base",
         ],
     }),
 )

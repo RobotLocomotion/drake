@@ -29,14 +29,15 @@ class EqualityConstrainedQPSolver final : public SolverBase {
   /// @returns string key for SolverOptions to set the feasibility tolerance.
   static std::string FeasibilityTolOptionName();
 
-  /// A static flavor of the base class method solver_id().
+  /// @name Static versions of the instance methods with similar names.
+  //@{
   static SolverId id();
-
-  /// A static flavor of the base class method available().
   static bool is_available();
-
-  /// A static flavor of the base class method AreProgramAttributesSatisfied().
   static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
 
  private:
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
