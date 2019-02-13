@@ -1,0 +1,41 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "cmake_config",
+    "install",
+    "install_cmake_config",
+)
+
+licenses(["notice"])  # MIT
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ctti",
+    hdrs = glob([
+        "include/ctti/**",
+    ]) or fail("No match"),
+    includes = ["include"],
+)
+
+CMAKE_PACKAGE = "ctti"
+
+cmake_config(package = CMAKE_PACKAGE)
+
+install_cmake_config(
+    package = CMAKE_PACKAGE,
+    versioned = 0,
+)
+
+install(
+    name = "install",
+    targets = [":ctti"],
+    hdr_dest = "include/" + CMAKE_PACKAGE,
+    hdr_strip_prefix = ["include"],
+    guess_hdrs = "PACKAGE",
+    docs = ["LICENSE.md"],
+    deps = [
+        ":install_cmake_config",
+    ],
+)

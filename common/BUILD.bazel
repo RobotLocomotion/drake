@@ -486,6 +486,7 @@ drake_cc_library(
         ":essential",
         ":is_cloneable",
         ":nice_type_name",
+        "@ctti",
     ],
 )
 

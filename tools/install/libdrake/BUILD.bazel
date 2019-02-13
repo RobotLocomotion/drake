@@ -172,6 +172,7 @@ cc_library(
         # The list of depended-on header-only libraries that libdrake's header
         # files depend on.
         "//lcmtypes:lcmtypes_drake_cc",
+        "@ctti",
         "@eigen",
         "@fmt",
         "@lcmtypes_bot2_core//:lcmtypes_bot2_core",

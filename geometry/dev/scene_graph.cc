@@ -80,12 +80,6 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
     }
   }
 
-  void SetFromOrThrow(const AbstractValue& other) override {
-    if (!do_double_assign(other)) {
-      Value<GeometryState<T>>::SetFromOrThrow(other);
-    }
-  }
-
  private:
   bool do_double_assign(const AbstractValue& other) {
     const GeometryStateValue<double>* double_value =
