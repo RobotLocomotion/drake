@@ -65,7 +65,7 @@ class SystemConstraintAdapter {
    *  3. linear inequality ( lower <= aᵀx <= upper )
    *
    * If the SystemConstraint cannot be parsed to the forms above, then return
-   * false, and clear @p constraints. Otherwise return true.
+   * empty; otherwise return a vector containing the parsed constraint.
    * @param index The index of the constraint in the System object.
    * @param context The context used to evaluate the SystemConstraint.
    * @retval constraints If the SystemConstraint can be parsed to the constraint
@@ -77,6 +77,28 @@ class SystemConstraintAdapter {
    */
   optional<std::vector<solvers::Binding<solvers::Constraint>>>
   MaybeCreateConstraintSymbolically(
+      SystemConstraintIndex index,
+      const Context<symbolic::Expression>& context) const;
+
+  /**
+   * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
+   * parse the constraint to a generic nonlinear constraint
+   * lower <= SystemConstraint.Calc(context) <= upper.
+   * If the SystemConstraint cannot be parsed to the form above, tehn return
+   * empty; otherwise returns a parsed constraint, together with the bound
+   * variables.
+   * @param index The index of the constraint in the System object.
+   * @param context The context used to evaluate the SystemConstraint. @note
+   * each expression in @p context (like state, parameter, etc) should be either
+   * a single symbolic variable, or a constant. Currently we do not support
+   * complicated symbolic expressions.
+   * @retval constraint A generic nonlinear constraint parsed from
+   * SystemConstraint. If the SystemConstraint cannot be parsed to the generic
+   * constraint using @p context instantiated with symbolic::Expression, then
+   * constraint.has_value() = false.
+   */
+  optional<solvers::Binding<solvers::Constraint>>
+  MaybeCreateGenericConstraintSymbolically(
       SystemConstraintIndex index,
       const Context<symbolic::Expression>& context) const;
 

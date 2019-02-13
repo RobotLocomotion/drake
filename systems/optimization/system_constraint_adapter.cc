@@ -1,4 +1,5 @@
 #include "drake/systems/optimization/system_constraint_adapter.h"
+#include "drake/systems/optimization/system_constraint_adapter_internal.h"
 
 #include "drake/solvers/create_constraint.h"
 
@@ -52,6 +53,122 @@ SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
   }
   return constraints;
 }
+
+namespace internal {
+UpdateContextForSymbolicSystemConstraint::
+    UpdateContextForSymbolicSystemConstraint(
+        const Context<symbolic::Expression>* context)
+    : context_{context} {
+  // continuous state.
+  for (int i = 0; i < context_->get_continuous_state_vector().size(); ++i) {
+    AddSymbolicVariables(
+        context_->get_continuous_state_vector().GetAtIndex(i),
+        [i](Context<double>* m_context, double val) {
+          m_context->get_mutable_continuous_state_vector().GetAtIndex(i) = val;
+        },
+        [i](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
+          m_context->get_mutable_continuous_state_vector().GetAtIndex(i) = val;
+        });
+  }
+  // discrete state.
+  for (int i = 0; i < context_->get_num_discrete_state_groups(); ++i) {
+    for (int j = 0; j < context_->get_discrete_state(i).size(); ++j) {
+      AddSymbolicVariables(
+          context_->get_discrete_state(i).GetAtIndex(j),
+          [i, j](Context<double>* m_context, double val) {
+            m_context->get_mutable_discrete_state(i).GetAtIndex(j) = val;
+          },
+          [i, j](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
+            m_context->get_mutable_discrete_state(i).GetAtIndex(j) = val;
+          });
+    }
+  }
+  // time
+  AddSymbolicVariables(
+      context_->get_time(),
+      [](Context<double>* m_context, double val) { m_context->set_time(val); },
+      [](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
+        m_context->set_time(val);
+      });
+  // numeric parameters.
+  for (int i = 0; i < context_->num_numeric_parameter_groups(); ++i) {
+    for (int j = 0; j < context_->get_numeric_parameter(i).size(); ++j) {
+      AddSymbolicVariables(
+          context_->get_numeric_parameter(i).GetAtIndex(j),
+          [i, j](Context<double>* m_context, double val) {
+            m_context->get_mutable_numeric_parameter(i).SetAtIndex(j, val);
+          },
+          [i, j](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
+            m_context->get_mutable_numeric_parameter(i).SetAtIndex(j, val);
+          });
+    }
+  }
+}
+
+void UpdateContextForSymbolicSystemConstraint::operator()(
+    const System<double>& system, const Eigen::Ref<const VectorX<double>>& x,
+    Context<double>* context) const {
+  for (int i = 0; i < static_cast<int>(updaters_double_.size()); ++i) {
+    updaters_double_[i](system, x, context);
+  }
+}
+
+void UpdateContextForSymbolicSystemConstraint::operator()(
+    const System<AutoDiffXd>& system, const Eigen::Ref<const AutoDiffVecXd>& x,
+    Context<AutoDiffXd>* context) const {
+  for (int i = 0; i < static_cast<int>(updaters_autodiff_.size()); ++i) {
+    updaters_autodiff_[i](system, x, context);
+  }
+}
+
+void UpdateContextForSymbolicSystemConstraint::AddSymbolicVariables(
+    const symbolic::Expression& expr,
+    std::function<void(Context<double>* context, double val)> updater_double,
+    std::function<void(Context<AutoDiffXd>* context, const AutoDiffXd& val)>
+        updater_autodiff) {
+  if (symbolic::is_constant(expr)) {
+    const double constant_val = symbolic::get_constant_value(expr);
+    updaters_double_.push_back([updater_double, constant_val](
+        const System<double>&, const Eigen::Ref<const VectorX<double>>&,
+        Context<double>* context) { updater_double(context, constant_val); });
+    updaters_autodiff_.push_back([updater_autodiff, constant_val](
+        const System<AutoDiffXd>&, const Eigen::Ref<const AutoDiffVecXd>&,
+        Context<AutoDiffXd>* context) {
+      updater_autodiff(context, AutoDiffXd(constant_val));
+    });
+  } else if (symbolic::is_variable(expr)) {
+    const symbolic::Variable& var = symbolic::get_variable(expr);
+    auto it = map_var_to_index_.find(var.get_id());
+    int var_index{-1};
+    if (it == map_var_to_index_.end()) {
+      map_var_to_index_.emplace_hint(it, var.get_id(), bound_variables_.rows());
+      var_index = bound_variables_.rows();
+      bound_variables_.conservativeResize(bound_variables_.rows() + 1);
+      bound_variables_(bound_variables_.rows() - 1) = var;
+    } else {
+      var_index = it->second;
+    }
+    updaters_double_.push_back([updater_double, var_index](
+        const System<double>&, const Eigen::Ref<const VectorX<double>>& x,
+        Context<double>* context) { updater_double(context, x(var_index)); });
+    updaters_autodiff_.push_back([updater_autodiff, var_index](
+        const System<AutoDiffXd>&, const Eigen::Ref<const AutoDiffVecXd>& x,
+        Context<AutoDiffXd>* context) {
+      updater_autodiff(context, x(var_index));
+    });
+  } else {
+    throw std::invalid_argument(
+        "SystemConstraintAdapter: only support Context<symbolic::Expression> "
+        "with its expression being either a constant or a "
+        "symbolic::Variable.");
+  }
+}
+}  // namespace internal
+/*
+optional<solvers::Binding<solvers::Constraint>>
+SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
+    SystemConstraintIndex index,
+    const Context<symbolic::Expression>& context) const {}*/
 
 const System<symbolic::Expression>& SystemConstraintAdapter::system_symbolic()
     const {

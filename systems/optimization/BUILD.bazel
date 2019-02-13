@@ -32,7 +32,10 @@ drake_cc_library(
 drake_cc_library(
     name = "system_constraint_adapter",
     srcs = ["system_constraint_adapter.cc"],
-    hdrs = ["system_constraint_adapter.h"],
+    hdrs = [
+        "system_constraint_adapter.h",
+        "system_constraint_adapter_internal.h",
+    ],
     deps = [
         ":system_constraint_wrapper",
         "//solvers:binding",
@@ -72,6 +75,17 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
         "//solvers:solve",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_adapter_internal_test",
+    deps = [
+        ":system_constraint_adapter",
+        ":system_optimization_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
         "//systems/primitives:linear_system",
     ],
 )
