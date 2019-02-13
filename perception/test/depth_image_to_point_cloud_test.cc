@@ -142,14 +142,13 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       auto context = dut.CreateDefaultContext();
       context->FixInputPort(0, Value<ConfiguredImage>(depth_image));
       if (kFields & pc_flags::kRGBs) {
-        context->FixInputPort(1, Value<ImageRgba8U>(*color_image));
+        context->FixInputPort(1, Value<ImageRgba8U>(color_image.value()));
       }
       if (camera_pose) {
         const Value<RigidTransformd> camera_pose_as_value(*camera_pose);
         context->FixInputPort(2, camera_pose_as_value);
       }
-      result = dut.get_output_port(0).Eval<PointCloud>(*context);
-      return result;
+      return dut.get_output_port(0).Eval<PointCloud>(*context);
     } else {
       PointCloud result(0, kFields);
       DepthImageToPointCloud::Convert(camera_info, camera_pose, depth_image,
@@ -173,7 +172,7 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       auto context = dut.CreateDefaultContext();
       context->FixInputPort(0, Value<ConfiguredImage>(depth_image));
       if (kFields & pc_flags::kRGBs) {
-        context->FixInputPort(1, Value<ImageRgba8U>(*color_image));
+        context->FixInputPort(1, Value<ImageRgba8U>(color_image.value()));
       }
       if (camera_pose) {
         const Value<RigidTransformd> camera_pose_as_value(*camera_pose);
