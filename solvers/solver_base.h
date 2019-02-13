@@ -36,7 +36,7 @@ class SolverBase : public SolverInterface {
   SolverId solver_id() const override;
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
   // NOLINTNEXTLINE(runtime/references)
-  SolutionResult Solve(MathematicalProgram&) const final;
+  SolutionResult Solve(MathematicalProgram&) const override;
 
  protected:
   /// Constructs a SolverBase with the given default implementations of the

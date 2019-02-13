@@ -8,18 +8,14 @@
 namespace drake {
 namespace solvers {
 
-SolverId SnoptSolver::solver_id() const {
-  return id();
-}
+SnoptSolver::SnoptSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+SnoptSolver::~SnoptSolver() = default;
 
 SolverId SnoptSolver::id() {
   static const never_destroyed<SolverId> singleton{"SNOPT"};
   return singleton.access();
-}
-
-bool SnoptSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return SnoptSolver::ProgramAttributesSatisfied(prog);
 }
 
 bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
@@ -36,14 +32,6 @@ bool SnoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
           ProgramAttribute::kQuadraticCost, ProgramAttribute::kCallback});
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
-}
-
-SolutionResult SnoptSolver::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
 }
 
 }  // namespace solvers

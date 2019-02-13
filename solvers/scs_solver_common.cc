@@ -8,18 +8,14 @@
 namespace drake {
 namespace solvers {
 
-SolverId ScsSolver::solver_id() const {
-  return id();
-}
+ScsSolver::ScsSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+ScsSolver::~ScsSolver() = default;
 
 SolverId ScsSolver::id() {
   static const never_destroyed<SolverId> singleton{"SCS"};
   return singleton.access();
-}
-
-bool ScsSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return ScsSolver::ProgramAttributesSatisfied(prog);
 }
 
 bool ScsSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
