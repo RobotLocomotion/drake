@@ -125,6 +125,23 @@ class DepthImageToPointCloudTest : public ::testing::Test {
     return image;
   }
 
+  static bool CompareClouds(const PointCloud& result_cloud,
+                           const PointCloud& expected_cloud,
+                           const float xyz_tol=1e-16) {
+    bool equal = true;
+
+    equal = equal && CompareMatrices(
+        result_cloud.xyzs(), expected_cloud.xyzs(), xyz_tol);
+
+    equal = equal && (result_cloud.has_rgbs() == expected_cloud.has_rgbs());
+
+    if (result_cloud.has_rgbs()) {
+      equal = equal && (result_cloud.rgbs() == expected_cloud.rgbs());
+    }
+
+    return equal;
+  }
+
   static PointCloud DoConvert(
       const CameraInfo& camera_info,
       const optional<RigidTransformd>& camera_pose,
@@ -151,8 +168,13 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       return dut.get_output_port(0).Eval<PointCloud>(*context);
     } else {
       PointCloud result(0, kFields);
-      DepthImageToPointCloud::Convert(camera_info, camera_pose, depth_image,
-                                      color_image, scale, &result);
+      if (kFields & pc_flags::kRGBs) {
+        DepthImageToPointCloud::Convert(camera_info, camera_pose, depth_image,
+                                        color_image, scale, &result);
+      } else {
+        DepthImageToPointCloud::Convert(camera_info, camera_pose, depth_image,
+                                        nullopt, scale, &result);
+      }
       return result;
     }
   }
@@ -180,9 +202,15 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       }
       dut.get_output_port(0).Calc(*context, cloud);
     } else {
-      DepthImageToPointCloud::Convert(
-          camera_info, camera_pose, depth_image, color_image, scale,
-          &(cloud->GetMutableValueOrThrow<PointCloud>()));
+      if (kFields & pc_flags::kRGBs) {
+        DepthImageToPointCloud::Convert(
+            camera_info, camera_pose, depth_image, color_image, scale,
+            &(cloud->GetMutableValueOrThrow<PointCloud>()));
+      } else {
+        DepthImageToPointCloud::Convert(
+            camera_info, camera_pose, depth_image, nullopt, scale,
+            &(cloud->GetMutableValueOrThrow<PointCloud>()));
+      }
     }
   }
 
@@ -240,45 +268,34 @@ TYPED_TEST(DepthImageToPointCloudTest, Basic) {
   PointCloud result(0, TestFixture::kFields);
 
   // Without a pose offset nor a scale factor.
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
-    EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
-  } else {
-    result = this->DoConvert(camera, nullopt, depth_image, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud.xyzs(),
-                              kDistanceTolerance));
+  result = this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(
+      result, expected_cloud, kDistanceTolerance));
 
   // Now with scale factor.
+  result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.001);
   if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.001);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
-  } else {
-    result = this->DoConvert(camera, nullopt, depth_image, nullopt, 0.001);
   }
   EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud.xyzs() * 0.001,
                               kDistanceTolerance));
 
+
   // Now with a pose offset -- just check the z values.
   const auto& pose = this->z_translation_;
   const auto& expected_z_row = expected_cloud.xyzs().row(2).array().eval();
+  result = this->DoConvert(camera, pose, depth_image, color_image, nullopt);
   if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, pose, depth_image, color_image, nullopt);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
-  } else {
-    result = this->DoConvert(camera, pose, depth_image, nullopt, nullopt);
   }
   EXPECT_TRUE(CompareMatrices(
       result.xyzs().row(2), (expected_z_row + pose.translation().z()).matrix(),
       kDistanceTolerance));
 
   // With both scale and pose offset -- just check the z values.
+  result = this->DoConvert(camera, pose, depth_image, color_image, 0.001);
   if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, pose, depth_image, color_image, 0.001);
     EXPECT_EQ(result.rgbs(), expected_cloud.rgbs());
-  } else {
-    result = this->DoConvert(camera, pose, depth_image, nullopt, 0.001);
   }
   EXPECT_TRUE(CompareMatrices(
       result.xyzs().row(2),
@@ -305,51 +322,36 @@ TYPED_TEST(DepthImageToPointCloudTest, NanValue) {
   const auto& camera = this->single_pixel_camera_;
   const auto& pose = this->random_transform_;
   const auto& depth_image = Vector1<Pixel>::Constant(single_pixel).eval();
-  const auto& expected_cloud = Vector3f::Constant(kFloatNaN).eval();
 
   // A single-pixel RGB image.
   const uint8_t kRedValue = 234;
   const uint8_t kGreenValue = 0;
   const uint8_t kBlueValue = 58;
-  Matrix3X<uint8_t> expected_colors(3, 1);
-  expected_colors << kRedValue, kGreenValue, kBlueValue;
   const auto& color_image =
       this->MakeRgbaImage(1, 1, kRedValue, kGreenValue, kBlueValue);
 
+  PointCloud expected_cloud(1, TestFixture::kFields);
+  expected_cloud.mutable_xyzs() = Vector3f::Constant(kFloatNaN).eval();
+  if (TestFixture::kFields & pc_flags::kRGBs) {
+    expected_cloud.mutable_rgbs() =
+        Vector3<uint8_t>(kRedValue, kGreenValue, kBlueValue);
+  }
+
   PointCloud result(0, TestFixture::kFields);
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, nullopt, depth_image, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result =
+      this->DoConvert(camera, nullopt, depth_image, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.1);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, nullopt, depth_image, nullopt, 0.1);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, pose, depth_image, color_image, nullopt);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, pose, depth_image, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, nullopt, depth_image, color_image, 0.1);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, pose, depth_image, color_image, 0.1);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, pose, depth_image, nullopt, 0.1);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, pose, depth_image, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
+
+  result = this->DoConvert(camera, pose, depth_image, color_image, 0.1);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 }
 
 // Verifies computed point cloud when pixel value is kTooClose or kTooFar.
@@ -362,92 +364,51 @@ TYPED_TEST(DepthImageToPointCloudTest, TooNearFar) {
       Vector1<Pixel>::Constant(Traits::kTooClose).eval();
   const auto& depth_image_far =
       Vector1<Pixel>::Constant(Traits::kTooFar).eval();
-  const auto& expected_cloud = Vector3f::Constant(kFloatInf).eval();
 
   // A single-pixel RGB image.
   const uint8_t kRedValue = 200;
   const uint8_t kGreenValue = 100;
   const uint8_t kBlueValue = 50;
-  Matrix3X<uint8_t> expected_colors(3, 1);
-  expected_colors << kRedValue, kGreenValue, kBlueValue;
   const auto& color_image =
       this->MakeRgbaImage(1, 1, kRedValue, kGreenValue, kBlueValue);
+
+  PointCloud expected_cloud(1, TestFixture::kFields);
+  expected_cloud.mutable_xyzs() = Vector3f::Constant(kFloatInf).eval();
+  if (TestFixture::kFields & pc_flags::kRGBs) {
+    expected_cloud.mutable_rgbs() =
+        Vector3<uint8_t>(kRedValue, kGreenValue, kBlueValue);
+  }
 
   PointCloud result(0, TestFixture::kFields);
 
   // Test all combinations of {without pose, with pose} x {near, far} x
   // {without scale, with scale}.
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, nullopt, depth_image_near, color_image,
-                             nullopt);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result =
-        this->DoConvert(camera, nullopt, depth_image_near, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result =
+      this->DoConvert(camera, nullopt, depth_image_near, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, nullopt, depth_image_near, color_image, 0.1);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, nullopt, depth_image_near, nullopt, 0.1);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, nullopt, depth_image_near, color_image, 0.1);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, nullopt, depth_image_far, color_image, nullopt);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result =
-        this->DoConvert(camera, nullopt, depth_image_far, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result =
+    this->DoConvert(camera, nullopt, depth_image_far, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, nullopt, depth_image_far, color_image, 0.1);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, nullopt, depth_image_far, nullopt, 0.1);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, nullopt, depth_image_far, color_image, 0.1);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, pose, depth_image_near, color_image, nullopt);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, pose, depth_image_near, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result =
+      this->DoConvert(camera, pose, depth_image_near, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, pose, depth_image_near, color_image, 0.1);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, pose, depth_image_near, nullopt, 0.1);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, pose, depth_image_near, color_image, 0.1);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result =
-        this->DoConvert(camera, pose, depth_image_far, color_image, nullopt);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, pose, depth_image_far, nullopt, nullopt);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, pose, depth_image_far, color_image, nullopt);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    result = this->DoConvert(camera, pose, depth_image_far, color_image, 0.1);
-    EXPECT_EQ(result.rgbs(), expected_colors);
-  } else {
-    result = this->DoConvert(camera, pose, depth_image_far, nullopt, 0.1);
-  }
-  EXPECT_TRUE(CompareMatrices(result.xyzs(), expected_cloud));
+  result = this->DoConvert(camera, pose, depth_image_far, color_image, 0.1);
+  EXPECT_TRUE(TestFixture::CompareClouds(result, expected_cloud));
 }
 
 // Verifies the System method CalcOutput resets invalid storage.
@@ -467,40 +428,31 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
   const auto& color_image =
       this->MakeRgbaImage(1, 1, kRedValue, kGreenValue, kBlueValue);
 
+  PointCloud expected_cloud(1, TestFixture::kFields);
+  expected_cloud.mutable_xyzs() = Vector3f(-0.5, -0.5, 1);
+  if (TestFixture::kFields & pc_flags::kRGBs) {
+    expected_cloud.mutable_rgbs() =
+        Vector3<uint8_t>(kRedValue, kGreenValue, kBlueValue);
+  }
+
   // N.B. A local variable is made to avoid linker errors.
   const pc_flags::Fields fields = TestFixture::kFields;
 
   // Starting from default storage, check the point cloud result.
   abstract_value = std::make_unique<Value<PointCloud>>(0, fields);
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
-                    abstract_value.get());
-  } else {
-    this->DoConvert(camera, nullopt, depth_image, nullopt, nullopt,
-                    abstract_value.get());
-  }
+  this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
+                  abstract_value.get());
   cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
   EXPECT_EQ(cloud->fields(), fields);
-  EXPECT_TRUE(CompareMatrices(cloud->xyzs(), Vector3f(-0.5, -0.5, 1)));
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    EXPECT_EQ(cloud->rgbs(), expected_colors);
-  }
+  EXPECT_TRUE(TestFixture::CompareClouds(*cloud, expected_cloud));
 
   // If the storage was the wrong size, then Calc should be able to resize it.
   abstract_value = std::make_unique<Value<PointCloud>>(22, fields);
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
-                    abstract_value.get());
-  } else {
-    this->DoConvert(camera, nullopt, depth_image, nullopt, nullopt,
-                    abstract_value.get());
-  }
+  this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
+                  abstract_value.get());
   cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
   EXPECT_EQ(cloud->fields(), fields);
-  EXPECT_TRUE(CompareMatrices(cloud->xyzs(), Vector3f(-0.5, -0.5, 1)));
-  if (TestFixture::kFields & pc_flags::kRGBs) {
-    EXPECT_EQ(cloud->rgbs(), expected_colors);
-  }
+  EXPECT_TRUE(TestFixture::CompareClouds(*cloud, expected_cloud));
 
   // If the storage had additional channels, we can't recover when its a System.
   if (TestFixture::kUseSystem) {
@@ -510,30 +462,16 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
     // resetting the set of channels, in which case this test should change.)
     abstract_value = std::make_unique<Value<PointCloud>>(
         1, pc_flags::kXYZs | pc_flags::kNormals);
-    if (TestFixture::kFields & pc_flags::kRGBs) {
-      EXPECT_THROW(this->DoConvert(camera, nullopt, depth_image, color_image,
-                                   nullopt, abstract_value.get()),
-                   std::exception);
-    } else {
-      EXPECT_THROW(this->DoConvert(camera, nullopt, depth_image, nullopt,
-                                   nullopt, abstract_value.get()),
-                   std::exception);
-    }
+    EXPECT_THROW(this->DoConvert(camera, nullopt, depth_image, color_image,
+                                 nullopt, abstract_value.get()),
+                 std::exception);
   } else {
     abstract_value = std::make_unique<Value<PointCloud>>(1, fields);
-    if (TestFixture::kFields & pc_flags::kRGBs) {
-      this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
-                      abstract_value.get());
-    } else {
-      this->DoConvert(camera, nullopt, depth_image, nullopt, nullopt,
-                      abstract_value.get());
-    }
+    this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
+                    abstract_value.get());
     cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
     EXPECT_EQ(cloud->fields(), fields);
-    EXPECT_TRUE(CompareMatrices(cloud->xyzs(), Vector3f(-0.5, -0.5, 1)));
-    if (TestFixture::kFields & pc_flags::kRGBs) {
-      EXPECT_EQ(cloud->rgbs(), expected_colors);
-    }
+    EXPECT_TRUE(TestFixture::CompareClouds(*cloud, expected_cloud));
   }
 }
 
