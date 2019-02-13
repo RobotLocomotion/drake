@@ -101,10 +101,10 @@ void IiwaCommandReceiver::set_initial_position(
 // user).  The result will always have have num_joints_ positions and torques.
 void IiwaCommandReceiver::CalcInput(
   const Context<double>& context, lcmt_iiwa_command* result) const {
-  const auto* const input0 = EvalVectorInput<IiwaCommand>(context, 0);
-  const auto* const input1 = EvalInputValue<lcmt_iiwa_command>(context, 1);
-  const auto* const input2 = EvalInputValue<lcmt_iiwa_command>(context, 2);
-  const int count = (input0 ? 1 : 0) + (input1 ? 1 : 0) + (input2 ? 1 : 0);
+  const bool has0 = LeafSystem<double>::get_input_port(0).HasValue(context);
+  const bool has1 = LeafSystem<double>::get_input_port(1).HasValue(context);
+  const bool has2 = LeafSystem<double>::get_input_port(2).HasValue(context);
+  const int count = (has0 ? 1 : 0) + (has1 ? 1 : 0) + (has2 ? 1 : 0);
   if (count == 0) {
     throw std::logic_error("IiwaCommandReceiver has no input connected");
   }
@@ -113,18 +113,21 @@ void IiwaCommandReceiver::CalcInput(
   }
 
   // Copies the (sole) input value, converting from IiwaCommand if necessary.
-  if (input2) {
-    *result = *input2;
-  } else if (input1) {
+  if (has2) {
+    *result = get_input_port().Eval<lcmt_iiwa_command>(context);
+  } else if (has1) {
     static const logging::Warn log_once(
         "The IiwaCommandReceiver \"command_message\" port is deprecated and "
         "will be removed on 2019-05-01; use \"lcmt_iiwa_command\" instead.");
-    *result = *input1;
+    const auto& port = LeafSystem<double>::get_input_port(1);
+    *result = port.Eval<lcmt_iiwa_command>(context);
   } else {
-    DRAKE_DEMAND(input0);
-    const VectorXd pos = input0->joint_position();
-    const VectorXd tor = input0->joint_torque();
-    result->utime = input0->utime();
+    DRAKE_DEMAND(has0);
+    const auto& port = LeafSystem<double>::get_input_port(0);
+    const auto& command = port.Eval<IiwaCommand<double>>(context);
+    const VectorXd pos = command.joint_position();
+    const VectorXd tor = command.joint_torque();
+    result->utime = command.utime();
     result->num_joints = pos.size();
     result->joint_position = {pos.data(), pos.data() + pos.size()};
     result->num_torques = tor.size();
