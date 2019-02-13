@@ -7,6 +7,8 @@ default-jdk
 diffstat
 doxygen
 file
+fonts-dejavu-core
+fonts-dejavu-extra
 gdb
 gfortran
 git
