@@ -94,6 +94,11 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>& context,
       const Quaternion<T>& q_FM, systems::State<T>* state) const;
 
+  /// Sets the distribution governing the random samples of the rotation
+  /// component of the mobilizer state.
+  void set_random_quaternion_distribution(
+      const Eigen::Quaternion<symbolic::Expression>& q_FM);
+
   /// Specifies that random samples for the rotation elements of the state
   /// should be drawn as uniformly random quaternions.
   void set_random_quaternion_distribution_to_uniform();

@@ -1281,7 +1281,12 @@ class MultibodyTree {
       const Body<T>& body,
       const Vector3<symbolic::Expression>& position);
 
-  /// See MultibodyPlant::SetFreeBodyRandomRotationDistributionToUniform.
+  /// See MultibodyPlant::SetFreeBodyRandomRotationDistribution.
+  void SetFreeBodyRandomRotationDistributionOrThrow(
+      const Body<T>& body,
+      const Eigen::Quaternion<symbolic::Expression>& rotation);
+
+    /// See MultibodyPlant::SetFreeBodyRandomRotationDistributionToUniform.
   void SetFreeBodyRandomRotationDistributionToUniformOrThrow(
       const Body<T>& body);
 

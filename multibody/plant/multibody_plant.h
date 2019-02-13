@@ -430,6 +430,17 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the
+  /// rotation component of the floating-base state.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyRandomRotationDistribution(
+      const Body<T>& body,
+      const Eigen::Quaternion<symbolic::Expression>& rotation) {
+    this->mutable_tree().SetFreeBodyRandomRotationDistributionOrThrow(
+        body, rotation);
+  }
+
+  /// Sets the distribution used by SetRandomState() to populate the
   /// rotation component of the floating-base state using uniformly random
   /// rotations.
   /// @throws std::exception if `body` is not a free body in the model.
