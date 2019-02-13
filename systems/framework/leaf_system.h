@@ -1525,9 +1525,8 @@ class LeafSystem : public System<T> {
     MaybeDeclareVectorBaseInequalityConstraint(
         "input " + std::to_string(index), model_vector,
         [this, index](const Context<T>& context) -> const VectorBase<T>& {
-          const BasicVector<T>* input = this->EvalVectorInput(context, index);
-          DRAKE_DEMAND(input != nullptr);
-          return *input;
+          return this->get_input_port(index).
+              template Eval<BasicVector<T>>(context);
         });
     return this->DeclareInputPort(NextInputPortName(std::move(name)),
                                   kVectorValued, size, random_type);

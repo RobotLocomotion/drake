@@ -1822,14 +1822,14 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
  private:
   void CalcY0(const Context<T>& context,
                     BasicVector<T>* y0) const {
-    const auto& u1 = *(this->EvalVectorInput(context, 1));
-    y0->set_value(u1.get_value());
+    const auto& u1 = this->get_input_port(1).Eval(context);
+    y0->set_value(u1);
   }
 
   void CalcY1(const Context<T>& context,
               BasicVector<T>* y1) const {
-    const auto& u0 = *(this->EvalVectorInput(context, 0));
-    y1->set_value(u0.get_value());
+    const auto& u0 = this->get_input_port(0).Eval(context);
+    y1->set_value(u0);
   }
 
   const int kSize = 1;

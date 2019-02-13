@@ -130,9 +130,8 @@ void MinimumDistanceConstraint::DoEvalGeneric(
   y->resize(1);
 
   internal::UpdateContextConfiguration(plant_context_, plant_, x);
-  const AbstractValue* plant_geometry_query_object = plant_.EvalAbstractInput(
-      *plant_context_, plant_.get_geometry_query_input_port().get_index());
-  if (plant_geometry_query_object == nullptr) {
+  const auto& query_port = plant_.get_geometry_query_input_port();
+  if (!query_port.HasValue(*plant_context_)) {
     throw std::invalid_argument(
         "MinimumDistanceConstraint: Cannot get a valid geometry::QueryObject. "
         "Either the plant geometry_query_input_port() is not properly "
@@ -140,8 +139,8 @@ void MinimumDistanceConstraint::DoEvalGeneric(
         "incorrect. Please refer to AddMultibodyPlantSceneGraph on connecting "
         "MultibodyPlant to SceneGraph.");
   }
-  const geometry::QueryObject<double>& query_object =
-      plant_geometry_query_object->GetValue<geometry::QueryObject<double>>();
+  const auto& query_object =
+      query_port.Eval<geometry::QueryObject<double>>(*plant_context_);
 
   const std::vector<geometry::SignedDistancePair<double>>
       signed_distance_pairs =
