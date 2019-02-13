@@ -141,7 +141,7 @@ class GurobiSolver final : public SolverBase {
    */
   static std::shared_ptr<License> AcquireLicense();
 
-  /// @name Static versions of the instance methods of the same name.
+  /// @name Static versions of the instance methods with similar names.
   //@{
   static SolverId id();
   static bool is_available();

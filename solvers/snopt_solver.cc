@@ -1004,34 +1004,23 @@ SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
 
 bool SnoptSolver::is_available() { return true; }
 
-void SnoptSolver::Solve(const MathematicalProgram& prog,
-                        const optional<Eigen::VectorXd>& initial_guess,
-                        const optional<SolverOptions>& solver_options,
-                        MathematicalProgramResult* result) const {
-  *result = {};
-  result->set_decision_variable_index(prog.decision_variable_index());
-
-  // Our function's arguments for initial_guess and solver_options take
-  // precedence over prog's values.
-  const Eigen::VectorXd& x_init =
-      initial_guess ? *initial_guess : prog.initial_guess();
-  SolverOptions merged_options =
-      solver_options ? *solver_options : SolverOptions();
-  merged_options.Merge(prog.solver_options());
-
+void SnoptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   // Call SNOPT.
   int snopt_status{0};
   double objective{0};
   Eigen::VectorXd x_val(prog.num_vars());
   SnoptSolverDetails& solver_details =
       result->SetSolverDetailsType<SnoptSolverDetails>();
-  SolveWithGivenOptions(prog, x_init, merged_options.GetOptionsStr(id()),
+  SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
                         merged_options.GetOptionsInt(id()),
                         merged_options.GetOptionsDouble(id()), &snopt_status,
                         &objective, &x_val, &solver_details);
 
   // Populate our results structure.
-  result->set_solver_id(id());
   const SolutionResult solution_result =
       MapSnoptInfoToSolutionResult(snopt_status);
   result->set_solution_result(solution_result);
