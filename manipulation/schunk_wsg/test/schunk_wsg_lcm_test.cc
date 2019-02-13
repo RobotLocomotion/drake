@@ -33,13 +33,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   context->FixInputPort(
       message_input_id,
       AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
-  EXPECT_EQ(dut.get_position_output_port()
-                .Eval<BasicVector<double>>(*context)
-                .GetAtIndex(0),
+  EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0],
             initial_position);
-  EXPECT_EQ(dut.get_force_limit_output_port()
-                .Eval<BasicVector<double>>(*context)
-                .GetAtIndex(0),
+  EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0],
             initial_force);
 
   // Start off with the gripper closed (zero) and a command to open to
@@ -50,13 +46,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgCommandReceiverTest) {
   context->FixInputPort(
       message_input_id,
       AbstractValue::Make<lcmt_schunk_wsg_command>(initial_command));
-  EXPECT_EQ(dut.get_position_output_port()
-                .Eval<BasicVector<double>>(*context)
-                .GetAtIndex(0),
+  EXPECT_EQ(dut.get_position_output_port().Eval(*context)[0],
             0.1);
-  EXPECT_EQ(dut.get_force_limit_output_port()
-                .Eval<BasicVector<double>>(*context)
-                .GetAtIndex(0),
+  EXPECT_EQ(dut.get_force_limit_output_port().Eval(*context)[0],
             40);
 }
 
@@ -89,13 +81,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   lcmt_schunk_wsg_status status{};
   context->FixInputPort(
       0, AbstractValue::Make<lcmt_schunk_wsg_status>(status));
-  EXPECT_TRUE(CompareMatrices(dut.get_state_output_port()
-                                  .Eval<BasicVector<double>>(*context)
-                                  .get_value(),
+  EXPECT_TRUE(CompareMatrices(dut.get_state_output_port().Eval(*context),
                               Vector2d::Zero()));
-  EXPECT_EQ(dut.get_force_output_port()
-                .Eval<BasicVector<double>>(*context)
-                .GetAtIndex(0),
+  EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0],
             0.0);
 
   // Check that we can read out valid input.
@@ -105,13 +93,9 @@ GTEST_TEST(SchunkWsgLcmTest, SchunkWsgStatusReceiverTest) {
   status.actual_force = 40;
   context->FixInputPort(
       0, AbstractValue::Make<lcmt_schunk_wsg_status>(status));
-  EXPECT_TRUE(CompareMatrices(dut.get_state_output_port()
-                                  .Eval<BasicVector<double>>(*context)
-                                  .get_value(),
+  EXPECT_TRUE(CompareMatrices(dut.get_state_output_port().Eval(*context),
                               Vector2d(.1, .324)));
-  EXPECT_EQ(dut.get_force_output_port()
-                .Eval<BasicVector<double>>(*context)
-                .GetAtIndex(0),
+  EXPECT_EQ(dut.get_force_output_port().Eval(*context)[0],
             40.0);
 }
 
