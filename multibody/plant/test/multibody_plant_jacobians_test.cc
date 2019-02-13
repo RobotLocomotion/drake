@@ -99,8 +99,7 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianFromNonUnitQuaternion) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  const bool unit_quaternion = false;
-  SetArbitraryConfiguration(unit_quaternion);
+  SetArbitraryConfiguration(false /* non-unit quaternion for floating base */);
 
   // A set of points Pi fixed in the end effector frame E.
   const int kNumPoints = 2;  // The set stores 2 points.

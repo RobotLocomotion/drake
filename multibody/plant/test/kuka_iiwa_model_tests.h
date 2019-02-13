@@ -91,7 +91,7 @@ class KukaIiwaModelTests : public ::testing::Test {
 
     if (!unit_quaternion) {
         VectorX<double> q = plant_->GetPositions(*context_);
-        // TODO(amcastro-tri): This asumes the first 4 entries in the
+        // TODO(amcastro-tri): This assumes the first 4 entries in the
         // generalized positions correspond to the quaternion for the free
         // floating robot base. Provide API to access these values.
         q.head<4>() *= 2;  // multiply quaternion by a factor.

@@ -291,7 +291,6 @@ template <typename T>
 Eigen::Matrix<T, 3, 4>
 QuaternionFloatingMobilizer<T>::QuaternionRateToAngularVelocityMatrix(
     const Quaternion<T>& q_FM) {
-  using std::sqrt;
   const T q_norm = q_FM.norm();
   // The input quaternion might not be normalized. We refer to the normalized
   // quaternion as q_FM_tilde. This is retrieved as a Vector4 with its storage
