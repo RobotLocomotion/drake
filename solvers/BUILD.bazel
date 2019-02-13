@@ -674,6 +674,7 @@ drake_cc_library(
     deps = select({
         "//tools:with_gurobi": [
             ":mathematical_program_lite",
+            ":solver_base",
             "//math:eigen_sparse_triplet",
             "//common:scoped_singleton",
             "@gurobi//:gurobi_c",
@@ -681,6 +682,7 @@ drake_cc_library(
         ],
         "//conditions:default": [
             ":mathematical_program_lite",
+            ":solver_base",
         ],
     }),
 )
@@ -705,12 +707,14 @@ drake_cc_library(
         "//tools:with_mosek": [
             ":mathematical_program_lite",
             ":mathematical_program_result",
+            ":solver_base",
             "//common:scoped_singleton",
             "@mosek",
         ],
         "//conditions:default": [
             ":mathematical_program_lite",
             ":mathematical_program_result",
+            ":solver_base",
         ],
     }),
 )
