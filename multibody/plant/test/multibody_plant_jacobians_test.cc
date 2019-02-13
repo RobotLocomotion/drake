@@ -110,8 +110,7 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   const Frame<double>& end_effector_frame = end_effector_link_->body_frame();
   const Frame<double>& world_frame = plant_->world_frame();
   plant_->CalcJacobianSpatialVelocity(*context_, JacobianWrtVariable::kQDot,
-                                      end_effector_frame, p_EoEp_E, world_frame,
-                                      world_frame, &Jq_V_WEp);
+      end_effector_frame, p_EoEp_E, world_frame, world_frame, &Jq_V_WEp);
 
   // Alternately, compute the spatial velocity Jacobian via the gradient of the
   // spatial velocity V_WEp with respect to q̇, since V_WEp = Jq_V_WEp * q̇.

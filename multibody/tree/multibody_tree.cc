@@ -9,11 +9,13 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/body_node_welded.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -1135,6 +1137,108 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
         R_EW * Jw_V_ABp_E->template topRows<3>();
     Jw_V_ABp_E->template bottomRows<3>() =
         R_EW * Jw_V_ABp_E->template bottomRows<3>();
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcJacobianAngularVelocity(
+    const systems::Context<T>& context,
+    const JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+    const Frame<T>& frame_A, const Frame<T>& frame_E,
+    EigenPtr<MatrixX<T>> Js_w_AB_E) const {
+  DRAKE_THROW_UNLESS(Js_w_AB_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_w_AB_E->rows() == 3);
+  const bool is_wrt_qdot = (with_respect_to == JacobianWrtVariable::kQDot);
+  const int num_columns = is_wrt_qdot ? num_positions() : num_velocities();
+  DRAKE_THROW_UNLESS(Js_w_AB_E->cols() == num_columns);
+
+  // The angular velocity addition theorem, gives w_WB = w_WA + w_AB, where
+  // w_WB is frame B's angular velocity in world W,
+  // w_WA is frame A's angular velocity in world W, and
+  // w_AB is frame B's angular velocity in frame A.
+  // Rearrange to calculate B's angular velocity in A as w_AB = w_WB - w_WA.
+  // So B's angular velocity Jacobian in A, expressed in frame E is
+  // Js_w_AB_E = R_EW * (Js_w_WB_W - Js_w_WA_W).
+
+  // TODO(Mitiguy): When performance becomes an issue, optimize this method by
+  // only using the kinematics path from A to B.
+
+  // Create dummy position list for signature requirements of next method.
+  const Eigen::Matrix<T, 0, 0> empty_position_list;
+
+  // TODO(Mitiguy) One way to avoid memory allocation and speed this up is to
+  // be clever and use the input argument as follows:
+  // Eigen::Ref<MatrixX<T>> Js_w_WA_W = *Js_w_AB_E;
+  // Then modify CalcFrameJacobianExpressedInWorld() so it can add or subtract
+  // a Jacobian that is passed to it.
+  MatrixX<T> Js_w_WA_W(3, num_columns);
+  CalcFrameJacobianExpressedInWorld(context, frame_A, empty_position_list,
+                                    is_wrt_qdot, &Js_w_WA_W, nullptr);
+
+  MatrixX<T> Js_w_WB_W(3, num_columns);
+  CalcFrameJacobianExpressedInWorld(context, frame_B, Eigen::Matrix<T, 0, 0>(),
+                                    is_wrt_qdot, &Js_w_WB_W, nullptr);
+
+  // Calculate Js_w_AB_W, B's angular velocity Jacobian in A, expressed in W.
+  *Js_w_AB_E = Js_w_WB_W - Js_w_WA_W;
+
+  // Re-express the Jacobian in frame E (if frame E is not the world frame).
+  const BodyFrame<T>& frame_W = world_frame();
+  if (frame_E.index() != frame_W.index()) {
+    const math::RigidTransform<T> X_EW(
+        CalcRelativeTransform(context, frame_E, frame_W));
+    const math::RotationMatrix<T>& R_EW = X_EW.rotation();
+    *Js_w_AB_E = R_EW * (*Js_w_AB_E);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcJacobianTranslationalVelocity(
+    const systems::Context<T>& context,
+    const JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+    const Eigen::Ref<const Vector3<T>>& p_BoBp_B, const Frame<T>& frame_A,
+    const Frame<T>& frame_E, EigenPtr<MatrixX<T>> Js_v_ABp_E) const {
+  DRAKE_THROW_UNLESS(Js_v_ABp_E != nullptr);
+  DRAKE_THROW_UNLESS(Js_v_ABp_E->rows() == 3);
+  const bool is_wrt_qdot = (with_respect_to == JacobianWrtVariable::kQDot);
+  const int num_columns = is_wrt_qdot ? num_positions() : num_velocities();
+  DRAKE_THROW_UNLESS(Js_v_ABp_E->cols() == num_columns);
+
+  // Bp's velocity in W can be calculated v_WBp = v_WAp + v_ABp, where
+  // v_WBp is point Bp's translational velocity in world W,
+  // v_WAp is point Ap's translational velocity in world W
+  //         (where Ap is the point of A coincident with Bp),
+  // v_ABp is point Bp's translational velocity in frame A.
+  // Rearrange to calculate Bp's velocity in A as v_ABp = v_WBp - v_WAp.
+  // So Bp's translational velocity Jacobian in A, expressed in frame E is
+  // Js_v_ABp_E = R_EW * (Js_v_WBp_W - Js_v_WAp_W).
+
+  // TODO(Mitiguy): When performance becomes an issue, optimize this method by
+  // only using the kinematics path from A to B.
+
+  // Determine Bp's position from Wo (World origin), expressed in World W.
+  Vector3<T> p_WoBp_W;
+  CalcPointsPositions(context, frame_B, p_BoBp_B, /* From frame B */
+                      world_frame(), &p_WoBp_W);  /* To world frame W */
+
+  MatrixX<T> Js_v_WAp_W(3, num_columns);
+  CalcFrameJacobianExpressedInWorld(context, frame_A, p_WoBp_W, is_wrt_qdot,
+      nullptr,  &Js_v_WAp_W);
+
+  MatrixX<T> Js_v_WBp_W(3, num_columns);
+  CalcFrameJacobianExpressedInWorld(context, frame_B, p_WoBp_W, is_wrt_qdot,
+      nullptr, &Js_v_WBp_W);
+
+  // Calculate Bp's translational velocity Jacobian in A, expressed in W.
+  *Js_v_ABp_E = Js_v_WBp_W - Js_v_WAp_W;
+
+  // Re-express the Jacobian in frame E (if frame E is not the world frame).
+  const BodyFrame<T>& frame_W = world_frame();
+  if (frame_E.index() != frame_W.index()) {
+    const math::RigidTransform<T> X_EW(
+        CalcRelativeTransform(context, frame_E, frame_W));
+    const math::RotationMatrix<T>& R_EW = X_EW.rotation();
+    *Js_v_ABp_E = R_EW * (*Js_v_ABp_E);
   }
 }
 
