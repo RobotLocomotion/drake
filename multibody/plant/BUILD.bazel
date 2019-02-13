@@ -158,6 +158,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "applied_generalized_force_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/controllers:inverse_dynamics_controller",
+    ],
+)
+
+drake_cc_googletest(
     name = "externally_applied_spatial_force_test",
     data = [
         "//multibody/benchmarks/acrobot:models",

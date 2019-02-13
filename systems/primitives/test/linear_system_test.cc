@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/test/affine_linear_test.h"
@@ -323,6 +324,76 @@ class TestNonPeriodicSystem : public LeafSystem<double> {
     (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
   }
 };
+
+// A system with no state and an abstract input port.
+template <typename T>
+class EmptyStateSystemWithAbstractInput final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptyStateSystemWithAbstractInput);
+  EmptyStateSystemWithAbstractInput()
+      : LeafSystem<T>(SystemTypeTag<EmptyStateSystemWithAbstractInput>{}) {
+    this->DeclareAbstractInputPort(
+        "dummy", Value<std::vector<double>>() /* Arbitrary data type */);
+  }
+
+  // Scalar-converting copy constructor. See @ref system_scalar_conversion.
+  template <typename U>
+  explicit EmptyStateSystemWithAbstractInput(
+      const EmptyStateSystemWithAbstractInput<U>&)
+      : EmptyStateSystemWithAbstractInput<T>() {}
+};
+
+// A system with no state, a vector input port, and an abstract input port.
+template <typename T>
+class EmptyStateSystemWithMixedInputs final : public LeafSystem<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EmptyStateSystemWithMixedInputs);
+  EmptyStateSystemWithMixedInputs()
+      : LeafSystem<T>(SystemTypeTag<EmptyStateSystemWithMixedInputs>{}) {
+    this->DeclareVectorInputPort(BasicVector<T>(1) /* scalar input */);
+    this->DeclareAbstractInputPort(
+        "dummy", Value<std::vector<double>>() /* Arbitrary data type */);
+  }
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit EmptyStateSystemWithMixedInputs(
+      const EmptyStateSystemWithMixedInputs<U>&)
+      : EmptyStateSystemWithMixedInputs<T>() {}
+};
+
+// Test that linearizing a system with abstract input port throws an
+// exception when trying to linearize that port.
+GTEST_TEST(TestLinearize, LinearizingOnAbstractPortThrows) {
+  EmptyStateSystemWithAbstractInput<double> system;
+  auto context = system.CreateDefaultContext();
+  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
+      "Port requested for differentiation is abstract, and differentiation of "
+      "abstract ports is not supported.");
+}
+
+// Test that linearizing a system with mixed (vector and abstract) inputs does
+// not throw an exception when the abstract input port is unconnected and
+// does throw an exception when the abstract input port is connected.
+GTEST_TEST(TestLinearize, LinearizingWithMixedInputs) {
+  EmptyStateSystemWithMixedInputs<double> system;
+  auto context = system.CreateDefaultContext();
+
+  // First check without the vector-valued input port connected.
+  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
+      "Vector-valued input port.*must be either fixed or connected to "
+          "the output of another system.");
+
+  // Now check with the vector-valued input port connect but without the
+  // abstract input port connected.
+  context->FixInputPort(0, Vector1<double>(0.0));
+  EXPECT_NO_THROW(Linearize(system, *context));
+
+  // Now check with the abstract input port connected.
+  context->FixInputPort(1, Value<std::vector<double>>());
+  DRAKE_EXPECT_THROWS_MESSAGE(Linearize(system, *context), std::logic_error,
+      "Unable to linearize system with connected abstract port.*");
+}
 
 // Test that Linearize throws when called on a discrete but non-periodic system.
 GTEST_TEST(TestLinearize, ThrowsWithNonPeriodicDiscreteSystem) {

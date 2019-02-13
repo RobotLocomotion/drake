@@ -40,6 +40,7 @@ using systems::OutputPort;
 using systems::State;
 
 using drake::multibody::MultibodyForces;
+using drake::multibody::MultibodyTree;
 using drake::multibody::PositionKinematicsCache;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -1283,6 +1284,13 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
   AddJointActuationForces(context, &forces);
   AddAppliedExternalSpatialForces(context, &forces);
 
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context))
+    forces.mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
+
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
   // WARNING: to reduce memory foot-print, we use the input applied arrays also
@@ -1408,9 +1416,15 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context0, &forces0);
-  AddAppliedExternalSpatialForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context0))
+    forces0.mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context0);
 
   // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
   const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
@@ -1599,6 +1613,11 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
+  // Declare the generalized force input port.
+  applied_generalized_force_input_port_ = this->DeclareVectorInputPort(
+      "applied_generalized_force",
+      systems::BasicVector<T>(num_velocities())).get_index();
+
   // Declare applied spatial force input force port.
   applied_spatial_force_input_port_ = this->DeclareAbstractInputPort(
         "applied_spatial_force",
@@ -1722,6 +1741,13 @@ MultibodyPlant<T>::get_actuation_input_port() const {
   DRAKE_THROW_UNLESS(num_actuators() > 0);
   DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
   return get_actuation_input_port(actuated_instance_);
+}
+
+template <typename T>
+const systems::InputPort<T>&
+MultibodyPlant<T>::get_applied_generalized_force_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_input_port(applied_generalized_force_input_port_);
 }
 
 template <typename T>

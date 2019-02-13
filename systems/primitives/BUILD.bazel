@@ -445,6 +445,7 @@ drake_cc_googletest(
         ":affine_linear_test",
         ":linear_system",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//examples/pendulum:pendulum_plant",
         "//systems/framework",
         "//systems/framework/test_utilities",

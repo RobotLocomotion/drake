@@ -1223,7 +1223,11 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-  context->FixInputPort(0, Vector1d{0.0});
+  context->FixInputPort(pendulum->get_actuation_input_port().get_index(),
+                        Vector1d{0.0});
+  context->FixInputPort(
+      pendulum->get_applied_generalized_force_input_port().get_index(),
+      Vector1d{0.0});
 
   // First we will linearize about the unstable fixed point with the pendulum
   // in its inverted position.
