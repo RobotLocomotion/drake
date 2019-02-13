@@ -653,22 +653,15 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
   return GetScopedSingleton<GurobiSolver::License>();
 }
 
-void GurobiSolver::Solve(const MathematicalProgram& prog,
-                         const optional<Eigen::VectorXd>& initial_guess,
-                         const optional<SolverOptions>& solver_options,
-                         MathematicalProgramResult* result) const {
-  // reset result.
-  *result = {};
-  result->set_decision_variable_index(prog.decision_variable_index());
+void GurobiSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   if (!license_) {
     license_ = AcquireLicense();
   }
   GRBenv* env = license_->GurobiEnv();
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(
-        "GurobiSolver's capability doesn't satisfy the requirement of this "
-        "optimization program.");
-  }
 
   const int num_prog_vars = prog.num_vars();
   int num_gurobi_vars = num_prog_vars;
@@ -797,40 +790,25 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
     error = GRBsetintparam(model_env, GRB_INT_PAR_OUTPUTFLAG, 0);
   }
 
-  for (const auto it : prog.GetSolverOptionsDouble(id())) {
+  for (const auto it : merged_options.GetOptionsDouble(id())) {
     if (!error) {
       error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
     }
   }
-  for (const auto it : prog.GetSolverOptionsInt(id())) {
+  for (const auto it : merged_options.GetOptionsInt(id())) {
     if (!error) {
       error = GRBsetintparam(model_env, it.first.c_str(), it.second);
     }
   }
-  if (solver_options.has_value()) {
-    for (const auto it : solver_options->GetOptionsDouble(id())) {
-      if (!error) {
-        error = GRBsetdblparam(model_env, it.first.c_str(), it.second);
-      }
-    }
-    for (const auto it : solver_options->GetOptionsInt(id())) {
-      if (!error) {
-        error = GRBsetintparam(model_env, it.first.c_str(), it.second);
-      }
-    }
-  }
 
-  if (initial_guess.has_value()) {
-    if (initial_guess.value().rows() != prog.num_vars()) {
-      throw std::invalid_argument(fmt::format(
-          "The initial guess has {} rows, but {} rows were expected.",
-          initial_guess.value().rows(), prog.num_vars()));
-    }
-    for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
-      if (!error) {
-        error =
-            GRBsetdblattrelement(model, "Start", i, initial_guess.value()(i));
-      }
+  if (initial_guess.rows() != prog.num_vars()) {
+    throw std::invalid_argument(fmt::format(
+        "The initial guess has {} rows, but {} rows were expected.",
+        initial_guess.rows(), prog.num_vars()));
+  }
+  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
+    if (!error && !std::isnan(initial_guess(i))) {
+      error = GRBsetdblattrelement(model, "Start", i, initial_guess(i));
     }
   }
 
@@ -859,8 +837,6 @@ void GurobiSolver::Solve(const MathematicalProgram& prog,
   if (!error) {
     error = GRBoptimize(model);
   }
-
-  result->set_solver_id(GurobiSolver::id());
 
   SolutionResult solution_result = SolutionResult::kUnknownError;
 

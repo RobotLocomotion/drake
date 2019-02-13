@@ -11,18 +11,14 @@
 namespace drake {
 namespace solvers {
 
-SolverId GurobiSolver::solver_id() const {
-  return id();
-}
+GurobiSolver::GurobiSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+GurobiSolver::~GurobiSolver() = default;
 
 SolverId GurobiSolver::id() {
   static const never_destroyed<SolverId> singleton{"Gurobi"};
   return singleton.access();
-}
-
-bool GurobiSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return GurobiSolver::ProgramAttributesSatisfied(prog);
 }
 
 bool GurobiSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
