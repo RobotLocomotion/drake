@@ -482,11 +482,11 @@ TEST_F(DrealSolverTest, SolveLinearProgramming) {
   prog_.AddConstraint(x1 >= -x0 + 200);
   prog_.AddCost(2 * x0 - 5 * x1);
   ASSERT_TRUE(solver_.available());
-  SolutionResult solution_result{solver_.Solve(prog_)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
   const double delta{0.001};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v0{prog_.GetSolution(x0)};
-  const double v1{prog_.GetSolution(x1)};
+  const double v0{result.GetSolution(x0)};
+  const double v1{result.GetSolution(x1)};
   EXPECT_TRUE(100 - delta <= v0 && v0 <= 200 + delta);
   EXPECT_TRUE(80 - delta <= v1 && v1 <= 170 + delta);
   EXPECT_TRUE(v1 >= -v0 + 200 - delta);
@@ -507,10 +507,10 @@ TEST_F(DrealSolverTest, SolveQuadraticProgramming) {
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
   prog_.SetSolverOption(DrealSolver::id(), "use_local_optimization", 0);
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v0{prog_.GetSolution(x0)};
-  const double v1{prog_.GetSolution(x1)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v0{result.GetSolution(x0)};
+  const double v1{result.GetSolution(x1)};
   EXPECT_TRUE(0 - delta <= v0 && v0 <= 20 + delta);
   EXPECT_TRUE(0 - delta <= v1);
   EXPECT_TRUE(2 * v0 + v1 >= 2 - delta);
@@ -528,10 +528,10 @@ TEST_F(DrealSolverTest, SolveLinearEqualityConstraint) {
   prog_.AddConstraint(2 * x0 + 3 * x1 == 2);
   prog_.AddConstraint(-3 * x0 + 4 * x1 <= 0);
   const double delta{1e-3};
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v0{prog_.GetSolution(x0)};
-  const double v1{prog_.GetSolution(x1)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v0{result.GetSolution(x0)};
+  const double v1{result.GetSolution(x1)};
   EXPECT_NEAR(2 * v0 + 3 * v1, 2.0, delta);
   EXPECT_TRUE(-3 * v0 + 4 * v1 <= delta);
 }
@@ -545,9 +545,9 @@ TEST_F(DrealSolverTest, SolveQuadraticConstraint) {
   prog_.AddConstraint(x1 * x1 - 0.0001 <= x0);
   prog_.AddConstraint(x0 == 3.0);
   const double delta{1e-3};
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v1{prog_.GetSolution(x1)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v1{result.GetSolution(x1)};
   EXPECT_NEAR(v1, 1.7320 /* sqrt(3.0) */, delta);
 }
 
@@ -564,9 +564,9 @@ TEST_F(DrealSolverTest, SolveLorentzConeConstraint) {
   prog_.AddCost(x2);
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v2{prog_.GetSolution(x2)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v2{result.GetSolution(x2)};
   // We check if the found minimum (solution for x2) is close to the one from
   // SCS solver.
   EXPECT_NEAR(v2, /* Solution from SCS Solver */ 0.414212, delta * 5);
@@ -584,11 +584,11 @@ TEST_F(DrealSolverTest, SolveRotatedLorentzConeConstraint) {
       Vector4<symbolic::Expression>(x0 + x1, x1 + x2, +x0, +x1));
   const double delta{1e-10};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v0{prog_.GetSolution(x0)};
-  const double v1{prog_.GetSolution(x1)};
-  const double v2{prog_.GetSolution(x2)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v0{result.GetSolution(x0)};
+  const double v1{result.GetSolution(x1)};
+  const double v2{result.GetSolution(x2)};
   // We check if the found minimum (solution for 2x0 + 3x1 - 2x2) is close to
   // the one from Gurobi solver.
   EXPECT_NEAR(2 * v0 + 3 * v1 - 2 * v2,
@@ -632,10 +632,10 @@ TEST_F(DrealSolverTest, SolveLinearComplementarityConstraint) {
   prog_.AddLinearComplementarityConstraint(M, q, {x, y, l});
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  const SolutionResult solution_result{solver_.Solve(prog_)};
-  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const auto x_val = prog_.GetSolution(x);
-  const auto y_val = prog_.GetSolution(y);
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const auto x_val = result.GetSolution(x);
+  const auto y_val = result.GetSolution(y);
   EXPECT_NEAR(x_val(0), 1, 1E-6);
   EXPECT_NEAR(y_val(0), 0, 1E-6);
 }
@@ -646,23 +646,25 @@ TEST_F(DrealSolverTest, SolveNonLinearConstraint) {
   prog_.AddConstraint(sin(x0) + cos(x0), 0.4, 0.41);
   const double delta{1e-5};
   prog_.SetSolverOption(DrealSolver::id(), "precision", delta);
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v0{prog_.GetSolution(x0)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v0{result.GetSolution(x0)};
   EXPECT_TRUE(-3.141592 - delta <= v0 && v0 <= 3.141592 + delta);
   EXPECT_TRUE(0.4 - delta <= sin(v0) + cos(v0));
   EXPECT_TRUE(sin(v0) + cos(v0) <= 0.41 + delta);
   // Add more constraints to make the problem infeasible.
   prog_.AddConstraint(cos(x0) * sin(x0), 0.9, 0.91);
-  solution_result = solver_.Solve(prog_);
-  ASSERT_EQ(solution_result, SolutionResult::kInfeasibleConstraints);
+  solver_.Solve(prog_, {}, {}, &result);
+  ASSERT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
 }
 
 TEST_F(DrealSolverTest, SolvePositiveSemidefiniteConstraint) {
   // No support yet. Checks DrealSolver throws std::logic_error.
   const auto X = prog_.NewSymmetricContinuousVariables<4>("X");
   prog_.AddPositiveSemidefiniteConstraint(X);
-  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+  EXPECT_THROW(solver_.Solve(prog_, {}, {}), logic_error);
 }
 
 TEST_F(DrealSolverTest, SolveLinearMatrixInequalityConstraint) {
@@ -671,7 +673,7 @@ TEST_F(DrealSolverTest, SolveLinearMatrixInequalityConstraint) {
       {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
        2 * Eigen::Matrix2d::Ones()},
       xvec_.head<2>());
-  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+  EXPECT_THROW(solver_.Solve(prog_, {}, {}), logic_error);
 }
 
 TEST_F(DrealSolverTest, SolveMultipleCostFunctions) {
@@ -680,9 +682,9 @@ TEST_F(DrealSolverTest, SolveMultipleCostFunctions) {
   prog_.AddCost(-2 * x + 1);  // -2x + 1
   prog_.AddCost(x * x);       // x²
   // Cost function = x² - 2x + 1 = (x-1)²
-  SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v{prog_.GetSolution(x)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v{result.GetSolution(x)};
   EXPECT_NEAR(v, 1, 0.005);
 }
 
@@ -699,11 +701,11 @@ TEST_F(DrealSolverTest, SolveGenericConstraint) {
       make_shared<test::GenericTrivialConstraint1>();
   prog_.AddConstraint(Binding<Constraint>(
       generic_trivial_constraint1, VectorDecisionVariable<3>(x0, x1, x2)));
-  const SolutionResult solution_result{solver_.Solve(prog_)};
-  ASSERT_EQ(solution_result, SolutionResult::kSolutionFound);
-  const double v0{prog_.GetSolution(x0)};
-  const double v1{prog_.GetSolution(x1)};
-  const double v2{prog_.GetSolution(x2)};
+  auto result = solver_.Solve(prog_, {}, {});
+  ASSERT_TRUE(result.is_success());
+  const double v0{result.GetSolution(x0)};
+  const double v1{result.GetSolution(x1)};
+  const double v2{result.GetSolution(x2)};
   EXPECT_LE(-10, v0);
   EXPECT_LE(v0, 10);
   EXPECT_LE(-10, v1);
@@ -723,7 +725,7 @@ TEST_F(DrealSolverTest, SolveGenericCost) {
   prog_.AddCost(
       Binding<Cost>(generic_trivial_cost1,
                     VectorDecisionVariable<3>(xvec_(0), xvec_(1), xvec_(2))));
-  EXPECT_THROW(solver_.Solve(prog_), logic_error);
+  EXPECT_THROW(solver_.Solve(prog_, {}, {}), logic_error);
 }
 
 }  // namespace

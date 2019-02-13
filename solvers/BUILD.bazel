@@ -353,7 +353,7 @@ drake_cc_library(
     srcs = ["non_convex_optimization_util.cc"],
     hdrs = ["non_convex_optimization_util.h"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solve",
         "//math:quadratic_form",
     ],
@@ -384,7 +384,8 @@ drake_cc_library(
     srcs = ["system_identification.cc"],
     hdrs = ["system_identification.h"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
+        ":solve",
         "//common:autodiff",
         "//common:essential",
         "//common:polynomial",
@@ -400,7 +401,7 @@ drake_cc_library(
         "rotation_constraint.h",
     ],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         "//math:gradient",
     ],
 )
@@ -418,8 +419,9 @@ drake_cc_library(
     deps = [
         ":bilinear_product_util",
         ":integer_optimization_util",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mixed_integer_optimization_util",
+        ":solve",
     ],
 )
 
@@ -454,7 +456,7 @@ drake_cc_library(
     srcs = ["test/add_solver_util.cc"],
     hdrs = ["test/add_solver_util.h"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
     ],
 )
 
@@ -493,7 +495,7 @@ drake_cc_library(
     srcs = ["test/mathematical_program_test_util.cc"],
     hdrs = ["test/mathematical_program_test_util.h"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         "@gtest//:without_main",
     ],
 )
@@ -504,7 +506,7 @@ drake_cc_library(
     srcs = ["test/optimization_examples.cc"],
     hdrs = ["test/optimization_examples.h"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":solver_type_converter",
         "//common/test_utilities:eigen_matrix_compare",
@@ -591,7 +593,7 @@ drake_cc_library(
     hdrs = ["solve.h"],
     deps = [
         ":choose_best_solver",
-        ":mathematical_program",
+        ":mathematical_program_lite",
     ],
 )
 
@@ -924,7 +926,7 @@ drake_cc_library(
     hdrs = ["mixed_integer_optimization_util.h"],
     deps = [
         ":integer_optimization_util",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         "//math:gray_code",
     ],
 )
@@ -1009,7 +1011,7 @@ drake_cc_googletest(
     name = "complementary_problem_test",
     tags = ["snopt"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solve",
     ],
 )
@@ -1026,7 +1028,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "decision_variable_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -1034,7 +1036,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1059,7 +1061,7 @@ drake_cc_googletest(
         ":dreal_solver",
         ":generic_trivial_constraint",
         ":generic_trivial_cost",
-        ":mathematical_program",
+        ":mathematical_program_lite",
     ],
 )
 
@@ -1070,7 +1072,7 @@ drake_cc_googletest(
     deps = [
         ":gurobi_solver",
         ":linear_program_examples",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
@@ -1085,7 +1087,7 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":gurobi_solver",
-        ":mathematical_program",
+        ":mathematical_program_lite",
     ],
 )
 
@@ -1093,7 +1095,7 @@ drake_cc_googletest(
     name = "integer_optimization_util_test",
     deps = [
         ":integer_optimization_util",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solve",
     ],
 )
@@ -1102,7 +1104,7 @@ drake_cc_googletest(
     name = "ipopt_solver_test",
     deps = [
         ":linear_program_examples",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
@@ -1113,7 +1115,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "linear_complementary_problem_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -1122,7 +1124,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "linear_system_solver_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":solve",
@@ -1154,8 +1156,10 @@ drake_cc_googletest(
     tags = gurobi_test_tags(),
     deps = [
         ":add_solver_util",
-        ":mathematical_program",
+        ":gurobi_solver",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
+        ":mosek_solver",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1163,7 +1167,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "moby_lcp_solver_test",
     deps = [
-        ":mathematical_program",
+        ":moby_lcp_solver",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1171,7 +1175,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "unrevised_lemke_solver_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":unrevised_lemke_solver",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -1183,7 +1187,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         ":linear_program_examples",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":mixed_integer_optimization_util",
         ":quadratic_program_examples",
@@ -1198,7 +1202,7 @@ drake_cc_googletest(
     name = "mosek_solver_moseklm_license_file_test",
     tags = mosek_test_tags(),
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mosek_solver",
     ],
 )
@@ -1207,7 +1211,7 @@ drake_cc_googletest(
     name = "nlopt_solver_test",
     deps = [
         ":linear_program_examples",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
@@ -1221,6 +1225,7 @@ drake_cc_googletest(
     deps = [
         ":decision_variable",
         ":non_convex_optimization_util",
+        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
     ],
@@ -1229,7 +1234,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "nonlinear_program_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":optimization_examples",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1251,9 +1256,11 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         ":gurobi_solver",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mixed_integer_rotation_constraint",
+        ":mosek_solver",
         ":rotation_constraint",
+        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
@@ -1270,9 +1277,11 @@ drake_cc_googletest(
     ],
     use_default_main = False,
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mixed_integer_rotation_constraint",
+        ":mosek_solver",
         ":rotation_constraint",
+        ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -1289,7 +1298,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         ":gurobi_solver",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":rotation_constraint",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1300,7 +1309,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "osqp_solver_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":osqp_solver",
         ":quadratic_program_examples",
@@ -1313,9 +1322,10 @@ drake_cc_binary(
     testonly = 1,
     srcs = ["test/plot_feasible_rotation_matrices.cc"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
+        ":solve",
         "//common/proto:call_matlab",
     ],
 )
@@ -1338,7 +1348,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":gurobi_solver",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mixed_integer_rotation_constraint",
         ":rotation_constraint",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1349,7 +1359,7 @@ drake_cc_googletest(
     name = "scs_solver_test",
     deps = [
         ":linear_program_examples",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":quadratic_program_examples",
         ":second_order_cone_program_examples",
@@ -1362,7 +1372,7 @@ drake_cc_googletest(
     tags = ["snopt"],
     deps = [
         ":linear_program_examples",
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mathematical_program_test_util",
         ":optimization_examples",
         ":quadratic_program_examples",
@@ -1391,7 +1401,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "solver_type_converter_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solver_type_converter",
     ],
 )
@@ -1400,7 +1410,8 @@ drake_cc_googletest(
     name = "sos_constraint_test",
     tags = mosek_test_tags(),
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
+        ":solve",
         ":sos_basis_generator",
     ],
 )
@@ -1408,7 +1419,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "sos_basis_generator_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":sos_basis_generator",
     ],
 )
@@ -1454,7 +1465,7 @@ drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_internal_test",
     tags = mosek_test_tags() + gurobi_test_tags() + ["no_tsan"],
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":mixed_integer_rotation_constraint",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1465,7 +1476,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "diagonally_dominant_matrix_test",
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
     ],
@@ -1475,7 +1486,7 @@ drake_cc_googletest(
     name = "scaled_diagonally_dominant_matrix_test",
     tags = gurobi_test_tags() + mosek_test_tags(),
     deps = [
-        ":mathematical_program",
+        ":mathematical_program_lite",
         ":solve",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
@@ -1495,7 +1506,6 @@ drake_cc_googletest(
     name = "choose_best_solver_test",
     deps = [
         ":choose_best_solver",
-        ":mathematical_program",
         "//common/test_utilities:expect_throws_message",
     ],
 )

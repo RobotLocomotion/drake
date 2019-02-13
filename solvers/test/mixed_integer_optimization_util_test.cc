@@ -75,9 +75,9 @@ void LogarithmicSos2Test(int num_lambda, bool logarithmic_binning) {
 
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
-      auto result = gurobi_solver.Solve(prog);
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
-      const auto lambda_val = prog.GetSolution(lambda);
+      auto result = gurobi_solver.Solve(prog, {}, {});
+      EXPECT_TRUE(result.is_success());
+      const auto lambda_val = result.GetSolution(lambda);
       Eigen::VectorXd lambda_val_expected = Eigen::VectorXd::Zero(num_lambda);
       lambda_val_expected(i) = 0.5;
       lambda_val_expected(i + 1) = 0.5;
@@ -135,13 +135,14 @@ GTEST_TEST(TestSos2, TestClosestPointOnLineSegments) {
     // gurobi.
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
-      const SolutionResult result = gurobi_solver.Solve(prog);
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      auto result = gurobi_solver.Solve(prog, {}, {});
+      EXPECT_TRUE(result.is_success());
       const Eigen::Vector2d P(
-          prog.GetSolution(VectorDecisionVariable<2>(x, y)));
+          result.GetSolution(VectorDecisionVariable<2>(x, y)));
       const Eigen::Vector2d P_expected = QP_pair.second;
       EXPECT_TRUE(CompareMatrices(P, P_expected, 1E-6));
-      EXPECT_NEAR(prog.GetOptimalCost(), (Q - P_expected).squaredNorm(), 1E-12);
+      EXPECT_NEAR(result.get_optimal_cost(), (Q - P_expected).squaredNorm(),
+                  1E-12);
     }
   }
 }
@@ -205,12 +206,12 @@ void LogarithmicSos1Test(int num_lambda,
     binary_assignment.evaluator()->UpdateUpperBound(code);
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
-      auto result = gurobi_solver.Solve(prog);
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      auto result = gurobi_solver.Solve(prog, {}, {});
+      EXPECT_TRUE(result.is_success());
       Eigen::VectorXd lambda_expected(num_lambda);
       lambda_expected.setZero();
       lambda_expected(i) = 1;
-      EXPECT_TRUE(CompareMatrices(prog.GetSolution(lambda), lambda_expected,
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(lambda), lambda_expected,
                                   1E-6, MatrixCompareType::absolute));
     }
   }
@@ -317,6 +318,7 @@ class BilinearProductMcCormickEnvelopeTest {
 
   BilinearProductMcCormickEnvelopeTest(int num_interval_x, int num_interval_y)
       : prog_{},
+        prog_result_{},
         num_interval_x_{num_interval_x},
         num_interval_y_{num_interval_y},
         w_{prog_.NewContinuousVariables<1>()(0)},
@@ -427,12 +429,12 @@ class BilinearProductMcCormickEnvelopeTest {
           cost.evaluator()->UpdateCoefficients(a.col(k));
           GurobiSolver gurobi_solver;
           if (gurobi_solver.available()) {
-            const auto result = gurobi_solver.Solve(prog_);
-            EXPECT_EQ(result, SolutionResult::kSolutionFound);
+            gurobi_solver.Solve(prog_, {}, {}, &prog_result_);
+            EXPECT_TRUE(prog_result_.is_success());
             Eigen::Matrix<double, 1, 4> cost_at_vertices =
                 a.col(k).transpose() * vertices;
-            EXPECT_NEAR(prog_.GetOptimalCost(), cost_at_vertices.minCoeff(),
-                        1E-4);
+            EXPECT_NEAR(prog_result_.get_optimal_cost(),
+                        cost_at_vertices.minCoeff(), 1E-4);
 
             TestLinearObjectiveCheck(i, j, k);
           }
@@ -445,6 +447,7 @@ class BilinearProductMcCormickEnvelopeTest {
 
  protected:
   MathematicalProgram prog_;
+  MathematicalProgramResult prog_result_;
   const int num_interval_x_;
   const int num_interval_y_;
   const symbolic::Variable w_;
@@ -513,18 +516,18 @@ class BilinearProductMcCormickEnvelopeSos2Test
       for (int n = 0; n <= num_interval_y_; ++n) {
         if (!((m == i && n == j) || (m == i && n == (j + 1)) ||
               (m == (i + 1) && n == j) || (m == (i + 1) && n == (j + 1)))) {
-          EXPECT_NEAR(prog_.GetSolution(lambda_(m, n)), 0, 1E-5);
+          EXPECT_NEAR(prog_result_.GetSolution(lambda_(m, n)), 0, 1E-5);
         } else {
-          double lambda_mn{prog_.GetSolution(lambda_(m, n))};
+          double lambda_mn{prog_result_.GetSolution(lambda_(m, n))};
           x += lambda_mn * phi_x_(m);
           y += lambda_mn * phi_y_(n);
           w += lambda_mn * phi_x_(m) * phi_y_(n);
         }
       }
     }
-    EXPECT_NEAR(prog_.GetSolution(x_), x, 1E-4);
-    EXPECT_NEAR(prog_.GetSolution(y_), y, 1E-4);
-    EXPECT_NEAR(prog_.GetSolution(w_), w, 1E-4);
+    EXPECT_NEAR(prog_result_.GetSolution(x_), x, 1E-4);
+    EXPECT_NEAR(prog_result_.GetSolution(y_), y, 1E-4);
+    EXPECT_NEAR(prog_result_.GetSolution(w_), w, 1E-4);
   }
 
  protected:

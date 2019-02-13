@@ -54,10 +54,9 @@ class TestMinimumDistance
     GurobiSolver gurobi_solver;
     if (gurobi_solver.available()) {
       prog_.SetSolverOption(GurobiSolver::id(), "OutputFlag", true);
-      SolutionResult sol_result = gurobi_solver.Solve(prog_);
-
-      EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-      double d_val = prog_.GetSolution(d_(0));
+      auto result = gurobi_solver.Solve(prog_, {}, {});
+      EXPECT_TRUE(result.is_success());
+      double d_val = result.GetSolution(d_(0));
       EXPECT_NEAR(d_val, minimal_distance_expected_, 1E-2);
     }
   }
