@@ -15,7 +15,7 @@ There are `experimental binary packages <https://github.com/RobotLocomotion/drak
 - :samp:`https://drake-packages.csail.mit.edu/drake/nightly/drake-{yyyymmdd}-{bionic|mac|xenial}.tar.gz`.
     - Example: https://drake-packages.csail.mit.edu/drake/nightly/drake-20171015-xenial.tar.gz
 
-Example usages of these binaries are shown in this `example CMake project <https://github.com/RobotLocomotion/drake-shambhala/tree/master/drake_cmake_installed>`_.
+Example usages of these binaries are shown in this `example CMake project <https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed>`_.
 For the compilers used to produce these releases, see :ref:`binary-packages`.
 If you are unsure of which approach to use, we suggest you :ref:`build from source <build_from_source>`
 instead.
