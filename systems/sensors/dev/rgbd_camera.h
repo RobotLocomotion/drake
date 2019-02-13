@@ -196,9 +196,8 @@ class RgbdCamera final : public LeafSystem<double> {
 
   const geometry::dev::QueryObject<double>& get_query_object(
       const Context<double>& context) const {
-    return this
-        ->EvalAbstractInput(context, query_object_input_port_->get_index())
-        ->template GetValue<geometry::dev::QueryObject<double>>();
+    return query_object_input_port().
+        Eval<geometry::dev::QueryObject<double>>(context);
   }
 
   const InputPort<double>* query_object_input_port_{};

@@ -94,13 +94,11 @@ void BicycleCar<T>::DoCalcTimeDerivatives(
       dynamic_cast<const BicycleCarState<T>*>(&context_state);
   DRAKE_ASSERT(state != nullptr);
 
-  const systems::BasicVector<T>* steering =
-      this->EvalVectorInput(context, get_steering_input_port().get_index());
-  DRAKE_ASSERT(steering != nullptr);
+  const systems::BasicVector<T>& steering =
+      get_steering_input_port().template Eval<systems::BasicVector<T>>(context);
 
-  const systems::BasicVector<T>* force =
-      this->EvalVectorInput(context, get_force_input_port().get_index());
-  DRAKE_ASSERT(force != nullptr);
+  const systems::BasicVector<T>& force =
+      get_force_input_port().template Eval<systems::BasicVector<T>>(context);
 
   DRAKE_ASSERT(derivatives != nullptr);
   systems::VectorBase<T>& derivative_vector = derivatives->get_mutable_vector();
@@ -108,7 +106,7 @@ void BicycleCar<T>::DoCalcTimeDerivatives(
       dynamic_cast<BicycleCarState<T>*>(&derivative_vector);
   DRAKE_ASSERT(state_derivatives != nullptr);
 
-  ImplCalcTimeDerivatives(params, *state, *steering, *force, state_derivatives);
+  ImplCalcTimeDerivatives(params, *state, steering, force, state_derivatives);
 }
 
 template <typename T>

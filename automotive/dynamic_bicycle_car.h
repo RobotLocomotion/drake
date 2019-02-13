@@ -118,15 +118,15 @@ class DynamicBicycleCar final : public systems::LeafSystem<T> {
   // Evaluates the input port and returns the scalar value of the steering
   // angle.
   const T get_steer(const systems::Context<T>& context) const {
-    return this->EvalVectorInput(context, 0)
-        ->GetAtIndex(DynamicBicycleCarInputIndices::kSteerCd);
+    return get_input_port().Eval(context)[
+        DynamicBicycleCarInputIndices::kSteerCd];
   }
 
   // Evaluates the input port and returns the scalar value of the longitudinal
   // force.
   const T get_longitudinal_force(const systems::Context<T>& context) const {
-    return this->EvalVectorInput(context, 0)
-        ->GetAtIndex(DynamicBicycleCarInputIndices::kFCpX);
+    return get_input_port().Eval(context)[
+        DynamicBicycleCarInputIndices::kFCpX];
   }
 
   // Copies the state out to the output port.

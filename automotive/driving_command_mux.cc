@@ -40,14 +40,12 @@ DrivingCommandMux<T>::acceleration_input() const {
 template <typename T>
 void DrivingCommandMux<T>::CombineInputsToOutput(
     const systems::Context<T>& context, DrivingCommand<T>* output) const {
-  const systems::BasicVector<T>* steering =
-      this->EvalVectorInput(context, steering_port_index_);
-  DRAKE_DEMAND(steering->size() == 1);
-  output->set_steering_angle(steering->GetAtIndex(0));
-  const systems::BasicVector<T>* acceleration =
-      this->EvalVectorInput(context, acceleration_port_index_);
-  DRAKE_DEMAND(acceleration->size() == 1);
-  output->set_acceleration(acceleration->GetAtIndex(0));
+  const auto& steering = steering_input().Eval(context);
+  DRAKE_DEMAND(steering.size() == 1);
+  output->set_steering_angle(steering[0]);
+  const auto& acceleration = acceleration_input().Eval(context);
+  DRAKE_DEMAND(acceleration.size() == 1);
+  output->set_acceleration(acceleration[0]);
 }
 
 }  // namespace automotive
