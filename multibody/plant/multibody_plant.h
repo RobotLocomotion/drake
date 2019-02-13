@@ -419,6 +419,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         body, V_WB, context, state);
   }
 
+  // TODO(sammy-tri) We should also be able to set the default pose of a free
+  // body.  See https://github.com/RobotLocomotion/drake/issues/10713
+
   /// Sets the distribution used by SetRandomState() to populate the
   /// x-y-z `position` component of the floating-base state.
   /// @throws std::exception if `body` is not a free body in the model.
@@ -430,14 +433,22 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Sets the distribution used by SetRandomState() to populate the
+  /// rotation component of the floating-base state.
+  /// @throws std::exception if `body` is not a free body in the model.
+  /// @throws std::exception if called pre-finalize.
+  void SetFreeBodyRandomRotationDistribution(
+      const Body<T>& body,
+      const Eigen::Quaternion<symbolic::Expression>& rotation) {
+    this->mutable_tree().SetFreeBodyRandomRotationDistributionOrThrow(
+        body, rotation);
+  }
+
+  /// Sets the distribution used by SetRandomState() to populate the
   /// rotation component of the floating-base state using uniformly random
   /// rotations.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
-  void SetFreeBodyRandomRotationDistributionToUniform(const Body<T>& body) {
-    this->mutable_tree().SetFreeBodyRandomRotationDistributionToUniformOrThrow(
-        body);
-  }
+  void SetFreeBodyRandomRotationDistributionToUniform(const Body<T>& body);
 
   /// Sets all generalized positions and velocities from the given vector
   /// [q; v].

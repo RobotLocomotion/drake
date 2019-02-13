@@ -424,12 +424,13 @@ void MultibodyTree<T>::SetFreeBodyRandomPositionDistributionOrThrow(
 }
 
 template <typename T>
-void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionToUniformOrThrow(
-    const Body<T>& body) {
+void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
+    const Body<T>& body,
+    const Eigen::Quaternion<symbolic::Expression>& rotation) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   QuaternionFloatingMobilizer<T>& mobilizer =
       get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
-  mobilizer.set_random_quaternion_distribution_to_uniform();
+  mobilizer.set_random_quaternion_distribution(rotation);
 }
 
 template <typename T>
