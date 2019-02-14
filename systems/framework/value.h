@@ -1,6 +1,7 @@
 #pragma once
 
-#warning This header is deprecated; use drake/common/value.h instead.
+// NOLINTNEXTLINE(whitespace/line_length)
+#warning This header is deprecated; use drake/common/value.h instead, and change all uses from drake::systems::Value to drake::Value and drake::systems::AbstractValue to drake::AbstractValue.
 
 // TODO(jwnimmer-tri) Remove this file (and its build rules) on 2019-06-01.
 
@@ -24,5 +25,4 @@ using Value
     = drake::Value<T>;
 
 }  // namespace systems
-
 }  // namespace drake
