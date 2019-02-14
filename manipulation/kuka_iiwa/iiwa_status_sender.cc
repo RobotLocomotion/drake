@@ -57,41 +57,73 @@ const systems::OutputPort<double>& IiwaStatusSender::get_output_port() const {
   return LeafSystem<double>::get_output_port(0);
 }
 
+namespace {
+// Returns the first one of port1.Eval or port2.Eval that has a value.
+// If min_num_connected is zero and both ports are empty, return zeros.
+// If less than min_num_connected of (port1,port2) are connected, throws.
+// If more than max_num_connected of (port1,port2) are connected, throws.
+// If port2_tail is provided, a suffix of port2's value is returned.
+Eigen::Ref<const Eigen::VectorXd> EvalFirstConnected(
+    const systems::Context<double>& context,
+    int min_num_connected, int max_num_connected, const Eigen::VectorXd& zeros,
+    const InPort& port1, const InPort& port2,
+    int port2_tail = -1) {
+  const int total_connected =
+      (port1.HasValue(context) ? 1 : 0) +
+      (port2.HasValue(context) ? 1 : 0);
+  if (total_connected > max_num_connected) {
+    throw std::logic_error(fmt::format(
+        "Both {} and {} cannot both be connected at the same time.",
+        port1.GetFullDescription(), port2.GetFullDescription()));
+  }
+  if (total_connected < min_num_connected) {
+    throw std::logic_error(fmt::format(
+        "At least {} of {} or {} must be connected.",
+        min_num_connected, port1.GetFullDescription(),
+        port2.GetFullDescription()));
+  }
+  if (port1.HasValue(context)) {
+    return port1.Eval(context);
+  }
+  if (port2.HasValue(context)) {
+    if (port2_tail < 0) {
+      return port2.Eval(context);
+    } else {
+      return port2.Eval(context).tail(port2_tail);
+    }
+  }
+  return zeros;
+}
+
+}  // namespace
+
 void IiwaStatusSender::CalcOutput(
     const systems::Context<double>& context, lcmt_iiwa_status* output) const {
-  const auto* const position_commanded_in = this->EvalVectorInput(context, 0);
-  const auto* const position_measured_in = this->EvalVectorInput(context, 1);
-  const auto* const velocity_estimated_in = this->EvalVectorInput(context, 2);
-  const auto* const torque_commanded_in = this->EvalVectorInput(context, 3);
-  const auto* const torque_measured_in = this->EvalVectorInput(context, 4);
-  const auto* const torque_external_in = this->EvalVectorInput(context, 5);
-  const auto* const state_commanded_in = this->EvalVectorInput(context, 6);
-  const auto* const state_measured_in = this->EvalVectorInput(context, 7);
-
-  // Check that required inputs are present.
-  DRAKE_THROW_UNLESS(position_commanded_in || state_commanded_in);
-  DRAKE_THROW_UNLESS(position_measured_in || state_measured_in);
-  DRAKE_THROW_UNLESS(torque_commanded_in);
-  // Check that one-or-the-other inputs are not doubly-connected.
-  DRAKE_THROW_UNLESS(!(position_commanded_in && state_commanded_in));
-  DRAKE_THROW_UNLESS(!(position_measured_in && state_measured_in));
-  DRAKE_THROW_UNLESS(!(velocity_estimated_in && state_measured_in));
-  // For each output quantity, choose which input data to use.
-  const auto& position_commanded =
-      position_commanded_in ? *position_commanded_in : *state_commanded_in;
-  const auto& position_measured =
-      position_measured_in ? *position_measured_in : *state_measured_in;
-  const auto& velocity_estimated =
-      velocity_estimated_in ? velocity_estimated_in->CopyToVector() :
-      state_measured_in ? Eigen::VectorXd(
-          state_measured_in->CopyToVector().tail(num_joints_)) :
-      zero_vector_.CopyToVector();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const auto& position_commanded = EvalFirstConnected(
+      context, 1, 1, zero_vector_,
+      get_position_commanded_input_port(),
+      get_command_input_port());
+  const auto& position_measured = EvalFirstConnected(
+      context, 1, 1, zero_vector_,
+      get_position_measured_input_port(),
+      get_state_input_port());
+  const auto& velocity_estimated = EvalFirstConnected(
+      context, 0, 1, zero_vector_,
+      get_velocity_estimated_input_port(),
+      get_state_input_port(), num_joints_);
   const auto& torque_commanded =
-      *torque_commanded_in;
-  const auto& torque_measured =
-      torque_measured_in ? *torque_measured_in : torque_commanded;
-  const auto& torque_external =
-      torque_external_in ? *torque_external_in : zero_vector_;
+      get_torque_commanded_input_port().Eval(context);
+  const auto& torque_measured = EvalFirstConnected(
+      context, 1, 2, zero_vector_,
+      get_torque_measured_input_port(),
+      get_torque_commanded_input_port());
+  const auto& torque_external = EvalFirstConnected(
+      context, 0, 2, zero_vector_,
+      get_torque_external_input_port(),
+      get_torque_external_input_port());
+#pragma GCC diagnostic pop
 
   lcmt_iiwa_status& status = *output;
   status.utime = context.get_time() * 1e6;

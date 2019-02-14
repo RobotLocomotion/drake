@@ -27,23 +27,24 @@ const systems::OutputPort<double>& IiwaCommandSender::get_output_port() const {
 
 void IiwaCommandSender::CalcOutput(
     const systems::Context<double>& context, lcmt_iiwa_command* output) const {
-  const auto* const position_in = this->EvalVectorInput(context, 0);
-  const auto* const torque_in = this->EvalVectorInput(context, 1);
-  // Check that inputs are properly connected.
-  DRAKE_THROW_UNLESS(position_in);
-  const int num_torques = torque_in ? num_joints_ : 0;
+  const auto& position = get_position_input_port().Eval(context);
+  const bool has_torque = get_torque_input_port().HasValue(context);
+  const int num_torques = has_torque ? num_joints_ : 0;
 
   lcmt_iiwa_command& command = *output;
   command.utime = context.get_time() * 1e6;
   command.num_joints = num_joints_;
   command.joint_position.resize(num_joints_);
   for (int i = 0; i < num_joints_; ++i) {
-    command.joint_position[i] = (*position_in)[i];
+    command.joint_position[i] = position[i];
   }
   command.num_torques = num_torques;
   command.joint_torque.resize(num_torques);
-  for (int i = 0; i < num_torques; ++i) {
-    command.joint_torque[i] = (*torque_in)[i];
+  if (has_torque) {
+    const auto& torque = get_torque_input_port().Eval(context);
+    for (int i = 0; i < num_torques; ++i) {
+      command.joint_torque[i] = torque[i];
+    }
   }
 }
 

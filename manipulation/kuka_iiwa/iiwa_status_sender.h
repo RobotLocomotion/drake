@@ -110,7 +110,7 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   void CalcOutput(const systems::Context<double>&, lcmt_iiwa_status*) const;
 
   const int num_joints_;
-  const systems::BasicVector<double> zero_vector_;
+  const Eigen::VectorXd zero_vector_;
 };
 
 }  // namespace kuka_iiwa
