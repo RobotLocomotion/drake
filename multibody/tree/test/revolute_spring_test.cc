@@ -34,20 +34,19 @@ class SpringTester : public ::testing::Test {
     bodyB_ = &model->AddRigidBody("BodyB", SpatialInertia<double>());
     bodyC_ = &model->AddRigidBody("BodyC", SpatialInertia<double>());
 
-    model->AddJoint<WeldJoint>(
-        "WeldBodyAToWorld", model->world_body(), {}, *bodyA_, {},
-        Isometry3<double>::Identity());
+    model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_body(), {},
+                               *bodyA_, {}, Isometry3<double>::Identity());
 
     // Allow body B to rotate about the z axis.
-    joint_ = &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, {},
-        *bodyB_, {}, Vector3<double>::UnitZ());
+    joint_ = &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, {}, *bodyB_,
+                                             {}, Vector3<double>::UnitZ());
 
-    model->AddJoint<RevoluteJoint>("joint_BC", *bodyB_, {},
-        *bodyC_, {}, Vector3<double>::UnitX());
+    model->AddJoint<RevoluteJoint>("joint_BC", *bodyB_, {}, *bodyC_, {},
+                                   Vector3<double>::UnitX());
 
     // Add spring
-    spring_ = &model->AddForceElement<RevoluteSpring>(
-        *joint_, nominal_angle_, stiffness_);
+    spring_ = &model->AddForceElement<RevoluteSpring>(*joint_, nominal_angle_,
+                                                      stiffness_);
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -88,7 +87,7 @@ class SpringTester : public ::testing::Test {
 
   // Parameters of the case.
   const double nominal_angle_ = 1.0;  // [m]
-  const double stiffness_ = 2.0;    // [N/m]
+  const double stiffness_ = 2.0;      // [N/m]
 };
 
 TEST_F(SpringTester, ConstructionAndAccessors) {
@@ -98,7 +97,7 @@ TEST_F(SpringTester, ConstructionAndAccessors) {
 }
 
 // Verify the spring applies no forces when the separation equals the
-// nominal angle
+// nominal angle.
 TEST_F(SpringTester, NominalAngle) {
   SetJointState(1.0, 0.0);
   CalcSpringForces();
@@ -111,8 +110,8 @@ TEST_F(SpringTester, NominalAngle) {
   EXPECT_NEAR(potential_energy, 0.0, kTolerance);
 }
 
-// Verify forces computation when the spring angle differs from the nominal
-TEST_F(SpringTester, DeltaAngl) {
+// Verify forces computation when the spring angle differs from the nominal.
+TEST_F(SpringTester, DeltaAngle) {
   const double angle = 2.0;
   SetJointState(angle, 0.0);
   CalcSpringForces();
@@ -123,7 +122,7 @@ TEST_F(SpringTester, DeltaAngl) {
   VectorX<double> expected_generalized_forces(2);
   expected_generalized_forces << expected_torque_magnitude, 0;
   EXPECT_TRUE(CompareMatrices(generalized_forces, expected_generalized_forces,
-      kTolerance, MatrixCompareType::relative));
+                              kTolerance, MatrixCompareType::relative));
 
   // Verify the value of the potential energy.
   const double potential_energy_expected =
@@ -138,13 +137,17 @@ TEST_F(SpringTester, DeltaAngl) {
       *context_, tree().EvalPositionKinematics(*context_),
       tree().EvalVelocityKinematics(*context_));
   EXPECT_NEAR(conservative_power, 0.0, kTolerance);
+  const double non_conservative_power = spring_->CalcNonConservativePower(
+      *context_, tree().EvalPositionKinematics(*context_),
+      tree().EvalVelocityKinematics(*context_));
+  EXPECT_NEAR(non_conservative_power, 0.0, kTolerance);
 }
 
 // This test verifies the computation of both conservative and non-conservative
 // powers for a configuration when they are non-zero.
 TEST_F(SpringTester, Power) {
   const double angle = 2.0;
-  const double angle_dot = 1.0;
+  const double angle_dot = 1.7;
   SetJointState(angle, angle_dot);
 
   const double conservative_power = spring_->CalcConservativePower(
@@ -154,10 +157,9 @@ TEST_F(SpringTester, Power) {
       -stiffness_ * (angle - nominal_angle_) * angle_dot;
   EXPECT_NEAR(conservative_power, conservative_power_expected, kTolerance);
 
-  const double non_conservative_power =
-      spring_->CalcNonConservativePower(
-          *context_, tree().EvalPositionKinematics(*context_),
-          tree().EvalVelocityKinematics(*context_));
+  const double non_conservative_power = spring_->CalcNonConservativePower(
+      *context_, tree().EvalPositionKinematics(*context_),
+      tree().EvalVelocityKinematics(*context_));
   const double non_conservative_power_expected = 0;
   // It should always be non-positive.
   EXPECT_NEAR(non_conservative_power, non_conservative_power_expected,

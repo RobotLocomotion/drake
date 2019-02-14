@@ -11,10 +11,11 @@
 namespace drake {
 namespace multibody {
 
-template <typename T> class Body;
+template <typename T>
+class Body;
 
 /// This %ForceElement models a torsional spring attached to a RevoluteJoint
-/// and applies a generalized force corresponding with that joint
+/// and applies a torque to that joint
 /// <pre>
 ///   τ = -k⋅(θ - θ₀)
 /// </pre>
@@ -32,7 +33,7 @@ class RevoluteSpring final : public ForceElement<T> {
   ///   The nominal angle of the spring  θ₀, in radians, at which the spring
   ///   applies no moment.
   /// @param[in] stiffness
-  ///   The stiffness k of the spring in N⋅m/rad. It must be non-negative.
+  ///   The stiffness k of the spring in N⋅m/rad.
   /// Refer to this class's documentation for further details.
   RevoluteSpring(const RevoluteJoint<T>& joint, double nominal_angle,
                  double stiffness);
@@ -74,7 +75,7 @@ class RevoluteSpring final : public ForceElement<T> {
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
  private:
-  // Helper method to make a clone templated on ToScalar.
+  // Helper method to make a clone templated on ToScalar().
   template <typename ToScalar>
   std::unique_ptr<ForceElement<ToScalar>> TemplatedDoCloneToScalar(
       const internal::MultibodyTree<ToScalar>& tree_clone) const;

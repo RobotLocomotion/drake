@@ -12,11 +12,11 @@ namespace multibody {
 
 template <typename T>
 RevoluteSpring<T>::RevoluteSpring(const RevoluteJoint<T>& joint,
-                                  double nominal_angle, double stiffness) :
-    ForceElement<T>(joint.model_instance()),
-    joint_(joint),
-    nominal_angle_(nominal_angle),
-    stiffness_(stiffness) {}
+                                  double nominal_angle, double stiffness)
+    : ForceElement<T>(joint.model_instance()),
+      joint_(joint),
+      nominal_angle_(nominal_angle),
+      stiffness_(stiffness) {}
 
 template <typename T>
 void RevoluteSpring<T>::DoCalcAndAddForceContribution(
@@ -30,7 +30,8 @@ void RevoluteSpring<T>::DoCalcAndAddForceContribution(
 }
 
 template <typename T>
-T RevoluteSpring<T>::CalcPotentialEnergy(const systems::Context<T>& context,
+T RevoluteSpring<T>::CalcPotentialEnergy(
+    const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>&) const {
   const T delta = nominal_angle_ - joint_.get_angle(context);
 
@@ -38,27 +39,23 @@ T RevoluteSpring<T>::CalcPotentialEnergy(const systems::Context<T>& context,
 }
 
 template <typename T>
-T RevoluteSpring<T>::CalcConservativePower(const systems::Context<T>& context,
+T RevoluteSpring<T>::CalcConservativePower(
+    const systems::Context<T>& context,
     const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&) const {
   // Since the potential energy is:
-  //  V = 1/2⋅k⋅(θ₀-θ)²
+  //   V = 1/2⋅k⋅(θ₀-θ)²
   // The conservative power is defined as:
-  //  Pc = -d(V)/dt, or -k⋅(θ₀-θ)⋅dθ/dt
+  //  Pc = -d(V)/dt = -[k⋅(θ₀-θ)⋅-dθ/dt] = k⋅(θ₀-θ)⋅dθ/dt
   // being positive when the potential energy decreases.
-
   const T delta = nominal_angle_ - joint_.get_angle(context);
-  const T delta_dot = -joint_.get_angular_rate(context);
-
-  // Since V = 1/2⋅k⋅(q-q₀)² we have that, from its definition:
-  // Pc = -d(V)/dt = -k⋅(q-q₀)⋅dq/dt
-  const T Pc = -stiffness_ * delta * delta_dot;
-  return Pc;
+  const T theta_dot = joint_.get_angular_rate(context);
+  return stiffness_ * delta * theta_dot;
 }
 
 template <typename T>
-T RevoluteSpring<T>::CalcNonConservativePower(const systems::Context<T>&,
-    const internal::PositionKinematicsCache<T>&,
+T RevoluteSpring<T>::CalcNonConservativePower(
+    const systems::Context<T>&, const internal::PositionKinematicsCache<T>&,
     const internal::VelocityKinematicsCache<T>&) const {
   // Purely conservative spring
   return 0;
@@ -81,15 +78,13 @@ RevoluteSpring<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<ForceElement<double>>
-RevoluteSpring<T>::DoCloneToScalar(
+std::unique_ptr<ForceElement<double>> RevoluteSpring<T>::DoCloneToScalar(
     const internal::MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<ForceElement<AutoDiffXd>>
-RevoluteSpring<T>::DoCloneToScalar(
+std::unique_ptr<ForceElement<AutoDiffXd>> RevoluteSpring<T>::DoCloneToScalar(
     const internal::MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
