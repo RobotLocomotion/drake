@@ -170,12 +170,29 @@ ManipulationStation<T>::ManipulationStation(double time_step)
 }
 
 template <typename T>
+void ManipulationStation<T>::AddManipulandFromFile(
+    const std::string& model_file, const RigidTransform<double>& X_WObject) {
+  multibody::Parser parser(plant_);
+  const auto model_index =
+      parser.AddModelFromFile(FindResourceOrThrow(model_file));
+  const auto indices = plant_->GetBodyIndices(model_index);
+  // Only support single-body objects for now.
+  // Note: this could be generalized fairly easily... would just want to
+  // set default/random positions for the non-floating-base elements below.
+  DRAKE_DEMAND(indices.size() == 1);
+  object_ids_.push_back(indices[0]);
+
+  object_poses_.push_back(X_WObject);
+}
+
+template <typename T>
 void ManipulationStation<T>::SetupClutterClearingStation(
-    const IiwaCollisionModel collision_model) {
+    const optional<const math::RigidTransformd>& X_WCameraBody,
+    IiwaCollisionModel collision_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kClutterClearing;
 
-  // Add the bin.
+  // Add the bins.
   {
     const std::string sdf_path = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/bin.sdf");
@@ -194,27 +211,32 @@ void ManipulationStation<T>::SetupClutterClearingStation(
                                   "bin_base", X_WC, plant_);
   }
 
-  // Add the objects.
+  // Add the camera.
   {
-    multibody::Parser parser(plant_);
-    // TODO(russt): Take a list of object models as an input argument.
-    const std::list<std::string> models{
-        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
-        "drake/examples/manipulation_station/models/cylinder.sdf",
-        "drake/examples/manipulation_station/models/thin_cylinder.sdf",
-        "drake/examples/manipulation_station/models/thin_box.sdf",
-        "drake/examples/manipulation_station/models/sphere.sdf"};
-    for (const auto& model : models) {
-      const auto model_index =
-          parser.AddModelFromFile(FindResourceOrThrow(model));
-      const auto indices = plant_->GetBodyIndices(model_index);
-      // Only support single-body objects for now.
-      // Note: this could be generalized fairly easily... would just want to
-      // set default/random positions for the non-floating-base elements below.
-      DRAKE_DEMAND(indices.size() == 1);
-      object_ids_.push_back(indices[0]);
-    }
+    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+    // depth are slightly different. And we are not able to model that at the
+    // moment.
+    // RGB:
+    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+    // DEPTH:
+    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+    // For this camera, we are going to assume that fx = fy, and we can compute
+    // fov_y by: fy = height / 2 / tan(fov_y / 2)
+    const double kFocalY = 645.;
+    const int kHeight = 480;
+    const int kWidth = 848;
+    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
+        2.0);
+
+    RegisterRgbdCamera("0", plant_->world_frame(),
+                       X_WCameraBody.value_or(math::RigidTransformd(
+                           math::RollPitchYaw<double>(-0.3, 0.8, 1.5),
+                           Eigen::Vector3d(0, -1.5, 1.5))),
+                       camera_properties);
   }
+
   AddDefaultIiwa(collision_model);
   AddDefaultWsg();
 }
@@ -272,6 +294,11 @@ void ManipulationStation<T>::SetupDefaultStation(
     const auto indices = plant_->GetBodyIndices(model_index);
     DRAKE_DEMAND(indices.size() == 1);
     object_ids_.push_back(indices[0]);
+
+    RigidTransform<T> X_WObject;
+    X_WObject.set_translation(Eigen::Vector3d(0.6, 0, 0));
+    X_WObject.set_rotation(RotationMatrix<T>::Identity());
+    object_poses_.push_back(X_WObject);
   }
 
   // Add the default iiwa/wsg models.
@@ -318,61 +345,12 @@ void ManipulationStation<T>::SetDefaultState(
       this->GetSubsystemContext(*plant_, station_context);
   auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
 
-  RigidTransform<T> X_WObject;
-  switch (setup_) {
-    case Setup::kNone:
-      // No additional setup required.
-      break;
-    case Setup::kDefault:
-      DRAKE_DEMAND(object_ids_.size() == 1);
+  DRAKE_DEMAND(object_ids_.size() == object_poses_.size());
 
-      // Set the initial pose of the object.
-      X_WObject.set_translation(Eigen::Vector3d(0.6, 0, 0));
-      X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[0]),
-                              X_WObject.GetAsIsometry3());
-
-      break;
-    case Setup::kClutterClearing:
-      DRAKE_DEMAND(object_ids_.size() == 5);
-
-      // Place the box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.7, 0.25));
-      X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[0]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the cylinder.
-      X_WObject.set_translation(Eigen::Vector3d(-0.2, -0.6, 0.30));
-      X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[1]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the thin cylinder.
-      X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.25));
-      X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[2]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the thin box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.25));
-      X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[3]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the sphere.
-      X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.31));
-      X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[4]),
-                              X_WObject.GetAsIsometry3());
-
-      break;
+  for (uint64_t i = 0; i < object_ids_.size(); i++) {
+    plant_->SetFreeBodyPose(plant_context, &plant_state,
+                            plant_->get_body(object_ids_[i]),
+                            object_poses_[i].GetAsIsometry3());
   }
 
   // Use SetIiwaPosition to make sure the controller state is initialized to
