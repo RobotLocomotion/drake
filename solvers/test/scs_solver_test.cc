@@ -24,8 +24,8 @@ GTEST_TEST(LinearProgramTest, Test0) {
   prog.AddLinearConstraint(x(0) + x(1) == 2);
   ScsSolver solver;
   if (solver.available()) {
-    SolutionResult sol_result = solver.Solve(prog);
-    EXPECT_EQ(sol_result, SolutionResult::kUnbounded);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
   }
 
   // Now add the constraint x(1) <= 1. The problem is
@@ -36,8 +36,8 @@ GTEST_TEST(LinearProgramTest, Test0) {
   prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 1,
                                 x(1));
   if (solver.available()) {
-    SolutionResult sol_result = solver.Solve(prog);
-    EXPECT_EQ(sol_result, SolutionResult::kUnbounded);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
   }
 
   const double tol{1E-5};
@@ -50,11 +50,11 @@ GTEST_TEST(LinearProgramTest, Test0) {
   prog.AddBoundingBoxConstraint(-std::numeric_limits<double>::infinity(), 5,
                                 x(0));
   if (solver.available()) {
-    SolutionResult sol_result = solver.Solve(prog);
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-    EXPECT_NEAR(prog.GetOptimalCost(), -1, tol);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), -1, tol);
     const Eigen::Vector2d x_expected(5, -3);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol,
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol,
                                 MatrixCompareType::absolute));
   }
 
@@ -68,11 +68,11 @@ GTEST_TEST(LinearProgramTest, Test0) {
   prog.AddLinearCost(2 * x(0) - 3 * x(1) + 5);
   prog.AddBoundingBoxConstraint(2, 6, x(0));
   if (solver.available()) {
-    SolutionResult sol_result = solver.Solve(prog);
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-    EXPECT_NEAR(prog.GetOptimalCost(), 11, tol);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), 11, tol);
     const Eigen::Vector2d x_expected(2, 0);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), x_expected, tol,
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, tol,
                                 MatrixCompareType::absolute));
   }
 }
@@ -91,8 +91,9 @@ GTEST_TEST(LinearProgramTest, Test1) {
   prog.AddLinearEqualityConstraint(x(0) - 2 * x(1) == 3);
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolutionResult sol_result = scs_solver.Solve(prog);
-    EXPECT_EQ(sol_result, SolutionResult::kInfeasibleConstraints);
+    auto result = scs_solver.Solve(prog, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
   }
 }
 
@@ -130,10 +131,10 @@ GTEST_TEST(LinearProgramTest, Test2) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
     const double tol{2E-5};
-    const SolutionResult sol_result = scs_solver.Solve(prog);
-    EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-    EXPECT_NEAR(prog.GetOptimalCost(), 8, tol);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, 1, 1),
+    auto result = scs_solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
+    EXPECT_NEAR(result.get_optimal_cost(), 8, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, 1),
                                 tol, MatrixCompareType::absolute));
   }
 }
@@ -152,9 +153,10 @@ INSTANTIATE_TEST_CASE_P(
 TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
   ScsSolver solver;
   if (solver.available()) {
-    SolutionResult result = solver.Solve(*prog_);
-    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(prog_->GetOptimalCost(),
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
+    EXPECT_EQ(result.get_optimal_cost(),
               MathematicalProgram::kGlobalInfeasibleCost);
   }
 }
@@ -162,9 +164,9 @@ TEST_F(InfeasibleLinearProgramTest0, TestInfeasible) {
 TEST_F(UnboundedLinearProgramTest0, TestUnbounded) {
   ScsSolver solver;
   if (solver.available()) {
-    SolutionResult result = solver.Solve(*prog_);
-    EXPECT_EQ(result, SolutionResult::kUnbounded);
-    EXPECT_EQ(prog_->GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
   }
 }
 
@@ -254,9 +256,8 @@ GTEST_TEST(TestScs, SetOptions) {
   prog.AddLinearConstraint(x(0) + x(1) >= 1);
   prog.AddQuadraticCost(x(0) * x(0) + x(1) * x(1));
 
-  MathematicalProgramResult result;
   ScsSolver solver;
-  solver.Solve(prog, {}, {}, &result);
+  auto result = solver.Solve(prog, {}, {});
   const int iter_solve =
       result.get_solver_details().GetValue<ScsSolverDetails>().iter;
   const int solved_status =

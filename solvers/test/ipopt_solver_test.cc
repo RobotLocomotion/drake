@@ -26,8 +26,7 @@ TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   IpoptSolver solver;
   if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
+    auto result = solver.Solve(*prog_, {}, {});
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasibleConstraints);
@@ -51,9 +50,9 @@ TEST_F(UnboundedLinearProgramTest0, TestIpopt) {
   prog_->SetSolverOption(IpoptSolver::id(), "max_iter", 1000);
   IpoptSolver solver;
   if (solver.available()) {
-    const auto solver_result = solver.Solve(*prog_);
-    EXPECT_EQ(solver_result, SolutionResult::kUnbounded);
-    EXPECT_EQ(prog_->GetOptimalCost(),
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    EXPECT_EQ(result.get_optimal_cost(),
               -std::numeric_limits<double>::infinity());
   }
 }
@@ -125,8 +124,7 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       MathematicalProgram prog;
       auto x = prog.NewContinuousVariables(1);
       prog.AddCost(NoisyQuadraticCost(max_noise), x);
-      MathematicalProgramResult result;
-      solver.Solve(prog, x_initial_guess, options, &result);
+      auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect to hit iteration limit
       EXPECT_FALSE(result.is_success());
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
@@ -145,8 +143,7 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       MathematicalProgram prog;
       auto x = prog.NewContinuousVariables(1);
       prog.AddCost(NoisyQuadraticCost(max_noise), x);
-      MathematicalProgramResult result;
-      solver.Solve(prog, x_initial_guess, options, &result);
+      auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect Ipopt status to be "STOP_AT_ACCEPTABLE_POINT."
       const int kIpoptStopAtAcceptablePoint{4};  // Defined in IpAlgTypes.hpp.
       EXPECT_EQ(result.get_solver_details()

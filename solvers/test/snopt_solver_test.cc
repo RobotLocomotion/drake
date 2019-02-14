@@ -34,8 +34,9 @@ TEST_F(InfeasibleLinearProgramTest0, TestSnopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   SnoptSolver solver;
   if (solver.available()) {
-    const auto solver_result = solver.Solve(*prog_);
-    EXPECT_EQ(solver_result, SolutionResult::kInfeasibleConstraints);
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
   }
 }
 
@@ -43,9 +44,9 @@ TEST_F(UnboundedLinearProgramTest0, TestSnopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
   SnoptSolver solver;
   if (solver.available() && !solver.is_bounded_lp_broken()) {
-    const auto solver_result = solver.Solve(*prog_);
-    EXPECT_EQ(solver_result, SolutionResult::kUnbounded);
-    EXPECT_EQ(prog_->GetOptimalCost(),
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    EXPECT_EQ(result.get_optimal_cost(),
               -std::numeric_limits<double>::infinity());
   }
 }
@@ -87,8 +88,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
 
   SnoptSolver solver;
   // Make sure the default setting can solve the problem.
-  MathematicalProgramResult result;
-  solver.Solve(prog, x_init, {}, &result);
+  auto result = solver.Solve(prog, x_init, {});
   EXPECT_TRUE(result.is_success());
   SnoptSolverDetails solver_details =
       result.get_solver_details().GetValue<SnoptSolverDetails>();
@@ -133,8 +133,8 @@ GTEST_TEST(SnoptTest, TestPrintFile) {
   EXPECT_FALSE(spruce::path(print_file).exists());
   prog.SetSolverOption(SnoptSolver::id(), "Print file", print_file);
   const SnoptSolver solver;
-  const SolutionResult result = solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(spruce::path(print_file).exists());
 }
 
@@ -146,31 +146,31 @@ GTEST_TEST(SnoptTest, TestSparseCost) {
   prog.AddLinearConstraint(x(0) + x(1) + x(2) == 1);
 
   SnoptSolver solver;
-  auto solution_result = solver.Solve(prog);
-  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
   const double tol{1E-5};
-  EXPECT_NEAR(prog.GetSolution(x).sum(), 1, tol);
-  EXPECT_EQ(prog.GetOptimalCost(), 0);
+  EXPECT_NEAR(result.GetSolution(x).sum(), 1, tol);
+  EXPECT_EQ(result.get_optimal_cost(), 0);
 
   // Add a cost on x(1) only
   // min x(1) * x(1).
   // s.t x(0) + x(1) + x(2) = 1
   prog.AddQuadraticCost(x(1) * x(1));
-  solution_result = solver.Solve(prog);
-  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(x(1)), 0, tol);
-  EXPECT_NEAR(prog.GetSolution(x).sum(), 1, tol);
-  EXPECT_NEAR(prog.GetOptimalCost(), 0, tol);
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(1)), 0, tol);
+  EXPECT_NEAR(result.GetSolution(x).sum(), 1, tol);
+  EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
 
   // Add another cost on x(1) and x(2)
   // min x(1) * x(1) + 2 * x(1) + x(2) * x(2) - 2 * x(2) + 1
   // s.t x(0) + x(1) + x(2) = 1
   prog.AddQuadraticCost(2 * x(1) + x(2) * x(2) - 2 * x(2) + 1);
-  solution_result = solver.Solve(prog);
-  EXPECT_EQ(solution_result, SolutionResult::kSolutionFound);
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(
-      CompareMatrices(prog.GetSolution(x), Eigen::Vector3d(1, -1, 1), tol));
-  EXPECT_NEAR(prog.GetOptimalCost(), -1, tol);
+      CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, -1, 1), tol));
+  EXPECT_NEAR(result.get_optimal_cost(), -1, tol);
 }
 
 GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
@@ -185,10 +185,10 @@ GTEST_TEST(SnoptTest, DistanceToTetrahedron) {
   prog.SetInitialGuessForAllVariables(x0);
 
   SnoptSolver solver;
-  const SolutionResult result = solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
 
-  const auto x_sol = prog.GetSolution(prog.x());
+  const auto x_sol = result.GetSolution(prog.x());
   const Eigen::Vector3d p_WB_sol = x_sol.head<3>();
   const Eigen::Vector3d p_WQ_sol = x_sol.segment<3>(3);
   const Eigen::Vector3d n_W_sol = x_sol.segment<3>(6);
@@ -357,11 +357,12 @@ GTEST_TEST(SnoptTest, AutoDiffOnlyCost) {
 
   SnoptSolver solver;
   if (solver.available()) {
-    const auto solver_result = solver.Solve(prog);
-    EXPECT_EQ(solver_result, drake::solvers::SolutionResult::kSolutionFound);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
     const double tol = 1E-6;
-    EXPECT_NEAR(prog.GetOptimalCost(), 2, tol);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), drake::Vector1d(1), tol));
+    EXPECT_NEAR(result.get_optimal_cost(), 2, tol);
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), drake::Vector1d(1),
+                                tol));
   }
 }
 

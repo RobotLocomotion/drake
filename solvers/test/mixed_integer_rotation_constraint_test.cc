@@ -14,6 +14,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -34,7 +35,7 @@ bool IsFeasibleCheck(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return prog->Solve() == kSolutionFound;
+  return Solve(*prog).is_success();
 }
 
 class TestMixedIntegerRotationConstraint {

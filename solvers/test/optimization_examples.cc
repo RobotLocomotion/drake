@@ -65,11 +65,10 @@ OptimizationProgram::OptimizationProgram(CostForm cost_form,
 
 void OptimizationProgram::RunProblem(SolverInterface* solver) {
   if (solver->available()) {
-    EXPECT_FALSE(prog_->GetSolverId());
     const MathematicalProgramResult result =
         RunSolver(*prog_, *solver, initial_guess());
     const optional<SolverType> solver_type =
-        SolverTypeConverter::IdToType(solver->solver_id());
+        SolverTypeConverter::IdToType(result.get_solver_id());
     ASSERT_TRUE(solver_type != nullopt);
     CheckSolution(result);
   }

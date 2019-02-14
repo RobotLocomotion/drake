@@ -4,6 +4,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_rotation_constraint.h"
 #include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/solve.h"
 
 /// Provides a simple utility for developers to visualize (slices of) the
 /// rotation matrix relaxations.  Sets up the problem:
@@ -37,7 +38,7 @@ bool IsFeasible(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return (prog->Solve() == kSolutionFound);
+  return Solve(*prog).is_success();
 }
 
 void DrawCircle(double radius = 1.0) {

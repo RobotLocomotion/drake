@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 using std::pow;
 
@@ -309,20 +310,20 @@ SystemIdentification<T>::EstimateParameters(
       Eigen::VectorXd::Zero(num_err_terms), error_variables).evaluator();
 
   // Solve the problem and copy out the result.
-  SolutionResult solution_result = problem.Solve();
-  if (solution_result != SolutionResult::kSolutionFound) {
+  const auto result = Solve(problem);
+  if (!result.is_success()) {
     std::ostringstream oss;
-    oss << "Solution failed: " << solution_result;
+    oss << "Solution failed: " << result.get_solution_result();
     throw std::runtime_error(oss.str());
   }
   PartialEvalType estimates;
   for (int i = 0; i < num_to_estimate; i++) {
     VarType var = vars_to_estimate[i];
-    estimates[var] = problem.GetSolution(parameter_variables(i));
+    estimates[var] = result.GetSolution(parameter_variables(i));
   }
   T error_squared = 0;
   for (int i = 0; i < num_err_terms; i++) {
-    error_squared += pow(problem.GetSolution(error_variables(i)), 2);
+    error_squared += pow(result.GetSolution(error_variables(i)), 2);
   }
 
   return std::make_pair(estimates, std::sqrt(error_squared / num_err_terms));
