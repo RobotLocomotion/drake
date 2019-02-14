@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -206,12 +207,13 @@ void AddJointActuatorFromSpecification(
   }
 }
 
-// Returns joint limits as the pair (lower_limit, upper_limit).
-// The units of the limits depend on the particular joint type. Units are meters
-// for prismatic joints and radians for revolute joints.
-// This method throws an exception if the joint type is not one of revolute or
-// prismatic.
-std::pair<double, double> ParseJointLimits(const sdf::Joint& joint_spec) {
+// Returns joint limits as the tuple (lower_limit, upper_limit,
+// velocity_limit).  The units of the limits depend on the particular joint
+// type. Units are meters for prismatic joints and radians for revolute
+// joints.  This method throws an exception if the joint type is not one of
+// revolute or prismatic.
+std::tuple<double, double, double> ParseJointLimits(
+    const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC);
   // Axis specification.
@@ -236,7 +238,21 @@ std::pair<double, double> ParseJointLimits(const sdf::Joint& joint_spec) {
         "The lower limit must be lower (or equal) than the upper limit for "
         "joint '" + joint_spec.Name() + "'.");
   }
-  return std::make_pair(lower_limit, upper_limit);
+
+  // SDF defaults to -1.0 for joints with no limits, see
+  // http://sdformat.org/spec?ver=1.6&elem=joint#limit_velocity
+  // Drake marks joints with no limits with ±numeric_limits<double>::infinity()
+  // and therefore we make the change here.
+  const double velocity_limit =
+      axis->MaxVelocity() == -1.0 ?
+      std::numeric_limits<double>::infinity() : axis->MaxVelocity();
+  if (velocity_limit < 0) {
+    throw std::runtime_error(
+        "Velocity limit is negative for joint '" + joint_spec.Name() + "'. "
+            "Velocity limit must be a non-negative number.");
+  }
+
+  return std::make_tuple(lower_limit, upper_limit, velocity_limit);
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
@@ -298,22 +314,30 @@ void AddJointFromSpecification(
     case sdf::JointType::PRISMATIC: {
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
-      const std::pair<double, double> limits = ParseJointLimits(joint_spec);
+      const std::tuple<double, double, double> limits =
+          ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J, limits.first, limits.second, damping);
+          child_body, X_CJ, axis_J, std::get<0>(limits), std::get<1>(limits),
+          damping);
+      plant->get_mutable_joint(joint.index()).set_velocity_limits(
+          Vector1d(-std::get<2>(limits)), Vector1d(std::get<2>(limits)));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
       const double damping = ParseJointDamping(joint_spec);
       Vector3d axis_J = ExtractJointAxis(model_spec, joint_spec);
-      const std::pair<double, double> limits = ParseJointLimits(joint_spec);
+      const std::tuple<double, double, double> limits =
+          ParseJointLimits(joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
-          child_body, X_CJ, axis_J, limits.first, limits.second, damping);
+          child_body, X_CJ, axis_J, std::get<0>(limits), std::get<1>(limits),
+          damping);
+      plant->get_mutable_joint(joint.index()).set_velocity_limits(
+          Vector1d(-std::get<2>(limits)), Vector1d(std::get<2>(limits)));
       AddJointActuatorFromSpecification(joint_spec, joint, plant);
       break;
     }
