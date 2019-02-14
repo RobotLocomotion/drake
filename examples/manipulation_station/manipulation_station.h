@@ -21,7 +21,7 @@ namespace manipulation_station {
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
 /// Determines which manipulation station is simulated.
-enum class Setup { kNone, kDefault, kClutterClearing };
+enum class Setup { kNone, kDefault, kClutterClearing, kDopeClutterClearing };
 
 /// @defgroup manipulation_station_systems Manipulation Station
 /// @{
@@ -146,6 +146,15 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @note Only one of the `Setup___()` methods should be called.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupClutterClearingStation(
+      IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
+
+  /// Adds an iiwa, wsg, two bins, and YCB object clutter, then calls
+  /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
+  /// the appropriate arguments.
+  /// @note Must be called before Finalize().
+  /// @note Only one of the `Setup___()` methods should be called.
+  /// @param collision_model Determines which sdf is loaded for the IIWA.
+  void SetupDopeClutterClearingStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT

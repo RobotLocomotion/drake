@@ -215,6 +215,86 @@ void ManipulationStation<T>::SetupClutterClearingStation(
       object_ids_.push_back(indices[0]);
     }
   }
+
+  AddDefaultIiwa(collision_model);
+  AddDefaultWsg();
+}
+
+template <typename T>
+void ManipulationStation<T>::SetupDopeClutterClearingStation(
+    const IiwaCollisionModel collision_model) {
+  DRAKE_DEMAND(setup_ == Setup::kNone);
+  setup_ = Setup::kDopeClutterClearing;
+
+  // Add the bin.
+  {
+    const std::string sdf_path = FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/bin.sdf");
+
+    Isometry3<double> X_WC =
+        RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI_2),
+                               Vector3d(-0.145, -0.63, 0.235))
+            .GetAsIsometry3();
+    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+
+    X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
+                                  Vector3d(0.5, -0.1, 0.235))
+        .GetAsIsometry3();
+    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+                                  "bin_base", X_WC, plant_);
+  }
+
+  // Add the objects.
+  {
+    multibody::Parser parser(plant_);
+    // TODO(russt): Take a list of object models as an input argument.
+    const std::list<std::string> models{
+        "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
+        "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
+        "drake/manipulation/models/ycb/sdf/005_tomato_soup_can.sdf",
+        "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf",
+        "drake/manipulation/models/ycb/sdf/009_gelatin_box.sdf",
+        "drake/manipulation/models/ycb/sdf/010_potted_meat_can.sdf"};
+    for (const auto& model : models) {
+      const auto model_index =
+          parser.AddModelFromFile(FindResourceOrThrow(model));
+      const auto indices = plant_->GetBodyIndices(model_index);
+      // Only support single-body objects for now.
+      // Note: this could be generalized fairly easily... would just want to
+      // set default/random positions for the non-floating-base elements below.
+      DRAKE_DEMAND(indices.size() == 1);
+      object_ids_.push_back(indices[0]);
+    }
+  }
+
+  // Add default camera.
+  {
+    std::map<std::string, RigidTransform<double>> camera_poses;
+    internal::get_camera_poses(&camera_poses);
+    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+    // depth are slightly different. And we are not able to model that at the
+    // moment.
+    // RGB:
+    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+    // DEPTH:
+    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+    // For this camera, we are going to assume that fx = fy, and we can compute
+    // fov_y by: fy = height / 2 / tan(fov_y / 2)
+    const double kFocalY = 645.;
+    const int kHeight = 480;
+    const int kWidth = 848;
+    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+    geometry::dev::render::DepthCameraProperties camera_properties(
+        kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
+        2.0);
+    RigidTransform<double> transform = RigidTransform<double>(
+        RollPitchYaw<double>(-0.3, 0.8, 1.5),
+        Vector3d(0, -1.5, 1.5));
+    RegisterRgbdCamera("0", plant_->world_frame(),
+                       transform, camera_properties);
+  }
+
   AddDefaultIiwa(collision_model);
   AddDefaultWsg();
 }
@@ -373,6 +453,58 @@ void ManipulationStation<T>::SetDefaultState(
                               X_WObject.GetAsIsometry3());
 
       break;
+    case Setup::kDopeClutterClearing:
+      DRAKE_DEMAND(object_ids_.size() == 5);
+
+      // Place the cracker box.
+      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.55, 0.4));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(-1.57, 0, 3)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[0]),
+                              X_WObject.GetAsIsometry3());
+
+      // Place the soup can.
+      X_WObject.set_translation(Eigen::Vector3d(-0.03, -0.57, 0.3));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(-1.57, 0, 3.14)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[1]),
+                              X_WObject.GetAsIsometry3());
+
+      // Place the mustard bottle.
+      X_WObject.set_translation(Eigen::Vector3d(0.05, -0.66, 0.35));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(-1.57, 0, 3.3)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[2]),
+                              X_WObject.GetAsIsometry3());
+
+      // Place the gelatin box.
+      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.35));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(-1.57, 0, 3.7)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[3]),
+                              X_WObject.GetAsIsometry3());
+
+      // Place the potted meat can.
+      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.3));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(-1.57, 0, 2.5)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[4]),
+                              X_WObject.GetAsIsometry3());
+
+      // Place the sugar box.
+      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.32));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(1.57, 1.57, 0)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[5]),
+                              X_WObject.GetAsIsometry3());
+
+      break;
   }
 
   // Use SetIiwaPosition to make sure the controller state is initialized to
@@ -472,13 +604,14 @@ void ManipulationStation<T>::Finalize() {
 
   switch (setup_) {
     case Setup::kNone:
-    case Setup::kDefault:
+    case Setup::kDefault: {
       // Set the initial positions of the IIWA to a comfortable configuration
       // inside the workspace of the station.
       q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
 
       break;
-    case Setup::kClutterClearing:
+    }
+    case Setup::kClutterClearing: {
       // Set the initial positions of the IIWA to a configuration right above
       // the picking bin.
       q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
@@ -487,11 +620,27 @@ void ManipulationStation<T>::Finalize() {
           y(-0.8, -.55), z(0.3, 0.35);
       const Vector3<symbolic::Expression> xyz{x(), y(), z()};
       for (const auto body_index : object_ids_) {
-        const multibody::Body<T>& body = plant_->get_body(body_index);
+        const multibody::Body<T> &body = plant_->get_body(body_index);
         plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
         plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
       }
       break;
+    }
+    case Setup::kDopeClutterClearing: {
+      // Set the initial positions of the IIWA to a configuration right above
+      // the picking bin.
+      q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+
+//      std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
+//          y(-0.8, -.55), z(0.3, 0.35);
+//      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+//      for (const auto body_index : object_ids_) {
+//        const multibody::Body<T>& body = plant_->get_body(body_index);
+//        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+//        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+//      }
+      break;
+    }
   }
 
   // Set the iiwa default configuration.
