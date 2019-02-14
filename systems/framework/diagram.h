@@ -314,14 +314,6 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     return diagram_derivatives->get_substate(i);
   }
 
-  DRAKE_DEPRECATED("Call GetSubsystemDerivatives(subsystem, derivatives) "
-                   "instead.  This call site will be removed on 2/15/19.")
-  const ContinuousState<T>& GetSubsystemDerivatives(
-      const ContinuousState<T>& derivatives, const System<T>* subsystem)
-      const {
-    return GetSubsystemDerivatives(*subsystem, derivatives);
-  }
-
   /// Retrieves the discrete state values for a particular subsystem from the
   /// discrete values for the entire diagram. Aborts if @p subsystem is not
   /// actually a subsystem of this diagram. Returns an empty DiscreteValues

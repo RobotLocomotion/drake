@@ -149,10 +149,10 @@ void init_module(py::module m) {
             cls_doc.SetFreeBodyPoseOrThrow.doc)
         .def("GetPositionsFromArray", &Class::GetPositionsFromArray,
             py::arg("model_instance"), py::arg("q_array"),
-            cls_doc.get_positions_from_array.doc)
+            cls_doc.GetPositionsFromArray.doc)
         .def("GetVelocitiesFromArray", &Class::GetVelocitiesFromArray,
             py::arg("model_instance"), py::arg("v_array"),
-            cls_doc.get_velocities_from_array.doc)
+            cls_doc.GetVelocitiesFromArray.doc)
         .def("SetFreeBodySpatialVelocityOrThrow",
             [](const Class* self, const Body<T>& body,
                 const SpatialVelocity<T>& V_WB, Context<T>* context) {
