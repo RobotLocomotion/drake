@@ -1,5 +1,8 @@
 #pragma once
 
+#include <unordered_map>
+#include <vector>
+
 #include "drake/systems/optimization/system_constraint_wrapper.h"
 
 namespace drake {

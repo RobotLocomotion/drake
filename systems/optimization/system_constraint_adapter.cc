@@ -1,7 +1,7 @@
 #include "drake/systems/optimization/system_constraint_adapter.h"
-#include "drake/systems/optimization/system_constraint_adapter_internal.h"
 
 #include "drake/solvers/create_constraint.h"
+#include "drake/systems/optimization/system_constraint_adapter_internal.h"
 
 namespace drake {
 namespace systems {
