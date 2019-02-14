@@ -246,6 +246,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 def setup(app):
     """Installs Drake-specific extensions and patches.
     """
+    app.add_stylesheet('css/custom.css')
     # Do not warn on Drake deprecations.
     # TODO(eric.cousineau): See if there is a way to intercept this.
     warnings.simplefilter('ignore', DrakeDeprecationWarning)
