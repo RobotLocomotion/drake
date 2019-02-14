@@ -66,10 +66,7 @@ template <typename ToScalar>
 std::unique_ptr<ForceElement<ToScalar>>
 RevoluteSpring<T>::TemplatedDoCloneToScalar(
     const internal::MultibodyTree<ToScalar>& tree_clone) const {
-  const RevoluteJoint<ToScalar>& joint_clone =
-      dynamic_cast<const RevoluteJoint<ToScalar>&>(
-          tree_clone.get_variant(joint()));
-
+  const RevoluteJoint<ToScalar>& joint_clone = tree_clone.get_variant(joint());
   // Make the clone.
   auto spring_clone = std::make_unique<RevoluteSpring<ToScalar>>(
       joint_clone, nominal_angle(), stiffness());
