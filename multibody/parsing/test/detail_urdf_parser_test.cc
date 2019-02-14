@@ -1,7 +1,10 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -136,6 +139,50 @@ GTEST_TEST(MultibodyPlantUrdfParserTest, TestOptionalSceneGraph) {
     plant.Finalize();
     EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
   }
+}
+
+GTEST_TEST(MultibodyPlantUrdfParserTest, JointParsingTest) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/urdf_parser_test/"
+      "joint_parsing_test.urdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  AddModelFromUrdfFile(full_name, "", package_map, &plant, &scene_graph);
+  plant.Finalize();
+
+  const Joint<double>& revolute_joint = plant.GetJointByName("revolute_joint");
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.position_lower_limits(), Vector1d(-1)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.position_upper_limits(), Vector1d(2)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.velocity_lower_limits(), Vector1d(-100)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.velocity_upper_limits(), Vector1d(100)));
+
+  const Joint<double>& prismatic_joint =
+      plant.GetJointByName("prismatic_joint");
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.position_lower_limits(), Vector1d(-2)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.position_upper_limits(), Vector1d(1)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.velocity_upper_limits(), Vector1d(5)));
+
+  const Joint<double>& no_limit_joint =
+      plant.GetJointByName("revolute_joint_no_limits");
+  const Vector1d inf(std::numeric_limits<double>::infinity());
+  const Vector1d neg_inf(-std::numeric_limits<double>::infinity());
+
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
 }
 
 }  // namespace
