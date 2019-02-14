@@ -37,7 +37,7 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->SetupClutterClearingStation();
+  station->SetupDopeClutterClearingStation(); // CHANGED from normal clutter clearing
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
