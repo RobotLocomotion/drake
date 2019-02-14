@@ -206,7 +206,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 // with negative damping.
 GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
   const std::string sdf_file_path = FindResourceOrThrow(
-      "drake/multibody/parsing/test/negative_damping_joint.sdf");
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "negative_damping_joint.sdf");
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(sdf_file_path);
   MultibodyPlant<double> plant;
@@ -220,7 +221,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
 
 GTEST_TEST(SdfParser, IncludeTags) {
   const std::string sdf_file_path =
-      "drake/multibody/parsing/test";
+      "drake/multibody/parsing/test/sdf_parser_test";
   sdf::addURIPath("model://", FindResourceOrThrow(sdf_file_path));
   MultibodyPlant<double> plant;
 
