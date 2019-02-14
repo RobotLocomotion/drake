@@ -20,21 +20,6 @@ load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(jwnimmer-tri) Remove this deprecation shim on or about 2019-02-01.
-drake_cc_library_aliases(
-    actual_subdir = "attic/systems/sensors",
-    add_deprecation_warning = True,
-    relative_labels = [
-        ":rgbd_camera",
-        ":rgbd_renderer",
-    ],
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-        "manual",
-    ],
-)
-
 drake_cc_package_library(
     name = "sensors",
     deps = [

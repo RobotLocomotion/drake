@@ -73,14 +73,6 @@ MultibodyTree<T>::MultibodyTree() {
 }
 
 template <typename T>
-void MultibodyTree<T>::set_actuation_vector(
-    ModelInstanceIndex model_instance,
-    const Eigen::Ref<const VectorX<T>>& u_instance,
-    EigenPtr<VectorX<T>> u) const {
-  SetActuationInArray(model_instance, u_instance, u);
-}
-
-template <typename T>
 void MultibodyTree<T>::SetActuationInArray(
     ModelInstanceIndex model_instance,
     const Eigen::Ref<const VectorX<T>>& u_instance,

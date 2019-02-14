@@ -741,12 +741,6 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(numeric_parameter_tickets_.size());
   }
 
-  DRAKE_DEPRECATED("Use num_numeric_parameter_groups().  This method will be"
-                   " removed after 2/15/19.")
-  int num_numeric_parameters() const {
-    return num_numeric_parameter_groups();
-  }
-
   /** Returns the number of declared abstract parameters. */
   int num_abstract_parameters() const {
     return static_cast<int>(abstract_parameter_tickets_.size());
