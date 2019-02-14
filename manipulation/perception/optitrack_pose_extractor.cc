@@ -15,8 +15,6 @@ namespace manipulation {
 namespace perception {
 
 using systems::Context;
-using systems::DiscreteValues;
-using systems::BasicVector;
 
 Isometry3<double> ExtractOptitrackPose(
     const optitrack::optitrack_rigid_body_t& body) {
@@ -79,7 +77,7 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
 }
 
 void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
-    const systems::Context<double>& context,
+    const Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   // Extract Internal state.
@@ -87,9 +85,8 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<Isometry3<double>>(0);
 
   // Update world state from inputs.
-  const AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  auto& message = input->GetValue<optitrack::optitrack_frame_t>();
+  const auto& input = this->get_input_port(0);
+  const auto& message = input.Eval<optitrack::optitrack_frame_t>(context);
   auto body = FindOptitrackBody(message, object_id_);
   if (!body.has_value()) {
     throw std::runtime_error(fmt::format(

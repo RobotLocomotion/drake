@@ -129,9 +129,7 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<InternalState>(0);
 
   // Update world state from inputs.
-  const AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& input_pose = input->GetValue<Isometry3d>();
+  const auto& input_pose = this->get_input_port(0).Eval<Isometry3d>(context);
 
   double current_time = context.get_time();
 
