@@ -95,6 +95,13 @@ class MixedIntegerBranchAndBoundNode {
    */
   const MathematicalProgram* prog() const { return prog_.get(); }
 
+  /**
+   * Getter for the mathematical program result.
+   */
+  const MathematicalProgramResult* prog_result() const {
+    return prog_result_.get();
+  }
+
   /** Getter for the left child. */
   const MixedIntegerBranchAndBoundNode* left_child() const {
     return left_child_.get();
@@ -201,6 +208,7 @@ class MixedIntegerBranchAndBoundNode {
 
   // Stores the optimization program in this node.
   std::unique_ptr<MathematicalProgram> prog_;
+  std::unique_ptr<MathematicalProgramResult> prog_result_;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> left_child_;
   std::unique_ptr<MixedIntegerBranchAndBoundNode> right_child_;
   MixedIntegerBranchAndBoundNode* parent_;

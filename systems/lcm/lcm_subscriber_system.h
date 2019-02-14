@@ -211,7 +211,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // This pair of methods is used for the output port when we're using a
   // serializer.
-  std::unique_ptr<systems::AbstractValue> AllocateSerializerOutputValue() const;
+  std::unique_ptr<AbstractValue> AllocateSerializerOutputValue() const;
   void CalcSerializerOutputValue(const Context<double>& context,
                                  AbstractValue* output_value) const;
 

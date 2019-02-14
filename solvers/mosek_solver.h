@@ -7,7 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program_result.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
@@ -26,49 +26,22 @@ struct MosekSolverDetails {
   int solution_status{};
 };
 
-class MosekSolver : public MathematicalProgramSolverInterface {
+/**
+ * @note Mosek only cares about the initial guess of integer variables. The
+ * initial guess of continuous variables are not passed to MOSEK. If all the
+ * integer variables are set to some integer values, then MOSEK will be forced
+ * to compute the remaining continuous variable values as the initial guess.
+ * (Mosek might change the values of the integer/binary variables in the
+ * subsequent iterations.) If the specified integer solution is infeasible or
+ * incomplete, MOSEK will simply ignore it. For more details, check
+ * https://docs.mosek.com/8.1/capi/tutorial-mio-shared.html?highlight=initial
+ */
+class MosekSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
 
-  MosekSolver() = default;
-  ~MosekSolver() override = default;
-
-  /**
-   * Defined true if Mosek was included during compilation, false otherwise.
-   */
-  bool available() const override { return is_available(); };
-
-  static bool is_available();
-
-  /**
-   * @param initial_guess The initial guess of all decision variables.
-   * @note Mosek only cares about the initial guess of integer variables. The
-   * initial guess of continuous variables are not passed to MOSEK. If all the
-   * integer variables are set to some integer values, then MOSEK will be forced
-   * to compute the remaining continuous variable values as the initial guess.
-   * (Mosek might change the values of the integer/binary variables in the
-   * subsequent iterations.) If the specified integer solution is infeasible or
-   * incomplete, MOSEK will simply ignore it. For more details, check
-   * https://docs.mosek.com/8.1/capi/tutorial-mio-shared.html?highlight=initial
-   */
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  // Todo(hongkai.dai@tri.global): deprecate Solve with a non-const
-  // MathematicalProgram.
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
-  static SolverId id();
-
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
-
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+  MosekSolver();
+  ~MosekSolver() final;
 
   /**
    * Control stream logging. Refer to
@@ -104,7 +77,20 @@ class MosekSolver : public MathematicalProgramSolverInterface {
    */
   static std::shared_ptr<License> AcquireLicense();
 
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+
  private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
+
   // Note that this is mutable to allow latching the allocation of mosek_env_
   // during the first call of Solve() (which avoids grabbing a Mosek license
   // before we know that we actually want one).

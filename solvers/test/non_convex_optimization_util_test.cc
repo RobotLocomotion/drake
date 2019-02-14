@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 using symbolic::test::ExprEqual;
@@ -233,11 +234,11 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
   auto cost = prog->AddLinearCost(x.cast<symbolic::Expression>().sum());
   for (int i = 0; i < c.cols(); ++i) {
     cost.evaluator()->UpdateCoefficients(c.col(i).transpose());
-    auto result = prog->Solve();
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    auto x_sol = prog->GetSolution(x);
-    auto y_sol = prog->GetSolution(y);
-    auto z_sol = prog->GetSolution(z);
+    auto result = Solve(*prog);
+    EXPECT_TRUE(result.is_success());
+    auto x_sol = result.GetSolution(x);
+    auto y_sol = result.GetSolution(y);
+    auto z_sol = result.GetSolution(z);
     const double check_tol{1E-5};
     EXPECT_GE(z_sol(0) - z_sol(1) + p.dot(y_sol), lower_bound - check_tol);
     EXPECT_LE(z_sol(0) - z_sol(1) + p.dot(y_sol), upper_bound + check_tol);
@@ -324,7 +325,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion,
       &prog_, x_, Q1, Q2, x_, Eigen::Vector2d::Zero(), 1, 1,
       Eigen::Vector2d(1, 0), 0.1);
 
-  auto result = prog_.Solve();
+  auto result = Solve(prog_).get_solution_result();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }
@@ -347,7 +348,7 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
           &prog1, x1, Q1, Q2, x1, Eigen::Vector2d::Zero(), 1, 1,
           Eigen::Vector2d(-5, -3), 0.1);
 
-  auto result = prog1.Solve();
+  auto result = Solve(prog1).get_solution_result();
   EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
               result == SolutionResult::kInfeasible_Or_Unbounded);
 
@@ -453,11 +454,11 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
   const double Q_sign = Q1_is_zero ? -1 : 1;
   for (int i = 0; i < c.cols(); ++i) {
     cost.evaluator()->UpdateCoefficients(c.col(i).transpose());
-    auto result = prog->Solve();
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    const double z_sol = prog->GetSolution(z(0));
-    const Eigen::Vector2d x_sol = prog->GetSolution(x);
-    const Eigen::VectorXd y_sol = prog->GetSolution(y);
+    auto result = Solve(*prog);
+    EXPECT_TRUE(result.is_success());
+    const double z_sol = result.GetSolution(z(0));
+    const Eigen::Vector2d x_sol = result.GetSolution(x);
+    const Eigen::VectorXd y_sol = result.GetSolution(y);
     const double tol{1E-5};
     EXPECT_GE(z_sign * z_sol + p.dot(y_sol), lb - tol);
     EXPECT_LE(z_sign * z_sol + p.dot(y_sol), ub + tol);
@@ -504,7 +505,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
       &prog_, x_, Eigen::Matrix2d::Zero(), Q2, x_, Eigen::Vector2d::Zero(), -4,
       -1, Eigen::Vector2d(0, 1), 1);
 
-  auto result = prog_.Solve();
+  auto result = Solve(prog_).get_solution_result();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }
@@ -558,7 +559,7 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
       &prog_, x_, Q1, Eigen::Matrix2d::Zero(), x_, Eigen::Vector2d::Zero(), 1,
       4, Eigen::Vector2d(0, 1), 1);
 
-  auto result = prog_.Solve();
+  auto result = Solve(prog_).get_solution_result();
   EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
               result == SolutionResult::kInfeasibleConstraints);
 }

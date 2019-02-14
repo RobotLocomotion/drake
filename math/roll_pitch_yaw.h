@@ -16,6 +16,7 @@ namespace math {
 template <typename T>
 class RotationMatrix;
 
+// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
 /// This class represents the orientation between two arbitrary frames A and D
 /// associated with a Space-fixed (extrinsic) X-Y-Z rotation by "roll-pitch-yaw"
 /// angles `[r, p, y]`, which is equivalent to a Body-fixed (intrinsic) Z-Y-X
@@ -58,8 +59,6 @@ class RotationMatrix;
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
-///
-// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
 template <typename T>
 class RollPitchYaw {
  public:

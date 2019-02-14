@@ -17,14 +17,14 @@ static const int kNumJoints = 2;
 
 AcrobotStateReceiver::AcrobotStateReceiver() {
   this->DeclareAbstractInputPort("lcmt_acrobot_x",
-                                 systems::Value<lcmt_acrobot_x>{});
+                                 Value<lcmt_acrobot_x>{});
   this->DeclareVectorOutputPort("acrobot_state",
                                 &AcrobotStateReceiver::CopyStateOut);
 }
 
 void AcrobotStateReceiver::CopyStateOut(
     const Context<double>& context, AcrobotState<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& state = input->GetValue<lcmt_acrobot_x>();
   auto output_vec = output->get_mutable_value();
@@ -56,7 +56,7 @@ void AcrobotCommandSender::OutputCommand(const Context<double>& context,
 
 AcrobotCommandReceiver::AcrobotCommandReceiver() {
   this->DeclareAbstractInputPort("lcmt_acrobot_u",
-                                 systems::Value<lcmt_acrobot_u>());
+                                 Value<lcmt_acrobot_u>());
   this->DeclareVectorOutputPort("elbow_torque", systems::BasicVector<double>(1),
                                 &AcrobotCommandReceiver::OutputCommandAsVector);
 }
@@ -64,7 +64,7 @@ AcrobotCommandReceiver::AcrobotCommandReceiver() {
 void AcrobotCommandReceiver::OutputCommandAsVector(
     const Context<double>& context,
     systems::BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_acrobot_u>();
   output->SetAtIndex(0, command.tau);

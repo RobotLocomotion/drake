@@ -68,8 +68,8 @@ class FramePoseTrackerTest : public ::testing::Test {
   geometry::FramePoseVector<double> UpdateInputCalcOutput(
       const FramePoseTracker& dut,
       const KinematicsResults<double>& input_results) {
-    std::unique_ptr<systems::AbstractValue> input(
-        new systems::Value<KinematicsResults<double>>(tree_.get()));
+    std::unique_ptr<AbstractValue> input(
+        new Value<KinematicsResults<double>>(tree_.get()));
     input->SetValue(input_results);
 
     auto context_ = dut.CreateDefaultContext();

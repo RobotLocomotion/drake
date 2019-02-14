@@ -130,7 +130,7 @@ class MobilPlannerTest : public ::testing::TestWithParam<RoadPositionStrategy> {
     traffic_poses.set_pose(num_lanes, Eigen::Isometry3d(translation_ego));
     traffic_poses.set_velocity(num_lanes, all_velocity);
     context_->FixInputPort(traffic_input_index_,
-                           systems::AbstractValue::Make(traffic_poses));
+                           AbstractValue::Make(traffic_poses));
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.

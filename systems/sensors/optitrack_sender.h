@@ -25,8 +25,7 @@ namespace sensors {
 ///
 /// Note that this system does not actually send this message on an LCM channel.
 /// To send the message, the output of this system should be connected to an
-/// input port of a systems::Value object templated on type
-/// `optitrack_frame_t`.
+/// input port of a Value object templated on type `optitrack_frame_t`.
 class OptitrackLcmFrameSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OptitrackLcmFrameSender)

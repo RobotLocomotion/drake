@@ -11,7 +11,7 @@ RobotCommandToDesiredEffortConverter::RobotCommandToDesiredEffortConverter(
     const std::vector<const RigidBodyActuator*>& actuators)
     : robot_command_port_index_(DeclareAbstractInputPort(
           kUseDefaultName,
-          systems::Value<bot_core::atlas_command_t>{}).get_index()),
+          Value<bot_core::atlas_command_t>{}).get_index()),
       desired_effort_port_indices_(DeclareDesiredEffortOutputPorts(actuators)) {
   set_name("RobotCommandToDesiredEffortConverter");
 }

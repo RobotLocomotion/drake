@@ -33,14 +33,16 @@ TEST_F(InfeasibleLinearProgramTest0, TestGurobiInfeasible) {
     // With dual reductions, Gurobi may not be able to differentiate between
     // infeasible and unbounded.
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 1);
-    SolutionResult result = solver.Solve(*prog_);
-    EXPECT_EQ(result, SolutionResult::kInfeasible_Or_Unbounded);
-    EXPECT_TRUE(std::isnan(prog_->GetOptimalCost()));
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasible_Or_Unbounded);
+    EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
     prog_->SetSolverOption(GurobiSolver::id(), "DualReductions", 0);
-    result = solver.Solve(*prog_);
-    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-    EXPECT_TRUE(std::isinf(prog_->GetOptimalCost()));
-    EXPECT_GE(prog_->GetOptimalCost(), 0);
+    result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
+    EXPECT_TRUE(std::isinf(result.get_optimal_cost()));
+    EXPECT_GE(result.get_optimal_cost(), 0);
   }
 }
 
@@ -51,8 +53,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     // infeasible and unbounded.
     SolverOptions solver_options;
     solver_options.SetOption(GurobiSolver::id(), "DualReductions", 1);
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, solver_options, &result);
+    auto result = solver.Solve(*prog_, {}, solver_options);
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasible_Or_Unbounded);
@@ -65,7 +66,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
               GRB_INF_OR_UNBD);
 
     solver_options.SetOption(GurobiSolver::id(), "DualReductions", 0);
-    solver.Solve(*prog_, {}, solver_options, &result);
+    result = solver.Solve(*prog_, {}, solver_options);
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
     // This code is defined in
@@ -115,12 +116,11 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     prog.SetSolverOption(GurobiSolver::id(), "Heuristics", 0.0);
 
     double x_expected0_to_test[] = {0.0, 1.0};
-    MathematicalProgramResult result;
     for (int i = 0; i < 2; i++) {
       Eigen::VectorXd x_expected(1);
       x_expected[0] = x_expected0_to_test[i];
       prog.SetInitialGuess(x, x_expected);
-      solver.Solve(prog, x_expected, {}, &result);
+      auto result = solver.Solve(prog, x_expected, {});
       EXPECT_TRUE(result.is_success());
       const auto& x_value = result.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
@@ -131,7 +131,7 @@ GTEST_TEST(GurobiTest, TestInitialGuess) {
     // Set wrong initial guess with incorrect size.
     Eigen::VectorXd initial_guess_wrong_size(2);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        solver.Solve(prog, initial_guess_wrong_size, {}, &result),
+        solver.Solve(prog, initial_guess_wrong_size, {}),
         std::invalid_argument,
         "The initial guess has 2 rows, but 1 rows were expected.");
   }
@@ -222,8 +222,7 @@ GTEST_TEST(GurobiTest, TestCallbacks) {
       solver.AddMipNodeCallback(mip_node_callback_function_wrapper);
       solver.AddMipSolCallback(mip_sol_callback_function_wrapper);
 
-      MathematicalProgramResult result;
-      solver.Solve(prog, {}, {}, &result);
+      auto result = solver.Solve(prog, {}, {});
       EXPECT_TRUE(result.is_success());
       const auto& x_value = result.GetSolution(x);
       EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1E-6,
@@ -304,18 +303,18 @@ GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
     prog.AddLinearConstraint(line_segment(1) == y);
     prog.AddQuadraticCost((x - i) * (x - i) + (y - 1) * (y - 1));
     GurobiSolver gurobi_solver;
-    const SolutionResult result = gurobi_solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    auto result = gurobi_solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
 
     const double tol = 1E-6;
     if (i % 2 == 0) {
-      EXPECT_NEAR(prog.GetOptimalCost(), 0, tol);
-      EXPECT_NEAR(prog.GetSolution(x), i, tol);
-      EXPECT_NEAR(prog.GetSolution(y), 1, tol);
+      EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
+      EXPECT_NEAR(result.GetSolution(x), i, tol);
+      EXPECT_NEAR(result.GetSolution(y), 1, tol);
     } else {
-      EXPECT_NEAR(prog.GetOptimalCost(), 0.5, tol);
-      EXPECT_NEAR(prog.GetSolution(y), 0.5, tol);
-      const double x_val = prog.GetSolution(x);
+      EXPECT_NEAR(result.get_optimal_cost(), 0.5, tol);
+      EXPECT_NEAR(result.GetSolution(y), 0.5, tol);
+      const double x_val = result.GetSolution(x);
       EXPECT_TRUE(std::abs(x_val - (i - 0.5)) < tol ||
                   std::abs(x_val - (i + 0.5)) < tol);
     }
@@ -340,11 +339,10 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
 
   GurobiSolver solver;
   if (solver.available()) {
-    MathematicalProgramResult result;
     SolverOptions solver_options;
     // Report error when we set an unknown attribute to Gurobi.
     solver_options.SetOption(solver.solver_id(), "Foo", 1);
-    solver.Solve(prog, {}, solver_options, &result);
+    auto result = solver.Solve(prog, {}, solver_options);
     // The error code is listed in
     // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
     const int UNKNOWN_PARAMETER{10007};
@@ -354,7 +352,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
 
     // Report error if the Q matrix in the QP cost is not positive semidefinite.
     prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
-    solver.Solve(prog, {}, {}, &result);
+    result = solver.Solve(prog, {}, {});
     // The error code is listed in
     // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
     const int Q_NOT_PSD{10020};

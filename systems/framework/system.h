@@ -492,6 +492,7 @@ class System : public SystemBase {
     return entry.Eval<T>(context);
   }
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /// Returns the value of the vector-valued input port with the given
   /// `port_index` as a BasicVector or a specific subclass `Vec` derived from
   /// BasicVector. Causes the value to become up to date first if necessary. See
@@ -534,6 +535,7 @@ class System : public SystemBase {
     return value;
   }
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /// Returns the value of the vector-valued input port with the given
   /// `port_index` as an %Eigen vector. Causes the value to become up to date
   /// first if necessary. See EvalAbstractInput() for more information.
@@ -1444,25 +1446,26 @@ class System : public SystemBase {
 
     for (int i = 0; i < get_num_input_ports(); ++i) {
       const auto& input_port = get_input_port(i);
+      const auto& other_port = other_system.get_input_port(i);
+      if (!other_port.HasValue(other_context)) {
+        continue;
+      }
 
       if (input_port.get_data_type() == kVectorValued) {
         // For vector-valued input ports, we placewise initialize a fixed input
         // vector using the explicit conversion from double to T.
-        const BasicVector<double>* other_vec =
-            other_system.EvalVectorInput(other_context, i);
-        if (other_vec == nullptr) continue;
+        const Eigen::VectorBlock<const VectorX<double>> other_vec =
+            other_port.Eval(other_context);
         auto our_vec = this->AllocateInputVector(input_port);
         for (int j = 0; j < our_vec->size(); ++j) {
-          our_vec->SetAtIndex(j, T(other_vec->GetAtIndex(j)));
+          (*our_vec)[j] = T(other_vec[j]);
         }
         target_context->FixInputPort(i, *our_vec);
       } else if (input_port.get_data_type() == kAbstractValued) {
         // For abstract-valued input ports, we just clone the value and fix
         // it to the port.
-        const AbstractValue* other_value =
-            other_system.EvalAbstractInput(other_context, i);
-        if (other_value == nullptr) continue;
-        target_context->FixInputPort(i, other_value->Clone());
+        const auto& other_value = other_port.Eval<AbstractValue>(other_context);
+        target_context->FixInputPort(i, other_value);
       } else {
         DRAKE_ABORT_MSG("Unknown input port type.");
       }
@@ -1714,9 +1717,12 @@ class System : public SystemBase {
     const InputPortIndex port_index(get_num_input_ports());
 
     const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
-    this->AddInputPort(std::make_unique<InputPort<T>>(
+    auto eval = [this, port_index](const ContextBase& context_base) {
+      return this->EvalAbstractInput(context_base, port_index);
+    };
+    this->AddInputPort(internal::FrameworkFactory::Make<InputPort<T>>(
         this, this, NextInputPortName(std::move(name)), port_index, port_ticket,
-        type, size, random_type));
+        type, size, random_type, std::move(eval)));
     return get_input_port(port_index);
   }
 

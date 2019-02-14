@@ -63,11 +63,8 @@ AutoDiffVecXd EvalMinimumDistanceConstraintAutoDiff(
   y(0).derivatives().resize(
       math::autoDiffToGradientMatrix(plant.GetPositions(context)).cols());
   y(0).derivatives().setZero();
-  const geometry::QueryObject<AutoDiffXd>& query_object =
-      plant
-          .EvalAbstractInput(context,
-                             plant.get_geometry_query_input_port().get_index())
-          ->GetValue<geometry::QueryObject<AutoDiffXd>>();
+  const auto& query_object = plant.get_geometry_query_input_port().
+      Eval<geometry::QueryObject<AutoDiffXd>>(context);
 
   const std::vector<geometry::SignedDistancePair<double>>
       signed_distance_pairs =

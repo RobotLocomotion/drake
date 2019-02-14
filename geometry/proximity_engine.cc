@@ -272,7 +272,7 @@ struct CollisionData {
 };
 
 // An internal functor to support DistanceFromPointCallback() and
-// ComputeNearphaseDistance(). It computes the signed distance to a query
+// ComputeNarrowPhaseDistance(). It computes the signed distance to a query
 // point from a supported geometry. Each overload to the call operator
 // reports the signed distance (encoded as SignedDistanceToPoint) between the
 // functor's stored query point and the given geometry argument.
@@ -457,11 +457,11 @@ void DistancePairGeometry::operator()(const fcl::Boxd* box_A,
 
 // Helps DistanceCallback(). Do it in closed forms for sphere-sphere or
 // sphere-box. Otherwise, use FCL GJK/EPA.
-void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
-                              const fcl::CollisionObjectd* b,
-                              const std::vector<GeometryId>& geometry_map,
-                              const fcl::DistanceRequestd& request,
-                              fcl::DistanceResultd* result) {
+void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
+                                const fcl::CollisionObjectd* b,
+                                const std::vector<GeometryId>& geometry_map,
+                                const fcl::DistanceRequestd& request,
+                                fcl::DistanceResultd* result) {
   const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
   const RigidTransformd X_WA(a->getTransform());
@@ -525,54 +525,45 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                       fcl::CollisionObjectd* fcl_object_B_ptr,
                       // NOLINTNEXTLINE
                       void* callback_data, double&) {
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We insure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
-
-  auto& collision_data = *static_cast<DistanceData*>(callback_data);
+  auto& distance_data = *static_cast<DistanceData*>(callback_data);
+  const std::vector<GeometryId>& geometry_map = distance_data.geometry_map;
+  // We want to pass object_A and object_B to the narrowphase distance in a
+  // specific order. This way the broadphase distance is free to give us
+  // either (A,B) or (B,A), and the narrowphase distance will always give the
+  // same result.
+  const GeometryId orig_id_A = EncodedData(*fcl_object_A_ptr).id(geometry_map);
+  const GeometryId orig_id_B = EncodedData(*fcl_object_B_ptr).id(geometry_map);
+  const bool swap_AB = (orig_id_B < orig_id_A);
+  const GeometryId id_A = swap_AB ? orig_id_B : orig_id_A;
+  const GeometryId id_B = swap_AB ? orig_id_A : orig_id_B;
+  // NOTE: Although this function *takes* pointers to non-const objects to
+  // satisfy the fcl api, it should not exploit the non-constness to modify
+  // the collision objects. We ensure this by a reference to a const version
+  // and not directly use the provided pointers afterwards.
+  const fcl::CollisionObjectd& fcl_object_A =
+      *(swap_AB ? fcl_object_B_ptr : fcl_object_A_ptr);
+  const fcl::CollisionObjectd& fcl_object_B =
+      *(swap_AB ? fcl_object_A_ptr : fcl_object_B_ptr);
 
   // Extract the collision filter keys from the fcl collision objects. These
   // keys will also be used to map the fcl collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(fcl_object_A);
-  EncodedData encoding_B(fcl_object_B);
+  const EncodedData encoding_A(fcl_object_A);
+  const EncodedData encoding_B(fcl_object_B);
 
-  const bool can_collide = collision_data.collision_filter.CanCollideWith(
+  const bool can_collide = distance_data.collision_filter.CanCollideWith(
       encoding_A.encoded_data(), encoding_B.encoded_data());
 
   if (can_collide) {
-    // Unpack the callback data
-    auto& distance_data = *static_cast<DistanceData*>(callback_data);
-    const fcl::DistanceRequestd& request = distance_data.request;
-    const std::vector<GeometryId>& geometry_map = distance_data.geometry_map;
-
     fcl::DistanceResultd result;
-
-    ComputeNearphaseDistance(&fcl_object_A, &fcl_object_B,
-                             geometry_map, request, &result);
-
-    SignedDistancePair<double> nearest_pair;
-    nearest_pair.id_A = EncodedData(fcl_object_A).id(geometry_map);
-    nearest_pair.id_B = EncodedData(fcl_object_B).id(geometry_map);
-
-    // Note: The result of FCL's distance query is in the *world* frame, the
-    // SignedDistancePair reports in geometry frame.
-    nearest_pair.p_ACa =
+    ComputeNarrowPhaseDistance(&fcl_object_A, &fcl_object_B, geometry_map,
+                               distance_data.request, &result);
+    const Vector3d p_ACa =
         fcl_object_A.getTransform().inverse() * result.nearest_points[0];
-    nearest_pair.p_BCb =
+    const Vector3d p_BCb =
         fcl_object_B.getTransform().inverse() * result.nearest_points[1];
-    nearest_pair.distance = result.min_distance;
-    // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-    // surfaces and then flip the normal.
-    if (nearest_pair.id_B < nearest_pair.id_A) {
-      std::swap(nearest_pair.id_A, nearest_pair.id_B);
-      std::swap(nearest_pair.p_ACa, nearest_pair.p_BCb);
-    }
-
-    distance_data.nearest_pairs->emplace_back(std::move(nearest_pair));
+    distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
+                                              result.min_distance);
   }
 
   // Returning true would tell the broadphase manager to terminate early. Since

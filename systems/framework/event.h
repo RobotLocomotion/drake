@@ -5,10 +5,10 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/event_status.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

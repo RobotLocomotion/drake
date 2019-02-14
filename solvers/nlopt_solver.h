@@ -3,7 +3,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
@@ -18,35 +18,12 @@ struct NloptSolverDetails {
   int status{};
 };
 
-class NloptSolver : public MathematicalProgramSolverInterface {
+class NloptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NloptSolver)
 
-  NloptSolver() = default;
-  ~NloptSolver() override = default;
-
-  // This solver is implemented in various pieces depending on if
-  // NLOpt was available during compilation.
-  bool available() const override { return is_available(); };
-
-  static bool is_available();
-
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
-  static SolverId id();
-
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
-
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+  NloptSolver();
+  ~NloptSolver() final;
 
   /** The key name for the double-valued constraint tolerance.*/
   static std::string ConstraintToleranceName();
@@ -59,6 +36,20 @@ class NloptSolver : public MathematicalProgramSolverInterface {
 
   /** The key name for int-valued maximum number of evaluations. */
   static std::string MaxEvalName();
+
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 
 }  // namespace solvers

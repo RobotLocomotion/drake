@@ -42,7 +42,7 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
     const RobotKinematicState<T>& robot_status,
     const ParamSet& paramset,
     const RigidBodyTreeAliasGroups<T>& alias_groups,
-    const systems::AbstractValue& plan) {
+    const AbstractValue& plan) {
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
   const auto& msg =

@@ -8,7 +8,6 @@
 
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
-#include "drake/systems/framework/value.h"
 
 using Eigen::Matrix;
 using std::make_unique;

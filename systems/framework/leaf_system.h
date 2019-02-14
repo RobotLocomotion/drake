@@ -19,6 +19,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/unused.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -31,7 +32,6 @@
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/system_scalar_converter.h"
 #include "drake/systems/framework/system_symbolic_inspector.h"
-#include "drake/systems/framework/value.h"
 #include "drake/systems/framework/value_checker.h"
 
 namespace drake {
@@ -477,7 +477,7 @@ class LeafSystem : public System<T> {
                                  int max_depth,
                                  std::stringstream *dot) const final {
     unused(max_depth);
-    DRAKE_DEMAND(port.get_system() == this);
+    DRAKE_DEMAND(&port.get_system() == this);
     *dot << this->GetGraphvizId() << ":u" << port.get_index();
   }
 
@@ -1525,9 +1525,8 @@ class LeafSystem : public System<T> {
     MaybeDeclareVectorBaseInequalityConstraint(
         "input " + std::to_string(index), model_vector,
         [this, index](const Context<T>& context) -> const VectorBase<T>& {
-          const BasicVector<T>* input = this->EvalVectorInput(context, index);
-          DRAKE_DEMAND(input != nullptr);
-          return *input;
+          return this->get_input_port(index).
+              template Eval<BasicVector<T>>(context);
         });
     return this->DeclareInputPort(NextInputPortName(std::move(name)),
                                   kVectorValued, size, random_type);
@@ -1606,7 +1605,7 @@ class LeafSystem : public System<T> {
   /// ports, the type must be copy constructible or cloneable. For
   /// methods below that are not given an explicit model value or construction
   /// ("make") method, the underlying type must be default constructible.
-  /// @see drake::systems::Value for more about abstract values.
+  /// @see drake::Value for more about abstract values.
   ///
   /// A list of prerequisites may be provided for the calculator function to
   /// avoid unnecessary recomputation. If no prerequisites are provided, the
@@ -1664,16 +1663,8 @@ class LeafSystem : public System<T> {
     // Caution: "name" is empty now.
     MaybeDeclareVectorBaseInequalityConstraint(
         "output " + std::to_string(int{port.get_index()}), model_vector,
-        [&port, storage = std::shared_ptr<AbstractValue>{}](
-            const Context<T>& context) mutable -> const VectorBase<T>& {
-          // Because we must return a VectorBase by const reference, our lambda
-          // object needs a member field to maintain storage for our result.
-          // We must use a shared_ptr not because we share storage, but because
-          // our lambda must be copyable.  This will go away once Eval works.
-          storage = port.Allocate();
-          // TODO(jwnimmer-tri) We should use port.Eval(), once it works.
-          port.Calc(context, storage.get());
-          return storage->GetValue<BasicVector<T>>();
+        [&port](const Context<T>& context) -> const VectorBase<T>& {
+          return port.template Eval<BasicVector<T>>(context);
         });
     return port;
   }
@@ -1741,7 +1732,7 @@ class LeafSystem : public System<T> {
   /// where `MySystem` must be a class derived from `LeafSystem<T>`.
   /// `OutputType` must be such that `Value<OutputType>` is permitted.
   /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
+  /// @see drake::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
       variant<std::string, UseDefaultName> name, const OutputType& model_value,
@@ -1779,7 +1770,7 @@ class LeafSystem : public System<T> {
   /// allocation (not common), use one of the other signatures to explicitly
   /// provide a method for the allocator to call; that method can then invoke
   /// the `OutputType` default constructor.
-  /// @see drake::systems::Value
+  /// @see drake::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
       variant<std::string, UseDefaultName> name,
@@ -1806,7 +1797,7 @@ class LeafSystem : public System<T> {
   /// may be any concrete type such that `Value<OutputType>` is permitted.
   /// See alternate signature if your allocator method needs a Context.
   /// Template arguments will be deduced and do not need to be specified.
-  /// @see drake::systems::Value
+  /// @see drake::Value
   template <class MySystem, typename OutputType>
   const OutputPort<T>& DeclareAbstractOutputPort(
       variant<std::string, UseDefaultName> name,
@@ -2499,7 +2490,7 @@ class LeafSystem : public System<T> {
     // the cache entry; the port's tracker will be subscribed to the cache
     // entry's tracker when a Context is created.
     // TODO(sherm1) Use implicit_cast when available (from abseil).
-    auto port = std::make_unique<LeafOutputPort<T>>(
+    auto port = internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         std::move(name),

@@ -727,7 +727,8 @@ void SolveWithGivenOptions(
     const std::unordered_map<std::string, std::string>& snopt_options_string,
     const std::unordered_map<std::string, int>& snopt_options_int,
     const std::unordered_map<std::string, double>& snopt_options_double,
-    int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val) {
+    int* snopt_status, double* objective, EigenPtr<Eigen::VectorXd> x_val,
+    SnoptSolverDetails* solver_details) {
   DRAKE_ASSERT(x_val->rows() == prog.num_vars());
 
   SnoptUserFunInfo user_info(&prog);
@@ -752,7 +753,8 @@ void SolveWithGivenOptions(
   std::vector<double> x(nx, 0.0);
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
-  std::vector<double> xmul(nx, 0.0);
+  solver_details->xmul.resize(nx);
+  solver_details->xmul.setZero();
   std::vector<int> xstate(nx, 0);
 
   // Initialize the guess for x.
@@ -824,10 +826,12 @@ void SolveWithGivenOptions(
 
   // Update the bound of the constraint.
   int nF = 1 + num_nonlinear_constraints + num_linear_constraints;
-  std::vector<double> F(nF, 0.0);
+  solver_details->F.resize(nF);
+  solver_details->F.setZero();
   std::vector<double> Flow(nF, -std::numeric_limits<double>::infinity());
   std::vector<double> Fupp(nF, std::numeric_limits<double>::infinity());
-  std::vector<double> Fmul(nF, 0.0);
+  solver_details->Fmul.resize(nF);
+  solver_details->Fmul.setZero();
   std::vector<int> Fstate(nF, 0);
 
   // Set up the gradient sparsity pattern.
@@ -954,25 +958,27 @@ void SolveWithGivenOptions(
   }
   // Actual solve.
   const char problem_name[] = "drake_problem";
-  Snopt::snkera(
-      Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
-      nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
-      nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
-      iAfun.data(), jAvar.data(), lenA, A.data(),
-      iGfun.data(), jGvar.data(), lenG,
-      xlow.data(), xupp.data(),
-      Flow.data(), Fupp.data(),
-      x.data(), xstate.data(), xmul.data(),
-      F.data(), Fstate.data(), Fmul.data(),
-      snopt_status, &nS, &nInf, &sInf,
-      &miniw, &minrw,
-      storage.iu(), storage.leniu(),
-      storage.ru(), storage.lenru(),
-      storage.iw(), storage.leniw(),
-      storage.rw(), storage.lenrw());
+  // clang-format off
+  Snopt::snkera(Cold, problem_name, nF, nx, ObjAdd, ObjRow, snopt_userfun,
+                nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
+                nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
+                iAfun.data(), jAvar.data(), lenA, A.data(),
+                iGfun.data(), jGvar.data(), lenG,
+                xlow.data(), xupp.data(),
+                Flow.data(), Fupp.data(),
+                x.data(), xstate.data(), solver_details->xmul.data(),
+                solver_details->F.data(), Fstate.data(),
+                solver_details->Fmul.data(),
+                snopt_status, &nS, &nInf, &sInf, &miniw, &minrw,
+                storage.iu(), storage.leniu(),
+                storage.ru(), storage.lenru(),
+                storage.iw(), storage.leniw(),
+                storage.rw(), storage.lenrw());
+  // clang-format on
 
   *x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
-  *objective = F[0];
+  *objective = solver_details->F(0);
+  solver_details->info = *snopt_status;
 }
 
 SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
@@ -998,34 +1004,23 @@ SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
 
 bool SnoptSolver::is_available() { return true; }
 
-void SnoptSolver::Solve(const MathematicalProgram& prog,
-                        const optional<Eigen::VectorXd>& initial_guess,
-                        const optional<SolverOptions>& solver_options,
-                        MathematicalProgramResult* result) const {
-  *result = {};
-  result->set_decision_variable_index(prog.decision_variable_index());
-
-  // Our function's arguments for initial_guess and solver_options take
-  // precedence over prog's values.
-  const Eigen::VectorXd& x_init =
-      initial_guess ? *initial_guess : prog.initial_guess();
-  SolverOptions merged_options =
-      solver_options ? *solver_options : SolverOptions();
-  merged_options.Merge(prog.solver_options());
-
+void SnoptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   // Call SNOPT.
   int snopt_status{0};
   double objective{0};
   Eigen::VectorXd x_val(prog.num_vars());
-  SolveWithGivenOptions(
-      prog, x_init,
-      merged_options.GetOptionsStr(id()),
-      merged_options.GetOptionsInt(id()),
-      merged_options.GetOptionsDouble(id()),
-      &snopt_status, &objective, &x_val);
+  SnoptSolverDetails& solver_details =
+      result->SetSolverDetailsType<SnoptSolverDetails>();
+  SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
+                        merged_options.GetOptionsInt(id()),
+                        merged_options.GetOptionsDouble(id()), &snopt_status,
+                        &objective, &x_val, &solver_details);
 
   // Populate our results structure.
-  result->set_solver_id(id());
   const SolutionResult solution_result =
       MapSnoptInfoToSolutionResult(snopt_status);
   result->set_solution_result(solution_result);
@@ -1035,9 +1030,6 @@ void SnoptSolver::Solve(const MathematicalProgram& prog,
   } else {
     result->set_optimal_cost(objective);
   }
-  // TODO(hongkai.dai) add other useful quantities to a struct specific to
-  // SNOPT, to include information on constraint values, xstate, Fstate, xmul,
-  // Fmul, etc.
 }
 
 bool SnoptSolver::is_thread_safe() { return true; }

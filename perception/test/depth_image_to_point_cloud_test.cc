@@ -13,8 +13,6 @@
 
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
-using drake::systems::AbstractValue;
-using drake::systems::Value;
 using drake::systems::sensors::CameraInfo;
 using drake::systems::sensors::Image;
 using drake::systems::sensors::ImageRgba8U;

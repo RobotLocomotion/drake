@@ -3,13 +3,11 @@
 #include <memory>
 
 #include "drake/lcmt_contact_results_for_viz.hpp"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace multibody {
 
 using systems::Context;
-using systems::Value;
 
 template <typename T>
 ContactResultsToLcmSystem<T>::ContactResultsToLcmSystem(
@@ -49,9 +47,8 @@ template <typename T>
 void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     const Context<T>& context, lcmt_contact_results_for_viz* output) const {
   // Get input / output.
-  const auto& contact_results =
-      this->EvalAbstractInput(context, contact_result_input_port_index_)
-          ->template GetValue<ContactResults<T>>();
+  const auto& contact_results = get_contact_result_input_port().
+      template Eval<ContactResults<T>>(context);
   auto& msg = *output;
 
   // Time in microseconds.
@@ -117,5 +114,5 @@ systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::ContactResultsToLcmSystem)

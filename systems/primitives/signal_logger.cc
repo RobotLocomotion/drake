@@ -52,8 +52,7 @@ void SignalLogger<T>::set_forced_publish_only() {
 
 template <typename T>
 EventStatus SignalLogger<T>::WriteToLog(const Context<T>& context) const {
-  log_.AddData(context.get_time(),
-               this->EvalVectorInput(context, 0)->get_value());
+  log_.AddData(context.get_time(), get_input_port().Eval(context));
   return EventStatus::Succeeded();
 }
 

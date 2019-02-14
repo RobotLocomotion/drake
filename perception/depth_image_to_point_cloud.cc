@@ -6,9 +6,12 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/never_destroyed.h"
 
+using Eigen::Isometry3f;
+using Eigen::Matrix3Xf;
+using Eigen::Vector3f;
+using drake::AbstractValue;
+using drake::Value;
 using drake::math::RigidTransformd;
-using drake::systems::AbstractValue;
-using drake::systems::Value;
 using drake::systems::sensors::CameraInfo;
 using drake::systems::sensors::Image;
 using drake::systems::sensors::ImageDepth16U;
@@ -17,9 +20,6 @@ using drake::systems::sensors::ImageRgba8U;
 using drake::systems::sensors::ImageTraits;
 using drake::systems::sensors::InvalidDepth;
 using drake::systems::sensors::PixelType;
-using Eigen::Isometry3f;
-using Eigen::Matrix3Xf;
-using Eigen::Vector3f;
 
 namespace drake {
 namespace perception {

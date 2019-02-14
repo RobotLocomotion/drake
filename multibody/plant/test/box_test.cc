@@ -19,7 +19,6 @@ namespace drake {
 using geometry::Box;
 using geometry::SceneGraph;
 using multibody::Parser;
-using systems::AbstractValue;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;

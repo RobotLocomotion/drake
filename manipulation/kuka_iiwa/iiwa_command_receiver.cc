@@ -2,13 +2,14 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
-#include "drake/lcmt_iiwa_command.hpp"
+#include "drake/common/text_logging.h"
 #include "drake/manipulation/kuka_iiwa/internal_iiwa_command_translator.h"
 
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
+using Eigen::VectorXd;
 using internal::IiwaCommand;
 using internal::IiwaCommandTranslator;
 using systems::BasicVector;
@@ -16,96 +17,177 @@ using systems::Context;
 using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
 
-IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
-    : num_joints_(num_joints) {
-  lcmt_iiwa_command uninitialized_message{};
-  uninitialized_message.utime =
-      static_cast<uint64_t>(IiwaCommand<double>::kUnitializedTime);
+namespace {
+
+std::unique_ptr<AbstractValue> MakeCommandMessage() {
+  return std::make_unique<Value<lcmt_iiwa_command>>();
+}
+
+std::unique_ptr<IiwaCommand<double>> MakeCommandVector(int num_joints) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // TODO(jwnimmer-tri) Remove this input port after 2019-03-01.
-  this->DeclareVectorInputPort("command_vector",
-                               IiwaCommand<double>(num_joints));
+  return std::make_unique<IiwaCommand<double>>(num_joints);
 #pragma GCC diagnostic pop
-  this->DeclareAbstractInputPort(
-      "command_message",
-      Value<lcmt_iiwa_command>(uninitialized_message));
+}
 
-  this->DeclareVectorOutputPort(
-      "state", BasicVector<double>(num_joints_ * 2),
-      [this](const Context<double>& c, BasicVector<double>* o) {
-        this->CopyStateToOutput(c, 0, num_joints_ * 2, o);
+}  // namespace
+
+IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
+    : num_joints_(num_joints) {
+  // Our parameter stores the position when no message has been received.
+  const BasicVector<double> default_position(VectorXd::Zero(num_joints));
+  DeclareNumericParameter(default_position);
+
+  // Our input ports are mutually exclusive; exactly one connected input port
+  // feeds our cache entry.
+  // TODO(jwnimmer-tri) Remove command_vector port on 2019-03-01.
+  // TODO(jwnimmer-tri) Remove command_message port on 2019-05-01.
+  DeclareVectorInputPort("command_vector", *MakeCommandVector(num_joints));
+  DeclareAbstractInputPort("command_message", *MakeCommandMessage());
+  DeclareAbstractInputPort("lcmt_iiwa_command", *MakeCommandMessage());
+  groomed_input_ = &DeclareCacheEntry(
+      "groomed_input", &IiwaCommandReceiver::CalcInput,
+      {all_input_ports_ticket()});
+
+  // Our state is a ZOH of input.joint_position.
+  // TODO(jwnimmer-tri) This system should NOT have any state.  We should
+  // remove our discrete state + update when the state output port is removed.
+  DeclareDiscreteState(num_joints_);
+  DeclarePeriodicDiscreteUpdateEvent(
+      kIiwaLcmStatusPeriod, 0.0, &IiwaCommandReceiver::CalcStateUpdate);
+
+  // Our first output is deprecated (as marked in our header).
+  // (It needs to be first -- calling code assumes that it has index == zero.)
+  // TODO(jwnimmer-tri) Remove this port and discrete state on 2019-05-01.
+  DeclareVectorOutputPort(
+      "state", BasicVector<double>(num_joints * 2),
+      &IiwaCommandReceiver::CalcStateOutput);
+  // These are the non-deprecated outputs.
+  // (This needs to be second -- calling code assumes that it has index == 1.)
+  DeclareVectorOutputPort(
+      "torque", BasicVector<double>(num_joints),
+      [this](const Context<double>& context, BasicVector<double>* output) {
+        output->SetFromVector(this->input_torque(context));
       });
-  this->DeclareVectorOutputPort(
-      "feedforward_torque", BasicVector<double>(num_joints_),
-      [this](const Context<double>& c, BasicVector<double>* o) {
-        this->CopyStateToOutput(c, num_joints_ * 2, num_joints_, o);
+  DeclareVectorOutputPort(
+      "position", BasicVector<double>(num_joints),
+      [this](const Context<double>& context, BasicVector<double>* output) {
+        output->SetFromVector(this->input_position(context));
       });
-  this->DeclarePeriodicDiscreteUpdate(kIiwaLcmStatusPeriod);
-  // State + torque
-  this->DeclareDiscreteState(num_joints_ * 3);
+}
+
+const systems::InputPort<double>& IiwaCommandReceiver::get_input_port() const {
+  return LeafSystem<double>::get_input_port(2);
+}
+using OutPort = systems::OutputPort<double>;
+const OutPort& IiwaCommandReceiver::get_commanded_state_output_port() const {
+  return LeafSystem<double>::get_output_port(0);
+}
+const OutPort& IiwaCommandReceiver::get_commanded_torque_output_port() const {
+  return LeafSystem<double>::get_output_port(1);
+}
+const OutPort& IiwaCommandReceiver::get_commanded_position_output_port() const {
+  return LeafSystem<double>::get_output_port(2);
 }
 
 void IiwaCommandReceiver::set_initial_position(
-    Context<double>* context, const Eigen::Ref<const VectorX<double>> x) const {
-  auto state_value = context->get_mutable_discrete_state(0).get_mutable_value();
-  DRAKE_ASSERT(x.size() == num_joints_);
-  state_value.setZero();
-  state_value.head(num_joints_) = x;
+    Context<double>* context, const Eigen::Ref<const VectorXd>& q) const {
+  DRAKE_THROW_UNLESS(q.size() == num_joints_);
+  context->get_mutable_numeric_parameter(0).SetFromVector(q);
 }
 
-void IiwaCommandReceiver::DoCalcDiscreteVariableUpdates(
+// Returns (in "result") the command message input, or if a message has not
+// been received yet returns the initial command (as optionally set by the
+// user).  The result will always have have num_joints_ positions and torques.
+void IiwaCommandReceiver::CalcInput(
+  const Context<double>& context, lcmt_iiwa_command* result) const {
+  const bool has0 = LeafSystem<double>::get_input_port(0).HasValue(context);
+  const bool has1 = LeafSystem<double>::get_input_port(1).HasValue(context);
+  const bool has2 = LeafSystem<double>::get_input_port(2).HasValue(context);
+  const int count = (has0 ? 1 : 0) + (has1 ? 1 : 0) + (has2 ? 1 : 0);
+  if (count == 0) {
+    throw std::logic_error("IiwaCommandReceiver has no input connected");
+  }
+  if (count > 1) {
+    throw std::logic_error("IiwaCommandReceiver has >1 input connected");
+  }
+
+  // Copies the (sole) input value, converting from IiwaCommand if necessary.
+  if (has2) {
+    *result = get_input_port().Eval<lcmt_iiwa_command>(context);
+  } else if (has1) {
+    static const logging::Warn log_once(
+        "The IiwaCommandReceiver \"command_message\" port is deprecated and "
+        "will be removed on 2019-05-01; use \"lcmt_iiwa_command\" instead.");
+    const auto& port = LeafSystem<double>::get_input_port(1);
+    *result = port.Eval<lcmt_iiwa_command>(context);
+  } else {
+    DRAKE_DEMAND(has0);
+    const auto& port = LeafSystem<double>::get_input_port(0);
+    const auto& command = port.Eval<IiwaCommand<double>>(context);
+    const VectorXd pos = command.joint_position();
+    const VectorXd tor = command.joint_torque();
+    result->utime = command.utime();
+    result->num_joints = pos.size();
+    result->joint_position = {pos.data(), pos.data() + pos.size()};
+    result->num_torques = tor.size();
+    result->joint_torque = {tor.data(), tor.data() + tor.size()};
+  }
+
+  // If we haven't received a legit message yet, use the initial command.
+  if (result->utime == 0.0) {
+    const VectorXd param = context.get_numeric_parameter(0).get_value();
+    result->num_joints = param.size();
+    result->joint_position = {param.data(), param.data() + param.size()};
+    result->num_torques = 0;
+    result->joint_torque.clear();
+  }
+
+  // Sanity check the joint sizes.  If torques were not sent, pad with zeros.
+  if (result->num_joints != num_joints_) {
+    throw std::runtime_error(fmt::format(
+        "IiwaCommandReceiver expected num_joints = {}, but received {}",
+        num_joints_, result->num_joints));
+  }
+  if (result->num_torques == 0) {
+    result->num_torques = num_joints_;
+    result->joint_torque.resize(num_joints_, 0.0);
+  } else if (result->num_torques != num_joints_) {
+    throw std::runtime_error(fmt::format(
+        "IiwaCommandReceiver expected num_torques = {}, but received {}",
+        num_joints_, result->num_torques));
+  }
+}
+
+IiwaCommandReceiver::MapVectorXd IiwaCommandReceiver::input_position(
+    const Context<double>& context) const {
+  const auto& message = groomed_input_->Eval<lcmt_iiwa_command>(context);
+  return Eigen::Map<const VectorXd>(
+      message.joint_position.data(),
+      message.joint_position.size());
+}
+
+IiwaCommandReceiver::MapVectorXd IiwaCommandReceiver::input_torque(
+    const Context<double>& context) const {
+  const auto& message = groomed_input_->Eval<lcmt_iiwa_command>(context);
+  return Eigen::Map<const VectorXd>(
+      message.joint_torque.data(),
+      message.joint_torque.size());
+}
+
+void IiwaCommandReceiver::CalcStateUpdate(
     const Context<double>& context,
-    const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
-  const IiwaCommand<double>* command =
-      this->template EvalVectorInput<IiwaCommand>(context, 0);
-
-  // If the vector input port is not wired, try the abstract value one.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  IiwaCommand<double> decoded_command(num_joints_);
-#pragma GCC diagnostic pop
-  if (!command) {
-    const AbstractValue* input = this->EvalAbstractInput(context, 1);
-    DRAKE_THROW_UNLESS(input != nullptr);
-    const auto& command_msg = input->GetValue<lcmt_iiwa_command>();
-    std::vector<uint8_t> bytes(command_msg.getEncodedSize());
-    const int encoded_size = command_msg.encode(bytes.data(), 0, bytes.size());
-    DRAKE_DEMAND(encoded_size == static_cast<int>(bytes.size()));
-    if (command_msg.num_joints == 0) {
-      // This can happen if we haven't received a message yet.
-      return;
-    }
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const IiwaCommandTranslator translator(num_joints_);
-#pragma GCC diagnostic pop
-    translator.Deserialize(bytes.data(), bytes.size(), &decoded_command);
-    command = &decoded_command;
-  }
-  DRAKE_THROW_UNLESS(command);
-
-  BasicVector<double>& state = discrete_state->get_mutable_vector(0);
-  auto state_value = state.get_mutable_value();
-  // Haven't received a legit message yet.
-  if (command->utime() == IiwaCommand<double>::kUnitializedTime) {
-    return;
-  }
-
-  state_value.segment(num_joints_, num_joints_) =
-      (command->joint_position() - state_value.head(num_joints_)) /
-      kIiwaLcmStatusPeriod;
-  state_value.head(num_joints_) = command->joint_position();
-  state_value.tail(num_joints_) = command->joint_torque();
+  discrete_state->get_mutable_vector(0).SetFromVector(input_position(context));
 }
 
-void IiwaCommandReceiver::CopyStateToOutput(const Context<double>& context,
-                                            int start_idx, int length,
-                                            BasicVector<double>* output) const {
-  Eigen::VectorBlock<VectorX<double>> output_vec = output->get_mutable_value();
-  output_vec =
-      context.get_discrete_state(0).get_value().segment(start_idx, length);
+void IiwaCommandReceiver::CalcStateOutput(
+    const Context<double>& context, BasicVector<double>* output) const {
+  auto output_block = output->get_mutable_value();
+  const auto& current = input_position(context);
+  const auto& prior = context.get_discrete_state(0).CopyToVector();
+  output_block.head(num_joints_) = current;
+  output_block.tail(num_joints_) = (current - prior) / kIiwaLcmStatusPeriod;
 }
 
 std::unique_ptr<systems::lcm::LcmSubscriberSystem>

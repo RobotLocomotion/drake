@@ -16,34 +16,34 @@ GTEST_TEST(QPtest, TestUnconstrainedQP) {
 
   OsqpSolver solver;
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
     const double tol = 1E-10;
-    EXPECT_NEAR(prog.GetSolution(x(0)), 0, tol);
-    EXPECT_NEAR(prog.GetOptimalCost(), 0, tol);
+    EXPECT_NEAR(result.GetSolution(x(0)), 0, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
   }
 
   // Add additional quadratic costs
   prog.AddQuadraticCost((x(1) + x(2) - 2) * (x(1) + x(2) - 2));
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
     const double tol = 1E-10;
-    EXPECT_NEAR(prog.GetSolution(x(0)), 0, tol);
-    EXPECT_NEAR(prog.GetSolution(x(1)) + prog.GetSolution(x(2)), 2, tol);
-    EXPECT_NEAR(prog.GetOptimalCost(), 0, tol);
+    EXPECT_NEAR(result.GetSolution(x(0)), 0, tol);
+    EXPECT_NEAR(result.GetSolution(x(1)) + result.GetSolution(x(2)), 2, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
   }
 
   // Add linear costs.
   prog.AddLinearCost(4 * x(0) + 5);
   // Now the cost is (x₀ + 2)² + (x₁ + x₂-2)² + 1
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
     const double tol = 1E-10;
-    EXPECT_NEAR(prog.GetSolution(x(0)), -2, tol);
-    EXPECT_NEAR(prog.GetSolution(x(1)) + prog.GetSolution(x(2)), 2, tol);
-    EXPECT_NEAR(prog.GetOptimalCost(), 1, tol);
+    EXPECT_NEAR(result.GetSolution(x(0)), -2, tol);
+    EXPECT_NEAR(result.GetSolution(x(1)) + result.GetSolution(x(2)), 2, tol);
+    EXPECT_NEAR(result.get_optimal_cost(), 1, tol);
   }
 }
 
@@ -74,16 +74,16 @@ GTEST_TEST(QPtest, TestUnbounded) {
   OsqpSolver solver;
   // The program is unbounded.
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
   }
 
   // Add a constraint
   prog.AddLinearConstraint(x(0) + 2 * x(2) == 2);
   prog.AddLinearConstraint(x(0) >= 0);
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kDualInfeasible);
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
   }
 }
 
@@ -99,9 +99,10 @@ GTEST_TEST(QPtest, TestInfeasible) {
   OsqpSolver solver;
   // The program is infeasible.
   if (solver.available()) {
-    const SolutionResult result = solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-    EXPECT_EQ(prog.GetOptimalCost(),
+    auto result = solver.Solve(prog, {}, {});
+    EXPECT_EQ(result.get_solution_result(),
+              SolutionResult::kInfeasibleConstraints);
+    EXPECT_EQ(result.get_optimal_cost(),
               MathematicalProgram::kGlobalInfeasibleCost);
   }
 }

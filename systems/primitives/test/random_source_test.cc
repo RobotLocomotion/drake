@@ -122,7 +122,6 @@ class TestSystem : public LeafSystem<double> {
  public:
   // Make methods available.
   using LeafSystem::DeclareInputPort;
-  using LeafSystem::EvalVectorInput;
 };
 
 //      +-------------------------+
@@ -175,27 +174,24 @@ GTEST_TEST(RandomSourceTest, AddToDiagramBuilderTest) {
   auto context = diagram->CreateDefaultContext();
 
   // Check that the uniform input port is connected.
-  EXPECT_NE(
-      sys1->EvalVectorInput(diagram->GetSubsystemContext(*sys1, *context), 0),
-      nullptr);
+  EXPECT_TRUE(sys1->get_input_port(0).HasValue(
+      diagram->GetSubsystemContext(*sys1, *context)));
 
   // Check that the exponential input port is connected.
-  EXPECT_NE(
-      sys1->EvalVectorInput(diagram->GetSubsystemContext(*sys1, *context), 1),
-      nullptr);
+  EXPECT_TRUE(sys1->get_input_port(1).HasValue(
+      diagram->GetSubsystemContext(*sys1, *context)));
 
   // Check that the Gaussian input port is connected.
-  EXPECT_NE(
-      sys2->EvalVectorInput(diagram->GetSubsystemContext(*sys2, *context), 0),
-      nullptr);
+  EXPECT_TRUE(sys2->get_input_port(0).HasValue(
+      diagram->GetSubsystemContext(*sys2, *context)));
 
   // Check that the exported input remained exported.
   EXPECT_EQ(diagram->get_num_input_ports(), 1);
   EXPECT_EQ(diagram->get_input_port(0).size(), 2);
 
   // Check that the previously connected input remained connected.
-  EXPECT_EQ(sys2->EvalEigenVectorInput(
-                diagram->GetSubsystemContext(*sys2, *context), 2)[0],
+  EXPECT_EQ(sys2->get_input_port(2).Eval(
+                diagram->GetSubsystemContext(*sys2, *context))[0],
             14.0);
 }
 

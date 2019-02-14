@@ -158,6 +158,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "applied_generalized_force_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/controllers:inverse_dynamics_controller",
+    ],
+)
+
+drake_cc_googletest(
     name = "externally_applied_spatial_force_test",
     data = [
         "//multibody/benchmarks/acrobot:models",
@@ -195,6 +208,16 @@ drake_cc_googletest(
         "//multibody/parsing",
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_symbolic_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:symbolic_test_util",
+        "//multibody/benchmarks/pendulum",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
@@ -331,7 +354,9 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":plant",
+        "//common/test_utilities:symbolic_test_util",
         "//systems/analysis:simulator",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

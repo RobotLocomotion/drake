@@ -61,36 +61,25 @@ SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
   lcmt_schunk_wsg_command uninitialized_message{};
   this->DeclareAbstractInputPort(
       "command_message",
-      systems::Value<lcmt_schunk_wsg_command>(uninitialized_message));
+      Value<lcmt_schunk_wsg_command>(uninitialized_message));
 }
 
 void SchunkWsgCommandReceiver::EvalInput(
     const Context<double>& context, SchunkWsgCommand<double>* result) const {
   // Try the vector input port first.
-  const SchunkWsgCommand<double>* wsg_command =
-      this->template EvalVectorInput<SchunkWsgCommand>(context, 0);
-
-  // Maybe the vector input is not wired, try abstract input next.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  SchunkWsgCommand<double> decoded_command;
-#pragma GCC diagnostic pop
-  if (!wsg_command) {
-    const systems::AbstractValue* input = this->EvalAbstractInput(context, 1);
-    DRAKE_THROW_UNLESS(input != nullptr);
-    const auto& command_msg = input->GetValue<lcmt_schunk_wsg_command>();
-    std::vector<uint8_t> bytes(command_msg.getEncodedSize());
-    command_msg.encode(bytes.data(), 0, bytes.size());
+  if (this->get_input_port(0).HasValue(context)) {
+    *result = this->get_input_port(0).Eval<SchunkWsgCommand<double>>(context);
+  } else {
+    const auto& message =
+        this->get_input_port(1).Eval<lcmt_schunk_wsg_command>(context);
+    std::vector<uint8_t> bytes(message.getEncodedSize());
+    message.encode(bytes.data(), 0, bytes.size());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const SchunkWsgCommandTranslator translator;
 #pragma GCC diagnostic pop
-    translator.Deserialize(bytes.data(), bytes.size(), &decoded_command);
-    wsg_command = &decoded_command;
+    translator.Deserialize(bytes.data(), bytes.size(), result);
   }
-  DRAKE_THROW_UNLESS(wsg_command != nullptr);
-
-  result->get_mutable_value() = wsg_command->get_value();
 }
 
 void SchunkWsgCommandReceiver::CalcPositionOutput(
@@ -148,13 +137,8 @@ void SchunkWsgCommandSender::CalcCommandOutput(
   lcmt_schunk_wsg_command& command = *output;
 
   command.utime = context.get_time() * 1e6;
-  const double position =
-      this->EvalVectorInput(context, position_input_port_)->GetAtIndex(0);
-
-  command.target_position_mm = position * 1e3;
-
-  command.force =
-      this->EvalVectorInput(context, force_limit_input_port_)->GetAtIndex(0);
+  command.target_position_mm = get_position_input_port().Eval(context)[0] * 1e3;
+  command.force = get_force_limit_input_port().Eval(context)[0];
 }
 
 SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
@@ -167,16 +151,14 @@ SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
                                  &SchunkWsgStatusReceiver::CopyForceOut)
                              .get_index()) {
   this->DeclareAbstractInputPort("lcmt_schunk_wsg_status",
-                                 systems::Value<lcmt_schunk_wsg_status>());
+                                 Value<lcmt_schunk_wsg_status>());
 }
 
 void SchunkWsgStatusReceiver::CopyStateOut(
     const drake::systems::Context<double>& context,
     drake::systems::BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& status = input->GetValue<lcmt_schunk_wsg_status>();
-
+  const auto& status =
+      get_status_input_port().Eval<lcmt_schunk_wsg_status>(context);
   output->SetAtIndex(0, status.actual_position_mm / 1e3);
   output->SetAtIndex(1, status.actual_speed_mm_per_s / 1e3);
 }
@@ -184,10 +166,8 @@ void SchunkWsgStatusReceiver::CopyStateOut(
 void SchunkWsgStatusReceiver::CopyForceOut(
     const drake::systems::Context<double>& context,
     drake::systems::BasicVector<double>* output) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& status = input->GetValue<lcmt_schunk_wsg_status>();
-
+  const auto& status =
+      get_status_input_port().Eval<lcmt_schunk_wsg_status>(context);
   output->SetAtIndex(0, status.actual_force);
 }
 
@@ -232,25 +212,22 @@ void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
 
   // Maintain the deprecated mode for now.
   if (input_port_wsg_state_.is_valid()) {
-    DRAKE_DEMAND(!state_input_port_.is_valid());
-    const systems::BasicVector<double>* state =
-        this->EvalVectorInput(context, input_port_wsg_state_);
-    status.actual_position_mm = -2 * state->GetAtIndex(position_index_) * 1e3;
-    status.actual_speed_mm_per_s =
-        -2 * state->GetAtIndex(velocity_index_) * 1e3;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const auto& state = get_input_port_wsg_state().Eval(context);
+#pragma GCC diagnostic pop
+    status.actual_position_mm = -2 * state[position_index_] * 1e3;
+    status.actual_speed_mm_per_s = -2 * state[velocity_index_] * 1e3;
   } else {
-    const systems::BasicVector<double>* state =
-        this->EvalVectorInput(context, state_input_port_);
+    const auto& state = get_state_input_port().Eval(context);
     // The position and speed reported in this message are between the
     // two fingers rather than the position/speed of a single finger
     // (so effectively doubled).
-    status.actual_position_mm = state->GetAtIndex(0) * 1e3;
-    status.actual_speed_mm_per_s = state->GetAtIndex(1) * 1e3;
+    status.actual_position_mm = state[0] * 1e3;
+    status.actual_speed_mm_per_s = state[1] * 1e3;
   }
 
-  const systems::BasicVector<double>* force =
-      this->EvalVectorInput(context, force_input_port_);
-  if (force) {
+  if (get_force_input_port().HasValue(context)) {
     // In drake-schunk-driver, the driver attempts to apply a sign to the
     // force value based on the last reported direction of gripper movement
     // (the gripper always reports positive values).  This does not work very
@@ -261,8 +238,8 @@ void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
     // replicate it here and instead report positive forces.
 
     // TODO(sammy-tri) once the deprecated constructor/ports are removed, this
-    // can just use force->GetAtIndex(0).
-    status.actual_force = force->get_value().cwiseAbs().sum();
+    // can just use Eval(context)[0] here.
+    status.actual_force = get_force_input_port().Eval(context).cwiseAbs().sum();
   } else {
     status.actual_force = 0;
   }

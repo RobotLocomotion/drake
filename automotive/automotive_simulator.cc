@@ -41,7 +41,6 @@ using maliput::api::LaneEnd;
 using maliput::api::LaneId;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
-using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
 using systems::lcm::LcmSubscriberSystem;
 using systems::OutputPort;
@@ -58,7 +57,7 @@ class DrivingCommandDecoder final : public systems::LeafSystem<double> {
  public:
   DrivingCommandDecoder() {
     this->DeclareAbstractInputPort(
-        systems::kUseDefaultName, systems::Value<lcmt_driving_command_t>{});
+        systems::kUseDefaultName, Value<lcmt_driving_command_t>{});
     this->DeclareVectorOutputPort(
         systems::kUseDefaultName, DrivingCommand<double>{},
         &DrivingCommandDecoder::Calc);
@@ -426,7 +425,7 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
   const LaneDirection lane_direction(goal_lane, initial_with_s);
   auto lane_source =
       builder_->template AddSystem<systems::ConstantValueSource<T>>(
-          systems::AbstractValue::Make<LaneDirection>(lane_direction));
+          AbstractValue::Make<LaneDirection>(lane_direction));
 
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   simple_car->set_name(name + "_simple_car");

@@ -21,7 +21,6 @@
 #include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/primitives/demultiplexer.h"
 
 using robotlocomotion::robot_plan_t;
 
@@ -120,7 +119,7 @@ int DoMain() {
           systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 
   // Waits for the first message.
-  const systems::AbstractValue& first_msg = loop.WaitForMessage();
+  const AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
   const lcmt_iiwa_status& first_status = first_msg.GetValue<lcmt_iiwa_status>();

@@ -3,59 +3,45 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 
-class EqualityConstrainedQPSolver : public MathematicalProgramSolverInterface {
+/**
+ * Solves a quadratic program with equality constraint.
+ *
+ * This program doesn't depend on the initial guess.
+ *
+ * The user can set the following options:
+ *
+ * - FeasibilityTolOptionName(). The feasible solution (both primal and dual
+ *   variables) should satisfy their constraints, with error no larger than
+ *   this value. The default is Eigen::dummy_precision().
+ */
+class EqualityConstrainedQPSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EqualityConstrainedQPSolver)
 
-  EqualityConstrainedQPSolver() = default;
-  ~EqualityConstrainedQPSolver() override = default;
+  EqualityConstrainedQPSolver();
+  ~EqualityConstrainedQPSolver() final;
 
-  bool available() const override { return is_available(); };
-
-  static bool is_available();
-
-  /**
-   * Solve the qudratic program with equality constraint.
-   * The user can set the following options
-   *  FeasibilityTolOptionName() The feasible solution (both primal and dual
-   *  variables) should satisfy their constraints, with error no
-   *  larger than this value. The default is Eigen::dummy_precision().
-   */
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  /**
-   * Solve the qudratic program with equality constraint.
-   * This program doesn't depend on the initial guess.
-   * The user can set the following options
-   *  FeasibilityTolOptionName(). The feasible solution (both primal and dual
-   *  variables) should satisfy their constraints, with error no
-   *  larger than this value. The default is Eigen::dummy_precision().
-   *  solver_options will take priority over any options stored inside prog.
-   */
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
-  static SolverId id();
-
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
-
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
-
-  /** Returns the string as a key value in SolverOption, to set the feasibility
-   * tolerance.
-   */
+  /// @returns string key for SolverOptions to set the feasibility tolerance.
   static std::string FeasibilityTolOptionName();
+
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 
 }  // namespace solvers

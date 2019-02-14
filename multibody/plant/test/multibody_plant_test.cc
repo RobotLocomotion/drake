@@ -63,7 +63,6 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::Parser;
-using systems::AbstractValue;
 using systems::BasicVector;
 using systems::ConstantVectorSource;
 using systems::Context;
@@ -869,13 +868,8 @@ class SphereChainScenario {
   std::vector<geometry::PenetrationAsPointPair<double>>
   ComputePointPairPenetration() const {
     // Grab query object to test for collisions.
-    const geometry::QueryObject<double>& query_object =
-        plant_
-            ->EvalAbstractInput(
-                *plant_context_,
-                plant_->get_geometry_query_input_port().get_index())
-            ->GetValue<geometry::QueryObject<double>>();
-
+    const auto& query_object = plant_->get_geometry_query_input_port().
+        Eval<geometry::QueryObject<double>>(*plant_context_);
     return query_object.ComputePointPairPenetration();
   }
 
@@ -1223,7 +1217,11 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-  context->FixInputPort(0, Vector1d{0.0});
+  context->FixInputPort(pendulum->get_actuation_input_port().get_index(),
+                        Vector1d{0.0});
+  context->FixInputPort(
+      pendulum->get_applied_generalized_force_input_port().get_index(),
+      Vector1d{0.0});
 
   // First we will linearize about the unstable fixed point with the pendulum
   // in its inverted position.

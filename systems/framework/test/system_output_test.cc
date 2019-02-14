@@ -8,7 +8,6 @@
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {

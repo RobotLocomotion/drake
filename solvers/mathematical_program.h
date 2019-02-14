@@ -33,14 +33,16 @@
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/function.h"
 #include "drake/solvers/indeterminate.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
 #include "drake/solvers/program_attribute.h"
 #include "drake/solvers/solution_result.h"
+#include "drake/solvers/solver_interface.h"
 #include "drake/solvers/solver_options.h"
 #include "drake/solvers/solver_result.h"
 
 namespace drake {
 namespace solvers {
+
+class SolverInterface;
 
 /** @addtogroup solvers
  * @{
@@ -52,9 +54,8 @@ namespace solvers {
  * objectives, and constraints.  The MathematicalProgram::Solve() method
  * reflects on the accumulated objectives and constraints and will dispatch to
  * the most appropriate solver.  Alternatively, one can invoke specific solver
- * by instantiating its MathematicalProgramSolverInterface and passing the
- * MathematicalProgram directly to the
- * MathematicalProgramSolverInterface::Solve() method.
+ * by instantiating its SolverInterface and passing the MathematicalProgram
+ * directly to the SolverInterface::Solve() method.
  *
  * Our solver coverage still has many gaps, but is under active development.
  *
@@ -2831,10 +2832,9 @@ class MathematicalProgram {
    * optimization problem stored in MathematicalProgram. The user should NOT
    * call this method.
    */
-  // This method should be called by the derived classes of
-  // MathematicalProgramSolverInterface, which is not a friend class of
-  // MathematicalProgram, as we do not want to leak any of the internal details
-  // of MathematicalProgram.
+  // This method should be called by the derived classes of SolverInterface,
+  // which is not a friend class of MathematicalProgram, as we do not want to
+  // leak any of the internal details of MathematicalProgram.
   void SetSolverResult(const SolverResult& solver_result);
 
   /// Getter for the required capability on the solver, given the
@@ -2905,17 +2905,15 @@ class MathematicalProgram {
 
   ProgramAttributes required_capabilities_{};
 
-  std::unique_ptr<MathematicalProgramSolverInterface> ipopt_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> nlopt_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> snopt_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> moby_lcp_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> linear_system_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface>
-      equality_constrained_qp_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> gurobi_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> mosek_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> osqp_solver_;
-  std::unique_ptr<MathematicalProgramSolverInterface> scs_solver_;
+  // By tradition, our soon-to-be-deprecated mutable Solve() method reuses its
+  // SolverInterface objects from one run to the next; doing so might improve
+  // performance if the Solver retains its heap allocations from one run to the
+  // next, for example.  This member field serves to keep that behavior intact
+  // during the transition period where MathematicalProgram still offers the
+  // mutable Solve() method but doesn't directly depend on a specific list of
+  // Solvers anymore.  When this class's Solve() method disappears, this field
+  // should also be removed.
+  std::unique_ptr<SolverInterface> solver_cache_for_deprecated_solve_method_;
 
   template <typename T>
   void NewVariables_impl(

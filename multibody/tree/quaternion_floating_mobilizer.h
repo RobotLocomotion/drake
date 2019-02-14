@@ -253,6 +253,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
 
   // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
   // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
+  // This method can take a non unity quaternion q_tilde such that
+  // w_WB = N⁺(q_tilde)⋅q̇_tilde_WB also holds true.
   // With L given by CalcLMatrix we have:
   // N⁺(q) = L(2 q_FM)ᵀ
   static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(

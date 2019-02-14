@@ -91,37 +91,16 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
       system.time_period());
 }
 
-// Returns the single vector-valued input port of a System and aborts if there
-// is not exactly one such port.
-InputPortIndex FindSingleVectorValuedInputPort(
-  const System<double>& system) {
-  InputPortIndex port_index;
-  for (InputPortIndex i(0); i < system.get_num_input_ports(); ++i) {
-    if (system.get_input_port_base(i).get_data_type() ==
-        PortDataType::kVectorValued) {
-      DRAKE_DEMAND(!port_index.is_valid());
-      port_index = i;
-    }
-  }
-
-  DRAKE_DEMAND(port_index.is_valid());
-  return port_index;
-}
-
 std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
-    const Eigen::Ref<const Eigen::MatrixXd>& N) {
+    const Eigen::Ref<const Eigen::MatrixXd>& N,
+    int input_port_index) {
   // TODO(russt): accept optional additional argument to return the cost-to-go
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
-  // Verify that there is exactly one vector-valued input port and get it.
-  const InputPortIndex vector_valued_input_port_index =
-      FindSingleVectorValuedInputPort(system);
-
-  const int num_inputs = system.get_input_port(
-    vector_valued_input_port_index).size();
+  const int num_inputs = system.get_input_port(input_port_index).size();
   const int num_states = context.get_num_total_states();
   DRAKE_DEMAND(num_states > 0);
   // The Linearize method call below will verify that the system has either
@@ -132,7 +111,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   // Use specified input and no outputs (the output dynamics are irrelevant for
   // LQR design).
   auto linear_system = Linearize(
-    system, context, vector_valued_input_port_index, kNoOutput);
+    system, context, input_port_index, kNoOutput);
 
   // DiscreteTimeLinearQuadraticRegulator does not support N yet.
   DRAKE_DEMAND(linear_system->time_period() == 0.0 || N.rows() == 0);
@@ -149,7 +128,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
           ? context.get_continuous_state_vector().CopyToVector()
           : context.get_discrete_state(0).CopyToVector();
 
-  const auto& u0 = system.EvalEigenVectorInput(context, 0);
+  const auto& u0 = system.get_input_port(0).Eval(context);
 
   // Return the affine controller: u = u0 - K(x-x0).
   return std::make_unique<systems::AffineSystem<double>>(

@@ -183,5 +183,36 @@ def install_numpy_warning_filters(force=False):
         message="elementwise comparison failed")
 
 
+def _deprecated_callable(f, message):
+
+    def wrapper(*args, **kwargs):
+        _warn_deprecated(message, stacklevel=3)
+        return f(*args, **kwargs)
+
+    wrapper.__name__ = f.__name__
+    wrapper.__qualname__ = f.__name__
+    wrapper.__doc__ = "Warning:\n\n    {}".format(message)
+    return wrapper
+
+
+def _forward_callables_as_deprecated(var_dict, m_new, date):
+    # Forwards public symbols from `m_new` to `var_dict`, while wrapping
+    # each symbol to emit a deprecation warning when it is called.
+    # Warning: This assumes all relevant symbols are callable!
+    all_public = [x for x in m_new.__dict__ if not x.startswith("_")]
+    symbols = getattr(m_new, "__all__", all_public)
+    for symbol in symbols:
+        new = getattr(m_new, symbol)
+        assert hasattr(new, "__call__")
+        old_name = var_dict["__name__"]
+        message = (
+            "``{}.{}`` is deprecated and will be removed on or around {}; "
+            "please use ``{}.{}`` instead.").format(
+            old_name, symbol, date, m_new.__name__, symbol)
+        old = _deprecated_callable(new, message)
+        old.__module__ = old_name
+        var_dict[symbol] = old
+
+
 warnings.simplefilter('once', DrakeDeprecationWarning)
 _installed_numpy_warning_filters = False

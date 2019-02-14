@@ -41,6 +41,7 @@ drake_cc_package_library(
         ":output_port",
         ":output_port_base",
         ":parameters",
+        ":port_base",
         ":single_output_vector_source",
         ":state",
         ":system",
@@ -49,8 +50,8 @@ drake_cc_package_library(
         ":system_output",
         ":system_scalar_converter",
         ":system_symbolic_inspector",
-        ":value",
         ":value_checker",
+        ":value_deprecated",
         ":vector",
         ":vector_system",
     ],
@@ -79,12 +80,27 @@ drake_cc_library(
     ],
 )
 
-drake_cc_hdrs_forwarding_library(
+drake_cc_library(
+    name = "value_deprecated",
+    hdrs = ["value.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "//common:value",
+    ],
+)
+
+cc_library(
     name = "value",
-    actual_subdir = "common",
-    add_deprecation_warning = False,
-    relative_labels = [":value"],
-    deps = ["//common:value"],
+    deprecation = "Use @drake//common:value instead.",
+    tags = [
+        # There are no hdrs or srcs here; :value_deprecated handles that.
+        "exclude_from_libdrake",
+        "exclude_from_package",
+        # Avoid 'build //...' yelling at us.
+        "manual",
+    ],
+    deps = [":value_deprecated"],
 )
 
 drake_cc_library(
@@ -93,10 +109,11 @@ drake_cc_library(
     hdrs = ["value_checker.h"],
     visibility = [":__subpackages__"],
     deps = [
-        ":value",
+        ":value_deprecated",
         ":vector",
         "//common:essential",
         "//common:nice_type_name",
+        "//common:value",
     ],
 )
 
@@ -106,9 +123,10 @@ drake_cc_library(
     hdrs = ["abstract_values.h"],
     deps = [
         ":framework_common",
-        ":value",
+        ":value_deprecated",
         "//common:autodiff",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -131,11 +149,12 @@ drake_cc_library(
     hdrs = ["discrete_values.h"],
     deps = [
         ":framework_common",
-        ":value",
+        ":value_deprecated",
         ":vector",
         "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -147,11 +166,12 @@ drake_cc_library(
         ":abstract_values",
         ":continuous_state",
         ":discrete_values",
-        ":value",
+        ":value_deprecated",
         ":vector",
         "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -168,10 +188,11 @@ drake_cc_library(
     deps = [
         ":abstract_values",
         ":context",
-        ":value",
+        ":value_deprecated",
         "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -194,8 +215,9 @@ drake_cc_library(
         "framework_common.h",
     ],
     deps = [
-        ":value",
+        ":value_deprecated",
         "//common:type_safe_index",
+        "//common:value",
     ],
 )
 
@@ -213,10 +235,11 @@ drake_cc_library(
     ],
     deps = [
         ":framework_common",
-        ":value",
+        ":value_deprecated",
         "//common:copyable_unique_ptr",
         "//common:reset_on_copy",
         "//common:unused",
+        "//common:value",
     ],
 )
 
@@ -233,10 +256,11 @@ drake_cc_library(
     deps = [
         ":cache_and_dependency_tracker",
         ":framework_common",
-        ":value",
+        ":value_deprecated",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -254,6 +278,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "port_base",
+    srcs = [
+        "port_base.cc",
+    ],
+    hdrs = [
+        "port_base.h",
+    ],
+    deps = [
+        ":framework_common",
+        ":vector",
+        "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
     name = "input_port_base",
     srcs = [
         "input_port_base.cc",
@@ -262,7 +301,10 @@ drake_cc_library(
         "input_port_base.h",
     ],
     deps = [
+        ":context_base",
         ":framework_common",
+        ":port_base",
+        "//common:nice_type_name",
         "//common:random",
     ],
 )
@@ -277,6 +319,8 @@ drake_cc_library(
     ],
     deps = [
         ":framework_common",
+        ":port_base",
+        "//common:nice_type_name",
     ],
 )
 
@@ -304,12 +348,13 @@ drake_cc_library(
     ],
     deps = [
         ":framework_common",
-        ":value",
         ":value_checker",
+        ":value_deprecated",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
         "//common:pointer_cast",
+        "//common:value",
     ],
 )
 
@@ -349,6 +394,7 @@ drake_cc_library(
         "input_port.h",
     ],
     deps = [
+        ":context",
         ":input_port_base",
         "//common:default_scalars",
         "//common:essential",
@@ -367,9 +413,10 @@ drake_cc_library(
         ":context",
         ":output_port_base",
         ":system_base",
-        ":value",
+        ":value_deprecated",
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -392,7 +439,7 @@ drake_cc_library(
         ":system_constraint",
         ":system_output",
         ":system_scalar_converter",
-        ":value",
+        ":value_deprecated",
         "//common:autodiff",
         "//common:default_scalars",
         "//common:essential",
@@ -401,6 +448,7 @@ drake_cc_library(
         "//common:symbolic",
         "//common:type_safe_index",
         "//common:unused",
+        "//common:value",
     ],
 )
 
@@ -411,11 +459,12 @@ drake_cc_library(
     deps = [
         ":framework_common",
         ":output_port",
-        ":value",
+        ":value_deprecated",
         ":vector",
         "//common:default_scalars",
         "//common:essential",
         "//common:nice_type_name",
+        "//common:value",
     ],
 )
 
@@ -425,9 +474,10 @@ drake_cc_library(
     hdrs = ["model_values.h"],
     visibility = [":__subpackages__"],
     deps = [
-        ":value",
+        ":value_deprecated",
         ":vector",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -517,9 +567,10 @@ drake_cc_library(
         ":diagram_context",
         ":framework_common",
         ":output_port",
-        ":value",
+        ":value_deprecated",
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
     ],
 )
 
@@ -802,6 +853,16 @@ drake_cc_googletest(
     deps = [
         ":system_output",
         "//common:essential",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "input_port_test",
+    deps = [
+        ":input_port",
+        ":leaf_system",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities",
     ],
 )

@@ -10,10 +10,10 @@
 
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/unused.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -180,6 +180,11 @@ class ContextBase : public internal::ContextMessageInterface {
   unconnected input port. See `Context<T>` for more-convenient overloads of
   FixInputPort() for vector values with elements of type T.
 
+  @note Calling this method on an already connected input port, i.e., an
+  input port that has previously been passed into a call to
+  DiagramBuilder::Connect(), causes FixedInputPortValue to override any other
+  value present on that port.
+
   @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
@@ -187,6 +192,11 @@ class ContextBase : public internal::ContextMessageInterface {
   /** Same as above method but the value is passed by const reference instead
   of by unique_ptr. The port will contain a copy of the `value` (not retain a
   pointer to the `value`).
+
+  @note Calling this method on an already connected input port, i.e., an
+  input port that has previously been passed into a call to
+  DiagramBuilder::Connect(), causes FixedInputPortValue to override any other
+  value present on that port.
 
   @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and we
   only need one of the two -- overloading on ownership doesn't make sense for

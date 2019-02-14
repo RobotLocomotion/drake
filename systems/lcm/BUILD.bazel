@@ -80,6 +80,7 @@ drake_cc_library(
     ],
     deps = [
         ":translator",
+        "//common:value",
         "//lcm:real",
         "//systems/framework",
     ],

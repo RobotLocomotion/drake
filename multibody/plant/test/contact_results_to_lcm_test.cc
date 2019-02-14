@@ -27,7 +27,7 @@ GTEST_TEST(ContactResultToLcmSystem, EmptyMultibodyPlant) {
   auto lcm_context = lcm_system.AllocateContext();
   lcm_context->FixInputPort(
       lcm_system.get_contact_result_input_port().get_index(),
-      systems::Value<ContactResults<double>>());
+      Value<ContactResults<double>>());
 
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
@@ -82,7 +82,7 @@ GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   auto lcm_context = lcm_system.AllocateContext();
   lcm_context->FixInputPort(
       lcm_system.get_contact_result_input_port().get_index(),
-      systems::Value<ContactResults<double>>(contacts));
+      Value<ContactResults<double>>(contacts));
 
   Value<lcmt_contact_results_for_viz> lcm_message_value;
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,

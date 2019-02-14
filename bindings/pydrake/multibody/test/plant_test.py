@@ -3,6 +3,7 @@
 from pydrake.multibody.tree import (
     Body,
     BodyIndex,
+    FixedOffsetFrame,
     ForceElement,
     ForceElementIndex,
     Frame,
@@ -33,13 +34,6 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
-# Soon to be deprecated modules.
-from pydrake.multibody.multibody_tree import (
-    BodyNodeIndex,
-    MobilizerIndex,
-    MultibodyTree,
-)
-from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
 
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.geometry import (
@@ -66,6 +60,21 @@ from pydrake.common.eigen_geometry import Isometry3
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.lcm import LcmPublisherSystem
+
+# Deprecated modules.
+# N.B. Place `with` afterwards to avoid needing to place `#noqa` on other
+# modules. Additionally, assert length of warnings here rather than in the test
+# so that we do not have to worry about whether a module has already been
+# loaded.
+with warnings.catch_warnings(record=True) as w:
+    warnings.simplefilter("default", DrakeDeprecationWarning)
+    from pydrake.multibody.multibody_tree import (
+        BodyNodeIndex,
+        MobilizerIndex,
+        MultibodyTree,
+    )
+    from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
+    assert len(w) == 3, len(w)
 
 
 def get_index_class(cls):
@@ -704,6 +713,15 @@ class TestPlant(unittest.TestCase):
         for joint in joints:
             self._test_joint_api(joint)
 
+    def test_multibody_add_frame(self):
+        plant = MultibodyPlant()
+        frame = plant.AddFrame(frame=FixedOffsetFrame(
+            name="frame", P=plant.world_frame(), X_PF=Isometry3.Identity(),
+            model_instance=None))
+        self.assertIsInstance(frame, Frame)
+        np.testing.assert_equal(
+            np.eye(4), frame.GetFixedPoseInBodyFrame().matrix())
+
     def test_multibody_dynamics(self):
         file_name = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
@@ -813,7 +831,15 @@ class TestPlant(unittest.TestCase):
             ComputeSignedDistancePairwiseClosestPoints()
         self.assertIsInstance(signed_distance_pair, SignedDistancePair)
         inspector = query_object.inspector()
-        bodies = {plant.GetBodyFromFrameId(inspector.GetFrameId(id_))
+
+        def get_body_from_frame_id(frame_id):
+            # Get body from frame id, and check inverse method.
+            body = plant.GetBodyFromFrameId(frame_id)
+            self.assertEqual(
+                plant.GetBodyFrameIdIfExists(body.index()), frame_id)
+            return body
+
+        bodies = {get_body_from_frame_id(inspector.GetFrameId(id_))
                   for id_ in [point_pair.id_A, point_pair.id_B]}
         self.assertSetEqual(
             bodies,

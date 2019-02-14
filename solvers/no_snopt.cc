@@ -9,10 +9,11 @@ namespace solvers {
 
 bool SnoptSolver::is_available() { return false; }
 
-void SnoptSolver::Solve(const MathematicalProgram&,
-                        const optional<Eigen::VectorXd>&,
-                        const optional<SolverOptions>&,
-                        MathematicalProgramResult*) const {
+void SnoptSolver::DoSolve(
+    const MathematicalProgram&,
+    const Eigen::VectorXd&,
+    const SolverOptions&,
+    MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "
       "solver.");

@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -59,15 +60,15 @@ class SosConstraintTest : public ::testing::Test {
       Q_flat.segment(i * Q.rows(), Q.rows()) = Q.col(i);
     }
     EXPECT_EQ(p.decision_variables(), Variables(Q_flat));
-    prog_.Solve();
+    result_ = Solve(prog_);
     CheckPositiveDefiniteMatrix(Q);
   }
 
   // Checks Q has all eigen values as approximately non-negatives.
-  // Precondition: prog_.Solve() has been called.
+  // Precondition: result_ = Solve(prog_) has been called.
   void CheckPositiveDefiniteMatrix(const MatrixXDecisionVariable& Q,
                        const double eps = 1e-07) {
-    const Eigen::MatrixXd Q_val = prog_.GetSolution(Q);
+    const Eigen::MatrixXd Q_val = result_.GetSolution(Q);
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q_val);
     EXPECT_TRUE((es.eigenvalues().array() >= -eps).all());
   }
@@ -81,6 +82,7 @@ class SosConstraintTest : public ::testing::Test {
   MathematicalProgram prog_;
   VectorIndeterminate<3> x_;
   VectorDecisionVariable<1> c_;
+  MathematicalProgramResult result_;
 };
 
 TEST_F(SosConstraintTest, NewFreePolynomialUnivariateDegree1) {
@@ -181,8 +183,8 @@ TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
 TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
   const auto& x = x_(0);
   const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1);
-  const auto result = prog_.Solve();
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  result_ = Solve(prog_);
+  ASSERT_TRUE(result_.is_success());
   CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
@@ -196,9 +198,9 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const auto binding_pair = prog_.AddSosConstraint(
       pow(x, 6) - 10 * pow(x, 5) + 51 * pow(x, 4) - 166 * pow(x, 3) +
       342 * pow(x, 2) - 400 * x + 200 - c);
-  const auto result = prog_.Solve();
-  ASSERT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_LE(prog_.GetSolution(c), 1E-4);
+  result_ = Solve(prog_);
+  ASSERT_TRUE(result_.is_success());
+  EXPECT_LE(result_.GetSolution(c), 1E-4);
   CheckPositiveDefiniteMatrix(binding_pair.first, 1E-6 /* eps */);
 }
 
@@ -209,8 +211,8 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
   const auto binding_pair =
       prog_.AddSosConstraint(2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
                              pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4));
-  const auto result = prog_.Solve();
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  result_ = Solve(prog_);
+
   CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
@@ -220,8 +222,8 @@ TEST_F(SosConstraintTest, AddSosPolynomialViaMonomialBasis) {
   Vector2<Monomial> basis{ 1, x };
   const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1,
                                                    basis);
-  const auto result = prog_.Solve();
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  result_ = Solve(prog_);
+  ASSERT_TRUE(result_.is_success());
   CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
@@ -239,9 +241,9 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate2) {
       4 * pow(x0, 2) - 2.1 * pow(x0, 4) + 1.0 / 3.0 * pow(x0, 6) + x0 * x1 -
       4 * x1 * x1 + 4 * pow(x1, 4) - c);
 
-  const auto result = prog_.Solve();
-  ASSERT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog_.GetSolution(c), -1.0316, 1E-4);
+  result_ = Solve(prog_);
+  ASSERT_TRUE(result_.is_success());
+  EXPECT_NEAR(result_.GetSolution(c), -1.0316, 1E-4);
   CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 
@@ -274,8 +276,8 @@ TEST_F(SosConstraintTest, SynthesizeLyapunovFunction) {
 
   // -Vdot is sum-of-squares.
   prog_.AddSosConstraint(-Vdot);
-  const auto result = prog_.Solve();
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
+  result_ = Solve(prog_);
+  ASSERT_TRUE(result_.is_success());
 }
 }  // namespace
 }  // namespace solvers

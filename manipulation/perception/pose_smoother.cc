@@ -112,11 +112,11 @@ PoseSmoother::PoseSmoother(double desired_max_linear_velocity,
       max_angular_velocity_(desired_max_angular_velocity),
       is_filter_enabled_(filter_window_size > 1) {
   this->DeclareAbstractState(
-      systems::AbstractValue::Make<InternalState>(
+      AbstractValue::Make<InternalState>(
           InternalState(filter_window_size)));
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<Isometry3d>(Isometry3d::Identity()));
+      Value<Isometry3d>(Isometry3d::Identity()));
   this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
 }
 
@@ -129,9 +129,7 @@ void PoseSmoother::DoCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<InternalState>(0);
 
   // Update world state from inputs.
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& input_pose = input->GetValue<Isometry3d>();
+  const auto& input_pose = this->get_input_port(0).Eval<Isometry3d>(context);
 
   double current_time = context.get_time();
 

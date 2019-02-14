@@ -15,7 +15,6 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
-#include "drake/systems/framework/value.h"
 
 using std::string;
 using Eigen::Vector3d;

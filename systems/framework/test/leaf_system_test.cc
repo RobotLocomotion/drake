@@ -1185,10 +1185,10 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   context->set_time(context->get_time() + 1.);
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
-  (void)port2.EvalAbstract(*context);  // Recalculate.
+  (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 3);
-  (void)port2.EvalAbstract(*context);  // "Recalculate" (should do nothing).
+  (void)port2.template Eval<AbstractValue>(*context);  // Should do nothing.
   EXPECT_EQ(cacheval2.serial_number(), 3);
 
   // Should invalidate accuracy- and everything-dependents. Note that the
@@ -1196,7 +1196,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   EXPECT_FALSE(context->get_accuracy());  // None set initially.
   context->set_accuracy(.000025);  // This is a change.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
-  (void)port2.EvalAbstract(*context);  // Recalculate.
+  (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 4);
 
@@ -1311,9 +1311,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
 
   // Mess with the abstract values on the context.
-  drake::systems::AbstractValues& values =
-      context->get_mutable_abstract_state();
-  drake::systems::AbstractValue& value = values.get_mutable_value(1);
+  AbstractValues& values = context->get_mutable_abstract_state();
+  AbstractValue& value = values.get_mutable_value(1);
   EXPECT_NO_THROW(value.SetValue<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
 
@@ -1823,14 +1822,14 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
  private:
   void CalcY0(const Context<T>& context,
                     BasicVector<T>* y0) const {
-    const auto& u1 = *(this->EvalVectorInput(context, 1));
-    y0->set_value(u1.get_value());
+    const auto& u1 = this->get_input_port(1).Eval(context);
+    y0->set_value(u1);
   }
 
   void CalcY1(const Context<T>& context,
               BasicVector<T>* y1) const {
-    const auto& u0 = *(this->EvalVectorInput(context, 0));
-    y1->set_value(u0.get_value());
+    const auto& u0 = this->get_input_port(0).Eval(context);
+    y1->set_value(u0);
   }
 
   const int kSize = 1;

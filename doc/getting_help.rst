@@ -58,13 +58,13 @@ When reporting an issue, please consider providing the following information
         +  CMake C++ compiler (``cmake -LA <path_to_source_dir> | grep 'CMAKE_.*_COMPILER'``)
 
     -  Git revision (``git rev-parse --short HEAD``)
-    -  :ref:`Building Drake <build_from_source>` vs. downstream project (like `drake_bazel_external <https://github.com/RobotLocomotion/drake-shambhala/tree/master/drake_bazel_external>`_, `drake_cmake_external <https://github.com/RobotLocomotion/drake-shambhala/tree/master/drake_cmake_external>`_)
+    -  :ref:`Building Drake <build_from_source>` vs. downstream project (like `drake_bazel_external <https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external>`_, `drake_cmake_external <https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_external>`_)
 
 *   If using binary release:
 
     -   Download URL
     -   Contents of ``drake/share/doc/drake/VERSION.txt``
-    -   Building downstream project (`drake_cmake_installed <https://github.com/RobotLocomotion/drake-shambhala/tree/master/drake_cmake_installed>`_)
+    -   Building downstream project (`drake_cmake_installed <https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed>`_)
 
 Older Sources
 =============

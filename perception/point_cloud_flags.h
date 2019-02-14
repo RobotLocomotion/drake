@@ -30,6 +30,7 @@ enum BaseField : int {
 
 namespace internal {
 
+// N.B. Ensure this is the largest bit.
 constexpr BaseField kMaxBitInUse = kRGBs;
 
 }  // namespace internal

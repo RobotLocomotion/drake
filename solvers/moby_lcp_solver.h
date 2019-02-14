@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 // TODO(jwnimmer-tri): This class should be renamed MobyLcpSolver to comply with
 //                     style guide.
@@ -26,7 +26,7 @@ class MobyLcpSolverId {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLcpSolverId);
   MobyLcpSolverId() = delete;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 };
 
@@ -67,12 +67,12 @@ class MobyLcpSolverId {
 /// * [Murty 1988]      K. Murty. Linear Complementarity, Linear and Nonlinear
 ///                     Programming. Heldermann Verlag, 1988.
 template <class T>
-class MobyLCPSolver : public MathematicalProgramSolverInterface {
+class MobyLCPSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobyLCPSolver)
 
-  MobyLCPSolver() = default;
-  ~MobyLCPSolver() override = default;
+  MobyLCPSolver();
+  ~MobyLCPSolver() final;
 
   void SetLoggingEnabled(bool enabled);
 
@@ -266,24 +266,6 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
                                 int max_exp = 1, const T& piv_tol = T(-1),
                                 const T& zero_tol = T(-1)) const;
 
-  bool available() const override { return is_available(); };
-
-  static bool is_available() { return true; }
-
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
-
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
-
   /// Returns the number of pivoting operations made by the last LCP solve.
   int get_num_pivots() const { return pivots_; }
 
@@ -291,7 +273,20 @@ class MobyLCPSolver : public MathematicalProgramSolverInterface {
   /// zero.
   void reset_num_pivots() { pivots_ = 0; }
 
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+
  private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
+
   void ClearIndexVectors() const;
 
   template <typename MatrixType, typename Scalar>

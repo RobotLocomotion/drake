@@ -7,7 +7,8 @@ from types import ModuleType
 import unittest
 import warnings
 
-from pydrake.common.deprecation import DrakeDeprecationWarning
+from pydrake.common.deprecation import (
+    DrakeDeprecationWarning, _forward_callables_as_deprecated)
 
 
 def get_completion_suffixes(namespace, prefix, max_count=1000):
@@ -241,3 +242,19 @@ class TestDeprecation(unittest.TestCase):
             obj.overload(10)
             self.assertEqual(len(w), 3)
             self._check_warning(w[2], "Example message for overload")
+
+    def test_deprecated_callable(self):
+        import deprecation_example.cc_module as m_new
+        # Spoof module name.
+        var_dict = dict(__name__="fake_module")
+        _forward_callables_as_deprecated(var_dict, m_new, "2050-01-01")
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("once", DrakeDeprecationWarning)
+            obj = var_dict["ExampleCppClass"]()
+            self.assertIsInstance(obj, m_new.ExampleCppClass)
+            message_expected = (
+                "``fake_module.ExampleCppClass`` is deprecated and will be "
+                "removed on or around 2050-01-01; please use "
+                "``deprecation_example.cc_module.ExampleCppClass`` instead.")
+            self.assertEqual(len(w), 1)
+            self._check_warning(w[0], message_expected)

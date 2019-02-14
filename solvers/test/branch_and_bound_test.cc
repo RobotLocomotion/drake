@@ -183,9 +183,9 @@ void CheckNodeSolution(const MixedIntegerBranchAndBoundNode& node,
                        double optimal_cost, double tol = 1E-4) {
   const SolutionResult result = node.solution_result();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(node.prog()->GetSolution(x), x_expected, tol,
-                              MatrixCompareType::absolute));
-  EXPECT_NEAR(node.prog()->GetOptimalCost(), optimal_cost, tol);
+  EXPECT_TRUE(CompareMatrices(node.prog_result()->GetSolution(x), x_expected,
+                              tol, MatrixCompareType::absolute));
+  EXPECT_NEAR(node.prog_result()->get_optimal_cost(), optimal_cost, tol);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {

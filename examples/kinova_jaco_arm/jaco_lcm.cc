@@ -33,7 +33,7 @@ JacoCommandReceiver::JacoCommandReceiver(int num_joints, int num_fingers)
       num_fingers_(num_fingers) {
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<lcmt_jaco_command>{});
+      Value<lcmt_jaco_command>{});
   this->DeclareVectorOutputPort(
       systems::BasicVector<double>((num_joints_ + num_fingers_) * 2),
       &JacoCommandReceiver::OutputCommand);
@@ -56,7 +56,7 @@ void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& command = input->GetValue<lcmt_jaco_command>();
 
@@ -132,7 +132,7 @@ JacoStatusReceiver::JacoStatusReceiver(int num_joints, int num_fingers)
       &JacoStatusReceiver::OutputStatus);
   this->DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<lcmt_jaco_status>{});
+      Value<lcmt_jaco_status>{});
   this->DeclareDiscreteState((num_joints_ + num_fingers_)* 2);
   this->DeclarePeriodicDiscreteUpdate(kJacoLcmStatusPeriod);
 }
@@ -141,7 +141,7 @@ void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
     const Context<double>& context,
     const std::vector<const DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
+  const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
   const auto& status = input->GetValue<lcmt_jaco_status>();
 

@@ -619,7 +619,7 @@ GTEST_TEST(SceneGraphVisualizationTest, NoWorldInPoseVector) {
     auto context = scene_graph.AllocateContext();
     FramePoseVector<double> pose_vector(s_id, {f_id});
     context->FixInputPort(scene_graph.get_source_pose_port(s_id).get_index(),
-                          systems::Value<FramePoseVector<double>>(pose_vector));
+                          Value<FramePoseVector<double>>(pose_vector));
     EXPECT_NO_THROW(
         SceneGraphTester::CalcPoseBundle(scene_graph, *context, &poses));
   }
