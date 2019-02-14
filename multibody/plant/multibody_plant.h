@@ -308,7 +308,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   /// Returns the vector `u` of the model corresponding to the actuation
-  /// input corresponding to the given model instance
+  /// input.
   /// Unlike get_actuation_input_port, this can be called even if there are
   /// no actuators, in which case it will return 0-length vector
   /// @pre Finalize() was already called on `this` plant.
@@ -331,14 +331,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// @throws std::exception if called before Finalize()
   /// @throws std::exception if u has incorrect dimensions
   void SetActuationInput(systems::Context<T>* context,
-                         const VectorX<T> u) const;
+                         const VectorX<T>& u) const;
 
   /// Sets the vector `u` in the context corresponding to the actuation
   /// input corresponding to the given model instance.
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize()
   /// @throws std::exception if u has incorrect dimensions
-  void SetActuationInput(systems::Context<T>* context, const VectorX<T> u,
+  void SetActuationInput(systems::Context<T>* context, const VectorX<T>& u,
                          ModelInstanceIndex model_instance) const;
 
   /// @name Position and velocity state component accessors and mutators.

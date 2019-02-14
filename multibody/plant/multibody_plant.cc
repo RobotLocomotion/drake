@@ -1705,7 +1705,7 @@ VectorX<T> MultibodyPlant<T>::GetActuationInput(
 
 template <typename T>
 void MultibodyPlant<T>::SetActuationInput(Context<T>* context,
-                                          const VectorX<T> u) const {
+                                          const VectorX<T>& u) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
   SetActuationInput(context, u, actuated_instance_);
@@ -1713,7 +1713,7 @@ void MultibodyPlant<T>::SetActuationInput(Context<T>* context,
 
 template <typename T>
 void MultibodyPlant<T>::SetActuationInput(
-    Context<T>* context, const VectorX<T> u,
+    Context<T>* context, const VectorX<T>& u,
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
