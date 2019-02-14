@@ -1682,6 +1682,49 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
 }
 
 template <typename T>
+VectorX<T> MultibodyPlant<T>::GetActuationInput(
+    const Context<T>& context) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
+  return GetActuationInput(context, actuated_instance_);
+}
+
+template <typename T>
+VectorX<T> MultibodyPlant<T>::GetActuationInput(
+    const Context<T>& context, ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+
+  if (num_actuated_dofs(model_instance) == 0) {
+    return VectorX<T>(0);
+  } else {
+    return get_actuation_input_port(model_instance).Eval(context);
+  }
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetActuationInput(Context<T>* context,
+                                          const VectorX<T> u) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(actuated_instance_.is_valid());
+  SetActuationInput(context, u, actuated_instance_);
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetActuationInput(
+    Context<T>* context, const VectorX<T> u,
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  DRAKE_THROW_UNLESS(model_instance.is_valid());
+  DRAKE_THROW_UNLESS(model_instance < num_model_instances());
+  if (num_actuated_dofs(model_instance) > 0) {
+    context->FixInputPort(get_actuation_input_port(model_instance).get_index(),
+                          u);
+  }
+}
+
+template <typename T>
 const systems::BasicVector<T>& MultibodyPlant<T>::GetStateVector(
     const Context<T>& context) const {
   if (is_discrete()) {

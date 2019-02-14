@@ -307,6 +307,40 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     return internal_tree().num_actuated_dofs(model_instance);
   }
 
+  /// Returns the vector `u` of the model corresponding to the actuation
+  /// input corresponding to the given model instance
+  /// Unlike get_actuation_input_port, this can be called even if there are
+  /// no actuators, in which case it will return 0-length vector
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize()
+  VectorX<T> GetActuationInput(const systems::Context<T>& context) const;
+
+  /// Returns the vector `u` of the model corresponding to the actuation
+  /// input corresponding to the given model instance.
+  /// Unlike get_actuation_input_port, this can be called even if there are
+  /// no actuators, in which case it will return 0-length vector
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize()
+  /// @throws std::exception if the model instance does not exist.
+  VectorX<T> GetActuationInput(const systems::Context<T>& context,
+                               ModelInstanceIndex model_instance) const;
+
+  /// Sets the vector `u` in the context corresponding to the actuation
+  /// input.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize()
+  /// @throws std::exception if u has incorrect dimensions
+  void SetActuationInput(systems::Context<T>* context,
+                         const VectorX<T> u) const;
+
+  /// Sets the vector `u` in the context corresponding to the actuation
+  /// input corresponding to the given model instance.
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize()
+  /// @throws std::exception if u has incorrect dimensions
+  void SetActuationInput(systems::Context<T>* context, const VectorX<T> u,
+                         ModelInstanceIndex model_instance) const;
+
   /// @name Position and velocity state component accessors and mutators.
   /// Various methods for accessing and mutating `[q; v]`, where `q` is the
   /// vector of generalized positions and `v` is the vector of generalized

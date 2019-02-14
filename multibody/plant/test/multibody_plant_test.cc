@@ -1923,8 +1923,9 @@ class KukaArmTest : public ::testing::TestWithParam<double> {
 };
 
 // This test verifies we can easily access the multibody state vector x = [q, v]
-// for either a discrete or continuous multibody model.
-TEST_P(KukaArmTest, StateAccess) {
+// for either a discrete or continuous multibody model and
+// access the input vector u
+TEST_P(KukaArmTest, StateAndInputAccess) {
   // Set the state to x[i] = i for each i-th entry.
   VectorX<double> xc_expected = VectorX<double>::LinSpaced(
       plant_->num_multibody_states() /* size */,
@@ -1980,9 +1981,17 @@ TEST_P(KukaArmTest, StateAccess) {
   EXPECT_EQ(xc, VectorX<double>::Zero(plant_->num_multibody_states()));
   plant_->SetPositionsAndVelocities(context_.get(), xc_expected);
   EXPECT_EQ(xc, xc_expected);
+
+  // Set and get u
+  VectorX<double> u_expected = VectorX<double>::LinSpaced(
+      plant_->num_actuators() /* size */, 1 /* first index */,
+      plant_->num_actuators() /* last index */);
+  plant_->SetActuationInput(context_.get(), u_expected);
+  VectorX<double> u = plant_->GetActuationInput(*context_);
+  EXPECT_EQ(u, u_expected);
 }
 
-TEST_P(KukaArmTest, InstanceStateAccess) {
+TEST_P(KukaArmTest, InstanceStateAndInputAccess) {
   // Redo the setup process, now with two Iiwa's.
   const char kSdfPath[] =
       "drake/manipulation/models/iiwa_description/sdf/"
@@ -2043,6 +2052,21 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
   plant_->SetPositionsAndVelocities(context_.get(), arm2, x);
   EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm2), x);
   EXPECT_EQ(plant_->GetPositionsAndVelocities(*context_, arm1).norm(), 0);
+
+  // Set and get across multiple instances
+  VectorX<double> u_expected_arm1 = VectorX<double>::LinSpaced(
+      plant_->num_actuated_dofs(arm1) /* size */, 1 /* first index */,
+      plant_->num_actuated_dofs(arm2) /* last index */);
+  // Set and get across multiple instances
+  VectorX<double> u_expected_arm2 = VectorX<double>::LinSpaced(
+      plant_->num_actuated_dofs(arm1) /* size */, -1 /* first index */,
+      -plant_->num_actuated_dofs(arm2) /* last index */);
+  plant_->SetActuationInput(context_.get(), u_expected_arm1, arm1);
+  plant_->SetActuationInput(context_.get(), u_expected_arm2, arm2);
+  VectorX<double> u_arm1 = plant_->GetActuationInput(*context_, arm1);
+  VectorX<double> u_arm2 = plant_->GetActuationInput(*context_, arm2);
+  EXPECT_EQ(u_arm1, u_expected_arm1);
+  EXPECT_EQ(u_arm2, u_expected_arm2);
 }
 
 // Verifies we instantiated an appropriate MultibodyPlant model based on the
