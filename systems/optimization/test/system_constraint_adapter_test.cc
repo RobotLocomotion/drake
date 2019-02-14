@@ -102,6 +102,58 @@ GTEST_TEST(SystemConstraintAdapterTest, SolveDummySystemConstraint) {
             -tol);
 }
 
+GTEST_TEST(SystemConstraintAdapterTest,
+           MaybeCreateGenericConstraintSymbolically) {
+  DummySystem<double> system;
+
+  SystemConstraintAdapter adapter(&system);
+
+  auto context_symbolic = adapter.system_symbolic().CreateDefaultContext();
+  const symbolic::Variable a("a");
+  const symbolic::Variable b("b");
+  const symbolic::Variable t("t");
+  const double x1_val = 1;
+  const double x2_val = 2;
+  context_symbolic->get_mutable_continuous_state_vector().SetFromVector(
+      Vector3<symbolic::Expression>(a, x1_val, x2_val));
+  context_symbolic->get_mutable_numeric_parameter(0).GetAtIndex(0) = b;
+  context_symbolic->set_time(t);
+
+  optional<solvers::Binding<solvers::Constraint>> binding =
+      adapter.MaybeCreateGenericConstraintSymbolically(
+          system.constraint_index(), *context_symbolic);
+  EXPECT_TRUE(binding.has_value());
+  EXPECT_EQ(binding->variables(), Vector3<symbolic::Variable>(a, t, b));
+  double a_val = 2;
+  double b_val = 3;
+  double t_val = 4;
+  // Evaluate this constraint.
+  Eigen::Vector2d constraint_val_expected(
+      b_val * a_val + x1_val, x2_val - x1_val * x1_val - b_val * a_val * a_val);
+  Eigen::Vector3d var_val(a_val, t_val, b_val);
+  Eigen::VectorXd constraint_val;
+  binding->evaluator()->Eval(var_val, &constraint_val);
+  const double tol = 1E-14;
+  EXPECT_TRUE(CompareMatrices(constraint_val, constraint_val_expected, tol));
+
+  // Evaluate this constraint with autodiff.
+  Vector3<AutoDiffXd> var_autodiff;
+  math::initializeAutoDiff(var_val, var_autodiff);
+  Vector2<AutoDiffXd> constraint_autodiff_expected;
+  constraint_autodiff_expected(0) = var_autodiff(0) * var_autodiff(2) + x1_val;
+  constraint_autodiff_expected(1) =
+      x2_val - x1_val -
+      x1_val * var_autodiff(2) * var_autodiff(0) * var_autodiff(0);
+  AutoDiffVecXd constraint_autodiff;
+  binding->evaluator()->Eval(var_autodiff, &constraint_autodiff);
+  EXPECT_TRUE(CompareMatrices(
+      math::autoDiffToValueMatrix(constraint_autodiff),
+      math::autoDiffToValueMatrix(constraint_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(
+      math::autoDiffToGradientMatrix(constraint_autodiff),
+      math::autoDiffToGradientMatrix(constraint_autodiff_expected), tol));
+}
+
 GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {
   Eigen::Matrix2d A;
   A << 0, 1, 0, 0;

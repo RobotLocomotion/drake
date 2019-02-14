@@ -29,6 +29,16 @@ SystemConstraintWrapper::SystemConstraintWrapper(
   context_autodiff_->SetTimeStateAndParametersFrom(*context_double_);
 }
 
+SystemConstraintWrapper::SystemConstraintWrapper(
+    const System<double>* system_double,
+    const System<AutoDiffXd>* system_autodiff, SystemConstraintIndex index,
+    UpdateContextFromDecisionVariablesFunction<double> updater_double,
+    UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
+    int x_size)
+    : SystemConstraintWrapper(system_double, system_autodiff, index,
+                              *(system_double->CreateDefaultContext()),
+                              updater_double, updater_autodiff, x_size) {}
+
 const System<AutoDiffXd>& SystemConstraintWrapper::system_autodiff() const {
   return *system_autodiff_;
 }

@@ -22,8 +22,10 @@ struct UpdateContextForSymbolicSystemConstraint {
     return bound_variables_;
   }
 
+  bool successfully_constructed() const { return successfully_constructed_; }
+
  private:
-  void AddSymbolicVariables(
+  bool AddSymbolicVariables(
       const symbolic::Expression& expr,
       std::function<void(Context<double>* context, double val)> updater_double,
       std::function<void(Context<AutoDiffXd>* context, const AutoDiffXd& val)>
@@ -37,6 +39,7 @@ struct UpdateContextForSymbolicSystemConstraint {
       updaters_double_;
   std::vector<UpdateContextFromDecisionVariablesFunction<AutoDiffXd>>
       updaters_autodiff_;
+  bool successfully_constructed_;
 };
 }  // namespace internal
 }  // namespace systems

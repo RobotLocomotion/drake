@@ -80,6 +80,18 @@ class SystemConstraintWrapper : public solvers::Constraint {
       UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
       int x_size);
 
+  /**
+   * Constructs SystemConstraintWrapper without a context storing the fixed
+   * values. The updaters @p updater_double and @p updater_autodiff need to set
+   * all values in the context.
+   */
+  SystemConstraintWrapper(
+      const System<double>* system_double,
+      const System<AutoDiffXd>* system_autodiff, SystemConstraintIndex index,
+      UpdateContextFromDecisionVariablesFunction<double> updater_double,
+      UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
+      int x_size);
+
   ~SystemConstraintWrapper() override {}
 
   /** Gets the AutoDiffXd type System stored in this constraint.*/
