@@ -60,9 +60,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     // This code is defined in
     // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
     const int GRB_INF_OR_UNBD = 4;
-    EXPECT_EQ(result.get_solver_details()
-                  .GetValue<GurobiSolverDetails>()
-                  .optimization_status,
+    EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_INF_OR_UNBD);
 
     solver_options.SetOption(GurobiSolver::id(), "DualReductions", 0);
@@ -72,9 +70,7 @@ TEST_F(UnboundedLinearProgramTest0, TestGurobiUnbounded) {
     // This code is defined in
     // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
     const int GRB_UNBOUNDED = 5;
-    EXPECT_EQ(result.get_solver_details()
-                  .GetValue<GurobiSolverDetails>()
-                  .optimization_status,
+    EXPECT_EQ(result.get_solver_details<GurobiSolver>().optimization_status,
               GRB_UNBOUNDED);
     EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
   }
@@ -346,9 +342,8 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     // The error code is listed in
     // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
     const int UNKNOWN_PARAMETER{10007};
-    EXPECT_EQ(
-        result.get_solver_details().GetValue<GurobiSolverDetails>().error_code,
-        UNKNOWN_PARAMETER);
+    EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
+              UNKNOWN_PARAMETER);
 
     // Report error if the Q matrix in the QP cost is not positive semidefinite.
     prog.AddQuadraticCost(x(0) * x(0) - x(1) * x(1));
@@ -356,9 +351,8 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     // The error code is listed in
     // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
     const int Q_NOT_PSD{10020};
-    EXPECT_EQ(
-        result.get_solver_details().GetValue<GurobiSolverDetails>().error_code,
-        Q_NOT_PSD);
+    EXPECT_EQ(result.get_solver_details<GurobiSolver>().error_code,
+              Q_NOT_PSD);
   }
 }
 

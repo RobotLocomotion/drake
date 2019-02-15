@@ -35,7 +35,7 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
     EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
     const MosekSolverDetails& mosek_solver_details =
-        result.get_solver_details().GetValue<MosekSolverDetails>();
+        result.get_solver_details<MosekSolver>();
     EXPECT_EQ(mosek_solver_details.rescode, 0);
     // This problem status is defined in
     // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
@@ -191,8 +191,7 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   SolverOptions solver_options;
   solver_options.SetOption(MosekSolver::id(), "non-existing options", 42);
   mosek_solver.Solve(prog, {}, solver_options, &result);
-  const MosekSolverDetails solver_details =
-      result.get_solver_details().GetValue<MosekSolverDetails>();
+  const auto& solver_details = result.get_solver_details<MosekSolver>();
   // This response code is defined in
   // https://docs.mosek.com/8.1/capi/response-codes.html#mosek.rescode
   const int MSK_RES_ERR_PARAM_NAME_INT = 1207;

@@ -91,7 +91,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   auto result = solver.Solve(prog, x_init, {});
   EXPECT_TRUE(result.is_success());
   SnoptSolverDetails solver_details =
-      result.get_solver_details().GetValue<SnoptSolverDetails>();
+      result.get_solver_details<SnoptSolver>();
   EXPECT_TRUE(CompareMatrices(solver_details.F,
                               Eigen::Vector2d(-std::sqrt(3), 1), 1E-6));
 
@@ -101,7 +101,7 @@ GTEST_TEST(SnoptTest, TestSetOption) {
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
   // This exit condition is defined in Snopt user guide.
   const int kMajorIterationLimitReached = 32;
-  solver_details = result.get_solver_details().GetValue<SnoptSolverDetails>();
+  solver_details = result.get_solver_details<SnoptSolver>();
   EXPECT_EQ(solver_details.info, kMajorIterationLimitReached);
   EXPECT_EQ(solver_details.xmul.size(), 3);
   EXPECT_EQ(solver_details.Fmul.size(), 2);
@@ -286,7 +286,7 @@ GTEST_TEST(SnoptTest, MultiThreadTest) {
       EXPECT_TRUE(CompareMatrices(
           result.get_x_val(), Eigen::Vector2d(0, 1), 1E-6));
       EXPECT_NEAR(result.get_optimal_cost(), 2, 1E-6);
-      EXPECT_EQ(result.get_solver_details().GetValue<SnoptSolverDetails>().info,
+      EXPECT_EQ(result.get_solver_details<SnoptSolver>().info,
                 1);
     }
 

@@ -27,8 +27,9 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
   EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
-  DRAKE_EXPECT_THROWS_MESSAGE(result.get_solver_details(), std::logic_error,
-                              "The solver_details has not been set yet.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      result.get_abstract_solver_details(), std::logic_error,
+      "The solver_details has not been set yet.");
 }
 
 TEST_F(MathematicalProgramResultTest, Setters) {
@@ -64,6 +65,9 @@ TEST_F(MathematicalProgramResultTest, Setters) {
 struct DummySolverDetails {
   int data{0};
 };
+struct DummySolver {
+  using Details = DummySolverDetails;
+};
 
 TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   MathematicalProgramResult result;
@@ -72,21 +76,17 @@ TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   DummySolverDetails& dummy_solver_details =
       result.SetSolverDetailsType<DummySolverDetails>();
   dummy_solver_details.data = data;
-  EXPECT_EQ(result.get_solver_details().GetValue<DummySolverDetails>().data,
-            data);
+  EXPECT_EQ(result.get_solver_details<DummySolver>().data, data);
   // Now we test if we call SetSolverDetailsType again, it doesn't allocate new
-  // memory.
-  // First we check the address of (result.get_solver_details()) is unchanged.
-  const AbstractValue* details = &(result.get_solver_details());
+  // memory.  First we check that the address is unchanged.
+  const AbstractValue* details = &(result.get_abstract_solver_details());
   dummy_solver_details = result.SetSolverDetailsType<DummySolverDetails>();
-  EXPECT_EQ(details, &(result.get_solver_details()));
-  // Now we check that the value in the solver details are unchanged, note that
-  // the default value for data is 0, as in the constructor of
-  // DummySolverDetails, so if the constructor were called,
-  // dummy_solver_details.data won't be equal to 1.
+  EXPECT_EQ(details, &(result.get_abstract_solver_details()));
+  // Now we check that the value in the details is unchanged, note that the
+  // default value for data is 0, as in the constructor of Details, so if the
+  // constructor were called, dummy_solver_details.data won't be equal to 1.
   dummy_solver_details = result.SetSolverDetailsType<DummySolverDetails>();
-  EXPECT_EQ(result.get_solver_details().GetValue<DummySolverDetails>().data,
-            data);
+  EXPECT_EQ(result.get_solver_details<DummySolver>().data, data);
 }
 
 TEST_F(MathematicalProgramResultTest, ConvertToSolverResult) {

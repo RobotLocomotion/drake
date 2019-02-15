@@ -6,9 +6,10 @@
 
 namespace drake {
 namespace solvers {
-/** The SCS solver details after calling Solve function in ScsSolver. The user
- * can obtain the details from
- * MathematicalProgramResult.get_solver_details().GetValue<ScsSolverDetails>();
+/**
+ * The SCS solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<ScsSolver>() to obtain the
+ * details.
  */
 struct ScsSolverDetails {
   /// The status of the solver at termination. Please refer to
@@ -57,6 +58,9 @@ struct ScsSolverDetails {
 class ScsSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScsSolver)
+
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = ScsSolverDetails;
 
   ScsSolver();
   ~ScsSolver() final;

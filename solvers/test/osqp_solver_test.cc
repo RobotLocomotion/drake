@@ -121,28 +121,22 @@ GTEST_TEST(OsqpSolverTest, SolverOptionsTest) {
   if (osqp_solver.available()) {
     osqp_solver.Solve(prog, {}, {}, &result);
     const int OSQP_SOLVED = 1;
-    EXPECT_EQ(
-        result.get_solver_details().GetValue<OsqpSolverDetails>().status_val,
-        OSQP_SOLVED);
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
 
     // Now only allow half the iterations in the OSQP solver. The solver should
     // not be able to solve the problem accurately.
     const int half_iterations =
-        result.get_solver_details().GetValue<OsqpSolverDetails>().iter / 2;
+        result.get_solver_details<OsqpSolver>().iter / 2;
     SolverOptions solver_options;
     solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
                              half_iterations);
     osqp_solver.Solve(prog, {}, solver_options, &result);
-    EXPECT_NE(
-        result.get_solver_details().GetValue<OsqpSolverDetails>().status_val,
-        OSQP_SOLVED);
+    EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
 
     // Now set the options in prog.
     prog.SetSolverOption(osqp_solver.solver_id(), "max_iter", half_iterations);
     osqp_solver.Solve(prog, {}, {}, &result);
-    EXPECT_NE(
-        result.get_solver_details().GetValue<OsqpSolverDetails>().status_val,
-        OSQP_SOLVED);
+    EXPECT_NE(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
   }
 }
 }  // namespace test

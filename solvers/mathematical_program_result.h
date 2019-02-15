@@ -71,11 +71,22 @@ class MathematicalProgramResult final {
   /** Sets the solver ID. */
   void set_solver_id(const SolverId& solver_id) { solver_id_ = solver_id; }
 
-  /** Gets the solver details. Throws an error if the solver_details has not
-   * been set.*/
-  const AbstractValue& get_solver_details() const;
+  /** Gets the solver details for the `Solver` that solved the program. Throws
+   * an error if the solver_details has not been set. */
+  template <typename Solver>
+  const typename Solver::Details& get_solver_details() const {
+    return get_abstract_solver_details().
+        template GetValueOrThrow<typename Solver::Details>();
+  }
 
-  /** Forces the solver_details to be stored using the given type T.
+  /** (Advanced.) Gets the type-erased solver details. Most users should use
+   * get_solver_details() instead. Throws an error if the solver_details has
+   * not been set. */
+  const AbstractValue& get_abstract_solver_details() const;
+
+  /** (Advanced.) Forces the solver_details to be stored using the given
+   * type `T`.  Typically, only an implementation of SolverInterface will
+   * call this method.
    * If the storage was already typed as T, this is a no-op.
    * If there were not any solver_details previously, or if it was of a
    * different type, initializes the storage to a default-constructed T.
@@ -85,11 +96,8 @@ class MathematicalProgramResult final {
   template <typename T>
   T& SetSolverDetailsType() {
     // Leave the storage alone if it already has the correct type.
-    if (solver_details_type_ && (*solver_details_type_ == typeid(T))) {
-      DRAKE_ASSERT(solver_details_ != nullptr);
-      DRAKE_ASSERT(solver_details_->MaybeGetValue<T>() != nullptr);
-    } else {
-      solver_details_type_ = &typeid(T);
+    if (!solver_details_ ||
+        (solver_details_->static_type_info() != typeid(T))) {
       solver_details_ = std::make_unique<Value<T>>();
     }
     return solver_details_->GetMutableValue<T>();
@@ -144,7 +152,6 @@ class MathematicalProgramResult final {
   Eigen::VectorXd x_val_;
   double optimal_cost_{};
   SolverId solver_id_;
-  reset_after_move<const std::type_info*> solver_details_type_;
   copyable_unique_ptr<AbstractValue> solver_details_;
 };
 

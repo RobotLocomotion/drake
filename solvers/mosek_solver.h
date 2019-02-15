@@ -11,6 +11,11 @@
 
 namespace drake {
 namespace solvers {
+/**
+ * The Mosek solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<MosekSolver>() to obtain the
+ * details.
+ */
 struct MosekSolverDetails {
   /// The mosek optimization time. Please refer to MSK_DINF_OPTIMIZER_TIME in
   /// https://docs.mosek.com/8.1/capi/constants.html?highlight=msk_dinf_optimizer_time
@@ -39,6 +44,9 @@ struct MosekSolverDetails {
 class MosekSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MosekSolver)
+
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = MosekSolverDetails;
 
   MosekSolver();
   ~MosekSolver() final;

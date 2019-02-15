@@ -15,10 +15,10 @@ MathematicalProgramResult::MathematicalProgramResult()
       x_val_{0},
       optimal_cost_{NAN},
       solver_id_{UnknownId()},
-      solver_details_type_{nullptr},
       solver_details_{nullptr} {}
 
-const AbstractValue& MathematicalProgramResult::get_solver_details() const {
+const AbstractValue& MathematicalProgramResult::get_abstract_solver_details()
+    const {
   if (!solver_details_) {
     throw std::logic_error("The solver_details has not been set yet.");
   }

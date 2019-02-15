@@ -32,14 +32,14 @@ TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
               SolutionResult::kInfeasibleConstraints);
     // LOCAL_INFEASIBILITY is defined in IpAlgTypes.hpp from Ipopt source file.
     const int LOCAL_INFEASIBILITY = 5;
-    EXPECT_EQ(result.get_solver_details().GetValue<IpoptSolverDetails>().status,
+    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
               LOCAL_INFEASIBILITY);
     const Eigen::Vector2d x_val =
         result.GetSolution(prog_->decision_variables());
     EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
     // local infeasibility is defined in Ipopt::SolverReturn in IpAlgTypes.hpp
     const int kIpoptLocalInfeasibility = 5;
-    EXPECT_EQ(result.get_solver_details().GetValue<IpoptSolverDetails>().status,
+    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
               kIpoptLocalInfeasibility);
   }
 }
@@ -130,9 +130,8 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
       // MAXITER_EXCEEDED is defined in IpAlgTypes.hpp from Ipopt source code.
       const int MAXITER_EXCEEDED = 1;
-      EXPECT_EQ(
-          result.get_solver_details().GetValue<IpoptSolverDetails>().status,
-          MAXITER_EXCEEDED);
+      EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
+                MAXITER_EXCEEDED);
     }
     options.SetOption(IpoptSolver::id(), "acceptable_tol", 1e-3);
     options.SetOption(IpoptSolver::id(), "acceptable_dual_inf_tol", 1e-3);
@@ -146,9 +145,7 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect Ipopt status to be "STOP_AT_ACCEPTABLE_POINT."
       const int kIpoptStopAtAcceptablePoint{4};  // Defined in IpAlgTypes.hpp.
-      EXPECT_EQ(result.get_solver_details()
-                    .GetValueOrThrow<IpoptSolverDetails>()
-                    .status,
+      EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
                 kIpoptStopAtAcceptablePoint);
       // Expect Ipopt's "STOP_AT_ACCEPTABLE_POINT" to be translated to success.
       EXPECT_TRUE(result.is_success());
