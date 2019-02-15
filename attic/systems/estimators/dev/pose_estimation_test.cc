@@ -183,17 +183,17 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
 
   for (int i = 0; i < prog.num_vars(); ++i) {
     std::cout << prog.decision_variable(i).get_name() << " = "
-              << prog.GetSolution(prog.decision_variable(i), result) << "\n";
+              << result.GetSolution(prog.decision_variable(i)) << "\n";
   }
 
   std::cout << "Solver " << result.get_solver_id().name() << " result "
             << static_cast<int>(result.get_solution_result()) << std::endl;
   Eigen::Isometry3d T;
-  T.translation() = prog.GetSolution(t, result);
+  T.translation() = result.GetSolution(t);
   if (rotation_type == kTranslationOnly) {
     T.linear() = Eigen::Matrix3d::Identity();
   } else {
-    T.linear() = prog.GetSolution(R, result);
+    T.linear() = result.GetSolution(R);
   }
   return T;
 }

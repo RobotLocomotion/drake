@@ -224,7 +224,7 @@ PiecewisePolynomial<double> DirectTranscription::ReconstructInputTrajectory(
 
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
-    inputs[i] = GetSolution(input(i), result);
+    inputs[i] = result.GetSolution(input(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
@@ -238,7 +238,7 @@ PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory(
 
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
-    states[i] = GetSolution(state(i), result);
+    states[i] = result.GetSolution(state(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);

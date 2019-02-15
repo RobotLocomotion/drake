@@ -231,7 +231,7 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
 
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
-    inputs[i] = GetSolution(input(i), result);
+    inputs[i] = result.GetSolution(input(i));
   }
   return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
 }
@@ -245,10 +245,10 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
 
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
-    states[i] = GetSolution(state(i), result);
+    states[i] = result.GetSolution(state(i));
     if (context_->get_num_input_ports() > 0) {
       input_port_value_->GetMutableVectorData<double>()->SetFromVector(
-          GetSolution(input(i), result));
+          result.GetSolution(input(i)));
     }
     context_->get_mutable_continuous_state().SetFromVector(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());

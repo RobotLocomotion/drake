@@ -84,11 +84,11 @@ void ComputeRegionOfAttraction() {
   DRAKE_DEMAND(result.get_solution_result() ==
                solvers::SolutionResult::kSolutionFound);
 
-  cout << "Verified that " << V << " < " << prog.GetSolution(rho, result)
+  cout << "Verified that " << V << " < " << result.GetSolution(rho)
        << " is in the region of attraction." << endl;
 
   // Check that ρ ≃ 1.0.
-  DRAKE_DEMAND(std::abs(prog.GetSolution(rho, result) - 1.0) < 1e-6);
+  DRAKE_DEMAND(std::abs(result.GetSolution(rho) - 1.0) < 1e-6);
 }
 }  // namespace drake
 

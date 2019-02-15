@@ -191,7 +191,7 @@ void ComputeBackwardReachableSet() {
 
   Environment w_env;
   for (const auto& var : w.decision_variables()) {
-    w_env.insert(var, prog.GetSolution(var, result));
+    w_env.insert(var, result.GetSolution(var));
   }
   const Polynomial w_sol{w.EvaluatePartial(w_env)};
 

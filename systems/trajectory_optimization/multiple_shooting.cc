@@ -213,7 +213,7 @@ Eigen::MatrixXd MultipleShooting::GetInputSamples(
     const solvers::MathematicalProgramResult& result) const {
   Eigen::MatrixXd inputs(num_inputs_, N_);
   for (int i = 0; i < N_; i++) {
-    inputs.col(i) = GetSolution(input(i), result);
+    inputs.col(i) = result.GetSolution(input(i));
   }
   return inputs;
 }
@@ -222,7 +222,7 @@ Eigen::MatrixXd MultipleShooting::GetStateSamples(
     const solvers::MathematicalProgramResult& result) const {
   Eigen::MatrixXd states(num_states_, N_);
   for (int i = 0; i < N_; i++) {
-    states.col(i) = GetSolution(state(i), result);
+    states.col(i) = result.GetSolution(state(i));
   }
   return states;
 }

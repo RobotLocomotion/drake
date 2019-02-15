@@ -38,7 +38,7 @@ bool IsFeasible(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return Solve(*prog).is_success();
+  return Solve(prog).is_success();
 }
 
 void DrawCircle(double radius = 1.0) {

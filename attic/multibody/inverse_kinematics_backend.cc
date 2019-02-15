@@ -301,7 +301,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
 
     const solvers::MathematicalProgramResult result =
         Solve(prog, prog.initial_guess());
-    const VectorXd& vars_value = prog.GetSolution(vars, result);
+    const VectorXd& vars_value = result.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
     info[t_index] = GetIKSolverInfo(result.get_solution_result());
   }

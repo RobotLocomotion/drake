@@ -142,18 +142,18 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
 
   double time = 0.0;
   for (int i = 0; i < kNumSampleTimes; i++) {
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.input(i), result),
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.input(i)),
                                 input_spline.value(time), 1e-6));
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(i), result),
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(i)),
                                 state_spline.value(time), 1e-6));
 
     EXPECT_TRUE(CompareMatrices(
-        system->A() * prog.GetSolution(prog.state(i), result) +
-            system->B() * prog.GetSolution(prog.input(i), result),
+        system->A() * result.GetSolution(prog.state(i)) +
+            system->B() * result.GetSolution(prog.input(i)),
         derivative_spline.value(time), 1e-6));
 
     if (i < (kNumSampleTimes - 1)) {
-      time += prog.GetSolution(prog.timestep(i).coeff(0), result);
+      time += result.GetSolution(prog.timestep(i).coeff(0));
     }
   }
 
@@ -162,7 +162,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   EXPECT_EQ(collocation_constraints.size(), kNumSampleTimes - 1);
   time = 0.0;
   for (int i = 0; i < (kNumSampleTimes - 1); i++) {
-    const double timestep = prog.GetSolution(prog.timestep(i).coeff(0), result);
+    const double timestep = result.GetSolution(prog.timestep(i).coeff(0));
     const double collocation_time = time + timestep / 2.0;
 
     const auto& binding = collocation_constraints[i];
@@ -215,9 +215,9 @@ GTEST_TEST(DirectCollocationTest, DoubleIntegratorTest) {
   // Solution should be bang-band (u = +1 then -1).
   int i = 0;
   while (i < kNumSampleTimes / 2.0)
-    EXPECT_NEAR(prog.GetSolution(prog.input(i++), result)(0), 1.0, 1e-5);
+    EXPECT_NEAR(result.GetSolution(prog.input(i++))(0), 1.0, 1e-5);
   while (i < kNumSampleTimes)
-    EXPECT_NEAR(prog.GetSolution(prog.input(i++), result)(0), -1.0, 1e-5);
+    EXPECT_NEAR(result.GetSolution(prog.input(i++))(0), -1.0, 1e-5);
 }
 
 // Tests that the double integrator without input limits results in minimal
@@ -251,7 +251,7 @@ GTEST_TEST(DirectCollocationTest, MinimumTimeTest) {
   // Solution should have total time equal to 0.5.
   double total_time = 0;
   for (int i = 0; i < kNumSampleTimes - 1; i++)
-    total_time += prog.GetSolution(prog.timestep(i), result)(0);
+    total_time += result.GetSolution(prog.timestep(i))(0);
   EXPECT_NEAR(total_time, kMinTimeStep * (kNumSampleTimes - 1), 1e-5);
 }
 
@@ -278,7 +278,7 @@ GTEST_TEST(DirectCollocationTest, NoInputs) {
             solvers::SolutionResult::kSolutionFound);
 
   const double duration = (kNumSampleTimes - 1) * kFixedTimeStep;
-  EXPECT_NEAR(prog.GetSolution(prog.final_state(), result)(0),
+  EXPECT_NEAR(result.GetSolution(prog.final_state())(0),
               x0 * std::exp(-duration), 1e-6);
 
   const auto state_trajectory = prog.ReconstructStateTrajectory(result);

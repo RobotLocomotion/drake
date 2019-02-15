@@ -44,7 +44,7 @@ class TwoFreeBodiesTest : public ::testing::Test {
   ~TwoFreeBodiesTest() override {}
 
   void RetrieveSolution(const solvers::MathematicalProgramResult& result) {
-    const auto q_sol = ik_.prog().GetSolution(ik_.q(), result);
+    const auto q_sol = result.GetSolution(ik_.q());
     body1_quaternion_sol_ = Vector4ToQuaternion(q_sol.head<4>());
     body1_position_sol_ = q_sol.segment<3>(4);
     body2_quaternion_sol_ = Vector4ToQuaternion(q_sol.segment<4>(7));
@@ -151,7 +151,7 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
   const auto result = Solve(ik_.prog(), ik_.prog().initial_guess());
   EXPECT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
-  const auto q_sol = ik_.prog().GetSolution(ik_.q(), result);
+  const auto q_sol = result.GetSolution(ik_.q());
   RetrieveSolution(result);
   const math::RotationMatrix<double> R_AbarBbar(
       body1_quaternion_sol_.inverse() * body2_quaternion_sol_);

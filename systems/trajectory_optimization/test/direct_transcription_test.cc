@@ -302,7 +302,7 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   double expected_cost{0.};
   for (int i{0}; i < kNumSamples - 1; i++) {
     expected_cost +=
-        kTimeStep * std::pow(prog.GetSolution(prog.state(i), result)[0], 2.);
+        kTimeStep * std::pow(result.GetSolution(prog.state(i))[0], 2.);
   }
 
   EXPECT_NEAR(result.get_optimal_cost(), expected_cost, 1e-6);

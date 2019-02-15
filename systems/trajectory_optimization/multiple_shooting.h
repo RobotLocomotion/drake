@@ -260,7 +260,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   Eigen::VectorXd GetSampleTimes(
       const solvers::MathematicalProgramResult& result) const {
-    return GetSampleTimes(this->GetSolution(h_vars_, result));
+    return GetSampleTimes(result.GetSolution(h_vars_));
   }
 
   /// Returns a matrix containing the input values (arranged in columns) at

@@ -13,6 +13,7 @@
 #include "drake/perception/estimators/dev/test/test_util.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
+#include "drake/systems/framework/basic_vector.h"
 
 using std::make_shared;
 using std::pair;
@@ -275,7 +276,7 @@ TEST_P(ArticulatedIcpTest, PositiveReturnsConvergenceTest) {
     }
 
     // Update initial guess.
-    q = prog.GetSolution(q_var, result);
+    q = result.GetSolution(q_var);
     ++iter;
     ASSERT_TRUE(iter < iter_max);
 

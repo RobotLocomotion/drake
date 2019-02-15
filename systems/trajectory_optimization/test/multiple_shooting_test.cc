@@ -142,8 +142,8 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
   solvers::MathematicalProgramResult result;
   // Arbitrarily set the decision variable values to 0.
   result.set_x_val(Eigen::VectorXd::Zero(prog.num_vars()));
-  EXPECT_THROW(prog.GetSolution(t(0), result), std::runtime_error);
-  EXPECT_THROW(prog.GetSolution(u, result), std::runtime_error);
+  EXPECT_THROW(result.GetSolution(t(0)), std::runtime_error);
+  EXPECT_THROW(result.GetSolution(u), std::runtime_error);
 }
 
 GTEST_TEST(MultipleShootingTest, PlaceholderVariableNames) {
@@ -172,7 +172,7 @@ GTEST_TEST(MultipleShootingTest, TimeIntervalBoundsTest) {
   const solvers::MathematicalProgramResult result = Solve(prog);
   ASSERT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.h_vars(), result),
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.h_vars()),
                               Eigen::Vector2d(0.5, 0.5), 1e-6));
 }
 
@@ -194,8 +194,8 @@ GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
       Solve(prog, prog.initial_guess());
   ASSERT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(prog.timestep(0).coeff(0), result),
-              prog.GetSolution(prog.timestep(1).coeff(0), result),
+  EXPECT_NEAR(result.GetSolution(prog.timestep(0).coeff(0)),
+              result.GetSolution(prog.timestep(1).coeff(0)),
               kSolverTolerance);
 }
 
@@ -221,7 +221,7 @@ GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
       Solve(prog, prog.initial_guess());
   ASSERT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(prog.h_vars(), result).sum(), .5, 1e-6);
+  EXPECT_NEAR(result.GetSolution(prog.h_vars()).sum(), .5, 1e-6);
 }
 
 GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
@@ -244,7 +244,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
     // 1E-6.
     const double tol =
         result.get_solver_id() == solvers::OsqpSolver::id() ? 4E-6 : 1E-6;
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(i), result),
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(i)),
                                 state_value, tol));
   }
 
@@ -255,13 +255,13 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   ASSERT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
   // u(0) = 0.
-  EXPECT_NEAR(prog.GetSolution(prog.input(0).coeff(0), result), 0.0, 1e-6);
+  EXPECT_NEAR(result.GetSolution(prog.input(0).coeff(0)), 0.0, 1e-6);
   // u(1) = h(0).
-  EXPECT_NEAR(prog.GetSolution(prog.input(1).coeff(0), result),
-              prog.GetSolution(prog.timestep(0).coeff(0), result), 1e-6);
+  EXPECT_NEAR(result.GetSolution(prog.input(1).coeff(0)),
+              result.GetSolution(prog.timestep(0).coeff(0)), 1e-6);
   // u(2) = h(0)+h(1).
-  EXPECT_NEAR(prog.GetSolution(prog.input(2).coeff(0), result),
-              prog.GetSolution(prog.h_vars(), result).sum(), 1e-6);
+  EXPECT_NEAR(result.GetSolution(prog.input(2).coeff(0)),
+              result.GetSolution(prog.h_vars()).sum(), 1e-6);
 }
 
 GTEST_TEST(MultipleShootingTest, FinalCostTest) {
@@ -280,7 +280,7 @@ GTEST_TEST(MultipleShootingTest, FinalCostTest) {
   ASSERT_EQ(result.get_solution_result(),
             solvers::SolutionResult::kSolutionFound);
   EXPECT_NEAR(result.get_optimal_cost(), 0.0, kSolverTolerance);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(prog.state(1), result),
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(1)),
                               desired_state, kSolverTolerance));
 }
 
