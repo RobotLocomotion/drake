@@ -61,6 +61,7 @@ drake_cc_library(
     name = "expect_throws_message",
     testonly = 1,
     hdrs = ["expect_throws_message.h"],
+    deps = ["//common:essential"],
 )
 
 drake_cc_library(

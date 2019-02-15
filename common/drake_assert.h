@@ -29,6 +29,9 @@
 /// This header will define exactly one of either @p DRAKE_ASSERT_IS_ARMED or
 /// @p DRAKE_ASSERT_IS_DISARMED to indicate whether @p DRAKE_ASSERT is armed.
 ///
+/// This header will define both `constexpr bool drake::kDrakeAssertIsArmed`
+/// and `constexpr bool drake::kDrakeAssertIsDisarmed` globals.
+///
 /// One difference versus the standard @p assert(condition) is that the
 /// @p condition within @p DRAKE_ASSERT is always syntax-checked, even if
 /// Drake's assertions are disarmed.
@@ -139,6 +142,10 @@ struct ConditionTraits {
 
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.
+namespace drake {
+constexpr bool kDrakeAssertIsArmed = true;
+constexpr bool kDrakeAssertIsDisarmed = false;
+}  // namespace drake
 # define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
 # define DRAKE_ASSERT_VOID(expression) do {                     \
     static_assert(                                              \
@@ -148,6 +155,10 @@ struct ConditionTraits {
   } while (0)
 #else
 // Assertions are disabled, so just typecheck the expression.
+namespace drake {
+constexpr bool kDrakeAssertIsArmed = false;
+constexpr bool kDrakeAssertIsDisarmed = true;
+}  // namespace drake
 # define DRAKE_ASSERT(condition) static_assert(                        \
     ::drake::assert::ConditionTraits<                                  \
         typename std::remove_cv<decltype(condition)>::type>::is_valid, \

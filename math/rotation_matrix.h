@@ -33,9 +33,9 @@ namespace math {
 /// @note This class does not store the frames associated with a rotation matrix
 /// nor does it enforce strict proper usage of this class with vectors.
 ///
-/// @note When DRAKE_ASSERT_IS_ARMED is defined, several methods in this class
+/// @note When assertions are enabled, several methods in this class
 /// do a validity check and throw an exception (std::logic_error) if the
-/// rotation matrix is invalid.  When DRAKE_ASSERT_IS_ARMED is not defined,
+/// rotation matrix is invalid.  When assertions are disabled,
 /// many of these validity checks are skipped (which helps improve speed).
 /// In addition, these validity tests are only performed for scalar types for
 /// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity

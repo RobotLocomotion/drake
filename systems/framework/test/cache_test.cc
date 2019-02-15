@@ -367,12 +367,12 @@ TEST_F(CacheTest, CanSwapValue) {
   EXPECT_EQ(entry_value.get_value<string>(), "new value");
 
 // In Debug builds, try a bad swap and expect it to be caught.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  std::unique_ptr<AbstractValue> empty_ptr;
-  EXPECT_THROW(entry_value.swap_value(&empty_ptr), std::logic_error);
-  auto bad_value = AbstractValue::Make<int>(29);
-  EXPECT_THROW(entry_value.swap_value(&bad_value), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    std::unique_ptr<AbstractValue> empty_ptr;
+    EXPECT_THROW(entry_value.swap_value(&empty_ptr), std::logic_error);
+    auto bad_value = AbstractValue::Make<int>(29);
+    EXPECT_THROW(entry_value.swap_value(&bad_value), std::logic_error);
+  }
 }
 
 TEST_F(CacheTest, InvalidationIsRecursive) {
@@ -517,15 +517,15 @@ TEST_F(CacheTest, ValueMethodsWork) {
   EXPECT_THROW(value.PeekAbstractValueOrThrow(), std::logic_error);
   EXPECT_THROW(value.PeekValueOrThrow<int>(), std::logic_error);
 
-#ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(value.get_abstract_value(), std::logic_error);
-  EXPECT_THROW(value.get_value<int>(), std::logic_error);
-  EXPECT_THROW(value.set_value<int>(5), std::logic_error);
-  EXPECT_THROW(value.is_out_of_date(), std::logic_error);
-  EXPECT_THROW(value.needs_recomputation(), std::logic_error);
-  EXPECT_THROW(value.mark_up_to_date(), std::logic_error);
-  EXPECT_THROW(value.swap_value(&swap_with_me), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(value.get_abstract_value(), std::logic_error);
+    EXPECT_THROW(value.get_value<int>(), std::logic_error);
+    EXPECT_THROW(value.set_value<int>(5), std::logic_error);
+    EXPECT_THROW(value.is_out_of_date(), std::logic_error);
+    EXPECT_THROW(value.needs_recomputation(), std::logic_error);
+    EXPECT_THROW(value.mark_up_to_date(), std::logic_error);
+    EXPECT_THROW(value.swap_value(&swap_with_me), std::logic_error);
+  }
 
   // Now provide an initial value (not yet up to date).
   value.SetInitialValue(PackValue(42));
@@ -542,10 +542,10 @@ TEST_F(CacheTest, ValueMethodsWork) {
   EXPECT_NO_THROW(value.PeekAbstractValueOrThrow());
 
   // The fast "get" methods must check for up to date in Debug builds.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(value.get_value<int>(), std::logic_error);
-  EXPECT_THROW(value.get_abstract_value(), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(value.get_value<int>(), std::logic_error);
+    EXPECT_THROW(value.get_abstract_value(), std::logic_error);
+  }
 
   // Swap doesn't care about up to date or not, but always marks the swapped-in
   // value out of date.
@@ -574,9 +574,9 @@ TEST_F(CacheTest, ValueMethodsWork) {
   EXPECT_THROW(value.SetValueOrThrow<int>(5), std::logic_error);
 
   // The fast "set" method must check for up to date in Debug builds.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(value.set_value<int>(5), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(value.set_value<int>(5), std::logic_error);
+  }
 
   // And "swap" still doesn't care about up to date on entry.
   value.swap_value(&swap_with_me);
