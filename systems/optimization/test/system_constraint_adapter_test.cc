@@ -123,29 +123,62 @@ GTEST_TEST(SystemConstraintAdapterTest,
       adapter.MaybeCreateGenericConstraintSymbolically(
           system.constraint_index(), *context_symbolic);
   EXPECT_TRUE(binding.has_value());
-  EXPECT_EQ(binding->variables(), Vector3<symbolic::Variable>(a, t, b));
+  // We make no promise on the ordering of the bound variables.
+  EXPECT_EQ(symbolic::Variables(binding->variables()),
+            symbolic::Variables(Vector3<symbolic::Variable>(a, t, b)));
   double a_val = 2;
   double b_val = 3;
   double t_val = 4;
+
+  AutoDiffVecXd abt_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+      Eigen::Vector3d(a_val, b_val, t_val), Eigen::Matrix3Xd::Identity(3, 3));
+
+  auto set_bound_variable_value = [&a, &b, &t](
+      const VectorX<symbolic::Variable>& bound_variables, auto a_value,
+      auto b_value, auto t_value) {
+    VectorX<decltype(a_value)> bound_variable_values(bound_variables.rows());
+    for (int i = 0; i < bound_variables.rows(); ++i) {
+      if (bound_variables(i).get_id() == a.get_id()) {
+        bound_variable_values(i) = a_value;
+      } else if (bound_variables(i).get_id() == b.get_id()) {
+        bound_variable_values(i) = b_value;
+      } else if (bound_variables(i).get_id() == t.get_id()) {
+        bound_variable_values(i) = t_value;
+      }
+    }
+    return bound_variable_values;
+  };
+
   // Evaluate this constraint.
-  Eigen::Vector2d constraint_val_expected(
-      b_val * a_val + x1_val, x2_val - x1_val * x1_val - b_val * a_val * a_val);
-  Eigen::Vector3d var_val(a_val, t_val, b_val);
+  auto context_double = system.CreateDefaultContext();
+  auto context_autodiff = adapter.system_autodiff().CreateDefaultContext();
+  context_double->get_mutable_continuous_state_vector().SetFromVector(
+      Vector3<double>(a_val, x1_val, x2_val));
+  context_autodiff->get_mutable_continuous_state_vector().SetFromVector(
+      Vector3<AutoDiffXd>(abt_autodiff(0), x1_val, x2_val));
+  context_double->get_mutable_numeric_parameter(0).GetAtIndex(0) = b_val;
+  context_autodiff->get_mutable_numeric_parameter(0).GetAtIndex(0) =
+      abt_autodiff(1);
+  context_double->set_time(t_val);
+  context_autodiff->set_time(abt_autodiff(2));
+  Eigen::VectorXd constraint_val_expected;
+  DummySystemConstraintCalc(*context_double, &constraint_val_expected);
+
+  const Eigen::Vector3d bound_var_val =
+      set_bound_variable_value(binding->variables(), a_val, b_val, t_val);
+
   Eigen::VectorXd constraint_val;
-  binding->evaluator()->Eval(var_val, &constraint_val);
+  binding->evaluator()->Eval(bound_var_val, &constraint_val);
   const double tol = 1E-14;
   EXPECT_TRUE(CompareMatrices(constraint_val, constraint_val_expected, tol));
 
   // Evaluate this constraint with autodiff.
-  Vector3<AutoDiffXd> var_autodiff;
-  math::initializeAutoDiff(var_val, var_autodiff);
-  Vector2<AutoDiffXd> constraint_autodiff_expected;
-  constraint_autodiff_expected(0) = var_autodiff(0) * var_autodiff(2) + x1_val;
-  constraint_autodiff_expected(1) =
-      x2_val - x1_val -
-      x1_val * var_autodiff(2) * var_autodiff(0) * var_autodiff(0);
+  Vector3<AutoDiffXd> bound_var_autodiff = set_bound_variable_value(
+      binding->variables(), abt_autodiff(0), abt_autodiff(1), abt_autodiff(2));
+  VectorX<AutoDiffXd> constraint_autodiff_expected;
+  DummySystemConstraintCalc(*context_autodiff, &constraint_autodiff_expected);
   AutoDiffVecXd constraint_autodiff;
-  binding->evaluator()->Eval(var_autodiff, &constraint_autodiff);
+  binding->evaluator()->Eval(bound_var_autodiff, &constraint_autodiff);
   EXPECT_TRUE(CompareMatrices(
       math::autoDiffToValueMatrix(constraint_autodiff),
       math::autoDiffToValueMatrix(constraint_autodiff_expected), tol));

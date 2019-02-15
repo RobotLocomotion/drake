@@ -1,7 +1,8 @@
 #include "drake/systems/optimization/system_constraint_adapter.h"
 
+#include <unordered_map>
+
 #include "drake/solvers/create_constraint.h"
-#include "drake/systems/optimization/system_constraint_adapter_internal.h"
 
 namespace drake {
 namespace systems {
@@ -54,134 +55,212 @@ SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
   return constraints;
 }
 
-namespace internal {
-UpdateContextForSymbolicSystemConstraint::
-    UpdateContextForSymbolicSystemConstraint(
-        const Context<symbolic::Expression>* context)
-    : context_{context}, successfully_constructed_{true} {
-  // continuous state.
-  for (int i = 0; i < context_->get_continuous_state_vector().size(); ++i) {
-    successfully_constructed_ &= AddSymbolicVariables(
-        context_->get_continuous_state_vector().GetAtIndex(i),
-        [i](Context<double>* m_context, double val) {
-          m_context->get_mutable_continuous_state_vector().GetAtIndex(i) = val;
-        },
-        [i](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
-          m_context->get_mutable_continuous_state_vector().GetAtIndex(i) = val;
-        });
-  }
-  // discrete state.
-  for (int i = 0; i < context_->get_num_discrete_state_groups(); ++i) {
-    for (int j = 0; j < context_->get_discrete_state(i).size(); ++j) {
-      successfully_constructed_ &= AddSymbolicVariables(
-          context_->get_discrete_state(i).GetAtIndex(j),
-          [i, j](Context<double>* m_context, double val) {
-            m_context->get_mutable_discrete_state(i).GetAtIndex(j) = val;
-          },
-          [i, j](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
-            m_context->get_mutable_discrete_state(i).GetAtIndex(j) = val;
-          });
+struct ContextContinuousStateIndex {
+  ContextContinuousStateIndex(int m_state_index, int m_var_index)
+      : state_index(m_state_index), var_index(m_var_index) {}
+  int state_index;
+  int var_index;
+};
+
+struct ContextDiscreteStateIndex {
+  ContextDiscreteStateIndex(int m_group_index, int m_state_index,
+                            int m_var_index)
+      : group_index(m_group_index),
+        state_index(m_state_index),
+        var_index(m_var_index) {}
+  int group_index;
+  int state_index;
+  int var_index;
+};
+
+struct ContextNumericParameterIndex {
+  ContextNumericParameterIndex(int m_group_index, int m_parameter_index,
+                               int m_var_index)
+      : group_index(m_group_index),
+        parameter_index(m_parameter_index),
+        var_index(m_var_index) {}
+  int group_index;
+  int parameter_index;
+  int var_index;
+};
+
+namespace {
+struct UpdateContextForSymbolicSystemConstraint {
+ public:
+  UpdateContextForSymbolicSystemConstraint(
+      const std::vector<ContextContinuousStateIndex>& continuous_state_indices,
+      const std::vector<ContextDiscreteStateIndex>& discrete_state_indices,
+      const std::vector<ContextNumericParameterIndex>&
+          numeric_parameter_indices,
+      const optional<int>& time_var_index)
+      : continuous_state_indices_{continuous_state_indices},
+        discrete_state_indices_{discrete_state_indices},
+        numeric_parameter_indices_{numeric_parameter_indices},
+        time_var_index_{time_var_index} {}
+
+  template <typename T>
+  void operator()(const System<T>&, const Eigen::Ref<const VectorX<T>>& x,
+                  Context<T>* context) const {
+    // Time.
+    if (time_var_index_.has_value()) {
+      context->set_time(x(time_var_index_.value()));
+    }
+    // Continuous state.
+    for (const auto& continuous_state_index : continuous_state_indices_) {
+      context->get_mutable_continuous_state_vector().GetAtIndex(
+          continuous_state_index.state_index) =
+          x(continuous_state_index.var_index);
+    }
+    // Discrete state.
+    for (const auto& discrete_state_index : discrete_state_indices_) {
+      context->get_mutable_discrete_state(discrete_state_index.group_index)
+          .GetAtIndex(discrete_state_index.state_index) =
+          x(discrete_state_index.var_index);
+    }
+    // Numeric parameter.
+    for (const auto& numeric_parameter_index : numeric_parameter_indices_) {
+      context
+          ->get_mutable_numeric_parameter(numeric_parameter_index.group_index)
+          .GetAtIndex(numeric_parameter_index.parameter_index) =
+          x(numeric_parameter_index.var_index);
     }
   }
-  // time
-  successfully_constructed_ &= AddSymbolicVariables(
-      context_->get_time(),
-      [](Context<double>* m_context, double val) { m_context->set_time(val); },
-      [](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
-        m_context->set_time(val);
-      });
-  // numeric parameters.
-  for (int i = 0; i < context_->num_numeric_parameter_groups(); ++i) {
-    for (int j = 0; j < context_->get_numeric_parameter(i).size(); ++j) {
-      successfully_constructed_ &= AddSymbolicVariables(
-          context_->get_numeric_parameter(i).GetAtIndex(j),
-          [i, j](Context<double>* m_context, double val) {
-            m_context->get_mutable_numeric_parameter(i).SetAtIndex(j, val);
-          },
-          [i, j](Context<AutoDiffXd>* m_context, const AutoDiffXd& val) {
-            m_context->get_mutable_numeric_parameter(i).SetAtIndex(j, val);
-          });
-    }
-  }
-}
 
-void UpdateContextForSymbolicSystemConstraint::operator()(
-    const System<double>& system, const Eigen::Ref<const VectorX<double>>& x,
-    Context<double>* context) const {
-  for (int i = 0; i < static_cast<int>(updaters_double_.size()); ++i) {
-    updaters_double_[i](system, x, context);
-  }
-}
+ private:
+  std::vector<ContextContinuousStateIndex> continuous_state_indices_;
+  std::vector<ContextDiscreteStateIndex> discrete_state_indices_;
+  std::vector<ContextNumericParameterIndex> numeric_parameter_indices_;
+  optional<int> time_var_index_;
+};
 
-void UpdateContextForSymbolicSystemConstraint::operator()(
-    const System<AutoDiffXd>& system, const Eigen::Ref<const AutoDiffVecXd>& x,
-    Context<AutoDiffXd>* context) const {
-  for (int i = 0; i < static_cast<int>(updaters_autodiff_.size()); ++i) {
-    updaters_autodiff_[i](system, x, context);
-  }
-}
-
-bool UpdateContextForSymbolicSystemConstraint::AddSymbolicVariables(
+bool ParseSymbolicVariableOrConstant(
     const symbolic::Expression& expr,
-    std::function<void(Context<double>* context, double val)> updater_double,
-    std::function<void(Context<AutoDiffXd>* context, const AutoDiffXd& val)>
-        updater_autodiff) {
+    std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index,
+    VectorX<symbolic::Variable>* bound_variables, optional<int>* variable_index,
+    optional<double>* constant_val) {
   if (symbolic::is_constant(expr)) {
-    const double constant_val = symbolic::get_constant_value(expr);
-    updaters_double_.push_back([updater_double, constant_val](
-        const System<double>&, const Eigen::Ref<const VectorX<double>>&,
-        Context<double>* context) { updater_double(context, constant_val); });
-    updaters_autodiff_.push_back([updater_autodiff, constant_val](
-        const System<AutoDiffXd>&, const Eigen::Ref<const AutoDiffVecXd>&,
-        Context<AutoDiffXd>* context) {
-      updater_autodiff(context, AutoDiffXd(constant_val));
-    });
+    *constant_val = symbolic::get_constant_value(expr);
+    variable_index->reset();
+    return true;
   } else if (symbolic::is_variable(expr)) {
     const symbolic::Variable& var = symbolic::get_variable(expr);
-    auto it = map_var_to_index_.find(var.get_id());
-    int var_index{-1};
-    if (it == map_var_to_index_.end()) {
-      map_var_to_index_.emplace_hint(it, var.get_id(), bound_variables_.rows());
-      var_index = bound_variables_.rows();
-      bound_variables_.conservativeResize(bound_variables_.rows() + 1);
-      bound_variables_(bound_variables_.rows() - 1) = var;
+    auto it = map_var_to_index->find(var.get_id());
+    if (it == map_var_to_index->end()) {
+      map_var_to_index->emplace_hint(it, var.get_id(), bound_variables->rows());
+      bound_variables->conservativeResize(bound_variables->rows() + 1);
+      (*bound_variables)(bound_variables->rows() - 1) = var;
+      *variable_index = bound_variables->rows() - 1;
     } else {
-      var_index = it->second;
+      *variable_index = it->second;
     }
-    updaters_double_.push_back([updater_double, var_index](
-        const System<double>&, const Eigen::Ref<const VectorX<double>>& x,
-        Context<double>* context) { updater_double(context, x(var_index)); });
-    updaters_autodiff_.push_back([updater_autodiff, var_index](
-        const System<AutoDiffXd>&, const Eigen::Ref<const AutoDiffVecXd>& x,
-        Context<AutoDiffXd>* context) {
-      updater_autodiff(context, x(var_index));
-    });
+    constant_val->reset();
+    return true;
   } else {
     return false;
   }
-  return true;
 }
-}  // namespace internal
+}  // namespace
 
 optional<solvers::Binding<solvers::Constraint>>
 SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     SystemConstraintIndex index,
     const Context<symbolic::Expression>& context) const {
-  internal::UpdateContextForSymbolicSystemConstraint updater(&context);
-  if (updater.successfully_constructed()) {
-    return solvers::Binding<solvers::Constraint>(
-        std::make_shared<SystemConstraintWrapper>(
-            system_double_, system_autodiff_.get(), index,
-            std::forward<UpdateContextFromDecisionVariablesFunction<double>>(
-                updater),
-            std::forward<
-                UpdateContextFromDecisionVariablesFunction<AutoDiffXd>>(
-                updater),
-            updater.bound_variables().size()),
-        updater.bound_variables());
-  } else {
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
+  VectorX<symbolic::Variable> bound_variables;
+  // context_fixed stores the constant values in @p context
+  auto context_fixed = system_double_->CreateDefaultContext();
+
+  std::vector<ContextContinuousStateIndex> continuous_state_indices;
+  std::vector<ContextDiscreteStateIndex> discrete_state_indices;
+  std::vector<ContextNumericParameterIndex> numeric_parameter_indices;
+  optional<int> time_var_index{};
+  optional<double> constant_val{};
+  optional<int> variable_index{};
+  // Time
+  bool success = ParseSymbolicVariableOrConstant(
+      context.get_time(), &map_var_to_index, &bound_variables, &variable_index,
+      &constant_val);
+  if (!success) {
     return {};
   }
+  if (constant_val.has_value()) {
+    context_fixed->set_time(constant_val.value());
+  } else {
+    time_var_index = variable_index.value();
+  }
+  // Continuous state.
+  for (int i = 0; i < context.get_continuous_state_vector().size(); ++i) {
+    success = ParseSymbolicVariableOrConstant(
+        context.get_continuous_state_vector().GetAtIndex(i), &map_var_to_index,
+        &bound_variables, &variable_index, &constant_val);
+    if (!success) {
+      return {};
+    }
+    if (variable_index.has_value()) {
+      continuous_state_indices.emplace_back(i, *variable_index);
+    } else if (constant_val.has_value()) {
+      context_fixed->get_mutable_continuous_state_vector().GetAtIndex(i) =
+          constant_val.value();
+    }
+  }
+  // Discrete state.
+  for (int i = 0; i < context.get_num_discrete_state_groups(); ++i) {
+    for (int j = 0; j < context.get_discrete_state(i).size(); ++j) {
+      success = ParseSymbolicVariableOrConstant(
+          context.get_discrete_state(i).GetAtIndex(j), &map_var_to_index,
+          &bound_variables, &variable_index, &constant_val);
+      if (!success) {
+        return {};
+      }
+      if (variable_index.has_value()) {
+        discrete_state_indices.emplace_back(i, j, *variable_index);
+      } else if (constant_val.has_value()) {
+        context_fixed->get_mutable_discrete_state(i).GetAtIndex(j) =
+            constant_val.value();
+      }
+    }
+  }
+  // numeric parameters.
+  for (int i = 0; i < context.num_numeric_parameter_groups(); ++i) {
+    for (int j = 0; j < context.get_numeric_parameter(i).size(); ++j) {
+      success = ParseSymbolicVariableOrConstant(
+          context.get_numeric_parameter(i).GetAtIndex(j), &map_var_to_index,
+          &bound_variables, &variable_index, &constant_val);
+      if (!success) {
+        return {};
+      }
+      if (variable_index.has_value()) {
+        numeric_parameter_indices.emplace_back(i, j, *variable_index);
+      } else if (constant_val.has_value()) {
+        context_fixed->get_mutable_numeric_parameter(i).GetAtIndex(j) =
+            constant_val.value();
+      }
+    }
+  }
+
+  // abstract state
+  if (context.get_num_abstract_states() != 0) {
+    throw std::invalid_argument(
+        "SystemConstraintAdapter: cannot handle system with abstract state "
+        "using symbolic Context, try SystemConstraintAdapter::Create() "
+        "instead.");
+  }
+  // abstract parameter
+  if (context.num_abstract_parameters() != 0) {
+    throw std::invalid_argument(
+        "SystemConstraintAdapter: cannot handle system with abstract "
+        "paramter "
+        "using symbolic Context, try SystemConstraintAdapter::Create() "
+        "instead.");
+  }
+
+  UpdateContextForSymbolicSystemConstraint updater(
+      continuous_state_indices, discrete_state_indices,
+      numeric_parameter_indices, time_var_index);
+
+  return solvers::Binding<solvers::Constraint>(
+      this->Create(index, *context_fixed, updater, map_var_to_index.size()),
+      bound_variables);
 }
 
 const System<symbolic::Expression>& SystemConstraintAdapter::system_symbolic()

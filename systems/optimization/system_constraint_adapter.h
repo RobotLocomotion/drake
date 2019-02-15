@@ -84,7 +84,7 @@ class SystemConstraintAdapter {
    * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
    * parse the constraint to a generic nonlinear constraint
    * lower <= SystemConstraint.Calc(context) <= upper.
-   * If the SystemConstraint cannot be parsed to the form above, tehn return
+   * If the SystemConstraint cannot be parsed to the form above, then return
    * empty; otherwise returns a parsed constraint, together with the bound
    * variables.
    * @param index The index of the constraint in the System object.
@@ -107,6 +107,13 @@ class SystemConstraintAdapter {
    * instantiated with symbolic::Expression.
    */
   const System<symbolic::Expression>& system_symbolic() const;
+
+  /**
+   * Getters for the system instantiated with AutoDiffXd.
+   */
+  const System<AutoDiffXd>& system_autodiff() const {
+    return *system_autodiff_;
+  }
 
  private:
   const System<double>* const system_double_;
