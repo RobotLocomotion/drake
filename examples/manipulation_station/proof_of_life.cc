@@ -29,7 +29,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, 4.0, "Simulation duration.");
 DEFINE_bool(test, false, "Disable random initial conditions in test mode.");
-DEFINE_bool(dope, false, "Use DOPE clutter clearing example.");
+DEFINE_string(setup, "clutter_clearing", "Manipulation Station setup option.");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -38,11 +38,15 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  // CHANGED from normal clutter clearing
-  if (FLAGS_dope) {
+  if (FLAGS_setup == "dope") {
     station->SetupDopeClutterClearingStation();
-  } else {
+  } else if (FLAGS_setup == "clutter_clearing") {
     station->SetupClutterClearingStation();
+  } else if (FLAGS_setup == "default") {
+    station->SetupDefaultStation();
+  } else {
+    DRAKE_ABORT_MSG("Invalid option for flag setup.  Valid options are: "
+                    "default, clutter_clearing, dope.");
   }
   station->Finalize();
 
