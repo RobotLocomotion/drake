@@ -47,7 +47,11 @@ PYBIND11_MODULE(manipulation_station, m) {
       .def("SetupClutterClearingStation",
           &ManipulationStation<T>::SetupClutterClearingStation,
           py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
-          doc.ManipulationStation.SetupDefaultStation.doc)
+          doc.ManipulationStation.SetupClutterClearingStation.doc)
+        .def("SetupDopeClutterClearingStation",
+        &ManipulationStation<T>::SetupDopeClutterClearingStation,
+        py::arg("collision_model") = IiwaCollisionModel::kNoCollision,
+        doc.ManipulationStation.SetupDopeClutterClearingStation.doc)
       .def("RegisterIiwaControllerModel",
           &ManipulationStation<T>::RegisterIiwaControllerModel,
           doc.ManipulationStation.RegisterIiwaControllerModel.doc)
