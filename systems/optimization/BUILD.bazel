@@ -70,6 +70,7 @@ drake_cc_googletest(
         ":system_constraint_adapter",
         ":system_optimization_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:gradient",
         "//solvers:solve",
         "//systems/primitives:linear_system",

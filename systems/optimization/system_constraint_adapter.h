@@ -87,6 +87,9 @@ class SystemConstraintAdapter {
    * If the SystemConstraint cannot be parsed to the form above, then return
    * empty; otherwise returns a parsed constraint, together with the bound
    * variables.
+   * @note We currently only support system without abstract state or abstract
+   * parameter. @throw invalid_argument if the system contains abstract state
+   * or abstract parameter.
    * @param index The index of the constraint in the System object.
    * @param context The context used to evaluate the SystemConstraint. @note
    * each expression in @p context (like state, parameter, etc) should be either

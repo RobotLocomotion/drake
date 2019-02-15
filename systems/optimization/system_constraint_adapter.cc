@@ -133,6 +133,10 @@ struct UpdateContextForSymbolicSystemConstraint {
   optional<int> time_var_index_;
 };
 
+// Parse the expression to either @p constant_val or the variable. Append that
+// variable to @p map-var_to_index and bound_variables. Return true if the
+// expression is either a constant or a symbolic variable; otherwise returns
+// false.
 bool ParseSymbolicVariableOrConstant(
     const symbolic::Expression& expr,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index,
@@ -165,6 +169,10 @@ optional<solvers::Binding<solvers::Constraint>>
 SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     SystemConstraintIndex index,
     const Context<symbolic::Expression>& context) const {
+  // TODO(hongkai.dai): First find out all the symbolic variables that could
+  // appear in the system constraint. If system_symbolic_ is not nullptr, then
+  // we can evaluate the system constraint using @p context. Otherwise, all the
+  // variables shown up in @p context would be the decision variables.
   std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
   VectorX<symbolic::Variable> bound_variables;
   // context_fixed stores the constant values in @p context
@@ -249,9 +257,8 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   if (context.num_abstract_parameters() != 0) {
     throw std::invalid_argument(
         "SystemConstraintAdapter: cannot handle system with abstract "
-        "paramter "
-        "using symbolic Context, try SystemConstraintAdapter::Create() "
-        "instead.");
+        "paramter using symbolic Context, try "
+        "SystemConstraintAdapter::Create() instead.");
   }
 
   UpdateContextForSymbolicSystemConstraint updater(
