@@ -7,42 +7,42 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 
+/// The Gurobi solver details after calling Solve() function. The user can call
+/// MathematicalProgramResult::get_solver_details<GurobiSolver>() to obtain the
+/// details.
 struct GurobiSolverDetails {
-  // The gurobi optimization time. Please refer to
-  // https://www.gurobi.com/documentation/8.0/refman/runtime.html
+  /// The gurobi optimization time. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/runtime.html
   double optimizer_time{};
 
-  // The error message returned from Gurobi call. Please refer to
-  // https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+  /// The error message returned from Gurobi call. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/error_codes.html
   int error_code{};
 
-  // The status code when the optimize call has returned. Please refer to
-  // https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+  /// The status code when the optimize call has returned. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
   int optimization_status{};
 
-  // The best known bound on the optimal objective. This is used in mixed
-  // integer optimization. Please refer to
-  // https://www.gurobi.com/documentation/8.0/refman/objbound.html
+  /// The best known bound on the optimal objective. This is used in mixed
+  /// integer optimization. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/objbound.html
   double objective_bound{NAN};
 };
 
-class GurobiSolver : public MathematicalProgramSolverInterface {
+class GurobiSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
 
-  GurobiSolver() = default;
-  ~GurobiSolver() override = default;
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = GurobiSolverDetails;
 
-  // This solver is implemented in various pieces depending on if
-  // Gurobi was available during compilation.
-  bool available() const override { return is_available(); };
-
-  static bool is_available();
+  GurobiSolver();
+  ~GurobiSolver() final;
 
   /// Contains info returned to a user function that handles
   /// a Node or Solution callback.
@@ -125,22 +125,6 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
     mip_sol_callback_ = callback;
   }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-             const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
-  static SolverId id();
-
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
-
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
-
   /**
    * This type contains a valid Gurobi license environment, and is only to be
    * used from AcquireLicense().
@@ -163,7 +147,22 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
    */
   static std::shared_ptr<License> AcquireLicense();
 
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+  // NOLINTNEXTLINE(runtime/references)
+  SolutionResult Solve(MathematicalProgram&) const final;
+
  private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
+
   // Note that this is mutable to allow latching the allocation of env_
   // during the first call of Solve() (which avoids grabbing a Gurobi license
   // before we know that we actually want one).

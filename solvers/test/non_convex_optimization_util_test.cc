@@ -235,10 +235,10 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegion(
   for (int i = 0; i < c.cols(); ++i) {
     cost.evaluator()->UpdateCoefficients(c.col(i).transpose());
     auto result = Solve(*prog);
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-    auto x_sol = prog->GetSolution(x, result);
-    auto y_sol = prog->GetSolution(y, result);
-    auto z_sol = prog->GetSolution(z, result);
+    EXPECT_TRUE(result.is_success());
+    auto x_sol = result.GetSolution(x);
+    auto y_sol = result.GetSolution(y);
+    auto z_sol = result.GetSolution(z);
     const double check_tol{1E-5};
     EXPECT_GE(z_sol(0) - z_sol(1) + p.dot(y_sol), lower_bound - check_tol);
     EXPECT_LE(z_sol(0) - z_sol(1) + p.dot(y_sol), upper_bound + check_tol);
@@ -325,11 +325,9 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion,
       &prog_, x_, Q1, Q2, x_, Eigen::Vector2d::Zero(), 1, 1,
       Eigen::Vector2d(1, 0), 0.1);
 
-  const auto result = Solve(prog_);
-  EXPECT_TRUE(result.get_solution_result() ==
-                  SolutionResult::kInfeasible_Or_Unbounded ||
-              result.get_solution_result() ==
-                  SolutionResult::kInfeasibleConstraints);
+  auto result = Solve(prog_).get_solution_result();
+  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
+              result == SolutionResult::kInfeasibleConstraints);
 }
 
 GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
@@ -350,10 +348,9 @@ GTEST_TEST(TestRelaxNonConvexQuadraticConstraintInTrustRegionInfeasible,
           &prog1, x1, Q1, Q2, x1, Eigen::Vector2d::Zero(), 1, 1,
           Eigen::Vector2d(-5, -3), 0.1);
 
-  auto result = Solve(prog1);
-  EXPECT_TRUE(
-      result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
-      result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
+  auto result = Solve(prog1).get_solution_result();
+  EXPECT_TRUE(result == SolutionResult::kInfeasibleConstraints ||
+              result == SolutionResult::kInfeasible_Or_Unbounded);
 
   // If we linearize the problem at about (7, -5), then the relaxed problem has
   // a solution around the linearization point.
@@ -458,10 +455,10 @@ void SolveRelaxNonConvexQuadraticConstraintInTrustRegionWithZeroQ1orQ2(
   for (int i = 0; i < c.cols(); ++i) {
     cost.evaluator()->UpdateCoefficients(c.col(i).transpose());
     auto result = Solve(*prog);
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-    const double z_sol = prog->GetSolution(z(0), result);
-    const Eigen::Vector2d x_sol = prog->GetSolution(x, result);
-    const Eigen::VectorXd y_sol = prog->GetSolution(y, result);
+    EXPECT_TRUE(result.is_success());
+    const double z_sol = result.GetSolution(z(0));
+    const Eigen::Vector2d x_sol = result.GetSolution(x);
+    const Eigen::VectorXd y_sol = result.GetSolution(y);
     const double tol{1E-5};
     EXPECT_GE(z_sign * z_sol + p.dot(y_sol), lb - tol);
     EXPECT_LE(z_sign * z_sol + p.dot(y_sol), ub + tol);
@@ -508,11 +505,9 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test2) {
       &prog_, x_, Eigen::Matrix2d::Zero(), Q2, x_, Eigen::Vector2d::Zero(), -4,
       -1, Eigen::Vector2d(0, 1), 1);
 
-  auto result = Solve(prog_);
-  EXPECT_TRUE(result.get_solution_result() ==
-                  SolutionResult::kInfeasible_Or_Unbounded ||
-              result.get_solution_result() ==
-                  SolutionResult::kInfeasibleConstraints);
+  auto result = Solve(prog_).get_solution_result();
+  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
+              result == SolutionResult::kInfeasibleConstraints);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ1Test3) {
@@ -564,11 +559,9 @@ TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test2) {
       &prog_, x_, Q1, Eigen::Matrix2d::Zero(), x_, Eigen::Vector2d::Zero(), 1,
       4, Eigen::Vector2d(0, 1), 1);
 
-  const auto result = Solve(prog_);
-  EXPECT_TRUE(result.get_solution_result() ==
-                  SolutionResult::kInfeasible_Or_Unbounded ||
-              result.get_solution_result() ==
-                  SolutionResult::kInfeasibleConstraints);
+  auto result = Solve(prog_).get_solution_result();
+  EXPECT_TRUE(result == SolutionResult::kInfeasible_Or_Unbounded ||
+              result == SolutionResult::kInfeasibleConstraints);
 }
 
 TEST_F(TestRelaxNonConvexQuadraticConstraintInTrustRegion, ZeroQ2Test3) {

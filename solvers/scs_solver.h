@@ -2,13 +2,14 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
-/** The SCS solver details after calling Solve function in ScsSolver. The user
- * can obtain the details from
- * MathematicalProgramResult.get_solver_details().GetValue<ScsSolverDetails>();
+/**
+ * The SCS solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<ScsSolver>() to obtain the
+ * details.
  */
 struct ScsSolverDetails {
   /// The status of the solver at termination. Please refer to
@@ -54,48 +55,32 @@ struct ScsSolverDetails {
   Eigen::VectorXd s;
 };
 
-class ScsSolver : public MathematicalProgramSolverInterface {
+class ScsSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScsSolver)
 
-  ScsSolver() = default;
-  ~ScsSolver() override = default;
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = ScsSolverDetails;
 
-  // This solver is implemented in various pieces depending on if
-  // SCS was available during compilation.
-  bool available() const override { return is_available(); };
+  ScsSolver();
+  ~ScsSolver() final;
 
-  static bool is_available();
+  // TODO(hongkai.dai): add function to set the verbosity through SolverOptions
+  // or MathematicalProgram.
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @name Static versions of the instance methods with similar names.
+  //@{
   static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
 
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
 
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
-
-  // If the user want the solver to print out debug message, then set this to
-  // true; otherwise set it to false. The default is false.
-  // TODO(hongkai.dai): add function to set the option through
-  // MathematicalProgram.
-  DRAKE_DEPRECATED(
-      "Use SolverOptions::SetOption(ScsSolver::id(), \"verbose\", true) to set "
-      "the verbose option.")
-  void SetVerbose(bool) {
-    throw std::runtime_error(
-        "Use SolverOptions::SetOption(ScsSolver::id(), \"verbose\", true) to "
-        "set the verbose options to true.");
-  }
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 
 }  // namespace solvers

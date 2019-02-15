@@ -173,7 +173,7 @@ ComputationPolicy ParseComputationPolicy(const YAML::Node& node) {
   if (policy == "prefer-speed") {
     return ComputationPolicy::kPreferSpeed;
   }
-  DRAKE_ABORT();
+  throw std::runtime_error("Unknown ComputationPolicy");
 }
 
 // Builds a LaneLayout based `node`'s lane node, the left and right shoulders.
@@ -230,9 +230,8 @@ Direction ResolveDirection(const std::string& direction_key) {
     return Direction::kForward;
   } else if (direction_key == "reverse") {
     return Direction::kReverse;
-  } else {
-    DRAKE_ABORT();
   }
+  throw std::runtime_error("Unknown direction_key");
 }
 
 // Returns the Direction that `end_key` sets to the Endpoint / EndpointZ.
@@ -242,9 +241,8 @@ api::LaneEnd::Which ResolveEnd(const std::string& end_key) {
     return api::LaneEnd::Which::kStart;
   } else if (end_key == "end") {
     return api::LaneEnd::Which::kFinish;
-  } else {
-    DRAKE_ABORT();
   }
+  throw std::runtime_error("Unknown end_key");
 }
 
 // Returns a ParsedReference structure by extracting keywords from
@@ -280,7 +278,7 @@ ParsedReference ResolveEndpointReference(const std::string& endpoint_key) {
     parsed_reference.lane_id = pieces_match[3].str() == "ref"
         ? nullopt : optional<int>(std::atoi(pieces_match[3].str().c_str()));
   } else {
-    DRAKE_ABORT();
+    throw std::runtime_error("Unknown endpoint reference");
   }
   return parsed_reference;
 }
@@ -363,7 +361,7 @@ optional<std::pair<ParsedAnchorPoint, StartSpec>> ResolveEndpoint(
           parsed_reference.end.value(), parsed_reference.direction);
     }
   } else {
-    DRAKE_ABORT();
+    throw std::runtime_error("Unknown endpoint");
   }
   return {{parsed_anchor_point, spec}};
 }
@@ -435,10 +433,10 @@ optional<std::pair<ParsedAnchorPoint, EndSpec>> ResolveEndpointZ(
             parsed_reference.end.value(), parsed_reference.direction);
       }
     } else {
-      DRAKE_ABORT();
+      throw std::runtime_error("Unknown EndpointZ scalar");
     }
   } else {
-    DRAKE_ABORT();
+    throw std::runtime_error("Unknown EndpointZ node type");
   }
   return {{parsed_anchor_point, spec}};
 }
@@ -523,10 +521,8 @@ const Connection* MaybeMakeConnection(
                                   ParseArcOffset(node["arc"]),
                                   *(end_spec->second.ref_spec));
         }
-        default: {
-          DRAKE_ABORT();
-        }
       }
+      DRAKE_UNREACHABLE();
     }
     case AnchorPointType::kLane: {
       switch (geometry_type) {
@@ -542,15 +538,11 @@ const Connection* MaybeMakeConnection(
                                   ParseArcOffset(node["arc"]),
                                   *(end_spec->second.lane_spec));
         }
-        default: {
-          DRAKE_ABORT();
-        }
       }
-    }
-    default: {
-      DRAKE_ABORT();
+      DRAKE_UNREACHABLE();
     }
   }
+  DRAKE_UNREACHABLE();
 }
 
 // Parses a YAML `node` that represents a RoadGeometry.

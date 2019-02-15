@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":contact_info",
         ":contact_results",
         ":coulomb_friction",
+        ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
         ":multibody_plant_core",
     ],
@@ -46,6 +47,7 @@ drake_cc_library(
     deps = [
         ":contact_results",
         ":coulomb_friction",
+        ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
         "//common:default_scalars",
         "//geometry:geometry_ids",
@@ -135,12 +137,49 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "externally_applied_spatial_force",
+    srcs = ["externally_applied_spatial_force.cc"],
+    hdrs = ["externally_applied_spatial_force.h"],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/math:spatial_force",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
 drake_cc_googletest(
     name = "implicit_stribeck_solver_test",
     deps = [
         ":implicit_stribeck_solver",
         ":implicit_stribeck_solver_test_util",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "applied_generalized_force_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/controllers:inverse_dynamics_controller",
+    ],
+)
+
+drake_cc_googletest(
+    name = "externally_applied_spatial_force_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/primitives:constant_vector_source",
     ],
 )
 
@@ -161,12 +200,24 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:geometry_set_tester",
         "//math:geometric_transform",
         "//math:gradient",
         "//multibody/benchmarks/acrobot",
         "//multibody/benchmarks/pendulum",
         "//multibody/parsing",
+        "//systems/primitives:constant_vector_source",
         "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_symbolic_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:symbolic_test_util",
+        "//multibody/benchmarks/pendulum",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
@@ -259,6 +310,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "floating_body_test",
+    timeout = "moderate",
+    srcs = [
+        "test/floating_body_test.cc",
+    ],
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/free_body",
+        "//multibody/test_utilities:floating_body_plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
     name = "inclined_plane_test",
     timeout = "moderate",
     deps = [
@@ -289,7 +354,9 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":plant",
+        "//common/test_utilities:symbolic_test_util",
         "//systems/analysis:simulator",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

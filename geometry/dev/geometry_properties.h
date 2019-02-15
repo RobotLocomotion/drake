@@ -11,7 +11,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/value.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace geometry {
@@ -200,8 +200,7 @@ namespace dev {
 class GeometryProperties {
  public:
   using PropertyGroup =
-      std::unordered_map<std::string,
-                         copyable_unique_ptr<systems::AbstractValue>>;
+      std::unordered_map<std::string, copyable_unique_ptr<AbstractValue>>;
 
   /** Adds a *new* group to the property set (if it doesn't already exist). If
    the group already exists, there is no change to the property set.  */
@@ -246,7 +245,7 @@ class GeometryProperties {
    @returns true if the property value is added.
    @throws  std::logic_error if `group` is not a valid property group.
    @tparam ValueType the type of data to store with the attribute -- must be
-                     copy constructible or cloneable (see systems::Value).  */
+                     copy constructible or cloneable (see Value).  */
   template <typename ValueType>
   bool AddProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
@@ -255,7 +254,7 @@ class GeometryProperties {
       PropertyGroup& group = iter->second;
       auto value_iter = group.find(name);
       if (value_iter == group.end()) {
-        group[name] = std::make_unique<systems::Value<ValueType>>(value);
+        group[name] = std::make_unique<Value<ValueType>>(value);
         return true;
       }
       return false;
@@ -272,14 +271,14 @@ class GeometryProperties {
    value.
    @throws  std::logic_error if `group` is not a valid property group.
    @tparam ValueType the type of data to store with the attribute -- must be
-                     copy constructible or cloneable (see systems::Value).  */
+                     copy constructible or cloneable (see Value).  */
   template <typename ValueType>
   void SetProperty(const std::string& group_name, const std::string& name,
                    const ValueType& value) {
     auto iter = values_.find(group_name);
     if (iter != values_.end()) {
       PropertyGroup& group = iter->second;
-      group[name] = std::make_unique<systems::Value<ValueType>>(value);
+      group[name] = std::make_unique<Value<ValueType>>(value);
     } else {
       throw std::logic_error(
           fmt::format("Trying to add property {} to group {}. But the group "

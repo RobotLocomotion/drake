@@ -150,7 +150,7 @@ class QuadraticProgram4 : public OptimizationProgram {
 // from a desired point which moves along the unit circle (L2 ball), to a point
 // constrained to lie inside the L1 ball.  Implemented in 2D, so that the
 // active set moves along 4 faces of the L1 ball.
-void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver);
+void TestQPonUnitBallExample(const SolverInterface& solver);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

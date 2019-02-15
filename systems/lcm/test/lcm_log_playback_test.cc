@@ -32,7 +32,8 @@ class DummySys : public LeafSystem<double> {
 
   DummySys() {
     DeclareAbstractInputPort("lcmt_drake_signal", Value<lcmt_drake_signal>());
-    DeclarePeriodicPublish(1.0 / publish_freq_, 0.0 /* no time offset */);
+    DeclarePeriodicPublishEvent(1.0 / publish_freq_, 0.0 /* no time offset */,
+        &DummySys::SaveMessage);
   }
 
   const std::vector<lcmt_drake_signal>& get_received_msgs() const {
@@ -48,22 +49,19 @@ class DummySys : public LeafSystem<double> {
   }
 
  private:
-  void DoPublish(
-      const Context<double>& context,
-      const std::vector<const systems::PublishEvent<double>*>&)
-  const override {
-    const lcmt_drake_signal* msg =
-        EvalInputValue<lcmt_drake_signal>(context, 0);
+  EventStatus SaveMessage(const Context<double>& context) const {
+    const lcmt_drake_signal& msg =
+        this->get_input_port(0).Eval<lcmt_drake_signal>(context);
 
     bool is_new_msg = false;
-    if (received_msgs_.empty() && msg->timestamp != 0) is_new_msg = true;
+    if (received_msgs_.empty() && msg.timestamp != 0) is_new_msg = true;
     if (!received_msgs_.empty() &&
-        (msg->timestamp != received_msgs_.back().timestamp)) {
+        (msg.timestamp != received_msgs_.back().timestamp)) {
       is_new_msg = true;
     }
 
     if (is_new_msg) {
-      received_msgs_.push_back(*msg);
+      received_msgs_.push_back(msg);
 
       // The diagram that this system is embedded in works the following way:
       // The LCM Subscriber system receives a message and then requests an
@@ -77,6 +75,7 @@ class DummySys : public LeafSystem<double> {
       // "tick" behind.
       received_time_.push_back(context.get_time() - 1.0 / publish_freq_);
     }
+    return EventStatus::Succeeded();
   }
 
   const double publish_freq_{100.0};  // In Hz.

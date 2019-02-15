@@ -7,10 +7,10 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
@@ -123,7 +123,7 @@ void DefineFrameworkPyValues(py::module m) {
   // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
   AddValueInstantiation<string>(m);
 
-  // Add `Value<>` instantations for basic vectors templated on common scalar
+  // Add `Value<>` instantiations for basic vectors templated on common scalar
   // types.
   auto bind_abstract_basic_vectors = [m](auto dummy) {
     using T = decltype(dummy);

@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 
@@ -74,8 +74,12 @@ TEST_F(WeldJointTest, GetX_PC) {
 }
 
 TEST_F(WeldJointTest, GetJointLimits) {
-  EXPECT_EQ(joint_->lower_limits().size(), 0);
-  EXPECT_EQ(joint_->upper_limits().size(), 0);
+  EXPECT_EQ(joint_->position_lower_limits().size(), 0);
+  EXPECT_EQ(joint_->position_upper_limits().size(), 0);
+  EXPECT_EQ(joint_->velocity_lower_limits().size(), 0);
+  EXPECT_EQ(joint_->velocity_upper_limits().size(), 0);
+  EXPECT_EQ(joint_->acceleration_lower_limits().size(), 0);
+  EXPECT_EQ(joint_->acceleration_upper_limits().size(), 0);
 }
 
 }  // namespace

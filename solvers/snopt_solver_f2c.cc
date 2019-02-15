@@ -604,25 +604,14 @@ void UpdateLinearConstraint(const MathematicalProgram& prog,
 
 bool SnoptSolver::is_available() { return true; }
 
-void SnoptSolver::Solve(const MathematicalProgram& prog,
-                        const optional<Eigen::VectorXd>& initial_guess,
-                        const optional<SolverOptions>& solver_options,
-                        MathematicalProgramResult* result) const {
-  *result = {};
-
-  // Our function's arguments for initial_guess and solver_options take
-  // precedence over prog's values.
-  const Eigen::VectorXd& x_init =
-      initial_guess ? *initial_guess : prog.initial_guess();
-  SolverOptions merged_options =
-      solver_options ? *solver_options : SolverOptions();
-  merged_options.Merge(prog.solver_options());
-
-  // TODO(jwnimmer-tri) If we ever decide to report solver details to the user,
-  // we'll have to set the user type here instead of our private type, and then
-  // nest our private SNOPTData within it.  But for now at least, this is an
-  // easy place to keep it.
-  SNOPTData& snopt_data = result->SetSolverDetailsType<SNOPTData>();
+void SnoptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
+  // TODO(hongkai.dai): put SNOPTData inside SnoptSolverDetails, so that we do
+  // not need to allocate memory for SNOPTData when we call Solve repeatedly.
+  SNOPTData snopt_data{};
   auto d = &snopt_data;
 
   const std::unordered_set<int> cost_gradient_indices =
@@ -638,8 +627,8 @@ void SnoptSolver::Solve(const MathematicalProgram& prog,
   snopt::doublereal* xlow = d->xlow.data();
   snopt::doublereal* xupp = d->xupp.data();
   for (int i = 0; i < nx; i++) {
-    if (!std::isnan(x_init(i))) {
-      x[i] = static_cast<snopt::doublereal>(x_init(i));
+    if (!std::isnan(initial_guess(i))) {
+      x[i] = static_cast<snopt::doublereal>(initial_guess(i));
     } else {
       x[i] = 0.0;
     }
@@ -832,7 +821,12 @@ void SnoptSolver::Solve(const MathematicalProgram& prog,
       npname, 8 * nxname, 8 * nFname, 8 * d->lencw, 8 * d->lencw);
 
   // Populate our results structure.
-  result->set_solver_id(id());
+  SnoptSolverDetails& solver_details =
+      result->SetSolverDetailsType<SnoptSolverDetails>();
+  solver_details.info = info;
+  solver_details.xmul = Eigen::Map<Eigen::VectorXd>(xmul, nx);
+  solver_details.F = Eigen::Map<Eigen::VectorXd>(F, nF);
+  solver_details.Fmul = Eigen::Map<Eigen::VectorXd>(Fmul, nF);
   SolutionResult solution_result{SolutionResult::kUnknownError};
   if (info >= 1 && info <= 6) {
     solution_result = SolutionResult::kSolutionFound;
@@ -856,7 +850,6 @@ void SnoptSolver::Solve(const MathematicalProgram& prog,
   } else {
     result->set_optimal_cost(*F);
   }
-  // todo: extract the other useful quantities, too.
 }
 
 bool SnoptSolver::is_thread_safe() { return false; }

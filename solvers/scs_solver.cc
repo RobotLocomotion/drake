@@ -569,18 +569,14 @@ void SetScsSettings(
 }
 }  // namespace
 
-void ScsSolver::Solve(const MathematicalProgram& prog,
-                      const optional<Eigen::VectorXd>& initial_guess,
-                      const optional<SolverOptions>& solver_options,
-                      MathematicalProgramResult* result) const {
-  *result = {};
+void ScsSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   // TODO(hongkai.dai): allow warm starting SCS with initial guess on
   // primal/dual variables and primal residues.
   unused(initial_guess);
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(
-        "SCS doesn't have the capability required by the program.");
-  }
   // The initial guess for SCS is unused.
   // SCS solves the problem in this form
   // min  cᵀx
@@ -679,20 +675,12 @@ void ScsSolver::Solve(const MathematicalProgram& prog,
   ScsData* scs_problem_data =
       static_cast<ScsData*>(scs_calloc(1, sizeof(ScsData)));
   SetScsProblemData(A_row_count, num_x, A, b, c, scs_problem_data);
-  std::unordered_map<std::string, int> prog_solver_options_int =
-      prog.GetSolverOptionsInt(id());
-  std::unordered_map<std::string, double> prog_solver_options_double =
-      prog.GetSolverOptionsDouble(id());
-  SetScsSettings(&prog_solver_options_int, scs_problem_data->stgs);
-  SetScsSettings(&prog_solver_options_double, scs_problem_data->stgs);
-  if (solver_options.has_value()) {
-    std::unordered_map<std::string, int> input_solver_options_int =
-        solver_options->GetOptionsInt(id());
-    std::unordered_map<std::string, double> input_solver_options_double =
-        solver_options->GetOptionsDouble(id());
-    SetScsSettings(&input_solver_options_int, scs_problem_data->stgs);
-    SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
-  }
+  std::unordered_map<std::string, int> input_solver_options_int =
+      merged_options.GetOptionsInt(id());
+  std::unordered_map<std::string, double> input_solver_options_double =
+      merged_options.GetOptionsDouble(id());
+  SetScsSettings(&input_solver_options_int, scs_problem_data->stgs);
+  SetScsSettings(&input_solver_options_double, scs_problem_data->stgs);
 
   ScsInfo scs_info{0};
 
@@ -714,7 +702,6 @@ void ScsSolver::Solve(const MathematicalProgram& prog,
   solver_details.scs_solve_time = scs_info.solve_time;
 
   SolutionResult solution_result{SolutionResult::kUnknownError};
-  result->set_solver_id(id());
   solver_details.y.resize(A_row_count);
   solver_details.s.resize(A_row_count);
   for (int i = 0; i < A_row_count; ++i) {
@@ -750,12 +737,5 @@ void ScsSolver::Solve(const MathematicalProgram& prog,
   scs_free_sol(scs_sol);
 }
 
-SolutionResult ScsSolver::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
-}
 }  // namespace solvers
 }  // namespace drake

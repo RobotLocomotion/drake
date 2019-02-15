@@ -22,7 +22,7 @@ class TestPlant : public LeafSystem<double> {
   TestPlant() {}
 
   double GetInputValue(const Context<double>& context) {
-    return EvalEigenVectorInput(context, 0)(0);
+    return get_input_port(0).Eval(context)[0];
   }
 };
 

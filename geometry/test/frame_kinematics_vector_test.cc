@@ -102,7 +102,7 @@ GTEST_TEST(FrameKinematicsVector, WorkingWithValues) {
   DRAKE_EXPECT_THROWS_MESSAGE(poses.value(FrameId::get_new_id()),
                               std::runtime_error,
                               "Can't acquire value for id \\d+. It is not part "
-                              "of the kinematics data id set.")
+                              "of the kinematics data id set.");
 }
 
 GTEST_TEST(FrameKinematicsVector, AutoDiffInstantiation) {

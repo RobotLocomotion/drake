@@ -12,7 +12,7 @@ namespace test {
 /// The analytical solution is
 /// S = [1 1]
 ///     [1 1]
-void TestTrivialSDP(const MathematicalProgramSolverInterface& solver,
+void TestTrivialSDP(const SolverInterface& solver,
                     double tol);
 
 // Solve a semidefinite programming problem.
@@ -22,7 +22,7 @@ void TestTrivialSDP(const MathematicalProgramSolverInterface& solver,
 // min 0
 // s.t P is positive definite
 //     - (Ai'*P + P*Ai) is positive definite
-void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver,
+void FindCommonLyapunov(const SolverInterface& solver,
                         double tol);
 
 /*
@@ -50,7 +50,7 @@ void FindCommonLyapunov(const MathematicalProgramSolverInterface& solver,
  *     ⎣sᵢbᵢᵀ - cᵀ   1 - sᵢ⎦
  * P is p.s.d
  */
-void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver,
+void FindOuterEllipsoid(const SolverInterface& solver,
                         double tol);
 
 // Solve an eigen value problem through a semidefinite programming.
@@ -60,7 +60,7 @@ void FindOuterEllipsoid(const MathematicalProgramSolverInterface& solver,
 // s.t z * Identity - x1 * F1 - ... - xn * Fn is p.s.d
 //     A * x <= b
 //     C * x = d
-void SolveEigenvalueProblem(const MathematicalProgramSolverInterface& solver,
+void SolveEigenvalueProblem(const SolverInterface& solver,
                             double tol);
 }  // namespace test
 }  // namespace solvers

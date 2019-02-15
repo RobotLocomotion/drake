@@ -64,7 +64,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
     const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
     DiscreteValues<double>* discrete_state) const {
   const double desired_position =
-      this->EvalEigenVectorInput(context, desired_position_input_port_)[0];
+      get_desired_position_input_port().Eval(context)[0];
 
   // The desired position input is the distance between the fingers in meters.
   // This class generates trajectories for the negative of the distance
@@ -72,9 +72,8 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
 
   double target_position = -desired_position;
 
-  const systems::BasicVector<double>* state =
-      this->EvalVectorInput(context, state_input_port_);
-  const double cur_position = 2 * state->GetAtIndex(position_index_);
+  const auto& state = get_state_input_port().Eval(context);
+  const double cur_position = 2 * state[position_index_];
 
   const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
@@ -84,8 +83,7 @@ void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
           &discrete_state->get_mutable_vector(0));
   new_traj_state->set_last_position(cur_position);
 
-  const double max_force =
-      this->EvalEigenVectorInput(context, force_limit_input_port_)[0];
+  const double max_force = get_force_limit_input_port().Eval(context)[0];
   new_traj_state->set_max_force(max_force);
 
   if (std::abs(last_traj_state->last_target_position() - target_position) >

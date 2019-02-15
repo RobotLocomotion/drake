@@ -27,7 +27,7 @@ std::pair<double, double> RunWsgControllerTestStep(
       dut.AllocateOutput();
   context->FixInputPort(
       dut.GetInputPort("command_message").get_index(),
-      std::make_unique<systems::Value<lcmt_schunk_wsg_command>>(wsg_command));
+      std::make_unique<Value<lcmt_schunk_wsg_command>>(wsg_command));
   Eigen::VectorXd wsg_state_vec =
       Eigen::VectorXd::Zero(kSchunkWsgNumPositions + kSchunkWsgNumVelocities);
   wsg_state_vec(0) = -(wsg_position / 1e3) / 2.;

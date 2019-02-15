@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -11,11 +10,11 @@ namespace internal {
 
 template <typename T>
 Isometry3<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>&) const { return X_FM_.cast<T>(); }
+    const systems::Context<T>&) const { return X_FM_.cast<T>(); }
 
 template <typename T>
 SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
   return SpatialVelocity<T>::Zero();
@@ -24,7 +23,7 @@ SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 WeldMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   return SpatialAcceleration<T>::Zero();
@@ -32,7 +31,7 @@ WeldMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void WeldMobilizer<T>::ProjectSpatialForce(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const SpatialForce<T>&,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
@@ -40,15 +39,15 @@ void WeldMobilizer<T>::ProjectSpatialForce(
 
 template <typename T>
 void WeldMobilizer<T>::DoCalcNMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>>) const {}
+    const systems::Context<T>&, EigenPtr<MatrixX<T>>) const {}
 
 template <typename T>
 void WeldMobilizer<T>::DoCalcNplusMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>>) const {}
+    const systems::Context<T>&, EigenPtr<MatrixX<T>>) const {}
 
 template <typename T>
 void WeldMobilizer<T>::MapVelocityToQDot(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -58,7 +57,7 @@ void WeldMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void WeldMobilizer<T>::MapQDotToVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
@@ -91,9 +90,16 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> WeldMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Mobilizer<symbolic::Expression>>
+WeldMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::multibody::internal::WeldMobilizer)

@@ -101,7 +101,6 @@ class AbstractValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValue)
 
-  AbstractValue() {}
   virtual ~AbstractValue();
 
   /// Returns a copy of this AbstractValue.
@@ -124,7 +123,9 @@ class AbstractValue {
   /// Returns typeid(T) for this Value<T> object. If T is polymorphic, this
   /// does NOT reflect the typeid of the most-derived type of the contained
   /// object; the result is always the base type T.
-  virtual const std::type_info& static_type_info() const = 0;
+  const std::type_info& static_type_info() const {
+    return static_type_info_;
+  }
 
   /// Returns a human-readable name for the underlying type T. This may be
   /// slow but is useful for error messages. If T is polymorphic, this returns
@@ -159,8 +160,8 @@ class AbstractValue {
   ///          otherwise nullptr.
   template <typename T>
   const T* MaybeGetValue() const {
-    const Value<T>* value = dynamic_cast<const Value<T>*>(this);
-    if (value == nullptr) return nullptr;
+    if (!is_matched<T>()) { return nullptr; }
+    auto* value = static_cast<const Value<T>*>(this);
     return &value->get_value();
   }
 
@@ -205,7 +206,17 @@ class AbstractValue {
     return std::unique_ptr<AbstractValue>(new Value<T>(value));
   }
 
+ protected:
+  explicit AbstractValue(const std::type_info& static_type_info)
+      : static_type_info_(static_type_info) {}
+
  private:
+  // Returns true iff `this` is-a `Value<T>`.
+  template <typename T>
+  bool is_matched() const {
+    return typeid(T) == static_type_info_;
+  }
+
   // Casts this to a Value<T>*. Throws if the cast fails.
   template <typename T>
   Value<T>* DownCastMutableOrThrow() {
@@ -228,14 +239,13 @@ class AbstractValue {
   // Casts this to a const Value<T>*. Throws if the cast fails.
   template <typename T>
   const Value<T>* DownCastOrThrow() const {
-    const Value<T>* value = dynamic_cast<const Value<T>*>(this);
-    if (value == nullptr) {
+    if (!is_matched<T>()) {
       throw std::logic_error(
           "AbstractValue: a request to extract a value of type '" +
           NiceTypeName::Get<T>() + "' failed because the actual type was '" +
           GetNiceTypeName() + "'.");
     }
-    return value;
+    return static_cast<const Value<T>*>(this);
   }
 
   // Casts this to a const Value<T>*. In Debug builds, throws if
@@ -245,6 +255,8 @@ class AbstractValue {
     // TODO(david-german-tri): Use static_cast in Release builds for speed.
     return DownCastOrThrow<T>();
   }
+
+  const std::type_info& static_type_info_;
 };
 
 /// A container class for an arbitrary type T. User-defined classes that
@@ -264,10 +276,16 @@ class Value : public AbstractValue {
             typename = typename std::enable_if_t<
                 std::is_default_constructible<T1>::value>>
 #endif
-  Value() : value_{} { Traits::reinitialize_if_necessary(&value_); }
+  Value()
+      : AbstractValue(typeid(T)),
+        value_{} {
+    Traits::reinitialize_if_necessary(&value_);
+  }
 
   /// Constructs a Value<T> by copying or cloning the given value @p v.
-  explicit Value(const T& v) : value_(Traits::to_storage(v)) {}
+  explicit Value(const T& v)
+      : AbstractValue(typeid(T)),
+        value_(Traits::to_storage(v)) {}
 
   /// Constructs a Value<T> by forwarding the given @p args to T's constructor,
   /// if available.  This is only available for non-primitive T's that are
@@ -293,7 +311,8 @@ class Value : public AbstractValue {
                 value_detail::ValueTraits<T>::UseCopy::value
               >>
   explicit Value(Arg1&& arg1, Args&&... args)
-      : value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {}
+      : AbstractValue(typeid(T)),
+        value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {}
 
   // This overload is for cloneable T; we move a unique_ptr into our Storage.
   template <typename Arg1,
@@ -310,14 +329,16 @@ class Value : public AbstractValue {
             // Dummy to disambiguate this method from the above overload.
             typename = void>
   explicit Value(Arg1&& arg1, Args&&... args)
-      : value_{std::make_unique<T>(
+      : AbstractValue(typeid(T)),
+        value_{std::make_unique<T>(
             std::forward<Arg1>(arg1), std::forward<Args>(args)...)} {}
 #endif
 
   /// Constructs a Value<T> by copying or moving the given value @p v.
   /// @pre v is non-null
   explicit Value(std::unique_ptr<T> v)
-      : value_{Traits::to_storage(std::move(v))} {}
+      : AbstractValue(typeid(T)),
+        value_{Traits::to_storage(std::move(v))} {}
   // An explanation of the above constructor:
   //
   // We start with a unique_ptr<T> v.  We std::move it to get an xvalue
@@ -353,10 +374,6 @@ class Value : public AbstractValue {
     value_ = Traits::to_storage(other.GetValueOrThrow<T>());
   }
 
-  const std::type_info& static_type_info() const final {
-    return typeid(T);
-  }
-
   const std::type_info& type_info() const override {
     return typeid(get_value());
   }
@@ -374,14 +391,5 @@ class Value : public AbstractValue {
   using Traits = value_detail::ValueTraits<T>;
   typename Traits::Storage value_;
 };
-
-#if !defined(DRAKE_DOXYGEN_CXX)
-// TODO(jwnimmer-tri) Port all of Drake to use the new location, and then
-// deprecate the old typenames, include path, and BUILD label.
-namespace systems {
-using AbstractValue = drake::AbstractValue;
-template <typename T> using Value = drake::Value<T>;
-}  // namespace systems
-#endif
 
 }  // namespace drake

@@ -10,7 +10,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
@@ -34,9 +33,9 @@ namespace math {
 /// @note This class does not store the frames associated with a rotation matrix
 /// nor does it enforce strict proper usage of this class with vectors.
 ///
-/// @note When DRAKE_ASSERT_IS_ARMED is defined, several methods in this class
+/// @note When assertions are enabled, several methods in this class
 /// do a validity check and throw an exception (std::logic_error) if the
-/// rotation matrix is invalid.  When DRAKE_ASSERT_IS_ARMED is not defined,
+/// rotation matrix is invalid.  When assertions are disabled,
 /// many of these validity checks are skipped (which helps improve speed).
 /// In addition, these validity tests are only performed for scalar types for
 /// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
@@ -932,22 +931,6 @@ RotationMatrix<T>::ThrowIfNotValid(const Matrix3<S>& R) {
     throw std::logic_error("Error: Rotation matrix determinant is negative. "
                                "It is possible a basis is left-handed");
   }
-}
-
-// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-template <typename Derived>
-DRAKE_DEPRECATED("Use  RotationMatrix(RollPitchYaw(rpy)).matrix() as per issue "
-                 "#8323. Code will be deleted after February 5, 2019. Consider "
-                 "updating call sites to use the RotationMatrix class rather "
-                 "than a Matrix3 because it ensures the underlying 3x3 matrix "
-                 "is a valid rotation matrix.")
-Matrix3<typename Derived::Scalar> rpy2rotmat(
-    const Eigen::MatrixBase<Derived>& rpy) {
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 3);
-  using Scalar = typename Derived::Scalar;
-  const RollPitchYaw<Scalar> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  const RotationMatrix<Scalar> R(roll_pitch_yaw);
-  return R.matrix();
 }
 
 }  // namespace math

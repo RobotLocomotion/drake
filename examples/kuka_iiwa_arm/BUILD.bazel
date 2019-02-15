@@ -10,7 +10,8 @@ load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
-load("//tools/install:install_data.bzl", "install", "install_data")
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_py.bzl",
@@ -35,6 +36,7 @@ drake_cc_library(
         "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
+        "//manipulation/kuka_iiwa:iiwa_constants",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
     ],
@@ -53,6 +55,7 @@ drake_cc_library(
         "//attic/multibody/rigid_body_plant:contact_results",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
+        "//manipulation/kuka_iiwa",
         "//systems/framework:leaf_system",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:translator",
@@ -230,7 +233,6 @@ drake_cc_googletest(
     deps = [
         ":iiwa_lcm",
         "//attic/manipulation/util:world_sim_tree_builder",
-        "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
     ],
 )
@@ -298,20 +300,8 @@ install(
     visibility = ["//visibility:public"],
 )
 
-filegroup(
-    name = "director_configs",
-    srcs = glob([
-        "*.csv",
-        "*.json",
-    ]),
-)
-
 install(
     name = "install_data",
-    data = [
-        ":director_configs",
-    ],
-    data_dest = "share/drake/" + package_name(),
     visibility = ["//visibility:public"],
     deps = [
         "//examples/kuka_iiwa_arm/models:install_data",

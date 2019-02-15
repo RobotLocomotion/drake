@@ -10,7 +10,6 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/systems/controllers/qp_inverse_dynamics/qp_inverse_dynamics_common.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -40,7 +39,7 @@ GTEST_TEST(QpOutputTranslatorTest, QpOutputTranslatorTest) {
     qp_output->mutable_dof_torques()[i] = i * 0.3;
   }
 
-  auto input = systems::AbstractValue::Make<QpOutput>(*qp_output);
+  auto input = AbstractValue::Make<QpOutput>(*qp_output);
   context->FixInputPort(dut->get_input_port_qp_output().get_index(),
                         std::move(input));
 

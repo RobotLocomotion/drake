@@ -6,8 +6,6 @@
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
 using drake::math::RotationMatrixd;
-using drake::multibody::internal::IiwaKinematicConstraintTest;
-using drake::multibody::internal::TwoFreeBodiesConstraintTest;
 using drake::systems::Context;
 
 namespace drake {

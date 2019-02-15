@@ -272,7 +272,7 @@ struct CollisionData {
 };
 
 // An internal functor to support DistanceFromPointCallback() and
-// ComputeNearphaseDistance(). It computes the signed distance to a query
+// ComputeNarrowPhaseDistance(). It computes the signed distance to a query
 // point from a supported geometry. Each overload to the call operator
 // reports the signed distance (encoded as SignedDistanceToPoint) between the
 // functor's stored query point and the given geometry argument.
@@ -457,11 +457,11 @@ void DistancePairGeometry::operator()(const fcl::Boxd* box_A,
 
 // Helps DistanceCallback(). Do it in closed forms for sphere-sphere or
 // sphere-box. Otherwise, use FCL GJK/EPA.
-void ComputeNearphaseDistance(const fcl::CollisionObjectd* a,
-                              const fcl::CollisionObjectd* b,
-                              const std::vector<GeometryId>& geometry_map,
-                              const fcl::DistanceRequestd& request,
-                              fcl::DistanceResultd* result) {
+void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
+                                const fcl::CollisionObjectd* b,
+                                const std::vector<GeometryId>& geometry_map,
+                                const fcl::DistanceRequestd& request,
+                                fcl::DistanceResultd* result) {
   const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
   const RigidTransformd X_WA(a->getTransform());
@@ -525,54 +525,45 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
                       fcl::CollisionObjectd* fcl_object_B_ptr,
                       // NOLINTNEXTLINE
                       void* callback_data, double&) {
-  // NOTE: Although this function *takes* non-const pointers to satisfy the
-  // fcl api, it should not exploit the non-constness to modify the collision
-  // objects. We insure this by immediately assigning to a const version and
-  // not directly using the provided parameters.
-  const fcl::CollisionObjectd& fcl_object_A = *fcl_object_A_ptr;
-  const fcl::CollisionObjectd& fcl_object_B = *fcl_object_B_ptr;
-
-  auto& collision_data = *static_cast<DistanceData*>(callback_data);
+  auto& distance_data = *static_cast<DistanceData*>(callback_data);
+  const std::vector<GeometryId>& geometry_map = distance_data.geometry_map;
+  // We want to pass object_A and object_B to the narrowphase distance in a
+  // specific order. This way the broadphase distance is free to give us
+  // either (A,B) or (B,A), and the narrowphase distance will always give the
+  // same result.
+  const GeometryId orig_id_A = EncodedData(*fcl_object_A_ptr).id(geometry_map);
+  const GeometryId orig_id_B = EncodedData(*fcl_object_B_ptr).id(geometry_map);
+  const bool swap_AB = (orig_id_B < orig_id_A);
+  const GeometryId id_A = swap_AB ? orig_id_B : orig_id_A;
+  const GeometryId id_B = swap_AB ? orig_id_A : orig_id_B;
+  // NOTE: Although this function *takes* pointers to non-const objects to
+  // satisfy the fcl api, it should not exploit the non-constness to modify
+  // the collision objects. We ensure this by a reference to a const version
+  // and not directly use the provided pointers afterwards.
+  const fcl::CollisionObjectd& fcl_object_A =
+      *(swap_AB ? fcl_object_B_ptr : fcl_object_A_ptr);
+  const fcl::CollisionObjectd& fcl_object_B =
+      *(swap_AB ? fcl_object_A_ptr : fcl_object_B_ptr);
 
   // Extract the collision filter keys from the fcl collision objects. These
   // keys will also be used to map the fcl collision object back to the Drake
   // GeometryId for colliding geometries.
-  EncodedData encoding_A(fcl_object_A);
-  EncodedData encoding_B(fcl_object_B);
+  const EncodedData encoding_A(fcl_object_A);
+  const EncodedData encoding_B(fcl_object_B);
 
-  const bool can_collide = collision_data.collision_filter.CanCollideWith(
+  const bool can_collide = distance_data.collision_filter.CanCollideWith(
       encoding_A.encoded_data(), encoding_B.encoded_data());
 
   if (can_collide) {
-    // Unpack the callback data
-    auto& distance_data = *static_cast<DistanceData*>(callback_data);
-    const fcl::DistanceRequestd& request = distance_data.request;
-    const std::vector<GeometryId>& geometry_map = distance_data.geometry_map;
-
     fcl::DistanceResultd result;
-
-    ComputeNearphaseDistance(&fcl_object_A, &fcl_object_B,
-                             geometry_map, request, &result);
-
-    SignedDistancePair<double> nearest_pair;
-    nearest_pair.id_A = EncodedData(fcl_object_A).id(geometry_map);
-    nearest_pair.id_B = EncodedData(fcl_object_B).id(geometry_map);
-
-    // Note: The result of FCL's distance query is in the *world* frame, the
-    // SignedDistancePair reports in geometry frame.
-    nearest_pair.p_ACa =
+    ComputeNarrowPhaseDistance(&fcl_object_A, &fcl_object_B, geometry_map,
+                               distance_data.request, &result);
+    const Vector3d p_ACa =
         fcl_object_A.getTransform().inverse() * result.nearest_points[0];
-    nearest_pair.p_BCb =
+    const Vector3d p_BCb =
         fcl_object_B.getTransform().inverse() * result.nearest_points[1];
-    nearest_pair.distance = result.min_distance;
-    // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-    // surfaces and then flip the normal.
-    if (nearest_pair.id_B < nearest_pair.id_A) {
-      std::swap(nearest_pair.id_A, nearest_pair.id_B);
-      std::swap(nearest_pair.p_ACa, nearest_pair.p_BCb);
-    }
-
-    distance_data.nearest_pairs->emplace_back(std::move(nearest_pair));
+    distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
+                                              result.min_distance);
   }
 
   // Returning true would tell the broadphase manager to terminate early. Since
@@ -866,8 +857,14 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
     }
     case fcl::GEOM_CONVEX: {
       const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
-      return make_shared<fcl::Convexd>(convex.num_vertices, convex.vertices,
-                                       convex.num_faces, convex.faces);
+      // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
+      //  we figure out why "Convex(const Convex& other) = default" created
+      //  link errors for Xenial Debug build.  For now we do deep copy of the
+      //  vertices and faces instead of simply copying the shared pointer.
+      return make_shared<fcl::Convexd>(
+          make_shared<const std::vector<Vector3d>>(convex.getVertices()),
+          convex.getFaceCount(),
+          make_shared<const std::vector<int>>(convex.getFaces()));
     }
     case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CAPSULE:
@@ -1096,14 +1093,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_box, user_data);
   }
 
-  void ImplementGeometry(const Mesh&, void* user_data) override {
-    // TODO(SeanCurtis-TRI): Replace this with a legitimate fcl mesh. This
-    // assumes that a zero-radius sphere has no interesting interactions with
-    // other meshes. However, it *does* increase the collision space. :(
-    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);
-    TakeShapeOwnership(fcl_sphere, user_data);
+  void ImplementGeometry(const Mesh&, void*) override {
+    DRAKE_ABORT_MSG("The proximity engine does not support meshes yet");
   }
-
 
   //
   // Convert vertices from tinyobj format to FCL format.
@@ -1210,8 +1202,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                                "one and only one object defined in it.");
     }
 
-    std::vector<Vector3d> vertices =
-        TinyObjToFclVertices(attrib, convex.scale());
+    auto vertices = std::make_shared<std::vector<Vector3d>>(
+        TinyObjToFclVertices(attrib, convex.scale()));
 
     const tinyobj::mesh_t& mesh = shapes[0].mesh;
 
@@ -1224,16 +1216,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     //               ...}
     // where n_i is the number of vertices of face_i.
     //
-    std::vector<int> faces;
-    int num_faces = TinyObjToFclFaces(mesh, &faces);
-
-    convex_objects_.emplace_back(move(vertices), num_faces, move(faces));
-    ConvexData& object = convex_objects_.back();
+    auto faces = std::make_shared<std::vector<int>>();
+    int num_faces = TinyObjToFclFaces(mesh, faces.get());
 
     // Create fcl::Convex.
     auto fcl_convex = make_shared<fcl::Convexd>(
-        object.vertices.size(), object.vertices.data(),
-        object.num_faces, object.faces.data());
+        vertices, num_faces, faces);
     TakeShapeOwnership(fcl_convex, user_data);
 
     // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
@@ -1552,23 +1540,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The mechanism for dictating collision filtering.
   CollisionFilterLegacy collision_filter_;
-
-  // The data needed by fcl::Convex.
-  struct ConvexData {
-    // TODO(DamrongGuoy) We will switch to shared_ptr<vector<>> later.
-    // For now, we force callers to use move semantics (&& rvalue reference)
-    // for efficiency.
-    ConvexData(std::vector<Vector3d>&& v, int n, std::vector<int>&& f):
-      vertices(move(v)), num_faces(n), faces(move(f)) {
-    }
-
-    std::vector<Vector3d> vertices;
-    int num_faces;
-    std::vector<int> faces;
-  };
-
-  // The vector containing data for each convex object.
-  std::vector<ConvexData> convex_objects_;
 
   // The tolerance that determines when the iterative process would terminate.
   // @see ProximityEngine::set_distance_tolerance() for more details.

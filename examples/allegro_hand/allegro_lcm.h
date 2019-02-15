@@ -75,10 +75,10 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
 /// which is supposed to be in the order of thumb(4)-index(4)-middle(4)-ring(4).
 ///
 /// This system has one abstract valued output port that contains a
-/// systems::Value object templated on type `lcmt_allegro_status`. Note that
+/// Value object templated on type `lcmt_allegro_status`. Note that
 /// this system does not actually send this message on an LCM channel. To send
 /// the message, the output of this system should be connected to an input port
-/// of a systems::lcm::LcmPublisherSystem that accepts a systems::Value object
+/// of a systems::lcm::LcmPublisherSystem that accepts a Value object
 /// templated on type `lcmt_allegro_status`.
 ///
 /// This system is presently only used in simulation.

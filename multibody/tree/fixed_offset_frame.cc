@@ -3,7 +3,6 @@
 #include <exception>
 #include <memory>
 
-#include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -47,9 +46,15 @@ std::unique_ptr<Frame<AutoDiffXd>> FixedOffsetFrame<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class FixedOffsetFrame<double>;
-template class FixedOffsetFrame<AutoDiffXd>;
+template <typename T>
+std::unique_ptr<Frame<symbolic::Expression>>
+FixedOffsetFrame<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::FixedOffsetFrame)

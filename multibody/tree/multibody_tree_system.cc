@@ -4,10 +4,8 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/autodiff.h"
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 
 namespace drake {
 using systems::BasicVector;
@@ -17,6 +15,32 @@ using systems::State;
 
 namespace multibody {
 namespace internal {
+
+template <typename T>
+MultibodyTreeSystem<T>::MultibodyTreeSystem(
+    std::unique_ptr<MultibodyTree<T>> tree,
+    bool is_discrete)
+    : MultibodyTreeSystem(
+          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          false,  // Null tree is not allowed here.
+          std::move(tree), is_discrete) {}
+
+template <typename T>
+MultibodyTreeSystem<T>::MultibodyTreeSystem(bool is_discrete)
+    : MultibodyTreeSystem(
+          systems::SystemTypeTag<internal::MultibodyTreeSystem>{},
+          true,  // Null tree is OK.
+          nullptr, is_discrete) {}
+
+template <typename T>
+MultibodyTreeSystem<T>::MultibodyTreeSystem(
+    systems::SystemScalarConverter converter,
+    std::unique_ptr<MultibodyTree<T>> tree,
+    bool is_discrete)
+    : MultibodyTreeSystem(
+          std::move(converter),
+          true,  // Null tree is OK.
+          std::move(tree), is_discrete) {}
 
 template <typename T>
 template <typename U>
@@ -90,11 +114,11 @@ void MultibodyTreeSystem<T>::Finalize() {
   auto& position_kinematics_cache_entry = this->DeclareCacheEntry(
       std::string("position kinematics"),
       [tree = tree_.get()]() {
-        return systems::AbstractValue::Make(
+        return AbstractValue::Make(
             PositionKinematicsCache<T>(tree->get_topology()));
       },
       [tree = tree_.get()](const systems::ContextBase& context_base,
-                           systems::AbstractValue* cache_value) {
+                           AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& position_cache =
             cache_value->GetMutableValue<PositionKinematicsCache<T>>();
@@ -108,11 +132,11 @@ void MultibodyTreeSystem<T>::Finalize() {
   auto& velocity_kinematics_cache_entry = this->DeclareCacheEntry(
       std::string("velocity kinematics"),
       [tree = tree_.get()]() {
-        return systems::AbstractValue::Make(
+        return AbstractValue::Make(
             VelocityKinematicsCache<T>(tree->get_topology()));
       },
       [tree = tree_.get()](const systems::ContextBase& context_base,
-                           systems::AbstractValue* cache_value) {
+                           AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& velocity_cache =
             cache_value->GetMutableValue<VelocityKinematicsCache<T>>();
@@ -128,11 +152,11 @@ void MultibodyTreeSystem<T>::Finalize() {
   auto& H_PB_W_cache_entry = this->DeclareCacheEntry(
       std::string("H_PB_W(q)"),
       [tree = tree_.get()]() {
-        return systems::AbstractValue::Make(
+        return AbstractValue::Make(
             std::vector<Vector6<T>>(tree->num_velocities()));
       },
       [tree = tree_.get()](const systems::ContextBase& context_base,
-                           systems::AbstractValue* cache_value) {
+                           AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& H_PB_W_cache =
             cache_value->GetMutableValue<std::vector<Vector6<T>>>();
@@ -147,25 +171,9 @@ void MultibodyTreeSystem<T>::Finalize() {
   already_finalized_ = true;
 }
 
-template <typename T>
-std::unique_ptr<systems::LeafContext<T>>
-MultibodyTreeSystem<T>::DoMakeLeafContext() const {
-  return std::make_unique<MultibodyTreeContext<T>>(tree_->get_topology(),
-                                                   is_discrete_);
-}
-
-// Instantiate supported conversion methods.
-// TODO(sherm1) Move definitions of these methods to an -inl.h file so that
-// they don't require explicit instantiation here.
-template MultibodyTreeSystem<AutoDiffXd>::MultibodyTreeSystem(
-    const MultibodyTreeSystem<double>& other);
-
-template MultibodyTreeSystem<double>::MultibodyTreeSystem(
-    const MultibodyTreeSystem<AutoDiffXd>& other);
-
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::internal::MultibodyTreeSystem)

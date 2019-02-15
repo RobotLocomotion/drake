@@ -7,7 +7,6 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace manipulation {
@@ -89,7 +88,7 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   void OutputState(const systems::Context<double>& context,
                    systems::BasicVector<double>* output) const;
 
-  // Calculator method for the accleration output port.
+  // Calculator method for the acceleration output port.
   void OutputAccel(const systems::Context<double>& context,
                    systems::BasicVector<double>* output) const;
 

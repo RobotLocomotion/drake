@@ -14,13 +14,10 @@
 
 namespace drake {
 namespace solvers {
+namespace {
 
-bool EqualityConstrainedQPSolver::is_available() { return true; }
-
-/**
- * Solves the un-constrained QP problem
- * min 0.5 * xᵀ * G * x + cᵀ * x
- */
+// Solves the un-constrained QP problem
+//  min 0.5 * xᵀ * G * x + cᵀ * x
 SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
                                     const Eigen::Ref<const Eigen::VectorXd>& c,
                                     double feasibility_tol,
@@ -90,15 +87,22 @@ void GetEqualityConstrainedQPSolverOptions(
   }
 }
 
-void EqualityConstrainedQPSolver::Solve(
+}  // namespace
+
+EqualityConstrainedQPSolver::EqualityConstrainedQPSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+EqualityConstrainedQPSolver::~EqualityConstrainedQPSolver() = default;
+
+void EqualityConstrainedQPSolver::DoSolve(
     const MathematicalProgram& prog,
-    const optional<Eigen::VectorXd>& initial_guess,
-    const optional<SolverOptions>& solver_options,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
     MathematicalProgramResult* result) const {
-  *result = {};
   // An equality constrained QP problem has analytical solution. It doesn't
   // depend on the initial guess.
   unused(initial_guess);
+
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
   // | G  A' | | x | = | -c |
@@ -123,18 +127,9 @@ void EqualityConstrainedQPSolver::Solve(
   // code have a solid understanding of equality constrained quadratic
   // programming before proceeding.
   // - J. Nocedal and S. Wright. Numerical Optimization. Springer, 1999.
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(
-        "EqualityConstrainedQPSolver's capability doesn't satisfy the "
-        "requirement of the program.");
-  }
 
   EqualityConstrainedQPSolverOptions solver_options_struct{};
-  SolverOptions merged_solver_options =
-      solver_options.has_value() ? solver_options.value() : SolverOptions();
-  merged_solver_options.Merge(prog.solver_options());
-  GetEqualityConstrainedQPSolverOptions(merged_solver_options,
-                                        &solver_options_struct);
+  GetEqualityConstrainedQPSolverOptions(merged_options, &solver_options_struct);
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
@@ -268,7 +263,6 @@ void EqualityConstrainedQPSolver::Solve(
         SolveUnconstrainedQP(G, c, solver_options_struct.feasibility_tol, &x);
   }
 
-  result->set_solver_id(id());
   result->set_x_val(x);
   result->set_solution_result(solution_result);
   double optimal_cost{};
@@ -292,26 +286,16 @@ void EqualityConstrainedQPSolver::Solve(
   result->set_optimal_cost(optimal_cost);
 }
 
-SolutionResult EqualityConstrainedQPSolver::Solve(
-    MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
+std::string EqualityConstrainedQPSolver::FeasibilityTolOptionName() {
+  return "FeasibilityTol";
 }
-
-SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }
 
 SolverId EqualityConstrainedQPSolver::id() {
   static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
   return singleton.access();
 }
 
-bool EqualityConstrainedQPSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return ProgramAttributesSatisfied(prog);
-}
+bool EqualityConstrainedQPSolver::is_available() { return true; }
 
 bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
     const MathematicalProgram& prog) {
@@ -323,10 +307,6 @@ bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
   // cost.
   return AreRequiredAttributesSupported(prog.required_capabilities(),
                                         solver_capabilities.access());
-}
-
-std::string EqualityConstrainedQPSolver::FeasibilityTolOptionName() {
-  return "FeasibilityTol";
 }
 
 }  // namespace solvers

@@ -219,18 +219,13 @@ void SetOsqpSolverSettings(const SolverOptions& solver_options,
 
 bool OsqpSolver::is_available() { return true; }
 
-void OsqpSolver::Solve(const MathematicalProgram& prog,
-                       const optional<Eigen::VectorXd>& initial_guess,
-                       const optional<SolverOptions>& solver_options,
-                       MathematicalProgramResult* result) const {
-  *result = {};
+void OsqpSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   // TODO(hongkai.dai): OSQP uses initial guess to warm start.
   unused(initial_guess);
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(
-        "OSQP solver's capability doesn't satisfy the requirement of the "
-        "problem.");
-  }
 
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
@@ -270,10 +265,7 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
       static_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   osqp_set_default_settings(settings);
 
-  SolverOptions merged_solver_options =
-      solver_options.value_or(SolverOptions());
-  merged_solver_options.Merge(prog.solver_options());
-  SetOsqpSolverSettings(merged_solver_options, settings);
+  SetOsqpSolverSettings(merged_options, settings);
 
   // Setup workspace.
   // OSQP structures.
@@ -284,7 +276,6 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
   c_int osqp_exitflag = osqp_solve(work);
 
   SolutionResult solution_result;
-  result->set_solver_id(id());
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
   solver_details.iter = work->info->iter;
@@ -342,12 +333,5 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
   c_free(settings);
 }
 
-SolutionResult OsqpSolver::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
-}
 }  // namespace solvers
 }  // namespace drake

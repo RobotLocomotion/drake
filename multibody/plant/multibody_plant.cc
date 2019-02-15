@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/geometry/geometry_frame.h"
@@ -13,6 +12,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/math/orthonormal_basis.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
@@ -267,12 +267,14 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(!geometry_source_is_registered());
-  source_id_ = scene_graph->RegisterSource();
   // Save the GS pointer so that on later geometry registrations can use this
   // instance. This will be nullified at Finalize().
   scene_graph_ = scene_graph;
-  body_index_to_frame_id_[world_index()] = scene_graph->world_frame_id();
-  frame_id_to_body_index_[scene_graph->world_frame_id()] = world_index();
+  source_id_ = member_scene_graph().RegisterSource();
+  const geometry::FrameId world_frame_id =
+      member_scene_graph().world_frame_id();
+  body_index_to_frame_id_[world_index()] = world_frame_id;
+  frame_id_to_body_index_[world_frame_id] = world_index();
   DeclareSceneGraphPorts();
   return source_id_.value();
 }
@@ -316,9 +318,8 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
   GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
-      scene_graph_);
-  scene_graph_->AssignRole(*source_id_, id, properties);
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+  member_scene_graph().AssignRole(*source_id_, id, properties);
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
   DRAKE_ASSERT(num_bodies() == static_cast<int>(visual_geometries_.size()));
@@ -346,12 +347,12 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
   GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name),
-      scene_graph_);
+      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
   // TODO(SeanCurtis-TRI): Push the contact parameters into the
   // ProximityProperties.
-  scene_graph_->AssignRole(*source_id_, id, geometry::ProximityProperties());
+  member_scene_graph().AssignRole(
+      *source_id_, id, geometry::ProximityProperties());
   const int collision_index = geometry_id_to_collision_index_.size();
   geometry_id_to_collision_index_[id] = collision_index;
   DRAKE_ASSERT(
@@ -413,14 +414,12 @@ template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
     const Body<T>& body, const Isometry3<double>& X_BG,
     const geometry::Shape& shape,
-    const std::string& name,
-    SceneGraph<T>* scene_graph) {
+    const std::string& name) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
-  CheckUserProvidedSceneGraph(scene_graph);
   // If not already done, register a frame for this body.
   if (!body_has_registered_frame(body)) {
-    FrameId frame_id = scene_graph_->RegisterFrame(
+    FrameId frame_id = member_scene_graph().RegisterFrame(
         source_id_.value(),
         GeometryFrame(
             GetScopedName(*this, body.model_instance(), body.name()),
@@ -436,7 +435,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
       std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
-  GeometryId geometry_id = scene_graph->RegisterGeometry(
+  GeometryId geometry_id = member_scene_graph().RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
   geometry_id_to_body_index_[geometry_id] = body.index();
@@ -543,17 +542,16 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     const double penalty_time_scale = kAlpha * time_step();
 
     if (revolute_joint) {
+      const double lower_limit = revolute_joint->position_lower_limits()(0);
+      const double upper_limit = revolute_joint->position_upper_limits()(0);
       // We only compute parameters if joints do have upper/lower bounds.
-      if (!std::isinf(revolute_joint->lower_limit()) ||
-          !std::isinf(revolute_joint->upper_limit())) {
+      if (!std::isinf(lower_limit) || !std::isinf(upper_limit)) {
         joint_limits_parameters_.joints_with_limits.push_back(
             revolute_joint->index());
 
         // Store joint limits.
-        joint_limits_parameters_.lower_limit.push_back(
-            revolute_joint->lower_limit());
-        joint_limits_parameters_.upper_limit.push_back(
-            revolute_joint->upper_limit());
+        joint_limits_parameters_.lower_limit.push_back(lower_limit);
+        joint_limits_parameters_.upper_limit.push_back(upper_limit);
         // Estimate penalty parameters.
         auto penalty_parameters =
             internal::JointLimitsPenaltyParametersEstimator<T>::
@@ -565,17 +563,16 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
     }
 
     if (prismatic_joint) {
+      const double lower_limit = prismatic_joint->position_lower_limits()(0);
+      const double upper_limit = prismatic_joint->position_upper_limits()(0);
       // We only compute parameters if joints do have upper/lower bounds.
-      if (!std::isinf(prismatic_joint->lower_limit()) ||
-          !std::isinf(prismatic_joint->upper_limit())) {
+      if (!std::isinf(lower_limit) || !std::isinf(upper_limit)) {
         joint_limits_parameters_.joints_with_limits.push_back(
             prismatic_joint->index());
 
         // Store joint limits.
-        joint_limits_parameters_.lower_limit.push_back(
-            prismatic_joint->lower_limit());
-        joint_limits_parameters_.upper_limit.push_back(
-            prismatic_joint->upper_limit());
+        joint_limits_parameters_.lower_limit.push_back(lower_limit);
+        joint_limits_parameters_.upper_limit.push_back(upper_limit);
 
         // Estimate penalty parameters.
         auto penalty_parameters =
@@ -646,6 +643,47 @@ MatrixX<T> MultibodyPlant<T>::MakeActuationMatrix() const {
 }
 
 template <typename T>
+struct MultibodyPlant<T>::SceneGraphStub {
+  static void Throw(const char* operation_name) {
+    throw std::logic_error(fmt::format(
+        "Cannot {} on a SceneGraph<symbolic::Expression>", operation_name));
+  }
+
+  static FrameId world_frame_id() {
+    return SceneGraph<double>::world_frame_id();
+  }
+
+#define DRAKE_STUB(Ret, Name)                   \
+  template <typename... Args>                   \
+  Ret Name(Args...) const { Throw(#Name); return Ret(); }
+
+  DRAKE_STUB(void, AssignRole)
+  DRAKE_STUB(void, ExcludeCollisionsBetween)
+  DRAKE_STUB(void, ExcludeCollisionsWithin)
+  DRAKE_STUB(FrameId, RegisterFrame)
+  DRAKE_STUB(GeometryId, RegisterGeometry)
+  DRAKE_STUB(SourceId, RegisterSource)
+
+#undef DRAKE_STUB
+};
+
+template <typename T>
+typename MultibodyPlant<T>::MemberSceneGraph&
+MultibodyPlant<T>::member_scene_graph() {
+  DRAKE_THROW_UNLESS(scene_graph_ != nullptr);
+  return *scene_graph_;
+}
+
+// Specialize this function so that we can use our Stub class; we cannot call
+// methods on SceneGraph<Expression> because they do not exist.
+template <>
+typename MultibodyPlant<symbolic::Expression>::MemberSceneGraph&
+MultibodyPlant<symbolic::Expression>::member_scene_graph() {
+  static never_destroyed<SceneGraphStub> stub_;
+  return stub_.access();
+}
+
+template <typename T>
 void MultibodyPlant<T>::CheckUserProvidedSceneGraph(
     const geometry::SceneGraph<T>* scene_graph) const {
   if (scene_graph != nullptr) {
@@ -691,7 +729,7 @@ void MultibodyPlant<T>::FilterAdjacentBodies() {
     optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
     if (child_id && parent_id) {
-      scene_graph_->ExcludeCollisionsBetween(
+      member_scene_graph().ExcludeCollisionsBetween(
           geometry::GeometrySet(*child_id),
           geometry::GeometrySet(*parent_id));
     }
@@ -709,8 +747,8 @@ void MultibodyPlant<T>::ExcludeCollisionsWithVisualGeometry() {
   for (const auto& body_geometries : collision_geometries_) {
     collision.Add(body_geometries);
   }
-  scene_graph_->ExcludeCollisionsWithin(visual);
-  scene_graph_->ExcludeCollisionsBetween(visual, collision);
+  member_scene_graph().ExcludeCollisionsWithin(visual);
+  member_scene_graph().ExcludeCollisionsBetween(visual, collision);
 }
 
 template<typename T>
@@ -861,6 +899,8 @@ void MultibodyPlant<T>::set_penetration_allowance(
   penalty_method_contact_parameters_.time_scale = time_scale;
 }
 
+// Specialize this function so that *only* double is supported; we cannot
+// compute penetrations for AutoDiff or Expression currently.
 template <>
 std::vector<PenetrationAsPointPair<double>>
 MultibodyPlant<double>::CalcPointPairPenetrations(
@@ -870,11 +910,10 @@ MultibodyPlant<double>::CalcPointPairPenetrations(
       throw std::logic_error(
           "This MultibodyPlant registered geometry for contact handling. "
           "However its query input port (get_geometry_query_input_port()) "
-          "is not connected. ");
+          "is not connected.");
     }
-    const geometry::QueryObject<double>& query_object =
-        this->EvalAbstractInput(context, geometry_query_port_)
-            ->template GetValue<geometry::QueryObject<double>>();
+    const auto& query_object = get_geometry_query_input_port().
+        Eval<geometry::QueryObject<double>>(context);
     return query_object.ComputePointPairPenetration();
   }
   return std::vector<PenetrationAsPointPair<double>>();
@@ -1086,6 +1125,40 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
 }
 
 template<typename T>
+void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  // Get the mutable applied external spatial forces vector
+  // (a.k.a., body force vector).
+  std::vector<SpatialForce<T>>& F_BBo_W_array = forces->mutable_body_forces();
+
+  // Evaluate the input port; if it's not connected, return now.
+  const auto* applied_input = this->template EvalInputValue<
+      std::vector<ExternallyAppliedSpatialForce<T>>>(
+          context, applied_spatial_force_input_port_);
+  if (!applied_input)
+    return;
+
+  // Loop over all forces.
+  for (const auto& force_structure : *applied_input) {
+    const BodyIndex body_index = force_structure.body_index;
+    const Body<T>& body = get_body(body_index);
+    const auto body_node_index = body.node_index();
+
+    // Get the pose for this body in the world frame.
+    // TODO(amcastro) When we can evaluate body poses and return a reference
+    // to a RigidTransform, use that reference here instead.
+    math::RigidTransform<T> X_WB(EvalBodyPoseInWorld(context, body));
+
+    // Get the position vector from the body origin (Bo) to the point of
+    // force application (Bq), expressed in the world frame (W).
+    const Vector3<T> p_BoBq_W = X_WB.rotation() * force_structure.p_BoBq_B;
+
+    // Shift the spatial force from Bq to Bo.
+    F_BBo_W_array[body_node_index] += force_structure.F_Bq_W.Shift(-p_BoBq_W);
+  }
+}
+
+template<typename T>
 void MultibodyPlant<T>::AddJointActuationForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   DRAKE_DEMAND(forces != nullptr);
@@ -1165,9 +1238,9 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     if (instance_num_dofs == 0) {
       continue;
     }
-    Eigen::VectorBlock<const VectorX<T>> u_instance =
-        this->EvalEigenVectorInput(
-            context, instance_actuation_ports_[model_instance_index]);
+    const auto& input_port = this->get_input_port(
+        instance_actuation_ports_[model_instance_index]);
+    const auto& u_instance = input_port.Eval(context);
     actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
     u_offset += instance_num_dofs;
   }
@@ -1208,6 +1281,14 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // If there is any input actuation, add it to the multibody forces.
   AddJointActuationForces(context, &forces);
+  AddAppliedExternalSpatialForces(context, &forces);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context))
+    forces.mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context);
 
   internal_tree().CalcMassMatrixViaInverseDynamics(context, &M);
 
@@ -1336,6 +1417,13 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   AddJointActuationForces(context0, &forces0);
 
   AddJointLimitsPenaltyForces(context0, &forces0);
+
+  // If there are applied generalized forces, add them.
+  const InputPort<T>& applied_generalized_force_input =
+      this->get_input_port(applied_generalized_force_input_port_);
+  if (applied_generalized_force_input.HasValue(context0))
+    forces0.mutable_generalized_forces() +=
+        applied_generalized_force_input.Eval(context0);
 
   // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
   const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
@@ -1524,6 +1612,16 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     actuated_instance_ = last_actuated_instance;
   }
 
+  // Declare the generalized force input port.
+  applied_generalized_force_input_port_ = this->DeclareVectorInputPort(
+      "applied_generalized_force",
+      systems::BasicVector<T>(num_velocities())).get_index();
+
+  // Declare applied spatial force input force port.
+  applied_spatial_force_input_port_ = this->DeclareAbstractInputPort(
+        "applied_spatial_force",
+        Value<std::vector<ExternallyAppliedSpatialForce<T>>>()).get_index();
+
   // Declare one output port for the entire state vector.
   continuous_state_output_port_ =
       this->DeclareVectorOutputPort("continuous_state",
@@ -1646,6 +1744,13 @@ MultibodyPlant<T>::get_actuation_input_port() const {
 
 template <typename T>
 const systems::InputPort<T>&
+MultibodyPlant<T>::get_applied_generalized_force_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return this->get_input_port(applied_generalized_force_input_port_);
+}
+
+template <typename T>
+const systems::InputPort<T>&
 MultibodyPlant<T>::get_actuation_input_port(
     ModelInstanceIndex model_instance) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
@@ -1654,6 +1759,13 @@ MultibodyPlant<T>::get_actuation_input_port(
   DRAKE_THROW_UNLESS(num_actuated_dofs(model_instance) > 0);
   return systems::System<T>::get_input_port(
       instance_actuation_ports_.at(model_instance));
+}
+
+template <typename T>
+const systems::InputPort<T>&
+MultibodyPlant<T>::get_applied_spatial_force_input_port() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  return systems::System<T>::get_input_port(applied_spatial_force_input_port_);
 }
 
 template <typename T>
@@ -1696,10 +1808,20 @@ MultibodyPlant<T>::get_contact_results_output_port() const {
   return this->get_output_port(contact_results_port_);
 }
 
+namespace {
+// A dummy, placeholder type.
+struct SymbolicGeometryValue {};
+// An alias for QueryObject<T>, except when T = Expression.
+template <typename T>
+using ModelQueryObject = typename std::conditional<
+    std::is_same<T, symbolic::Expression>::value,
+    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
+}  // namespace
+
 template <typename T>
 void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   geometry_query_port_ = this->DeclareAbstractInputPort(
-      "geometry_query", systems::Value<geometry::QueryObject<T>>{}).get_index();
+      "geometry_query", Value<ModelQueryObject<T>>{}).get_index();
   // Allocate pose port.
   // TODO(eric.cousineau): Simplify this logic.
   typename systems::LeafOutputPort<T>::AllocCallback pose_alloc = [this]() {
@@ -1710,11 +1832,11 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
       if (it.first == world_index()) continue;
       ids.push_back(it.second);
     }
-    return systems::AbstractValue::Make(
+    return AbstractValue::Make(
         FramePoseVector<T>(*this->source_id_, ids));
   };
   typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
-      const Context<T>& context, systems::AbstractValue* value) {
+      const Context<T>& context, AbstractValue* value) {
     this->CalcFramePoseOutput(
         context, &value->GetMutableValue<FramePoseVector<T>>());
   };
@@ -1835,6 +1957,7 @@ AddMultibodyPlantSceneGraph(
 }
 
 // Add explicit instantiations for `AddMultibodyPlantSceneGraph`.
+// This does *not* support symbolic::Expression.
 template
 AddMultibodyPlantSceneGraphResult<double>
 AddMultibodyPlantSceneGraph(
@@ -1852,7 +1975,7 @@ AddMultibodyPlantSceneGraph(
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::MultibodyPlant)
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct drake::multibody::AddMultibodyPlantSceneGraphResult)

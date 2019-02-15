@@ -2,10 +2,10 @@
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
-#include "drake/bindings/pydrake/util/cpp_param_pybind.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
 #include "drake/perception/point_cloud.h"
 
@@ -122,12 +122,16 @@ void init_perception(py::module m) {
     constexpr auto& cls_doc = doc.DepthImageToPointCloud;
     py::class_<Class, LeafSystem<double>>(
         m, "DepthImageToPointCloud", cls_doc.doc)
-        .def(py::init<const CameraInfo&, PixelType, float>(),
+        .def(py::init<const CameraInfo&, PixelType, float,
+                 pc_flags::BaseFieldT>(),
             py::arg("camera_info"),
             py::arg("pixel_type") = PixelType::kDepth32F,
-            py::arg("scale") = 1.0, cls_doc.ctor.doc)
+            py::arg("scale") = 1.0, py::arg("fields") = pc_flags::kXYZs,
+            cls_doc.ctor.doc)
         .def("depth_image_input_port", &Class::depth_image_input_port,
             py_reference_internal, cls_doc.depth_image_input_port.doc)
+        .def("color_image_input_port", &Class::color_image_input_port,
+            py_reference_internal, cls_doc.color_image_input_port.doc)
         .def("point_cloud_output_port", &Class::point_cloud_output_port,
             py_reference_internal, cls_doc.point_cloud_output_port.doc);
   }

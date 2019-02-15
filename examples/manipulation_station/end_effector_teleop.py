@@ -170,7 +170,7 @@ class DifferentialIK(LeafSystem):
         self.time_step = time_step
         # Note that this context is NOT the context of the DifferentialIK
         # system, but rather a context for the multibody plant that is used
-        # to pass the configuation into the DifferentialInverseKinematics
+        # to pass the configuration into the DifferentialInverseKinematics
         # methods.
         self.robot_context = robot.CreateDefaultContext()
         # Confirm that all velocities are zero (they will not be reset below).
@@ -254,7 +254,7 @@ parser.add_argument(
     help="Time constant for the first order low pass filter applied to"
          "the teleop commands")
 parser.add_argument(
-    "--velocity_limit_factor", type=float, default=0.15,
+    "--velocity_limit_factor", type=float, default=1.0,
     help="This value, typically between 0 and 1, further limits the iiwa14 "
          "joint velocities. It multiplies each of the seven pre-defined "
          "joint velocity limits. "
@@ -287,7 +287,8 @@ else:
                            station.GetOutputPort("pose_bundle"))
     if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
-            station.get_scene_graph(), zmq_url=args.meshcat))
+            station.get_scene_graph(), zmq_url=args.meshcat,
+            open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
 
@@ -337,7 +338,7 @@ station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
 q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-    station_context).get_value()
+    station_context)
 differential_ik.parameters.set_nominal_joint_position(q0)
 
 teleop.SetPose(differential_ik.ForwardKinematics(q0))
@@ -345,7 +346,7 @@ filter.set_initial_output_value(
     diagram.GetMutableSubsystemContext(
         filter, simulator.get_mutable_context()),
     teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
-        teleop, simulator.get_mutable_context())).get_value())
+        teleop, simulator.get_mutable_context())))
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
 

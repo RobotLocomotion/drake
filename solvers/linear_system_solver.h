@@ -3,39 +3,32 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 
-class LinearSystemSolver : public MathematicalProgramSolverInterface {
+/** Finds the least-square solution to the linear system A * x = b. */
+class LinearSystemSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearSystemSolver)
 
-  LinearSystemSolver() = default;
-  ~LinearSystemSolver() override = default;
+  LinearSystemSolver();
+  ~LinearSystemSolver() final;
 
-  bool available() const override { return is_available(); };
-
-  static bool is_available();
-
-  /// Find the least-square solution to the linear system A * x = b.
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @name Static versions of the instance methods with similar names.
+  //@{
   static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
 
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
 
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 
 }  // namespace solvers

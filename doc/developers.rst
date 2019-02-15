@@ -80,20 +80,21 @@ supported for CMake builds using the "Unix Makefiles" generator.
 | Operating System                 | Build System    | C/C++ Compiler  | Java       | MATLAB (Optional) | Python |
 +==================================+=================+=================+============+===================+========+
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.21.0  | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
+| Ubuntu 16.04 LTS (Xenial Xerus)  | | Bazel 0.22    | | Clang 6.0     | OpenJDK 8  | R2017a            | 2.7.11 |
 |                                  | | CMake 3.5.1   | | GCC 5.4       |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
-| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.21.0  | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
+| Ubuntu 18.04 LTS (Bionic Beaver) | | Bazel 0.22    | | Clang 6.0     | OpenJDK 11 | R2018b            | 2.7.15 |
 |                                  | | CMake 3.10.2  | | GCC 7.3       |            |                   | 3.6.7  |
 +----------------------------------+-----------------+-----------------+------------+                   +--------+
-| macOS High Sierra (10.13)        | | Bazel 0.21.0  | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
+| macOS High Sierra (10.13)        | | Bazel 0.22    | Apple LLVM 10.0 | Oracle 11  |                   | 2.7.15 |
 +----------------------------------+ | CMake 3.13.2  |                 |            |                   | 3.7.2  |
 | macOS Mojave (10.14)             |                 |                 |            |                   |        |
 +----------------------------------+-----------------+-----------------+------------+-------------------+--------+
 
 
 CPython is the only Python implementation supported. On all platforms, Python 2
-is the default version.
+is the default version. On Ubuntu, amd64 (i.e., x86_64) is the only supported
+architecture.
 
 The following configurations are presently untested in continuous integration:
 
@@ -182,6 +183,21 @@ lines, excluding files that are easily identified to meet the exemptions above.
 We use https://reviewable.io for code reviews. You can sign in for free with
 your GitHub identity. Before your first code review, please take a look at
 :doc:`reviewable`.
+
+If you have an expected pace for your review, please add a ``priority`` label
+(which have different meanings for PRs and
+:ref:`for issues <issues-priority>`). The response expectations, for both the
+author and reviewer:
+
+- ``priority: emergency`` - Very quick response time, nominally reserved for
+  build cop.
+- ``priority: high`` - Some urgency, quick response time.
+- ``priority: medium`` - (Default) Normal response time.
+- ``priority: low`` - No rush.
+- ``priority: backlog`` - Give priority to all other PRs on your plate.
+
+If you are an external contributor, you will need to request that a priority be
+added by a Drake Developer.
 
 **Feature Review.** After creating your pull request, assign it to someone
 else on your team for feature review. Choose the person most familiar

@@ -8,17 +8,16 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(ipopt, m) {
-  using drake::solvers::IpoptSolver;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   m.doc() = "Ipopt solver bindings for MathematicalProgram";
 
-  py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram")
-          .attr("MathematicalProgramSolverInterface");
+  py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<IpoptSolver>(
-      m, "IpoptSolver", solverinterface, doc.IpoptSolver.doc)
+  py::class_<IpoptSolver, SolverInterface>(
+      m, "IpoptSolver", doc.IpoptSolver.doc)
       .def(py::init<>(), doc.IpoptSolver.ctor.doc);
 }
 

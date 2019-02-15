@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
@@ -57,24 +58,15 @@ namespace multibody {
 /// combination law model for tires, will have a different set of requirements
 /// from the ones stated above.
 ///
-/// @tparam T The scalar type. Must be a valid Eigen scalar.
-///
-/// Instantiated templates for the following kinds of T's are provided:
-///
-/// - double
-/// - AutoDiffXd
-/// - symbolic::Expression
-///
-/// They are already available to link against in the containing library.
-/// No other values for T are currently supported.
+/// @tparam T Must be one of drake's default scalar types.
 template<typename T>
 class CoulombFriction {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(CoulombFriction)
 
   /// Default constructor for a frictionless surface, i.e. with zero static and
   /// dynamic coefficients of friction.
-  CoulombFriction() = default;
+  CoulombFriction();
 
   /// Specifies both the static and dynamic friction coefficients for a given
   /// surface.
@@ -103,6 +95,12 @@ class CoulombFriction {
   T static_friction_{0.0};
   T dynamic_friction_{0.0};
 };
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T> CoulombFriction<T>::CoulombFriction() = default;
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(CoulombFriction)
 
 /// Given the surface properties of two different surfaces, this method computes
 /// the Coulomb's law coefficients of friction characterizing the interaction by
@@ -165,3 +163,6 @@ using multibody::CalcContactFrictionFromSurfaceProperties;
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::CoulombFriction);

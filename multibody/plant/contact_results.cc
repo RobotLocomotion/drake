@@ -2,8 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/default_scalars.h"
-
 namespace drake {
 namespace multibody {
 
@@ -31,5 +29,5 @@ const PointPairContactInfo<T>& ContactResults<T>::contact_info(int i) const {
 }  // namespace drake
 
 // Explicitly instantiates on the most common scalar types.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::ContactResults)

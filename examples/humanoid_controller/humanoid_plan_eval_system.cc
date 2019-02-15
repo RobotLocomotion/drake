@@ -24,9 +24,9 @@ HumanoidPlanEvalSystem::HumanoidPlanEvalSystem(
     : PlanEvalBaseSystem(robot, alias_groups_file_name, param_file_name, dt) {
   input_port_index_manip_plan_msg_ = DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<robotlocomotion::robot_plan_t>{}).get_index();
+      Value<robotlocomotion::robot_plan_t>{}).get_index();
 
-  auto plan_as_value = systems::AbstractValue::Make<GenericPlan<double>>(
+  auto plan_as_value = AbstractValue::Make<GenericPlan<double>>(
       HumanoidManipulationPlan<double>());
   abs_state_index_plan_ = DeclareAbstractState(std::move(plan_as_value));
 }
@@ -44,7 +44,7 @@ void HumanoidPlanEvalSystem::DoExtendedCalcUnrestrictedUpdate(
           context, get_input_port_kinematic_state().get_index());
 
   // Gets the plan message from input.
-  const systems::AbstractValue* msg_as_value =
+  const AbstractValue* msg_as_value =
       EvalAbstractInput(context, input_port_index_manip_plan_msg_);
   DRAKE_DEMAND(msg_as_value != nullptr);
 

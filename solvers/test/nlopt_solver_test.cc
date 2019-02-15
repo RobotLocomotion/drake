@@ -16,14 +16,14 @@ TEST_F(UnboundedLinearProgramTest0, TestNlopt) {
   if (solver.available()) {
     MathematicalProgramResult result;
     solver.Solve(*prog_, {}, {}, &result);
-    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_optimal_cost(),
               -std::numeric_limits<double>::infinity());
     SolverOptions solver_options;
     solver_options.SetOption(solver.solver_id(), NloptSolver::MaxEvalName(), 1);
     solver.Solve(*prog_, {}, solver_options, &result);
     const int NLOPT_MAXEVAL_REACHED = 5;
-    EXPECT_EQ(result.get_solver_details().GetValue<NloptSolverDetails>().status,
+    EXPECT_EQ(result.get_solver_details<NloptSolver>().status,
               NLOPT_MAXEVAL_REACHED);
   }
 }

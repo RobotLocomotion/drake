@@ -6,6 +6,7 @@
 #include <sdf/sdf.hh>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
@@ -197,7 +198,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
       "model_scope_link1_frame", "model_scope_link1_frame_child", X_F1F2);
   const Isometry3d X_MF3 = RigidTransformd(
       Vector3d(0.7, 0.8, 0.9)).GetAsIsometry3();
-  check_frame("instance1", "model_scope_model_frame_implicit", X_MF3);
+  check_frame(
+      "_instance1_sdf_model_frame", "model_scope_model_frame_implicit", X_MF3);
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
@@ -306,6 +308,62 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
     plant.Finalize();
     EXPECT_EQ(plant.num_visual_geometries(), num_visuals_explicit);
   }
+}
+
+void ExpectUnsupportedFrame(const std::string& inner) {
+  const std::string filename = temp_directory() + "/bad.sdf";
+  std::ofstream file(filename);
+  file << "<sdf version='1.6'>" << inner << "\n</sdf>\n";
+  file.close();
+
+  MultibodyPlant<double> plant;
+  SceneGraph<double> scene_graph;
+  PackageMap package_map;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  drake::log()->debug("inner: {}", inner);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelsFromSdfFile(filename, package_map, &plant),
+      std::runtime_error,
+      R"(<pose frame='\{non-empty\}'/> is presently not supported )"
+      R"(outside of the <frame/> tag.)");
+}
+
+GTEST_TEST(SdfParser, TestUnsupportedFrames) {
+  ExpectUnsupportedFrame(R"(
+<model name='bad'>
+  <pose frame='hello'/>
+</model>)");
+  ExpectUnsupportedFrame(R"(
+<model name='bad'>
+  <link name='a'><pose frame='hello'/></link>
+</model>)");
+  ExpectUnsupportedFrame(R"(
+<model name='bad'>
+  <link name='a'>
+    <inertial><pose frame='hello'/></inertial>
+  </link>
+</model>)");
+  ExpectUnsupportedFrame(R"(
+<model name='bad'>
+  <link name='a'>"
+    <visual name='b'><pose frame='hello'/></visual>
+  </link>
+</model>)");
+  ExpectUnsupportedFrame(R"(
+<model name='bad'>
+  <link name='a'>"
+    <collision name='b'><pose frame='hello'/></collision>
+  </link>
+</model>)");
+  ExpectUnsupportedFrame(R"(
+<model name='bad'>
+  <link name='a'/>
+  <joint name='b' type='fixed'>"
+    <pose frame='hello'/>"
+    <parent>world</parent>
+    <child>a</child>"
+  </joint>
+</model>)");
 }
 
 }  // namespace

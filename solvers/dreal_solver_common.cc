@@ -11,18 +11,14 @@
 namespace drake {
 namespace solvers {
 
-SolverId DrealSolver::solver_id() const {
-  return id();
-}
+DrealSolver::DrealSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+DrealSolver::~DrealSolver() = default;
 
 SolverId DrealSolver::id() {
   static const never_destroyed<SolverId> singleton{"dReal"};
   return singleton.access();
-}
-
-bool DrealSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return DrealSolver::ProgramAttributesSatisfied(prog);
 }
 
 bool DrealSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {

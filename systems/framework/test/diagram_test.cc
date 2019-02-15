@@ -342,16 +342,10 @@ GTEST_TEST(BadDiagramTest, UnconnectedInsideInputPort) {
       diagram.GetSubsystemContext(diagram.inside(), *context);
 
   // This should get the value we just fixed above.
-  const AbstractValue* value0 =
-      diagram.inside().EvalAbstractInput(inside_context, 0);
+  EXPECT_EQ(diagram.inside().get_input_port(0).Eval(inside_context)[0], 1);
 
-  // This is neither exported, connected, nor fixed so should be null.
-  const AbstractValue* value1 =
-      diagram.inside().EvalAbstractInput(inside_context, 1);
-
-  ASSERT_NE(value0, nullptr);
-  EXPECT_EQ(value0->GetValue<BasicVector<double>>()[0], 1);
-  EXPECT_EQ(value1, nullptr);
+  // This is neither exported, connected, nor fixed so shouldn't have a value.
+  EXPECT_FALSE(diagram.inside().get_input_port(1).HasValue(inside_context));
 }
 
 /* ExampleDiagram has the following structure:
@@ -576,7 +570,7 @@ TEST_F(DiagramTest, Topology) {
   ASSERT_EQ(kSize, diagram_->get_num_input_ports());
   for (int i = 0; i < kSize; ++i) {
     const auto& input_port = diagram_->get_input_port(i);
-    EXPECT_EQ(diagram_.get(), input_port.get_system());
+    EXPECT_EQ(diagram_.get(), &input_port.get_system());
     EXPECT_EQ(kVectorValued, input_port.get_data_type());
     EXPECT_EQ(kSize, input_port.size());
   }
@@ -796,20 +790,14 @@ TEST_F(DiagramTest, AllocateInputs) {
   auto context = diagram_->CreateDefaultContext();
 
   for (int port = 0; port < 3; port++) {
-    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
-    EXPECT_EQ(vec, nullptr);
+    EXPECT_FALSE(diagram_->get_input_port(port).HasValue(*context));
   }
-
-  // Also check that abstract evaluation returns nullptr.
-  const AbstractValue* value = diagram_->EvalAbstractInput(*context, 0);
-  EXPECT_EQ(value, nullptr);
 
   diagram_->AllocateFixedInputs(context.get());
 
   for (int port = 0; port < 3; port++) {
-    const BasicVector<double>* vec = diagram_->EvalVectorInput(*context, port);
-    EXPECT_NE(vec, nullptr);
-    EXPECT_EQ(vec->size(), kSize);
+    EXPECT_TRUE(diagram_->get_input_port(port).HasValue(*context));
+    EXPECT_EQ(diagram_->get_input_port(port).Eval(*context).size(), kSize);
   }
 }
 
@@ -1112,9 +1100,9 @@ TEST_F(DiagramOfDiagramsTest, Graphviz) {
 TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   context_->EnableCaching();  // Just to be sure.
 
-  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 0)->GetAtIndex(0), 8.);
-  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 1)->GetAtIndex(0), 64.);
-  EXPECT_EQ(diagram_->EvalVectorInput(*context_, 2)->GetAtIndex(0), 512.);
+  EXPECT_EQ(diagram_->get_input_port(0).Eval(*context_)[0], 8.);
+  EXPECT_EQ(diagram_->get_input_port(1).Eval(*context_)[0], 64.);
+  EXPECT_EQ(diagram_->get_input_port(2).Eval(*context_)[0], 512.);
 
   // The outputs of subsystem0_ are:
   //   output0 = 8 + 64 + 512 = 584
@@ -1125,12 +1113,9 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output0 = 584 + 656 + 9 = 1249
   //   output1 = output0 + 584 + 656 = 2489
   //   output2 = 81 (state of integrator1_)
-  EXPECT_EQ(1249, diagram_->get_output_port(0).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
-  EXPECT_EQ(2489, diagram_->get_output_port(1).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
-  EXPECT_EQ(81, diagram_->get_output_port(2).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+  EXPECT_EQ(1249, diagram_->get_output_port(0).Eval(*context_)[0]);
+  EXPECT_EQ(2489, diagram_->get_output_port(1).Eval(*context_)[0]);
+  EXPECT_EQ(81, diagram_->get_output_port(2).Eval(*context_)[0]);
 
   // Check that invalidation flows through input ports properly, either due
   // to replacing the fixed value or by modifying it.
@@ -1225,7 +1210,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
 // double to a function provided in the constructor.
 class PublishingSystem : public LeafSystem<double> {
  public:
-  explicit PublishingSystem(std::function<void(int)> callback)
+  explicit PublishingSystem(std::function<void(double)> callback)
       : callback_(callback) {
     this->DeclareInputPort(kVectorValued, 1);
   }
@@ -1234,7 +1219,7 @@ class PublishingSystem : public LeafSystem<double> {
   void DoPublish(
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>&) const override {
-    callback_(this->EvalVectorInput(context, 0)->get_value()[0]);
+    callback_(this->get_input_port(0).Eval(context)[0]);
   }
 
  private:
@@ -1391,19 +1376,18 @@ class Reduce : public LeafSystem<double> {
                                   &Reduce::CalcFeedthrough);
   }
 
-  const systems::InputPort<double>& get_sink_input() {
+  const systems::InputPort<double>& get_sink_input() const {
     return this->get_input_port(sink_input_);
   }
 
-  const systems::InputPort<double>& get_feedthrough_input() {
+  const systems::InputPort<double>& get_feedthrough_input() const {
     return this->get_input_port(feedthrough_input_);
   }
 
   void CalcFeedthrough(const Context<double>& context,
                        BasicVector<double>* output) const {
-    const BasicVector<double>* input_vector =
-        this->EvalVectorInput(context, feedthrough_input_);
-    output->get_mutable_value() = input_vector->get_value();
+    const auto& input = get_feedthrough_input().Eval(context);
+    output->get_mutable_value() = input;
   }
 
   optional<bool> DoHasDirectFeedthrough(int input_port, int) const override {
@@ -2574,7 +2558,7 @@ class MyEventTestSystem : public LeafSystem<double> {
           TriggerType::kPerStep) {
         per_step_count_++;
       } else {
-        DRAKE_ABORT();
+        ADD_FAILURE() << "MyEventTestSystem doesn't support this trigger type";
       }
     }
   }

@@ -13,9 +13,7 @@ namespace internal {
 template <typename T>
 const T& PrismaticMobilizer<T>::get_translation(
     const systems::Context<T>& context) const {
-  const MultibodyTreeContext<T>& mbt_context =
-      this->GetMultibodyTreeContextOrThrow(context);
-  auto q = this->get_positions(mbt_context);
+  auto q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
   return q.coeffRef(0);
 }
@@ -23,9 +21,7 @@ const T& PrismaticMobilizer<T>::get_translation(
 template <typename T>
 const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation(
     systems::Context<T>* context, const T& translation) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto q = this->get_mutable_positions(&mbt_context);
+  auto q = this->get_mutable_positions(&*context);
   DRAKE_ASSERT(q.size() == kNq);
   q[0] = translation;
   return *this;
@@ -33,20 +29,16 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation(
 
 template <typename T>
 const T& PrismaticMobilizer<T>::get_translation_rate(
-    const systems::Context<T> &context) const {
-  const MultibodyTreeContext<T>& mbt_context =
-      this->GetMultibodyTreeContextOrThrow(context);
-  const auto& v = this->get_velocities(mbt_context);
+    const systems::Context<T>& context) const {
+  const auto& v = this->get_velocities(context);
   DRAKE_ASSERT(v.size() == kNv);
   return v.coeffRef(0);
 }
 
 template <typename T>
 const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation_rate(
-    systems::Context<T> *context, const T& translation_dot) const {
-  MultibodyTreeContext<T>& mbt_context =
-      this->GetMutableMultibodyTreeContextOrThrow(context);
-  auto v = this->get_mutable_velocities(&mbt_context);
+    systems::Context<T>* context, const T& translation_dot) const {
+  auto v = this->get_mutable_velocities(&*context);
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = translation_dot;
   return *this;
@@ -54,14 +46,14 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation_rate(
 
 template <typename T>
 Isometry3<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
-    const MultibodyTreeContext<T>& context) const {
+    const systems::Context<T>& context) const {
   return Isometry3<T>(
       Translation3<T>(get_translation(context) * translation_axis()));
 }
 
 template <typename T>
 SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
   return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
@@ -70,7 +62,7 @@ SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
 template <typename T>
 SpatialAcceleration<T>
 PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
   return SpatialAcceleration<T>(Vector3<T>::Zero(),
@@ -79,7 +71,7 @@ PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
 
 template <typename T>
 void PrismaticMobilizer<T>::ProjectSpatialForce(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const SpatialForce<T>& F_Mo_F,
     Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
@@ -91,19 +83,19 @@ void PrismaticMobilizer<T>::ProjectSpatialForce(
 
 template <typename T>
 void PrismaticMobilizer<T>::DoCalcNMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> N) const {
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> N) const {
   (*N)(0, 0) = 1.0;
 }
 
 template <typename T>
 void PrismaticMobilizer<T>::DoCalcNplusMatrix(
-    const MultibodyTreeContext<T>&, EigenPtr<MatrixX<T>> Nplus) const {
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> Nplus) const {
   (*Nplus)(0, 0) = 1.0;
 }
 
 template <typename T>
 void PrismaticMobilizer<T>::MapVelocityToQDot(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
   DRAKE_ASSERT(v.size() == kNv);
@@ -114,7 +106,7 @@ void PrismaticMobilizer<T>::MapVelocityToQDot(
 
 template <typename T>
 void PrismaticMobilizer<T>::MapQDotToVelocity(
-    const MultibodyTreeContext<T>&,
+    const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
   DRAKE_ASSERT(qdot.size() == kNq);
@@ -148,10 +140,16 @@ std::unique_ptr<Mobilizer<AutoDiffXd>> PrismaticMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class PrismaticMobilizer<double>;
-template class PrismaticMobilizer<AutoDiffXd>;
+template <typename T>
+std::unique_ptr<Mobilizer<symbolic::Expression>>
+PrismaticMobilizer<T>::DoCloneToScalar(
+    const MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
 
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::PrismaticMobilizer)

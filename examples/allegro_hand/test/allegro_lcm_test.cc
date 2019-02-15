@@ -56,7 +56,7 @@ GTEST_TEST(AllegroLcmTest, AllegroCommandReceiver) {
   }
 
   context->FixInputPort(
-      0, std::make_unique<systems::Value<lcmt_allegro_command>>(command));
+      0, std::make_unique<Value<lcmt_allegro_command>>(command));
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       dut.AllocateDiscreteVariables();

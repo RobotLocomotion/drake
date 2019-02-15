@@ -23,8 +23,7 @@ def pybind_py_library(
         py_deps = [],
         py_imports = [],
         py_library_rule = native.py_library,
-        visibility = None,
-        testonly = None):
+        **kwargs):
     """Declares a pybind11 Python library with C++ and Python portions.
 
     @param cc_srcs
@@ -69,8 +68,7 @@ def pybind_py_library(
         deps = [
             "@pybind11",
         ] + cc_deps,
-        testonly = testonly,
-        visibility = visibility,
+        **kwargs
     )
 
     # Add Python library.
@@ -80,8 +78,7 @@ def pybind_py_library(
         srcs = py_srcs,
         deps = py_deps,
         imports = py_imports,
-        testonly = testonly,
-        visibility = visibility,
+        **kwargs
     )
     return struct(
         cc_so_target = cc_so_target,
@@ -310,7 +307,7 @@ def _generate_pybind_documentation_header_impl(ctx):
             # the same Bazel package as the target.
             package_headers_depsets.append(depset(direct = [
                 transitive_header
-                for transitive_header in target.cc.transitive_headers
+                for transitive_header in target.cc.transitive_headers.to_list()
                 if (target.label.package == transitive_header.owner.package and
                     target.label.workspace_root == transitive_header.owner.workspace_root)  # noqa
             ]))

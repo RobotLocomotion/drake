@@ -11,7 +11,8 @@ def _combine_relative_labels(arg_list, arg_map):
     # the public macros below.  The result is a map where the arg_list items
     # are twinned into matching key:key pairs, union'd with the arg_map.  (Also
     # double-checks that the keys and values are all relative labels.)
-    result = dict([(x, x) for x in arg_list]) + arg_map
+    result = dict([(x, x) for x in arg_list])
+    result.update(arg_map)
     for x in result.keys() + result.values():
         if not x.startswith(":"):
             fail("Expected relative_label, got " + x)
@@ -132,14 +133,15 @@ from {module} import *
 
 _PY_TEMPLATE_DEPRECATED = r'''"""
 Warning:
-    This module is deprecated.
-    Please use ``{module}`` instead.
+    This module is deprecated and will be removed on or around
+    {deprecation_removal_date}. Please use ``{module}`` instead.
 """
 from pydrake.common.deprecation import _warn_deprecated
 from {module} import *
 
 _warn_deprecated(
-    "This module is deprecated; please use '{module}' instead.")
+    "This module is deprecated and will be removed on or around "
+    "{deprecation_removal_date}. Please use '{module}' instead.")
 '''
 
 def _strip_py_suffix(label):
@@ -152,6 +154,7 @@ def drake_py_library_aliases(
         relative_labels_map = {},
         actual_subdir = "",
         add_deprecation_warning = False,
+        deprecation_removal_date = None,
         tags = [],
         **kwargs):
     actual_subdir or fail("Missing required actual_subdir")
@@ -167,17 +170,27 @@ def drake_py_library_aliases(
         actual_name = _strip_py_suffix(actual_relative_label)
         actual_module = actual_package + "." + actual_name
         if add_deprecation_warning:
-            template = _PY_TEMPLATE_DEPRECATED
+            if deprecation_removal_date == None:
+                fail("`deprecation_removal_date` must be supplied.")
+            generate_file(
+                name = stub_file,
+                content = _PY_TEMPLATE_DEPRECATED.format(
+                    module = actual_module,
+                    deprecation_removal_date = deprecation_removal_date,
+                ),
+            )
         else:
-            template = _PY_TEMPLATE_NOT_DEPRECATED
-        generate_file(
-            name = stub_file,
-            content = template.format(module = actual_module),
-        )
+            generate_file(
+                name = stub_file,
+                content = _PY_TEMPLATE_NOT_DEPRECATED.format(
+                    module = actual_module,
+                ),
+            )
         actual_full_label = "//" + actual_subdir + actual_relative_label
         native.py_library(
             name = stub_relative_label[1:],
             deps = [actual_full_label],
             srcs = [stub_file],
             tags = tags + ["nolint"],
+            **kwargs
         )

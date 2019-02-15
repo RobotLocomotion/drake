@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
 
 namespace drake {
@@ -664,8 +663,8 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
 
   // Initialize vt_error to an arbitrary value larger than tolerance so that the
   // solver at least performs one iteration.
-  T vt_error = 2 * v_contact_tolerance;
-  T vn_error = 2 * v_contact_tolerance;
+  double vt_error = 2 * v_contact_tolerance;
+  double vn_error = 2 * v_contact_tolerance;
 
   // Initialize iteration with the guess provided.
   v = v_guess;
@@ -741,8 +740,8 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
     Delta_vn = Jn * Delta_v;
 
     // We monitor convergence in both normal and tangential velocities.
-    vn_error = Delta_vn.norm();
-    vt_error = Delta_vt.norm();
+    vn_error = ExtractDoubleOrThrow(Delta_vn.norm());
+    vt_error = ExtractDoubleOrThrow(Delta_vt.norm());
 
     // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for all contact points.
     T alpha = CalcAlpha(vt, Delta_vt);
@@ -751,7 +750,7 @@ ImplicitStribeckSolverResult ImplicitStribeckSolver<T>::SolveWithGuess(
     v = v + alpha * Delta_v;
 
     // Save iteration statistics.
-    statistics_.Update(ExtractDoubleOrThrow(vt_error));
+    statistics_.Update(vt_error);
   }
 
   // If we are here is because we reached the maximum number of iterations
@@ -783,9 +782,8 @@ T ImplicitStribeckSolver<T>::ModifiedStribeckDerivative(
 }  // namespace multibody
 }  // namespace drake
 
-// Explicitly instantiates on the most common scalar types.
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     struct ::drake::multibody::internal::DirectionChangeLimiter)
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::ImplicitStribeckSolver)

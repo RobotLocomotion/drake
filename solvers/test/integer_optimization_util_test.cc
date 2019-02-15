@@ -73,24 +73,24 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
       b1_cnstr_.evaluator()->UpdateLowerBound(Vector1d(b_vals_[i](1)));
       b1_cnstr_.evaluator()->UpdateUpperBound(Vector1d(b_vals_[i](1)));
       MathematicalProgramResult result = Solve(prog_);
-      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+      EXPECT_TRUE(result.is_success());
       double tol = 1E-3;
       if (result.get_solver_id() == OsqpSolver::id()) {
         // OSQP can solve linear program, but it is likely to fail in polishing,
         // thus the solution is less accurate.
         tol = 3E-3;
       }
-      EXPECT_NEAR(prog_.GetSolution(operand_result, result),
-                  operand_result_expected, tol);
+      EXPECT_NEAR(result.GetSolution(operand_result), operand_result_expected,
+                  tol);
 
       // Now update the objective to
       // min -b_and
       // The solution should be the same.
       cost.evaluator()->UpdateCoefficients(Vector1d(-1));
       result = Solve(prog_);
-      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-      EXPECT_NEAR(prog_.GetSolution(operand_result, result),
-                  operand_result_expected, tol);
+      EXPECT_TRUE(result.is_success());
+      EXPECT_NEAR(result.GetSolution(operand_result), operand_result_expected,
+                  tol);
     }
   }
 
@@ -137,21 +137,9 @@ GTEST_TEST(TestBinaryCodeMatchConstraint, Test) {
           match_constraint.evaluator()->UpdateLowerBound(Vector1d(match_val));
           const auto result = Solve(prog);
           if (b0_val == 0 && b1_val == 1 && b2_val == 1) {
-            if (match_val == 1.0) {
-              EXPECT_EQ(result.get_solution_result(),
-                        SolutionResult::kSolutionFound);
-            } else {
-              EXPECT_NE(result.get_solution_result(),
-                        SolutionResult::kSolutionFound);
-            }
+            EXPECT_EQ(result.is_success(), match_val == 1.0);
           } else {
-            if (match_val == 0.0) {
-              EXPECT_EQ(result.get_solution_result(),
-                        SolutionResult::kSolutionFound);
-            } else {
-              EXPECT_NE(result.get_solution_result(),
-                        SolutionResult::kSolutionFound);
-            }
+            EXPECT_EQ(result.is_success(), match_val == 0.0);
           }
         }
       }

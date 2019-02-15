@@ -43,9 +43,9 @@ class TestSystem : public System<double> {
     this->set_name("TestSystem");
   }
 
-  // Implementation is required, but unused here.
   int get_num_continuous_states() const final {
-    DRAKE_ABORT();
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+    return {};
   }
 
   ~TestSystem() override {}
@@ -81,7 +81,7 @@ class TestSystem : public System<double> {
         [](const ContextBase&, AbstractValue*) {});
     // TODO(sherm1) Use implicit_cast when available (from abseil). Several
     // places in this test.
-    auto port = std::make_unique<LeafOutputPort<double>>(
+    auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "y" + std::to_string(get_num_output_ports()),
@@ -115,15 +115,14 @@ class TestSystem : public System<double> {
 
   double DoCalcWitnessValue(const Context<double>&,
                             const WitnessFunction<double>&) const override {
-    // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE() << "This system uses no witness functions.";
+    return {};
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<double>*,
       CompositeEventCollection<double>*) const override {
-    // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE() << "This system uses no witness functions.";
   }
 
   // The default publish function.
@@ -169,7 +168,7 @@ class TestSystem : public System<double> {
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
   // Sets up an arbitrary mapping from the current time to the next discrete
@@ -464,7 +463,7 @@ class ValueIOTestSystem : public System<T> {
 
     this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
 
-    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
+    this->AddOutputPort(internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "absport",
@@ -482,7 +481,7 @@ class ValueIOTestSystem : public System<T> {
                            RandomDistribution::kUniform);
     this->DeclareInputPort("gaussian", kVectorValued, 1,
                            RandomDistribution::kGaussian);
-    this->AddOutputPort(std::make_unique<LeafOutputPort<T>>(
+    this->AddOutputPort(internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "vecport",
@@ -499,24 +498,23 @@ class ValueIOTestSystem : public System<T> {
     this->set_name("ValueIOTestSystem");
   }
 
-  // Implementation is required, but unused here.
   int get_num_continuous_states() const final {
-    DRAKE_ABORT();
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+    return {};
   }
 
     ~ValueIOTestSystem() override {}
 
   T DoCalcWitnessValue(const Context<T>&,
                        const WitnessFunction<T>&) const override {
-    // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE() << "This system uses no witness functions.";
+    return {};
   }
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<T>*,
       CompositeEventCollection<T>*) const override {
-    // This system uses no witness functions.
-    DRAKE_ABORT();
+    ADD_FAILURE() << "This system uses no witness functions.";
   }
 
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -582,21 +580,21 @@ class ValueIOTestSystem : public System<T> {
   void DispatchPublishHandler(
       const Context<T>& context,
       const EventCollection<PublishEvent<T>>& event_info) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
   void DispatchDiscreteVariableUpdateHandler(
       const Context<T>& context,
       const EventCollection<DiscreteUpdateEvent<T>>& event_info,
       DiscreteValues<T>* discrete_state) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
   void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& event_info,
       State<T>* state) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
   std::unique_ptr<EventCollection<PublishEvent<T>>>
@@ -843,9 +841,9 @@ class ComputationTestSystem final : public System<double> {
     EXPECT_EQ(pnc, pnc_count_);
   }
 
-  // Implementation is required, but unused here.
   int get_num_continuous_states() const final {
-    DRAKE_ABORT();
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+    return {};
   }
 
  private:
@@ -916,11 +914,12 @@ class ComputationTestSystem final : public System<double> {
   std::multimap<int, int> GetDirectFeedthroughs() const final { return {}; }
   double DoCalcWitnessValue(const Context<double>&,
                             const WitnessFunction<double>&) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+    return {};
   }
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
       Event<double>*, CompositeEventCollection<double>*) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<double>&) const final {
@@ -929,19 +928,19 @@ class ComputationTestSystem final : public System<double> {
   void DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
   void DispatchDiscreteVariableUpdateHandler(
       const Context<double>& context,
       const EventCollection<DiscreteUpdateEvent<double>>& events,
       DiscreteValues<double>* discrete_state) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
   void DispatchUnrestrictedUpdateHandler(
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
-    DRAKE_ABORT_MSG("test should not get here");
+    ADD_FAILURE() << "Implementation is required, but unused here.";
   }
   std::map<PeriodicEventData, std::vector<const Event<double>*>,
            PeriodicEventDataComparator>

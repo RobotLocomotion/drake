@@ -11,6 +11,7 @@
 
 #include <Eigen/Eigenvalues>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -104,7 +105,7 @@ namespace multibody {
 template <typename T>
 class RotationalInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(RotationalInertia)
 
   /// Constructs a rotational inertia that has all its moments/products of
   /// inertia equal to NaN (helps quickly detect uninitialized values).
@@ -538,13 +539,6 @@ class RotationalInertia {
     return *this;
   }
 
-  // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("Use ReExpressInPlace(RotationMatrix<T>&). "
-                   "Code will be deleted after February 5, 2019.")
-  RotationalInertia<T>& ReExpressInPlace(const Matrix3<T>& R_AE) {
-    return ReExpressInPlace(math::RotationMatrix<T>(R_AE));
-  }
-
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
   /// @param[in] R_AE RotationMatrix relating frames A and E.
@@ -555,14 +549,6 @@ class RotationalInertia {
   RotationalInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const
       __attribute__((warn_unused_result)) {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
-  }
-
-  // TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("Use RotationalInertia::ReExpress(RotationMatrix<T>&). "
-                   "Code will be deleted after February 5, 2019.")
-  RotationalInertia<T> ReExpress(const Matrix3<T>& R_AE) const
-                                          __attribute__((warn_unused_result)) {
-    return ReExpress(math::RotationMatrix<T>(R_AE));
   }
 
   /// @name Shift methods
@@ -1015,5 +1001,10 @@ std::ostream& operator<<(std::ostream& o,
   return o;
 }
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(RotationalInertia)
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::RotationalInertia)

@@ -17,7 +17,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 
 // TODO(edrumwri,sherm1) This code is currently written out mostly in scalars
 // but should be done in 2D vectors instead to make it more compact, easier to
@@ -83,7 +82,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(
     return 0;
 
   // TODO(edrumwri): Flesh out this stub.
-  DRAKE_ABORT();
+  DRAKE_ABORT_MSG("Rod2D<T>::DetermineNumWitnessFunctions is stubbed");
   return 0;
 }
 
@@ -1037,7 +1036,8 @@ void Rod2D<T>::DoCalcTimeDerivatives(
     return CalcAccelerationsCompliantContactAndBallistic(context, derivatives);
   } else {
     // TODO(edrumwri): Implement the piecewise DAE approach.
-    DRAKE_ABORT();
+    DRAKE_ABORT_MSG(
+        "Rod2D<T>::DoCalcTimeDerivatives: piecewise DAE isn't implemented yet");
   }
 }
 

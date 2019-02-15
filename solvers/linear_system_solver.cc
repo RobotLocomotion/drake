@@ -12,15 +12,20 @@
 namespace drake {
 namespace solvers {
 
+LinearSystemSolver::LinearSystemSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+LinearSystemSolver::~LinearSystemSolver() = default;
+
 bool LinearSystemSolver::is_available() { return true; }
 
-void LinearSystemSolver::Solve(const MathematicalProgram& prog,
-                               const optional<Eigen::VectorXd>& initial_guess,
-                               const optional<SolverOptions>& solver_options,
-                               MathematicalProgramResult* result) const {
-  *result = {};
+void LinearSystemSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   // The initial guess doesn't help us, and we don't offer any tuning options.
-  unused(initial_guess, solver_options);
+  unused(initial_guess, merged_options);
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
     num_constraints += binding.evaluator()->A().rows();
@@ -56,7 +61,6 @@ void LinearSystemSolver::Solve(const MathematicalProgram& prog,
   const Eigen::VectorXd least_square_sol =
       Aeq.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beq);
 
-  result->set_solver_id(id());
   result->set_x_val(least_square_sol);
   if (beq.isApprox(Aeq * least_square_sol)) {
     result->set_optimal_cost(0.);
@@ -67,24 +71,9 @@ void LinearSystemSolver::Solve(const MathematicalProgram& prog,
   }
 }
 
-SolutionResult LinearSystemSolver::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
-}
-
-SolverId LinearSystemSolver::solver_id() const { return id(); }
-
 SolverId LinearSystemSolver::id() {
   static const never_destroyed<SolverId> singleton{"Linear system"};
   return singleton.access();
-}
-
-bool LinearSystemSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return ProgramAttributesSatisfied(prog);
 }
 
 bool LinearSystemSolver::ProgramAttributesSatisfied(

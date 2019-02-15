@@ -3,7 +3,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include "drake/common/autodiff.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -21,10 +20,13 @@ RevoluteJoint<T>::TemplatedDoCloneToScalar(
 
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<RevoluteJoint<ToScalar>>(
-      this->name(),
-      frame_on_parent_body_clone, frame_on_child_body_clone,
-      this->revolute_axis(),
-      this->lower_limit(), this->upper_limit(), this->damping());
+      this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
+      this->revolute_axis(), this->position_lower_limits()[0],
+      this->position_upper_limit(), this->damping());
+  joint_clone->set_velocity_limits(this->velocity_lower_limits(),
+                                   this->velocity_upper_limits());
+  joint_clone->set_acceleration_limits(this->acceleration_lower_limits(),
+                                       this->acceleration_upper_limits());
 
   return std::move(joint_clone);
 }
@@ -41,6 +43,12 @@ std::unique_ptr<Joint<AutoDiffXd>> RevoluteJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Joint<symbolic::Expression>> RevoluteJoint<T>::DoCloneToScalar(
+    const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
+  return TemplatedDoCloneToScalar(tree_clone);
+}
+
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.
@@ -54,9 +62,8 @@ RevoluteJoint<T>::MakeImplementationBlueprint() const {
   return std::move(blue_print);
 }
 
-// Explicitly instantiates on the most common scalar types.
-template class RevoluteJoint<double>;
-template class RevoluteJoint<AutoDiffXd>;
-
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::RevoluteJoint)

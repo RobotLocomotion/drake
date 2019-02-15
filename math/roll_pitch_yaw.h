@@ -5,10 +5,10 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/symbolic.h"
 
 namespace drake {
 namespace math {
@@ -16,6 +16,7 @@ namespace math {
 template <typename T>
 class RotationMatrix;
 
+// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
 /// This class represents the orientation between two arbitrary frames A and D
 /// associated with a Space-fixed (extrinsic) X-Y-Z rotation by "roll-pitch-yaw"
 /// angles `[r, p, y]`, which is equivalent to a Body-fixed (intrinsic) Z-Y-X
@@ -57,9 +58,7 @@ class RotationMatrix;
 ///
 /// - double
 /// - AutoDiffXd
-///
-// TODO(@mitiguy) Add Sherm/Goldstein's way to visualize rotation sequences.
-// TODO(Mitiguy) Ensure this class handles RotationMatrix<symbolic::Expression>.
+/// - symbolic::Expression
 template <typename T>
 class RollPitchYaw {
  public:
@@ -200,17 +199,14 @@ class RollPitchYaw {
     return ToRotationMatrix().matrix();
   }
 
-  // TODO(jwnimmer-tri) Nearly all of the bool-valued predicates ("IsFoo...")
-  // in this class should return boolean<T>, to be consistent with the
-  // RotationMatrix methods.
-
   /// Compares each element of `this` to the corresponding element of `other`
   /// to check if they are the same to within a specified `tolerance`.
   /// @param[in] other %RollPitchYaw to compare to `this`.
   /// @param[in] tolerance maximum allowable absolute difference between the
   /// matrix elements in `this` and `other`.
   /// @returns `true` if `‖this - other‖∞ <= tolerance`.
-  bool IsNearlyEqualTo(const RollPitchYaw<T>& other, double tolerance) const {
+  boolean<T> IsNearlyEqualTo(
+      const RollPitchYaw<T>& other, double tolerance) const {
     const Vector3<T> difference = vector() - other.vector();
     return difference.template lpNorm<Eigen::Infinity>() <= tolerance;
   }
@@ -221,12 +217,12 @@ class RollPitchYaw {
   /// @param[in] other %RollPitchYaw to compare to `this`.
   /// @param[in] tolerance maximum allowable absolute difference between R1, R2.
   /// @returns `true` if `‖R1 - R2‖∞ <= tolerance`.
-  bool IsNearlySameOrientation(const RollPitchYaw<T>& other,
-                               double tolerance) const;
+  boolean<T> IsNearlySameOrientation(const RollPitchYaw<T>& other,
+                                     double tolerance) const;
 
   /// Returns true if roll-pitch-yaw angles `[r, p, y]` are in the range
   /// `-π <= r <= π`, `-π/2 <= p <= π/2, `-π <= y <= π`.
-  bool IsRollPitchYawInCanonicalRange() const {
+  boolean<T> IsRollPitchYawInCanonicalRange() const {
     const T& r = roll_angle();
     const T& p = pitch_angle();
     const T& y = yaw_angle();
@@ -241,7 +237,7 @@ class RollPitchYaw {
   /// @param[in] cos_pitch_angle cosine of the pitch angle, i.e., `cos(p)`.
   /// @note Pitch-angles close to gimbal-lock can can cause problems with
   /// numerical precision and numerical integration.
-  static bool DoesCosPitchAngleViolateGimbalLockTolerance(
+  static boolean<T> DoesCosPitchAngleViolateGimbalLockTolerance(
       const T& cos_pitch_angle) {
     using std::abs;
     return abs(cos_pitch_angle) < kGimbalLockToleranceCosPitchAngle;
@@ -253,7 +249,7 @@ class RollPitchYaw {
   /// @note To improve efficiency when cos(pitch_angle()) is already calculated,
   /// instead use the function DoesCosPitchAngleViolateGimbalLockTolerance().
   /// @see DoesCosPitchAngleViolateGimbalLockTolerance()
-  bool DoesPitchAngleViolateGimbalLockTolerance() const {
+  boolean<T> DoesPitchAngleViolateGimbalLockTolerance() const {
     using std::cos;
     return DoesCosPitchAngleViolateGimbalLockTolerance(cos(pitch_angle()));
   }
@@ -268,7 +264,10 @@ class RollPitchYaw {
   /// Returns true if `rpy` contains valid roll, pitch, yaw angles.
   /// @param[in] rpy allegedly valid roll, pitch, yaw angles.
   /// @note an angle is invalid if it is NaN or infinite.
-  static bool IsValid(const Vector3<T>& rpy) { return rpy.allFinite(); }
+  static boolean<T> IsValid(const Vector3<T>& rpy) {
+    using std::isfinite;
+    return isfinite(rpy[0]) && isfinite(rpy[1]) && isfinite(rpy[2]);
+  }
 
   /// Forms Ṙ, the ordinary derivative of the %RotationMatrix `R` with respect
   /// to an independent variable `t` (`t` usually denotes time) and `R` is the
@@ -416,12 +415,20 @@ class RollPitchYaw {
  private:
   // Throws an exception if rpy is not a valid %RollPitchYaw.
   // @param[in] rpy an allegedly valid rotation matrix.
-  static void ThrowIfNotValid(const Vector3<T>& rpy) {
+  // @note If the underlying scalar type T is non-numeric (symbolic), no
+  // validity check is made and no assertion is thrown.
+  template <typename S = T>
+  static typename std::enable_if_t<scalar_predicate<S>::is_bool>
+  ThrowIfNotValid(const Vector3<T>& rpy) {
     if (!RollPitchYaw<T>::IsValid(rpy)) {
       throw std::logic_error(
        "Error: One (or more) of the roll-pitch-yaw angles is infinity or NaN.");
     }
   }
+
+  template <typename S = T>
+  static typename std::enable_if_t<!scalar_predicate<S>::is_bool>
+  ThrowIfNotValid(const Vector3<S>&) {}
 
   // Throws an exception with a message that the pitch-angle `p` violates the
   // internally-defined gimbal-lock tolerance, which occurs when `cos(p) ≈ 0`,

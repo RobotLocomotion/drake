@@ -35,7 +35,7 @@ bool IsFeasibleCheck(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return Solve(prog).get_solution_result() == kSolutionFound;
+  return Solve(*prog).is_success();
 }
 
 class TestMixedIntegerRotationConstraint {

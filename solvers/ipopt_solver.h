@@ -6,15 +6,15 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 
 /**
- * The details of IPOPT solvers after calling Solve function. The users can get
- * the details by
- * MathematicalProgramResult::get_solver_details().GetValue<IpoptSolverDetails>();
+ * The Ipopt solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<IpoptSolver>() to obtain the
+ * details.
  */
 struct IpoptSolverDetails {
   /**
@@ -40,35 +40,29 @@ struct IpoptSolverDetails {
   const char* ConvertStatusToString() const;
 };
 
-class IpoptSolver : public MathematicalProgramSolverInterface {
+class IpoptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver)
 
-  IpoptSolver() = default;
-  ~IpoptSolver() override = default;
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = IpoptSolverDetails;
 
-  // This solver is implemented in various pieces depending on if
-  // Ipopt was available during compilation.
-  bool available() const override { return is_available(); };
+  IpoptSolver();
+  ~IpoptSolver() final;
 
-  static bool is_available();
-
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @name Static versions of the instance methods with similar names.
+  //@{
   static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
 
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
 
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 
 }  // namespace solvers

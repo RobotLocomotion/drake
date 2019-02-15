@@ -1,7 +1,12 @@
 from __future__ import print_function, absolute_import
 
 from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.mathematicalprogram import SolverType
+from pydrake.solvers.gurobi import GurobiSolver
+from pydrake.solvers.snopt import SnoptSolver
+from pydrake.solvers.mathematicalprogram import (
+    SolverOptions,
+    SolverType
+    )
 
 import unittest
 import warnings
@@ -12,6 +17,8 @@ import pydrake
 from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.symbolic as sym
+
+SNOPT_NO_GUROBI = SnoptSolver().available() and not GurobiSolver().available()
 
 
 class TestQP:
@@ -30,7 +37,7 @@ class TestQP:
             prog.AddLinearConstraint(sym.logical_and(x[1] >= 1, x[1] <= 2.)),
             # Linear inequality
             prog.AddLinearConstraint(3 * x[0] - x[1] <= 2),
-            # Linaer equality
+            # Linear equality
             prog.AddLinearConstraint(x[0] + 2 * x[1] == 3)]
 
         # TODO(eric.cousineau): Add constant terms
@@ -46,6 +53,51 @@ class TestMathematicalProgram(unittest.TestCase):
         vars_all = prog.decision_variables()
         self.assertEqual(vars_all.shape, (5,))
 
+    def test_program_attributes_and_solver_selection(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        # Add linear equality constraints; make sure the solver works.
+        prog.AddLinearConstraint(x[0] + x[1] == 0)
+        prog.AddLinearConstraint(2*x[0] - x[1] == 1)
+        solver_id = mp.ChooseBestSolver(prog)
+        self.assertEqual(solver_id.name(), "Linear system")
+        solver = mp.MakeSolver(solver_id)
+        self.assertEqual(solver.solver_id().name(), "Linear system")
+        self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
+        result = solver.Solve(prog, None, None)
+        self.assertTrue(result.is_success())
+
+        # With an inequality constraint added, the "Linear system" solver
+        # doesn't work anymore.
+        prog.AddLinearConstraint(x[0] >= 0)
+        self.assertFalse(solver.AreProgramAttributesSatisfied(prog))
+        with self.assertRaises(ValueError):
+            solver.Solve(prog, None, None)
+
+        # A different solver will work, though.  We re-use the result object
+        # (as a mutable output argument), and make sure that it changes.
+        solver_id = mp.ChooseBestSolver(prog)
+        self.assertNotEqual(solver_id.name(), "Linear system")
+        solver = mp.MakeSolver(solver_id)
+        solver.Solve(prog, None, None, result)
+        self.assertTrue(result.is_success())
+        self.assertEqual(result.get_solver_id().name(), solver_id.name())
+
+    def test_module_level_solve_function_and_result_accessors(self):
+        qp = TestQP()
+        x_expected = np.array([1, 1])
+        result = mp.Solve(qp.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.get_x_val(), x_expected))
+        self.assertEqual(result.get_solution_result(),
+                         mp.SolutionResult.kSolutionFound)
+        self.assertEqual(result.get_optimal_cost(), 3.0)
+        self.assertTrue(result.get_solver_id().name())
+        self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
+        self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
+
+    @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):
         prog = mp.MathematicalProgram()
         x = prog.NewBinaryVariables(3, "x")
@@ -259,6 +311,14 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.EvalBindings(prog.GetAllConstraints(), x_expected),
             np.ndarray)
 
+        # Bindings for `Eval`.
+        x_list = (float(1.), AutoDiffXd(1.), sym.Variable("x"))
+        T_y_list = (float, AutoDiffXd, sym.Expression)
+        evaluator = costs[0].evaluator()
+        for x_i, T_y_i in zip(x_list, T_y_list):
+            y_i = evaluator.Eval(x=[x_i, x_i])
+            self.assertIsInstance(y_i[0], T_y_i)
+
     def test_matrix_variables(self):
         prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, 2, "x")
@@ -415,6 +475,9 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.SetInitialGuessForAllVariables(x0)
         check_and_reset()
 
+    @unittest.skipIf(
+        SNOPT_NO_GUROBI,
+        "SNOPT is unable to solve this problem (#10653).")
     def test_lorentz_cone_constraint(self):
         # Set Up Mathematical Program
         prog = mp.MathematicalProgram()
@@ -444,3 +507,7 @@ class TestMathematicalProgram(unittest.TestCase):
         options = prog.GetSolverOptions(SolverType.kGurobi)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+
+        # For now, just make sure the constructor exists.  Once we bind more
+        # accessors, we can test them here.
+        options_object = SolverOptions()

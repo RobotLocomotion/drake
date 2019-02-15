@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/lcmt_contact_results_for_viz.hpp"
@@ -21,15 +22,7 @@ namespace multibody {
  message. It has a single input port with type ContactResults<T> and a single
  output port with lcmt_contact_results_for_viz.
 
- @tparam T The scalar type. Must be a valid Eigen scalar.
-
- Instantiated templates for the following kinds of T's are provided:
-
- - double
- - AutoDiffXd
-
- They are already available to link against in the containing library. No other
- values for T are currently supported.
+ @tparam T Must be one of drake's default scalar types.
  */
 template <typename T>
 class ContactResultsToLcmSystem final : public systems::LeafSystem<T> {
@@ -146,3 +139,6 @@ inline systems::lcm::LcmPublisherSystem* ConnectContactResultsToDrakeVisualizer(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::ContactResultsToLcmSystem)

@@ -35,7 +35,7 @@ constexpr double kJacoLcmStatusPeriod = 0.010;
 /// Handles lcmt_jaco_command messages from a LcmSubscriberSystem.
 ///
 /// This system has one abstract valued input port which expects a
-/// systems::Value object templated on type `lcmt_jaco_command`.
+/// Value object templated on type `lcmt_jaco_command`.
 ///
 /// This system has a single output port which publishes the commanded
 /// position and velocity for each joint.
@@ -81,11 +81,11 @@ class JacoCommandReceiver : public systems::LeafSystem<double> {
 /// desired position and velocity.
 ///
 /// This system has one abstract valued output port that contains a
-/// systems::Value object templated on type `lcmt_jaco_command`. Note
+/// Value object templated on type `lcmt_jaco_command`. Note
 /// that this system does not actually send this message on an LCM
 /// channel. To send the message, the output of this system should be
 /// connected to an input port of a systems::lcm::LcmPublisherSystem
-/// that accepts a systems::Value object templated on type
+/// that accepts a Value object templated on type
 /// `lcmt_jaco_command`.
 class JacoCommandSender : public systems::LeafSystem<double> {
  public:
@@ -110,7 +110,7 @@ class JacoCommandSender : public systems::LeafSystem<double> {
 /// Handles lcmt_jaco_status messages from a LcmSubscriberSystem.
 ///
 /// This system has one abstract valued input port which expects a
-/// systems::Value object templated on type `lcmt_jaco_status`.
+/// Value object templated on type `lcmt_jaco_status`.
 ///
 /// This system has one vector valued output port which reports
 /// measured position and velocity for each joint and finger.
@@ -148,11 +148,11 @@ class JacoStatusReceiver : public systems::LeafSystem<double> {
 /// current position and velocity.
 ///
 /// This system has one abstract valued output port that contains a
-/// systems::Value object templated on type `lcmt_jaco_status`. Note that this
+/// Value object templated on type `lcmt_jaco_status`. Note that this
 /// system does not actually send this message on an LCM channel. To send the
 /// message, the output of this system should be connected to an input port of
 /// a systems::lcm::LcmPublisherSystem that accepts a
-/// systems::Value object templated on type `lcmt_jaco_status`.
+/// Value object templated on type `lcmt_jaco_status`.
 class JacoStatusSender : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoStatusSender)

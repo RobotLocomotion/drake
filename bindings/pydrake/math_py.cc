@@ -24,7 +24,7 @@ PYBIND11_MODULE(math, m) {
   m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
 
-  py::module::import("pydrake.util.eigen_geometry");
+  py::module::import("pydrake.common.eigen_geometry");
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -133,7 +133,7 @@ PYBIND11_MODULE(math, m) {
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
-  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw")
+  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw", doc.RollPitchYaw.doc)
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("other"))
       .def(py::init<const Vector3<T>>(), py::arg("rpy"),
           doc.RollPitchYaw.ctor.doc_1args_rpy)

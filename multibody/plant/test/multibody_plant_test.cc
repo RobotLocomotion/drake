@@ -19,6 +19,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/test_utilities/geometry_set_tester.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -27,11 +28,13 @@
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
@@ -60,8 +63,8 @@ using multibody::benchmarks::acrobot::MakeAcrobotPlant;
 using multibody::benchmarks::pendulum::MakePendulumPlant;
 using multibody::benchmarks::pendulum::PendulumParameters;
 using multibody::Parser;
-using systems::AbstractValue;
 using systems::BasicVector;
+using systems::ConstantVectorSource;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiagramBuilder;
@@ -235,6 +238,18 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pin_joint.model_instance(), pendulum_model_instance);
   EXPECT_THROW(plant->GetJointByName(kInvalidName), std::logic_error);
 
+  // Get joint indices by model instance
+  const std::vector<JointIndex> acrobot_joint_indices =
+      plant->GetJointIndices(default_model_instance());
+  EXPECT_EQ(acrobot_joint_indices.size(), 2);
+  EXPECT_EQ(acrobot_joint_indices[0], shoulder_joint.index());
+  EXPECT_EQ(acrobot_joint_indices[1], elbow_joint.index());
+
+  const std::vector<JointIndex> pendulum_joint_indices =
+      plant->GetJointIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_joint_indices.size(), 2);  // pin joint + weld joint.
+  EXPECT_EQ(pendulum_joint_indices[0], pin_joint.index());
+
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
       plant->GetJointByName<RevoluteJoint>(parameters.shoulder_joint_name());
@@ -333,11 +348,13 @@ class AcrobotPlantTests : public ::testing::Test {
     elbow_ = &plant_->GetMutableJointByName<RevoluteJoint>(
         parameters_.elbow_joint_name());
 
-    context_ = plant_->CreateDefaultContext();
-    derivatives_ = plant_->AllocateTimeDerivatives();
+    context_ = diagram_->CreateDefaultContext();
+    derivatives_ = diagram_->AllocateTimeDerivatives();
+    plant_context_ = &diagram_->GetMutableSubsystemContext(
+        *plant_, context_.get());
 
     ASSERT_GT(plant_->num_actuators(), 0);
-    input_port_ = &context_->FixInputPort(
+    input_port_ = &plant_context_->FixInputPort(
         plant_->get_actuation_input_port().get_index(), Vector1<double>(0.0));
   }
 
@@ -370,12 +387,12 @@ class AcrobotPlantTests : public ::testing::Test {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
 
     // Calculate the generalized forces due to gravity.
     const VectorX<double> tau_g =
-        plant_->CalcGravityGeneralizedForces(*context_);
+        plant_->CalcGravityGeneralizedForces(*plant_context_);
 
     // Calculate a benchmark value.
     const Vector2d tau_g_expected =
@@ -394,16 +411,16 @@ class AcrobotPlantTests : public ::testing::Test {
     const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
     // Set the state:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
-    shoulder_->set_angular_rate(context_.get(), theta1dot);
-    elbow_->set_angular_rate(context_.get(), theta2dot);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
+    shoulder_->set_angular_rate(plant_context_, theta1dot);
+    elbow_->set_angular_rate(plant_context_, theta2dot);
 
     // Fix input port to a value before computing anything. In this case, zero
     // actuation.
     input_port_->GetMutableVectorData<double>()->SetAtIndex(0, input_torque);
 
-    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     const VectorXd xdot = derivatives_->CopyToVector();
 
     // Now compute inverse dynamics using our benchmark:
@@ -416,8 +433,8 @@ class AcrobotPlantTests : public ::testing::Test {
 
     // Verify the computation of the contribution due to joint damping.
     MultibodyForces<double> forces(*plant_);
-    shoulder_->AddInDamping(*context_, &forces);
-    elbow_->AddInDamping(*context_, &forces);
+    shoulder_->AddInDamping(*plant_context_, &forces);
+    elbow_->AddInDamping(*plant_context_, &forces);
     EXPECT_TRUE(CompareMatrices(forces.generalized_forces(), tau_damping,
                                 kTolerance, MatrixCompareType::relative));
 
@@ -450,22 +467,24 @@ class AcrobotPlantTests : public ::testing::Test {
     const double time_step = discrete_plant_->time_step();
 
     // Set the state for the continuous model:
-    shoulder_->set_angle(context_.get(), theta1);
-    elbow_->set_angle(context_.get(), theta2);
-    shoulder_->set_angular_rate(context_.get(), theta1dot);
-    elbow_->set_angular_rate(context_.get(), theta2dot);
+    shoulder_->set_angle(plant_context_, theta1);
+    elbow_->set_angle(plant_context_, theta2);
+    shoulder_->set_angular_rate(plant_context_, theta1dot);
+    elbow_->set_angular_rate(plant_context_, theta2dot);
 
     // Set the state for the discrete model:
-    // Note: modeling elements such as joints, bodies, frames, etc. are agnostic
-    // to whether the state is discrete or continuous. Therefore, we are allowed
-    // to using the same modeling elements to set both `context` and
-    // `discrete_context`.
-    shoulder_->set_angle(discrete_context_.get(), theta1);
-    elbow_->set_angle(discrete_context_.get(), theta2);
-    shoulder_->set_angular_rate(discrete_context_.get(), theta1dot);
-    elbow_->set_angular_rate(discrete_context_.get(), theta2dot);
+    const RevoluteJoint<double>& discrete_shoulder =
+        discrete_plant_->GetJointByName<RevoluteJoint>(
+            parameters_.shoulder_joint_name());
+    const RevoluteJoint<double>& discrete_elbow =
+        discrete_plant_->GetJointByName<RevoluteJoint>(
+            parameters_.elbow_joint_name());
+    discrete_shoulder.set_angle(discrete_context_.get(), theta1);
+    discrete_elbow.set_angle(discrete_context_.get(), theta2);
+    discrete_shoulder.set_angular_rate(discrete_context_.get(), theta1dot);
+    discrete_elbow.set_angular_rate(discrete_context_.get(), theta2dot);
 
-    plant_->CalcTimeDerivatives(*context_, derivatives_.get());
+    diagram_->CalcTimeDerivatives(*context_, derivatives_.get());
     auto updates = discrete_plant_->AllocateDiscreteVariables();
     discrete_plant_->CalcDiscreteVariableUpdates(
         *discrete_context_, updates.get());
@@ -501,10 +520,12 @@ class AcrobotPlantTests : public ::testing::Test {
   SceneGraph<double>* scene_graph_{nullptr};
   // The Diagram containing both the MultibodyPlant and the SceneGraph.
   unique_ptr<Diagram<double>> diagram_;
-  // Workspace including context and derivatives vector:
+  // Workspace including diagram context and derivatives vector:
   unique_ptr<Context<double>> context_;
   unique_ptr<Context<double>> discrete_context_;
   unique_ptr<ContinuousState<double>> derivatives_;
+  // Non-owning pointer to the plant context.
+  Context<double>* plant_context_{nullptr};
   // Non-owning pointers to the model's elements:
   const Body<double>* link1_{nullptr};
   const Body<double>* link2_{nullptr};
@@ -655,6 +676,26 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
       plant_->GetBodyFrameIdIfExists(world_index());
   EXPECT_EQ(undefined_id, nullopt);
 #endif
+}
+
+TEST_F(AcrobotPlantTests, SetDefaultState) {
+  EXPECT_EQ(shoulder_->get_angle(*plant_context_), 0.0);
+  EXPECT_EQ(elbow_->get_angle(*plant_context_), 0.0);
+
+  // Set the default joint angles for the acrobot.
+  shoulder_->set_default_angle(0.05);
+  elbow_->set_default_angle(1.2);
+
+  // New contexts should get the default angles.
+  auto test_context = plant_->CreateDefaultContext();
+  EXPECT_EQ(shoulder_->get_angle(*test_context), 0.05);
+  EXPECT_EQ(elbow_->get_angle(*test_context), 1.2);
+
+  shoulder_->set_default_angle(4.2);
+
+  // Calling SetDefaultContext directly works, too.
+  plant_->SetDefaultContext(plant_context_);
+  EXPECT_EQ(shoulder_->get_angle(*plant_context_), 4.2);
 }
 
 TEST_F(AcrobotPlantTests, SetRandomState) {
@@ -827,13 +868,8 @@ class SphereChainScenario {
   std::vector<geometry::PenetrationAsPointPair<double>>
   ComputePointPairPenetration() const {
     // Grab query object to test for collisions.
-    const geometry::QueryObject<double>& query_object =
-        plant_
-            ->EvalAbstractInput(
-                *plant_context_,
-                plant_->get_geometry_query_input_port().get_index())
-            ->GetValue<geometry::QueryObject<double>>();
-
+    const auto& query_object = plant_->get_geometry_query_input_port().
+        Eval<geometry::QueryObject<double>>(*plant_context_);
     return query_object.ComputePointPairPenetration();
   }
 
@@ -939,6 +975,7 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometriesErrors) {
 // will be included.
 GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
   using geometry::GeometrySet;
+  using geometry::GeometrySetTester;
 
   SphereChainScenario scenario(5);
 
@@ -947,25 +984,28 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
   // Case: Empty vector produces empty geometry set.
   {
     GeometrySet set = plant.CollectRegisteredGeometries({});
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_EQ(set.num_frames(), 0);
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_EQ(tester.num_frames(), 0);
   }
 
   // Case: Single body produces single, corresponding frame.
   {
     GeometrySet set = plant.CollectRegisteredGeometries({&scenario.sphere(0)});
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_EQ(set.num_frames(), 1);
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_EQ(tester.num_frames(), 1);
     FrameId id_0 = plant.GetBodyFrameIdOrThrow(scenario.sphere(0).index());
-    EXPECT_TRUE(set.contains(id_0));
+    EXPECT_TRUE(tester.contains(id_0));
   }
 
   // Case: Body with no corresponding geometry frame.
   {
     GeometrySet set =
         plant.CollectRegisteredGeometries({&scenario.no_geometry_body()});
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_EQ(set.num_frames(), 0);
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_EQ(tester.num_frames(), 0);
   }
 
   // Case: Include the world body.
@@ -973,9 +1013,10 @@ GTEST_TEST(MultibodyPlantTest, CollectRegisteredGeometries) {
     GeometrySet set =
         plant.CollectRegisteredGeometries(
             {&scenario.mutable_plant()->world_body()});
-    EXPECT_EQ(set.num_frames(), 1);
-    EXPECT_EQ(set.num_geometries(), 0);
-    EXPECT_FALSE(set.contains(scenario.ground_id()));
+    GeometrySetTester tester(&set);
+    EXPECT_EQ(tester.num_frames(), 1);
+    EXPECT_EQ(tester.num_geometries(), 0);
+    EXPECT_FALSE(tester.contains(scenario.ground_id()));
   }
 }
 
@@ -1176,7 +1217,11 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   const auto& pin =
       pendulum->GetJointByName<RevoluteJoint>(parameters.pin_joint_name());
   unique_ptr<Context<double>> context = pendulum->CreateDefaultContext();
-  context->FixInputPort(0, Vector1d{0.0});
+  context->FixInputPort(pendulum->get_actuation_input_port().get_index(),
+                        Vector1d{0.0});
+  context->FixInputPort(
+      pendulum->get_applied_generalized_force_input_port().get_index(),
+      Vector1d{0.0});
 
   // First we will linearize about the unstable fixed point with the pendulum
   // in its inverted position.
@@ -2055,7 +2100,7 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
       parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
   const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
   const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
-  // We dont care for the actual pose of the gripper in the end effector frame
+  // We don't care for the actual pose of the gripper in the end effector frame
   // for this example. We only care about the state size.
   plant.WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
   plant.Finalize();

@@ -46,7 +46,7 @@ class ConstAndEcho final : public LeafSystem<T> {
   template <typename U>
   explicit ConstAndEcho(const ConstAndEcho<U>&) : ConstAndEcho() {}
 
-  const systems::InputPort<T>& get_vec_input_port() {
+  const systems::InputPort<T>& get_vec_input_port() const {
     return this->get_input_port(0);
   }
 
@@ -64,8 +64,8 @@ class ConstAndEcho final : public LeafSystem<T> {
   }
 
   void CalcEcho(const Context<T>& context, BasicVector<T>* echo) const {
-    const BasicVector<T>* input_vector = this->EvalVectorInput(context, 0);
-    echo->get_mutable_value() = input_vector->get_value();
+    const auto& input = this->get_vec_input_port().Eval(context);
+    echo->get_mutable_value() = input;
   }
 };
 

@@ -164,8 +164,8 @@ TEST_P(TestBoxSphereCorner, TestOrthogonal) {
                       R_.col(free_axis1).dot(box_pt));
 
   const auto result = Solve(prog_);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-  const auto R_val = prog_.GetSolution(R_, result);
+  EXPECT_TRUE(result.is_success());
+  const auto R_val = result.GetSolution(R_);
   std::vector<Eigen::Matrix3d> Bpos_val(3);
   std::vector<Eigen::Matrix3d> Bneg_val(3);
   EXPECT_NEAR(R_val.col(free_axis0).dot(box_pt), 0, 1E-4);

@@ -4,8 +4,6 @@
 
 #include <stdexcept>
 
-#include "drake/common/drake_assert.h"
-
 using std::runtime_error;
 using std::shared_ptr;
 
@@ -18,16 +16,9 @@ shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
 
 bool MosekSolver::is_available() { return false; }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram&) const {
-  throw runtime_error(
-      "Mosek is not installed in your build. You'll need to use a different "
-      "solver.");
-}
-
-void MosekSolver::Solve(const MathematicalProgram&,
-                        const optional<Eigen::VectorXd>&,
-                        const optional<SolverOptions>&,
-                        MathematicalProgramResult*) const {
+void MosekSolver::DoSolve(
+    const MathematicalProgram&, const Eigen::VectorXd&,
+    const SolverOptions&, MathematicalProgramResult*) const {
   throw runtime_error(
       "Mosek is not installed in your build. You'll need to use a different "
       "solver.");

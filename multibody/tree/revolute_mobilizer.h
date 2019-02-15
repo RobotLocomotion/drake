@@ -3,13 +3,13 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
@@ -38,6 +38,7 @@ namespace internal {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -70,8 +71,6 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /// Gets the rotation angle of `this` mobilizer from `context`. See class
   /// documentation for sign convention.
-  /// @throws std::logic_error if `context` is not a valid
-  /// MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @returns The angle coordinate of `this` mobilizer in the `context`.
@@ -79,8 +78,6 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
   /// rotation angle of `this` mobilizer equals `angle`.
-  /// @throws std::logic_error if `context` is not a valid
-  /// MultibodyTreeContext.
   /// @param[in] context The context of the MultibodyTree this mobilizer
   ///                    belongs to.
   /// @param[in] angle The desired angle in radians.
@@ -115,7 +112,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
   Isometry3<T> CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context) const override;
+      const systems::Context<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   /// M measured and expressed in frame F as a function of the rotation angle
@@ -125,7 +122,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
@@ -137,7 +134,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// See class documentation for the angle sign convention.
   /// This method aborts in Debug builds if `vdot.size()` is not one.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   /// Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
@@ -149,26 +146,26 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// the axis of `this` mobilizer.
   /// This method aborts in Debug builds if `tau.size()` is not one.
   void ProjectSpatialForce(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
   void MapVelocityToQDot(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
 
   void MapQDotToVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override;
 
  protected:
-  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+  void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
@@ -176,6 +173,9 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
   typedef MobilizerImpl<T, 1, 1> MobilizerBase;
@@ -208,3 +208,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::RevoluteMobilizer)

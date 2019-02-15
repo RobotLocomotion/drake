@@ -5,6 +5,7 @@
 #include <iostream>
 #include <limits>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
@@ -97,7 +98,7 @@ namespace multibody {
 template <typename T>
 class SpatialInertia {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SpatialInertia)
 
   /// Creates a spatial inertia for a physical body or composite body S about a
   /// point P from a given mass, center of mass, and central rotational inertia.
@@ -294,13 +295,6 @@ class SpatialInertia {
     return *this;                    // Now M_SP_A
   }
 
-// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("Use SpatialInertia::ReExpressInPlace(RotationMatrix<T>&). "
-                   "Code will be deleted after February 5, 2019.")
-  SpatialInertia& ReExpressInPlace(const Matrix3<T>& R_AE) {
-    return ReExpressInPlace(math::RotationMatrix<T>(R_AE));
-  }
-
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// taken about a point P and expressed in frame E, this method computes the
   /// same inertia re-expressed in another frame A.
@@ -310,13 +304,6 @@ class SpatialInertia {
   /// @see ReExpressInPlace() for details.
   SpatialInertia ReExpress(const math::RotationMatrix<T>& R_AE) const {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
-  }
-
-// TODO(mitiguy) Delete this deprecated code after February 5, 2019.
-  DRAKE_DEPRECATED("Use SpatialInertia:ReExpress(RotationMatrix<T>&). "
-                   "Code will be deleted after February 5, 2019.")
-  SpatialInertia ReExpress(const Matrix3<T>& R_AE) const {
-    return ReExpress(math::RotationMatrix<T>(R_AE));
   }
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
@@ -490,5 +477,10 @@ std::ostream& operator<<(std::ostream& o,
       << M.CalcRotationalInertia();
 }
 
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(SpatialInertia)
+
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::SpatialInertia)

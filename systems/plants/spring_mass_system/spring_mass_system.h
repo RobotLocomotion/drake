@@ -124,7 +124,7 @@ class SpringMassSystem : public LeafSystem<T> {
     T external_force = 0;
     DRAKE_ASSERT(system_is_forced_ == (context.get_num_input_ports() == 1));
     if (system_is_forced_) {
-      external_force = this->EvalVectorInput(context, 0)->GetAtIndex(0);
+      external_force = get_force_port().Eval(context)[0];
     }
     return external_force;
   }

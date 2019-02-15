@@ -20,7 +20,6 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
@@ -68,8 +67,6 @@ int do_main(int argc, char* argv[]) {
   lcm::DrakeLcm lcm;
   lcm.StartReceiveThread();
 
-  // TODO(russt): IiwaCommandReceiver should output positions, not
-  // state.  (We are adding delay twice in this current implementation).
   auto iiwa_command_subscriber = builder.AddSystem(
       kuka_iiwa_arm::MakeIiwaCommandLcmSubscriberSystem(
           kuka_iiwa_arm::kIiwaArmNumJoints, "IIWA_COMMAND", &lcm));
@@ -78,35 +75,28 @@ int do_main(int argc, char* argv[]) {
                   iiwa_command->GetInputPort("command_message"));
 
   // Pull the positions out of the state.
-  auto demux = builder.AddSystem<systems::Demultiplexer>(14, 7);
-  builder.Connect(iiwa_command->get_commanded_state_output_port(),
-                  demux->get_input_port(0));
-  builder.Connect(demux->get_output_port(0),
+  builder.Connect(iiwa_command->get_commanded_position_output_port(),
                   station->GetInputPort("iiwa_position"));
   builder.Connect(iiwa_command->get_commanded_torque_output_port(),
                   station->GetInputPort("iiwa_feedforward_torque"));
 
   auto iiwa_status = builder.AddSystem<kuka_iiwa_arm::IiwaStatusSender>();
-  // The IiwaStatusSender input port wants size 14, but only uses the first 7.
-  // TODO(russt): Consider cleaning up the IiwaStatusSender.
-  auto zero_padding =
-      builder.AddSystem<systems::MatrixGain>(Eigen::MatrixXd::Identity(14, 7));
   builder.Connect(station->GetOutputPort("iiwa_position_commanded"),
-                  zero_padding->get_input_port());
-  builder.Connect(zero_padding->get_output_port(),
-                  iiwa_status->get_command_input_port());
-  builder.Connect(station->GetOutputPort("iiwa_state_estimated"),
-                  iiwa_status->get_state_input_port());
+                  iiwa_status->get_position_commanded_input_port());
+  builder.Connect(station->GetOutputPort("iiwa_position_measured"),
+                  iiwa_status->get_position_measured_input_port());
+  builder.Connect(station->GetOutputPort("iiwa_velocity_estimated"),
+                  iiwa_status->get_velocity_estimated_input_port());
   builder.Connect(station->GetOutputPort("iiwa_torque_commanded"),
-                  iiwa_status->get_commanded_torque_input_port());
+                  iiwa_status->get_torque_commanded_input_port());
   builder.Connect(station->GetOutputPort("iiwa_torque_measured"),
-                  iiwa_status->get_measured_torque_input_port());
+                  iiwa_status->get_torque_measured_input_port());
   builder.Connect(station->GetOutputPort("iiwa_torque_external"),
-                  iiwa_status->get_external_torque_input_port());
+                  iiwa_status->get_torque_external_input_port());
   auto iiwa_status_publisher = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<drake::lcmt_iiwa_status>(
           "IIWA_STATUS", &lcm, 0.005 /* publish period */));
-  builder.Connect(iiwa_status->get_output_port(0),
+  builder.Connect(iiwa_status->get_output_port(),
                   iiwa_status_publisher->get_input_port());
 
   // Receive the WSG commands.

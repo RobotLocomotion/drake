@@ -396,8 +396,6 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     solver_details.g = Eigen::Map<const Eigen::VectorXd>(g, m);
     solver_details.lambda = Eigen::Map<const Eigen::VectorXd>(lambda, m);
 
-    result_->set_solver_id(IpoptSolver::id());
-
     result_->set_solution_result(SolutionResult::kUnknownError);
     switch (status) {
       case Ipopt::SUCCESS: {
@@ -639,24 +637,16 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
 
 bool IpoptSolver::is_available() { return true; }
 
-void IpoptSolver::Solve(const MathematicalProgram& prog,
-                        const optional<Eigen::VectorXd>& initial_guess,
-                        const optional<SolverOptions>& solver_options,
-                        MathematicalProgramResult* result) const {
-  *result = {};
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(
-        "Ipopt doesn't satisfy the capabilities required by the program");
-  }
-
-  // TODO(hongkai.dai): do not retrieve initial guess from prog.
-  const Eigen::VectorXd x_init =
-      initial_guess.has_value() ? initial_guess.value() : prog.initial_guess();
+void IpoptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  SetIpoptOptions(prog, solver_options, &(*app));
+  SetIpoptOptions(prog, merged_options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {
@@ -665,16 +655,8 @@ void IpoptSolver::Solve(const MathematicalProgram& prog,
   }
 
   Ipopt::SmartPtr<IpoptSolver_NLP> nlp =
-      new IpoptSolver_NLP(prog, x_init, result);
+      new IpoptSolver_NLP(prog, initial_guess, result);
   status = app->OptimizeTNLP(nlp);
-}
-
-SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
 }
 
 }  // namespace solvers

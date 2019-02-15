@@ -20,8 +20,8 @@ from sphinx.locale import _
 import sphinx.domains.python as pydoc
 from sphinx.ext import autodoc
 
-from pydrake.util.cpp_template import TemplateBase
-from pydrake.util.deprecation import DrakeDeprecationWarning
+from pydrake.common.cpp_template import TemplateBase
+from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 def rindex(s, sub):
@@ -246,6 +246,7 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
 def setup(app):
     """Installs Drake-specific extensions and patches.
     """
+    app.add_stylesheet('css/custom.css')
     # Do not warn on Drake deprecations.
     # TODO(eric.cousineau): See if there is a way to intercept this.
     warnings.simplefilter('ignore', DrakeDeprecationWarning)

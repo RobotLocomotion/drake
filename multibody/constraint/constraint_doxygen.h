@@ -1,5 +1,5 @@
 /** @addtogroup constraint_overview
-    @ingroup multibody_concepts
+    @ingroup multibody
 
 This documentation describes the types of multibody constraints supported in
 Drake, including specialized constraint types- namely point-based contact

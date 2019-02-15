@@ -19,7 +19,6 @@
 #include "drake/systems/framework/system.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -69,9 +68,9 @@ class MyOutputPort : public OutputPort<double> {
     return *temp.access();
   }
 
-  // We won't call this.
   internal::OutputPortPrerequisite DoGetPrerequisite() const override {
-    DRAKE_ABORT();
+    ADD_FAILURE() << "We won't call this.";
+    return {};
   };
 };
 
@@ -144,16 +143,16 @@ GTEST_TEST(TestBaseClass, BadOutputType) {
 
   EXPECT_NO_THROW(port.Calc(*context, good_port_value.get()));
 
-// This message is thrown in Debug. In Release some other error may trigger
-// but not from OutputPort, so we can't use
-// DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED() which would insist that if any
-// message is thrown in Release it must be the expected one.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      port.Calc(*context, bad_port_value.get()), std::logic_error,
-      "OutputPort::Calc().*expected.*MyVector.*but got.*std::string"
-      ".*OutputPort\\[0\\].*");
-#endif
+  // This message is thrown in Debug. In Release some other error may trigger
+  // but not from OutputPort, so we can't use
+  // DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED() which would insist that if any
+  // message is thrown in Release it must be the expected one.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        port.Calc(*context, bad_port_value.get()), std::logic_error,
+        "OutputPort::Calc().*expected.*MyVector.*but got.*std::string"
+        ".*OutputPort\\[0\\].*");
+  }
 }
 
 // These functions match the signatures required by LeafOutputPort.
@@ -192,22 +191,26 @@ class LeafOutputPortTest : public ::testing::Test {
   // Create abstract- and vector-valued ports.
   DummySystem dummy_;
   // TODO(sherm1) Use implicit_cast when available (from abseil).
-  LeafOutputPort<double> absport_general_{
-      &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
-      &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
-      "absport",
-      OutputPortIndex(dummy_.get_num_output_ports()),
-      dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
-      &dummy_.DeclareCacheEntry(
-          "absport", alloc_string, calc_string)};
-  LeafOutputPort<double> vecport_general_{
-      &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
-      &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
-      "vecport",
-      OutputPortIndex(dummy_.get_num_output_ports()),
-      dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
-      &dummy_.DeclareCacheEntry(
-          "vecport", alloc_myvector3, calc_vector3)};
+  std::unique_ptr<LeafOutputPort<double>> absport_general_ptr_ =
+      internal::FrameworkFactory::Make<LeafOutputPort<double>>(
+          &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
+          &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+          "absport",
+          OutputPortIndex(dummy_.get_num_output_ports()),
+          dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
+          &dummy_.DeclareCacheEntry(
+              "absport", alloc_string, calc_string));
+  LeafOutputPort<double>& absport_general_ = *absport_general_ptr_;
+  std::unique_ptr<LeafOutputPort<double>> vecport_general_ptr_ =
+      internal::FrameworkFactory::Make<LeafOutputPort<double>>(
+          &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
+          &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
+          "vecport",
+          OutputPortIndex(dummy_.get_num_output_ports()),
+          dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
+          &dummy_.DeclareCacheEntry(
+              "vecport", alloc_myvector3, calc_vector3));
+  LeafOutputPort<double>& vecport_general_ = *vecport_general_ptr_;
   unique_ptr<Context<double>> context_{dummy_.CreateDefaultContext()};
 };
 
@@ -218,8 +221,11 @@ void AbstractPortCheck(const Context<double>& context,
   unique_ptr<AbstractValue> val = port.Allocate();
   EXPECT_EQ(val->GetValueOrThrow<string>(), alloc_string);
   port.Calc(context, val.get());
-  EXPECT_EQ(val->GetValueOrThrow<string>(), string("from calc_string"));
-  EXPECT_EQ(port.Eval<string>(context), string("from calc_string"));
+  const string new_value("from calc_string");
+  EXPECT_EQ(val->GetValueOrThrow<string>(), new_value);
+  EXPECT_EQ(port.Eval<string>(context), new_value);
+  EXPECT_EQ(port.Eval<AbstractValue>(context).GetValueOrThrow<string>(),
+            new_value);
 
   // Can't Eval into the wrong type.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -246,13 +252,21 @@ void VectorPortCheck(const Context<double>& context,
   EXPECT_EQ(myvector3.get_value(), alloc_value);
   port.Calc(context, val.get());
   // Should have written into the underlying MyVector3d.
-  EXPECT_EQ(myvector3.get_value(), Vector3d(99., 100., 101.));
+  const Vector3d new_value(99., 100., 101.);
+  EXPECT_EQ(myvector3.get_value(), new_value);
 
-  // Check that Eval runs to completion without error.
-  const auto& eval_basic = port.Eval<BasicVector<double>>(context);
-  const auto& eval_eigen = port.EvalEigenVector(context);
-  EXPECT_EQ(eval_basic.size(), 3);
-  EXPECT_EQ(eval_eigen.size(), 3);
+  // Check that Eval is correct, for many ValueType choices.
+  const auto& eval_eigen = port.Eval(context);
+  const BasicVector<double>& eval_basic =
+      port.Eval<BasicVector<double>>(context);
+  const MyVector3d& eval_myvec3 = port.Eval<MyVector3d>(context);
+  const AbstractValue& eval_abs = port.Eval<AbstractValue>(context);
+  EXPECT_EQ(eval_eigen, new_value);
+  EXPECT_EQ(eval_basic.CopyToVector(), new_value);
+  EXPECT_EQ(eval_myvec3.CopyToVector(), new_value);
+  EXPECT_EQ(
+      eval_abs.GetValueOrThrow<BasicVector<double>>().CopyToVector(),
+      new_value);
 }
 
 // Check for proper construction and functioning of vector-valued
@@ -271,14 +285,14 @@ unique_ptr<AbstractValue> alloc_null() {
 TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   // Create an abstract port with an allocator that returns null.
   // TODO(sherm1) Use implicit_cast when available (from abseil).
-  LeafOutputPort<double> null_port{
+  auto null_port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_),
       "null_port",
       OutputPortIndex(dummy_.get_num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
       kAbstractValued, 0 /* size */,
-      &dummy_.DeclareCacheEntry("null", alloc_null, calc_string)};
+      &dummy_.DeclareCacheEntry("null", alloc_null, calc_string));
 
   // Creating a context for this system should fail when it tries to allocate
   // a cache entry for null_port.
@@ -288,8 +302,11 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
 // Check that Debug builds catch bad output types. We can't run these tests
 // unchecked since the results would be indeterminate -- they may run to
 // completion or segfault depending on memory contents.
-#ifndef DRAKE_ASSERT_IS_DISARMED
 TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
+
   // The abstract port is a string; let's give it an int.
   auto good_out = absport_general_.Allocate();
   auto bad_out = AbstractValue::Make<int>(5);
@@ -306,7 +323,6 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
       vecport_general_.Calc(*context_, bad_vec.get()), std::logic_error,
       "OutputPort::Calc().*expected.*MyVector.*got.*BasicVector.*");
 }
-#endif
 
 // For testing diagram output ports we need a couple of subsystems that have
 // recognizably different Contexts so we can verify that (1) the diagram exports

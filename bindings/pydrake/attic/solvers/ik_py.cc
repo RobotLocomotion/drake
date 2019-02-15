@@ -18,6 +18,26 @@ PYBIND11_MODULE(ik, m) {
   py::class_<RigidBodyConstraint>(
       m, "RigidBodyConstraint", doc.RigidBodyConstraint.doc);
 
+  py::class_<SingleTimeKinematicConstraint, RigidBodyConstraint>(
+      m, "SingleTimeKinematicConstraint")
+      .def("eval",
+          [](const SingleTimeKinematicConstraint& self, double t,
+              KinematicsCache<double>& cache) {
+            Eigen::VectorXd c;
+            Eigen::MatrixXd dc;
+            self.eval(&t, cache, c, dc);
+            return std::pair<Eigen::VectorXd, Eigen::MatrixXd>(c, dc);
+          },
+          py::arg("t"), py::arg("cache"),
+          doc.SingleTimeKinematicConstraint.eval.doc)
+      .def("bounds",
+          [](const SingleTimeKinematicConstraint& self, double t) {
+            Eigen::VectorXd lb, ub;
+            self.bounds(&t, lb, ub);
+            return std::pair<Eigen::VectorXd, Eigen::VectorXd>(lb, ub);
+          },
+          py::arg("t"), doc.SingleTimeKinematicConstraint.bounds.doc);
+
   py::class_<PostureConstraint, RigidBodyConstraint>(
       m, "PostureConstraint", doc.PostureConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, const Eigen::Vector2d&>(),
@@ -30,7 +50,7 @@ PYBIND11_MODULE(ik, m) {
               const Eigen::VectorXd&)>(&PostureConstraint::setJointLimits),
           doc.PostureConstraint.setJointLimits.doc);
 
-  py::class_<WorldPositionConstraint, RigidBodyConstraint>(
+  py::class_<WorldPositionConstraint, SingleTimeKinematicConstraint>(
       m, "_WorldPositionConstraint", doc.WorldPositionConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, const Eigen::Matrix3Xd&,
                Eigen::MatrixXd, Eigen::MatrixXd, const Eigen::Vector2d&>(),
@@ -39,7 +59,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.WorldPositionConstraint.ctor.doc);
 
-  py::class_<RelativePositionConstraint, RigidBodyConstraint>(
+  py::class_<RelativePositionConstraint, SingleTimeKinematicConstraint>(
       m, "RelativePositionConstraint", doc.RelativePositionConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, const Eigen::Matrix3Xd&,
                const Eigen::MatrixXd&, const Eigen::MatrixXd&, int, int,
@@ -49,7 +69,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.RelativePositionConstraint.ctor.doc);
 
-  py::class_<RelativeQuatConstraint, RigidBodyConstraint>(
+  py::class_<RelativeQuatConstraint, SingleTimeKinematicConstraint>(
       m, "RelativeQuatConstraint", doc.RelativeQuatConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, int, const Eigen::Vector4d&,
                double, const Eigen::Vector2d&>(),
@@ -58,7 +78,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.RelativeQuatConstraint.ctor.doc);
 
-  py::class_<WorldPositionInFrameConstraint, RigidBodyConstraint>(m,
+  py::class_<WorldPositionInFrameConstraint, SingleTimeKinematicConstraint>(m,
       "_WorldPositionInFrameConstraint", doc.WorldPositionInFrameConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, const Eigen::Matrix3Xd&,
                const Eigen::Matrix4d&, const Eigen::MatrixXd&,
@@ -68,7 +88,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.WorldPositionInFrameConstraint.ctor.doc);
 
-  py::class_<WorldGazeDirConstraint, RigidBodyConstraint>(
+  py::class_<WorldGazeDirConstraint, SingleTimeKinematicConstraint>(
       m, "WorldGazeDirConstraint", doc.WorldGazeDirConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, const Eigen::Vector3d&,
                const Eigen::Vector3d&, double, const Eigen::Vector2d&>(),
@@ -77,7 +97,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.WorldGazeDirConstraint.ctor.doc);
 
-  py::class_<WorldGazeTargetConstraint, RigidBodyConstraint>(
+  py::class_<WorldGazeTargetConstraint, SingleTimeKinematicConstraint>(
       m, "WorldGazeTargetConstraint", doc.WorldGazeTargetConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, const Eigen::Vector3d&,
                const Eigen::Vector3d&, const Eigen::Vector3d&, double,
@@ -87,7 +107,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.WorldGazeTargetConstraint.ctor.doc);
 
-  py::class_<RelativeGazeDirConstraint, RigidBodyConstraint>(
+  py::class_<RelativeGazeDirConstraint, SingleTimeKinematicConstraint>(
       m, "RelativeGazeDirConstraint", doc.RelativeGazeDirConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, int, const Eigen::Vector3d&,
                const Eigen::Vector3d&, double, const Eigen::Vector2d&>(),
@@ -96,7 +116,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.RelativeGazeDirConstraint.ctor.doc);
 
-  py::class_<MinDistanceConstraint, RigidBodyConstraint>(
+  py::class_<MinDistanceConstraint, SingleTimeKinematicConstraint>(
       m, "MinDistanceConstraint", doc.MinDistanceConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, double, const std::vector<int>&,
                const std::set<std::string>&, const Eigen::Vector2d&>(),
@@ -105,7 +125,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.MinDistanceConstraint.ctor.doc);
 
-  py::class_<WorldEulerConstraint, RigidBodyConstraint>(
+  py::class_<WorldEulerConstraint, SingleTimeKinematicConstraint>(
       m, "WorldEulerConstraint", doc.WorldEulerConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, const Eigen::Vector3d&,
                const Eigen::Vector3d&, const Eigen::Vector2d>(),
@@ -113,7 +133,7 @@ PYBIND11_MODULE(ik, m) {
           py::arg("tspan") = DrakeRigidBodyConstraint::default_tspan,
           doc.WorldEulerConstraint.ctor.doc);
 
-  py::class_<WorldQuatConstraint, RigidBodyConstraint>(
+  py::class_<WorldQuatConstraint, SingleTimeKinematicConstraint>(
       m, "WorldQuatConstraint", doc.WorldQuatConstraint.doc)
       .def(py::init<RigidBodyTree<double>*, int, const Eigen::Vector4d&, double,
                const Eigen::Vector2d>(),

@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
@@ -73,7 +73,7 @@ TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
   // an identity rigid transform.
   mobilizer_->set_zero_state(*context_, &context_->get_mutable_state());
   const RigidTransformd X_WB(
-      mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_));
+      mobilizer_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
@@ -88,11 +88,11 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
                                       &generator);
   EXPECT_TRUE(
-      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
           .IsExactlyIdentity());
-  EXPECT_TRUE(mobilizer_->get_position(*mbt_context_).isZero());
-  EXPECT_TRUE(mobilizer_->get_angular_velocity(*mbt_context_).isZero());
-  EXPECT_TRUE(mobilizer_->get_translational_velocity(*mbt_context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_position(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_angular_velocity(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_translational_velocity(*context_).isZero());
 
   Eigen::Matrix<symbolic::Expression, 3, 1> position_distribution;
   for (int i = 0; i < 3; i++) {
@@ -105,11 +105,11 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
                                       &generator);
   EXPECT_FALSE(
-      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
           .IsExactlyIdentity());
-  EXPECT_FALSE(mobilizer_->get_position(*mbt_context_).isZero());
-  EXPECT_TRUE(mobilizer_->get_angular_velocity(*mbt_context_).isZero());
-  EXPECT_TRUE(mobilizer_->get_translational_velocity(*mbt_context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_position(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_angular_velocity(*context_).isZero());
+  EXPECT_TRUE(mobilizer_->get_translational_velocity(*context_).isZero());
 
   // Set the velocity distribution.  Now both should be random.
   Eigen::Matrix<symbolic::Expression, 6, 1> velocity_distribution;
@@ -120,11 +120,11 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
                                       &generator);
   EXPECT_FALSE(
-      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*mbt_context_))
+      RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
           .IsExactlyIdentity());
-  EXPECT_FALSE(mobilizer_->get_position(*mbt_context_).isZero());
-  EXPECT_FALSE(mobilizer_->get_angular_velocity(*mbt_context_).isZero());
-  EXPECT_FALSE(mobilizer_->get_translational_velocity(*mbt_context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_position(*context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_angular_velocity(*context_).isZero());
+  EXPECT_FALSE(mobilizer_->get_translational_velocity(*context_).isZero());
 }
 
 
@@ -143,11 +143,11 @@ TEST_F(QuaternionFloatingMobilizerTest, KinematicMapping) {
 
   // Compute N.
   MatrixX<double> N(7, 6);
-  mobilizer_->CalcNMatrix(*mbt_context_, &N);
+  mobilizer_->CalcNMatrix(*context_, &N);
 
   // Compute Nplus.
   MatrixX<double> Nplus(6, 7);
-  mobilizer_->CalcNplusMatrix(*mbt_context_, &Nplus);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
   // Verify that Nplus is the left pseudoinverse of N.
   MatrixX<double> Nplus_x_N = Nplus * N;

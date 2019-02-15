@@ -1,0 +1,3 @@
+# -*- python -*-
+
+exports_files(["doxygen"])

@@ -163,9 +163,9 @@ void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
     const std::vector<const DiscreteUpdateEvent<T>*>&,
     DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());
-  const BasicVector<T>& input_value = *this->EvalVectorInput(context, 0);
+  const auto& input = get_input_port().Eval(context);
   BasicVector<T>& state_value = discrete_state->get_mutable_vector(0);
-  state_value.SetFrom(input_value);
+  state_value.SetFromVector(input);
 }
 
 template <typename T>
@@ -185,12 +185,12 @@ void ZeroOrderHold<T>::DoCalcUnrestrictedUpdate(
     const std::vector<const UnrestrictedUpdateEvent<T>*>&,
     State<T>* state) const {
   DRAKE_ASSERT(is_abstract());
-  const AbstractValue& input_value = *this->EvalAbstractInput(context, 0);
+  const auto& input = get_input_port().template Eval<AbstractValue>(context);
   // See `DoCalcAbstractOutput` for rationale regarding non-templated value
   // accessor.
   AbstractValue& state_value =
       state->get_mutable_abstract_state().get_mutable_value(0);
-  state_value.SetFrom(input_value);
+  state_value.SetFrom(input);
 }
 
 template <typename T>

@@ -149,18 +149,9 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
 }
 
 template <>
-SolutionResult MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
-  // NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-    MathematicalProgram&) const {
-  DRAKE_ABORT_MSG("MobyLCPSolver cannot yet be used in a MathematicalProgram "
-                  "while templatized as an AutoDiff");
-  return SolutionResult::kUnknownError;
-}
-
-template <>
-void MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
-    const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-    const optional<SolverOptions>&, MathematicalProgramResult*) const {
+void MobyLCPSolver<Eigen::AutoDiffScalar<Vector1d>>::DoSolve(
+    const MathematicalProgram&, const Eigen::VectorXd&,
+    const SolverOptions&, MathematicalProgramResult*) const {
   DRAKE_ABORT_MSG(
       "MobyLCPSolver cannot yet be used in a MathematicalProgram "
       "while templatized as an AutoDiff");
@@ -169,52 +160,14 @@ void MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
 // TODO(edrumwri): Break the following code out into a special
 // MobyLcpMathematicalProgram class.
 template <typename T>
-void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
-                             const optional<Eigen::VectorXd>& initial_guess,
-                             const optional<SolverOptions>& solver_options,
-                             MathematicalProgramResult* result) const {
-  *result = {};
+void MobyLCPSolver<T>::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   // Moby doesn't use initial guess or the solver options.
   unused(initial_guess);
-  unused(solver_options);
-  // TODO(ggould-tri) This solver currently imposes restrictions that its
-  // problem:
-  //
-  // (1) Contains only linear complementarity constraints,
-  // (2) Has no element of any decision variable appear in more than one
-  //     constraint, and
-  // (3) Has every element of every decision variable in a constraint.
-  //
-  // Restriction 1 could reasonably be relaxed by reformulating other
-  // constraint types that can be expressed as LCPs (eg, convex QLPs),
-  // although this would also entail adding an output stage to convert
-  // the LCP results back to the desired form.  See eg. @RussTedrake on
-  // how to convert a linear equality constraint of n elements to an
-  // LCP of 2n elements.
-  //
-  // There is no obvious way to relax restriction 2.
-  //
-  // Restriction 3 could reasonably be relaxed to simply let unbound
-  // variables sit at 0.
-  if (!AreProgramAttributesSatisfied(prog)) {
-    throw std::invalid_argument(
-        "Moby LCP's capability doesn't satisfy the requirement of the "
-        "program.");
-  }
-
-  const auto& bindings = prog.linear_complementarity_constraints();
-
-  // Assert that the available LCPs cover the program and no two LCPs cover
-  // the same variable.
-  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
-    int coverings = 0;
-    for (const auto& binding : bindings) {
-      if (binding.ContainsVariable(prog.decision_variable(i))) {
-        coverings++;
-      }
-    }
-    DRAKE_ASSERT(coverings == 1);
-  }
+  unused(merged_options);
 
   // Solve each individual LCP, writing the result back to the decision
   // variables through the binding and returning true iff all LCPs are
@@ -229,8 +182,7 @@ void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
   // implementation but might perform better if the solver were to parallelize
   // internally.
 
-  result->set_solver_id(MobyLcpSolverId::id());
-
+  const auto& bindings = prog.linear_complementarity_constraints();
   Eigen::VectorXd x_sol(prog.num_vars());
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
@@ -251,16 +203,6 @@ void MobyLCPSolver<T>::Solve(const MathematicalProgram& prog,
   result->set_optimal_cost(0.0);
   result->set_x_val(x_sol);
   result->set_solution_result(SolutionResult::kSolutionFound);
-}
-
-template <typename T>
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-SolutionResult MobyLCPSolver<T>::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
 }
 
 template <typename T>
@@ -1083,9 +1025,11 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
 }
 
 template <typename T>
-SolverId MobyLCPSolver<T>::solver_id() const {
-  return MobyLcpSolverId::id();
-}
+MobyLCPSolver<T>::MobyLCPSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+template <typename T>
+MobyLCPSolver<T>::~MobyLCPSolver() = default;
 
 SolverId MobyLcpSolverId::id() {
   static const never_destroyed<SolverId> singleton{"Moby LCP"};
@@ -1093,23 +1037,62 @@ SolverId MobyLcpSolverId::id() {
 }
 
 template <typename T>
-bool MobyLCPSolver<T>::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return MobyLCPSolver<T>::ProgramAttributesSatisfied(prog);
+SolverId MobyLCPSolver<T>::id() {
+  return MobyLcpSolverId::id();
+}
+
+template <typename T>
+bool MobyLCPSolver<T>::is_available() {
+  return true;
 }
 
 template <typename T>
 bool MobyLCPSolver<T>::ProgramAttributesSatisfied(
     const MathematicalProgram& prog) {
-  return prog.required_capabilities() ==
-         ProgramAttributes(
-             {ProgramAttribute::kLinearComplementarityConstraint});
+  // This solver currently imposes restrictions that its problem:
+  //
+  // (1) Contains only linear complementarity constraints,
+  // (2) Has no element of any decision variable appear in more than one
+  //     constraint, and
+  // (3) Has every element of every decision variable in a constraint.
+  //
+  // Restriction 1 could reasonably be relaxed by reformulating other
+  // constraint types that can be expressed as LCPs (eg, convex QLPs),
+  // although this would also entail adding an output stage to convert
+  // the LCP results back to the desired form.  See eg. @RussTedrake on
+  // how to convert a linear equality constraint of n elements to an
+  // LCP of 2n elements.
+  //
+  // There is no obvious way to relax restriction 2.
+  //
+  // Restriction 3 could reasonably be relaxed to simply let unbound
+  // variables sit at 0.
+  if (prog.required_capabilities() != ProgramAttributes({
+        ProgramAttribute::kLinearComplementarityConstraint})) {
+    return false;
+  }
+
+  // Check that the available LCPs cover the program and no two LCPs cover the
+  // same variable.
+  const auto& bindings = prog.linear_complementarity_constraints();
+  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
+    int coverings = 0;
+    for (const auto& binding : bindings) {
+      if (binding.ContainsVariable(prog.decision_variable(i))) {
+        coverings++;
+      }
+    }
+    if (coverings != 1) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 // Instantiate templates.
 template class MobyLCPSolver<double>;
-template class
-    drake::solvers::MobyLCPSolver<Eigen::AutoDiffScalar<drake::Vector1d>>;
+template class MobyLCPSolver<Eigen::AutoDiffScalar<Vector1d>>;
 
 }  // namespace solvers
 }  // namespace drake

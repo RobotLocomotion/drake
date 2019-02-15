@@ -16,9 +16,9 @@ namespace perception {
 /// which all points expected to belong to the rigid bodies comprising the
 /// RigidBodyTree have been removed.
 ///
-/// The system has two inpt ports and one output port. The first input port
+/// The system has two input ports and one output port. The first input port
 /// consumes a PointCloud and the second takes the state of the RigidBodyTree.
-/// The ouput port contains the filtered PointCloud.
+/// The output port contains the filtered PointCloud.
 class RigidBodyPointCloudFilter final : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RigidBodyPointCloudFilter)

@@ -130,7 +130,7 @@ drake_cc_library(
     hdrs = ["geometry_properties.h"],
     deps = [
         "//common:essential",
-        "//systems/framework:value",
+        "//common:value",
         "@fmt",
     ],
 )
@@ -316,6 +316,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_ids",
         ":geometry_set",
+        "//geometry/test_utilities:geometry_set_tester",
     ],
 )
 

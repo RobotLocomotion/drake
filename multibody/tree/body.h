@@ -4,13 +4,12 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_element.h"
-#include "drake/multibody/tree/multibody_tree_forward_decl.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -89,6 +88,9 @@ class BodyFrame final : public Frame<T> {
 
   std::unique_ptr<Frame<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const override;
 
  private:
   // Body<T> and BodyFrame<T> are natural allies. A BodyFrame object is created
@@ -195,13 +197,13 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
   /// (Advanced) Returns the mass of this body stored in `context`.
   virtual T get_mass(
-      const internal::MultibodyTreeContext<T> &context)const = 0;
+      const systems::Context<T> &context)const = 0;
 
   /// (Advanced) Computes the center of mass `p_BoBcm_B` (or `p_Bcm` for short)
   /// of this body measured from this body's frame origin `Bo` and expressed in
   /// the body frame B.
   virtual const Vector3<T> CalcCenterOfMassInBodyFrame(
-      const internal::MultibodyTreeContext<T>& context) const = 0;
+      const systems::Context<T>& context) const = 0;
 
   /// (Advanced) Computes the SpatialInertia `I_BBo_B` of `this` body about its
   /// frame origin `Bo` (not necessarily its center of mass) and expressed in
@@ -212,7 +214,7 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   /// describing its state of deformation. As a particular case, the spatial
   /// inertia of a RigidBody in its body frame is constant.
   virtual SpatialInertia<T> CalcSpatialInertiaInBodyFrame(
-      const internal::MultibodyTreeContext<T>& context) const = 0;
+      const systems::Context<T>& context) const = 0;
 
   /// Returns the pose `X_WB` of this body B in the world frame W as a function
   /// of the state of the model stored in `context`.
@@ -305,6 +307,10 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
   virtual std::unique_ptr<Body<AutoDiffXd>> DoCloneToScalar(
       const internal::MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
+  /// Clones this %Body (templated on T) to a body templated on Expression.
+  virtual std::unique_ptr<Body<symbolic::Expression>> DoCloneToScalar(
+      const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+
   /// @}
 
  private:
@@ -346,3 +352,6 @@ class Body : public MultibodyTreeElement<Body<T>, BodyIndex> {
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::multibody::BodyFrame)

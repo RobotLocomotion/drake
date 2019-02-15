@@ -95,22 +95,23 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
-    const Eigen::Ref<const Eigen::MatrixXd>& N) {
+    const Eigen::Ref<const Eigen::MatrixXd>& N,
+    int input_port_index) {
   // TODO(russt): accept optional additional argument to return the cost-to-go
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
-  DRAKE_DEMAND(system.get_num_input_ports() == 1);
-  const int num_inputs = system.get_input_port(0).size(),
-            num_states = context.get_num_total_states();
+  const int num_inputs = system.get_input_port(input_port_index).size();
+  const int num_states = context.get_num_total_states();
   DRAKE_DEMAND(num_states > 0);
   // The Linearize method call below will verify that the system has either
   // continuous-time OR (only simple) discrete-time dyanmics.
 
   // TODO(russt): Confirm behavior if Q is not PSD.
 
-  // Use first input and no outputs (the output dynamics are irrelevant for
+  // Use specified input and no outputs (the output dynamics are irrelevant for
   // LQR design).
-  auto linear_system = Linearize(system, context, 0, kNoOutput);
+  auto linear_system = Linearize(
+    system, context, input_port_index, kNoOutput);
 
   // DiscreteTimeLinearQuadraticRegulator does not support N yet.
   DRAKE_DEMAND(linear_system->time_period() == 0.0 || N.rows() == 0);
@@ -127,7 +128,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
           ? context.get_continuous_state_vector().CopyToVector()
           : context.get_discrete_state(0).CopyToVector();
 
-  const auto& u0 = system.EvalEigenVectorInput(context, 0);
+  const auto& u0 = system.get_input_port(0).Eval(context);
 
   // Return the affine controller: u = u0 - K(x-x0).
   return std::make_unique<systems::AffineSystem<double>>(

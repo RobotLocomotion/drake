@@ -30,10 +30,12 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   integrator.get_mutable_context()->set_time(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
-  EXPECT_EQ(context->get_time(), 3.);\
+  EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
-  EXPECT_THROW(integrator.IntegrateAtMost(dt, dt, dt), std::logic_error);
+  const double target_time = context->get_time() + dt;
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(
+    target_time, target_time, target_time), std::logic_error);
 }
 
 // Verifies error estimation is unsupported.
@@ -80,11 +82,9 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   ExplicitEulerIntegrator<double> ee(plant, small_dt, context.get());
   ee.Initialize();
   const double t_final = 1.0;
-  double t_remaining = t_final - context->get_time();
   do {
-    ee.IntegrateAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - context->get_time();
-  } while (t_remaining > 0.0);
+    ee.IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  } while (context->get_time() < t_final);
 
   // Get the final state.
   VectorX<double> x_final_ee = context->get_continuous_state_vector().
@@ -98,11 +98,9 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   see.Initialize();
 
   // Integrate for one second.
-  t_remaining = t_final - context->get_time();
   do {
-    see.IntegrateAtMost(t_remaining, t_remaining, t_remaining);
-    t_remaining = t_final - context->get_time();
-  } while (t_remaining > 0.0);
+    see.IntegrateNoFurtherThanTime(t_final, t_final, t_final);
+  } while (context->get_time() < t_final);
 
   // Verify that the final states are "close".
   VectorX<double> x_final_see = context->get_continuous_state_vector().
@@ -155,7 +153,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double kTFinal = 1.0;
   double t;
   for (t = 0.0; std::abs(t - kTFinal) > dt; t += dt)
-    integrator.IntegrateAtMost(inf, inf, dt);
+    integrator.IntegrateNoFurtherThanTime(inf, inf, kTFinal);
 
   EXPECT_NEAR(context->get_time(), t, dt);  // Should be exact.
 

@@ -36,7 +36,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 1.0, 1.0;
-  auto x_value = prog.GetSolution(x, result);
+  auto x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
   EXPECT_NEAR(0.0, result.get_optimal_cost(), 1e-10);
@@ -54,8 +54,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
   expected_answer.resize(3);
   expected_answer << 1.0, 2.0, 2.0;
   VectorXd actual_answer(3);
-  x_value = prog.GetSolution(x, result);
-  const auto& y_value = prog.GetSolution(y, result);
+  x_value = result.GetSolution(x);
+  const auto& y_value = result.GetSolution(y);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
@@ -89,7 +89,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
 
   VectorXd expected_answer(2);
   expected_answer << 0.5, 0.5;
-  auto x_value = prog.GetSolution(x, result);
+  auto x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-10,
                               MatrixCompareType::absolute));
 
@@ -110,8 +110,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
   expected_answer.resize(3);
   expected_answer << 0.5, 0.5, 1.0;
   VectorXd actual_answer(3);
-  x_value = prog.GetSolution(x, result);
-  auto y_value = prog.GetSolution(y, result);
+  x_value = result.GetSolution(x);
+  auto y_value = result.GetSolution(y);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
                               MatrixCompareType::absolute))
@@ -129,11 +129,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost((x(0) - 1) * x(0));
-  EqualityConstrainedQPSolver equality_qp_solver;
-  MathematicalProgramResult result;
-  equality_qp_solver.Solve(prog, {}, {}, &result);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-  EXPECT_NEAR(prog.GetSolution(x(0), result), 0.5, 1E-10);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_NEAR(result.GetSolution(x(0)), 0.5, 1E-10);
   EXPECT_NEAR(result.get_optimal_cost(), -0.25, 1E-10);
 }
 
@@ -144,10 +143,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) - x(1) * x(1));
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver, testUnboundedQP) {
@@ -157,10 +156,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnboundedQP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) - 2 * x(1));
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
 }
 
 GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
@@ -169,10 +168,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeDefiniteHessianQP) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(-x(0) * x(0) - 2 * x(1));
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
 }
 
 // Test a QP with positive definite Hessian, but infeasible constraint.
@@ -187,10 +186,12 @@ GTEST_TEST(testEqualityConstrainedQPSolver,
   prog.AddCost(x(0) * x(0) + 2 * x(1) * x(1) + x(0) * x(1));
   prog.AddLinearConstraint(x(0) + 2 * x(1) == 1 && x(0) - x(1) == 3 &&
                            2 * x(0) + x(1) == 2);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 // Test a QP with indefinite Hessian, but unique minimum.
@@ -201,12 +202,12 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessian) {
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) - x(1) * x(1));
   prog.AddLinearConstraint(x(1) == 1);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), Eigen::Vector2d(0, 1), 1E-12,
-                              MatrixCompareType::absolute));
-  EXPECT_NEAR(prog.GetOptimalCost(), -1, 1E-12);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector2d(0, 1),
+                              1E-12, MatrixCompareType::absolute));
+  EXPECT_NEAR(result.get_optimal_cost(), -1, 1E-12);
 }
 
 // Test a QP with positive semidefinite Hessian, but unbounded objective.
@@ -217,10 +218,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDhessianUnbounded) {
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) - 2 * x(1));
   prog.AddLinearConstraint(x(0) == 1);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
 }
 
 // Test a QP with negative definite Hessian, but with a unique optimum.
@@ -232,12 +233,12 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUniqueOptimum) {
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(-x(0) * x(0) - x(1) * x(1));
   prog.AddLinearConstraint(x(0) + x(1) == 2 && x(0) - x(1) == 3);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x), Eigen::Vector2d(2.5, -0.5),
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x), Eigen::Vector2d(2.5, -0.5),
                               1E-12, MatrixCompareType::absolute));
-  EXPECT_NEAR(prog.GetOptimalCost(), -6.5, 1E-12);
+  EXPECT_NEAR(result.get_optimal_cost(), -6.5, 1E-12);
 }
 
 // Test a QP with negative definite Hessian, and an unbounded objective.
@@ -248,10 +249,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testNegativeHessianUnbounded) {
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(-x(0) * x(0) - x(1) * x(1));
   prog.AddLinearConstraint(x(0) + x(1) == 1);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kUnbounded);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kUnboundedCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+  EXPECT_EQ(result.get_optimal_cost(), MathematicalProgram::kUnboundedCost);
 }
 
 // Test a QP with positive semidefinite Hessian (not strictly positive
@@ -263,13 +264,13 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testPSDHessianUniqueOptimal) {
   auto x = prog.NewContinuousVariables<2>("x");
   prog.AddCost(x(0) * x(0) + 2 * x(0) + 3 * x(1));
   prog.AddLinearConstraint(x(0) + 2 * x(1) == 1);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x),
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x),
                               Eigen::Vector2d(-1.0 / 4, 5.0 / 8), 1E-12,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(prog.GetOptimalCost(), 23.0 / 16.0, 1E-12);
+  EXPECT_NEAR(result.get_optimal_cost(), 23.0 / 16.0, 1E-12);
 }
 
 // Test a QP with indefinite Hessian and infeasible constraints
@@ -283,10 +284,12 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testIndefiniteHessianInfeasible) {
   prog.AddCost(x(0) * x(0) - 2 * x(1) * x(1));
   prog.AddLinearConstraint(x(0) + 2 * x(1) == 1 && -x(0) + 3 * x(1) == 2 &&
                            2 * x(0) - 3 * x(1) == 3);
-  EqualityConstrainedQPSolver equality_qp_solver;
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
+  EqualityConstrainedQPSolver solver;
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 }
 
 // Test changing the feasibility tolerance.
@@ -303,26 +306,28 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   prog.AddCost(x(0) * x(0) + 2 * x(1) * x(1));
   prog.AddLinearConstraint(x(0) + 2 * x(1) == 1 && x(0) - x(1) == -2 &&
                            x(0) + x(1) == 1E-6);
-  EqualityConstrainedQPSolver equality_qp_solver;
+  EqualityConstrainedQPSolver solver;
   prog.SetSolverOption(EqualityConstrainedQPSolver::id(), "FeasibilityTol",
                        1E-7);
-  auto result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kInfeasibleConstraints);
-  EXPECT_EQ(prog.GetOptimalCost(), MathematicalProgram::kGlobalInfeasibleCost);
+  auto result = solver.Solve(prog, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  EXPECT_EQ(result.get_optimal_cost(),
+            MathematicalProgram::kGlobalInfeasibleCost);
 
   // Now increase the feasibility tolerance.
   double tol = 1E-6;
   prog.SetSolverOption(EqualityConstrainedQPSolver::id(),
                        EqualityConstrainedQPSolver::FeasibilityTolOptionName(),
                        tol);
-  result = equality_qp_solver.Solve(prog);
-  EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  const Eigen::Vector2d x_val = prog.GetSolution(x);
+  result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
+  const Eigen::Vector2d x_val = result.GetSolution(x);
   const Eigen::Vector3d cnstr_val(x_val(0) + 2 * x_val(1), x_val(0) - x_val(1),
                                   x_val(0) + x_val(1));
   EXPECT_TRUE(CompareMatrices(cnstr_val, Eigen::Vector3d(1, -2, 1E-6), tol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(prog.GetOptimalCost(), 3, 1E-6);
+  EXPECT_NEAR(result.get_optimal_cost(), 3, 1E-6);
 
   // Now solve with a low feasibility tolerance again by passing the option in
   // the Solver function. The result should be infeasible.
@@ -333,9 +338,8 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testFeasibilityTolerance) {
   solver_options.SetOption(
       EqualityConstrainedQPSolver::id(),
       EqualityConstrainedQPSolver::FeasibilityTolOptionName(), 0.1 * tol);
-  equality_qp_solver.Solve(prog, {}, solver_options, &math_prog_result);
-  EXPECT_EQ(math_prog_result.get_solution_result(),
-            SolutionResult::kInfeasibleConstraints);
+  solver.Solve(prog, {}, solver_options, &math_prog_result);
+  EXPECT_FALSE(math_prog_result.is_success());
 }
 
 // min x'*x + x0 + x1 + 1
@@ -351,10 +355,10 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearCost) {
 
   MathematicalProgramResult result;
   result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
-  EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result),
-                              Eigen::Vector2d(-.5, -.5), 1e-6));
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector2d(-.5, -.5), 1e-6));
   EXPECT_EQ(result.get_optimal_cost(), .5);
 }
 

@@ -23,10 +23,42 @@ class InverseKinematics {
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant.
+   * This constructor will create and own a context for @param plant.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
+   * @note The inverse kinematics problem constructed in this way doesn't permit
+   * collision related constraint (such as calling
+   * AddMinimumDistanceConstraint). To enable collision related constraint, call
+   * InverseKinematics(const MultibodyPlant<double>& plant,
+   * systems::Context<double>* plant_context);
    */
   explicit InverseKinematics(const MultibodyPlant<double>& plant);
+
+  /**
+   * Constructs an inverse kinematics problem for a MultibodyPlant. If the user
+   * wants to solve the problem with collision related constraint (like calling
+   * AddMinimumDistanceConstraint), please use this constructor.
+   * @param plant The robot on which the inverse kinematics problem will be
+   * solved. This plant should have been connected to a SceneGraph within a
+   * Diagram
+   * @param context The context for the plant. This context should be a part of
+   * the Diagram context.
+   * To construct a plant connected to a SceneGraph, with the corresponding
+   * plant_context, the steps are
+   * // 1. Add a diagram containing the MultibodyPlant and SceneGraph
+   * system::DiagramBuilder<double> builder;
+   * auto items = AddMultibodyPlantSceneGraph(&builder);
+   * // 2. Add collision geometries to the plant
+   * Parser(&(items.plant)).AddModelFromFile("model.sdf");
+   * // 3. Construct the diagram
+   * auto diagram = builder.Build();
+   * // 4. Create diagram context.
+   * auto diagram_context= diagram->CreateDefaultContext();
+   * // 5. Get the context for the plant.
+   * auto plant_context = &(diagram->GetMutableSubsystemContext(*plant, diagram_context.get()));
+   */
+  InverseKinematics(const MultibodyPlant<double>& plant,
+                    systems::Context<double>* plant_context);
 
   /** Adds the kinematic constraint that a point Q, fixed in frame B, should lie
    * within a bounding box expressed in another frame A as p_AQ_lower <= p_AQ <=
@@ -148,6 +180,22 @@ class InverseKinematics {
       const Eigen::Ref<const Eigen::Vector3d>& nb_B, double angle_lower,
       double angle_upper);
 
+  // TODO(hongkai.dai): remove this documentation.
+  /**
+   * Adds the constraint that the pairwise distance between objects should be no
+   * smaller than a positive threshold. We consider the distance between pairs
+   * of
+   * 1. Anchored (static) object and a dynamic object.
+   * 2. A dynamic object and another dynamic object, if one is not the parent
+   * link of the other.
+   * @see MinimumDistanceConstraint for more details on the constraint
+   * formulation.
+   * @throws invalid_argument if the plant does not register its geometry
+   * with a SceneGraph.
+   */
+  solvers::Binding<solvers::Constraint> AddMinimumDistanceConstraint(
+      double minimal_distance);
+
   /** Getter for q. q is the decision variable for the generalized positions of
    * the robot. */
   const solvers::VectorXDecisionVariable& q() const { return q_; }
@@ -159,11 +207,12 @@ class InverseKinematics {
   solvers::MathematicalProgram* get_mutable_prog() const { return prog_.get(); }
 
  private:
-  systems::Context<double>* get_mutable_context() { return context_.get(); }
+  systems::Context<double>* get_mutable_context() { return context_; }
 
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const MultibodyPlant<double>& plant_;
-  std::unique_ptr<systems::Context<double>> const context_;
+  std::unique_ptr<systems::Context<double>> const owned_context_;
+  systems::Context<double>* const context_;
   solvers::VectorXDecisionVariable q_;
 };
 }  // namespace multibody

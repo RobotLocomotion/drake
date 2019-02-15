@@ -99,91 +99,29 @@ class LcmPublisherSystem : public LeafSystem<double> {
                      drake::lcm::DrakeLcmInterface* lcm,
                      double publish_period = 0.0);
 
-  /**
-   * A constructor for an %LcmPublisherSystem that takes vector data on its sole
-   * vector-valued input port. The vector data is mapped to message content by
-   * the provided `translator`.
-   *
-   * @param[in] channel The LCM channel on which to publish.
-   *
-   * @param[in] translator The translator that converts between LCM message
-   * objects and drake::systems::VectorBase objects. This reference must remain
-   * valid for the lifetime of this object.
-   *
-   * @param lcm A pointer to the LCM subsystem to use, which must
-   * remain valid for the lifetime of this object. If null, a
-   * drake::lcm::DrakeLcm object is allocated and maintained internally, but
-   * see the note in the class comments.
-   *
-   * @param publish_period Period that messages will be published (optional).
-   * If the publish period is zero, LcmPublisherSystem will use per-step
-   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
-   *
-   * @pre publish_period is non-negative.
-   *
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
-   */
-  LcmPublisherSystem(const std::string& channel,
-                     const LcmAndVectorBaseTranslator& translator,
-                     drake::lcm::DrakeLcmInterface* lcm,
-                     double publish_period = 0.0);
-
-  /**
-   * Constructor that passes a unique_ptr of the LcmAndVectorBaseTranslator,
-   * for the LcmPublisherSystem to own.
-   *
-   * @param[in] channel The LCM channel on which to publish.
-   *
-   * @param[in] translator The translator that converts between LCM message
-   * objects and drake::systems::VectorBase objects.
-   *
-   * @param lcm A pointer to the LCM subsystem to use, which must
-   * remain valid for the lifetime of this object. If null, a
-   * drake::lcm::DrakeLcm object is allocated and maintained internally, but
-   * see the note in the class comments.
-   *
-   * @param publish_period Period that messages will be published (optional).
-   * If the publish period is zero, LcmPublisherSystem will use per-step
-   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
-   *
-   * @pre publish_period is non-negative.
-   *
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
-   */
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
   LcmPublisherSystem(
-      const std::string& channel,
-      std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
-      drake::lcm::DrakeLcmInterface* lcm,
-      double publish_period = 0.0);
+      const std::string&, const LcmAndVectorBaseTranslator&,
+      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
 
-  /**
-   * Constructor that returns a publisher System that takes vector data on
-   * its sole vector-valued input port. The vector data are mapped to message
-   * contents by the `translator` found in the provided `translator_dictionary`.
-   *
-   * @param[in] channel The LCM channel on which to publish.
-   *
-   * @param[in] translator_dictionary A dictionary for obtaining the appropriate
-   * translator for a particular LCM channel. This reference must remain
-   * valid for the lifetime of this object.
-   *
-   * @param lcm A pointer to the LCM subsystem to use, which must
-   * remain valid for the lifetime of this object. If null, a
-   * drake::lcm::DrakeLcm object is allocated and maintained internally, but
-   * see the note in the class comments.
-   *
-   * @param publish_period Period that messages will be published (optional).
-   * If the publish period is zero, LcmPublisherSystem will use per-step
-   * publishing instead; see LeafSystem::DeclarePerStepPublishEvent().
-   *
-   * @pre publish_period is non-negative.
-   *
-   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
-   */
-  LcmPublisherSystem(const std::string& channel,
-                     const LcmTranslatorDictionary& translator_dictionary,
-                     drake::lcm::DrakeLcmInterface* lcm,
-                     double publish_period = 0.0);
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
+  LcmPublisherSystem(
+      const std::string&, std::unique_ptr<const LcmAndVectorBaseTranslator>,
+      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
+  LcmPublisherSystem(
+      const std::string&, const LcmTranslatorDictionary&,
+      drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
+#pragma GCC diagnostic pop
 
   ~LcmPublisherSystem() override;
 
@@ -231,14 +169,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
         &LcmPublisherSystem::PublishInputAsLcmMessage);
   }
 
-  /**
-   * Returns the translator used by this publisher. This can be used to convert
-   * a serialized LCM message provided by
-   * DrakeMockLcm::get_last_published_message() into a BasicVector. It is useful
-   * in unit tests for verifying that a BasicVector was correctly published as
-   * an LCM message.
-   * @pre this system is using a vector-valued port (not abstract-valued).
-   */
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
   const LcmAndVectorBaseTranslator& get_translator() const;
 
   /**
@@ -259,11 +192,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
     return LeafSystem<double>::get_input_port(0);
   }
 
-  DRAKE_DEPRECATED("Don't use the indexed overload; use the no-arg overload.")
-  const InputPort<double>& get_input_port(int index) const {
-    DRAKE_THROW_UNLESS(index == 0);
-    return get_input_port();
-  }
+  // Don't use the indexed overload; use the no-arg overload.
+  void get_input_port(int index) = delete;
 
   // This system has no output ports.
   void get_output_port(int) = delete;

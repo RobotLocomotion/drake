@@ -8,18 +8,14 @@
 namespace drake {
 namespace solvers {
 
-SolverId MosekSolver::solver_id() const {
-  return id();
-}
+MosekSolver::MosekSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+MosekSolver::~MosekSolver() = default;
 
 SolverId MosekSolver::id() {
   static const never_destroyed<SolverId> singleton{"Mosek"};
   return singleton.access();
-}
-
-bool MosekSolver::AreProgramAttributesSatisfied(
-    const MathematicalProgram& prog) const {
-  return MosekSolver::ProgramAttributesSatisfied(prog);
 }
 
 bool MosekSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {

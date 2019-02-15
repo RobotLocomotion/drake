@@ -81,12 +81,25 @@ GTEST_TEST(AutodiffOverloadsTest, NextToward) {
   EXPECT_EQ(nexttoward(x, inf) - 1, eps);
 }
 
+// Tests correctness of isfinite.
+GTEST_TEST(AutodiffOverloadsTest, IsFinite) {
+  Eigen::AutoDiffScalar<Eigen::Vector2d> x;
+  x.value() = 1.0 / 0.0;
+  EXPECT_EQ(isfinite(x), false);
+  x.value() = 0.0;
+  EXPECT_EQ(isfinite(x), true);
+  x.derivatives()[0] = 1.0 / 0.0;  // The derivatives() are ignored.
+  EXPECT_EQ(isfinite(x), true);
+}
+
 // Tests correctness of isinf.
 GTEST_TEST(AutodiffOverloadsTest, IsInf) {
   Eigen::AutoDiffScalar<Eigen::Vector2d> x;
   x.value() = 1.0 / 0.0;
   EXPECT_EQ(isinf(x), true);
   x.value() = 0.0;
+  EXPECT_EQ(isinf(x), false);
+  x.derivatives()[0] = 1.0 / 0.0;  // The derivatives() are ignored.
   EXPECT_EQ(isinf(x), false);
 }
 

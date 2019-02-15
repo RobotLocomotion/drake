@@ -3,13 +3,13 @@
 #include <limits>
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
@@ -50,47 +50,47 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   /// Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   /// is independent of the state stored in `context`.
   Isometry3<T> CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context) const final;
+      const systems::Context<T>& context) const final;
 
   /// Computes the across-mobilizer velocity `V_FM` which for this mobilizer is
   /// always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
   /// Computes the across-mobilizer acceleration `A_FM` which for this mobilizer
   /// is always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
   /// Since this mobilizer has no generalized velocities associated with it,
   /// this override is a no-op.
   void ProjectSpatialForce(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
   /// This override is a no-op since this mobilizer has no generalized
   /// velocities associated with it.
   void MapVelocityToQDot(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const final;
 
   /// This override is a no-op since this mobilizer has no generalized
   /// velocities associated with it.
   void MapQDotToVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const final;
 
  protected:
-  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+  void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
@@ -98,6 +98,9 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const final;
+
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
   typedef MobilizerImpl<T, 0, 0> MobilizerBase;
@@ -130,3 +133,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::multibody::internal::WeldMobilizer)

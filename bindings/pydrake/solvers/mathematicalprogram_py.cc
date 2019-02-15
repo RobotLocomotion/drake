@@ -7,12 +7,14 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/bindings/pydrake/util/deprecation_pybind.h"
-#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/solvers/solver_type_converter.h"
 
 using Eigen::Dynamic;
@@ -33,13 +35,15 @@ using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using solvers::LorentzConeConstraint;
 using solvers::MathematicalProgram;
-using solvers::MathematicalProgramSolverInterface;
+using solvers::MathematicalProgramResult;
 using solvers::MatrixXDecisionVariable;
 using solvers::MatrixXIndeterminate;
 using solvers::PositiveSemidefiniteConstraint;
 using solvers::QuadraticCost;
 using solvers::SolutionResult;
 using solvers::SolverId;
+using solvers::SolverInterface;
+using solvers::SolverOptions;
 using solvers::SolverType;
 using solvers::SolverTypeConverter;
 using solvers::VariableRefList;
@@ -174,28 +178,44 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       py::module::import("pydrake.symbolic").attr("Expression");
   py::object formula = py::module::import("pydrake.symbolic").attr("Formula");
 
-  py::class_<MathematicalProgramSolverInterface>(m,
-      "MathematicalProgramSolverInterface",
-      doc.MathematicalProgramSolverInterface.doc)
-      .def("available", &MathematicalProgramSolverInterface::available,
-          doc.MathematicalProgramSolverInterface.available.doc)
-      .def("solver_id", &MathematicalProgramSolverInterface::solver_id,
-          doc.MathematicalProgramSolverInterface.solver_id.doc)
+  py::class_<SolverInterface>(m, "SolverInterface", doc.SolverInterface.doc)
+      .def("available", &SolverInterface::available,
+          doc.SolverInterface.available.doc)
+      .def("solver_id", &SolverInterface::solver_id,
+          doc.SolverInterface.solver_id.doc)
+      .def("AreProgramAttributesSatisfied",
+          &SolverInterface::AreProgramAttributesSatisfied, py::arg("prog"),
+          doc.SolverInterface.AreProgramAttributesSatisfied.doc)
+      .def("Solve",
+          pydrake::overload_cast_explicit<void, const MathematicalProgram&,
+              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&,
+              MathematicalProgramResult*>(&SolverInterface::Solve),
+          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
+          py::arg("result"), doc.SolverInterface.Solve.doc_4args)
+      .def("Solve",
+          // This method really lives on SolverBase, but we manually write it
+          // out here to avoid all of the overloading / inheritance hassles.
+          [](const SolverInterface& self, const MathematicalProgram& prog,
+              const optional<Eigen::VectorXd>& initial_guess,
+              const optional<SolverOptions>& solver_options) {
+            MathematicalProgramResult result;
+            self.Solve(prog, initial_guess, solver_options, &result);
+            return result;
+          },
+          py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
+          doc.SolverBase.Solve.doc)
       .def("Solve",
           // NOLINTNEXTLINE(whitespace/parens)
-          static_cast<SolutionResult (MathematicalProgramSolverInterface::*)(
-              MathematicalProgram&) const>(
-              &MathematicalProgramSolverInterface::Solve),
-          py::arg("prog"),
-          doc.MathematicalProgramSolverInterface.Solve.doc_1args)
+          static_cast<SolutionResult (SolverInterface::*)(MathematicalProgram&)
+                  const>(&SolverInterface::Solve),
+          py::arg("prog"), doc.SolverInterface.Solve.doc_1args)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
-          [](const MathematicalProgramSolverInterface& self) {
+          [](const SolverInterface& self) {
             return SolverTypeConverter::IdToType(self.solver_id());
           })
-      .def("SolverName", [](const MathematicalProgramSolverInterface& self) {
-        return self.solver_id().name();
-      });
+      .def("SolverName",
+          [](const SolverInterface& self) { return self.solver_id().name(); });
 
   py::class_<SolverId>(m, "SolverId", doc.SolverId.doc)
       .def("name", &SolverId::name, doc.SolverId.name.doc);
@@ -213,6 +233,53 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .value("kNlopt", SolverType::kNlopt, doc.SolverType.kNlopt.doc)
       .value("kOsqp", SolverType::kOsqp, doc.SolverType.kOsqp.doc)
       .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
+
+  // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
+  py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
+      .def(py::init<>(), doc.SolverOptions.ctor.doc);
+
+  py::class_<MathematicalProgramResult>(
+      m, "MathematicalProgramResult", doc.MathematicalProgramResult.doc)
+      .def(py::init<>(), doc.MathematicalProgramResult.ctor.doc)
+      .def("is_success", &MathematicalProgramResult::is_success,
+          doc.MathematicalProgramResult.is_success.doc)
+      .def("get_x_val", &MathematicalProgramResult::get_x_val,
+          doc.MathematicalProgramResult.get_x_val.doc)
+      .def("get_solution_result",
+          &MathematicalProgramResult::get_solution_result,
+          doc.MathematicalProgramResult.get_solution_result.doc)
+      .def("get_optimal_cost", &MathematicalProgramResult::get_optimal_cost,
+          doc.MathematicalProgramResult.get_optimal_cost.doc)
+      .def("get_solver_id", &MathematicalProgramResult::get_solver_id,
+          doc.MathematicalProgramResult.get_solver_id.doc)
+      .def("get_solver_details",
+          [](const MathematicalProgramResult& self) {
+            const auto& abstract = self.get_abstract_solver_details();
+            // TODO(#9398): Figure out why `py_reference` is necessary.
+            py::object value_ref = py::cast(&abstract, py_reference);
+            return value_ref.attr("get_value")();
+          },
+          py_reference_internal,
+          doc.MathematicalProgramResult.get_solver_details.doc)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self, const Variable& var) {
+            return self.GetSolution(var);
+          },
+          doc.MathematicalProgramResult.GetSolution.doc_1args_var)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self,
+              const VectorXDecisionVariable& var) {
+            return self.GetSolution(var);
+          },
+          doc.MathematicalProgramResult.GetSolution
+              .doc_1args_constEigenMatrixBase)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self,
+              const MatrixXDecisionVariable& var) {
+            return self.GetSolution(var);
+          },
+          doc.MathematicalProgramResult.GetSolution
+              .doc_1args_constEigenMatrixBase);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
@@ -609,12 +676,28 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
 
-  // TODO(eric.cousineau): Expose Eval() in a Python-friendly fashion.
-  py::class_<EvaluatorBase, std::shared_ptr<EvaluatorBase>>(m, "EvaluatorBase")
-      .def("num_outputs", &EvaluatorBase::num_outputs,
-          doc.EvaluatorBase.num_outputs.doc)
-      .def(
-          "num_vars", &EvaluatorBase::num_vars, doc.EvaluatorBase.num_vars.doc);
+  {
+    using Class = EvaluatorBase;
+    constexpr auto& cls_doc = doc.EvaluatorBase;
+    py::class_<Class, std::shared_ptr<EvaluatorBase>> cls(m, "EvaluatorBase");
+    cls  // BR
+        .def("num_outputs", &Class::num_outputs, cls_doc.num_outputs.doc)
+        .def("num_vars", &Class::num_vars, cls_doc.num_vars.doc);
+    auto bind_eval = [&cls, &cls_doc](auto dummy_x, auto dummy_y) {
+      using T_x = decltype(dummy_x);
+      using T_y = decltype(dummy_y);
+      cls.def("Eval",
+          [](const Class& self, const Eigen::Ref<const VectorX<T_x>>& x) {
+            VectorX<T_y> y;
+            self.Eval(x, &y);
+            return y;
+          },
+          py::arg("x"), cls_doc.Eval.doc);
+    };
+    bind_eval(double{}, double{});
+    bind_eval(AutoDiffXd{}, AutoDiffXd{});
+    bind_eval(symbolic::Variable{}, symbolic::Expression{});
+  }
 
   RegisterBinding<EvaluatorBase>(&m, "EvaluatorBase")
       .def(py::init([](py::object binding) {
@@ -751,6 +834,19 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       m, "VisualizationCallback", doc.VisualizationCallback.doc);
 
   RegisterBinding<VisualizationCallback>(&m, "VisualizationCallback");
+
+  // Bind the free functions in choose_best_solver.h and solve.h.
+  m  // BR
+      .def("ChooseBestSolver", &solvers::ChooseBestSolver, py::arg("prog"),
+          doc.ChooseBestSolver.doc)
+      .def(
+          "MakeSolver", &solvers::MakeSolver, py::arg("id"), doc.MakeSolver.doc)
+      .def("Solve",
+          py::overload_cast<const MathematicalProgram&,
+              const optional<Eigen::VectorXd>&, const optional<SolverOptions>&>(
+              &solvers::Solve),
+          py::arg("prog"), py::arg("initial_guess") = py::none(),
+          py::arg("solver_options") = py::none(), doc.Solve.doc_3args);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

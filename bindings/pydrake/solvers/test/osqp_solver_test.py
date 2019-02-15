@@ -16,10 +16,11 @@ class TestOsqpSolver(unittest.TestCase):
         solver = OsqpSolver()
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_type(), mp.SolverType.kOsqp)
-        result = solver.Solve(prog)
-        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        result = solver.Solve(prog, None, None)
+        self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
-        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+        self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
+        self.assertEqual(result.get_solver_details().status_val, 1)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when OSQP is disabled."""

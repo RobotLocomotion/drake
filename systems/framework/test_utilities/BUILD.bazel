@@ -26,7 +26,7 @@ drake_cc_library(
     srcs = [],
     hdrs = ["pack_value.h"],
     deps = [
-        "//systems/framework:value",
+        "//common:value",
     ],
 )
 
@@ -59,8 +59,8 @@ drake_cc_googletest(
     deps = [
         ":my_vector",
         "//common:copyable_unique_ptr",
+        "//common:value",
         "//common/test_utilities:is_dynamic_castable",
-        "//systems/framework:value",
     ],
 )
 

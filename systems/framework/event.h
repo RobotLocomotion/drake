@@ -5,10 +5,10 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/event_status.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -91,7 +91,7 @@ template <class T>
 class WitnessTriggeredEventData : public EventData {
  public:
   WitnessTriggeredEventData() {}
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(WitnessTriggeredEventData);
 
   /// Gets the witness function that triggered the event handler.
   const WitnessFunction<T>* triggered_witness() const {
@@ -152,6 +152,8 @@ class WitnessTriggeredEventData : public EventData {
   const ContinuousState<T>* xc0_{nullptr};
   const ContinuousState<T>* xcf_{nullptr};
 };
+
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(WitnessTriggeredEventData)
 
 /**
  * Predefined types of triggers for events. Used at run time to determine why
@@ -596,11 +598,8 @@ UnrestrictedUpdateEvent<T>::UnrestrictedUpdateEvent(
 }  // namespace systems
 }  // namespace drake
 
-// TODO(sammy-tri) I would like to use
-// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS for
-// WitnessTriggeredEventData, but DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN
-// breaks due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 with
-// extern templates.
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::WitnessTriggeredEventData)
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Event)

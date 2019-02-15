@@ -19,7 +19,6 @@ namespace drake {
 using geometry::Box;
 using geometry::SceneGraph;
 using multibody::Parser;
-using systems::AbstractValue;
 using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
@@ -82,9 +81,6 @@ GTEST_TEST(Box, UnderStiction) {
   EXPECT_EQ(plant.num_positions(), 2);
   EXPECT_EQ(plant.num_actuators(), 1);
   EXPECT_EQ(plant.num_actuated_dofs(), 1);
-
-  // Two input ports: actuation + geometric queries.
-  EXPECT_EQ(plant.get_num_input_ports(), 2);
 
   // And build the Diagram:
   std::unique_ptr<Diagram<double>> diagram = builder.Build();

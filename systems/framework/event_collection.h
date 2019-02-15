@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -172,9 +173,11 @@ class DiagramEventCollection final : public EventCollection<EventType> {
         owned_subevent_collection_(num_subsystems) {}
 
   /**
-   * Aborts if called, because no events should be added at the Diagram level.
+   * Throws if called, because no events should be added at the Diagram level.
    */
-  void add_event(std::unique_ptr<EventType>) override { DRAKE_ABORT(); }
+  void add_event(std::unique_ptr<EventType>) override {
+    throw std::logic_error("DiagramEventCollection::add_event is not allowed");
+  }
 
   /**
    * Returns the number of constituent EventCollection objects that correspond

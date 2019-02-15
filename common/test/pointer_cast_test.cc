@@ -114,7 +114,7 @@ GTEST_TEST(DynamicPointerCastOrThrowTest, FailedCastFromNullptr) {
       dynamic_pointer_cast_or_throw<MoreDerived>(std::move(u)),
       std::logic_error,
       "Cannot cast a unique_ptr<drake.*Base> containing nullptr "
-      "to unique_ptr<drake.*MoreDerived>.")
+      "to unique_ptr<drake.*MoreDerived>.");
   EXPECT_EQ(!!u, false);
 }
 
@@ -125,7 +125,7 @@ GTEST_TEST(DynamicPointerCastOrThrowTest, FailedDowncast) {
       dynamic_pointer_cast_or_throw<MoreDerived>(std::move(u)),
       std::logic_error,
       "Cannot cast a unique_ptr<drake.*Base> containing an object of type "
-      "drake.*Derived to unique_ptr<drake.*MoreDerived>.")
+      "drake.*Derived to unique_ptr<drake.*MoreDerived>.");
   EXPECT_EQ(!!u, true);
 }
 

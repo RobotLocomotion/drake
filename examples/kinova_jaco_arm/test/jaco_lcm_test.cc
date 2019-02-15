@@ -40,7 +40,7 @@ GTEST_TEST(JacoLcmTest, JacoCommandPassthroughTest) {
     -10, -20, -30, -40, -50, -60, -70};
 
   context->FixInputPort(
-      0, std::make_unique<systems::Value<lcmt_jaco_command>>(command));
+      0, std::make_unique<Value<lcmt_jaco_command>>(command));
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();
@@ -110,7 +110,7 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
   }
 
   context->FixInputPort(
-      0, std::make_unique<systems::Value<lcmt_jaco_status>>(status));
+      0, std::make_unique<Value<lcmt_jaco_status>>(status));
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();

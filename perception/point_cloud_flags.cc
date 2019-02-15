@@ -27,9 +27,14 @@ std::ostream& join(std::ostream& os,
 namespace pc_flags {
 
 std::ostream& operator<<(std::ostream& os, const Fields& fields) {
+  DRAKE_DEMAND(internal::kMaxBitInUse == kRGBs);
   std::vector<std::string> values;
-  if (fields.contains(pc_flags::kXYZs))
+  if (fields.contains(kXYZs))
     values.push_back("kXYZs");
+  if (fields.contains(kNormals))
+    values.push_back("kNormals");
+  if (fields.contains(kRGBs))
+    values.push_back("kRGBs");
   if (fields.has_descriptor()) {
     values.push_back(fields.descriptor_type().name());
   }

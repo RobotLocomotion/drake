@@ -29,6 +29,9 @@
 /// This header will define exactly one of either @p DRAKE_ASSERT_IS_ARMED or
 /// @p DRAKE_ASSERT_IS_DISARMED to indicate whether @p DRAKE_ASSERT is armed.
 ///
+/// This header will define both `constexpr bool drake::kDrakeAssertIsArmed`
+/// and `constexpr bool drake::kDrakeAssertIsDisarmed` globals.
+///
 /// One difference versus the standard @p assert(condition) is that the
 /// @p condition within @p DRAKE_ASSERT is always syntax-checked, even if
 /// Drake's assertions are disarmed.
@@ -44,9 +47,21 @@
 /// failure with a message showing at least the condition text, function name,
 /// file, and line.
 #define DRAKE_DEMAND(condition)
-/// Aborts the program (via ::abort) with a message showing at least the
-/// function name, file, and line.
+/// (Deprecated.)  Aborts the program (via ::abort) with a message showing at
+/// least the function name, file, and line.
 #define DRAKE_ABORT()
+/// Silences a "no return value" compiler warning by calling a function that
+/// always raises an exception or aborts (i.e., a function marked noreturn).
+/// Only use this macro at a point where (1) a point in the code is truly
+/// unreachable, (2) the fact that it's unreachable is knowable from only
+/// reading the function itself (and not, e.g., some larger design invariant),
+/// and (3) there is a compiler warning if this macro were removed.  The most
+/// common valid use is with a switch-case-return block where all cases are
+/// accounted for but the enclosing function is supposed to return a value.  Do
+/// *not* use this macro as a "logic error" assertion; it should *only* be used
+/// to silence false positive warnings.  When in doubt, throw an exception
+/// manually instead of using this macro.
+#define DRAKE_UNREACHABLE()
 /// Aborts the program (via ::abort) with a message showing at least the
 /// given message (macro argument), function name, file, and line.
 #define DRAKE_ABORT_MSG(message)
@@ -76,6 +91,13 @@ namespace detail {
 // Abort the program with an error message.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
+__attribute__((noreturn))
+__attribute__((deprecated(
+    "\nDRAKE DEPRECATED: DRAKE_ABORT() is deprecated; use DRAKE_ABORT_MSG(); "
+    "this macro will be removed on 2019-05-01")))
+inline void DeprecatedAbort(const char* func, const char* file, int line) {
+  Abort(nullptr, func, file, line);
+}
 // Report an assertion failure; will either Abort(...) or throw.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void AssertionFailed(
@@ -97,8 +119,12 @@ struct ConditionTraits {
 }  // namespace assert
 }  // namespace drake
 
-#define DRAKE_ABORT()                                           \
-  ::drake::detail::Abort(nullptr, __func__, __FILE__, __LINE__)
+#define DRAKE_ABORT()                                                   \
+  ::drake::detail::DeprecatedAbort(__func__, __FILE__, __LINE__)
+
+#define DRAKE_UNREACHABLE()                                             \
+  ::drake::detail::Abort(                                               \
+      "Unreachable code was reached?!", __func__, __FILE__, __LINE__)
 
 #define DRAKE_DEMAND(condition)                                              \
   do {                                                                       \
@@ -116,6 +142,10 @@ struct ConditionTraits {
 
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.
+namespace drake {
+constexpr bool kDrakeAssertIsArmed = true;
+constexpr bool kDrakeAssertIsDisarmed = false;
+}  // namespace drake
 # define DRAKE_ASSERT(condition) DRAKE_DEMAND(condition)
 # define DRAKE_ASSERT_VOID(expression) do {                     \
     static_assert(                                              \
@@ -125,6 +155,10 @@ struct ConditionTraits {
   } while (0)
 #else
 // Assertions are disabled, so just typecheck the expression.
+namespace drake {
+constexpr bool kDrakeAssertIsArmed = false;
+constexpr bool kDrakeAssertIsDisarmed = true;
+}  // namespace drake
 # define DRAKE_ASSERT(condition) static_assert(                        \
     ::drake::assert::ConditionTraits<                                  \
         typename std::remove_cv<decltype(condition)>::type>::is_valid, \

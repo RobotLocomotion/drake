@@ -1,14 +1,14 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 /**
- * The OSQP solver details after calling Solve function in OsqpSolver. The user
- * can obtain the details from
- * MathematicalProgramResult.get_solver_details().GetValue<OsqpSolverDetails>();
+ * The OSQP solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<OsqpSolver>() to obtain the
+ * details.
  */
 struct OsqpSolverDetails {
   /// Number of iterations taken.
@@ -30,34 +30,29 @@ struct OsqpSolverDetails {
   double run_time{};
 };
 
-class OsqpSolver : public MathematicalProgramSolverInterface {
+class OsqpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver)
 
-  OsqpSolver() = default;
-  ~OsqpSolver() override = default;
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = OsqpSolverDetails;
 
-  // This solver is implemented in various pieces depending on if Osqp was
-  // available during compilation.
-  bool available() const override { return is_available(); };
+  OsqpSolver();
+  ~OsqpSolver() final;
 
-  static bool is_available();
-
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram&, const optional<Eigen::VectorXd>&,
-             const optional<SolverOptions>&,
-             MathematicalProgramResult*) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @name Static versions of the instance methods with similar names.
+  //@{
   static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
 
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
 
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 }  // namespace solvers
 }  // namespace drake

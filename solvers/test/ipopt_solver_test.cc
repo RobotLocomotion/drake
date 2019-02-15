@@ -26,16 +26,20 @@ TEST_F(InfeasibleLinearProgramTest0, TestIpopt) {
   prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
   IpoptSolver solver;
   if (solver.available()) {
-    MathematicalProgramResult result;
-    solver.Solve(*prog_, {}, {}, &result);
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(),
               SolutionResult::kInfeasibleConstraints);
+    // LOCAL_INFEASIBILITY is defined in IpAlgTypes.hpp from Ipopt source file.
+    const int LOCAL_INFEASIBILITY = 5;
+    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
+              LOCAL_INFEASIBILITY);
     const Eigen::Vector2d x_val =
-        prog_->GetSolution(prog_->decision_variables(), result);
+        result.GetSolution(prog_->decision_variables());
     EXPECT_NEAR(result.get_optimal_cost(), -x_val(0) - x_val(1), 1E-7);
     // local infeasibility is defined in Ipopt::SolverReturn in IpAlgTypes.hpp
     const int kIpoptLocalInfeasibility = 5;
-    EXPECT_EQ(result.get_solver_details().GetValue<IpoptSolverDetails>().status,
+    EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
               kIpoptLocalInfeasibility);
   }
 }
@@ -46,9 +50,9 @@ TEST_F(UnboundedLinearProgramTest0, TestIpopt) {
   prog_->SetSolverOption(IpoptSolver::id(), "max_iter", 1000);
   IpoptSolver solver;
   if (solver.available()) {
-    const auto solver_result = solver.Solve(*prog_);
-    EXPECT_EQ(solver_result, SolutionResult::kUnbounded);
-    EXPECT_EQ(prog_->GetOptimalCost(),
+    auto result = solver.Solve(*prog_, {}, {});
+    EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnbounded);
+    EXPECT_EQ(result.get_optimal_cost(),
               -std::numeric_limits<double>::infinity());
   }
 }
@@ -120,10 +124,14 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       MathematicalProgram prog;
       auto x = prog.NewContinuousVariables(1);
       prog.AddCost(NoisyQuadraticCost(max_noise), x);
-      MathematicalProgramResult result;
-      solver.Solve(prog, x_initial_guess, options, &result);
+      auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect to hit iteration limit
-      EXPECT_EQ(result.get_solution_result(), kIterationLimit);
+      EXPECT_FALSE(result.is_success());
+      EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+      // MAXITER_EXCEEDED is defined in IpAlgTypes.hpp from Ipopt source code.
+      const int MAXITER_EXCEEDED = 1;
+      EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
+                MAXITER_EXCEEDED);
     }
     options.SetOption(IpoptSolver::id(), "acceptable_tol", 1e-3);
     options.SetOption(IpoptSolver::id(), "acceptable_dual_inf_tol", 1e-3);
@@ -134,17 +142,13 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
       MathematicalProgram prog;
       auto x = prog.NewContinuousVariables(1);
       prog.AddCost(NoisyQuadraticCost(max_noise), x);
-      MathematicalProgramResult result;
-      solver.Solve(prog, x_initial_guess, options, &result);
+      auto result = solver.Solve(prog, x_initial_guess, options);
       // Expect Ipopt status to be "STOP_AT_ACCEPTABLE_POINT."
       const int kIpoptStopAtAcceptablePoint{4};  // Defined in IpAlgTypes.hpp.
-      EXPECT_EQ(result.get_solver_details()
-                    .GetValueOrThrow<IpoptSolverDetails>()
-                    .status,
+      EXPECT_EQ(result.get_solver_details<IpoptSolver>().status,
                 kIpoptStopAtAcceptablePoint);
-      // Expect Ipopt's "STOP_AT_ACCEPTABLE_POINT" to be translated to
-      // kSolutionFound.
-      EXPECT_EQ(result.get_solution_result(), kSolutionFound);
+      // Expect Ipopt's "STOP_AT_ACCEPTABLE_POINT" to be translated to success.
+      EXPECT_TRUE(result.is_success());
     }
   }
 }

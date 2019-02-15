@@ -64,7 +64,7 @@ class TestGtestMain(unittest.TestCase):
         log_message = "[debug] Cross your fingers for the magic_number 1"
         args = ["-magic_number=1.0"]
         output = self._check_call(args, expected_returncode=0)
-        self.assertFalse(log_message in output)
+        self.assertFalse(log_message in output, output)
 
         # Once enabled, we see a debug log.
         args.append("-spdlog_level=debug")

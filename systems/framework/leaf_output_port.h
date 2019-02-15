@@ -8,11 +8,11 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
 #include "drake/systems/framework/system_base.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -59,8 +59,17 @@ class LeafOutputPort final : public OutputPort<T> {
   using CalcVectorCallback =
   std::function<void(const Context<T>&, BasicVector<T>*)>;
 
-  /** Constructs a cached output port. The `system` parameter must be the same
-  object as the `system_base` parameter. */
+  /** Returns the cache entry associated with this output port. */
+  const CacheEntry& cache_entry() const {
+    DRAKE_ASSERT(cache_entry_ != nullptr);
+    return *cache_entry_;
+  }
+
+ private:
+  friend class internal::FrameworkFactory;
+
+  // Constructs a cached output port. The `system` parameter must be the same
+  // object as the `system_base` parameter.
   LeafOutputPort(const System<T>* system, SystemBase* system_base,
                  std::string name, OutputPortIndex index,
                  DependencyTicket ticket, PortDataType data_type, int size,
@@ -71,13 +80,6 @@ class LeafOutputPort final : public OutputPort<T> {
     DRAKE_DEMAND(cache_entry != nullptr);
   }
 
-  /** Returns the cache entry associated with this output port. */
-  const CacheEntry& cache_entry() const {
-    DRAKE_ASSERT(cache_entry_ != nullptr);
-    return *cache_entry_;
-  }
-
- private:
   // Invokes the cache entry's allocation function.
   std::unique_ptr<AbstractValue> DoAllocate() const final {
     return cache_entry().Allocate();

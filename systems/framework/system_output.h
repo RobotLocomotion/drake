@@ -4,10 +4,11 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -29,9 +30,9 @@ A `SystemOutput<T>` object can only be obtained using
 template <typename T>
 class SystemOutput {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SystemOutput);
+  DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(SystemOutput);
 
-  ~SystemOutput() = default;
+  ~SystemOutput();
 
   /** Returns the number of output ports specified for this %SystemOutput
   during allocation. */
@@ -81,7 +82,7 @@ class SystemOutput {
   friend class System<T>;
   friend class SystemOutputTest;
 
-  SystemOutput() = default;
+  SystemOutput();
 
   // Add a suitable object to hold values for the next output port.
   void add_port(std::unique_ptr<AbstractValue> model_value) {
@@ -91,10 +92,15 @@ class SystemOutput {
   std::vector<copyable_unique_ptr<AbstractValue>> port_values_;
 };
 
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T> SystemOutput<T>::SystemOutput() = default;
+template <typename T> SystemOutput<T>::~SystemOutput() = default;
+DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(SystemOutput);
+
 }  // namespace systems
 }  // namespace drake
 
-// TODO(sammy-tri) I would like to use
-// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS here, but
-// DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN breaks due to
-// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 with extern templates.
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SystemOutput)

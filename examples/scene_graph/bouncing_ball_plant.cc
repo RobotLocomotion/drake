@@ -26,7 +26,6 @@ using geometry::SourceId;
 using geometry::Sphere;
 using std::make_unique;
 using systems::Context;
-using systems::Value;
 
 template <typename T>
 BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
@@ -37,7 +36,7 @@ BouncingBallPlant<T>::BouncingBallPlant(SourceId source_id,
   DRAKE_DEMAND(source_id_.is_valid());
 
   geometry_query_port_ = this->DeclareAbstractInputPort(
-      systems::kUseDefaultName, systems::Value<geometry::QueryObject<T>>{})
+      systems::kUseDefaultName, Value<geometry::QueryObject<T>>{})
           .get_index();
   state_port_ =
       this->DeclareVectorOutputPort(BouncingBallVector<T>(),

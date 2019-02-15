@@ -9,8 +9,8 @@ except ImportError:
     import Tkinter as tk
 import numpy as np
 
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree import JointIndex
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import JointIndex
 from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
 
 
@@ -87,8 +87,8 @@ class JointSliders(VectorSystem):
         k = 0
         for i in range(0, robot.num_joints()):
             joint = robot.get_joint(JointIndex(i))
-            low = joint.lower_limits()
-            upp = joint.upper_limits()
+            low = joint.position_lower_limits()
+            upp = joint.position_upper_limits()
             for j in range(0, joint.num_positions()):
                 self._slider_position_start.append(joint.position_start() + j)
                 self._slider.append(tk.Scale(self.window,

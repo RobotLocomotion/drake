@@ -1,7 +1,12 @@
 import pydrake.common.compatibility as mut
 
-import numpy as np
+from functools import partial
+from threading import Thread
 import unittest
+
+import numpy as np
+
+from pydrake.common.compatibility_test_util import invoke_callback
 
 numpy_formatters = mut._patches["numpy_formatters"]
 
@@ -31,3 +36,16 @@ class TestCompatibility(unittest.TestCase):
         self.assertTrue(numpy_formatters["applied"])
         for name in expect_deferred:
             self.assertIn("Deferred", str(getattr(module, name)))
+
+    def test_gil_callback(self):
+        # Ensure that GIL behavior is correct, and does not cause threads to
+        # hang when pybind11 invokes Python callbacks from C++ (#10471).
+        called = [False]  # Store as list for easy non-local mutation.
+
+        def callback():
+            called[0] = True
+
+        thread = Thread(target=partial(invoke_callback, callback))
+        thread.start()
+        thread.join()
+        self.assertTrue(called[0])

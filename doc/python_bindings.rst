@@ -13,6 +13,9 @@ installed as a single package called ``pydrake``.
 
 .. _python-bindings-binary:
 
+Installation
+============
+
 Binary Installation for Python
 ------------------------------
 
@@ -34,7 +37,8 @@ Ensure that you have the system dependencies:
 
     /opt/drake/share/drake/setup/install_prereqs
 
-Next, ensure that your ``PYTHONPATH`` is properly configured:
+Next, ensure that your ``PYTHONPATH`` is properly configured. For example, for
+the Python 2 bindings on all supported platforms:
 
 .. code-block:: shell
 
@@ -43,8 +47,42 @@ Next, ensure that your ``PYTHONPATH`` is properly configured:
 See :ref:`below <using-python-bindings>` for usage instructions. If using
 macOS, pay special attention to :ref:`this note <using-python-mac-os-path>`.
 
-Python 2.7 is currently the only supported version for the bindings supplied
-by the binary packages. To use Python 3.x, see below for building from source.
+Inside ``virtualenv``
+^^^^^^^^^^^^^^^^^^^^^
+
+At present, Drake is not installable via ``pip``. However, you can still
+incorporate its install tree into a ``virtualenv``
+`FHS <https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard>`_-like
+environment.
+
+An example for ``python2``, where you should replace ``<venv_path>`` and
+``<platform>``:
+
+.. code-block:: shell
+
+    # Setup drake, and run prerequisites.
+    curl -o drake.tar.gz https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-<platform>.tar.gz
+    mkdir -p <venv_path>
+    tar -xvzf drake.tar.gz -C <venv_path> --strip-components=1
+    # - You may need `sudo` here.
+    <venv_path>/share/drake/setup/install_prereqs
+
+    # Setup a virtualenv over the drake install.
+    python2 -m virtualenv -p python2 <venv_path> --system-site-packages
+
+.. note::
+
+    You can extract Drake into an existing ``virtualenv`` tree if you have
+    already run ``install_prereqs``; however, you should ensure that you have
+    run ``install_prereqs``. Before you do this, you should capture / freeze
+    your current requirements to reproduce your environment if there are
+    conflicts.
+
+To check if this worked, follow the instructions as
+:ref:`shown below <using-python-bindings>`, but either:
+
+*   Use ``<venv_path>/bin/python`` instead of ``python``, or
+*   Source ``<venv_path>/bin/activate`` in your current shell session.
 
 Building the Python Bindings
 ----------------------------
@@ -87,10 +125,13 @@ As an example, continuing from the code snippets from above:
 .. _using-python-bindings:
 
 Using the Python Bindings
--------------------------
+=========================
 
-To use the Drake Python bindings, follow the steps above to install or build
-Drake. To check this:
+Check Installation
+------------------
+
+After following the above install steps, check to ensure you can import
+``pydrake``:
 
 .. code-block:: shell
 
@@ -138,13 +179,18 @@ Here's an example snippet of code from ``pydrake``:
 .. code-block:: python
 
     from pydrake.common import FindResourceOrThrow
-    from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-    from pydrake.multibody.rigid_body_tree import RigidBodyTree
+    from pydrake.multibody.parsing import Parser
+    from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
     from pydrake.systems.analysis import Simulator
+    from pydrake.systems.framework import DiagramBuilder
 
-    tree = RigidBodyTree(
+    builder = DiagramBuilder()
+    plant, _ = AddMultibodyPlantSceneGraph(builder)
+    Parser(plant).AddModelFromFile(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-    simulator = Simulator(RigidBodyPlant(tree))
+    plant.Finalize()
+    diagram = builder.Build()
+    simulator = Simulator(diagram)
 
 If you are prototyping code in a REPL environment (such as IPython / Jupyter)
 and to reduce the number of import statements, consider using ``pydrake.all`` to
@@ -155,16 +201,21 @@ automatically. If you are writing non-prototype code, avoid using
 In all cases, try to avoid using ``from pydrake.all import *``, as it may
 introduce symbol collisions that are difficiult to debug.
 
-An example of importing symbols directly from ``pydrake.all``:
+The above example, but using ``pydrake.all``:
 
 .. code-block:: python
 
     from pydrake.all import (
-        FindResourceOrThrow, RigidBodyPlant, RigidBodyTree, Simulator)
+        AddMultibodyPlantSceneGraph, DiagramBuilder, FindResourceOrThrow,
+        Parser, Simulator)
 
-    tree = RigidBodyTree(
+    builder = DiagramBuilder()
+    plant, _ = AddMultibodyPlantSceneGraph(builder)
+    Parser(plant).AddModelFromFile(
         FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-    simulator = Simulator(RigidBodyPlant(tree))
+    plant.Finalize()
+    diagram = builder.Build()
+    simulator = Simulator(diagram)
 
 An alternative is to use ``pydrake.all`` to import all modules, but then
 explicitly refer to each symbol:
@@ -173,14 +224,17 @@ explicitly refer to each symbol:
 
     import pydrake.all
 
-    tree = pydrake.multibody.rigid_body_tree.RigidBodyTree(
+    builder = pydrake.systems.framework.DiagramBuilder()
+    plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder)
+    pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
         pydrake.common.FindResourceOrThrow(
             "drake/examples/pendulum/Pendulum.urdf"))
-    simulator = pydrake.systems.analysis.Simulator(
-        pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
+    plant.Finalize()
+    diagram = builder.Build()
+    simulator = pydrake.systems.analysis.Simulator(diagram)
 
 Differences with C++ API
-========================
+------------------------
 
 In general, the `Python API <pydrake/index.html#://>`_ should be close to the
 `C++ API <doxygen_cxx/index.html#://>`_. There are some exceptions:

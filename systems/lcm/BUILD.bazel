@@ -80,6 +80,7 @@ drake_cc_library(
     ],
     deps = [
         ":translator",
+        "//common:value",
         "//lcm:real",
         "//systems/framework",
     ],
@@ -227,6 +228,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "translator_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":translator_system",
         "//lcm:lcmt_drake_signal_utils",

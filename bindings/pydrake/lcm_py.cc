@@ -4,9 +4,9 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/lcm/drake_mock_lcm.h"
@@ -46,6 +46,8 @@ PYBIND11_MODULE(lcm, m) {
     using Class = DrakeLcm;
     py::class_<Class, DrakeLcmInterface>(m, "DrakeLcm", doc.DrakeLcm.doc)
         .def(py::init<>(), doc.DrakeLcm.ctor.doc_0args)
+        .def(py::init<std::string>(), py::arg("lcm_url"),
+            doc.DrakeLcm.ctor.doc_1args)
         .def("StartReceiveThread", &Class::StartReceiveThread,
             doc.DrakeLcm.StartReceiveThread.doc)
         .def("StopReceiveThread", &Class::StopReceiveThread,

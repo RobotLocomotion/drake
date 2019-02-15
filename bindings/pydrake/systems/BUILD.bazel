@@ -50,8 +50,8 @@ drake_cc_library(
     deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/util:cpp_param_pybind",
-        "//bindings/pydrake/util:cpp_template_pybind",
+        "//bindings/pydrake/common:cpp_param_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
     ],
 )
 
@@ -60,12 +60,12 @@ drake_pybind_library(
     cc_deps = [
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
         "//bindings/pydrake/common:drake_variant_pybind",
-        "//bindings/pydrake/util:deprecation_pybind",
-        "//bindings/pydrake/util:drake_optional_pybind",
-        "//bindings/pydrake/util:eigen_pybind",
-        "//bindings/pydrake/util:type_safe_index_pybind",
-        "//bindings/pydrake/util:wrap_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:type_safe_index_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = [
         "framework_py.cc",
@@ -81,7 +81,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
-        "//bindings/pydrake/util:cpp_template_py",
+        "//bindings/pydrake/common:cpp_template_py",
     ],
 )
 
@@ -98,7 +98,7 @@ drake_pybind_library(
     cc_deps = [
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/util:drake_optional_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -127,7 +127,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/util:wrap_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["controllers_py.cc"],
     package_info = PACKAGE_INFO,
@@ -137,7 +137,9 @@ drake_pybind_library(
         ":primitives_py",
         "//bindings/pydrake:math_py",
         "//bindings/pydrake:symbolic_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
     ],
+    py_srcs = ["_controllers_extra.py"],
 )
 
 drake_pybind_library(
@@ -145,14 +147,14 @@ drake_pybind_library(
     cc_deps = [
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/util:eigen_geometry_pybind",
+        "//bindings/pydrake/common:eigen_geometry_pybind",
     ],
     cc_srcs = ["rendering_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake/util:eigen_geometry_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
     ],
 )
 
@@ -160,21 +162,21 @@ drake_pybind_library(
     name = "sensors_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:eigen_geometry_pybind",
+        "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/systems:systems_pybind",
-        "//bindings/pydrake/util:cpp_template_pybind",
-        "//bindings/pydrake/util:eigen_geometry_pybind",
-        "//bindings/pydrake/util:eigen_pybind",
-        "//bindings/pydrake/util:type_pack",
     ],
     cc_srcs = ["sensors_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
-        "//bindings/pydrake/util:cpp_template_py",
-        "//bindings/pydrake/util:eigen_geometry_py",
+        "//bindings/pydrake/common:cpp_template_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
     ],
+    py_srcs = ["_sensors_extra.py"],
 )
 
 drake_pybind_library(
@@ -202,19 +204,37 @@ drake_py_library(
     deps = [":module_py"],
 )
 
+drake_cc_library(
+    name = "lcm_pybind",
+    hdrs = ["lcm_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+    ],
+)
+
 drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
+        ":lcm_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/systems:systems_pybind",
-        "//bindings/pydrake/util:deprecation_pybind",
     ],
-    cc_srcs = ["lcm_py.cc"],
+    cc_srcs = [
+        "lcm_py.cc",
+        "lcm_py_bind_cpp_serializers.cc",
+        "lcm_py_bind_cpp_serializers.h",
+    ],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
         ":module_py",
         "//bindings/pydrake:lcm_py",
+        "//lcmtypes:lcmtypes_drake_py",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
     py_srcs = ["_lcm_extra.py"],
 )
@@ -224,7 +244,6 @@ drake_py_unittest(
     deps = [
         ":lcm_py",
         ":primitives_py",
-        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion_py",
     ],
 )
 
@@ -239,7 +258,7 @@ drake_py_library(
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:math_py",
-        "//bindings/pydrake/util:eigen_geometry_py",
+        "//bindings/pydrake/common:eigen_geometry_py",
         "//lcmtypes:lcmtypes_drake_py",
         "@meshcat_python//:meshcat",
         "@meshcat_python//:meshcat-server",
@@ -327,7 +346,7 @@ drake_pybind_library(
     py_deps = [
         ":framework_py",
         ":primitives_py",
-        "//bindings/pydrake/util:cpp_template_py",
+        "//bindings/pydrake/common:cpp_template_py",
     ],
     visibility = ["//visibility:private"],
 )
@@ -368,14 +387,14 @@ drake_py_unittest(
     deps = [
         ":controllers_py",
         "//bindings/pydrake/examples:pendulum_py",
-        "//bindings/pydrake/multibody:multibody_tree_py",
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
+        "//bindings/pydrake/multibody:plant_py",
     ],
 )
 
 drake_py_unittest(
     name = "meshcat_visualizer_test",
     data = [
+        "//examples/kuka_iiwa_arm:models",
         "//examples/multibody/cart_pole:models",
         "//manipulation/models/iiwa_description:models",
     ],
@@ -422,9 +441,7 @@ drake_py_unittest(
     data = [
         "//systems/sensors:test_models",
     ],
-    deps = [
-        ":sensors_py",
-    ],
+    deps = [":sensors_py"],
 )
 
 drake_py_unittest(
@@ -432,17 +449,6 @@ drake_py_unittest(
     deps = [
         ":trajectory_optimization_py",
         "//bindings/pydrake/examples:pendulum_py",
-    ],
-)
-
-drake_py_binary(
-    name = "rgbd_camera_example",
-    srcs = ["rgbd_camera_example.py"],
-    data = [
-        "//multibody:models",
-    ],
-    deps = [
-        ":sensors_py",
     ],
 )
 

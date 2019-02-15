@@ -179,6 +179,14 @@ class SceneGraphInspector {
     return state_->BelongsToSource(frame_id, source_id);
   }
 
+  /** Reports the _name_ of the geometry source that registered the frame with
+   the given `id`.
+   @throws std::logic_error  If `id` does not map to a registered frame.  */
+  const std::string& GetOwningSourceName(FrameId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetOwningSourceName(id);
+  }
+
   /** Reports the name of the frame with the given `id`.
    @throws std::logic_error if `id` does not map to a registered frame.  */
   const std::string& GetName(FrameId id) const {
@@ -248,6 +256,14 @@ class SceneGraphInspector {
     return state_->BelongsToSource(geometry_id, source_id);
   }
 
+  /** Reports the _name_ of the geometry source that registered the geometry
+   with the given `id`.
+   @throws std::logic_error  If `id` does not map to a registered geometry.  */
+  const std::string& GetOwningSourceName(GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetOwningSourceName(id);
+  }
+
   /** Reports the id of the frame to which the given geometry with the given
    `id` is registered.
    @throws std::logic_error if `id` does not map to a registered geometry.  */
@@ -262,6 +278,14 @@ class SceneGraphInspector {
   const std::string& GetName(GeometryId id) const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->get_name(id);
+  }
+
+  /** Returns the shape specified for the geometry with the given `id`. In order
+   to extract the details of the shape, it should be passed through an
+   implementation of a ShapeReifier.  */
+  const Shape& GetShape(GeometryId id) const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetShape(id);
   }
 
   /** Reports the pose of the geometry G with the given `id` in its registered

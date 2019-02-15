@@ -47,22 +47,24 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, FeasibilityCheck) {
   // [1 0.9;0.9 2] is diagonally dominant
   set_X_value(Eigen::Vector3d(1, 0.9, 2));
   MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // [1 -0.9; -0.9 2] is diagonally dominant
   set_X_value(Eigen::Vector3d(1, -0.9, 2));
   result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // [1 1.1; 1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, 1.1, 2));
   result = Solve(prog);
+  EXPECT_FALSE(result.is_success());
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
   // [1 -1.1; -1.1 2] is not diagonally dominant
   set_X_value(Eigen::Vector3d(1, -1.1, 2));
   result = Solve(prog);
+  EXPECT_FALSE(result.is_success());
   EXPECT_TRUE(
       result.get_solution_result() == SolutionResult::kInfeasibleConstraints ||
       result.get_solution_result() == SolutionResult::kInfeasible_Or_Unbounded);
@@ -100,13 +102,12 @@ GTEST_TEST(DiagonallyDominantMatrixConstraint, three_by_three_vertices) {
       // https://github.com/RobotLocomotion/drake/pull/9382
       // TODO(hongkai.dai): fix the problem in SnoptSolver wrapper and enable
       // this test with Snopt.
-      EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
-      EXPECT_TRUE(CompareMatrices(
-          prog.GetSolution(VectorDecisionVariable<3>(X(0, 1), X(0, 2), X(1, 2)),
-                           result),
-          sol_expected, tol));
+      EXPECT_TRUE(result.is_success());
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(VectorDecisionVariable<3>(
+                                      X(0, 1), X(0, 2), X(1, 2))),
+                                  sol_expected, tol));
       // The matrix should be positive semidefinite.
-      const Eigen::Matrix3d X_sol = prog.GetSolution(X, result);
+      const Eigen::Matrix3d X_sol = result.GetSolution(X);
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigen_solver(X_sol);
       EXPECT_TRUE((eigen_solver.eigenvalues().array() >= -tol).all());
     }

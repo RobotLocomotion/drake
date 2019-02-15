@@ -331,22 +331,21 @@ T GetOptionValueWithDefault(const std::unordered_map<std::string, T>& options,
 
 bool NloptSolver::is_available() { return true; }
 
-void NloptSolver::Solve(const MathematicalProgram& prog,
-                        const optional<Eigen::VectorXd>& initial_guess,
-                        const optional<SolverOptions>& solver_options,
-                        MathematicalProgramResult* result) const {
-  *result = {};
+void NloptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
+
   const int nx = prog.num_vars();
 
   // Load the algo to use and the size.
   nlopt::opt opt(nlopt::LD_SLSQP, nx);
 
-  const Eigen::VectorXd& x_init =
-      initial_guess.has_value() ? initial_guess.value() : prog.initial_guess();
-  std::vector<double> x(x_init.size());
+  std::vector<double> x(initial_guess.size());
   for (size_t i = 0; i < x.size(); i++) {
-    if (!std::isnan(x_init[i])) {
-      x[i] = x_init[i];
+    if (!std::isnan(initial_guess[i])) {
+      x[i] = initial_guess[i];
     } else {
       x[i] = 0.0;
     }
@@ -378,13 +377,8 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
 
   opt.set_min_objective(EvaluateCosts, const_cast<MathematicalProgram*>(&prog));
 
-  SolverOptions merged_solver_options =
-      solver_options.value_or(SolverOptions());
-  merged_solver_options.Merge(prog.solver_options());
-
-  const auto& nlopt_options_double =
-      merged_solver_options.GetOptionsDouble(id());
-  const auto& nlopt_options_int = merged_solver_options.GetOptionsInt(id());
+  const auto& nlopt_options_double = merged_options.GetOptionsDouble(id());
+  const auto& nlopt_options_int = merged_options.GetOptionsInt(id());
   const double constraint_tol = GetOptionValueWithDefault(
       nlopt_options_double, ConstraintToleranceName(), 1e-6);
   const double xtol_rel = GetOptionValueWithDefault(
@@ -425,7 +419,6 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
   opt.set_maxeval(max_eval);
 
   result->set_solution_result(SolutionResult::kSolutionFound);
-  result->set_solver_id(id());
 
   NloptSolverDetails& solver_details =
       result->SetSolverDetailsType<NloptSolverDetails>();
@@ -509,14 +502,6 @@ void NloptSolver::Solve(const MathematicalProgram& prog,
   }
 
   result->set_optimal_cost(minf);
-}
-
-SolutionResult NloptSolver::Solve(MathematicalProgram& prog) const {
-  MathematicalProgramResult result;
-  Solve(prog, {}, {}, &result);
-  const SolverResult solver_result = result.ConvertToSolverResult();
-  prog.SetSolverResult(solver_result);
-  return result.get_solution_result();
 }
 
 }  // namespace solvers

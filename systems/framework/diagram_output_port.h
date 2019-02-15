@@ -8,10 +8,10 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/output_port.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -35,29 +35,42 @@ class DiagramOutputPort final : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort)
 
-  /** (Internal use only) Constructs a %DiagramOutputPort that exports an
-  output port of one of the diagram's child subsystems.
+  ~DiagramOutputPort() final = default;
 
-  @param diagram The Diagram that will own this port.
-  @param system_base The same Diagram cast to its base class.
-  @param name A name for the port.  Output ports names must be unique
-      within the `diagram` System.
-  @param index The output port index to be assigned to the new port.
-  @param ticket The DependencyTicket to be assigned to the new port.
-  @param source_output_port An output port of one of this diagram's child
-      subsystems that is to be forwarded to the new port.
-  @param source_subsystem_index The index of the child subsystem that owns
-      `source_output_port`.
+  /** Obtains a reference to the subsystem output port that was exported to
+  create this diagram port. Note that the source may itself be a diagram
+  output port. */
+  const OutputPort<T>& get_source_output_port() const {
+    return *source_output_port_;
+  }
 
-  @pre The `diagram` System must actually be a Diagram.
-  @pre `diagram` lifetime must exceed the port's; we retain the pointer here.
-  @pre `diagram` and `system_base` must be the same object.
-  @pre `source_output_port` must be owned by a child of `diagram`.
-  @pre `source_subsystem_index` must be the index of that child in `diagram`.
+ private:
+  friend class internal::FrameworkFactory;
 
-  This is intended only for use by Diagram and we depend on the caller to
-  meet the above preconditions, not all of which can be independently
-  verified here. */
+  // Constructs a %DiagramOutputPort that exports an output port of one of the
+  // diagram's child subsystems.
+  //
+  // @param diagram The Diagram that will own this port.
+  // @param system_base The same Diagram cast to its base class.
+  // @param name A name for the port.  Output ports names must be unique
+  //     within the `diagram` System.
+  // @param index The output port index to be assigned to the new port.
+  // @param ticket The DependencyTicket to be assigned to the new port.
+  // @param source_output_port An output port of one of this diagram's child
+  //     subsystems that is to be forwarded to the new port.
+  // @param source_subsystem_index The index of the child subsystem that owns
+  //     `source_output_port`.
+  //
+  // @pre The `diagram` System must actually be a Diagram.
+  // @pre `diagram` lifetime must exceed the port's; we retain the pointer here.
+  // @pre `diagram` and `system_base` must be the same object.
+  // @pre `source_output_port` must be owned by a child of `diagram`.
+  // @pre `source_subsystem_index` must be the index of that child in `diagram`.
+  //
+  // This is intended only for use by Diagram and we depend on the caller to
+  // meet the above preconditions, not all of which can be independently
+  // verified here.
+  //
   // To avoid a Diagram <=> DiagramOutputPort physical dependency, this class
   // doesn't have access to a declaration of Diagram<T> so would not be able
   // to static_cast up to System<T> as is required by OutputPort. We expect
@@ -79,16 +92,6 @@ class DiagramOutputPort final : public OutputPort<T> {
     DRAKE_DEMAND(source_output_port != nullptr);
   }
 
-  ~DiagramOutputPort() final = default;
-
-  /** Obtains a reference to the subsystem output port that was exported to
-  create this diagram port. Note that the source may itself be a diagram
-  output port. */
-  const OutputPort<T>& get_source_output_port() const {
-    return *source_output_port_;
-  }
-
- private:
   // Asks the source system output port to allocate an appropriate object.
   std::unique_ptr<AbstractValue> DoAllocate() const final {
     return source_output_port_->Allocate();
@@ -106,7 +109,7 @@ class DiagramOutputPort final : public OutputPort<T> {
   // delegates to the source output port.
   const AbstractValue& DoEval(const Context<T>& diagram_context) const final {
     const Context<T>& subcontext = get_subcontext(diagram_context);
-    return source_output_port_->EvalAbstract(subcontext);
+    return source_output_port_->template Eval<AbstractValue>(subcontext);
   }
 
   // Returns the source output port's subsystem, and the ticket for that

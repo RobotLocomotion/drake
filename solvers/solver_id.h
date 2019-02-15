@@ -11,7 +11,7 @@
 namespace drake {
 namespace solvers {
 
-/// Identifies a MathematicalProgramSolverInterface implementation.
+/// Identifies a SolverInterface implementation.
 ///
 /// A moved-from instance is guaranteed to be empty and will not compare equal
 /// to any non-empty ID.

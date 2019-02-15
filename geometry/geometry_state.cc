@@ -8,6 +8,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
@@ -180,6 +181,12 @@ bool GeometryState<T>::BelongsToSource(FrameId frame_id,
 }
 
 template <typename T>
+const std::string& GeometryState<T>::GetOwningSourceName(FrameId id) const {
+  SourceId source_id = get_source_id(id);
+  return source_names_.at(source_id);
+}
+
+template <typename T>
 const std::string& GeometryState<T>::get_frame_name(FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
@@ -275,6 +282,12 @@ bool GeometryState<T>::BelongsToSource(GeometryId geometry_id,
 }
 
 template <typename T>
+const std::string& GeometryState<T>::GetOwningSourceName(GeometryId id) const {
+  SourceId source_id = get_source_id(id);
+  return source_names_.at(source_id);
+}
+
+template <typename T>
 FrameId GeometryState<T>::GetFrameId(GeometryId geometry_id) const {
   const auto& geometry = GetValueOrThrow(geometry_id, geometries_);
   return geometry.frame_id();
@@ -287,6 +300,15 @@ const std::string& GeometryState<T>::get_name(GeometryId geometry_id) const {
 
   throw std::logic_error("No geometry available for invalid geometry id: " +
       to_string(geometry_id));
+}
+
+template <typename T>
+const Shape& GeometryState<T>::GetShape(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry != nullptr) return geometry->shape();
+
+  throw std::logic_error("No geometry available for invalid geometry id: " +
+      to_string(id));
 }
 
 template <typename T>
@@ -593,10 +615,44 @@ bool GeometryState<T>::IsValidGeometryName(
   return NameIsUnique(frame_id, role, name);
 }
 
+namespace {
+// Small class for identifying mesh geometries.
+class MeshIdentifier final : public ShapeReifier {
+ public:
+  bool is_mesh() const { return is_mesh_; }
+
+  // Implementation of ShapeReifier interface.
+  void ImplementGeometry(const Sphere&, void*) final {}
+  void ImplementGeometry(const Cylinder&, void*) final {}
+  void ImplementGeometry(const HalfSpace&, void*) final {}
+  void ImplementGeometry(const Box&, void*) final {}
+  void ImplementGeometry(const Mesh& mesh, void*) final {
+    is_mesh_ = true;
+    drake::log()->warn("Meshes are _not_ supported for proximity: ({})",
+                       mesh.filename());
+  }
+  void ImplementGeometry(const Convex&, void*) final {}
+
+ private:
+  bool is_mesh_{false};
+};
+}  // namespace
+
 template <typename T>
 void GeometryState<T>::AssignRole(SourceId source_id,
                                   GeometryId geometry_id,
                                   ProximityProperties properties) {
+  // TODO(SeanCurtis-TRI): When meshes are supported for proximity roles, remove
+  // this test and the MeshIdentifier class.
+  {
+    const InternalGeometry* g = GetGeometry(geometry_id);
+    if (g) {
+      MeshIdentifier identifier;
+      g->shape().Reify(&identifier);
+      if (identifier.is_mesh()) return;
+    }
+  }
+
   AssignRoleInternal(source_id, geometry_id, std::move(properties),
                      Role::kProximity);
 
@@ -681,8 +737,8 @@ void GeometryState<T>::ExcludeCollisionsWithin(const GeometrySet& set) {
   //   1. the set contains a single frame and no geometries -- geometries *on*
   //      that single frame have already been handled, or
   //   2. there are no frames and a single geometry.
-  if ((set.num_frames() == 1 && set.num_geometries() == 0) ||
-      (set.num_frames() == 0 && set.num_geometries() == 1)) {
+  if ((set.num_frames_internal() == 1 && set.num_geometries_internal() == 0) ||
+      (set.num_frames_internal() == 0 && set.num_geometries_internal() == 1)) {
     return;
   }
 
@@ -720,7 +776,7 @@ void GeometryState<T>::CollectIndices(
   // TODO(SeanCurtis-TRI): Consider expanding this to include Role if it proves
   // that collecting indices for *other* role-related tasks prove necessary.
   std::unordered_set<GeometryIndex>* target;
-  for (auto frame_id : geometry_set.frames()) {
+  for (auto frame_id : geometry_set.frames_internal()) {
     const auto& frame = GetValueOrThrow(frame_id, frames_);
     target = frame.is_world() ? anchored : dynamic;
     for (auto geometry_id : frame.child_geometries()) {
@@ -731,7 +787,7 @@ void GeometryState<T>::CollectIndices(
     }
   }
 
-  for (auto geometry_id : geometry_set.geometries()) {
+  for (auto geometry_id : geometry_set.geometries_internal()) {
     const InternalGeometry* geometry = GetGeometry(geometry_id);
     if (geometry == nullptr) {
       throw std::logic_error(
@@ -798,6 +854,16 @@ SourceId GeometryState<T>::get_source_id(FrameId frame_id) const {
 }
 
 template <typename T>
+SourceId GeometryState<T>::get_source_id(GeometryId id) const {
+  const InternalGeometry* geometry = GetGeometry(id);
+  if (geometry == nullptr) {
+    throw std::logic_error("Geometry id " + to_string(id) +
+                           " does not map to a registered geometry");
+  }
+  return geometry->source_id();
+}
+
+template <typename T>
 void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
                                                RemoveGeometryOrigin caller) {
   const InternalGeometry& geometry = GetValueOrThrow(geometry_id, geometries_);
@@ -833,9 +899,11 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
     // removed_index.
     InternalGeometry& moved_geometry =
         geometries_[geometry_index_to_id_map_[removed_index]];
-    geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
-                                          moved_geometry.is_dynamic(),
-                                          removed_index);
+    if (moved_geometry.has_proximity_role()) {
+      geometry_engine_->UpdateGeometryIndex(moved_geometry.proximity_index(),
+                                            moved_geometry.is_dynamic(),
+                                            removed_index);
+    }
   }
 
   if (geometry.has_proximity_role()) {
@@ -852,9 +920,14 @@ void GeometryState<T>::RemoveGeometryUnchecked(GeometryId geometry_id,
         swap(X_WG_[proximity_index], X_WG_[moved_proximity_index]);
         swap(dynamic_proximity_index_to_internal_map_[proximity_index],
              dynamic_proximity_index_to_internal_map_[moved_proximity_index]);
-        dynamic_proximity_index_to_internal_map_.pop_back();
       }
       geometries_[moved_id].set_proximity_index(proximity_index);
+    }
+    if (geometry.is_dynamic()) {
+      // We've removed a dynamic geometry -- it was either the last or it has
+      // been moved to be last -- so, we pop the map to reflect the removed
+      // state.
+      dynamic_proximity_index_to_internal_map_.pop_back();
     }
   }
 

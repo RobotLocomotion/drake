@@ -13,7 +13,7 @@ RigidBodyPointCloudFilter::RigidBodyPointCloudFilter(
   // Create input port for point cloud.
   point_cloud_input_port_index_ = DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<PointCloud>{}).get_index();
+      Value<PointCloud>{}).get_index();
 
   // Create input port for tree positions and velocities.
   state_input_port_index_ =

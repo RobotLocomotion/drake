@@ -5,9 +5,6 @@
 
 #include "drake/automotive/driving_command_mux.h"
 #include "drake/automotive/gen/driving_command.h"
-#include "drake/automotive/gen/driving_command_translator.h"
-#include "drake/automotive/gen/maliput_railcar_state_translator.h"
-#include "drake/automotive/gen/simple_car_state_translator.h"
 #include "drake/automotive/idm_controller.h"
 #include "drake/automotive/maliput/api/junction.h"
 #include "drake/automotive/maliput/api/lane.h"
@@ -21,6 +18,9 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_driving_command_t.hpp"
+#include "drake/lcmt_maliput_railcar_state_t.hpp"
+#include "drake/lcmt_simple_car_state_t.hpp"
 #include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -29,7 +29,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/lcm/lcmt_drake_signal_translator.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/rendering/render_pose_to_geometry_pose.h"
 
@@ -42,8 +41,8 @@ using maliput::api::LaneEnd;
 using maliput::api::LaneId;
 using maliput::api::RoadGeometry;
 using maliput::api::RoadGeometryId;
-using systems::AbstractValue;
 using systems::lcm::LcmPublisherSystem;
+using systems::lcm::LcmSubscriberSystem;
 using systems::OutputPort;
 using systems::rendering::PoseBundle;
 using systems::RungeKutta2Integrator;
@@ -51,6 +50,77 @@ using systems::System;
 using systems::SystemOutput;
 
 namespace automotive {
+namespace {
+
+// Decodes Value<lcmt_driving_command_t> into DrivingCommand<double>.
+class DrivingCommandDecoder final : public systems::LeafSystem<double> {
+ public:
+  DrivingCommandDecoder() {
+    this->DeclareAbstractInputPort(
+        systems::kUseDefaultName, Value<lcmt_driving_command_t>{});
+    this->DeclareVectorOutputPort(
+        systems::kUseDefaultName, DrivingCommand<double>{},
+        &DrivingCommandDecoder::Calc);
+  }
+ private:
+  void Calc(const systems::Context<double>& context,
+            DrivingCommand<double>* output) const {
+    const auto* const input =
+        this->template EvalInputValue<drake::lcmt_driving_command_t>(
+            context, 0);
+    DRAKE_DEMAND(input != nullptr);
+    output->set_steering_angle(input->steering_angle);
+    output->set_acceleration(input->acceleration);
+  }
+};
+
+// Encodes SimpleCarState<double> into Value<lcmt_simple_car_state_t>.
+class SimpleCarStateEncoder final : public systems::LeafSystem<double> {
+ public:
+  SimpleCarStateEncoder() {
+    this->DeclareVectorInputPort(
+        systems::kUseDefaultName, SimpleCarState<double>{});
+    this->DeclareAbstractOutputPort(
+        systems::kUseDefaultName, lcmt_simple_car_state_t{},
+        &SimpleCarStateEncoder::Calc);
+  }
+ private:
+  void Calc(const systems::Context<double>& context,
+            lcmt_simple_car_state_t* output) const {
+    const auto* input =
+        this->template EvalVectorInput<SimpleCarState>(context, 0);
+    DRAKE_DEMAND(input != nullptr);
+    *output = {};
+    output->x = input->x();
+    output->y = input->y();
+    output->heading = input->heading();
+    output->velocity = input->velocity();
+  }
+};
+
+// Encodes MaliputRailcarState<double> into Value<lcmt_maliput_railcar_state_t>.
+class MaliputRailcarStateEncoder final : public systems::LeafSystem<double> {
+ public:
+  MaliputRailcarStateEncoder() {
+    this->DeclareVectorInputPort(
+        systems::kUseDefaultName, MaliputRailcarState<double>{});
+    this->DeclareAbstractOutputPort(
+        systems::kUseDefaultName, lcmt_maliput_railcar_state_t{},
+        &MaliputRailcarStateEncoder::Calc);
+  }
+ private:
+  void Calc(const systems::Context<double>& context,
+            lcmt_maliput_railcar_state_t* output) const {
+    const auto* input =
+        this->template EvalVectorInput<MaliputRailcarState>(context, 0);
+    DRAKE_DEMAND(input != nullptr);
+    *output = {};
+    output->s = input->s();
+    output->speed = input->speed();
+  }
+};
+
+}  // namespace
 
 template <typename T>
 AutomotiveSimulator<T>::AutomotiveSimulator()
@@ -213,13 +283,13 @@ int AutomotiveSimulator<T>::AddPriusSimpleCar(
       simple_car->velocity_output());
 
   if (!channel_name.empty() && lcm_) {
-    static const DrivingCommandTranslator driving_command_translator;
-    auto command_subscriber =
-        builder_->template AddSystem<systems::lcm::LcmSubscriberSystem>(
-            channel_name, driving_command_translator, lcm_.get());
-
-    builder_->Connect(*command_subscriber, *simple_car);
-
+    auto command_subscriber = builder_->AddSystem(
+        LcmSubscriberSystem::Make<drake::lcmt_driving_command_t>(
+            channel_name, lcm_.get()));
+    auto command_decoder =
+        builder_->template AddSystem<DrivingCommandDecoder>();
+    builder_->Connect(*command_subscriber, *command_decoder);
+    builder_->Connect(*command_decoder, *simple_car);
     AddPublisher(*simple_car, id);
   }
   return id;
@@ -355,7 +425,7 @@ int AutomotiveSimulator<T>::AddIdmControlledCar(
   const LaneDirection lane_direction(goal_lane, initial_with_s);
   auto lane_source =
       builder_->template AddSystem<systems::ConstantValueSource<T>>(
-          systems::AbstractValue::Make<LaneDirection>(lane_direction));
+          AbstractValue::Make<LaneDirection>(lane_direction));
 
   auto simple_car = builder_->template AddSystem<SimpleCar<T>>();
   simple_car->set_name(name + "_simple_car");
@@ -550,12 +620,14 @@ void AutomotiveSimulator<T>::AddPublisher(const MaliputRailcar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(lcm_ != nullptr);
-  static const MaliputRailcarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_MALIPUT_RAILCAR_STATE";
-  auto publisher =  builder_->template AddSystem<LcmPublisherSystem>(
-      channel, translator, lcm_.get());
-  builder_->Connect(system.state_output(), publisher->get_input_port());
+  auto encoder = builder_->template AddSystem<MaliputRailcarStateEncoder>();
+  auto publisher = builder_->AddSystem(
+      LcmPublisherSystem::Make<lcmt_maliput_railcar_state_t>(
+          channel, lcm_.get()));
+  builder_->Connect(system.state_output(), encoder->get_input_port(0));
+  builder_->Connect(encoder->get_output_port(0), publisher->get_input_port());
 }
 
 template <typename T>
@@ -563,12 +635,14 @@ void AutomotiveSimulator<T>::AddPublisher(const SimpleCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(lcm_ != nullptr);
-  static const SimpleCarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
-  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
-      channel, translator, lcm_.get());
-  builder_->Connect(system.state_output(), publisher->get_input_port());
+  auto encoder = builder_->template AddSystem<SimpleCarStateEncoder>();
+  auto publisher = builder_->AddSystem(
+      LcmPublisherSystem::Make<lcmt_simple_car_state_t>(
+          channel, lcm_.get()));
+  builder_->Connect(system.state_output(), encoder->get_input_port(0));
+  builder_->Connect(encoder->get_output_port(0), publisher->get_input_port());
 }
 
 template <typename T>
@@ -576,12 +650,14 @@ void AutomotiveSimulator<T>::AddPublisher(const TrajectoryCar<T>& system,
                                           int vehicle_number) {
   DRAKE_DEMAND(!has_started());
   DRAKE_DEMAND(lcm_ != nullptr);
-  static const SimpleCarStateTranslator translator;
   const std::string channel =
       std::to_string(vehicle_number) + "_SIMPLE_CAR_STATE";
-  auto publisher = builder_->template AddSystem<LcmPublisherSystem>(
-      channel, translator, lcm_.get());
-  builder_->Connect(system.raw_pose_output(), publisher->get_input_port());
+  auto encoder = builder_->template AddSystem<SimpleCarStateEncoder>();
+  auto publisher = builder_->AddSystem(
+      LcmPublisherSystem::Make<lcmt_simple_car_state_t>(
+          channel, lcm_.get()));
+  builder_->Connect(system.raw_pose_output(), encoder->get_input_port(0));
+  builder_->Connect(encoder->get_output_port(0), publisher->get_input_port());
 }
 
 template <typename T>

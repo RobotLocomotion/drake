@@ -95,7 +95,7 @@ drake_cc_binary(
     ],
     add_test_rule = 1,
     tags = vtk_test_tags(),
-    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1"],
+    test_rule_args = ["--target_realtime_rate=0.0 --duration=0.1 --test"],
     test_rule_timeout = "moderate",
     deps = [
         ":manipulation_station",

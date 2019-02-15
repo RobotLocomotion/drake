@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
@@ -23,7 +23,7 @@ class UnrevisedLemkeSolverId {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolverId);
   UnrevisedLemkeSolverId() = delete;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 };
 
@@ -34,12 +34,12 @@ class UnrevisedLemkeSolverId {
 ///     Transform for Solving Linear Complementarity Problems with Lemke's
 ///     Algorithm. (2018, located in doc/pivot_column.pdf).
 template <class T>
-class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
+class UnrevisedLemkeSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolver)
 
-  UnrevisedLemkeSolver() = default;
-  ~UnrevisedLemkeSolver() override = default;
+  UnrevisedLemkeSolver();
+  ~UnrevisedLemkeSolver() final;
 
   /// Calculates the zero tolerance that the solver would compute if the user
   /// does not specify a tolerance.
@@ -89,23 +89,15 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                      VectorX<T>* z, int* num_pivots,
                      const T& zero_tol = T(-1)) const;
 
-  bool available() const override { return is_available(); };
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
 
-  static bool is_available() { return true; }
-
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  void Solve(const MathematicalProgram& prog,
-             const optional<Eigen::VectorXd>& initial_guess,
-             const optional<SolverOptions>& solver_options,
-             MathematicalProgramResult* result) const override;
-
-  SolverId solver_id() const override;
-
-  bool AreProgramAttributesSatisfied(
-      const MathematicalProgram& prog) const override;
-
-  static bool ProgramAttributesSatisfied(const MathematicalProgram& prog);
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
 
  private:
   friend class UnrevisedLemkePrivateTests;
@@ -176,6 +168,9 @@ class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
                           // indicates that the variable is artificial. -1
                           // indicates that the index is uninitialized.
   };
+
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 
   static void SelectSubMatrixWithCovering(
       const MatrixX<T>& in,

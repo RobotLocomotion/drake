@@ -9,11 +9,10 @@
 namespace drake {
 namespace solvers {
 /**
- * This class is used by implementations of the class
- * MathematicalProgramSolverInterface to report their results to the
- * mathematical program. It is guaranteed to have a defined solver id; all other
- * fields can be left undefined. Reading those values should be guarded by a
- * test on whether the field has been defined.
+ * This class is used by implementations of the class SolverInterface to report
+ * their results to the mathematical program. It is guaranteed to have a
+ * defined solver id; all other fields can be left undefined. Reading those
+ * values should be guarded by a test on whether the field has been defined.
  */
 class SolverResult {
  public:

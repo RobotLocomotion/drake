@@ -144,7 +144,7 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
 
   // Now configure the system for the valid port declaration.
   const auto& port =
-      DeclareAbstractInputPort(port_name, systems::Value<Image<kPixelType>>());
+      DeclareAbstractInputPort(port_name, Value<Image<kPixelType>>());
 
   PublishEvent<double> event(
       TriggerType::kPeriodic,
@@ -160,19 +160,12 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
 
 template <PixelType kPixelType>
 void ImageWriter::WriteImage(const Context<double>& context, int index) const {
+  const auto& port = get_input_port(index);
   const ImagePortInfo& data = port_info_[index];
-  const Image<kPixelType>* image =
-      this->EvalInputValue<Image<kPixelType>>(context, index);
-  if (image) {
-    const std::string& port_name = get_input_port(index).get_name();
-    SaveToFileHelper(
-        *image, MakeFileName(data.format, data.pixel_type, context.get_time(),
-                             port_name, data.count++));
-    return;
-  }
-  throw std::logic_error(
-      fmt::format("ImageWriter: {} image input port {} is not connected",
-                  labels_.at(data.pixel_type), index));
+  const Image<kPixelType>& image = port.Eval<Image<kPixelType>>(context);
+  SaveToFileHelper(
+      image, MakeFileName(data.format, data.pixel_type, context.get_time(),
+                          port.get_name(), data.count++));
 }
 
 std::string ImageWriter::MakeFileName(const std::string& format,

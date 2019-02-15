@@ -2,13 +2,13 @@
 
 #include <memory>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
@@ -66,6 +66,7 @@ namespace internal {
 ///
 /// - double
 /// - AutoDiffXd
+/// - symbolic::Expression
 ///
 /// They are already available to link against in the containing library.
 /// No other values for T are currently supported.
@@ -93,8 +94,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   ///   rotations about the space fixed axes x̂, ŷ, ẑ, respectively packed and
   ///   returned as a Vector3 with entries `angles(0) = θ₁`, `angles(1) = θ₂`,
   ///   `angles(2) = θ₃`.
-  ///
-  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   Vector3<T> get_angles(const systems::Context<T>& context) const;
 
   /// Sets in `context` the state for `this` mobilizer to have the space x-y-z
@@ -108,8 +107,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   ///   described in this class's documentation, at entries `angles(0)`,
   ///   `angles(1)` and `angles(2)`, respectively.
   /// @returns a constant reference to `this` mobilizer.
-  ///
-  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   const SpaceXYZMobilizer<T>& set_angles(
       systems::Context<T>* context,
       const Vector3<T>& angles) const;
@@ -132,7 +129,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// angles θ₁, θ₂, θ₃ that correspond to this rotation.
   /// See @ref RotationMatrix<T>::ProjectToRotationMatrix
   ///
-  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   /// @throws std::logic_error if an improper rotation results after projection
   /// of `R_FM`, that is, if the projected matrix's determinant is `-1`.
   const SpaceXYZMobilizer<T>& SetFromRotationMatrix(
@@ -150,8 +146,6 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @note Many dynamicists follow the convention of expressing angular
   /// velocity in the outboard frame M; we return it expressed in the inboard
   /// frame F. That is, this method returns `W_FM_F`.
-  ///
-  /// @throws std::logic_error if `context` is not a valid MultibodyTreeContext.
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const;
 
   /// Sets in `context` the state for `this` mobilizer so that the angular
@@ -185,7 +179,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// frame F and the outboard frame M as a function of the space x-y-z angles
   /// θ₁, θ₂, θ₃ stored in `context`.
   Isometry3<T> CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context) const override;
+      const systems::Context<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   /// M measured and expressed in frame F as a function of the space x-y-z
@@ -193,7 +187,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// velocity v which contains the components of the angular velocity `w_FM`
   /// expressed in frame F.
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override;
 
   /// Computes the across-mobilizer acceleration `A_FM(q, v, v̇)` of the
@@ -206,11 +200,11 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// @ref Dt_multibody_quantities for our notation of time derivatives in
   /// different reference frames).
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
   void ProjectSpatialForce(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
@@ -233,7 +227,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   /// the cosine of θ₂ is smaller than 10⁻³, a number arbitrarily chosen to this
   /// end.
   void MapVelocityToQDot(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override;
 
@@ -250,17 +244,17 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   ///   A vector of generalized velocities for this Mobilizer which should
   ///   correspond to a vector in ℝ³ for an angular velocity `w_FM` of M in F.
   void MapQDotToVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override;
 
 
  protected:
-  void DoCalcNMatrix(const MultibodyTreeContext<T>& context,
+  void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
@@ -268,6 +262,9 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
   typedef MobilizerImpl<T, 3, 3> MobilizerBase;
@@ -297,3 +294,6 @@ DRAKE_DEPRECATED(
 
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::SpaceXYZMobilizer)

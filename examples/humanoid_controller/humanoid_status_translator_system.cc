@@ -17,7 +17,7 @@ RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
 
   DeclareAbstractInputPort(
       systems::kUseDefaultName,
-      systems::Value<bot_core::robot_state_t>{});
+      Value<bot_core::robot_state_t>{});
   DeclareAbstractOutputPort<RobotStateMsgToHumanoidStatusSystem,
                             RobotKinematicState<double>>(
       *default_output_,

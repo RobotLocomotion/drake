@@ -8,4 +8,4 @@ RUN set -eux \
 COPY . .
 RUN set -eux \
   && bazel build //tools:drake_visualizer //examples/acrobot:run_passive
-ENTRYPOINT ["drake/setup/ubuntu/docker/entrypoint.sh"]
+ENTRYPOINT ["./setup/ubuntu/docker/entrypoint.sh"]

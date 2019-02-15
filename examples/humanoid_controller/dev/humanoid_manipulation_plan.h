@@ -119,7 +119,7 @@ class HumanoidManipulationPlan
           robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
-      const systems::AbstractValue& plan) override;
+      const AbstractValue& plan) override;
 
   /**
    * Updates the X and Y dimension of the desired linear momentum change in

@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/joint_actuator.h"
@@ -49,25 +50,6 @@ namespace multibody {
 ///     author should take care to choose a reasonable model instance.
 /// * ForceElement: Depends on the type of element
 ///   * UniformGravityFieldElement: uses the world model instance
-
-// Note:
-//   static global variables are strongly discouraged by the C++ style guide:
-// https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-// For this reason, we create and return an instance of ModelInstanceIndex
-// instead of using a static variable.
-
-/// Returns the model instance containing the *world* body.  For
-/// every MultibodyTree the **world** body _always_ has this unique
-/// model instance and it is always zero (as described in #3088).
-inline ModelInstanceIndex world_model_instance() {
-  return ModelInstanceIndex(0);
-}
-
-/// Returns the model instance which contains all tree elements with
-/// no explicit model instance specified.
-inline ModelInstanceIndex default_model_instance() {
-  return ModelInstanceIndex(1);
-}
 
 namespace internal {
 
@@ -180,3 +162,6 @@ class ModelInstance :
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::ModelInstance)
