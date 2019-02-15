@@ -27,20 +27,15 @@ using std::sort;
 using symbolic::Expression;
 using symbolic::Variable;
 
-#ifdef DRAKE_ASSERT_IS_DISARMED
 // With assertion disarmed, expect no exception.
 #define EXPECT_THROW_IF_ARMED(expression, exception) \
-do {\
-  EXPECT_NO_THROW(expression); \
-} while (0)
-
-#else
-
-#define EXPECT_THROW_IF_ARMED(expression, exception) \
 do { \
-  EXPECT_THROW(expression, exception); \
+  if (kDrakeAssertIsArmed) { \
+    EXPECT_THROW(expression, exception); \
+  } else { \
+    EXPECT_NO_THROW(expression); \
+  } \
 } while (0)
-#endif
 
 constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 

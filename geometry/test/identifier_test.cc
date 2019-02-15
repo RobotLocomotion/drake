@@ -193,13 +193,12 @@ TEST_F(IdentifierTests, Convertible) {
 }
 
 // Suite of tests to catch the debug-build assertions.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-
 class IdentifierDeathTests : public IdentifierTests {};
 
 // Attempting to acquire the value is an error.
 TEST_F(IdentifierDeathTests, InvalidGetValueCall) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (kDrakeAssertIsDisarmed) { return ; }
   AId invalid;
   int64_t value = -1;
   ASSERT_DEATH(
@@ -213,6 +212,7 @@ TEST_F(IdentifierDeathTests, InvalidGetValueCall) {
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierDeathTests, InvlalidEqualityCompare) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (kDrakeAssertIsDisarmed) { return ; }
   AId invalid;
   bool result = true;
   EXPECT_DEATH(
@@ -226,6 +226,7 @@ TEST_F(IdentifierDeathTests, InvlalidEqualityCompare) {
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierDeathTests, InvlalidInequalityCompare) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (kDrakeAssertIsDisarmed) { return ; }
   AId invalid;
   bool result = true;
   EXPECT_DEATH(
@@ -239,6 +240,7 @@ TEST_F(IdentifierDeathTests, InvlalidInequalityCompare) {
 // Hashing an invalid id is an error.
 TEST_F(IdentifierDeathTests, InvalidHash) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (kDrakeAssertIsDisarmed) { return ; }
   std::unordered_set<AId> ids;
   AId invalid;
   ASSERT_DEATH({ids.insert(invalid);}, "");
@@ -247,12 +249,11 @@ TEST_F(IdentifierDeathTests, InvalidHash) {
 // Streaming an invalid id is an error.
 TEST_F(IdentifierDeathTests, InvalidStream) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+  if (kDrakeAssertIsDisarmed) { return ; }
   AId invalid;
   std::stringstream ss;
   ASSERT_DEATH({ss << invalid;}, "");
 }
-
-#endif  // DRAKE_ASSERT_IS_DISARMED
 
 }  // namespace
 }  // namespace geometry

@@ -377,14 +377,14 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   EXPECT_EQ(string_entry().GetKnownUpToDate<string>(context_), "initial");
   EXPECT_EQ(string_value.serial_number(), expected_serial_num);  // No change.
 
-// In Debug we have an expensive check that the output type provided to
-// Calc() has the right concrete type. Make sure it works.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  auto bad_out = AbstractValue::Make<double>(3.14);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      string_entry().Calc(context_, &*bad_out), std::logic_error,
-      ".*Calc().*expected.*type.*string.*but got.*double.*");
-#endif
+  // In Debug we have an expensive check that the output type provided to
+  // Calc() has the right concrete type. Make sure it works.
+  if (kDrakeAssertIsArmed) {
+    auto bad_out = AbstractValue::Make<double>(3.14);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        string_entry().Calc(context_, &*bad_out), std::logic_error,
+        ".*Calc().*expected.*type.*string.*but got.*double.*");
+  }
 
   // The value is currently marked up to date, so Eval does nothing.
   const string& result = string_entry().Eval<string>(context_);
@@ -587,17 +587,18 @@ TEST_F(CacheEntryTest, CanSwapValue) {
   EXPECT_EQ(entry_value.get_value<string>(), "new value");
   EXPECT_EQ(string_entry().GetKnownUpToDate<string>(context_), "new value");
 
-// In Debug builds, try a bad swap and expect it to be caught.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  std::unique_ptr<AbstractValue> empty_ptr;
-  DRAKE_EXPECT_THROWS_MESSAGE(entry_value.swap_value(&empty_ptr),
-                              std::logic_error,
-                              ".*swap_value().*value.*empty.*");
-  auto bad_value = AbstractValue::Make<int>(29);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      entry_value.swap_value(&bad_value), std::logic_error,
-      ".*swap_value().*value.*wrong concrete type.*int.*[Ee]xpected.*string.*");
-#endif
+  // In Debug builds, try a bad swap and expect it to be caught.
+  if (kDrakeAssertIsArmed) {
+    std::unique_ptr<AbstractValue> empty_ptr;
+    DRAKE_EXPECT_THROWS_MESSAGE(entry_value.swap_value(&empty_ptr),
+                                std::logic_error,
+                                ".*swap_value().*value.*empty.*");
+    auto bad_value = AbstractValue::Make<int>(29);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        entry_value.swap_value(&bad_value), std::logic_error,
+        ".*swap_value().*value.*wrong concrete type.*int.*"
+        "[Ee]xpected.*string.*");
+  }
 }
 
 TEST_F(CacheEntryTest, InvalidationIsRecursive) {
