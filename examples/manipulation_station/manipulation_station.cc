@@ -252,6 +252,7 @@ void ManipulationStation<T>::SetupDopeClutterClearingStation(
     const std::list<std::string> models{
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
+//        "drake/examples/manipulation_station/models/sugar_box_collision.sdf",
         "drake/manipulation/models/ycb/sdf/005_tomato_soup_can.sdf",
         "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf",
         "drake/manipulation/models/ycb/sdf/009_gelatin_box.sdf",
@@ -454,22 +455,30 @@ void ManipulationStation<T>::SetDefaultState(
 
       break;
     case Setup::kDopeClutterClearing:
-      DRAKE_DEMAND(object_ids_.size() == 5);
+      DRAKE_DEMAND(object_ids_.size() == 6);
 
       // Place the cracker box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.55, 0.4));
+      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.55, 0.36));
       X_WObject.set_rotation(RotationMatrix<double>(
           RollPitchYaw<double>(-1.57, 0, 3)));
       plant_->SetFreeBodyPose(plant_context, &plant_state,
                               plant_->get_body(object_ids_[0]),
                               X_WObject.GetAsIsometry3());
 
-      // Place the soup can.
-      X_WObject.set_translation(Eigen::Vector3d(-0.03, -0.57, 0.3));
+      // Place the sugar box.
+      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.33));
+      X_WObject.set_rotation(RotationMatrix<double>(
+          RollPitchYaw<double>(1.57, 1.57, 0)));
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[1]),
+                              X_WObject.GetAsIsometry3());
+
+      // Place the tomato soup can.
+      X_WObject.set_translation(Eigen::Vector3d(-0.03, -0.57, 0.31));
       X_WObject.set_rotation(RotationMatrix<double>(
           RollPitchYaw<double>(-1.57, 0, 3.14)));
       plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[1]),
+                              plant_->get_body(object_ids_[2]),
                               X_WObject.GetAsIsometry3());
 
       // Place the mustard bottle.
@@ -477,29 +486,21 @@ void ManipulationStation<T>::SetDefaultState(
       X_WObject.set_rotation(RotationMatrix<double>(
           RollPitchYaw<double>(-1.57, 0, 3.3)));
       plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[2]),
+                              plant_->get_body(object_ids_[3]),
                               X_WObject.GetAsIsometry3());
 
       // Place the gelatin box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.35));
+      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.38));
       X_WObject.set_rotation(RotationMatrix<double>(
           RollPitchYaw<double>(-1.57, 0, 3.7)));
       plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[3]),
+                              plant_->get_body(object_ids_[4]),
                               X_WObject.GetAsIsometry3());
 
       // Place the potted meat can.
       X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.3));
       X_WObject.set_rotation(RotationMatrix<double>(
           RollPitchYaw<double>(-1.57, 0, 2.5)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[4]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the sugar box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.32));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(1.57, 1.57, 0)));
       plant_->SetFreeBodyPose(plant_context, &plant_state,
                               plant_->get_body(object_ids_[5]),
                               X_WObject.GetAsIsometry3());
@@ -631,14 +632,14 @@ void ManipulationStation<T>::Finalize() {
       // the picking bin.
       q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
 
-//      std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
-//          y(-0.8, -.55), z(0.3, 0.35);
-//      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
-//      for (const auto body_index : object_ids_) {
-//        const multibody::Body<T>& body = plant_->get_body(body_index);
-//        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
-//        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
-//      }
+      std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
+          y(-0.8, -.55), z(0.3, 0.35);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
       break;
     }
   }

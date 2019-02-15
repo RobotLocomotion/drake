@@ -29,6 +29,7 @@ DEFINE_double(target_realtime_rate, 1.0,
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, 4.0, "Simulation duration.");
 DEFINE_bool(test, false, "Disable random initial conditions in test mode.");
+DEFINE_bool(dope, false, "Use DOPE clutter clearing example.");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -37,7 +38,12 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->SetupDopeClutterClearingStation(); // CHANGED from normal clutter clearing
+  // CHANGED from normal clutter clearing
+  if (FLAGS_dope) {
+    station->SetupDopeClutterClearingStation();
+  } else {
+    station->SetupClutterClearingStation();
+  }
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
