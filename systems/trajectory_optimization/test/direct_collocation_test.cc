@@ -130,6 +130,7 @@ GTEST_TEST(DirectCollocationTest, TestReconstruction) {
   // Pretends that the solver has solved the optimization problem, and set the
   // decision variable to some user-specified values.
   solvers::MathematicalProgramResult result;
+  result.set_decision_variable_index(prog.decision_variable_index());
   result.set_solver_id(solvers::SolverId("dummy"));
   result.set_x_val(
       Eigen::VectorXd::LinSpaced(prog.num_vars(), 1, prog.num_vars()));
@@ -209,8 +210,7 @@ GTEST_TEST(DirectCollocationTest, DoubleIntegratorTest) {
   prog.AddFinalCost(prog.time().cast<symbolic::Expression>());
 
   const solvers::MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // Solution should be bang-band (u = +1 then -1).
   int i = 0;
@@ -245,8 +245,7 @@ GTEST_TEST(DirectCollocationTest, MinimumTimeTest) {
   prog.AddFinalCost(prog.time().cast<symbolic::Expression>());
 
   const solvers::MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // Solution should have total time equal to 0.5.
   double total_time = 0;
@@ -274,8 +273,7 @@ GTEST_TEST(DirectCollocationTest, NoInputs) {
   prog.AddLinearConstraint(prog.initial_state() == Vector1d(x0));
 
   const solvers::MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   const double duration = (kNumSampleTimes - 1) * kFixedTimeStep;
   EXPECT_NEAR(result.GetSolution(prog.final_state())(0),

@@ -294,8 +294,7 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   prog.AddFinalCost(prog.state() * prog.state());
 
   const solvers::MathematicalProgramResult result = Solve(prog);
-  EXPECT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // Compute the expected cost as c[N] + \Sum_{i = 0...N-1} h * c[i]
   //   where c[i] is the running cost and c[N] is the terminal cost.

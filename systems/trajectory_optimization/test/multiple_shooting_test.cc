@@ -102,8 +102,7 @@ GTEST_TEST(MultipleShootingTest, VariableTimestepTest) {
 
   EXPECT_EQ(prog.num_vars(), 7);
   const solvers::MathematicalProgramResult result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   const Eigen::VectorXd times = prog.GetSampleTimes(result);
   EXPECT_EQ(times.size(), 2);
   EXPECT_NEAR(times[0], 0.0, kSolverTolerance);
@@ -141,9 +140,10 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
 
   solvers::MathematicalProgramResult result;
   // Arbitrarily set the decision variable values to 0.
+  result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(Eigen::VectorXd::Zero(prog.num_vars()));
-  EXPECT_THROW(result.GetSolution(t(0)), std::runtime_error);
-  EXPECT_THROW(result.GetSolution(u), std::runtime_error);
+  EXPECT_THROW(result.GetSolution(t(0)), std::exception);
+  EXPECT_THROW(result.GetSolution(u), std::exception);
 }
 
 GTEST_TEST(MultipleShootingTest, PlaceholderVariableNames) {
@@ -170,8 +170,7 @@ GTEST_TEST(MultipleShootingTest, TimeIntervalBoundsTest) {
 
   prog.AddTimeIntervalBounds(.5, .5);
   const solvers::MathematicalProgramResult result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.h_vars()),
                               Eigen::Vector2d(0.5, 0.5), 1e-6));
 }
@@ -192,8 +191,7 @@ GTEST_TEST(MultipleShootingTest, EqualTimeIntervalsTest) {
 
   const solvers::MathematicalProgramResult result =
       Solve(prog, prog.initial_guess());
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(prog.timestep(0).coeff(0)),
               result.GetSolution(prog.timestep(1).coeff(0)),
               kSolverTolerance);
@@ -219,8 +217,7 @@ GTEST_TEST(MultipleShootingTest, DurationConstraintTest) {
 
   const solvers::MathematicalProgramResult result =
       Solve(prog, prog.initial_guess());
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.GetSolution(prog.h_vars()).sum(), .5, 1e-6);
 }
 
@@ -237,8 +234,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   prog.AddConstraintToAllKnotPoints(prog.state() == state_value);
 
   solvers::MathematicalProgramResult result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   for (int i = 0; i < kNumSampleTimes; i++) {
     // osqp can fail in polishing step, such that the accuracy cannot reach
     // 1E-6.
@@ -252,8 +248,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
   const solvers::VectorXDecisionVariable& u = prog.input();
   prog.AddConstraintToAllKnotPoints(u == t);
   result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   // u(0) = 0.
   EXPECT_NEAR(result.GetSolution(prog.input(0).coeff(0)), 0.0, 1e-6);
   // u(1) = h(0).
@@ -277,8 +272,7 @@ GTEST_TEST(MultipleShootingTest, FinalCostTest) {
 
   prog.AddFinalCost(error.dot(error));
   const solvers::MathematicalProgramResult result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  ASSERT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 0.0, kSolverTolerance);
   EXPECT_TRUE(CompareMatrices(result.GetSolution(prog.state(1)),
                               desired_state, kSolverTolerance));
@@ -376,6 +370,7 @@ GTEST_TEST(MultipleShootingTest, InitialGuessTest) {
   // the solution to prog.initial_guess().
   solvers::MathematicalProgramResult result;
   result.set_solver_id(solvers::SolverId("dummy"));
+  result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(prog.initial_guess());
   EXPECT_EQ(prog.GetSampleTimes(result), Eigen::Vector3d(0.0, 0.5, 1.0));
 
@@ -417,6 +412,7 @@ GTEST_TEST(MultipleShootingTest, ResultSamplesTest) {
   // the solution to prog.initial_guess().
   solvers::MathematicalProgramResult result;
   result.set_solver_id(solvers::SolverId("dummy"));
+  result.set_decision_variable_index(prog.decision_variable_index());
   result.set_x_val(prog.initial_guess());
 
   EXPECT_TRUE(CompareMatrices(prog.GetSampleTimes(result),
