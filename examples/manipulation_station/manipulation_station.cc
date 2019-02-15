@@ -252,7 +252,6 @@ void ManipulationStation<T>::SetupDopeClutterClearingStation(
     const std::list<std::string> models{
         "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
         "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
-//        "drake/examples/manipulation_station/models/sugar_box_collision.sdf",
         "drake/manipulation/models/ycb/sdf/005_tomato_soup_can.sdf",
         "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf",
         "drake/manipulation/models/ycb/sdf/009_gelatin_box.sdf",
