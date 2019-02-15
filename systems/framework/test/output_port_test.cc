@@ -143,16 +143,16 @@ GTEST_TEST(TestBaseClass, BadOutputType) {
 
   EXPECT_NO_THROW(port.Calc(*context, good_port_value.get()));
 
-// This message is thrown in Debug. In Release some other error may trigger
-// but not from OutputPort, so we can't use
-// DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED() which would insist that if any
-// message is thrown in Release it must be the expected one.
-#ifndef DRAKE_ASSERT_IS_DISARMED
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      port.Calc(*context, bad_port_value.get()), std::logic_error,
-      "OutputPort::Calc().*expected.*MyVector.*but got.*std::string"
-      ".*OutputPort\\[0\\].*");
-#endif
+  // This message is thrown in Debug. In Release some other error may trigger
+  // but not from OutputPort, so we can't use
+  // DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED() which would insist that if any
+  // message is thrown in Release it must be the expected one.
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        port.Calc(*context, bad_port_value.get()), std::logic_error,
+        "OutputPort::Calc().*expected.*MyVector.*but got.*std::string"
+        ".*OutputPort\\[0\\].*");
+  }
 }
 
 // These functions match the signatures required by LeafOutputPort.
@@ -302,8 +302,11 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
 // Check that Debug builds catch bad output types. We can't run these tests
 // unchecked since the results would be indeterminate -- they may run to
 // completion or segfault depending on memory contents.
-#ifndef DRAKE_ASSERT_IS_DISARMED
 TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
+  if (kDrakeAssertIsDisarmed) {
+    return;
+  }
+
   // The abstract port is a string; let's give it an int.
   auto good_out = absport_general_.Allocate();
   auto bad_out = AbstractValue::Make<int>(5);
@@ -320,7 +323,6 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
       vecport_general_.Calc(*context_, bad_vec.get()), std::logic_error,
       "OutputPort::Calc().*expected.*MyVector.*got.*BasicVector.*");
 }
-#endif
 
 // For testing diagram output ports we need a couple of subsystems that have
 // recognizably different Contexts so we can verify that (1) the diagram exports

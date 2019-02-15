@@ -3,6 +3,8 @@
 #include <regex>
 #include <string>
 
+#include "drake/common/drake_assert.h"
+
 // TODO(sherm1) Add unit tests for these macros. See issue #8403.
 
 #ifdef DRAKE_DOXYGEN_CXX
@@ -41,14 +43,15 @@ whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do be default.
 /** Same as `DRAKE_ASSERT_THROWS_MESSAGE` in Debug builds, but doesn't require
 a throw in Release builds. However, if the Release build does throw it must
 throw the right message. More precisely, the thrown message is required
-whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do be default.
+whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do by default.
 @see DRAKE_ASSERT_THROWS_MESSAGE */
 #define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp)
-#endif
 
-#ifndef DRAKE_DOXYGEN_CXX
-#define DRAKE_EXPECT_THROWS_MESSAGE_HELPER(expression, exception, regexp, \
-                                           must_throw, fatal_failure) \
+#else  // DRAKE_DOXYGEN_CXX
+
+#define DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+    expression, exception, regexp, must_throw, fatal_failure) \
+do { \
 try { \
   expression; \
   if (must_throw) { \
@@ -66,35 +69,27 @@ try { \
   } else { \
     EXPECT_PRED2(matcher, err.what(), regexp); \
   } \
-}
+} \
+} while (0)
 
 #define DRAKE_EXPECT_THROWS_MESSAGE(expression, exception, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER(expression, exception, regexp, \
-                                     true /*must_throw*/, false /*non-fatal*/)
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, exception, regexp, \
+      true /*must_throw*/, false /*non-fatal*/)
 
 #define DRAKE_ASSERT_THROWS_MESSAGE(expression, exception, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER(expression, exception, regexp, \
-                                     true /*must_throw*/, true /*fatal*/)
-
-#ifdef DRAKE_ASSERT_IS_DISARMED
-// Throwing the expected message is optional in this case.
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, exception, regexp, \
+      true /*must_throw*/, true /*fatal*/)
 
 #define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER(expression, exception, regexp, \
-                                     false /*optional*/, false /*non-fatal*/)
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, exception, regexp, \
+      ::drake::kDrakeAssertIsArmed /*must_throw*/, false /*non-fatal*/)
 
 #define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE_HELPER(expression, exception, regexp, \
-                                     false /*optional*/, true /*fatal*/)
+  DRAKE_EXPECT_THROWS_MESSAGE_HELPER( \
+      expression, exception, regexp, \
+      ::drake::kDrakeAssertIsArmed /*must_throw*/, true /*fatal*/)
 
-#else
-// Throwing the expected message is required in this case.
-
-#define DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp) \
-  DRAKE_EXPECT_THROWS_MESSAGE(expression, exception, regexp)
-
-#define DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(expression, exception, regexp) \
-  DRAKE_ASSERT_THROWS_MESSAGE(expression, exception, regexp)
-
-#endif
-#endif
+#endif  // DRAKE_DOXYGEN_CXX

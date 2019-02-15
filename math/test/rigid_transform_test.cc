@@ -55,7 +55,6 @@ RotationMatrix<double> GetRotationMatrixB() {
   return RotationMatrix<double>(m);
 }
 
-#ifdef DRAKE_ASSERT_IS_ARMED
 // Helper function to create an invalid rotation matrix.
 Matrix3d GetBadRotationMatrix() {
   const double theta = 0.5;
@@ -66,7 +65,6 @@ Matrix3d GetBadRotationMatrix() {
        0, -sin_theta, cos_theta;
   return m;
 }
-#endif
 
 // Helper functions to create generic position vectors.
 Vector3d GetPositionVectorA() { return Vector3d(2, 3, 4); }
@@ -108,7 +106,6 @@ GTEST_TEST(RigidTransform, ConstructorAndSet) {
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
-#ifdef DRAKE_ASSERT_IS_ARMED
   // Bad rotation matrix should throw exception.
   // Note: Although this test seems redundant with similar tests for the
   // RotationMatrix class, it is here due to the bug (mentioned below) in
@@ -116,9 +113,10 @@ GTEST_TEST(RigidTransform, ConstructorAndSet) {
   // an extra set of parentheses around its first argument) with the use of
   // EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error); below.
   const Matrix3d bad = GetBadRotationMatrix();
-  EXPECT_THROW(RigidTransform<double>(RotationMatrix<double>(bad), p),
-               std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(RigidTransform<double>(RotationMatrix<double>(bad), p),
+                 std::logic_error);
+  }
 }
 
 // Tests constructing a RigidTransform from just a RotationMatrix.
@@ -259,7 +257,6 @@ GTEST_TEST(RigidTransform, Isometry3) {
   EXPECT_TRUE((zero_rotation.array() == 0).all());
   EXPECT_TRUE((zero_position.array() == 0).all());
 
-#ifdef DRAKE_ASSERT_IS_ARMED
   // Bad matrix should throw exception.
   const Matrix3d bad = GetBadRotationMatrix();
   Isometry3<double> isometryC;
@@ -269,8 +266,9 @@ GTEST_TEST(RigidTransform, Isometry3) {
   // The default RigidTransform constructor does not throw an exception which
   // means the EXPECT_THROW fails.  The fix (credit Sherm) was to add an extra
   // set of parentheses around the first argument of EXPECT_THROW.
-  EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW((RigidTransform<double>(isometryC)), std::logic_error);
+  }
 }
 
 // Tests method Identity (identity rotation matrix and zero vector).
