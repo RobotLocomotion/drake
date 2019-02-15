@@ -3,7 +3,10 @@ from __future__ import print_function, absolute_import
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.gurobi import GurobiSolver
 from pydrake.solvers.snopt import SnoptSolver
-from pydrake.solvers.mathematicalprogram import SolverType
+from pydrake.solvers.mathematicalprogram import (
+    SolverOptions,
+    SolverType
+    )
 
 import unittest
 import warnings
@@ -49,6 +52,50 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(vars.dtype, sym.Variable)
         vars_all = prog.decision_variables()
         self.assertEqual(vars_all.shape, (5,))
+
+    def test_program_attributes_and_solver_selection(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        # Add linear equality constraints; make sure the solver works.
+        prog.AddLinearConstraint(x[0] + x[1] == 0)
+        prog.AddLinearConstraint(2*x[0] - x[1] == 1)
+        solver_id = mp.ChooseBestSolver(prog)
+        self.assertEqual(solver_id.name(), "Linear system")
+        solver = mp.MakeSolver(solver_id)
+        self.assertEqual(solver.solver_id().name(), "Linear system")
+        self.assertTrue(solver.AreProgramAttributesSatisfied(prog))
+        result = solver.Solve(prog, None, None)
+        self.assertTrue(result.is_success())
+
+        # With an inequality constraint added, the "Linear system" solver
+        # doesn't work anymore.
+        prog.AddLinearConstraint(x[0] >= 0)
+        self.assertFalse(solver.AreProgramAttributesSatisfied(prog))
+        with self.assertRaises(ValueError):
+            solver.Solve(prog, None, None)
+
+        # A different solver will work, though.  We re-use the result object
+        # (as a mutable output argument), and make sure that it changes.
+        solver_id = mp.ChooseBestSolver(prog)
+        self.assertNotEqual(solver_id.name(), "Linear system")
+        solver = mp.MakeSolver(solver_id)
+        solver.Solve(prog, None, None, result)
+        self.assertTrue(result.is_success())
+        self.assertEqual(result.get_solver_id().name(), solver_id.name())
+
+    def test_module_level_solve_function_and_result_accessors(self):
+        qp = TestQP()
+        x_expected = np.array([1, 1])
+        result = mp.Solve(qp.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.get_x_val(), x_expected))
+        self.assertEqual(result.get_solution_result(),
+                         mp.SolutionResult.kSolutionFound)
+        self.assertEqual(result.get_optimal_cost(), 3.0)
+        self.assertTrue(result.get_solver_id().name())
+        self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
+        self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
 
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):
@@ -460,3 +507,7 @@ class TestMathematicalProgram(unittest.TestCase):
         options = prog.GetSolverOptions(SolverType.kGurobi)
         self.assertDictEqual(
             options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+
+        # For now, just make sure the constructor exists.  Once we bind more
+        # accessors, we can test them here.
+        options_object = SolverOptions()
