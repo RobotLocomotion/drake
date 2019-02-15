@@ -250,10 +250,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::VectorXd GetSampleTimes(
       const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const;
 
-  /// Returns a vector containing the elapsed time at each knot point at the
-  /// solution.
   // TODO(hongkai.dai): remove this function in the future, use the one with
   // MathematicalProgramResult& as the input.
+  /// Returns a vector containing the elapsed time at each knot point at the
+  /// solution.
   Eigen::VectorXd GetSampleTimes() const {
     return GetSampleTimes(this->GetSolution(h_vars_));
   }
@@ -263,10 +263,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
     return GetSampleTimes(result.GetSolution(h_vars_));
   }
 
-  /// Returns a matrix containing the input values (arranged in columns) at
-  /// each knot point at the solution.
   // TODO(hongkai.dai): remove this function in the future, use the one with
   // MathematicalProgramResult& as the input.
+  /// Returns a matrix containing the input values (arranged in columns) at
+  /// each knot point at the solution.
   Eigen::MatrixXd GetInputSamples() const;
 
   /// Returns a matrix containing the input values (arranged in columns) at
@@ -274,10 +274,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::MatrixXd GetInputSamples(
       const solvers::MathematicalProgramResult& result) const;
 
-  /// Returns a matrix containing the state values (arranged in columns) at
-  /// each knot point at the solution.
   // TODO(hongkai.dai): remove this function in the future, use the one with
   // MathematicalProgramResult& as the input.
+  /// Returns a matrix containing the state values (arranged in columns) at
+  /// each knot point at the solution.
   Eigen::MatrixXd GetStateSamples() const;
 
   /// Returns a matrix containing the state values (arranged in columns) at
@@ -285,12 +285,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::MatrixXd GetStateSamples(
       const solvers::MathematicalProgramResult& result) const;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input
   /// port.
-  // TODO(hongkai.dai): remove this function in the future, use the one with
-  // MathematicalProgramResult& as the input.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
@@ -304,11 +304,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
         "The derived class has to override this function.");
   }
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
-  // TODO(hongkai.dai): remove this function in the future, use the one with
-  // MathematicalProgramResult& as the input.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
 
