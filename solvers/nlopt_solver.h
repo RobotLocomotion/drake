@@ -8,19 +8,22 @@
 namespace drake {
 namespace solvers {
 /**
- * The NLopt solver details after calling Solve() function. The users can call
- * MathematicalProgramResult::get_solver_details().GetValue<NloptSolverDetails>()
- * to obtain the details.
+ * The NLopt solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<NloptSolver>() to obtain the
+ * details.
  */
 struct NloptSolverDetails {
-  // The return status of NLopt solver. Please refer to
-  // https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
+  /// The return status of NLopt solver. Please refer to
+  /// https://nlopt.readthedocs.io/en/latest/NLopt_Reference/#return-values.
   int status{};
 };
 
 class NloptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NloptSolver)
+
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = NloptSolverDetails;
 
   NloptSolver();
   ~NloptSolver() final;

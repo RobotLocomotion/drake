@@ -6,9 +6,9 @@
 namespace drake {
 namespace solvers {
 /**
- * The OSQP solver details after calling Solve function in OsqpSolver. The user
- * can obtain the details from
- * MathematicalProgramResult.get_solver_details().GetValue<OsqpSolverDetails>();
+ * The OSQP solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<OsqpSolver>() to obtain the
+ * details.
  */
 struct OsqpSolverDetails {
   /// Number of iterations taken.
@@ -33,6 +33,9 @@ struct OsqpSolverDetails {
 class OsqpSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OsqpSolver)
+
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = OsqpSolverDetails;
 
   OsqpSolver();
   ~OsqpSolver() final;

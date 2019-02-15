@@ -931,9 +931,8 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   MathematicalProgramResult result;
   Solve(prog, {}, {}, &result);
   SolverResult solver_result = result.ConvertToSolverResult();
-  const double objective_bound = result.get_solver_details()
-                                     .GetValue<GurobiSolverDetails>()
-                                     .objective_bound;
+  const double objective_bound =
+      result.get_solver_details<GurobiSolver>().objective_bound;
   if (!std::isnan(objective_bound)) {
     solver_result.set_optimal_cost_lower_bound(objective_bound);
   }

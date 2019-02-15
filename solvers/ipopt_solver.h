@@ -12,9 +12,9 @@ namespace drake {
 namespace solvers {
 
 /**
- * The details of IPOPT solvers after calling Solve function. The users can get
- * the details by
- * MathematicalProgramResult::get_solver_details().GetValue<IpoptSolverDetails>();
+ * The Ipopt solver details after calling Solve() function. The user can call
+ * MathematicalProgramResult::get_solver_details<IpoptSolver>() to obtain the
+ * details.
  */
 struct IpoptSolverDetails {
   /**
@@ -43,6 +43,9 @@ struct IpoptSolverDetails {
 class IpoptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver)
+
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = IpoptSolverDetails;
 
   IpoptSolver();
   ~IpoptSolver() final;
