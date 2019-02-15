@@ -81,8 +81,7 @@ void ComputeRegionOfAttraction() {
   prog.AddSosConstraint((V - rho) * x.dot(x) - lambda * Vdot);
   prog.AddLinearCost(-rho);
   const solvers::MathematicalProgramResult result = Solve(prog);
-  DRAKE_DEMAND(result.get_solution_result() ==
-               solvers::SolutionResult::kSolutionFound);
+  DRAKE_DEMAND(result.is_success());
 
   cout << "Verified that " << V << " < " << result.GetSolution(rho)
        << " is in the region of attraction." << endl;

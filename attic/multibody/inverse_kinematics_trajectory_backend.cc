@@ -542,8 +542,7 @@ void inverseKinTrajBackend(RigidBodyTree<double>* model, const int nT,
     prog.AddConstraint(inbetween_constraint, {q, qdot0, qdotf});
   }
 
-  const solvers::MathematicalProgramResult result =
-      Solve(prog, prog.initial_guess());
+  const solvers::MathematicalProgramResult result = Solve(prog);
   *info = GetIKSolverInfo(result.get_solution_result());
 
   // Populate the output arguments.

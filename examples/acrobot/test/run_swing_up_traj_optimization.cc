@@ -68,7 +68,7 @@ int do_main() {
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
   const auto result = solvers::Solve(dircol);
-  if (result.get_solution_result() != SolutionResult::kSolutionFound) {
+  if (!result.is_success()) {
     std::cerr << "No solution found.\n";
     return 1;
   }

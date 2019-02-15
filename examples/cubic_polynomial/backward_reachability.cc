@@ -182,8 +182,7 @@ void ComputeBackwardReachableSet() {
 
   const solvers::MathematicalProgramResult result = Solve(prog);
   DRAKE_DEMAND(result.get_solver_id() == solvers::MosekSolver::id());
-  DRAKE_DEMAND(result.get_solution_result() ==
-               solvers::SolutionResult::kSolutionFound);
+  DRAKE_DEMAND(result.is_success());
 
   // Print the solution (if one is found).
   cout << " Solution found with optimal cost: " << result.get_optimal_cost()

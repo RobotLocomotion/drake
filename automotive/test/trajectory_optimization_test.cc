@@ -103,8 +103,7 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
   prog.SetInitialTrajectory(trajectories::PiecewisePolynomial<double>(),
                             initial_state_trajectory);
   const auto result = solvers::Solve(prog);
-  EXPECT_EQ(result.get_solution_result(),
-            solvers::SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // Plot the solution.
   // Note: see call_matlab.h for instructions on viewing the plot.

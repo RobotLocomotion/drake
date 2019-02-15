@@ -72,7 +72,7 @@ int DoMain() {
       {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
   dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
   const auto result = solvers::Solve(dircol);
-  if (result.get_solution_result() != SolutionResult::kSolutionFound) {
+  if (!result.is_success()) {
     std::cerr << "Failed to solve optimization for the swing-up trajectory"
               << std::endl;
     return 1;

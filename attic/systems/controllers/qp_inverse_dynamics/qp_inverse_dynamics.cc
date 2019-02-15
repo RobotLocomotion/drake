@@ -617,9 +617,9 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
 
   ////////////////////////////////////////////////////////////////////
   // Call solver.
-  solvers::MathematicalProgramResult result;
-  solver_.Solve(*(prog_.get()), {}, {}, &result);
-  if (result.get_solution_result() != solvers::SolutionResult::kSolutionFound) {
+  const solvers::MathematicalProgramResult result =
+      solver_.Solve(*prog_, {}, {});
+  if (!result.is_success()) {
     drake::log()->warn("Solution not found.");
     return -1;
   }

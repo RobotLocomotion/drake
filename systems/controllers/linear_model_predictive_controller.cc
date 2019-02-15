@@ -108,8 +108,7 @@ VectorX<T> LinearModelPredictiveController<T>::SetupAndSolveQp(
   prog.AddLinearConstraint(prog.initial_state() == current_state - state_ref);
 
   const auto result = Solve(prog);
-  DRAKE_DEMAND(result.get_solution_result() ==
-               solvers::SolutionResult::kSolutionFound);
+  DRAKE_DEMAND(result.is_success());
 
   return prog.GetInputSamples(result).col(0);
 }
