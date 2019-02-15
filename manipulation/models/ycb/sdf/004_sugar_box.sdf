@@ -11,7 +11,7 @@
   -->
   <link name="base_link_sugar">
     <inertial>
-      <pose frame=''>-0.018  0.088  0.0039 -0.77 -1.52 2.36</pose>
+      <pose frame=''>0 0 0 0 0 0</pose>
       <mass>0.514000</mass>
         <inertia>
           <ixx>0.001418</ixx>
