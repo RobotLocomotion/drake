@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/optimization/test/system_optimization_test_util.h"
@@ -124,6 +125,8 @@ GTEST_TEST(SystemConstraintAdapterTest,
           system.constraint_index(), *context_symbolic);
   EXPECT_TRUE(binding.has_value());
   // We make no promise on the ordering of the bound variables.
+  // TODO(hongkai.dai): t is not used in evaluating the system constraint. Hence
+  // it is better to remove t from the bound variables.
   EXPECT_EQ(symbolic::Variables(binding->variables()),
             symbolic::Variables(Vector3<symbolic::Variable>(a, t, b)));
   double a_val = 2;
@@ -185,6 +188,45 @@ GTEST_TEST(SystemConstraintAdapterTest,
   EXPECT_TRUE(CompareMatrices(
       math::autoDiffToGradientMatrix(constraint_autodiff),
       math::autoDiffToGradientMatrix(constraint_autodiff_expected), tol));
+
+  // If the context contains complicated symbolic expressions (other than a
+  // variable and a constant), the adapter won't be able to create the generic
+  // constraint.
+  context_symbolic->get_mutable_continuous_state_vector().GetAtIndex(0) = a + b;
+  EXPECT_FALSE(adapter
+                   .MaybeCreateGenericConstraintSymbolically(
+                       system.constraint_index(), *context_symbolic)
+                   .has_value());
+}
+
+GTEST_TEST(SystemConstraintAdapterTest,
+           MaybeCreateGenericConstraintSymbolicallyFailure) {
+  auto check_failure = [](const DummySystem<double>& system,
+                          const std::string failure_msg) {
+    SystemConstraintAdapter adapter(&system);
+    auto context = adapter.system_symbolic().CreateDefaultContext();
+    symbolic::Variable a("a");
+    symbolic::Variable b("b");
+    symbolic::Variable t("t");
+    context->get_mutable_continuous_state_vector().GetAtIndex(0) = a;
+    context->get_mutable_numeric_parameter(0).GetAtIndex(0) = b;
+    context->set_time(t);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        adapter.MaybeCreateGenericConstraintSymbolically(
+            system.constraint_index(), *context),
+        std::invalid_argument, failure_msg);
+  };
+
+  // With abstract state, no abstract parameters.
+  DummySystem<double> system1(true, false);
+  check_failure(
+      system1,
+      "SystemConstraintAdapter: cannot handle system with abstract state.*");
+  // No abstract state, with abstract parameters.
+  DummySystem<double> system2(false, true);
+  check_failure(system2,
+                "SystemConstraintAdapter: cannot handle system with abstract "
+                "paramter.*");
 }
 
 GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {
