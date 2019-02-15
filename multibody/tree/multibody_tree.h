@@ -2153,12 +2153,12 @@ class MultibodyTree {
   // frame Fq with origin at a point Q are given by:
   //   w_WFq = Jr_WFq⋅v
   //   v_WFq = Jt_WFq⋅v
-  // when computed in terms of generalized velocities (from_qdot = false) or
-  // by:
+  // when computed in terms of generalized velocities
+  // (with_respect_to = JacobianWrtVariable::kV) or by:
   //   w_WFq = Jr_WFq⋅q̇
   //   v_WFq = Jt_WFq⋅q̇
   // when computed in terms of the time derivatives of the generalized
-  // positions (from_qdot = true).
+  // positions (with_respect_to = JacobianWrtVariable::kQDot).
   //
   // This method provides the option to specify whether angular and/or
   // translational terms need to be computed, however the caller must at least
@@ -2173,13 +2173,14 @@ class MultibodyTree {
   // origin at a point Q is the same as that of frame F, for any point Q.
   // That is, w_WFq = w_WF for any point Q. With this in mind, Jr_WFq is
   // defined so that:
-  //   w_WFq = w_WF = Jr_WFq⋅v (or = Jr_WFq⋅q̇ if from_qdot = true).
-  // and therefore Jr_WFq is a matrix with 3 rows and nv columns (or nq
-  // columns when from_qdot = true), with nv and nq the
-  // number of generalized velocities and positions, respectively. If not
-  // nullptr on input, matrix Jr_WFq **must** have the documented size or this
-  // method throws a std::runtime_error exception.
-  //
+  //   w_WFq = w_WF = Jr_WFq⋅v  if with_respect_to = JacobianWrtVariable::kV
+  //   w_WFq = w_WF = Jr_WFq⋅q̇  if with_respect_to = JacobianWrtVariable::kQDot
+  // and therefore Jr_WFq is a matrix with 3 rows and
+  // nv columns if with_respect_to = JacobianWrtVariable::kV or
+  // nq columns if with_respect_to = JacobianWrtVariable::kQDot, where nv and nq
+  // are the number of generalized velocities and positions, respectively.
+  // If not nullptr on input, matrix Jr_WFq **must** have the documented size
+  // or this method throws a std::runtime_error exception.
   //
   //               Format of the Jacobian matrix Jt_WFq
   //
@@ -2187,14 +2188,14 @@ class MultibodyTree {
   // v_WFq = [v_WFq1; v_WFq2; ...] of size 3⋅np, with np the number of
   // points in the input list. Then the translational velocities Jacobian is
   // defined such that:
-  //   v_WFq = Jt_WFq⋅v, when from_qdot = false
-  // or by:
-  //   v_WFq = Jt_WFq⋅q̇, when from_qdot = true
+  //   v_WFq = Jt_WFq⋅v, if with_respect_to = JacobianWrtVariable::kV
+  //   v_WFq = Jt_WFq⋅q̇, if with_respect_to = JacobianWrtVariable::kQDot
   //
-  // Therefore Jt_WFq is a matrix with 3⋅np rows and nv columns (from_qdot =
-  // false) or nq columns (from_qdot = true). If not
-  // nullptr on input, matrix Jt_WFq **must** have the required size or this
-  // method throws a std::runtime_error exception.
+  // Therefore Jt_WFq is a matrix with 3⋅np rows and
+  // nv columns if with_respect_to = JacobianWrtVariable::kV or
+  // nq columns if with_respect_to = JacobianWrtVariable::kQDot
+  // If not nullptr on input, matrix Jt_WFq **must** have the required size or
+  // this method throws a std::runtime_error exception.
   //
   // This helper throws std::runtime_error when:
   // - The number of rows in p_WQ_list does not equal three. That is, p_WQ_list
@@ -2202,15 +2203,15 @@ class MultibodyTree {
   // - Jr_WFq and Jt_WFq are both nullptr (caller must request at least one
   //   Jacobian).
   // - The number of columns of Jr_WFq and/or Jt_WFq does not equal
-  //   num_velocities() (from_qdot = false) or num_positions() (from_qdot =
-  //   true).
+  //   num_velocities() if with_respect_to = JacobianWrtVariable::kV or
+  //   num_positions()  if with_respect_to = JacobianWrtVariable::kQDot.
   // - The number of rows of Jr_WFq does not equal 3.
   // - The number of rows of Jt_WFq does not equal 3⋅np.
   void CalcFrameJacobianExpressedInWorld(
       const systems::Context<T>& context,
       const Frame<T>& frame_F,
       const Eigen::Ref<const MatrixX<T>>& p_WQ_list,
-      bool from_qdot,
+      JacobianWrtVariable with_respect_to,
       EigenPtr<MatrixX<T>> Jr_WFq, EigenPtr<MatrixX<T>> Jt_WFq) const;
 
   // Implementation for CalcMassMatrixViaInverseDynamics().

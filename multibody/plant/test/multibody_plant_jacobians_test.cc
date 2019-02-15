@@ -94,17 +94,32 @@ TEST_F(KukaIiwaModelTests, CalcPointsAnalyticalJacobianExpressedInWorld) {
 }
 
 TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
+  // Herein, E is the robot's end-effector frame and Ep is a point fixed on E.
+  // This test does the following:
+  // 1. Calculates Ep's spatial velocity Jacobian with respect to generalized
+  //    positions q̇ using the method CalcJacobianSpatialVelocity().
+  // 2. Calculates that same quantity, but using autodiff.  Ensure these two
+  //    methods produce nearly identical results.
+  // 3. Calculate E's angular velocity Jacobian with respect to q̇
+  //    using the method CalcJacobianAngularVelocity() and ensure it
+  //    produces nearly identical results to the rotational portion of the
+  //    aforementioned spatial velocity Jacobian.
+  // 4. Calculate Ep's translational velocity Jacobian with respect to q̇
+  //    using the method CalcJacobianTranslationalVelocity() and ensure it
+  //    produces nearly identical results to the translational portion of the
+  //    aforementioned spatial velocity Jacobian.
+  // 5. TODO(Mitiguy) Add tests for JacobianWrtVariable::kV
+
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
   SetArbitraryConfiguration();
 
-  // For an end-effector frame E, form a position vector from Eo (E's origin)
-  // to a point Ep fixed on E, expressed in E.
+  // Form a position vector from Eo (E's origin) to point Ep, expressed in E.
   Vector3<double> p_EoEp_E{0.1, -0.05, 0.02};
 
-  // For a system with n generalized positions (generalized coordinates),
-  // compute the 6xn matrix for Ep's spatial velocity Jacobian in W (world).
+  // For this system which has n generalized positions, compute the 6xn matrix
+  // for Ep's spatial velocity Jacobian in W (world).
   const int num_generalized_positions = plant_->num_positions();
   MatrixX<double> Jq_V_WEp(6, num_generalized_positions);
   const Frame<double>& end_effector_frame = end_effector_link_->body_frame();
@@ -153,9 +168,9 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(Jq_V_WEp, Jq_V_WEp_autodiff, kTolerance,
                               MatrixCompareType::relative));
 
-  // Also test CalcJacobianAngularVelocity by calculating the 3xn matrix for
-  // E's angular velocity Jacobian in W (world) and ensuring this is the first
-  // 3 rows of the spatial velocity Jacobian Jq_V_WEp.
+  // Test CalcJacobianAngularVelocity by calculating the 3xn matrix for
+  // E's angular velocity Jacobian in W (world) and ensuring this
+  // is the first 3 rows of the spatial velocity Jacobian Jq_V_WEp.
   MatrixX<double> Jq_w_WE(3, num_generalized_positions);
   plant_->CalcJacobianAngularVelocity(*context_, JacobianWrtVariable::kQDot,
                                       end_effector_frame, world_frame,
@@ -165,19 +180,17 @@ TEST_F(KukaIiwaModelTests, CalcJacobianSpatialVelocity) {
   EXPECT_TRUE(CompareMatrices(Jq_w_WE, top_three_rows, kTolerance,
                               MatrixCompareType::relative));
 
-  // Also test CalcJacobianTranslationalVelocity by calculating the 3xn matrix
-  // for point Ep's translational velocity Jacobian in W (world) and ensuring
-  // this is the last 3 rows of the spatial velocity Jacobian Jq_V_WEp.
+  // Test CalcJacobianTranslationalVelocity by calculating the 3xn matrix for
+  // point Ep's translational velocity Jacobian in W (world) and ensuring this
+  // is the last 3 rows of the spatial velocity Jacobian Jq_V_WEp.
   MatrixX<double> Jq_v_WEp(3, num_generalized_positions);
   plant_->CalcJacobianTranslationalVelocity(
       *context_, JacobianWrtVariable::kQDot, end_effector_frame, p_EoEp_E,
       world_frame, world_frame, &Jq_v_WEp);
   MatrixX<double> bottom_three_rows(3, num_generalized_positions);
-  bottom_three_rows = Jq_v_WEp.template bottomRows<3>();
+  bottom_three_rows = Jq_V_WEp.template bottomRows<3>();
   EXPECT_TRUE(CompareMatrices(Jq_v_WEp, bottom_three_rows, kTolerance,
                               MatrixCompareType::relative));
-
-  // TODO(Mitiguy) Add tests for JacobianWrtVariable::kV
 }
 
 }  // namespace
