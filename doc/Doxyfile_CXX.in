@@ -327,6 +327,9 @@ X& operator=(const X&) = default; \
 X(X&&) = default; \
 X& operator=(X&&) = default; \
 /** \} */"
+PREDEFINED            += DRAKE_DEPRECATED(X):=" \
+/** (Deprecated.) \deprecated X */ \
+"
 # =============================================================================
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
