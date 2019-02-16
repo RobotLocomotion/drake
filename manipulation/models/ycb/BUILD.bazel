@@ -35,6 +35,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
+        "//systems/analysis:simulator",
     ],
 )
 
