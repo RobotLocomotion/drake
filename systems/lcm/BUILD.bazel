@@ -112,7 +112,7 @@ drake_cc_library(
     deps = [
         ":lcm_pubsub_system",
         "//lcm",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 
