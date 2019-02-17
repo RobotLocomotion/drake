@@ -16,10 +16,11 @@
 namespace drake {
 namespace systems {
 
-/** Holds information about a subsystem output port that has been exported to
-become one of this Diagram's output ports. The actual methods for determining
-the port's value are supplied by the LeafOutputPort that ultimately underlies
-the source port, although that may be any number of levels down.
+/** (Advanced.) Holds information about a subsystem output port that has been
+exported to become one of this Diagram's output ports. The actual methods for
+determining the port's value are supplied by the LeafOutputPort that ultimately
+underlies the source port, although that may be any number of levels down.
+This is intended for internal use in implementing Diagram.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 

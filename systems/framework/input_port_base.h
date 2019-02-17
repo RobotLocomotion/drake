@@ -35,6 +35,14 @@ class InputPortBase : public PortBase {
   /** Returns the RandomDistribution if this is a random port. */
   optional<RandomDistribution> get_random_type() const { return random_type_; }
 
+  // A using-declaration adds these methods into our class's Doxygen.
+  // (Placed in an order that makes sense for the class's table of contents.)
+  using PortBase::get_name;
+  using PortBase::GetFullDescription;
+  using PortBase::get_data_type;
+  using PortBase::size;
+  using PortBase::ticket;
+
  protected:
   /** Signature of a function suitable for returning the cached value of a
   particular input port. Will return nullptr if the port is not connected. */

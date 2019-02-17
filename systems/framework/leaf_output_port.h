@@ -20,9 +20,9 @@ namespace systems {
 // TODO(sherm1) Output ports that simply expose existing Context objects
 // should not require a cache entry. Add provision for that to avoid the
 // unnecessary copying currently done by Eval() for those.
-/** Implements an output port whose value is managed by a cache entry in the
-same LeafSystem as the port. This is intended for internal use in implementing
-the DeclareOutputPort() variants in LeafSystem.
+/** (Advanced.) Implements an output port whose value is managed by a cache
+entry in the same LeafSystem as the port. This is intended for internal use in
+implementing the DeclareOutputPort() variants in LeafSystem.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
@@ -39,7 +39,7 @@ class LeafOutputPort final : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort)
 
-  ~LeafOutputPort() override;
+  ~LeafOutputPort() final;
 
   // TODO(sherm1) These callbacks should not be specific to this class. Move
   // elsewhere, e.g. framework_common.h so they can be shared with cache entry.
