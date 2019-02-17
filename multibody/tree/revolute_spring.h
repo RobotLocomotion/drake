@@ -34,7 +34,7 @@ class RevoluteSpring final : public ForceElement<T> {
   ///   applies no moment.
   /// @param[in] stiffness
   ///   The stiffness k of the spring in N⋅m/rad.
-  /// Refer to this class's documentation for further details.
+  /// @throws std::exception if `stiffness` is negative.
   RevoluteSpring(const RevoluteJoint<T>& joint, double nominal_angle,
                  double stiffness);
 
