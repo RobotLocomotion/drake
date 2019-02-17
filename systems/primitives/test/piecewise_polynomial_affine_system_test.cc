@@ -37,7 +37,6 @@ class PiecewisePolynomialAffineSystemTest
     }
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput();
     continuous_state_ = &context_->get_mutable_continuous_state();
     discrete_state_ = &context_->get_mutable_discrete_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
@@ -48,7 +47,6 @@ class PiecewisePolynomialAffineSystemTest
   // The Device Under Test (DUT) is a PiecewisePolynomialAffineSystem<double>.
   unique_ptr<PiecewisePolynomialAffineSystem<double>> dut_;
   unique_ptr<Context<double>> context_;
-  unique_ptr<SystemOutput<double>> system_output_;
 
   ContinuousState<double>* continuous_state_{nullptr};
   DiscreteValues<double>* discrete_state_{nullptr};
@@ -146,13 +144,11 @@ TEST_P(PiecewisePolynomialAffineSystemTest, Output) {
   for (const double t : mat_data_.times) {
     context_->set_time(t);
 
-    dut_->CalcOutput(*context_, system_output_.get());
     const Eigen::Matrix2d C = ltv_data_.C.value(t);
     const Eigen::Matrix2d D = ltv_data_.D.value(t);
     const Eigen::Vector2d y0 = ltv_data_.y0.value(t);
-
     EXPECT_TRUE(CompareMatrices(C * x + D * u + y0,
-                                system_output_->get_vector_data(0)->get_value(),
+                                dut_->get_output_port().Eval(*context_),
                                 tol));
   }
 }
