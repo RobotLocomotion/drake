@@ -104,7 +104,7 @@ class Sine final : public LeafSystem<T> {
   /// Returns the phase vector constant.
   const Eigen::VectorXd& phase_vector() const;
 
- protected:
+ private:
   void CalcValueOutput(const Context<T>& context,
                        BasicVector<T>* output) const;
   void CalcFirstDerivativeOutput(const Context<T>& context,

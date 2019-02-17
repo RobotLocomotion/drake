@@ -56,7 +56,7 @@ namespace systems {
 ///
 /// @ingroup primitive_systems
 template <typename T>
-class SignalLogger : public LeafSystem<T> {
+class SignalLogger final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SignalLogger)
 

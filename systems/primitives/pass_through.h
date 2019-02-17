@@ -58,7 +58,7 @@ class PassThrough final : public LeafSystem<T> {
   template <typename U>
   explicit PassThrough(const PassThrough<U>&);
 
-  virtual ~PassThrough() {}
+  virtual ~PassThrough() = default;
 
   // TODO(eric.cousineau): Possibly share single port interface with
   // ZeroOrderHold (#6490).
@@ -79,7 +79,14 @@ class PassThrough final : public LeafSystem<T> {
   // Don't use the indexed get_output_port when calling this system directly.
   void get_output_port(int) = delete;
 
- protected:
+ private:
+  // Allow different specializations to access each other's private data.
+  template <typename U> friend class PassThrough;
+
+  // All of the other constructors delegate here.
+  PassThrough(int vector_size,
+              std::unique_ptr<const AbstractValue> abstract_model_value);
+
   /// Sets the output port to equal the input port.
   void DoCalcVectorOutput(
       const Context<T>& context,
@@ -92,17 +99,9 @@ class PassThrough final : public LeafSystem<T> {
 
   // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
   optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const override;
+      int input_port, int output_port) const final;
 
- private:
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
-
-  // Delegated constructor so that we may clone properly at run-time.
-  PassThrough(int vector_size,
-              std::unique_ptr<const AbstractValue> abstract_model_value);
-
-  // Allow different specializations to access each other's private data.
-  template <typename U> friend class PassThrough;
 
   const std::unique_ptr<const AbstractValue> abstract_model_value_;
 };

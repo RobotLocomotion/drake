@@ -80,18 +80,18 @@ class FirstOrderLowPassFilter final : public VectorSystem<T> {
   void set_initial_output_value(Context<T>* context,
                                 const Eigen::Ref<const VectorX<T>>& z0) const;
 
- protected:
+ private:
   void DoCalcVectorTimeDerivatives(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* derivatives) const override;
+      Eigen::VectorBlock<VectorX<T>>* derivatives) const final;
 
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const VectorX<double> time_constants_;
 };

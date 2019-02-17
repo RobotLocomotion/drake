@@ -32,27 +32,27 @@ class Integrator final : public VectorSystem<T> {
   template <typename U>
   explicit Integrator(const Integrator<U>&);
 
-  ~Integrator() override;
+  ~Integrator() final;
 
   /// Sets the value of the integral modifying the state in the context.
   /// @p value must be a column vector of the appropriate size.
   void set_integral_value(Context<T>* context,
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
- protected:
+ private:
   // VectorSystem<T> override.
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   // VectorSystem<T> override.
   void DoCalcVectorTimeDerivatives(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* derivatives) const override;
+      Eigen::VectorBlock<VectorX<T>>* derivatives) const final;
 };
 
 }  // namespace systems

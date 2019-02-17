@@ -20,7 +20,7 @@ namespace systems {
 /// supported since AbstractValue does not support it.
 /// @ingroup primitive_systems
 template <typename T>
-class ZeroOrderHold : public LeafSystem<T> {
+class ZeroOrderHold final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
@@ -41,10 +41,7 @@ class ZeroOrderHold : public LeafSystem<T> {
   template <typename U>
   explicit ZeroOrderHold(const ZeroOrderHold<U>& other);
 
-  ~ZeroOrderHold() override {}
-
-  // TODO(eric.cousineau): Possibly share single port interface with
-  // PassThrough (#6490).
+  ~ZeroOrderHold() final = default;
 
   /// Returns the sole input port.
   const InputPort<T>& get_input_port() const {
@@ -62,11 +59,17 @@ class ZeroOrderHold : public LeafSystem<T> {
   // Don't use the indexed get_output_port when calling this system directly.
   void get_output_port(int) = delete;
 
+ private:
+  // Allow different specializations to access each other's private data.
+  template <typename U> friend class ZeroOrderHold;
 
- protected:
+  // All of the other constructors delegate here.
+  ZeroOrderHold(double period_sec, int vector_size,
+                std::unique_ptr<const AbstractValue> model_value);
+
   // Override feedthrough detection to avoid the need for `DoToSymbolic()`.
   optional<bool> DoHasDirectFeedthrough(
-      int input_port, int output_port) const override;
+      int input_port, int output_port) const final;
 
   // Sets the output port value to the vector value that is currently
   // latched in the zero-order hold.
@@ -78,7 +81,7 @@ class ZeroOrderHold : public LeafSystem<T> {
   void DoCalcDiscreteVariableUpdates(
       const Context<T>& context,
       const std::vector<const DiscreteUpdateEvent<T>*>& events,
-      DiscreteValues<T>* discrete_state) const override;
+      DiscreteValues<T>* discrete_state) const final;
 
   // Same as `DoCalcVectorOutput`, but for abstract values.
   void DoCalcAbstractOutput(
@@ -89,16 +92,9 @@ class ZeroOrderHold : public LeafSystem<T> {
   void DoCalcUnrestrictedUpdate(
       const Context<T>& context,
       const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
-      State<T>* state) const override;
+      State<T>* state) const final;
 
- private:
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
-
-  ZeroOrderHold(double period_sec, int vector_size,
-                std::unique_ptr<const AbstractValue> model_value);
-
-  // Allow different specializations to access each other's private data.
-  template <typename U> friend class ZeroOrderHold;
 
   double period_sec_{};
   std::unique_ptr<const AbstractValue> abstract_model_value_;

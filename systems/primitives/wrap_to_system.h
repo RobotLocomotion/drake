@@ -25,7 +25,7 @@ namespace systems {
 ///
 /// @ingroup primitive_systems
 template <typename T>
-class WrapToSystem : public LeafSystem<T> {
+class WrapToSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WrapToSystem)
 
