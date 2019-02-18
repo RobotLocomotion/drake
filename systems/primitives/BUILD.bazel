@@ -524,7 +524,7 @@ drake_cc_googletest(
         ":random_source",
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 
