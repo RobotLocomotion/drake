@@ -336,34 +336,62 @@ if(WITH_MOSEK)
   list(APPEND BAZEL_CONFIGS --config=mosek)
 endif()
 
-option(WITH_ROBOTLOCOMOTION_SNOPT
-  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository"
-  OFF
+set(WITH_SNOPT_STRINGS F2C Fortran OFF ON)
+string(REPLACE ";" " " WITH_SNOPT_STRINGS_STRING "${WITH_SNOPT_STRINGS}")
+
+set(WITH_ROBOTLOCOMOTION_SNOPT OFF CACHE STRING
+  "Build with support for SNOPT using the RobotLocomotion/snopt private GitHub repository, options are ${WITH_SNOPT_STRINGS_STRING}"
 )
-option(WITH_SNOPT
-  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH"
-  OFF
+set_property(CACHE WITH_ROBOTLOCOMOTION_SNOPT PROPERTY
+  STRINGS "${WITH_SNOPT_STRINGS}"
 )
+
+if(NOT WITH_ROBOTLOCOMOTION_SNOPT IN_LIST WITH_SNOPT_STRINGS)
+  message(FATAL_ERROR
+    "Value ${WITH_ROBOTLOCOMOTION_SNOPT} for the WITH_ROBOTLOCOMOTION_SNOPT option is NOT supported"
+  )
+endif()
+
+set(WITH_SNOPT OFF CACHE STRING
+  "Build with support for SNOPT using a SNOPT source archive at SNOPT_PATH, options are ${WITH_SNOPT_STRINGS_STRING}"
+)
+set_property(CACHE WITH_SNOPT PROPERTY STRINGS "${WITH_SNOPT_STRINGS}")
+
+if(NOT WITH_SNOPT IN_LIST WITH_SNOPT_STRINGS)
+  message(FATAL_ERROR
+    "Value ${WITH_SNOPT} for the WITH_SNOPT option is NOT supported"
+  )
+endif()
 
 if(WITH_ROBOTLOCOMOTION_SNOPT AND WITH_SNOPT)
   message(FATAL_ERROR
     "WITH_ROBOTLOCOMOTION_SNOPT and WITH_SNOPT options are mutually exclusive"
   )
-elseif(WITH_ROBOTLOCOMOTION_SNOPT)
-  list(APPEND BAZEL_CONFIGS --config=snopt)
-  list(APPEND BAZEL_ENV "SNOPT_PATH=git")
-elseif(WITH_SNOPT)
-  list(APPEND BAZEL_CONFIGS --config=snopt)
-  set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH
-    "Path to SNOPT source archive"
-  )
-  if(NOT EXISTS "${SNOPT_PATH}")
-    message(FATAL_ERROR
-      "SNOPT source archive was NOT found at '${SNOPT_PATH}'"
-    )
+endif()
+
+if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
+  if(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL F2C OR WITH_SNOPT STREQUAL F2C)
+    list(APPEND BAZEL_CONFIGS --config=snopt_f2c)
+  elseif(WITH_ROBOTLOCOMOTION_SNOPT STREQUAL Fortran OR WITH_SNOPT STREQUAL Fortran)
+    list(APPEND BAZEL_CONFIGS --config=snopt_fortran)
+  else()
+    list(APPEND BAZEL_CONFIGS --config=snopt)
   endif()
-  mark_as_advanced(SNOPT_PATH)
-  list(APPEND BAZEL_ENV "SNOPT_PATH=${SNOPT_PATH}")
+
+  if(WITH_ROBOTLOCOMOTION_SNOPT)
+    list(APPEND BAZEL_ENV "SNOPT_PATH=git")
+  else()
+    set(SNOPT_PATH SNOPT_PATH-NOTFOUND CACHE FILEPATH
+      "Path to SNOPT source archive"
+    )
+    if(NOT EXISTS "${SNOPT_PATH}")
+      message(FATAL_ERROR
+        "SNOPT source archive was NOT found at '${SNOPT_PATH}'"
+      )
+    endif()
+    mark_as_advanced(SNOPT_PATH)
+    list(APPEND BAZEL_ENV "SNOPT_PATH=${SNOPT_PATH}")
+  endif()
 endif()
 
 if(BAZEL_CONFIGS)
