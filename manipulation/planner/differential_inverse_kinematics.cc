@@ -209,29 +209,28 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   // Solve
   solvers::OsqpSolver solver;
-  DRAKE_THROW_UNLESS(solver.available());
-  solvers::SolutionResult result = solver.Solve(prog);
+  solvers::MathematicalProgramResult result = solver.Solve(prog, {}, {});
 
-  if (result != solvers::SolutionResult::kSolutionFound) {
+  if (!result.is_success()) {
     return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};
   }
 
   if (num_cart_constraints) {
     VectorX<double> cost(1);
-    cart_cost->Eval(prog.GetSolution(alpha), &cost);
+    cart_cost->Eval(result.GetSolution(alpha), &cost);
     const double kMaxTrackingError = 5;
     const double kMinEndEffectorVel = 1e-2;
     if (cost(0) > kMaxTrackingError &&
-        prog.GetSolution(alpha)[0] <= kMinEndEffectorVel) {
+        result.GetSolution(alpha)[0] <= kMinEndEffectorVel) {
       // Not tracking the desired vel norm (large tracking error) and the
       // computed vel is small.
-      log()->info("v_next = {}", prog.GetSolution(v_next).transpose());
-      log()->info("alpha = {}", prog.GetSolution(alpha).transpose());
+      log()->info("v_next = {}", result.GetSolution(v_next).transpose());
+      log()->info("alpha = {}", result.GetSolution(alpha).transpose());
       return {nullopt, DifferentialInverseKinematicsStatus::kStuck};
     }
   }
 
-  return {prog.GetSolution(v_next),
+  return {result.GetSolution(v_next),
           DifferentialInverseKinematicsStatus::kSolutionFound};
 }
 
