@@ -262,6 +262,7 @@ class QuasistaticSystem : public systems::LeafSystem<Scalar> {
 
   // MIQP program
   std::unique_ptr<solvers::MathematicalProgram> prog_;
+  std::unique_ptr<solvers::MathematicalProgramResult> prog_result_;
   solvers::GurobiSolver solver_;
 
   solvers::VectorXDecisionVariable delta_q_;
