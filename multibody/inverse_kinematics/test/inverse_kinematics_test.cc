@@ -115,7 +115,7 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
                                           Eigen::Vector4d(1, 0, 0, 0));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
                                           Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = Solve(ik_.prog(), ik_.prog().initial_guess());
+  const auto result = Solve(ik_.prog());
   EXPECT_TRUE(result.is_success());
   RetrieveSolution(result);
   const Eigen::Vector3d p_AQ = body2_quaternion_sol_.inverse() *
