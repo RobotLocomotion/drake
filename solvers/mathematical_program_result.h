@@ -113,6 +113,11 @@ class MathematicalProgramResult final {
   SolverResult ConvertToSolverResult() const;
 
   /**
+   * Gets the solution of all decision variables.
+   */
+  const Eigen::VectorXd& GetSolution() const { return x_val_; }
+
+  /**
    * Gets the solution of an Eigen matrix of decision variables.
    * @tparam Derived An Eigen matrix containing Variable.
    * @param var The decision variables.
