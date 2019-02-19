@@ -19,16 +19,16 @@ class PortBase {
   /** Get port name. */
   const std::string& get_name() const { return name_; }
 
+  /** Returns a verbose human-readable description of port. This is useful for
+  error messages or debugging. */
+  std::string GetFullDescription() const;
+
   /** Returns the port data type. */
   PortDataType get_data_type() const { return data_type_; }
 
   /** Returns the fixed size expected for a vector-valued port. Not
   meaningful for abstract-valued ports. */
   int size() const { return size_; }
-
-  /** Returns a verbose human-readable description of port. This is useful for
-  error messages or debugging. */
-  std::string GetFullDescription() const;
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Returns a reference to the system that owns this port. Note that for a

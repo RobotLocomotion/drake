@@ -24,6 +24,14 @@ class OutputPortBase : public PortBase {
     return OutputPortIndex(get_int_index());
   }
 
+  // A using-declaration adds these methods into our class's Doxygen.
+  // (Placed in an order that makes sense for the class's table of contents.)
+  using PortBase::get_name;
+  using PortBase::GetFullDescription;
+  using PortBase::get_data_type;
+  using PortBase::size;
+  using PortBase::ticket;
+
 #ifndef DRAKE_DOXYGEN_CXX
   // Internal use only. Returns the prerequisite for this output port -- either
   // a cache entry in this System, or an output port of a child System.

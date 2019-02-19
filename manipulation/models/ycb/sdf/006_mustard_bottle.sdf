@@ -9,18 +9,24 @@
     Origin:
       (0, 0, 0) at the center of the bottle's bounding box.
   -->
+
+  <!--
+    The inertial properties were calculated from the mass and dimensions given
+    with the YCB dataset. The mustard bottle is treated as a constant density
+    box from the base of the bottle to the bottom of the cap, which matches the
+    collision shape.
+  -->
   <link name="base_link_mustard">
     <inertial>
-      <pose frame=''>0.0049 0.092 0.027 1.57 -0.40 0.0</pose>
       <mass>0.603000</mass>
-        <inertia>
-          <ixx>0.002009</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.000633</iyy>
-          <iyz>0</iyz>
-          <izz>0.002302</izz>
-        </inertia>
+      <inertia>
+        <ixx>0.002009</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.000633</iyy>
+        <iyz>0</iyz>
+        <izz>0.002302</izz>
+      </inertia>
     </inertial>
     <visual name='base_link_mustard'>
       <pose frame=''>0.0049 0.092 0.027 1.57 -0.40 0.0</pose>

@@ -109,6 +109,17 @@ class InputPort final : public InputPortBase {
   input port was exported. */
   const System<T>& get_system() const { return system_; }
 
+  // A using-declaration adds these methods into our class's Doxygen.
+  // (Placed in an order that makes sense for the class's table of contents.)
+  using PortBase::get_name;
+  using PortBase::GetFullDescription;
+  using InputPortBase::get_index;
+  using PortBase::get_data_type;
+  using PortBase::size;
+  using InputPortBase::is_random;
+  using InputPortBase::get_random_type;
+  using PortBase::ticket;
+
  private:
   friend class internal::FrameworkFactory;
 

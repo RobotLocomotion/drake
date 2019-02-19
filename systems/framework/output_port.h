@@ -176,6 +176,15 @@ class OutputPort : public OutputPortBase {
     return system_;
   }
 
+  // A using-declaration adds these methods into our class's Doxygen.
+  // (Placed in an order that makes sense for the class's table of contents.)
+  using PortBase::get_name;
+  using PortBase::GetFullDescription;
+  using OutputPortBase::get_index;
+  using PortBase::get_data_type;
+  using PortBase::size;
+  using PortBase::ticket;
+
   DRAKE_DEPRECATED(
       "Use Eval() instead. This method will be removed on 2019-06-01.")
   const AbstractValue& EvalAbstract(const Context<T>& context) const {

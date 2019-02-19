@@ -209,7 +209,7 @@ drake_cc_library(
         "//lcmtypes:viewer",
         "//math:geometric_transform",
         "//systems/framework:diagram_builder",
-        "//systems/lcm",
+        "//systems/lcm:lcm_pubsub_system",
         "//systems/rendering:pose_bundle_to_draw_message",
     ],
 )

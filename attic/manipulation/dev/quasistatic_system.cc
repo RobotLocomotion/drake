@@ -217,6 +217,7 @@ void QuasistaticSystem<Scalar>::Initialize() {
 
   // initialize mathematical program
   prog_.reset(new solvers::MathematicalProgram());
+  prog_result_.reset(new solvers::MathematicalProgramResult());
 
   delta_q_ = prog_->NewContinuousVariables(n1_, "delta_q");
   lambda_n_ = prog_->NewContinuousVariables(nc_, "lambda_n");
@@ -731,13 +732,11 @@ void QuasistaticSystem<Scalar>::MinimizeKineticEnergy(
 
   // solve QP
   prog_QP.SetSolverOption(solvers::GurobiSolver::id(), "OutputFlag", 0);
-  const auto result_QP = solver_.Solve(prog_QP);
-
-  // get QP solution
-  auto delta_qu_QP_value = prog_QP.GetSolution(delta_qu_QP);
+  const auto result_QP = solver_.Solve(prog_QP, {}, {});
 
   // replace qu in the MIQP solution with the QP solution
-  if (result_QP == drake::solvers::kSolutionFound) {
+  if (result_QP.is_success()) {
+    auto delta_qu_QP_value = result_QP.GetSolution(delta_qu_QP);
     for (int i = 0; i < nu_; i++) {
       delta_q_value(idx_qu_in_q_[i]) = delta_qu_QP_value(i);
     }
@@ -875,8 +874,8 @@ void QuasistaticSystem<Scalar>::StepForward(
   prog_->SetInitialGuess(z_f_, z_f_start_);
   prog_->SetInitialGuess(z_gamma_, z_gamma_start_);
 
-  const auto result = solver_.Solve(*prog_);
-  DRAKE_DEMAND(result == drake::solvers::kSolutionFound);
+  solver_.Solve(*prog_, {}, {}, prog_result_.get());
+  DRAKE_DEMAND(prog_result_->is_success());
 }
 
 template <class Scalar>
@@ -921,13 +920,14 @@ void QuasistaticSystem<Scalar>::DoCalcDiscreteVariableUpdates(
   StepForward(Wn, Wf, Jn, Jf, U, E, phi, f, qa_dot_d);
 
   // get solution
-  auto delta_q_value = prog_->GetSolution(delta_q_);
-  auto lambda_n_value = prog_->GetSolution(lambda_n_);
-  auto lambda_f_value = prog_->GetSolution(lambda_f_);
-  auto gamma_value = prog_->GetSolution(gamma_);
-  auto z_n_value = prog_->GetSolution(z_n_);
-  auto z_f_value = prog_->GetSolution(z_f_);
-  auto z_gamma_value = prog_->GetSolution(z_gamma_);
+  DRAKE_DEMAND(prog_result_->is_success());
+  auto delta_q_value = prog_result_->GetSolution(delta_q_);
+  auto lambda_n_value = prog_result_->GetSolution(lambda_n_);
+  auto lambda_f_value = prog_result_->GetSolution(lambda_f_);
+  auto gamma_value = prog_result_->GetSolution(gamma_);
+  auto z_n_value = prog_result_->GetSolution(z_n_);
+  auto z_f_value = prog_result_->GetSolution(z_f_);
+  auto z_gamma_value = prog_result_->GetSolution(z_gamma_);
 
   VectorXd delta_qu_value(nu_);
   for (int i = 0; i < nu_; i++) {
