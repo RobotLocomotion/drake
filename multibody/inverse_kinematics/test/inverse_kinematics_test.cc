@@ -43,8 +43,8 @@ class TwoFreeBodiesTest : public ::testing::Test {
 
   ~TwoFreeBodiesTest() override {}
 
-  void RetrieveSolution() {
-    const auto q_sol = ik_.prog().GetSolution(ik_.q());
+  void RetrieveSolution(const solvers::MathematicalProgramResult& result) {
+    const auto q_sol = result.GetSolution(ik_.q());
     body1_quaternion_sol_ = Vector4ToQuaternion(q_sol.head<4>());
     body1_position_sol_ = q_sol.segment<3>(4);
     body2_quaternion_sol_ = Vector4ToQuaternion(q_sol.segment<4>(7));
@@ -88,8 +88,7 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
   auto check_q_test = [&ik, &q_test_bound](const Eigen::VectorXd& q_test) {
     q_test_bound.evaluator()->UpdateLowerBound(q_test);
     q_test_bound.evaluator()->UpdateUpperBound(q_test);
-    const auto result = ik.get_mutable_prog()->Solve();
-    return result == solvers::SolutionResult::kSolutionFound;
+    return Solve(ik.prog()).is_success();
   };
   for (int i = 0; i < 7; ++i) {
     Eigen::VectorXd q_good = Eigen::VectorXd::Zero(7);
@@ -116,9 +115,9 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
                                           Eigen::Vector4d(1, 0, 0, 0));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
                                           Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.get_mutable_prog()->Solve();
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
-  RetrieveSolution();
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
+  RetrieveSolution(result);
   const Eigen::Vector3d p_AQ = body2_quaternion_sol_.inverse() *
                                (body1_quaternion_sol_ * p_BQ +
                                 body1_position_sol_ - body2_position_sol_);
@@ -146,10 +145,10 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
                                           Eigen::Vector4d(1, 0, 0, 0));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
                                           Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.get_mutable_prog()->Solve();
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
-  const auto q_sol = ik_.prog().GetSolution(ik_.q());
-  RetrieveSolution();
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
+  const auto q_sol = result.GetSolution(ik_.q());
+  RetrieveSolution(result);
   const math::RotationMatrix<double> R_AbarBbar(
       body1_quaternion_sol_.inverse() * body2_quaternion_sol_);
   const math::RotationMatrix<double> R_AB =
@@ -171,10 +170,10 @@ TEST_F(TwoFreeBodiesTest, GazeTargetConstraint) {
                                           Eigen::Vector4d(1, 0, 0, 0));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
                                           Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.get_mutable_prog()->Solve();
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
 
-  RetrieveSolution();
+  RetrieveSolution(result);
   const Eigen::Vector3d p_WS =
       body1_quaternion_sol_ * p_AS + body1_position_sol_;
   const Eigen::Vector3d p_WT =
@@ -198,10 +197,10 @@ TEST_F(TwoFreeBodiesTest, AngleBetweenVectorsConstraint) {
                                           Eigen::Vector4d(1, 0, 0, 0));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
                                           Eigen::Vector4d(1, 0, 0, 0));
-  const auto result = ik_.get_mutable_prog()->Solve();
-  EXPECT_EQ(result, solvers::SolutionResult::kSolutionFound);
+  const auto result = Solve(ik_.prog());
+  EXPECT_TRUE(result.is_success());
 
-  RetrieveSolution();
+  RetrieveSolution(result);
 
   const Eigen::Vector3d n_A_W = body1_quaternion_sol_ * n_A;
   const Eigen::Vector3d n_B_W = body2_quaternion_sol_ * n_B;
@@ -229,8 +228,7 @@ TEST_F(TwoFreeSpheresTest, MinimalDistanceConstraintTest) {
                                          Eigen::Vector3d(0, 0, -0.01));
 
   auto solve_and_check = [&]() {
-    const solvers::MathematicalProgramResult result =
-        Solve(ik.prog(), ik.prog().initial_guess());
+    const solvers::MathematicalProgramResult result = Solve(ik.prog());
     EXPECT_TRUE(result.is_success());
 
     const Eigen::Vector3d p_WB1 = result.GetSolution(ik.q().segment<3>(4));

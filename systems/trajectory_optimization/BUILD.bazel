@@ -70,6 +70,7 @@ drake_cc_googletest(
     deps = [
         ":multiple_shooting",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
     ],
 )
 
@@ -78,6 +79,7 @@ drake_cc_googletest(
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
         "//systems/primitives:linear_system",
     ],
 )
@@ -87,6 +89,7 @@ drake_cc_googletest(
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
         "//systems/primitives:piecewise_polynomial_linear_system",
     ],
 )

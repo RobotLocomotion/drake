@@ -28,6 +28,7 @@ drake_cc_test(
         "//common:essential",
         "//common:find_resource",
         "//solvers:mathematical_program",
+        "//solvers:solve",
         "@lcm",
         "@lcmtypes_bot2_core",
     ],

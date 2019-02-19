@@ -192,6 +192,7 @@ drake_cc_binary(
         "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
+        "//solvers:solve",
         "//systems/analysis",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/primitives:trajectory_source",

@@ -617,12 +617,13 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
 
   ////////////////////////////////////////////////////////////////////
   // Call solver.
-  solvers::SolutionResult result = solver_.Solve(*(prog_.get()));
-  if (result != solvers::SolutionResult::kSolutionFound) {
+  const solvers::MathematicalProgramResult result =
+      solver_.Solve(*prog_, {}, {});
+  if (!result.is_success()) {
     drake::log()->warn("Solution not found.");
     return -1;
   }
-  solution_ = prog_->GetSolution(prog_->decision_variables());
+  solution_ = result.GetSolution(prog_->decision_variables());
 
   ////////////////////////////////////////////////////////////////////
   // Examples of inspecting each cost / eq, ineq term
@@ -634,24 +635,24 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
   int ctr = 0;
   VectorX<double> tmp_vec;
 
-  // TODO(hongkai.dai): Solve() function in GurobiSolver or MosekSolver
+  // TODO(hongkai.dai): Solve(prog) function in GurobiSolver or MosekSolver
   // should return the cost directly.
   for (auto& cost_b : costs) {
-    tmp_vec = prog_->EvalBindingAtSolution(cost_b);
+    tmp_vec = prog_->EvalBinding(cost_b, result.get_x_val());
     output->mutable_cost(ctr).first = cost_b.evaluator()->get_description();
     output->mutable_cost(ctr).second = tmp_vec(0);
     ctr++;
   }
 
   for (auto& eq_b : eqs) {
-    DRAKE_ASSERT(
-        (prog_->EvalBindingAtSolution(eq_b) - eq_b.evaluator()->lower_bound())
-            .isZero(1e-6));
+    DRAKE_ASSERT((prog_->EvalBinding(eq_b, result.get_x_val()) -
+                  eq_b.evaluator()->lower_bound())
+                     .isZero(1e-6));
   }
 
   for (auto& ineq_b : ineqs) {
     solvers::LinearConstraint* ineq = ineq_b.evaluator().get();
-    tmp_vec = prog_->EvalBindingAtSolution(ineq_b);
+    tmp_vec = prog_->EvalBinding(ineq_b, result.get_x_val());
     for (int i = 0; i < tmp_vec.size(); ++i) {
       DRAKE_ASSERT(tmp_vec[i] >= ineq->lower_bound()[i] - 1e-6 &&
                    tmp_vec[i] <= ineq->upper_bound()[i] + 1e-6);
@@ -663,7 +664,7 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
   // Compute resulting contact wrenches.
   int basis_index = 0;
   int point_force_index = 0;
-  const auto& basis_value = prog_->GetSolution(basis_);
+  const auto& basis_value = result.GetSolution(basis_);
   point_forces_ = basis_to_force_matrix_ * basis_value;
 
   // Remove old contacts that are not in input anymore.
@@ -679,7 +680,7 @@ int QpInverseDynamics::Control(const RobotKinematicState<double>& rs,
     output->mutable_resolved_contacts().erase(old_contact);
   }
 
-  const auto& vd_value = prog_->GetSolution(vd_);
+  const auto& vd_value = result.GetSolution(vd_);
   for (const auto& contact_pair : input.contact_information()) {
     const ContactInformation& contact = contact_pair.second;
     if (output->mutable_resolved_contacts().find(contact.body_name()) ==

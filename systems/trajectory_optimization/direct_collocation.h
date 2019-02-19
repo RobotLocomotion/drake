@@ -51,11 +51,21 @@ class DirectCollocation : public MultipleShooting {
 
   ~DirectCollocation() override {}
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
   const override;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
   const override;
+
+  trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
+      const solvers::MathematicalProgramResult& result) const override;
+
+  trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
+      const solvers::MathematicalProgramResult& result) const override;
 
  private:
   // Implements a running cost at all timesteps using trapezoidal integration.

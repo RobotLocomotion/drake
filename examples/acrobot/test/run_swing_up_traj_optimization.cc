@@ -13,6 +13,7 @@
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -66,14 +67,14 @@ int do_main() {
   auto traj_init_x =
       PiecewisePolynomialType::FirstOrderHold({0, timespan_init}, {x0, xG});
   dircol.SetInitialTrajectory(PiecewisePolynomialType(), traj_init_x);
-  SolutionResult result = dircol.Solve();
-  if (result != SolutionResult::kSolutionFound) {
+  const auto result = solvers::Solve(dircol);
+  if (!result.is_success()) {
     std::cerr << "No solution found.\n";
     return 1;
   }
 
   const trajectories::PiecewisePolynomial<double> pp_xtraj =
-      dircol.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory(result);
   auto state_source = builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
 
   lcm::DrakeLcm lcm;

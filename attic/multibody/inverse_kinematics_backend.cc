@@ -19,6 +19,7 @@
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::Map;
 using Eigen::MatrixBase;
@@ -224,7 +225,7 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
   // TODO(sam.creasey) I really don't like rebuilding the
   // MathematicalProgram for every timestep, but it's not possible to
   // enable/disable (or even remove) a constraint from an
-  // MathematicalProgram between calls to Solve() currently, so
+  // MathematicalProgram between calls to Solve(prog) currently, so
   // there's not actually another way.
   for (int t_index = 0; t_index < nT; t_index++) {
     MathematicalProgram prog;
@@ -298,10 +299,10 @@ void inverseKinBackend(RigidBodyTree<double>* model, const int nT,
       prog.SetInitialGuess(vars, q_sol->col(t_index - 1));
     }
 
-    SolutionResult result = prog.Solve();
-    const VectorXd& vars_value = prog.GetSolution(vars);
+    const solvers::MathematicalProgramResult result = Solve(prog);
+    const VectorXd& vars_value = result.GetSolution(vars);
     q_sol->col(t_index) = vars_value;
-    info[t_index] = GetIKSolverInfo(result);
+    info[t_index] = GetIKSolverInfo(result.get_solution_result());
   }
 }
 

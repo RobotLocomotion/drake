@@ -8,6 +8,7 @@
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
@@ -70,17 +71,17 @@ int DoMain() {
   auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
       {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
   dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
-  SolutionResult result = dircol.Solve();
-  if (result != SolutionResult::kSolutionFound) {
+  const auto result = solvers::Solve(dircol);
+  if (!result.is_success()) {
     std::cerr << "Failed to solve optimization for the swing-up trajectory"
               << std::endl;
     return 1;
   }
 
   const PiecewisePolynomial<double> pp_traj =
-      dircol.ReconstructInputTrajectory();
+      dircol.ReconstructInputTrajectory(result);
   const PiecewisePolynomial<double> pp_xtraj =
-      dircol.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory(result);
   auto input_trajectory = builder.AddSystem<systems::TrajectorySource>(pp_traj);
   input_trajectory->set_name("input trajectory");
   auto state_trajectory =

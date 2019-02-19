@@ -12,6 +12,7 @@
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/perception/estimators/dev/test/test_util.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/framework/basic_vector.h"
 
 using std::make_shared;
@@ -266,9 +267,8 @@ TEST_P(ArticulatedIcpTest, PositiveReturnsConvergenceTest) {
     icp_cost.UpdateCost(qp_cost.get());
 
     // Solve.
-    prog.SetInitialGuess(q_var, q);
-    auto result = prog.Solve();
-    ASSERT_EQ(solvers::kSolutionFound, result);
+    const auto result = Solve(prog, q);
+    ASSERT_EQ(solvers::kSolutionFound, result.get_solution_result());
 
     const double q_diff_norm = (q - q_init_).norm();
     if (q_diff_norm < q_diff_norm_min_) {
@@ -276,7 +276,7 @@ TEST_P(ArticulatedIcpTest, PositiveReturnsConvergenceTest) {
     }
 
     // Update initial guess.
-    q = prog.GetSolution(q_var);
+    q = result.GetSolution(q_var);
     ++iter;
     ASSERT_TRUE(iter < iter_max);
 

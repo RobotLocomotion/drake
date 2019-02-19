@@ -735,6 +735,7 @@ drake_cc_googletest(
         ":simple_car",
         "//common/proto:call_matlab",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
         "//systems/trajectory_optimization:direct_collocation",
     ],
 )

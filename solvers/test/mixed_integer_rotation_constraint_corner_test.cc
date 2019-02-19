@@ -163,7 +163,7 @@ TEST_P(TestBoxSphereCorner, TestOrthogonal) {
   prog_.AddLinearCost(R_.col(free_axis0).dot(box_pt) +
                       R_.col(free_axis1).dot(box_pt));
 
-  auto result = Solve(prog_);
+  const auto result = Solve(prog_);
   EXPECT_TRUE(result.is_success());
   const auto R_val = result.GetSolution(R_);
   std::vector<Eigen::Matrix3d> Bpos_val(3);

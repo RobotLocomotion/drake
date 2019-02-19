@@ -67,7 +67,7 @@ class SosConstraintTest : public ::testing::Test {
   // Checks Q has all eigen values as approximately non-negatives.
   // Precondition: result_ = Solve(prog_) has been called.
   void CheckPositiveDefiniteMatrix(const MatrixXDecisionVariable& Q,
-                       const double eps = 1e-07) {
+                                   const double eps = 1e-07) {
     const Eigen::MatrixXd Q_val = result_.GetSolution(Q);
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q_val);
     EXPECT_TRUE((es.eigenvalues().array() >= -eps).all());
@@ -212,7 +212,7 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
       prog_.AddSosConstraint(2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
                              pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4));
   result_ = Solve(prog_);
-
+  ASSERT_TRUE(result_.is_success());
   CheckPositiveDefiniteMatrix(binding_pair.first);
 }
 

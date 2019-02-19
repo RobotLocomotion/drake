@@ -12,6 +12,7 @@
 #include "drake/multibody/rigid_body.h"
 #include "drake/multibody/rigid_body_tree.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/estimators/dev/rotation.h"
 
 // Note: Currently assumes that the tree has only the world plus a single body,
@@ -177,20 +178,22 @@ Eigen::Isometry3d PoseEstimation(const RigidBodyTree<double>& tree,
   }
 
   std::cout << "Beginning solve... ";
-  const drake::solvers::SolutionResult solution_result = prog.Solve();
+  const drake::solvers::MathematicalProgramResult result = Solve(prog);
   std::cout << "Finished." << std::endl;
 
-  prog.PrintSolution();
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    std::cout << prog.decision_variable(i).get_name() << " = "
+              << result.GetSolution(prog.decision_variable(i)) << "\n";
+  }
 
-  std::cout << "Solver " << prog.GetSolverId()->name()
-            << " result " << static_cast<int>(solution_result)
-            << std::endl;
+  std::cout << "Solver " << result.get_solver_id().name() << " result "
+            << static_cast<int>(result.get_solution_result()) << std::endl;
   Eigen::Isometry3d T;
-  T.translation() = prog.GetSolution(t);
+  T.translation() = result.GetSolution(t);
   if (rotation_type == kTranslationOnly) {
     T.linear() = Eigen::Matrix3d::Identity();
   } else {
-    T.linear() = prog.GetSolution(R);
+    T.linear() = result.GetSolution(R);
   }
   return T;
 }

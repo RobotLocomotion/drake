@@ -104,15 +104,21 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           overload_cast_explicit<Eigen::VectorXd>(
               &MultipleShooting::GetSampleTimes),
           doc.MultipleShooting.GetSampleTimes.doc_0args)
-      .def("GetInputSamples", &MultipleShooting::GetInputSamples,
+      .def("GetInputSamples",
+          [](const MultipleShooting& prog) { return prog.GetInputSamples(); },
           doc.MultipleShooting.GetInputSamples.doc)
-      .def("GetStateSamples", &MultipleShooting::GetStateSamples,
+      .def("GetStateSamples",
+          [](const MultipleShooting& prog) { return prog.GetStateSamples(); },
           doc.MultipleShooting.GetStateSamples.doc)
       .def("ReconstructInputTrajectory",
-          &MultipleShooting::ReconstructInputTrajectory,
+          [](const MultipleShooting& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
           doc.MultipleShooting.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
-          &MultipleShooting::ReconstructStateTrajectory,
+          [](const MultipleShooting& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
           doc.MultipleShooting.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocation, MultipleShooting>(
@@ -123,10 +129,14 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           py::arg("minimum_timestep"), py::arg("maximum_timestep"),
           doc.DirectCollocation.ctor.doc)
       .def("ReconstructInputTrajectory",
-          &DirectCollocation::ReconstructInputTrajectory,
+          [](const DirectCollocation& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
           doc.DirectCollocation.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
-          &DirectCollocation::ReconstructStateTrajectory,
+          [](const DirectCollocation& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
           doc.DirectCollocation.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocationConstraint, solvers::Constraint,
@@ -158,10 +168,14 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       //      .def(py::init<const TimeVaryingLinearSystem<double>*,
       //                    const Context<double>&, int>())
       .def("ReconstructInputTrajectory",
-          &DirectTranscription::ReconstructInputTrajectory,
+          [](const DirectTranscription& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
           doc.DirectTranscription.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
-          &DirectTranscription::ReconstructStateTrajectory,
+          [](const DirectTranscription& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
           doc.DirectTranscription.ReconstructStateTrajectory.doc);
 }
 

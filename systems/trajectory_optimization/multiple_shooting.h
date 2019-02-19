@@ -250,20 +250,43 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::VectorXd GetSampleTimes(
       const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
   Eigen::VectorXd GetSampleTimes() const {
     return GetSampleTimes(this->GetSolution(h_vars_));
   }
 
+  Eigen::VectorXd GetSampleTimes(
+      const solvers::MathematicalProgramResult& result) const {
+    return GetSampleTimes(result.GetSolution(h_vars_));
+  }
+
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Returns a matrix containing the input values (arranged in columns) at
   /// each knot point at the solution.
   Eigen::MatrixXd GetInputSamples() const;
 
+  /// Returns a matrix containing the input values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetInputSamples(
+      const solvers::MathematicalProgramResult& result) const;
+
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Returns a matrix containing the state values (arranged in columns) at
   /// each knot point at the solution.
   Eigen::MatrixXd GetStateSamples() const;
 
+  /// Returns a matrix containing the state values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetStateSamples(
+      const solvers::MathematicalProgramResult& result) const;
+
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input
@@ -271,11 +294,33 @@ class MultipleShooting : public solvers::MathematicalProgram {
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
+  virtual trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
+      const solvers::MathematicalProgramResult&) const {
+    // TODO(hongkai.dai): make this function an abstract virtual function, when
+    // we deprecate ReconstructInputTrajectory(). Currently I throw this error
+    // so that the derived classes in Drake can override it, and we do not break
+    // the derived class outside of drake master.
+    throw std::runtime_error(
+        "The derived class has to override this function.");
+  }
+
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
+
+  virtual trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
+      const solvers::MathematicalProgramResult&) const {
+    // TODO(hongkai.dai): make this function an abstract virtual function, when
+    // we deprecate ReconstructStateTrajectory(). Currently I throw this error
+    // so that the derived classes in Drake can override it, and we do not break
+    // the derived class outside of drake master.
+    throw std::runtime_error(
+        "The derived class has to override this function.");
+  }
 
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);

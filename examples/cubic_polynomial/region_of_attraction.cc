@@ -13,6 +13,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/common/unused.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/framework/vector_system.h"
 
 namespace drake {
@@ -79,14 +80,14 @@ void ComputeRegionOfAttraction() {
 
   prog.AddSosConstraint((V - rho) * x.dot(x) - lambda * Vdot);
   prog.AddLinearCost(-rho);
-  const solvers::SolutionResult result{prog.Solve()};
-  DRAKE_DEMAND(result == solvers::SolutionResult::kSolutionFound);
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  DRAKE_DEMAND(result.is_success());
 
-  cout << "Verified that " << V << " < " << prog.GetSolution(rho)
+  cout << "Verified that " << V << " < " << result.GetSolution(rho)
        << " is in the region of attraction." << endl;
 
   // Check that ρ ≃ 1.0.
-  DRAKE_DEMAND(std::abs(prog.GetSolution(rho) - 1.0) < 1e-6);
+  DRAKE_DEMAND(std::abs(result.GetSolution(rho) - 1.0) < 1e-6);
 }
 }  // namespace drake
 

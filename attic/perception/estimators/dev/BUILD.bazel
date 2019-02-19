@@ -96,6 +96,7 @@ drake_cc_googletest(
         "//lcmtypes:viewer",
         "//math:geometric_transform",
         "//solvers:mathematical_program",
+        "//solvers:solve",
     ],
 )
 

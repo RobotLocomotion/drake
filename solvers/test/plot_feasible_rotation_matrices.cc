@@ -30,7 +30,7 @@ void AddTestConstraints(MathematicalProgram* prog,
 }
 
 bool IsFeasible(
-    MathematicalProgram* prog,
+    const MathematicalProgram& prog,
     const std::shared_ptr<LinearEqualityConstraint>& feasibility_constraint,
     const Eigen::Ref<const Eigen::MatrixXd>& R_sample) {
   Eigen::Map<const Eigen::VectorXd> R_sample_vec(R_sample.data(),
@@ -38,7 +38,7 @@ bool IsFeasible(
   feasibility_constraint->UpdateLowerBound(R_sample_vec);
   feasibility_constraint->UpdateUpperBound(R_sample_vec);
 
-  return Solve(*prog).is_success();
+  return Solve(prog).is_success();
 }
 
 void DrawCircle(double radius = 1.0) {
@@ -95,7 +95,7 @@ void PlotColumnVectorXYSlice(double z = 0.0, int fig_num = 1) {
     for (int j = 0; j < num_samples_per_axis; j++) {
       double y = minval + j * (maxval - minval) / (num_samples_per_axis - 1);
       sample(1) = y;
-      if (IsFeasible(&prog, feasibility_constraint, sample))
+      if (IsFeasible(prog, feasibility_constraint, sample))
         feasible_points.col(num_feasible++) = Eigen::Vector2d(x, y);
     }
     std::cout << "." << std::flush;
