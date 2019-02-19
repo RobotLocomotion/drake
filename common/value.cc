@@ -2,6 +2,11 @@
 
 namespace drake {
 
-AbstractValue::~AbstractValue() {}
+AbstractValue::~AbstractValue() = default;
+
+std::string AbstractValue::GetNiceTypeName() const {
+  return NiceTypeName::Canonicalize(
+      NiceTypeName::Demangle(type_info().name()));
+}
 
 }  // namespace drake
