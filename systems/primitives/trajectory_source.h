@@ -26,7 +26,7 @@ namespace systems {
 /// No other values for T are currently supported.
 /// @ingroup primitive_systems
 template <typename T>
-class TrajectorySource : public SingleOutputVectorSource<T> {
+class TrajectorySource final : public SingleOutputVectorSource<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectorySource)
 
@@ -39,9 +39,9 @@ class TrajectorySource : public SingleOutputVectorSource<T> {
                             int output_derivative_order = 0,
                             bool zero_derivatives_beyond_limits = true);
 
-  ~TrajectorySource() override = default;
+  ~TrajectorySource() final = default;
 
- protected:
+ private:
   /// Outputs a vector of values evaluated at the context time of the trajectory
   /// and up to its Nth derivatives, where the trajectory and N are passed to
   /// the constructor. The size of the vector is:
@@ -49,9 +49,8 @@ class TrajectorySource : public SingleOutputVectorSource<T> {
   /// constructor.
   void DoCalcVectorOutput(
       const Context<T>& context,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
- private:
   const std::unique_ptr<trajectories::Trajectory<T>> trajectory_;
   const bool clamp_derivatives_;
   std::vector<std::unique_ptr<trajectories::Trajectory<T>>> derivatives_;

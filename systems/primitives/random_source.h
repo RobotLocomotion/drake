@@ -64,7 +64,7 @@ class RandomState {
 ///
 /// @ingroup primitive_systems
 template <typename Distribution, typename Generator = RandomGenerator>
-class RandomSource : public LeafSystem<double> {
+class RandomSource final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
 
@@ -88,7 +88,7 @@ class RandomSource : public LeafSystem<double> {
   void DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const UnrestrictedUpdateEvent<double>*>&,
-      State<double>* state) const override {
+      State<double>* state) const final {
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto& updates = state->get_mutable_discrete_state();
@@ -97,13 +97,13 @@ class RandomSource : public LeafSystem<double> {
     }
   }
 
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const final {
     return std::make_unique<AbstractValues>(
         AbstractValue::Make(RandomState(seed_)));
   }
 
   void SetDefaultState(const Context<double>& context,
-                       State<double>* state) const override {
+                       State<double>* state) const final {
     unused(context);
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
@@ -115,7 +115,7 @@ class RandomSource : public LeafSystem<double> {
   }
 
   void SetRandomState(const Context<double>& context, State<double>* state,
-                      RandomGenerator* generator) const override {
+                      RandomGenerator* generator) const final {
     unused(context);
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);

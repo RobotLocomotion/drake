@@ -13,7 +13,8 @@ static constexpr double kDiscreteTimeStep = 0.1;
 
 // A helper for accessing the underlying PiecewisePolynomial data.
 struct MatrixData {
-  MatrixData() {}
+  MatrixData() = default;
+
   /// Fully-parameterized constructor.
   MatrixData(const std::vector<double>& times_in,
              const std::vector<Eigen::MatrixXd>& Avec_in,

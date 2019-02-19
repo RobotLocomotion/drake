@@ -40,7 +40,7 @@ namespace systems {
 ///
 /// @ingroup primitive_systems
 template <typename T>
-class Saturation : public LeafSystem<T> {
+class Saturation final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Saturation)
 

@@ -56,7 +56,7 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   template <typename U>
   explicit ConstantVectorSource(const ConstantVectorSource<U>& other);
 
-  ~ConstantVectorSource() override;
+  ~ConstantVectorSource() final;
 
   /// Return a read-only reference to the source value of this block in the
   /// given @p context.
@@ -76,7 +76,7 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   // Outputs a signal with a fixed value as specified by the user.
   void DoCalcVectorOutput(
       const Context<T>& context,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const int source_value_index_;
 };

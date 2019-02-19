@@ -62,12 +62,12 @@ class Gain final : public VectorSystem<T> {
   /// Returns the gain vector constant.
   const Eigen::VectorXd& get_gain_vector() const;
 
- protected:
+ private:
   void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const Eigen::VectorXd k_;
 };
