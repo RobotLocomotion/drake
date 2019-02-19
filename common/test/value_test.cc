@@ -12,8 +12,7 @@
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
-namespace systems {
-namespace {
+namespace testing {
 
 // A type with no constructors.
 struct BareStruct {
@@ -65,6 +64,11 @@ struct MoveOrCloneInt {
 // Helper for EXPECT_EQ to unwrap the data field.
 template <typename T>
 bool operator==(int i, const T& value) { return i == value.data; }
+
+namespace {
+
+using systems::BasicVector;
+using systems::MyVector2d;
 
 // Boilerplate for tests that are identical across different types.  Our
 // TYPED_TESTs will run using all of the below types as the TypeParam.
@@ -348,6 +352,43 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
   EXPECT_EQ("5,6", printable_erased->print());
 }
 
+// Check that TypeHash is extracting exactly the right strings from
+// __PRETTY_FUNCTION__.
+template <typename T>
+void CheckHash(const std::string& name) {
+  internal::FNV1aHasher hasher;
+  hasher(name.data(), name.size());
+  EXPECT_EQ(internal::TypeHash<T>::value, size_t(hasher))
+      << "  for name\n"
+      << "    Which is: " << name << "\n"
+      << "  for __PRETTY_FUNCTION__\n"
+      << "    Which is: " << __PRETTY_FUNCTION__;
+}
+
+struct AnonStruct {};
+
+#ifdef __APPLE__
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
+GTEST_TEST(TypeHashTest, WellKnownValues) {
+  CheckHash<int>("int");
+  CheckHash<BareStruct>("drake::testing::BareStruct");
+  CheckHash<AnonStruct>("drake::testing::{}::AnonStruct");
+
+  const std::string stdcc = kApple ? "std::__1" : "std";
+  CheckHash<std::vector<double>>(fmt::format(
+      "{std}::vector<double,{std}::allocator<double>>",
+      fmt::arg("std", stdcc)));
+  CheckHash<std::vector<BasicVector<double>>>(fmt::format(
+      "{std}::vector<"
+        "drake::systems::BasicVector<double>,"
+        "{std}::allocator<drake::systems::BasicVector<double>>"
+      ">", fmt::arg("std", stdcc)));
+}
+
 }  // namespace
-}  // namespace systems
+}  // namespace testing
 }  // namespace drake
