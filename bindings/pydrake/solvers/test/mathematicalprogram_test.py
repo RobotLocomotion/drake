@@ -94,6 +94,7 @@ class TestMathematicalProgram(unittest.TestCase):
                          mp.SolutionResult.kSolutionFound)
         self.assertEqual(result.get_optimal_cost(), 3.0)
         self.assertTrue(result.get_solver_id().name())
+        self.assertTrue(np.allclose(result.GetSolution(), x_expected))
         self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
         self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
 

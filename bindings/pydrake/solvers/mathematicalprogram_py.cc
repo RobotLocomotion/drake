@@ -262,6 +262,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py_reference_internal,
           doc.MathematicalProgramResult.get_solver_details.doc)
       .def("GetSolution",
+          [](const MathematicalProgramResult& self) {
+            return self.GetSolution();
+          },
+          doc.MathematicalProgramResult.GetSolution.doc_0args)
+      .def("GetSolution",
           [](const MathematicalProgramResult& self, const Variable& var) {
             return self.GetSolution(var);
           },
