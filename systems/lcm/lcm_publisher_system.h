@@ -87,20 +87,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
   }
 
   /**
-   * See full factory method above. Uses the default publish_period = 0
-   * for when publish_triggers does not contain kPeriodic.
-   */
-  template <typename LcmMessage>
-  static std::unique_ptr<LcmPublisherSystem> Make(
-      const std::string& channel,
-      drake::lcm::DrakeLcmInterface* lcm,
-      std::unordered_set<TriggerType> publish_triggers = {}) {
-    return std::make_unique<LcmPublisherSystem>(
-        channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
-        0.0, publish_triggers);
-  }
-
-  /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
    * its sole abstract-valued input port. The LCM message type is determined by
    * the provided `serializer`.
