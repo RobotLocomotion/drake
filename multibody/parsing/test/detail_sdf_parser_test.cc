@@ -206,7 +206,8 @@ GTEST_TEST(MultibodyPlantSdfParserTest, ModelInstanceTest) {
 // with negative damping.
 GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
   const std::string sdf_file_path = FindResourceOrThrow(
-      "drake/multibody/parsing/test/negative_damping_joint.sdf");
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "negative_damping_joint.sdf");
   PackageMap package_map;
   package_map.PopulateUpstreamToDrake(sdf_file_path);
   MultibodyPlant<double> plant;
@@ -220,7 +221,7 @@ GTEST_TEST(SdfParserThrowsWhen, JointDampingIsNegative) {
 
 GTEST_TEST(SdfParser, IncludeTags) {
   const std::string sdf_file_path =
-      "drake/multibody/parsing/test";
+      "drake/multibody/parsing/test/sdf_parser_test";
   sdf::addURIPath("model://", FindResourceOrThrow(sdf_file_path));
   MultibodyPlant<double> plant;
 
@@ -310,6 +311,53 @@ GTEST_TEST(SdfParser, TestOptionalSceneGraph) {
   }
 }
 
+// Verifies that the SDF loader can leverage a specified package map.
+GTEST_TEST(MultibodyPlantSdfParserTest, JointParsingTest) {
+  MultibodyPlant<double> plant;
+  geometry::SceneGraph<double> scene_graph;
+
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "joint_parsing_test.sdf");
+  PackageMap package_map;
+  package_map.PopulateUpstreamToDrake(full_name);
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_name, "", package_map, &plant, &scene_graph);
+  plant.Finalize();
+
+  const Joint<double>& revolute_joint = plant.GetJointByName("revolute_joint");
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.position_lower_limits(), Vector1d(-1)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.position_upper_limits(), Vector1d(2)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.velocity_lower_limits(), Vector1d(-100)));
+  EXPECT_TRUE(CompareMatrices(
+      revolute_joint.velocity_upper_limits(), Vector1d(100)));
+
+  const Joint<double>& prismatic_joint =
+      plant.GetJointByName("prismatic_joint");
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.position_lower_limits(), Vector1d(-2)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.position_upper_limits(), Vector1d(1)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.velocity_lower_limits(), Vector1d(-5)));
+  EXPECT_TRUE(CompareMatrices(
+      prismatic_joint.velocity_upper_limits(), Vector1d(5)));
+
+  const Joint<double>& no_limit_joint =
+      plant.GetJointByName("revolute_joint_no_limits");
+  const Vector1d inf(std::numeric_limits<double>::infinity());
+  const Vector1d neg_inf(-std::numeric_limits<double>::infinity());
+
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.position_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.position_upper_limits(), inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_lower_limits(), neg_inf));
+  EXPECT_TRUE(CompareMatrices(no_limit_joint.velocity_upper_limits(), inf));
+}
+
 void ExpectUnsupportedFrame(const std::string& inner) {
   const std::string filename = temp_directory() + "/bad.sdf";
   std::ofstream file(filename);
@@ -365,6 +413,7 @@ GTEST_TEST(SdfParser, TestUnsupportedFrames) {
   </joint>
 </model>)");
 }
+
 
 }  // namespace
 }  // namespace detail

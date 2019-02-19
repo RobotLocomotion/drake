@@ -46,7 +46,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
 
 GTEST_TEST(FileParserTest, MultiModelTest) {
   const std::string sdf_name = FindResourceOrThrow(
-      "drake/multibody/parsing/test/two_models.sdf");
+      "drake/multibody/parsing/test/sdf_parser_test/two_models.sdf");
 
   // Check that the plural method loads two models.
   {

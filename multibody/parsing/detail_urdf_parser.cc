@@ -198,14 +198,17 @@ void ParseJointKeyParams(XMLElement* node,
   }
 }
 
-void ParseJointLimits(XMLElement* node, double* lower, double* upper) {
+void ParseJointLimits(XMLElement* node, double* lower, double* upper,
+                      double* velocity) {
   *lower = -std::numeric_limits<double>::infinity();
   *upper = std::numeric_limits<double>::infinity();
+  *velocity = std::numeric_limits<double>::infinity();
 
   XMLElement* limit_node = node->FirstChildElement("limit");
   if (limit_node) {
     ParseScalarAttribute(limit_node, "lower", lower);
     ParseScalarAttribute(limit_node, "upper", upper);
+    ParseScalarAttribute(limit_node, "velocity", velocity);
   }
 }
 
@@ -290,23 +293,28 @@ void ParseJoint(ModelInstanceIndex model_instance,
   double upper = 0;
   double lower = 0;
   double damping = 0;
+  double velocity = 0;
 
   if (type.compare("revolute") == 0 || type.compare("continuous") == 0) {
-    ParseJointLimits(node, &lower, &upper);
+    ParseJointLimits(node, &lower, &upper, &velocity);
     ParseJointDynamics(name, node, &damping);
-    plant->AddJoint<RevoluteJoint>(
+    const JointIndex index = plant->AddJoint<RevoluteJoint>(
         name, parent_body, X_PJ,
-        child_body, nullopt, axis, lower, upper, damping);
+        child_body, nullopt, axis, lower, upper, damping).index();
+    Joint<double>& joint = plant->get_mutable_joint(index);
+    joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
   } else if (type.compare("fixed") == 0) {
     plant->AddJoint<WeldJoint>(name, parent_body, X_PJ,
                                child_body, nullopt,
                                Isometry3d::Identity());
   } else if (type.compare("prismatic") == 0) {
-    ParseJointLimits(node, &lower, &upper);
+    ParseJointLimits(node, &lower, &upper, &velocity);
     ParseJointDynamics(name, node, &damping);
-    plant->AddJoint<PrismaticJoint>(
+    const JointIndex index = plant->AddJoint<PrismaticJoint>(
         name, parent_body, X_PJ,
-        child_body, nullopt, axis, lower, upper, damping);
+        child_body, nullopt, axis, lower, upper, damping).index();
+    Joint<double>& joint = plant->get_mutable_joint(index);
+    joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
   } else if (type.compare("floating") == 0) {
     drake::log()->warn("Joint {} specified as type floating which is not "
                        "supported by MultibodyPlant.  Leaving {} as a "
