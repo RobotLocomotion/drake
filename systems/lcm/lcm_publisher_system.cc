@@ -29,7 +29,8 @@ LcmPublisherSystem::LcmPublisherSystem(
     const LcmAndVectorBaseTranslator* translator,
     std::unique_ptr<const LcmAndVectorBaseTranslator> owned_translator,
     std::unique_ptr<SerializerInterface> serializer,
-    DrakeLcmInterface* lcm, double publish_period)
+    DrakeLcmInterface* lcm, double publish_period,
+    std::unordered_set<TriggerType> publish_triggers)
     : channel_(channel),
       translator_(owned_translator ? owned_translator.get() : translator),
       owned_translator_(std::move(owned_translator)),
@@ -40,10 +41,28 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND(lcm_);
   DRAKE_DEMAND(publish_period >= 0.0);
 
+  // Check that publish_triggers does not contain an unsupported trigger
+  for (const auto& trigger : publish_triggers) {
+      DRAKE_DEMAND((trigger == TriggerType::kForced) ||
+        (trigger == TriggerType::kPeriodic) ||
+        (trigger == TriggerType::kPerStep));
+  }
+
+  // If empty, Create default publish triggers
+  if (publish_triggers.empty()) {
+    if (publish_period > 0) {
+      publish_triggers = {TriggerType::kForced, TriggerType::kPeriodic};
+    } else {
+      publish_triggers = {TriggerType::kForced, TriggerType::kPerStep};
+    }
+  }
+
   // Declare a forced publish so that any time Publish(.) is called on this
   // system (or a Diagram containing it), a message is emitted.
-  this->DeclareForcedPublishEvent(
-    &LcmPublisherSystem::PublishInputAsLcmMessage);
+  if (publish_triggers.find(TriggerType::kForced) != publish_triggers.end()) {
+    this->DeclareForcedPublishEvent(
+      &LcmPublisherSystem::PublishInputAsLcmMessage);
+  }
 
   if (translator_ != nullptr) {
     // If the translator provides a specific storage type (i.e., if it returns
@@ -63,52 +82,67 @@ LcmPublisherSystem::LcmPublisherSystem(
   }
 
   set_name(make_name(channel_));
-
-  if (publish_period > 0.0) {
-    this->disable_internal_per_step_publish_events_ = true;
+  if (publish_triggers.find(TriggerType::kPeriodic) != publish_triggers.end()) {
+    DRAKE_DEMAND(publish_period > 0);
     const double offset = 0.0;
     this->DeclarePeriodicPublishEvent(
         publish_period, offset,
         &LcmPublisherSystem::PublishInputAsLcmMessage);
   } else {
-    this->DeclarePerStepEvent(
-        systems::PublishEvent<double>([this](
-            const systems::Context<double>& context,
-            const systems::PublishEvent<double>&) {
-          // TODO(edrumwri) Remove this code once set_publish_period(.) has
-          // been removed; it exists so that one does not get both a per-step
-          // publish and a periodic publish if a user constructs the publisher
-          // the "old" way (construction followed by set_publish_period()).
-          if (this->disable_internal_per_step_publish_events_)
-            return;
+    // publish_period > 0 without TriggerType::kPeriodic has no meaning and is
+    // likely a mistake
+    DRAKE_DEMAND(publish_period == 0);
+  }
 
-          this->PublishInputAsLcmMessage(context);
-        }));
+  if (publish_triggers.find(TriggerType::kPerStep) != publish_triggers.end()) {
+    this->DeclarePerStepEvent(
+    systems::PublishEvent<double>([this](
+        const systems::Context<double>& context,
+        const systems::PublishEvent<double>&) {
+      // TODO(edrumwri) Remove this code once set_publish_period(.) has
+      // been removed; it exists so that one does not get both a per-step
+      // publish and a periodic publish if a user constructs the publisher
+      // the "old" way (construction followed by set_publish_period()).
+      if (this->disable_internal_per_step_publish_events_)
+        return;
+
+      this->PublishInputAsLcmMessage(context);
+    }));
   }
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
     drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
+    double publish_period,
+    std::unordered_set<TriggerType> publish_triggers)
     : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
-                         lcm, publish_period) {}
+                         lcm, publish_period, publish_triggers) {}
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
+    drake::lcm::DrakeLcmInterface* lcm,
+    std::unordered_set<TriggerType> publish_triggers)
+    : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
+                         lcm, 0.0, publish_triggers) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator,
     drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
+    double publish_period,
+    std::unordered_set<TriggerType> publish_triggers)
     : LcmPublisherSystem(channel, &translator, nullptr, nullptr,
-                         lcm, publish_period) {}
+                         lcm, publish_period, publish_triggers) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
     drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period)
+    double publish_period,
+    std::unordered_set<TriggerType> publish_triggers)
     : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
-                         lcm, publish_period) {}
+                         lcm, publish_period, publish_triggers) {}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -116,11 +150,12 @@ LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
     DrakeLcmInterface* lcm,
-    double publish_period)
+    double publish_period,
+    std::unordered_set<TriggerType> publish_triggers)
     : LcmPublisherSystem(
           channel,
           translator_dictionary.GetTranslator(channel),
-          lcm, publish_period) {}
+          lcm, publish_period, publish_triggers) {}
 #pragma GCC diagnostic pop
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
