@@ -42,24 +42,17 @@ GTEST_TEST(BarycentricSystemTest, MatrixGain) {
   auto gain_context = gain.CreateDefaultContext();
   auto bary_context = bary_sys.CreateDefaultContext();
 
-  auto gain_output = gain.get_output_port().Allocate();
-  auto bary_output = bary_sys.get_output_port().Allocate();
   for (double x : {-1., -.5, .3, .7}) {
     for (double y : {-.24, .4, .8}) {
       test = Vector2d{x, y};
       gain_context->FixInputPort(0, test);
-      gain.get_output_port().Calc(*gain_context, gain_output.get());
-
       bary_context->FixInputPort(0, test);
-      bary_sys.get_output_port().Calc(*bary_context, bary_output.get());
 
-      EXPECT_TRUE(CompareMatrices(
-          gain_output->GetValue<BasicVector<double>>().CopyToVector(), A * test,
-          1e-8));
+      const auto& gain_output = gain.get_output_port().Eval(*gain_context);
+      const auto& bary_output = bary_sys.get_output_port().Eval(*bary_context);
 
-      EXPECT_TRUE(CompareMatrices(
-          gain_output->GetValue<BasicVector<double>>().CopyToVector(),
-          bary_output->GetValue<BasicVector<double>>().CopyToVector(), 1e-8));
+      EXPECT_TRUE(CompareMatrices(gain_output, A * test, 1e-8));
+      EXPECT_TRUE(CompareMatrices(gain_output, bary_output, 1e-8));
     }
   }
 }

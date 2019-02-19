@@ -269,17 +269,12 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
   Eigen::VectorXd y0 = Eigen::VectorXd::Zero(num_outputs);
 
   if (output_port) {
-    std::unique_ptr<AbstractValue> autodiff_y0 = output_port->Allocate();
-    output_port->Calc(*autodiff_context, autodiff_y0.get());
-
-    auto autodiff_y0_vec =
-        autodiff_y0->GetValue<BasicVector<AutoDiffXd>>().CopyToVector();
-
-    const Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0_vec);
+    const auto& autodiff_y0 = output_port->Eval(*autodiff_context);
+    const Eigen::MatrixXd CD = math::autoDiffToGradientMatrix(autodiff_y0);
     C = CD.leftCols(num_states);
     D = CD.rightCols(num_inputs);
 
-    const Eigen::VectorXd y = math::autoDiffToValueMatrix(autodiff_y0_vec);
+    const Eigen::VectorXd y = math::autoDiffToValueMatrix(autodiff_y0);
 
     // Note: No tolerance check needed here.  We have defined that the output
     // for the system produced by Linearize is in the coordinates (y-y0).

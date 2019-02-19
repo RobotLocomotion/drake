@@ -28,7 +28,6 @@ class LinearSystemTest : public AffineLinearSystemTest {
     dut_->set_name("test_linear_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput();
     state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
@@ -78,11 +77,8 @@ TEST_F(LinearSystemTest, Output) {
   Eigen::Vector2d x(0.8, -22.1);
   state_->SetFromVector(x);
 
-  dut_->CalcOutput(*context_, system_output_.get());
-
   Eigen::VectorXd expected_output = C_ * x + D_ * u;
-
-  EXPECT_EQ(expected_output, system_output_->get_vector_data(0)->get_value());
+  EXPECT_EQ(expected_output, dut_->get_output_port().Eval(*context_));
 }
 
 // Tests converting to different scalar types.

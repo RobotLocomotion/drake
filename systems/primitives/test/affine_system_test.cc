@@ -22,7 +22,6 @@ class AffineSystemTest : public AffineLinearSystemTest {
     dut_->set_name("test_affine_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput();
     state_ = &context_->get_mutable_continuous_state();
     derivatives_ = dut_->AllocateTimeDerivatives();
     updates_ = dut_->AllocateDiscreteVariables();
@@ -91,14 +90,11 @@ TEST_F(AffineSystemTest, Output) {
   Eigen::Vector2d x(0.8, -22.1);
   state_->SetFromVector(x);
 
-  dut_->CalcOutput(*context_, system_output_.get());
-
   Eigen::VectorXd expected_output(2);
-
   expected_output = C_ * x + D_ * u + y0_;
 
   EXPECT_TRUE(CompareMatrices(
-      expected_output, system_output_->get_vector_data(0)->get_value(), 1e-10));
+      expected_output, dut_->get_output_port().Eval(*context_), 1e-10));
 }
 
 // Tests converting to different scalar types.
@@ -206,9 +202,7 @@ GTEST_TEST(DiscreteAffineSystemTest, DiscreteTime) {
   EXPECT_TRUE(CompareMatrices(system.y0(t), y0));
 
   // Compare the calculated output against the expected output.
-  auto system_output = system.AllocateOutput();
-  system.CalcOutput(*context, system_output.get());
-  EXPECT_TRUE(CompareMatrices(system_output->get_vector_data(0)->get_value(),
+  EXPECT_TRUE(CompareMatrices(system.get_output_port().Eval(*context),
                               C * x0 + D * u0 + y0));
 }
 
@@ -263,10 +257,8 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, EvalTest) {
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
                               derivs->CopyToVector()));
 
-  auto output = sys.AllocateOutput();
-  sys.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
-                              output->get_vector_data(0)->CopyToVector()));
+                              sys.get_output_port().Eval(*context)));
 }
 
 GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
@@ -284,10 +276,8 @@ GTEST_TEST(SimpleTimeVaryingAffineSystemTest, DiscreteEvalTest) {
   EXPECT_TRUE(CompareMatrices(sys.A(t) * x + 42.0 * sys.B(t),
                               updates->get_vector().CopyToVector()));
 
-  auto output = sys.AllocateOutput();
-  sys.CalcOutput(*context, output.get());
   EXPECT_TRUE(CompareMatrices(x + sys.y0(t) + 42.0 * sys.D(t),
-                              output->get_vector_data(0)->CopyToVector()));
+                              sys.get_output_port().Eval(*context)));
 }
 
 // Checks that a time-varying affine system will fail if the matrices do not
