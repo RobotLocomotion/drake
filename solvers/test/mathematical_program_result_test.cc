@@ -38,6 +38,8 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   result.set_solution_result(SolutionResult::kSolutionFound);
   const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
+  EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
   EXPECT_EQ(result.GetSolution(x0_), x_val(0));
   EXPECT_EQ(result.GetSolution(x1_), x_val(1));
   EXPECT_EQ(result.GetSolution(Vector2<symbolic::Variable>(x0_, x1_)), x_val);
@@ -50,6 +52,7 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   result.set_solver_id(SolverId("foo"));
   EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
   EXPECT_EQ(result.get_optimal_cost(), cost);
   EXPECT_EQ(result.get_solver_id().name(), "foo");
 
