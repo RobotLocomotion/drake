@@ -65,7 +65,8 @@ class PassThrough final : public LeafSystem<T> {
 
   /// Returns the sole input port.
   const InputPort<T>& get_input_port() const {
-    return LeafSystem<T>::get_input_port(0);
+    DRAKE_ASSERT(input_port_ != nullptr);
+    return *input_port_;
   }
 
   // Don't use the indexed get_input_port when calling this system directly.
@@ -73,7 +74,8 @@ class PassThrough final : public LeafSystem<T> {
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
-    return LeafSystem<T>::get_output_port(0);
+    DRAKE_ASSERT(output_port_ != nullptr);
+    return *output_port_;
   }
 
   // Don't use the indexed get_output_port when calling this system directly.
@@ -105,6 +107,11 @@ class PassThrough final : public LeafSystem<T> {
   template <typename U> friend class PassThrough;
 
   const std::unique_ptr<const AbstractValue> abstract_model_value_;
+
+  // We store our port pointers so that DoCalcVectorOutput's access to the
+  // input_port_->Eval is inlined (without any port-count bounds checking).
+  const InputPort<T>* input_port_{};
+  const OutputPort<T>* output_port_{};
 };
 
 // TODO(amcastro-tri): remove the vector_size parameter from the constructor
@@ -118,21 +125,21 @@ PassThrough<T>::PassThrough(
   if (!is_abstract()) {
     DRAKE_DEMAND(vector_size != -1);
     BasicVector<T> model_value(vector_size);
-    this->DeclareVectorInputPort(model_value);
-    this->DeclareVectorOutputPort(
+    input_port_ = &this->DeclareVectorInputPort(model_value);
+    output_port_ = &this->DeclareVectorOutputPort(
         model_value, &PassThrough::DoCalcVectorOutput);
   } else {
     DRAKE_DEMAND(vector_size == -1);
     // TODO(eric.cousineau): Remove value parameter from the constructor once
     // the equivalent of #3109 for abstract values is also resolved.
-    this->DeclareAbstractInputPort(*abstract_model_value_);
+    input_port_ = &this->DeclareAbstractInputPort(*abstract_model_value_);
     // Use the std::function<> overloads to work with `AbstractValue` type
     // directly and maintain type erasure.
     auto abstract_value_allocator = [this]() {
       return abstract_model_value_->Clone();
     };
     namespace sp = std::placeholders;
-    this->DeclareAbstractOutputPort(
+    output_port_ = &this->DeclareAbstractOutputPort(
         abstract_value_allocator,
         std::bind(&PassThrough::DoCalcAbstractOutput, this, sp::_1, sp::_2));
   }
@@ -152,7 +159,7 @@ void PassThrough<T>::DoCalcVectorOutput(
   DRAKE_ASSERT(!is_abstract());
   const auto& input = get_input_port().Eval(context);
   DRAKE_ASSERT(input.size() == output->size());
-  output->SetFromVector(input);
+  output->get_mutable_value() = input;
 }
 
 template <typename T>
