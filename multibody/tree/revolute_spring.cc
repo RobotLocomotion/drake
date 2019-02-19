@@ -18,7 +18,7 @@ RevoluteSpring<T>::RevoluteSpring(const RevoluteJoint<T>& joint,
       nominal_angle_(nominal_angle),
       stiffness_(stiffness) {
   DRAKE_THROW_UNLESS(stiffness >= 0);
-      }
+}
 
 template <typename T>
 void RevoluteSpring<T>::DoCalcAndAddForceContribution(
