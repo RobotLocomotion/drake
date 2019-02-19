@@ -2407,7 +2407,7 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
       plant.GetFreeBodyPose(*context, body);
 
   plant.SetRandomContext(context.get(), &generator);
-  const math::RigidTransform<double> X_WB =
+  math::RigidTransform<double> X_WB =
       plant.GetFreeBodyPose(*context, body);
 
   // Just make sure that the rotation matrices have changed. (Testing that
@@ -2428,6 +2428,21 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
   // z is drawn from [3, 4).
   EXPECT_GE(X_WB.translation()[2], 3.0);
   EXPECT_LT(X_WB.translation()[2], 4.0);
+
+  // Check that we can set the rotation to a specific distribution (in this
+  // case it's just constant).
+  const math::RotationMatrix<double> X_WB_new(
+      math::RollPitchYaw<double>(0.3, 0.4, 0.5));
+  plant.SetFreeBodyRandomRotationDistribution(
+      body, X_WB_new.cast<symbolic::Expression>().ToQuaternion());
+
+  plant.SetRandomContext(context.get(), &generator);
+  X_WB = plant.GetFreeBodyPose(*context, body);
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(
+      X_WB_new.matrix(), X_WB.rotation().matrix(),
+      kTolerance, MatrixCompareType::relative));
 }
 
 }  // namespace
