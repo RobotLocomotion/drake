@@ -1815,7 +1815,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///
   /// @param[in] context The state of the multibody system.
   /// @param[in] with_respect_to Enum equal to JacobianWrtVariable::kQDot or
-  /// JacobianWrtVariable::kV, indicating whether the Jacobian ``Js_w_AB` is
+  /// JacobianWrtVariable::kV, indicating whether the Jacobian `Js_w_AB` is
   /// partial derivatives with respect to 𝑠 = q̇ (time-derivatives of generalized
   /// positions) or with respect to 𝑠 = v (generalized velocities).
   /// @param[in] frame_B The frame B in `w_AB` (B's angular velocity in A).
