@@ -224,14 +224,12 @@ TEST_F(VectorSystemTest, OutputStateless) {
   TestVectorSystem dut;
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue> output = output_port.Allocate();
   context->FixInputPort(0, {1.0, 2.0});
-  output_port.Calc(*context, output.get());
+  const auto& output = output_port.Eval(*context);
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
-  EXPECT_EQ(basic.GetAtIndex(0), 1.0);
-  EXPECT_EQ(basic.GetAtIndex(1), 2.0);
+  EXPECT_EQ(output[0], 1.0);
+  EXPECT_EQ(output[1], 2.0);
 
   const auto& input = dut.EvalVectorInput(*context);
   EXPECT_EQ(input.size(), 2);
@@ -247,16 +245,14 @@ TEST_F(VectorSystemTest, OutputContinuous) {
   dut.DeclareContinuousState(TestVectorSystem::kSize);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue> output = output_port.Allocate();
   context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d::Ones());
-  output_port.Calc(*context, output.get());
+  const auto& output = output_port.Eval(*context);
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
-  EXPECT_EQ(basic.GetAtIndex(0), 2.0);
-  EXPECT_EQ(basic.GetAtIndex(1), 3.0);
+  EXPECT_EQ(output[0], 2.0);
+  EXPECT_EQ(output[1], 3.0);
 
   const auto& state = dut.GetVectorState(*context);
   EXPECT_EQ(state.size(), 2);
@@ -270,16 +266,14 @@ TEST_F(VectorSystemTest, OutputDiscrete) {
   dut.set_prototype_discrete_state_count(1);
   auto context = dut.CreateDefaultContext();
   auto& output_port = dut.get_output_port();
-  std::unique_ptr<AbstractValue> output = output_port.Allocate();
   context->FixInputPort(0, {1.0, 2.0});
   context->get_mutable_discrete_state(0).SetFromVector(
       Eigen::Vector2d::Ones());
-  output_port.Calc(*context, output.get());
+  const auto& output = output_port.Eval(*context);
   EXPECT_EQ(dut.get_output_count(), 1);
   EXPECT_EQ(dut.get_last_context(), context.get());
-  const auto& basic = output->GetValueOrThrow<BasicVector<double>>();
-  EXPECT_EQ(basic.GetAtIndex(0), 2.0);
-  EXPECT_EQ(basic.GetAtIndex(1), 3.0);
+  EXPECT_EQ(output[0], 2.0);
+  EXPECT_EQ(output[1], 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
@@ -403,7 +397,7 @@ TEST_F(VectorSystemTest, NoFeedthroughContinuousTimeSystemTest) {
   // The non-connected input is never evaluated.
   auto context = dut.CreateDefaultContext();
   const auto& output = dut.get_output_port();
-  EXPECT_EQ(output.Eval<BasicVector<double>>(*context).GetAtIndex(0), 0.0);
+  EXPECT_EQ(output.Eval(*context)[0], 0.0);
 }
 
 // Symbolic analysis should be able to determine that the system is not direct
@@ -421,7 +415,7 @@ TEST_F(VectorSystemTest, ImplicitlyNoFeedthroughTest) {
   // The non-connected input is never evaluated.
   auto context = dut.CreateDefaultContext();
   const auto& output = dut.get_output_port();
-  EXPECT_EQ(output.Eval<BasicVector<double>>(*context).GetAtIndex(0), 0.0);
+  EXPECT_EQ(output.Eval(*context)[0], 0.0);
 }
 
 // Derivatives and Output methods still work when input size is zero.
@@ -437,7 +431,7 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   EXPECT_EQ(derivatives->get_vector().GetAtIndex(0), -1.0);
 
   const auto& output = dut.get_output_port();
-  EXPECT_EQ(output.Eval<BasicVector<double>>(*context).GetAtIndex(0), 1.0);
+  EXPECT_EQ(output.Eval(*context)[0], 1.0);
 
   const auto& input = dut.EvalVectorInput(*context);
   EXPECT_EQ(input.size(), 0);
@@ -575,7 +569,7 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
 
   const auto& output = dut.get_output_port();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      output.Eval<BasicVector<double>>(*context), std::exception,
+      output.Eval(*context), std::exception,
       ".*Output.*'output->size.. == 0.*failed.*");
 }
 
@@ -603,7 +597,7 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
 
   const auto& output = dut.get_output_port();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      output.Eval<BasicVector<double>>(*context), std::exception,
+      output.Eval(*context), std::exception,
       ".*Output.*'output->size.. == 0.*failed.*");
 }
 

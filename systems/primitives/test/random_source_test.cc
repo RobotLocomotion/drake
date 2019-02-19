@@ -235,25 +235,23 @@ GTEST_TEST(RandomSourceTest, CorrelationTest) {
 // SetDefaultContext returns it to the original (default) output.
 GTEST_TEST(RandomSourceTest, SetRandomContextTest) {
   UniformRandomSource random_source(2, 0.0025);
-  auto output = random_source.get_output_port(0).Allocate();
-  const BasicVector<double>& output_values =
-      output->GetValueOrThrow<systems::BasicVector<double>>();
 
   auto context = random_source.CreateDefaultContext();
-
-  random_source.get_output_port(0).Calc(*context, output.get());
-  Eigen::Vector2d default_values = output_values.CopyToVector();
+  const Eigen::Vector2d default_values =
+      random_source.get_output_port(0).Eval(*context);
 
   RandomGenerator generator;
   random_source.SetRandomContext(context.get(), &generator);
-  random_source.get_output_port(0).Calc(*context, output.get());
-  EXPECT_NE(default_values[0], output_values.GetAtIndex(0));
-  EXPECT_NE(default_values[1], output_values.GetAtIndex(1));
+  const Eigen::Vector2d novel_values =
+      random_source.get_output_port(0).Eval(*context);
+  EXPECT_NE(default_values[0], novel_values[0]);
+  EXPECT_NE(default_values[1], novel_values[1]);
 
   random_source.SetDefaultContext(context.get());
-  random_source.get_output_port(0).Calc(*context, output.get());
-  EXPECT_EQ(default_values[0], output_values.GetAtIndex(0));
-  EXPECT_EQ(default_values[1], output_values.GetAtIndex(1));
+  const Eigen::Vector2d default_values_again =
+      random_source.get_output_port(0).Eval(*context);
+  EXPECT_EQ(default_values[0], default_values_again[0]);
+  EXPECT_EQ(default_values[1], default_values_again[1]);
 }
 
 }  // namespace
