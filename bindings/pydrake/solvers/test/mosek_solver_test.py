@@ -1,7 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
 import unittest
+import warnings
+
 import numpy as np
+
+from pydrake.common.deprecation import DrakeDeprecationWarning
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.mosek import MosekSolver
 
@@ -16,7 +20,7 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = MosekSolver()
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_type(), mp.SolverType.kMosek)
-        result = solver.Solve(prog)
-        self.assertEqual(result, mp.SolutionResult.kSolutionFound)
+        result = solver.Solve(prog, None, None)
+        self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])
-        self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
+        self.assertTrue(np.allclose(result.GetSolution(x), x_expected))

@@ -187,7 +187,10 @@ GTEST_TEST(testMathematicalProgram, testConstructor) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.initial_guess().rows(), 0);
   EXPECT_EQ(prog.num_vars(), 0);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(prog.GetSolution(prog.decision_variables()).rows(), 0);
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(testAddVariable, testAddContinuousVariables1) {
@@ -390,6 +393,8 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 2);
   EXPECT_EQ(prog.initial_guess().rows(), 3);
   EXPECT_EQ(prog.decision_variables().rows(), 3);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   const VectorDecisionVariable<3> vars_expected(x0, x1, x2);
   SolverResult solver_result(SolverId("dummy"));
   solver_result.set_decision_variable_values(Vector3<double>(1, 2, 3));
@@ -398,6 +403,7 @@ GTEST_TEST(testAddDecisionVariables, AddDecisionVariables1) {
     EXPECT_EQ(prog.GetSolution(vars_expected(i)), i + 1);
     EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
   }
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(testAddDecisionVariables, AddVariable2) {
@@ -413,6 +419,8 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
   EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
   EXPECT_EQ(prog.FindDecisionVariableIndex(x2), 5);
   EXPECT_EQ(prog.initial_guess().rows(), 6);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   SolverResult solver_result(SolverId("dummy"));
   solver_result.set_decision_variable_values(Vector6<double>::Zero());
   prog.SetSolverResult(solver_result);
@@ -422,6 +430,7 @@ GTEST_TEST(testAddDecisionVariables, AddVariable2) {
     EXPECT_EQ(prog.GetSolution(vars_expected(i)), 0);
     EXPECT_TRUE(prog.decision_variables()(i).equal_to(vars_expected(i)));
   }
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(testAddDecisionVariables, AddVariable3) {
@@ -494,6 +503,8 @@ GTEST_TEST(testAddIndeterminates, testAddIndeterminates4) {
   CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 template <typename Derived1, typename Derived2>
 typename enable_if<is_same<typename Derived1::Scalar, Variable>::value &&
                    is_same<typename Derived2::Scalar, double>::value>::type
@@ -514,6 +525,7 @@ CheckGetSolution(const MathematicalProgram& prog,
     }
   }
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(testAddIndeterminates, AddIndeterminates1) {
   // Call AddIndeterminates on an empty program.
@@ -570,6 +582,9 @@ GTEST_TEST(testAddIndeterminates, AddIndeterminates3) {
   EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
                std::runtime_error);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(testGetSolution, testGetSolution1) {
   // Tests setting and getting solution for
   // 1. A static-sized  matrix of decision variables.
@@ -625,7 +640,10 @@ GTEST_TEST(testGetSolution, testGetSolution1) {
   EXPECT_THROW(prog.GetSolution(VectorDecisionVariable<2>(z1, X1(0, 0))),
                runtime_error);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(testGetSolution, testGetSolution2) {
   // GetSolution of a symbolic expression/polynomial
   MathematicalProgram prog;
@@ -663,6 +681,7 @@ GTEST_TEST(testGetSolution, testGetSolution2) {
                    p + symbolic::Polynomial(b, symbolic::Variables())),
                std::runtime_error);
 }
+#pragma GCC diagnostic pop
 
 namespace {
 
@@ -2686,9 +2705,12 @@ GTEST_TEST(testMathematicalProgram, testClone) {
         prog.decision_variable(i).equal_to(new_prog->decision_variable(i)));
     EXPECT_EQ(prog.FindDecisionVariableIndex(prog.decision_variable(i)),
               new_prog->FindDecisionVariableIndex(prog.decision_variable(i)));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     // Cloned program has all variable values set to NaN.
     EXPECT_TRUE(
         std::isnan(new_prog->GetSolution(new_prog->decision_variable(i))));
+#pragma GCC diagnostic pop
   }
   for (int i = 0; i < prog.num_indeterminates(); ++i) {
     EXPECT_TRUE(prog.indeterminate(i).equal_to(new_prog->indeterminate(i)));
@@ -2732,7 +2754,10 @@ GTEST_TEST(testMathematicalProgram, testClone) {
                              new_prog->linear_complementarity_constraints()));
 
   EXPECT_TRUE(CompareMatrices(new_prog->initial_guess(), prog.initial_guess()));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(new_prog->GetSolverId(), prog.GetSolverId());
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(testMathematicalProgram, testEvalBinding) {
@@ -2825,6 +2850,8 @@ GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
                               Vector2d::Constant(-std::sqrt(2.) / 2.), 1e-6));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
@@ -2868,6 +2895,7 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(testMathematicalProgram, testAddVisualizationCallback) {
   MathematicalProgram prog;
@@ -2930,6 +2958,8 @@ GTEST_TEST(testMathematicalProgram, TestSolverOptions) {
   EXPECT_EQ(prog.GetSolverOptionsStr(wrong_solver_id).size(), 0);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(testMathematicalProgram, TestGetSolution) {
   // Test GetSolution(var, result)
   MathematicalProgram prog;
@@ -2958,6 +2988,7 @@ GTEST_TEST(testMathematicalProgram, TestGetSolution) {
                               "MathematicalProgramResult::set_x_val, the "
                               "dimension of x_val is 3, expected 2");
 }
+#pragma GCC diagnostic pop
 
 void CheckNewNonnegativePolynomial(
     MathematicalProgram::NonnegativePolynomial type) {
