@@ -570,14 +570,14 @@ void DrealSolver::DoSolve(
         constraints, precision, local_optimization);
   }
 
-  // 4. Sets up SolverResult and SolutionResult.
+  // 4. Sets MathematicalProgramResult.
   result->set_solution_result(SolutionResult::kUnknownError);
   if (dreal_result) {
     // 4.1. delta-SAT case.
     const int num_vars{prog.num_vars()};
     Eigen::VectorXd solution_vector(num_vars);
     // dReal returns an interval box instead of a point as a solution. We pick
-    // the mid-point from a returned box and assign it to the SolverResult.
+    // the mid-point from a returned box and assign it to the result.
     for (const auto& item : *dreal_result) {
       const symbolic::Variable& var{item.first};
       const double v{item.second.mid()};
