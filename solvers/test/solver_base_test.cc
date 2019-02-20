@@ -134,8 +134,6 @@ GTEST_TEST(SolverBaseTest, SolveAndReturn) {
   // solve-as-output-argument method.
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(SolverBaseTest, SolveMutable) {
   const StubSolverBase dut;
   MathematicalProgram prog;
@@ -148,7 +146,6 @@ GTEST_TEST(SolverBaseTest, SolveMutable) {
   EXPECT_EQ(prog.GetSolution(vars[0]), 22.0);
   EXPECT_EQ(prog.GetOptimalCost(), 1.0);
 }
-#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace test

@@ -3,7 +3,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -12,14 +11,6 @@
 
 namespace drake {
 namespace pydrake {
-
-namespace {
-constexpr const char* const kSolveDeprecationString =
-    "MathematicalProgram methods that assume the solution is stored inside "
-    "the program are deprecated; for details and porting advice, see "
-    "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-    "will be removed on 2019-06-01.";
-}  // namespace
 
 PYBIND11_MODULE(trajectory_optimization, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -110,74 +101,24 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
           doc.MultipleShooting.SetInitialTrajectory.doc)
       .def("GetSampleTimes",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetSampleTimes();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetSampleTimes.doc)
-      .def("GetSampleTimes",
-          overload_cast_explicit<Eigen::VectorXd,
-              const solvers::MathematicalProgramResult&>(
+          overload_cast_explicit<Eigen::VectorXd>(
               &MultipleShooting::GetSampleTimes),
-          doc.MultipleShooting.GetSampleTimes.doc)
+          doc.MultipleShooting.GetSampleTimes.doc_0args)
       .def("GetInputSamples",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetInputSamples();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetInputSamples.doc)
-      .def("GetInputSamples",
-          overload_cast_explicit<Eigen::MatrixXd,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::GetInputSamples),
+          [](const MultipleShooting& prog) { return prog.GetInputSamples(); },
           doc.MultipleShooting.GetInputSamples.doc)
       .def("GetStateSamples",
-          [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            return prog.GetStateSamples();
-#pragma GCC diagnostic pop
-          },
-          doc.MultipleShooting.GetStateSamples.doc)
-      .def("GetStateSamples",
-          overload_cast_explicit<Eigen::MatrixXd,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::GetStateSamples),
+          [](const MultipleShooting& prog) { return prog.GetStateSamples(); },
           doc.MultipleShooting.GetStateSamples.doc)
       .def("ReconstructInputTrajectory",
           [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.ReconstructInputTrajectory();
-#pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.ReconstructInputTrajectory.doc)
-      .def("ReconstructInputTrajectory",
-          overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::ReconstructInputTrajectory),
           doc.MultipleShooting.ReconstructInputTrajectory.doc)
       .def("ReconstructStateTrajectory",
           [](const MultipleShooting& prog) {
-            WarnDeprecated(kSolveDeprecationString);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.ReconstructStateTrajectory();
-#pragma GCC diagnostic pop
           },
-          doc.MultipleShooting.ReconstructStateTrajectory.doc)
-      .def("ReconstructStateTrajectory",
-          overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::ReconstructStateTrajectory),
           doc.MultipleShooting.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocation, MultipleShooting>(
@@ -186,7 +127,17 @@ PYBIND11_MODULE(trajectory_optimization, m) {
                const systems::Context<double>&, int, double, double>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
           py::arg("minimum_timestep"), py::arg("maximum_timestep"),
-          doc.DirectCollocation.ctor.doc);
+          doc.DirectCollocation.ctor.doc)
+      .def("ReconstructInputTrajectory",
+          [](const DirectCollocation& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
+          doc.DirectCollocation.ReconstructInputTrajectory.doc)
+      .def("ReconstructStateTrajectory",
+          [](const DirectCollocation& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
+          doc.DirectCollocation.ReconstructStateTrajectory.doc);
 
   py::class_<DirectCollocationConstraint, solvers::Constraint,
       std::shared_ptr<DirectCollocationConstraint>>(
@@ -212,7 +163,20 @@ PYBIND11_MODULE(trajectory_optimization, m) {
           py::arg("linear_system"), py::arg("context"),
           py::arg("num_time_samples"),
           doc.DirectTranscription.ctor
-              .doc_3args_linear_system_context_num_time_samples);
+              .doc_3args_linear_system_context_num_time_samples)
+      // TODO(russt): Add this once TimeVaryingLinearSystem is bound.
+      //      .def(py::init<const TimeVaryingLinearSystem<double>*,
+      //                    const Context<double>&, int>())
+      .def("ReconstructInputTrajectory",
+          [](const DirectTranscription& prog) {
+            return prog.ReconstructInputTrajectory();
+          },
+          doc.DirectTranscription.ReconstructInputTrajectory.doc)
+      .def("ReconstructStateTrajectory",
+          [](const DirectTranscription& prog) {
+            return prog.ReconstructStateTrajectory();
+          },
+          doc.DirectTranscription.ReconstructStateTrajectory.doc);
 }
 
 }  // namespace pydrake

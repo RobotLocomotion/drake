@@ -184,7 +184,6 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["trajectory_optimization_py.cc"],
     package_info = PACKAGE_INFO,

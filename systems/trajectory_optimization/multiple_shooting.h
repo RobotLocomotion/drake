@@ -8,7 +8,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
@@ -251,18 +250,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::VectorXd GetSampleTimes(
       const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
-  DRAKE_DEPRECATED(
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
   Eigen::VectorXd GetSampleTimes() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return GetSampleTimes(this->GetSolution(h_vars_));
-#pragma GCC diagnostic pop
   }
 
   Eigen::VectorXd GetSampleTimes(
@@ -270,13 +263,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
     return GetSampleTimes(result.GetSolution(h_vars_));
   }
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Returns a matrix containing the input values (arranged in columns) at
   /// each knot point at the solution.
-  DRAKE_DEPRECATED(
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
   Eigen::MatrixXd GetInputSamples() const;
 
   /// Returns a matrix containing the input values (arranged in columns) at
@@ -284,13 +274,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::MatrixXd GetInputSamples(
       const solvers::MathematicalProgramResult& result) const;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Returns a matrix containing the state values (arranged in columns) at
   /// each knot point at the solution.
-  DRAKE_DEPRECATED(
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
   Eigen::MatrixXd GetStateSamples() const;
 
   /// Returns a matrix containing the state values (arranged in columns) at
@@ -298,15 +285,12 @@ class MultipleShooting : public solvers::MathematicalProgram {
   Eigen::MatrixXd GetStateSamples(
       const solvers::MathematicalProgramResult& result) const;
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input
   /// port.
-  DRAKE_DEPRECATED(
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
@@ -320,14 +304,11 @@ class MultipleShooting : public solvers::MathematicalProgram {
         "The derived class has to override this function.");
   }
 
+  // TODO(hongkai.dai): remove this function in the future, use the one with
+  // MathematicalProgramResult& as the input.
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
-  DRAKE_DEPRECATED(
-      "MathematicalProgram methods that assume the solution is stored inside "
-      "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
 

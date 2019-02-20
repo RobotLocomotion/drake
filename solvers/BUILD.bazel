@@ -280,15 +280,6 @@ drake_cc_library(
     ],
 )
 
-# The mathematical_program_lite library is similar to the mathematical_program
-# library, differing only in that "lite" does not offer deprecated APIs that
-# assume the solution is stored inside the program (including prog.Solve()).
-# As such, "lite" does not depend on any of the solver implementations, and so
-# is a lighter-weight dependency if the user already knows which particular
-# solver(s) should be used for their class of program.  In the future, the
-# mathematical_program library will also drop those dependencies, at which
-# point this library will become a deprecated alias for mathematical_program.
-# TODO(jwnimmer-tri) Rename the library targets on 2019-06-01.
 drake_cc_library(
     name = "mathematical_program_lite",
     srcs = [
@@ -299,6 +290,9 @@ drake_cc_library(
         "mathematical_program.h",
         "solver_interface.h",
     ],
+    # TODO(jwnimmer-tri) Once we start deprecating non-const Solve, we should
+    # probably make mathematical_program_lite public.
+    visibility = ["//visibility:private"],
     deps = [
         ":binding",
         ":create_constraint",
@@ -1394,7 +1388,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "solver_base_test",
     deps = [
-        ":mathematical_program",
         ":solver_base",
         "//common/test_utilities:expect_throws_message",
     ],

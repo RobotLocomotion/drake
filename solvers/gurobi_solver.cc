@@ -927,12 +927,10 @@ void GurobiSolver::DoSolve(
   result->set_solution_result(solution_result);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   MathematicalProgramResult result;
   Solve(prog, {}, {}, &result);
-  internal::SolverResult solver_result = result.ConvertToSolverResult();
+  SolverResult solver_result = result.ConvertToSolverResult();
   const double objective_bound =
       result.get_solver_details<GurobiSolver>().objective_bound;
   if (!std::isnan(objective_bound)) {
@@ -941,7 +939,6 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   prog.SetSolverResult(solver_result);
   return result.get_solution_result();
 }
-#pragma GCC diagnostic pop
 
 }  // namespace solvers
 }  // namespace drake

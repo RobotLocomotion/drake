@@ -92,8 +92,6 @@ TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   EXPECT_EQ(result.get_solver_details<DummySolver>().data, data);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(MathematicalProgramResultTest, ConvertToSolverResult) {
   MathematicalProgramResult result;
   result.set_decision_variable_index(decision_variable_index_);
@@ -111,7 +109,6 @@ TEST_F(MathematicalProgramResultTest, ConvertToSolverResult) {
       result.get_x_val(), solver_result.decision_variable_values().value()));
   EXPECT_EQ(result.get_optimal_cost(), solver_result.optimal_cost());
 }
-#pragma GCC diagnostic pop
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

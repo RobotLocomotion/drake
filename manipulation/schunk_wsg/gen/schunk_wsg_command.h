@@ -60,7 +60,7 @@ class SchunkWsgCommand final : public drake::systems::BasicVector<T> {
   /// @arg @c utime defaults to 0.0 microsecond.
   /// @arg @c target_position_mm defaults to 0.0 mm.
   /// @arg @c force defaults to 0.0 N.
-  DRAKE_DEPRECATED("This class will be removed after 2019-03-01.")
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
   SchunkWsgCommand() : drake::systems::BasicVector<T>(K::kNumCoordinates) {
     this->set_utime(0.0);
     this->set_target_position_mm(0.0);

@@ -14,14 +14,14 @@ namespace systems {
 using AbstractValue
     DRAKE_DEPRECATED(
         "Spell as drake::AbstractValue instead. "
-        "This alias will be removed on 2019-06-01.")
+        "This alias will be removed on 2019-06-01")
     = drake::AbstractValue;
 
 template <typename T>
 using Value
     DRAKE_DEPRECATED(
         "Spell as drake::AbstractValue instead. "
-        "This alias will be removed on 2019-06-01.")
+        "This alias will be removed on 2019-06-01")
     = drake::Value<T>;
 
 }  // namespace systems

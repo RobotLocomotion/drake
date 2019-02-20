@@ -185,8 +185,6 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double>
 DirectCollocation::ReconstructInputTrajectory()
     const {
@@ -201,10 +199,7 @@ DirectCollocation::ReconstructInputTrajectory()
   }
   return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
 }
-#pragma GCC diagnostic pop
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double>
 DirectCollocation::ReconstructStateTrajectory()
     const {
@@ -226,7 +221,6 @@ DirectCollocation::ReconstructStateTrajectory()
   }
   return PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives);
 }
-#pragma GCC diagnostic pop
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
     const solvers::MathematicalProgramResult& result) const {
