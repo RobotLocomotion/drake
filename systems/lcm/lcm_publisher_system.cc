@@ -76,7 +76,7 @@ LcmPublisherSystem::LcmPublisherSystem(
 
   set_name(make_name(channel_));
   if (publish_triggers.find(TriggerType::kPeriodic) != publish_triggers.end()) {
-    DRAKE_THROW_UNLESS(publish_period > 0);
+    DRAKE_THROW_UNLESS(publish_period > 0.0);
     const double offset = 0.0;
     this->DeclarePeriodicPublishEvent(
         publish_period, offset,
@@ -84,7 +84,7 @@ LcmPublisherSystem::LcmPublisherSystem(
   } else {
     // publish_period > 0 without TriggerType::kPeriodic has no meaning and is
     // likely a mistake.
-    DRAKE_THROW_UNLESS(publish_period == 0);
+    DRAKE_THROW_UNLESS(publish_period == 0.0);
   }
 
   if (publish_triggers.find(TriggerType::kPerStep) != publish_triggers.end()) {
@@ -112,7 +112,7 @@ LcmPublisherSystem::LcmPublisherSystem(
     DrakeLcmInterface* lcm, double publish_period)
     : LcmPublisherSystem(channel, translator, std::move(owned_translator),
       std::move(serializer), lcm,
-      (publish_period > 0) ?
+      (publish_period > 0.0) ?
       TriggerTypeSet({TriggerType::kForced, TriggerType::kPeriodic}) :
       TriggerTypeSet({TriggerType::kForced, TriggerType::kPerStep}),
       publish_period) {}

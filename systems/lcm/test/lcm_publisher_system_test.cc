@@ -289,7 +289,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   // Ensure that the integrator takes at least a few steps.
   // Since there is no internal continuous state for the system, the integrator
   // will not subdivide its steps.
-  for (double time = 0; time < 1; time += 0.25)
+  for (double time = 0.0; time < 1; time += 0.25)
     simulator.StepTo(time);
 
   // Check that we get exactly the number of publishes desired: one (at
@@ -321,7 +321,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
     dut->Publish(*context);
   }
 
-  // Check that we get exactly the number of publishes desired
+  // Check that we get exactly the number of publishes desired.
   EXPECT_EQ(transmission_count, force_publish_count);
 }
 
@@ -401,7 +401,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   // Check that a message was transmitted during initialization.
   EXPECT_EQ(transmission_count, 1);
 
-  for (double time = 0; time < 4; time += 0.01) {
+  for (double time = 0.0; time < 4; time += 0.01) {
     simulator.StepTo(time);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
   }
