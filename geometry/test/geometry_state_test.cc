@@ -1,5 +1,6 @@
 #include "drake/geometry/geometry_state.h"
 
+#include <algorithm>
 #include <memory>
 #include <unordered_set>
 #include <utility>
@@ -1697,6 +1698,71 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.get_pose_in_parent(FrameId::get_new_id()),
       std::logic_error, "No pose available for invalid frame id: \\d+");
+}
+
+TEST_F(GeometryStateTest, TestCollisionCandidates) {
+  SetUpSingleSourceTree(true /* assign proximity roles */);
+
+  // The explicit enumeration of candidate pairs. geometries 0 & 1, 2 & 3, and
+  // 4 & 5 are siblings, therefore they are not valid candidate pairs. All other
+  // combinations _are_.
+  std::set<std::pair<GeometryId, GeometryId>> expected_candidates =
+      {{geometries_[0], geometries_[2]}, {geometries_[0], geometries_[3]},
+       {geometries_[0], geometries_[4]}, {geometries_[0], geometries_[5]},
+       {geometries_[0], anchored_geometry_},
+       {geometries_[1], geometries_[2]}, {geometries_[1], geometries_[3]},
+       {geometries_[1], geometries_[4]}, {geometries_[1], geometries_[5]},
+       {geometries_[1], anchored_geometry_},
+       {geometries_[2], geometries_[4]}, {geometries_[2], geometries_[5]},
+       {geometries_[2], anchored_geometry_},
+       {geometries_[3], geometries_[4]}, {geometries_[3], geometries_[5]},
+       {geometries_[3], anchored_geometry_},
+       {geometries_[4], anchored_geometry_},
+       {geometries_[5], anchored_geometry_}};
+
+  auto candidates_in_set =
+      [](const std::set<std::pair<GeometryId, GeometryId>>& candidates,
+         const std::set<std::pair<GeometryId, GeometryId>>& expected) {
+        ::testing::AssertionResult result = ::testing::AssertionSuccess();
+        if (candidates != expected) {
+          result = ::testing::AssertionFailure();
+          auto print_difference = [&result](const auto& set1, const auto& set2,
+                                            const char* msg) {
+            std::set<std::pair<GeometryId, GeometryId>> diff;
+            std::set_difference(set1.begin(), set1.end(), set2.begin(),
+                                set2.end(), std::inserter(diff, diff.begin()));
+            if (!diff.empty()) {
+              result << "\n    " << msg;
+              for (const auto& p : diff) {
+                result << " (" << p.first << ", " << p.second << ")";
+              }
+            }
+          };
+          print_difference(
+              candidates, expected,
+              "The following pairs were reported but not expected:");
+          print_difference(expected, candidates,
+                           "The following pairs were expected but missing:");
+        }
+        return result;
+      };
+
+  // Confirm initial conditions.
+  EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
+                                expected_candidates));
+
+  // This assumes that ExcludeCollisionsBetween() (tested below) works.
+  while (!expected_candidates.empty()) {
+    auto pair = expected_candidates.begin();
+    geometry_state_.ExcludeCollisionsBetween(GeometrySet{pair->first},
+                                             GeometrySet{pair->second});
+    expected_candidates.erase(pair);
+    EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
+                                  expected_candidates));
+  }
+  // We've filtered everything, should report as empty.
+  EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
+                                expected_candidates));
 }
 
 // Test disallowing collisions among members of a group (self collisions).
