@@ -26,7 +26,7 @@ class DrakeLcm;
 namespace systems {
 namespace lcm {
 
-using TriggerTypes = std::unordered_set<TriggerType, DefaultHash>;
+using TriggerTypeSet = std::unordered_set<TriggerType, DefaultHash>;
 
 /**
  * Publishes an LCM message containing information from its input port.
@@ -54,8 +54,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * Value<LcmMessage> message objects on its sole abstract-valued input port.
    *
    * Sets the default set of publish triggers: 
-   *   if publish_period = 0, publishes on forced events and per step
-   *   if publish_period > 0, publishes on forced events and periodically
+   *   if publish_period = 0, publishes on forced events and per step,
+   *   if publish_period > 0, publishes on forced events and periodically.
    *
    * @tparam LcmMessage message type to serialize, e.g., lcmt_drake_signal.
    *
@@ -103,7 +103,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    *
    * @param publish_period Period that messages will be published (optional).
    * publish_period should only be non-zero if one of the publish_triggers is
-   * kPerStep.
+   * kPeriodic.
    *   
    * @pre publish_period is non-negative.
    * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
@@ -113,7 +113,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm,
-      const TriggerTypes& publish_triggers,
+      const TriggerTypeSet& publish_triggers,
       double publish_period = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
@@ -164,21 +164,21 @@ class LcmPublisherSystem : public LeafSystem<double> {
    *
    * @param publish_triggers Set of triggers that determine when messages will
    * be published. Supported TriggerTypes are {kForced, kPeriodic, kPerStep}. 
-   * Will throw an error if empty or if unsupported types are provided.
+   * Will throw an exception if empty or if unsupported types are provided.
    *
    * @param publish_period Period that messages will be published (optional).
    * publish_period should only be non-zero if one of the publish_triggers is
    * kPerStep.
    *   
    * @pre publish_period is non-negative.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
    * @pre publish_period > 0 iff trigger_types contains kPeriodic.
+   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
    */
   LcmPublisherSystem(const std::string& channel,
-                     std::unique_ptr<SerializerInterface> serializer,
-                     drake::lcm::DrakeLcmInterface* lcm,
-                     const TriggerTypes& publish_triggers,
-                     double publish_period = 0.0);
+      std::unique_ptr<SerializerInterface> serializer,
+      drake::lcm::DrakeLcmInterface* lcm,
+      const TriggerTypeSet& publish_triggers,
+      double publish_period = 0.0);
 
   DRAKE_DEPRECATED(
       "The LcmAndVectorBaseTranslator and its related code are deprecated, "
@@ -290,7 +290,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
                          owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
-                     const TriggerTypes& publish_triggers,
+                     const TriggerTypeSet& publish_triggers,
                      double publish_period);
 
   // Constructors which do not specify publish_triggers delegate to here.
