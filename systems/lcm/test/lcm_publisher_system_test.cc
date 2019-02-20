@@ -270,7 +270,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   lcm.EnableLoopBack();
 
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &lcm, std::unordered_set<TriggerType>({TriggerType::kPerStep}));
+      &lcm, TriggerTypes({TriggerType::kPerStep}));
 
   unique_ptr<Context<double>> context = dut->AllocateContext();
 
@@ -355,7 +355,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
 
   // Instantiates the "device under test".
   auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
-      &lcm, std::unordered_set<TriggerType>({TriggerType::kPeriodic}),
+      &lcm, TriggerTypes({TriggerType::kPeriodic}),
       kPublishPeriod);
   unique_ptr<Context<double>> context = dut->AllocateContext();
 

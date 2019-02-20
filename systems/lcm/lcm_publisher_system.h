@@ -8,6 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/hash.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -24,6 +25,8 @@ class DrakeLcm;
 
 namespace systems {
 namespace lcm {
+
+using TriggerTypes = std::unordered_set<TriggerType, DefaultHash>;
 
 /**
  * Publishes an LCM message containing information from its input port.
@@ -110,7 +113,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   static std::unique_ptr<LcmPublisherSystem> Make(
       const std::string& channel,
       drake::lcm::DrakeLcmInterface* lcm,
-      const std::unordered_set<TriggerType>& publish_triggers,
+      const TriggerTypes& publish_triggers,
       double publish_period = 0.0) {
     return std::make_unique<LcmPublisherSystem>(
         channel, std::make_unique<Serializer<LcmMessage>>(), lcm,
@@ -174,7 +177,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   LcmPublisherSystem(const std::string& channel,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
-                     const std::unordered_set<TriggerType>& publish_triggers,
+                     const TriggerTypes& publish_triggers,
                      double publish_period = 0.0);
 
   DRAKE_DEPRECATED(
@@ -287,7 +290,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
                          owned_translator,
                      std::unique_ptr<SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
-                     const std::unordered_set<TriggerType>& publish_triggers,
+                     const TriggerTypes& publish_triggers,
                      double publish_period);
 
   // Constructors which do not specify publish_triggers delegate to here.
