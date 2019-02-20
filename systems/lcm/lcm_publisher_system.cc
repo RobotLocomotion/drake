@@ -29,8 +29,9 @@ LcmPublisherSystem::LcmPublisherSystem(
     const LcmAndVectorBaseTranslator* translator,
     std::unique_ptr<const LcmAndVectorBaseTranslator> owned_translator,
     std::unique_ptr<SerializerInterface> serializer,
-    DrakeLcmInterface* lcm, double publish_period,
-    std::unordered_set<TriggerType> publish_triggers)
+    DrakeLcmInterface* lcm,
+    const std::unordered_set<TriggerType>& publish_triggers,
+    double publish_period)
     : channel_(channel),
       translator_(owned_translator ? owned_translator.get() : translator),
       owned_translator_(std::move(owned_translator)),
@@ -40,21 +41,13 @@ LcmPublisherSystem::LcmPublisherSystem(
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_.get() != nullptr));
   DRAKE_DEMAND(lcm_);
   DRAKE_DEMAND(publish_period >= 0.0);
+  DRAKE_DEMAND(!publish_triggers.empty());
 
   // Check that publish_triggers does not contain an unsupported trigger
   for (const auto& trigger : publish_triggers) {
       DRAKE_DEMAND((trigger == TriggerType::kForced) ||
         (trigger == TriggerType::kPeriodic) ||
         (trigger == TriggerType::kPerStep));
-  }
-
-  // If empty, Create default publish triggers
-  if (publish_triggers.empty()) {
-    if (publish_period > 0) {
-      publish_triggers = {TriggerType::kForced, TriggerType::kPeriodic};
-    } else {
-      publish_triggers = {TriggerType::kForced, TriggerType::kPerStep};
-    }
   }
 
   // Declare a forced publish so that any time Publish(.) is called on this
@@ -112,37 +105,49 @@ LcmPublisherSystem::LcmPublisherSystem(
 }
 
 LcmPublisherSystem::LcmPublisherSystem(
-    const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
-    drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period,
-    std::unordered_set<TriggerType> publish_triggers)
-    : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
-                         lcm, publish_period, publish_triggers) {}
+    const std::string& channel,
+    const LcmAndVectorBaseTranslator* translator,
+    std::unique_ptr<const LcmAndVectorBaseTranslator> owned_translator,
+    std::unique_ptr<SerializerInterface> serializer,
+    DrakeLcmInterface* lcm, double publish_period)
+    : LcmPublisherSystem(channel, translator, std::move(owned_translator),
+      std::move(serializer), lcm,
+      (publish_period > 0) ? std::unordered_set<TriggerType>(
+          {TriggerType::kForced, TriggerType::kPeriodic}) :
+      std::unordered_set<TriggerType>(
+          {TriggerType::kForced, TriggerType::kPerStep}),
+      publish_period) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
     drake::lcm::DrakeLcmInterface* lcm,
-    std::unordered_set<TriggerType> publish_triggers)
+    double publish_period)
     : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
-                         lcm, 0.0, publish_triggers) {}
+                         lcm, publish_period) {}
+
+LcmPublisherSystem::LcmPublisherSystem(
+    const std::string& channel, std::unique_ptr<SerializerInterface> serializer,
+    drake::lcm::DrakeLcmInterface* lcm,
+    const std::unordered_set<TriggerType>& publish_triggers,
+    double publish_period)
+    : LcmPublisherSystem(channel, nullptr, nullptr, std::move(serializer),
+                         lcm, publish_triggers, publish_period) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmAndVectorBaseTranslator& translator,
     drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period,
-    std::unordered_set<TriggerType> publish_triggers)
+    double publish_period)
     : LcmPublisherSystem(channel, &translator, nullptr, nullptr,
-                         lcm, publish_period, publish_triggers) {}
+                         lcm, publish_period) {}
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     std::unique_ptr<const LcmAndVectorBaseTranslator> translator,
     drake::lcm::DrakeLcmInterface* lcm,
-    double publish_period,
-    std::unordered_set<TriggerType> publish_triggers)
+    double publish_period)
     : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
-                         lcm, publish_period, publish_triggers) {}
+                         lcm, publish_period) {}
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -150,12 +155,11 @@ LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
     DrakeLcmInterface* lcm,
-    double publish_period,
-    std::unordered_set<TriggerType> publish_triggers)
+    double publish_period)
     : LcmPublisherSystem(
           channel,
           translator_dictionary.GetTranslator(channel),
-          lcm, publish_period, publish_triggers) {}
+          lcm, publish_period) {}
 #pragma GCC diagnostic pop
 
 LcmPublisherSystem::~LcmPublisherSystem() {}

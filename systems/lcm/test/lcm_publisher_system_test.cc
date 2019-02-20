@@ -269,14 +269,13 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   });
   lcm.EnableLoopBack();
 
-  // Instantiate the "device under test" in per-step publishing mode.
-  LcmtDrakeSignalTranslator translator(kDim);
-  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm, 0,
-      std::unordered_set<TriggerType>({TriggerType::kPerStep}));
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
+      &lcm, std::unordered_set<TriggerType>({TriggerType::kPerStep}));
+
   unique_ptr<Context<double>> context = dut->AllocateContext();
 
   context->FixInputPort(kPortNumber,
-      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(kDim)));
+    AbstractValue::Make<lcmt_drake_signal>(lcmt_drake_signal()));
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
@@ -341,8 +340,8 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   EXPECT_EQ(transmission_count, 3);
 }
 
-// Tests that the published LCM message has the expected timestamps, when
-// initialized with a publish trigger set
+// When constructed via a publish_triggers set, tests that periodic publishing
+// generates the expected number of publishes.
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
 
@@ -355,14 +354,13 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   lcm.EnableLoopBack();
 
   // Instantiates the "device under test".
-  LcmtDrakeSignalTranslator translator(kDim);
-  auto dut = make_unique<LcmPublisherSystem>(channel_name, translator, &lcm,
-      kPublishPeriod,
-      std::unordered_set<TriggerType>({TriggerType::kPeriodic}));
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
+      &lcm, std::unordered_set<TriggerType>({TriggerType::kPeriodic}),
+      kPublishPeriod);
   unique_ptr<Context<double>> context = dut->AllocateContext();
 
   context->FixInputPort(kPortNumber,
-      make_unique<BasicVector<double>>(Eigen::VectorXd::Zero(kDim)));
+    AbstractValue::Make<lcmt_drake_signal>(lcmt_drake_signal()));
 
   // Prepares to integrate.
   drake::systems::Simulator<double> simulator(*dut, std::move(context));
@@ -376,11 +374,6 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   for (double time = 0; time < 4; time += 0.01) {
     simulator.StepTo(time);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
-    // Note that the expected time is in milliseconds.
-    const double expected_time =
-        std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
-    EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
-      channel_name).timestamp, expected_time);
   }
 
   // Check that we get the expected number of messages: one at initialization
