@@ -84,7 +84,7 @@ LcmPublisherSystem::LcmPublisherSystem(
   } else {
     // publish_period > 0 without TriggerType::kPeriodic has no meaning and is
     // likely a mistake.
-    DRAKE_DEMAND(publish_period == 0);
+    DRAKE_THROW_UNLESS(publish_period == 0);
   }
 
   if (publish_triggers.find(TriggerType::kPerStep) != publish_triggers.end()) {
