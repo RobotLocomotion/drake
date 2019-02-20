@@ -9,6 +9,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/hash.h"
 #include "drake/common/is_cloneable.h"
 #include "drake/common/nice_type_name.h"
 
@@ -241,6 +242,204 @@ class Value : public AbstractValue {
 #if !defined(DRAKE_DOXYGEN_CXX)
 // Declare some private helper structs.
 namespace internal {
+
+// Work around a GCC 5 bug that forbids throw except in return statements.
+constexpr int pretty_func_parse_error(bool is_error) {
+  return is_error ? throw std::logic_error("Parse error") : 0;
+}
+
+// Extracts a hash of the type `T` in a __PRETTY_FUNCTION__ templated on T.
+//
+// For, e.g., TypeHash<int> the pretty_func string `pretty` looks like this:
+//  GCC   7.3: "... calc() [with T = int; size_t = ..."
+//  Clang 6.0: "... calc() [T = int]"
+//
+// We grab the characters for T's type (e.g., "int") and hash them using FNV1a.
+//  https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+//
+// If T is a template type like "std::vector<U>", we only hash "std::vector"
+// here.  We stop when we reach a '<' because each template argument is hashed
+// separately below using parameter packs (see `TypeHasher<T<Args...>>`).  This
+// avoids compiler bugs where __PRETTY_FUNCTION__ is fickle about the spelling
+// of "T = std::vector<U>" vs "T = std::vector<U, std::allocator<U>>", varying
+// it from one method to the next.  Because we visit each base type in turn, we
+// hash "std::vector" then "U" then "std::allocator" then "U" and so it doesn't
+// matter exactly how templates end up being spelled in __PRETTY_FUNCTION__.
+//
+// Note that the compiler is required to inform us at compile-time if there are
+// undefined operations in the below, such as running off the end of a string.
+// Therefore, so as long as this function compiles, we know that `pretty` had
+// at least something that looks like "T = ..." in it.
+constexpr void hash_template_argument_from_pretty_func(
+    const char* pretty, bool discard_nested, FNV1aHasher* result) {
+  // Advance to the typename after the "T = ".
+  const char* p = pretty;
+  for (; (*p != '='); ++p) {}  // Advance to '='.
+  ++p;                         // Advance to ' '.
+  ++p;                         // Advance to the typename we want.
+
+  // Hash the characters in the typename, ending either when the typename ends
+  // (';' or ']') or maybe when the first template argument begins ('<').
+  while ((*p != ';') && (*p != ']')) {
+    // Map Clang's spelling for the anonymous namespace to match GCC.  Start by
+    // searching for the clang spelling starting at `p` ...
+    const char* const clang_spelling = "(anonymous namespace)";
+    const char* clang_iter = clang_spelling;
+    const char* pretty_iter = p;
+    for (; *clang_iter != 0 && *pretty_iter != 0; ++clang_iter, ++pretty_iter) {
+      if (*clang_iter != *pretty_iter) { break; }
+    }
+    // ... and if we found the entire clang_spelling, emit gcc_spelling instead.
+    if (*clang_iter == 0) {
+      const char* const gcc_spelling = "{anonymous}";
+      for (const char* c = gcc_spelling; *c; ++c) {
+        result->add_byte(*c);
+      }
+      p = pretty_iter;
+      continue;
+    }
+
+    // If we find a nested type ("<>"), then either we expected it (in which
+    // case we're done) or we didn't expect it (and something is wrong).
+    if (*p == '<') {
+      if (discard_nested) {
+        break;
+      } else {
+        pretty_func_parse_error(true);
+      }
+    }
+
+    // If the type has parens (such as a function pointer or std::function),
+    // then we can't handle it.  Add support for function types involves not
+    // only unpacking the return and argument types, but also adding support
+    // for const / volatile / reference / etc.).
+    if (*p == '(') {
+      pretty_func_parse_error(true);
+    }
+
+    result->add_byte(*p);
+    ++p;
+  }
+}
+
+// Provides a struct templated on T so that __PRETTY_FUNCTION__ will express T
+// at compile time.  The calc() function returns a hash of T.  This base struct
+// handles non-templated values (e.g., int); in a specialization down below, we
+// handle template template T's.
+template <typename T>
+struct TypeHasher {
+  static constexpr void calc(FNV1aHasher* result) {
+    // With discard_nested disabled here, the hasher will fail if it sees a
+    // '<' in the typename.  If that happens, it means that the parameter pack
+    // specialization(s) below did not match as expected.
+    const bool discard_nested = false;
+    hash_template_argument_from_pretty_func(
+        __PRETTY_FUNCTION__, discard_nested, result);
+  }
+};
+
+// Provides a struct templated on Ts... with a calc() that hashes a sequence of
+// types (a template parameter pack).
+template <typename... Args>
+struct ParameterPackHasher {};
+// Specializes for base case: an empty pack.
+template <>
+struct ParameterPackHasher<> { static constexpr void calc(FNV1aHasher*) {} };
+// Specializes for inductive case: recurse using first + rest.
+template <typename A, typename... B>
+struct ParameterPackHasher<A, B...> {
+  static constexpr void calc(FNV1aHasher* result) {
+    TypeHasher<A>::calc(result);
+    if (sizeof...(B)) {
+      // Add delimiter so that pair<cub,scone> and pair<cubs,cone> are distinct.
+      result->add_byte(',');
+      ParameterPackHasher<B...>::calc(result);
+    }
+  }
+};
+
+// Specializes TypeHasher for template types T so that we have the typename of
+// each template argument separately from T's outer type (as explained in the
+// overview above).
+template <template <typename...> class T, class... Args>
+struct TypeHasher<T<Args...>> {
+  static constexpr void calc(FNV1aHasher* result) {
+    // First, hash just the "T" template template type, not the "<Args...>".
+    const bool discard_nested = true;
+    hash_template_argument_from_pretty_func(
+        __PRETTY_FUNCTION__, discard_nested, result);
+    // Then, hash the "<Args...>".  Add delimiters so that parameter pack
+    // nesting is correctly hashed.
+    result->add_byte('<');
+    ParameterPackHasher<Args...>::calc(result);
+    result->add_byte('>');
+  }
+};
+
+// Provides a struct templated on an `int`, similar to TypeHasher<T> but where
+// the template parameters are int(s), not typenames.
+template <int N>
+struct IntHasher {
+  static constexpr void calc(FNV1aHasher* result) {
+    const bool discard_nested = false;
+    hash_template_argument_from_pretty_func(
+        __PRETTY_FUNCTION__, discard_nested, result);
+  }
+};
+// Provides a struct templated on Ns... with a calc() that hashes a sequence of
+// ints (an int parameter pack).
+template <int... Ns>
+struct IntPackHasher {};
+// Specializes for base case: an empty pack.
+template <>
+struct IntPackHasher<> { static constexpr void calc(FNV1aHasher*) {} };
+// Specializes for inductive case: recurse using first + rest.
+template <int N, int... Ns>
+struct IntPackHasher<N, Ns...> {
+  static constexpr void calc(FNV1aHasher* result) {
+    IntHasher<N>::calc(result);
+    if (sizeof...(Ns)) {
+      result->add_byte(',');
+      IntPackHasher<Ns...>::calc(result);
+    }
+  }
+};
+
+// Specializes TypeHasher for Eigen-like types.
+template <template <typename, int, int...> class T,
+          typename U, int N, int... Ns>
+struct TypeHasher<T<U, N, Ns...>> {
+  static constexpr void calc(FNV1aHasher* result) {
+    // First, hash just the "T" template template type, not the "<U, N, Ns...>".
+    const bool discard_nested = true;
+    hash_template_argument_from_pretty_func(
+        __PRETTY_FUNCTION__, discard_nested, result);
+    // Then, hash the "<U, N, Ns...>".  Add delimiters so that parameter pack
+    // nesting is correctly hashed.
+    result->add_byte('<');
+    TypeHasher<U>::calc(result);
+    result->add_byte(',');
+    IntPackHasher<N, Ns...>::calc(result);
+    result->add_byte('>');
+  }
+};
+
+// Computes a typename hash into a static constant.  By putting it into a
+// static constexpr, we force the compiler to compute the hash at compile time.
+// This implementation is intended to work for the kinds of `T`s we would see
+// in a Value<T>; notably, it does not support T's of type std::function,
+// function pointers, and the like.
+template <typename T>
+struct TypeHash {
+  static constexpr size_t calc() {
+    FNV1aHasher hasher;
+    TypeHasher<T>::calc(&hasher);
+    return size_t(hasher);
+  }
+  static constexpr size_t value = calc();
+};
+template <typename T>
+constexpr size_t TypeHash<T>::value;
 
 // For copyable types, we can store a T directly within Value<T> and we don't
 // need any special tricks to create or retrieve it.
