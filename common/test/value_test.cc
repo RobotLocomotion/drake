@@ -1,5 +1,6 @@
 #include "drake/common/value.h"
 
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -12,8 +13,7 @@
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
-namespace systems {
-namespace {
+namespace test {
 
 // A type with no constructors.
 struct BareStruct {
@@ -65,6 +65,9 @@ struct MoveOrCloneInt {
 // Helper for EXPECT_EQ to unwrap the data field.
 template <typename T>
 bool operator==(int i, const T& value) { return i == value.data; }
+
+using systems::BasicVector;
+using systems::MyVector2d;
 
 // Boilerplate for tests that are identical across different types.  Our
 // TYPED_TESTs will run using all of the below types as the TypeParam.
@@ -348,6 +351,92 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
   EXPECT_EQ("5,6", printable_erased->print());
 }
 
+// Check that TypeHash is extracting exactly the right strings from
+// __PRETTY_FUNCTION__.
+template <typename T>
+void CheckHash(const std::string& name) {
+  internal::FNV1aHasher hasher;
+  hasher(name.data(), name.size());
+  EXPECT_EQ(internal::TypeHash<T>::value, size_t(hasher))
+      << "  for name\n"
+      << "    Which is: " << name << "\n"
+      << "  for __PRETTY_FUNCTION__\n"
+      << "    Which is: " << __PRETTY_FUNCTION__;
+}
+
+namespace {
+struct AnonStruct {};
+class AnonClass {};
 }  // namespace
-}  // namespace systems
+
+#ifdef __APPLE__
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
+GTEST_TEST(TypeHashTest, WellKnownValues) {
+  // Simple primitives, structs, and classes.
+  CheckHash<int>("int");
+  CheckHash<double>("double");
+  CheckHash<Point>("drake::test::Point");
+
+  // Anonymous structs and classes.
+  CheckHash<AnonStruct>("drake::test::{anonymous}::AnonStruct");
+  CheckHash<AnonClass>("drake::test::{anonymous}::AnonClass");
+
+  // Templated containers without default template arguments.
+  const std::string stdcc = kApple ? "std::__1" : "std";
+  CheckHash<std::shared_ptr<double>>(fmt::format(
+      "{std}::shared_ptr<double>",
+      fmt::arg("std", stdcc)));
+  CheckHash<std::pair<int, double>>(fmt::format(
+      "{std}::pair<int,double>",
+      fmt::arg("std", stdcc)));
+
+  // Templated classes *with* default template arguments.
+  CheckHash<std::vector<double>>(fmt::format(
+      "{std}::vector<double,{std}::allocator<double>>",
+      fmt::arg("std", stdcc)));
+  CheckHash<std::vector<BasicVector<double>>>(fmt::format(
+      "{std}::vector<"
+        "drake::systems::BasicVector<double>,"
+        "{std}::allocator<drake::systems::BasicVector<double>>"
+      ">", fmt::arg("std", stdcc)));
+
+  // Const-qualified types.
+  CheckHash<std::vector<const double>>(fmt::format(
+      "{std}::vector<const double,{std}::allocator<const double>>",
+      fmt::arg("std", stdcc)));
+  CheckHash<std::shared_ptr<const double>>(fmt::format(
+      "{std}::shared_ptr<const double>",
+      fmt::arg("std", stdcc)));
+
+  // Eigen classes.
+  CheckHash<Eigen::VectorXd>("Eigen::Matrix<double,-1,1,0,-1,1>");
+  CheckHash<Eigen::MatrixXd>("Eigen::Matrix<double,-1,-1,0,-1,-1>");
+  CheckHash<Eigen::Vector3d>("Eigen::Matrix<double,3,1,0,3,1>");
+  CheckHash<Eigen::Matrix3d>("Eigen::Matrix<double,3,3,0,3,3>");
+
+  // Vectors of Eigens.
+  CheckHash<std::vector<Eigen::VectorXd>>(fmt::format(
+      "{std}::vector<{eigen},{std}::allocator<{eigen}>>",
+      fmt::arg("std", stdcc),
+      fmt::arg("eigen", "Eigen::Matrix<double,-1,1,0,-1,1>")));
+
+  // Everything together at once works.
+  using BigType = std::vector<std::pair<
+      const double, std::shared_ptr<Eigen::Matrix3d>>>;
+  CheckHash<BigType>(fmt::format(
+      "{std}::vector<"
+        "{std}::pair<"
+          "const double,"
+          "{std}::shared_ptr<Eigen::Matrix<double,3,3,0,3,3>>>,"
+        "{std}::allocator<{std}::pair<"
+          "const double,"
+          "{std}::shared_ptr<Eigen::Matrix<double,3,3,0,3,3>>>>>",
+      fmt::arg("std", stdcc)));
+}
+
+}  // namespace test
 }  // namespace drake
