@@ -1,5 +1,6 @@
 #include "drake/common/value.h"
 
+#include <functional>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -12,8 +13,7 @@
 #include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
-namespace systems {
-namespace {
+namespace test {
 
 // A type with no constructors.
 struct BareStruct {
@@ -65,6 +65,9 @@ struct MoveOrCloneInt {
 // Helper for EXPECT_EQ to unwrap the data field.
 template <typename T>
 bool operator==(int i, const T& value) { return i == value.data; }
+
+using systems::BasicVector;
+using systems::MyVector2d;
 
 // Boilerplate for tests that are identical across different types.  Our
 // TYPED_TESTs will run using all of the below types as the TypeParam.
@@ -348,6 +351,65 @@ GTEST_TEST(ValueTest, SubclassOfValueSurvivesClone) {
   EXPECT_EQ("5,6", printable_erased->print());
 }
 
+// Check that TypeHash is extracting exactly the right strings from
+// __PRETTY_FUNCTION__.
+template <typename T>
+void CheckHash(const std::string& name) {
+  internal::FNV1aHasher hasher;
+  hasher(name.data(), name.size());
+  EXPECT_EQ(internal::TypeHash<T>::value, size_t(hasher))
+      << "  for name\n"
+      << "    Which is: " << name << "\n"
+      << "  for __PRETTY_FUNCTION__\n"
+      << "    Which is: " << __PRETTY_FUNCTION__;
+}
+
+namespace {
+struct AnonStruct {};
+class AnonClass {};
 }  // namespace
-}  // namespace systems
+
+#ifdef __APPLE__
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
+#ifdef __clang__
+constexpr bool kClang = true;
+#else
+constexpr bool kClang = false;
+#endif
+
+GTEST_TEST(TypeHashTest, WellKnownValues) {
+  // Simple primitives, structs, and classes work.
+  CheckHash<int>("int");
+  CheckHash<double>("double");
+  CheckHash<Point>("drake::test::Point");
+
+  // Anonymous structs and classes work.  Compilers differ on how these types
+  // get hashed, but there is no problem as long as the hash is consistent
+  // within a single translation unit.
+  const std::string anon = kClang ? "(anonymousnamespace)" : "{anonymous}";
+  CheckHash<AnonStruct>(fmt::format("drake::test::{}::AnonStruct", anon));
+  CheckHash<AnonClass>(fmt::format("drake::test::{}::AnonClass", anon));
+
+  // Templated classes work.
+  const std::string stdcc = kApple ? "std::__1" : "std";
+  CheckHash<std::vector<double>>(fmt::format(
+      "{std}::vector<double,{std}::allocator<double>>",
+      fmt::arg("std", stdcc)));
+  CheckHash<std::vector<BasicVector<double>>>(fmt::format(
+      "{std}::vector<"
+        "drake::systems::BasicVector<double>,"
+        "{std}::allocator<drake::systems::BasicVector<double>>"
+      ">", fmt::arg("std", stdcc)));
+
+  // Function types work.
+  CheckHash<int(*)(double)>("int(*)(double)");
+  CheckHash<std::function<int(double)>>(fmt::format(
+      "{std}::function<int(double)>", fmt::arg("std", stdcc)));
+}
+
+}  // namespace test
 }  // namespace drake

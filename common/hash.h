@@ -212,13 +212,14 @@ struct uhash {
   }
 };
 
-namespace detail {
+namespace internal {
 /// The FNV1a hash algorithm, used for @ref hash_append.
 /// https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
 class FNV1aHasher {
  public:
   using result_type = size_t;
 
+  // Feeds a block of memory into this hash.
   void operator()(const void* data, size_t length) noexcept {
     const uint8_t* const begin = static_cast<const uint8_t*>(data);
     const uint8_t* const end = begin + length;
@@ -227,7 +228,13 @@ class FNV1aHasher {
     }
   }
 
-  explicit operator size_t() noexcept {
+  // Feeds a single byte into this hash.
+  constexpr void add_byte(uint8_t byte) noexcept {
+    hash_ = (hash_ ^ byte) * 1099511628211u;
+  }
+
+  // Returns the hash.
+  explicit constexpr operator size_t() noexcept {
     return hash_;
   }
 
@@ -235,11 +242,11 @@ class FNV1aHasher {
   static_assert(sizeof(result_type) == (64 / 8), "We require a 64-bit size_t");
   result_type hash_{0xcbf29ce484222325u};
 };
-}  // namespace detail
+}  // namespace internal
 
 /// The default HashAlgorithm concept implementation across Drake.  This is
 /// guaranteed to have a result_type of size_t to be compatible with std::hash.
-using DefaultHasher = detail::FNV1aHasher;
+using DefaultHasher = internal::FNV1aHasher;
 
 /// The default hashing functor, akin to std::hash.
 using DefaultHash = drake::uhash<DefaultHasher>;
