@@ -34,7 +34,7 @@ class IiwaCommand : public systems::BasicVector<T> {
    * The dimension of this will be 2 * @p num_joints + 1, which are timestamp,
    * position and torque per each joint.
    */
-  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01.")
   explicit IiwaCommand(int num_joints);
 
   T utime() const;
@@ -83,7 +83,7 @@ class IiwaCommandTranslator : public systems::lcm::LcmAndVectorBaseTranslator {
    * Constructs a IiwaCommandTranslator.
    * @param num_joints Number of joints of the IIWA command.
    */
-  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01.")
   explicit IiwaCommandTranslator(int num_joints = kIiwaArmNumJoints);
 
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()

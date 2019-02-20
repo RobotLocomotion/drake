@@ -28,7 +28,7 @@ class SchunkWsgCommandTranslator
 
   // TODO(jwnimmer-tri) Remove this class after 2019-03-01.
   // There is no replacement -- these objects should never be needed anymore.
-  DRAKE_DEPRECATED("This class will be removed after 2019-03-01")
+  DRAKE_DEPRECATED("This class will be removed after 2019-03-01.")
   SchunkWsgCommandTranslator() : LcmAndVectorBaseTranslator(3) {}
 
   std::unique_ptr<systems::BasicVector<double>> AllocateOutputVector()
