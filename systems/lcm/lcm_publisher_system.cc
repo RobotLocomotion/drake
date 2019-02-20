@@ -83,7 +83,7 @@ LcmPublisherSystem::LcmPublisherSystem(
         &LcmPublisherSystem::PublishInputAsLcmMessage);
   } else {
     // publish_period > 0 without TriggerType::kPeriodic has no meaning and is
-    // likely a mistake
+    // likely a mistake.
     DRAKE_DEMAND(publish_period == 0);
   }
 

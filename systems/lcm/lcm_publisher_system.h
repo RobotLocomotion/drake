@@ -103,8 +103,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * kPerStep.
    *   
    * @pre publish_period is non-negative.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}
-   * @pre publish_period > 0 iff trigger_types contains kPeriodic
+   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period > 0 if and only if trigger_types contains kPeriodic.
    */
   template <typename LcmMessage>
   static std::unique_ptr<LcmPublisherSystem> Make(
@@ -168,8 +168,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * kPerStep.
    *   
    * @pre publish_period is non-negative.
-   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}
-   * @pre publish_period > 0 iff trigger_types contains kPeriodic
+   * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
+   * @pre publish_period > 0 iff trigger_types contains kPeriodic.
    */
   LcmPublisherSystem(const std::string& channel,
                      std::unique_ptr<SerializerInterface> serializer,
