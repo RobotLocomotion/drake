@@ -145,6 +145,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "hash",
+    srcs = ["hash.cc"],
     hdrs = ["hash.h"],
     deps = [
         ":essential",
@@ -484,6 +485,7 @@ drake_cc_library(
     deps = [
         ":copyable_unique_ptr",
         ":essential",
+        ":hash",
         ":is_cloneable",
         ":nice_type_name",
     ],
