@@ -124,6 +124,9 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetNumAnchoredGeometries().  */
   int GetNumAnchoredGeometries() const;
 
+  /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
+  std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
+
   //@}
 
   /** @name          Sources and source-related data  */

@@ -128,6 +128,16 @@ class SceneGraphInspector {
     return state_->GetNumAnchoredGeometries();
   }
 
+  /** Returns all pairs of geometries that are candidates for collision (in no
+   particular order). See SceneGraph::ExcludeCollisionsBetween() or
+   SceneGraph::ExcludeCollisionsWithin() for information on why a particular
+   pair may _not_ be a candidate.  */
+  std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates()
+      const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetCollisionCandidates();
+  }
+
   //@}
 
   /** @name                Sources and source-related data  */

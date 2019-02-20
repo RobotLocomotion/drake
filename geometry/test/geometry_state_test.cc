@@ -1699,6 +1699,76 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
       std::logic_error, "No pose available for invalid frame id: \\d+");
 }
 
+TEST_F(GeometryStateTest, TestCollisionCandidates) {
+  SetUpSingleSourceTree(true /* assign proximity roles */);
+
+  // The set of all geometry ids that are candidate pairs. Siblings are *not*
+  // candidates.
+  std::set<std::pair<GeometryId, GeometryId>> expected_candidates =
+      {{geometries_[0], geometries_[2]}, {geometries_[0], geometries_[3]},
+       {geometries_[0], geometries_[4]}, {geometries_[0], geometries_[5]},
+       {geometries_[0], anchored_geometry_},
+       {geometries_[1], geometries_[2]}, {geometries_[1], geometries_[3]},
+       {geometries_[1], geometries_[4]}, {geometries_[1], geometries_[5]},
+       {geometries_[1], anchored_geometry_},
+       {geometries_[2], geometries_[4]}, {geometries_[2], geometries_[5]},
+       {geometries_[2], anchored_geometry_},
+       {geometries_[3], geometries_[4]}, {geometries_[3], geometries_[5]},
+       {geometries_[3], anchored_geometry_},
+       {geometries_[4], anchored_geometry_},
+       {geometries_[5], anchored_geometry_}};
+
+  auto candidates_in_set =
+      [](const std::set<std::pair<GeometryId, GeometryId>>& candidates,
+         const std::set<std::pair<GeometryId, GeometryId>>& expected) {
+        if (candidates.size() != expected.size()) {
+          auto result = ::testing::AssertionFailure()
+              << "Wrong number of collision candidates:\n";
+          result << "Expected " << expected.size() << ":";
+          for (const auto& p : expected) {
+            result << " (" << p.first << ", " << p.second << ")";
+          }
+          result << "\nTested " << candidates.size() << ":";
+          for (const auto& p : candidates) {
+            result << " (" << p.first << ", " << p.second << ")";
+          }
+          result << "\n";
+          return result;
+        }
+        for (const auto& pair : candidates) {
+          if (expected.count(pair) == 0) {
+            auto result = ::testing::AssertionFailure()
+                << "At least one test candidate was not expected";
+            result << "Pair (" << pair.first << ", " << pair.second << ") "
+                   << " was not in the expected set.\n";
+            result << "Expected:";
+            for (const auto& p : expected) {
+              result << " (" << p.first << ", " << p.second << ")";
+            }
+            result << "\n";
+          }
+        }
+        return ::testing::AssertionSuccess();
+      };
+
+  // Confirm initial conditions.
+  EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
+                                expected_candidates));
+
+  // This assumes that ExcludeCollisionsBetween() (tested below) works.
+  while (!expected_candidates.empty()) {
+    auto pair = expected_candidates.begin();
+    geometry_state_.ExcludeCollisionsBetween(GeometrySet{pair->first},
+                                             GeometrySet{pair->second});
+    expected_candidates.erase(pair);
+    EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
+                                  expected_candidates));
+  }
+  // We've filtered everything, should report as empty.
+  EXPECT_TRUE(candidates_in_set(geometry_state_.GetCollisionCandidates(),
+                                expected_candidates));
+}
+
 // Test disallowing collisions among members of a group (self collisions).
 TEST_F(GeometryStateTest, ExcludeCollisionsWithin) {
   SetUpSingleSourceTree(true /* assign proximity roles */);
