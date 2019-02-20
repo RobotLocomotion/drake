@@ -221,8 +221,11 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 }
 
 template <typename T>
-void ManipulationStation<T>::SetupDopeClutterClearingStation(
-    const IiwaCollisionModel collision_model) {
+void ManipulationStation<T>::SetupClutterClearingStation(
+    const std::list<std::string>& model_files,
+    const std::vector<RigidTransform<T>>& model_poses,
+    const bool render_rgbd_camera,
+    IiwaCollisionModel collision_model) {
   DRAKE_DEMAND(setup_ == Setup::kNone);
   setup_ = Setup::kDopeClutterClearing;
 
@@ -248,15 +251,7 @@ void ManipulationStation<T>::SetupDopeClutterClearingStation(
   // Add the objects.
   {
     multibody::Parser parser(plant_);
-    // TODO(russt): Take a list of object models as an input argument.
-    const std::list<std::string> models{
-        "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
-        "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
-        "drake/manipulation/models/ycb/sdf/005_tomato_soup_can.sdf",
-        "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf",
-        "drake/manipulation/models/ycb/sdf/009_gelatin_box.sdf",
-        "drake/manipulation/models/ycb/sdf/010_potted_meat_can.sdf"};
-    for (const auto& model : models) {
+    for (const auto& model : model_files) {
       const auto model_index =
           parser.AddModelFromFile(FindResourceOrThrow(model));
       const auto indices = plant_->GetBodyIndices(model_index);
@@ -266,33 +261,37 @@ void ManipulationStation<T>::SetupDopeClutterClearingStation(
       DRAKE_DEMAND(indices.size() == 1);
       object_ids_.push_back(indices[0]);
     }
+
+    object_poses_ = model_poses;
   }
 
   // Add default camera.
   {
-    std::map<std::string, RigidTransform<double>> camera_poses;
-    internal::get_camera_poses(&camera_poses);
-    // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
-    // depth are slightly different. And we are not able to model that at the
-    // moment.
-    // RGB:
-    // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
-    // DEPTH:
-    // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
-    // For this camera, we are going to assume that fx = fy, and we can compute
-    // fov_y by: fy = height / 2 / tan(fov_y / 2)
-    const double kFocalY = 645.;
-    const int kHeight = 480;
-    const int kWidth = 848;
-    const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
-    geometry::dev::render::DepthCameraProperties camera_properties(
-        kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
-        2.0);
-    RigidTransform<double> transform = RigidTransform<double>(
-        RollPitchYaw<double>(-0.3, 0.8, 1.5),
-        Vector3d(0, -1.5, 1.5));
-    RegisterRgbdCamera("0", plant_->world_frame(),
-                       transform, camera_properties);
+    if (render_rgbd_camera) {
+      std::map<std::string, RigidTransform<double>> camera_poses;
+      internal::get_camera_poses(&camera_poses);
+      // Typical D415 intrinsics for 848 x 480 resolution, note that rgb and
+      // depth are slightly different. And we are not able to model that at the
+      // moment.
+      // RGB:
+      // - w: 848, h: 480, fx: 616.285, fy: 615.778, ppx: 405.418, ppy: 232.864
+      // DEPTH:
+      // - w: 848, h: 480, fx: 645.138, fy: 645.138, ppx: 420.789, ppy: 239.13
+      // For this camera, we are going to assume that fx = fy, and we can compute
+      // fov_y by: fy = height / 2 / tan(fov_y / 2)
+      const double kFocalY = 645.;
+      const int kHeight = 480;
+      const int kWidth = 848;
+      const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
+      geometry::dev::render::DepthCameraProperties camera_properties(
+          kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
+          2.0);
+      RigidTransform<double> transform = RigidTransform<double>(
+          RollPitchYaw<double>(-0.3, 0.8, 1.5),
+          Vector3d(0, -1.5, 1.5));
+      RegisterRgbdCamera("0", plant_->world_frame(),
+                         transform, camera_properties);
+    }
   }
 
   AddDefaultIiwa(collision_model);
@@ -454,55 +453,13 @@ void ManipulationStation<T>::SetDefaultState(
 
       break;
     case Setup::kDopeClutterClearing:
-      DRAKE_DEMAND(object_ids_.size() == 6);
+      DRAKE_DEMAND(object_ids_.size() == object_poses_.size());
 
-      // Place the cracker box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.55, 0.36));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(-1.57, 0, 3)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[0]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the sugar box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.33));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(1.57, 1.57, 0)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[1]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the tomato soup can.
-      X_WObject.set_translation(Eigen::Vector3d(-0.03, -0.57, 0.31));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(-1.57, 0, 3.14)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[2]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the mustard bottle.
-      X_WObject.set_translation(Eigen::Vector3d(0.05, -0.66, 0.35));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(-1.57, 0, 3.3)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[3]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the gelatin box.
-      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.38));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(-1.57, 0, 3.7)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[4]),
-                              X_WObject.GetAsIsometry3());
-
-      // Place the potted meat can.
-      X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.3));
-      X_WObject.set_rotation(RotationMatrix<double>(
-          RollPitchYaw<double>(-1.57, 0, 2.5)));
-      plant_->SetFreeBodyPose(plant_context, &plant_state,
-                              plant_->get_body(object_ids_[5]),
-                              X_WObject.GetAsIsometry3());
+      for (unsigned long i = 0; i < object_ids_.size(); i++) {
+        plant_->SetFreeBodyPose(plant_context, &plant_state,
+                                plant_->get_body(object_ids_[i]),
+                                object_poses_[i].GetAsIsometry3());
+      }
 
       break;
   }

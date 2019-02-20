@@ -23,6 +23,9 @@ namespace {
 // (e.g. picking up an object) and perhaps a slightly more descriptive name.
 
 using Eigen::VectorXd;
+using math::RigidTransform;
+using math::RollPitchYaw;
+using math::RotationMatrix;
 
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
@@ -39,7 +42,55 @@ int do_main(int argc, char* argv[]) {
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
   if (FLAGS_setup == "dope") {
-    station->SetupDopeClutterClearingStation();
+    // station->SetupDopeClutterClearingStation();
+    const std::list<std::string> model_files{
+        "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
+        "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
+        "drake/manipulation/models/ycb/sdf/005_tomato_soup_can.sdf",
+        "drake/manipulation/models/ycb/sdf/006_mustard_bottle.sdf",
+        "drake/manipulation/models/ycb/sdf/009_gelatin_box.sdf",
+        "drake/manipulation/models/ycb/sdf/010_potted_meat_can.sdf"};
+
+    std::vector<RigidTransform<double>> model_poses;
+    RigidTransform<double> X_WObject;
+
+    // The cracker box pose.
+    X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.55, 0.36));
+    X_WObject.set_rotation(RotationMatrix<double>(
+        RollPitchYaw<double>(-1.57, 0, 3)));
+    model_poses.push_back(X_WObject);
+
+    // The sugar box pose.
+    X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.33));
+    X_WObject.set_rotation(RotationMatrix<double>(
+        RollPitchYaw<double>(1.57, 1.57, 0)));
+    model_poses.push_back(X_WObject);
+
+    // The tomato soup can pose.
+    X_WObject.set_translation(Eigen::Vector3d(-0.03, -0.57, 0.31));
+    X_WObject.set_rotation(RotationMatrix<double>(
+        RollPitchYaw<double>(-1.57, 0, 3.14)));
+    model_poses.push_back(X_WObject);
+
+    // The mustard bottle pose.
+    X_WObject.set_translation(Eigen::Vector3d(0.05, -0.66, 0.35));
+    X_WObject.set_rotation(RotationMatrix<double>(
+        RollPitchYaw<double>(-1.57, 0, 3.3)));
+    model_poses.push_back(X_WObject);
+
+    // The gelatin box pose.
+    X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.38));
+    X_WObject.set_rotation(RotationMatrix<double>(
+        RollPitchYaw<double>(-1.57, 0, 3.7)));
+    model_poses.push_back(X_WObject);
+
+    // The potted meat can pose.
+    X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.62, 0.3));
+    X_WObject.set_rotation(RotationMatrix<double>(
+        RollPitchYaw<double>(-1.57, 0, 2.5)));
+    model_poses.push_back(X_WObject);
+
+    station->SetupClutterClearingStation(model_files, model_poses, true);
   } else if (FLAGS_setup == "clutter_clearing") {
     station->SetupClutterClearingStation();
   } else if (FLAGS_setup == "default") {

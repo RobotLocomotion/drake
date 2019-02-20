@@ -139,6 +139,7 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
+  // TODO(kmuhlrad): possibly delete
   /// Adds a default iiwa, wsg, two bins, and object clutter, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   /// the appropriate arguments.
@@ -148,13 +149,21 @@ class ManipulationStation : public systems::Diagram<T> {
   void SetupClutterClearingStation(
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  /// Adds an iiwa, wsg, two bins, and YCB object clutter, then calls
+  /// Adds a default iiwa, wsg, two bins, and custom object clutter, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   /// the appropriate arguments.
   /// @note Must be called before Finalize().
   /// @note Only one of the `Setup___()` methods should be called.
+  /// @param model_files A list of sdf model files to render.
+  /// @param model_poses A list of world poses for each object. It must be the
+  /// same length as `model_files`.
+  /// @param render_rgbd_camera If true, add an RgbdCamera looking at the
+  /// clutter.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
-  void SetupDopeClutterClearingStation(
+  void SetupClutterClearingStation(
+      const std::list<std::string>& model_files,
+      const std::vector<math::RigidTransform<T>>& model_poses,
+      const bool render_rgbd_camera = false,
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
@@ -514,6 +523,7 @@ class ManipulationStation : public systems::Diagram<T> {
   // Store references to objects as *body* indices instead of model indices,
   // because this is needed for MultibodyPlant::SetFreeBodyPose(), etc.
   std::vector<multibody::BodyIndex> object_ids_;
+  std::vector<math::RigidTransform<T>> object_poses_;
 
   // Registered camera related information.
   std::map<std::string, CameraInformation> camera_information_;
