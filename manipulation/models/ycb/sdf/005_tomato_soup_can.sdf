@@ -9,18 +9,23 @@
     Origin:
       (0, 0, 0) at the center of the can.
   -->
+
+  <!--
+    The inertial properties were calculated from the mass and dimensions given
+    with the YCB dataset. The tomato soup can is treated as a constant density
+    cylinder, which matches the collision shape.
+  -->
   <link name="base_link_soup">
     <inertial>
-      <pose frame=''>-0.0018  0.051 -0.084 1.57 0.13 0.0</pose>
       <mass>0.349000</mass>
-        <inertia>
-          <ixx>0.000402</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.000200</iyy>
-          <iyz>0</iyz>
-          <izz>0.000402</izz>
-        </inertia>
+      <inertia>
+        <ixx>0.000402</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.000200</iyy>
+        <iyz>0</iyz>
+        <izz>0.000402</izz>
+      </inertia>
     </inertial>
 
     <visual name='base_link_soup'>

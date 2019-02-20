@@ -9,18 +9,23 @@
     Origin:
       (0, 0, 0) at the center of the box.
   -->
+
+  <!--
+    The inertial properties were calculated from the mass and dimensions given
+    with the YCB dataset. The gelatin box is treated as a constant density box,
+    which matches the collision shape.
+  -->
   <link name="base_link_gelatin">
     <inertial>
-      <pose frame=''>-0.0029 0.024 -0.015 -0.0085 -0.002 1.34</pose>
       <mass>0.097000</mass>
-        <inertia>
-          <ixx>0.000050</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.000072</iyy>
-          <iyz>0</iyz>
-          <izz>0.000108</izz>
-        </inertia>
+      <inertia>
+        <ixx>0.000050</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.000072</iyy>
+        <iyz>0</iyz>
+        <izz>0.000108</izz>
+      </inertia>
     </inertial>
 
     <visual name='base_link_gelatin'>
