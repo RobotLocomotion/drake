@@ -175,7 +175,10 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
   const RigidBody<double>& body = robot_->get_body(body_idx);
   const RigidBody<double>* parent = body.get_parent();
   if (!body.IsRigidlyFixedToWorld()) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const Matrix3d R_WC = GetSolution(R_WB_[body_idx]);
+#pragma GCC diagnostic pop
     // R_WP is the rotation matrix of parent frame to the world frame.
     const Matrix3d& R_WP = reconstruct_R_WB->at(parent->get_body_index());
     const DrakeJoint* joint = &(body.getJoint());
@@ -186,7 +189,10 @@ void GlobalInverseKinematics::ReconstructGeneralizedPositionSolutionForBody(
     // the posture for that joint.
     if (joint->is_floating()) {
       // p_WBi is the position of the body frame in the world frame.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       const Vector3d p_WBi = GetSolution(p_WBo_[body_idx]);
+#pragma GCC diagnostic pop
       const math::RotationMatrix<double> normalized_rotmat =
           math::RotationMatrix<double>::ProjectToRotationMatrix(R_WC);
 

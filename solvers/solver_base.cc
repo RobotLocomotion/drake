@@ -77,7 +77,10 @@ bool SolverBase::AreProgramAttributesSatisfied(
 SolutionResult SolverBase::Solve(MathematicalProgram& prog) const {
   MathematicalProgramResult result;
   Solve(prog, {}, {}, &result);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   prog.SetSolverResult(result.ConvertToSolverResult());
+#pragma GCC diagnostic pop
   return result.get_solution_result();
 }
 

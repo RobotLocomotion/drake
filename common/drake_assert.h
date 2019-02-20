@@ -94,7 +94,7 @@ void Abort(const char* condition, const char* func, const char* file, int line);
 __attribute__((noreturn))
 __attribute__((deprecated(
     "\nDRAKE DEPRECATED: DRAKE_ABORT() is deprecated; use DRAKE_ABORT_MSG(); "
-    "this macro will be removed on 2019-05-01")))
+    "this macro will be removed on 2019-05-01.")))
 inline void DeprecatedAbort(const char* func, const char* file, int line) {
   Abort(nullptr, func, file, line);
 }

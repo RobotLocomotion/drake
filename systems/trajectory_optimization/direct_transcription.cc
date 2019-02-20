@@ -187,6 +187,8 @@ void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double>
 DirectTranscription::ReconstructInputTrajectory()
     const {
@@ -201,7 +203,10 @@ DirectTranscription::ReconstructInputTrajectory()
   // TODO(russt): Implement DTTrajectories and return one of those instead.
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
@@ -215,6 +220,7 @@ PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
   // TODO(russt): Implement DTTrajectories and return one of those instead.
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
 }
+#pragma GCC diagnostic pop
 
 PiecewisePolynomial<double> DirectTranscription::ReconstructInputTrajectory(
     const solvers::MathematicalProgramResult& result) const {
