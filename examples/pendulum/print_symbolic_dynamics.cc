@@ -55,7 +55,8 @@ VectorX<Expression> MultibodyPlantDynamics() {
   // Obtain the symbolic dynamics.
   auto context = symbolic_plant.CreateDefaultContext();
   context->FixInputPort(
-      0, Vector1<Expression>::Constant(Variable("tau")));
+      symbolic_plant.get_actuation_input_port().get_index(),
+      Vector1<Expression>::Constant(Variable("tau")));
   symbolic_plant.SetPositionsAndVelocities(
       context.get(), Vector2<Expression>(
           Variable("theta"), Variable("thetadot")));
