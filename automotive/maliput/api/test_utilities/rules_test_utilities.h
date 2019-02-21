@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/rules/regions.h"
+#include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -169,6 +170,58 @@ inline ::testing::AssertionResult IsEqual(
   return c.result();
 }
 
+/// Predicate-formatter which tests equality of GeoPosition.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const GeoPosition& a,
+                                          const GeoPosition& b) {
+  unused(a_expression, b_expression);
+  return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
+}
+
+/// Predicate-formatter which tests equality of Rotation.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const Rotation& a,
+                                          const Rotation& b) {
+  unused(a_expression, b_expression);
+  return ::testing::internal::CmpHelperEQ(a_expression, b_expression,
+                                          a.matrix(), b.matrix());
+}
+
+/// Predicate-formatter which tests equality of BulbColor.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const BulbColor& a,
+                                          const BulbColor& b) {
+  unused(a_expression, b_expression);
+  return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
+}
+
+/// Predicate-formatter which tests equality of BulbType.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const BulbType& a,
+                                          const BulbType& b) {
+  unused(a_expression, b_expression);
+  return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
+}
+
+/// Predicate-formatter which tests equality of Bulb.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const Bulb& a, const Bulb& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));
+  MALIPUT_ADD_RESULT(
+      c, MALIPUT_IS_EQUAL(a.position_bulb_group(), b.position_bulb_group()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.orientation_bulb_group(),
+                                         b.orientation_bulb_group()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.color(), b.color()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.type(), b.type()));
+  return c.result();
+}
 
 }  // namespace test
 }  // namespace rules
