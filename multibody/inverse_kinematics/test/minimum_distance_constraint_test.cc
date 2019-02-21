@@ -18,6 +18,7 @@ enum class PenaltyType {
 template <typename T>
 T QuadraticallySmoothedPenalty(const T& distance, double minimum_distance) {
   if (distance >= minimum_distance) {
+    // use 0 * distance to set the right size of the derivatives.
     return T(0) * distance;
   }
   const T x = distance / minimum_distance - 1;
@@ -31,6 +32,7 @@ T QuadraticallySmoothedPenalty(const T& distance, double minimum_distance) {
 template <typename T>
 T ExponentiallySmoothedPenalty(const T& distance, double minimum_distance) {
   if (distance >= minimum_distance) {
+    // use 0 * distance to set the right size of the derivatives.
     return T(0) * distance;
   }
   const T x = distance / minimum_distance - 1;
