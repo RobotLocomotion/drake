@@ -39,11 +39,12 @@ template <typename T> class JointActuator;
 template <typename T> class ForceElement;
 template <typename T> class UniformGravityFieldElement;
 
-/// Enumeration that distinguishes between flavors of Jacobians based
-/// on the variable with respect to which they are taken.
+/// Enumeration that indicates whether the Jacobian is partial differentiation
+/// with respect to q̇ (time-derivatives of generalized positions) or
+/// with respect to v (generalized velocities).
 enum class JacobianWrtVariable {
-  kQDot,  /// J = ∂V/∂q̇
-  kV      /// J = ∂V/∂v
+  kQDot,  ///< J = ∂V/∂q̇
+  kV      ///< J = ∂V/∂v
 };
 
 /// @cond
