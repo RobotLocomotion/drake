@@ -119,9 +119,9 @@ class TestInverseKinematics(unittest.TestCase):
             frameAbar=self.body1_frame, R_AbarA=R_AbarA,
             frameBbar=self.body2_frame, R_BbarB=R_BbarB,
             theta_bound=theta_bound)
+
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
-
         q_val = result.GetSolution(self.q)
 
         body1_quat = self._body1_quat(q_val)
@@ -135,10 +135,21 @@ class TestInverseKinematics(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always', DrakeDeprecationWarning)
+
             self.assertEqual(
                 self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            self.assertTrue(np.allclose(
-                self.prog.GetSolution(self.q), q_val))
+            q_val = self.prog.GetSolution(self.q)
+
+            body1_quat = self._body1_quat(q_val)
+            body2_quat = self._body2_quat(q_val)
+            body1_rotmat = Quaternion(body1_quat).rotation()
+            body2_rotmat = Quaternion(body2_quat).rotation()
+            R_AbarBbar = body1_rotmat.transpose().dot(body2_rotmat)
+            R_AB = R_AbarA.matrix().transpose().dot(
+                R_AbarBbar.dot(R_BbarB.matrix()))
+            self.assertGreater(R_AB.trace(),
+                               1 + 2 * math.cos(theta_bound) - 1E-6)
+
             self.assertEqual(len(w), 2)
 
     def test_AddGazeTargetConstraint(self):
@@ -151,10 +162,11 @@ class TestInverseKinematics(unittest.TestCase):
             frameA=self.body1_frame, p_AS=p_AS, n_A=n_A,
             frameB=self.body2_frame, p_BT=p_BT,
             cone_half_angle=cone_half_angle)
+
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
-
         q_val = result.GetSolution(self.q)
+
         body1_quat = self._body1_quat(q_val)
         body1_pos = self._body1_xyz(q_val)
         body2_quat = self._body2_quat(q_val)
@@ -171,10 +183,26 @@ class TestInverseKinematics(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always', DrakeDeprecationWarning)
+
             self.assertEqual(
                 self.prog.Solve(), mp.SolutionResult.kSolutionFound)
-            self.assertTrue(np.allclose(
-                self.prog.GetSolution(self.q), q_val))
+            q_val = self.prog.GetSolution(self.q)
+
+            body1_quat = self._body1_quat(q_val)
+            body1_pos = self._body1_xyz(q_val)
+            body2_quat = self._body2_quat(q_val)
+            body2_pos = self._body2_xyz(q_val)
+            body1_rotmat = Quaternion(body1_quat).rotation()
+            body2_rotmat = Quaternion(body2_quat).rotation()
+
+            p_WS = body1_pos + body1_rotmat.dot(p_AS)
+            p_WT = body2_pos + body2_rotmat.dot(p_BT)
+            p_ST_W = p_WT - p_WS
+            n_W = body1_rotmat.dot(n_A)
+            self.assertGreater(p_ST_W.dot(n_W), np.linalg.norm(
+                p_ST_W) * np.linalg.norm(n_W) *
+                math.cos(cone_half_angle) - 1E-6)
+
             self.assertEqual(len(w), 2)
 
     def test_AddAngleBetweenVectorsConstraint(self):
