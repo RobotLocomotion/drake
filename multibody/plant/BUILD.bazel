@@ -193,6 +193,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/free_body:models",
         "//multibody/parsing:test_models",
     ],
     deps = [

@@ -2150,7 +2150,8 @@ class System : public SystemBase {
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex port_index) const final {
     const InputPort<T>& port = this->get_input_port(port_index);
-    const std::string pathname = this->GetSystemPathname();
+    const std::string& port_name = port.get_name();
+    const std::string path_name = this->GetSystemPathname();
 
     // Note that our lambdas below will capture all necessary items by-value,
     // so that they do not rely on this System still being alive.  (We do not
@@ -2166,11 +2167,11 @@ class System : public SystemBase {
         // fine to let them also handle detailed error reporting on their own.
         const std::type_info& expected_type =
             this->AllocateInputAbstract(port)->static_type_info();
-        return [&expected_type, port_index, pathname](
+        return [&expected_type, port_index, path_name, port_name](
             const AbstractValue& actual) {
           if (actual.static_type_info() != expected_type) {
             SystemBase::ThrowInputPortHasWrongType(
-                "FixInputPortTypeCheck", pathname, port_index,
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
                 NiceTypeName::Get(expected_type),
                 NiceTypeName::Get(actual.type_info()));
           }
@@ -2182,20 +2183,20 @@ class System : public SystemBase {
         const std::unique_ptr<BasicVector<T>> model_vector =
             this->AllocateInputVector(port);
         const int expected_size = model_vector->size();
-        return [expected_size, port_index, pathname](
+        return [expected_size, port_index, path_name, port_name](
             const AbstractValue& actual) {
           const BasicVector<T>* const actual_vector =
               actual.MaybeGetValue<BasicVector<T>>();
           if (actual_vector == nullptr) {
             SystemBase::ThrowInputPortHasWrongType(
-                "FixInputPortTypeCheck", pathname, port_index,
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
                 NiceTypeName::Get<Value<BasicVector<T>>>(),
                 NiceTypeName::Get(actual));
           }
           // Check that vector sizes match.
           if (actual_vector->size() != expected_size) {
             SystemBase::ThrowInputPortHasWrongType(
-                "FixInputPortTypeCheck", pathname, port_index,
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
                 fmt::format("{} with size={}",
                             NiceTypeName::Get<BasicVector<T>>(),
                             expected_size),

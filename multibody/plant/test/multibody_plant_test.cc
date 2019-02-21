@@ -306,6 +306,48 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
 }
 
+GTEST_TEST(ActuationPortsTest, CheckActuation) {
+  // Create a MultibodyPlant consisting of two model instances, one actuated
+  // and the other unactuated.
+  MultibodyPlant<double> plant;
+  const std::string acrobot_path = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string cylinder_path = FindResourceOrThrow(
+      "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf");
+  auto acrobot_instance = Parser(&plant).AddModelFromFile(acrobot_path);
+  auto cylinder_instance = Parser(&plant).AddModelFromFile(cylinder_path);
+  plant.Finalize();
+
+  // Verify that we can get the actuation input ports.
+  EXPECT_NO_THROW(plant.get_actuation_input_port());
+  EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
+  EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
+
+  // Try to compute the derivatives without connecting the acrobot_instance
+  // port.
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  std::unique_ptr<ContinuousState<double>> continuous_state = plant.
+      AllocateTimeDerivatives();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcTimeDerivatives(*context, continuous_state.get()),
+      std::logic_error, "Actuation input port for model instance .* must "
+          "be connected.");
+
+  // Verify that derivatives can be computed after fixing the acrobot actuation
+  // input port.
+  context->FixInputPort(
+      plant.get_actuation_input_port(acrobot_instance).get_index(),
+      Vector1d(0.0));
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
+
+  // Verify that derivatives can be computed after fixing the cylinder actuation
+  // input port with an empty vector.
+  context->FixInputPort(
+      plant.get_actuation_input_port(cylinder_instance).get_index(),
+      VectorXd(0));
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
+}
+
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
  public:
