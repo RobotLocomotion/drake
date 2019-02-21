@@ -137,7 +137,7 @@ class BoxSphereTest : public ::testing::Test {
 
  protected:
   Eigen::Vector3d box_size_;
-  double radius_;
+  double radius_{0};
   std::unique_ptr<systems::Diagram<double>> diagram_double_;
   std::unique_ptr<systems::Diagram<AutoDiffXd>> diagram_autodiff_;
   MultibodyPlant<double>* plant_double_{nullptr};

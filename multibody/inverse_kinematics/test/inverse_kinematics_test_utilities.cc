@@ -182,25 +182,22 @@ T BoxSphereSignedDistance(const Eigen::Ref<const Eigen::Vector3d>& box_size,
   const math::RigidTransform<T> X_BS = X_WB.inverse() * X_WS;
   const Vector3<T>& p_BS = X_BS.translation();
   // Check if the sphere center is within the box.
+  const Eigen::Array3d half_size = box_size.array() / 2;
   const bool is_sphere_center_inside_box =
-      (p_BS.array().abs() <= box_size.array() / 2).all();
+      (p_BS.array().abs() <= half_size).all();
   using std::max;
   if (is_sphere_center_inside_box) {
-    const T dist1 = (p_BS - box_size / 2).maxCoeff();
-    const T dist2 = (-p_BS - box_size / 2).maxCoeff();
-    return max(dist1, dist2) - radius;
+    // Find the distance from the sphere center to the closest face, add the
+    // radius, and negate to indicate penetration.
+    return -(half_size - p_BS.array().abs()).minCoeff() - radius;
   } else {
     T signed_distance = 0;
     using std::pow;
-    using std::max;
-    using std::min;
+    using std::abs;
     for (int i = 0; i < 3; ++i) {
-      T distance_i = 0;
-      if (p_BS(i) > box_size(i) / 2) {
-        distance_i = p_BS(i) - box_size(i) / 2;
-      } else if (p_BS(i) < -box_size(i) / 2) {
-        distance_i = -box_size(i) / 2 - p_BS(i);
-      }
+      // Compute the distance from the sphere center box face along the i'th
+      // dimension.
+      T distance_i = max(T(0), abs(p_BS(i)) - T(half_size(i)));
       signed_distance += pow(distance_i, 2);
     }
     using std::sqrt;
