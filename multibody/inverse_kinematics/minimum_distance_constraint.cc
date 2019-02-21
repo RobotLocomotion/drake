@@ -110,12 +110,12 @@ void AddPenalty(const MultibodyPlant<double>& plant,
   penalty_function(penalty_x, &penalty, &dpenalty_dx);
   const double dpenalty_ddistance = dpenalty_dx / minimum_distance;
 
-  Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_BCa(6, plant.num_positions());
+  Eigen::Matrix<double, 6, Eigen::Dynamic> Jq_V_BCa_W(6, plant.num_positions());
   plant.CalcJacobianSpatialVelocity(context, JacobianWrtVariable::kQDot, frameA,
-                                    p_ACa, frameB, frameB, &Jq_V_BCa);
-
+                                    p_ACa, frameB, plant.world_frame(),
+                                    &Jq_V_BCa_W);
   const Eigen::RowVectorXd ddistance_dq =
-      (p_WCa - p_WCb).transpose() * Jq_V_BCa.bottomRows<3>() / distance;
+      (p_WCa - p_WCb).transpose() * Jq_V_BCa_W.bottomRows<3>() / distance;
   const Vector1<AutoDiffXd> penalty_autodiff =
       math::initializeAutoDiffGivenGradientMatrix(
           Vector1d(penalty), dpenalty_ddistance * ddistance_dq *

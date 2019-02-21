@@ -46,7 +46,7 @@ class InverseKinematics {
    * To construct a plant connected to a SceneGraph, with the corresponding
    * plant_context, the steps are
    * // 1. Add a diagram containing the MultibodyPlant and SceneGraph
-   * system::DiagramBuilder<double> builder;
+   * systems::DiagramBuilder<double> builder;
    * auto items = AddMultibodyPlantSceneGraph(&builder);
    * // 2. Add collision geometries to the plant
    * Parser(&(items.plant)).AddModelFromFile("model.sdf");
@@ -55,7 +55,8 @@ class InverseKinematics {
    * // 4. Create diagram context.
    * auto diagram_context= diagram->CreateDefaultContext();
    * // 5. Get the context for the plant.
-   * auto plant_context = &(diagram->GetMutableSubsystemContext(*plant, diagram_context.get()));
+   * auto plant_context = &(diagram->GetMutableSubsystemContext(items.plant,
+   * diagram_context.get()));
    */
   InverseKinematics(const MultibodyPlant<double>& plant,
                     systems::Context<double>* plant_context);

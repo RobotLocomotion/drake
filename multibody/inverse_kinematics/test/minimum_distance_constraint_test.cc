@@ -18,7 +18,8 @@ enum class PenaltyType {
 template <typename T>
 T QuadraticallySmoothedPenalty(const T& distance, double minimum_distance) {
   if (distance >= minimum_distance) {
-    return 0;
+    // use 0 * distance to set the right size of the derivatives.
+    return T(0) * distance;
   }
   const T x = distance / minimum_distance - 1;
   if (x > -1) {
@@ -29,9 +30,10 @@ T QuadraticallySmoothedPenalty(const T& distance, double minimum_distance) {
 }
 
 template <typename T>
-T ExponentiallySmoothdPenalty(const T& distance, double minimum_distance) {
+T ExponentiallySmoothedPenalty(const T& distance, double minimum_distance) {
   if (distance >= minimum_distance) {
-    return 0;
+    // use 0 * distance to set the right size of the derivatives.
+    return T(0) * distance;
   }
   const T x = distance / minimum_distance - 1;
   using std::exp;
@@ -47,7 +49,7 @@ T Penalty(const T& distance, double minimum_distance,
       return QuadraticallySmoothedPenalty(distance, minimum_distance);
     }
     case PenaltyType::kExponential: {
-      return ExponentiallySmoothdPenalty(distance, minimum_distance);
+      return ExponentiallySmoothedPenalty(distance, minimum_distance);
     }
     default: { throw std::runtime_error("Should not reach here."); }
   }
@@ -63,8 +65,9 @@ AutoDiffVecXd EvalMinimumDistanceConstraintAutoDiff(
   y(0).derivatives().resize(
       math::autoDiffToGradientMatrix(plant.GetPositions(context)).cols());
   y(0).derivatives().setZero();
-  const auto& query_object = plant.get_geometry_query_input_port().
-      Eval<geometry::QueryObject<AutoDiffXd>>(context);
+  const auto& query_object =
+      plant.get_geometry_query_input_port()
+          .Eval<geometry::QueryObject<AutoDiffXd>>(context);
 
   const std::vector<geometry::SignedDistancePair<double>>
       signed_distance_pairs =
@@ -299,6 +302,76 @@ TEST_F(TwoFreeSpheresTest, NonpositiveMinimalDistance) {
       MinimumDistanceConstraint(plant_double_, -0.1, plant_context_double_),
       std::invalid_argument,
       "MinimumDistanceConstraint: minimum_distance should be positive.");
+}
+
+template <typename T>
+T BoxSphereSignedDistance(const Eigen::Vector3d& box_size, double radius,
+                          const VectorX<T>& x) {
+  const math::RigidTransform<T> X_WB(
+      math::RotationMatrix<T>(Eigen::Quaternion<T>(x(0), x(1), x(2), x(3))),
+      x.template segment<3>(4));
+  const math::RigidTransform<T> X_WS(
+      math::RotationMatrix<T>(Eigen::Quaternion<T>(x(7), x(8), x(9), x(10))),
+      x.template tail<3>());
+  return BoxSphereSignedDistance(box_size, radius, X_WB, X_WS);
+}
+
+TEST_F(BoxSphereTest, Test) {
+  const double minimum_distance = 0.01;
+  for (PenaltyType penalty_type :
+       {PenaltyType::kQuadratic, PenaltyType::kExponential}) {
+    MinimumDistancePenaltyFunction penalty_function =
+        penalty_type == PenaltyType::kQuadratic
+            ? QuadraticallySmoothedHingeLoss
+            : ExponentiallySmoothedHingeLoss;
+    MinimumDistanceConstraint constraint(plant_double_, minimum_distance,
+                                         plant_context_double_,
+                                         penalty_function);
+
+    auto check_eval_autodiff = [&minimum_distance, &constraint, penalty_type](
+        const Eigen::VectorXd& q_val, const Eigen::MatrixXd& q_gradient,
+        double tol, const Eigen::Vector3d& box_size, double radius) {
+      AutoDiffVecXd x_autodiff =
+          math::initializeAutoDiffGivenGradientMatrix(q_val, q_gradient);
+
+      AutoDiffVecXd y_autodiff;
+      constraint.Eval(x_autodiff, &y_autodiff);
+
+      auto distance = BoxSphereSignedDistance(box_size, radius, x_autodiff);
+      CompareAutoDiffVectors(y_autodiff,
+                             Vector1<AutoDiffXd>(Penalty(
+                                 distance, minimum_distance, penalty_type)),
+                             tol);
+    };
+    Eigen::VectorXd q(14);
+    // First check q with normalized quaternion.
+    q.head<4>() = Eigen::Vector4d(1, 0, 0, 0);
+    q.segment<3>(4) = Eigen::Vector3d(0, 0, -5);
+    q.segment<4>(7) = Eigen::Vector4d(0.1, 0.7, 0.8, 0.9).normalized();
+    q.tail<3>() << 0, 0, 0;
+    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-13, box_size_,
+                        radius_);
+
+    q.tail<3>() << 0, 0, 1.1;
+    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-13, box_size_,
+                        radius_);
+
+    // box and sphere are separated, but the separation distance is smaller than
+    // minimum_distance.
+    q.tail<3>() << 0, 0, 1.005;
+    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-11, box_size_,
+                        radius_);
+
+    q.tail<3>() << 0, 0, -1;
+    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-13, box_size_,
+                        radius_);
+
+    // Test a q with unnormalized quaternion.
+    q.head<4>() << 0.1, 1.7, 0.5, 0.3;
+    q.segment<4>(7) << 1, 0.1, 0.3, 2;
+    check_eval_autodiff(q, Eigen::MatrixXd::Identity(14, 14), 1E-12, box_size_,
+                        radius_);
+  }
 }
 }  // namespace multibody
 }  // namespace drake
