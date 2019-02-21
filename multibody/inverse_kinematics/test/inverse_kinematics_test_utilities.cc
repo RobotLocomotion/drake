@@ -1,5 +1,6 @@
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "drake/common/find_resource.h"
@@ -134,10 +135,93 @@ TwoFreeSpheresTest::TwoFreeSpheresTest() {
       *plant_autodiff_, diagram_context_autodiff_.get()));
 }
 
+template <typename T>
+std::unique_ptr<systems::Diagram<T>> ConstructBoxSphereDiagram(
+    const Eigen::Vector3d& box_size, double radius, MultibodyPlant<T>** plant,
+    geometry::SceneGraph<T>** scene_graph) {
+  systems::DiagramBuilder<T> builder;
+  std::tie(*plant, *scene_graph) = AddMultibodyPlantSceneGraph(&builder);
+  const auto& box = (*plant)->AddRigidBody(
+      "box", SpatialInertia<double>(1, Eigen::Vector3d(0, 0, 0),
+                                    UnitInertia<double>(1, 1, 1)));
+  (*plant)->RegisterCollisionGeometry(
+      box, Isometry3<double>::Identity(),
+      geometry::Box(box_size(0), box_size(1), box_size(2)), "box",
+      CoulombFriction<double>(0.9, 0.8), *scene_graph);
+
+  const auto& sphere = (*plant)->AddRigidBody(
+      "sphere", SpatialInertia<double>(1, Eigen::Vector3d::Zero(),
+                                       UnitInertia<double>(1, 1, 1)));
+  (*plant)->RegisterCollisionGeometry(
+      sphere, Isometry3<double>::Identity(), geometry::Sphere(radius), "sphere",
+      CoulombFriction<double>(0.9, 0.8), *scene_graph);
+
+  (*plant)->Finalize();
+
+  return builder.Build();
+}
+
+BoxSphereTest::BoxSphereTest() : box_size_(10, 10, 10), radius_(1) {
+  diagram_double_ = ConstructBoxSphereDiagram(
+      box_size_, radius_, &plant_double_, &scene_graph_double_);
+  diagram_context_double_ = diagram_double_->CreateDefaultContext();
+  plant_context_double_ = &(diagram_double_->GetMutableSubsystemContext(
+      *plant_double_, diagram_context_double_.get()));
+
+  diagram_autodiff_ = ConstructBoxSphereDiagram(
+      box_size_, radius_, &plant_autodiff_, &scene_graph_autodiff_);
+  diagram_context_autodiff_ = diagram_autodiff_->CreateDefaultContext();
+  plant_context_autodiff_ = &(diagram_autodiff_->GetMutableSubsystemContext(
+      *plant_autodiff_, diagram_context_autodiff_.get()));
+}
+
+template <typename T>
+T BoxSphereSignedDistance(const Eigen::Ref<const Eigen::Vector3d>& box_size,
+                          double radius, const math::RigidTransform<T>& X_WB,
+                          const math::RigidTransform<T>& X_WS) {
+  const math::RigidTransform<T> X_BS = X_WB.inverse() * X_WS;
+  const Vector3<T>& p_BS = X_BS.translation();
+  // Check if the sphere center is within the box.
+  const bool is_sphere_center_inside_box =
+      (p_BS.array().abs() <= box_size.array() / 2).all();
+  using std::max;
+  if (is_sphere_center_inside_box) {
+    const T dist1 = (p_BS - box_size / 2).maxCoeff();
+    const T dist2 = (-p_BS - box_size / 2).maxCoeff();
+    return max(dist1, dist2) - radius;
+  } else {
+    T signed_distance = 0;
+    using std::pow;
+    using std::max;
+    using std::min;
+    for (int i = 0; i < 3; ++i) {
+      T distance_i = 0;
+      if (p_BS(i) > box_size(i) / 2) {
+        distance_i = p_BS(i) - box_size(i) / 2;
+      } else if (p_BS(i) < -box_size(i) / 2) {
+        distance_i = -box_size(i) / 2 - p_BS(i);
+      }
+      signed_distance += pow(distance_i, 2);
+    }
+    using std::sqrt;
+    signed_distance = sqrt(signed_distance) - radius;
+    return signed_distance;
+  }
+}
+
 template std::unique_ptr<MultibodyPlant<double>>
 ConstructTwoFreeBodiesPlant<double>();
 template std::unique_ptr<MultibodyPlant<AutoDiffXd>>
 ConstructTwoFreeBodiesPlant<AutoDiffXd>();
+
+template double BoxSphereSignedDistance<double>(
+    const Eigen::Ref<const Eigen::Vector3d>& box_size, double radius,
+    const math::RigidTransform<double>& X_WB,
+    const math::RigidTransform<double>& X_WS);
+template AutoDiffXd BoxSphereSignedDistance<AutoDiffXd>(
+    const Eigen::Ref<const Eigen::Vector3d>& box_size, double radius,
+    const math::RigidTransform<AutoDiffXd>& X_WB,
+    const math::RigidTransform<AutoDiffXd>& X_WS);
 
 }  // namespace multibody
 }  // namespace drake
