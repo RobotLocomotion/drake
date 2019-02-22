@@ -120,6 +120,10 @@ class TestGeneral(unittest.TestCase):
         # TODO(russt): Bind _Declare*Parameter or find an example with an
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
+        x = np.array([0.1, 0.2])
+        context.SetContinuousState(x)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), x)
 
     def test_event_api(self):
         # TriggerType - existence check.
