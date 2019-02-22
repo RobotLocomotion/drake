@@ -160,6 +160,8 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_continuous_state_vector",
             &Context<T>::get_continuous_state_vector, py_reference_internal,
             doc.Context.get_continuous_state_vector.doc)
+        .def("SetContinuousState", &Context<T>::SetContinuousState,
+            doc.Context.SetContinuousState.doc)
         .def("get_mutable_continuous_state_vector",
             &Context<T>::get_mutable_continuous_state_vector,
             py_reference_internal,
