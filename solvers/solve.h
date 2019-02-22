@@ -21,12 +21,18 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
                                 const optional<SolverOptions>& solver_options);
 
 /**
- * Solves an optimization program with a given initial guess.
+ * Solves an optimization program with a given initial guess, and the options
+ * stored inside @p prog.
  */
 MathematicalProgramResult Solve(
     const MathematicalProgram& prog,
     const Eigen::Ref<const Eigen::VectorXd>& initial_guess);
 
+/**
+ * Solves an optimization program with the initial guess and options stored in
+ * @p prog. The initial guess can be accessed through prog.initial_guess(), and
+ * the options can be accessed through prog.GetSolverOptionsDouble/Int/Str().
+ */
 MathematicalProgramResult Solve(const MathematicalProgram& prog);
 }  // namespace solvers
 }  // namespace drake

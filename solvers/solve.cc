@@ -25,7 +25,7 @@ MathematicalProgramResult Solve(
 }
 
 MathematicalProgramResult Solve(const MathematicalProgram& prog) {
-  return Solve(prog, {}, {});
+  return Solve(prog, prog.initial_guess(), {});
 }
 }  // namespace solvers
 }  // namespace drake

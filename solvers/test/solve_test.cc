@@ -47,6 +47,17 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
     x_expected(0) = 1;
     MathematicalProgramResult result = Solve(prog, x_expected, solver_options);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
+
+    // Test Solve(prog). It should use the initial guess and options set in
+    // @p prog.
+    for (double x_val : {0, 1}) {
+      prog.SetSolverOption(GurobiSolver::id(), "Presolve", 0);
+      prog.SetSolverOption(GurobiSolver::id(), "Heuristics", 0.0);
+      x_expected(0) = x_val;
+      prog.SetInitialGuess(x, x_expected);
+      result = Solve(prog);
+      EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
+    }
   }
 }
 
