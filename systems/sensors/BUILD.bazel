@@ -248,6 +248,7 @@ filegroup(
     srcs = [
         "test/models/background.jpg",
         "test/models/box.sdf",
+        "test/models/box_with_mesh.sdf",
         "test/models/meshes/box.json",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
