@@ -6,6 +6,7 @@ package, Meshcat:
 from __future__ import print_function
 import argparse
 import math
+import os
 import warnings
 import webbrowser
 
@@ -30,6 +31,78 @@ with warnings.catch_warnings():
         message="can't resolve package from __spec__")
     import meshcat
 import meshcat.transformations as tf  # noqa
+
+
+def _convert_mesh(geom):
+    # Given a LCM geometry message, forms a meshcat geometry and material
+    # for that geometry, as well as a local tf to the meshcat geometry
+    # that matches the LCM geometry.
+    # For MESH geometry, this function checks if a texture file exists next
+    # to the mesh file, and uses that to provide the material information if
+    # present. For BOX, SPHERE, CYLINDER geometry as well as MESH geometry
+    # not satisfying the above, this function uses the geom.color field to
+    # create a flat color for the object. In the case of other geometry types,
+    # both fields are returned as None.
+    meshcat_geom = None
+    material = None
+    element_local_tf = RigidTransform(
+        RotationMatrix(Quaternion(geom.quaternion)),
+        geom.position).GetAsMatrix4()
+
+    if geom.type == geom.BOX:
+        assert geom.num_float_data == 3
+        meshcat_geom = meshcat.geometry.Box(geom.float_data)
+    elif geom.type == geom.SPHERE:
+        assert geom.num_float_data == 1
+        meshcat_geom = meshcat.geometry.Sphere(geom.float_data[0])
+    elif geom.type == geom.CYLINDER:
+        assert geom.num_float_data == 2
+        meshcat_geom = meshcat.geometry.Cylinder(
+            geom.float_data[1],
+            geom.float_data[0])
+        # In Drake, cylinders are along +z
+        # In meshcat, cylinders are along +y
+        # Rotate to fix this misalignment
+        extra_rotation = tf.rotation_matrix(
+            math.pi/2., [1, 0, 0])
+        element_local_tf[0:3, 0:3] = (
+            element_local_tf[0:3, 0:3].dot(
+                extra_rotation[0:3, 0:3]))
+    elif geom.type == geom.MESH:
+        meshcat_geom = meshcat.geometry.ObjMeshGeometry.from_file(
+            geom.string_data[0:-3] + "obj")
+        # Attempt to find a texture for the object by looking for an
+        # identically-named *.png next to the model.
+        # TODO(gizatt): Support .MTLs and prefer them over png, since they're
+        # both more expressive and more standard.
+        # TODO(gizatt): In the long term, this kind of material information
+        # should be gleaned from the SceneGraph constituents themselves, so
+        # that we visualize what the simulation is *actually* reasoning about
+        # rather than what files happen to be present.
+        candidate_texture_path_png = geom.string_data[0:-3] + "png"
+        if os.path.exists(candidate_texture_path_png):
+            material = meshcat.geometry.MeshLambertMaterial(
+                map=meshcat.geometry.ImageTexture(
+                    image=meshcat.geometry.PngImage.from_file(
+                        candidate_texture_path_png)))
+    else:
+        print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
+              geom.type))
+        return meshcat_geom, material
+
+    if material is None:
+        def rgb_2_hex(rgb):
+            # Turn a list of R,G,B elements (any indexable list
+            # of >= 3 elements will work), where each element is
+            # specified on range [0., 1.], into the equivalent
+            # 24-bit value 0xRRGGBB.
+            val = 0
+            for i in range(3):
+                val += (256**(2 - i)) * int(255 * rgb[i])
+            return val
+        material = meshcat.geometry.MeshLambertMaterial(
+            color=rgb_2_hex(geom.color))
+    return meshcat_geom, material, element_local_tf
 
 
 class MeshcatVisualizer(LeafSystem):
@@ -179,55 +252,13 @@ class MeshcatVisualizer(LeafSystem):
                 if geom.color[3] == 0:
                     continue
 
-                element_local_tf = RigidTransform(
-                    RotationMatrix(Quaternion(geom.quaternion)),
-                    geom.position).GetAsMatrix4()
-
-                if geom.type == geom.BOX:
-                    assert geom.num_float_data == 3
-                    meshcat_geom = meshcat.geometry.Box(geom.float_data)
-                elif geom.type == geom.SPHERE:
-                    assert geom.num_float_data == 1
-                    meshcat_geom = meshcat.geometry.Sphere(geom.float_data[0])
-                elif geom.type == geom.CYLINDER:
-                    assert geom.num_float_data == 2
-                    meshcat_geom = meshcat.geometry.Cylinder(
-                        geom.float_data[1],
-                        geom.float_data[0])
-                    # In Drake, cylinders are along +z
-                    # In meshcat, cylinders are along +y
-                    # Rotate to fix this misalignment
-                    extra_rotation = tf.rotation_matrix(
-                        math.pi/2., [1, 0, 0])
-                    element_local_tf[0:3, 0:3] = (
-                        element_local_tf[0:3, 0:3].dot(
-                            extra_rotation[0:3, 0:3]))
-                elif geom.type == geom.MESH:
-                    meshcat_geom = \
-                        meshcat.geometry.ObjMeshGeometry.from_file(
-                            geom.string_data[0:-3] + "obj")
-                else:
-                    print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
-                          geom.type))
-                    continue
-
-                # Turn a list of R,G,B elements (any indexable list of >= 3
-                # elements will work), where each element is specified on range
-                # [0., 1.], into the equivalent 24-bit value 0xRRGGBB.
-                def Rgb2Hex(rgb):
-                    val = 0
-                    for i in range(3):
-                        val += (256**(2 - i)) * int(255 * rgb[i])
-                    return val
-
-                cur_vis = (
-                    self.vis[self.prefix][source_name][str(link.robot_num)]
-                    [frame_name][str(j)])
-                cur_vis.set_object(
-                    meshcat_geom,
-                    meshcat.geometry.MeshLambertMaterial(
-                        color=Rgb2Hex(geom.color)))
-                cur_vis.set_transform(element_local_tf)
+                meshcat_geom, material, element_local_tf = _convert_mesh(geom)
+                if meshcat_geom is not None:
+                    cur_vis = (
+                        self.vis[self.prefix][source_name][str(link.robot_num)]
+                        [frame_name][str(j)])
+                    cur_vis.set_object(meshcat_geom, material)
+                    cur_vis.set_transform(element_local_tf)
 
     def _DoPublish(self, context, event):
         # TODO(russt): Change this to declare a periodic event with a
