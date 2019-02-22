@@ -48,7 +48,6 @@ def print_instructions():
 class TeleopMouseKeyboardManager():
 
     def __init__(self):
-
         pygame.init()
         # We don't actually want a screen, but
         # I can't get this to work without a tiny screen.
