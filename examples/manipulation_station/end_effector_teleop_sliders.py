@@ -12,11 +12,12 @@ from pydrake.examples.manipulation_station import (
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
-from pydrake.manipulation.planner import DifferentialInverseKinematicsParameters
+from pydrake.manipulation.planner import (
+    DifferentialInverseKinematicsParameters)
 from pydrake.multibody.parsing import Parser
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (BasicVector, DiagramBuilder, 
+from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
