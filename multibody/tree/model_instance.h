@@ -51,25 +51,6 @@ namespace multibody {
 /// * ForceElement: Depends on the type of element
 ///   * UniformGravityFieldElement: uses the world model instance
 
-// Note:
-//   static global variables are strongly discouraged by the C++ style guide:
-// https://google.github.io/styleguide/cppguide.html#Static_and_Global_Variables
-// For this reason, we create and return an instance of ModelInstanceIndex
-// instead of using a static variable.
-
-/// Returns the model instance containing the *world* body.  For
-/// every MultibodyTree the **world** body _always_ has this unique
-/// model instance and it is always zero (as described in #3088).
-inline ModelInstanceIndex world_model_instance() {
-  return ModelInstanceIndex(0);
-}
-
-/// Returns the model instance which contains all tree elements with
-/// no explicit model instance specified.
-inline ModelInstanceIndex default_model_instance() {
-  return ModelInstanceIndex(1);
-}
-
 namespace internal {
 
 /// @tparam T The scalar type. Must be a valid Eigen scalar.

@@ -6,3 +6,4 @@ pyzmq
 six
 tornado
 u-msgpack-python
+virtualenv

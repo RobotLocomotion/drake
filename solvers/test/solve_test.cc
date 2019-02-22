@@ -15,7 +15,7 @@ GTEST_TEST(SolveTest, LinearSystemSolverTest) {
   prog.AddLinearEqualityConstraint(Eigen::Matrix2d::Identity(),
                                    Eigen::Vector2d(1, 2), x);
   auto result = Solve(prog, {}, {});
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   EXPECT_TRUE(
       CompareMatrices(result.get_x_val(), Eigen::Vector2d(1, 2), 1E-12));
   EXPECT_EQ(result.get_optimal_cost(), 0);
@@ -24,8 +24,7 @@ GTEST_TEST(SolveTest, LinearSystemSolverTest) {
   // Now add an inconsistent constraint
   prog.AddLinearEqualityConstraint(x(0) + x(1), 5);
   result = Solve(prog, {}, {});
-  EXPECT_EQ(result.get_solution_result(),
-            SolutionResult::kInfeasibleConstraints);
+  EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_optimal_cost(),
             MathematicalProgram::kGlobalInfeasibleCost);
   EXPECT_EQ(result.get_solver_id(), LinearSystemSolver::id());
@@ -47,7 +46,7 @@ GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
     Eigen::VectorXd x_expected(1);
     x_expected(0) = 1;
     MathematicalProgramResult result = Solve(prog, x_expected, solver_options);
-    EXPECT_TRUE(CompareMatrices(prog.GetSolution(x, result), x_expected, 1E-6));
+    EXPECT_TRUE(CompareMatrices(result.GetSolution(x), x_expected, 1E-6));
   }
 }
 

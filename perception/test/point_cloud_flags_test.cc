@@ -29,6 +29,12 @@ GTEST_TEST(PointCloudFlagsTest, Basic) {
     os << (pcf::kXYZs | pcf::kDescriptorCurvature);
     EXPECT_EQ("(kXYZs | kDescriptorCurvature)", os.str());
   }
+  // Ensure it works for multiple types.
+  {
+    std::ostringstream os;
+    os << (pcf::kXYZs | pcf::kRGBs | pcf::kDescriptorCurvature);
+    EXPECT_EQ("(kXYZs | kRGBs | kDescriptorCurvature)", os.str());
+  }
 
   // Check basics.
   pcf::Fields lhs = pcf::kXYZs;

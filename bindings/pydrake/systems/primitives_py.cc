@@ -22,6 +22,7 @@
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
+#include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
@@ -118,6 +119,18 @@ PYBIND11_MODULE(primitives, m) {
             doc.Gain.ctor.doc_2args)
         .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("k"),
             doc.Gain.ctor.doc_1args);
+
+    DefineTemplateClassWithDefault<Sine<T>, LeafSystem<T>>(
+        m, "Sine", GetPyParam<T>(), doc.Sine.doc)
+        .def(py::init<double, double, double, int, bool>(),
+            py::arg("amplitude"), py::arg("frequency"), py::arg("phase"),
+            py::arg("size"), py::arg("is_time_based") = true,
+            doc.Sine.ctor.doc_5args)
+        .def(py::init<const Eigen::Ref<const VectorXd>&,
+                 const Eigen::Ref<const VectorXd>&,
+                 const Eigen::Ref<const VectorXd>&, bool>(),
+            py::arg("amplitudes"), py::arg("frequencies"), py::arg("phases"),
+            py::arg("is_time_based") = true, doc.Sine.ctor.doc_4args);
 
     DefineTemplateClassWithDefault<Integrator<T>, LeafSystem<T>>(
         m, "Integrator", GetPyParam<T>(), doc.Integrator.doc)

@@ -68,13 +68,17 @@ GTEST_TEST(TextLoggingTest, ConstantTest) {
   #endif
 }
 
-// Abuse gtest internals to verify that logging actually prints, when enabled.
+// Abuse gtest internals to verify that logging actually prints when enabled,
+// and that the default level is INFO.
 GTEST_TEST(TextLoggingTest, CaptureOutputTest) {
   testing::internal::CaptureStderr();
-  drake::log()->info("sentinel string");
+  drake::log()->trace("bad sentinel");
+  drake::log()->debug("bad sentinel");
+  drake::log()->info("good sentinel");
   std::string output = testing::internal::GetCapturedStderr();
   #if TEXT_LOGGING_TEST_SPDLOG
-    EXPECT_TRUE(output.find("sentinel string") != std::string::npos);
+    EXPECT_TRUE(output.find("good sentinel") != std::string::npos);
+    EXPECT_TRUE(output.find("bad sentinel") == std::string::npos);
   #else
     EXPECT_EQ(output, "");
   #endif

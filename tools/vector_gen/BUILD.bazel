@@ -92,6 +92,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "sample_translator_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":sample_translator",
         "//common/test_utilities",

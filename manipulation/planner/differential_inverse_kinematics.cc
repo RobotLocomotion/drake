@@ -55,9 +55,8 @@ std::ostream& operator<<(std::ostream& os,
       return os << "No solution found.";
     case (DifferentialInverseKinematicsStatus::kStuck):
       return os << "Stuck!";
-    default:
-      DRAKE_ABORT();
   }
+  DRAKE_UNREACHABLE();
 }
 
 const std::vector<std::shared_ptr<solvers::LinearConstraint>>&

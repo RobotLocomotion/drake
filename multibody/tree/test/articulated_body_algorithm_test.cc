@@ -6,7 +6,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/space_xyz_mobilizer.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -45,16 +45,14 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   const FeatherstoneMobilizer<T>& set_angles(
       systems::Context<T>* context,
       const Vector2<T>& angles) const {
-    MultibodyTreeContext<T>& mbt_context =
-        this->GetMutableMultibodyTreeContextOrThrow(context);
-    auto q = this->get_mutable_positions(&mbt_context);
+    auto q = this->get_mutable_positions(&*context);
     DRAKE_ASSERT(q.size() == kNq);
     q = angles;
     return *this;
   }
 
   Isometry3<T> CalcAcrossMobilizerTransform(
-      const MultibodyTreeContext<T>& context) const override {
+      const systems::Context<T>& context) const override {
     const Vector3<T> axis_rotation_F = rotation_axis();
     const T rotation = get_rotation(context);
     const math::RotationMatrix<T> R_FM(
@@ -69,14 +67,14 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const override {
     DRAKE_ASSERT(v.size() == kNv);
     return SpatialVelocity<T>(H_FM_ * v);
   }
 
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override {
     DRAKE_ASSERT(vdot.size() == kNv);
     // Note that Hdot * v = 0 for this mobilizer.
@@ -84,7 +82,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   void ProjectSpatialForce(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override {
     DRAKE_ASSERT(tau.size() == kNv);
@@ -92,7 +90,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   void MapVelocityToQDot(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
       EigenPtr<VectorX<T>> qdot) const override {
     DRAKE_ASSERT(v.size() == kNv);
@@ -102,7 +100,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   void MapQDotToVelocity(
-      const MultibodyTreeContext<T>& context,
+      const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override {
     DRAKE_ASSERT(qdot.size() == kNq);
@@ -112,13 +110,13 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
  protected:
-  void DoCalcNMatrix(const MultibodyTreeContext<T>&,
+  void DoCalcNMatrix(const systems::Context<T>&,
                      EigenPtr<MatrixX<T>> N) const override {
     N->setIdentity();
   }
 
   void DoCalcNplusMatrix(
-      const MultibodyTreeContext<T>&,
+      const systems::Context<T>&,
       EigenPtr<MatrixX<T>> Nplus) const override {
     Nplus->setIdentity();
   }
@@ -133,6 +131,11 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
+  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+      const MultibodyTree<symbolic::Expression>& tree_clone) const override {
+    return TemplatedDoCloneToScalar(tree_clone);
+  }
+
  private:
   typedef MobilizerImpl<T, 2, 2> MobilizerBase;
 
@@ -144,12 +147,12 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     return H_FM_.template block<3, 1>(3, 1);
   }
 
-  const T get_rotation(const MultibodyTreeContext<T>& context) const {
+  const T get_rotation(const systems::Context<T>& context) const {
     const auto& q = this->get_positions(context);
     return q[0];
   }
 
-  const T get_translation(const MultibodyTreeContext<T>& context) const {
+  const T get_translation(const systems::Context<T>& context) const {
     const auto& q = this->get_positions(context);
     return q[1];
   }

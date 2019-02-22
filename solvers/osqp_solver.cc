@@ -285,6 +285,7 @@ void OsqpSolver::Solve(const MathematicalProgram& prog,
 
   SolutionResult solution_result;
   result->set_solver_id(id());
+  result->set_decision_variable_index(prog.decision_variable_index());
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
   solver_details.iter = work->info->iter;

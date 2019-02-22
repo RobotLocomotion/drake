@@ -128,7 +128,7 @@ void QuadraticProgram0::CheckSolution(
     // MSK_DPARAM_INTPNT_QO_REL_TOL_GAP to 1E-10 to improve the accuracy.
     tol = 3E-5;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -216,7 +216,7 @@ void QuadraticProgram1::CheckSolution(
   } else if (solver_type == SolverType::kMosek) {
     tol = 1E-7;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -259,7 +259,7 @@ void QuadraticProgram2::CheckSolution(
   } else if (solver_type == SolverType::kSnopt) {
     tol = 1E-6;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -318,7 +318,7 @@ void QuadraticProgram3::CheckSolution(
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
@@ -373,12 +373,12 @@ void QuadraticProgram4::CheckSolution(
   if (solver_type == SolverType::kMosek) {
     tol = 1E-8;
   }
-  EXPECT_TRUE(CompareMatrices(prog()->GetSolution(x_, result), x_expected_, tol,
+  EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
 }
 
-void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
+void TestQPonUnitBallExample(const SolverInterface& solver) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(2);
 
@@ -425,7 +425,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     }
     const MathematicalProgramResult result =
         RunSolver(prog, solver, initial_guess);
-    const auto& x_value = prog.GetSolution(x, result);
+    const auto& x_value = result.GetSolution(x);
 
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-4,
                                 MatrixCompareType::absolute));
@@ -445,7 +445,7 @@ void TestQPonUnitBallExample(const MathematicalProgramSolverInterface& solver) {
     MathematicalProgramResult result;
     ASSERT_NO_THROW(result = RunSolver(prog, solver));
 
-    const auto& x_value = prog.GetSolution(x, result);
+    const auto& x_value = result.GetSolution(x);
     EXPECT_TRUE(CompareMatrices(x_value, x_expected, 1e-5,
                                 MatrixCompareType::absolute));
     ExpectSolutionCostAccurate(prog, result, 1E-5);

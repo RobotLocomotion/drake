@@ -42,7 +42,7 @@ class TestEllipsoidsSeparation
  public:
   TestEllipsoidsSeparation();
 
-  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver,
+  void SolveAndCheckSolution(const SolverInterface& solver,
                              double tol = 1E-8);
 
  private:
@@ -80,7 +80,7 @@ class TestQPasSOCP : public ::testing::TestWithParam<QPasSOCPProblem> {
  public:
   TestQPasSOCP();
 
-  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver,
+  void SolveAndCheckSolution(const SolverInterface& solver,
                              double tol = 1E-6);
 
  private:
@@ -129,7 +129,7 @@ class TestFindSpringEquilibrium
  public:
   TestFindSpringEquilibrium();
 
-  void SolveAndCheckSolution(const MathematicalProgramSolverInterface& solver,
+  void SolveAndCheckSolution(const SolverInterface& solver,
                              double tol = 2E-3);
 
  private:

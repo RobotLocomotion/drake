@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 /* clang-format on */
 
 #include <algorithm>
@@ -518,6 +518,29 @@ TEST_F(TreeTopologyTests, ToAutoDiffXd) {
   // Even though the test above confirms the two topologies are exactly equal,
   // we perform a number of additional tests.
   VerifyTopology(autodiff_topology);
+}
+
+// Verifies that the symbolic version of a given MultibodyTree model created
+// with MultibodyTree::ToSymbolic() has exactly the same topology as the
+// original model.
+TEST_F(TreeTopologyTests, ToSymbolic) {
+  model_->Finalize();
+  EXPECT_EQ(model_->num_bodies(), 8);
+  EXPECT_EQ(model_->num_mobilizers(), 7);
+  const MultibodyTreeTopology& topology = model_->get_topology();
+
+  auto symbolic_model = model_->CloneToScalar<symbolic::Expression>();
+  EXPECT_EQ(symbolic_model->num_bodies(), 8);
+  const MultibodyTreeTopology& symbolic_topology =
+      symbolic_model->get_topology();
+
+  // The topology of the clone must be exactly equal to the topology of the
+  // original MultibodyTree.
+  EXPECT_EQ(topology, symbolic_topology);
+
+  // Even though the test above confirms the two topologies are exactly equal,
+  // we perform a number of additional tests.
+  VerifyTopology(symbolic_topology);
 }
 
 // Verifies the correctness of the method

@@ -4,7 +4,6 @@
 
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/multibody_tree_context.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {

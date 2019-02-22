@@ -8,17 +8,17 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-constexpr int kIiwaArmNumJoints = 7;
-
-/// Returns the maximum joint velocities provided by Kuka.
-/// @return Maximum joint velocities (rad/s).
-VectorX<double> get_iiwa_max_joint_velocities();
+// These details have moved to files under drake/manipulation/kuka_iiwa.
+// These forwarding aliases are placed here for compatibility purposes.
+using manipulation::kuka_iiwa::kIiwaArmNumJoints;
+using manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
 
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.

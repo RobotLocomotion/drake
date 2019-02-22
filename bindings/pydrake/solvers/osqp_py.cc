@@ -8,16 +8,15 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(osqp, m) {
-  using drake::solvers::OsqpSolver;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   m.doc() = "OSQP solver bindings for MathematicalProgram";
 
-  py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram")
-          .attr("MathematicalProgramSolverInterface");
+  py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<OsqpSolver>(m, "OsqpSolver", solverinterface, doc.OsqpSolver.doc)
+  py::class_<OsqpSolver, SolverInterface>(m, "OsqpSolver", doc.OsqpSolver.doc)
       .def(py::init<>(), doc.OsqpSolver.ctor.doc);
 }
 

@@ -1,5 +1,6 @@
 #include "drake/examples/manipulation_station/manipulation_station.h"
 
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -58,8 +59,7 @@ SpatialInertia<double> MakeCompositeGripperInertia(
   parser.AddModelFromFile(wsg_sdf_path);
   plant.Finalize();
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
-  const auto& gripper_body =
-      plant.GetRigidBodyByName(frame.body().name());
+  const auto& gripper_body = plant.GetRigidBodyByName(frame.body().name());
   const auto& left_finger = plant.GetRigidBodyByName("left_finger");
   const auto& right_finger = plant.GetRigidBodyByName("right_finger");
   const auto& left_slider = plant.GetJointByName("left_finger_sliding_joint");
@@ -197,28 +197,24 @@ void ManipulationStation<T>::SetupClutterClearingStation(
   // Add the objects.
   {
     multibody::Parser parser(plant_);
-    parser.AddModelFromFile(
-        FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object_1");
-    parser.AddModelFromFile(
-        FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/cylinder.sdf"),
-        "object_2");
-    parser.AddModelFromFile(
-        FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/thin_cylinder.sdf"),
-        "object_3");
-    parser.AddModelFromFile(
-        FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/thin_box.sdf"),
-        "object_4");
-    parser.AddModelFromFile(
-        FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/sphere.sdf"),
-        "object_5");
+    // TODO(russt): Take a list of object models as an input argument.
+    const std::list<std::string> models{
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf",
+        "drake/examples/manipulation_station/models/cylinder.sdf",
+        "drake/examples/manipulation_station/models/thin_cylinder.sdf",
+        "drake/examples/manipulation_station/models/thin_box.sdf",
+        "drake/examples/manipulation_station/models/sphere.sdf"};
+    for (const auto& model : models) {
+      const auto model_index =
+          parser.AddModelFromFile(FindResourceOrThrow(model));
+      const auto indices = plant_->GetBodyIndices(model_index);
+      // Only support single-body objects for now.
+      // Note: this could be generalized fairly easily... would just want to
+      // set default/random positions for the non-floating-base elements below.
+      DRAKE_DEMAND(indices.size() == 1);
+      object_ids_.push_back(indices[0]);
+    }
   }
-
   AddDefaultIiwa(collision_model);
   AddDefaultWsg();
 }
@@ -271,10 +267,11 @@ void ManipulationStation<T>::SetupDefaultStation(
   // Add the object.
   {
     multibody::Parser parser(plant_);
-    parser.AddModelFromFile(
-        FindResourceOrThrow(
-            "drake/examples/manipulation_station/models/061_foam_brick.sdf"),
-        "object_1");
+    const auto model_index = parser.AddModelFromFile(FindResourceOrThrow(
+        "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
+    const auto indices = plant_->GetBodyIndices(model_index);
+    DRAKE_DEMAND(indices.size() == 1);
+    object_ids_.push_back(indices[0]);
   }
 
   // Add the default iiwa/wsg models.
@@ -315,21 +312,11 @@ void ManipulationStation<T>::SetDefaultState(
   // Call the base class method, to initialize all systems in this diagram.
   systems::Diagram<T>::SetDefaultState(station_context, state);
 
-  VectorX<T> q0_iiwa(num_iiwa_joints());
   T q0_gripper{0.1};
 
-  auto& plant_context = this->GetSubsystemContext(*plant_, station_context);
+  const auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
   auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
-
-  auto set_object_pose = [&](std::string object_name,
-                             const RigidTransform<T>& X_WObject) {
-    const auto indices =
-        plant_->GetBodyIndices(plant_->GetModelInstanceByName(object_name));
-    DRAKE_DEMAND(indices.size() == 1);
-    plant_->SetFreeBodyPose(plant_context, &plant_state,
-                            plant_->get_body(indices[0]),
-                            X_WObject.GetAsIsometry3());
-  };
 
   RigidTransform<T> X_WObject;
   switch (setup_) {
@@ -337,52 +324,98 @@ void ManipulationStation<T>::SetDefaultState(
       // No additional setup required.
       break;
     case Setup::kDefault:
-      // Set the initial positions of the IIWA to a comfortable configuration
-      // inside the workspace of the station.
-      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+      DRAKE_DEMAND(object_ids_.size() == 1);
 
       // Set the initial pose of the object.
       X_WObject.set_translation(Eigen::Vector3d(0.6, 0, 0));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      set_object_pose("object_1", X_WObject);
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[0]),
+                              X_WObject.GetAsIsometry3());
 
       break;
     case Setup::kClutterClearing:
-      // Set the initial positions of the IIWA to a configuration right above
-      // the picking bin.
-      q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+      DRAKE_DEMAND(object_ids_.size() == 5);
 
       // Place the box.
       X_WObject.set_translation(Eigen::Vector3d(-0.15, -0.7, 0.25));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      set_object_pose("object_1", X_WObject);
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[0]),
+                              X_WObject.GetAsIsometry3());
 
       // Place the cylinder.
       X_WObject.set_translation(Eigen::Vector3d(-0.2, -0.6, 0.30));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      set_object_pose("object_2", X_WObject);
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[1]),
+                              X_WObject.GetAsIsometry3());
 
       // Place the thin cylinder.
       X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.25));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      set_object_pose("object_3", X_WObject);
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[2]),
+                              X_WObject.GetAsIsometry3());
 
       // Place the thin box.
       X_WObject.set_translation(Eigen::Vector3d(-0.3, -0.7, 0.25));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      set_object_pose("object_4", X_WObject);
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[3]),
+                              X_WObject.GetAsIsometry3());
 
       // Place the sphere.
       X_WObject.set_translation(Eigen::Vector3d(0, -0.6, 0.31));
       X_WObject.set_rotation(RotationMatrix<T>::Identity());
-      set_object_pose("object_5", X_WObject);
+      plant_->SetFreeBodyPose(plant_context, &plant_state,
+                              plant_->get_body(object_ids_[4]),
+                              X_WObject.GetAsIsometry3());
 
       break;
   }
 
-  SetIiwaPosition(station_context, state, q0_iiwa);
+  // Use SetIiwaPosition to make sure the controller state is initialized to
+  // the IIWA state.
+  SetIiwaPosition(station_context, state, GetIiwaPosition(station_context));
   SetIiwaVelocity(station_context, state, VectorX<T>::Zero(num_iiwa_joints()));
   SetWsgPosition(station_context, state, q0_gripper);
+  SetWsgVelocity(station_context, state, 0);
+}
+
+template <typename T>
+void ManipulationStation<T>::SetRandomState(
+    const systems::Context<T>& station_context, systems::State<T>* state,
+    RandomGenerator* generator) const {
+  // Call the base class method, to initialize all systems in this diagram.
+  systems::Diagram<T>::SetRandomState(station_context, state, generator);
+
+  const auto& plant_context =
+      this->GetSubsystemContext(*plant_, station_context);
+  auto& plant_state = this->GetMutableSubsystemState(*plant_, state);
+
+  // Separate the objects by lifting them up in z (in a random order).
+  // TODO(russt): Replace this with an explicit projection into a statically
+  // stable configuration.
+  std::vector<multibody::BodyIndex> shuffled_object_ids(object_ids_);
+  std::shuffle(shuffled_object_ids.begin(), shuffled_object_ids.end(),
+               *generator);
+  double z_offset = 0.1;
+  for (const auto body_index : shuffled_object_ids) {
+    math::RigidTransform<T> pose =
+        plant_->GetFreeBodyPose(plant_context, plant_->get_body(body_index));
+    pose.set_translation(pose.translation() + Vector3d{0, 0, z_offset});
+    z_offset += 0.1;
+    plant_->SetFreeBodyPose(plant_context, &plant_state,
+                            plant_->get_body(body_index),
+                            pose.GetAsIsometry3());
+  }
+
+  // Use SetIiwaPosition to make sure the controller state is initialized to
+  // the IIWA state.
+  SetIiwaPosition(station_context, state, GetIiwaPosition(station_context));
+  SetIiwaVelocity(station_context, state, VectorX<T>::Zero(num_iiwa_joints()));
+  SetWsgPosition(station_context, state, GetWsgPosition(station_context));
   SetWsgVelocity(station_context, state, 0);
 }
 
@@ -433,6 +466,48 @@ void ManipulationStation<T>::Finalize() {
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.
   plant_->Finalize();
+
+  // Set plant properties that must occur after finalizing the plant.
+  VectorX<T> q0_iiwa(num_iiwa_joints());
+
+  switch (setup_) {
+    case Setup::kNone:
+    case Setup::kDefault:
+      // Set the initial positions of the IIWA to a comfortable configuration
+      // inside the workspace of the station.
+      q0_iiwa << 0, 0.6, 0, -1.75, 0, 1.0, 0;
+
+      break;
+    case Setup::kClutterClearing:
+      // Set the initial positions of the IIWA to a configuration right above
+      // the picking bin.
+      q0_iiwa << -1.57, 0.1, 0, -1.2, 0, 1.6, 0;
+
+      std::uniform_real_distribution<symbolic::Expression> x(-.35, 0.05),
+          y(-0.8, -.55), z(0.3, 0.35);
+      const Vector3<symbolic::Expression> xyz{x(), y(), z()};
+      for (const auto body_index : object_ids_) {
+        const multibody::Body<T>& body = plant_->get_body(body_index);
+        plant_->SetFreeBodyRandomPositionDistribution(body, xyz);
+        plant_->SetFreeBodyRandomRotationDistributionToUniform(body);
+      }
+      break;
+  }
+
+  // Set the iiwa default configuration.
+  const auto iiwa_joint_indices =
+      plant_->GetJointIndices(iiwa_model_.model_instance);
+  int q0_index = 0;
+  for (const auto joint_index : iiwa_joint_indices) {
+    multibody::RevoluteJoint<T>* joint =
+        dynamic_cast<multibody::RevoluteJoint<T>*>(
+            &plant_->get_mutable_joint(joint_index));
+    // Note: iiwa_joint_indices includes the WeldJoint at the base.  Only set
+    // the RevoluteJoints.
+    if (joint) {
+      joint->set_default_angle(q0_iiwa[q0_index++]);
+    }
+  }
 
   systems::DiagramBuilder<T> builder;
 

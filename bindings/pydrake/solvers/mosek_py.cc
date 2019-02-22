@@ -8,17 +8,16 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(mosek, m) {
-  using drake::solvers::MosekSolver;
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   m.doc() = "Mosek solver bindings for MathematicalProgram";
 
-  py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram")
-          .attr("MathematicalProgramSolverInterface");
+  py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<MosekSolver>(
-      m, "MosekSolver", solverinterface, doc.MosekSolver.doc)
+  py::class_<MosekSolver, SolverInterface>(
+      m, "MosekSolver", doc.MosekSolver.doc)
       .def(py::init<>(), doc.MosekSolver.ctor.doc);
 }
 

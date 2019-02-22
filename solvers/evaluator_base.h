@@ -33,34 +33,34 @@ class EvaluatorBase {
 
   virtual ~EvaluatorBase() {}
 
-  /**
-   * Evaluates the expression with a scalar type of double.
-   * @param x A `num_vars` x 1 input vector.
-   * @param[out] y A `num_outputs` x 1 output vector.
-   */
   // TODO(bradking): consider using a Ref for `y`.  This will require the client
   // to do allocation, but also allows it to choose stack allocation instead.
+  /**
+   * Evaluates the expression.
+   * @param[in] x A `num_vars` x 1 input vector.
+   * @param[out] y A `num_outputs` x 1 output vector.
+   */
   void Eval(const Eigen::Ref<const Eigen::VectorXd>& x,
             Eigen::VectorXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
   }
 
-  /**
-   * Evaluates the expression with a scalar type of AutoDiffXd.
-   * @param x A `num_vars` x 1 input vector.
-   * @param[out] y A `num_outputs` x 1 output vector.
-   */
   // TODO(eric.cousineau): Move this to DifferentiableConstraint derived class
   // if/when we need to support non-differentiable functions (at least, if
   // DifferentiableConstraint is ever implemented).
+  /**
+   * Evaluates the expression.
+   * @param[in] x A `num_vars` x 1 input vector.
+   * @param[out] y A `num_outputs` x 1 output vector.
+   */
   void Eval(const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
     DRAKE_ASSERT(x.rows() == num_vars_ || num_vars_ == Eigen::Dynamic);
     DoEval(x, y);
   }
 
   /**
-   * Evaluates the expression with a scalar type of symbolic::Expression.
+   * Evaluates the expression.
    * @param[in] x A `num_vars` x 1 input vector.
    * @param[out] y A `num_outputs` x 1 output vector.
    */

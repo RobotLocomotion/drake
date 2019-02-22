@@ -105,9 +105,9 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
   AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
   AddRotationMatrixSpectrahedralSdpConstraint(&prog, Rvar);
   MathematicalProgramResult result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(), kSolutionFound);
+  ASSERT_TRUE(result.is_success());
 
-  Matrix3d R = prog.GetSolution(Rvar, result);
+  Matrix3d R = result.GetSolution(Rvar);
 
   double tol = 1e-6;
   EXPECT_LE(R.col(0).lpNorm<2>(), 1 + tol);
@@ -154,9 +154,9 @@ GTEST_TEST(RotationTest, TestOrthonormal) {
   AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
   AddRotationMatrixOrthonormalSocpConstraint(&prog, Rvar);
   MathematicalProgramResult result = Solve(prog);
-  ASSERT_EQ(result.get_solution_result(), kSolutionFound);
+  ASSERT_TRUE(result.is_success());
 
-  Matrix3d R = prog.GetSolution(Rvar, result);
+  Matrix3d R = result.GetSolution(Rvar);
 
   double tol = 1e-4;
   EXPECT_LE(R.col(0).lpNorm<2>(), 1 + tol);

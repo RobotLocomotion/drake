@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 namespace drake {
@@ -18,6 +19,9 @@ class PoseStampedTPoseVectorTranslator
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseStampedTPoseVectorTranslator)
 
+  DRAKE_DEPRECATED(
+      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+      "and will be removed on 2019-05-01.")
   explicit PoseStampedTPoseVectorTranslator(const std::string& frame_name);
 
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

@@ -82,8 +82,8 @@ double HeadingIntoLane(const api::Lane* const lane,
     case api::LaneEnd::kFinish: {
       return lane->GetOrientation({lane->length(), 0., 0.}).yaw() + M_PI;
     }
-    default: { DRAKE_ABORT(); }
   }
+  DRAKE_UNREACHABLE();
 }
 
 // Computes the Euclidean distance between @p base and @p target,
@@ -327,6 +327,7 @@ void AttachLaneEndToBranchPoint(const api::LaneEnd::Which end, Lane* lane,
   DRAKE_DEMAND(lane != nullptr);
   DRAKE_DEMAND(branch_point != nullptr);
   // Tells the lane about its branch-point.
+  DRAKE_DEMAND((end == api::LaneEnd::kStart) || (end == api::LaneEnd::kFinish));
   switch (end) {
     case api::LaneEnd::kStart: {
       lane->SetStartBp(branch_point);
@@ -336,7 +337,6 @@ void AttachLaneEndToBranchPoint(const api::LaneEnd::Which end, Lane* lane,
       lane->SetEndBp(branch_point);
       break;
     }
-    default: { DRAKE_ABORT(); }
   }
   // Tells the BranchPoint about the lane. When the A-Side is empty, it adds
   // the LaneEnd to it.

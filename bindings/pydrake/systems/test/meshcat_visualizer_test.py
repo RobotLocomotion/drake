@@ -4,13 +4,18 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import SceneGraph
-from pydrake.multibody.multibody_tree import UniformGravityFieldElement
-from pydrake.multibody.multibody_tree.multibody_plant import (
+from pydrake.multibody.tree import UniformGravityFieldElement
+from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import (
+    MeshcatVisualizer,
+    MeshcatContactVisualizer
+)
+from pydrake.common.eigen_geometry import Isometry3
+from pydrake.multibody.plant import MultibodyPlant
 
 
 class TestMeshcat(unittest.TestCase):
@@ -80,3 +85,82 @@ class TestMeshcat(unittest.TestCase):
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(.1)
+
+    def test_contact_force(self):
+        """A block sitting on a table."""
+        object_file_path = FindResourceOrThrow(
+            "drake/examples/manipulation_station/models/061_foam_brick.sdf")
+        table_file_path = FindResourceOrThrow(
+            "drake/examples/kuka_iiwa_arm/models/table/"
+            "extra_heavy_duty_table_surface_only_collision.sdf")
+
+        # T: tabletop frame.
+        X_TObject = Isometry3.Identity()
+        X_TObject.set_translation([0, 0, 0.2])
+
+        builder = DiagramBuilder()
+        plant = MultibodyPlant(0.002)
+        _, scene_graph = AddMultibodyPlantSceneGraph(builder, plant)
+        object_model = Parser(plant=plant).AddModelFromFile(object_file_path)
+        table_model = Parser(plant=plant).AddModelFromFile(table_file_path)
+
+        # Weld table to world.
+        plant.WeldFrames(
+            A=plant.world_frame(),
+            B=plant.GetFrameByName("link", table_model))
+
+        plant.AddForceElement(UniformGravityFieldElement())
+        plant.Finalize()
+
+        # Add meshcat visualizer.
+        viz = builder.AddSystem(
+            MeshcatVisualizer(scene_graph,
+                              zmq_url=None,
+                              open_browser=False))
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            viz.get_input_port(0))
+
+        # Add contact visualizer.
+        contact_viz = builder.AddSystem(
+            MeshcatContactVisualizer(
+                meshcat_viz=viz,
+                force_threshold=0,
+                contact_force_scale=10,
+                plant=plant))
+        contact_input_port = contact_viz.GetInputPort("contact_results")
+        builder.Connect(
+            plant.GetOutputPort("contact_results"),
+            contact_input_port)
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            contact_viz.GetInputPort("pose_bundle"))
+
+        diagram = builder.Build()
+
+        diagram_context = diagram.CreateDefaultContext()
+        mbp_context = diagram.GetMutableSubsystemContext(
+            plant, diagram_context)
+
+        X_WT = plant.CalcRelativeTransform(
+            mbp_context,
+            plant.world_frame(),
+            plant.GetFrameByName("top_center"))
+
+        plant.SetFreeBodyPose(
+            mbp_context,
+            plant.GetBodyByName("base_link", object_model),
+            X_WT.multiply(X_TObject))
+
+        simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.StepTo(1.0)
+
+        contact_viz_context = (
+            diagram.GetMutableSubsystemContext(contact_viz, diagram_context))
+        contact_results = contact_viz.EvalAbstractInput(
+            contact_viz_context,
+            contact_input_port.get_index()).get_value()
+
+        self.assertGreater(contact_results.num_contacts(), 0)
+        self.assertEqual(contact_viz._contact_key_counter, 4)

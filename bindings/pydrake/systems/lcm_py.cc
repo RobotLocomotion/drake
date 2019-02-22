@@ -169,8 +169,7 @@ PYBIND11_MODULE(lcm, m) {
                  DrakeLcmInterface*>(),
             py::arg("channel"), py::arg("serializer"), py::arg("lcm"),
             // Keep alive: `self` keeps `DrakeLcmInterface` alive.
-            py::keep_alive<1, 3>(),
-            cls_doc.ctor.doc_3args_channel_serializer_lcm)
+            py::keep_alive<1, 3>(), doc.LcmSubscriberSystem.ctor.doc)
         .def("CopyLatestMessageInto", &Class::CopyLatestMessageInto,
             py::arg("state"), cls_doc.CopyLatestMessageInto.doc)
         .def("WaitForMessage", &Class::WaitForMessage,

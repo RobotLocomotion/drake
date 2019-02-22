@@ -63,20 +63,21 @@ their responsibilities are:
 
   responsibilities: MIT CSAIL research lab / MIT courses
 
+.. _issues-priority:
+
 Priority
 ========
 
 The ``emergency`` priority indicates that the owning team should not work
 on anything else until the issue is resolved.
 
-The ``high``, ``medium``, ``low``, and ``backlog`` priority levels have
-semantics determined by the owning team. The following rules of thumb may be
-useful:
+The other priorities are determined by the owning team. The following rules of
+thumb may be useful for issues:
 
-* high-priority issues are planned to receive attention within the month.
-* medium-priority issues are planned to receive attention within the quarter.
-* low-priority issues may be planned for a subsequent quarter.
-* backlog-priority issues will be handled on an ad-hoc basis, as time permits.
+* ``priority: high`` - planned to receive attention within the month.
+* ``priority: medium`` - planned to receive attention within the quarter.
+* ``priority: low`` - planned for a subsequent quarter.
+* ``priority: backlog`` - will be handled on an ad-hoc basis, as time permits.
 
 Configuration
 =============

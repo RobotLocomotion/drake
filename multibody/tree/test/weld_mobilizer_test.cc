@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
@@ -47,7 +47,7 @@ TEST_F(WeldMobilizerTest, ZeroSizedState) {
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
   const math::RigidTransformd X_FM(
-      weld_body_to_world_->CalcAcrossMobilizerTransform(*mbt_context_));
+      weld_body_to_world_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_WB_.GetAsMatrix34(),
                               kTolerance, MatrixCompareType::relative));
@@ -57,7 +57,7 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const VectorXd zero_sized_vector(0);
   const SpatialVelocity<double> V_FM =
       weld_body_to_world_->CalcAcrossMobilizerSpatialVelocity(
-          *mbt_context_, zero_sized_vector);
+          *context_, zero_sized_vector);
   EXPECT_EQ(V_FM.get_coeffs(), Vector6<double>::Zero());
 }
 
@@ -65,7 +65,7 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const VectorXd zero_sized_vector(0);
   const SpatialAcceleration<double> A_FM =
       weld_body_to_world_->CalcAcrossMobilizerSpatialAcceleration(
-          *mbt_context_, zero_sized_vector);
+          *context_, zero_sized_vector);
   EXPECT_EQ(A_FM.get_coeffs(), Vector6<double>::Zero());
 }
 
@@ -74,16 +74,16 @@ TEST_F(WeldMobilizerTest, ProjectSpatialForce) {
   const SpatialForce<double> F_Mo_F;  // value not important for this test.
   // no-op, just tests we can call it with a zero sized vector.
   weld_body_to_world_->ProjectSpatialForce(
-      *mbt_context_, F_Mo_F, zero_sized_vector);
+      *context_, F_Mo_F, zero_sized_vector);
 }
 
 TEST_F(WeldMobilizerTest, MapVelocityToQDotAndBack) {
   VectorXd zero_sized_vector(0);
   // These methods are no-ops, just test we can call them with zero sized
   // vectors.
-  weld_body_to_world_->MapVelocityToQDot(*mbt_context_,
+  weld_body_to_world_->MapVelocityToQDot(*context_,
                                          zero_sized_vector, &zero_sized_vector);
-  weld_body_to_world_->MapQDotToVelocity(*mbt_context_,
+  weld_body_to_world_->MapQDotToVelocity(*context_,
                                          zero_sized_vector, &zero_sized_vector);
 }
 
@@ -91,8 +91,8 @@ TEST_F(WeldMobilizerTest, KinematicMapping) {
   // These methods are no-ops, just test we can call them with zero sized
   // matrices.
   MatrixX<double> N(0, 0);
-  weld_body_to_world_->CalcNMatrix(*mbt_context_, &N);
-  weld_body_to_world_->CalcNplusMatrix(*mbt_context_, &N);
+  weld_body_to_world_->CalcNMatrix(*context_, &N);
+  weld_body_to_world_->CalcNplusMatrix(*context_, &N);
 }
 
 }  // namespace

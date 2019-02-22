@@ -89,6 +89,8 @@ drake_cc_vector_gen_library(
 drake_cc_vector_gen_translator_library(
     name = "generated_translators",
     srcs = _LCM_ENABLED_NAMED_VECTORS,
+    deprecation = "The LcmAndVectorBaseTranslator and its related code are deprecated, and will be removed on 2019-05-01.",  # noqa
+    tags = ["manual"],  # Avoid 'build //...' yelling at us.
     deps = [
         ":generated_vectors",
         "//lcmtypes:automotive",
@@ -431,7 +433,6 @@ drake_cc_library(
     hdrs = ["automotive_simulator.h"],
     deps = [
         ":driving_command_mux",
-        ":generated_translators",
         ":generated_vectors",
         ":idm_controller",
         ":lane_direction",
@@ -447,6 +448,7 @@ drake_cc_library(
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//lcm",
+        "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:lcmt_drake_signal_translator",
@@ -538,6 +540,7 @@ drake_cc_googletest(
         "//automotive:create_trajectory_params",
         "//automotive/maliput/dragway",
         "//lcm:mock",
+        "//lcmtypes:lcmtypes_drake_cc",
     ],
 )
 

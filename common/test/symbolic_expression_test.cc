@@ -2145,6 +2145,15 @@ TEST_F(SymbolicExpressionTest, UniformRealDistribution) {
     EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_UNIFORM);
   }
 
+  // Checks the same thing, but tests operator() with no arguments.
+  {
+    uniform_real_distribution<Expression> d{0.0, 1.0};
+    const Expression e{d()};
+    ASSERT_TRUE(is_variable(e));
+    const Variable& v{get_variable(e)};
+    EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_UNIFORM);
+  }
+
   // A general case: X ~ U(-5, 10) should generate a symbolic expression
   // -5 + 15 * v where v is a random uniform variable.
   {
@@ -2295,6 +2304,15 @@ TEST_F(SymbolicExpressionTest, NormalDistribution) {
     EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_GAUSSIAN);
   }
 
+  // Checks the same thing, but tests operator() with no arguments.
+  {
+    normal_distribution<Expression> d{0.0, 1.0};
+    const Expression e{d()};
+    ASSERT_TRUE(is_variable(e));
+    const Variable& v{get_variable(e)};
+    EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_GAUSSIAN);
+  }
+
   // A general case: X ~ N(5, 10) should generate a symbolic expression
   // 5 + 10 * v where v is a random Gaussian variable.
   {
@@ -2429,6 +2447,15 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
   {
     exponential_distribution<Expression> d{1.0};
     const Expression e{d(generator)};
+    ASSERT_TRUE(is_variable(e));
+    const Variable& v{get_variable(e)};
+    EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_EXPONENTIAL);
+  }
+
+  // Checks the same thing, but tests operator() with no arguments.
+  {
+    exponential_distribution<Expression> d{1.0};
+    const Expression e{d()};
     ASSERT_TRUE(is_variable(e));
     const Variable& v{get_variable(e)};
     EXPECT_EQ(v.get_type(), Variable::Type::RANDOM_EXPONENTIAL);

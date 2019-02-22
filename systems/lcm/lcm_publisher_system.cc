@@ -114,6 +114,8 @@ LcmPublisherSystem::LcmPublisherSystem(
     : LcmPublisherSystem(channel, nullptr, std::move(translator), nullptr,
                          lcm, publish_period) {}
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
     const LcmTranslatorDictionary& translator_dictionary,
@@ -123,6 +125,7 @@ LcmPublisherSystem::LcmPublisherSystem(
           channel,
           translator_dictionary.GetTranslator(channel),
           lcm, publish_period) {}
+#pragma GCC diagnostic pop
 
 LcmPublisherSystem::~LcmPublisherSystem() {}
 

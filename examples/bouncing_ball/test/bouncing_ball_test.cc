@@ -40,31 +40,27 @@ std::pair<double, double> CalcClosedFormHeightAndVelocity(double g,
       // Ball has hit the ground.
       return std::make_pair(0.0, 0.0);
     }
-  } else {
-    if (e == 1.0) {
-      // Get the number of phases that have passed.
-      int num_phases = static_cast<int>(std::floor(tf / drop_time));
-
-      // Get the time within the phase.
-      const double t = tf - num_phases*drop_time;
-
-      // Even phases mean that the ball is falling, odd phases mean that it is
-      // rising.
-      if ((num_phases & 1) == 0) {
-        return std::make_pair(g*t*t/2 + x0, g*t);
-      } else {
-        // Get the ball velocity at the time of impact.
-        const double vf = g*drop_time;
-        return std::make_pair(g*t*t/2 - vf*t, g*t - vf);
-      }
-    } else {
-      throw std::logic_error("Invalid restitution coefficient!");
-    }
-
-    // Should never reach here.
-    DRAKE_ABORT();
-    return std::make_pair(0.0, 0.0);
   }
+
+  if (e == 1.0) {
+    // Get the number of phases that have passed.
+    int num_phases = static_cast<int>(std::floor(tf / drop_time));
+
+    // Get the time within the phase.
+    const double t = tf - num_phases*drop_time;
+
+    // Even phases mean that the ball is falling, odd phases mean that it is
+    // rising.
+    if ((num_phases & 1) == 0) {
+      return std::make_pair(g*t*t/2 + x0, g*t);
+    } else {
+      // Get the ball velocity at the time of impact.
+      const double vf = g*drop_time;
+      return std::make_pair(g*t*t/2 - vf*t, g*t - vf);
+    }
+  }
+
+  throw std::logic_error("Invalid restitution coefficient!");
 }
 
 class BouncingBallTest : public ::testing::Test {

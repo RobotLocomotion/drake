@@ -209,10 +209,8 @@ class WitnessFunction final {
       case WitnessFunctionDirection::kCrossesZero:
         return ((w0 > zero && wf <= zero) ||
                 (w0 < zero && wf >= zero));
-
-      default:
-        DRAKE_ABORT();
     }
+    DRAKE_UNREACHABLE();
   }
 
   /// Sets the event that will be dispatched when the witness function

@@ -8,17 +8,16 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(gurobi, m) {
-  using drake::solvers::GurobiSolver;
-
-  m.doc() = "Gurobi solver bindings for MathematicalProgram";
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::solvers;
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
-  py::object solverinterface =
-      py::module::import("pydrake.solvers.mathematicalprogram")
-          .attr("MathematicalProgramSolverInterface");
+  m.doc() = "Gurobi solver bindings for MathematicalProgram";
 
-  py::class_<GurobiSolver>(
-      m, "GurobiSolver", solverinterface, doc.GurobiSolver.doc)
+  py::module::import("pydrake.solvers.mathematicalprogram");
+
+  py::class_<GurobiSolver, SolverInterface>(
+      m, "GurobiSolver", doc.GurobiSolver.doc)
       .def(py::init<>(), doc.GurobiSolver.ctor.doc);
 }
 

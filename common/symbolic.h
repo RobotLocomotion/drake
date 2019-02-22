@@ -34,6 +34,7 @@
 #include "drake/common/symbolic_environment.h"
 #include "drake/common/symbolic_expression.h"
 #include "drake/common/symbolic_expression_visitor.h"
+#include "drake/common/symbolic_ldlt.h"
 #include "drake/common/symbolic_monomial.h"
 #include "drake/common/symbolic_monomial_util.h"
 #include "drake/common/symbolic_polynomial.h"

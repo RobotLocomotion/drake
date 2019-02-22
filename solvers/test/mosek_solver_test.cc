@@ -32,9 +32,16 @@ TEST_F(UnboundedLinearProgramTest0, Test) {
     MathematicalProgramResult result;
     solver.Solve(const_prog, {}, {}, &result);
     // Mosek can only detect dual infeasibility, not primal unboundedness.
+    EXPECT_FALSE(result.is_success());
     EXPECT_EQ(result.get_solution_result(), SolutionResult::kDualInfeasible);
-    EXPECT_EQ(
-        result.get_solver_details().GetValue<MosekSolverDetails>().rescode, 0);
+    const MosekSolverDetails& mosek_solver_details =
+        result.get_solver_details().GetValue<MosekSolverDetails>();
+    EXPECT_EQ(mosek_solver_details.rescode, 0);
+    // This problem status is defined in
+    // https://docs.mosek.com/8.1/capi/constants.html#mosek.prosta
+    const int MSK_SOL_STA_DUAL_INFEAS_CER = 6;
+    EXPECT_EQ(mosek_solver_details.solution_status,
+              MSK_SOL_STA_DUAL_INFEAS_CER);
   }
 }
 
@@ -164,13 +171,13 @@ GTEST_TEST(MosekTest, SolverOptionsTest) {
   MathematicalProgramResult result;
   MosekSolver mosek_solver;
   mosek_solver.Solve(prog, {}, solver_options, &result);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
 
   // Now try a small positive semidefinite matrix tolerance.
   solver_options.SetOption(MosekSolver::id(),
                            "MSK_DPAR_SEMIDEFINITE_TOL_APPROX", 1E-10);
   mosek_solver.Solve(prog, {}, solver_options, &result);
-  EXPECT_NE(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_FALSE(result.is_success());
 }
 
 GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
@@ -195,7 +202,7 @@ GTEST_TEST(MosekSolver, SolverOptionsErrorTest) {
   const int MSK_PRO_STA_UNKNOWN = 0;
   EXPECT_EQ(solver_details.solution_status, MSK_PRO_STA_UNKNOWN);
 
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kUnknownError);
+  EXPECT_FALSE(result.is_success());
 }
 
 GTEST_TEST(MosekSolver, TestInitialGuess) {
@@ -231,14 +238,14 @@ GTEST_TEST(MosekSolver, TestInitialGuess) {
   MathematicalProgramResult result;
   solver.Solve(prog, prog.initial_guess(), solver_options, &result);
   const double tol = 1E-8;
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 0.8, tol);
 
   // By setting y = (0, 0, 0, 1), point C is on the line segment A4A1. The
   // minimal squared distance is  1.0 / 17
   prog.SetInitialGuess(y, Eigen::Vector4d(0, 0, 0, 1));
   solver.Solve(prog, prog.initial_guess(), solver_options, &result);
-  EXPECT_EQ(result.get_solution_result(), SolutionResult::kSolutionFound);
+  EXPECT_TRUE(result.is_success());
   EXPECT_NEAR(result.get_optimal_cost(), 1.0 / 17, tol);
 }
 }  // namespace test

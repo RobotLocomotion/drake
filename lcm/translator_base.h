@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -21,7 +22,11 @@ namespace lcm {
  * any arbitrary data type as well.
  */
 template <typename DataType, typename MsgType>
-class TranslatorBase {
+class
+    DRAKE_DEPRECATED(
+        "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+        "and will be removed on 2019-05-01.")
+    TranslatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TranslatorBase)
 

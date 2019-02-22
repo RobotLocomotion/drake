@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/translator_base.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -61,7 +62,11 @@ struct DataTypeTraits<DataType, false> {
  * translator instance passed to the constructor.
  */
 template <typename DataType, typename MsgType>
-class LcmEncoderSystem : public LeafSystem<double> {
+class
+    DRAKE_DEPRECATED(
+        "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+        "and will be removed on 2019-05-01.")
+    LcmEncoderSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmEncoderSystem)
 
@@ -132,7 +137,11 @@ class LcmEncoderSystem : public LeafSystem<double> {
  * translator instance passed to the constructor.
  */
 template <typename DataType, typename MsgType>
-class LcmDecoderSystem : public LeafSystem<double> {
+class
+    DRAKE_DEPRECATED(
+        "The LcmAndVectorBaseTranslator and its related code are deprecated, "
+        "and will be removed on 2019-05-01.")
+    LcmDecoderSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmDecoderSystem)
 

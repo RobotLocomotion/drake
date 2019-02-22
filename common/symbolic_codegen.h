@@ -71,6 +71,7 @@ class CodeGenVisitor {
 };
 
 /// @defgroup codegen Code Generation
+/// @ingroup technical_notes
 /// @{
 /// Provides `CodeGen` functions which generate C99 code to evaluate symbolic
 /// expressions and matrices.

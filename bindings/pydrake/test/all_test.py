@@ -78,6 +78,11 @@ class TestAll(unittest.TestCase):
             # attic
             # - solvers
             "RigidBodyConstraint",
+            # - systems
+            # - - controllers
+            "RbtInverseDynamics",
+            # - - sensors
+            "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
             # automotive
@@ -116,13 +121,17 @@ class TestAll(unittest.TestCase):
             "MakeAcrobotPlant",
             # - inverse_kinematics
             "InverseKinematics",
-            # - multibody_tree
-            "MultibodyPlant",
+            # - math
             "SpatialVelocity",
+            # - multibody_tree
+            "BodyNodeIndex",
+            "MultibodyTree",
             # - parsing
             "Parser",
             # - parsers
             "PackageMap",
+            # - plant
+            "MultibodyPlant",
             # - rigid_body_plant
             "RigidBodyPlant",
             # - rigid_body_tree
@@ -131,6 +140,8 @@ class TestAll(unittest.TestCase):
             # TODO(eric.cousineau): Avoid collision with `collision.Element`.
             # Import modules, since these names are generic.
             "Element",
+            # - tree
+            "MultibodyForces",
             # perception
             "PointCloud",
             # solvers
@@ -150,6 +161,8 @@ class TestAll(unittest.TestCase):
             "LeafSystem",
             # - analysis
             "Simulator",
+            # - controllers
+            "InverseDynamics",
             # - lcm
             "PySerializer",
             # - primitives

@@ -9,8 +9,8 @@ except ImportError:
     import Tkinter as tk
 import numpy as np
 
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.multibody_tree import JointIndex
+from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.tree import JointIndex
 from pydrake.systems.framework import BasicVector, LeafSystem, VectorSystem
 
 

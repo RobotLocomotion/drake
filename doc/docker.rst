@@ -31,8 +31,9 @@ another base image (FROM line in the Dockerfile), they are available `here
 
   However, there are downstream usages of Drake within a Docker container:
 
-  * `Underactuated Robotics Drake Docker Instructions <http://underactuated.csail.mit.edu/Spring2018/install_drake_docker.html>`_,
+  * `MIT 6.832 (Underactuated Robotics) Drake Docker Instructions <http://underactuated.csail.mit.edu/Spring2019/install_drake_docker.html>`_,
     used by many students across all nooks and crannies of Windows, Mac, Linux.
+  * `MIT 6.881 (Intelligent Robot Manipulation) Drake Docker Instructions <http://manipulation.csail.mit.edu/install_drake_docker.html>`_,
   * `Spartan's Docker Build <https://github.com/RobotLocomotion/spartan/blob/master/setup/docker/README.md>`_
 
 .. _docker_getting_started:

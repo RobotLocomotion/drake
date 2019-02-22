@@ -158,8 +158,10 @@ class Constraint : public EvaluatorBase {
                                 const double tol) const {
     AutoDiffVecXd y(num_constraints());
     DoEval(x, &y);
-    return (y.array() >= lower_bound_.cast<AutoDiffXd>().array() - tol).all() &&
-           (y.array() <= upper_bound_.cast<AutoDiffXd>().array() + tol).all();
+    auto get_value = [](const AutoDiffXd& v) { return v.value(); };
+    return
+        (y.array().unaryExpr(get_value) >= lower_bound_.array() - tol).all() &&
+        (y.array().unaryExpr(get_value) <= upper_bound_.array() + tol).all();
   }
 
   virtual symbolic::Formula DoCheckSatisfied(

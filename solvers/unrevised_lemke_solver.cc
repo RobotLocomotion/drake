@@ -17,6 +17,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 using drake::log;
 
@@ -118,6 +119,7 @@ void UnrevisedLemkeSolver<T>::Solve(
     const optional<SolverOptions>& solver_options,
     MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(prog.decision_variable_index());
   unused(initial_guess);
   unused(solver_options);
   // This solver imposes restrictions that its problem:
@@ -852,18 +854,17 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     indep_variables_indices_[indep_variables_[i]] = i;
 
   // Output the independent and dependent variable tuples.
-  #ifdef SPDLOG_DEBUG_ON
   auto to_string = [](const std::vector<LCPVariable>& vars) -> std::string {
     std::ostringstream oss;
     for (int i = 0; i < static_cast<int>(vars.size()); ++i)
       oss << ((vars[i].is_z()) ? "z" : "w") << vars[i].index() << " ";
     return oss.str();
   };
+  unused(to_string);  // ... when in release mode.
   DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
       to_string(indep_variables_));
   DRAKE_SPDLOG_DEBUG(log(), "Dependent set variables: {}",
       to_string(dep_variables_));
-  #endif
 
   // Pivot up to the maximum number of times.
   VectorX<T> q_prime(n), M_prime_col(n);

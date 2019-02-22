@@ -184,6 +184,21 @@ We use https://reviewable.io for code reviews. You can sign in for free with
 your GitHub identity. Before your first code review, please take a look at
 :doc:`reviewable`.
 
+If you have an expected pace for your review, please add a ``priority`` label
+(which have different meanings for PRs and
+:ref:`for issues <issues-priority>`). The response expectations, for both the
+author and reviewer:
+
+- ``priority: emergency`` - Very quick response time, nominally reserved for
+  build cop.
+- ``priority: high`` - Some urgency, quick response time.
+- ``priority: medium`` - (Default) Normal response time.
+- ``priority: low`` - No rush.
+- ``priority: backlog`` - Give priority to all other PRs on your plate.
+
+If you are an external contributor, you will need to request that a priority be
+added by a Drake Developer.
+
 **Feature Review.** After creating your pull request, assign it to someone
 else on your team for feature review. Choose the person most familiar
 with the context of your pull request. This reviewer is responsible for

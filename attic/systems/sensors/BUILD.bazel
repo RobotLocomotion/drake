@@ -198,28 +198,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "rgbd_camera_publish_lcm_example",
-    srcs = [
-        "rgbd_camera_publish_lcm_example.cc",
-    ],
-    deps = [
-        ":rgbd_camera",
-        "//attic/multibody:rigid_body_tree",
-        "//attic/multibody:rigid_body_tree_construction",
-        "//attic/multibody/parsers",
-        "//attic/multibody/rigid_body_plant",
-        "//attic/multibody/rigid_body_plant:drake_visualizer",
-        "//common:unused",
-        "//lcm",
-        "//systems/analysis:simulator",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_stamped_t_pose_vector_translator",
-        "//systems/sensors:image_to_lcm_image_array_t",
-        "@gflags",
-    ],
-)
-
 # === test/ ===
 
 drake_cc_googletest(
@@ -320,20 +298,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
     ],
-)
-
-sh_test(
-    name = "rgbd_camera_publish_lcm_test",
-    size = "small",
-    srcs = ["rgbd_camera_publish_lcm_example"],
-    args = [
-        "--sdf_dir=systems/sensors/test/models",
-        "--duration=0.1",
-    ],
-    data = [
-        "//systems/sensors:test_models",
-    ],
-    tags = vtk_test_tags(),
 )
 
 add_lint_tests(

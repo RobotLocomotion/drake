@@ -12,7 +12,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/mathematical_program.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -23,7 +23,7 @@ class UnrevisedLemkeSolverId {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolverId);
   UnrevisedLemkeSolverId() = delete;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 };
 
@@ -34,7 +34,7 @@ class UnrevisedLemkeSolverId {
 ///     Transform for Solving Linear Complementarity Problems with Lemke's
 ///     Algorithm. (2018, located in doc/pivot_column.pdf).
 template <class T>
-class UnrevisedLemkeSolver : public MathematicalProgramSolverInterface {
+class UnrevisedLemkeSolver : public SolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnrevisedLemkeSolver)
 

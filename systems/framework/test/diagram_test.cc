@@ -2574,7 +2574,7 @@ class MyEventTestSystem : public LeafSystem<double> {
           TriggerType::kPerStep) {
         per_step_count_++;
       } else {
-        DRAKE_ABORT();
+        ADD_FAILURE() << "MyEventTestSystem doesn't support this trigger type";
       }
     }
   }

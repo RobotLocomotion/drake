@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
@@ -85,7 +85,7 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   const double translation = 1.5;
   slider_->set_translation(context_.get(), translation);
   const math::RigidTransformd X_FM(
-      slider_->CalcAcrossMobilizerTransform(*mbt_context_));
+      slider_->CalcAcrossMobilizerTransform(*context_));
 
   const math::RigidTransformd X_FM_expected(
       Vector3d(axis_F_.normalized() * translation));
@@ -102,7 +102,7 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
   const double translation_rate = 1.5;
   const SpatialVelocity<double> V_FM =
       slider_->CalcAcrossMobilizerSpatialVelocity(
-          *mbt_context_, Vector1d(translation_rate));
+          *context_, Vector1d(translation_rate));
 
   const SpatialVelocity<double> V_FM_expected(
       Vector3d::Zero(), axis_F_.normalized() * translation_rate);
@@ -117,7 +117,7 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const double translational_acceleration = 1.5;
   const SpatialAcceleration<double> A_FM =
       slider_->CalcAcrossMobilizerSpatialAcceleration(
-          *mbt_context_, Vector1d(translational_acceleration));
+          *context_, Vector1d(translational_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
       Vector3d::Zero(), axis_F_.normalized() * translational_acceleration);
@@ -133,7 +133,7 @@ TEST_F(PrismaticMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector1d tau;
-  slider_->ProjectSpatialForce(*mbt_context_, F_Mo_F, tau);
+  slider_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
   // Only the force along axis_F does work.
   const double tau_expected = force_Mo_F.dot(axis_F_.normalized());
@@ -143,11 +143,11 @@ TEST_F(PrismaticMobilizerTest, ProjectSpatialForce) {
 TEST_F(PrismaticMobilizerTest, MapVelocityToQDotAndBack) {
   Vector1d v(1.5);
   Vector1d qdot;
-  slider_->MapVelocityToQDot(*mbt_context_, v, &qdot);
+  slider_->MapVelocityToQDot(*context_, v, &qdot);
   EXPECT_NEAR(qdot(0), v(0), kTolerance);
 
   qdot(0) = -std::sqrt(2);
-  slider_->MapQDotToVelocity(*mbt_context_, qdot, &v);
+  slider_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_NEAR(v(0), qdot(0), kTolerance);
 }
 
@@ -159,12 +159,12 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
 
   // Compute N.
   MatrixX<double> N(1, 1);
-  slider_->CalcNMatrix(*mbt_context_, &N);
+  slider_->CalcNMatrix(*context_, &N);
   EXPECT_EQ(N(0, 0), 1.0);
 
   // Compute Nplus.
   MatrixX<double> Nplus(1, 1);
-  slider_->CalcNplusMatrix(*mbt_context_, &Nplus);
+  slider_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 

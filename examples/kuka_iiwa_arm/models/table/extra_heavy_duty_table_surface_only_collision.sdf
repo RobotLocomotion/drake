@@ -301,6 +301,11 @@
         </surface>
       </collision>
     </link>
+
+    <frame name='top_center'>
+      <pose frame='world'>0 0 0.7645 0 -0 0</pose>
+    </frame>
+
     <static>1</static>
     <allow_auto_disable>1</allow_auto_disable>
   </model>

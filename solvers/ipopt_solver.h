@@ -6,7 +6,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace solvers {
@@ -40,7 +40,7 @@ struct IpoptSolverDetails {
   const char* ConvertStatusToString() const;
 };
 
-class IpoptSolver : public MathematicalProgramSolverInterface {
+class IpoptSolver : public SolverInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IpoptSolver)
 
@@ -62,7 +62,7 @@ class IpoptSolver : public MathematicalProgramSolverInterface {
 
   SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /// @return same as SolverInterface::solver_id()
   static SolverId id();
 
   bool AreProgramAttributesSatisfied(

@@ -574,6 +574,7 @@ void ScsSolver::Solve(const MathematicalProgram& prog,
                       const optional<SolverOptions>& solver_options,
                       MathematicalProgramResult* result) const {
   *result = {};
+  result->set_decision_variable_index(prog.decision_variable_index());
   // TODO(hongkai.dai): allow warm starting SCS with initial guess on
   // primal/dual variables and primal residues.
   unused(initial_guess);

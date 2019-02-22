@@ -87,6 +87,8 @@ void TestSubscriber(drake::lcm::DrakeMockLcm* lcm,
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
   // Instantiates LCM.
@@ -109,7 +111,10 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTest) {
 
   TestSubscriber(&lcm, channel_name, &dut);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the functionality of LcmSubscriberSystem.
 GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
   // Instantiates LCM.
@@ -136,6 +141,7 @@ GTEST_TEST(LcmSubscriberSystemTest, ReceiveTestUsingDictionary) {
 
   TestSubscriber(&lcm, channel_name, &dut);
 }
+#pragma GCC diagnostic pop
 
 struct SampleData {
   lcmt_drake_signal value{2, {1.0, 2.0}, {"x", "y"}, 12345};
@@ -253,6 +259,8 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
       future_message.get(), sample_data.value));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Subscribe and output a custom VectorBase type.
 GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
   const std::string kChannelName = "dummy";
@@ -291,6 +299,7 @@ GTEST_TEST(LcmSubscriberSystemTest, CustomVectorBaseTest) {
     EXPECT_EQ(sample_vector.GetAtIndex(i), custom_output->GetAtIndex(i));
   }
 }
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace lcm

@@ -262,6 +262,20 @@ these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
 
+Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
+
+ - The ``--config snopt_f2c`` option selects the legacy bindings that use the
+   f2c compiler; these bindings will be removed on 2019-05-01.
+ - The ``--config snopt_fortran`` option selects the bindings that use the
+   gfortran compiler; these bindings will be supported for the foreseeable
+   future.
+ - The ``--config snopt`` option selects a default choice (currently f2c, but
+   will soon change to gfortran).
+
+The gfortran bindings are superior in several ways (such as being threadsafe),
+but have a known problem with unbounded linear programs (see drake issue
+`#10423 <https://github.com/RobotLocomotion/drake/issues/10423>`_).
+
 Optional Tools
 ==============
 

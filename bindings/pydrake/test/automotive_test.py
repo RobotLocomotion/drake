@@ -26,7 +26,7 @@ from pydrake.maliput.api import (
 from pydrake.maliput.dragway import (
     create_dragway,
 )
-from pydrake.multibody.multibody_tree.math import (
+from pydrake.multibody.math import (
     SpatialVelocity,
 )
 from pydrake.systems.analysis import (
