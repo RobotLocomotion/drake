@@ -7,23 +7,20 @@ except ImportError:
     import Tkinter as tk
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
-from pydrake.manipulation.planner import (
-    DifferentialInverseKinematicsParameters, DoDifferentialInverseKinematics)
+from pydrake.manipulation.planner import DifferentialInverseKinematicsParameters
 from pydrake.multibody.parsing import Parser
-from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
+from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import (AbstractValue, BasicVector,
-                                       DiagramBuilder, LeafSystem,
-                                       PortDataType)
+from pydrake.systems.framework import (BasicVector, DiagramBuilder, 
+                                       LeafSystem)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-from pydrake.util.eigen_geometry import Isometry3, AngleAxis
+from pydrake.util.eigen_geometry import Isometry3
 
 from differential_ik import DifferentialIK
 
@@ -117,7 +114,7 @@ class EndEffectorTeleop(LeafSystem):
 
     def SetRPY(self, rpy):
         """
-        @param rpy is a 3 element vector of roll, pitch, yaw.
+        @param rpy is a RollPitchYaw object
         """
         self.roll.set(rpy.roll_angle())
         self.pitch.set(rpy.pitch_angle())
