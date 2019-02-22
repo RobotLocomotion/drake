@@ -6,6 +6,7 @@ package, Meshcat:
 from __future__ import print_function
 import argparse
 import math
+import os
 import warnings
 import webbrowser
 
@@ -183,6 +184,7 @@ class MeshcatVisualizer(LeafSystem):
                     RotationMatrix(Quaternion(geom.quaternion)),
                     geom.position).GetAsMatrix4()
 
+                use_texture_override = False
                 if geom.type == geom.BOX:
                     assert geom.num_float_data == 3
                     meshcat_geom = meshcat.geometry.Box(geom.float_data)
@@ -206,27 +208,43 @@ class MeshcatVisualizer(LeafSystem):
                     meshcat_geom = \
                         meshcat.geometry.ObjMeshGeometry.from_file(
                             geom.string_data[0:-3] + "obj")
+                    # Attempt to find a texture for the object by looking
+                    # for an identically-named *.png next to the model.
+                    # TODO(gizatt): Support .MTLs and prefer them over png,
+                    # since they're both more expressive and more standard.
+                    # TODO(gizatt): In the long term, this kind of material
+                    # information should be gleaned from the SceneGraph
+                    # constituents themselves, so that we visualize
+                    # what the simulation is *actually* reasoning about
+                    # rather than what files happen to be present.
+                    candidate_texture_path_png = geom.string_data[0:-3] + "png"
+                    if os.path.exists(candidate_texture_path_png):
+                        use_texture_override = True
+                        material = meshcat.geometry.MeshLambertMaterial(
+                            map=meshcat.geometry.ImageTexture(
+                                image=meshcat.geometry.PngImage.from_file(
+                                    candidate_texture_path_png)))
                 else:
                     print("UNSUPPORTED GEOMETRY TYPE {} IGNORED".format(
                           geom.type))
                     continue
 
-                # Turn a list of R,G,B elements (any indexable list of >= 3
-                # elements will work), where each element is specified on range
-                # [0., 1.], into the equivalent 24-bit value 0xRRGGBB.
-                def Rgb2Hex(rgb):
-                    val = 0
-                    for i in range(3):
-                        val += (256**(2 - i)) * int(255 * rgb[i])
-                    return val
-
+                if not use_texture_override:
+                    def Rgb2Hex(rgb):
+                        ''' Turn a list of R,G,B elements (any indexable list
+                        of >= 3 elements will work), where each element is
+                        specified on range [0., 1.], into the equivalent
+                        24-bit value 0xRRGGBB. '''
+                        val = 0
+                        for i in range(3):
+                            val += (256**(2 - i)) * int(255 * rgb[i])
+                        return val
+                    material = meshcat.geometry.MeshLambertMaterial(
+                        color=Rgb2Hex(geom.color))
                 cur_vis = (
                     self.vis[self.prefix][source_name][str(link.robot_num)]
                     [frame_name][str(j)])
-                cur_vis.set_object(
-                    meshcat_geom,
-                    meshcat.geometry.MeshLambertMaterial(
-                        color=Rgb2Hex(geom.color)))
+                cur_vis.set_object(meshcat_geom, material)
                 cur_vis.set_transform(element_local_tf)
 
     def _DoPublish(self, context, event):
