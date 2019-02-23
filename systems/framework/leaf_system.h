@@ -1494,7 +1494,7 @@ class LeafSystem : public System<T> {
   // =========================================================================
   /// @name                    Declare input ports
   /// Methods in this section are used by derived classes to declare their
-  /// output ports, which may be vector valued or abstract valued.
+  /// input ports, which may be vector valued or abstract valued.
   ///
   /// You should normally provide a meaningful name for any input port you
   /// create. Names must be unique for this system (passing in a duplicate
