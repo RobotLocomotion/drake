@@ -7,6 +7,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
@@ -30,6 +31,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Isometry3d;
 using std::make_shared;
@@ -297,8 +299,11 @@ class DistanceToPoint {
   // Overload for Box.
   SignedDistanceToPoint<double> operator()(const fcl::Boxd& box);
 
+  // Overload for Cylinder.
+  SignedDistanceToPoint<double> operator()(const fcl::Cylinderd& cylinder);
+
  private:
-  // Calculate a tolerance relative to a given `size` parameter with a lower
+  // Calculates a tolerance relative to a given `size` parameter with a lower
   // bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
   // use the relative tolerance of 1e-14 times the `size`.  If the `size` is
   // smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
@@ -314,10 +319,12 @@ class DistanceToPoint {
   // Picks the axis i whose coordinate p(i) is closest to the boundary value
   // ±bounds(i). If there are ties, we prioritize according to an arbitrary
   // ordering: +x,-x,+y,-y,+z,-z.
-  static int ExtremalAxis(const Vector3d& p, const Vector3d& bounds) {
+  // @tparam V The vector type: Vector2d or Vector3d.
+  template <typename V>
+  static int ExtremalAxis(const V& p, const V& bounds) {
     double min_dist = std::numeric_limits<double>::infinity();
     int axis = -1;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < V::SizeAtCompileTime; ++i) {
       for (const auto bound : {bounds(i), -bounds(i)}) {
         const double dist = std::abs(bound - p(i));
         if (dist < min_dist) {
@@ -328,7 +335,25 @@ class DistanceToPoint {
     }
     return axis;
   }
-
+  // Calculates the signed distance from a conceptual box geometry G in 2D and
+  // 3D in G's frame.  We use the 3D version directly for the signed distance
+  // from Box and use the 2D version indirectly for the signed distance from
+  // Cylinder.
+  // @tparam V       The vector type: Vector2d or Vector3d.
+  // @param h        The vector from the center of the box to the positive
+  //                 corner of the box.  In 2D, it consists of half the width
+  //                 and half the length of G. In 3D, it consists of half the
+  //                 width, half the length, and half the depth of G.
+  //                 Mathematically the box is the Cartesian product
+  //                 [-h(0),h(0)]x[-h(1),h(1)] in 2D and
+  //                 [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)] in 3D.
+  // @param p_GQ_G   The position of the query point Q in G's frame.
+  // @retval {p_GN_G, distance, grad_G}   The tuple of the position of
+  //                 the nearest point N in G's frame, the signed distance,
+  //                 and the gradient vector in G's frame.
+  template <typename V>
+  std::tuple<V, double, V> BoxDistance2DOr3D(const V& h,
+                                             const V& p_GQ_G);
   // The id of the geometry G.
   const GeometryId geometry_id_;
   // The pose of the geometry G in World frame.
@@ -337,10 +362,18 @@ class DistanceToPoint {
   const Vector3d p_WQ_;
 };
 
-// An internal functor to compute sphere-sphere signed distance and sphere-box
-// signed distance.
+// An internal functor to support ComputeNarrowPhaseDistance(). It computes
+// the signed distance between a supported pair of geometries.  Each overload
+// to the call operator reports the signed distance (encoded in
+// fcl::DistanceResultd) between the two given geometry arguments using the
+// functor's stored poses.
 class DistancePairGeometry {
  public:
+  // @param result   We report the signed distance and the witness points in
+  //                 the struct fcl::DistanceResultd pointed by `result`.
+  // @note Some parts of the geometry (id, pose) are initialized in this
+  // constructor, and the remaining part of the geometry (shape) is a
+  // parameter to the call operator() below.
   DistancePairGeometry(const GeometryId& id_A, const GeometryId& id_B,
                        const RigidTransformd& X_WA, const RigidTransformd& X_WB,
                        fcl::DistanceResultd* result)
@@ -366,7 +399,8 @@ class DistancePairGeometry {
   // 3. Na = Ao - r * ∇φ_B(Ao)
   void operator()(const fcl::Sphered* sphere_A, const fcl::Sphered* sphere_B);
   void operator()(const fcl::Sphered* sphere_A, const fcl::Boxd* box_B);
-  void operator()(const fcl::Boxd* box_A, const fcl::Sphered* sphere_B);
+  void operator()(const fcl::Sphered* sphere_A,
+                  const fcl::Cylinderd* cylinder_B);
 
  private:
   // Performs step 3. Na = Ao - r * ∇φ_B(Ao).
@@ -434,84 +468,85 @@ void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
   result_->update(distance, sphere_A, box_B, -1, -1, p_WNa, p_WNb);
 }
 
-// Signed distance between a box and a sphere. Instead of calling
-// operator()(sphere_B, box_A), we repeat almost the same computation again.
-// The reason is that to call operator()(sphere_B, box_A), we have to swap
-// the pose X_WA_ v.s. X_WB_ and id_A_ v.s. id_B_ before and after the call,
-// and we have to swap o1 v.s. o2 and the two nearest_points[2] in the result_
-// variable after the call. I think the overhead from swap() is not worth it.
-void DistancePairGeometry::operator()(const fcl::Boxd* box_A,
-                                      const fcl::Sphered* sphere_B) {
-  SignedDistanceToPoint<double> box_A_to_point_Bo =
-      DistanceToPoint {id_A_, X_WA_, X_WB_.translation()}(*box_A);
-  const double distance = box_A_to_point_Bo.distance - sphere_B->radius;
-  // Na is the witness point on ∂A.
-  const Vector3d& p_ANa = box_A_to_point_Bo.p_GN;
-  const Vector3d p_WNa = X_WA_ * p_ANa;
+// Signed distance between a sphere and a cylinder.
+void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
+                                      const fcl::Cylinderd* cylinder_B) {
+  SignedDistanceToPoint<double> cylinder_B_to_point_Ao =
+      DistanceToPoint {id_B_, X_WB_, X_WA_.translation()}(*cylinder_B);
+  const double distance = cylinder_B_to_point_Ao.distance - sphere_A->radius;
   // Nb is the witness point on ∂B.
-  const Vector3d& gradA_W = box_A_to_point_Bo.grad_W;
-  const Vector3d p_WNb = WitnessPointOnSphere(sphere_B->radius, X_WB_, gradA_W);
+  const Vector3d& p_BNb = cylinder_B_to_point_Ao.p_GN;
+  const Vector3d p_WNb = X_WB_ * p_BNb;
+  // Na is the witness point on ∂A.
+  const Vector3d& gradB_W = cylinder_B_to_point_Ao.grad_W;
+  const Vector3d p_WNa = WitnessPointOnSphere(sphere_A->radius, X_WA_, gradB_W);
   // fcl::DistanceResult expects -1 for geometry shapes (triangle id or
   // point id for meshes or point clouds, and cell id for octrees).
-  result_->update(distance, box_A, sphere_B, -1, -1, p_WNa, p_WNb);
+  result_->update(distance, sphere_A, cylinder_B, -1, -1, p_WNa, p_WNb);
 }
 
-// Helps DistanceCallback(). Do it in closed forms for sphere-sphere or
-// sphere-box. Otherwise, use FCL GJK/EPA.
+// Helps DistanceCallback(). Do it in closed forms for sphere-sphere,
+// sphere-box, or sphere-cylinder. Otherwise, use FCL GJK/EPA.
 void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
                                 const fcl::CollisionObjectd* b,
                                 const std::vector<GeometryId>& geometry_map,
                                 const fcl::DistanceRequestd& request,
                                 fcl::DistanceResultd* result) {
-  const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
-  const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
-  const RigidTransformd X_WA(a->getTransform());
-  const RigidTransformd X_WB(b->getTransform());
-  const auto id_A = EncodedData(*a).id(geometry_map);
-  const auto id_B = EncodedData(*b).id(geometry_map);
-
-  DistancePairGeometry distance_pair(id_A, id_B, X_WA, X_WB, result);
-
-  switch (a_geometry->getNodeType()) {
+  const bool a_is_sphere =
+      a->collisionGeometry().get()->getNodeType() == fcl::GEOM_SPHERE;
+  const bool b_is_sphere =
+      b->collisionGeometry().get()->getNodeType() == fcl::GEOM_SPHERE;
+  const bool no_sphere = ((!a_is_sphere) && (!b_is_sphere));
+  if (no_sphere) {
+    fcl::distance(a, b, request, *result);
+    return;
+  }
+  DRAKE_ASSERT(a_is_sphere || b_is_sphere);
+  // We write `s` for the sphere object and `o` for the other object. We
+  // assign either (a,b) or (b,a) to (s,o) depending on whether `a` is a
+  // sphere or not. Therefore, we only need the helper DistancePairGeometry
+  // that takes (sphere, other) but not (other, sphere).  This scheme helps us
+  // keep the code compact; however, we might have to re-order the result
+  // afterwards.
+  const fcl::CollisionObjectd* s = a_is_sphere ? a : b;
+  const fcl::CollisionObjectd* o = a_is_sphere ? b : a;
+  const fcl::CollisionGeometryd* s_geometry = s->collisionGeometry().get();
+  const fcl::CollisionGeometryd* o_geometry = o->collisionGeometry().get();
+  const RigidTransformd X_WS(s->getTransform());
+  const RigidTransformd X_WO(o->getTransform());
+  const auto id_S = EncodedData(*s).id(geometry_map);
+  const auto id_O = EncodedData(*o).id(geometry_map);
+  DistancePairGeometry distance_pair(id_S, id_O, X_WS, X_WO, result);
+  auto sphere_S = static_cast<const fcl::Sphered*>(s_geometry);
+  switch (o_geometry->getNodeType()) {
     case fcl::GEOM_SPHERE: {
-      switch (b_geometry->getNodeType()) {
-        case fcl::GEOM_SPHERE: {
-          auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
-          auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
-          distance_pair(sphere_A, sphere_B);
-          break;
-        }
-        case fcl::GEOM_BOX: {
-          auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
-          auto box_B = static_cast<const fcl::Boxd*>(b_geometry);
-          distance_pair(sphere_A, box_B);
-          break;
-        }
-        default: {
-          fcl::distance(a, b, request, *result);
-        }
-      }
+      auto sphere_O = static_cast<const fcl::Sphered*>(o_geometry);
+      distance_pair(sphere_S, sphere_O);
       break;
     }
     case fcl::GEOM_BOX: {
-      switch (b_geometry->getNodeType()) {
-        case fcl::GEOM_SPHERE: {
-          auto box_A = static_cast<const fcl::Boxd*>(a_geometry);
-          auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
-          distance_pair(box_A, sphere_B);
-          break;
-        }
-        default: {
-          fcl::distance(a, b, request, *result);
-        }
-      }
+      auto box_O = static_cast<const fcl::Boxd*>(o_geometry);
+      distance_pair(sphere_S, box_O);
+      break;
+    }
+    case fcl::GEOM_CYLINDER: {
+      auto cylinder_O = static_cast<const fcl::Cylinderd*>(o_geometry);
+      distance_pair(sphere_S, cylinder_O);
       break;
     }
     default: {
-      fcl::distance(a, b, request, *result);
+      // We don't have a closed form solution for the other geometry, so we
+      // call FCL GJK/EPA.
+      fcl::distance(s, o, request, *result);
     }
   }
+  // If needed, re-order the result for (s,o) back to the result for (a,b).
+  if (!a_is_sphere) {
+    std::swap(result->o1, result->o2);
+    std::swap(result->nearest_points[0], result->nearest_points[1]);
+  }
 }
+
 
 // The callback function in fcl::distance request. The final unnamed parameter
 // is `dist`, which is used in fcl::distance, that if the distance between two
@@ -606,18 +641,10 @@ SignedDistanceToPoint<double> DistanceToPoint::operator()(
                                        grad_W};
 }
 
-// Overload for Box.
-SignedDistanceToPoint<double> DistanceToPoint::operator()(
-    const fcl::Boxd& box) {
-  // TODO(DamrongGuoy): Move most code of this function into FCL.
-  // Express the given query point Q in the frame of the box geometry G.
-  const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
-
-  // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
-  // centered at the origin, where h(i) is half the size of the box in the
-  // i-th coordinate.
-  const Vector3d half_size = box.side / 2.0;
-
+template <typename V>
+std::tuple<V, double, V> DistanceToPoint::BoxDistance2DOr3D(const V& h,
+                                                            const V& p_GQ_G) {
+  // TODO(DamrongGuoy): Move into FCL.
   // We need to classify Q as inside, outside, or on the boundary of B,
   // where 'on the boundary' means within a tolerance of the boundary.
   // This helper function takes the i-th coordinate `coord` of p_GQ_G.
@@ -626,75 +653,148 @@ SignedDistanceToPoint<double> DistanceToPoint::operator()(
   // (-h(i),+h(i)), or within a tolerance of the bounded value ±h(i), or
   // outside the interval.
   enum class Location {kInside, kBoundary, kOutside};
-  auto clamp = [&half_size](const int i, const double coord,
+  auto clamp = [&h](const int i, const double coord,
                             Location* location) -> double {
-    const double tolerance = RelativeTolerance(half_size(i));
-    if (std::abs(coord) > half_size(i) + tolerance) {
+    const double tolerance = RelativeTolerance(h(i));
+    if (std::abs(coord) > h(i) + tolerance) {
       *location = Location::kOutside;
-      return Sign(coord) * half_size(i);
-    } else if (std::abs(coord) >= half_size(i) - tolerance) {
+      return Sign(coord) * h(i);
+    } else if (std::abs(coord) >= h(i) - tolerance) {
       *location = Location::kBoundary;
-      return Sign(coord) * half_size(i);
+      return Sign(coord) * h(i);
     } else {
       *location = Location::kInside;
       return coord;
     }
   };
 
+  // Declare a type of vector of Location parallel to the vector of
+  // coordinates of the position p_GQ_G of Q.
+  typedef Eigen::Matrix<Location, V::SizeAtCompileTime, 1> VL;
+
   // The clamp point C has coordinates of Q clamped onto the box.
   // Note that:
   // 1. C is the nearest point to Q on ∂B if Q is classified as outside B.
   // 2. C is at the same position as Q if Q is classified as inside B.
   // 3. C is exactly on ∂B if Q is within a tolerance from ∂B.
-  Vector3d p_GC_G;
-  Vector3<Location> locations;
-  for (int i = 0; i < 3; ++i)
-    p_GC_G(i) = clamp(i, p_GQ_G(i), &locations(i));
+  V p_GC_G;
+  VL location;
+  for (int i = 0; i < p_GC_G.size(); ++i)
+    p_GC_G(i) = clamp(i, p_GQ_G(i), &location(i));
 
   // Initialize the position of the nearest point N on ∂B as that of C.
-  Vector3d p_GN_G = p_GC_G;
+  V p_GN_G = p_GC_G;
   double distance;
-  Vector3d grad_G{0., 0., 0.};
+  V grad_G = V::Zero();
 
-  if ((locations(0) == Location::kOutside)||
-      (locations(1) == Location::kOutside)||
-      (locations(2) == Location::kOutside)) {
+  // This helper function checks whether some of the coordinates of p_GQ_G was
+  // classified as a given kind of Location.
+  auto some_is = [](const VL& loc, const Location& kind) -> bool {
+    for (int i = 0; i < VL::SizeAtCompileTime; ++i)
+      if (loc(i) == kind) return true;
+    return false;
+  };
+
+  if (some_is(location, Location::kOutside)) {
     // Q is outside the box.
-    Vector3d p_NQ_G = p_GQ_G - p_GN_G;
+    V p_NQ_G = p_GQ_G - p_GN_G;
     distance = p_NQ_G.norm();
     DRAKE_DEMAND(distance != 0.);
     grad_G = p_NQ_G / distance;
-  } else if ((locations(0) == Location::kBoundary)||
-      (locations(1) == Location::kBoundary)||
-      (locations(2) == Location::kBoundary)) {
+  } else if (some_is(location, Location::kBoundary)) {
     // Q is on the boundary of the box.
     distance = 0.0;
-    // A point on a face, on an edge, or on a vertex of the box has one, two,
-    // or three of locations(i) on boundary respectively.  The gradient
-    // at a point on an edge or a vertex of the box is undefined. Here, the
-    // calculation is equivalent to averaging outward unit normals of the
-    // faces that contain the point.
-    for (int i = 0; i < 3; ++i) {
-      if (locations(i) == Location::kBoundary)
+    // In 2D (3D), a point on an edge or vertex (on a face, edge, or vertex) of
+    // the box has one or two (one or two or three) of location(i) == kBoundary
+    // respectively. The gradient on a vertex (edge or vertex) of the 2D (3D)
+    // box is undefined.  Here, the calculation is equivalent to averaging
+    // outward unit normals of the edges (faces) containing the point.
+    for (int i = 0; i < VL::SizeAtCompileTime; ++i) {
+      if (location(i) == Location::kBoundary)
         grad_G(i) = Sign(p_GC_G(i));
     }
     grad_G.normalize();
   } else {
     // Q is inside the box.
-    // The nearest point N is the axis-aligned projection of Q onto one of
-    // the faces of the box.  The gradient vector is along that direction.
-    int axis = ExtremalAxis(p_GQ_G, half_size);
+    // In 2D (3D), the nearest point N is the axis-aligned projection of Q
+    // onto one of the edge (faces) of the box.  The gradient vector is along
+    // that direction.
+    int axis = ExtremalAxis(p_GQ_G, h);
     double sign = Sign(p_GQ_G(axis));
-    p_GN_G(axis) = sign * half_size(axis);
+    p_GN_G(axis) = sign * h(axis);
     grad_G(axis) = sign;
-    distance = std::abs(p_GQ_G(axis)) - half_size(axis);
+    distance = std::abs(p_GQ_G(axis)) - h(axis);
   }
+  return std::make_tuple(p_GN_G, distance, grad_G);
+}
+
+// Overload for Box.
+SignedDistanceToPoint<double> DistanceToPoint::operator()(
+    const fcl::Boxd& box) {
+  // TODO(DamrongGuoy): Move most code of this function into FCL.
+  // Express the given query point Q in the frame of the box geometry G.
+  const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
+  // The box G is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
+  // centered at the origin, where h(i) is half the size of the box in the
+  // i-th coordinate.
+  const Vector3d h = box.side / 2.0;
+  Vector3d p_GN_G;
+  double distance;
+  Vector3d grad_G;
+  std::tie(p_GN_G, distance, grad_G) = BoxDistance2DOr3D(h, p_GQ_G);
+  // Use R_WG for vectors. Use X_WG for points.
+  const auto& R_WG = X_WG_.rotation();
+  Vector3d grad_W = R_WG * grad_G;
+  return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance, grad_W};
+}
+
+// Overload for Cylinder.
+SignedDistanceToPoint<double> DistanceToPoint::operator()(
+    const fcl::Cylinderd& cylinder) {
+  // Overview. First, we map the problem from the 3D cylinder G to the 2D box B
+  // of G's cross section through the plane containing the query point Q and
+  // the center line of G. Then, we call the function BoxDistance2DOr3D() to
+  // get the signed distance, the nearest point N and the gradient vector
+  // expressed in B's frame. Finally, we map the answers back into G's frame.
+  // TODO(DamrongGuoy): Move into FCL.
+  // Express the query point Q in the cylinder geometry G's frame.
+  const Vector3d p_GQ = X_WG_.inverse() * p_WQ_;
+  // Transform coordinates (x,y,z) of Q in G's frame to (r,z) in B's frame.
+  // The coordinate r is in the radial direction of G. The xy_GQ vector is
+  // the projection of p_GQ onto xy-plane of G's frame.
+  const Vector3d xy_GQ(p_GQ(0), p_GQ(1), 0.);
+  const double r_GQ = xy_GQ.norm();
+  const Vector2d p_BQ(r_GQ, p_GQ(2));
+  // The 2D cross section B is the box [-h(0),h(0)]x[-h(1),h(1)], where
+  // h(0) and h(1) are the radius and half length of the cylinder.
+  const double radius = cylinder.radius;
+  const Vector2d h(cylinder.radius, cylinder.lz / 2.0);
+
+  // The position of the nearest point N expressed in 2D box B's frame in
+  // coordinates (r,z).
+  Vector2d p_BN;
+  double distance;
+  // The gradient vector expressed in B's frame in coordinates (r,z).
+  Vector2d grad_B;
+  std::tie(p_BN, distance, grad_B) = BoxDistance2DOr3D(h, p_BQ);
+
+  // Transform coordinates from (r,z) in B's frame to (x,y,z) in G's frame.
+  const bool  near_center_line = (r_GQ < RelativeTolerance(radius));
+  // unit_r is the unit vector for r coordinate expressed in G's frame;
+  // however, it is the zero vector if Q is within a tolerance from the center
+  // line.
+  const Vector3d unit_r =
+      near_center_line ? Vector3d(0., 0., 0.) : xy_GQ / r_GQ;
+  auto rz_to_xyz = [&unit_r](const Vector2d& rz) -> Vector3d {
+    return rz(0) * unit_r + rz(1) * Vector3d::UnitZ();
+  };
+  const Vector3d p_GN = rz_to_xyz(p_BN);
+  const Vector3d grad_G = rz_to_xyz(grad_B);
 
   // Use R_WG for vectors. Use X_WG for points.
   const auto& R_WG = X_WG_.rotation();
   Vector3d grad_W = R_WG * grad_G;
-  return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
-                                       grad_W};
+  return SignedDistanceToPoint<double>{geometry_id_, p_GN, distance, grad_W};
 }
 
 // Callback function from fcl::distance to help ComputeSignedDistanceToPoint.
@@ -737,6 +837,10 @@ bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     case fcl::GEOM_BOX:
       distance = distance_to_point(
           *static_cast<const fcl::Boxd*>(collision_geometry));
+      break;
+    case fcl::GEOM_CYLINDER:
+      distance = distance_to_point(
+          *static_cast<const fcl::Cylinderd*>(collision_geometry));
       break;
     default:
       return false;  // Returning false tells fcl to continue to other objects.
