@@ -2510,6 +2510,58 @@ GTEST_TEST(ProximityEngineTests, AddAnchoredMesh) {
       "The proximity engine does not support meshes yet.*");
 }
 
+// This is a one-off test. Exposed in issue #10577. A point penetration pair
+// was returned for a zero-depth contact. This reproduces the geometry that
+// manifested the error. The reproduction isn't *exact*; it's been simplified to
+// a simpler configuration. Specifically, the important characteristics are:
+//   - both box and cylinder are ill aspected (one dimension is several orders
+//     of magnitude smaller than the other two),
+//   - the cylinder is placed away from the center of the box face,
+//   - the box is rotated 90 degrees around it's z-axis -- note swapping box
+//     dimensions with an identity rotation did *not* produce equivalent
+//     results, and
+//   - FCL uses GJK/EPA to solve box-cylinder collision (this is beyond control
+//     of this test).
+//
+// Libccd upgraded how it handles degenerate simplices. The upshot of that is
+// FCL would still return the same penetration depth, but instead of returning
+// a gibberish normal, it returns a zero vector. We want to make sure we don't
+// report zero-penetration as penetration, even in these numerically,
+// ill-conditioned scenarios. So, we address it up to a tolerance.
+GTEST_TEST(ProximityEngineTests, Issue10577Regression_Osculation) {
+  ProximityEngine<double> engine;
+  GeometryId id_A = GeometryId::get_new_id();
+  GeometryId id_B = GeometryId::get_new_id();
+  GeometryIndex index_A(0);
+  GeometryIndex index_B(1);
+  ProximityIndex engine_index_A =
+      engine.AddDynamicGeometry(Box(0.49, 0.63, 0.015), index_A);
+  ProximityIndex engine_index_B =
+      engine.AddDynamicGeometry(Cylinder(0.08, 0.002), index_B);
+  ASSERT_EQ(engine_index_A, 0);
+  ASSERT_EQ(engine_index_B, 1);
+  std::vector<GeometryIndex> indices{index_A, index_B};
+  Isometry3<double> X_WA;
+  // Original translation was p_WA = (-0.145, -0.63, 0.2425) and
+  // p_WB = (0, -0.6, 0.251), respectively.
+  // clang-format off
+  X_WA.matrix() << 0, -1, 0, -0.25,
+                   1,  0, 0,     0,
+                   0,  0, 1,     0,
+                   0,  0, 0,     1;
+  Isometry3<double> X_WB;
+  X_WB.matrix() << 1, 0, 0,      0,
+                   0, 1, 0,      0,
+                   0, 0, 1, 0.0085,
+                   0, 0, 0,      1;
+  // clang-format on
+  std::vector<Isometry3<double>> X_WG{X_WA, X_WB};
+  engine.UpdateWorldPoses(X_WG, indices);
+  std::vector<GeometryId> geometry_map{id_A, id_B};
+  auto pairs = engine.ComputePointPairPenetration(geometry_map);
+  EXPECT_EQ(pairs.size(), 0);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

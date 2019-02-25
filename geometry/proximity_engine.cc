@@ -787,41 +787,50 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
       // NOTE: This assumes that the request is configured to use a single
       // contact.
       const fcl::Contactd& contact = result.getContact(0);
-      //  By convention, Drake requires the contact normal to point out of B and
-      //  into A. FCL uses the opposite convention.
-      Vector3d drake_normal = -contact.normal;
 
       // Signed distance is negative when penetration depth is positive.
       double depth = contact.penetration_depth;
 
-      // FCL returns a single contact point centered between the two penetrating
-      // surfaces. PenetrationAsPointPair expects
-      // two, one on the surface of body A (Ac) and one on the surface of body B
-      // (Bc). Choose points along the line defined by the contact point and
-      // normal, equidistant to the contact point. Recall that signed_distance
-      // is strictly non-positive, so signed_distance * drake_normal points out
-      // of A and into B.
-      Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
-      Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
+      // TODO(SeanCurtis-TRI): Remove this test when FCL issue 375 is fixed.
+      // FCL returns osculation as contact but doesn't guarantee a non-zero
+      // normal. Drake isn't really in a position to define that normal from the
+      // geometry or contact results so, if the geometry is sufficiently close
+      // to osculation, we consider the geometries to be non-penetrating.
+      if (depth > std::numeric_limits<double>::epsilon()) {
+        // By convention, Drake requires the contact normal to point out of B
+        // and into A. FCL uses the opposite convention.
+        Vector3d drake_normal = -contact.normal;
 
-      PenetrationAsPointPair<double> penetration;
-      penetration.depth = depth;
-      // The engine doesn't know geometry ids; it returns engine indices. The
-      // caller must map engine indices to geometry ids.
-      const std::vector<GeometryId>& geometry_map = collision_data.geometry_map;
-      penetration.id_A = encoding_A.id(geometry_map);
-      penetration.id_B = encoding_B.id(geometry_map);
-      penetration.p_WCa = p_WAc;
-      penetration.p_WCb = p_WBc;
-      penetration.nhat_BA_W = drake_normal;
-      // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
-      // surfaces and then flip the normal.
-      if (penetration.id_B < penetration.id_A) {
-        std::swap(penetration.id_A, penetration.id_B);
-        std::swap(penetration.p_WCa, penetration.p_WCb);
-        penetration.nhat_BA_W = -penetration.nhat_BA_W;
+        // FCL returns a single contact point centered between the two
+        // penetrating surfaces. PenetrationAsPointPair expects
+        // two, one on the surface of body A (Ac) and one on the surface of body
+        // B (Bc). Choose points along the line defined by the contact point and
+        // normal, equidistant to the contact point. Recall that signed_distance
+        // is strictly non-positive, so signed_distance * drake_normal points
+        // out of A and into B.
+        Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
+        Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
+
+        PenetrationAsPointPair<double> penetration;
+        penetration.depth = depth;
+        // The engine doesn't know geometry ids; it returns engine indices. The
+        // caller must map engine indices to geometry ids.
+        const std::vector<GeometryId>
+            & geometry_map = collision_data.geometry_map;
+        penetration.id_A = encoding_A.id(geometry_map);
+        penetration.id_B = encoding_B.id(geometry_map);
+        penetration.p_WCa = p_WAc;
+        penetration.p_WCb = p_WBc;
+        penetration.nhat_BA_W = drake_normal;
+        // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
+        // surfaces and then flip the normal.
+        if (penetration.id_B < penetration.id_A) {
+          std::swap(penetration.id_A, penetration.id_B);
+          std::swap(penetration.p_WCa, penetration.p_WCb);
+          penetration.nhat_BA_W = -penetration.nhat_BA_W;
+        }
+        collision_data.contacts->emplace_back(std::move(penetration));
       }
-      collision_data.contacts->emplace_back(std::move(penetration));
     }
   }
 
