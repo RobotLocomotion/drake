@@ -1,0 +1,39 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "hydrostatic_contact",
+    deps = [
+        ":triangle_quadrature",
+    ],
+)
+
+drake_cc_package_library(
+    name = "triangle_quadrature",
+    deps = [
+    ],
+)
+
+
+drake_cc_googletest(
+    name = "triangle_quadrature",
+    deps = [
+        ":triangle_quadrature",
+        "//systems/analysis:simulator",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+add_lint_tests()
