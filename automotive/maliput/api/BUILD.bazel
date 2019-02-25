@@ -26,6 +26,7 @@ drake_cc_library(
         "road_geometry.cc",
         "rules/right_of_way_phase.cc",
         "rules/right_of_way_phase_ring.cc",
+        "rules/traffic_lights.cc",
     ],
     hdrs = [
         "basic_id_index.h",
@@ -42,6 +43,7 @@ drake_cc_library(
         "rules/right_of_way_rule.h",
         "rules/road_rulebook.h",
         "rules/speed_limit_rule.h",
+        "rules/traffic_lights.h",
         "segment.h",
         "type_specific_identifier.h",
     ],
@@ -84,6 +86,7 @@ drake_cc_googletest(
         "test/rules_right_of_way_test.cc",
         "test/rules_road_rulebook_test.cc",
         "test/rules_speed_limit_test.cc",
+        "test/traffic_lights_test.cc",
     ],
     deps = [
         ":api",
