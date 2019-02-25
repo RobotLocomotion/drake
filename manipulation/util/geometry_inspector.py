@@ -30,9 +30,8 @@ import numpy as np
 
 from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.manipulation.simple_ui import JointSliders
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
-from pydrake.multibody.parsing import Parser
-from pydrake.multibody.parsing import PackageMap
+from pydrake.multibody.parsing import PackageMap, Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.rendering import MultibodyPositionToGeometryPose
