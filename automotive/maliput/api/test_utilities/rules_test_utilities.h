@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -231,6 +232,40 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.type(), b.type()));
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.arrow_orientation_rad(),
                                          b.arrow_orientation_rad()));
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of std::unordered_map<Bulb::Id,
+/// Bulb>.
+inline ::testing::AssertionResult IsEqual(
+    const char* a_expression, const char* b_expression,
+    const std::unordered_map<Bulb::Id, Bulb>& a,
+    const std::unordered_map<Bulb::Id, Bulb>& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.size(), b.size()));
+  if (c.failed() == 0) {
+    for (const auto& element : a) {
+      MALIPUT_ADD_RESULT(c,
+                         MALIPUT_IS_EQUAL(element.second, b.at(element.first)));
+    }
+  }
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of BulbGroup.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const BulbGroup& a,
+                                          const BulbGroup& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.position_traffic_light(),
+                                         b.position_traffic_light()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.orientation_traffic_light(),
+                                         b.orientation_traffic_light()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.bulbs(), b.bulbs()));
   return c.result();
 }
 
