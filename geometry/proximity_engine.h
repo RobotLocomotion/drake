@@ -208,12 +208,20 @@ class ProximityEngine {
   //@{
 
   // NOTE: This maps to Model::ComputeMaximumDepthCollisionPoints().
+  // The definition that touching is not penetrating is due to an FCL issue
+  // described in https://github.com/flexible-collision-library/fcl/issues/375
+  // and drake issue #10577. Once that is resolved, this definition can be
+  // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
+  // be updated).
   /** Computes the penetrations across all pairs of geometries in the world.
    Only reports results for _penetrating_ geometries; if two geometries are
-   separated, there will be no result for that pair.
+   not penetrating, there will be no result for that pair. Geometries whose
+   surfaces are just touching (osculating) are not considered in penetration.
+   Surfaces whose penetration is within an epsilon of osculation, are likewise
+   not considered penetrating.
 
    The penetrations are characterized by pairs of points (providing some measure
-   of the penetration "depth" of the two objects -- but _not_ the overlapping
+   of the penetration "depth" of the two objects), but _not_ the overlapping
    volume.
 
    This method is affected by collision filtering; geometry pairs that
