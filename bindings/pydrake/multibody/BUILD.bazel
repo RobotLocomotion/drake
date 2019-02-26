@@ -225,6 +225,7 @@ drake_py_unittest(
         ":multibody_tree_py",
         ":plant_py",
         ":tree_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -241,6 +242,7 @@ drake_py_unittest(
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

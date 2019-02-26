@@ -53,10 +53,8 @@ from six import text_type as unicode
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.deprecation import (
-    DrakeDeprecationWarning,
-)
 from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.lcm import LcmPublisherSystem
@@ -66,15 +64,13 @@ from pydrake.systems.lcm import LcmPublisherSystem
 # modules. Additionally, assert length of warnings here rather than in the test
 # so that we do not have to worry about whether a module has already been
 # loaded.
-with warnings.catch_warnings(record=True) as w:
-    warnings.simplefilter("default", DrakeDeprecationWarning)
+with catch_drake_warnings(expected_count=3):
     from pydrake.multibody.multibody_tree import (
         BodyNodeIndex,
         MobilizerIndex,
         MultibodyTree,
     )
     from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
-    assert len(w) == 3, len(w)
 
 
 def get_index_class(cls):
@@ -220,11 +216,9 @@ class TestPlant(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
 
         plant = MultibodyPlant(time_step=0.01)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("default", DrakeDeprecationWarning)
+        with catch_drake_warnings(expected_count=1):
             result = AddModelFromSdfFile(plant=plant, file_name=sdf_file)
             self.assertIsInstance(result, ModelInstanceIndex)
-            self.assertEqual(len(w), 1)
 
     def check_old_spelling_exists(self, value):
         # Just to make it obvious when this is being tested.
@@ -849,8 +843,7 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant()
         plant.Finalize()
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', DrakeDeprecationWarning)
+        with catch_drake_warnings() as w:
             num_expected_warnings = [0]
 
             def expect_new_warning(msg_part):

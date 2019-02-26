@@ -6,7 +6,7 @@ import warnings
 
 import numpy as np
 
-from pydrake.common.deprecation import DrakeDeprecationWarning
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.examples.pendulum import PendulumPlant
 from pydrake.trajectories import PiecewisePolynomial
 from pydrake.solvers import mathematicalprogram as mp
@@ -66,10 +66,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dircol.AddStateTrajectoryCallback(state_callback)
 
         if use_deprecated_solve:
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter('always', DrakeDeprecationWarning)
+            with catch_drake_warnings(expected_count=1):
                 dircol.Solve()
-                self.assertEqual(len(w), 1)
                 result = None
         else:
             result = mp.Solve(dircol)
@@ -77,14 +75,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertTrue(state_was_called)
 
         if use_deprecated_solve:
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter('always', DrakeDeprecationWarning)
+            with catch_drake_warnings(expected_count=5):
                 times = dircol.GetSampleTimes()
                 inputs = dircol.GetInputSamples()
                 states = dircol.GetStateSamples()
                 input_traj = dircol.ReconstructInputTrajectory()
                 state_traj = dircol.ReconstructStateTrajectory()
-                self.assertEqual(len(w), 5)
         else:
             times = dircol.GetSampleTimes(result)
             inputs = dircol.GetInputSamples(result)
@@ -133,15 +129,13 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dirtran.SetInitialTrajectory(initial_u, initial_x)
 
         if use_deprecated_solve:
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter('always', DrakeDeprecationWarning)
+            with catch_drake_warnings(expected_count=6):
                 dirtran.Solve()
                 times = dirtran.GetSampleTimes()
                 inputs = dirtran.GetInputSamples()
                 states = dirtran.GetStateSamples()
                 input_traj = dirtran.ReconstructInputTrajectory()
                 state_traj = dirtran.ReconstructStateTrajectory()
-                self.assertEqual(len(w), 6)
         else:
             result = mp.Solve(dirtran)
             times = dirtran.GetSampleTimes(result)

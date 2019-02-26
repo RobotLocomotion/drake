@@ -166,7 +166,10 @@ drake_py_unittest(
         "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
         "//conditions:default": [],
     }),
-    deps = [":ipopt_py"],
+    deps = [
+        ":ipopt_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 drake_py_unittest(
@@ -191,6 +194,7 @@ drake_py_unittest(
         ":gurobi_py",
         ":mathematicalprogram_py",
         ":snopt_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
