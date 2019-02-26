@@ -13,22 +13,34 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-drake_cc_package_library(
+drake_cc_library(
     name = "hydrostatic_contact",
     deps = [
         ":triangle_quadrature",
     ],
 )
 
-drake_cc_package_library(
+drake_cc_library(
+    name = "triangle_quadrature_rules",
+    hdrs = [
+        "triangle_quadrature_rule.h",
+        "gaussian_triangle_quadrature_rule.h",
+    ],
+)
+
+drake_cc_library(
     name = "triangle_quadrature",
+    hdrs = [
+        "triangle_quadrature.h",
+    ],
     deps = [
+        ":triangle_quadrature_rules",
     ],
 )
 
 
 drake_cc_googletest(
-    name = "triangle_quadrature",
+    name = "triangle_quadrature_test",
     deps = [
         ":triangle_quadrature",
         "//systems/analysis:simulator",
