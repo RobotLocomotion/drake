@@ -38,7 +38,7 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
     } else {
       DRAKE_DEMAND(false);
     }
-    context->get_mutable_state().CopyFrom(*tmp_state);
+    context->get_mutable_state().SetFrom(*tmp_state);
   }
   sub.CalcOutput(*context, output);
 }

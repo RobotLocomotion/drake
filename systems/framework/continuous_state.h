@@ -9,6 +9,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
@@ -207,8 +208,9 @@ class ContinuousState {
     return *misc_continuous_state_.get();
   }
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)  Use SetFrom() instead.
+  DRAKE_DEPRECATED(
+      "Use SetFrom instead of CopyFrom. "
+      "This method will be removed on 2019-06-01.")
   void CopyFrom(const ContinuousState<T>& other) {
     SetFrom(other);
   }

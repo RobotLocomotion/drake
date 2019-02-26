@@ -7,6 +7,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
@@ -145,8 +146,9 @@ class DiscreteValues {
     return *data_[index];
   }
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)  Use SetFrom() instead.
+  DRAKE_DEPRECATED(
+      "Use SetFrom instead of CopyFrom. "
+      "This method will be removed on 2019-06-01.")
   void CopyFrom(const DiscreteValues<T>& other) { SetFrom(other); }
 
   /// Resets the values in this DiscreteValues from the values in @p other,

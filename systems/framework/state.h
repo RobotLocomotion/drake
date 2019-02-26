@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
@@ -108,8 +109,9 @@ class State {
     return xa.get_mutable_value(index).GetMutableValue<U>();
   }
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)  Use SetFrom() instead.
+  DRAKE_DEPRECATED(
+      "Use SetFrom instead of CopyFrom. "
+      "This method will be removed on 2019-06-01.")
   void CopyFrom(const State<T>& other) {
     SetFrom(other);
   }
