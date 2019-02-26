@@ -1,15 +1,15 @@
-#include "drake/multibody/plant/hydrostatic_contact/triangle_quadrature.h"
+#include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature.h"
 
 #include <numeric>
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/plant/hydrostatic_contact/gaussian_triangle_quadrature_rule.h"
+#include "drake/multibody/plant/hydroelastic_contact/gaussian_triangle_quadrature_rule.h"
 
 using Vector2d = drake::Vector2<double>;
 using TriangleVertices = std::array<Vector2d, 3>;
-using drake::multibody::hydrostatic::TriangleQuadrature;
-using drake::multibody::hydrostatic::GaussianTriangleQuadratureRule;
+using drake::multibody::hydroelastic_contact::TriangleQuadrature;
+using drake::multibody::hydroelastic_contact::GaussianTriangleQuadratureRule;
 
 GTEST_TEST(TriangleQuadrature, WeightsSumToUnity) {
   for (int order = 1; order <= 5; ++order) {
