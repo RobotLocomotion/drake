@@ -32,4 +32,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "block_on_inclined_plane_plant_library",
+    srcs = [
+        "block_on_inclined_plane_plant.cc",
+    ],
+    hdrs = [
+        "block_on_inclined_plane_plant.h",
+    ],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+    ],
+)
+
 add_lint_tests()
