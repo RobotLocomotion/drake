@@ -35,10 +35,14 @@ class TriangleQuadratureRule {
   /// Derived classes shall return the order (>= 1) of this rule.
   virtual int do_order() const = 0;
 
-  /// Derived classes shall return the vector of quadrature points.
+  /// Derived classes shall return the vector of quadrature points. Each of
+  /// these Vector2 objects represents the barycentric coordinates of a
+  /// triangle (the third barycentric coordinate is implicit: it is the
+  /// difference between unity and the sum of the other two coordinates).
   virtual const std::vector<Vector2<double>>& do_quadrature_points() const = 0;
 
-  /// Derived classes shall return the vector of weights.
+  /// Derived classes shall return the vector of weights. The sum of all
+  /// weights must equal 1.0.
   virtual const std::vector<double>& do_weights() const = 0;
 };
 
