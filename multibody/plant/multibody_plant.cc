@@ -1315,8 +1315,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // Compute contact forces on each body by penalty method.
   if (num_collision_geometries() > 0) {
-    std::vector<PenetrationAsPointPair<T>> point_pairs =
-        CalcPointPairPenetrations(context);
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+        EvalPointPairPenetrations(context);
     CalcAndAddContactForcesByPenaltyMethod(
         context, pc, vc, point_pairs, &F_BBo_W_array);
   }
@@ -1435,10 +1435,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     forces0.mutable_generalized_forces() +=
         applied_generalized_force_input.Eval(context0);
 
-  // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
-  const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
-      CalcPointPairPenetrations(context0);
-
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
@@ -1458,6 +1454,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
       &minus_tau);
 
   // Compute normal and tangential velocity Jacobians at t0.
+  const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
+      EvalPointPairPenetrations(context0);
   const int num_contacts = point_pairs0.size();
   MatrixX<T> Jn(num_contacts, nv);
   MatrixX<T> Jt(2 * num_contacts, nv);
@@ -1595,7 +1593,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     this->DeclarePeriodicDiscreteUpdate(time_step_);
   }
 
-  // TODO(sherm1) Add ContactResults cache entry.
+  DeclareCacheEntries();
 
   // Declare per model instance actuation ports.
   int num_actuated_instances = 0;
@@ -1689,6 +1687,29 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   "contact_results", ContactResults<T>(),
                                   &MultibodyPlant<T>::CalcContactResultsOutput)
                               .get_index();
+}
+
+template <typename T>
+void MultibodyPlant<T>::DeclareCacheEntries() {
+  DRAKE_DEMAND(this->is_finalized());
+
+  // Cache entry for point contact queries.
+  auto& point_pairs_cache_entry = this->DeclareCacheEntry(
+      std::string("Point pair penetrations."),
+      []() {
+        return AbstractValue::Make(
+            std::vector<geometry::PenetrationAsPointPair<T>>());
+      },
+      [this](const systems::ContextBase& context_base, AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& point_pairs_cache = cache_value->GetMutableValue<
+            std::vector<geometry::PenetrationAsPointPair<T>>>();
+        point_pairs_cache = this->CalcPointPairPenetrations(context);
+      },
+      {this->configuration_ticket()});
+  cache_indexes_.point_pairs_ = point_pairs_cache_entry.cache_index();
+
+  // TODO(sherm1) Add ContactResults cache entry.
 }
 
 template <typename T>

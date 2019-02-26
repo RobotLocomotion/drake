@@ -2894,6 +2894,19 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
   /// @}
 
+  /// @name Geometric queries
+  /// These geometric queries are only available when %MultibodyPlant is the
+  /// source to a SceneGraph.
+
+  /// Evaluates all contact pairs.
+  const std::vector<geometry::PenetrationAsPointPair<T>>&
+  EvalPointPairPenetrations(const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.point_pairs_)
+        .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
+            context);
+  }
+  /// @}
+
   /// Sets the `state` so that generalized positions and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
@@ -2937,6 +2950,13 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
+
+  // This struct stores in one single place all indexes related with
+  // MultibodyPlant specific cache entries. These are initialized at Finalize()
+  // when the plant declares its cache entries.
+  struct CacheIndexes {
+    systems::CacheIndex point_pairs_;
+  };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
   // WARNING: This may *not* result in a plant with a valid state. Use
@@ -3025,6 +3045,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
+
+  // Declare the system:: level cache entries specific to MultibodyPlant.
+  void DeclareCacheEntries();
 
   // Helper method to assemble actuation input vector from the appropriate
   // ports.
@@ -3424,6 +3447,9 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   // TODO(sherm1) Replace this mock cache entry with the real thing.
   mutable ContactResults<T> contact_results_;
+
+  // All MultibodyPlant cache indexes are stored in cache_indexes_.
+  CacheIndexes cache_indexes_;
 };
 
 /// @cond
