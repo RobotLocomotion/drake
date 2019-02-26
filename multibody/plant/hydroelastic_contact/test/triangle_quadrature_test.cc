@@ -39,7 +39,7 @@ GTEST_TEST(TriangleQuadrature, BarycentricCoordsConsistent) {
 class UnityQuadratureTest : public ::testing::Test {
  public:
   void TestForUnityResultFromStartingOrder(
-      std::function<double(const Vector2d&> f, int starting_order) {
+      std::function<double(const Vector2d&)> f, int starting_order) {
     // The vertices of the "unit triangle."
     TriangleVertices v = UnitTriangleVertices();
 
@@ -58,7 +58,7 @@ class UnityQuadratureTest : public ::testing::Test {
   TriangleVertices UnitTriangleVertices() {
     return {{ {0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0} }};
   }
-}
+};
 
 // First test from TEST04.
 TEST_F(UnityQuadratureTest, FirstOrder1) {
