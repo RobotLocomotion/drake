@@ -96,7 +96,8 @@ void DefineFrameworkPySemantics(py::module m) {
       .def("get_mutable_value", &AbstractValues::get_mutable_value,
           py_reference_internal, doc.AbstractValues.get_mutable_value.doc)
       .def("CopyFrom", &AbstractValues::CopyFrom,
-          doc.AbstractValues.CopyFrom.doc);
+          doc.AbstractValues.CopyFrom.doc)
+      .def("SetFrom", &AbstractValues::SetFrom, doc.AbstractValues.SetFrom.doc);
 
   {
     using Class = TriggerType;
@@ -432,7 +433,11 @@ void DefineFrameworkPySemantics(py::module m) {
             // Keep alive, ownership: `value` keeps `self` alive.
             py::keep_alive<2, 1>(), py::arg("abstract_params"),
             doc.Parameters.set_abstract_parameters.doc)
-        .def("SetFrom", &Parameters<T>::SetFrom, doc.Parameters.SetFrom.doc);
+        .def("SetFrom",
+            [](Parameters<T>* self, const Parameters<double>& other) {
+              self->SetFrom(other);
+            },
+            doc.Parameters.SetFrom.doc);
 
     // State.
     DefineTemplateClassWithDefault<State<T>>(

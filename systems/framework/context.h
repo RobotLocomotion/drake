@@ -483,14 +483,16 @@ class Context : public ContextBase {
   // TODO(sherm1) Change the name of this method to be more inclusive since it
   //              also copies accuracy (now) and fixed input port values
   //              (pending above TODO).
-  void SetTimeStateAndParametersFrom(const Context<double>& source) {
+  template <typename U>
+  void SetTimeStateAndParametersFrom(const Context<U>& source) {
     ThrowIfNotRootContext(__func__, "Time");
     // A single change event for all these changes is faster than doing
     // each separately.
     const int64_t change_event = this->start_new_change_event();
 
     // These two both set the value and perform notifications.
-    PropagateTimeChange(this, T(source.get_time()), change_event);
+    const scalar_conversion::ValueConverter<T, U> converter;
+    PropagateTimeChange(this, converter(source.get_time()), change_event);
     PropagateAccuracyChange(this, source.get_accuracy(), change_event);
 
     // Notification is separate from the actual value change for bulk changes.

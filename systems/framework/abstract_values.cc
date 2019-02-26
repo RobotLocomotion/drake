@@ -42,7 +42,7 @@ AbstractValue& AbstractValues::get_mutable_value(int index) {
   return *data_[index];
 }
 
-void AbstractValues::CopyFrom(const AbstractValues& other) {
+void AbstractValues::SetFrom(const AbstractValues& other) {
   DRAKE_ASSERT(size() == other.size());
   for (int i = 0; i < size(); i++) {
     DRAKE_ASSERT(data_[i] != nullptr);

@@ -108,20 +108,18 @@ class State {
     return xa.get_mutable_value(index).GetMutableValue<U>();
   }
 
-  /// Copies the values from another State of the same scalar type into this
-  /// State.
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)  Use SetFrom() instead.
   void CopyFrom(const State<T>& other) {
-    continuous_state_->CopyFrom(other.get_continuous_state());
-    discrete_state_->CopyFrom(other.get_discrete_state());
-    abstract_state_->CopyFrom(other.get_abstract_state());
+    SetFrom(other);
   }
 
-  /// Initializes this state (regardless of scalar type) from a State<double>.
-  /// All scalar types in Drake must support initialization from doubles.
-  void SetFrom(const State<double>& other) {
+  /// Initializes this state from a State<U>.
+  template <typename U>
+  void SetFrom(const State<U>& other) {
     continuous_state_->SetFrom(other.get_continuous_state());
     discrete_state_->SetFrom(other.get_discrete_state());
-    abstract_state_->CopyFrom(other.get_abstract_state());
+    abstract_state_->SetFrom(other.get_abstract_state());
   }
 
  private:
