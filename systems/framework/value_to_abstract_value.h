@@ -57,11 +57,11 @@ appropriate policy. Here is an example:
   std::unique_ptr<AbstractValue> abstract_value =
     is_vector_port
         ? internal::ValueToVectorValue<T>::ToAbstract(__func__, value)
-        : internal::ValueToAbstractValue::ToAbstract(value);
+        : internal::ValueToAbstractValue::ToAbstract(__func__, value);
 ```
 Note that for this to work _both_ ToAbstract() methods must compile
-successfully, even though the VectorPolicy is much more restrictive. Thus
-the VectorPolicy must issue runtime errors for values that are unacceptable.
+successfully. Thus where one policy is more restrictive than the other, it must
+issue runtime errors for values that are unacceptable.
 
 @see ValueToVectorValue
 
@@ -69,8 +69,8 @@ the VectorPolicy must issue runtime errors for values that are unacceptable.
 
  1. Any given AbstractValue object is simply cloned.
  2. A `char *` type is copied into a Value<std::string>.
- 3. Any Eigen expression type is simplified using `.eval()`, and then stored
-    in a Value<E> where E is the type returned by `.eval()` (without const).
+ 3. Simple Eigen objects (e.g. Matrix3d) are accepted and stored as themselves;
+    complicated Eigen expressions are rejected at runtime.
  4. For any other type V
     - if V is copy-constructible it is copied into a `Value<V>`;
     - if V has an accessible Clone() method that returns `unique_ptr<V>` it is
@@ -79,46 +79,39 @@ the VectorPolicy must issue runtime errors for values that are unacceptable.
       where B is a base class of V, then V is cloned into a `Value<B>`;
     - otherwise, compilation fails with a `static_assert` message.
 
-@warning Eigen expressions typically don't have simple Vector types. That
-doesn't matter under the VectorPolicy. However, under the AbstractPolicy you
-will get Value<E> where E is the type of V.eval(). If you need to know E's
-type, use `ValueToAbstractValue::NiceEigenType<V>`. Better, put your expression
-V into an Eigen vector of known type before storing it in an AbstractValue. */
+@warning Eigen expressions typically don't have simple Vector or Matrix types.
+That doesn't matter under the VectorPolicy (as long as the size and shape are
+acceptable). However, under the AbstractPolicy you can only store simple Eigen
+object types like `Eigen::Vector3d`. If you have a more-complex Eigen expression
+you'd like to store, invoke Eigen's `.eval()` method on it to obtain a simple
+Eigen type. The precise definition of "simple Eigen object type" is that the
+type does not change when `.eval()` is applied to it. */
 class ValueToAbstractValue {
  public:
   // Signature (1): used for AbstractValue or Value<U> arguments.
-  static std::unique_ptr<AbstractValue> ToAbstract(const AbstractValue& value) {
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+      const AbstractValue& value) {
+    unused(api_name);
     return value.Clone();
   }
 
   // Signature (2): special case char* to std::string to avoid ugly compilation
   // messages for this case, where the user's intent is obvious.
-  static std::unique_ptr<AbstractValue> ToAbstract(const char* c_string) {
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+      const char* c_string) {
+    unused(api_name);
     return std::make_unique<Value<std::string>>(c_string);
   }
 
-  // This is the storage type we'll use for an Eigen vector type.
+  // Signature (3): special case any Eigen vector expression so that we
+  // can check if it is a simple Eigen type. If so, store it that way. If not,
+  // complain at runtime.
   template <typename ValueType,
             typename = std::enable_if_t<is_eigen_refable<ValueType>()>>
-  using NiceEigenType = std::remove_const_t<
-      std::remove_reference_t<decltype(std::declval<ValueType>().eval())>>;
-
-  // Signature (3): special case any Eigen vector expression so that we
-  // can invoke eval() on it and store it as the simpler result type. If
-  // you need to know how it was stored, use NiceEigenType above.
-
-  // Note that we're assuming that MatrixBase<Derived> will instantiate under
-  // the same conditions as is_eigen_refable() returns true.
-  // TODO(sherm1) Figure out some way to make this explicitly dependent on
-  // is_eigen_refable<ValueType>().
-  template <typename Derived>
-  static std::unique_ptr<AbstractValue> ToAbstract(
-      const Eigen::MatrixBase<Derived>& eigen_expr) {
-    // Can't use NiceEigenType here because we don't have the original
-    // ValueType.
-    using TypeAfterEval = std::remove_const_t<
-        std::remove_reference_t<decltype(eigen_expr.eval())>>;
-    return std::make_unique<Value<TypeAfterEval>>(eigen_expr.eval());
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+                                                   const ValueType& eigen_value,
+                                                   ...) {
+    return EigenValueHelper<ValueType>(api_name, eigen_value, 1);
   }
 
   // Returns true iff ValueType has an accessible Clone() method that
@@ -137,12 +130,14 @@ class ValueToAbstractValue {
             typename = std::enable_if_t<
                 !(std::is_base_of<AbstractValue, ValueType>::value ||
                   is_eigen_refable<ValueType>())>>
-  static std::unique_ptr<AbstractValue> ToAbstract(const ValueType& value) {
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+      const ValueType& value) {
     static_assert(
         std::is_copy_constructible<ValueType>::value ||
             has_accessible_clone<ValueType>(),
         "ValueToAbstractValue(): value type must be copy constructible or "
         "have an accessible Clone() method that returns std::unique_ptr.");
+    unused(api_name);
     return ValueHelper(value, 1, 1);
   }
 
@@ -200,6 +195,51 @@ class ValueToAbstractValue {
   // a good message already; this method just needs to compile peacefully.
   template <typename ValueType>
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType&, ...) {
+    DRAKE_UNREACHABLE();
+  }
+
+  // TODO(sherm1) Replace with std::remove_cvref_t for C++20.
+  template <typename ValueType>
+  using RemoveCVRef = std::remove_cv_t<std::remove_reference_t<ValueType>>;
+
+  template <typename ValueType,
+            typename = std::enable_if_t<is_eigen_refable<ValueType>()>>
+  using EigenTypeAfterEval =
+      RemoveCVRef<decltype(std::declval<ValueType>().eval())>;
+
+  // We define a "nice" Eigen type to be one whose type is not changed by
+  // applying `.eval()` to it.
+  template <typename ValueType,
+      typename = std::enable_if_t<
+          is_eigen_refable<ValueType>() &&
+              std::is_same<RemoveCVRef<ValueType>,
+                           EigenTypeAfterEval<ValueType>>::value>>
+  static constexpr bool is_nice_eigen_type(int) {
+    return true;
+  }
+
+  // This gets called by conversion int->char if the previous method
+  // doesn't instantiate.
+  template <typename ValueType>
+  static constexpr bool is_nice_eigen_type(char) { return false; }
+
+  // This method is preferred for nice Eigen types and stores the object
+  // using that type.
+  template <typename ValueType,
+      typename = std::enable_if_t<is_nice_eigen_type<ValueType>(1)>>
+  static std::unique_ptr<AbstractValue> EigenValueHelper(
+      const char*, const ValueType& eigen_value, int) {
+    return std::make_unique<Value<RemoveCVRef<ValueType>>>(eigen_value);
+  }
+
+  template <typename ValueType>
+  static std::unique_ptr<AbstractValue> EigenValueHelper(
+      const char* api_name, const ValueType& eigen_value, ...) {
+    throw std::logic_error(fmt::format(
+        "{}(): the given Eigen object of type {} is not "
+        "suitable for storage as a Drake abstract quantity. Use Eigen's "
+        ".eval() method to produce a simple Eigen object.",
+        api_name, NiceTypeName::Get<ValueType>()));
     DRAKE_UNREACHABLE();
   }
 };
