@@ -138,12 +138,11 @@ class Parameters {
     return clone;
   }
 
-  /// Initializes this state (regardless of scalar type) from a
-  /// Parameters<double>. All scalar types in Drake must support
-  /// initialization from doubles.
-  void SetFrom(const Parameters<double>& other) {
+  /// Initializes this state from `other`.
+  template <typename U>
+  void SetFrom(const Parameters<U>& other) {
     numeric_parameters_->SetFrom(other.get_numeric_parameters());
-    abstract_parameters_->CopyFrom(other.get_abstract_parameters());
+    abstract_parameters_->SetFrom(other.get_abstract_parameters());
   }
 
  private:
