@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -10,6 +12,8 @@ namespace hydrostatic {
 /// triangular domains.
 class TriangleQuadratureRule {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TriangleQuadratureRule)
+  TriangleQuadratureRule() = default;
   virtual ~TriangleQuadratureRule() {}
 
   /// Returns the order of this rule.

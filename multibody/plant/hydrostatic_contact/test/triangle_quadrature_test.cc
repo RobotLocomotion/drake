@@ -1,8 +1,9 @@
+#include "drake/multibody/plant/hydrostatic_contact/triangle_quadrature.h"
+
 #include <numeric>
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/plant/hydrostatic_contact/triangle_quadrature.h"
 #include "drake/multibody/plant/hydrostatic_contact/gaussian_triangle_quadrature_rule.h"
 
 using Vector2d = drake::Vector2<double>;
@@ -15,7 +16,8 @@ GTEST_TEST(TriangleQuadrature, WeightsSumToUnity) {
     GaussianTriangleQuadratureRule rule(order);
     const std::vector<double>& weights = rule.weights();
     const double sum = std::accumulate(weights.begin(), weights.end(), 0.0);
-    const double tol = 20 * weights.size() * std::numeric_limits<double>::epsilon();
+    const double tol = 20 * weights.size() *
+        std::numeric_limits<double>::epsilon();
     EXPECT_NEAR(sum, 1.0, tol);
   }
 }
@@ -34,6 +36,7 @@ TriangleVertices UnitTriangleVertices() {
 }
 
 // First test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
 // https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
 GTEST_TEST(TriangleQuadrature, FirstOrder1) {
   // Function to be integrated: 2.0
@@ -56,6 +59,7 @@ GTEST_TEST(TriangleQuadrature, FirstOrder1) {
 }
 
 // Second test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
 // https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
 GTEST_TEST(TriangleQuadrature, FirstOrder2) {
   // Function to be integrated: 6.0y
@@ -78,6 +82,7 @@ GTEST_TEST(TriangleQuadrature, FirstOrder2) {
 }
 
 // Eleventh test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
 // https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
 GTEST_TEST(TriangleQuadrature, FirstOrder3) {
   // Function to be integrated: 6x
@@ -100,6 +105,7 @@ GTEST_TEST(TriangleQuadrature, FirstOrder3) {
 }
 
 // Third test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
 // https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
 GTEST_TEST(TriangleQuadrature, SecondOrder1) {
   // Function to be integrated: 12y²
@@ -121,7 +127,7 @@ GTEST_TEST(TriangleQuadrature, SecondOrder1) {
   }
 }
 
-// Tests whether quadrature is able to produce the accurate solution given at
+// Tests whether quadrature is able to produce the accurate solution given at:
 // http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF p. 12.
 GTEST_TEST(TriangleQuadrature, SecondOrder2) {
   // Function to be integrated: (2 - x - 2y)
@@ -143,7 +149,31 @@ GTEST_TEST(TriangleQuadrature, SecondOrder2) {
   }
 }
 
+// Twelfth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
+// https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
+GTEST_TEST(TriangleQuadrature, SecondOrder3) {
+  // Function to be integrated: 24xy
+  auto f = [](const Vector2d& p) -> double {
+    return 24 * p[0] * p[1];
+  };
+
+  // The vertices of the "unit triangle."
+  TriangleVertices v = UnitTriangleVertices();
+
+  // Test Gaussian quadrature rule of orders 2 through 5.
+  for (int order = 2; order <= 5; ++order) {
+    GaussianTriangleQuadratureRule rule(order);
+
+    // Compute the integral.
+    double result = TriangleQuadrature<double, double>::Integrate(
+        v[0], v[1], v[2], f, rule, 0.0);
+    EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
+  }
+}
+
 // Fourth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
 // https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
 GTEST_TEST(TriangleQuadrature, ThirdOrder) {
   // Function to be integrated: 20y³
@@ -165,10 +195,34 @@ GTEST_TEST(TriangleQuadrature, ThirdOrder) {
   }
 }
 
-// Fifth test from TEST04 of:
+// Thirteenth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
 // https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
-GTEST_TEST(TriangleQuadrature, FourthOrder) {
-  // Function to be integrated: 30y⁴⁵
+GTEST_TEST(TriangleQuadrature, ThirdOrder2) {
+  // Function to be integrated: 60xy²
+  auto f = [](const Vector2d& p) -> double {
+    return 60 * p[0] * p[1] * p[1];
+  };
+
+  // The vertices of the "unit triangle."
+  TriangleVertices v = UnitTriangleVertices();
+
+  // Test Gaussian quadrature rule of orders 3 through 5.
+  for (int order = 3; order <= 5; ++order) {
+    GaussianTriangleQuadratureRule rule(order);
+
+    // Compute the integral.
+    double result = TriangleQuadrature<double, double>::Integrate(
+        v[0], v[1], v[2], f, rule, 0.0);
+    EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
+  }
+}
+
+// Fifth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
+// https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
+GTEST_TEST(TriangleQuadrature, FourthOrder1) {
+  // Function to be integrated: 30y⁴
   auto f = [](const Vector2d& p) -> double {
     return 30 * p[1] * p[1] * p[1] * p[1];
   };
@@ -185,5 +239,72 @@ GTEST_TEST(TriangleQuadrature, FourthOrder) {
         v[0], v[1], v[2], f, rule, 0.0);
     EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
   }
+}
+
+// Fourteenth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
+// https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
+GTEST_TEST(TriangleQuadrature, FourthOrder2) {
+  // Function to be integrated: 120xy³
+  auto f = [](const Vector2d& p) -> double {
+    return 30 * p[1] * p[1] * p[1] * p[1];
+  };
+
+  // The vertices of the "unit triangle."
+  TriangleVertices v = UnitTriangleVertices();
+
+  // Test Gaussian quadrature rules of orders 4 through 5.
+  for (int order = 4; order <= 5; ++order) {
+    GaussianTriangleQuadratureRule rule(order);
+
+    // Compute the integral.
+    double result = TriangleQuadrature<double, double>::Integrate(
+        v[0], v[1], v[2], f, rule, 0.0);
+    EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
+  }
+}
+
+// Fifth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
+// https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
+GTEST_TEST(TriangleQuadrature, FifthOrder1) {
+  // Function to be integrated: 30y⁵
+  auto f = [](const Vector2d& p) -> double {
+    return 42 * p[1] * p[1] * p[1] * p[1] * p[1];
+  };
+
+  // The vertices of the "unit triangle."
+  TriangleVertices v = UnitTriangleVertices();
+
+  // Test Gaussian quadrature rule of order 5.
+  const int order = 5;
+  GaussianTriangleQuadratureRule rule(order);
+
+  // Compute the integral.
+  double result = TriangleQuadrature<double, double>::Integrate(
+      v[0], v[1], v[2], f, rule, 0.0);
+  EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
+}
+
+// Fifteenth test from TEST04 of:
+// NOLINTNEXTLINE(whitespace/line_length)
+// https://people.sc.fsu.edu/~jburkardt/f_src/triangle_dunavant_rule/triangle_dunavant_rule_prb_output.txt
+GTEST_TEST(TriangleQuadrature, FifthOrder2) {
+  // Function to be integrated: 210xy⁴
+  auto f = [](const Vector2d& p) -> double {
+    return 210 * p[0] * p[1] * p[1] * p[1] * p[1];
+  };
+
+  // The vertices of the "unit triangle."
+  TriangleVertices v = UnitTriangleVertices();
+
+  // Test Gaussian quadrature rule of order 5.
+  const int order = 5;
+  GaussianTriangleQuadratureRule rule(order);
+
+  // Compute the integral.
+  double result = TriangleQuadrature<double, double>::Integrate(
+      v[0], v[1], v[2], f, rule, 0.0);
+  EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
 }
 

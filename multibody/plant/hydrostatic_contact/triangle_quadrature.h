@@ -1,7 +1,8 @@
 #pragma once
 
-#include "drake/common/eigen_types.h"
+#include <vector>
 
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/hydrostatic_contact/triangle_quadrature_rule.h"
 
 namespace drake {
@@ -28,10 +29,11 @@ class TriangleQuadrature {
 
  private:
   // Quadrature rules are defined for the "canonical triangle" (0, 0), (1, 0),
-  // (0, 1). This function transforms the quadrature points from the canonical
-  // triangle to the user-supplied triangle as described on pp. 10-12 of:
+  // (0, 1). This function transforms the quadrature points from the barycentric
+  // coordinates of the canonical triangle to Cartesian coordinates as
+  // described on pp. 10-12 of:
   // http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
-  static Vector2<T> TransformQuadraturePoint(
+  static Vector2<T> TransformBarycentricToCartesianCoordinates(
       const Vector2<T>& a, const Vector2<T>& b, const Vector2<T>& c,
       const Vector2<T>& quadrature_point) {
     Vector2<T> canonical_point;
@@ -66,12 +68,13 @@ NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
 
   // Sum the weighted function evaluated at the transformed quadrature points.
   for (int i = 0; i < static_cast<int>(points.size()); ++i) {
-    integral += f(TransformQuadraturePoint(a, b, c, points[i])) * weights[i];
-   }
+    integral += f(TransformBarycentricToCartesianCoordinates(
+        a, b, c, points[i])) * weights[i];
+  }
 
   return integral * area;
 }
 
-}  // end hydrostatic
-}  // end multibody
-}  // end drake
+}  // namespace hydrostatic
+}  // namespace multibody
+}  // namespace drake
