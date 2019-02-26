@@ -88,6 +88,7 @@ GTEST_TEST(Box, UnderStiction) {
   // Create a context for this system:
   std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
+  diagram_context->EnableCaching();    
   diagram->SetDefaultContext(diagram_context.get());
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());

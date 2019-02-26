@@ -51,6 +51,7 @@ drake_cc_library(
         ":coulomb_friction",
         ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
+        ":implicit_stribeck_solver_results",
         "//common:default_scalars",
         "//geometry:geometry_ids",
         "//geometry:geometry_visualization",
@@ -85,6 +86,19 @@ drake_cc_library(
     ],
     hdrs = [
         "contact_jacobians.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_stribeck_solver_results",
+    srcs = [
+        "implicit_stribeck_solver_results.cc",
+    ],
+    hdrs = [
+        "implicit_stribeck_solver_results.h",
     ],
     deps = [
         "//common:default_scalars",

@@ -1392,17 +1392,13 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
   return info;
 }
 
-// TODO(amcastro-tri): Consider splitting this method into smaller pieces.
-template<typename T>
-void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
+template <typename T>
+void MultibodyPlant<T>::CalcImplicitStribeckResults(
     const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
+    ImplicitStribeckSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
-
-  const double dt = time_step_;  // just a shorter alias.
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
@@ -1526,8 +1522,39 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
 
+  // Update the results.
+  results->v_next = implicit_stribeck_solver_->get_generalized_velocities();
+  results->fn = implicit_stribeck_solver_->get_normal_forces();
+  results->ft = implicit_stribeck_solver_->get_friction_forces();
+  results->vn = implicit_stribeck_solver_->get_normal_velocities();
+  results->vt = implicit_stribeck_solver_->get_tangential_velocities();
+  results->tau_contact =
+      implicit_stribeck_solver_->get_generalized_contact_forces();
+}
+
+// TODO(amcastro-tri): Consider splitting this method into smaller pieces.
+template<typename T>
+void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
+    const drake::systems::Context<T>& context0,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
+    drake::systems::DiscreteValues<T>* updates) const {
+  const double dt = time_step_;  // just a shorter alias.
+
+  const int nq = this->num_positions();
+  const int nv = this->num_velocities();
+
+  // Get the system state as raw Eigen vectors
+  // (solution at the previous time step).
+  auto x0 = context0.get_discrete_state(0).get_value();
+  VectorX<T> q0 = x0.topRows(nq);
+  VectorX<T> v0 = x0.bottomRows(nv);
+
+  // Solve for contact.
+  const ImplicitStribeckSolverResults<T>& solver_results =
+      EvalImplicitStribeckResults(context0);
+
   // Retrieve the solution velocity for the next time step.
-  VectorX<T> v_next = implicit_stribeck_solver_->get_generalized_velocities();
+  const VectorX<T>& v_next = solver_results.v_next;
 
   VectorX<T> qdot_next(this->num_positions());
   internal_tree().MapVelocityToQDot(context0, v_next, &qdot_next);
@@ -1540,6 +1567,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Save contact results for analysis and visualization.
   // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
   // and R_WC_set will be cached.
+  const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
+      EvalPointPairPenetrations(context0);
+  const ContactJacobians<T>& contact_jacobians = EvalContactJacobians(context0);
   CalcContactResults(context0, point_pairs0, contact_jacobians.R_WC_list,
                      &contact_results_);
 }
@@ -1725,6 +1755,25 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->configuration_ticket()});
   cache_indexes_.contact_jacobians_ =
       contact_jacobians_cache_entry.cache_index();
+
+  // Cache ImplicitStribeckSolver computations.
+  auto& implicit_stribeck_solver_cache_entry = this->DeclareCacheEntry(
+      std::string("Implicit Stribeck solver computations."),
+      []() { return AbstractValue::Make(ImplicitStribeckSolverResults<T>()); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& implicit_stribeck_solver_cache =
+            cache_value->GetMutableValue<ImplicitStribeckSolverResults<T>>();
+        this->CalcImplicitStribeckResults(context,
+                                          &implicit_stribeck_solver_cache);
+      },
+      // We explicitly declare the kinematics (q and v) dependence even though
+      // the Eval() above implicitly evaluates kinematics dependent cache
+      // entries.
+      {this->kinematics_ticket()});
+  cache_indexes_.implicit_stribeck_solver_results_ =
+      implicit_stribeck_solver_cache_entry.cache_index();
 
   // TODO(sherm1) Add ContactResults cache entry.
 }

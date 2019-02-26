@@ -20,6 +20,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/implicit_stribeck_solver.h"
+#include "drake/multibody/plant/implicit_stribeck_solver_results.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -2963,6 +2964,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // when the plant declares its cache entries.
   struct CacheIndexes {
     systems::CacheIndex contact_jacobians_;
+    systems::CacheIndex implicit_stribeck_solver_results_;
     systems::CacheIndex point_pairs_;
   };
 
@@ -3099,6 +3101,17 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu,
       const VectorX<T>& v0, const VectorX<T>& phi0) const;
+
+  void CalcImplicitStribeckResults(
+      const drake::systems::Context<T>& context0,
+      ImplicitStribeckSolverResults<T>* results) const;
+
+  const ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
+      const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results_)
+        .template Eval<ImplicitStribeckSolverResults<T>>(context);
+  }
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
