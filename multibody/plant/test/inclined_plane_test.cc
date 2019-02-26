@@ -177,17 +177,10 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
         plant.get_generalized_contact_forces_output_port(
             default_model_instance());
 
-    auto contact_forces_value = contact_forces_port.Allocate();
-    // Verify the correct type.
-    EXPECT_NO_THROW(
-        contact_forces_value->GetValueOrThrow<BasicVector<double>>());
-    const BasicVector<double>& contact_forces =
-        contact_forces_value->GetValueOrThrow<BasicVector<double>>();
-    EXPECT_EQ(contact_forces.size(), 6);
-    // Compute the generalized contact forces using the system's API.
-    contact_forces_port.Calc(plant_context, contact_forces_value.get());
-
-    const VectorX<double> tau_contact = contact_forces.CopyToVector();
+    // Evaluate the generalized contact forces using the system's API.
+    const VectorX<double>& tau_contact =
+        contact_forces_port.Eval(plant_context);
+    EXPECT_EQ(tau_contact.size(), 6);
 
     // Unit inertia computed about the contact point using the
     // parallel axis theorem.

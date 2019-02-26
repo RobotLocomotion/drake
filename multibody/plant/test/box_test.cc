@@ -88,7 +88,7 @@ GTEST_TEST(Box, UnderStiction) {
   // Create a context for this system:
   std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
-  diagram_context->EnableCaching();    
+  diagram_context->EnableCaching();
   diagram->SetDefaultContext(diagram_context.get());
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
@@ -104,15 +104,9 @@ GTEST_TEST(Box, UnderStiction) {
 
   // We evaluate the contact results output port in order to verify the
   // simulation results.
-  std::unique_ptr<AbstractValue> contact_results_value =
-      plant.get_contact_results_output_port().Allocate();
-  EXPECT_NO_THROW(
-      contact_results_value->GetValueOrThrow<ContactResults<double>>());
   const ContactResults<double>& contact_results =
-      contact_results_value->GetValueOrThrow<ContactResults<double>>();
-  // Compute the poses for each geometry in the model.
-  plant.get_contact_results_output_port().Calc(
-      plant_context, contact_results_value.get());
+      plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+          plant_context);
 
   ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
   const PointPairContactInfo<double>& contact_info =

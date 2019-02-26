@@ -2964,6 +2964,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // when the plant declares its cache entries.
   struct CacheIndexes {
     systems::CacheIndex contact_jacobians_;
+    systems::CacheIndex contact_results_;
     systems::CacheIndex implicit_stribeck_solver_results_;
     systems::CacheIndex point_pairs_;
   };
@@ -3113,6 +3114,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         .template Eval<ImplicitStribeckSolverResults<T>>(context);
   }
 
+  const ContactResults<T>& EvalContactResults(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.contact_results_)
+        .template Eval<ContactResults<T>>(context);
+  }
+
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
@@ -3212,8 +3219,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // frame C in the world frame W.
   void CalcContactResults(
       const systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
-      const std::vector<Matrix3<T>>& R_WC_set,
       ContactResults<T>* contacts) const;
 
   // Helper method to add the contribution of external actuation forces to the
@@ -3462,12 +3467,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
-
-  // TODO(sherm1) Add CacheIndex members here for cache entries that belong to
-  //              MBPlant, not MBTree.
-
-  // TODO(sherm1) Replace this mock cache entry with the real thing.
-  mutable ContactResults<T> contact_results_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

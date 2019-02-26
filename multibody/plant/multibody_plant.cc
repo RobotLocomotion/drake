@@ -969,32 +969,33 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
 
 template<typename T>
 void MultibodyPlant<T>::CalcContactResultsOutput(
-    const systems::Context<T>&,
+    const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  // TODO(amcastro-tri): Eval() contact results when caching lands.
-  *contact_results = contact_results_;
+  *contact_results = EvalContactResults(context);
 }
 
 template<typename T>
 void MultibodyPlant<T>::CalcContactResults(
-    const systems::Context<T>&,
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs,
-    const std::vector<Matrix3<T>>& R_WC_set,
+    const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
-  if (num_collision_geometries() == 0) return;
   DRAKE_DEMAND(contact_results != nullptr);
+  contact_results->Clear();    
+  if (num_collision_geometries() == 0) return;  
+
+  const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+      EvalPointPairPenetrations(context);
+  const std::vector<Matrix3<T>>& R_WC_set =
+      EvalContactJacobians(context).R_WC_list;
+  const ImplicitStribeckSolverResults<T>& solver_results =
+      EvalImplicitStribeckResults(context);
+
+  const VectorX<T>& fn = solver_results.fn;
+  const VectorX<T>& ft = solver_results.ft;
+  const VectorX<T>& vt = solver_results.vt;
+  const VectorX<T>& vn = solver_results.vn;
+
   const int num_contacts = point_pairs.size();
-  DRAKE_DEMAND(static_cast<int>(R_WC_set.size()) == num_contacts);
-
-  // Note: auto below resolves to VectorBlock<const VectorX<T>>.
-  using VectorXBlock = Eigen::VectorBlock<const VectorX<T>>;
-  const VectorXBlock fn = implicit_stribeck_solver_->get_normal_forces();
-  const VectorXBlock ft = implicit_stribeck_solver_->get_friction_forces();
-  const VectorXBlock vt =
-      implicit_stribeck_solver_->get_tangential_velocities();
-  const VectorXBlock vn = implicit_stribeck_solver_->get_normal_velocities();
-
   DRAKE_DEMAND(fn.size() == num_contacts);
   DRAKE_DEMAND(ft.size() == 2 * num_contacts);
   DRAKE_DEMAND(vn.size() == num_contacts);
@@ -1563,15 +1564,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
-
-  // Save contact results for analysis and visualization.
-  // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
-  // and R_WC_set will be cached.
-  const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
-      EvalPointPairPenetrations(context0);
-  const ContactJacobians<T>& contact_jacobians = EvalContactJacobians(context0);
-  CalcContactResults(context0, point_pairs0, contact_jacobians.R_WC_list,
-                     &contact_results_);
 }
 
 template<typename T>
@@ -1775,7 +1767,22 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.implicit_stribeck_solver_results_ =
       implicit_stribeck_solver_cache_entry.cache_index();
 
-  // TODO(sherm1) Add ContactResults cache entry.
+  // Cache contact results.
+  auto& contact_results_cache_entry = this->DeclareCacheEntry(
+      std::string("Contact results."),
+      []() { return AbstractValue::Make(ContactResults<T>()); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_results_cache =
+            cache_value->GetMutableValue<ContactResults<T>>();
+        this->CalcContactResults(context, &contact_results_cache);
+      },
+      // We explicitly declare the dependence on the implicit Stribeck solver
+      // even though the Eval() above makes the evaluation.
+      {this->cache_entry_ticket(
+          cache_indexes_.implicit_stribeck_solver_results_)});
+  cache_indexes_.contact_results_ = contact_results_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -1809,18 +1816,16 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    ModelInstanceIndex model_instance, const Context<T>&,
+    ModelInstanceIndex model_instance, const Context<T>& context,
     BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
 
   // Vector of generalized contact forces for the entire plant's multibody
   // system.
-  // TODO(amcastro-tri): Contact forces should be computed into a cache entry
-  // and evaluated here. Update this to use caching as soon as the capability
-  // lands.
-  const VectorX<T>& tau_contact =
-      implicit_stribeck_solver_->get_generalized_contact_forces();
+  const ImplicitStribeckSolverResults<T>& solver_results =
+      EvalImplicitStribeckResults(context);
+  const VectorX<T>& tau_contact = solver_results.tau_contact;
 
   // Generalized velocities and generalized forces are ordered in the same way.
   // Thus we can call get_velocities_from_array().
