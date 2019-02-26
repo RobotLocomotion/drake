@@ -19,22 +19,14 @@ template <typename T>
 class QuadrotorPlant final : public systems::LeafSystem<T> {
  public:
   QuadrotorPlant();
-  QuadrotorPlant(double m_arg, double L_arg, const Eigen::Matrix3d& I_arg,
-                 double kF_arg, double kM_arg);
+  QuadrotorPlant(double m, double L, const Eigen::Matrix3d& inertia,
+                 double kF, double kM);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit QuadrotorPlant(const QuadrotorPlant<U>&);
 
   ~QuadrotorPlant() override;
-
-  int get_input_size() const { return kInputDimension; }
-
-  int get_num_states() const { return kStateDimension; }
-
-  void set_state(systems::Context<T>* context, const VectorX<T>& x) const {
-    context->get_mutable_continuous_state_vector().SetFromVector(x);
-  }
 
   double m() const { return m_; }
   double g() const { return g_; }
@@ -61,9 +53,6 @@ class QuadrotorPlant final : public systems::LeafSystem<T> {
  private:
   // Allow different specializations to access each other's private data.
   template <typename> friend class QuadrotorPlant;
-
-  static constexpr int kStateDimension{12};
-  static constexpr int kInputDimension{4};
 
   // TODO(naveenoid): Declare these as parameters in the context.
   const double g_;           // Gravitational acceleration (m/s^2).

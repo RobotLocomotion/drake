@@ -43,6 +43,7 @@ kind("cc_library", visible("//tools/install/libdrake:libdrake.so", "//..."))
         "//examples/compass_gait/..."
         "//examples/manipulation_station/..."
         "//examples/pendulum/..."
+        "//examples/quadrotor/..."
         "//examples/rimless_wheel/..."
         "//examples/van_der_pol/..."
       ))

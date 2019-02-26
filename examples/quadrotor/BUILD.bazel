@@ -19,6 +19,7 @@ drake_cc_library(
     name = "quadrotor_plant",
     srcs = ["quadrotor_plant.cc"],
     hdrs = ["quadrotor_plant.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//attic/util",
         "//common:default_scalars",
