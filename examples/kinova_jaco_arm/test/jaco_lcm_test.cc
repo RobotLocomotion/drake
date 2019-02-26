@@ -46,7 +46,7 @@ GTEST_TEST(JacoLcmTest, JacoCommandPassthroughTest) {
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
   diagram->CalcDiscreteVariableUpdates(*context, update.get());
-  context->get_mutable_discrete_state().CopyFrom(*update);
+  context->get_mutable_discrete_state().SetFrom(*update);
   diagram->CalcOutput(*context, output.get());
 
   lcmt_jaco_command command_out =
@@ -116,7 +116,7 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
   diagram->CalcDiscreteVariableUpdates(*context, update.get());
-  context->get_mutable_discrete_state().CopyFrom(*update);
+  context->get_mutable_discrete_state().SetFrom(*update);
   diagram->CalcOutput(*context, output.get());
 
   lcmt_jaco_status status_out =

@@ -1561,7 +1561,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -1579,7 +1579,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_continuous_state(std::make_unique<ContinuousState<double>>(
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
     };
@@ -1605,7 +1605,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
       std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       s->set_discrete_state(
@@ -1632,7 +1632,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_abstract_state(std::make_unique<AbstractValues>());
     };
 

@@ -745,7 +745,7 @@ class System : public SystemBase {
 
     // Copy current state to the passed-in state, as specified in the
     // documentation for DoCalcUnrestrictedUpdate().
-    state->CopyFrom(context.get_state());
+    state->SetFrom(context.get_state());
 
     DispatchUnrestrictedUpdateHandler(context, events, state);
 

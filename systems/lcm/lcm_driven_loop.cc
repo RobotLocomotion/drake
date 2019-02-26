@@ -51,7 +51,7 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
   } else {
     DRAKE_DEMAND(false);
   }
-  sub_context_->get_mutable_state().CopyFrom(*sub_swap_state_);
+  sub_context_->get_mutable_state().SetFrom(*sub_swap_state_);
 
   driving_sub_.CalcOutput(*sub_context_, sub_output_.get());
   return *(sub_output_->get_data(0));

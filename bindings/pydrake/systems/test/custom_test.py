@@ -389,8 +389,11 @@ class TestCustom(unittest.TestCase):
             values.get_value(0).get_value(), model_value.get_value())
         self.assertEqual(
             values.get_mutable_value(0).get_value(), model_value.get_value())
-        values.CopyFrom(values.Clone())
         values.SetFrom(values.Clone())
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always", DrakeDeprecationWarning)
+            values.CopyFrom(values.Clone())
+            self.assertEqual(len(w), 1)
 
         # - Check diagram context accessors.
         builder = DiagramBuilder()

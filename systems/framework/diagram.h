@@ -1128,7 +1128,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
     // As a baseline, initialize all the discrete variables to their
     // current values.
-    diagram_discrete->CopyFrom(context.get_discrete_state());
+    diagram_discrete->SetFrom(context.get_discrete_state());
 
     const DiagramEventCollection<DiscreteUpdateEvent<T>>& info =
         dynamic_cast<const DiagramEventCollection<DiscreteUpdateEvent<T>>&>(

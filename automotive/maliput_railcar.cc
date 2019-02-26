@@ -385,7 +385,7 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   const double current_length = current_lane_direction.lane->length();
 
   // Copies the present state into the new one.
-  next_state->CopyFrom(context.get_state());
+  next_state->SetFrom(context.get_state());
 
   ContinuousState<T>& cs = next_state->get_mutable_continuous_state();
   VectorBase<T>& cv = cs.get_mutable_vector();

@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/value.h"
 
 namespace drake {
@@ -51,8 +52,9 @@ class AbstractValues {
   /// the index is out-of-bounds.
   AbstractValue& get_mutable_value(int index);
 
-  // TODO(jwnimmer-tri) Deprecate me and use SetFrom.
-  /// (To be deprecated.)  Identical to SetFrom.
+  DRAKE_DEPRECATED(
+      "Use SetFrom instead of CopyFrom. "
+      "This method will be removed on 2019-06-01.")
   void CopyFrom(const AbstractValues& other) {
     SetFrom(other);
   }
