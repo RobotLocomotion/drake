@@ -1052,7 +1052,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
-      "for input port input \\(index 0\\) but the actual type was "
+      "for input port 'input' \\(index 0\\) but the actual type was "
       "drake::systems::BasicVector<double> with size=2. "
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1060,7 +1060,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
-      "for input port input \\(index 0\\) but the actual type was "
+      "for input port 'input' \\(index 0\\) but the actual type was "
       "drake::Value<std::string>. "
       "\\(System ::dut\\)");
 
@@ -1071,7 +1071,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
-      "for input port abstract_input \\(index 2\\) but the actual type was "
+      "for input port 'abstract_input' \\(index 2\\) but the actual type was "
       "std::string. "
       "\\(System ::dut\\)");
 }

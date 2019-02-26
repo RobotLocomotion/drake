@@ -1243,22 +1243,12 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
   int u_offset = 0;
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
+    // Ignore the port if the model instance has no actuated DoFs.
     const int instance_num_dofs =
         internal_tree().num_actuated_dofs(model_instance_index);
-    if (instance_num_dofs == 0) {
-      // Verify that the input port is either unconnected or holds a
-      // zero-dimensional vector.
-      const auto& input_port = this->get_input_port(
-          instance_actuation_ports_[model_instance_index]);
-      if (input_port.HasValue(context) && input_port.Eval(context).size() > 0) {
-        throw std::logic_error(fmt::format("Actuation input port for model "
-            "instance {} must either be unconnected or connected to a "
-            "zero-dimensional vector source.",
-            GetModelInstanceName(model_instance_index)));
-      }
-
+    if (instance_num_dofs == 0)
       continue;
-    }
+
     const auto& input_port = this->get_input_port(
         instance_actuation_ports_[model_instance_index]);
     if (!input_port.HasValue(context)) {

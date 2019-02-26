@@ -212,7 +212,7 @@ void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
 void SystemBase::ThrowNotAVectorInputPort(const char* func,
                                           InputPortIndex port) const {
   throw std::logic_error(fmt::format(
-      "{}: vector port required, but input port {} (index {}) was declared "
+      "{}: vector port required, but input port '{}' (index {}) was declared "
           "abstract. Even if the actual value is a vector, use "
           "EvalInputValue<V> instead for an abstract port containing a vector "
           "of type V. (System {})",
@@ -233,7 +233,7 @@ void SystemBase::ThrowInputPortHasWrongType(
     const std::string& port_name, const std::string& expected_type,
     const std::string& actual_type) {
   throw std::logic_error(fmt::format(
-      "{}: expected value of type {} for input port {} (index {}) "
+      "{}: expected value of type {} for input port '{}' (index {}) "
           "but the actual type was {}. (System {})",
       FmtFunc(func), expected_type, port_name, port, actual_type,
       system_pathname));
@@ -242,8 +242,8 @@ void SystemBase::ThrowInputPortHasWrongType(
 void SystemBase::ThrowCantEvaluateInputPort(const char* func,
                                             InputPortIndex port) const {
   throw std::logic_error(
-      fmt::format("{}: input port {} (index {}) is neither connected nor fixed "
-                      "so cannot be evaluated. (System {})",
+      fmt::format("{}: input port '{}' (index {}) is neither connected nor "
+                      "fixed so cannot be evaluated. (System {})",
                   FmtFunc(func), get_input_port_base(port).get_name(), port,
                   GetSystemPathname()));
 }

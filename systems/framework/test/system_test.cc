@@ -688,8 +688,8 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
-      ".*EvalEigenVectorInput.*input port u1 .*index 1.* is neither connected "
-      "nor fixed.*");
+      ".*EvalEigenVectorInput.*input port 'u1' .*index 1.* is neither "
+      "connected nor fixed.*");
 
   // Assign values to all ports. All but port 0 are BasicVector ports.
   system_.AllocateFixedInputs(context_.get());
