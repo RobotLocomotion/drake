@@ -51,10 +51,16 @@ class AbstractValues {
   /// the index is out-of-bounds.
   AbstractValue& get_mutable_value(int index);
 
+  // TODO(jwnimmer-tri) Deprecate me and use SetFrom.
+  /// (To be deprecated.)  Identical to SetFrom.
+  void CopyFrom(const AbstractValues& other) {
+    SetFrom(other);
+  }
+
   /// Copies all of the AbstractValues in @p other into this. Asserts if the
   /// two are not equal in size.
   /// @throws std::exception if any of the elements are of incompatible type.
-  void CopyFrom(const AbstractValues& other);
+  void SetFrom(const AbstractValues& other);
 
   /// Returns a deep copy of all the data in this AbstractValues. The clone
   /// will own its own data. This is true regardless of whether the data being

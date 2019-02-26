@@ -390,6 +390,7 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(
             values.get_mutable_value(0).get_value(), model_value.get_value())
         values.CopyFrom(values.Clone())
+        values.SetFrom(values.Clone())
 
         # - Check diagram context accessors.
         builder = DiagramBuilder()
