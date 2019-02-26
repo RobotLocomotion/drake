@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 
 import pydrake
-from pydrake.common.deprecation import DrakeDeprecationWarning
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.symbolic as sym
 
@@ -224,10 +224,8 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
         # Test deprecated method.
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('once', DrakeDeprecationWarning)
+        with catch_drake_warnings(expected_count=1):
             c = binding.constraint()
-            self.assertEqual(len(w), 1)
 
     def test_constraint_api(self):
         prog = mp.MathematicalProgram()
@@ -293,9 +291,7 @@ class TestMathematicalProgram(unittest.TestCase):
         constraints = qp.constraints
         constraint_values_expected = [1., 1., 2., 3.]
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', DrakeDeprecationWarning)
-
+        with catch_drake_warnings(action='ignore'):
             prog.Solve()
             self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
 
@@ -375,8 +371,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
 
         # Test SubstituteSolution(sym.Expression)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', DrakeDeprecationWarning)
+        with catch_drake_warnings(action='ignore'):
             prog.Solve()
             # TODO(eric.cousineau): Expose `SymbolicTestCase` so that other
             # tests can use the assertion utilities.

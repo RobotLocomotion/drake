@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from pydrake.common.deprecation import DrakeDeprecationWarning
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.ipopt import IpoptSolver
 
@@ -36,11 +36,9 @@ class TestIpoptSolver(unittest.TestCase):
         # SolverBase method that writes the solution back into the program.
         prog, x, x_expected = self._make_prog()
         solver = IpoptSolver()
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', DrakeDeprecationWarning)
+        with catch_drake_warnings(expected_count=2):
             result = solver.Solve(prog)
             solution = prog.GetSolution(x)
-            self.assertEqual(len(w), 2)
         self.assertEqual(result, mp.SolutionResult.kSolutionFound)
         self.assertTrue(np.allclose(solution, x_expected))
 
