@@ -12,6 +12,7 @@ from pydrake.examples import (
     compass_gait,
     manipulation_station,
     pendulum,
+    quadrotor,
     rimless_wheel,
     van_der_pol,
 )
