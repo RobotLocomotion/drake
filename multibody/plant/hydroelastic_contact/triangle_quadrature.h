@@ -3,11 +3,11 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/plant/hydrostatic_contact/triangle_quadrature_rule.h"
+#include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {
-namespace hydrostatic {
+namespace hydroelastic_contact {
 
 template <typename NumericReturnType, typename T>
 class TriangleQuadrature {
@@ -75,6 +75,6 @@ NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
   return integral * area;
 }
 
-}  // namespace hydrostatic
+}  // namespace hydroelastic_contact
 }  // namespace multibody
 }  // namespace drake

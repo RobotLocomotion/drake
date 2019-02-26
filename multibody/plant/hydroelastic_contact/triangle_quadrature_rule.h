@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace multibody {
-namespace hydrostatic {
+namespace hydroelastic_contact {
 
 /// A "rule" (weights and quadrature points) for computing quadrature over
 /// triangular domains.
@@ -50,6 +50,6 @@ class TriangleQuadratureRule {
   virtual const std::vector<double>& do_weights() const = 0;
 };
 
-}  // namespace hydrostatic
+}  // namespace hydroelastic_contact
 }  // namespace multibody
 }  // namespace drake

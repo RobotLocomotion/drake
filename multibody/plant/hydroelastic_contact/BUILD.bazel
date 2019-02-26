@@ -14,7 +14,7 @@ package(
 )
 
 drake_cc_package_library(
-    name = "hydrostatic_contact",
+    name = "hydroelastic_contact",
     deps = [
         ":triangle_quadrature",
         ":triangle_quadrature_rules",
