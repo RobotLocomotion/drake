@@ -19,7 +19,6 @@
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_receiver.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_status_sender.h"
-#include "drake/manipulation/kuka_iiwa/internal_iiwa_command_translator.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
@@ -69,8 +68,6 @@ using manipulation::kuka_iiwa::IiwaCommandSender;
 using manipulation::kuka_iiwa::IiwaStatusReceiver;
 using manipulation::kuka_iiwa::IiwaStatusSender;
 using manipulation::kuka_iiwa::MakeIiwaCommandLcmSubscriberSystem;
-using manipulation::kuka_iiwa::internal::IiwaCommandTranslator;
-using manipulation::kuka_iiwa::internal::IiwaCommand;
 using manipulation::kuka_iiwa::kIiwaLcmStatusPeriod;
 
 }  // namespace kuka_iiwa_arm
