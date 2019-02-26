@@ -2402,7 +2402,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `3.0 >= 33.0`.
   InputVector input;
   input.SetAtIndex(0, 3.0);
-  context->FixInputPort(0, input);
+  dut.get_input_port(0).FixValue(&*context, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(3.0)));

@@ -351,7 +351,6 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("Eval",
             [](const InputPort<T>* self, const Context<T>& context) {
               return DoEval(self, context);
-              DRAKE_UNREACHABLE();
             },
             doc.InputPort.Eval.doc)
         .def("EvalAbstract",
