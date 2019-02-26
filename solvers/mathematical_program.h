@@ -2334,6 +2334,7 @@ class MathematicalProgram {
 
   /**
    * Sets the initial guess for a single variable @p decision_variable.
+   * The guess is stored as part of this program.
    * @pre decision_variable is a registered decision variable in the program.
    * @throws std::runtime_error if precondition is not satisfied.
    */
@@ -2341,9 +2342,21 @@ class MathematicalProgram {
                        double variable_guess_value);
 
   /**
+   * Updates the initial guess for a single variable @p decision_variable inside
+   * the @p guess vector.  The guess is NOT stored as part of this program.
+   * The guess for other decision variables is left unchanged.
+   * @param[inout] guess The guess to be tweaked; must be of size num_vars().
+   * @pre decision_variable is a registered decision variable in the program.
+   * @throws std::runtime_error if precondition is not satisfied.
+   */
+  void UpdateInitialGuess(const symbolic::Variable& decision_variable,
+                          double variable_guess_value,
+                          EigenPtr<Eigen::VectorXd> guess) const;
+
+  /**
    * Sets the initial guess for the decision variables stored in
-   * @p decision_variable_mat to be @p x0. Variables begin with a default
-   * initial guess of NaN to indicate that no guess is available.
+   * @p decision_variable_mat to be @p x0.
+   * The guess is stored as part of this program.
    */
   template <typename DerivedA, typename DerivedB>
   void SetInitialGuess(const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
@@ -2353,6 +2366,27 @@ class MathematicalProgram {
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
         SetInitialGuess(decision_variable_mat(i, j), x0(i, j));
+      }
+    }
+  }
+
+  /**
+   * Updates the initial guess for the decision variables stored in
+   * @p decision_variable_mat to be @p x0 inside the @p guess vector.
+   * The guess for any other decision variables (if any) is left unchanged.
+   * The guess is NOT stored as part of this program.
+   * @param[inout] guess The guess to be tweaked; must be of size num_vars().
+   */
+  template <typename DerivedA, typename DerivedB>
+  void UpdateInitialGuess(
+      const Eigen::MatrixBase<DerivedA>& decision_variable_mat,
+      const Eigen::MatrixBase<DerivedB>& x0,
+      EigenPtr<Eigen::VectorXd> guess) const {
+    DRAKE_ASSERT(decision_variable_mat.rows() == x0.rows());
+    DRAKE_ASSERT(decision_variable_mat.cols() == x0.cols());
+    for (int i = 0; i < decision_variable_mat.rows(); ++i) {
+      for (int j = 0; j < decision_variable_mat.cols(); ++j) {
+        UpdateInitialGuess(decision_variable_mat(i, j), x0(i, j), guess);
       }
     }
   }

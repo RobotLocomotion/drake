@@ -957,6 +957,13 @@ void MathematicalProgram::SetInitialGuess(
       variable_guess_value;
 }
 
+void MathematicalProgram::UpdateInitialGuess(
+    const symbolic::Variable& decision_variable, double variable_guess_value,
+    EigenPtr<Eigen::VectorXd> guess) const {
+  DRAKE_THROW_UNLESS(guess->size() == num_vars());
+  (*guess)(FindDecisionVariableIndex(decision_variable)) = variable_guess_value;
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void MathematicalProgram::SetSolverResult(

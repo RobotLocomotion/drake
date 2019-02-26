@@ -695,6 +695,23 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
+      .def("UpdateInitialGuess",
+          [](const MathematicalProgram& prog,
+              const symbolic::Variable& decision_variable,
+              double variable_guess_value, Eigen::Ref<Eigen::VectorXd> guess) {
+            prog.UpdateInitialGuess(
+                decision_variable, variable_guess_value, &guess);
+          },
+          doc.MathematicalProgram.UpdateInitialGuess
+              .doc_3args_decision_variable_variable_guess_value_guess)
+      .def("UpdateInitialGuess",
+          [](const MathematicalProgram& prog,
+              const MatrixXDecisionVariable& decision_variable_mat,
+              const Eigen::MatrixXd& x0, Eigen::Ref<Eigen::VectorXd> guess) {
+            prog.UpdateInitialGuess(decision_variable_mat, x0, &guess);
+          },
+          doc.MathematicalProgram.UpdateInitialGuess
+              .doc_3args_constEigenMatrixBase_constEigenMatrixBase_EigenPtr)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
