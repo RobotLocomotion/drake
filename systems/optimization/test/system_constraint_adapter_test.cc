@@ -123,12 +123,12 @@ GTEST_TEST(SystemConstraintAdapterTest,
   optional<solvers::Binding<solvers::Constraint>> binding =
       adapter.MaybeCreateGenericConstraintSymbolically(
           system.constraint_index(), *context_symbolic);
-  EXPECT_TRUE(binding.has_value());
+  ASSERT_TRUE(binding.has_value());
   // We make no promise on the ordering of the bound variables.
   // TODO(hongkai.dai): t is not used in evaluating the system constraint. Hence
   // it is better to remove t from the bound variables.
   EXPECT_EQ(symbolic::Variables(binding->variables()),
-            symbolic::Variables(Vector3<symbolic::Variable>(a, t, b)));
+            symbolic::Variables({a, b, t}));
   double a_val = 2;
   double b_val = 3;
   double t_val = 4;
@@ -147,6 +147,9 @@ GTEST_TEST(SystemConstraintAdapterTest,
         bound_variable_values(i) = b_value;
       } else if (bound_variables(i).get_id() == t.get_id()) {
         bound_variable_values(i) = t_value;
+      } else {
+        throw std::runtime_error(
+            "The bound_variables should only include a, b and t.");
       }
     }
     return bound_variable_values;
@@ -167,21 +170,21 @@ GTEST_TEST(SystemConstraintAdapterTest,
   Eigen::VectorXd constraint_val_expected;
   DummySystemConstraintCalc(*context_double, &constraint_val_expected);
 
-  const Eigen::Vector3d bound_var_val =
-      set_bound_variable_value(binding->variables(), a_val, b_val, t_val);
-
   Eigen::VectorXd constraint_val;
-  binding->evaluator()->Eval(bound_var_val, &constraint_val);
+  binding->evaluator()->Eval(
+      set_bound_variable_value(binding->variables(), a_val, b_val, t_val),
+      &constraint_val);
   const double tol = 1E-14;
   EXPECT_TRUE(CompareMatrices(constraint_val, constraint_val_expected, tol));
 
   // Evaluate this constraint with autodiff.
-  Vector3<AutoDiffXd> bound_var_autodiff = set_bound_variable_value(
-      binding->variables(), abt_autodiff(0), abt_autodiff(1), abt_autodiff(2));
   VectorX<AutoDiffXd> constraint_autodiff_expected;
   DummySystemConstraintCalc(*context_autodiff, &constraint_autodiff_expected);
   AutoDiffVecXd constraint_autodiff;
-  binding->evaluator()->Eval(bound_var_autodiff, &constraint_autodiff);
+  binding->evaluator()->Eval(
+      set_bound_variable_value(binding->variables(), abt_autodiff(0),
+                               abt_autodiff(1), abt_autodiff(2)),
+      &constraint_autodiff);
   EXPECT_TRUE(CompareMatrices(
       math::autoDiffToValueMatrix(constraint_autodiff),
       math::autoDiffToValueMatrix(constraint_autodiff_expected), tol));
@@ -202,7 +205,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
 GTEST_TEST(SystemConstraintAdapterTest,
            MaybeCreateGenericConstraintSymbolicallyFailure) {
   auto check_failure = [](const DummySystem<double>& system,
-                          const std::string failure_msg) {
+                          const std::string& failure_message) {
     SystemConstraintAdapter adapter(&system);
     auto context = adapter.system_symbolic().CreateDefaultContext();
     symbolic::Variable a("a");
@@ -214,7 +217,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
     DRAKE_EXPECT_THROWS_MESSAGE(
         adapter.MaybeCreateGenericConstraintSymbolically(
             system.constraint_index(), *context),
-        std::invalid_argument, failure_msg);
+        std::invalid_argument, failure_message);
   };
 
   // With abstract state, no abstract parameters.
@@ -226,7 +229,7 @@ GTEST_TEST(SystemConstraintAdapterTest,
   DummySystem<double> system2(false, true);
   check_failure(system2,
                 "SystemConstraintAdapter: cannot handle system with abstract "
-                "paramter.*");
+                "parameter.*");
 }
 
 GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {

@@ -82,9 +82,9 @@ class SystemConstraintAdapter {
 
   /**
    * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
-   * parse the constraint to a generic nonlinear constraint
+   * parses the constraint to a generic nonlinear constraint
    * lower <= SystemConstraint.Calc(context) <= upper.
-   * If the SystemConstraint cannot be parsed to the form above, then return
+   * If the SystemConstraint cannot be parsed to the form above, then returns
    * empty; otherwise returns a parsed constraint, together with the bound
    * variables.
    * @note We currently only support system without abstract state or abstract
@@ -106,17 +106,17 @@ class SystemConstraintAdapter {
       const Context<symbolic::Expression>& context) const;
 
   /**
-   * Returns the symbolic system. Throws a runtime error if the system cannot be
-   * instantiated with symbolic::Expression.
-   */
-  const System<symbolic::Expression>& system_symbolic() const;
-
-  /**
    * Getters for the system instantiated with AutoDiffXd.
    */
   const System<AutoDiffXd>& system_autodiff() const {
     return *system_autodiff_;
   }
+
+  /**
+   * Returns the symbolic system. Throws a runtime error if the system cannot be
+   * instantiated with symbolic::Expression.
+   */
+  const System<symbolic::Expression>& system_symbolic() const;
 
  private:
   const System<double>* const system_double_;

@@ -55,47 +55,33 @@ SystemConstraintAdapter::MaybeCreateConstraintSymbolically(
   return constraints;
 }
 
-struct ContextContinuousStateIndex {
-  ContextContinuousStateIndex(int m_state_index, int m_var_index)
-      : state_index(m_state_index), var_index(m_var_index) {}
-  int state_index;
-  int var_index;
-};
-
-struct ContextDiscreteStateIndex {
-  ContextDiscreteStateIndex(int m_group_index, int m_state_index,
-                            int m_var_index)
-      : group_index(m_group_index),
-        state_index(m_state_index),
-        var_index(m_var_index) {}
-  int group_index;
-  int state_index;
-  int var_index;
-};
-
-struct ContextNumericParameterIndex {
-  ContextNumericParameterIndex(int m_group_index, int m_parameter_index,
-                               int m_var_index)
-      : group_index(m_group_index),
-        parameter_index(m_parameter_index),
-        var_index(m_var_index) {}
-  int group_index;
-  int parameter_index;
-  int var_index;
-};
-
 namespace {
-struct UpdateContextForSymbolicSystemConstraint {
+enum class ContextElementKind {
+  kContinuous,
+  kDiscrete,
+  kParam,
+};
+
+struct ContextIndex {
+  ContextIndex(ContextElementKind kind_in, int group_index_in,
+               int element_offset_in, int var_index_in)
+      : kind{kind_in},
+        group_index{group_index_in},
+        element_offset{element_offset_in},
+        var_index{var_index_in} {}
+  ContextElementKind kind;
+  int group_index{};
+  int element_offset{};
+  int var_index{};
+};
+
+
+class UpdateContextForSymbolicSystemConstraint {
  public:
   UpdateContextForSymbolicSystemConstraint(
-      const std::vector<ContextContinuousStateIndex>& continuous_state_indices,
-      const std::vector<ContextDiscreteStateIndex>& discrete_state_indices,
-      const std::vector<ContextNumericParameterIndex>&
-          numeric_parameter_indices,
+      const std::vector<ContextIndex>& context_indices,
       const optional<int>& time_var_index)
-      : continuous_state_indices_{continuous_state_indices},
-        discrete_state_indices_{discrete_state_indices},
-        numeric_parameter_indices_{numeric_parameter_indices},
+      : context_indices_(context_indices),
         time_var_index_{time_var_index} {}
 
   template <typename T>
@@ -105,36 +91,41 @@ struct UpdateContextForSymbolicSystemConstraint {
     if (time_var_index_.has_value()) {
       context->set_time(x(time_var_index_.value()));
     }
-    // Continuous state.
-    for (const auto& continuous_state_index : continuous_state_indices_) {
-      context->get_mutable_continuous_state_vector().GetAtIndex(
-          continuous_state_index.state_index) =
-          x(continuous_state_index.var_index);
-    }
-    // Discrete state.
-    for (const auto& discrete_state_index : discrete_state_indices_) {
-      context->get_mutable_discrete_state(discrete_state_index.group_index)
-          .GetAtIndex(discrete_state_index.state_index) =
-          x(discrete_state_index.var_index);
-    }
-    // Numeric parameter.
-    for (const auto& numeric_parameter_index : numeric_parameter_indices_) {
-      context
-          ->get_mutable_numeric_parameter(numeric_parameter_index.group_index)
-          .GetAtIndex(numeric_parameter_index.parameter_index) =
-          x(numeric_parameter_index.var_index);
+    for (const auto& context_index : context_indices_) {
+      switch (context_index.kind) {
+        case ContextElementKind::kContinuous: {
+          // Continuous state.
+          context->get_mutable_continuous_state_vector().GetAtIndex(
+              context_index.element_offset) = x(context_index.var_index);
+          break;
+        }
+        case ContextElementKind::kDiscrete: {
+          // Discrete state.
+          context->get_mutable_discrete_state(context_index.group_index)
+              .GetAtIndex(context_index.element_offset) =
+              x(context_index.var_index);
+          break;
+        }
+        case ContextElementKind::kParam: {
+          // Numeric parameter.
+          context
+              ->get_mutable_numeric_parameter(
+                  context_index.group_index)
+              .GetAtIndex(context_index.element_offset) =
+              x(context_index.var_index);
+          break;
+        }
+      }
     }
   }
 
  private:
-  std::vector<ContextContinuousStateIndex> continuous_state_indices_;
-  std::vector<ContextDiscreteStateIndex> discrete_state_indices_;
-  std::vector<ContextNumericParameterIndex> numeric_parameter_indices_;
+  std::vector<ContextIndex> context_indices_;
   optional<int> time_var_index_;
 };
 
 // Parse the expression to either @p constant_val or the variable. Append that
-// variable to @p map-var_to_index and bound_variables. Return true if the
+// variable to @p map_var_to_index and bound_variables. Return true if the
 // expression is either a constant or a symbolic variable; otherwise returns
 // false.
 bool ParseSymbolicVariableOrConstant(
@@ -150,10 +141,11 @@ bool ParseSymbolicVariableOrConstant(
     const symbolic::Variable& var = symbolic::get_variable(expr);
     auto it = map_var_to_index->find(var.get_id());
     if (it == map_var_to_index->end()) {
-      map_var_to_index->emplace_hint(it, var.get_id(), bound_variables->rows());
+      const int new_index = bound_variables->rows();
+      map_var_to_index->emplace_hint(it, var.get_id(), new_index);
       bound_variables->conservativeResize(bound_variables->rows() + 1);
-      (*bound_variables)(bound_variables->rows() - 1) = var;
-      *variable_index = bound_variables->rows() - 1;
+      (*bound_variables)(new_index) = var;
+      *variable_index = new_index;
     } else {
       *variable_index = it->second;
     }
@@ -178,9 +170,7 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   // context_fixed stores the constant values in @p context
   auto context_fixed = system_double_->CreateDefaultContext();
 
-  std::vector<ContextContinuousStateIndex> continuous_state_indices;
-  std::vector<ContextDiscreteStateIndex> discrete_state_indices;
-  std::vector<ContextNumericParameterIndex> numeric_parameter_indices;
+  std::vector<ContextIndex> context_indices;
   optional<int> time_var_index{};
   optional<double> constant_val{};
   optional<int> variable_index{};
@@ -205,7 +195,8 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
       return {};
     }
     if (variable_index.has_value()) {
-      continuous_state_indices.emplace_back(i, *variable_index);
+      context_indices.emplace_back(ContextElementKind::kContinuous, 0, i,
+                                   *variable_index);
     } else if (constant_val.has_value()) {
       context_fixed->get_mutable_continuous_state_vector().GetAtIndex(i) =
           constant_val.value();
@@ -221,7 +212,8 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
         return {};
       }
       if (variable_index.has_value()) {
-        discrete_state_indices.emplace_back(i, j, *variable_index);
+        context_indices.emplace_back(ContextElementKind::kDiscrete, i, j,
+                                     *variable_index);
       } else if (constant_val.has_value()) {
         context_fixed->get_mutable_discrete_state(i).GetAtIndex(j) =
             constant_val.value();
@@ -238,7 +230,8 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
         return {};
       }
       if (variable_index.has_value()) {
-        numeric_parameter_indices.emplace_back(i, j, *variable_index);
+        context_indices.emplace_back(ContextElementKind::kParam, i, j,
+                                     *variable_index);
       } else if (constant_val.has_value()) {
         context_fixed->get_mutable_numeric_parameter(i).GetAtIndex(j) =
             constant_val.value();
@@ -257,13 +250,12 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   if (context.num_abstract_parameters() != 0) {
     throw std::invalid_argument(
         "SystemConstraintAdapter: cannot handle system with abstract "
-        "paramter using symbolic Context, try "
+        "parameter using symbolic Context, try "
         "SystemConstraintAdapter::Create() instead.");
   }
 
-  UpdateContextForSymbolicSystemConstraint updater(
-      continuous_state_indices, discrete_state_indices,
-      numeric_parameter_indices, time_var_index);
+  UpdateContextForSymbolicSystemConstraint updater(context_indices,
+                                                   time_var_index);
 
   return solvers::Binding<solvers::Constraint>(
       this->Create(index, *context_fixed, updater, map_var_to_index.size()),

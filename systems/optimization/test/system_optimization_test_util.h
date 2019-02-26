@@ -67,8 +67,8 @@ class DummySystem : public LeafSystem<T> {
   }
 
   SystemConstraintIndex constraint_index_;
-  bool with_abstract_state_;
-  bool with_abstract_parameter_;
+  bool with_abstract_state_{};
+  bool with_abstract_parameter_{};
 };
 
 template <typename T>
