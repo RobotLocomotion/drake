@@ -17,6 +17,7 @@ drake_cc_package_library(
     name = "plant",
     deps = [
         ":contact_info",
+        ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
         ":externally_applied_spatial_force",
@@ -45,6 +46,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":contact_jacobians",
         ":contact_results",
         ":coulomb_friction",
         ":externally_applied_spatial_force",
@@ -73,6 +75,19 @@ drake_cc_library(
         "//common:default_scalars",
         "//geometry/query_results:penetration_as_point_pair",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_jacobians",
+    srcs = [
+        "contact_jacobians.cc",
+    ],
+    hdrs = [
+        "contact_jacobians.h",
+    ],
+    deps = [
+        "//common:default_scalars",
     ],
 )
 

@@ -780,6 +780,12 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   auto& Jt = *Jt_ptr;
   Jt.resize(2 * num_contacts, num_velocities());
 
+  if (R_WC_set != nullptr) R_WC_set->clear();
+
+  // Quick no-op exit. Notice we did resize Jn, Jt and R_WC_set to be zero
+  // sized.
+  if (num_contacts == 0) return;
+
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
 
@@ -1457,19 +1463,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
       EvalPointPairPenetrations(context0);
   const int num_contacts = point_pairs0.size();
-  MatrixX<T> Jn(num_contacts, nv);
-  MatrixX<T> Jt(2 * num_contacts, nv);
-  // For each contact point pair, the rotation matrix R_WC giving the
-  // orientation of the contact frame C in the world frame W.
-  // TODO(amcastro-tri): cache R_WC_set as soon as caching lands.
-  std::vector<Matrix3<T>> R_WC_set;
-  if (num_contacts > 0) {
-    // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
-    // solver to use operators instead so that we don't have to form these
-    // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
-    CalcNormalAndTangentContactJacobians(
-        context0, point_pairs0, &Jn, &Jt, &R_WC_set);
-  }
+  const ContactJacobians<T>& contact_jacobians = EvalContactJacobians(context0);
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored
   // by the time stepping scheme.
@@ -1521,8 +1515,9 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   int num_substeps = 0;
   do {
     ++num_substeps;
-    info = SolveUsingSubStepping(
-        num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
+    info = SolveUsingSubStepping(num_substeps, M0, contact_jacobians.Jn,
+                                 contact_jacobians.Jt, minus_tau, stiffness,
+                                 damping, mu, v0, phi0);
   } while (info != ImplicitStribeckSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
@@ -1545,7 +1540,8 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   // Save contact results for analysis and visualization.
   // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
   // and R_WC_set will be cached.
-  CalcContactResults(context0, point_pairs0, R_WC_set, &contact_results_);
+  CalcContactResults(context0, point_pairs0, contact_jacobians.R_WC_list,
+                     &contact_results_);
 }
 
 template<typename T>
@@ -1708,6 +1704,27 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       },
       {this->configuration_ticket()});
   cache_indexes_.point_pairs_ = point_pairs_cache_entry.cache_index();
+
+  // Cache contact Jacobians.
+  auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
+      std::string("Contact Jacobians Jn(q) and Jt(q)."),
+      []() { return AbstractValue::Make(ContactJacobians<T>()); },
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
+        auto& context = dynamic_cast<const Context<T>&>(context_base);
+        auto& contact_jacobians_cache =
+            cache_value->GetMutableValue<ContactJacobians<T>>();
+        this->CalcNormalAndTangentContactJacobians(
+            context, EvalPointPairPenetrations(context),
+            &contact_jacobians_cache.Jn, &contact_jacobians_cache.Jt,
+            &contact_jacobians_cache.R_WC_list);
+      },
+      // We explicitly declare the configuration dependence even though the
+      // Eval() above implicitly evaluates configuration dependent cache
+      // entries.
+      {this->configuration_ticket()});
+  cache_indexes_.contact_jacobians_ =
+      contact_jacobians_cache_entry.cache_index();
 
   // TODO(sherm1) Add ContactResults cache entry.
 }

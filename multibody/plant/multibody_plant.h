@@ -16,6 +16,7 @@
 #include "drake/common/random.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/implicit_stribeck_solver.h"
@@ -2907,6 +2908,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
   /// @}
 
+  const ContactJacobians<T>& EvalContactJacobians(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.contact_jacobians_)
+        .template Eval<ContactJacobians<T>>(context);
+  }
+
   /// Sets the `state` so that generalized positions and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
@@ -2955,6 +2962,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
+    systems::CacheIndex contact_jacobians_;
     systems::CacheIndex point_pairs_;
   };
 
