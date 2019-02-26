@@ -118,7 +118,7 @@ class DerivedClassCloneable : public JustCloneable {
 // For reference:
 // (1) ToAbstract(AbstractValue) cloned directly without wrapping in Value<>
 // (2) ToAbstract(const char*) special-cased shorthand for std::string
-// (3) ToAbstract(Eigen expression) eval'ed and stored as the eval() type
+// (3) ToAbstract(Eigen object) must be a simple Eigen type
 // (4) ToAbstract<V>(V) creates Value<V> for copyable or cloneable types V,
 //                      or Value<B> if V's clone returns a base type B.
 // Method (4) is supposed to prefer the copy constructor if it and Clone() are
@@ -138,9 +138,9 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicy) {
   AbstractValue& absval_double = value_double;
 
   const auto value_str_copy =
-      AbstractPolicy::ToAbstract(value_str);  // (1, with conversion)
+      AbstractPolicy::ToAbstract("MyApi", value_str);  // (1, with conversion)
   const auto absval_double_copy =
-      AbstractPolicy::ToAbstract(absval_double);  // (1)
+      AbstractPolicy::ToAbstract("MyApi", absval_double);  // (1)
 
   EXPECT_EQ(value_str_copy->get_value<std::string>(), "hello");
   EXPECT_EQ(absval_double_copy->get_value<double>(), 1.25);
@@ -155,45 +155,46 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicy) {
   // Check char* sugar signature (2).
 
   // char* values are stored in std::string AbstractValues.
-  const auto char_ptr_val = AbstractPolicy::ToAbstract("char*");
+  const auto char_ptr_val = AbstractPolicy::ToAbstract("MyApi", "char*");
   EXPECT_EQ(char_ptr_val->get_value<std::string>(), "char*");  // (2)
 
   // Check signature (4) handling of simple objects.
 
-  const auto int_val = AbstractPolicy::ToAbstract(5);  // (4)
+  const auto int_val = AbstractPolicy::ToAbstract("MyApi", 5);  // (4)
   EXPECT_EQ(int_val->get_value<int>(), 5);
 
   const auto str_val =
-      AbstractPolicy::ToAbstract(std::string("string"));  // (4)
+      AbstractPolicy::ToAbstract("MyApi", std::string("string"));  // (4)
   EXPECT_EQ(str_val->get_value<std::string>(), "string");
 
   // Check signature (4) handling of objects that are: just copyable,
   // just cloneable (to self or base class), and both copyable and cloneable.
 
-  const auto copyable_val =
-      AbstractPolicy::ToAbstract(CopyConstructible(1.25));  // (4, copy)
+  const auto copyable_val = AbstractPolicy::ToAbstract(
+      "MyApi", CopyConstructible(1.25));  // (4, copy)
   EXPECT_EQ(copyable_val->get_value<CopyConstructible>().value(), 1.25);
 
   const auto cloneable_val =
-      AbstractPolicy::ToAbstract(JustCloneable(0.75));  // (4, clone)
+      AbstractPolicy::ToAbstract("MyApi", JustCloneable(0.75));  // (4, clone)
   EXPECT_EQ(cloneable_val->get_value<JustCloneable>().value(), 0.75);
 
   // Here ToAbstract() has to discover that the available Clone() method
   // returns a base class-typed object (here a JustCloneable), rather than the
   // concrete type we give it, so we have to store it in a Value<BaseType>.
   const auto base_cloneable_val = AbstractPolicy::ToAbstract(
+      "MyApi",
       BaseClassCloneable("base_cloneable", 1.5));  // (4, clone-to-base)
   EXPECT_EQ(base_cloneable_val->get_value<JustCloneable>().value(), 1.5);
   EXPECT_EQ(dynamic_cast<const BaseClassCloneable&>(
-                base_cloneable_val->get_value<JustCloneable>()).name(),
+                base_cloneable_val->get_value<JustCloneable>())
+                .name(),
             "base_cloneable");
 
   // Here ToAbstract() should discover that the available Clone() method
   // returns the derived class-typed object, so we can store that directly
   // in a Value<DerivedType>.
-  const auto derived_cloneable_val =
-      AbstractPolicy::ToAbstract(
-          DerivedClassCloneable("derived_cloneable", 0.25));  // (4, clone)
+  const auto derived_cloneable_val = AbstractPolicy::ToAbstract(
+      "MyApi", DerivedClassCloneable("derived_cloneable", 0.25));  // (4, clone)
   EXPECT_EQ(derived_cloneable_val->get_value<DerivedClassCloneable>().value(),
             0.25);
   EXPECT_EQ(derived_cloneable_val->get_value<DerivedClassCloneable>().name(),
@@ -206,7 +207,7 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicy) {
   EXPECT_FALSE(cc_value.was_copy_constructed());
 
   const auto cc_val_abstract_copy =
-      AbstractPolicy::ToAbstract(cc_value);  // (4, prefer copy)
+      AbstractPolicy::ToAbstract("MyApi", cc_value);  // (4, prefer copy)
   const auto& cc_val_copy =
       cc_val_abstract_copy->get_value<CopyableAndCloneable>();
   EXPECT_EQ(cc_val_copy.value(), 2.25);
@@ -219,7 +220,7 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicy) {
   //   static assertion failed: ValueToAbstractValue(): value type must be
   //   copy constructible or have an accessible Clone() method that returns
   //   std::unique_ptr.
-  // AbstractPolicy::ToAbstract(NotCopyableOrCloneable(2.));
+  // AbstractPolicy::ToAbstract("MyApi", NotCopyableOrCloneable(2.));
 }
 
 // AbstractPolicy should store vector objects as themselves, but Eigen vector
@@ -231,37 +232,35 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicyOnVectors) {
   const double expected_scalar = 3.125;
 
   // A scalar should not get turned into a Vector1.
-  const auto scalar_val = AbstractPolicy::ToAbstract(expected_scalar);  // (4)
+  const auto scalar_val =
+      AbstractPolicy::ToAbstract("MyApi", expected_scalar);  // (4)
   EXPECT_EQ(scalar_val->get_value<double>(), expected_scalar);
 
-  // An Eigen vector should not be stored in a BasicVector.
-  const auto vec3_val = AbstractPolicy::ToAbstract(expected_vec);  // (3)
+  // An Eigen vector object can't be supplied directly.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AbstractPolicy::ToAbstract("MyApi", expected_vec),  // (3)
+      std::logic_error,
+      ".*MyApi.*Eigen.*cannot automatically be stored.*Drake abstract "
+      "quantity.*");
+
+  // But providing the type explicitly works.
+  const auto vec3_val =
+      AbstractPolicy::ToAbstract("MyApi", Value<Eigen::Vector3d>(expected_vec));
   EXPECT_EQ(vec3_val->get_value<Eigen::Vector3d>(), expected_vec);
 
-  // More complicated Eigen objects should be stored using the type produced
-  // when the object is eval()'ed, minus const and reference if any.
-  // Also check that AbstractPolicy::NiceEigenType returns the right type.
+  // More complicated Eigen expressions should throw also.
   const Eigen::Vector4d long_vec(.25, .5, .75, 1.);
-  auto tail3_val = AbstractPolicy::ToAbstract(long_vec.tail(3));  // (3)
-  using Tail3StorageType = std::remove_const_t<
-      std::remove_reference_t<decltype(long_vec.tail(3).eval())>>;
-  const bool has_expected_type =
-      std::is_same<AbstractPolicy::NiceEigenType<decltype(long_vec.tail(3))>,
-                   Tail3StorageType>::value;
-  EXPECT_TRUE(has_expected_type);
-  EXPECT_EQ(tail3_val->get_value<Tail3StorageType>(),
-            Eigen::Vector3d(.5, .75, 1.));
-
-  // Fixed-size Eigen expressions eval() more predictably.
-  auto segment_val = AbstractPolicy::ToAbstract(long_vec.segment<2>(1));  // (3)
-  EXPECT_EQ(segment_val->get_value<Eigen::Vector2d>(),
-            Eigen::Vector2d(.5, .75));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AbstractPolicy::ToAbstract("MyApi", long_vec.tail(3)),  // (3)
+      std::logic_error,
+      ".*MyApi.*Eigen.*cannot automatically be stored.*Drake abstract "
+      "quantity.*");
 
   // A plain BasicVector is stored as a Value<BasicVector>, just as it is
   // under the VectorPolicy.
   const BasicVector<double> basic_vector3({7., 8., 9.});
   const auto basic_vector_val =
-      AbstractPolicy::ToAbstract(basic_vector3);  // (4)
+      AbstractPolicy::ToAbstract("MyApi", basic_vector3);  // (4)
   EXPECT_EQ(basic_vector_val->get_value<BasicVector<double>>().get_value(),
             Eigen::Vector3d(7., 8., 9.));
 
@@ -270,7 +269,7 @@ GTEST_TEST(ValueToAbstractValue, AbstractPolicyOnVectors) {
   // handled like any other cloneable object by signature (4) and stored as
   // Value<MyVector>. That's different from the VectorPolicy treatment.
   const MyVector3d my_vector3(expected_vec);
-  auto my_vector3_val = AbstractPolicy::ToAbstract(my_vector3);  // (4)
+  auto my_vector3_val = AbstractPolicy::ToAbstract("MyApi", my_vector3);  // (4)
   const MyVector3d& my_vector3_from_abstract =
       my_vector3_val->get_value<MyVector3d>();
   EXPECT_EQ(my_vector3_from_abstract.get_value(), expected_vec);

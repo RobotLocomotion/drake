@@ -412,6 +412,7 @@ drake_cc_library(
     deps = [
         ":context",
         ":input_port_base",
+        ":value_to_abstract_value",
         "//common:default_scalars",
         "//common:essential",
     ],
