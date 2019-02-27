@@ -4,17 +4,15 @@ import numpy as np
 from pydrake.examples.manipulation_station import (
     ManipulationStation, ManipulationStationHardwareInterface)
 from pydrake.geometry import ConnectDrakeVisualizer
-from pydrake.multibody.multibody_tree.multibody_plant import MultibodyPlant
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
     DifferentialInverseKinematicsParameters)
-from pydrake.multibody.parsing import Parser
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
-from pydrake.util.eigen_geometry import Isometry3
 
 from differential_ik import DifferentialIK
 import sys
@@ -23,8 +21,9 @@ try:
     import pygame
     from pygame.locals import *
 except ImportError:
-    print("error: missing pygame.  Please install pygame to use this example.")
-    sys.exit(1)
+    print("ERROR: missing pygame.  Please install pygame to use this example.")
+    # Fail silently (until pygame is supported in python 3 on all platforms)
+    sys.exit(0)
 
 
 def print_instructions():
@@ -41,7 +40,8 @@ def print_instructions():
     print("mouse wheel        - open/close gripper")
     print("")
     print("space              - switch out of teleop mode")
-    print("alt+tab then enter - return to teleop mode")
+    print("enter              - return to teleop mode (be sure you've")
+    print("                     returned focus to the pygame app)")
     print("escape             - quit")
 
 
@@ -333,8 +333,7 @@ station_context = diagram.GetMutableSubsystemContext(
 station_context.FixInputPort(station.GetInputPort(
     "iiwa_feedforward_torque").get_index(), np.zeros(7))
 
-q0 = station.GetOutputPort("iiwa_position_measured").Eval(
-    station_context).get_value()
+q0 = station.GetOutputPort("iiwa_position_measured").Eval(station_context)
 differential_ik.parameters.set_nominal_joint_position(q0)
 
 teleop.SetPose(differential_ik.ForwardKinematics(q0))
@@ -342,7 +341,7 @@ filter.set_initial_output_value(
     diagram.GetMutableSubsystemContext(
         filter, simulator.get_mutable_context()),
     teleop.get_output_port(0).Eval(diagram.GetMutableSubsystemContext(
-        teleop, simulator.get_mutable_context())).get_value())
+        teleop, simulator.get_mutable_context())))
 differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
     differential_ik, simulator.get_mutable_context()), q0)
 

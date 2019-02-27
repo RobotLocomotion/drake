@@ -1,9 +1,6 @@
-from pydrake.manipulation.planner import (
-    DifferentialInverseKinematicsParameters, DoDifferentialInverseKinematics)
-from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
-from pydrake.systems.framework import (AbstractValue, BasicVector,
-                                       DiagramBuilder, LeafSystem,
-                                       PortDataType)
+from pydrake.manipulation.planner import DoDifferentialInverseKinematics
+from pydrake.math import RigidTransform, RollPitchYaw
+from pydrake.systems.framework import BasicVector, LeafSystem, PortDataType
 
 
 # TODO(russt): Clean this up and move it to C++.
