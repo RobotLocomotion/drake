@@ -201,6 +201,7 @@ drake_cc_test(
 
 drake_cc_googletest(
     name = "fast_math_test",
+    tags = ["no_kcov"],  # TODO(liang.fok) Remove this, see #10788.
     deps = [
         "//:drake_shared_library",
     ],
