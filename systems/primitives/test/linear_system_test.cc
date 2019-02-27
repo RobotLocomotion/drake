@@ -42,8 +42,11 @@ GTEST_TEST(LinearSystemTestWithEmptyPort, EmptyPort) {
   const MatrixXd D = B;
   LinearSystemPlusEmptyVectorPort dut(A, B, C, D);
 
-  // Get the system as a System<double>.
-  auto& system = dynamic_cast<System<double>&>(dut);
+  // Get the system as a System<double>. This is necessary because the
+  // grandparent (TimeVaryingAffineSystem) shadows System::get_input_port(int)
+  // with TimeVaryingAffineSystem::get_input_port(), which makes the former
+  // inaccessible.
+  System<double>& system = dut;
 
   // Verify that the first two vector input ports have expected sizes.
   ASSERT_EQ(system.get_input_port(0).size(), num_inputs);
