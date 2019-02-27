@@ -318,6 +318,10 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
   auto cylinder_instance = Parser(&plant).AddModelFromFile(cylinder_path);
   plant.Finalize();
 
+  // Verify the number of actuators.
+  EXPECT_EQ(plant.num_actuated_dofs(acrobot_instance), 1);
+  EXPECT_EQ(plant.num_actuated_dofs(cylinder_instance), 0);
+
   // Verify that we can get the actuation input ports.
   EXPECT_NO_THROW(plant.get_actuation_input_port());
   EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));

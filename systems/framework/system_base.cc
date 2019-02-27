@@ -195,7 +195,7 @@ void SystemBase::ThrowNegativePortIndex(const char* func,
 void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
                                                InputPortIndex port) const {
   throw std::out_of_range(fmt::format(
-      "{}: there is no input port {} because there "
+      "{}: there is no input port with index {} because there "
       "are only {} input ports in system {}.",
       FmtFunc(func),  port, get_num_input_ports(), GetSystemPathname()));
 }
@@ -203,9 +203,9 @@ void SystemBase::ThrowInputPortIndexOutOfRange(const char* func,
 void SystemBase::ThrowOutputPortIndexOutOfRange(const char* func,
                                                 OutputPortIndex port) const {
   throw std::out_of_range(fmt::format(
-      "{}: there is no output port {} because there "
+      "{}: there is no output port with index {} because there "
       "are only {} output ports in system {}.",
-      FmtFunc(func),  port,
+      FmtFunc(func), port,
       get_num_output_ports(), GetSystemPathname()));
 }
 

@@ -1246,8 +1246,7 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
     // Ignore the port if the model instance has no actuated DoFs.
     const int instance_num_dofs =
         internal_tree().num_actuated_dofs(model_instance_index);
-    if (instance_num_dofs == 0)
-      continue;
+    if (instance_num_dofs == 0) continue;
 
     const auto& input_port = this->get_input_port(
         instance_actuation_ports_[model_instance_index]);
@@ -1624,8 +1623,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
             .get_index();
   }
 
-  if (num_actuated_instances == 1)
-    actuated_instance_ = last_actuated_instance;
+  if (num_actuated_instances == 1) actuated_instance_ = last_actuated_instance;
 
   // Declare the generalized force input port.
   applied_generalized_force_input_port_ = this->DeclareVectorInputPort(
