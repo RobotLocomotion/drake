@@ -14,6 +14,7 @@ package(default_visibility = ["//visibility:private"])
 drake_cc_package_library(
     name = "inclined_plane",
     deps = [
+        ":block_on_inclined_plane_plant",
         ":make_inclined_plane_plant",
     ],
 )
@@ -33,7 +34,7 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "block_on_inclined_plane_plant_library",
+    name = "block_on_inclined_plane_plant",
     srcs = [
         "block_on_inclined_plane_plant.cc",
     ],

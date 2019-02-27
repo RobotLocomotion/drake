@@ -27,4 +27,24 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "block_on_inclined_plane_with_friction",
+    srcs = [
+        "block_on_inclined_plane_with_friction.cc",
+    ],
+    add_test_rule = 1,
+    test_rule_args = [
+        "--simulation_time=0.1",
+        "--target_realtime_rate=0.0",
+    ],
+    deps = [
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//multibody/benchmarks/inclined_plane",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
+
 add_lint_tests()

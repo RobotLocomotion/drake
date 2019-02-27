@@ -8,7 +8,7 @@ namespace multibody {
 namespace benchmarks {
 namespace block_on_inclined_plane {
 
-void AddBlockAndInclinedPlaneAndHorizontalPlaneToPlant(
+void AddBlockAndInclinedPlaneToPlant(
     double Lx, double Ly, double Lz, double mass, double slope, double gravity,
     const CoulombFriction<double>& coefficient_of_friction_block,
     const CoulombFriction<double>& coefficient_of_friction_inclined_plan,
@@ -19,7 +19,7 @@ void AddBlockAndInclinedPlaneAndHorizontalPlaneToPlant(
   const UnitInertia<double> G_Bcm = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
   const SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
 
-  // Create a rigid body with mass properties of a uniform solid block.
+  // Create a rigid body with the mass properties of a uniform solid block.
   const RigidBody<double>& block = plant->AddRigidBody("Block", M_Bcm);
 
   // Orient the inclined plane frame P with its unit vector Py = Wy (World y)
@@ -34,20 +34,21 @@ void AddBlockAndInclinedPlaneAndHorizontalPlaneToPlant(
   // rectangular surface is in contact with the inclined plane's top surface.
   const Vector3<double> p_BoContact_W = -0.5 * Lz * Pz_W;
 
-  // The inclined plane P's geometry is a half-space.
-  const Isometry3<double> X_WP =
-      geometry::HalfSpace::MakePose(Pz_W, p_BoContact_W);
+  // The inclined plane P's collision geometry is a half-space.
+  const math::RigidTransform<double> X_WP(R_WP, p_BoContact_W);
   plant->RegisterCollisionGeometry(plant->world_body(),
-                                   X_WP,
+                                   X_WP.GetAsIsometry3(),
                                    geometry::HalfSpace(),
                                    "collision",
                                    coefficient_of_friction_inclined_plan);
 
-  // The ground's geometry is a half-space.
+  // The inclined plane's visual geometry is a half-space.
+  const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
   plant->RegisterVisualGeometry(plant->world_body(),
-                                X_WP,
+                                X_WP.GetAsIsometry3(),
                                 geometry::HalfSpace(),
-                                "visual");
+                                "InclinedPlaneVisualGeometry",
+                                green);
 
   // The block B's collision geometry is a solid box.  The pose X_BG of geometry
   // frame G in block's frame B is an identity transform.

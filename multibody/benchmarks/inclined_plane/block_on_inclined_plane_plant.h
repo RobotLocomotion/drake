@@ -22,13 +22,13 @@ namespace block_on_inclined_plane {
 /// @param[in] gravity The magnitude of Earth's local gravitational acceleration
 ///   in m/s².  Earth's gravity is in the World's -z direction.
 /// @param[in] coefficient_of_friction_block Coulomb's coefficient of friction
-///   for the block for either sliding or static friction (regarded as equal).
+///   data for the block (sliding friction, static friction, .
 /// @param[in] coefficient_of_friction_inclined_plane Coulomb's coefficient of
 ///   friction for the inclined plane for either sliding or static friction.
 /// @param[out] plant Plant to contain the block and inclined plane.
 /// @throws std::exception if plant is nullptr.
 /// @pre plant must be registered with a scene graph.
-void AddBlockAndInclinedPlaneAndHorizontalPlaneToPlant(
+void AddBlockAndInclinedPlaneToPlant(
     double Lx, double Ly, double Lz, double mass, double slope, double gravity,
     const CoulombFriction<double>& coefficient_of_friction_block,
     const CoulombFriction<double>& coefficient_of_friction_inclined_plan,
