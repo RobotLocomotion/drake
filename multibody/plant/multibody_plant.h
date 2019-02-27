@@ -2898,21 +2898,19 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   /// @name Point contact queries
   /// These queries relate to the modeling of contact using point contact
-  /// models. The %MultibodyPlant model must be registered with a SceneGraph or
-  /// these methods will throw an exception.
+  /// models.
 
   /// Evaluates all point pairs of contact for a given state of themodel stored
   /// in `context`.
   /// Each entry in the returned vector corresponds to a single point pair
   /// corresponding to two bodies A and B in penetration. The size of the
   /// returned vector corredsponds to the total number of contact penetration
-  /// pairs.
+  /// pairs. If no geometry was registered, the output vector is empty.
   /// @see PenetrationAsPointPair for further details on the returned data.
   /// @throws std::exception if called pre-finalize. See Finalize().
   const std::vector<geometry::PenetrationAsPointPair<T>>&
   EvalPointPairPenetrations(const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_THROW_UNLESS(geometry_source_is_registered());
     return this->get_cache_entry(cache_indexes_.point_pairs_)
         .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
@@ -2939,12 +2937,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   ///     concatenates the two-dimensional relative tangential velocity vector
   ///     `vx_AcBc_C` for each contact pair.
   ///
+  /// If no geometry was registered or if `nc = 0`,ContactJacobians holds empty
+  /// results.
+  ///
   /// @see ContactJacobians for specifics on the returned data storage.
   /// @throws std::exception if called pre-finalize. See Finalize().
   const ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_THROW_UNLESS(geometry_source_is_registered());
     return this->get_cache_entry(cache_indexes_.contact_jacobians_)
         .template Eval<ContactJacobians<T>>(context);
   }
