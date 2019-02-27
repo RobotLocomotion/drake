@@ -968,7 +968,7 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
 }
 
 template<typename T>
-void MultibodyPlant<T>::CalcContactResultsOutput(
+void MultibodyPlant<T>::CopyContactResultsOutput(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
@@ -1703,7 +1703,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Contact results output port.
   contact_results_port_ = this->DeclareAbstractOutputPort(
                                   "contact_results", ContactResults<T>(),
-                                  &MultibodyPlant<T>::CalcContactResultsOutput)
+                                  &MultibodyPlant<T>::CopyContactResultsOutput)
                               .get_index();
 }
 

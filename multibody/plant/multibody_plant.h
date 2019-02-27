@@ -2896,24 +2896,59 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
   /// @}
 
-  /// @name Geometric queries
-  /// These geometric queries are only available when %MultibodyPlant is the
-  /// source to a SceneGraph.
+  /// @name Point contact queries
+  /// These queries relate to the modeling of contact using point contact
+  /// models. The %MultibodyPlant model must be registered with a SceneGraph or
+  /// these methods will throw an exception.
 
-  /// Evaluates all contact pairs.
+  /// Evaluates all point pairs of contact for a given state of themodel stored
+  /// in `context`.
+  /// Each entry in the returned vector corresponds to a single point pair
+  /// corresponding to two bodies A and B in penetration. The size of the
+  /// returned vector corredsponds to the total number of contact penetration
+  /// pairs.  
+  /// @see PenetrationAsPointPair for further details on the returned data.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const std::vector<geometry::PenetrationAsPointPair<T>>&
   EvalPointPairPenetrations(const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_THROW_UNLESS(geometry_source_is_registered());
     return this->get_cache_entry(cache_indexes_.point_pairs_)
         .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
   }
-  /// @}
 
+  /// Evaluates the contact Jacobians for the given state of the plant stored in
+  /// `context`.
+  /// This method first evaluates the point pair penetrations in the system for
+  /// the given `context`, see EvalPointPairPenetrations(). For each penetration
+  /// pair involving bodies A and B a contact frame C is defined by the rotation
+  /// matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W` equals the
+  /// normal vector pointing from body B into body A, expressed in the world
+  /// frame W. See PenetrationAsPointPair for further details on the definition
+  /// of each contact pair. Versors `Cx_W` and `Cy_W` constitute a basis of the
+  /// plane normal to `Cz_W` and are arbitrarily chosen. The contact frame basis
+  /// can be accessed in the results, see ContactJacobians::R_WC_list. Further,
+  /// for each contact pair evaluated this method computes the Jacobians `Jn`
+  /// and `Jt`. With v of size `nv` the vector of generalized velocities and
+  /// `nc` the number of contact pairs;
+  ///   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
+  ///     separation speed for each contact point, defined to be positive when
+  ///     bodies are moving away.
+  ///   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
+  ///     concatenates the two-dimensional relative tangential velocity vector
+  ///     `vx_AcBc_C` for each contact pair.
+  ///
+  /// @see ContactJacobians for specifics on the returned data storage.
+  /// @throws std::exception if called pre-finalize. See Finalize().
   const ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    DRAKE_THROW_UNLESS(geometry_source_is_registered());    
     return this->get_cache_entry(cache_indexes_.contact_jacobians_)
         .template Eval<ContactJacobians<T>>(context);
   }
+  /// @}
 
   /// Sets the `state` so that generalized positions and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
@@ -3103,10 +3138,16 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const VectorX<T>& mu,
       const VectorX<T>& v0, const VectorX<T>& phi0) const;
 
+  // This method uses the time stepping method described in
+  // ImplicitStribeckSolver to advance the state of the model stored in
+  // `context0` taking a time step of size time_step().
+  // Contact forces and velocities are computed and stored in `results`. See
+  // ImplicitStribeckSolverResults for further details on the returned data.
   void CalcImplicitStribeckResults(
       const drake::systems::Context<T>& context0,
       ImplicitStribeckSolverResults<T>* results) const;
 
+  // Eval version of the method CalcImplicitStribeckResults().
   const ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
       const systems::Context<T>& context) const {
     return this
@@ -3114,6 +3155,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         .template Eval<ImplicitStribeckSolverResults<T>>(context);
   }
 
+  // Helper method to fill in the ContactResults given the current context.
+  // If cached constact solver results are not up-to-date with `context`,
+  // they'll be  recomputed, see EvalImplicitStribeckResults(). The solver
+  // results are then used to compute contact results into `contacts`.
+  void CalcContactResults(const systems::Context<T>& context,
+                          ContactResults<T>* contacts) const;
+
+  // Eval version of the method CalcContactResults().
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.contact_results_)
@@ -3181,7 +3230,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
-  void CalcContactResultsOutput(
+  void CopyContactResultsOutput(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
@@ -3213,13 +3262,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const internal::VelocityKinematicsCache<T>& vc,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
-
-  // Helper method to fill in the ContactResults given the current context,
-  // point_pairs and the vector or orientations R_WC of each contact point
-  // frame C in the world frame W.
-  void CalcContactResults(
-      const systems::Context<T>& context,
-      ContactResults<T>* contacts) const;
 
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
