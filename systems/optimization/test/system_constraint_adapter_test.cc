@@ -208,12 +208,8 @@ GTEST_TEST(SystemConstraintAdapterTest,
                           const std::string& failure_message) {
     SystemConstraintAdapter adapter(&system);
     auto context = adapter.system_symbolic().CreateDefaultContext();
-    symbolic::Variable a("a");
     symbolic::Variable b("b");
-    symbolic::Variable t("t");
-    context->get_mutable_continuous_state_vector().GetAtIndex(0) = a;
     context->get_mutable_numeric_parameter(0).GetAtIndex(0) = b;
-    context->set_time(t);
     DRAKE_EXPECT_THROWS_MESSAGE(
         adapter.MaybeCreateGenericConstraintSymbolically(
             system.constraint_index(), *context),

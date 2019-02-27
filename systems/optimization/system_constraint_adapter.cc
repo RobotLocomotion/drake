@@ -91,28 +91,24 @@ class UpdateContextForSymbolicSystemConstraint {
     if (time_var_index_.has_value()) {
       context->set_time(x(time_var_index_.value()));
     }
-    for (const auto& context_index : context_indices_) {
-      switch (context_index.kind) {
+    for (const auto& item : context_indices_) {
+      switch (item.kind) {
         case ContextElementKind::kContinuous: {
           // Continuous state.
           context->get_mutable_continuous_state_vector().GetAtIndex(
-              context_index.element_offset) = x(context_index.var_index);
+              item.element_offset) = x(item.var_index);
           break;
         }
         case ContextElementKind::kDiscrete: {
           // Discrete state.
-          context->get_mutable_discrete_state(context_index.group_index)
-              .GetAtIndex(context_index.element_offset) =
-              x(context_index.var_index);
+          context->get_mutable_discrete_state(item.group_index)
+              .GetAtIndex(item.element_offset) = x(item.var_index);
           break;
         }
         case ContextElementKind::kParam: {
           // Numeric parameter.
-          context
-              ->get_mutable_numeric_parameter(
-                  context_index.group_index)
-              .GetAtIndex(context_index.element_offset) =
-              x(context_index.var_index);
+          context->get_mutable_numeric_parameter(item.group_index)
+              .GetAtIndex(item.element_offset) = x(item.var_index);
           break;
         }
       }
@@ -133,9 +129,10 @@ bool ParseSymbolicVariableOrConstant(
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index,
     VectorX<symbolic::Variable>* bound_variables, optional<int>* variable_index,
     optional<double>* constant_val) {
+  variable_index->reset();
+  constant_val->reset();
   if (symbolic::is_constant(expr)) {
     *constant_val = symbolic::get_constant_value(expr);
-    variable_index->reset();
     return true;
   } else if (symbolic::is_variable(expr)) {
     const symbolic::Variable& var = symbolic::get_variable(expr);
@@ -149,7 +146,6 @@ bool ParseSymbolicVariableOrConstant(
     } else {
       *variable_index = it->second;
     }
-    constant_val->reset();
     return true;
   } else {
     return false;
@@ -164,11 +160,14 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
   // TODO(hongkai.dai): First find out all the symbolic variables that could
   // appear in the system constraint. If system_symbolic_ is not nullptr, then
   // we can evaluate the system constraint using @p context. Otherwise, all the
-  // variables shown up in @p context would be the decision variables.
+  // variables shown up in @p context would be the decision variables. Picking
+  // the variables in SystemConstraint.Calc(context) result would give us a
+  // more sparse constraint (with less number of bounded variables).
   std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
   VectorX<symbolic::Variable> bound_variables;
   // context_fixed stores the constant values in @p context
   auto context_fixed = system_double_->CreateDefaultContext();
+  context_fixed->set_accuracy(context.get_accuracy());
 
   std::vector<ContextIndex> context_indices;
   optional<int> time_var_index{};
@@ -197,7 +196,8 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
     if (variable_index.has_value()) {
       context_indices.emplace_back(ContextElementKind::kContinuous, 0, i,
                                    *variable_index);
-    } else if (constant_val.has_value()) {
+    } else {
+      DRAKE_ASSERT(constant_val.has_value());
       context_fixed->get_mutable_continuous_state_vector().GetAtIndex(i) =
           constant_val.value();
     }
@@ -214,7 +214,8 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
       if (variable_index.has_value()) {
         context_indices.emplace_back(ContextElementKind::kDiscrete, i, j,
                                      *variable_index);
-      } else if (constant_val.has_value()) {
+      } else {
+        DRAKE_ASSERT(constant_val.has_value());
         context_fixed->get_mutable_discrete_state(i).GetAtIndex(j) =
             constant_val.value();
       }
@@ -232,10 +233,22 @@ SystemConstraintAdapter::MaybeCreateGenericConstraintSymbolically(
       if (variable_index.has_value()) {
         context_indices.emplace_back(ContextElementKind::kParam, i, j,
                                      *variable_index);
-      } else if (constant_val.has_value()) {
+      } else {
+        DRAKE_ASSERT(constant_val.has_value());
         context_fixed->get_mutable_numeric_parameter(i).GetAtIndex(j) =
             constant_val.value();
       }
+    }
+  }
+
+  // input ports
+  // TODO(hongkai.dai): parse fixed values in the input ports, when we can copy
+  // the fixed input port value from Context<double> to Context<AutoDiffXd>.
+  for (int i = 0; i < context.get_num_input_ports(); ++i) {
+    if (context.MaybeGetFixedInputPortValue(i) != nullptr) {
+      throw std::runtime_error(
+          "SystemConstraintAdapter doesn't support system with fixed input "
+          "ports yet.");
     }
   }
 
