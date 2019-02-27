@@ -89,6 +89,14 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
                                   .Eval<BasicVector<double>>(*context)
                                   .get_value()));
 
+  // All ports must be connected if later on we'll ask questions like: "what's
+  // the external contact torque?". We therefore fix the gripper related ports.
+  double wsg_position = station.GetWsgPosition(*context);
+  context->FixInputPort(station.GetInputPort("wsg_position").get_index(),
+                        Vector1d(wsg_position));
+  context->FixInputPort(station.GetInputPort("wsg_force_limit").get_index(),
+                        Vector1d(40));
+
   // Check iiwa_torque_commanded == iiwa_torque_measured.
   EXPECT_TRUE(CompareMatrices(station.GetOutputPort("iiwa_torque_commanded")
                                   .Eval<BasicVector<double>>(*context)
