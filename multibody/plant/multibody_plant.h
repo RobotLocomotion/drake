@@ -2906,7 +2906,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Each entry in the returned vector corresponds to a single point pair
   /// corresponding to two bodies A and B in penetration. The size of the
   /// returned vector corredsponds to the total number of contact penetration
-  /// pairs.  
+  /// pairs.
   /// @see PenetrationAsPointPair for further details on the returned data.
   /// @throws std::exception if called pre-finalize. See Finalize().
   const std::vector<geometry::PenetrationAsPointPair<T>>&
@@ -2944,7 +2944,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   const ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    DRAKE_THROW_UNLESS(geometry_source_is_registered());    
+    DRAKE_THROW_UNLESS(geometry_source_is_registered());
     return this->get_cache_entry(cache_indexes_.contact_jacobians_)
         .template Eval<ContactJacobians<T>>(context);
   }

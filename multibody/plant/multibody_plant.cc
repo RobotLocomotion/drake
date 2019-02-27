@@ -975,13 +975,13 @@ void MultibodyPlant<T>::CopyContactResultsOutput(
   *contact_results = EvalContactResults(context);
 }
 
-template<typename T>
+template <typename T>
 void MultibodyPlant<T>::CalcContactResults(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Clear();    
-  if (num_collision_geometries() == 0) return;  
+  contact_results->Clear();
+  if (num_collision_geometries() == 0) return;
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
@@ -1015,8 +1015,8 @@ void MultibodyPlant<T>::CalcContactResults(
     const Matrix3<T>& R_WC = R_WC_set[icontact];
 
     // Contact forces applied on B at contact point C.
-    const Vector3<T> f_Bc_C(
-        -ft(2 * icontact), -ft(2 * icontact + 1), fn(icontact));
+    const Vector3<T> f_Bc_C(-ft(2 * icontact), -ft(2 * icontact + 1),
+                            fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
     // Slip velocity.
@@ -1026,9 +1026,8 @@ void MultibodyPlant<T>::CalcContactResults(
     const T separation_velocity = vn(icontact);
 
     // Add pair info to the contact results.
-    contact_results->AddContactInfo(
-        {bodyA_index, bodyB_index, f_Bc_W, p_WC,
-         separation_velocity, slip, pair});
+    contact_results->AddContactInfo({bodyA_index, bodyB_index, f_Bc_W, p_WC,
+                                     separation_velocity, slip, pair});
   }
 }
 
@@ -1718,7 +1717,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         return AbstractValue::Make(
             std::vector<geometry::PenetrationAsPointPair<T>>());
       },
-      [this](const systems::ContextBase& context_base, AbstractValue* cache_value) {
+      [this](const systems::ContextBase& context_base,
+             AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& point_pairs_cache = cache_value->GetMutableValue<
             std::vector<geometry::PenetrationAsPointPair<T>>>();
