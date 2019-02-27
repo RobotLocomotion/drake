@@ -797,9 +797,7 @@ bool ImplicitEulerIntegrator<T>::DoStep(const T& h) {
   // take a single step of size h. We can estimate the error in the larger
   // step that way, but note that we propagate the two half-steps on the
   // assumption the result will be better despite not having an error estimate
-  // for them (that's called "local extrapolation"
-  // explicit Euler step will be taken. We compute the error estimate using two
-  // half steps, and we propagate the result of the half-steps.
+  // for them (that's called "local extrapolation").
   if (h < this->get_working_minimum_step_size()) {
     SPDLOG_DEBUG(drake::log(), "-- requested step too small, taking explicit "
         "step instead");

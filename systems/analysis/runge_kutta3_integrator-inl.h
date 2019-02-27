@@ -54,7 +54,6 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 template <class T>
 bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   using std::abs;
-  const double kOneSixth = 1.0 / 6.0;
   Context<T>& context = *this->get_mutable_context();
   const T t0 = context.get_time();
   const T t1 = t0 + h;
@@ -65,7 +64,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& xcdot0 = derivs0_->get_vector();
 
-  // Compute the first intermediate state and derivative (at t=0.5, x(0.5)).
+  // Compute the first intermediate state and derivative (at t'=t₀+h/2, x(t')).
   // This call invalidates t- and xc-dependent cache entries.
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
       t0 + h / 2);                     // t' ← t₀ + h/2
@@ -76,7 +75,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& xcdot_p = derivs1_->get_vector();  // ẋc'
 
-  // Compute the second intermediate state and derivative (at t=1, x(1)).
+  // Compute the second intermediate state and derivative (at t=t₁, x(t₁)).
   // This call invalidates t- and xc-dependent cache entries.
   context.SetTimeAndNoteContinuousStateChange(t1);
   // xc'' ← xc₀ - h ẋc₀ + 2 h ẋc'
@@ -89,6 +88,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   context.NoteContinuousStateChange();
   // xc₁ ← xc₀ + h/6 ẋc₀ + 2/3 h ẋc' + h/6 ẋc''
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  const double kOneSixth = 1.0 / 6.0;
   xc.PlusEqScaled({{h * kOneSixth,     xcdot0},
                    {4 * h * kOneSixth, xcdot_p},
                    {h * kOneSixth,     xcdot_pp}});

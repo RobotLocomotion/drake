@@ -67,7 +67,7 @@ template <class T>
 bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
   Context<T>* const context = IntegratorBase<T>::get_mutable_context();
 
-  // Evaluate derivative xcdot(t₀) ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
+  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
   // into a temporary since we'll be calculating another derivative below.
   derivs0_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(*context).get_vector());
@@ -84,9 +84,14 @@ bool RungeKutta2Integrator<T>::DoStep(const T& dt) {
   const VectorBase<T>& xcdot1 =
       this->EvalTimeDerivatives(*context).get_vector();
 
+  // Because we captured a reference to xc above and now want to modify it in
+  // place and recalculate, we must manually tell the caching system that we've
+  // made that change since it is otherwise unobservable. There is an advanced
+  // method available for this purpose.
+
   // Invalidates xc-dependent context entries; time doesn't change here.
   context->NoteContinuousStateChange();
-  // xc₁ = xc₀ + dt * (xcdot0 + xcdot1)/2 = xc' + dt * (xcdot1 - xcdot0)/2
+  // xc₁ = xc₀ + dt * (xcdot₀ + xcdot₁)/2 = xc' + dt * (xcdot₁ - xcdot₀)/2
   xc.PlusEqScaled({{dt / 2, xcdot1}, {-dt / 2, xcdot0}});
 
   // RK2 always succeeds at taking the step.

@@ -398,7 +398,7 @@ int do_main() {
                  integrator->get_largest_step_size_taken());
       fmt::print("Smallest adapted step size = {:10.6g} s\n",
                  integrator->get_smallest_adapted_step_size_taken());
-      fmt::print("Number steps shrunk due to error control = {:d}\n",
+      fmt::print("Number of steps shrunk due to error control = {:d}\n",
                  integrator->get_num_step_shrinkages_from_error_control());
     }
   }

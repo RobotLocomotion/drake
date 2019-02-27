@@ -1194,7 +1194,7 @@ class IntegratorBase {
    * Evaluates the derivative function (and updates call statistics).
    * Subclasses should call this function rather than calling
    * system.EvalTimeDerivatives() directly. This version of this function
-   * exists to allow integrators to count AutoDiff'd systems in derivative
+   * exists to allow integrators to include AutoDiff'd systems in derivative
    * function evaluations.
    */
   template <typename U>

@@ -59,15 +59,15 @@ template <class T>
 bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   Context<T>& context = *this->get_mutable_context();
 
-  // Evaluate derivative xcdot(t₀) ← xcdot(t₀, x(t₀), u(t₀)).
+  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)).
   const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
-  const VectorBase<T>& xcdot = xc_deriv.get_vector();
+  const VectorBase<T>& xcdot0 = xc_deriv.get_vector();
 
   // Update continuous state and time.
   // This call invalidates t- and xc-dependent cache entries.
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
       context.get_time() + dt);  // t ← t₀ + h
-  xc.PlusEqScaled(dt, xcdot);     // xc(t₀ + h) ← xc(t₀) + dt * xcdot(t₀)
+  xc.PlusEqScaled(dt, xcdot0);   // xc(t₀ + h) ← xc(t₀) + dt * xcdot₀
 
   // This integrator always succeeds at taking the step.
   return true;

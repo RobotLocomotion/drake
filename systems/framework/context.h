@@ -303,6 +303,15 @@ class Context : public ContextBase {
   /// sweep to occur. Instead, request the mutable reference again when
   /// you need it so that the necessary notification sweep can be performed.
   ///
+  /// <h4>Advanced context-modifying methods</h4>
+  /// Specialized methods are provided for expert users implementing
+  /// integrators and other state-modifying solvers. Those are segregated to
+  /// a separate
+  /// @ref advanced_context_value_change_methods "documentation group".
+  /// <!-- TODO(sherm1) The "get mutable" methods here should be moved to
+  ///      the Advanced section also once we have civilized replacements
+  ///      for them. -->
+  ///
   /// <h3>Implementation note</h3>
   /// Each method in the group below guarantees to mark as out of date any
   /// dependents of the quantities to which it permits modification, including
@@ -355,75 +364,6 @@ class Context : public ContextBase {
   /// date notifications for all continuous-state-dependent computations.
   VectorBase<T>& get_mutable_continuous_state_vector() {
     return get_mutable_continuous_state().get_mutable_vector();
-  }
-
-  /// (Advanced) Sets time and returns a mutable reference to the continuous
-  /// state xc (including q, v, z) as a VectorBase. Performs a single
-  /// notification sweep to avoid duplicate notifications for computations that
-  /// depend on both time and state.
-  /// @throws std::logic_error if this is not the root context.
-  /// @see SetTimeAndNoteContinuousStateChange()
-  /// @see SetTimeAndGetMutableContinuousState()
-  VectorBase<T>& SetTimeAndGetMutableContinuousStateVector(const T& time_sec) {
-    return SetTimeAndGetMutableContinuousStateHelper(__func__, time_sec)
-        .get_mutable_vector();
-  }
-
-  /// (Advanced) Sets time and returns a mutable reference to the second-order
-  /// continuous state partition q from xc. Performs a single notification sweep
-  /// to avoid duplicate notifications for computations that depend on both time
-  /// and q.
-  /// @throws std::logic_error if this is not the root context.
-  /// @see GetMutableVZVectors()
-  /// @see SetTimeAndGetMutableContinuousStateVector()
-  VectorBase<T>& SetTimeAndGetMutableQVector(const T& time_sec) {
-    ThrowIfNotRootContext(__func__, "Time");
-    const int64_t change_event = this->start_new_change_event();
-    PropagateTimeChange(this, time_sec, change_event);
-    PropagateBulkChange(change_event, &Context<T>::NoteAllQChanged);
-    return do_access_mutable_state()  // No invalidation here.
-        .get_mutable_continuous_state()
-        .get_mutable_generalized_position();
-  }
-
-  /// (Advanced) Returns mutable references to the first-order continuous
-  /// state partitions v and z from xc. Performs a single notification sweep
-  /// to avoid duplicate notifications for computations that depend on both
-  /// v and z. Does _not_ invalidate computations that depend on time or
-  /// pose q, unless those also depend on v or z.
-  /// @see SetTimeAndGetMutableQVector()
-  std::pair<VectorBase<T>*, VectorBase<T>*> GetMutableVZVectors() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event, &Context<T>::NoteAllVZChanged);
-    ContinuousState<T>& xc =  // No invalidation here.
-        do_access_mutable_state().get_mutable_continuous_state();
-    return {&xc.get_mutable_generalized_velocity(),
-            &xc.get_mutable_misc_continuous_state()};
-  }
-
-  /// (Advanced) Sets time and registers an intention to modify the continuous
-  /// state xc. Intended use is for integrators that are already holding a
-  /// mutable reference to xc which they are going to modify. Performs a single
-  /// notification sweep to avoid duplicate notifications for computations that
-  /// depend on both time and state.
-  /// @throws std::logic_error if this is not the root context.
-  /// @see SetTimeAndGetMutableContinuousStateVector()
-  void SetTimeAndNoteContinuousStateChange(const T& time_sec) {
-    SetTimeAndNoteContinuousStateChangeHelper(__func__, time_sec);
-  }
-
-  /// (Advanced) Registers an intention to modify the continuous
-  /// state xc. Intended use is for integrators that are already holding a
-  /// mutable reference to xc which they are going to modify. Performs a
-  /// notification sweep to invalidate computations that depend on any
-  /// continuous state variables. If you need to change the time also, use
-  /// SetTimeAndNoteContinuousStateChange() instead to avoid unnecessary
-  /// duplicate notifications.
-  /// @see SetTimeAndNoteContinuousStateChange()
-  void NoteContinuousStateChange() {
-    const int64_t change_event = this->start_new_change_event();
-    PropagateBulkChange(change_event,
-                        &Context<T>::NoteAllContinuousStateChanged);
   }
 
   // TODO(sherm1) Add more-specific state "set" methods for smaller
@@ -665,6 +605,86 @@ class Context : public ContextBase {
     ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();
     PropagateAccuracyChange(this, accuracy, change_event);
+  }
+  //@}
+
+  /** @anchor advanced_context_value_change_methods */
+  /// @name    Advanced methods for changing locally-stored values
+  /// Methods in this group are specialized for expert users writing numerical
+  /// integrators and other context-modifying solvers where careful cache
+  /// management can improve performance. Please see
+  /// @ref context_value_change_methods "Context Value-Change Methods"
+  /// for general information, and prefer to use the methods in that section
+  /// unless you _really_ know what you're doing!
+  //@{
+
+  /// (Advanced) Sets time and returns a mutable reference to the continuous
+  /// state xc (including q, v, z) as a VectorBase. Performs a single
+  /// notification sweep to avoid duplicate notifications for computations that
+  /// depend on both time and state.
+  /// @throws std::logic_error if this is not the root context.
+  /// @see SetTimeAndNoteContinuousStateChange()
+  /// @see SetTimeAndGetMutableContinuousState()
+  VectorBase<T>& SetTimeAndGetMutableContinuousStateVector(const T& time_sec) {
+    return SetTimeAndGetMutableContinuousStateHelper(__func__, time_sec)
+        .get_mutable_vector();
+  }
+
+  /// (Advanced) Sets time and returns a mutable reference to the second-order
+  /// continuous state partition q from xc. Performs a single notification sweep
+  /// to avoid duplicate notifications for computations that depend on both time
+  /// and q.
+  /// @throws std::logic_error if this is not the root context.
+  /// @see GetMutableVZVectors()
+  /// @see SetTimeAndGetMutableContinuousStateVector()
+  VectorBase<T>& SetTimeAndGetMutableQVector(const T& time_sec) {
+    ThrowIfNotRootContext(__func__, "Time");
+    const int64_t change_event = this->start_new_change_event();
+    PropagateTimeChange(this, time_sec, change_event);
+    PropagateBulkChange(change_event, &Context<T>::NoteAllQChanged);
+    return do_access_mutable_state()  // No invalidation here.
+        .get_mutable_continuous_state()
+        .get_mutable_generalized_position();
+  }
+
+  /// (Advanced) Returns mutable references to the first-order continuous
+  /// state partitions v and z from xc. Performs a single notification sweep
+  /// to avoid duplicate notifications for computations that depend on both
+  /// v and z. Does _not_ invalidate computations that depend on time or
+  /// pose q, unless those also depend on v or z.
+  /// @see SetTimeAndGetMutableQVector()
+  std::pair<VectorBase<T>*, VectorBase<T>*> GetMutableVZVectors() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event, &Context<T>::NoteAllVZChanged);
+    ContinuousState<T>& xc =  // No invalidation here.
+        do_access_mutable_state().get_mutable_continuous_state();
+    return {&xc.get_mutable_generalized_velocity(),
+            &xc.get_mutable_misc_continuous_state()};
+  }
+
+  /// (Advanced) Sets time and registers an intention to modify the continuous
+  /// state xc. Intended use is for integrators that are already holding a
+  /// mutable reference to xc which they are going to modify. Performs a single
+  /// notification sweep to avoid duplicate notifications for computations that
+  /// depend on both time and state.
+  /// @throws std::logic_error if this is not the root context.
+  /// @see SetTimeAndGetMutableContinuousStateVector()
+  void SetTimeAndNoteContinuousStateChange(const T& time_sec) {
+    SetTimeAndNoteContinuousStateChangeHelper(__func__, time_sec);
+  }
+
+  /// (Advanced) Registers an intention to modify the continuous
+  /// state xc. Intended use is for integrators that are already holding a
+  /// mutable reference to xc which they are going to modify. Performs a
+  /// notification sweep to invalidate computations that depend on any
+  /// continuous state variables. If you need to change the time also, use
+  /// SetTimeAndNoteContinuousStateChange() instead to avoid unnecessary
+  /// duplicate notifications.
+  /// @see SetTimeAndNoteContinuousStateChange()
+  void NoteContinuousStateChange() {
+    const int64_t change_event = this->start_new_change_event();
+    PropagateBulkChange(change_event,
+                        &Context<T>::NoteAllContinuousStateChanged);
   }
   //@}
 

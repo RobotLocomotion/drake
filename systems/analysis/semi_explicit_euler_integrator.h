@@ -136,8 +136,8 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
   // hasn't been invalidated if it was pre-computed.
   system.MapVelocityToQDot(context, v, &qdot_);
 
-  // Now invalidate time- and q-dependent computations and update time
-  // and q.
+  // Now set time and q to their final values. This invalidates time- and
+  // q-dependent computations as a side effect.
   VectorBase<T>& q =
       context.SetTimeAndGetMutableQVector(context.get_time() + h);
   q.PlusEqScaled(h, qdot_);

@@ -93,7 +93,7 @@ class VectorBase {
     }
   }
 
-  /// Copies the entire state to a vector with no semantics.
+  /// Copies this entire %VectorBase into a contiguous Eigen Vector.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value and allocates only the O(N) memory that it returns.
@@ -105,7 +105,7 @@ class VectorBase {
     return vec;
   }
 
-  /// Copies the entire state to a pre-sized vector with no semantics.
+  /// Copies this entire %VectorBase into a pre-sized Eigen Vector.
   ///
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value.
