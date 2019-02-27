@@ -71,6 +71,12 @@ def _convert_mesh(geom):
     elif geom.type == geom.MESH:
         meshcat_geom = meshcat.geometry.ObjMeshGeometry.from_file(
             geom.string_data[0:-3] + "obj")
+        # Handle scaling. TODO(gizatt): Scaling is supported in three.JS
+        # as a field of the Geometry type, but it isn't exposed through
+        # meshcat-python. Tracked by meshcat-python issue #40.
+        # When that support arrives, this should be tidied up.
+        element_local_tf[:3, :3] = element_local_tf[:3, :3].dot(
+            np.diag(geom.float_data[:3]))
         # Attempt to find a texture for the object by looking for an
         # identically-named *.png next to the model.
         # TODO(gizatt): Support .MTLs and prefer them over png, since they're
