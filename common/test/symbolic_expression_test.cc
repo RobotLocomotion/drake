@@ -1927,6 +1927,13 @@ TEST_F(SymbolicExpressionTest, ExtractDoubleTest) {
   // 2x - 7 -2x + 2 => -5
   const Expression e3{2 * x_ - 7 - 2 * x_ + 2};
   EXPECT_EQ(ExtractDoubleOrThrow(e3), -5);
+
+  // Literal NaN should come through without an exception during Extract.
+  EXPECT_TRUE(std::isnan(ExtractDoubleOrThrow(e_nan_)));
+
+  // Computed NaN should still throw.
+  const Expression bogus = zero_ / e_nan_;
+  EXPECT_THROW(ExtractDoubleOrThrow(bogus), std::exception);
 }
 
 TEST_F(SymbolicExpressionTest, Jacobian) {
