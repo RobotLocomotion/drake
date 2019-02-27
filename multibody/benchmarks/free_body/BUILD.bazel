@@ -8,8 +8,6 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# Because there are no meaninfully distinct components in this package, the
-# only public target we will offer is our drake_cc_package_library.
 package(default_visibility = ["//visibility:private"])
 
 filegroup(
@@ -21,6 +19,7 @@ filegroup(
         "**/*.urdf",
         "**/*.xml",
     ]),
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_package_library(

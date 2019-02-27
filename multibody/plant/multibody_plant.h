@@ -2578,8 +2578,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// a specific model instance.  This input port is a vector valued port, which
   /// can be set with JointActuator::set_actuation_vector().
   /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize() or if the model
-  /// instance does not contain any actuators.
+  /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
   const systems::InputPort<T>& get_actuation_input_port(
       ModelInstanceIndex model_instance) const;
@@ -3381,8 +3380,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 
   // Input/Output port indexes:
   // A vector containing actuation ports for each model instance indexed by
-  // ModelInstanceIndex.  An invalid value indicates that the model instance has
-  // no actuated dofs.
+  // ModelInstanceIndex.
   std::vector<systems::InputPortIndex> instance_actuation_ports_;
 
   // If only one model instance has actuated dofs, remember it here.  If

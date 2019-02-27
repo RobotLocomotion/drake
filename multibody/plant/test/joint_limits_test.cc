@@ -85,7 +85,9 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
 
     Simulator<double> simulator(plant);
     Context<double>& context = simulator.get_mutable_context();
-    context.FixInputPort(0, Vector1<double>::Constant(-10.0));
+    context.FixInputPort(
+      plant.get_actuation_input_port().get_index(),
+      Vector1<double>::Constant(-10.0));
     simulator.Initialize();
     simulator.StepTo(simulation_time);
 
@@ -101,7 +103,9 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
     EXPECT_NEAR(slider.get_translation_rate(context), 0.0, kVelocityTolerance);
 
     // Set the force to be positive and re-start the simulation.
-    context.FixInputPort(0, Vector1<double>::Constant(10.0));
+    context.FixInputPort(
+      plant.get_actuation_input_port().get_index(),
+      Vector1<double>::Constant(10.0));
     context.set_time(0.0);
     simulator.StepTo(simulation_time);
 
@@ -157,7 +161,9 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
 
     Simulator<double> simulator(plant);
     Context<double>& context = simulator.get_mutable_context();
-    context.FixInputPort(0, Vector1<double>::Constant(1.5));
+    context.FixInputPort(
+      plant.get_actuation_input_port().get_index(),
+      Vector1<double>::Constant(1.5));
     simulator.Initialize();
     simulator.StepTo(simulation_time);
 
@@ -173,7 +179,9 @@ GTEST_TEST(JointLimitsTest, RevoluteJoint) {
     EXPECT_NEAR(pin.get_angular_rate(context), 0.0, kVelocityTolerance);
 
     // Set the torque to be negative and re-start the simulation.
-    context.FixInputPort(0, Vector1<double>::Constant(-1.5));
+    context.FixInputPort(
+      plant.get_actuation_input_port().get_index(),
+      Vector1<double>::Constant(-1.5));
     context.set_time(0.0);
     simulator.StepTo(simulation_time);
 
@@ -254,7 +262,9 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   Context<double>& context = simulator.get_mutable_context();
 
   // Drive all the joints to their upper limit by applying a positive torque.
-  context.FixInputPort(0, VectorX<double>::Constant(nq, 0.4));
+  context.FixInputPort(
+    plant.get_actuation_input_port().get_index(),
+    VectorX<double>::Constant(nq, 0.4));
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
@@ -269,7 +279,9 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
   }
 
   // Drive all the joints to their lower limit by applying a negative torque.
-  context.FixInputPort(0, VectorX<double>::Constant(nq, -0.4));
+  context.FixInputPort(
+    plant.get_actuation_input_port().get_index(),
+    VectorX<double>::Constant(nq, -0.4));
   plant.SetDefaultContext(&context);
   context.set_time(0.0);
   simulator.StepTo(simulation_time);

@@ -176,14 +176,18 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       continue;
     }
 
-    // Must be a vector valued port. First look to see whether it's connected.
-    if (!input_port_i.HasValue(context)) {
-      throw std::logic_error(fmt::format(
-          "Vector-valued input port {} must be either fixed or connected to "
-          "the output of another system.", input_port_i.get_name()));
+    // Must be a vector valued port. First look to see whether it's connected
+    // or zero-dimensional.
+    if (input_port_i.size() > 0) {
+      if (!input_port_i.HasValue(context)) {
+        throw std::logic_error(fmt::format(
+            "Vector-valued input port {} must be either fixed or connected to "
+            "the output of another system.", input_port_i.get_name()));
+      }
+
+      Eigen::VectorBlock<const VectorX<double>> u = input_port_i.Eval(context);
+      autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
     }
-    Eigen::VectorBlock<const VectorX<double>> u = input_port_i.Eval(context);
-    autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
   }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);
