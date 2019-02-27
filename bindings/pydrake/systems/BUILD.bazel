@@ -399,6 +399,7 @@ drake_py_unittest(
         "//examples/kuka_iiwa_arm:models",
         "//examples/multibody/cart_pole:models",
         "//manipulation/models/iiwa_description:models",
+        "//systems/sensors:test_models",
     ],
     deps = [
         ":analysis_py",
