@@ -84,11 +84,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/constraint",
     "//multibody/inverse_kinematics",
     "//multibody/math",
-    "//multibody/multibody_tree",
-    "//multibody/multibody_tree/implicit_stribeck",
-    "//multibody/multibody_tree/math",
-    "//multibody/multibody_tree/multibody_plant",
-    "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
@@ -109,5 +104,4 @@ LIBDRAKE_COMPONENTS = [
     "//systems/trajectory_optimization",
     # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
-    # //multibody/multibody_tree/joints:forwarding_hdrs (indirectly)
 ]

@@ -313,14 +313,6 @@ drake_lcm_py_library(
     ],
 )
 
-py_library(
-    name = "lcmtypes_py",
-    deprecation = "Please use `lcmtypes_drake_py` instead. This will be " +
-                  "removed on or after 2019-03-01.",
-    tags = ["manual"],  # Avoid 'build //...' yelling at us.
-    deps = ["lcmtypes_drake_py"],
-)
-
 drake_lcm_java_library(
     name = "lcmtypes_drake_java",
     lcm_package = "drake",
@@ -381,14 +373,6 @@ drake_java_binary(
 drake_cc_library(
     name = "lcmtypes_drake_cc",
     deps = LCMTYPES_CC,
-)
-
-cc_library(
-    name = "lcmtypes_cc",
-    deprecation = "Please use `lcmtypes_drake_cc` instead. This will be " +
-                  "removed on or after 2019-03-01.",
-    tags = ["manual"],  # Avoid 'build //...' yelling at us.
-    deps = ["lcmtypes_drake_cc"],
 )
 
 drake_transitive_installed_hdrs_filegroup(

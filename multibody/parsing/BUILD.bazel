@@ -35,8 +35,6 @@ drake_cc_package_library(
         ":detail_urdf_parser",
         ":package_map",
         ":parser",
-        ":sdf_parser",
-        ":urdf_parser",
     ],
 )
 
@@ -114,19 +112,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "sdf_parser",
-    hdrs = [
-        "sdf_parser.h",
-    ],
-    visibility = [
-        "//visibility:public",
-    ],
-    deps = [
-        ":detail_sdf_parser",
-    ],
-)
-
-drake_cc_library(
     name = "detail_sdf_parser",
     srcs = [
         "detail_sdf_parser.cc",
@@ -142,19 +127,6 @@ drake_cc_library(
         ":detail_scene_graph",
         "//multibody/plant",
         "@sdformat",
-    ],
-)
-
-drake_cc_library(
-    name = "urdf_parser",
-    hdrs = [
-        "urdf_parser.h",
-    ],
-    visibility = [
-        "//visibility:public",
-    ],
-    deps = [
-        ":detail_urdf_parser",
     ],
 )
 

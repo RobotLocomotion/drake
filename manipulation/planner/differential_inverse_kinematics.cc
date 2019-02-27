@@ -267,43 +267,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
                                          parameters);
 }
 
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::internal::MultibodyTree<double>& robot,
-    const systems::Context<double>& context,
-    const Vector6<double>& V_WE_desired,
-    const multibody::Frame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  const Isometry3<double> X_WE =
-      robot.CalcRelativeTransform(context, robot.world_frame(), frame_E);
-  MatrixX<double> J_WE(6, robot.num_velocities());
-  robot.CalcFrameGeometricJacobianExpressedInWorld(
-      context, frame_E, Vector3<double>::Zero(), &J_WE);
-
-  VectorX<double> x = robot.GetPositionsAndVelocities(context);
-  return detail::DoDifferentialInverseKinematics(
-      x.head(robot.num_positions()), x.tail(robot.num_velocities()),
-      X_WE, J_WE, V_WE_desired, parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::internal::MultibodyTree<double>& robot,
-    const systems::Context<double>& context,
-    const Isometry3<double>& X_WE_desired,
-    const multibody::Frame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  const Isometry3<double> X_WE =
-      robot.EvalBodyPoseInWorld(context, frame_E.body()) *
-      frame_E.CalcPoseInBodyFrame(context);
-  const Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
-      parameters.get_timestep();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  return DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E,
-                                         parameters);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
-}
-
 }  // namespace planner
 }  // namespace manipulation
 }  // namespace drake

@@ -4,7 +4,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/tree/articulated_body_inertia.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
@@ -80,14 +79,6 @@ class ArticulatedBodyInertiaCache {
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ArticulatedBodyInertiaCache);
 
 }  // namespace internal
-
-/// WARNING: This will be removed on or around 2019/03/01.
-template <typename T>
-using ArticulatedBodyInertiaCache
-DRAKE_DEPRECATED(
-    "This public alias is deprecated, and will be removed around 2019/03/01.")
-    = internal::ArticulatedBodyInertiaCache<T>;
-
 }  // namespace multibody
 }  // namespace drake
 

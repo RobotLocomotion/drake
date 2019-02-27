@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/type_safe_index.h"
 
 namespace drake {
@@ -24,16 +23,6 @@ using FrameIndex = TypeSafeIndex<class FrameTag>;
 
 /// Type used to identify bodies by index in a multibody tree system.
 using BodyIndex = TypeSafeIndex<class BodyTag>;
-
-/// WARNING: This will be removed on or around 2019/03/01.
-DRAKE_DEPRECATED(
-    "This public alias is deprecated, and will be removed around 2019/03/01.")
-typedef internal::MobilizerIndex MobilizerIndex;
-
-/// WARNING: This will be removed on or around 2019/03/01.
-DRAKE_DEPRECATED(
-    "This public alias is deprecated, and will be removed around 2019/03/01.")
-typedef internal::BodyNodeIndex BodyNodeIndex;
 
 /// Type used to identify force elements by index within a multibody tree
 /// system.

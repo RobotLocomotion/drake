@@ -3,7 +3,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -145,14 +144,6 @@ class PositionKinematicsCache {
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(PositionKinematicsCache)
 
 }  // namespace internal
-
-/// WARNING: This will be removed on or around 2019/03/01.
-template <typename T>
-using PositionKinematicsCache
-DRAKE_DEPRECATED(
-    "This public alias is deprecated, and will be removed around 2019/03/01.")
-    = internal::PositionKinematicsCache<T>;
-
 }  // namespace multibody
 }  // namespace drake
 

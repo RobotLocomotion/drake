@@ -41,11 +41,8 @@ using systems::OutputPort;
 using systems::State;
 
 using drake::multibody::MultibodyForces;
-using drake::multibody::MultibodyTree;
-using drake::multibody::PositionKinematicsCache;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
-using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 using systems::InputPort;
@@ -520,7 +517,7 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
 template<typename T>
 void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
   // After finalizing the base class, tree is read-only.
-  MultibodyTreeSystem<T>::Finalize();
+  internal::MultibodyTreeSystem<T>::Finalize();
   CheckUserProvidedSceneGraph(scene_graph);
   if (geometry_source_is_registered()) {
     FilterAdjacentBodies();
