@@ -13,7 +13,7 @@ class GaussianTriangleQuadratureRule : public TriangleQuadratureRule {
  public:
   /// Constructs the Gaussian quadrature rule of the specified order.
   explicit GaussianTriangleQuadratureRule(int order) : order_(order) {
-    if (order >= 9) {
+    if (order > 5) {
       throw std::logic_error(
         "Gaussian triangle quadrature only supported up to fifth order "
         "presently.");
@@ -81,6 +81,9 @@ class GaussianTriangleQuadratureRule : public TriangleQuadratureRule {
         quadrature_points_[5] = { 0.10128650732346, 0.79742698535309 };
         quadrature_points_[6] = { 0.79742698535309, 0.10128650732346 };
         break;
+
+      default:
+        DRAKE_UNREACHABLE();
     }
   }
 

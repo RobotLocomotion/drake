@@ -43,6 +43,7 @@ drake_cc_googletest(
     name = "triangle_quadrature_test",
     deps = [
         ":triangle_quadrature",
+        "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
         "//systems/framework/test_utilities:scalar_conversion",
     ],

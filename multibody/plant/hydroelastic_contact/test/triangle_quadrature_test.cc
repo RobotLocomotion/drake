@@ -4,12 +4,21 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/hydroelastic_contact/gaussian_triangle_quadrature_rule.h"
 
 using Vector2d = drake::Vector2<double>;
 using TriangleVertices = std::array<Vector2d, 3>;
 using drake::multibody::hydroelastic_contact::TriangleQuadrature;
 using drake::multibody::hydroelastic_contact::GaussianTriangleQuadratureRule;
+
+GTEST_TEST(TriangleQuadrature, GaussianQuadratureRuleThrowsAboveMaxOrder) {
+  // TODO(edrumwri): Consider adding a max_order() method to the
+  // TriangleQuadratureRule class (if more quadrature rules are added).
+  const int max_order = 5;
+  DRAKE_EXPECT_THROWS_MESSAGE(GaussianTriangleQuadratureRule(max_order + 1),
+      std::logic_error, ".*quadrature only supported up to fifth order.*");
+}
 
 GTEST_TEST(TriangleQuadrature, WeightsSumToUnity) {
   for (int order = 1; order <= 5; ++order) {

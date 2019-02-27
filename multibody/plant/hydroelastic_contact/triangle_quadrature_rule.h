@@ -19,6 +19,7 @@ class TriangleQuadratureRule {
   /// Returns the order of this rule.
   int order() const {
     int rule_order = do_order();
+    DRAKE_DEMAND(rule_order >= 1);
     return rule_order;
   }
 
