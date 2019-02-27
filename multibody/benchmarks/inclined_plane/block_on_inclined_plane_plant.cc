@@ -11,7 +11,7 @@ namespace block_on_inclined_plane {
 void AddBlockAndInclinedPlaneToPlant(
     double Lx, double Ly, double Lz, double mass, double slope, double gravity,
     const CoulombFriction<double>& coefficient_of_friction_block,
-    const CoulombFriction<double>& coefficient_of_friction_inclined_plan,
+    const CoulombFriction<double>& coefficient_of_friction_inclined_plane,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
@@ -40,7 +40,7 @@ void AddBlockAndInclinedPlaneToPlant(
                                    X_WP.GetAsIsometry3(),
                                    geometry::HalfSpace(),
                                    "collision",
-                                   coefficient_of_friction_inclined_plan);
+                                   coefficient_of_friction_inclined_plane);
 
   // The inclined plane's visual geometry is a half-space.
   const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
@@ -59,7 +59,7 @@ void AddBlockAndInclinedPlaneToPlant(
                                    "collision",
                                    coefficient_of_friction_block);
 
-  // The block's visual geometry is a solid box..
+  // The block's visual geometry is a solid box.
   const Vector4<double> orange(1.0, 0.55, 0.0, 1.0);
   plant->RegisterVisualGeometry(block,
                                 X_BG.GetAsIsometry3(),
