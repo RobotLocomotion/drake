@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -449,7 +450,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     }
 
     if (!next_branch) {
-      DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
+      throw std::logic_error(
+          "MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
           "Vehicle should switch lanes but no default or ongoing branch "
           "exists.");
     } else {

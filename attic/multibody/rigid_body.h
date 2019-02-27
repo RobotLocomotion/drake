@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -113,7 +114,7 @@ class RigidBody {
   template<typename JointType>
   JointType* add_joint(RigidBody* parent, std::unique_ptr<JointType> joint) {
     if (joint_ != nullptr) {
-      DRAKE_ABORT_MSG(
+      throw std::logic_error(
           "Attempting to assign a new joint to a body that already has one");
     }
     set_parent(parent);

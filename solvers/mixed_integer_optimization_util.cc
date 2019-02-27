@@ -16,9 +16,7 @@ std::string to_string(IntervalBinning binning) {
       return "logarithmic_binning";
     }
   }
-  // The following line should not be reached. We add it due to a compiler
-  // defect.
-  DRAKE_ABORT_MSG("Should not reach this part of the code.");
+  DRAKE_UNREACHABLE();
 }
 
 std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning) {

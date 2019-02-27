@@ -125,7 +125,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
              input_port_index < system.get_num_input_ports()) {
     input_port = &(autodiff_system->get_input_port(input_port_index));
   } else if (input_port_index != kNoInput) {
-    DRAKE_ABORT_MSG("Invalid input_port_index specified.");
+    throw std::domain_error("Invalid input_port_index specified.");
   }
 
   // By default, use the first input / output ports (if they exist).
@@ -138,7 +138,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
              output_port_index < system.get_num_output_ports()) {
     output_port = &(autodiff_system->get_output_port(output_port_index));
   } else if (output_port_index != kNoOutput) {
-    DRAKE_ABORT_MSG("Invalid output_port_index specified.");
+    throw std::domain_error("Invalid output_port_index specified.");
   }
 
   // Verify that the input port is not abstract valued.

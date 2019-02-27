@@ -4,6 +4,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -85,7 +86,7 @@ struct ModuleInitVtkRenderingOpenGL2 {
 std::string RemoveFileExtension(const std::string& filepath) {
   const size_t last_dot = filepath.find_last_of(".");
   if (last_dot == std::string::npos) {
-    DRAKE_ABORT_MSG("File has no extension.");
+    throw std::logic_error("File has no extension.");
   }
   return filepath.substr(0, last_dot);
 }

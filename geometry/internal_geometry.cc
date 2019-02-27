@@ -29,7 +29,7 @@ bool InternalGeometry::has_role(Role role) const {
     case Role::kUnassigned:
       return !(has_proximity_role() || has_illustration_role());
   }
-  DRAKE_ABORT_MSG("Unreachable code; switch on enum had unexpected value");
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace internal

@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -80,7 +81,7 @@ template <>
 void UnrevisedLemkeSolver<AutoDiffXd>::DoSolve(
     const MathematicalProgram&, const Eigen::VectorXd&,
     const SolverOptions&, MathematicalProgramResult*) const {
-  DRAKE_ABORT_MSG(
+  throw std::logic_error(
       "UnrevisedLemkeSolver cannot yet be used in a "
       "MathematicalProgram while templatized as an AutoDiff");
 }

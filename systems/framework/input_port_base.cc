@@ -1,5 +1,6 @@
 #include "drake/systems/framework/input_port_base.h"
 
+#include <stdexcept>
 #include <utility>
 
 #include <fmt/format.h>
@@ -20,7 +21,7 @@ InputPortBase::InputPortBase(
       eval_(std::move(eval)),
       random_type_(random_type) {
   if (is_random() && data_type != kVectorValued) {
-    DRAKE_ABORT_MSG("Random input ports must be vector valued.");
+    throw std::logic_error("Random input ports must be vector valued.");
   }
   DRAKE_DEMAND(eval_ != nullptr);
 }

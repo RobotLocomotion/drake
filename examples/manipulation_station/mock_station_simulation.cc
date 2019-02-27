@@ -54,8 +54,8 @@ int do_main(int argc, char* argv[]) {
   } else if (FLAGS_setup == "clutter_clearing") {
     station->SetupClutterClearingStation();
   } else {
-    DRAKE_ABORT_MSG("Unrecognized station type. Options are "
-                    "{default, clutter_clearing}.");
+    throw std::domain_error(
+        "Unrecognized station type. Options are {default, clutter_clearing}.");
   }
   // TODO(russt): Load sdf objects specified at the command line.  Requires
   // #9747.

@@ -169,7 +169,10 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
 
   // TODO(edrumwri): Test this method as soon as DAE solver is available,
   //                 (necessarily removing abort() first).
-  DRAKE_ABORT_MSG("This method requires testing.");
+  if (true) {
+    throw std::logic_error(
+        "DoCalcVelocityChangeFromConstraintImpulses requires testing.");
+  }
 
   // The bead on the wire is unit mass, so the velocity change is equal to
   // simply Jᵀλ

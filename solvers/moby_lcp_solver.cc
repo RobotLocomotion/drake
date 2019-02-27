@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 #include <Eigen/LU>
@@ -152,7 +153,7 @@ template <>
 void MobyLCPSolver<Eigen::AutoDiffScalar<Vector1d>>::DoSolve(
     const MathematicalProgram&, const Eigen::VectorXd&,
     const SolverOptions&, MathematicalProgramResult*) const {
-  DRAKE_ABORT_MSG(
+  throw std::logic_error(
       "MobyLCPSolver cannot yet be used in a MathematicalProgram "
       "while templatized as an AutoDiff");
 }
