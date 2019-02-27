@@ -162,11 +162,12 @@ INSTANTIATE_TEST_CASE_P(UsableModelTypesTests, UsableModelTypesTests,
 
 #ifndef DRAKE_DISABLE_FCL
 // Fixture for locking down FclModel's not-yet-implemented functions.
-class FclModelDeathTests : public ModelTestBase,
-                           public ::testing::WithParamInterface<
-                               std::function<void(FclModelDeathTests*)>> {
+class FclModelNotImplementedTests :
+    public ModelTestBase,
+    public ::testing::WithParamInterface<
+        std::function<void(FclModelNotImplementedTests*)>> {
  public:
-  FclModelDeathTests() {
+  FclModelNotImplementedTests() {
     model_ = drake::multibody::collision::newModel(ModelType::kFcl);
   }
 
@@ -219,22 +220,22 @@ class FclModelDeathTests : public ModelTestBase,
   }
 };
 
-TEST_P(FclModelDeathTests, NotImplemented) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
-  EXPECT_DEATH(GetParam()(this), "Not implemented.");
+TEST_P(FclModelNotImplementedTests, NotImplemented) {
+  EXPECT_THROW(GetParam()(this), std::exception);
 }
 
 INSTANTIATE_TEST_CASE_P(
-    NotImplementedTest, FclModelDeathTests,
-    ::testing::Values(&FclModelDeathTests::CallAddBox,
-                      &FclModelDeathTests::CallAddCapsule,
-                      &FclModelDeathTests::CallAddMesh,
-                      &FclModelDeathTests::CallClosestPointsAllToAll,
-                      &FclModelDeathTests::CallCollisionDetectFromPoints,
-                      &FclModelDeathTests::CallClearCachedResults,
-                      &FclModelDeathTests::CallCollisionRaycast,
-                      &FclModelDeathTests::CallCollidingPointsCheckOnly,
-                      &FclModelDeathTests::CallCollidingPoints));
+    NotImplementedTest, FclModelNotImplementedTests,
+    ::testing::Values(
+       &FclModelNotImplementedTests::CallAddBox,
+       &FclModelNotImplementedTests::CallAddCapsule,
+       &FclModelNotImplementedTests::CallAddMesh,
+       &FclModelNotImplementedTests::CallClosestPointsAllToAll,
+       &FclModelNotImplementedTests::CallCollisionDetectFromPoints,
+       &FclModelNotImplementedTests::CallClearCachedResults,
+       &FclModelNotImplementedTests::CallCollisionRaycast,
+       &FclModelNotImplementedTests::CallCollidingPointsCheckOnly,
+       &FclModelNotImplementedTests::CallCollidingPoints));
 #endif
 
 // Fixture for testing collision queries involving pairs of collision
