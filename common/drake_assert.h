@@ -95,8 +95,9 @@ __attribute__((noreturn))
 __attribute__((deprecated(
     "\nDRAKE DEPRECATED: DRAKE_ABORT() and DRAKE_ABORT_MSG() are deprecated; "
     "use 'throw' instead; this macro will be removed on 2019-06-01.")))
-inline void DeprecatedAbort(const char* func, const char* file, int line) {
-  Abort(nullptr, func, file, line);
+inline void DeprecatedAbort(
+    const char* condition, const char* func, const char* file, int line) {
+  Abort(condition, func, file, line);
 }
 // Report an assertion failure; will either Abort(...) or throw.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
@@ -120,7 +121,7 @@ struct ConditionTraits {
 }  // namespace drake
 
 #define DRAKE_ABORT()                                                   \
-  ::drake::detail::DeprecatedAbort(__func__, __FILE__, __LINE__)
+  ::drake::detail::DeprecatedAbort(nullptr, __func__, __FILE__, __LINE__)
 
 #define DRAKE_UNREACHABLE()                                             \
   ::drake::detail::Abort(                                               \

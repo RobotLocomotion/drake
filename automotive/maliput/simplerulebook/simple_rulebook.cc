@@ -212,7 +212,7 @@ QueryResults SimpleRulebook::DoFindRules(
       } else if (id.s) {
         result.speed_limit.push_back(speed_limits_.at(*id.s));
       } else {
-        throw std::domain_error("IdVariant is empty");
+        throw std::domain_error("SimpleRulebook: IdVariant is empty");
       }
     }
   }

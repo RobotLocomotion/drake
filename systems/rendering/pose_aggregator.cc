@@ -183,8 +183,6 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
     case InputRecord::kBundle:
       return this->DeclareAbstractInputPort(
           kUseDefaultName, Value<PoseBundle<T>>());
-    case InputRecord::kUnknown:
-      throw std::logic_error("Invariant failure");
   }
   DRAKE_UNREACHABLE();
 }

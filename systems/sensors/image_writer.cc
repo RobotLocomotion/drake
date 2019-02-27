@@ -111,7 +111,7 @@ const InputPort<double>& ImageWriter::DeclareImageInputPort(
       DirectoryFromFormat(file_name_format, port_name, kPixelType)};
   FolderState folder_state = ValidateDirectory(test_dir.getStr());
   if (folder_state != FolderState::kValid) {
-    const const char* const reason = [folder_state]() {
+    const char* const reason = [folder_state]() {
       switch (folder_state) {
         case FolderState::kValid:
           DRAKE_UNREACHABLE();
