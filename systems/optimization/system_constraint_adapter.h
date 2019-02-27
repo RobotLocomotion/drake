@@ -64,8 +64,8 @@ class SystemConstraintAdapter {
    *  2. linear equality ( aᵀx = b )
    *  3. linear inequality ( lower <= aᵀx <= upper )
    *
-   * If the SystemConstraint cannot be parsed to the forms above, then return
-   * empty; otherwise return a vector containing the parsed constraint.
+   * If the SystemConstraint cannot be parsed to the forms above, then returns
+   * nullopt; otherwise returns a vector containing the parsed constraint.
    * @param index The index of the constraint in the System object.
    * @param context The context used to evaluate the SystemConstraint.
    * @retval constraints If the SystemConstraint can be parsed to the constraint
@@ -87,9 +87,8 @@ class SystemConstraintAdapter {
    * If the SystemConstraint cannot be parsed to the form above, then returns
    * empty; otherwise returns a parsed constraint, together with the bound
    * variables.
-   * @note We currently only support system without abstract state or abstract
-   * parameter. @throw invalid_argument if the system contains abstract state
-   * or abstract parameter.
+   * We currently only support systems without abstract states or abstract
+   * parameters.
    * @param index The index of the constraint in the System object.
    * @param context The context used to evaluate the SystemConstraint. @note
    * each expression in @p context (like state, parameter, etc) should be either
@@ -99,6 +98,8 @@ class SystemConstraintAdapter {
    * SystemConstraint. If the SystemConstraint cannot be parsed to the generic
    * constraint using @p context instantiated with symbolic::Expression, then
    * constraint.has_value() = false.
+   * @throw invalid_argument if the system contains abstract states or abstract
+   * parameters.
    */
   optional<solvers::Binding<solvers::Constraint>>
   MaybeCreateGenericConstraintSymbolically(

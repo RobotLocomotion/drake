@@ -1,6 +1,7 @@
 #include "drake/systems/optimization/system_constraint_adapter.h"
 
 #include <unordered_map>
+#include <utility>
 
 #include "drake/solvers/create_constraint.h"
 
@@ -75,13 +76,17 @@ struct ContextIndex {
   int var_index{};
 };
 
-
+/**
+ * A functor to update the Context<double> or Context<AutoDiffXd> from decision
+ * variables. This functor will be used as
+ * UpdateContextFromDecisionVariableFunction.
+ */
 class UpdateContextForSymbolicSystemConstraint {
  public:
   UpdateContextForSymbolicSystemConstraint(
-      const std::vector<ContextIndex>& context_indices,
+      std::vector<ContextIndex> context_indices,
       const optional<int>& time_var_index)
-      : context_indices_(context_indices),
+      : context_indices_(std::move(context_indices)),
         time_var_index_{time_var_index} {}
 
   template <typename T>

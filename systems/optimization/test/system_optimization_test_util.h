@@ -32,7 +32,8 @@ class DummySystem : public LeafSystem<T> {
       : LeafSystem<T>(SystemTypeTag<DummySystem>{}),
         with_abstract_state_(with_abstract_state),
         with_abstract_parameter_(with_abstract_parameter) {
-    this->DeclareContinuousState(3);  // 3 state variable.
+    this->DeclareContinuousState(3);
+    this->DeclareDiscreteState(2);
     this->DeclareNumericParameter(BasicVector<T>({1}));
     this->DeclareInputPort("u", PortDataType::kVectorValued, 2);
     this->constraint_index_ = this->DeclareInequalityConstraint(

@@ -33,8 +33,8 @@ SystemConstraintWrapper::SystemConstraintWrapper(
       // when we can copy the fixed input port value from Context<double> to
       // Context<AutoDiffXd>.
       throw std::runtime_error(
-          "SystemConstraintWrapper doesn't support system with input ports "
-          "yet.");
+          "SystemConstraintWrapper doesn't support system with fixed input "
+          "ports yet.");
     }
   }
 }
