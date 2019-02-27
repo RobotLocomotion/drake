@@ -53,20 +53,40 @@ void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
   x_val_ = x_val;
 }
 
-double MathematicalProgramResult::GetSolution(
-    const symbolic::Variable& var) const {
-  DRAKE_DEMAND(decision_variable_index_.has_value());
-  auto it = decision_variable_index_->find(var.get_id());
-  if (it == decision_variable_index_->end()) {
+double GetVariableValue(
+    const symbolic::Variable& var,
+    const std::unordered_map<symbolic::Variable::Id, int>& variable_index,
+    const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
+  DRAKE_DEMAND(variable_values.rows() ==
+               static_cast<int>(variable_index.size()));
+  auto it = variable_index.find(var.get_id());
+  if (it == variable_index.end()) {
     std::stringstream oss;
-    oss << "MathematicalProgramResult::GetSolution, " << var
+    oss << "GetVariableValue: " << var
         << " is not captured by the decision_variable_index map, passed in "
            "set_decision_variable_index().";
     throw std::invalid_argument(oss.str());
   }
-  DRAKE_DEMAND(x_val_.size() ==
-               static_cast<int>(decision_variable_index_->size()));
-  return x_val_[it->second];
+  return variable_values(it->second);
+}
+
+double MathematicalProgramResult::GetSolution(
+    const symbolic::Variable& var) const {
+  DRAKE_DEMAND(decision_variable_index_.has_value());
+  return GetVariableValue(var, decision_variable_index_.value(), x_val_);
+}
+
+double MathematicalProgramResult::GetSuboptimalSolution(
+    const symbolic::Variable& var, int solution_number) const {
+  DRAKE_DEMAND(decision_variable_index_.has_value());
+  return GetVariableValue(var, decision_variable_index_.value(),
+                          suboptimal_x_val_[solution_number]);
+}
+
+void MathematicalProgramResult::AddSuboptimalSolution(
+    double suboptimal_objective, const Eigen::VectorXd& suboptimal_x) {
+  suboptimal_x_val_.push_back(suboptimal_x);
+  suboptimal_objectives_.push_back(suboptimal_objective);
 }
 }  // namespace solvers
 }  // namespace drake
