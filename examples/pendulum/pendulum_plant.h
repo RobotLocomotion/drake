@@ -19,7 +19,7 @@ namespace pendulum {
 ///
 /// @system{PendulumPlant,
 ///    @input_port{tau},
-///    @output_port{state} @output_port{geometry pose}
+///    @output_port{state} @output_port{geometry_pose}
 /// }
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
