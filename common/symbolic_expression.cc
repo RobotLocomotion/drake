@@ -1035,6 +1035,14 @@ Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v) {
 }  // namespace symbolic
 
 double ExtractDoubleOrThrow(const symbolic::Expression& e) {
+  if (is_nan(e)) {
+    // If this was a literal NaN provided by the user or a dummy_value<T>, then
+    // it is sound to promote it as the "extracted value" during scalar
+    // conversion.  (In contrast, if an expression tree includes a NaN term,
+    // then it's still desirable to throw an exception and we should NOT return
+    // NaN in that case.)
+    return std::numeric_limits<double>::quiet_NaN();
+  }
   return e.Evaluate();
 }
 
