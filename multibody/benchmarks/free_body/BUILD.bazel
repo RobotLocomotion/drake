@@ -13,13 +13,13 @@ package(default_visibility = ["//visibility:private"])
 filegroup(
     name = "models",
     testonly = 1,
-    visibility = ["//visibility:public"],
     srcs = glob([
         "**/*.obj",
         "**/*.sdf",
         "**/*.urdf",
         "**/*.xml",
     ]),
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_package_library(
