@@ -1,5 +1,7 @@
 #include "drake/solvers/mathematical_program_result.h"
 
+#include <fmt/format.h>
+
 namespace drake {
 namespace solvers {
 namespace {
@@ -55,31 +57,29 @@ void MathematicalProgramResult::set_x_val(const Eigen::VectorXd& x_val) {
 
 double GetVariableValue(
     const symbolic::Variable& var,
-    const std::unordered_map<symbolic::Variable::Id, int>& variable_index,
+    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+        variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
+  DRAKE_ASSERT(variable_index.has_value());
   DRAKE_DEMAND(variable_values.rows() ==
-               static_cast<int>(variable_index.size()));
-  auto it = variable_index.find(var.get_id());
-  if (it == variable_index.end()) {
-    std::stringstream oss;
-    oss << "GetVariableValue: " << var
-        << " is not captured by the decision_variable_index map, passed in "
-           "set_decision_variable_index().";
-    throw std::invalid_argument(oss.str());
+               static_cast<int>(variable_index->size()));
+  auto it = variable_index->find(var.get_id());
+  if (it == variable_index->end()) {
+    throw std::invalid_argument(fmt::format(
+        "GetVariableValue: {} is not captured by the variable_index map.",
+        var.get_name()));
   }
   return variable_values(it->second);
 }
 
 double MathematicalProgramResult::GetSolution(
     const symbolic::Variable& var) const {
-  DRAKE_DEMAND(decision_variable_index_.has_value());
-  return GetVariableValue(var, decision_variable_index_.value(), x_val_);
+  return GetVariableValue(var, decision_variable_index_, x_val_);
 }
 
 double MathematicalProgramResult::GetSuboptimalSolution(
     const symbolic::Variable& var, int solution_number) const {
-  DRAKE_DEMAND(decision_variable_index_.has_value());
-  return GetVariableValue(var, decision_variable_index_.value(),
+  return GetVariableValue(var, decision_variable_index_,
                           suboptimal_x_val_[solution_number]);
 }
 

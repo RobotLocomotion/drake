@@ -48,6 +48,7 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   EXPECT_EQ(result.num_suboptimal_solution(), 1);
   EXPECT_EQ(result.GetSuboptimalSolution(x0_, 0), 1);
   EXPECT_EQ(result.GetSuboptimalSolution(x1_, 0), 2);
+  EXPECT_EQ(result.get_suboptimal_objective(0), 0.1);
   DRAKE_EXPECT_THROWS_MESSAGE(result.set_x_val(Eigen::Vector3d::Zero()),
                               std::invalid_argument,
                               "MathematicalProgramResult::set_x_val, the "
@@ -63,11 +64,9 @@ TEST_F(MathematicalProgramResultTest, Setters) {
 
   // Getting solution for a variable y not in decision_variable_index_.
   symbolic::Variable y("y");
-  DRAKE_EXPECT_THROWS_MESSAGE(result.GetSolution(y), std::invalid_argument,
-                              "GetVariableValue: y is "
-                              "not captured by the decision_variable_index "
-                              "map, passed in "
-                              "set_decision_variable_index\\(\\).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      result.GetSolution(y), std::invalid_argument,
+      "GetVariableValue: y is not captured by the variable_index map.");
 }
 
 struct DummySolverDetails {

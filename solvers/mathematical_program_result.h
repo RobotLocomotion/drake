@@ -26,7 +26,8 @@ namespace solvers {
  */
 double GetVariableValue(
     const symbolic::Variable& var,
-    const std::unordered_map<symbolic::Variable::Id, int>& variable_index,
+    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+        variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values);
 
 template <typename Derived>
@@ -36,7 +37,8 @@ typename std::enable_if<
                   Derived::ColsAtCompileTime>>::type
 GetVariableValue(
     const Eigen::MatrixBase<Derived>& var,
-    const std::unordered_map<symbolic::Variable::Id, int>& variable_index,
+    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+        variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
   Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
       value(var.rows(), var.cols());
@@ -171,8 +173,7 @@ class MathematicalProgramResult final {
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
                     Derived::ColsAtCompileTime>>::type
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
-    DRAKE_ASSERT(decision_variable_index_.has_value());
-    return GetVariableValue(var, decision_variable_index_.value(), x_val_);
+    return GetVariableValue(var, decision_variable_index_, x_val_);
   }
 
   /**
@@ -185,6 +186,16 @@ class MathematicalProgramResult final {
    */
   double GetSolution(const symbolic::Variable& var) const;
 
+  /**
+   * Gets the suboptimal solution of an Eigen matrix of decision variables.
+   * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+   * solutions for mixed integer programming model.
+   * @param var The decision variables.
+   * @param solution_number The index of the sub-optimal solution. @pre @p
+   * solution_number should be in the range [0, num_suboptimal_solution()).
+   * @return The suboptimal values of the decision variables after solving the
+   * problem.
+   */
   template <typename Derived>
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
@@ -192,22 +203,52 @@ class MathematicalProgramResult final {
                     Derived::ColsAtCompileTime>>::type
   GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
                         int solution_number) const {
-    DRAKE_ASSERT(decision_variable_index_.has_value());
-    return GetVariableValue(var, decision_variable_index_.value(),
+    return GetVariableValue(var, decision_variable_index_,
                             suboptimal_x_val_[solution_number]);
   }
 
+  /**
+   * Gets the suboptimal solution of a decision variable.
+   * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+   * solutions for mixed integer programming model.
+   * @param var The decision variable.
+   * @param solution_number The index of the sub-optimal solution. @pre @p
+   * solution_number should be in the range [0, num_suboptimal_solution()).
+   * @return The suboptimal value of the decision variable after solving the
+   * problem.
+   */
   double GetSuboptimalSolution(const symbolic::Variable& var,
                                int solution_number) const;
 
+  /**
+   * Number of suboptimal solutions stored inside MathematicalProgramResult.
+   * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+   * solutions for mixed integer programming model.
+   */
   int num_suboptimal_solution() const {
     return static_cast<int>(suboptimal_x_val_.size());
   }
 
+  /**
+   * Gets the suboptimal objective value.
+   * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+   * solutions for mixed integer programming model.
+   * @param solution_number The index of the sub-optimal solution. @pre @p
+   * solution_number should be in the range [0, num_suboptimal_solution()).
+   */
   double get_suboptimal_objective(int solution_number) const {
     return suboptimal_objectives_[solution_number];
   }
 
+  /**
+   * Adds the suboptimal solution to the result.
+   * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+   * solutions for mixed integer programming model.
+   * @param suboptimal_objective The objective value computed from this
+   * suboptimal solution.
+   * @param suboptimal_x The values of the decision variables in this suboptimal
+   * solution.
+   */
   void AddSuboptimalSolution(double suboptimal_objective,
                              const Eigen::VectorXd& suboptimal_x);
 
@@ -219,9 +260,10 @@ class MathematicalProgramResult final {
   double optimal_cost_{};
   SolverId solver_id_;
   copyable_unique_ptr<AbstractValue> solver_details_;
-  // Some solvers can find suboptimal solutions. suboptimal_objectives_[i] is
-  // the objective value computed with the suboptimal solution
-  // suboptimal_x_val_[i].
+  // Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+  // solutions for mixed integer programming model.
+  // suboptimal_objectives_[i] is the objective value computed with the
+  // suboptimal solution suboptimal_x_val_[i].
   std::vector<Eigen::VectorXd> suboptimal_x_val_{};
   std::vector<double> suboptimal_objectives_{};
 };
