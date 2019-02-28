@@ -478,6 +478,18 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.SetInitialGuessForAllVariables(x0)
         check_and_reset()
 
+        # Check an extrinsic guess.  We sanity check changes to the guess using
+        # loose "any" and "all" predicates rather than specific indices because
+        # we should not presume how variables map into indices.
+        guess = np.ndarray(count)
+        guess.fill(np.nan)
+        self.assertTrue(all([np.isnan(i) for i in guess]))
+        prog.SetDecisionVariableValueInVector(x[0], x0[0], guess)
+        self.assertFalse(all([np.isnan(i) for i in guess]))
+        self.assertTrue(any([np.isnan(i) for i in guess]))
+        prog.SetDecisionVariableValueInVector(x_matrix, x0_matrix, guess)
+        self.assertFalse(any([np.isnan(i) for i in guess]))
+
     @unittest.skipIf(
         SNOPT_NO_GUROBI,
         "SNOPT is unable to solve this problem (#10653).")
