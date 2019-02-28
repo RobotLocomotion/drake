@@ -21,8 +21,9 @@ namespace solvers {
  * variable_values.
  * @param variable_values The values of all variables.
  * @return variable_values(variable_index[var.get_id()]) if
- * var.get_id() is a valid key of @p variable_index. Otherwise @throws an
- * invalid_argument error.
+ * var.get_id() is a valid key of @p variable_index.
+ * @throws an invalid_argument error if var.get_id() is not a valid key of @p
+ * variable_index.
  * @pre All the mapped value in variable_index is in the range [0,
  * variable_values.rows())
  */
@@ -193,15 +194,15 @@ class MathematicalProgramResult final {
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
-   * @anchor suboptimal_solution
-   * @name suboptimal solution
+   * @anchor solution_pools
+   * @name Solution Pools
    * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
    * solutions for mixed integer programming model.
    * @{
    */
   /**
    * Gets the suboptimal solution corresponding to a matrix of decision
-   * variables. See @ref suboptimal_solution "solution pools"
+   * variables. See @ref solution_pools "solution pools"
    * @param var The decision variables.
    * @param solution_number The index of the sub-optimal solution.
    * @pre @p solution_number should be in the range [0,
@@ -222,7 +223,7 @@ class MathematicalProgramResult final {
 
   /**
    * Gets the suboptimal solution of a decision variable. See @ref
-   * suboptimal_solution "solution pools"
+   * solution_pools "solution pools"
    * @param var The decision variable.
    * @param solution_number The index of the sub-optimal solution.
    * @pre @p solution_number should be in the range [0,
@@ -235,14 +236,14 @@ class MathematicalProgramResult final {
 
   /**
    * Number of suboptimal solutions stored inside MathematicalProgramResult.
-   * See @ref suboptimal_solution "solution pools".
+   * See @ref solution_pools "solution pools".
    */
   int num_suboptimal_solution() const {
     return static_cast<int>(suboptimal_x_val_.size());
   }
 
   /**
-   * Gets the suboptimal objective value. See @ref suboptimal_solution "solution
+   * Gets the suboptimal objective value. See @ref solution_pools "solution
    * pools".
    * @param solution_number The index of the sub-optimal solution. @pre @p
    * solution_number should be in the range [0, num_suboptimal_solution()).
@@ -252,7 +253,7 @@ class MathematicalProgramResult final {
   }
 
   /**
-   * Adds the suboptimal solution to the result. See @ref suboptimal_solution
+   * Adds the suboptimal solution to the result. See @ref solution_pools
    * "solution pools".
    * @param suboptimal_objective The objective value computed from this
    * suboptimal solution.
