@@ -61,7 +61,7 @@ double GetVariableValue(
         variable_index,
     const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
   DRAKE_ASSERT(variable_index.has_value());
-  DRAKE_DEMAND(variable_values.rows() ==
+  DRAKE_ASSERT(variable_values.rows() ==
                static_cast<int>(variable_index->size()));
   auto it = variable_index->find(var.get_id());
   if (it == variable_index->end()) {
