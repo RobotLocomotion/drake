@@ -194,30 +194,3 @@ class TestMeshcat(unittest.TestCase):
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(1.0)
-
-    def test_mesh_scaling(self):
-        """This mesh is known to have a scaling."""
-        object_file_path = FindResourceOrThrow(
-            "drake/examples/quadrotor/quadrotor.urdf")
-
-        builder = DiagramBuilder()
-        plant = MultibodyPlant(0.002)
-        _, scene_graph = AddMultibodyPlantSceneGraph(builder, plant)
-        object_model = Parser(plant=plant).AddModelFromFile(object_file_path)
-        plant.Finalize()
-
-        # Add meshcat visualizer.
-        viz = builder.AddSystem(
-            MeshcatVisualizer(scene_graph,
-                              zmq_url=None,
-                              open_browser=False))
-        builder.Connect(
-            scene_graph.get_pose_bundle_output_port(),
-            viz.get_input_port(0))
-
-        diagram = builder.Build()
-        diagram_context = diagram.CreateDefaultContext()
-
-        simulator = Simulator(diagram, diagram_context)
-        simulator.set_publish_every_time_step(False)
-        simulator.StepTo(1.0)
