@@ -29,7 +29,7 @@ ViewerDrawTranslator::ViewerDrawTranslator(const RigidBodyTree<double>& tree)
 
 void ViewerDrawTranslator::Deserialize(
     const void*, int, VectorBase<double>*) const {
-  DRAKE_ABORT_MSG(
+  throw std::logic_error(
     "The translator that converts from a drake::lcmt_viewer_draw message to "
     "a VectorBase object that contains the RigidBodyTree's state vector has not"
     "been implemented yet.");

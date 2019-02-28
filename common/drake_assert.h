@@ -62,8 +62,8 @@
 /// to silence false positive warnings.  When in doubt, throw an exception
 /// manually instead of using this macro.
 #define DRAKE_UNREACHABLE()
-/// Aborts the program (via ::abort) with a message showing at least the
-/// given message (macro argument), function name, file, and line.
+/// (Deprecated.)  Aborts the program (via ::abort) with a message showing at
+/// least the given message (macro argument), function name, file, and line.
 #define DRAKE_ABORT_MSG(message)
 #else  //  DRAKE_DOXYGEN_CXX
 
@@ -93,10 +93,11 @@ __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
 void Abort(const char* condition, const char* func, const char* file, int line);
 __attribute__((noreturn))
 __attribute__((deprecated(
-    "\nDRAKE DEPRECATED: DRAKE_ABORT() is deprecated; use DRAKE_ABORT_MSG(); "
-    "this macro will be removed on 2019-05-01.")))
-inline void DeprecatedAbort(const char* func, const char* file, int line) {
-  Abort(nullptr, func, file, line);
+    "\nDRAKE DEPRECATED: DRAKE_ABORT() and DRAKE_ABORT_MSG() are deprecated; "
+    "use 'throw' instead; this macro will be removed on 2019-06-01.")))
+inline void DeprecatedAbort(
+    const char* condition, const char* func, const char* file, int line) {
+  Abort(condition, func, file, line);
 }
 // Report an assertion failure; will either Abort(...) or throw.
 __attribute__((noreturn)) /* gcc is ok with [[noreturn]]; clang is not. */
@@ -120,7 +121,7 @@ struct ConditionTraits {
 }  // namespace drake
 
 #define DRAKE_ABORT()                                                   \
-  ::drake::detail::DeprecatedAbort(__func__, __FILE__, __LINE__)
+  ::drake::detail::DeprecatedAbort(nullptr, __func__, __FILE__, __LINE__)
 
 #define DRAKE_UNREACHABLE()                                             \
   ::drake::detail::Abort(                                               \
@@ -138,7 +139,7 @@ struct ConditionTraits {
   } while (0)
 
 #define DRAKE_ABORT_MSG(msg)                                    \
-  ::drake::detail::Abort(msg, __func__, __FILE__, __LINE__)
+  ::drake::detail::DeprecatedAbort(msg, __func__, __FILE__, __LINE__)
 
 #ifdef DRAKE_ASSERT_IS_ARMED
 // Assertions are enabled.

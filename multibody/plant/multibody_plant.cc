@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "drake/common/drake_throw.h"
@@ -933,7 +934,7 @@ template<typename T>
 std::vector<PenetrationAsPointPair<T>>
 MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>&) const {
-  DRAKE_ABORT_MSG("This method only supports T = double.");
+  throw std::domain_error("This method only supports T = double.");
 }
 
 template<typename T>

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -1102,7 +1103,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh&, void*) override {
-    DRAKE_ABORT_MSG("The proximity engine does not support meshes yet");
+    throw std::domain_error("The proximity engine does not support meshes yet");
   }
 
   //

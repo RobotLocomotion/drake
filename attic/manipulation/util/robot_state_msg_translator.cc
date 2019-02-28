@@ -164,7 +164,8 @@ void RobotStateLcmMessageTranslator::DecodeMessageKinematics(
       v.segment<3>(velocity_start) =  R_BJ * V_WB_J.head<3>();     // Rotate.
       v.segment<3>(velocity_start + 3) = R_BJ * V_WB_J.tail<3>();  // Translate.
     } else {
-      DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
+      throw std::domain_error(
+          "Floating joint is neither a RPY or a Quaternion joint.");
     }
   }
 
@@ -276,7 +277,8 @@ void RobotStateLcmMessageTranslator::EncodeMessageKinematics(
       V_JB.head<3>() = R_JB * v.segment<3>(velocity_start);
       V_JB.tail<3>() = R_JB * v.segment<3>(velocity_start + 3);
     } else {
-      DRAKE_ABORT_MSG("Floating joint is neither a RPY or a Quaternion joint.");
+      throw std::domain_error(
+          "Floating joint is neither a RPY or a Quaternion joint.");
     }
   } else {
     // Fixed base, the transformation is the joint's pose in the world frame.

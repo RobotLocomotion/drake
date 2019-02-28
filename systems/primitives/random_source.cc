@@ -39,28 +39,28 @@ int AddRandomInputs(double sampling_interval_sec,
         continue;
       }
 
+      count++;
       switch (port.get_random_type().value()) {
         case RandomDistribution::kUniform: {
           const auto* uniform = builder->AddSystem<UniformRandomSource>(
               port.size(), sampling_interval_sec);
           builder->Connect(uniform->get_output_port(0), port);
-        } break;
+          continue;
+        }
         case RandomDistribution::kGaussian: {
           const auto* gaussian = builder->AddSystem<GaussianRandomSource>(
               port.size(), sampling_interval_sec);
           builder->Connect(gaussian->get_output_port(0), port);
-        } break;
+          continue;
+        }
         case RandomDistribution::kExponential: {
           const auto* exponential = builder->AddSystem<ExponentialRandomSource>(
               port.size(), sampling_interval_sec);
           builder->Connect(exponential->get_output_port(0), port);
-        } break;
-        default: {
-          DRAKE_ABORT_MSG(
-              "InputPort has an unsupported RandomDistribution.");
+          continue;
         }
       }
-      count++;
+      DRAKE_UNREACHABLE();
     }
   }
   return count;

@@ -1,5 +1,6 @@
 #include "drake/multibody/collision/fcl_model.h"
 
+#include <stdexcept>
 #include <utility>
 
 #include <Eigen/Dense>
@@ -98,8 +99,7 @@ void FclModel::DoAddElement(const Element& element) {
           std::make_shared<fcl::Cylinderd>(cylinder.radius, cylinder.length);
     } break;
     default:
-      DRAKE_ABORT_MSG("Not implemented.");
-      break;
+      throw std::logic_error("Not implemented.");
   }
 
   auto fcl_object = std::make_unique<fcl::CollisionObjectd>(fcl_geometry);
@@ -147,8 +147,7 @@ bool FclModel::ClosestPointsAllToAll(
     const std::vector<ElementId>& ids_to_check, bool use_margins,
     std::vector<PointPair<double>>* closest_points) {
   drake::unused(ids_to_check, use_margins, closest_points);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return false;
+  throw std::logic_error("Not implemented.");
 }
 
 bool FclModel::ComputeMaximumDepthCollisionPoints(
@@ -165,20 +164,19 @@ bool FclModel::ClosestPointsPairwise(
     const std::vector<ElementIdPair>& id_pairs, bool use_margins,
     std::vector<PointPair<double>>* closest_points) {
   drake::unused(id_pairs, use_margins, closest_points);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return false;
+  throw std::logic_error("Not implemented.");
 }
 
 void FclModel::CollisionDetectFromPoints(
     const Eigen::Matrix3Xd& points, bool use_margins,
     std::vector<PointPair<double>>* closest_points) {
   drake::unused(points, use_margins, closest_points);
-  DRAKE_ABORT_MSG("Not implemented.");
+  throw std::logic_error("Not implemented.");
 }
 
 void FclModel::ClearCachedResults(bool use_margins) {
   drake::unused(use_margins);
-  DRAKE_ABORT_MSG("Not implemented.");
+  throw std::logic_error("Not implemented.");
 }
 
 bool FclModel::CollisionRaycast(const Eigen::Matrix3Xd& origins,
@@ -186,24 +184,21 @@ bool FclModel::CollisionRaycast(const Eigen::Matrix3Xd& origins,
                                 bool use_margins, Eigen::VectorXd* distances,
                                 Eigen::Matrix3Xd* normals) {
   drake::unused(origins, ray_endpoints, use_margins, distances, normals);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return false;
+  throw std::logic_error("Not implemented.");
 }
 
 bool FclModel::CollidingPointsCheckOnly(
     const std::vector<Eigen::Vector3d>& input_points,
     double collision_threshold) {
   drake::unused(input_points, collision_threshold);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return false;
+  throw std::logic_error("Not implemented.");
 }
 
 std::vector<size_t> FclModel::CollidingPoints(
     const std::vector<Eigen::Vector3d>& input_points,
     double collision_threshold) {
   drake::unused(input_points, collision_threshold);
-  DRAKE_ABORT_MSG("Not implemented.");
-  return std::vector<size_t>();
+  throw std::logic_error("Not implemented.");
 }
 
 }  // namespace collision

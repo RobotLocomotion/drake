@@ -25,7 +25,7 @@ PortBase::PortBase(
   DRAKE_DEMAND(owning_system != nullptr);
   DRAKE_DEMAND(!name_.empty());
   if (size_ == kAutoSize) {
-    DRAKE_ABORT_MSG("Auto-size ports are not yet implemented.");
+    throw std::domain_error("Auto-size ports are not yet implemented.");
   }
 }
 

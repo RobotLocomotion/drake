@@ -1451,24 +1451,29 @@ class System : public SystemBase {
         continue;
       }
 
-      if (input_port.get_data_type() == kVectorValued) {
-        // For vector-valued input ports, we placewise initialize a fixed input
-        // vector using the explicit conversion from double to T.
-        const Eigen::VectorBlock<const VectorX<double>> other_vec =
-            other_port.Eval(other_context);
-        auto our_vec = this->AllocateInputVector(input_port);
-        for (int j = 0; j < our_vec->size(); ++j) {
-          (*our_vec)[j] = T(other_vec[j]);
+      switch (input_port.get_data_type()) {
+        case kVectorValued: {
+          // For vector-valued input ports, we placewise initialize a fixed
+          // input vector using the explicit conversion from double to T.
+          const Eigen::VectorBlock<const VectorX<double>> other_vec =
+              other_port.Eval(other_context);
+          auto our_vec = this->AllocateInputVector(input_port);
+          for (int j = 0; j < our_vec->size(); ++j) {
+            (*our_vec)[j] = T(other_vec[j]);
+          }
+          target_context->FixInputPort(i, *our_vec);
+          continue;
         }
-        target_context->FixInputPort(i, *our_vec);
-      } else if (input_port.get_data_type() == kAbstractValued) {
-        // For abstract-valued input ports, we just clone the value and fix
-        // it to the port.
-        const auto& other_value = other_port.Eval<AbstractValue>(other_context);
-        target_context->FixInputPort(i, other_value);
-      } else {
-        DRAKE_ABORT_MSG("Unknown input port type.");
+        case kAbstractValued: {
+          // For abstract-valued input ports, we just clone the value and fix
+          // it to the port.
+          const auto& other_value =
+              other_port.Eval<AbstractValue>(other_context);
+          target_context->FixInputPort(i, other_value);
+          continue;
+        }
       }
+      DRAKE_UNREACHABLE();
     }
   }
 
