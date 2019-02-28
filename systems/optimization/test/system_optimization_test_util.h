@@ -34,7 +34,7 @@ class DummySystem : public LeafSystem<T> {
         with_abstract_parameter_(with_abstract_parameter) {
     this->DeclareContinuousState(3);
     this->DeclareDiscreteState(2);
-    this->DeclareNumericParameter(BasicVector<T>({1}));
+    this->DeclareNumericParameter(BasicVector<T>(Vector1<T>::Constant(1.0)));
     this->DeclareInputPort("u", PortDataType::kVectorValued, 2);
     this->constraint_index_ = this->DeclareInequalityConstraint(
         DummySystemConstraintCalc<T>, {Eigen::Vector2d(2, 0), nullopt},
