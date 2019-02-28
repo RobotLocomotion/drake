@@ -31,11 +31,11 @@ drake_cc_library(
 
 drake_cc_library(
     name = "triangle_quadrature",
-    hdrs = [
-        "triangle_quadrature.h",
-    ],
     srcs = [
         "triangle_quadrature.cc",
+    ],
+    hdrs = [
+        "triangle_quadrature.h",
     ],
     deps = [
         ":triangle_quadrature_rules",
