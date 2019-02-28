@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature_rule.h"
+#include "drake/multibody/hydroelastic_contact/triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {
@@ -33,14 +33,14 @@ class TriangleQuadrature {
   ///        (p[0], p[1], 1 - p[0] - p[1]).
   /// @param area the area of the triangle.
   static NumericReturnType Integrate(
-      const std::function<NumericReturnType(const Vector2<T>&)> f,
+      const std::function<NumericReturnType(const Vector2<T>&)>& f,
       const TriangleQuadratureRule& rule,
       const T& area);
 };
 
 template <typename NumericReturnType, typename T>
 NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
-    const std::function<NumericReturnType(const Vector2<T>&)> f,
+    const std::function<NumericReturnType(const Vector2<T>&)>& f,
     const TriangleQuadratureRule& rule,
     const T& area) {
 

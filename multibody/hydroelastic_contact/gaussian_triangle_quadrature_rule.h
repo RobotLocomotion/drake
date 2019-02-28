@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature_rule.h"
+#include "drake/multibody/hydroelastic_contact/triangle_quadrature_rule.h"
 
 namespace drake {
 namespace multibody {

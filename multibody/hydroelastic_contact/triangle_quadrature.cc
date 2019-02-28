@@ -1,4 +1,4 @@
-#include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature.h"
+#include "drake/multibody/hydroelastic_contact/triangle_quadrature.h"
 
 // Default template instantiations below.
 namespace drake {
