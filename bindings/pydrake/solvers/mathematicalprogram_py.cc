@@ -695,6 +695,34 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
+      .def("SetDecisionVariableValueInVector",
+          [](const MathematicalProgram& prog,
+              const symbolic::Variable& decision_variable,
+              double decision_variable_new_value,
+              Eigen::Ref<Eigen::VectorXd> values) {
+            prog.SetDecisionVariableValueInVector(
+                decision_variable, decision_variable_new_value, &values);
+          },
+          py::arg("decision_variable"), py::arg("decision_variable_new_value"),
+          py::arg("values"),
+          doc.MathematicalProgram.SetDecisionVariableValueInVector
+              .doc_3args_decision_variable_decision_variable_new_value_values)
+      .def("SetDecisionVariableValueInVector",
+          [](const MathematicalProgram& prog,
+              const Eigen::Ref<const MatrixXDecisionVariable>&
+                  decision_variables,
+              const Eigen::Ref<const Eigen::MatrixXd>&
+                  decision_variables_new_values,
+              Eigen::Ref<Eigen::VectorXd> values) {
+            prog.SetDecisionVariableValueInVector(
+                decision_variables, decision_variables_new_values, &values);
+          },
+          py::arg("decision_variables"),
+          py::arg("decision_variables_new_values"), py::arg("values"),
+          doc.MathematicalProgram
+              .SetDecisionVariableValueInVector
+              // NOLINTNEXTLINE(whitespace/line_length)
+              .doc_3args_decision_variables_decision_variables_new_values_values)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,
