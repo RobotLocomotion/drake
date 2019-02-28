@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
+namespace base {
 
 
 /// SimpleRulebook is a simple concrete implementation of the
@@ -82,6 +82,6 @@ class SimpleRulebook : public api::rules::RoadRulebook {
 };
 
 
-}  // namespace simplerulebook
+}  // namespace base
 }  // namespace maliput
 }  // namespace drake
