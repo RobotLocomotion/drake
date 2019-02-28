@@ -356,6 +356,39 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
   }
 }
 
+GTEST_TEST(GurobiTest, SolutionPool) {
+  // For mixed-integer program, Gurobi can find a pool of suboptimal solutions.
+  MathematicalProgram prog;
+  auto b = prog.NewBinaryVariables<2>();
+  prog.AddLinearEqualityConstraint(b(0) + b(1) == 1);
+  prog.AddLinearCost(b(0));
+
+  GurobiSolver solver;
+  if (solver.is_available()) {
+    SolverOptions solver_options;
+    // Find at most 3 suboptimal solutions. Note that the problem only has 2
+    // solutions. This is to make sure that the user can set the size of the
+    // pool as large as he wants, and the solver will try to find all possible
+    // solutions.
+    solver_options.SetOption(solver.id(), "PoolSolutions", 3);
+    MathematicalProgramResult result;
+    solver.Solve(prog, {}, solver_options, &result);
+    // The problem has only two set of solutions, either b = [0, 1] and b = [1,
+    // 0].
+    EXPECT_EQ(result.num_suboptimal_solution(), 2);
+    const double tol = 1E-8;
+    EXPECT_TRUE(
+        CompareMatrices(result.GetSolution(b), Eigen::Vector2d(0, 1), tol));
+    EXPECT_TRUE(CompareMatrices(result.GetSuboptimalSolution(b, 0),
+                                Eigen::Vector2d(0, 1), tol));
+    EXPECT_TRUE(CompareMatrices(result.GetSuboptimalSolution(b, 1),
+                                Eigen::Vector2d(1, 0), tol));
+    EXPECT_NEAR(result.get_optimal_cost(), 0, tol);
+    EXPECT_NEAR(result.get_suboptimal_objective(0), 0, tol);
+    EXPECT_NEAR(result.get_suboptimal_objective(1), 1, tol);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

@@ -294,7 +294,38 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution
-              .doc_1args_constEigenMatrixBase);
+              .doc_1args_constEigenMatrixBase)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const symbolic::Variable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_var_solution_number)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const VectorXDecisionVariable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_constEigenMatrixBase_int)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const MatrixXDecisionVariable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_constEigenMatrixBase_int)
+      .def("num_suboptimal_solution()",
+          [](const MathematicalProgramResult& self) {
+            return self.num_suboptimal_solution();
+          },
+          doc.MathematicalProgramResult.num_suboptimal_solution.doc)
+      .def("get_suboptimal_objective",
+          [](const MathematicalProgramResult& self, int solution_number) {
+            return self.get_suboptimal_objective(solution_number);
+          },
+          doc.MathematicalProgramResult.get_suboptimal_objective.doc);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);

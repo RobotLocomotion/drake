@@ -4,6 +4,7 @@
 #include <typeinfo>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "drake/common/symbolic.h"
 #include "drake/common/value.h"
@@ -12,6 +13,51 @@
 
 namespace drake {
 namespace solvers {
+/**
+ * Retrieve the value of a single variable @p var from @p variable_values.
+ * @param var The variable whose value is going to be retrieved. @p var.get_id()
+ * must be a key in @p variable_index.
+ * @param variable_index maps the variable ID to its index in @p
+ * variable_values.
+ * @param variable_values The values of all variables.
+ * @return variable_values(variable_index[var.get_id()]) if
+ * var.get_id() is a valid key of @p variable_index.
+ * @throws an invalid_argument error if var.get_id() is not a valid key of @p
+ * variable_index.
+ * @pre All the mapped value in variable_index is in the range [0,
+ * variable_values.rows())
+ */
+double GetVariableValue(
+    const symbolic::Variable& var,
+    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+        variable_index,
+    const Eigen::Ref<const Eigen::VectorXd>& variable_values);
+
+/**
+ * Overload GetVariableValue() function, but for an Eigen matrix of decision
+ * variables.
+ */
+template <typename Derived>
+typename std::enable_if_t<
+    std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+    Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>>
+GetVariableValue(
+    const Eigen::MatrixBase<Derived>& var,
+    const optional<std::unordered_map<symbolic::Variable::Id, int>>&
+        variable_index,
+    const Eigen::Ref<const Eigen::VectorXd>& variable_values) {
+  Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>
+      value(var.rows(), var.cols());
+  for (int i = 0; i < var.rows(); ++i) {
+    for (int j = 0; j < var.cols(); ++j) {
+      value(i, j) =
+          GetVariableValue(var(i, j), variable_index, variable_values);
+    }
+  }
+  return value;
+}
+
 /**
  * The result returned by MathematicalProgram::Solve(). It stores the
  * solvers::SolutionResult (whether the program is solved to optimality,
@@ -134,15 +180,7 @@ class MathematicalProgramResult final {
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
                     Derived::ColsAtCompileTime>>::type
   GetSolution(const Eigen::MatrixBase<Derived>& var) const {
-    Eigen::Matrix<double, Derived::RowsAtCompileTime,
-                  Derived::ColsAtCompileTime>
-        value(var.rows(), var.cols());
-    for (int i = 0; i < var.rows(); ++i) {
-      for (int j = 0; j < var.cols(); ++j) {
-        value(i, j) = GetSolution(var(i, j));
-      }
-    }
-    return value;
+    return GetVariableValue(var, decision_variable_index_, x_val_);
   }
 
   /**
@@ -155,6 +193,77 @@ class MathematicalProgramResult final {
    */
   double GetSolution(const symbolic::Variable& var) const;
 
+  /**
+   * @anchor solution_pools
+   * @name Solution Pools
+   * Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+   * solutions for mixed integer programming model.
+   * @{
+   */
+  /**
+   * Gets the suboptimal solution corresponding to a matrix of decision
+   * variables. See @ref solution_pools "solution pools"
+   * @param var The decision variables.
+   * @param solution_number The index of the sub-optimal solution.
+   * @pre @p solution_number should be in the range [0,
+   * num_suboptimal_solution()).
+   * @return The suboptimal values of the decision variables after solving the
+   * problem.
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
+      Eigen::Matrix<double, Derived::RowsAtCompileTime,
+                    Derived::ColsAtCompileTime>>::type
+  GetSuboptimalSolution(const Eigen::MatrixBase<Derived>& var,
+                        int solution_number) const {
+    return GetVariableValue(var, decision_variable_index_,
+                            suboptimal_x_val_[solution_number]);
+  }
+
+  /**
+   * Gets the suboptimal solution of a decision variable. See @ref
+   * solution_pools "solution pools"
+   * @param var The decision variable.
+   * @param solution_number The index of the sub-optimal solution.
+   * @pre @p solution_number should be in the range [0,
+   * num_suboptimal_solution()).
+   * @return The suboptimal value of the decision variable after solving the
+   * problem.
+   */
+  double GetSuboptimalSolution(const symbolic::Variable& var,
+                               int solution_number) const;
+
+  /**
+   * Number of suboptimal solutions stored inside MathematicalProgramResult.
+   * See @ref solution_pools "solution pools".
+   */
+  int num_suboptimal_solution() const {
+    return static_cast<int>(suboptimal_x_val_.size());
+  }
+
+  /**
+   * Gets the suboptimal objective value. See @ref solution_pools "solution
+   * pools".
+   * @param solution_number The index of the sub-optimal solution. @pre @p
+   * solution_number should be in the range [0, num_suboptimal_solution()).
+   */
+  double get_suboptimal_objective(int solution_number) const {
+    return suboptimal_objectives_[solution_number];
+  }
+
+  /**
+   * Adds the suboptimal solution to the result. See @ref solution_pools
+   * "solution pools".
+   * @param suboptimal_objective The objective value computed from this
+   * suboptimal solution.
+   * @param suboptimal_x The values of the decision variables in this suboptimal
+   * solution.
+   */
+  void AddSuboptimalSolution(double suboptimal_objective,
+                             const Eigen::VectorXd& suboptimal_x);
+  //@}
+
  private:
   optional<std::unordered_map<symbolic::Variable::Id, int>>
       decision_variable_index_{};
@@ -163,6 +272,12 @@ class MathematicalProgramResult final {
   double optimal_cost_{};
   SolverId solver_id_;
   copyable_unique_ptr<AbstractValue> solver_details_;
+  // Some solvers (like Gurobi, Cplex, etc) can store a pool of (suboptimal)
+  // solutions for mixed integer programming model.
+  // suboptimal_objectives_[i] is the objective value computed with the
+  // suboptimal solution suboptimal_x_val_[i].
+  std::vector<Eigen::VectorXd> suboptimal_x_val_{};
+  std::vector<double> suboptimal_objectives_{};
 };
 
 }  // namespace solvers
