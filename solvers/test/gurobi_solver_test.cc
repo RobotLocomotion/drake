@@ -366,11 +366,15 @@ GTEST_TEST(GurobiTest, SolutionPool) {
   GurobiSolver solver;
   if (solver.is_available()) {
     SolverOptions solver_options;
-    // Find at most 3 suboptimal solutions.
+    // Find at most 3 suboptimal solutions. Note that the problem only has 2
+    // solutions. This is to make sure that the user can set the size of the
+    // pool as large as he wants, and the solver will try to find all possible
+    // solutions.
     solver_options.SetOption(solver.id(), "PoolSolutions", 3);
     MathematicalProgramResult result;
     solver.Solve(prog, {}, solver_options, &result);
-    // The two suboptimal solutions are b = [0, 1] and b = [1, 0].
+    // The problem has only two set of solutions, either b = [0, 1] and b = [1,
+    // 0].
     EXPECT_EQ(result.num_suboptimal_solution(), 2);
     const double tol = 1E-8;
     EXPECT_TRUE(
