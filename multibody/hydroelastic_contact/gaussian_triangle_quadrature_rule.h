@@ -25,8 +25,13 @@ class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
 
  private:
   // Sets the weights and quadrature points depending on the order of the
-  // quadrature rule. Weights and quadrature points taken from pp. 18-19 of:
+  // quadrature rule. Weights and quadrature points for the rational numbers
+  // were taken from pp. 8-9 of:
   // http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
+  // Weights and quadrature points for decimal numbers were taken from p. 1140
+  // of:
+  // D. A. Dunavant. High degree efficient symmetrical Gaussian quadrature
+  // rules for the triangle. Intl. J. Num. Meth. Eng. pp. 1129-1148, 1985.
   void SetWeightsAndQuadraturePoints() {
     switch (order_) {
       case 1:
@@ -56,6 +61,10 @@ class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
         quadrature_points_[3] = { 3.0/5.0, 1.0/5.0 };
         break;
 
+      // TODO(edrumwri): Consider solving the polynomial equations for the
+      // rational numbers symbolically (or even numerically) to get the last
+      // digit of accuracy for fourth order and beyond; fourth and fifth order
+      // currently provide "only" 15 decimal digits of accuracy.
       case 4:
         weights_.resize(6);
         quadrature_points_.resize(6);

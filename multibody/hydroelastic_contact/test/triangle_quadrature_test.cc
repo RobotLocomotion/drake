@@ -57,10 +57,11 @@ class UnityQuadratureTest : public ::testing::Test {
       GaussianTriangleQuadratureRule rule(order);
 
       // Compute the integral over the unit triangle (0, 0), (1, 0), (0, 1).
+      const int num_weights = static_cast<int>(rule.weights().size());
       double result = TriangleQuadrature<double, double>::Integrate(
           f, rule, 0.5 /* triangle area */);
       EXPECT_NEAR(result, 1.0,
-          25 * std::numeric_limits<double>::epsilon()) << order;
+          5 * num_weights * std::numeric_limits<double>::epsilon()) << order;
     }
   }
 };
