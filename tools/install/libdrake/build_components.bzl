@@ -81,6 +81,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
+    "//multibody/hydroelastic_contact",
     "//multibody/inverse_kinematics",
     "//multibody/math",
     "//multibody/multibody_tree",
@@ -90,7 +91,6 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
     "//multibody/plant",
-    "//multibody/plant/hydroelastic_contact",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
     "//multibody/tree",
     "//perception",
