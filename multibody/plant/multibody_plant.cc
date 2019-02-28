@@ -1779,7 +1779,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         this->CalcContactResults(context, &contact_results_cache);
       },
       // We explicitly declare the dependence on the implicit Stribeck solver
-      // even though the Eval() above makes the evaluation.
+      // even though the Eval() above does the evaluation.
       {this->cache_entry_ticket(
           cache_indexes_.implicit_stribeck_solver_results_)});
   cache_indexes_.contact_results_ = contact_results_cache_entry.cache_index();

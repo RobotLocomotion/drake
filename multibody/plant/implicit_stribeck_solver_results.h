@@ -10,11 +10,11 @@ namespace multibody {
 /// This struct stores the results from a computation performed with
 /// ImplicitStribeckSolver. See the ImplicitStribeckSolver class's documentation
 /// for further details.
-/// We denote with `nv` the size of the vector of generalized velocities and
-/// with `nc` the number of contact points.
+/// We denote `nv` the size of the vector of generalized velocities and `nc` the
+/// number of contact points.
 template <class T>
 struct ImplicitStribeckSolverResults {
-  /// Next time step vector of generalized velocities.
+  /// Vector of generalized velocities at the next time step.
   VectorX<T> v_next;
 
   /// Vector storing the normal force (positive) at each contact point, of size

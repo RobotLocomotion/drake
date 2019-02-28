@@ -2900,11 +2900,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// These queries relate to the modeling of contact using point contact
   /// models.
 
-  /// Evaluates all point pairs of contact for a given state of themodel stored
+  /// Evaluates all point pairs of contact for a given state of the model stored
   /// in `context`.
   /// Each entry in the returned vector corresponds to a single point pair
-  /// corresponding to two bodies A and B in penetration. The size of the
-  /// returned vector corredsponds to the total number of contact penetration
+  /// corresponding to two interpenetrating bodies A and B. The size of the
+  /// returned vector corresponds to the total number of contact penetration
   /// pairs. If no geometry was registered, the output vector is empty.
   /// @see PenetrationAsPointPair for further details on the returned data.
   /// @throws std::exception if called pre-finalize. See Finalize().
@@ -2920,24 +2920,27 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// `context`.
   /// This method first evaluates the point pair penetrations in the system for
   /// the given `context`, see EvalPointPairPenetrations(). For each penetration
-  /// pair involving bodies A and B a contact frame C is defined by the rotation
-  /// matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W` equals the
-  /// normal vector pointing from body B into body A, expressed in the world
-  /// frame W. See PenetrationAsPointPair for further details on the definition
-  /// of each contact pair. Versors `Cx_W` and `Cy_W` constitute a basis of the
-  /// plane normal to `Cz_W` and are arbitrarily chosen. The contact frame basis
-  /// can be accessed in the results, see ContactJacobians::R_WC_list. Further,
-  /// for each contact pair evaluated this method computes the Jacobians `Jn`
-  /// and `Jt`. With v of size `nv` the vector of generalized velocities and
-  /// `nc` the number of contact pairs;
+  /// pair involving bodies A and B, a contact frame C is defined by the
+  /// rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W`
+  /// equals the normal vector pointing from body B into body A, expressed in
+  /// the world frame W. See PenetrationAsPointPair for further details on the
+  /// definition of each contact pair. Versors `Cx_W` and `Cy_W` constitute a
+  /// basis of the plane normal to `Cz_W` and are arbitrarily chosen. The
+  /// contact frame basis can be accessed in the results, see
+  /// ContactJacobians::R_WC_list. Further, for each contact pair evaluated,
+  /// this method computes the Jacobians `Jn` and `Jt`. With the vector of
+  /// generalized velocities v of size `nv` and `nc` the number of contact
+  /// pairs;
   ///   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
   ///     separation speed for each contact point, defined to be positive when
-  ///     bodies are moving away.
+  ///     bodies are moving away at the contact.
   ///   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
-  ///     concatenates the two-dimensional relative tangential velocity vector
-  ///     `vx_AcBc_C` for each contact pair.
+  ///     concatenates the tangential components of the relative velocity vector
+  ///     `v_AcBc` in the frame C of contact. That is, for the k-th contact
+  ///     pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
+  ///     `Cx` and `Cy` directions.
   ///
-  /// If no geometry was registered or if `nc = 0`,ContactJacobians holds empty
+  /// If no geometry was registered or if `nc = 0`, ContactJacobians holds empty
   /// results.
   ///
   /// @see ContactJacobians for specifics on the returned data storage.
@@ -2994,7 +2997,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
 
-  // This struct stores in one single place all indexes related with
+  // This struct stores in one single place all indexes related to
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
@@ -3139,7 +3142,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const VectorX<T>& v0, const VectorX<T>& phi0) const;
 
   // This method uses the time stepping method described in
-  // ImplicitStribeckSolver to advance the state of the model stored in
+  // ImplicitStribeckSolver to advance the model's state stored in
   // `context0` taking a time step of size time_step().
   // Contact forces and velocities are computed and stored in `results`. See
   // ImplicitStribeckSolverResults for further details on the returned data.
@@ -3156,7 +3159,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
 
   // Helper method to fill in the ContactResults given the current context.
-  // If cached constact solver results are not up-to-date with `context`,
+  // If cached contact solver results are not up-to-date with `context`,
   // they'll be  recomputed, see EvalImplicitStribeckResults(). The solver
   // results are then used to compute contact results into `contacts`.
   void CalcContactResults(const systems::Context<T>& context,

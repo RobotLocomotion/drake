@@ -7,8 +7,7 @@
 namespace drake {
 namespace multibody {
 
-/// This struct stores a contact Jacobians computation when a point contact
-/// model is used.
+/// Stores the computed contact Jacobians when a point contact model is used.
 /// At a given state of the multibody system, there will be `nc` contact pairs.
 /// For each penetration pair involving bodies A and B a contact frame C is
 /// defined by the rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where
@@ -28,8 +27,10 @@ struct ContactJacobians {
 
   /// Tangential contact forces Jacobian.
   /// `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v` concatenates
-  /// the two-dimensional relative tangential velocity vector `vx_AcBc_C` for
-  /// each contact pair.
+  /// the tangential components of the relative velocity vector `v_AcBc`
+  /// in the frame C of contact, for each pair. That is, for the k-th contact
+  /// pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
+  /// `Cx` and `Cy` directions.
   MatrixX<T> Jt;
 
   /// List of contact frames orientation R_WC in the world frame W for each
