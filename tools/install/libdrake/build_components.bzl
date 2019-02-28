@@ -82,6 +82,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
+    "//multibody/hydroelastic_contact",
     "//multibody/inverse_kinematics",
     "//multibody/math",
     "//multibody/multibody_tree",
