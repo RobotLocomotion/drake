@@ -32,33 +32,34 @@ class TriangleQuadrature {
   ///        The barycentric coordinates are given by
   ///        (p[0], p[1], 1 - p[0] - p[1]).
   /// @param area the area of the triangle.
-  /// @param initial_value the integral will be added to this value, which
-  ///        you will typically want to set to zero.
   static NumericReturnType Integrate(
       std::function<NumericReturnType(const Vector2<T>&)> f,
       const TriangleQuadratureRule& rule,
-      const T& area,
-      const NumericReturnType& initial_value);
+      const T& area);
 };
 
 template <typename NumericReturnType, typename T>
 NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
     std::function<NumericReturnType(const Vector2<T>&)> f,
     const TriangleQuadratureRule& rule,
-    const T& area,
-    const NumericReturnType& initial_value) {
-
-  // Initialize the integral.
-  NumericReturnType integral = initial_value / area;
+    const T& area) {
 
   // Get the quadrature points and weights.
   const std::vector<Eigen::Vector2d>& barycentric_coordinates =
       rule.quadrature_points();
   const std::vector<double>& weights = rule.weights();
   DRAKE_DEMAND(barycentric_coordinates.size() == weights.size());
+  DRAKE_DEMAND(weights.size() >= 1);
 
   // Sum the weighted function evaluated at the transformed quadrature points.
-  for (int i = 0; i < static_cast<int>(weights.size()); ++i)
+  // The looping is done in this particular way so that the return type can
+  // be either a traditional scalar (e.g., `double`), an Eigen Vector, or
+  // some other numeric type, without having to worry about the numerous
+  // possible ways to initialize to zero (e.g., `double integral = 0.0` vs.
+  // `Eigen::VectorXd = Eigen::VectorXd::Zero())` or having to know the
+  // dimension of the NumericReturnType (i.e., scalar or vector dimension).
+  NumericReturnType integral = f(barycentric_coordinates[0]) * weights[0];
+  for (int i = 1; i < static_cast<int>(weights.size()); ++i)
     integral += f(barycentric_coordinates[i]) * weights[i];
 
   return integral * area;

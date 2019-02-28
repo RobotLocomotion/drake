@@ -34,8 +34,12 @@ drake_cc_library(
     hdrs = [
         "triangle_quadrature.h",
     ],
+    srcs = [
+        "triangle_quadrature.cc",
+    ],
     deps = [
         ":triangle_quadrature_rules",
+        "//common:essential",
     ],
 )
 
@@ -44,8 +48,6 @@ drake_cc_googletest(
     deps = [
         ":triangle_quadrature",
         "//common/test_utilities:expect_throws_message",
-        "//systems/analysis:simulator",
-        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 

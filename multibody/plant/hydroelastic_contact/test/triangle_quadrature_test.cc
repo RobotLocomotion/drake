@@ -55,7 +55,7 @@ class UnityQuadratureTest : public ::testing::Test {
 
       // Compute the integral over the unit triangle (0, 0), (1, 0), (0, 1).
       double result = TriangleQuadrature<double, double>::Integrate(
-          f, rule, 0.5 /* triangle area */, 0.0 /* initial value */);
+          f, rule, 0.5 /* triangle area */);
       EXPECT_NEAR(result, 1.0,
           25 * std::numeric_limits<double>::epsilon()) << order;
     }
