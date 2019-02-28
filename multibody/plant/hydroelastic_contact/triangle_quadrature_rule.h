@@ -25,15 +25,12 @@ class TriangleQuadratureRule {
 
   /// Returns the vector of quadrature points.
   const std::vector<Vector2<double>>& quadrature_points() const {
-    const std::vector<Vector2<double>>& rule_quadrature_points =
-        do_quadrature_points();
-    return rule_quadrature_points;
+    return do_quadrature_points();
   }
 
   /// Returns the vector of weights.
   const std::vector<double>& weights() const {
-    const std::vector<double>& rule_weights = do_weights();
-    return rule_weights;
+    return do_weights();
   }
 
  protected:

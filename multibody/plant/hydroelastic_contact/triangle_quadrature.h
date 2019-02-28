@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
 #include "drake/common/eigen_types.h"
@@ -15,9 +16,8 @@ namespace hydroelastic_contact {
 /// @tparam NumericReturnType the output type of the function being integrated.
 ///         Commonly will be a IEEE floating point scalar (e.g., `double`), but
 ///         could be an Eigen::VectorXd, a multibody::SpatialForce, or any
-///         other numeric type that supports scalar multiplication and division
-///         (i.e., operator*(const NumericReturnType&, double) and
-///         operator/(const NumericReturnType&, double)) and addition with
+///         other numeric type that supports both scalar multiplication
+///         (i.e., operator*(const NumericReturnType&, double) and addition with
 ///         another of the same type (i.e.,
 ///         operator+(const NumericReturnType&, const NumericReturnType&)).
 /// @tparam T the scalar type of the function being integrated over. Supported
@@ -33,14 +33,14 @@ class TriangleQuadrature {
   ///        (p[0], p[1], 1 - p[0] - p[1]).
   /// @param area the area of the triangle.
   static NumericReturnType Integrate(
-      std::function<NumericReturnType(const Vector2<T>&)> f,
+      const std::function<NumericReturnType(const Vector2<T>&)> f,
       const TriangleQuadratureRule& rule,
       const T& area);
 };
 
 template <typename NumericReturnType, typename T>
 NumericReturnType TriangleQuadrature<NumericReturnType, T>::Integrate(
-    std::function<NumericReturnType(const Vector2<T>&)> f,
+    const std::function<NumericReturnType(const Vector2<T>&)> f,
     const TriangleQuadratureRule& rule,
     const T& area) {
 

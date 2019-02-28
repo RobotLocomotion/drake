@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algorithm>
+#include <stdexcept>
 #include <vector>
 
 #include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature_rule.h"
@@ -9,7 +9,7 @@ namespace drake {
 namespace multibody {
 namespace hydroelastic_contact {
 
-class GaussianTriangleQuadratureRule : public TriangleQuadratureRule {
+class GaussianTriangleQuadratureRule final : public TriangleQuadratureRule {
  public:
   /// Constructs the Gaussian quadrature rule of the specified order, which
   /// must be between 1 and 5.

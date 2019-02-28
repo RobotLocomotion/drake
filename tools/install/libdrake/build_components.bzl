@@ -90,6 +90,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
     "//multibody/plant",
+    "//multibody/plant/hydroelastic_contact",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
     "//multibody/tree",
     "//perception",

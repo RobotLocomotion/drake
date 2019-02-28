@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/hydroelastic_contact/triangle_quadrature.h"
 
+#include <algorithm>
 #include <numeric>
 
 #include <gtest/gtest.h>
@@ -8,9 +9,11 @@
 #include "drake/multibody/plant/hydroelastic_contact/gaussian_triangle_quadrature_rule.h"
 
 using Vector2d = drake::Vector2<double>;
-using TriangleVertices = std::array<Vector2d, 3>;
-using drake::multibody::hydroelastic_contact::TriangleQuadrature;
-using drake::multibody::hydroelastic_contact::GaussianTriangleQuadratureRule;
+
+namespace drake {
+namespace multibody {
+namespace hydroelastic_contact {
+namespace {
 
 GTEST_TEST(TriangleQuadrature, GaussianQuadratureRuleThrowsAboveMaxOrder) {
   // TODO(edrumwri): Consider adding a max_order() method to the
@@ -48,7 +51,7 @@ GTEST_TEST(TriangleQuadrature, BarycentricCoordsConsistent) {
 class UnityQuadratureTest : public ::testing::Test {
  public:
   void TestForUnityResultFromStartingOrder(
-      std::function<double(const Vector2d&)> f, int starting_order) {
+      const std::function<double(const Vector2d&)> f, int starting_order) {
     // Test Gaussian quadrature rules from starting_order through 5.
     for (int order = starting_order; order <= 5; ++order) {
       GaussianTriangleQuadratureRule rule(order);
@@ -171,3 +174,8 @@ TEST_F(UnityQuadratureTest, FifthOrder2) {
 
   TestForUnityResultFromStartingOrder(f, 5);
 }
+
+}  // namespace
+}  // namespace hydroelastic_contact
+}  // namespace multibody
+}  // namespace drake
