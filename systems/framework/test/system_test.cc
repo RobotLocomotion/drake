@@ -442,7 +442,7 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
 }
 
 template <typename T>
-using TestTypedVector = MyVector<1, T>;
+using TestTypedVector = MyVector<T, 1>;
 
 // A shell System for AbstractValue IO test.
 template <typename T>
@@ -635,9 +635,9 @@ class SystemInputErrorTest : public ::testing::Test {
 
 // A BasicVector-derived type we can complain about in the next test.
 template <typename T>
-class WrongVector : public MyVector<2, T> {
+class WrongVector : public MyVector<T, 2> {
  public:
-  using MyVector<2, T>::MyVector;
+  using MyVector<T, 2>::MyVector;
 };
 
 // Test error messages from the EvalInput methods.

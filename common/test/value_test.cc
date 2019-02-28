@@ -163,7 +163,7 @@ GTEST_TEST(ValueTest, NiceTypeName) {
 
   // Must return the name of the most-derived type.
   EXPECT_EQ(base_value->GetNiceTypeName(),
-            "drake::systems::MyVector<2,double>");
+            "drake::systems::MyVector<double,2>");
 }
 
 GTEST_TEST(ValueTest, TypeInfo) {

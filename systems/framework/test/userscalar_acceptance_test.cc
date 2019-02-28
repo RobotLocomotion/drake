@@ -29,8 +29,8 @@ class TestSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TestSystem)
 
-  using StateVector = MyVector<2, T>;
-  using OutputVector = MyVector<1, T>;
+  using StateVector = MyVector<T, 2>;
+  using OutputVector = MyVector<T, 1>;
 
   TestSystem() {
     this->DeclareContinuousState(StateVector{});
