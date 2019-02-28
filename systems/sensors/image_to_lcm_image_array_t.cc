@@ -129,7 +129,7 @@ void PackImageToLcmImageT(const AbstractValue& untyped_image,
       break;
     }
     case PixelType::kExpr:
-      DRAKE_ABORT_MSG("PixelType::kExpr is not supported.");
+      throw std::domain_error("PixelType::kExpr is not supported.");
   }
 }
 

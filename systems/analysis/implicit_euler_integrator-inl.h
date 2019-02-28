@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 
 #include "drake/common/text_logging.h"
@@ -397,7 +398,7 @@ bool ImplicitEulerIntegrator<T>::CalcMatrices(const T& tf, const T& dt,
       }
 
       default:
-        DRAKE_ABORT_MSG("Unexpected trial number.");
+        throw std::domain_error("Unexpected trial number.");
     }
   }
 }

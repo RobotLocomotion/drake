@@ -1,6 +1,7 @@
 #include "drake/automotive/maliput/simplerulebook/simple_rulebook.h"
 
 #include <algorithm>
+#include <stdexcept>
 #include <string>
 
 #include "drake/common/drake_optional.h"
@@ -211,7 +212,7 @@ QueryResults SimpleRulebook::DoFindRules(
       } else if (id.s) {
         result.speed_limit.push_back(speed_limits_.at(*id.s));
       } else {
-        DRAKE_ABORT_MSG("IdVariant is empty");
+        throw std::domain_error("SimpleRulebook: IdVariant is empty");
       }
     }
   }
