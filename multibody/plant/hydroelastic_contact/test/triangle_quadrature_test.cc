@@ -49,23 +49,16 @@ class UnityQuadratureTest : public ::testing::Test {
  public:
   void TestForUnityResultFromStartingOrder(
       std::function<double(const Vector2d&)> f, int starting_order) {
-    // The vertices of the "unit triangle."
-    TriangleVertices v = UnitTriangleVertices();
-
-    // Test Gaussian quadrature rules of orders 1 through 5.
+    // Test Gaussian quadrature rules from starting_order through 5.
     for (int order = starting_order; order <= 5; ++order) {
       GaussianTriangleQuadratureRule rule(order);
 
-      // Compute the integral.
+      // Compute the integral over the unit triangle (0, 0), (1, 0), (0, 1).
       double result = TriangleQuadrature<double, double>::Integrate(
-          v[0], v[1], v[2], f, rule, 0.0);
-      EXPECT_NEAR(result, 1.0, 1000 * std::numeric_limits<double>::epsilon());
+          f, rule, 0.5 /* triangle area */, 0.0 /* initial value */);
+      EXPECT_NEAR(result, 1.0,
+          25 * std::numeric_limits<double>::epsilon()) << order;
     }
-  }
-
- private:
-  TriangleVertices UnitTriangleVertices() {
-    return {{ {0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0} }};
   }
 };
 
@@ -110,7 +103,7 @@ TEST_F(UnityQuadratureTest, SecondOrder1) {
 }
 
 // Twelfth test from TEST04 of:
-TEST_F(UnityQuadratureTest, SecondOrder3) {
+TEST_F(UnityQuadratureTest, SecondOrder2) {
   // Function to be integrated: 24xy
   auto f = [](const Vector2d& p) -> double {
     return 24 * p[0] * p[1];
@@ -120,7 +113,7 @@ TEST_F(UnityQuadratureTest, SecondOrder3) {
 }
 
 // Fourth test from TEST04 of:
-TEST_F(UnityQuadratureTest, ThirdOrder) {
+TEST_F(UnityQuadratureTest, ThirdOrder1) {
   // Function to be integrated: 20y³
   auto f = [](const Vector2d& p) -> double {
     return 20 * p[1] * p[1] * p[1];
@@ -153,7 +146,7 @@ TEST_F(UnityQuadratureTest, FourthOrder1) {
 TEST_F(UnityQuadratureTest, FourthOrder2) {
   // Function to be integrated: 120xy³
   auto f = [](const Vector2d& p) -> double {
-    return 30 * p[1] * p[1] * p[1] * p[1];
+    return 120 * p[0] * p[1] * p[1] * p[1];
   };
 
   TestForUnityResultFromStartingOrder(f, 4);
@@ -161,7 +154,7 @@ TEST_F(UnityQuadratureTest, FourthOrder2) {
 
 // Fifth test from TEST04 of:
 TEST_F(UnityQuadratureTest, FifthOrder1) {
-  // Function to be integrated: 30y⁵
+  // Function to be integrated: 42y⁵
   auto f = [](const Vector2d& p) -> double {
     return 42 * p[1] * p[1] * p[1] * p[1] * p[1];
   };
@@ -178,26 +171,3 @@ TEST_F(UnityQuadratureTest, FifthOrder2) {
 
   TestForUnityResultFromStartingOrder(f, 5);
 }
-
-// Tests whether quadrature is able to produce the accurate solution given at:
-// http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF p. 12.
-GTEST_TEST(TriangleQuadrature, SecondOrder2) {
-  // Function to be integrated: (2 - x - 2y)
-  auto f = [](const Vector2d& p) -> double {
-    return 2 - p[0] - 2 * p[1];
-  };
-
-  // The triangle vertices.
-  Vector2d v[3] = { {0.0, 0.0}, {1.0, 0.5}, {0.0, 1.0} };
-
-  // Test Gaussian quadrature rules of orders 2 through 5.
-  for (int order = 2; order <= 5; ++order) {
-    GaussianTriangleQuadratureRule rule(order);
-
-    // Compute the integral.
-    double result = TriangleQuadrature<double, double>::Integrate(
-        v[0], v[1], v[2], f, rule, 0.0);
-    EXPECT_NEAR(result, 1.0/3, 1000 * std::numeric_limits<double>::epsilon());
-  }
-}
-

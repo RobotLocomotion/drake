@@ -11,8 +11,10 @@ namespace hydroelastic_contact {
 
 class GaussianTriangleQuadratureRule : public TriangleQuadratureRule {
  public:
-  /// Constructs the Gaussian quadrature rule of the specified order.
+  /// Constructs the Gaussian quadrature rule of the specified order, which
+  /// must be between 1 and 5.
   explicit GaussianTriangleQuadratureRule(int order) : order_(order) {
+    DRAKE_DEMAND(order >= 1);
     if (order > 5) {
       throw std::logic_error(
         "Gaussian triangle quadrature only supported up to fifth order "
@@ -46,40 +48,40 @@ class GaussianTriangleQuadratureRule : public TriangleQuadratureRule {
       case 3:
         weights_.resize(4);
         quadrature_points_.resize(4);
-        weights_[0] = -0.5625;
-        weights_[1] = weights_[2] = weights_[3] = 0.52083333333333;
+        weights_[0] = -27.0/48.0;
+        weights_[1] = weights_[2] = weights_[3] = 25.0/48.0;
         quadrature_points_[0] = { 1.0/3.0, 1.0/3.0 };
-        quadrature_points_[1] = { 0.2, 0.2 };
-        quadrature_points_[2] = { 0.2, 0.6 };
-        quadrature_points_[3] = { 0.6, 0.2 };
+        quadrature_points_[1] = { 1.0/5.0, 1.0/5.0 };
+        quadrature_points_[2] = { 1.0/5.0, 3.0/5.0 };
+        quadrature_points_[3] = { 3.0/5.0, 1.0/5.0 };
         break;
 
       case 4:
         weights_.resize(6);
         quadrature_points_.resize(6);
-        weights_[0] = weights_[1] = weights_[2] = 0.22338158967801;
-        weights_[3] = weights_[4] = weights_[5] = 0.10995174365532;
-        quadrature_points_[0] = { 0.44594849091597, 0.44594849091597 };
-        quadrature_points_[1] = { 0.44594849091597, 0.10810301816807 };
-        quadrature_points_[2] = { 0.10810301816807, 0.44594849091597 };
-        quadrature_points_[3] = { 0.09157621350977, 0.09157621350977 };
-        quadrature_points_[4] = { 0.09157621350977, 0.81684757298046 };
-        quadrature_points_[5] = { 0.81684757298046, 0.09157621350977 };
+        weights_[0] = weights_[1] = weights_[2] = 0.223381589678011;
+        weights_[3] = weights_[4] = weights_[5] = 0.109951743655322;
+        quadrature_points_[0] = { 0.445948490915965, 0.445948490915965 };
+        quadrature_points_[1] = { 0.445948490915965, 0.108103018168070 };
+        quadrature_points_[2] = { 0.108103018168070, 0.445948490915965 };
+        quadrature_points_[3] = { 0.091576213509771, 0.091576213509771 };
+        quadrature_points_[4] = { 0.091576213509771, 0.816847572980459 };
+        quadrature_points_[5] = { 0.816847572980459, 0.091576213509771 };
         break;
 
       case 5:
         weights_.resize(7);
         quadrature_points_.resize(7);
         weights_[0] = 0.225;
-        weights_[1] = weights_[2] = weights_[3] = 0.13239415278851;
-        weights_[4] = weights_[5] = weights_[6] = 0.12593918054483;
+        weights_[1] = weights_[2] = weights_[3] = 0.132394152788506;
+        weights_[4] = weights_[5] = weights_[6] = 0.125939180544827;
         quadrature_points_[0] = { 1.0/3.0, 1.0/3.0 };
-        quadrature_points_[1] = { 0.47014206410511, 0.47014206410511 };
-        quadrature_points_[2] = { 0.47014206410511, 0.05971587178977 };
-        quadrature_points_[3] = { 0.05971587178977, 0.47014206410511 };
-        quadrature_points_[4] = { 0.10128650732346, 0.10128650732346 };
-        quadrature_points_[5] = { 0.10128650732346, 0.79742698535309 };
-        quadrature_points_[6] = { 0.79742698535309, 0.10128650732346 };
+        quadrature_points_[1] = { 0.470142064105115, 0.470142064105115 };
+        quadrature_points_[2] = { 0.470142064105115, 0.059715871789770 };
+        quadrature_points_[3] = { 0.059715871789770, 0.470142064105115 };
+        quadrature_points_[4] = { 0.101286507323456, 0.101286507323456 };
+        quadrature_points_[5] = { 0.101286507323456, 0.797426985353087 };
+        quadrature_points_[6] = { 0.797426985353087, 0.101286507323456 };
         break;
 
       default:
