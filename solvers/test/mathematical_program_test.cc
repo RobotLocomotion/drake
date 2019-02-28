@@ -76,6 +76,10 @@ namespace drake {
 namespace solvers {
 namespace test {
 
+namespace {
+constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+}  // namespace
+
 struct Movable {
   Movable() = default;
   Movable(Movable&&) = default;
@@ -2823,6 +2827,20 @@ GTEST_TEST(testMathematicalProgram, testSetAndGetInitialGuess) {
   symbolic::Variable y("y");
   EXPECT_THROW(prog.SetInitialGuess(y, 1), std::runtime_error);
   EXPECT_THROW(prog.GetInitialGuess(y), std::runtime_error);
+
+  // Try the same things with an extrinsic guess.
+  VectorXd guess = VectorXd::Constant(3, kNaN);
+  prog.SetDecisionVariableValueInVector(x(2), 2, &guess);
+  EXPECT_TRUE(std::isnan(guess[0]));
+  EXPECT_EQ(guess[2], 2.0);
+  prog.SetDecisionVariableValueInVector(
+      x.head<2>(), Eigen::Vector2d(0.0, 1.0), &guess);
+  EXPECT_EQ(guess[0], 0.0);
+  EXPECT_EQ(guess[1], 1.0);
+  EXPECT_EQ(guess[2], 2.0);
+  EXPECT_THROW(
+      prog.SetDecisionVariableValueInVector(y, 0.0, &guess),
+      std::exception);
 }
 
 GTEST_TEST(testMathematicalProgram, testNonlinearExpressionConstraints) {
@@ -2866,8 +2884,7 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   EXPECT_EQ(prog.GetSolverId(), dummy_solver_id);
   // The decision variables, optimal cost, and lower bound should all be NaN.
   EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(x),
-      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+      prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
   EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 
@@ -2890,8 +2907,7 @@ GTEST_TEST(testMathematicalProgram, testSetSolverResult) {
   EXPECT_EQ(prog.GetSolverId(), dummy_solver_id2);
   // The decision variables, optimal cost, and lower bound should all be NaN.
   EXPECT_TRUE(CompareMatrices(
-      prog.GetSolution(x),
-      Eigen::Vector2d::Constant(std::numeric_limits<double>::quiet_NaN())));
+      prog.GetSolution(x), Eigen::Vector2d::Constant(kNaN)));
   EXPECT_TRUE(std::isnan(prog.GetOptimalCost()));
   EXPECT_TRUE(std::isnan(prog.GetLowerBoundCost()));
 }

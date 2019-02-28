@@ -957,6 +957,34 @@ void MathematicalProgram::SetInitialGuess(
       variable_guess_value;
 }
 
+void MathematicalProgram::SetDecisionVariableValueInVector(
+    const symbolic::Variable& decision_variable,
+    double decision_variable_new_value,
+    EigenPtr<Eigen::VectorXd> values) const {
+  DRAKE_THROW_UNLESS(values != nullptr);
+  DRAKE_THROW_UNLESS(values->size() == num_vars());
+  const int index = FindDecisionVariableIndex(decision_variable);
+  (*values)(index) = decision_variable_new_value;
+}
+
+void MathematicalProgram::SetDecisionVariableValueInVector(
+    const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables,
+    const Eigen::Ref<const Eigen::MatrixXd>& decision_variables_new_values,
+    EigenPtr<Eigen::VectorXd> values) const {
+  DRAKE_THROW_UNLESS(values != nullptr);
+  DRAKE_THROW_UNLESS(values->size() == num_vars());
+  DRAKE_THROW_UNLESS(
+      decision_variables.rows() == decision_variables_new_values.rows());
+  DRAKE_THROW_UNLESS(
+      decision_variables.cols() == decision_variables_new_values.cols());
+  for (int i = 0; i < decision_variables.rows(); ++i) {
+    for (int j = 0; j < decision_variables.cols(); ++j) {
+      const int index = FindDecisionVariableIndex(decision_variables(i, j));
+      (*values)(index) = decision_variables_new_values(i, j);
+    }
+  }
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void MathematicalProgram::SetSolverResult(
