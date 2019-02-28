@@ -25,7 +25,7 @@ GTEST_TEST(TriangleQuadrature, WeightsSumToUnity) {
     GaussianTriangleQuadratureRule rule(order);
     const std::vector<double>& weights = rule.weights();
     const double sum = std::accumulate(weights.begin(), weights.end(), 0.0);
-    const double tol = 20 * weights.size() *
+    const double tol = weights.size() *
         std::numeric_limits<double>::epsilon();
     EXPECT_NEAR(sum, 1.0, tol);
   }
