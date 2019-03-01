@@ -315,7 +315,7 @@ TEST_F(LeafOutputPortTest, ThrowIfBadCalcOutput) {
       absport_general_.Calc(*context_, bad_out.get()), std::logic_error,
       "OutputPort::Calc().*expected.*std::string.*got.*int.*");
 
-  // The vector port is a MyVector<3,double>, we'll give it a BasicVector.
+  // The vector port is a MyVector3d, we'll give it a BasicVector.
   auto good_vec = vecport_general_.Allocate();
   auto bad_vec = AbstractValue::Make(BasicVector<double>(2));
   EXPECT_NO_THROW(vecport_general_.Calc(*context_, good_vec.get()));

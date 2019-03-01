@@ -809,7 +809,7 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
 // Tests that the leaf system reserved the declared continuous state with
 // second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
-  using MyVector9d = MyVector<4 + 3 + 2, double>;
+  using MyVector9d = MyVector<double, 4 + 3 + 2>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
   // Tests get_num_continuous_states without a context.

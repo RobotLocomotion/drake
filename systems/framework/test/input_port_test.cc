@@ -71,12 +71,12 @@ GTEST_TEST(InputPortTest, VectorTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut->Eval<std::string>(context), std::exception,
       "InputPort::Eval..: wrong value type std::string specified; "
-      "actual type was drake::systems::MyVector<3,double> "
+      "actual type was drake::systems::MyVector<double,3> "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut->Eval<MyVector2d>(context), std::exception,
-      "InputPort::Eval..: wrong value type .*MyVector<2,double> specified; "
-      "actual type was .*MyVector<3,double> "
+      "InputPort::Eval..: wrong value type .*MyVector<double,2> specified; "
+      "actual type was .*MyVector<double,3> "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
 }
 
