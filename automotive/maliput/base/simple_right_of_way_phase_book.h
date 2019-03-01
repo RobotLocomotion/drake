@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simple_phase_book {
 
 /// A simple concrete implementation of the api::rules::RightOfWayPhaseBook
 /// abstract interface. It allows users to obtain the ID of the
@@ -48,6 +47,5 @@ class SimpleRightOfWayPhaseBook : public api::rules::RightOfWayPhaseBook {
   std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace simple_phase_book
 }  // namespace maliput
 }  // namespace drake

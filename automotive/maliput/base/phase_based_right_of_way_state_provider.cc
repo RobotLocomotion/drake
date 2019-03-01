@@ -1,18 +1,18 @@
-#include "drake/automotive/phase_based_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/phase_based_right_of_way_state_provider.h"
 
 #include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
-namespace automotive {
+namespace maliput {
 
-using maliput::api::rules::RightOfWayPhase;
-using maliput::api::rules::RightOfWayPhaseBook;
-using maliput::api::rules::RightOfWayPhaseProvider;
-using maliput::api::rules::RightOfWayPhaseRing;
-using maliput::api::rules::RightOfWayRule;
-using maliput::api::rules::RightOfWayStateProvider;
+using api::rules::RightOfWayPhase;
+using api::rules::RightOfWayPhaseBook;
+using api::rules::RightOfWayPhaseProvider;
+using api::rules::RightOfWayPhaseRing;
+using api::rules::RightOfWayRule;
+using api::rules::RightOfWayStateProvider;
 
 PhaseBasedRightOfWayStateProvider::PhaseBasedRightOfWayStateProvider(
     const RightOfWayPhaseBook* phase_book,
@@ -48,5 +48,5 @@ PhaseBasedRightOfWayStateProvider::DoGetState(const RightOfWayRule::Id& rule_id)
   return nullopt;
 }
 
-}  // namespace automotive
+}  // namespace maliput
 }  // namespace drake

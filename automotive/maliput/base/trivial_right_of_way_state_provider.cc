@@ -1,4 +1,4 @@
-#include "drake/automotive/trivial_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/trivial_right_of_way_state_provider.h"
 
 #include <stdexcept>
 #include <string>
@@ -6,9 +6,9 @@
 #include "drake/common/drake_throw.h"
 
 namespace drake {
-namespace automotive {
+namespace maliput {
 
-using maliput::api::rules::RightOfWayRule;
+using api::rules::RightOfWayRule;
 
 void TrivialRightOfWayStateProvider::AddState(
     const RightOfWayRule::Id& id,
@@ -36,5 +36,5 @@ TrivialRightOfWayStateProvider::DoGetState(
   return Result{it->second, nullopt};
 }
 
-}  // namespace automotive
+}  // namespace maliput
 }  // namespace drake

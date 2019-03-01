@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simplerulebook/yaml_io.h"
+#include "drake/automotive/maliput/base/yaml_io.h"
 
 #include <sstream>
 
@@ -11,13 +11,12 @@
 #include "drake/automotive/maliput/api/test_utilities/rules_right_of_way_compare.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_speed_limit_compare.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
-#include "drake/automotive/maliput/simplerulebook/simple_rulebook.h"
+#include "drake/automotive/maliput/base/simple_rulebook.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
 namespace {
 
 using api::LaneId;
@@ -225,6 +224,5 @@ maliput_simple_rulebook_v1:
 
 
 }  // namespace
-}  // namespace simplerulebook
 }  // namespace maliput
 }  // namespace drake

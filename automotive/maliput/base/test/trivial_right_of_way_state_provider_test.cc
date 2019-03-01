@@ -1,4 +1,4 @@
-#include "drake/automotive/trivial_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/trivial_right_of_way_state_provider.h"
 
 #include <stdexcept>
 
@@ -7,7 +7,7 @@
 #include "drake/automotive/maliput/api/test_utilities/rules_right_of_way_compare.h"
 
 namespace drake {
-namespace automotive {
+namespace maliput {
 namespace {
 
 using maliput::api::rules::RightOfWayRule;
@@ -38,5 +38,5 @@ GTEST_TEST(TrivialRightOfWayStateProviderTest, BasicTest) {
 }
 
 }  // namespace
-}  // namespace automotive
+}  // namespace maliput
 }  // namespace drake

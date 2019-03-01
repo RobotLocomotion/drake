@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simplerulebook/yaml_io.h"
+#include "drake/automotive/maliput/base/yaml_io.h"
 
 #include <map>
 #include <memory>
@@ -20,7 +20,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
 
 using api::LaneId;
 using api::rules::LaneSRoute;
@@ -204,7 +203,5 @@ void LoadYaml(std::istream* istream, SimpleRulebook* rulebook) {
   }
 }
 
-
-}  // namespace simplerulebook
 }  // namespace maliput
 }  // namespace drake

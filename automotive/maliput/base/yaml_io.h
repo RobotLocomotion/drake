@@ -2,11 +2,10 @@
 
 #include <iosfwd>
 
-#include "drake/automotive/maliput/simplerulebook/simple_rulebook.h"
+#include "drake/automotive/maliput/base/simple_rulebook.h"
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
 
 /// @file
 /// YAML IO for SimpleRulebook.
@@ -72,6 +71,5 @@ namespace simplerulebook {
 /// throwing/asserting which that function does.
 void LoadYaml(std::istream* istream, SimpleRulebook* rulebook);
 
-}  // namespace simplerulebook
 }  // namespace maliput
 }  // namespace drake

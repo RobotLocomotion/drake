@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simple_phase_book/simple_right_of_way_phase_book.h"
+#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
 
 #include <stdexcept>
 #include <string>
@@ -9,7 +9,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simple_phase_book {
 
 using api::rules::RightOfWayRule;
 using api::rules::RightOfWayPhase;
@@ -101,6 +100,5 @@ optional<RightOfWayPhaseRing> SimpleRightOfWayPhaseBook::DoFindPhaseRing(
   return impl_->DoFindPhaseRing(rule_id);
 }
 
-}  // namespace simple_phase_book
 }  // namespace maliput
 }  // namespace drake
