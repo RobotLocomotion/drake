@@ -101,7 +101,9 @@ def _convert_mesh(geom):
                 val += (256**(2 - i)) * int(255 * rgb[i])
             return val
         material = meshcat.geometry.MeshLambertMaterial(
-            color=rgb_2_hex(geom.color))
+            color=rgb_2_hex(geom.color[:3]),
+            transparent=geom.color[3] != 1.,
+            opacity=geom.color[3])
     return meshcat_geom, material, element_local_tf
 
 
