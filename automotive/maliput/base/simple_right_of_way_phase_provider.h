@@ -10,7 +10,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simple_phase_provider {
 
 /// A simple concrete implementation of the
 /// api::rules::RightOfWayPhaseProvider abstract interface. It allows the
@@ -47,6 +46,5 @@ class SimpleRightOfWayPhaseProvider
     maliput::api::rules::RightOfWayPhase::Id> phases_;
 };
 
-}  // namespace simple_phase_provider
 }  // namespace maliput
 }  // namespace drake

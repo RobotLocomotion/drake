@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simple_phase_provider/simple_right_of_way_phase_provider.h"
+#include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
 
 #include <string>
 
@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simple_phase_provider {
 
 using api::rules::RightOfWayPhaseProvider;
 
@@ -38,6 +37,5 @@ SimpleRightOfWayPhaseProvider::DoGetPhase(
   return Result{it->second, nullopt};
 }
 
-}  // namespace simple_phase_provider
 }  // namespace maliput
 }  // namespace drake

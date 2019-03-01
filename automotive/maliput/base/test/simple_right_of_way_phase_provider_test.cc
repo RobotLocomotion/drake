@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simple_phase_provider/simple_right_of_way_phase_provider.h"
+#include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
 
 #include <stdexcept>
 
@@ -12,7 +12,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simple_phase_provider {
 namespace {
 
 using api::rules::RightOfWayRule;
@@ -69,6 +68,5 @@ GTEST_TEST(RightOfWayPhaseRingTest, InvalidPhases) {
 }
 
 }  // namespace
-}  // namespace simple_phase_provider
 }  // namespace maliput
 }  // namespace drake

@@ -12,8 +12,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
-
 
 /// SimpleRulebook is a simple concrete implementation of the
 /// api::rules::RoadRulebook abstract interface.
@@ -81,7 +79,5 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   std::unique_ptr<RangeIndex> index_;
 };
 
-
-}  // namespace simplerulebook
 }  // namespace maliput
 }  // namespace drake

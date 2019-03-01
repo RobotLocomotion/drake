@@ -6,11 +6,11 @@
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-namespace automotive {
+namespace maliput {
 
 /// A trivial implementation of an api::rules::RightOfWayStateProvider.
 class TrivialRightOfWayStateProvider final
-    : public maliput::api::rules::RightOfWayStateProvider {
+    : public api::rules::RightOfWayStateProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrivialRightOfWayStateProvider)
 
@@ -25,25 +25,25 @@ class TrivialRightOfWayStateProvider final
   /// already exists in this provider.
   /// @throws std::runtime_error if the dynamic state failed to be added.
   void AddState(
-      const maliput::api::rules::RightOfWayRule::Id& id,
-      const maliput::api::rules::RightOfWayRule::State::Id& initial_state);
+      const api::rules::RightOfWayRule::Id& id,
+      const api::rules::RightOfWayRule::State::Id& initial_state);
 
   /// Sets the dynamic state of a RightOfWayRule within this provider.
   ///
   /// @throws std::out_of_range if no dynamic state with @p id exists in this
   /// provider.
-  void SetState(const maliput::api::rules::RightOfWayRule::Id& id,
-                const maliput::api::rules::RightOfWayRule::State::Id& state);
+  void SetState(const api::rules::RightOfWayRule::Id& id,
+                const api::rules::RightOfWayRule::State::Id& state);
 
  private:
-  drake::optional<maliput::api::rules::RightOfWayStateProvider::Result>
+  drake::optional<api::rules::RightOfWayStateProvider::Result>
       DoGetState(
-          const maliput::api::rules::RightOfWayRule::Id& id) const final;
+          const api::rules::RightOfWayRule::Id& id) const final;
 
   std::unordered_map<
-    maliput::api::rules::RightOfWayRule::Id,
-    maliput::api::rules::RightOfWayRule::State::Id> states_;
+    api::rules::RightOfWayRule::Id,
+    api::rules::RightOfWayRule::State::Id> states_;
 };
 
-}  // namespace automotive
+}  // namespace maliput
 }  // namespace drake

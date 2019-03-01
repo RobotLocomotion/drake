@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simplerulebook/simple_rulebook.h"
+#include "drake/automotive/maliput/base/simple_rulebook.h"
 
 #include <algorithm>
 #include <stdexcept>
@@ -9,7 +9,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
 
 using api::LaneId;
 using api::rules::LaneSRange;
@@ -219,8 +218,5 @@ QueryResults SimpleRulebook::DoFindRules(
   return result;
 }
 
-
-
-}  // namespace simplerulebook
 }  // namespace maliput
 }  // namespace drake

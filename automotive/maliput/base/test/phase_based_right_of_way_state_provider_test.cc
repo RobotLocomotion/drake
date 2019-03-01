@@ -1,20 +1,18 @@
-#include "drake/automotive/phase_based_right_of_way_state_provider.h"
+#include "drake/automotive/maliput/base/phase_based_right_of_way_state_provider.h"
 
 #include <gtest/gtest.h>
 
-#include "drake/automotive/maliput/simple_phase_book/simple_right_of_way_phase_book.h"
-#include "drake/automotive/maliput/simple_phase_provider/simple_right_of_way_phase_provider.h"
+#include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
+#include "drake/automotive/maliput/base/simple_right_of_way_phase_provider.h"
 
 namespace drake {
-namespace automotive {
+namespace maliput {
 namespace {
 
 using maliput::api::rules::RightOfWayPhase;
 using maliput::api::rules::RightOfWayPhaseRing;
 using maliput::api::rules::RightOfWayRule;
 using maliput::api::rules::RightOfWayStateProvider;
-using maliput::simple_phase_book::SimpleRightOfWayPhaseBook;
-using maliput::simple_phase_provider::SimpleRightOfWayPhaseProvider;
 
 GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
   const RightOfWayRule::Id rule_id_a("rule a");
@@ -86,5 +84,5 @@ GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
 }
 
 }  // namespace
-}  // namespace automotive
+}  // namespace maliput
 }  // namespace drake

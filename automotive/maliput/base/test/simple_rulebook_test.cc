@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/simplerulebook/simple_rulebook.h"
+#include "drake/automotive/maliput/base/simple_rulebook.h"
 
 #include <gtest/gtest.h>
 
@@ -11,7 +11,6 @@
 
 namespace drake {
 namespace maliput {
-namespace simplerulebook {
 namespace {
 
 using api::LaneId;
@@ -137,6 +136,5 @@ GTEST_TEST(SimpleRulebookTest, FindRules) {
 
 
 }  // namespace
-}  // namespace simplerulebook
 }  // namespace maliput
 }  // namespace drake
