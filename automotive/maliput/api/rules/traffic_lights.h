@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <vector>
 
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/type_specific_identifier.h"
@@ -109,6 +110,61 @@ class Bulb final {
   BulbColor color_ = BulbColor::kRed;
   BulbType type_ = BulbType::kRound;
   optional<double> arrow_orientation_rad_ = nullopt;
+};
+
+/// Models a group of bulbs within a traffic light. All of the bulbs within a
+/// group should share the same approximate orientation. However, this is not
+/// programmatically enforced.
+class BulbGroup final {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BulbGroup);
+
+  /// Unique identifier for a BulbGroup.
+  using Id = TypeSpecificIdentifier<BulbGroup>;
+
+  /// Constructs a BulbGroup instance.
+  ///
+  /// @param id The bulb group's unique ID.
+  ///
+  /// @param position_traffic_light The linear offset of this bulb group's frame
+  /// relative to the frame of the traffic light that contains it. The origin of
+  /// this bulb group's frame should approximate the bulb group's CoM.
+  ///
+  /// @param orientation_traffic_light The rotational offset of this bulb
+  /// group's frame relative to the frame of the traffic light that contains it.
+  /// The +Z axis should align with the bulb group's "up" direction, and the +X
+  /// axis should point in the direction that the bulb group is facing.
+  /// Following a right-handed coordinate frame, the +Y axis should point left
+  /// when facing the +X direction.
+  ///
+  /// @param bulbs The bulbs that are part of this BulbGroup.
+  BulbGroup(const Id& id, const GeoPosition& position_traffic_light,
+            const Rotation& orientation_traffic_light,
+            const std::vector<Bulb>& bulbs);
+
+  /// Returns this BulbGroup instance's unique identifier.
+  const Id& id() const { return id_; }
+
+  /// Returns the linear offset of this bulb group's frame relative to the
+  /// frame of the traffic light that contains it.
+  const GeoPosition& position_traffic_light() const {
+    return position_traffic_light_;
+  }
+
+  /// Returns the rotational offset of this bulb group's frame relative to the
+  /// frame of the traffic light that contains it.
+  const Rotation& orientation_traffic_light() const {
+    return orientation_traffic_light_;
+  }
+
+  /// Returns the bulbs contained within this bulb group.
+  const std::vector<Bulb>& bulbs() const { return bulbs_; }
+
+ private:
+  Id id_;
+  GeoPosition position_traffic_light_;
+  Rotation orientation_traffic_light_;
+  std::vector<Bulb> bulbs_;
 };
 
 }  // namespace rules
