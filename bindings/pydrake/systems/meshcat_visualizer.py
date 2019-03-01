@@ -71,6 +71,11 @@ def _convert_mesh(geom):
     elif geom.type == geom.MESH:
         meshcat_geom = meshcat.geometry.ObjMeshGeometry.from_file(
             geom.string_data[0:-3] + "obj")
+        # Handle scaling.
+        # TODO(gizatt): See meshcat-python#40 for incorporating scale as a
+        # field rather than a matrix multiplication.
+        scale = geom.float_data[:3]
+        element_local_tf[:3, :3] = element_local_tf[:3, :3].dot(np.diag(scale))
         # Attempt to find a texture for the object by looking for an
         # identically-named *.png next to the model.
         # TODO(gizatt): Support .MTLs and prefer them over png, since they're
