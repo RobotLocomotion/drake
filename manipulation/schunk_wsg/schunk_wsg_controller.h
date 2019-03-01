@@ -8,8 +8,7 @@ namespace manipulation {
 namespace schunk_wsg {
 
 /// This class implements a controller for a Schunk WSG gripper.  It
-/// has three input ports: lcmt_schunk_wsg_command message, a vectorized
-/// representation of the same message (SchunkWsgCommand), and the current
+/// has two input ports: lcmt_schunk_wsg_command message and the current
 /// state, and an output port which emits the target force for the actuated
 /// finger. Note, only one of the command input ports should be connected,
 /// However, if both are connected, the message input will be ignored.
@@ -19,7 +18,6 @@ namespace schunk_wsg {
 ///
 /// @system{
 ///   @input_port{state}
-///   @input_port{command_vector}
 ///   @input_port{command_message}
 ///   @output_port{force}
 /// }

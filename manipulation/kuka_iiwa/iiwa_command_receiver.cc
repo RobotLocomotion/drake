@@ -3,33 +3,21 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-#include "drake/manipulation/kuka_iiwa/internal_iiwa_command_translator.h"
 
 namespace drake {
 namespace manipulation {
 namespace kuka_iiwa {
 
 using Eigen::VectorXd;
-using internal::IiwaCommand;
-using internal::IiwaCommandTranslator;
 using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
 
 namespace {
-
 std::unique_ptr<AbstractValue> MakeCommandMessage() {
   return std::make_unique<Value<lcmt_iiwa_command>>();
 }
-
-std::unique_ptr<IiwaCommand<double>> MakeCommandVector(int num_joints) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  return std::make_unique<IiwaCommand<double>>(num_joints);
-#pragma GCC diagnostic pop
-}
-
 }  // namespace
 
 IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
@@ -40,9 +28,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
 
   // Our input ports are mutually exclusive; exactly one connected input port
   // feeds our cache entry.
-  // TODO(jwnimmer-tri) Remove command_vector port on 2019-03-01.
   // TODO(jwnimmer-tri) Remove command_message port on 2019-05-01.
-  DeclareVectorInputPort("command_vector", *MakeCommandVector(num_joints));
   DeclareAbstractInputPort("command_message", *MakeCommandMessage());
   DeclareAbstractInputPort("lcmt_iiwa_command", *MakeCommandMessage());
   groomed_input_ = &DeclareCacheEntry(
@@ -77,7 +63,7 @@ IiwaCommandReceiver::IiwaCommandReceiver(int num_joints)
 }
 
 const systems::InputPort<double>& IiwaCommandReceiver::get_input_port() const {
-  return LeafSystem<double>::get_input_port(2);
+  return LeafSystem<double>::get_input_port(1);
 }
 using OutPort = systems::OutputPort<double>;
 const OutPort& IiwaCommandReceiver::get_commanded_state_output_port() const {
@@ -103,8 +89,7 @@ void IiwaCommandReceiver::CalcInput(
   const Context<double>& context, lcmt_iiwa_command* result) const {
   const bool has0 = LeafSystem<double>::get_input_port(0).HasValue(context);
   const bool has1 = LeafSystem<double>::get_input_port(1).HasValue(context);
-  const bool has2 = LeafSystem<double>::get_input_port(2).HasValue(context);
-  const int count = (has0 ? 1 : 0) + (has1 ? 1 : 0) + (has2 ? 1 : 0);
+  const int count = (has0 ? 1 : 0) + (has1 ? 1 : 0);
   if (count == 0) {
     throw std::logic_error("IiwaCommandReceiver has no input connected");
   }
@@ -113,25 +98,15 @@ void IiwaCommandReceiver::CalcInput(
   }
 
   // Copies the (sole) input value, converting from IiwaCommand if necessary.
-  if (has2) {
+  if (has1) {
     *result = get_input_port().Eval<lcmt_iiwa_command>(context);
-  } else if (has1) {
+  } else {
+    DRAKE_DEMAND(has0);
     static const logging::Warn log_once(
         "The IiwaCommandReceiver \"command_message\" port is deprecated and "
         "will be removed on 2019-05-01; use \"lcmt_iiwa_command\" instead.");
-    const auto& port = LeafSystem<double>::get_input_port(1);
-    *result = port.Eval<lcmt_iiwa_command>(context);
-  } else {
-    DRAKE_DEMAND(has0);
     const auto& port = LeafSystem<double>::get_input_port(0);
-    const auto& command = port.Eval<IiwaCommand<double>>(context);
-    const VectorXd pos = command.joint_position();
-    const VectorXd tor = command.joint_torque();
-    result->utime = command.utime();
-    result->num_joints = pos.size();
-    result->joint_position = {pos.data(), pos.data() + pos.size()};
-    result->num_torques = tor.size();
-    result->joint_torque = {tor.data(), tor.data() + tor.size()};
+    *result = port.Eval<lcmt_iiwa_command>(context);
   }
 
   // If we haven't received a legit message yet, use the initial command.
