@@ -445,23 +445,7 @@ PYBIND11_MODULE(plant, m) {
         .def("world_body", &Class::world_body, py_reference_internal,
             doc.MultibodyPlant.world_body.doc)
         .def("world_frame", &Class::world_frame, py_reference_internal,
-            doc.MultibodyPlant.world_frame.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("tree",
-        [](const Class& self) {
-          // Avoid cyclic references at declaration time. Only import here for
-          // bindings of `MultibodyTree`.
-          py::module::import("pydrake.multibody.multibody_tree");
-          return &self.tree();
-        },
-        py_reference_internal,
-        pydrake_doc.drake.multibody.internal.MultibodyTreeSystem.tree.doc);
-    DeprecateAttribute(cls, "tree",
-        "`tree()` will soon be internal. Please use `MultibodyPlant` "
-        "methods directly instead.");
-#pragma GCC diagnostic pop
-    cls  // BR
+            doc.MultibodyPlant.world_frame.doc)
         .def("is_finalized", &Class::is_finalized,
             doc.MultibodyPlant.is_finalized.doc)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),

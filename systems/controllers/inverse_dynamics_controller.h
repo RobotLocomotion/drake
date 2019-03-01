@@ -12,13 +12,6 @@
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declaration because we only need the type name for deprecation
-// purposes; we never call any methods on an RBT.
-template <class T>
-class RigidBodyTree;
-#endif
-
 namespace drake {
 namespace systems {
 namespace controllers {
@@ -61,21 +54,6 @@ class InverseDynamicsController : public Diagram<T>,
                                   public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
-
-#ifndef DRAKE_DOXYGEN_CXX
-  // TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
-  // Remember to remove the forward declaration above at the same time.
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>>,
-                            const VectorX<double>&, const VectorX<double>&,
-                            const VectorX<double>&, bool) {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-#endif
 
   /**
    * Constructs an inverse dynamics controller for the given `plant` model.
@@ -143,26 +121,6 @@ class InverseDynamicsController : public Diagram<T>,
   const OutputPort<T>& get_output_port_control() const final {
     return this->get_output_port(output_port_index_control_);
   }
-
-#ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  const RigidBodyTree<T>& get_robot_for_control() const {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  const RigidBodyTree<T>* get_rigid_body_tree_for_control() {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-#endif
 
   /**
    * Returns a constant pointer to the MultibodyPlant used for control.
