@@ -1491,7 +1491,7 @@ class MathematicalProgram {
    * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
    * @code{.cc}
-   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
+   *   auto x = prog.NewContinuousVariables(6,"myvar");
    *   Eigen::Matrix2d Aeq;
    *   Aeq << -1, 2,
    *           1, 1;
@@ -1521,7 +1521,7 @@ class MathematicalProgram {
    * Example: to add two equality constraints which only depend on two of the
    * elements of x, you could use
    * @code{.cc}
-   *   auto x = prog.NewContinuousDecisionVariable(6,"myvar");
+   *   auto x = prog.NewContinuousVariables(6,"myvar");
    *   Eigen::Matrix2d Aeq;
    *   Aeq << -1, 2,
    *           1, 1;
@@ -1594,8 +1594,8 @@ class MathematicalProgram {
    * Example
    * \code{.cc}
    * MathematicalProgram prog;
-   * auto x = prog.NewContinuousDecisionVariables<2>("x");
-   * auto y = prog.NewContinuousDecisionVariables<1>("y");
+   * auto x = prog.NewContinuousVariables<2>("x");
+   * auto y = prog.NewContinuousVariables<1>("y");
    * Eigen::Vector3d lb(0, 1, 2);
    * Eigen::Vector3d ub(1, 2, 3);
    * // Imposes the constraint
