@@ -91,6 +91,57 @@ TEST_F(BulbTest, Assignment) {
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_));
 }
 
+class BulbGroupTest : public ::testing::Test {
+ public:
+  BulbGroupTest()
+      : red_bulb_(Bulb::Id("red_bulb"), GeoPosition(0, 0, -0.25),
+                  Rotation::FromRpy(0, 0, 0), BulbColor::kRed,
+                  BulbType::kRound),
+        yellow_bulb_(Bulb::Id("yellow_bulb"), GeoPosition(0, 0, 0),
+                     Rotation::FromRpy(0, 0, 0), BulbColor::kYellow,
+                     BulbType::kRound),
+        green_bulb_(Bulb::Id("green_bulb"), GeoPosition(0, 0, 0.25),
+                    Rotation::FromRpy(0, 0, 0), BulbColor::kGreen,
+                    BulbType::kRound),
+        bulb_group_(BulbGroup::Id("test_bulb_group"), GeoPosition(1, 2, 3),
+                    Rotation::FromRpy(4, 5, 6),
+                    {red_bulb_, yellow_bulb_, green_bulb_}) {}
+
+  const Bulb red_bulb_;
+  const Bulb yellow_bulb_;
+  const Bulb green_bulb_;
+  const BulbGroup bulb_group_;
+};
+
+TEST_F(BulbGroupTest, Accessors) {
+  EXPECT_EQ(bulb_group_.id(), BulbGroup::Id("test_bulb_group"));
+  EXPECT_EQ(bulb_group_.position_traffic_light(), GeoPosition(1, 2, 3));
+  EXPECT_EQ(bulb_group_.orientation_traffic_light().matrix(),
+            Rotation::FromRpy(4, 5, 6).matrix());
+  EXPECT_EQ(bulb_group_.bulbs().size(), 3);
+}
+
+TEST_F(BulbGroupTest, Copying) {
+  const BulbGroup dut(bulb_group_);
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_group_));
+}
+
+TEST_F(BulbGroupTest, Assignment) {
+  const Bulb red_arrow_bulb(Bulb::Id("red_arrow_bulb"), GeoPosition(1, 2, 3),
+                            Rotation::FromRpy(4, 5, 6), BulbColor::kRed,
+                            BulbType::kArrow, 0 /* arrow_orientation_rad */);
+  const Bulb green_arrow_bulb(
+      Bulb::Id("green_arrow_bulb"), GeoPosition(7, 8, 9),
+      Rotation::FromRpy(10, 11, 12), BulbColor::kGreen, BulbType::kArrow,
+      M_PI / 2. /* arrow_orientation_rad */);
+
+  BulbGroup dut(BulbGroup::Id("other_dut_id"), GeoPosition(13, 14, 15),
+                Rotation::FromRpy(17, 18, 19),
+                {red_arrow_bulb, green_arrow_bulb});
+  dut = bulb_group_;
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_group_));
+}
+
 }  // namespace
 }  // namespace rules
 }  // namespace api

@@ -38,6 +38,15 @@ Bulb::Bulb(const Bulb::Id& id, const GeoPosition& position_bulb_group,
   }
 }
 
+BulbGroup::BulbGroup(const BulbGroup::Id& id,
+                     const GeoPosition& position_traffic_light,
+                     const Rotation& orientation_traffic_light,
+                     const std::vector<Bulb>& bulbs)
+    : id_(id),
+      position_traffic_light_(position_traffic_light),
+      orientation_traffic_light_(orientation_traffic_light),
+      bulbs_(bulbs) {}
+
 }  // namespace rules
 }  // namespace api
 }  // namespace maliput
