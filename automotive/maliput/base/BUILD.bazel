@@ -13,12 +13,28 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "base",
     deps = [
+        ":intersection",
         ":phase_based_right_of_way_state_provider",
         ":simple_right_of_way_phase_book",
         ":simple_right_of_way_phase_provider",
         ":simple_rulebook",
         ":trivial_right_of_way_state_provider",
         ":yaml_io",
+    ],
+)
+
+drake_cc_library(
+    name = "intersection",
+    srcs = [
+        "intersection.cc",
+    ],
+    hdrs = [
+        "intersection.h",
+    ],
+    deps = [
+        ":simple_right_of_way_phase_provider",
+        "//automotive/maliput/api",
+        "//common:essential",
     ],
 )
 
@@ -110,6 +126,13 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "intersection_test",
+    deps = [
+        ":intersection",
+    ],
+)
 
 drake_cc_googletest(
     name = "phase_based_right_of_way_state_provider_test",
