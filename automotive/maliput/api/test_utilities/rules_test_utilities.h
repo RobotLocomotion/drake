@@ -234,6 +234,37 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   return c.result();
 }
 
+/// Predicate-formatter which tests equality of std::vector<Bulb>.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const std::vector<Bulb>& a,
+                                          const std::vector<Bulb>& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.size(), b.size()));
+  int smallest = std::min(a.size(), b.size());
+  for (int i = 0; i < smallest; ++i) {
+    MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.at(i), b.at(i)));
+  }
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of BulbGroup.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const BulbGroup& a,
+                                          const BulbGroup& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.position_traffic_light(),
+                                         b.position_traffic_light()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.orientation_traffic_light(),
+                                         b.orientation_traffic_light()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.bulbs(), b.bulbs()));
+  return c.result();
+}
+
 }  // namespace test
 }  // namespace rules
 }  // namespace api
