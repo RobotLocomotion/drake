@@ -20,7 +20,6 @@ drake_cc_package_library(
         ":iiwa_constants",
         ":iiwa_status_receiver",
         ":iiwa_status_sender",
-        ":internal_iiwa_command_translator",
     ],
 )
 
@@ -39,7 +38,6 @@ drake_cc_library(
     hdrs = ["iiwa_command_receiver.h"],
     deps = [
         ":iiwa_constants",
-        ":internal_iiwa_command_translator",
         "//common:essential",
         "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
@@ -80,20 +78,6 @@ drake_cc_library(
         "//common:essential",
         "//lcmtypes:lcmtypes_drake_cc",
         "//systems/framework:leaf_system",
-    ],
-)
-
-drake_cc_library(
-    name = "internal_iiwa_command_translator",
-    srcs = ["internal_iiwa_command_translator.cc"],
-    hdrs = ["internal_iiwa_command_translator.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":iiwa_constants",
-        "//common:essential",
-        "//lcmtypes:lcmtypes_drake_cc",
-        "//systems/framework:vector",
-        "//systems/lcm:translator",
     ],
 )
 
