@@ -368,7 +368,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "random",
+    srcs = ["random.cc"],
     hdrs = ["random.h"],
+    deps = [":essential"],
 )
 
 drake_cc_library(
