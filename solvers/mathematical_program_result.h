@@ -156,11 +156,10 @@ class MathematicalProgramResult final {
    * GurobiSolver), then the user will have to set it after calling
    * ConvertToSolverResult.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This class "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   internal::SolverResult ConvertToSolverResult() const;
 
   /**

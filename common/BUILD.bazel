@@ -1216,7 +1216,6 @@ drake_cc_googletest(
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
-# - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
 add_lint_tests(

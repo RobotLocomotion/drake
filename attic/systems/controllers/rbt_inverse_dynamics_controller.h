@@ -118,7 +118,8 @@ class InverseDynamicsController : public Diagram<T>,
   /**
    * Returns a constant reference to the RigidBodyTree used for control.
    */
-  DRAKE_DEPRECATED("Please use get_rigid_body_tree_for_control().")
+  DRAKE_DEPRECATED("2019-12-31",
+      "Please use get_rigid_body_tree_for_control().")
   const RigidBodyTree<T>& get_robot_for_control() const {
     return *rigid_body_tree_for_control_;
   }

@@ -52,9 +52,7 @@ class AbstractValues {
   /// the index is out-of-bounds.
   AbstractValue& get_mutable_value(int index);
 
-  DRAKE_DEPRECATED(
-      "Use SetFrom instead of CopyFrom. "
-      "This method will be removed on 2019-06-01.")
+  DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")
   void CopyFrom(const AbstractValues& other) {
     SetFrom(other);
   }

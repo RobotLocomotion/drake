@@ -100,17 +100,17 @@ class LcmSubscriberSystem : public LeafSystem<double> {
                       std::unique_ptr<SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   LcmSubscriberSystem(const std::string&, const LcmAndVectorBaseTranslator&,
                       drake::lcm::DrakeLcmInterface*);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   LcmSubscriberSystem(const std::string&, const LcmTranslatorDictionary&,
                       drake::lcm::DrakeLcmInterface*);
 #pragma GCC diagnostic pop
@@ -122,9 +122,9 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   const std::string& get_channel_name() const;
 
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   const LcmAndVectorBaseTranslator& get_translator() const;
 
   /// Returns the sole output port.
