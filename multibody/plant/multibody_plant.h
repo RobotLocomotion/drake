@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
@@ -192,7 +191,7 @@ namespace multibody {
 ///
 /// @ingroup systems
 template <typename T>
-class MultibodyPlant : public MultibodyTreeSystem<T> {
+class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant)
 
@@ -208,7 +207,7 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   MultibodyPlant(const MultibodyPlant<U>& other)
-      : MultibodyTreeSystem<T>(
+      : internal::MultibodyTreeSystem<T>(
             systems::SystemTypeTag<multibody::MultibodyPlant>{},
             other.internal_tree().template CloneToScalar<T>(),
             other.is_discrete()) {
@@ -2916,19 +2915,12 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
     internal_tree().SetRandomState(context, state, generator);
   }
 
-  using MultibodyTreeSystem<T>::is_discrete;
-  using MultibodyTreeSystem<T>::EvalPositionKinematics;
-  using MultibodyTreeSystem<T>::EvalVelocityKinematics;
-
-  // N.B. Add forwarding call in lieu of `using` out of paranoia.
-  /// Deprecated.
-  DRAKE_DEPRECATED("Please use MultibodyPlant methods directly.")
-  const internal::MultibodyTree<T>& tree() const {
-    return internal_tree();
-  }
+  using internal::MultibodyTreeSystem<T>::is_discrete;
+  using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
+  using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
 
  private:
-  using MultibodyTreeSystem<T>::internal_tree;
+  using internal::MultibodyTreeSystem<T>::internal_tree;
 
   // Allow different specializations to access each other's private data for
   // scalar conversion.
@@ -3433,16 +3425,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
 #undef DRAKE_MBP_THROW_IF_FINALIZED
 #undef DRAKE_MBP_THROW_IF_NOT_FINALIZED
 /// @endcond
-
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
-namespace multibody_plant {
-template <typename T>
-using MultibodyPlant
-    DRAKE_DEPRECATED("Spell as drake::multibody::MultibodyPlant instead.")
-    = ::drake::multibody::MultibodyPlant<T>;
-}  // namespace multibody_plant
-#endif  // DRAKE_DOXYGEN_CXX
 
 // Forward declare to permit exclusive friendship for construction.
 template <typename T>

@@ -4,7 +4,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/contact_info.h"
 
@@ -49,14 +48,6 @@ class ContactResults {
 // support GCC versions prior to 6.3.
 template <typename T> ContactResults<T>::ContactResults() = default;
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(ContactResults)
-
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
-namespace multibody_plant {
-template <typename T>
-using ContactResults = ::drake::multibody::ContactResults<T>;
-}  // namespace multibody_plant
-#endif  // DRAKE_DOXYGEN_CXX
 
 }  // namespace multibody
 }  // namespace drake

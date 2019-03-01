@@ -8,18 +8,7 @@ PYTHON_LINT_IGNORE_DEFAULT = "E121,E123,E126,E226,E24,E704,W503".split(",")
 
 # Internal helper.
 def _python_lint(name_prefix, files, ignore):
-    ignore_types = list(PYTHON_LINT_IGNORE_DEFAULT)
-    for e in (ignore or []):
-        if type(e) == int:
-            # Backwards compatibility.
-            print(
-                "WARNING: Passing an integer to `ignore = [...]` is " +
-                "deprecated, and will not be supported on or after " +
-                "2019-03-01.",
-            )
-            ignore_types.append("E{}".format(e))
-        else:
-            ignore_types.append(e)
+    ignore_types = PYTHON_LINT_IGNORE_DEFAULT + (ignore or [])
     ignore_args = ["--ignore={}".format(",".join(ignore_types))]
 
     # Pycodestyle.

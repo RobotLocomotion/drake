@@ -6,7 +6,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -108,16 +107,6 @@ class PointPairContactInfo {
 };
 
 DRAKE_DEFINE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN_T(PointPairContactInfo)
-
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(#9314) Remove this transitional namespace on or about 2019-03-01.
-namespace multibody_plant {
-template <typename T>
-using PointPairContactInfo
-    DRAKE_DEPRECATED("Spell as drake::multibody::PointPairContactInfo instead.")
-    = ::drake::multibody::PointPairContactInfo<T>;
-}  // namespace multibody_plant
-#endif  // DRAKE_DOXYGEN_CXX
 
 }  // namespace multibody
 }  // namespace drake

@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -70,15 +69,6 @@ class Parser final {
   MultibodyPlant<double>* const plant_;
   geometry::SceneGraph<double>* const scene_graph_;
 };
-
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(jwnimmer-tri) Remove this forwarder on or about 2019-03-01.
-namespace parsing {
-using Parser
-    DRAKE_DEPRECATED("Spell as drake::multibody::Parser instead.")
-    = ::drake::multibody::Parser;
-}  // namespace parsing
-#endif
 
 }  // namespace multibody
 }  // namespace drake

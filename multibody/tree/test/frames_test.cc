@@ -19,6 +19,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 namespace {
 
 using Eigen::AngleAxisd;
@@ -227,5 +228,6 @@ TEST_F(FrameTests, HasFrameNamed) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

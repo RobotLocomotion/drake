@@ -12,7 +12,6 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
@@ -69,9 +68,6 @@ template <typename T> class QuaternionFloatingMobilizer;
 /// and manages each of the elements that belong to this physical system.
 /// Multibody dynamics elements include bodies, joints, force elements and
 /// constraints.
-///
-/// @warning This class will be eventually deprecated; up until that point,
-/// most methods will be forwarded to MultibodyPlant.
 ///
 /// @tparam T The scalar type. Must be a valid Eigen scalar.
 ///
@@ -2372,13 +2368,6 @@ class MultibodyTree {
 };
 
 }  // namespace internal
-
-/// Deprecated public alias to internal `MultibodyTree`.
-/// @warning This alias will be removed 2019-03-01.
-template <typename T>
-using MultibodyTree DRAKE_DEPRECATED(
-    "This will be internal only after 2019-03-01. Please use `MultibodyPlant` "
-    "instead.") = internal::MultibodyTree<T>;
 
 /// @cond
 // Undef macros defined at the top of the file. From the GSG:
