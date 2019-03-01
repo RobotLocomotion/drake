@@ -53,7 +53,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * A factory method that returns an %LcmPublisherSystem that takes
    * Value<LcmMessage> message objects on its sole abstract-valued input port.
    *
-   * Sets the default set of publish triggers: 
+   * Sets the default set of publish triggers:
    *   if publish_period = 0, publishes on forced events and per step,
    *   if publish_period > 0, publishes on forced events and periodically.
    *
@@ -98,13 +98,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_triggers Set of triggers that determine when messages will
-   * be published. Supported TriggerTypes are {kForced, kPeriodic, kPerStep}. 
+   * be published. Supported TriggerTypes are {kForced, kPeriodic, kPerStep}.
    * Will throw an error if empty or if unsupported types are provided.
    *
    * @param publish_period Period that messages will be published (optional).
    * publish_period should only be non-zero if one of the publish_triggers is
    * kPeriodic.
-   *   
+   *
    * @pre publish_period is non-negative.
    * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
    * @pre publish_period > 0 if and only if trigger_types contains kPeriodic.
@@ -123,7 +123,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   /**
    * A constructor for an %LcmPublisherSystem that takes LCM message objects on
    * its sole abstract-valued input port. The LCM message type is determined by
-   * the provided `serializer`. Will publish on forced events and either 
+   * the provided `serializer`. Will publish on forced events and either
    * periodic or per-step events, as determined by publish_period.
    *
    * @param[in] channel The LCM channel on which to publish.
@@ -163,13 +163,13 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * see the note in the class comments.
    *
    * @param publish_triggers Set of triggers that determine when messages will
-   * be published. Supported TriggerTypes are {kForced, kPeriodic, kPerStep}. 
+   * be published. Supported TriggerTypes are {kForced, kPeriodic, kPerStep}.
    * Will throw an exception if empty or if unsupported types are provided.
    *
    * @param publish_period Period that messages will be published (optional).
    * publish_period should only be non-zero if one of the publish_triggers is
    * kPerStep.
-   *   
+   *
    * @pre publish_period is non-negative.
    * @pre publish_period > 0 iff trigger_types contains kPeriodic.
    * @pre trigger_types contains a subset of {kForced, kPeriodic, kPerStep}.
@@ -180,25 +180,25 @@ class LcmPublisherSystem : public LeafSystem<double> {
       const TriggerTypeSet& publish_triggers,
       double publish_period = 0.0);
 
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   LcmPublisherSystem(
       const std::string&, const LcmAndVectorBaseTranslator&,
       drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
 
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   LcmPublisherSystem(
       const std::string&, std::unique_ptr<const LcmAndVectorBaseTranslator>,
       drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   LcmPublisherSystem(
       const std::string&, const LcmTranslatorDictionary&,
       drake::lcm::DrakeLcmInterface*, double publish_period = 0.0);
@@ -236,8 +236,8 @@ class LcmPublisherSystem : public LeafSystem<double> {
    */
   static std::string make_name(const std::string& channel);
 
-  DRAKE_DEPRECATED("Pass publish period to constructor instead. This method "
-                   "will be removed after 4/14/19.")
+  DRAKE_DEPRECATED("2019-04-14",
+      "Pass publish period to constructor instead.")
   void set_publish_period(double period) {
     if (disable_internal_per_step_publish_events_) {
       drake::log()->info("LcmPublisherSystem publish period set "
@@ -250,9 +250,9 @@ class LcmPublisherSystem : public LeafSystem<double> {
         &LcmPublisherSystem::PublishInputAsLcmMessage);
   }
 
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   const LcmAndVectorBaseTranslator& get_translator() const;
 
   /**

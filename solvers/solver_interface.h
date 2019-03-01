@@ -58,7 +58,7 @@ class SolverInterface {
 };
 
 using MathematicalProgramSolverInterface
-    DRAKE_DEPRECATED("This alias will be removed on 2019-05-01.")
+DRAKE_DEPRECATED("2019-05-01", "Transitional alias.")
     = SolverInterface;
 
 }  // namespace solvers

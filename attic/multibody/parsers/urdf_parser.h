@@ -86,7 +86,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringWithRpyJointToWorld(
     const std::string& urdf_string, bool do_compile,
     RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED(
+DRAKE_DEPRECATED("2019-12-31",
   "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorld().")
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, RigidBodyTree<double>* tree);
@@ -138,7 +138,7 @@ AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages(
     const std::string& urdf_string, const PackageMap& package_map,
     bool do_compile, RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
+DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfStringWithRpyJointToWorldSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const PackageMap& package_map,
     RigidBodyTree<double>* tree);
@@ -251,7 +251,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfStringSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     bool do_compile, RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
+DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfStringSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfString(
     const std::string& urdf_string, const PackageMap& package_map,
     const std::string& root_dir,
@@ -295,7 +295,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileWithRpyJointToWorld(
     const std::string& urdf_filename, bool do_compile,
     RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
+DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfFileWithRpyJointToWorld().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename, RigidBodyTree<double>* tree);
 
@@ -344,7 +344,8 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileToWorld(
     const drake::multibody::joints::FloatingBaseType floating_base_type,
     bool do_compile, RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileToWorld().")
+DRAKE_DEPRECATED("2019-12-31",
+    "Please use AddModelInstanceFromUrdfFileToWorld().")
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
     const std::string& urdf_filename,
     const drake::multibody::joints::FloatingBaseType floating_base_type,
@@ -451,7 +452,7 @@ ModelInstanceIdTable AddModelInstanceFromUrdfFileSearchingInRosPackages(
     std::shared_ptr<RigidBodyFrame<double>> weld_to_frame,
     bool do_compile, RigidBodyTree<double>* tree);
 
-DRAKE_DEPRECATED("Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
+DRAKE_DEPRECATED("2019-12-31", "Please use AddModelInstanceFromUrdfFileSearchingInRosPackages().")  // NOLINT(whitespace/line_length)
 ModelInstanceIdTable AddModelInstanceFromUrdfFile(
      const std::string& urdf_filename, const PackageMap& package_map,
      const drake::multibody::joints::FloatingBaseType floating_base_type,

@@ -176,7 +176,7 @@ class RigidBody {
   bool has_parent_body() const { return parent_ != nullptr; }
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("Please use has_parent_body().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use has_parent_body().")
   bool hasParent() const;
 
   /**

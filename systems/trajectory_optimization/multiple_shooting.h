@@ -253,11 +253,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::VectorXd GetSampleTimes() const {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -272,11 +271,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns a matrix containing the input values (arranged in columns) at
   /// each knot point at the solution.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::MatrixXd GetInputSamples() const;
 
   /// Returns a matrix containing the input values (arranged in columns) at
@@ -286,11 +284,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns a matrix containing the state values (arranged in columns) at
   /// each knot point at the solution.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::MatrixXd GetStateSamples() const;
 
   /// Returns a matrix containing the state values (arranged in columns) at
@@ -302,11 +299,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input
   /// port.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
 
@@ -323,11 +319,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
 

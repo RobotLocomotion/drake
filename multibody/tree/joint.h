@@ -167,7 +167,7 @@ class Joint : public MultibodyTreeElement<Joint<T>, JointIndex>  {
 
   /// Returns the number of degrees of freedom for `this` joint.
   /// E.g., one for a revolute joint and three for a ball joint.
-  DRAKE_DEPRECATED("Please use num_velocities().")
+  DRAKE_DEPRECATED("2019-04-01", "Please use num_velocities().")
   int num_dofs() const {
     return num_velocities();
   }

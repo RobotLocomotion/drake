@@ -19,9 +19,9 @@ class PoseStampedTPoseVectorTranslator
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseStampedTPoseVectorTranslator)
 
-  DRAKE_DEPRECATED(
-      "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-      "and will be removed on 2019-05-01.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "The LcmAndVectorBaseTranslator and its related code "
+      "are scheduled to be removed, with no replacement.")
   explicit PoseStampedTPoseVectorTranslator(const std::string& frame_name);
 
   void Deserialize(const void* lcm_message_bytes, int lcm_message_length,

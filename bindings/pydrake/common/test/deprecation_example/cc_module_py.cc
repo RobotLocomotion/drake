@@ -19,7 +19,7 @@ class ExampleCppClass {
   // Deprecated overload.
   // N.B. We add an actual C++ deprecation to show an example of how to
   // suppress the error when calling the method.
-  DRAKE_DEPRECATED("Example message for overload")
+  DRAKE_DEPRECATED("2038-01-19", "Example message for overload")
   void overload(int) {}
 };
 

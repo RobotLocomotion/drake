@@ -23,9 +23,9 @@ namespace lcm {
  */
 template <typename DataType, typename MsgType>
 class
-    DRAKE_DEPRECATED(
-        "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-        "and will be removed on 2019-05-01.")
+    DRAKE_DEPRECATED("2019-05-01",
+        "The LcmAndVectorBaseTranslator and its related code "
+        "are scheduled to be removed, with no replacement.")
     LcmEncoderSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmEncoderSystem)
@@ -96,9 +96,9 @@ class
  */
 template <typename DataType, typename MsgType>
 class
-    DRAKE_DEPRECATED(
-        "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-        "and will be removed on 2019-05-01.")
+    DRAKE_DEPRECATED("2019-05-01",
+        "The LcmAndVectorBaseTranslator and its related code "
+        "are scheduled to be removed, with no replacement.")
     LcmDecoderSystem : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmDecoderSystem)

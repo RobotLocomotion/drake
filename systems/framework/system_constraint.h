@@ -153,9 +153,9 @@ class SystemConstraint final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemConstraint)
 
-  // TODO(jwnimmer-tri) Remove this alias on or about 2019-04-01.
   using CalcCallback
-      DRAKE_DEPRECATED("Use drake::systems::ContextConstraintCalc instead.")
+      DRAKE_DEPRECATED("2019-04-01",
+          "Use drake::systems::ContextConstraintCalc instead.")
       = ContextConstraintCalc<T>;
 
   /// (Advanced) Constructs a default (zero-sized) SystemConstraint.

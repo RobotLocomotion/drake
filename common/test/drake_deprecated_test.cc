@@ -8,13 +8,14 @@ deprecation warnings are promoted to errors, the build would fail. */
 
 namespace {
 
-class DRAKE_DEPRECATED("Use MyNewClass instead.") MyClass {
+class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.") MyClass {
 };
 
 class MyNewClass {
 };
 
-DRAKE_DEPRECATED("Don't use this function; use NewMethod() instead.")
+DRAKE_DEPRECATED("2038-01-19",
+    "Don't use this function; use NewMethod() instead.")
 int OldMethod(int arg) { return arg; }
 
 int NewMethod(int arg) { return arg; }

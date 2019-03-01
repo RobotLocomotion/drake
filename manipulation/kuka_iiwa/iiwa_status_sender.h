@@ -64,41 +64,34 @@ class IiwaStatusSender : public systems::LeafSystem<double> {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED(
-      "This port is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
       "Instead, use position_commanded (without velocities).")
   const systems::InputPort<double>& get_command_input_port() const;
-  DRAKE_DEPRECATED(
-      "This port is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
       "Instead, use position_measured (and velocity_estimated, if needed).")
   const systems::InputPort<double>& get_state_input_port() const;
-  DRAKE_DEPRECATED(
-      "This spelling is deprecated and will be removed on 2019-05-01. "
-      "Instead, use torque_commanded.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "This spelling is deprecated. Instead, use torque_commanded.")
   const systems::InputPort<double>& get_commanded_torque_input_port() const {
     return this->get_torque_commanded_input_port();
   }
-  DRAKE_DEPRECATED(
-      "This spelling is deprecated and will be removed on 2019-05-01. "
-      "Instead, use torque_measured.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "This spelling is deprecated. Instead, use torque_measured.")
   const systems::InputPort<double>& get_measured_torque_input_port() const {
     return this->get_torque_measured_input_port();
   }
-  DRAKE_DEPRECATED(
-      "This spelling is deprecated and will be removed on 2019-05-01. "
-      "Instead, use torque_external.")
+  DRAKE_DEPRECATED("2019-05-01",
+      "This spelling is deprecated. Instead, use torque_external.")
   const systems::InputPort<double>& get_external_torque_input_port() const {
     return this->get_torque_external_input_port();
   }
-  DRAKE_DEPRECATED(
-      "This method is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
       "Instead, use the named port accessors.")
   // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
   const systems::InputPort<double>& get_input_port(int index) const {
     return LeafSystem<double>::get_input_port(index);
   }
-  DRAKE_DEPRECATED(
-      "This method is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
       "Instead, use get_output_port() with no arguments.")
   // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
   const systems::OutputPort<double>& get_output_port(int index) const {
