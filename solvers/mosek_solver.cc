@@ -18,6 +18,21 @@
 namespace drake {
 namespace solvers {
 namespace {
+// For a positive semidefinite matrix variable X, Mosek treats it specially.
+// Check https://docs.mosek.com/8.1/capi/tutorial-sdo-shared.html
+// that Mosek doesn't allow us imposing a linear constraint on the entry of X
+// directly; instead Mosek only allows to impose the linear constraint on X
+// through matrix inner product. For example, if we want to impose a constraint
+// X(0, 0) >= 0, Mosek doesn't allow the user to extract the (0, 0)'th entry of
+// X, and then add a bound on X(0, 0). Instead we need to define a matrix E_00,
+// such that E_00(0, 0) = 1, E_00(i, j) = 0, if i ≠ 0 or j ≠ 0, and impose the
+// linear constraint <E_00, X> >= 0. Mosek internally stores the psd matrix
+// variables, and we can access the matrix with a unique index.
+struct MatrixVariableEntry {
+  MSKint64t bar_matrix_index;
+  MSKint32t row_index;
+  MSKint32t col_index;
+};
 
 // This function is used to print information for each iteration to the console,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
@@ -393,6 +408,11 @@ MSKrescodee AddPositiveSemidefiniteConstraints(const MathematicalProgram& prog,
 
 MSKrescodee AddLinearMatrixInequalityConstraint(const MathematicalProgram& prog,
                                                 MSKtask_t* task) {
+  // 1. Create the matrix variable X_bar.
+  // 2. Add the constraint
+  //     x1 * F1(m, n) + ... + xk * Fk(m, n) + <E_mn, X_bar> = -F0(m, n)
+  //    where E_mn is a symmetric matrix, the matrix inner product <E_mn, X_bar>
+  //    = X_bar(m, n).
   MSKrescodee rescode = MSK_RES_OK;
   for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
     int num_linear_constraint = 0;
@@ -680,6 +700,13 @@ void MosekSolver::DoSolve(
     license_ = AcquireLicense();
   }
   MSKenv_t env = license_->mosek_env();
+
+  // When we solve semidefinite problem, prog.decision_variables() include the
+  // positive semidefinite matrix variables. @p
+  // map_decision_variable_index_to_matrix_variable maps the
+  // prog.decision_variables()(i) to how it is stored internally in Mosek.
+  std::unordered_map<int, MatrixVariableEntry>
+      map_decision_variable_index_to_matrix_variable;
 
   // Create the optimization task.
   rescode = MSK_maketask(env, 0, num_vars, &task);
