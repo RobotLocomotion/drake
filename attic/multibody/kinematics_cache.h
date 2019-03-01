@@ -199,13 +199,13 @@ class KinematicsCache {
   int get_num_positions() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("Please use get_num_positions().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_positions().")
   int getNumPositions() const;
 
   int get_num_velocities() const;
 
 // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("Please use get_num_velocities().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_velocities().")
   int getNumVelocities() const;
 
  private:

@@ -31,8 +31,7 @@ class ConstantValueSource final : public LeafSystem<T> {
   /// @param value The constant value to emit which is copied by this system.
   explicit ConstantValueSource(const AbstractValue& value);
 
-  // TODO(jwnimmer-tri) Remove this overload on or about 2018-04-01.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2018-04-01",
       "Use the ConstantValueSource(const AbstractValue&) constructor instead")
   explicit ConstantValueSource(std::unique_ptr<AbstractValue> value);
 

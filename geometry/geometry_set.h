@@ -248,31 +248,31 @@ class GeometrySet {
   // private methods below to the simpler names - 2018-02-15.
 
   /** Returns the frame ids in the set. */
-  DRAKE_DEPRECATED("Test-only utility function to be removed after 2018-02-15")
+  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
   const std::unordered_set<FrameId> frames() const { return frames_; }
 
   /** Reports the number of frames in the set. */
-  DRAKE_DEPRECATED("Test-only utility function to be removed after 2018-02-15")
+  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
   int num_frames() const { return static_cast<int>(frames_.size()); }
 
   /** Returns the geometry ids in the set. */
-  DRAKE_DEPRECATED("Test-only utility function to be removed after 2018-02-15")
+  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
   const std::unordered_set<GeometryId> geometries() const {
     return geometries_;
   }
 
   /** Reports the number of geometries _explicitly_ in the set. It does
    _not_ count the geometries that belong to the added frames.  */
-  DRAKE_DEPRECATED("Test-only utility function to be removed after 2018-02-15")
+  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
   int num_geometries() const { return static_cast<int>(geometries_.size()); }
 
   /** Reports if the given `frame_id` has been added to the group. */
-  DRAKE_DEPRECATED("Test-only utility function to be removed after 2018-02-15")
+  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
   bool contains(FrameId frame_id) const { return frames_.count(frame_id) > 0; }
 
   /** Reports if the given `geometry_id` has been *explicitly* added to the
    group. It will *not* capture geometry ids affixed to added frames.  */
-  DRAKE_DEPRECATED("Test-only utility function to be removed after 2018-02-15")
+  DRAKE_DEPRECATED("2018-02-15", "Test-only utility function.")
   bool contains(GeometryId geometry_id) const {
     return geometries_.count(geometry_id) > 0;
   }

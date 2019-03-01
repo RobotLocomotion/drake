@@ -19,9 +19,10 @@ namespace test {
  * Translates between LCM message objects and VectorBase objects for the
  * Sample type.
  */
-class DRAKE_DEPRECATED(
-    "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-    "and will be removed on 2019-05-01.") SampleTranslator final
+class DRAKE_DEPRECATED("2019-05-01",
+                       "The LcmAndVectorBaseTranslator and its related code "
+                       "are scheduled to be removed, with no replacement.")
+    SampleTranslator final
     : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   SampleTranslator()

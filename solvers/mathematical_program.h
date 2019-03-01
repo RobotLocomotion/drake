@@ -2402,18 +2402,16 @@ class MathematicalProgram {
    *
    * @return SolutionResult indicating if the solution was successful.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   SolutionResult Solve();
 
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   void PrintSolution();
 
   void SetSolverOption(const SolverId& solver_id,
@@ -2456,11 +2454,10 @@ class MathematicalProgram {
    * Returns the ID of the solver that was used to solve this program.
    * Returns empty if Solve() has not been called.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   optional<SolverId> GetSolverId() const;
 
   /**
@@ -2473,22 +2470,20 @@ class MathematicalProgram {
    * return some finite value as the optimal cost.
    * Otherwise, the optimal cost is NaN.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   double GetOptimalCost() const;
 
   /**
    * Getter for lower bound on optimal cost. Defaults to -Infinity
    * if a lower bound has not been found.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   double GetLowerBoundCost() const;
 
   /**
@@ -2663,11 +2658,10 @@ class MathematicalProgram {
    * @return The value of the decision variable after solving the problem.
    */
   template <typename Derived>
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   typename std::enable_if<
       std::is_same<typename Derived::Scalar, symbolic::Variable>::value,
       Eigen::Matrix<double, Derived::RowsAtCompileTime,
@@ -2690,11 +2684,10 @@ class MathematicalProgram {
   /**
    * Gets the value of a single decision variable.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   double GetSolution(const symbolic::Variable& var) const;
 
   /**
@@ -2707,11 +2700,10 @@ class MathematicalProgram {
    * will be substituted by its solutions in double values, but not the
    * indeterminates.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   symbolic::Expression SubstituteSolution(const symbolic::Expression& e) const;
 
   /**
@@ -2724,11 +2716,10 @@ class MathematicalProgram {
    * will be substituted by its solutions in double values, but not the
    * indeterminates.
    */
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   symbolic::Polynomial SubstituteSolution(const symbolic::Polynomial& p) const;
 
   /**
@@ -2834,11 +2825,10 @@ class MathematicalProgram {
    * @return The value of @p binding at the solution value.
    */
   template <typename C>
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::VectorXd EvalBindingAtSolution(const Binding<C>& binding) const {
     return EvalBinding(binding, x_values_);
   }
@@ -2880,11 +2870,10 @@ class MathematicalProgram {
   // This method should be called by the derived classes of SolverInterface,
   // which is not a friend class of MathematicalProgram, as we do not want to
   // leak any of the internal details of MathematicalProgram.
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-06-01",
       "MathematicalProgram methods that assume the solution is stored inside "
       "the program are deprecated; for details and porting advice, see "
-      "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
-      "will be removed on 2019-06-01.")
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   void SetSolverResult(const internal::SolverResult& solver_result);
 
   /// Getter for the required capability on the solver, given the

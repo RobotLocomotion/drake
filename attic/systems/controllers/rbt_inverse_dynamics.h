@@ -48,7 +48,8 @@ class InverseDynamics : public LeafSystem<T> {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
 
-  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsType.")
+  DRAKE_DEPRECATED("2019-12-31",
+      "Please use constructor with InverseDynamicsType.")
   InverseDynamics(const RigidBodyTree<T>* tree, bool pure_gravity_compensation);
 
   /**
@@ -91,7 +92,7 @@ class InverseDynamics : public LeafSystem<T> {
   /**
    * Returns the output port for the actuation torques.
    */
-  DRAKE_DEPRECATED("Please use get_output_port_force().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_output_port_force().")
   const OutputPort<T>& get_output_port_torque() const {
     return this->get_output_port(output_port_index_force_);
   }
