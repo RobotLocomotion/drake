@@ -33,6 +33,12 @@ enum class BulbType {
 /// Maps BulbType enums to string representations.
 std::unordered_map<BulbType, const char*, DefaultHash> BulbTypeMapper();
 
+/// Defines the possible bulb states.
+enum class BulbState { kOff = 0, kOn, kBlinking };
+
+/// Maps BulbState enums to string representations.
+std::unordered_map<BulbState, const char*, DefaultHash> BulbStateMapper();
+
 /// Models a bulb within a bulb group.
 class Bulb final {
  public:
@@ -71,10 +77,14 @@ class Bulb final {
   /// must be defined when @p type is BulbType::kArrow, otherwise an exception
   /// will be thrown. An exception will also be thrown if this parameter is
   /// defined for non-arrow BulbType values.
+  ///
+  /// @param states The possible states of this bulb. If this is nullopt, this
+  /// bulb has states {BulbState::kOff, BulbState::kOn}.
   Bulb(const Id& id, const GeoPosition& position_bulb_group,
        const Rotation& orientation_bulb_group, const BulbColor& color,
        const BulbType& type,
-       const optional<double>& arrow_orientation_rad = nullopt);
+       const optional<double>& arrow_orientation_rad = nullopt,
+       const optional<std::vector<BulbState>>& states = nullopt);
 
   /// Returns this Bulb instance's unique identifier.
   const Id& id() const { return id_; }
@@ -103,6 +113,9 @@ class Bulb final {
     return arrow_orientation_rad_;
   }
 
+  /// Returns the possible states of this bulb.
+  const std::vector<BulbState>& states() const { return states_; }
+
  private:
   Id id_;
   GeoPosition position_bulb_group_;
@@ -110,6 +123,7 @@ class Bulb final {
   BulbColor color_ = BulbColor::kRed;
   BulbType type_ = BulbType::kRound;
   optional<double> arrow_orientation_rad_ = nullopt;
+  std::vector<BulbState> states_;
 };
 
 /// Models a group of bulbs within a traffic light. All of the bulbs within a

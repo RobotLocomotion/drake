@@ -47,6 +47,22 @@ GTEST_TEST(BulbTypeTest, MapperTest) {
   EXPECT_EQ(dut.size(), kNumTypes);
 }
 
+GTEST_TEST(BulbStateTest, InstantiateAndAssign) {
+  BulbState dut{};
+  EXPECT_EQ(dut, BulbState::kOff);
+  for (BulbState state : {BulbState::kOn, BulbState::kBlinking}) {
+    EXPECT_NE(dut, state);
+    dut = state;
+    EXPECT_EQ(dut, state);
+  }
+}
+
+GTEST_TEST(BulbStateTest, MapperTest) {
+  const auto dut = BulbStateMapper();
+  constexpr int kNumTypes{3};
+  EXPECT_EQ(dut.size(), kNumTypes);
+}
+
 GTEST_TEST(BulbConstructorTest, ArrowWithoutOrientation) {
   EXPECT_THROW(
       Bulb(Bulb::Id("other_dut_id"), GeoPosition(7, 8, 9),
@@ -76,6 +92,9 @@ TEST_F(BulbTest, Accessors) {
             Rotation::FromRpy(4, 5, 6).matrix());
   EXPECT_EQ(bulb_.color(), BulbColor::kRed);
   EXPECT_EQ(bulb_.type(), BulbType::kRound);
+  EXPECT_EQ(bulb_.states().size(), 2);
+  EXPECT_EQ(bulb_.states().at(0), BulbState::kOff);
+  EXPECT_EQ(bulb_.states().at(1), BulbState::kOn);
 }
 
 TEST_F(BulbTest, Copying) {
@@ -86,7 +105,8 @@ TEST_F(BulbTest, Copying) {
 TEST_F(BulbTest, Assignment) {
   Bulb dut(Bulb::Id("other_dut_id"), GeoPosition(7, 8, 9),
            Rotation::FromRpy(10, 11, 12), BulbColor::kGreen, BulbType::kArrow,
-           0 /* arrow_orientation_rad */);
+           0 /* arrow_orientation_rad */,
+           std::vector<BulbState>{BulbState::kBlinking});
   dut = bulb_;
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_));
 }
