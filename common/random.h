@@ -19,8 +19,8 @@ class RandomGenerator {
   RandomGenerator() = default;
   explicit RandomGenerator(result_type value) : generator_(value) {}
 
-  static result_type min() { return std::mt19937::min(); }
-  static result_type max() { return std::mt19937::max(); }
+  static constexpr result_type min() { return std::mt19937::min(); }
+  static constexpr result_type max() { return std::mt19937::max(); }
   result_type operator()() { return generator_(); }
 
   static constexpr result_type default_seed = std::mt19937::default_seed;
