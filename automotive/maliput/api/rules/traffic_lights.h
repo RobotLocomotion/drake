@@ -94,7 +94,7 @@ class Bulb final {
   /// Returns the color of this bulb.
   const BulbColor& color() const { return color_; }
 
-  /// Returns the Bulb instances contained within this Bulb.
+  /// Returns the type of this bulb.
   const BulbType& type() const { return type_; }
 
   /// Returns the arrow's orientation. Only applicable if type() returns
