@@ -413,7 +413,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
-        prog.AddLinearConstraint(np.eye(2), np.zeros(2), np.ones(2), x)
+        prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
+                                 vars=x)
+        prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
+        prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
+        prog.AddLinearConstraint(f=(x[0] == 0))
 
         prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
         prog.AddLinearEqualityConstraint(x[0] == 1)
