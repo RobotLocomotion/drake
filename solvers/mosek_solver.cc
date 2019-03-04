@@ -27,10 +27,10 @@ namespace {
 // that Mosek doesn't allow us imposing a linear constraint on the entry of X
 // directly; instead Mosek only allows to impose the linear constraint on X
 // through matrix inner product. For example, if we want to impose a constraint
-// X(0, 0) >= 0, Mosek doesn't allow the user to extract the (0, 0)'th entry of
+// X(0, 0) ≥ 0, Mosek doesn't allow the user to extract the (0, 0)'th entry of
 // X, and then add a bound on X(0, 0). Instead we need to define a matrix E_00,
 // such that E_00(0, 0) = 1, E_00(i, j) = 0, if i ≠ 0 or j ≠ 0, and impose the
-// linear constraint <E_00, X> >= 0. Mosek internally stores the psd matrix
+// linear constraint <E_00, X> ≥ 0. Mosek internally stores the psd matrix
 // variables, and we can access the matrix with a unique index.
 class MatrixVariableEntry {
  public:
@@ -302,9 +302,9 @@ MSKrescodee AddLinearConstraintsFromBindings(
     MSKtask_t* task, const std::vector<Binding<C>>& constraint_list,
     LinearConstraintBoundType bound_type, const MathematicalProgram& prog,
     const std::unordered_map<int, MatrixVariableEntry>&
-        map_decision_variable_to_mosek_matrix_variable,
+        map_decision_variable_index_to_mosek_matrix_variable,
     const std::unordered_map<int, int>&
-        map_decision_variable_to_mosek_nonmatrix_variable,
+        map_decision_variable_index_to_mosek_nonmatrix_variable,
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         map_matrix_variable_entry_to_mosek_id) {
   MSKrescodee rescode{MSK_RES_OK};
@@ -317,8 +317,8 @@ MSKrescodee AddLinearConstraintsFromBindings(
     B_zero.setZero();
     rescode = AddLinearConstraintToMosek(
         prog, A.sparseView(), B_zero, lb, ub, binding.variables(), {},
-        bound_type, map_decision_variable_to_mosek_matrix_variable,
-        map_decision_variable_to_mosek_nonmatrix_variable,
+        bound_type, map_decision_variable_index_to_mosek_matrix_variable,
+        map_decision_variable_index_to_mosek_nonmatrix_variable,
         map_matrix_variable_entry_to_mosek_id, *task);
   }
   return rescode;
@@ -464,8 +464,6 @@ MSKrescodee AddBoundingBoxConstraints(
  *    z0 >= 0, z1 >=0
  * Mosek does not allow two cones to share variables. To overcome this,
  * we will add a new set of variable (z0, ..., zN)
- * @param is_new_variable  Refer to the documentation on is_new_variable in
- * MosekSolver::Solve() function
  */
 template <typename C>
 MSKrescodee AddSecondOrderConeConstraints(
@@ -477,7 +475,7 @@ MSKrescodee AddSecondOrderConeConstraints(
         map_decision_variable_index_to_mosek_nonmatrix_variable,
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         map_matrix_variable_entry_to_mosek_id,
-    MSKtask_t* task, std::vector<bool>* is_new_variable) {
+    MSKtask_t* task) {
   static_assert(std::is_same<C, LorentzConeConstraint>::value ||
                     std::is_same<C, RotatedLorentzConeConstraint>::value,
                 "Should be either Lorentz cone constraint or rotated Lorentz "
@@ -497,10 +495,8 @@ MSKrescodee AddSecondOrderConeConstraints(
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    is_new_variable->resize(num_mosek_vars + num_z);
     std::vector<MSKint32t> new_var_indices(num_z);
     for (int i = 0; i < num_z; ++i) {
-      is_new_variable->at(num_mosek_vars + i) = true;
       new_var_indices[i] = num_mosek_vars + i;
       rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
@@ -1066,23 +1062,11 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
                           const SolverOptions& merged_options,
                           MathematicalProgramResult* result) const {
   // num_decision_vars are the total number of decision variables in @p prog. It
-  // includes
-  // both the matrix variables (for psd matrix variables) and non-matrix
-  // variables.
+  // includes both the matrix variables (for psd matrix variables) and
+  // non-matrix variables.
   const int num_decision_vars = prog.num_vars();
   MSKtask_t task = nullptr;
   MSKrescodee rescode{MSK_RES_OK};
-
-  // When solving optimization problem with Mosek, we sometimes need to add
-  // new variables to Mosek, so that the solver can parse the constraint.
-  // is_new_variable has the same length as the number of non-matrix variables
-  // in Mosek
-  // i.e. the invariant is  MSKint32t num_mosek_vars;
-  //                        MSK_getnumvar(task, &num_mosek_vars);
-  //                        assert(is_new_variable.length() ==  num_mosek_vars);
-  // is_new_variable[i] is true if the variable is not a part of the variable
-  // in MathematicalProgram prog, but added to Mosek solver.
-  std::vector<bool> is_new_variable(num_decision_vars, false);
 
   if (!license_) {
     license_ = AcquireLicense();
@@ -1163,7 +1147,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         prog, prog.lorentz_cone_constraints(),
         map_decision_variable_index_to_mosek_matrix_variable,
         map_decision_variable_index_to_mosek_nonmatrix_variable,
-        &map_matrix_variable_entry_to_mosek_id, &task, &is_new_variable);
+        &map_matrix_variable_entry_to_mosek_id, &task);
   }
 
   // Add rotated Lorentz cone constraints.
@@ -1172,7 +1156,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         prog, prog.rotated_lorentz_cone_constraints(),
         map_decision_variable_index_to_mosek_matrix_variable,
         map_decision_variable_index_to_mosek_nonmatrix_variable,
-        &map_matrix_variable_entry_to_mosek_id, &task, &is_new_variable);
+        &map_matrix_variable_entry_to_mosek_id, &task);
   }
 
   // Add linear matrix inequality constraints.
@@ -1224,31 +1208,25 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     DRAKE_ASSERT(initial_guess.size() == prog.num_vars());
     MSKint32t num_mosek_vars{0};
     if (rescode == MSK_RES_OK) {
-      // num_mosek_vars is guaranteed to be no less than prog.num_vars(), as we
-      // can add slack variables when we construct Mosek constraints. For
-      // example, when we call AddSecondOrderConeConstraints().
       rescode = MSK_getnumvar(task, &num_mosek_vars);
-      DRAKE_DEMAND(num_mosek_vars >= prog.num_vars());
     }
     if (rescode == MSK_RES_OK) {
       rescode = MSK_putintparam(task, MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON);
     }
-    int var_count = 0;
-    for (int i = 0; i < num_mosek_vars; ++i) {
-      if (!is_new_variable[i]) {
-        const auto var_type = prog.decision_variable(var_count).get_type();
+    for (int i = 0; i < prog.num_vars(); ++i) {
+      auto it = map_decision_variable_index_to_mosek_nonmatrix_variable.find(i);
+      if (it != map_decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+        const auto var_type = prog.decision_variable(i).get_type();
         if (var_type == MathematicalProgram::VarType::INTEGER ||
             var_type == MathematicalProgram::VarType::BINARY) {
           if (rescode == MSK_RES_OK) {
-            const MSKrealt initial_guess_i = initial_guess(var_count);
-            rescode =
-                MSK_putxxslice(task, MSK_SOL_ITG, i, i + 1, &initial_guess_i);
+            const MSKrealt initial_guess_i = initial_guess(i);
+            rescode = MSK_putxxslice(task, MSK_SOL_ITG, it->second,
+                                     it->second + 1, &initial_guess_i);
           }
         }
-        var_count++;
       }
     }
-    DRAKE_DEMAND(var_count == prog.num_vars());
   }
 
   result->set_solution_result(SolutionResult::kUnknownError);

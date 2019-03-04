@@ -131,6 +131,13 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveSDPwithSecondOrderConeExample(mosek_solver, 1E-7);
+  }
+}
+
 GTEST_TEST(MosekTest, TestLogFile) {
   // Test if we can print the logging info to a log file.
   MathematicalProgram prog;

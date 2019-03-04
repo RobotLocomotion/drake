@@ -36,6 +36,7 @@ void TestTrivialSDP(const SolverInterface& solver,
   auto S_value = result.GetSolution(S);
 
   EXPECT_TRUE(CompareMatrices(S_value, Eigen::Matrix2d::Ones(), tol));
+  EXPECT_NEAR(result.get_optimal_cost(), 2.0, tol);
 }
 
 void FindCommonLyapunov(const SolverInterface& solver,
@@ -130,6 +131,8 @@ void FindOuterEllipsoid(const SolverInterface& solver,
   const auto s_value = result.GetSolution(s);
   const auto c_value = result.GetSolution(c);
 
+  EXPECT_NEAR(-P_value.trace(), result.get_optimal_cost(), tol);
+
   const Eigen::SelfAdjointEigenSolver<Matrix3d> es_P(P_value);
   EXPECT_TRUE((es_P.eigenvalues().array() >= -tol).all());
   // The minimal eigen value of M should be 0, since the optimality happens at
@@ -179,10 +182,39 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
   const auto x_value = result.GetSolution(x);
   const auto xF_sum = x_value(0) * F1 + x_value(1) * F2;
 
+  EXPECT_NEAR(z_value, result.get_optimal_cost(), tol);
   Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_xF(xF_sum);
   EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), tol);
   EXPECT_TRUE(((x_value - x_lb).array() >= -tol).all());
   EXPECT_TRUE(((x_value - x_ub).array() <= tol).all());
+}
+
+void SolveSDPwithSecondOrderConeExample(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog;
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  auto x = prog.NewContinuousVariables<3>();
+  Eigen::Matrix3d C0;
+  // clang-format off
+  C0 << 2, 1, 0,
+        1, 2, 1,
+        0, 1, 2;
+  // clang-format on
+  prog.AddLinearCost((C0 * X.cast<symbolic::Expression>()).trace() + x(0));
+  prog.AddLinearConstraint((Eigen::Matrix3d::Identity() * X.cast<symbolic::Expression>()).trace() + x(0) == 1);
+  prog.AddLinearConstraint((Eigen::Matrix3d::Ones() * X.cast<symbolic::Expression>()).trace() + x(1) + x(2) == 0.5);
+  prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+
+  const auto X_val = result.GetSolution(X);
+  const auto x_val = result.GetSolution(x);
+  EXPECT_NEAR((C0 * X_val).trace() + x_val(0), result.get_optimal_cost(), tol);
+  EXPECT_NEAR((Eigen::Matrix3d::Identity() * X_val).trace() + x_val(0), 1, tol);
+  EXPECT_NEAR((Eigen::Matrix3d::Ones() * X_val).trace() + x_val(1) + x_val(2), 0.5, tol);
+  EXPECT_GE(x_val(0), std::sqrt(x_val(1) * x_val(1) + x_val(2) * x_val(2)) - tol);
 }
 }  // namespace test
 }  // namespace solvers
