@@ -142,6 +142,11 @@ drake_cc_googletest(
         ],
         "//conditions:default": [],
     }),
+    tags = [
+        # TODO(jwnimmer-tri) Clang ASan is not happy with LimitMalloc.
+        # Investigate, fix, and re-enable this test.
+        "no_asan",
+    ],
     deps = [
         ":limit_malloc",
     ],
