@@ -30,6 +30,7 @@ from differential_ik import DifferentialIK
 
 from robotlocomotion import image_array_t
 
+
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.
 class EndEffectorTeleop(LeafSystem):
     def __init__(self):
