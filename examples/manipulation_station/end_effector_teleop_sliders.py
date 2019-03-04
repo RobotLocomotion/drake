@@ -20,11 +20,15 @@ from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
+from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
+from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.util.eigen_geometry import Isometry3
 
 from differential_ik import DifferentialIK
+
+from robotlocomotion import image_array_t
 
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.
 class EndEffectorTeleop(LeafSystem):

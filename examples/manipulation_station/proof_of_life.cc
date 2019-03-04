@@ -50,9 +50,8 @@ int do_main(int argc, char* argv[]) {
   } else if (FLAGS_setup == "default") {
     station->SetupDefaultStation();
   } else {
-    DRAKE_ABORT_MSG(
-        "Invalid option for flag setup.  Valid options are: "
-        "default, clutter_clearing.");
+    throw std::domain_error(
+        "Unrecognized setup option. Options are {default, clutter_clearing}.");
   }
   station->Finalize();
 
