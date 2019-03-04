@@ -5,7 +5,6 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/frame.h"
@@ -21,7 +20,6 @@ namespace {
 
 TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   SetArbitraryConfiguration();
-  context_->EnableCaching();
 
   // An arbitrary point on the end effector frame E.
   Vector3<double> p_EP(0.1, -0.05, 0.3);
@@ -42,12 +40,6 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
       *context_, p_EP, F_Ep_E, end_effector_link_->body_frame(), &forces);
   const VectorX<double> tau_id =
       plant_->CalcInverseDynamics(*context_, vdot, forces);
-  { // Repeat the computation to confirm the heap behavior.  We allow the
-    // method to heap-allocate 2 temporaries and 1 return value.
-    drake::test::LimitMalloc guard({ .max_num_allocations = 3 });
-    auto dummy = plant_->CalcInverseDynamics(*context_, vdot, forces);
-    unused(dummy);
-  }
 
   MatrixX<double> M(nv, nv);
   plant_->CalcMassMatrixViaInverseDynamics(*context_, &M);
