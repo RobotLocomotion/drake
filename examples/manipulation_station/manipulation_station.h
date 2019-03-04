@@ -151,7 +151,7 @@ class ManipulationStation : public systems::Diagram<T> {
       const optional<const math::RigidTransformd>& X_WCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
-  // TODO(kmuhlrad): Rename SetupMITClassStation.
+  // TODO(kmuhlrad): Make setup more modular.
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
