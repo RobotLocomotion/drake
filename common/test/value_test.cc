@@ -367,6 +367,8 @@ void CheckHash(const std::string& name) {
 namespace {
 struct AnonStruct {};
 class AnonClass {};
+enum class AnonEnum { kFoo, kBar };
+template <AnonEnum K> class AnonEnumTemplate {};
 }  // namespace
 
 #ifdef __APPLE__
@@ -381,9 +383,10 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
   CheckHash<double>("double");
   CheckHash<Point>("drake::test::Point");
 
-  // Anonymous structs and classes.
+  // Anonymous structs and classes, and an enum class.
   CheckHash<AnonStruct>("drake::test::{anonymous}::AnonStruct");
   CheckHash<AnonClass>("drake::test::{anonymous}::AnonClass");
+  CheckHash<AnonEnum>("drake::test::{anonymous}::AnonEnum");
 
   // Templated containers without default template arguments.
   const std::string stdcc = kApple ? "std::__1" : "std";
@@ -405,9 +408,6 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
       ">", fmt::arg("std", stdcc)));
 
   // Const-qualified types.
-  CheckHash<std::vector<const double>>(fmt::format(
-      "{std}::vector<const double,{std}::allocator<const double>>",
-      fmt::arg("std", stdcc)));
   CheckHash<std::shared_ptr<const double>>(fmt::format(
       "{std}::shared_ptr<const double>",
       fmt::arg("std", stdcc)));
@@ -436,6 +436,10 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
           "const double,"
           "{std}::shared_ptr<Eigen::Matrix<double,3,3,0,3,3>>>>>",
       fmt::arg("std", stdcc)));
+
+  // Templated on a value (instead of a typename).  We cannot (yet) compute a
+  // compile-time typename hash for this case.
+  EXPECT_EQ(internal::TypeHash<AnonEnumTemplate<AnonEnum::kFoo>>::value, 0);
 }
 
 }  // namespace test
