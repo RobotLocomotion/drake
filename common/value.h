@@ -243,11 +243,6 @@ class Value : public AbstractValue {
 // Declare some private helper structs.
 namespace internal {
 
-// Work around a GCC 5 bug that forbids throw except in return statements.
-constexpr int pretty_func_parse_error(bool is_error) {
-  return is_error ? throw std::logic_error("Parse error") : 0;
-}
-
 // Extracts a hash of the type `T` in a __PRETTY_FUNCTION__ templated on T.
 //
 // For, e.g., TypeHash<int> the pretty_func string `pretty` looks like this:
@@ -270,7 +265,9 @@ constexpr int pretty_func_parse_error(bool is_error) {
 // undefined operations in the below, such as running off the end of a string.
 // Therefore, so as long as this function compiles, we know that `pretty` had
 // at least something that looks like "T = ..." in it.
-constexpr void hash_template_argument_from_pretty_func(
+//
+// Returns true on success / false on failure.
+constexpr bool hash_template_argument_from_pretty_func(
     const char* pretty, bool discard_nested, FNV1aHasher* result) {
   // Advance to the typename after the "T = ".
   const char* p = pretty;
@@ -305,7 +302,7 @@ constexpr void hash_template_argument_from_pretty_func(
       if (discard_nested) {
         break;
       } else {
-        pretty_func_parse_error(true);
+        return false;
       }
     }
 
@@ -314,26 +311,30 @@ constexpr void hash_template_argument_from_pretty_func(
     // only unpacking the return and argument types, but also adding support
     // for const / volatile / reference / etc.).
     if (*p == '(') {
-      pretty_func_parse_error(true);
+      return false;
     }
 
     result->add_byte(*p);
     ++p;
   }
+
+  return true;
 }
 
 // Provides a struct templated on T so that __PRETTY_FUNCTION__ will express T
-// at compile time.  The calc() function returns a hash of T.  This base struct
+// at compile time.  The calc() function feeds the string representation of T
+// to `result`.  Returns true on success / false on failure.  This base struct
 // handles non-templated values (e.g., int); in a specialization down below, we
 // handle template template T's.
 template <typename T>
 struct TypeHasher {
-  static constexpr void calc(FNV1aHasher* result) {
+  // Returns true on success / false on failure.
+  static constexpr bool calc(FNV1aHasher* result) {
     // With discard_nested disabled here, the hasher will fail if it sees a
     // '<' in the typename.  If that happens, it means that the parameter pack
     // specialization(s) below did not match as expected.
     const bool discard_nested = false;
-    hash_template_argument_from_pretty_func(
+    return hash_template_argument_from_pretty_func(
         __PRETTY_FUNCTION__, discard_nested, result);
   }
 };
@@ -344,17 +345,20 @@ template <typename... Args>
 struct ParameterPackHasher {};
 // Specializes for base case: an empty pack.
 template <>
-struct ParameterPackHasher<> { static constexpr void calc(FNV1aHasher*) {} };
+struct ParameterPackHasher<> {
+  static constexpr bool calc(FNV1aHasher*) { return true; }
+};
 // Specializes for inductive case: recurse using first + rest.
 template <typename A, typename... B>
 struct ParameterPackHasher<A, B...> {
-  static constexpr void calc(FNV1aHasher* result) {
-    TypeHasher<A>::calc(result);
+  static constexpr bool calc(FNV1aHasher* result) {
+    bool success = TypeHasher<A>::calc(result);
     if (sizeof...(B)) {
       // Add delimiter so that pair<cub,scone> and pair<cubs,cone> are distinct.
       result->add_byte(',');
-      ParameterPackHasher<B...>::calc(result);
+      success = success && ParameterPackHasher<B...>::calc(result);
     }
+    return success;
   }
 };
 
@@ -363,16 +367,17 @@ struct ParameterPackHasher<A, B...> {
 // overview above).
 template <template <typename...> class T, class... Args>
 struct TypeHasher<T<Args...>> {
-  static constexpr void calc(FNV1aHasher* result) {
+  static constexpr bool calc(FNV1aHasher* result) {
     // First, hash just the "T" template template type, not the "<Args...>".
     const bool discard_nested = true;
-    hash_template_argument_from_pretty_func(
+    bool success = hash_template_argument_from_pretty_func(
         __PRETTY_FUNCTION__, discard_nested, result);
     // Then, hash the "<Args...>".  Add delimiters so that parameter pack
     // nesting is correctly hashed.
     result->add_byte('<');
-    ParameterPackHasher<Args...>::calc(result);
+    success = success && ParameterPackHasher<Args...>::calc(result);
     result->add_byte('>');
+    return success;
   }
 };
 
@@ -380,9 +385,9 @@ struct TypeHasher<T<Args...>> {
 // the template parameters are int(s), not typenames.
 template <int N>
 struct IntHasher {
-  static constexpr void calc(FNV1aHasher* result) {
+  static constexpr bool calc(FNV1aHasher* result) {
     const bool discard_nested = false;
-    hash_template_argument_from_pretty_func(
+    return hash_template_argument_from_pretty_func(
         __PRETTY_FUNCTION__, discard_nested, result);
   }
 };
@@ -392,16 +397,19 @@ template <int... Ns>
 struct IntPackHasher {};
 // Specializes for base case: an empty pack.
 template <>
-struct IntPackHasher<> { static constexpr void calc(FNV1aHasher*) {} };
+struct IntPackHasher<> {
+  static constexpr bool calc(FNV1aHasher*) { return true; }
+};
 // Specializes for inductive case: recurse using first + rest.
 template <int N, int... Ns>
 struct IntPackHasher<N, Ns...> {
-  static constexpr void calc(FNV1aHasher* result) {
-    IntHasher<N>::calc(result);
+  static constexpr bool calc(FNV1aHasher* result) {
+    bool success = IntHasher<N>::calc(result);
     if (sizeof...(Ns)) {
       result->add_byte(',');
-      IntPackHasher<Ns...>::calc(result);
+      success = success && IntPackHasher<Ns...>::calc(result);
     }
+    return success;
   }
 };
 
@@ -409,33 +417,47 @@ struct IntPackHasher<N, Ns...> {
 template <template <typename, int, int...> class T,
           typename U, int N, int... Ns>
 struct TypeHasher<T<U, N, Ns...>> {
-  static constexpr void calc(FNV1aHasher* result) {
+  static constexpr bool calc(FNV1aHasher* result) {
     // First, hash just the "T" template template type, not the "<U, N, Ns...>".
     const bool discard_nested = true;
-    hash_template_argument_from_pretty_func(
+    bool success = hash_template_argument_from_pretty_func(
         __PRETTY_FUNCTION__, discard_nested, result);
     // Then, hash the "<U, N, Ns...>".  Add delimiters so that parameter pack
     // nesting is correctly hashed.
     result->add_byte('<');
-    TypeHasher<U>::calc(result);
+    success = success && TypeHasher<U>::calc(result);
     result->add_byte(',');
-    IntPackHasher<N, Ns...>::calc(result);
+    success = success && IntPackHasher<N, Ns...>::calc(result);
     result->add_byte('>');
+    return success;
   }
 };
 
-// Computes a typename hash into a static constant.  By putting it into a
+// Computes a typename hash as a compile-time constant.  By putting it into a
 // static constexpr, we force the compiler to compute the hash at compile time.
+//
+// We (intend to) use these compile-time hashes to improve the performance of
+// the downcast checks in AbstractValue.  (That use is not yet implemented;
+// PR#10727 for actual use.)  The hash constant ends up being inlined into the
+// object code of AbstractValue's accessors.  (We cannot use `typeid(T).name()`
+// for this purpose at compile-time, because it's not constexpr.)
+//
 // This implementation is intended to work for the kinds of `T`s we would see
-// in a Value<T>; notably, it does not support T's of type std::function,
-// function pointers, and the like.
+// in a `Value<T>`; notably, it does not support `T`s of type `std::function`,
+// function pointers, and the like.  It also does not support `T`'s with
+// non-type template parameters.  Unsupported types yield a hash value of zero
+// so that using-code can decide how to handle the failure.
 template <typename T>
 struct TypeHash {
   static constexpr size_t calc() {
     FNV1aHasher hasher;
-    TypeHasher<T>::calc(&hasher);
-    return size_t(hasher);
+    const bool success = TypeHasher<T>::calc(&hasher);
+    const size_t hash = size_t(hasher);
+    const size_t nonzero_hash = hash ? hash : 1;
+    return success ? nonzero_hash : 0;
   }
+  // The hash of "T", or zero when the type is not supported by the hasher.
+  // (Such failures are expected to be rare.)
   static constexpr size_t value = calc();
 };
 template <typename T>
