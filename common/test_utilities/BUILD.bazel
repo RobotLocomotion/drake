@@ -95,6 +95,21 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "limit_malloc",
+    testonly = 1,
+    srcs = ["limit_malloc.cc"],
+    hdrs = ["limit_malloc.h"],
+    tags = [
+        # The limit_malloc library be used sparingly, and not by default.
+        # Don't add this library into the ":test_utilities" package library.
+        "exclude_from_package",
+    ],
+    deps = [
+        # Keep it simple and don't depend on any Drake code.
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = ["symbolic_test_util.h"],
@@ -115,6 +130,20 @@ drake_cc_library(
     deps = [
         "//common:text_logging_gflags",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "limit_malloc_test",
+    args = select({
+        "//tools/cc_toolchain:apple": [
+            # The code to enforce malloc limits is not implemented on macOS.
+            "--gtest_filter=-*DeathTest*",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":limit_malloc",
     ],
 )
 
