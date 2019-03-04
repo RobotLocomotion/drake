@@ -35,13 +35,11 @@ LIBDRAKE_COMPONENTS = [
     "//attic/util",
     "//automotive",
     "//automotive/maliput/api",
+    "//automotive/maliput/base",
     "//automotive/maliput/dragway",
     "//automotive/maliput/geometry_base",
     "//automotive/maliput/multilane",
     "//automotive/maliput/rndf",
-    "//automotive/maliput/simple_phase_book",
-    "//automotive/maliput/simple_phase_provider",
-    "//automotive/maliput/simplerulebook",
     "//automotive/maliput/utility",
     "//common",
     "//common/proto",
@@ -58,6 +56,7 @@ LIBDRAKE_COMPONENTS = [
     "//examples/manipulation_station:manipulation_station_hardware_interface",  # unpackaged  # noqa
     "//examples/pendulum:pendulum_plant",  # unpackaged
     "//examples/pendulum:pendulum_vector_types",  # unpackaged
+    "//examples/quadrotor:quadrotor_plant",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel",  # unpackaged
     "//examples/rimless_wheel:rimless_wheel_vector_types",  # unpackaged
     "//examples/van_der_pol:van_der_pol",  # unpackaged
@@ -81,13 +80,9 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
     "//multibody/constraint",
+    "//multibody/hydroelastic_contact",
     "//multibody/inverse_kinematics",
     "//multibody/math",
-    "//multibody/multibody_tree",
-    "//multibody/multibody_tree/implicit_stribeck",
-    "//multibody/multibody_tree/math",
-    "//multibody/multibody_tree/multibody_plant",
-    "//multibody/multibody_tree/parsing",
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
@@ -108,5 +103,4 @@ LIBDRAKE_COMPONENTS = [
     "//systems/trajectory_optimization",
     # //examples/kuka_iiwa_arm:iiwa_common (indirectly)
     # //examples/kuka_iiwa_arm:iiwa_lcm (indirectly)
-    # //multibody/multibody_tree/joints:forwarding_hdrs (indirectly)
 ]

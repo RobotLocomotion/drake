@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
 #include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
@@ -95,8 +96,18 @@ void DefineFrameworkPySemantics(py::module m) {
           doc.AbstractValues.get_value.doc)
       .def("get_mutable_value", &AbstractValues::get_mutable_value,
           py_reference_internal, doc.AbstractValues.get_mutable_value.doc)
-      .def("CopyFrom", &AbstractValues::CopyFrom,
-          doc.AbstractValues.CopyFrom.doc);
+      .def("CopyFrom",
+          [](AbstractValues* self, const AbstractValues& other) {
+            WarnDeprecated(
+                "Use SetFrom instead of CopyFrom. "
+                "This method will be removed on 2019-06-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            self->CopyFrom(other);
+#pragma GCC diagnostic pop
+          },
+          doc.AbstractValues.CopyFrom.doc)
+      .def("SetFrom", &AbstractValues::SetFrom, doc.AbstractValues.SetFrom.doc);
 
   {
     using Class = TriggerType;
@@ -160,6 +171,8 @@ void DefineFrameworkPySemantics(py::module m) {
         .def("get_continuous_state_vector",
             &Context<T>::get_continuous_state_vector, py_reference_internal,
             doc.Context.get_continuous_state_vector.doc)
+        .def("SetContinuousState", &Context<T>::SetContinuousState,
+            doc.Context.SetContinuousState.doc)
         .def("get_mutable_continuous_state_vector",
             &Context<T>::get_mutable_continuous_state_vector,
             py_reference_internal,
@@ -430,7 +443,11 @@ void DefineFrameworkPySemantics(py::module m) {
             // Keep alive, ownership: `value` keeps `self` alive.
             py::keep_alive<2, 1>(), py::arg("abstract_params"),
             doc.Parameters.set_abstract_parameters.doc)
-        .def("SetFrom", &Parameters<T>::SetFrom, doc.Parameters.SetFrom.doc);
+        .def("SetFrom",
+            [](Parameters<T>* self, const Parameters<double>& other) {
+              self->SetFrom(other);
+            },
+            doc.Parameters.SetFrom.doc);
 
     // State.
     DefineTemplateClassWithDefault<State<T>>(

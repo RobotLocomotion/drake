@@ -809,7 +809,7 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
 // Tests that the leaf system reserved the declared continuous state with
 // second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
-  using MyVector9d = MyVector<4 + 3 + 2, double>;
+  using MyVector9d = MyVector<double, 4 + 3 + 2>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
   // Tests get_num_continuous_states without a context.
@@ -1052,7 +1052,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
-      "for input port\\[0\\] but the actual type was "
+      "for input port 'input' \\(index 0\\) but the actual type was "
       "drake::systems::BasicVector<double> with size=2. "
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1060,7 +1060,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
-      "for input port\\[0\\] but the actual type was "
+      "for input port 'input' \\(index 0\\) but the actual type was "
       "drake::Value<std::string>. "
       "\\(System ::dut\\)");
 
@@ -1071,7 +1071,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
-      "for input port\\[2\\] but the actual type was "
+      "for input port 'abstract_input' \\(index 2\\) but the actual type was "
       "std::string. "
       "\\(System ::dut\\)");
 }
@@ -1561,7 +1561,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -1579,7 +1579,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_continuous_state(std::make_unique<ContinuousState<double>>(
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
     };
@@ -1605,7 +1605,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
       std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       s->set_discrete_state(
@@ -1632,7 +1632,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_abstract_state(std::make_unique<AbstractValues>());
     };
 

@@ -167,6 +167,8 @@ class TestMath(unittest.TestCase):
             (0, 0, 0))
         rpy = mut.RollPitchYaw(R=mut.RotationMatrix())
         self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
+        rpy = mut.RollPitchYaw(matrix=np.eye(3))
+        self.assertTrue(np.allclose(rpy.vector(), [0, 0, 0]))
         q_I = Quaternion()
         rpy_q_I = mut.RollPitchYaw(quaternion=q_I)
         self.assertTrue(np.allclose(rpy_q_I.vector(), [0, 0, 0]))

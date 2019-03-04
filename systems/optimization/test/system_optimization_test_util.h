@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -26,18 +27,36 @@ void DummySystemConstraintCalc(const Context<T>& context, VectorX<T>* y) {
 template <typename T>
 class DummySystem : public LeafSystem<T> {
  public:
-  DummySystem() : LeafSystem<T>(SystemTypeTag<DummySystem>{}) {
-    this->DeclareContinuousState(3);  // 3 state variable.
-    this->DeclareNumericParameter(BasicVector<T>(1));
+  DummySystem(bool with_abstract_state = false,
+              bool with_abstract_parameter = false)
+      : LeafSystem<T>(SystemTypeTag<DummySystem>{}),
+        with_abstract_state_(with_abstract_state),
+        with_abstract_parameter_(with_abstract_parameter) {
+    this->DeclareContinuousState(3);
+    this->DeclareDiscreteState(2);
+    this->DeclareNumericParameter(BasicVector<T>(Vector1<T>::Constant(1.0)));
+    this->DeclareInputPort("u", PortDataType::kVectorValued, 2);
     this->constraint_index_ = this->DeclareInequalityConstraint(
         DummySystemConstraintCalc<T>, {Eigen::Vector2d(2, 0), nullopt},
         "dummy_system_constraint");
+    if (with_abstract_state_) {
+      this->DeclareAbstractState(AbstractValue::Make<int>(5));
+    }
+    if (with_abstract_parameter_) {
+      this->DeclareAbstractParameter(Value<std::string>("parameter"));
+    }
   }
 
   template <typename U>
-  explicit DummySystem(const DummySystem<U>&) : DummySystem() {}
+  explicit DummySystem(const DummySystem<U>& other)
+      : DummySystem(other.with_abstract_state(),
+                    other.with_abstract_parameter()) {}
 
   SystemConstraintIndex constraint_index() const { return constraint_index_; }
+
+  bool with_abstract_state() const { return with_abstract_state_; }
+
+  bool with_abstract_parameter() const { return with_abstract_parameter_; }
 
  private:
   // xdot = [p0 * x(0); p0 * x(1) + x(0), x(2) - x(1)]
@@ -50,6 +69,8 @@ class DummySystem : public LeafSystem<T> {
   }
 
   SystemConstraintIndex constraint_index_;
+  bool with_abstract_state_{};
+  bool with_abstract_parameter_{};
 };
 
 template <typename T>

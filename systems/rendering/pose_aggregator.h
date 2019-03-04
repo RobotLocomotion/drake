@@ -158,13 +158,12 @@ namespace pose_aggregator_detail {
 // parameter @p T.
 struct InputRecord {
   enum PoseInputType {
-    kUnknown = 0,
     kSinglePose = 1,
     kSingleVelocity = 2,
     kBundle = 3,
   };
 
-  PoseInputType type{kUnknown};
+  PoseInputType type{kSinglePose};
   int num_poses{0};
   // name is only valid if type is kSingle{Pose, Velocity} or kBundle.
   std::string name{};

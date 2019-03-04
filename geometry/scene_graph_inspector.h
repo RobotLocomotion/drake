@@ -1,7 +1,9 @@
 #pragma once
 
+#include <set>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/geometry_roles.h"
@@ -126,6 +128,19 @@ class SceneGraphInspector {
   int GetNumAnchoredGeometries() const {
     DRAKE_DEMAND(state_ != nullptr);
     return state_->GetNumAnchoredGeometries();
+  }
+
+  /** Returns all pairs of geometries that are candidates for collision (in no
+   particular order). See SceneGraph::ExcludeCollisionsBetween() or
+   SceneGraph::ExcludeCollisionsWithin() for information on why a particular
+   pair may _not_ be a candidate. For candidate pair (A, B), the candidate is
+   always guaranteed to be reported in a fixed order (i.e., always (A, B) and
+   _never_ (B, A)). This is the same ordering as would be returned by, e.g.,
+   QueryObject::ComputePointPairPenetration().  */
+  std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates()
+      const {
+    DRAKE_DEMAND(state_ != nullptr);
+    return state_->GetCollisionCandidates();
   }
 
   //@}

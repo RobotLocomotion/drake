@@ -29,11 +29,9 @@ namespace kuka_iiwa {
 /// one for commanded additional feedforward joint torque.
 /// (As well as some deprecated output ports; see below.)
 ///
-/// It also has two additional, deprecated input ports -- "command_message" as
-/// a synonym for "lcmt_iiwa_command", and "command_vector" for IiwaCommand.
-/// Exactly one of the three inputs must be connected.  The "command_vector"
-/// port will be removed on 2019-03-01.  The "command_message" port will be
-/// removed on 2019-05-01.
+/// It also has one additional, deprecated input port -- "command_message" as a
+/// synonym for "lcmt_iiwa_command".  The "command_message" port will be
+/// removed on 2019-05-01.  Exactly one of the two inputs must be connected.
 ///
 /// It also has one additional, deprecated output port -- "state" for the
 /// commanded position AND an estimate of the commanded velocity for each
@@ -65,19 +63,17 @@ class IiwaCommandReceiver : public systems::LeafSystem<double> {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
-  DRAKE_DEPRECATED(
-      "The state port is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
+      "The state port is deprecated. "
       "Instead, use the \"position\" port.")
   const systems::OutputPort<double>& get_commanded_state_output_port() const;
-  DRAKE_DEPRECATED(
-      "This method is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
       "Instead, use get_input_port() with no arguments.")
   // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
   const systems::InputPort<double>& get_input_port(int index) const {
     return LeafSystem<double>::get_input_port(index);
   }
-  DRAKE_DEPRECATED(
-      "This method is deprecated and will be removed on 2019-05-01. "
+  DRAKE_DEPRECATED("2019-05-01",
       "Instead, use the named port accessors.")
   // TODO(jwnimmer-tri) Change this to `= delete;` after deprecation expires.
   const systems::OutputPort<double>& get_output_port(int index) const {

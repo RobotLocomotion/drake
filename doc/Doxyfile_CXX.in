@@ -327,8 +327,9 @@ X& operator=(const X&) = default; \
 X(X&&) = default; \
 X& operator=(X&&) = default; \
 /** \} */"
-PREDEFINED            += DRAKE_DEPRECATED(X):=" \
-/** (Deprecated.) \deprecated X */ \
+PREDEFINED            += "DRAKE_DEPRECATED(removal_date,message):= \
+/** (Deprecated.) \deprecated message <br> \
+This will be removed from Drake on or after removal_date. */ \
 "
 # =============================================================================
 EXPAND_AS_DEFINED      =

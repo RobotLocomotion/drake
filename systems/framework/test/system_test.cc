@@ -442,7 +442,7 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
 }
 
 template <typename T>
-using TestTypedVector = MyVector<1, T>;
+using TestTypedVector = MyVector<T, 1>;
 
 // A shell System for AbstractValue IO test.
 template <typename T>
@@ -635,9 +635,9 @@ class SystemInputErrorTest : public ::testing::Test {
 
 // A BasicVector-derived type we can complain about in the next test.
 template <typename T>
-class WrongVector : public MyVector<2, T> {
+class WrongVector : public MyVector<T, 2> {
  public:
-  using MyVector<2, T>::MyVector;
+  using MyVector<T, 2>::MyVector;
 };
 
 // Test error messages from the EvalInput methods.
@@ -688,8 +688,8 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalEigenVectorInput(*context_, 1), std::logic_error,
-      ".*EvalEigenVectorInput.*input port\\[1\\].*neither connected nor "
-          "fixed.*");
+      ".*EvalEigenVectorInput.*input port 'u1' .*index 1.* is neither "
+      "connected nor fixed.*");
 
   // Assign values to all ports. All but port 0 are BasicVector ports.
   system_.AllocateFixedInputs(context_.get());

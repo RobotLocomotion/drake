@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "drake/common/drake_throw.h"
@@ -41,11 +42,8 @@ using systems::OutputPort;
 using systems::State;
 
 using drake::multibody::MultibodyForces;
-using drake::multibody::MultibodyTree;
-using drake::multibody::PositionKinematicsCache;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
-using drake::multibody::VelocityKinematicsCache;
 using systems::BasicVector;
 using systems::Context;
 using systems::InputPort;
@@ -520,7 +518,7 @@ void MultibodyPlant<T>::CalcForceElementsContribution(
 template<typename T>
 void MultibodyPlant<T>::Finalize(geometry::SceneGraph<T>* scene_graph) {
   // After finalizing the base class, tree is read-only.
-  MultibodyTreeSystem<T>::Finalize();
+  internal::MultibodyTreeSystem<T>::Finalize();
   CheckUserProvidedSceneGraph(scene_graph);
   if (geometry_source_is_registered()) {
     FilterAdjacentBodies();
@@ -933,7 +931,7 @@ template<typename T>
 std::vector<PenetrationAsPointPair<T>>
 MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>&) const {
-  DRAKE_ABORT_MSG("This method only supports T = double.");
+  throw std::domain_error("This method only supports T = double.");
 }
 
 template<typename T>
@@ -1243,13 +1241,19 @@ VectorX<T> MultibodyPlant<T>::AssembleActuationInput(
   int u_offset = 0;
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
+    // Ignore the port if the model instance has no actuated DoFs.
     const int instance_num_dofs =
         internal_tree().num_actuated_dofs(model_instance_index);
-    if (instance_num_dofs == 0) {
-      continue;
-    }
+    if (instance_num_dofs == 0) continue;
+
     const auto& input_port = this->get_input_port(
         instance_actuation_ports_[model_instance_index]);
+    if (!input_port.HasValue(context)) {
+        throw std::logic_error(fmt::format("Actuation input port for model "
+            "instance {} must be connected.",
+            GetModelInstanceName(model_instance_index)));
+    }
+
     const auto& u_instance = input_port.Eval(context);
     actuation_input.segment(u_offset, instance_num_dofs) = u_instance;
     u_offset += instance_num_dofs;
@@ -1605,11 +1609,10 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs =
         internal_tree().num_actuated_dofs(model_instance_index);
-    if (instance_num_dofs == 0) {
-      continue;
+    if (instance_num_dofs > 0) {
+      ++num_actuated_instances;
+      last_actuated_instance = model_instance_index;
     }
-    ++num_actuated_instances;
-    last_actuated_instance = model_instance_index;
     instance_actuation_ports_[model_instance_index] =
         this->DeclareVectorInputPort(
                 internal_tree().GetModelInstanceName(model_instance_index) +
@@ -1618,9 +1621,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
             .get_index();
   }
 
-  if (num_actuated_instances == 1) {
-    actuated_instance_ = last_actuated_instance;
-  }
+  if (num_actuated_instances == 1) actuated_instance_ = last_actuated_instance;
 
   // Declare the generalized force input port.
   applied_generalized_force_input_port_ = this->DeclareVectorInputPort(
@@ -1766,7 +1767,6 @@ MultibodyPlant<T>::get_actuation_input_port(
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(model_instance.is_valid());
   DRAKE_THROW_UNLESS(model_instance < num_model_instances());
-  DRAKE_THROW_UNLESS(num_actuated_dofs(model_instance) > 0);
   return systems::System<T>::get_input_port(
       instance_actuation_ports_.at(model_instance));
 }

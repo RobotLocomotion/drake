@@ -329,22 +329,25 @@ source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
 reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity            |Symbol|     Typeset    |   Code   | Meaning †
---------------------|:----:|:--------------:|:--------:|----------------------------
-Rotation matrix     |  R   |@f$^BR^C@f$     |`R_BC`    |Frame C's orientation in B
-Position vector     |  p   |@f$^Pp^Q@f$     |`p_PQ`    |Position from point P to point Q
-Transform/pose      |  X   |@f$^BX^C@f$     |`X_BC`    |Frame C's transform (pose) in B
-Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B †
-Velocity            |  v   |@f$^Bv^Q@f$     |`v_BQ`    |%Point Q's velocity in B
-Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial velocity in B
-Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
-Acceleration        |  a   |@f$^Ba^Q@f$     |`a_BQ`    |%Point Q's acceleration in B
-Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial acceleration in B
-Torque              |  t   |@f$\tau^{B}@f$  |`t_B`     |Torque on a body (or frame) B
-Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
-Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
-Inertia matrix      |  I   |@f$I^{B/Bo}@f$  |`I_BBo`   |Body B's inertia matrix about Bo
-Spatial inertia     |  M   |@f$M^{B/Bo}@f$  |`M_BBo`   |Body B's spatial inertia bout Bo †
+Quantity             |Symbol|     Typeset              |   Code     | Meaning †
+---------------------|:----:|:------------------------:|:----------:|----------------------------
+Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
+Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
+Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's transform (pose) in frame B
+Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame B †
+Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
+Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B
+Angular acceleration |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
+Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in B
+Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B
+Torque               |  t   |@f$t^{B}@f$               |`t_B`       |Torque on a body (or frame) B
+Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
+Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force) ††
+Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
+Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Bo †
+Jacobian wrt q †††   | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
+Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
+Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
@@ -354,11 +357,32 @@ as @f$[^B\omega^C]_E @f$.
 expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
 <br>For more information, see @ref multibody_spatial_inertia
 
-†† In mechanical systems, it is often useful to <b>replace</b> a set of forces
-by an equivalent set with a force fᴾ placed at an arbitrary point P (fᴾ is equal
-to the set's resultant), together with a torque `t` equal to the moment of the
-set about P.  A spatial force Fᴾ containing `t` and fᴾ can be useful for
-representing this replacement.
+†† It is often useful to <b>replace</b> a set of forces by an equivalent set
+with a force @f$f^{P}@f$ (equal to the set's resultant) placed at an arbitrary
+point P, together with a torque @f$t@f$ equal to the moment of the set about
+P.  A spatial force Fᴾ containing @f$t@f$ and @f$f^P@f$ can represent this
+replacement.
+
+††† The Jacobian contains partial derivatives wrt (with respect to) scalars
+e.g., wrt q (generalized positions), or q̇, or v (generalized velocities).
+The example below shows the simplicity of Jacobian monogram:
+first is the Jacobian symbol (Jv), next is the kinematic quantity (v_BQ),
+last is an expressed-in frame (E).
+<br>Example: `Jv_v_BQ_E` is `Jv` (Jacobian wrt v),
+for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
+<br> <b>Advanced:</b> Due to rules of vector differentiation, explicit Jacobian
+monogram notation for `Jq` (Jacobian wrt generalized positions q) requires an
+extra frame (e.g., `JBq` is partial differentiation in frame B wrt q).
+Frequently, the partial-differentiation-in-frame B is identical to the
+expressed-in-frame E and a shorthand notation can be used.
+<br>Example: `Jq_p_PQ_E` is `Jq` (Jacobian <b>in</b> frame E wrt q),
+for `p_PQ` (position from point P to point Q),
+expressed <b>in</b> frame E.
+<br> <b>Special relationship between position and velocity Jacobians:</b>
+When a point Q's position vector originates at a point Bo <b>fixed</b> in frame
+B and when there are no motion constraints (no relationships between q̇₁ ... q̇ₙ),
+@f$\;[J_{q}^{{}^{Bo}p^Q}]_B = [J_{q̇}^{{}^Bv^Q}]_B\;@f$ i.e.,
+`(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
 
 Next topic: @ref Dt_multibody_quantities
 */

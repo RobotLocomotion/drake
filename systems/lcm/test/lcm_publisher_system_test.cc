@@ -258,6 +258,73 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
   EXPECT_EQ(transmission_count, 1 + simulator.get_num_steps_taken());
 }
 
+// When constructed via a publish_triggers set, tests that per-step publish
+// generates the expected number of publishes.
+GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  int transmission_count = 0;
+  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
+    ++transmission_count;
+  });
+  lcm.EnableLoopBack();
+
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
+      &lcm, {TriggerType::kPerStep});
+
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  context->FixInputPort(kPortNumber,
+    AbstractValue::Make<lcmt_drake_signal>(lcmt_drake_signal()));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(*dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
+  simulator.Initialize();
+
+  // Check that a message was transmitted during initialization.
+  EXPECT_EQ(transmission_count, 1);
+
+  // Ensure that the integrator takes at least a few steps.
+  // Since there is no internal continuous state for the system, the integrator
+  // will not subdivide its steps.
+  for (double time = 0.0; time < 1; time += 0.25)
+    simulator.StepTo(time);
+
+  // Check that we get exactly the number of publishes desired: one (at
+  // initialization) plus another for each step.
+  EXPECT_EQ(transmission_count, 1 + simulator.get_num_steps_taken());
+}
+
+// When constructed via a publish_triggers set, tests that forced publish
+// generates the expected number of publishes.
+GTEST_TEST(LcmPublisherSystemTest, TestForcedPublishTrigger) {
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  int transmission_count = 0;
+  int force_publish_count = 3;
+  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
+    ++transmission_count;
+  });
+  lcm.EnableLoopBack();
+
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
+      &lcm, {TriggerType::kForced});
+
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  context->FixInputPort(kPortNumber,
+    AbstractValue::Make<lcmt_drake_signal>(lcmt_drake_signal()));
+
+  for (int i = 0; i < force_publish_count; i++) {
+    dut->Publish(*context);
+  }
+
+  // Check that we get exactly the number of publishes desired.
+  EXPECT_EQ(transmission_count, force_publish_count);
+}
+
 // Tests that the published LCM message has the expected timestamps.
 GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   const double kPublishPeriod = 1.5;  // Seconds between publications.
@@ -296,6 +363,47 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
         std::floor(time / kPublishPeriod) * kPublishPeriod * 1000;
     EXPECT_EQ(lcm.DecodeLastPublishedMessageAs<lcmt_drake_signal>(
       channel_name).timestamp, expected_time);
+  }
+
+  // Check that we get the expected number of messages: one at initialization
+  // plus two from periodic publishing.
+  EXPECT_EQ(transmission_count, 3);
+}
+
+// When constructed via a publish_triggers set, tests that periodic publishing
+// generates the expected number of publishes.
+GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
+  const double kPublishPeriod = 1.5;  // Seconds between publications.
+
+  lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+  int transmission_count = 0;
+  lcm.Subscribe(channel_name, [&transmission_count](const void*, int) {
+    ++transmission_count;
+  });
+  lcm.EnableLoopBack();
+
+  // Instantiates the "device under test".
+  auto dut = LcmPublisherSystem::Make<lcmt_drake_signal>(channel_name,
+      &lcm, {TriggerType::kPeriodic},
+      kPublishPeriod);
+  unique_ptr<Context<double>> context = dut->AllocateContext();
+
+  context->FixInputPort(kPortNumber,
+    AbstractValue::Make<lcmt_drake_signal>(lcmt_drake_signal()));
+
+  // Prepares to integrate.
+  drake::systems::Simulator<double> simulator(*dut, std::move(context));
+  simulator.set_publish_every_time_step(false);
+  simulator.set_publish_at_initialization(false);
+  simulator.Initialize();
+
+  // Check that a message was transmitted during initialization.
+  EXPECT_EQ(transmission_count, 1);
+
+  for (double time = 0.0; time < 4; time += 0.01) {
+    simulator.StepTo(time);
+    EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
   }
 
   // Check that we get the expected number of messages: one at initialization

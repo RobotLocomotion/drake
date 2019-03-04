@@ -116,8 +116,9 @@ int do_main(int argc, char* argv[]) {
   // Check that the arm is (very roughly) in the commanded position.
   VectorXd q = station->GetIiwaPosition(station_context);
   if (!is_approx_equal_abstol(q, q0, 1.e-3)) {
-    std::cout << "q - q0  = " << (q - q0).transpose() << std::endl;
-    DRAKE_ABORT_MSG("q is not sufficiently close to q0.");
+    std::cout << "q is not sufficiently close to q0.\n";
+    std::cout << "q - q0  = " << (q - q0).transpose() << "\n";
+    return EXIT_FAILURE;
   }
 
   return 0;

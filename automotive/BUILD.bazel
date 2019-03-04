@@ -44,7 +44,6 @@ drake_cc_package_library(
         ":maliput_railcar",
         ":mobil_planner",
         ":multilane_onramp_merge",
-        ":phase_based_right_of_way_state_provider",
         ":pose_selector",
         ":pure_pursuit",
         ":pure_pursuit_controller",
@@ -55,7 +54,6 @@ drake_cc_package_library(
         ":trajectory",
         ":trajectory_car",
         ":trajectory_follower",
-        ":trivial_right_of_way_state_provider",
     ],
 )
 
@@ -400,34 +398,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "phase_based_right_of_way_state_provider",
-    srcs = [
-        "phase_based_right_of_way_state_provider.cc",
-    ],
-    hdrs = [
-        "phase_based_right_of_way_state_provider.h",
-    ],
-    deps = [
-        "//automotive/maliput/api",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
-    name = "trivial_right_of_way_state_provider",
-    srcs = [
-        "trivial_right_of_way_state_provider.cc",
-    ],
-    hdrs = [
-        "trivial_right_of_way_state_provider.h",
-    ],
-    deps = [
-        "//automotive/maliput/api",
-        "//common:essential",
-    ],
-)
-
-drake_cc_library(
     name = "automotive_simulator",
     srcs = ["automotive_simulator.cc"],
     hdrs = ["automotive_simulator.h"],
@@ -441,7 +411,6 @@ drake_cc_library(
         ":pure_pursuit_controller",
         ":simple_car",
         ":trajectory_car",
-        ":trivial_right_of_way_state_provider",
         "//automotive/maliput/api",
         "//automotive/maliput/utility",
         "//common:temp_directory",
@@ -737,23 +706,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:solve",
         "//systems/trajectory_optimization:direct_collocation",
-    ],
-)
-
-drake_cc_googletest(
-    name = "phase_based_right_of_way_state_provider_test",
-    deps = [
-        ":phase_based_right_of_way_state_provider",
-        "//automotive/maliput/simple_phase_book",
-        "//automotive/maliput/simple_phase_provider",
-    ],
-)
-
-drake_cc_googletest(
-    name = "trivial_right_of_way_state_provider_test",
-    deps = [
-        ":trivial_right_of_way_state_provider",
-        "//automotive/maliput/api/test_utilities:rules_test_utilities",
     ],
 )
 

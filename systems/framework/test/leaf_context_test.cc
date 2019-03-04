@@ -567,7 +567,7 @@ TEST_F(LeafContextTest, CopyStateFrom) {
   clone->get_mutable_discrete_state(0)[0] = 243.0;
   clone->get_mutable_abstract_state<int>(0) = 729;
 
-  context_.get_mutable_state().CopyFrom(clone->get_state());
+  context_.get_mutable_state().SetFrom(clone->get_state());
 
   EXPECT_EQ(81.0, context_.get_continuous_state()[0]);
   EXPECT_EQ(243.0, context_.get_discrete_state(0)[0]);

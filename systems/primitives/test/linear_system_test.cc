@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
@@ -12,10 +13,52 @@
 
 using std::make_unique;
 using std::unique_ptr;
+using MatrixXd = drake::MatrixX<double>;
 
 namespace drake {
 namespace systems {
 namespace {
+
+class LinearSystemPlusEmptyVectorPort : public LinearSystem<double> {
+ public:
+  LinearSystemPlusEmptyVectorPort(
+        const Eigen::Ref<const Eigen::MatrixXd>& A,
+        const Eigen::Ref<const Eigen::MatrixXd>& B,
+        const Eigen::Ref<const Eigen::MatrixXd>& C,
+        const Eigen::Ref<const Eigen::MatrixXd>& D) : LinearSystem(A, B, C, D) {
+    this->DeclareInputPort(kVectorValued, 0);
+  }
+};
+
+GTEST_TEST(LinearSystemTestWithEmptyPort, EmptyPort) {
+  // Set linear system matrices as simply as possible while using a non-empty
+  // vector input.
+  const int num_states = 1;
+  const int num_inputs = 1;
+  MatrixXd B(num_states, num_inputs);
+  B << 0;
+  const MatrixXd A = B;
+  const MatrixXd C = B;
+  const MatrixXd D = B;
+  LinearSystemPlusEmptyVectorPort dut(A, B, C, D);
+
+  // Get the system as a System<double>. This is necessary because the
+  // grandparent (TimeVaryingAffineSystem) shadows System::get_input_port(int)
+  // with TimeVaryingAffineSystem::get_input_port(), which makes the former
+  // inaccessible.
+  System<double>& system = dut;
+
+  // Verify that the first two vector input ports have expected sizes.
+  ASSERT_EQ(system.get_input_port(0).size(), num_inputs);
+  ASSERT_EQ(system.get_input_port(1).size(), 0);
+
+  // Verify that computing derivatives does not cause an exception to be thrown
+  // when the empty vector port is unconnected.
+  auto context = dut.CreateDefaultContext();
+  auto derivatives = dut.AllocateTimeDerivatives();
+  context->FixInputPort(0, Vector1d(0));
+  EXPECT_NO_THROW(dut.CalcTimeDerivatives(*context, derivatives.get()));
+}
 
 class LinearSystemTest : public AffineLinearSystemTest {
  public:

@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -82,8 +83,7 @@ int Rod2D<T>::DetermineNumWitnessFunctions(
     return 0;
 
   // TODO(edrumwri): Flesh out this stub.
-  DRAKE_ABORT_MSG("Rod2D<T>::DetermineNumWitnessFunctions is stubbed");
-  return 0;
+  throw std::domain_error("Rod2D<T>::DetermineNumWitnessFunctions is stubbed");
 }
 
 /// Gets the integer variable 'k' used to determine the point of contact
@@ -1036,7 +1036,7 @@ void Rod2D<T>::DoCalcTimeDerivatives(
     return CalcAccelerationsCompliantContactAndBallistic(context, derivatives);
   } else {
     // TODO(edrumwri): Implement the piecewise DAE approach.
-    DRAKE_ABORT_MSG(
+    throw std::domain_error(
         "Rod2D<T>::DoCalcTimeDerivatives: piecewise DAE isn't implemented yet");
   }
 }

@@ -745,7 +745,7 @@ class System : public SystemBase {
 
     // Copy current state to the passed-in state, as specified in the
     // documentation for DoCalcUnrestrictedUpdate().
-    state->CopyFrom(context.get_state());
+    state->SetFrom(context.get_state());
 
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
@@ -1451,24 +1451,29 @@ class System : public SystemBase {
         continue;
       }
 
-      if (input_port.get_data_type() == kVectorValued) {
-        // For vector-valued input ports, we placewise initialize a fixed input
-        // vector using the explicit conversion from double to T.
-        const Eigen::VectorBlock<const VectorX<double>> other_vec =
-            other_port.Eval(other_context);
-        auto our_vec = this->AllocateInputVector(input_port);
-        for (int j = 0; j < our_vec->size(); ++j) {
-          (*our_vec)[j] = T(other_vec[j]);
+      switch (input_port.get_data_type()) {
+        case kVectorValued: {
+          // For vector-valued input ports, we placewise initialize a fixed
+          // input vector using the explicit conversion from double to T.
+          const Eigen::VectorBlock<const VectorX<double>> other_vec =
+              other_port.Eval(other_context);
+          auto our_vec = this->AllocateInputVector(input_port);
+          for (int j = 0; j < our_vec->size(); ++j) {
+            (*our_vec)[j] = T(other_vec[j]);
+          }
+          target_context->FixInputPort(i, *our_vec);
+          continue;
         }
-        target_context->FixInputPort(i, *our_vec);
-      } else if (input_port.get_data_type() == kAbstractValued) {
-        // For abstract-valued input ports, we just clone the value and fix
-        // it to the port.
-        const auto& other_value = other_port.Eval<AbstractValue>(other_context);
-        target_context->FixInputPort(i, other_value);
-      } else {
-        DRAKE_ABORT_MSG("Unknown input port type.");
+        case kAbstractValued: {
+          // For abstract-valued input ports, we just clone the value and fix
+          // it to the port.
+          const auto& other_value =
+              other_port.Eval<AbstractValue>(other_context);
+          target_context->FixInputPort(i, other_value);
+          continue;
+        }
       }
+      DRAKE_UNREACHABLE();
     }
   }
 
@@ -2150,7 +2155,8 @@ class System : public SystemBase {
   std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
       InputPortIndex port_index) const final {
     const InputPort<T>& port = this->get_input_port(port_index);
-    const std::string pathname = this->GetSystemPathname();
+    const std::string& port_name = port.get_name();
+    const std::string path_name = this->GetSystemPathname();
 
     // Note that our lambdas below will capture all necessary items by-value,
     // so that they do not rely on this System still being alive.  (We do not
@@ -2166,11 +2172,11 @@ class System : public SystemBase {
         // fine to let them also handle detailed error reporting on their own.
         const std::type_info& expected_type =
             this->AllocateInputAbstract(port)->static_type_info();
-        return [&expected_type, port_index, pathname](
+        return [&expected_type, port_index, path_name, port_name](
             const AbstractValue& actual) {
           if (actual.static_type_info() != expected_type) {
             SystemBase::ThrowInputPortHasWrongType(
-                "FixInputPortTypeCheck", pathname, port_index,
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
                 NiceTypeName::Get(expected_type),
                 NiceTypeName::Get(actual.type_info()));
           }
@@ -2182,20 +2188,20 @@ class System : public SystemBase {
         const std::unique_ptr<BasicVector<T>> model_vector =
             this->AllocateInputVector(port);
         const int expected_size = model_vector->size();
-        return [expected_size, port_index, pathname](
+        return [expected_size, port_index, path_name, port_name](
             const AbstractValue& actual) {
           const BasicVector<T>* const actual_vector =
               actual.MaybeGetValue<BasicVector<T>>();
           if (actual_vector == nullptr) {
             SystemBase::ThrowInputPortHasWrongType(
-                "FixInputPortTypeCheck", pathname, port_index,
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
                 NiceTypeName::Get<Value<BasicVector<T>>>(),
                 NiceTypeName::Get(actual));
           }
           // Check that vector sizes match.
           if (actual_vector->size() != expected_size) {
             SystemBase::ThrowInputPortHasWrongType(
-                "FixInputPortTypeCheck", pathname, port_index,
+                "FixInputPortTypeCheck", path_name, port_index, port_name,
                 fmt::format("{} with size={}",
                             NiceTypeName::Get<BasicVector<T>>(),
                             expected_size),

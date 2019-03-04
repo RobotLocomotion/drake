@@ -19,9 +19,9 @@ namespace lcm {
  * existence throughout the lifespan of this object.
  */
 class
-DRAKE_DEPRECATED(
-    "The LcmAndVectorBaseTranslator and its related code are deprecated, "
-    "and will be removed on 2019-05-01.")
+DRAKE_DEPRECATED("2019-05-01",
+    "The LcmAndVectorBaseTranslator and its related code "
+    "are scheduled to be removed, with no replacement.")
 LcmTranslatorDictionary {
  public:
 #pragma GCC diagnostic push

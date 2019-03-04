@@ -88,6 +88,19 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "quadrotor_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["quadrotor_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
     name = "rimless_wheel_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -118,6 +131,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":compass_gait_py",
     ":manipulation_station_py",
     ":pendulum_py",
+    ":quadrotor_py",
     ":rimless_wheel_py",
     ":van_der_pol_py",
     "//bindings/pydrake/examples/multibody",
@@ -169,6 +183,13 @@ drake_py_unittest(
     name = "pendulum_test",
     deps = [
         ":pendulum_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "quadrotor_test",
+    deps = [
+        ":quadrotor_py",
     ],
 )
 

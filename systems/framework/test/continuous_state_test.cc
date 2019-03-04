@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
@@ -30,8 +31,9 @@ constexpr int kVelocityLength = 1;
 constexpr int kMiscLength = 1;
 constexpr int kLength = kPositionLength + kVelocityLength + kMiscLength;
 
-std::unique_ptr<VectorBase<double>> MakeSomeVector() {
-  return BasicVector<double>::Make({1, 2, 3, 4});
+template <typename T>
+std::unique_ptr<VectorBase<T>> MakeSomeVector() {
+  return BasicVector<T>::Make({1, 2, 3, 4});
 }
 
 // Tests for ContinuousState.
@@ -39,8 +41,20 @@ std::unique_ptr<VectorBase<double>> MakeSomeVector() {
 class ContinuousStateTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    continuous_state_.reset(new ContinuousState<double>(
-        MakeSomeVector(), kPositionLength, kVelocityLength, kMiscLength));
+    continuous_state_ = MakeSomeState<double>();
+  }
+
+  template <typename T>
+  static std::unique_ptr<ContinuousState<T>> MakeSomeState() {
+    return std::make_unique<ContinuousState<T>>(
+        MakeSomeVector<T>(), kPositionLength, kVelocityLength, kMiscLength);
+  }
+
+  template <typename T>
+  static std::unique_ptr<ContinuousState<T>> MakeNanState() {
+    return std::make_unique<ContinuousState<T>>(
+        std::make_unique<BasicVector<T>>(kLength),
+        kPositionLength, kVelocityLength, kMiscLength);
   }
 
   std::unique_ptr<ContinuousState<double>> continuous_state_;
@@ -93,7 +107,8 @@ TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
 TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
   EXPECT_THROW(
       continuous_state_.reset(new ContinuousState<double>(
-          MakeSomeVector(), kPositionLength, kVelocityLength, kMiscLength + 1)),
+          MakeSomeVector<double>(),
+          kPositionLength, kVelocityLength, kMiscLength + 1)),
       std::out_of_range);
 }
 
@@ -102,21 +117,81 @@ TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
 TEST_F(ContinuousStateTest, MoreVelocityThanPositionVariables) {
   EXPECT_THROW(
       continuous_state_.reset(new ContinuousState<double>(
-          MakeSomeVector(), 1 /* num_q */, 2 /* num_v */, kMiscLength + 1)),
+          MakeSomeVector<double>(),
+          1 /* num_q */, 2 /* num_v */, kMiscLength + 1)),
       std::out_of_range);
 }
 
-TEST_F(ContinuousStateTest, CopyFrom) {
-  // Create a zero-initialized continuous state, with the same dimensions as
-  // the continuous state in the fixture.
-  ContinuousState<double> next_state(BasicVector<double>::Make({0, 0, 0, 0}),
-                                     kPositionLength, kVelocityLength,
-                                     kMiscLength);
-  next_state.CopyFrom(*continuous_state_);
-  EXPECT_EQ(1, next_state[0]);
-  EXPECT_EQ(2, next_state[1]);
-  EXPECT_EQ(3, next_state[2]);
-  EXPECT_EQ(4, next_state[3]);
+TEST_F(ContinuousStateTest, SetFrom) {
+  const auto expected_double = MakeSomeState<double>();
+  const auto expected_autodiff = MakeSomeState<AutoDiffXd>();
+  const auto expected_symbolic = MakeSomeState<symbolic::Expression>();
+
+  // Check ContinuousState<T>::SetFrom<T> for all T's.
+  auto actual_double = MakeNanState<double>();
+  auto actual_autodiff = MakeNanState<AutoDiffXd>();
+  auto actual_symbolic = MakeNanState<symbolic::Expression>();
+  actual_double->SetFrom(*expected_double);
+  actual_autodiff->SetFrom(*expected_autodiff);
+  actual_symbolic->SetFrom(*expected_symbolic);
+  EXPECT_EQ(actual_double->CopyToVector(), expected_double->CopyToVector());
+  EXPECT_EQ(actual_autodiff->CopyToVector(), expected_autodiff->CopyToVector());
+  EXPECT_EQ(actual_symbolic->CopyToVector(), expected_symbolic->CopyToVector());
+
+  // Check ContinuousState<double>::SetFrom<U> for U=AutoDiff and U=Expression.
+  actual_double = MakeNanState<double>();
+  actual_double->SetFrom(*expected_autodiff);
+  EXPECT_EQ(actual_double->CopyToVector(), expected_double->CopyToVector());
+  actual_double = MakeNanState<double>();
+  actual_double->SetFrom(*expected_symbolic);
+  EXPECT_EQ(actual_double->CopyToVector(), expected_double->CopyToVector());
+
+  // If there was an unbound variable, we get an exception.
+  auto unbound_symbolic = expected_symbolic->Clone();
+  unbound_symbolic->get_mutable_vector()[0] = symbolic::Variable("q");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      actual_double->SetFrom(*unbound_symbolic),
+      std::exception, ".*variable q.*\n*");
+
+  // Check ContinuousState<AutoDiff>::SetFrom<U> for U=double and U=Expression.
+  actual_autodiff = MakeNanState<AutoDiffXd>();
+  actual_autodiff->SetFrom(*expected_double);
+  EXPECT_EQ(actual_autodiff->CopyToVector(), expected_autodiff->CopyToVector());
+  actual_autodiff = MakeNanState<AutoDiffXd>();
+  actual_autodiff->SetFrom(*expected_symbolic);
+  EXPECT_EQ(actual_autodiff->CopyToVector(), expected_autodiff->CopyToVector());
+
+  // Check ContinuousState<Expression>::SetFrom<U> for U=double and U=AutoDiff.
+  actual_symbolic = MakeNanState<symbolic::Expression>();
+  actual_symbolic->SetFrom(*expected_double);
+  EXPECT_EQ(actual_symbolic->CopyToVector(), expected_symbolic->CopyToVector());
+  actual_symbolic = MakeNanState<symbolic::Expression>();
+  actual_symbolic->SetFrom(*expected_autodiff);
+  EXPECT_EQ(actual_symbolic->CopyToVector(), expected_symbolic->CopyToVector());
+
+  // Check ContinuousState<AutoDiff>::SetFrom<AutoDiff> preserves derivatives.
+  auto fancy_autodiff = MakeSomeState<AutoDiffXd>();
+  auto& fancy_vector = fancy_autodiff->get_mutable_vector();
+  fancy_vector[0].derivatives() = Eigen::VectorXd::Constant(4, -1.0);
+  fancy_vector[1].derivatives() = Eigen::VectorXd::Constant(4, -2.0);
+  fancy_vector[2].derivatives() = Eigen::VectorXd::Constant(4, -3.0);
+  fancy_vector[3].derivatives() = Eigen::VectorXd::Constant(4, -4.0);
+  actual_autodiff = MakeNanState<AutoDiffXd>();
+  actual_autodiff->SetFrom(*fancy_autodiff);
+  EXPECT_EQ(actual_autodiff->CopyToVector(), expected_autodiff->CopyToVector());
+  const auto& actual_vector = actual_autodiff->get_vector();
+  EXPECT_EQ(actual_vector[0].derivatives(), fancy_vector[0].derivatives());
+  EXPECT_EQ(actual_vector[1].derivatives(), fancy_vector[1].derivatives());
+  EXPECT_EQ(actual_vector[2].derivatives(), fancy_vector[2].derivatives());
+  EXPECT_EQ(actual_vector[3].derivatives(), fancy_vector[3].derivatives());
+}
+
+TEST_F(ContinuousStateTest, SetFromException) {
+  const auto dut = MakeSomeState<double>();
+  const auto wrong = std::make_unique<ContinuousState<double>>(
+      MakeSomeVector<double>(),
+      kPositionLength - 1, kVelocityLength, kMiscLength + 1);
+  EXPECT_THROW(dut->SetFrom(*wrong), std::exception);
 }
 
 // This is testing the default implementation of Clone() for when a
@@ -133,7 +208,7 @@ TEST_F(ContinuousStateTest, Clone) {
 
   // Make sure underlying BasicVector type, and 2nd-order structure,
   // is preserved in the clone.
-  ContinuousState<double> state(MyVector<3, double>::Make(1.25, 1.5, 1.75),
+  ContinuousState<double> state(MyVector3d::Make(1.25, 1.5, 1.75),
                                 2, 1, 0);
   clone_ptr = state.Clone();
   const ContinuousState<double>& clone2 = *clone_ptr;
@@ -147,7 +222,7 @@ TEST_F(ContinuousStateTest, Clone) {
   EXPECT_EQ(clone2.get_generalized_position()[1], 1.5);
   EXPECT_EQ(clone2.get_generalized_velocity()[0], 1.75);
 
-  auto vector = dynamic_cast<const MyVector<3, double>*>(&clone2.get_vector());
+  auto vector = dynamic_cast<const MyVector3d*>(&clone2.get_vector());
   ASSERT_NE(vector, nullptr);
   EXPECT_EQ((*vector)[0], 1.25);
   EXPECT_EQ((*vector)[1], 1.5);

@@ -120,7 +120,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
     diagram_->CalcOutput(*context_, output_.get());
   }
 

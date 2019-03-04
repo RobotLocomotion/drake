@@ -53,28 +53,11 @@ from six import text_type as unicode
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.common.deprecation import (
-    DrakeDeprecationWarning,
-)
 from pydrake.common.eigen_geometry import Isometry3
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.systems.framework import InputPort, OutputPort
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.lcm import LcmPublisherSystem
-
-# Deprecated modules.
-# N.B. Place `with` afterwards to avoid needing to place `#noqa` on other
-# modules. Additionally, assert length of warnings here rather than in the test
-# so that we do not have to worry about whether a module has already been
-# loaded.
-with warnings.catch_warnings(record=True) as w:
-    warnings.simplefilter("default", DrakeDeprecationWarning)
-    from pydrake.multibody.multibody_tree import (
-        BodyNodeIndex,
-        MobilizerIndex,
-        MultibodyTree,
-    )
-    from pydrake.multibody.multibody_tree.parsing import AddModelFromSdfFile
-    assert len(w) == 3, len(w)
 
 
 def get_index_class(cls):
@@ -214,17 +197,6 @@ class TestPlant(unittest.TestCase):
         self._test_multibody_tree_element_mixin(joint_actuator)
         self.assertIsInstance(joint_actuator.name(), unicode)
         self.assertIsInstance(joint_actuator.joint(), Joint)
-
-    def test_deprecated_parsing(self):
-        sdf_file = FindResourceOrThrow(
-            "drake/multibody/benchmarks/acrobot/acrobot.sdf")
-
-        plant = MultibodyPlant(time_step=0.01)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("default", DrakeDeprecationWarning)
-            result = AddModelFromSdfFile(plant=plant, file_name=sdf_file)
-            self.assertIsInstance(result, ModelInstanceIndex)
-            self.assertEqual(len(w), 1)
 
     def check_old_spelling_exists(self, value):
         # Just to make it obvious when this is being tested.
@@ -844,56 +816,3 @@ class TestPlant(unittest.TestCase):
         self.assertSetEqual(
             bodies,
             {plant.GetBodyByName("body1"), plant.GetBodyByName("body2")})
-
-    def test_deprecated_tree_api(self):
-        plant = MultibodyPlant()
-        plant.Finalize()
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always', DrakeDeprecationWarning)
-            num_expected_warnings = [0]
-
-            def expect_new_warning(msg_part):
-                num_expected_warnings[0] += 1
-                self.assertEqual(len(w), num_expected_warnings[0])
-                self.assertIn(msg_part, str(w[-1].message))
-
-            tree = plant.tree()
-            expect_new_warning("`tree()`")
-            MobilizerIndex(0)
-            expect_new_warning("`MobilizerIndex`")
-            BodyNodeIndex(0)
-            expect_new_warning("`BodyNodeIndex`")
-            MultibodyForces(model=tree)
-            expect_new_warning("`MultibodyForces(plant)`")
-            element = plant.world_body()
-            self.assertIsInstance(element.get_parent_tree(), MultibodyTree)
-            expect_new_warning("`get_parent_tree()`")
-
-        # Check old spellings (no deprecation warnings).
-        self.check_old_spelling_exists(tree.CalcRelativeTransform)
-        self.check_old_spelling_exists(tree.CalcPointsPositions)
-        self.check_old_spelling_exists(
-            tree.CalcFrameGeometricJacobianExpressedInWorld)
-        self.check_old_spelling_exists(tree.EvalBodyPoseInWorld)
-        self.check_old_spelling_exists(tree.SetFreeBodyPoseOrThrow)
-        self.check_old_spelling_exists(tree.SetFreeBodySpatialVelocityOrThrow)
-        self.check_old_spelling_exists(tree.EvalBodySpatialVelocityInWorld)
-        self.check_old_spelling_exists(tree.GetPositionsFromArray)
-        self.check_old_spelling_exists(tree.GetVelocitiesFromArray)
-        self.check_old_spelling_exists(tree.CalcMassMatrixViaInverseDynamics)
-        self.check_old_spelling_exists(tree.CalcBiasTerm)
-        self.check_old_spelling_exists(tree.CalcInverseDynamics)
-        self.check_old_spelling_exists(tree.num_frames)
-        self.check_old_spelling_exists(tree.get_body)
-        self.check_old_spelling_exists(tree.get_joint)
-        self.check_old_spelling_exists(tree.get_joint_actuator)
-        self.check_old_spelling_exists(tree.get_frame)
-        self.check_old_spelling_exists(tree.GetModelInstanceName)
-
-        context = plant.CreateDefaultContext()
-        # All body poses.
-        X_WB, = tree.CalcAllBodyPosesInWorld(context)
-        self.assertIsInstance(X_WB, Isometry3)
-        v_WB, = tree.CalcAllBodySpatialVelocitiesInWorld(context)
-        self.assertIsInstance(v_WB, SpatialVelocity)

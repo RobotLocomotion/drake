@@ -20,7 +20,7 @@ class CustomDrakeSignalTranslator : public LcmAndVectorBaseTranslator {
 
   // An output vector type that tests that subscribers permit non-default
   // types.
-  using CustomVector = MyVector<kDim, double>;
+  using CustomVector = MyVector<double, kDim>;
 
   CustomDrakeSignalTranslator() : LcmAndVectorBaseTranslator(kDim) {}
 

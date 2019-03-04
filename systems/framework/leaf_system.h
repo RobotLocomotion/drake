@@ -211,7 +211,7 @@ class LeafSystem : public System<T> {
         model_discrete_state_.num_groups() == xd.num_groups());
 
     if (model_discrete_state_.num_groups() > 0) {
-      xd.CopyFrom(model_discrete_state_);
+      xd.SetFrom(model_discrete_state_);
     } else {
       // With no model vector, we just zero all the discrete variables.
       for (int i = 0; i < xd.num_groups(); i++) {
@@ -221,7 +221,7 @@ class LeafSystem : public System<T> {
     }
 
     AbstractValues& xa = state->get_mutable_abstract_state();
-    xa.CopyFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
+    xa.SetFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
   }
 
   /// Default implementation: sets all numeric parameters to the model vector
@@ -1494,7 +1494,7 @@ class LeafSystem : public System<T> {
   // =========================================================================
   /// @name                    Declare input ports
   /// Methods in this section are used by derived classes to declare their
-  /// output ports, which may be vector valued or abstract valued.
+  /// input ports, which may be vector valued or abstract valued.
   ///
   /// You should normally provide a meaningful name for any input port you
   /// create. Names must be unique for this system (passing in a duplicate
@@ -2347,8 +2347,8 @@ class LeafSystem : public System<T> {
     const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
-    // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
-    discrete_state->CopyFrom(context.get_discrete_state());
+    // TODO(siyuan): should have a API level SetFrom for DiscreteValues.
+    discrete_state->SetFrom(context.get_discrete_state());
     // Only call DoCalcDiscreteVariableUpdates if there are discrete update
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());

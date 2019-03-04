@@ -164,6 +164,12 @@ class PyFunctionConstraint : public Constraint {
   const AutoDiffFunc autodiff_func_;
 };
 
+constexpr const char* const kSolveDeprecationString =
+    "MathematicalProgram methods that assume the solution is stored inside "
+    "the program are deprecated; for details and porting advice, see "
+    "https://github.com/RobotLocomotion/drake/issues/9633.  This method "
+    "will be removed on 2019-06-01.";
+
 }  // namespace
 
 PYBIND11_MODULE(mathematicalprogram, m) {
@@ -205,10 +211,14 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("prog"), py::arg("initial_guess"), py::arg("solver_options"),
           doc.SolverBase.Solve.doc)
       .def("Solve",
-          // NOLINTNEXTLINE(whitespace/parens)
-          static_cast<SolutionResult (SolverInterface::*)(MathematicalProgram&)
-                  const>(&SolverInterface::Solve),
-          py::arg("prog"), doc.SolverInterface.Solve.doc_1args)
+          [](const SolverInterface& self, MathematicalProgram& prog) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            return self.Solve(prog);
+#pragma GCC diagnostic pop
+          },
+          py::arg("prog"), kSolveDeprecationString)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("solver_type",
           [](const SolverInterface& self) {
@@ -284,7 +294,38 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution
-              .doc_1args_constEigenMatrixBase);
+              .doc_1args_constEigenMatrixBase)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const symbolic::Variable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_var_solution_number)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const VectorXDecisionVariable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_constEigenMatrixBase_int)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const MatrixXDecisionVariable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_constEigenMatrixBase_int)
+      .def("num_suboptimal_solution()",
+          [](const MathematicalProgramResult& self) {
+            return self.num_suboptimal_solution();
+          },
+          doc.MathematicalProgramResult.num_suboptimal_solution.doc)
+      .def("get_suboptimal_objective",
+          [](const MathematicalProgramResult& self, int solution_number) {
+            return self.get_suboptimal_objective(solution_number);
+          },
+          doc.MathematicalProgramResult.get_suboptimal_objective.doc);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
@@ -397,16 +438,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearConstraint),
+          py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
               &MathematicalProgram::AddLinearConstraint),
+          py::arg("e"), py::arg("lb"), py::arg("ub"),
           doc.MathematicalProgram.AddLinearConstraint.doc_3args_e_lb_ub)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const VectorX<symbolic::Expression>>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&)>(
+              &MathematicalProgram::AddLinearConstraint),
+          py::arg("v"), py::arg("lb"), py::arg("ub"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_3args_v_lb_ub)
+      .def("AddLinearConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddLinearConstraint),
-          doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
+          py::arg("f"), doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -527,10 +578,24 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddVisualizationCallback),
           doc.MathematicalProgram.AddVisualizationCallback.doc)
-      .def("Solve", &MathematicalProgram::Solve,
-          doc.MathematicalProgram.Solve.doc)
-      .def("GetSolverId", &MathematicalProgram::GetSolverId,
-          doc.MathematicalProgram.GetSolverId.doc)
+      .def("Solve",
+          [](MathematicalProgram* self) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            return self->Solve();
+#pragma GCC diagnostic pop
+          },
+          kSolveDeprecationString)
+      .def("GetSolverId",
+          [](MathematicalProgram* self) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            return self->GetSolverId();
+#pragma GCC diagnostic pop
+          },
+          kSolveDeprecationString)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
       .def("linear_equality_constraints",
@@ -559,31 +624,51 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           doc.MathematicalProgram.decision_variables.doc)
       .def("GetSolution",
           [](const MathematicalProgram& prog, const Variable& var) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.GetSolution(var);
+#pragma GCC diagnostic pop
           },
-          doc.MathematicalProgram.GetSolution.doc_1args_var)
+          kSolveDeprecationString)
       .def("GetSolution",
           [](const MathematicalProgram& prog,
               const VectorXDecisionVariable& var) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.GetSolution(var);
+#pragma GCC diagnostic pop
           },
-          doc.MathematicalProgram.GetSolution.doc_1args_constEigenMatrixBase)
+          kSolveDeprecationString)
       .def("GetSolution",
           [](const MathematicalProgram& prog,
               const MatrixXDecisionVariable& var) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.GetSolution(var);
+#pragma GCC diagnostic pop
           },
-          doc.MathematicalProgram.GetSolution.doc_1args_constEigenMatrixBase)
+          kSolveDeprecationString)
       .def("SubstituteSolution",
           [](const MathematicalProgram& prog, const symbolic::Expression& e) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.SubstituteSolution(e);
+#pragma GCC diagnostic pop
           },
-          doc.MathematicalProgram.SubstituteSolution.doc_1args_e)
+          kSolveDeprecationString)
       .def("SubstituteSolution",
           [](const MathematicalProgram& prog, const symbolic::Polynomial& p) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             return prog.SubstituteSolution(p);
+#pragma GCC diagnostic pop
           },
-          doc.MathematicalProgram.SubstituteSolution.doc_1args_p)
+          kSolveDeprecationString)
       .def("EvalBinding",
           [](const MathematicalProgram& prog,
               const Binding<EvaluatorBase>& binding,
@@ -601,8 +686,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("bindings"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBindings.doc)
       .def("EvalBindingAtSolution",
-          &MathematicalProgram::EvalBindingAtSolution<EvaluatorBase>,
-          py::arg("binding"), doc.MathematicalProgram.EvalBindingAtSolution.doc)
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding) {
+            WarnDeprecated(kSolveDeprecationString);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            return prog.EvalBindingAtSolution(binding);
+#pragma GCC diagnostic pop
+          },
+          py::arg("binding"), kSolveDeprecationString)
       .def("GetInitialGuess",
           [](MathematicalProgram& prog,
               const symbolic::Variable& decision_variable) {
@@ -644,6 +736,34 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
+      .def("SetDecisionVariableValueInVector",
+          [](const MathematicalProgram& prog,
+              const symbolic::Variable& decision_variable,
+              double decision_variable_new_value,
+              Eigen::Ref<Eigen::VectorXd> values) {
+            prog.SetDecisionVariableValueInVector(
+                decision_variable, decision_variable_new_value, &values);
+          },
+          py::arg("decision_variable"), py::arg("decision_variable_new_value"),
+          py::arg("values"),
+          doc.MathematicalProgram.SetDecisionVariableValueInVector
+              .doc_3args_decision_variable_decision_variable_new_value_values)
+      .def("SetDecisionVariableValueInVector",
+          [](const MathematicalProgram& prog,
+              const Eigen::Ref<const MatrixXDecisionVariable>&
+                  decision_variables,
+              const Eigen::Ref<const Eigen::MatrixXd>&
+                  decision_variables_new_values,
+              Eigen::Ref<Eigen::VectorXd> values) {
+            prog.SetDecisionVariableValueInVector(
+                decision_variables, decision_variables_new_values, &values);
+          },
+          py::arg("decision_variables"),
+          py::arg("decision_variables_new_values"), py::arg("values"),
+          doc.MathematicalProgram
+              .SetDecisionVariableValueInVector
+              // NOLINTNEXTLINE(whitespace/line_length)
+              .doc_3args_decision_variables_decision_variables_new_values_values)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,

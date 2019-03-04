@@ -1,0 +1,54 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//multibody:__subpackages__"],
+)
+
+drake_cc_package_library(
+    name = "hydroelastic_contact",
+    deps = [
+        ":triangle_quadrature",
+        ":triangle_quadrature_rules",
+    ],
+)
+
+drake_cc_library(
+    name = "triangle_quadrature_rules",
+    hdrs = [
+        "gaussian_triangle_quadrature_rule.h",
+        "triangle_quadrature_rule.h",
+    ],
+)
+
+drake_cc_library(
+    name = "triangle_quadrature",
+    srcs = [
+        "triangle_quadrature.cc",
+    ],
+    hdrs = [
+        "triangle_quadrature.h",
+    ],
+    deps = [
+        ":triangle_quadrature_rules",
+        "//common:essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "triangle_quadrature_test",
+    deps = [
+        ":triangle_quadrature",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+add_lint_tests()

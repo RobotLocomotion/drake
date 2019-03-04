@@ -962,7 +962,8 @@ class SystemBase : public internal::SystemMessageInterface {
   the input port had some value type that was wrong. */
   [[noreturn]] static void ThrowInputPortHasWrongType(
       const char* func, const std::string& system_pathname, InputPortIndex,
-      const std::string& expected_type, const std::string& actual_type);
+      const std::string& port_name, const std::string& expected_type,
+      const std::string& actual_type);
 
   /** Throws std::logic_error because someone called API method `func`, that
   requires this input port to be evaluatable, but the port was neither

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -123,6 +124,9 @@ class GeometryState {
 
   /** Implementation of SceneGraphInspector::GetNumAnchoredGeometries().  */
   int GetNumAnchoredGeometries() const;
+
+  /** Implementation of SceneGraphInspector::GetCollisionCandidates().  */
+  std::set<std::pair<GeometryId, GeometryId>> GetCollisionCandidates() const;
 
   //@}
 

@@ -25,7 +25,7 @@ class SystemOutputTest : public ::testing::Test {
 
     // Vector output port 1 is derived from BasicVector<double>. The concrete
     // type should be preserved when copying.
-    auto my_vec = MyVector<3, double>::Make(125, 625, 3125);
+    auto my_vec = MyVector3d::Make(125, 625, 3125);
     auto my_basic_vec =
         std::make_unique<Value<BasicVector<double>>>(std::move(my_vec));
     output_.add_port(std::move(my_basic_vec));
@@ -77,7 +77,7 @@ TEST_F(SystemOutputTest, Copy) {
 
   // The type and value should be preserved.
   const BasicVector<double>* basic = copy.get_vector_data(1);
-  ASSERT_TRUE((is_dynamic_castable<const MyVector<3, double>>(basic)));
+  ASSERT_TRUE((is_dynamic_castable<const MyVector3d>(basic)));
 
   expected.resize(3);
   expected << 125, 625, 3125;

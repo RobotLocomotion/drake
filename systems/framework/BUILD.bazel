@@ -136,6 +136,7 @@ drake_cc_library(
     hdrs = ["continuous_state.h"],
     deps = [
         ":framework_common",
+        ":system_scalar_converter",
         ":vector",
         "//common:autodiff",
         "//common:default_scalars",
@@ -149,6 +150,7 @@ drake_cc_library(
     hdrs = ["discrete_values.h"],
     deps = [
         ":framework_common",
+        ":system_scalar_converter",
         ":value_deprecated",
         ":vector",
         "//common:autodiff",
@@ -685,6 +687,7 @@ drake_cc_googletest(
         ":continuous_state",
         ":diagram_continuous_state",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:my_vector",
     ],
 )
@@ -744,6 +747,7 @@ drake_cc_googletest(
         ":diagram_discrete_values",
         ":discrete_values",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
         "//systems/framework/test_utilities",
     ],

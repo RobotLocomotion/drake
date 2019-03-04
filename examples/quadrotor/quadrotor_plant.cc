@@ -3,8 +3,12 @@
 #include <memory>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/find_resource.h"
 #include "drake/math/gradient.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
 #include "drake/util/drakeGeometryUtil.h"
 
@@ -39,16 +43,27 @@ QuadrotorPlant<T>::QuadrotorPlant(double m_arg, double L_arg,
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<quadrotor::QuadrotorPlant>{}),
       g_{9.81}, m_(m_arg), L_(L_arg), kF_(kF_arg), kM_(kM_arg), I_(I_arg) {
-  this->DeclareInputPort(systems::kVectorValued, kInputDimension);
-  this->DeclareContinuousState(kStateDimension);
-  this->DeclareVectorOutputPort(systems::BasicVector<T>(kStateDimension),
-                                &QuadrotorPlant::CopyStateOut);
+  // Four inputs -- one for each propellor.
+  this->DeclareInputPort("propellor_force", systems::kVectorValued, 4);
+  // State is x ,y , z, roll, pitch, yaw + velocities.
+  this->DeclareContinuousState(12);
+  state_port_ =
+      this->DeclareVectorOutputPort("state", systems::BasicVector<T>(12),
+                                    &QuadrotorPlant::CopyStateOut)
+          .get_index();
 }
 
 template <typename T>
 template <typename U>
 QuadrotorPlant<T>:: QuadrotorPlant(const QuadrotorPlant<U>& other)
-    : QuadrotorPlant<T>(other.m_, other.L_, other.I_, other.kF_, other.kM_) {}
+    : QuadrotorPlant<T>(other.m_, other.L_, other.I_, other.kF_, other.kM_) {
+  source_id_ = other.source_id();
+  frame_id_ = other.frame_id_;
+
+  if (source_id_.is_valid()) {
+    geometry_pose_port_ = AllocateGeometryPoseOutputPort();
+  }
+}
 
 template <typename T>
 QuadrotorPlant<T>::~QuadrotorPlant() {}
@@ -130,11 +145,55 @@ void QuadrotorPlant<T>::DoCalcTimeDerivatives(
   derivatives->SetFromVector(xDt);
 }
 
-// Declare storage for our constants.
 template <typename T>
-constexpr int QuadrotorPlant<T>::kStateDimension;
+systems::OutputPortIndex QuadrotorPlant<T>::AllocateGeometryPoseOutputPort() {
+  DRAKE_DEMAND(source_id_.is_valid() && frame_id_.is_valid());
+  return this
+      ->DeclareAbstractOutputPort(
+          "geometry_pose",
+          geometry::FramePoseVector<T>(source_id_, {frame_id_}),
+          &QuadrotorPlant<T>::CopyPoseOut)
+      .get_index();
+}
+
 template <typename T>
-constexpr int QuadrotorPlant<T>::kInputDimension;
+void QuadrotorPlant<T>::RegisterGeometry(
+    geometry::SceneGraph<double>* scene_graph) {
+  DRAKE_DEMAND(!source_id_.is_valid());
+  DRAKE_DEMAND(scene_graph);
+
+  // Use (temporary) MultibodyPlant to parse the urdf and setup the
+  // scene_graph.
+  // TODO(SeanCurtis-TRI): Update this on resolution of #10775.
+  multibody::MultibodyPlant<double> mbp;
+  multibody::Parser parser(&mbp, scene_graph);
+
+  auto model_id = parser.AddModelFromFile(
+      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
+      "quadrotor");
+  mbp.Finalize();
+
+  source_id_ = *mbp.get_source_id();
+  frame_id_ = mbp.GetBodyFrameIdOrThrow(mbp.GetBodyIndices(model_id)[0]);
+
+  // Now allocate the output port.
+  geometry_pose_port_ = AllocateGeometryPoseOutputPort();
+}
+
+template <typename T>
+void QuadrotorPlant<T>::CopyPoseOut(const systems::Context<T>& context,
+                                   geometry::FramePoseVector<T>* poses) const {
+  DRAKE_DEMAND(poses->size() == 1);
+  DRAKE_DEMAND(poses->source_id() == source_id_);
+
+  VectorX<T> state = context.get_continuous_state_vector().CopyToVector();
+
+  poses->clear();
+  math::RigidTransform<T> pose(
+      math::RollPitchYaw<T>(state.template segment<3>(3)),
+      state.template head<3>());
+  poses->set_value(frame_id_, pose.GetAsIsometry3());
+}
 
 std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
     const QuadrotorPlant<double>* quadrotor_plant,
@@ -149,7 +208,7 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
       4, quadrotor_plant->m() * quadrotor_plant->g() / 4);
 
   quad_context_goal->FixInputPort(0, u0);
-  quadrotor_plant->set_state(quad_context_goal.get(), x0);
+  quad_context_goal->SetContinuousState(x0);
 
   // Setup LQR cost matrices (penalize position error 10x more than velocity
   // error).

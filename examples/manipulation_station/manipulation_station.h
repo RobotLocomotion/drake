@@ -354,9 +354,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetIiwaPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
                        systems::Context<T>* station_context) const {
     SetIiwaPosition(station_context, q);
@@ -381,9 +380,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
                        systems::Context<T>* station_context) const {
     SetIiwaVelocity(station_context, v);
@@ -414,9 +412,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetWsgPosition(const T& q, systems::Context<T>* station_context) const {
     SetWsgPosition(station_context, q);
   }
@@ -432,9 +429,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const {
     SetWsgVelocity(station_context, v);
   }

@@ -2,6 +2,7 @@
 ///
 /// Implements a controller for a KUKA iiwa arm.
 
+#include <iostream>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -75,10 +76,11 @@ int DoMain() {
   } else if (interp_str == "pchip") {
     interpolator_type = InterpolatorType::Pchip;
   } else {
-    DRAKE_ABORT_MSG(
+    std::cerr <<
         "Robot plan interpolation type not recognized. "
         "Use the gflag --helpshort to display "
-        "flag options for interpolator type.");
+        "flag options for interpolator type.\n";
+    return EXIT_FAILURE;
   }
   auto plan_interpolator =
       builder.AddSystem<LcmPlanInterpolator>(urdf, interpolator_type);

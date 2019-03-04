@@ -164,3 +164,33 @@ class TestMeshcat(unittest.TestCase):
 
         self.assertGreater(contact_results.num_contacts(), 0)
         self.assertEqual(contact_viz._contact_key_counter, 4)
+
+    def test_texture_override(self):
+        """Draws a textured box to test the texture override pathway."""
+        object_file_path = FindResourceOrThrow(
+            "drake/systems/sensors/test/models/box_with_mesh.sdf")
+        # Find the texture path just to ensure it exists and
+        # we're testing the code path we want to.
+        FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png")
+
+        builder = DiagramBuilder()
+        plant = MultibodyPlant(0.002)
+        _, scene_graph = AddMultibodyPlantSceneGraph(builder, plant)
+        object_model = Parser(plant=plant).AddModelFromFile(object_file_path)
+        plant.Finalize()
+
+        # Add meshcat visualizer.
+        viz = builder.AddSystem(
+            MeshcatVisualizer(scene_graph,
+                              zmq_url=None,
+                              open_browser=False))
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            viz.get_input_port(0))
+
+        diagram = builder.Build()
+        diagram_context = diagram.CreateDefaultContext()
+
+        simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.StepTo(1.0)

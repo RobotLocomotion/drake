@@ -901,6 +901,23 @@ void GurobiSolver::DoSolve(
       result->set_optimal_cost(optimal_cost + constant_cost);
 
       if (is_mip) {
+        // The program wants to retrieve sub-optimal solutions
+        int sol_count{0};
+        GRBgetintattr(model, "SolCount", &sol_count);
+        for (int solution_number = 0; solution_number < sol_count;
+             ++solution_number) {
+          error = GRBsetintparam(model_env, "SolutionNumber", solution_number);
+          DRAKE_DEMAND(!error);
+          double suboptimal_obj{1.0};
+          error = GRBgetdblattrarray(model, "Xn", 0, num_total_variables,
+                                     solver_sol_vector.data());
+          DRAKE_DEMAND(!error);
+          error = GRBgetdblattr(model, "PoolObjVal", &suboptimal_obj);
+          DRAKE_DEMAND(!error);
+          SetProgramSolutionVector(is_new_variable, solver_sol_vector,
+                                   &prog_sol_vector);
+          result->AddSuboptimalSolution(suboptimal_obj, prog_sol_vector);
+        }
         // If the problem is a mixed-integer optimization program, provide
         // Gurobi's lower bound.
         double lower_bound;
@@ -927,10 +944,12 @@ void GurobiSolver::DoSolve(
   result->set_solution_result(solution_result);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   MathematicalProgramResult result;
   Solve(prog, {}, {}, &result);
-  SolverResult solver_result = result.ConvertToSolverResult();
+  internal::SolverResult solver_result = result.ConvertToSolverResult();
   const double objective_bound =
       result.get_solver_details<GurobiSolver>().objective_bound;
   if (!std::isnan(objective_bound)) {
@@ -939,6 +958,7 @@ SolutionResult GurobiSolver::Solve(MathematicalProgram& prog) const {
   prog.SetSolverResult(solver_result);
   return result.get_solution_result();
 }
+#pragma GCC diagnostic pop
 
 }  // namespace solvers
 }  // namespace drake

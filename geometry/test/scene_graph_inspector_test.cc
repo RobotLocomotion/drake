@@ -49,6 +49,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
   inspector.NumGeometriesWithRole(Role::kUnassigned);
   inspector.GetNumDynamicGeometries();
   inspector.GetNumAnchoredGeometries();
+  inspector.GetCollisionCandidates();
 
   // Source and source-related data methods.
   // Register a source to prevent exceptions being thrown.

@@ -78,7 +78,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
         bundle.set_pose(pose_index, value.get_isometry());
         bundle.set_model_instance_id(pose_index, record.model_instance_id);
         pose_index++;
-        break;
+        continue;
       }
       case InputRecord::kSingleVelocity: {
         // Single velocities are associated with the single pose that must
@@ -97,7 +97,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
         // Write the velocity to the previous pose_index, and do not increment
         // the pose_index, because this input was not a pose.
         bundle.set_velocity(prev_pose_index, value);
-        break;
+        continue;
       }
       case InputRecord::kBundle: {
         // Concatenate the poses of the input pose bundle into the output.
@@ -115,10 +115,10 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
                                        value.get_model_instance_id(j));
           pose_index++;
         }
-        break;
+        continue;
       }
-      default: { DRAKE_ABORT_MSG("Unknown PoseInputType."); }
     }
+    DRAKE_UNREACHABLE();
   }
 }
 
@@ -183,10 +183,8 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
     case InputRecord::kBundle:
       return this->DeclareAbstractInputPort(
           kUseDefaultName, Value<PoseBundle<T>>());
-    case InputRecord::kUnknown:
-      break;
   }
-  DRAKE_ABORT_MSG("Invariant failure");
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace rendering

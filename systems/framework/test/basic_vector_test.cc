@@ -262,7 +262,7 @@ GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
 
 // Tests the protected `::values()` methods.
 GTEST_TEST(BasicVectorTest, ValuesAccess) {
-  MyVector<2, double> dut;
+  MyVector2d dut;
   dut[0] = 11.0;
   dut[1] = 22.0;
 

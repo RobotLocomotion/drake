@@ -123,9 +123,6 @@ class TestAll(unittest.TestCase):
             "InverseKinematics",
             # - math
             "SpatialVelocity",
-            # - multibody_tree
-            "BodyNodeIndex",
-            "MultibodyTree",
             # - parsing
             "Parser",
             # - parsers

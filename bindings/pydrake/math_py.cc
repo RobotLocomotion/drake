@@ -144,6 +144,12 @@ PYBIND11_MODULE(math, m) {
           doc.RollPitchYaw.ctor.doc_1args_R)
       .def(py::init<const Eigen::Quaternion<T>&>(), py::arg("quaternion"),
           doc.RollPitchYaw.ctor.doc_1args_quaternion)
+      .def(py::init([](const Matrix3<T>& matrix) {
+        return RollPitchYaw<T>(RotationMatrix<T>(matrix));
+      }),
+          py::arg("matrix"),
+          "Construct from raw rotation matrix. See RotationMatrix overload "
+          "for more information.")
       .def("vector", &RollPitchYaw<T>::vector, doc.RollPitchYaw.vector.doc)
       .def("roll_angle", &RollPitchYaw<T>::roll_angle,
           doc.RollPitchYaw.roll_angle.doc)

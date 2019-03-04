@@ -887,7 +887,7 @@ void ManipulationStation<T>::AddDefaultIiwa(
           "iiwa7_with_box_collision.sdf");
       break;
     default:
-      DRAKE_ABORT_MSG("Unrecognized collision_model.");
+      throw std::domain_error("Unrecognized collision_model.");
   }
   const auto X_WI = RigidTransform<double>::Identity();
   auto iiwa_instance = internal::AddAndWeldModelFrom(

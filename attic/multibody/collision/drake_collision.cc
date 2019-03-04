@@ -31,9 +31,8 @@ unique_ptr<Model> newModel(ModelType type) {
       return unique_ptr<Model>(new BulletModel());
     }
 #endif
-    default:
-      DRAKE_ABORT_MSG("Unexpected collision model type.");
   }
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace collision

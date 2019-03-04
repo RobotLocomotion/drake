@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -51,13 +52,17 @@ class DirectCollocation : public MultipleShooting {
 
   ~DirectCollocation() override {}
 
-  // TODO(hongkai.dai): remove this function in the future, use the one with
-  // MathematicalProgramResult& as the input.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
   const override;
 
-  // TODO(hongkai.dai): remove this function in the future, use the one with
-  // MathematicalProgramResult& as the input.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
   const override;
 
