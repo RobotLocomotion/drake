@@ -314,6 +314,10 @@ struct Impl {
             overload_cast_explicit<unique_ptr<SystemOutput<T>>>(
                 &System<T>::AllocateOutput),
             doc.System.AllocateOutput.doc)
+        .def("AllocateTimeDerivatives",
+            overload_cast_explicit<unique_ptr<ContinuousState<T>>>(
+                &System<T>::AllocateTimeDerivatives),
+            doc.System.AllocateTimeDerivatives.doc)
         .def("EvalVectorInput",
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalVectorInput(arg1, arg2);
@@ -347,6 +351,9 @@ struct Impl {
             overload_cast_explicit<void, const Context<T>&>(
                 &System<T>::Publish),
             doc.System.Publish.doc_1args)
+        // Cached evaluations.
+        .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
+            py_reference_internal, doc.System.EvalTimeDerivatives.doc)
         // Scalar types.
         .def("ToAutoDiffXd",
             [](const System<T>& self) { return self.ToAutoDiffXd(); },

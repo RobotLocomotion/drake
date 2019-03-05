@@ -429,11 +429,16 @@ class TestCustom(unittest.TestCase):
                             BasicVector_[T](num_state),
                             num_q=num_q, num_v=num_v, num_z=num_z)
 
+                def _DoCalcTimeDerivatives(self, context, derivatives):
+                    derivatives.get_mutable_vector().SetZero()
+
             for index in range(4):
                 system = TrivialSystem(index)
                 context = system.CreateDefaultContext()
                 self.assertEqual(
                     context.get_continuous_state_vector().size(), 6)
+                self.assertEqual(system.AllocateTimeDerivatives().size(), 6)
+                self.assertEqual(system.EvalTimeDerivatives(context).size(), 6)
 
     def test_discrete_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
