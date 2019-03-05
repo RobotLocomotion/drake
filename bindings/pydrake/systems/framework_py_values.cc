@@ -82,7 +82,8 @@ void DefineFrameworkPyValues(py::module m) {
             [](BasicVector<T>* self, int index) -> T& {
               return self->GetAtIndex(index);
             },
-            py_reference_internal, doc.BasicVector.GetAtIndex.doc);
+            py_reference_internal, doc.BasicVector.GetAtIndex.doc)
+        .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
         m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
