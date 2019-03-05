@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 #include "drake/automotive/maliput/api/rules/regions.h"
@@ -33,7 +32,7 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   /// in the SimpleRulebook.
   void AddRule(const api::rules::RightOfWayRule& rule);
 
-  /// Removes the RightOfWayRule labelled by `id`.
+  /// Removes the RightOfWayRule labeled by `id`.
   ///
   /// @throws std::runtime_error if no such rule exists.
   void RemoveRule(const api::rules::RightOfWayRule::Id& id);
@@ -44,7 +43,7 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   /// in the SimpleRulebook.
   void AddRule(const api::rules::SpeedLimitRule& rule);
 
-  /// Removes the SpeedLimitRule labelled by `id`.
+  /// Removes the SpeedLimitRule labeled by `id`.
   ///
   /// @throws std::runtime_error if no such rule exists.
   void RemoveRule(const api::rules::SpeedLimitRule::Id& id);
@@ -58,25 +57,8 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   api::rules::SpeedLimitRule DoGetRule(
       const api::rules::SpeedLimitRule::Id& id) const override;
 
-  template <class T>
-  void AddAnyRule(const T& rule,
-                  std::unordered_map<typename T::Id, T>* map);
-  template <class T>
-  T GetAnyRule(const typename T::Id& id,
-               const std::unordered_map<typename T::Id, T>& map) const;
-  template <class T>
-  void RemoveAnyRule(const typename T::Id& id,
-                     std::unordered_map<typename T::Id, T>* map);
-
-  // ID->Rule indices for each rule type
-  template <class T>
-  using IdIndex = std::unordered_map<typename T::Id, T>;
-  IdIndex<api::rules::RightOfWayRule> right_of_ways_;
-  IdIndex<api::rules::SpeedLimitRule> speed_limits_;
-
-  // An index from LaneSRange to collections of rule ID's of all types.
-  class RangeIndex;
-  std::unique_ptr<RangeIndex> index_;
+  class Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace maliput
