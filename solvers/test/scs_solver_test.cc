@@ -250,6 +250,20 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    SolveSDPwithSecondOrderConeExample(scs_solver, 1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    SolveSDPwithOverlappingVariables(scs_solver, 1E-5);
+  }
+}
+
 GTEST_TEST(TestScs, SetOptions) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();

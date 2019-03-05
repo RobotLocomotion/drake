@@ -138,6 +138,13 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveSDPwithOverlappingVariables(mosek_solver, 1E-7);
+  }
+}
+
 GTEST_TEST(MosekTest, TestLogFile) {
   // Test if we can print the logging info to a log file.
   MathematicalProgram prog;

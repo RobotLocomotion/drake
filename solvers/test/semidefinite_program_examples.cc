@@ -189,7 +189,8 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
   EXPECT_TRUE(((x_value - x_ub).array() <= tol).all());
 }
 
-void SolveSDPwithSecondOrderConeExample(const SolverInterface& solver, double tol) {
+void SolveSDPwithSecondOrderConeExample(const SolverInterface& solver,
+                                        double tol) {
   MathematicalProgram prog;
   auto X = prog.NewSymmetricContinuousVariables<3>();
   auto x = prog.NewContinuousVariables<3>();
@@ -200,8 +201,14 @@ void SolveSDPwithSecondOrderConeExample(const SolverInterface& solver, double to
         0, 1, 2;
   // clang-format on
   prog.AddLinearCost((C0 * X.cast<symbolic::Expression>()).trace() + x(0));
-  prog.AddLinearConstraint((Eigen::Matrix3d::Identity() * X.cast<symbolic::Expression>()).trace() + x(0) == 1);
-  prog.AddLinearConstraint((Eigen::Matrix3d::Ones() * X.cast<symbolic::Expression>()).trace() + x(1) + x(2) == 0.5);
+  prog.AddLinearConstraint(
+      (Eigen::Matrix3d::Identity() * X.cast<symbolic::Expression>()).trace() +
+          x(0) ==
+      1);
+  prog.AddLinearConstraint(
+      (Eigen::Matrix3d::Ones() * X.cast<symbolic::Expression>()).trace() +
+          x(1) + x(2) ==
+      0.5);
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
 
@@ -213,8 +220,29 @@ void SolveSDPwithSecondOrderConeExample(const SolverInterface& solver, double to
   const auto x_val = result.GetSolution(x);
   EXPECT_NEAR((C0 * X_val).trace() + x_val(0), result.get_optimal_cost(), tol);
   EXPECT_NEAR((Eigen::Matrix3d::Identity() * X_val).trace() + x_val(0), 1, tol);
-  EXPECT_NEAR((Eigen::Matrix3d::Ones() * X_val).trace() + x_val(1) + x_val(2), 0.5, tol);
-  EXPECT_GE(x_val(0), std::sqrt(x_val(1) * x_val(1) + x_val(2) * x_val(2)) - tol);
+  EXPECT_NEAR((Eigen::Matrix3d::Ones() * X_val).trace() + x_val(1) + x_val(2),
+              0.5, tol);
+  EXPECT_GE(x_val(0),
+            std::sqrt(x_val(1) * x_val(1) + x_val(2) * x_val(2)) - tol);
+}
+
+void SolveSDPwithOverlappingVariables(const SolverInterface& solver,
+                                      double tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(
+      (Matrix2<symbolic::Variable>() << x(0), x(1), x(1), x(0)).finished());
+  prog.AddPositiveSemidefiniteConstraint(
+      (Matrix2<symbolic::Variable>() << x(0), x(2), x(2), x(0)).finished());
+  prog.AddBoundingBoxConstraint(1, 1, x(1));
+  prog.AddLinearCost(2 * x(0) + x(2));
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, {}, {}, &result);
+  EXPECT_TRUE(result.is_success());
+  EXPECT_TRUE(
+      CompareMatrices(result.GetSolution(x), Eigen::Vector3d(1, 1, -1), tol));
+  EXPECT_NEAR(result.get_optimal_cost(), 1, tol);
 }
 }  // namespace test
 }  // namespace solvers
