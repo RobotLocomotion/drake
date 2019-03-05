@@ -35,8 +35,6 @@ namespace {
 // stiction.
 // The test then verifies the computed values of contact results.
 GTEST_TEST(Box, UnderStiction) {
-  DiagramBuilder<double> builder;
-
   // Length of the simulation, in seconds.
   const double simulation_time = 2.0;
 
@@ -60,30 +58,38 @@ GTEST_TEST(Box, UnderStiction) {
   // dominated for "how well we reached steady state".
   const double kTolerance = 1.0e-12;
 
-  const std::string full_name = FindResourceOrThrow(
-      "drake/multibody/plant/test/box.sdf");
-  MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(time_step));
-  Parser(&plant).AddModelFromFile(full_name);
+  auto MakeBoxDiagram = [&]() {
+    DiagramBuilder<double> builder;
+    const std::string full_name =
+        FindResourceOrThrow("drake/multibody/plant/test/box.sdf");
+    MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
+        &builder, std::make_unique<MultibodyPlant<double>>(time_step));
+    plant.set_name("plant");
+    Parser(&plant).AddModelFromFile(full_name);
 
-  // Add gravity to the model.
-  plant.AddForceElement<UniformGravityFieldElement>(
-      -g * Vector3<double>::UnitZ());
+    // Add gravity to the model.
+    plant.AddForceElement<UniformGravityFieldElement>(
+        -g * Vector3<double>::UnitZ());
 
-  plant.Finalize();  // Done creating the model.
+    plant.Finalize();  // Done creating the model.
 
-  // Set contact parameters.
-  plant.set_penetration_allowance(penetration_allowance);
-  plant.set_stiction_tolerance(stiction_tolerance);
+    // Set contact parameters.
+    plant.set_penetration_allowance(penetration_allowance);
+    plant.set_stiction_tolerance(stiction_tolerance);
+
+    // And build the Diagram:
+    return builder.Build();
+  };
+
+  auto diagram = MakeBoxDiagram();
+  const auto& plant = dynamic_cast<const MultibodyPlant<double>&>(
+      diagram->GetSubsystemByName("plant"));
 
   // Sanity check for the model's size.
   EXPECT_EQ(plant.num_velocities(), 2);
   EXPECT_EQ(plant.num_positions(), 2);
   EXPECT_EQ(plant.num_actuators(), 1);
   EXPECT_EQ(plant.num_actuated_dofs(), 1);
-
-  // And build the Diagram:
-  std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<Context<double>> diagram_context =
@@ -102,20 +108,21 @@ GTEST_TEST(Box, UnderStiction) {
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
-  auto VerifyContactResults = [&](const Context<double>& the_context) {
+  auto VerifyContactResults = [&](const MultibodyPlant<double>& the_plant,
+                                  const Context<double>& the_context) {
     // We evaluate the contact results output port in order to verify the
     // simulation results.
     const ContactResults<double>& contact_results =
-        plant.get_contact_results_output_port().Eval<ContactResults<double>>(
-            the_context);
+        the_plant.get_contact_results_output_port()
+            .Eval<ContactResults<double>>(the_context);
 
     ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
     const PointPairContactInfo<double>& contact_info =
         contact_results.contact_info(0);
 
     // Verify the bodies referenced by the contact info.
-    const Body<double>& ground = plant.GetBodyByName("ground");
-    const Body<double>& box = plant.GetBodyByName("box");
+    const Body<double>& ground = the_plant.GetBodyByName("ground");
+    const Body<double>& box = the_plant.GetBodyByName("box");
     EXPECT_TRUE((contact_info.bodyA_index() == box.index() &&
                  contact_info.bodyB_index() == ground.index()) ||
                 (contact_info.bodyB_index() == box.index() &&
@@ -161,23 +168,30 @@ GTEST_TEST(Box, UnderStiction) {
   };
 
   // Verify contact results at the end of the simulation.
-  VerifyContactResults(plant_context);
+  VerifyContactResults(plant, plant_context);
 
-  // To verify evaluation of contact results is performed properly, we create a
-  // new context initialized with values obtained from the simulatin above. Then
-  // we evaluate contact results on the new context.
+  // We want to verify that contact results can be evaluated simply from the
+  // information stored in the context. To verify this we create a completely
+  // new model of the same mechanical system and a new context for that system.
+  // Therefore we don't run the risk of using previously computed results in the
+  // simulation above. We only use the final state of that simulation to set the
+  // new context. Thus contact results evaluation in the following test is
+  // completely independent from the simulation above (besides of course the
+  // initial condition).
+  auto diagram2 = MakeBoxDiagram();
+  const auto& plant2 = dynamic_cast<const MultibodyPlant<double>&>(
+      diagram2->GetSubsystemByName("plant"));
   std::unique_ptr<Context<double>> diagram_context2 =
-      diagram->CreateDefaultContext();
+      diagram2->CreateDefaultContext();
   diagram_context2->EnableCaching();
-  diagram->SetDefaultContext(diagram_context2.get());
   Context<double>& plant_context2 =
-      diagram->GetMutableSubsystemContext(plant, diagram_context2.get());
-  plant_context2.FixInputPort(plant.get_actuation_input_port().get_index(),
+      diagram2->GetMutableSubsystemContext(plant2, diagram_context2.get());
+  plant_context2.FixInputPort(plant2.get_actuation_input_port().get_index(),
                               Vector1<double>::Constant(applied_force));
   // Set the state from the computed solution.
-  plant.SetPositionsAndVelocities(
+  plant2.SetPositionsAndVelocities(
       &plant_context2, plant.GetPositionsAndVelocities(plant_context));
-  VerifyContactResults(plant_context2);
+  VerifyContactResults(plant2, plant_context2);
 }
 
 }  // namespace
