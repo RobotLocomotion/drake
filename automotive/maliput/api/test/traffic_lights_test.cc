@@ -91,6 +91,12 @@ TEST_F(BulbTest, Assignment) {
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_));
 }
 
+GTEST_TEST(BulbGroupConstructorTest, InvalidGroupSize) {
+  EXPECT_THROW(BulbGroup(BulbGroup::Id("dut_id"), GeoPosition(1, 2, 3),
+                         Rotation::FromRpy(M_PI, M_PI, M_PI), {}),
+               std::exception);
+}
+
 class BulbGroupTest : public ::testing::Test {
  public:
   BulbGroupTest()

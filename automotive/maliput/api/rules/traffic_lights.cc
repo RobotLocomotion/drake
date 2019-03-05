@@ -45,7 +45,9 @@ BulbGroup::BulbGroup(const BulbGroup::Id& id,
     : id_(id),
       position_traffic_light_(position_traffic_light),
       orientation_traffic_light_(orientation_traffic_light),
-      bulbs_(bulbs) {}
+      bulbs_(bulbs) {
+  DRAKE_THROW_UNLESS(bulbs_.size() > 0);
+}
 
 }  // namespace rules
 }  // namespace api
