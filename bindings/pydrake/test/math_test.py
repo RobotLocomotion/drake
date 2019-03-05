@@ -4,8 +4,9 @@ import pydrake.math as mut
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3, Quaternion, AngleAxis
 
-import unittest
 import numpy as np
+import six
+import unittest
 
 import math
 
@@ -131,6 +132,10 @@ class TestMath(unittest.TestCase):
         self.assertIsInstance(
             X.multiply(other=mut.RigidTransform()), mut.RigidTransform)
         self.assertIsInstance(X.multiply(p_BoQ_B=p_I), np.ndarray)
+        if six.PY3:
+            self.assertIsInstance(
+                eval("X @ mut.RigidTransform()"), mut.RigidTransform)
+            self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
 
     def test_rotation_matrix(self):
         # - Constructors.
@@ -154,6 +159,9 @@ class TestMath(unittest.TestCase):
         # - Inverse.
         R_I = R.inverse().multiply(R)
         self.assertTrue(np.allclose(R_I.matrix(), np.eye(3)))
+        if six.PY3:
+            self.assertTrue(np.allclose(
+                eval("R.inverse() @ R").matrix(), np.eye(3)))
 
     def test_roll_pitch_yaw(self):
         # - Constructors.
