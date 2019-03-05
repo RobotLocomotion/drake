@@ -188,8 +188,7 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   ASSERT_TRUE(properties.AddProperty(group_name, prop_name, 7.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
-      ".*a request to extract a value of type 'int' failed .* actual type was "
-      "'double'.");
+      ".* 'int' failed .* actual type was 'double'.");
 }
 
 GTEST_TEST(GeometryProperties, PropertyCounts) {
