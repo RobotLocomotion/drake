@@ -380,6 +380,8 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(
             context.get_abstract_state(0).get_value(), model_value.get_value())
 
+        self.assertEqual(system.AllocateTimeDerivatives().size(), 1)
+
         # Check AbstractValues API.
         values = context.get_abstract_state()
         self.assertEqual(values.size(), 1)
