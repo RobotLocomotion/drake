@@ -151,12 +151,18 @@ PYBIND11_MODULE(eigen_geometry, m) {
             })
         .def("__str__",
             [](py::object self) { return py::str(self.attr("matrix")()); })
-        // Do not define operator `__mul__` until we have the Python3 `@`
-        // operator so that operations are similar to those of arrays.
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             py::arg("other"))
+        .def("__matmul__",
+            [](const Class& self, const Class& other) { return self * other; },
+            py::arg("other"))
         .def("multiply",
+            [](const Class& self, const Vector3<T>& position) {
+              return self * position;
+            },
+            py::arg("position"))
+        .def("__matmul__",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
@@ -242,11 +248,16 @@ PYBIND11_MODULE(eigen_geometry, m) {
                   .format(py_class_obj.attr("__name__"), self->w(), self->x(),
                       self->y(), self->z());
             })
-        // Do not define operator `__mul__` until we have the Python3 `@`
-        // operator so that operations are similar to those of arrays.
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; })
+        .def("__matmul__",
+            [](const Class& self, const Class& other) { return self * other; })
         .def("multiply",
+            [](const Class& self, const Vector3<T>& position) {
+              return self * position;
+            },
+            py::arg("position"))
+        .def("__matmul__",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
@@ -326,9 +337,9 @@ PYBIND11_MODULE(eigen_geometry, m) {
                   .format(py_class_obj.attr("__name__"), self->angle(),
                       self->axis());
             })
-        // Do not define operator `__mul__` until we have the Python3 `@`
-        // operator so that operations are similar to those of arrays.
         .def("multiply",
+            [](const Class& self, const Class& other) { return self * other; })
+        .def("__matmul__",
             [](const Class& self, const Class& other) { return self * other; })
         .def("inverse", [](const Class* self) { return self->inverse(); });
   }

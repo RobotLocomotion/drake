@@ -1,6 +1,7 @@
 import pydrake.common.eigen_geometry as mut
 
 import numpy as np
+import six
 import unittest
 
 import pydrake.common.test.eigen_geometry_test_util as test_util
@@ -73,6 +74,9 @@ class TestEigenGeometry(unittest.TestCase):
             (q.multiply(position=[1, 2, 3]) == [3, 1, 2]).all())
         q_I = q.inverse().multiply(q)
         self.assertTrue(np.allclose(q_I.wxyz(), [1, 0, 0, 0]))
+        if six.PY3:
+            self.assertTrue(np.allclose(
+                eval("q.inverse() @ q").wxyz(), [1, 0, 0, 0]))
         q_conj = q.conjugate()
         self.assertTrue(np.allclose(q_conj.wxyz(), [0.5, -0.5, -0.5, -0.5]))
 
@@ -81,7 +85,7 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertTrue(isinstance(value, mut.Quaternion))
         test_util.check_quaternion(value)
 
-    def test_transform(self):
+    def test_isometry3(self):
         # - Default constructor
         transform = mut.Isometry3()
         X = np.eye(4, 4)
@@ -133,6 +137,11 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertTrue(np.allclose(transform_I.matrix(), np.eye(4)))
         self.assertTrue((
             transform.multiply(position=[10, 20, 30]) == [21, -8, 33]).all())
+        if six.PY3:
+            self.assertTrue(np.allclose(
+                eval("transform.inverse() @ transform").matrix(), np.eye(4)))
+            self.assertTrue((
+                eval("transform @ [10, 20, 30]") == [21, -8, 33]).all())
 
     def test_translation(self):
         # Test `type_caster`s.
@@ -157,6 +166,10 @@ class TestEigenGeometry(unittest.TestCase):
         self.assertTrue(np.allclose(
             value.multiply(value.inverse()).rotation(), np.eye(3),
             atol=1e-15, rtol=0))
+        if six.PY3:
+            self.assertTrue(np.allclose(
+                eval("value @ value.inverse()").rotation(), np.eye(3),
+                atol=1e-15, rtol=0))
         value.set_rotation(np.eye(3))
         self.assertTrue((value.rotation() == np.eye(3)).all())
 

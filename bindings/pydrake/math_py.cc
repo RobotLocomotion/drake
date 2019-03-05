@@ -118,18 +118,26 @@ PYBIND11_MODULE(math, m) {
       // .def("IsIdentityToEpsilon", ...)
       .def("inverse", &RigidTransform<T>::inverse,
           doc.RigidTransform.inverse.doc)
-      // TODO(eric.cousineau): Use `matmul` operator once we support Python3.
       .def("multiply",
           [](const RigidTransform<T>* self, const RigidTransform<T>& other) {
             return *self * other;
           },
           py::arg("other"), doc.RigidTransform.operator_mul.doc_1args_other)
+      .def("__matmul__",
+          [](const RigidTransform<T>* self, const RigidTransform<T>& other) {
+            return *self * other;
+          },
+          py::arg("other"), "See ``multiply``.")
       .def("multiply",
           [](const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
             return *self * p_BoQ_B;
           },
-          py::arg("p_BoQ_B"),
-          doc.RigidTransform.operator_mul.doc_1args_p_BoQ_B);
+          py::arg("p_BoQ_B"), doc.RigidTransform.operator_mul.doc_1args_p_BoQ_B)
+      .def("__matmul__",
+          [](const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
+            return *self * p_BoQ_B;
+          },
+          py::arg("p_BoQ_B"), "See ``multiply``.");
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
@@ -172,13 +180,16 @@ PYBIND11_MODULE(math, m) {
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
           doc.RotationMatrix.ctor.doc_1args_rpy)
       .def("matrix", &RotationMatrix<T>::matrix, doc.RotationMatrix.matrix.doc)
-      // Do not define an operator until we have the Python3 `@` operator so
-      // that operations are similar to those of arrays.
       .def("multiply",
           [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
             return self * other;
           },
           doc.RotationMatrix.operator_mul.doc_1args_other)
+      .def("__matmul__",
+          [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
+            return self * other;
+          },
+          "See ``multiply``")
       .def("inverse", &RotationMatrix<T>::inverse,
           doc.RotationMatrix.inverse.doc)
       .def("ToQuaternion",
