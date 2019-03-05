@@ -21,11 +21,17 @@ struct SignedDistancePair{
    @param p_A     The witness point on geometry A's surface, in A's frame.
    @param p_B     The witness point on geometry B's surface, in B's frame.
    @param dist    The signed distance between p_A and p_B. When A and B are
-   separated, dist > 0; when A and B are touching or penetrating, dist <= 0.*/
+   separated, dist > 0; when A and B are touching or penetrating, dist <= 0.
+   @param n_WAB   The unit normal vector between witness points from A to B,
+                  in world frame.*/
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
-              const Vector3<T>& p_B, T dist) : id_A(a), id_B(b),
-                                               p_ACa(p_A), p_BCb(p_B),
-                                               distance(dist) {}
+                     const Vector3<T>& p_B, T dist, const Vector3<T>& n_WAB)
+      : id_A(a),
+        id_B(b),
+        p_ACa(p_A),
+        p_BCb(p_B),
+        distance(dist),
+        normal_WAB(n_WAB) {}
 
   /** The id of the first geometry in the pair. */
   GeometryId id_A;
@@ -45,6 +51,14 @@ struct SignedDistancePair{
   Vector3<T> p_BCb;
   /** The distance between p_A_A and p_B_B (measured in a common frame). */
   T distance{};
+  /** The unit normal vector from Ca to Cb, expressed in world frame,
+   *  normal_WAB = (p_WCb - p_WCa) / |p_WCb - p_WCa|.
+   *  @note When A and B are touching, defined as the signed distance = 0, we
+   *  define normal_WAB as the direction through which moving B will maximize
+   *  the distance. It is the outward unit normal vector to the surface of A
+   *  at Ca, if the surface is smooth at Ca.
+   *    */
+  Vector3<T> normal_WAB;
 };
 
 }  // namespace geometry
