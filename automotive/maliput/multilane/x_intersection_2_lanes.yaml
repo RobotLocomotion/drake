@@ -1,0 +1,114 @@
+# -*- yaml -*-
+---
+# Implements a basic X-intersection between two 2-lane roads.
+#
+# Distances are meters; angles are degrees.
+maliput_multilane_builder:
+  id: "basic_two_lane_x_intersection"
+  computation_policy: "prefer-accuracy"
+  scale_length: 1
+  lane_width: 3.75
+  left_shoulder: 2.5
+  right_shoulder: 2.5
+  elevation_bounds: [0, 5]
+  linear_tolerance: .01
+  angular_tolerance: 0.5
+  points:
+    west_start_point:
+      xypoint: [-59.375, -1.875, 0]  # x,y, heading
+      zpoint: [0, 0, 0, 0]  # z, z_dot, theta (superelevation), theta_dot
+    west_entry_point:
+      xypoint: [-9.375, -1.875, 0]
+      zpoint: [0, 0, 0, 0]
+    east_entry_point:
+      xypoint: [9.375, -1.875, 0]
+      zpoint: [0, 0, 0, 0]
+    east_start_point:
+      xypoint: [59.375, -1.875, 0]
+      zpoint: [0, 0, 0, 0]
+    south_start_point:
+      xypoint: [1.875, -59.375, 90]
+      zpoint: [0, 0, 0, 0]
+    south_entry_point:
+      xypoint: [1.875, -9.375, 90]
+      zpoint: [0, 0, 0, 0]
+    north_entry_point:
+      xypoint: [1.875, 9.375, 90]
+      zpoint: [0, 0, 0, 0]
+    north_start_point:
+      xypoint: [1.875, 59.375, 90]
+      zpoint: [0, 0, 0, 0]
+  connections:
+    # Straight through lanes.
+    w_segment:
+      lanes: [2, 0, 0]  # num_lanes, ref_lane, r_ref
+      start: ["ref", "points.west_start_point.forward"]
+      length: 50
+      z_end: ["ref", [0, 0, 0]]
+    ew_intersection_segment:
+       lanes: [2, 0, 0]
+       start: ["ref", "points.west_entry_point.forward"]
+       length: 18.75
+       z_end: ["ref", [0, 0, 0]]
+    e_segment:
+       lanes: [2, 0, 0]
+       start: ["ref", "points.east_entry_point.forward"]
+       length: 50
+       z_end: ["ref", [0, 0, 0]]
+    s_segment:
+      lanes: [2, 0, 0]
+      start: ["ref", "points.south_start_point.forward"]
+      length: 50
+      z_end: ["ref", [0, 0, 0]]
+    ns_intersection_segment:
+       lanes: [2, 0, 0]
+       start: ["ref", "points.south_entry_point.forward"]
+       length: 18.75
+       z_end: ["ref", [0, 0, 0]]
+    n_segment:
+       lanes: [2, 0, 0]
+       start: ["ref", "points.north_entry_point.forward"]
+       length: 50
+       z_end: ["ref", [0, 0, 0]]
+    # Right turn lanes.
+    east_right_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ew_intersection_segment.start.0.forward"]
+       arc: [7.5, -90]  # radius, d_theta
+       explicit_end: ["lane.0", "connections.ns_intersection_segment.start.0.forward"]
+    west_right_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ew_intersection_segment.end.1.reverse"]
+       arc: [7.5, -90]
+       explicit_end: ["lane.0", "connections.ns_intersection_segment.end.0.forward"]
+    north_right_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ns_intersection_segment.start.0.forward"]
+       arc: [7.5, -90]
+       explicit_end: ["lane.0", "connections.ew_intersection_segment.end.0.forward"]
+    south_right_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ns_intersection_segment.end.1.reverse"]
+       arc: [7.5, -90]
+       explicit_end: ["lane.0", "connections.ew_intersection_segment.start.1.forward"]
+    # Left turn lanes.
+    east_left_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ew_intersection_segment.start.0.forward"]
+       arc: [11.25, 90]
+       explicit_end: ["lane.0", "connections.ns_intersection_segment.end.0.forward"]
+    west_left_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ew_intersection_segment.end.1.reverse"]
+       arc: [11.25, 90]
+       explicit_end: ["lane.0", "connections.ns_intersection_segment.end.1.forward"]
+    north_left_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ns_intersection_segment.start.0.forward"]
+       arc: [11.25, 90]
+       explicit_end: ["lane.0", "connections.ew_intersection_segment.end.1.forward"]
+    south_left_turn_segment:
+       lanes: [1, 0, 0]
+       start: ["lane.0", "connections.ns_intersection_segment.end.1.reverse"]
+       arc: [11.25, 90]
+       explicit_end: ["lane.0", "connections.ew_intersection_segment.start.0.forward"]
