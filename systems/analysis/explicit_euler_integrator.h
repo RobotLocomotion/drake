@@ -37,9 +37,7 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
                           Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
-    derivs_ = system.AllocateTimeDerivatives();
   }
-
 
   /**
    * Explicit Euler integrator does not support error estimation.
@@ -51,34 +49,30 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
 
  private:
   bool DoStep(const T& dt) override;
-
-  // These are pre-allocated temporaries for use by integration
-  std::unique_ptr<ContinuousState<T>> derivs_;
 };
 
 /**
- * Integrates the system forward in time by dt. This value is determined
- * by IntegratorBase::Step().
+ * Integrates the system forward in time by dt, starting at the current time t₀.
+ * This value of dt is determined by IntegratorBase::Step().
  */
 template <class T>
 bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
-  // Find the continuous state xc within the Context, just once.
-  auto context = IntegratorBase<T>::get_mutable_context();
-  VectorBase<T>& xc = context->get_mutable_continuous_state_vector();
+  Context<T>& context = *this->get_mutable_context();
 
-  // TODO(sherm1) This should be calculating into the cache so that
-  // Publish() doesn't have to recalculate if it wants to output derivatives.
-  this->CalcTimeDerivatives(*context, derivs_.get());
+  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)).
+  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
+  const VectorBase<T>& xcdot0 = xc_deriv.get_vector();
 
-  // Compute derivative and update configuration and velocity.
-  // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
-  const auto& xcdot = derivs_->get_vector();
-  xc.PlusEqScaled(dt, xcdot);  // xc += dt * xcdot
-  context->set_time(context->get_time() + dt);
+  // Update continuous state and time.
+  // This call invalidates t- and xc-dependent cache entries.
+  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
+      context.get_time() + dt);  // t ← t₀ + h
+  xc.PlusEqScaled(dt, xcdot0);   // xc(t₀ + h) ← xc(t₀) + dt * xcdot₀
 
   // This integrator always succeeds at taking the step.
   return true;
 }
+
 }  // namespace systems
 }  // namespace drake
 

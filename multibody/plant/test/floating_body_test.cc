@@ -70,6 +70,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // call to this system's SetDefaultState().
   systems::Simulator<double> simulator(free_body_plant);
   systems::Context<double>& context = simulator.get_mutable_context();
+  context.EnableCaching();
 
   // The expected initial velocities with non-zero components in all three
   // axes, where B is the free body frame and W is the world frame.
