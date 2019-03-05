@@ -21,7 +21,8 @@ struct SignedDistancePair{
    @param p_A     The witness point on geometry A's surface, in A's frame.
    @param p_B     The witness point on geometry B's surface, in B's frame.
    @param dist    The signed distance between p_A and p_B. When A and B are
-   separated, dist > 0; when A and B are touching or penetrating, dist <= 0.
+                  separated, dist > 0; when A and B are touching or
+                  penetrating, dist <= 0.
    @param n_BA_W  The unit direction of the gradient of the signed distance
                   field of B evaluated at p_B, expressed in world frame. By
                   definition, the unit direction of the gradient of the signed
@@ -45,7 +46,8 @@ struct SignedDistancePair{
    @param p_A     The witness point on geometry A's surface, in A's frame.
    @param p_B     The witness point on geometry B's surface, in B's frame.
    @param dist    The signed distance between p_A and p_B. When A and B are
-   separated, dist > 0; when A and B are touching or penetrating, dist <= 0.*/
+                  separated, dist > 0; when A and B are touching or
+                  penetrating, dist <= 0.*/
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
                      const Vector3<T>& p_B, T dist)
       : id_A(a),
