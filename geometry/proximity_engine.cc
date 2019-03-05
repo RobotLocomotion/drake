@@ -559,12 +559,13 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     fcl::DistanceResultd result;
     ComputeNarrowPhaseDistance(&fcl_object_A, &fcl_object_B, geometry_map,
                                distance_data.request, &result);
-    const Vector3d p_ACa =
-        fcl_object_A.getTransform().inverse() * result.nearest_points[0];
-    const Vector3d p_BCb =
-        fcl_object_B.getTransform().inverse() * result.nearest_points[1];
+    const Vector3d p_WCa = result.nearest_points[0];
+    const Vector3d p_WCb = result.nearest_points[1];
+    const Vector3d p_ACa = fcl_object_A.getTransform().inverse() * p_WCa;
+    const Vector3d p_BCb = fcl_object_B.getTransform().inverse() * p_WCb;
+    const Vector3d nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
     distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
-                                              result.min_distance);
+                                              result.min_distance, nhat_BA_W);
   }
 
   // Returning true would tell the broadphase manager to terminate early. Since
