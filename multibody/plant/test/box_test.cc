@@ -102,62 +102,82 @@ GTEST_TEST(Box, UnderStiction) {
   simulator.Initialize();
   simulator.StepTo(simulation_time);
 
-  // We evaluate the contact results output port in order to verify the
-  // simulation results.
-  const ContactResults<double>& contact_results =
-      plant.get_contact_results_output_port().Eval<ContactResults<double>>(
-          plant_context);
+  auto VerifyContactResults = [&](const Context<double>& the_context) {
+    // We evaluate the contact results output port in order to verify the
+    // simulation results.
+    const ContactResults<double>& contact_results =
+        plant.get_contact_results_output_port().Eval<ContactResults<double>>(
+            the_context);
 
-  ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
-  const PointPairContactInfo<double>& contact_info =
-      contact_results.contact_info(0);
+    ASSERT_EQ(contact_results.num_contacts(), 1);  // only one contact pair.
+    const PointPairContactInfo<double>& contact_info =
+        contact_results.contact_info(0);
 
-  // Verify the bodies referenced by the contact info.
-  const Body<double>& ground = plant.GetBodyByName("ground");
-  const Body<double>& box = plant.GetBodyByName("box");
-  EXPECT_TRUE(
-      (contact_info.bodyA_index() == box.index() &&
-       contact_info.bodyB_index() == ground.index()) ||
-      (contact_info.bodyB_index() == box.index() &&
-       contact_info.bodyA_index() == ground.index()));
+    // Verify the bodies referenced by the contact info.
+    const Body<double>& ground = plant.GetBodyByName("ground");
+    const Body<double>& box = plant.GetBodyByName("box");
+    EXPECT_TRUE((contact_info.bodyA_index() == box.index() &&
+                 contact_info.bodyB_index() == ground.index()) ||
+                (contact_info.bodyB_index() == box.index() &&
+                 contact_info.bodyA_index() == ground.index()));
 
-  // Whether the normal points up or down depends on the order in which the
-  // geometry engine orders bodies in the contact pair.
-  // direction = +1 indicates the normal is the +z axis pointing into the box
-  // (i.e. the outward normal to the ground plane).
-  // direction = -1 indicates the outward normal to the box (i.e. pointing down
-  // in the -z direction).
-  double direction = contact_info.bodyA_index() == box.index() ? 1.0 : -1.0;
+    // Whether the normal points up or down depends on the order in which
+    // the geometry engine orders bodies in the contact pair. direction = +1
+    // indicates the normal is the +z axis pointing into the box (i.e. the
+    // outward normal to the ground plane). direction = -1 indicates the
+    // outward normal to the box (i.e. pointing down in the -z direction).
+    double direction = contact_info.bodyA_index() == box.index() ? 1.0 : -1.0;
 
-  // The expected value of the contact force applied on the box at the contact
-  // point C.
-  const Vector3<double> f_Bc_W(-applied_force, 0.0, mass * g);
-  EXPECT_TRUE(CompareMatrices(
-      contact_info.contact_force(), f_Bc_W * direction,
-      kTolerance, MatrixCompareType::relative));
+    // The expected value of the contact force applied on the box at the
+    // contact point C.
+    const Vector3<double> f_Bc_W(-applied_force, 0.0, mass * g);
+    EXPECT_TRUE(CompareMatrices(contact_info.contact_force(),
+                                f_Bc_W * direction, kTolerance,
+                                MatrixCompareType::relative));
 
-  // Upper limit on the x displacement computed using the maximum possible
-  // velocity under stiction, i.e. the stiction tolerance.
-  const double x_upper_limit = stiction_tolerance * simulation_time;
-  EXPECT_LT(contact_info.contact_point().x(), x_upper_limit);
+    // Upper limit on the x displacement computed using the maximum possible
+    // velocity under stiction, i.e. the stiction tolerance.
+    const double x_upper_limit = stiction_tolerance * simulation_time;
+    EXPECT_LT(contact_info.contact_point().x(), x_upper_limit);
 
-  // The penetration allowance is just an estimate. Therefore we only expect
-  // the penetration depth to be close enough to it.
-  EXPECT_NEAR(contact_info.point_pair().depth, penetration_allowance, 1.0e-3);
+    // The penetration allowance is just an estimate. Therefore we only
+    // expect the penetration depth to be close enough to it.
+    EXPECT_NEAR(contact_info.point_pair().depth, penetration_allowance, 1.0e-3);
 
-  // Whether the normal points up or down depends on the order in which
-  // scene graph orders bodies in the contact pair.
-  const Vector3<double> expected_normal = Vector3<double>::UnitZ() * direction;
-  EXPECT_TRUE(CompareMatrices(
-      contact_info.point_pair().nhat_BA_W, expected_normal,
-      kTolerance, MatrixCompareType::relative));
+    // Whether the normal points up or down depends on the order in which
+    // scene graph orders bodies in the contact pair.
+    const Vector3<double> expected_normal =
+        Vector3<double>::UnitZ() * direction;
+    EXPECT_TRUE(CompareMatrices(contact_info.point_pair().nhat_BA_W,
+                                expected_normal, kTolerance,
+                                MatrixCompareType::relative));
 
-  // If we are in stiction, the slip speed should be smaller than the specified
-  // stiction tolerance.
-  EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
+    // If we are in stiction, the slip speed should be smaller than the
+    // specified stiction tolerance.
+    EXPECT_LT(contact_info.slip_speed(), stiction_tolerance);
 
-  // There should not be motion in the normal direction.
-  EXPECT_NEAR(contact_info.separation_speed(), 0.0, kTolerance);
+    // There should not be motion in the normal direction.
+    EXPECT_NEAR(contact_info.separation_speed(), 0.0, kTolerance);
+  };
+
+  // Verify contact results at the end of the simulation.
+  VerifyContactResults(plant_context);
+
+  // To verify evaluation of contact results is performed properly, we create a
+  // new context initialized with values obtained from the simulatin above. Then
+  // we evaluate contact results on the new context.
+  std::unique_ptr<Context<double>> diagram_context2 =
+      diagram->CreateDefaultContext();
+  diagram_context2->EnableCaching();
+  diagram->SetDefaultContext(diagram_context2.get());
+  Context<double>& plant_context2 =
+      diagram->GetMutableSubsystemContext(plant, diagram_context2.get());
+  plant_context2.FixInputPort(plant.get_actuation_input_port().get_index(),
+                              Vector1<double>::Constant(applied_force));
+  // Set the state from the computed solution.
+  plant.SetPositionsAndVelocities(
+      &plant_context2, plant.GetPositionsAndVelocities(plant_context));
+  VerifyContactResults(plant_context2);
 }
 
 }  // namespace
