@@ -78,9 +78,9 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // (at t⁽ᵃ⁾=t₀+h/2, x⁽ᵃ⁾, u⁽ᵃ⁾).
   // This call invalidates t- and xc-dependent cache entries.
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
-      t0 + h / 2);                     // t⁽ᵃ⁾ ← t₀ + h/2
-  xc.CopyToPreSizedVector(save_xc0_);  // Save xc₀ while we can.
-  xc.PlusEqScaled(h / 2, xcdot0);      // xc⁽ᵃ⁾ ← xc₀ + h/2 xcdot₀
+      t0 + h / 2);                      // t⁽ᵃ⁾ ← t₀ + h/2
+  xc.CopyToPreSizedVector(&save_xc0_);  // Save xc₀ while we can.
+  xc.PlusEqScaled(h / 2, xcdot0);       // xc⁽ᵃ⁾ ← xc₀ + h/2 xcdot₀
 
   derivs1_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
@@ -115,9 +115,9 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // ε = | xc₁ - (xc₀ + h xcdot⁽ᵃ⁾) | = | xc₀ + h xcdot⁽ᵃ⁾ - xc₁ |
   err_est_vec_ = save_xc0_;  // ε ← xc₀
   // TODO(sherm1) This is xcdot₀, not xcdot⁽ᵃ⁾! Should be xcdot_a; issue #10633.
-  xcdot0.ScaleAndAddToVector(h, err_est_vec_);      // ε += h xcdot₀   (WRONG!)
-  // xcdot_a.ScaleAndAddToVector(h, err_est_vec_);  // ε += h xcdot⁽ᵃ⁾ (RIGHT!)
-  xc.ScaleAndAddToVector(-1.0, err_est_vec_);       // ε -= xc₁
+  xcdot0.ScaleAndAddToVector(h, &err_est_vec_);      // ε += h xcdot₀   (WRONG!)
+  // xcdot_a.ScaleAndAddToVector(h, &err_est_vec_);  // ε += h xcdot⁽ᵃ⁾ (RIGHT!)
+  xc.ScaleAndAddToVector(-1.0, &err_est_vec_);       // ε -= xc₁
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 

@@ -109,16 +109,17 @@ class BasicVector : public VectorBase<T> {
   VectorX<T> CopyToVector() const override { return values_; }
 
   void ScaleAndAddToVector(const T& scale,
-                           Eigen::Ref<VectorX<T>> vec) const override {
-    if (vec.rows() != size()) {
+                           EigenPtr<VectorX<T>> vec) const override {
+    DRAKE_THROW_UNLESS(vec != nullptr);
+    if (vec->rows() != size()) {
       throw std::out_of_range("Addends must be the same size.");
     }
-    vec += scale * values_;
+    *vec += scale * values_;
   }
 
   void SetZero() override { values_.setZero(); }
 
-  /// Computes the infinity norm for this vector.
+  DRAKE_DEPRECATED("2019-06-01", "Use get_value() + Eigen lpNorm.")
   T NormInf() const override {
     return values_.template lpNorm<Eigen::Infinity>();
   }
@@ -179,7 +180,7 @@ class BasicVector : public VectorBase<T> {
       const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
       override {
     for (const auto& operand : rhs_scal)
-      operand.second.ScaleAndAddToVector(operand.first, values_);
+      operand.second.ScaleAndAddToVector(operand.first, &values_);
   }
 
   // The column vector of T values.
