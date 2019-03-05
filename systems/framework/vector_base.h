@@ -8,6 +8,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 
@@ -110,10 +111,11 @@ class VectorBase {
   /// Implementations should ensure this operation is O(N) in the size of the
   /// value.
   /// @throws std::exception if `vec` is the wrong size.
-  virtual void CopyToPreSizedVector(Eigen::Ref<VectorX<T>> vec) const {
-    DRAKE_THROW_UNLESS(vec.rows() == size());
+  virtual void CopyToPreSizedVector(EigenPtr<VectorX<T>> vec) const {
+    DRAKE_THROW_UNLESS(vec != nullptr);
+    DRAKE_THROW_UNLESS(vec->rows() == size());
     for (int i = 0; i < size(); ++i) {
-      vec[i] = GetAtIndex(i);
+      (*vec)[i] = GetAtIndex(i);
     }
   }
 
@@ -125,11 +127,19 @@ class VectorBase {
   /// Implementations should ensure this operation remains O(N) in the size of
   /// the value and allocates no memory.
   virtual void ScaleAndAddToVector(const T& scale,
-                                   Eigen::Ref<VectorX<T>> vec) const {
-    if (vec.rows() != size()) {
+                                   EigenPtr<VectorX<T>> vec) const {
+    DRAKE_THROW_UNLESS(vec != nullptr);
+    if (vec->rows() != size()) {
       throw std::out_of_range("Addends must be the same size.");
     }
-    for (int i = 0; i < size(); ++i) vec[i] += scale * GetAtIndex(i);
+    for (int i = 0; i < size(); ++i) {
+      (*vec)[i] += scale * GetAtIndex(i);
+    }
+  }
+
+  DRAKE_DEPRECATED("2019-06-01", "Use the EigenPtr overload instead.")
+  void ScaleAndAddToVector(const T& scale, Eigen::Ref<VectorX<T>> vec) const {
+    ScaleAndAddToVector(scale, &vec);
   }
 
   /// Add in scaled vector @p rhs to this vector. Both vectors must
@@ -162,15 +172,7 @@ class VectorBase {
     return PlusEqScaled(T(-1), rhs);
   }
 
-  /// Computes the infinity norm for this vector.
-  ///
-  /// You should override this method if possible with a more efficient
-  /// approach that leverages structure; the default implementation performs
-  /// element-by-element computations that are likely inefficient. If the
-  /// vector is contiguous, for example, Eigen implementations should be far
-  /// more efficient. Overriding implementations should
-  /// ensure that this operation remains O(N) in the size of
-  /// the value and allocates no memory.
+  DRAKE_DEPRECATED("2019-06-01", "Use CopyToVector + Eigen lpNorm.")
   virtual T NormInf() const {
     using std::abs;
     using std::max;
