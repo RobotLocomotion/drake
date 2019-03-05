@@ -1538,8 +1538,6 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
     const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
     drake::systems::DiscreteValues<T>* updates) const {
-  const double dt = time_step_;  // just a shorter alias.
-
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
 
@@ -1558,7 +1556,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
 
   VectorX<T> qdot_next(this->num_positions());
   internal_tree().MapVelocityToQDot(context0, v_next, &qdot_next);
-  VectorX<T> q_next = q0 + dt * qdot_next;
+  VectorX<T> q_next = q0 + time_step() * qdot_next;
 
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;

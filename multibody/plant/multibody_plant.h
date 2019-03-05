@@ -2896,10 +2896,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   }
   /// @}
 
-  /// @name Point contact queries
-  /// These queries relate to the modeling of contact using point contact
-  /// models.
-
   /// Evaluates all point pairs of contact for a given state of the model stored
   /// in `context`.
   /// Each entry in the returned vector corresponds to a single point pair
@@ -2915,43 +2911,6 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
         .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
   }
-
-  /// Evaluates the contact Jacobians for the given state of the plant stored in
-  /// `context`.
-  /// This method first evaluates the point pair penetrations in the system for
-  /// the given `context`, see EvalPointPairPenetrations(). For each penetration
-  /// pair involving bodies A and B, a contact frame C is defined by the
-  /// rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W`
-  /// equals the normal vector pointing from body B into body A, expressed in
-  /// the world frame W. See PenetrationAsPointPair for further details on the
-  /// definition of each contact pair. Versors `Cx_W` and `Cy_W` constitute a
-  /// basis of the plane normal to `Cz_W` and are arbitrarily chosen. The
-  /// contact frame basis can be accessed in the results, see
-  /// ContactJacobians::R_WC_list. Further, for each contact pair evaluated,
-  /// this method computes the Jacobians `Jn` and `Jt`. With the vector of
-  /// generalized velocities v of size `nv` and `nc` the number of contact
-  /// pairs;
-  ///   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
-  ///     separation speed for each contact point, defined to be positive when
-  ///     bodies are moving away at the contact.
-  ///   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
-  ///     concatenates the tangential components of the relative velocity vector
-  ///     `v_AcBc` in the frame C of contact. That is, for the k-th contact
-  ///     pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
-  ///     `Cx` and `Cy` directions.
-  ///
-  /// If no geometry was registered or if `nc = 0`, ContactJacobians holds empty
-  /// results.
-  ///
-  /// @see ContactJacobians for specifics on the returned data storage.
-  /// @throws std::exception if called pre-finalize. See Finalize().
-  const ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return this->get_cache_entry(cache_indexes_.contact_jacobians_)
-        .template Eval<ContactJacobians<T>>(context);
-  }
-  /// @}
 
   /// Sets the `state` so that generalized positions and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
@@ -3322,6 +3281,42 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
+
+  // Evaluates the contact Jacobians for the given state of the plant stored in
+  // `context`.
+  // This method first evaluates the point pair penetrations in the system for
+  // the given `context`, see EvalPointPairPenetrations(). For each penetration
+  // pair involving bodies A and B, a contact frame C is defined by the
+  // rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W`
+  // equals the normal vector pointing from body B into body A, expressed in
+  // the world frame W. See PenetrationAsPointPair for further details on the
+  // definition of each contact pair. Versors `Cx_W` and `Cy_W` constitute a
+  // basis of the plane normal to `Cz_W` and are arbitrarily chosen. The
+  // contact frame basis can be accessed in the results, see
+  // ContactJacobians::R_WC_list. Further, for each contact pair evaluated,
+  // this method computes the Jacobians `Jn` and `Jt`. With the vector of
+  // generalized velocities v of size `nv` and `nc` the number of contact
+  // pairs;
+  //   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
+  //     separation speed for each contact point, defined to be positive when
+  //     bodies are moving away at the contact.
+  //   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
+  //     concatenates the tangential components of the relative velocity vector
+  //     `v_AcBc` in the frame C of contact. That is, for the k-th contact
+  //     pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
+  //     `Cx` and `Cy` directions.
+  //
+  // If no geometry was registered or if `nc = 0`, ContactJacobians holds empty
+  // results.
+  //
+  // See ContactJacobians for specifics on the returned data storage.
+  // This method throws std::exception if called pre-finalize. See Finalize().
+  const ContactJacobians<T>& EvalContactJacobians(
+      const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return this->get_cache_entry(cache_indexes_.contact_jacobians_)
+        .template Eval<ContactJacobians<T>>(context);
+  }
 
   // The gravity field force element.
   optional<const UniformGravityFieldElement<T>*> gravity_field_;
