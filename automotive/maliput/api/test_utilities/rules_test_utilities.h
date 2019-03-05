@@ -152,7 +152,7 @@ inline ::testing::AssertionResult IsEqual(
   unused(a_expression, b_expression);
   AssertionResultCollector c;
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.size(), b.size()));
-  int smallest = std::min(a.size(), b.size());
+  const int smallest = std::min(a.size(), b.size());
   for (int i = 0; i < smallest; ++i) {
     MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a[i], b[i]));
   }
@@ -175,7 +175,6 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
                                           const GeoPosition& a,
                                           const GeoPosition& b) {
-  unused(a_expression, b_expression);
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
@@ -184,7 +183,6 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
                                           const Rotation& a,
                                           const Rotation& b) {
-  unused(a_expression, b_expression);
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression,
                                           a.matrix(), b.matrix());
 }
@@ -194,7 +192,6 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
                                           const BulbColor& a,
                                           const BulbColor& b) {
-  unused(a_expression, b_expression);
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
@@ -203,7 +200,6 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
                                           const BulbType& a,
                                           const BulbType& b) {
-  unused(a_expression, b_expression);
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
@@ -212,7 +208,6 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
                                           const optional<double>& a,
                                           const optional<double>& b) {
-  unused(a_expression, b_expression);
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
@@ -242,7 +237,7 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   unused(a_expression, b_expression);
   AssertionResultCollector c;
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.size(), b.size()));
-  int smallest = std::min(a.size(), b.size());
+  const int smallest = std::min(a.size(), b.size());
   for (int i = 0; i < smallest; ++i) {
     MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.at(i), b.at(i)));
   }
