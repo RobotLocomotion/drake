@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity_engine.h"
 
+#include <cmath>
 #include <utility>
 #include <vector>
 
@@ -1988,13 +1989,17 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
         const double u = i / 3.;
         const double v = j / 3.;
         const double w = k / 3.;
+        const double abs_u = std::abs(u);
+        const double abs_v = std::abs(v);
+        const double abs_w = std::abs(w);
         // Skip interior points.
-        if (abs(u) != 1. && abs(v) != 1. && abs(w) != 1.) continue;
+        if (abs_u != 1. && abs_v != 1. && abs_w != 1.)
+          continue;
         // Map from s(u,v) in square to d(f,g) in the unit disk.
         const Vector2d s(u, v);
         const Vector2d d = (u == 0. && v == 0.) ? Vector2d(0., 0.)
-                               : (abs(u) >= abs(v)) ? abs(u) * s.normalized()
-                                                    : abs(v) * s.normalized();
+                               : (abs_u >= abs_v) ? abs_u * s.normalized()
+                                                  : abs_v * s.normalized();
         // Map from d(f,g) in the unit disk together with w in [-1,1] to
         // (x,y,z) in the cylinder.
         const Vector2d xy = r_B * d;
@@ -2014,10 +2019,10 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
         // Compute the witness point Ca on the sphere A in three cases.  The
         // expression is in B's frame.
         const Vector3d p_AoCa_B =
-            ((abs(u) == 1. || abs(v) == 1.) && abs(w) == 1.)
+            ((abs_u == 1. || abs_v == 1.) && abs_w == 1.)
                    // Ao is on the circular edges.
                 ? -r_A * Vector3d(d(0), d(1), w).normalized()
-                : ((abs(u) == 1. || abs(v) == 1.))
+                : (abs_u == 1. || abs_v == 1.)
                         // Ao is on the cylindrical surface.
                       ? -r_A * Vector3d(d(0), d(1), 0)
                         // Ao is on the top or bottom circular disks.
