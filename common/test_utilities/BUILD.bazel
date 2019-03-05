@@ -99,6 +99,10 @@ drake_cc_library(
     testonly = 1,
     srcs = ["limit_malloc.cc"],
     hdrs = ["limit_malloc.h"],
+    copts = [
+        # We shouldn't call __tsan_func_entry from allocations during dl_init.
+        "-fno-sanitize=thread",
+    ],
     tags = [
         # The limit_malloc library be used sparingly, and not by default.
         # Don't add this library into the ":test_utilities" package library.
@@ -135,24 +139,34 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "limit_malloc_test",
-    args = select({
-        "//tools/cc_toolchain:apple": [
-            # The code to enforce malloc limits is not implemented on macOS.
-            "--gtest_filter=-*DeathTest*",
-        ],
-        "//conditions:default": [],
-    }),
-    tags = [
-        # TODO(jwnimmer-tri) Clang ASan and TSan either segfault or abort with
-        # LimitMalloc.  Investigate, fix, and re-enable this test.
-        "no_asan",
-        "no_tsan",
-        # TODO(jwnimmer-tri) The DeathTests fail their test conditions when run
-        # under Valgrind.  Investigate, fix, and re-enable this test.
-        "no_memcheck",
+    args = [
+        # By default, we will skip the death tests because they only pass on
+        # non-Apple, non-Sanitizer, non-Memcheck builds.  We will explicitly
+        # run them (below) for the configurations that succeed.
+        "--gtest_filter=-*DeathTest*",
     ],
     deps = [
         ":limit_malloc",
+    ],
+)
+
+# N.B. All sh_tests are excluded from dynamic_analysis (sanitizer and memcheck)
+# build by default; these death tests are skipped under those configurations.
+sh_test(
+    name = "limit_malloc_death_test",
+    srcs = [":limit_malloc_test"],
+    args = select({
+        "//tools/cc_toolchain:apple": [
+            # The code to enforce malloc limits is not implemented on macOS.
+            "--gtest_filter=-*",
+        ],
+        "//conditions:default": [
+            # Run only the death tests, not the plain tests.
+            "--gtest_filter=*DeathTest*",
+        ],
+    }),
+    data = [
+        ":limit_malloc_test",
     ],
 )
 
