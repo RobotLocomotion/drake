@@ -40,20 +40,19 @@ namespace trajectories {
  * const auto pp = PiecewisePolynomial<double>::FirstOrderHold(breaks, knots);
  *
  * // Evaluate the PiecewisePolynomial at some values.
- * std::cout << pp.value(-.5)(0, 0) << std::endl;  // Returns 0.5.
- * std::cout << pp.value(0)(0, 0) << std::endl;    // Returns 0.0;
+ * std::cout << pp.value(-.5)(0, 0) << std::endl;  // Outputs 0.5.
+ * std::cout << pp.value(0)(0, 0) << std::endl;    // Outputs 0.0;
  *
- * // Show how we can evaluate the first derivative (returns 1.0).
+ * // Show how we can evaluate the first derivative (outputs 1.0).
  * std::cout << pp.derivative(1).value(-.5)(0, 0) << std::endl;
  * @endcode
- *
  *
  * PiecewisePolynomials can be added, subtracted, and multiplied.
  * They cannot be divided because Polynomials are not closed
  * under division.
  *
  * @warning PiecewisePolynomials silently clip input evaluations outside of
- * their defined range. So `pp.value(-2)(0, 0)` in the example above would
+ * their defined range. So `pp.value(-2.0)(0, 0)` in the example above would
  * evaluate to -1.0. See value().
  *
  * @tparam T is a scalar type.
@@ -93,6 +92,19 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * of matrices of polynomials, one for each output dimension. Unlike the
    * coefficient-based methods, the number of polynomials must equal the number
    * of segments, which will be one fewer than the number of breaks.
+   *
+   * The following shows how such a PiecewisePolynomial might be constructed and
+   * used:
+   * @code
+   * // Construct the PiecewisePolynomial.
+   * const std::vector<double> breaks = { -1, 0, 1 };
+   * Polynomiald x("x");
+   * std::vector<Polynomiald> polynomials = { -(x*x), (x*x) };
+   * const PiecewisePolynomial<double> pp(polynomials, breaks);
+   *
+   * // Evaluate the PiecewisePolynomial at some values.
+   * std::cout << pp.value(-1.0)(0, 0) << std::endl;    // Outputs -1.0
+   * std::cout << pp.value(1.0)(0, 0) << std::endl;     // Output 1.0
    */
   // @{
 
