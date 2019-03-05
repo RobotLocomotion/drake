@@ -43,6 +43,7 @@ drake_cc_library(
         "rules/right_of_way_phase_provider.h",
         "rules/right_of_way_phase_ring.h",
         "rules/right_of_way_rule.h",
+        "rules/right_of_way_state_provider.h",
         "rules/road_rulebook.h",
         "rules/speed_limit_rule.h",
         "rules/traffic_lights.h",
@@ -84,6 +85,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rules_test",
     srcs = [
+        "test/right_of_way_state_provider_test.cc",
         "test/rules_regions_test.cc",
         "test/rules_right_of_way_test.cc",
         "test/rules_road_rulebook_test.cc",

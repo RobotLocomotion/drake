@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
+#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
 
 namespace drake {

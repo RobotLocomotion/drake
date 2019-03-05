@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
+#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
