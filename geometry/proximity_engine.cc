@@ -563,7 +563,14 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     const Vector3d p_WCb = result.nearest_points[1];
     const Vector3d p_ACa = fcl_object_A.getTransform().inverse() * p_WCa;
     const Vector3d p_BCb = fcl_object_B.getTransform().inverse() * p_WCb;
-    const Vector3d nhat_BA_W = (p_WCa - p_WCb) / result.min_distance;
+    // TODO(DamrongGuoy): We will compute the right nhat when min_distance is
+    //  0 or almost 0 after PR #10813 lands to avoid conflicts with this
+    //  PR #10823. For now, we simply return nan in nhat when min_distance
+    //  is 0 or almost 0.
+    const Vector3d nhat_BA_W =
+        (std::abs(result.min_distance) < 1e-14)
+            ? Vector3d(std::nan(""), std::nan(""), std::nan(""))
+            : (p_WCa - p_WCb) / result.min_distance;
     distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
                                               result.min_distance, nhat_BA_W);
   }

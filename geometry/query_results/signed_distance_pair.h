@@ -38,7 +38,9 @@ struct SignedDistancePair{
         nhat_BA_W(n_BA_W) {}
 
   // TODO(DamrongGuoy): Remove this constructor when it's not needed.  Right
-  //   now the unit tests need it.
+  //   now the unit tests need it.  The downside is that Python binder calls
+  //   the doc for the above constructor ctor.doc_6args and this one
+  //   ctor.doc_5args.
   /** Constructor.
    We keep this constructor tempoarily for backward compatibility.
    @param a       The id of the first geometry (A).
