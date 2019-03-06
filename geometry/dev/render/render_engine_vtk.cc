@@ -123,159 +123,7 @@ RenderEngineVtk::RenderEngineVtk()
       pipelines_{{make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>(),
                   make_unique<RenderingPipeline>()}} {
-  const ColorD sky_color =
-      color_palette_.get_normalized_color(RenderLabel::empty_label());
-  const vtkSmartPointer<vtkTransform> vtk_identity =
-      ConvertToVtkTransform(Eigen::Isometry3d::Identity());
-
-  // Generic configuration of pipelines.
-  for (auto& pipeline : pipelines_) {
-    // Multisampling disabled by design for label and depth. It's turned off for
-    // color because of a bug which affects on-screen rendering with NVidia
-    // drivers on Ubuntu 16.04. In certain very specific
-    // cases (camera position, scene, triangle drawing order, normal
-    // orientation), a plane surface has partial background pixels
-    // bleeding through it, which changes the color of the center pixel.
-    // TODO(fbudin69500) If lack of anti-aliasing in production code is
-    // problematic, change this to only disable anti-aliasing in unit
-    // tests. Alternatively, find other way to resolve the driver bug.
-    pipeline->window->SetMultiSamples(0);
-
-    pipeline->renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
-    auto camera = pipeline->renderer->GetActiveCamera();
-    camera->SetViewAngle(90.0);  // Default to an arbitrary 90° field of view.
-    camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
-    SetModelTransformMatrixToVtkCamera(camera, vtk_identity);
-
-    pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
-    pipeline->filter->SetInput(pipeline->window.GetPointer());
-    pipeline->filter->SetScale(1);
-    pipeline->filter->ReadFrontBufferOff();
-    pipeline->filter->SetInputBufferTypeToRGBA();
-    pipeline->exporter->SetInputData(pipeline->filter->GetOutput());
-    pipeline->exporter->ImageLowerLeftOff();
-  }
-
-  // Pipeline-specific tweaks.
-
-  // Depth image background color is white -- the representation of the maximum
-  // distance (e.g., infinity).
-  pipelines_[ImageType::kDepth]->renderer->SetBackground(1., 1., 1.);
-
-  pipelines_[ImageType::kColor]->renderer->SetUseDepthPeeling(1);
-  pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
-}
-
-std::unique_ptr<RenderEngine> RenderEngineVtk::Clone() const {
-  // Relies on the constructor to wire up the rendering pipelines.
-  auto engine_clone = make_unique<RenderEngineVtk>();
-
-  // Utility function for creating a cloned actor which *shares* the same
-  // underlying polygonal data.
-  auto clone_actor_array = [&engine_clone](
-      const std::array<vtkSmartPointer<vtkActor>, 3>& source_actors,
-      std::array<vtkSmartPointer<vtkActor>, 3>* clone_actors_ptr) {
-    DRAKE_DEMAND(clone_actors_ptr != nullptr);
-    std::array<vtkSmartPointer<vtkActor>, 3>& clone_actors = *clone_actors_ptr;
-    for (int i = 0; i < 3; ++i) {
-      // NOTE: source *should* be const; but none of the getters on the source
-      // are const-compatible.
-      DRAKE_DEMAND(source_actors[i]);
-      DRAKE_DEMAND(clone_actors[i]);
-      vtkActor& source = *source_actors[i];
-      vtkActor& clone = *clone_actors[i];
-
-      if (source.GetTexture() == nullptr) {
-        clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
-      } else {
-        clone.SetTexture(source.GetTexture());
-      }
-      clone.SetUserTransform(source.GetUserTransform());
-
-      // NOTE: The clone renderer and original renderer *share* polygon data.
-      // If the meshes were *deformable* this would be invalid. Furthermore,
-      // even if dynamic adding/removing of geometry were valid, VTK's
-      // reference counting preserves the underlying geometry in the
-      // copy that still references it.
-      clone.SetMapper(source.GetMapper());
-      clone.SetUserTransform(source.GetUserTransform());
-      // This is necessary because *terrain* has its lighting turned off. To
-      // blindly handle arbitrary actors being flagged as terrain, we need to
-      // treat all actors this way.
-      clone.GetProperty()->SetLighting(source.GetProperty()->GetLighting());
-
-      engine_clone->pipelines_.at(i)->renderer.Get()->AddActor(&clone);
-    }
-  };
-
-  for (size_t a = 0; a < actors_.size(); ++a) {
-    std::array<vtkSmartPointer<vtkActor>, 3> actors{
-        vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
-        vtkSmartPointer<vtkActor>::New()};
-    clone_actor_array(actors_.at(a), &actors);
-    engine_clone->actors_.emplace_back(actors);
-  }
-
-  // Copy camera properties
-  auto copy_cameras = [](auto src_renderer, auto dst_renderer) {
-    dst_renderer->GetActiveCamera()->DeepCopy(
-        src_renderer->GetActiveCamera());
-  };
-  for (int p = 0; p < 3; ++p) {
-    copy_cameras(pipelines_.at(p)->renderer.Get(),
-                 engine_clone->pipelines_.at(p)->renderer.Get());
-  }
-
-  return engine_clone;
-}
-
-void RenderEngineVtk::AddFlatTerrain() {
-  ColorD terrain_color =
-      color_palette_.get_normalized_color(RenderLabel::terrain_label());
-  PerceptionProperties material;
-  material.AddGroup("label");
-  material.AddProperty("label", "id", RenderLabel::terrain_label());
-  material.AddGroup("phong");
-  material.AddProperty("phong", "diffuse",
-                       Eigen::Vector4d{terrain_color.r, terrain_color.g,
-                                       terrain_color.b, 1.0});
-  // TODO(SeanCurtis-TRI): This is bad; I'm consuming an index for something
-  // that isn't stored in SceneGraph. This should be killed in favor of actually
-  // introducing managed geometry (and appropriate materials).
-  RegisterVisual(HalfSpace(), material, Isometry3<double>::Identity());
-}
-
-RenderIndex RenderEngineVtk::RegisterVisual(
-    const Shape& shape, const PerceptionProperties& properties,
-    const Isometry3<double>& X_FG) {
-  // Note: the user_data interface on reification requires a non-const pointer.
-  RegistrationData data{properties, X_FG};
-  shape.Reify(this, &data);
-  return RenderIndex(static_cast<int>(actors_.size()) - 1);
-}
-
-optional<RenderIndex> RenderEngineVtk::RemoveVisual(RenderIndex index) {
-  DRAKE_DEMAND(index >= 0 && index < actors_.size());
-  for (int i = 0; i < 3; ++i) {
-    pipelines_[i]->renderer->RemoveActor(actors_[index][i]);
-  }
-  optional<RenderIndex> moved_index{};
-  RenderIndex last_index{static_cast<int>(actors_.size()) - 1};
-  if (index < last_index) {
-    moved_index = last_index;
-    std::swap(actors_[index], actors_[last_index]);
-    actors_.pop_back();
-  }
-  return moved_index;
-}
-
-void RenderEngineVtk::UpdateVisualPose(const Eigen::Isometry3d& X_WG,
-                                       RenderIndex index) const {
-  vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(X_WG);
-  // TODO(SeanCurtis-TRI): Provide the ability to specify specific actors.
-  for (const auto& actor : actors_.at(index)) {
-    actor->SetUserTransform(vtk_X_WG);
-  }
+  InitializePipelines();
 }
 
 void RenderEngineVtk::UpdateViewpoint(const Eigen::Isometry3d& X_WC) const {
@@ -290,7 +138,6 @@ void RenderEngineVtk::UpdateViewpoint(const Eigen::Isometry3d& X_WC) const {
 void RenderEngineVtk::RenderColorImage(const CameraProperties& camera,
                                        ImageRgba8U* color_image_out,
                                        bool show_window) const {
-  // TODO(sherm1) Should evaluate VTK cache entry.
   UpdateWindow(camera, show_window, pipelines_[ImageType::kColor].get(),
                "Color Image");
   PerformVTKUpdate(*pipelines_[ImageType::kColor]);
@@ -348,8 +195,10 @@ void RenderEngineVtk::RenderLabelImage(const CameraProperties& camera,
                "Label Image");
   PerformVTKUpdate(*pipelines_[ImageType::kLabel]);
 
-  // TODO(SeanCurtis-TRI): Determine if this copies memory (and find some way
-  // around copying).
+  // TODO(SeanCurtis-TRI): This copies the image and *that's* a tragedy. It
+  // would be much better to process the pixels directly. The solution is to
+  // simply call exporter->GetPointerToData() and process the pixels myself.
+  // See the implementation in vtkImageExport::Export() for details.
   ImageRgba8U image(camera.width, camera.height);
   pipelines_[ImageType::kLabel]->exporter->Export(image.at(0, 0));
 
@@ -424,6 +273,154 @@ const ColorI& RenderEngineVtk::get_sky_color() const {
 /** Returns flat terrain's color in an RGB image. */
 const ColorI& RenderEngineVtk::get_flat_terrain_color() const {
   return color_palette_.get_terrain_color();
+}
+
+optional<RenderIndex> RenderEngineVtk::DoRegisterVisual(
+    const Shape& shape, const PerceptionProperties& properties,
+    const Isometry3<double>& X_FG) {
+  // Note: the user_data interface on reification requires a non-const pointer.
+  RegistrationData data{properties, X_FG};
+  shape.Reify(this, &data);
+  return RenderIndex(static_cast<int>(actors_.size()) - 1);
+}
+
+void RenderEngineVtk::DoUpdateVisualPose(const Eigen::Isometry3d& X_WG,
+                                         RenderIndex index) {
+  vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(X_WG);
+  // TODO(SeanCurtis-TRI): Provide the ability to specify specific actors; i.e.
+  // only update the visual actor or only the label actor, etc.
+  for (const auto& actor : actors_.at(index)) {
+    actor->SetUserTransform(vtk_X_WG);
+  }
+}
+
+optional<RenderIndex> RenderEngineVtk::DoRemoveGeometry(RenderIndex index) {
+  DRAKE_DEMAND(index >= 0 && index < actors_.size());
+  for (int i = 0; i < 3; ++i) {
+    pipelines_[i]->renderer->RemoveActor(actors_[index][i]);
+  }
+  optional<RenderIndex> moved_index{};
+  RenderIndex last_index{static_cast<int>(actors_.size()) - 1};
+  if (index < last_index) {
+    moved_index = last_index;
+    std::swap(actors_[index], actors_[last_index]);
+    actors_.pop_back();
+  }
+  return moved_index;
+}
+
+std::unique_ptr<RenderEngine> RenderEngineVtk::DoClone() const {
+  return std::unique_ptr<RenderEngineVtk>(new RenderEngineVtk(*this));
+}
+
+RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
+    : RenderEngine(other),
+      color_palette_(kNumMaxLabel, RenderLabel::terrain_label(),
+                     RenderLabel::empty_label()),
+      pipelines_{{make_unique<RenderingPipeline>(),
+                  make_unique<RenderingPipeline>(),
+                  make_unique<RenderingPipeline>()}} {
+  InitializePipelines();
+
+  // Utility function for creating a cloned actor which *shares* the same
+  // underlying polygonal data.
+  auto clone_actor_array =
+      [this](const std::array<vtkSmartPointer<vtkActor>, 3>& source_actors,
+             std::array<vtkSmartPointer<vtkActor>, 3>* clone_actors_ptr) {
+        DRAKE_DEMAND(clone_actors_ptr != nullptr);
+        std::array<vtkSmartPointer<vtkActor>, 3>& clone_actors =
+            *clone_actors_ptr;
+        for (int i = 0; i < 3; ++i) {
+          // NOTE: source *should* be const; but none of the getters on the
+          // source are const-compatible.
+          DRAKE_DEMAND(source_actors[i]);
+          DRAKE_DEMAND(clone_actors[i]);
+          vtkActor& source = *source_actors[i];
+          vtkActor& clone = *clone_actors[i];
+
+          if (source.GetTexture() == nullptr) {
+            clone.GetProperty()->SetColor(source.GetProperty()->GetColor());
+          } else {
+            clone.SetTexture(source.GetTexture());
+          }
+          clone.SetUserTransform(source.GetUserTransform());
+
+          // NOTE: The clone renderer and original renderer *share* polygon
+          // data. If the meshes were *deformable* this would be invalid.
+          // Furthermore, even if dynamic adding/removing of geometry were
+          // valid, VTK's reference counting preserves the underlying geometry
+          // in the copy that still references it.
+          clone.SetMapper(source.GetMapper());
+          clone.SetUserTransform(source.GetUserTransform());
+          // This is necessary because *terrain* has its lighting turned off. To
+          // blindly handle arbitrary actors being flagged as terrain, we need
+          // to treat all actors this way.
+          clone.GetProperty()->SetLighting(source.GetProperty()->GetLighting());
+
+          pipelines_.at(i)->renderer.Get()->AddActor(&clone);
+        }
+      };
+
+  for (size_t a = 0; a < other.actors_.size(); ++a) {
+    std::array<vtkSmartPointer<vtkActor>, 3> actors{
+        vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
+        vtkSmartPointer<vtkActor>::New()};
+    clone_actor_array(other.actors_.at(a), &actors);
+    actors_.emplace_back(actors);
+  }
+
+  // Copy camera properties
+  auto copy_cameras = [](auto src_renderer, auto dst_renderer) {
+    dst_renderer->GetActiveCamera()->DeepCopy(src_renderer->GetActiveCamera());
+  };
+  for (int p = 0; p < 3; ++p) {
+    copy_cameras(other.pipelines_.at(p)->renderer.Get(),
+                 pipelines_.at(p)->renderer.Get());
+  }
+}
+
+void RenderEngineVtk::InitializePipelines() {
+  const ColorD sky_color =
+      systems::sensors::ColorPalette<int>::Normalize(get_sky_color());
+  const vtkSmartPointer<vtkTransform> vtk_identity =
+      ConvertToVtkTransform(Eigen::Isometry3d::Identity());
+
+  // Generic configuration of pipelines.
+  for (auto& pipeline : pipelines_) {
+    // Multisampling disabled by design for label and depth. It's turned off for
+    // color because of a bug which affects on-screen rendering with NVidia
+    // drivers on Ubuntu 16.04. In certain very specific
+    // cases (camera position, scene, triangle drawing order, normal
+    // orientation), a plane surface has partial background pixels
+    // bleeding through it, which changes the color of the center pixel.
+    // TODO(fbudin69500) If lack of anti-aliasing in production code is
+    // problematic, change this to only disable anti-aliasing in unit
+    // tests. Alternatively, find other way to resolve the driver bug.
+    pipeline->window->SetMultiSamples(0);
+
+    pipeline->renderer->SetBackground(sky_color.r, sky_color.g, sky_color.b);
+    auto camera = pipeline->renderer->GetActiveCamera();
+    camera->SetViewAngle(90.0);  // Default to an arbitrary 90° field of view.
+    camera->SetClippingRange(kClippingPlaneNear, kClippingPlaneFar);
+    SetModelTransformMatrixToVtkCamera(camera, vtk_identity);
+
+    pipeline->window->AddRenderer(pipeline->renderer.GetPointer());
+    pipeline->filter->SetInput(pipeline->window.GetPointer());
+    pipeline->filter->SetScale(1);
+    pipeline->filter->ReadFrontBufferOff();
+    pipeline->filter->SetInputBufferTypeToRGBA();
+    pipeline->exporter->SetInputData(pipeline->filter->GetOutput());
+    pipeline->exporter->ImageLowerLeftOff();
+  }
+
+  // Pipeline-specific tweaks.
+
+  // Depth image background color is white -- the representation of the maximum
+  // distance (e.g., infinity).
+  pipelines_[ImageType::kDepth]->renderer->SetBackground(1., 1., 1.);
+
+  pipelines_[ImageType::kColor]->renderer->SetUseDepthPeeling(1);
+  pipelines_[ImageType::kColor]->renderer->UseFXAAOn();
 }
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,

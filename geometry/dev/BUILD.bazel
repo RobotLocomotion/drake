@@ -84,7 +84,6 @@ drake_cc_library(
         "//geometry:geometry_state",
         "//geometry:internal_frame",
         "//geometry:internal_geometry",
-        "//geometry/dev/render:fidelity",
         "//geometry/dev/render:render_engine_impl",
         "//geometry/test_utilities:geometry_set_tester",
     ],
