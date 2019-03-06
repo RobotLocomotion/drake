@@ -16,22 +16,22 @@ namespace trajectories {
 
 /// A scalar multi-variate piecewise polynomial.
 /**
- * PiecewisePolynomial represents a list of contiguous segments in a scalar
+ * %PiecewisePolynomial represents a list of contiguous segments in a scalar
  * independent variable (typically corresponding to time) with Polynomials
  * defined at each segment. We call the output from evaluating the
- * PiecewisePolynomial at the scalar independent variable "the output", and
+ * %PiecewisePolynomial at the scalar independent variable "the output", and
  * that output can be either a Eigen MatrixX<T> (if evaluated using value())
  * or a scalar (if evaluated using scalar_value()).
  *
  * An example of a piecewise polynomial is a function of m segments in time,
- * where for each segment a different polynomial is defined. For a more specific
+ * where a different polynomial is defined for each segment. For a specific
  * example, consider the absolute value function over the interval [-1, 1].
- * We can define a PiecewisePolynomial over this interval using breaks at
- * t = { -1, 0, 1 }, and "knots" of abs(t).
+ * We can define a %PiecewisePolynomial over this interval using breaks at
+ * t = { -1.0, 0.0, 1.0 }, and "knots" of abs(t).
  *
  * @code
  * // Construct the PiecewisePolynomial.
- * const std::vector<double> breaks = { -1, 0, 1 };
+ * const std::vector<double> breaks = { -1.0, 0.0, 1.0 };
  * std::vector<Eigen::MatrixXd> knots(3);
  * for (int i = 0; i < static_cast<int>(breaks.size()); ++i) {
  *   knots[i].resize(1, 1);
@@ -40,19 +40,19 @@ namespace trajectories {
  * const auto pp = PiecewisePolynomial<double>::FirstOrderHold(breaks, knots);
  *
  * // Evaluate the PiecewisePolynomial at some values.
- * std::cout << pp.value(-.5)(0, 0) << std::endl;  // Outputs 0.5.
- * std::cout << pp.value(0)(0, 0) << std::endl;    // Outputs 0.0;
+ * std::cout << pp.scalar_value(-.5) << std::endl;  // Outputs 0.5.
+ * std::cout << pp.scalar_value(0) << std::endl;    // Outputs 0.0;
  *
  * // Show how we can evaluate the first derivative (outputs 1.0).
- * std::cout << pp.derivative(1).value(-.5)(0, 0) << std::endl;
+ * std::cout << pp.derivative(1).scalar_value(-.5) << std::endl;
  * @endcode
  *
- * PiecewisePolynomials can be added, subtracted, and multiplied.
+ * PiecewisePolynomial objects can be added, subtracted, and multiplied.
  * They cannot be divided because Polynomials are not closed
  * under division.
  *
- * @warning PiecewisePolynomials silently clip input evaluations outside of
- * their defined range. So `pp.value(-2.0)(0, 0)` in the example above would
+ * @warning %PiecewisePolynomial silently clips input evaluations outside of
+ * their defined range. So `pp.scalar_value(-2.0)` in the example above would
  * evaluate to -1.0. See value().
  *
  * @tparam T is a scalar type.
@@ -64,6 +64,9 @@ namespace trajectories {
 template <typename T>
 class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
  public:
+  /// Constructs an empty piecewise polynomial.
+  PiecewisePolynomial() = default;
+
   // We are final, so this is okay.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewisePolynomial)
 
@@ -72,11 +75,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   typedef MatrixX<T> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
-  /// Default constructor; just leaves segment_times and polynomials empty.
-  PiecewisePolynomial() = default;
-
   /// Single segment, constant value constructor over the interval [0, ∞].
-  /// The constructed PiecewisePolynomial will return `constant_value` at
+  /// The constructed %PiecewisePolynomial will return `constant_value` at
   /// every evaluated point (i.e., `value(t) = constant_value` ∀t ∈ [0, ∞]).
   template <typename Derived>
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& constant_value)
@@ -88,27 +88,63 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /**
    * @anchor polynomial_construction_methods
    * @name Polynomial-based construction methods.
-   * Various methods for constructing a PiecewisePolynomial using vectors
+   * Various methods for constructing a %PiecewisePolynomial using vectors
    * of matrices of polynomials, one for each output dimension. Unlike the
    * coefficient-based methods, the number of polynomials must equal the number
    * of segments, which will be one fewer than the number of breaks.
    *
-   * The following shows how such a PiecewisePolynomial might be constructed and
-   * used:
+   * The following shows how such a %PiecewisePolynomial might be constructed
+   * and used:
    * @code
    * // Construct the PiecewisePolynomial.
-   * const std::vector<double> breaks = { -1, 0, 1 };
-   * Polynomiald x("x");
-   * std::vector<Polynomiald> polynomials = { -(x*x), (x*x) };
+   * const std::vector<double> breaks = { -1.0, 0.0, 1.0 };
+   * Polynomiald t("t");
+   * std::vector<Polynomiald> polynomials = { -(t*t), (t*t) };
    * const PiecewisePolynomial<double> pp(polynomials, breaks);
    *
    * // Evaluate the PiecewisePolynomial at some values.
-   * std::cout << pp.value(-1.0)(0, 0) << std::endl;    // Outputs -1.0
-   * std::cout << pp.value(1.0)(0, 0) << std::endl;     // Output 1.0
+   * std::cout << pp.scalar_value(-1.0) << std::endl;    // Outputs -1.0
+   * std::cout << pp.scalar_value(1.0) << std::endl;     // Outputs 1.0
+   * @endcode
+   *
+   * @anchor polynomial_warning
+   * <b>WARNING:</b> For robust floating point arithmetic, the polynomial for
+   * a segment will be evaluated (using value()) by first
+   * subtracting the break time from the evaluation time, meaning that
+   * constructing the polynomial like:
+   * @code
+   * const std::vector<double> breaks = { 0.0, 1.0, 2.0 };
+   * Polynomiald t("t");
+   * std::vector<Polynomiald> polynomials = { (t*t), (t*t) };
+   * const PiecewisePolynomial<double> pp(polynomials, breaks);
+   * @endcode
+   * would give the following result:
+   * @code
+   * // Evaluate the PiecewisePolynomial on both sides of a break.
+   * const double eps = 0.5 * std::numeric_limits<double>::epsilon();
+   * std::cout << pp.scalar_value(1.0-eps) << std::endl;    // Outputs 1.0
+   * std::cout << pp.scalar_value(1.0+eps) << std::endl;    // Outputs 1e-32
+   * @endcode
+   * because the second polynomial will be evaluated at 1.0+eps minus the break
+   * time for that polynomial (1.0), i.e., t=eps. The intended result can be
+   * obtained by shifting the piecewise polynomial, like so (for the above
+   * example):
+   * @code
+   * const std::vector<double> breaks = { 0.0, 1.0, 2.0 };
+   * Polynomiald t("t");
+   * std::vector<Polynomiald> polynomials = { (t*t),
+   *     ((t+breaks[1])*(t+breaks[1])) };
+   * const PiecewisePolynomial<double> pp(polynomials, breaks);
+   *
+   * // Evaluate the PiecewisePolynomial on both sides of a break.
+   * const double eps = 0.5 * std::numeric_limits<double>::epsilon();
+   * std::cout << pp.scalar_value(1.0-eps) << std::endl;    // Outputs 1.0
+   * std::cout << pp.scalar_value(1.0+eps) << std::endl;    // Outputs 1.0
+   * @endcode
    */
   // @{
 
-  /// Constructs a PiecewisePolynomial using matrix-output Polynomials defined
+  /// Constructs a %PiecewisePolynomial using matrix-output Polynomials defined
   /// over each segment.
   ///
   /// @pre `polynomials.size() == breaks.size() - 1`
@@ -116,7 +152,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials,
                       std::vector<double> const& breaks);
 
-  /// Constructs a PiecewisePolynomial using scalar-output Polynomials defined
+  /// Constructs a %PiecewisePolynomial using scalar-output Polynomials defined
   /// over each segment.
   ///
   /// @pre `polynomials.size() == breaks.size() - 1`
@@ -132,11 +168,11 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   /**
    * @anchor coefficient_construction_methods
    * @name Coefficient-based construction methods.
-   * Various methods for constructing a PiecewisePolynomial using knots of
-   * coefficient matrices. Under the hood, PiecewisePolynomial constructs
-   * interpolating polynomials that pass through the knot points. These methods
-   * differ by the continuity constraints that they enforce at knot points and
-   * whether each knot represents a full matrix (versions taking
+   * Various methods for constructing a %PiecewisePolynomial using knots of
+   * coefficient matrices. Under the hood, %PiecewisePolynomial constructs
+   * interpolating Polynomial objects that pass through the knot points. These
+   * methods differ by the continuity constraints that they enforce at knot
+   * points and whether each knot represents a full matrix (versions taking
    * `const std::vector<CoefficientMatrix>&`) or a column vector (versions
    * taking `const Eigen::Ref<const MatrixX<T>>&`).
    *
@@ -150,8 +186,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // @{
 
   /**
-   * Constructs a piecewise constant PiecewisePolynomial using matrix knots.
-   * Note that constructing a PiecewisePolynomial requires at least two knot
+   * Constructs a piecewise constant %PiecewisePolynomial using matrix knots.
+   * Note that constructing a %PiecewisePolynomial requires at least two knot
    * points, although in this case, the second knot point's value is ignored,
    * and only its break time is used.
    *
@@ -169,7 +205,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * point.
    *
    * @pre `knots.cols() == breaks.size()`
-   * @overload PiecewisePolynomial<T> ZeroOrderHold(breaks, knots)
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
@@ -178,7 +213,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const MatrixX<T>>& knots);
 
   /**
-   * Constructs a piecewise linear PiecewisePolynomial using matrix knots.
+   * Constructs a piecewise linear %PiecewisePolynomial using matrix knots.
    *
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
@@ -194,7 +229,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * represents a knot point.
    *
    * @pre `knots.cols() == breaks.size()`
-   * @overload PiecewisePolynomial<T> FirstOrderHold(breaks, knots)
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
@@ -203,7 +237,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const MatrixX<T>>& knots);
 
   /**
-   * Constructs a third order PiecewisePolynomial using matrix knots.
+   * Constructs a third order %PiecewisePolynomial using matrix knots.
    * First derivatives are chosen to be "shape preserving", i.e. if
    * `knots` is monotonic within some interval, the interpolated data will
    * also be monotonic. The second derivative is not guaranteed to be smooth
@@ -252,8 +286,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @pre `knots.cols() == breaks.size()`.
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
-   * @overload PiecewisePolynomial<T> Pchip(breaks, knots,
-   * zero_end_point_derivatives)
    */
   static PiecewisePolynomial<T> Pchip(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -261,8 +293,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       bool zero_end_point_derivatives = false);
 
   /**
-   * Constructs a third order PiecewisePolynomial using matrix knots.
-   * The PiecewisePolynomial is constructed such that the interior segments
+   * Constructs a third order %PiecewisePolynomial using matrix knots.
+   * The %PiecewisePolynomial is constructed such that the interior segments
    * have the same value, first and second derivatives at `breaks`.
    * `knot_dot_at_start` and `knot_dot_at_end` are used for the first and
    * last first derivatives.
@@ -285,8 +317,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * represents a knot point.
    *
    * @pre `knots.cols() == breaks.size()`.
-   * @overload PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot_start,
-   * knots_dot_end)
    * @throws std::runtime_error under the conditions specified under
    *         @ref coefficient_construction_methods.
    */
@@ -297,7 +327,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const VectorX<T>>& knots_dot_end);
 
   /**
-   * Constructs a third order PiecewisePolynomial using matrix knots and
+   * Constructs a third order %PiecewisePolynomial using matrix knots and
    * derivatives of knots (`knots_dot`); each matrix element of `knots_dot`
    * represents the derivative with respect to the independent variable (e.g.,
    * the time derivative) of the corresponding entry in `knots`.
@@ -317,7 +347,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * `knots_dot` are used as the knot point and independent variable derivative,
    * respectively.
    *
-   * @overload PiecewisePolynomial<T> Cubic(breaks, knots, knots_dot)
    * @pre `knots.cols() == knots_dot.cols() == breaks.size()`.
    */
   static PiecewisePolynomial<T> Cubic(
@@ -326,8 +355,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const MatrixX<T>>& knots_dot);
 
   /**
-   * Constructs a third order PiecewisePolynomial using matrix knots.
-   * The PiecewisePolynomial is constructed such that the interior segments
+   * Constructs a third order %PiecewisePolynomial using matrix knots.
+   * The %PiecewisePolynomial is constructed such that the interior segments
    * have the same value, first and second derivatives at `breaks`. If
    * `periodic_end_condition` is `false` (default), then the "Not-a-knot" end
    * condition is used here, which means the third derivatives are
@@ -362,7 +391,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * MatrixX<T> inputs. Each column of `knots` represents a knot point.
    *
    * @pre `knots.cols() == breaks.size()`.
-   * @overload PiecewisePolynomial<T> Cubic(breaks, knots)
    */
   static PiecewisePolynomial<T> Cubic(
       const Eigen::Ref<const Eigen::VectorXd>& breaks,
@@ -370,29 +398,23 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       bool periodic_end_condition = false);
   // @}
 
-  /// Returns the derivative of this PiecewisePolynomial.
   /**
-   * Returns a PiecewisePolynomial where each segment is the derivative of the
-   * segment in the input PiecewisePolynomial. Any rules or limitations of
-   * Polynomial::derivative also apply to this function.
+   * Returns a %PiecewisePolynomial where each segment is the nth derivative of
+   * the segment in the input %PiecewisePolynomial. Any rules or limitations of
+   * Polynomial::derivative() also apply to this function.
    *
    * Derivatives evaluated at non-differentiable points return the value at the
    * left hand side of the interval.
-   *
-   * If `derivative_order` is given, takes the nth derivative of this
-   * PiecewisePolynomial.
    */
-  PiecewisePolynomial<T> derivative(int derivative_order = 1) const;
+  PiecewisePolynomial<T> derivative(int n = 1) const;
 
-  std::unique_ptr<Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const override {
-    return derivative(derivative_order).Clone();
+  std::unique_ptr<Trajectory<T>> MakeDerivative(int n = 1) const override {
+    return derivative(n).Clone();
   };
 
-  /// Returns the indefinite integral of this PiecewisePolynomial.
   /**
-   * Returns a PiecewisePolynomial that is the indefinite integral of this one.
-   * Any rules or limitations of Polynomial::integral also apply to this
+   * Returns a %PiecewisePolynomial that is the indefinite integral of this one.
+   * Any rules or limitations of Polynomial::integral() also apply to this
    * function.
    *
    * If `value_at_start_time` is given, it does the following only for the
@@ -401,10 +423,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   PiecewisePolynomial<T> integral(double value_at_start_time = 0.0) const;
 
-  /// Returns the indefinite integral of this PiecewisePolynomial.
   /**
-   * Returns a PiecewisePolynomial that is the indefinite integral of this one.
-   * Any rules or limitations of Polynomial::integral also apply to this
+   * Returns a %PiecewisePolynomial that is the indefinite integral of this one.
+   * Any rules or limitations of Polynomial::integral() also apply to this
    * function.
    *
    * If `value_at_start_time` is given, it does the following only for the
@@ -419,28 +440,33 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /// Evaluates the trajectory at the given time without returning the entire
   /// matrix. Equivalent to value(t)(row, col).
+  /// @warning See warnings in value().
   double scalarValue(double t, Eigen::Index row = 0,
                      Eigen::Index col = 0) const;
 
   /**
-   * Evaluates the PiecewisePolynomial at the given time \p t.
+   * Evaluates the %PiecewisePolynomial at the given time t.
    *
-   * @param t The time at which to evaluate the PiecewisePolynomial.
+   * @param t The time at which to evaluate the %PiecewisePolynomial.
    * @return The matrix of evaluated values.
    *
    * @warning If t does not lie in the range that the polynomial is defined
    *          over, the polynomial will silently be evaluated at the closest
    *          point to t. For example, `value(-1)` will return `value(0)` for
    *          a polynomial defined over [0, 1].
+   * @warning See warning in @ref polynomial_construction_warning.
    */
   MatrixX<T> value(double t) const override;
 
   /// Gets the matrix of Polynomials corresponding to the given segment index.
+  /// @warning `segment_index` is not checked for validity.
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 
   /// Gets the Polynomial with the given matrix row and column index that
   /// corresponds to the given segment index.
   /// Equivalent to `getPolynomialMatrix(segment_index)(row, col)`.
+  /// @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+  ///       validate `segment_index`.
   const PolynomialType& getPolynomial(int segment_index, Eigen::Index row = 0,
                                       Eigen::Index col = 0) const;
 
@@ -451,89 +477,95 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
                                  Eigen::Index col = 0) const;
 
   /// Returns the row count of the output matrices.
+  /// @throws std::runtime_error if empty().
   Eigen::Index rows() const override;
 
   /// Returns the column count of the output matrices.
+  /// @throws std::runtime_error if empty().
   Eigen::Index cols() const override;
 
-  /// Adds all of the values from the knot points in `other` to the knot points
-  /// in `this`, storing the result in `this`.
-  /// @throws std::runtime_error if other.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
+  /// Adds each Polynomial in the PolynomialMatrix of `other` to the
+  /// corresponding Polynomial in the PolynomialMatrix of `this`, storing the
+  /// result in `this`. If `this` corresponds to t² and `other` corresponds to
+  /// t³, `this += other` will correspond to t³ + t².
+  /// @throws std::runtime_error if every element of `other.get_segment_times()`
+  /// is not within PiecewiseFunction::kEpsilonTime from
+  /// `this->get_segment_times().
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 
-  /// Subtracts all of the values of the knot points in `other` from the knot
-  /// points in `this`, storing the result in `this`.
-  /// @throws std::runtime_error if other.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
+  /// Subtracts each Polynomial in the PolynomialMatrix of `other` from the
+  /// corresponding Polynomial in the PolynomialMatrix of `this`, storing the
+  /// result in `this`. If `this` corresponds to t² and `other` corresponds to
+  /// t³, `this -= other` will correspond to t² - t³.
+  /// @throws std::runtime_error if every element of `other.get_segment_times()`
+  /// is not within PiecewiseFunction::kEpsilonTime from
+  /// `this->get_segment_times().
   PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
 
-  /// Multiplies all of the values of the knot points in `other` by the knot
-  /// points in `this` (i.e., a coefficient-wise multiplication), storing the
-  /// result in this.
-  /// @throws std::runtime_error if other.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
+  /// Multiplies each Polynomial in the PolynomialMatrix of `other` by the
+  /// corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
+  /// coefficient-wise multiplication), storing the result in `this`. If `this`
+  /// corresponds to t² and `other` corresponds to t³, `this *= other` will
+  /// correspond to t⁵.
+  /// @throws std::runtime_error if every element of `other.get_segment_times()`
+  /// is not within PiecewiseFunction::kEpsilonTime from
+  /// `this->get_segment_times().
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
 
-  /// Adds all of the values from the knot points in `coeff` to the knot points
-  /// in `this`, storing the result in `this`.
-  /// @throws std::runtime_error if offset.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator+=(const CoefficientMatrix& coeff);
 
-  /// Subtracts all of the values of the knot points in `coeff` from the knot
-  /// points in `this`, storing the result in `this`.
-  /// @throws std::runtime_error if offset.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   PiecewisePolynomial& operator-=(const CoefficientMatrix& coeff);
 
-  /// Adds all of the values from the knot points in `other` to the knot points
-  /// in `this`.
-  /// @throws std::runtime_error if other.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
+  /// Adds each Polynomial in the PolynomialMatrix of `other` to the
+  /// corresponding Polynomial in the PolynomialMatrix of `this`.
+  /// If `this` corresponds to t² and `other` corresponds to
+  /// t³, `this + other` will correspond to t³ + t².
+  /// @throws std::runtime_error if every element of `other.get_segment_times()`
+  /// is not within PiecewiseFunction::kEpsilonTime from
+  /// `this->get_segment_times().
   const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
 
-  /// Subtracts all of the values of the knot points in `other` from the knot
-  /// points in `this`.
-  /// @throws std::runtime_error if other.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
+  /// Subtracts each Polynomial in the PolynomialMatrix of `other` from the
+  /// corresponding Polynomial in the PolynomialMatrix of `this`.
+  /// If `this` corresponds to t² and `other` corresponds to
+  /// t³, `this - other` will correspond to t² - t³.
+  /// @throws std::runtime_error if every element of `other.get_segment_times()`
+  /// is not within PiecewiseFunction::kEpsilonTime from
+  /// `this->get_segment_times().
   const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
 
-  /// Multiplies all of the values of the knot points in `other` by the knot
-  /// points in `this` (i.e., a coefficient-wise multiplication).
-  /// @throws std::runtime_error if other.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
+  /// Multiplies each Polynomial in the PolynomialMatrix of `other` by the
+  /// corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
+  /// coefficient-wise multiplication). If `this` corresponds to t² and `other`
+  /// corresponds to t³, `this *= other` will correspond to t⁵.
+  /// @throws std::runtime_error if every element of `other.get_segment_times()`
+  /// is not within PiecewiseFunction::kEpsilonTime from
+  /// `this->get_segment_times()1.
   const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
 
-  /// Adds all of the values from the knot points in `coeff` to the knot points
-  /// in `this`.
-  /// @throws std::runtime_error if offset.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator+(const CoefficientMatrix& coeff) const;
 
-  /// Subtracts all of the values of the knot points in `coeff` from the knot
-  /// points in `this`.
-  /// @throws std::runtime_error if offset.segment_times is not within
-  /// PiecewiseFunction::kEpsilonTime from this->segment_times.
   const PiecewisePolynomial operator-(const CoefficientMatrix& coeff) const;
 
-  /// Checks if a PiecewisePolynomial is approximately equal to this one.
+  /// Checks whether a %PiecewisePolynomial is approximately equal to this one.
   /**
    * Checks that every coefficient of `other` is within `tol` of the
-   * corresponding coefficient of this PiecewisePolynomial.
-   * @throws std::exception if any Polynomial in either PiecewisePolynomial is
+   * corresponding coefficient of this %PiecewisePolynomial.
+   * @throws std::exception if any Polynomial in either %PiecewisePolynomial is
    * not univariate.
    */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 
-  /// Concatenates `other` at the end, yielding a continuous trajectory
-  /// from current start_time() to `other` end_time().
+  /// Concatenates `other` to the end of `this`.
   ///
-  /// @param other PiecewisePolynomial instance to concatenate.
+  /// @warning The resulting %PiecewisePolynomial will only be continuous to the
+  ///          degree that the first Polynomial of `other` is continuous with
+  ///          the last Polynomial of `this`.
+  /// @param other %PiecewisePolynomial instance to concatenate.
   /// @throws std::runtime_error if trajectories' dimensions do not match
   ///                            each other (either rows() or cols() does
   ///                            not match between this and `other`).
-  /// @throws std::runtime_error if this end_time() and `other` start_time()
+  /// @throws std::runtime_error if `this->end_time()` and `other->start_time()`
   ///                            are not within
   ///                            PiecewiseTrajectory<T>::kEpsilonTime from
   ///                            each other.
@@ -541,16 +573,21 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /// Adds `offset` to all of the breaks. `offset` need not be a non-negative
   /// number.
+  /// @note has no effect if empty().
   void shiftRight(double offset);
 
   /// Replaces the specified block of the PolynomialMatrix at the given
   /// segment index.
+  /// @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+  ///       validate `segment_index`.
   void setPolynomialMatrixBlock(const PolynomialMatrix& replacement,
                                 int segment_index, Eigen::Index row_start = 0,
                                 Eigen::Index col_start = 0);
 
-  /// Returns the PiecewisePolynomial comprising the `num_segments` segments
+  /// Returns the %PiecewisePolynomial comprising the `num_segments` segments
   /// starting at the specified `start_segment_index`.
+  /// @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+  ///       validate `segment_index`.
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
  private:
