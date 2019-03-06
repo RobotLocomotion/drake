@@ -203,12 +203,10 @@ void SolveSDPwithSecondOrderConeExample(const SolverInterface& solver,
   prog.AddLinearCost((C0 * X.cast<symbolic::Expression>()).trace() + x(0));
   prog.AddLinearConstraint(
       (Eigen::Matrix3d::Identity() * X.cast<symbolic::Expression>()).trace() +
-          x(0) ==
-      1);
+          x(0) == 1);
   prog.AddLinearConstraint(
       (Eigen::Matrix3d::Ones() * X.cast<symbolic::Expression>()).trace() +
-          x(1) + x(2) ==
-      0.5);
+          x(1) + x(2) == 0.5);
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
 

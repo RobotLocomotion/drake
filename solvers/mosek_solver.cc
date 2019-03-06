@@ -25,21 +25,23 @@ namespace {
 // Mosek treats psd matrix variables in a special manner.
 // Check https://docs.mosek.com/8.1/capi/tutorial-sdo-shared.html for more
 // details. To summarize, Mosek stores a positive semidefinite (psd) matrix
-// variable as "bar var". Inside Mosek, it access each of the psd matrix
-// variable with a unique ID. Moreover, the Mosek user cannot access or impose
-// linear constraint on each entry of the psd matrix variable individually;
-// instead, the user can only access the matrix X̅ as a whole, and impose the
-// linear constraint on psd matrix variable X̅ entries using another
-// "coefficient matrix" A̅, together with matrix inner product
+// variable as a "bar var" (as called in Mosek's API, for example
+// https://docs.mosek.com/8.1/capi/tutorial-sdo-shared.html). Inside Mosek, it
+// accesses each of the psd matrix variable with a unique ID. Moreover, the
+// Mosek user cannot access the entries of the psd matrix variable individually;
+// instead, the user can only access the matrix X̅ as a whole. To impose
+// linear constraints on psd matrix variable X̅ entries, the user must specify a
+// "coefficient matrix" A̅ that multiplies X̅ (using the matrix inner product) to
+// yield the linear constraint.
 // lower ≤ <A̅, X̅> ≤ upper.
 // For example, to impose the constraint X̅(0, 0) + X̅(1, 0) = 1, where X̅ is a
 // 2 x 2 psd matrix, Mosek requires the user to write it as
 // <A̅, X̅> = 1, where A̅ = ⌈1   0.5⌉
 //                       ⌊0.5   0⌋
 // On the other hand, drake::solvers::MathematicalProgram doesn't treat psd
-// matrix variables in a special manner, same as any other decision variables.
-// Hence we use this struct MatrixVariableEntry to map each MathematicalProgram
-// decision variable to how it is stored as a matrix variable in Mosek.
+// matrix variables in a special manner.
+// MatrixVariableEntry stores the data needed to refer to a particular entry of
+// a Mosek matrix variable.
 class MatrixVariableEntry {
  public:
   typedef size_t Id;
@@ -98,7 +100,7 @@ enum class LinearConstraintBoundType {
 // (except the psd constraint), then we need a matrix Eₘₙ stored inside Mosek,
 // such that <Eₘₙ, X̅> = X̅(m, n). In this function we add the symmetric matrix
 // Eₘₙ into Mosek, and record the index of Eₘₙ in Mosek.
-MSKrescodee AddMatrixVariableEntryCoefficientMatrixIfNotExist(
+MSKrescodee AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
     const MatrixVariableEntry& matrix_variable_entry,
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         map_matrix_variable_entry_to_selection_matrix_id,
@@ -138,7 +140,7 @@ MSKrescodee AddScalarTimesMatrixVariableEntryToMosek(
     MSKtask_t* task) {
   MSKrescodee rescode{MSK_RES_OK};
   MSKint64t E_index;
-  rescode = AddMatrixVariableEntryCoefficientMatrixIfNotExist(
+  rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
       matrix_variable_entry, map_matrix_variable_entry_to_selection_matrix_id,
       &E_index, task);
   if (rescode != MSK_RES_OK) {
@@ -240,8 +242,8 @@ MSKrescodee AddLinearConstraintToMosek(
   // newly added linear constraint.
   // mosek_matrix_variable_entries[j] contains all the entries in that matrix
   // variable X̅ⱼ that show up in this new linear constraint.
-  // This map is used when adding the term <A̅ᵢⱼ, X̅ⱼ>. Specifically, the map is
-  // used to compute the symmetric matrix A̅ᵢⱼ.
+  // This map is used to compute the symmetric matrix A̅ᵢⱼ in the term term
+  // <A̅ᵢⱼ, X̅ⱼ>.
   std::unordered_map<MSKint64t, std::vector<MatrixVariableEntry>>
       mosek_matrix_variable_entries;
 
@@ -267,7 +269,7 @@ MSKrescodee AddLinearConstraintToMosek(
         const MatrixVariableEntry& matrix_variable_entry =
             it_mosek_matrix_variable->second;
         MSKint64t E_mn_index;
-        rescode = AddMatrixVariableEntryCoefficientMatrixIfNotExist(
+        rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
             matrix_variable_entry,
             map_matrix_variable_entry_to_selection_matrix_id, &E_mn_index,
             &task);
@@ -1124,14 +1126,14 @@ MSKrescodee AddEqualityConstraintForMatrixVariableForSameDecisionVariable(
         // A(m, n) = 1 if m == n else 0.5
         // A(p, q) = -1 if p == q else -0.5
         std::array<MSKint64t, 2> E_indices;
-        rescode = AddMatrixVariableEntryCoefficientMatrixIfNotExist(
+        rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
             matrix_variable_entries[0],
             map_matrix_variable_entry_to_selection_matrix_id, &(E_indices[0]),
             task);
         if (rescode != MSK_RES_OK) {
           return rescode;
         }
-        rescode = AddMatrixVariableEntryCoefficientMatrixIfNotExist(
+        rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
             matrix_variable_entries[i],
             map_matrix_variable_entry_to_selection_matrix_id, &(E_indices[1]),
             task);
