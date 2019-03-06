@@ -260,6 +260,29 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   return c.result();
 }
 
+/// Predicate-formatter which tests equality of TrafficLight.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const TrafficLight& a,
+                                          const TrafficLight& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.position_road_network(),
+                                         b.position_road_network()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.orientation_road_network(),
+                                         b.orientation_road_network()));
+  const std::vector<BulbGroup>& bulb_groups_a = a.bulb_groups();
+  const std::vector<BulbGroup>& bulb_groups_b = b.bulb_groups();
+  MALIPUT_ADD_RESULT(
+      c, MALIPUT_IS_EQUAL(bulb_groups_a.size(), bulb_groups_b.size()));
+  const int smallest = std::min(bulb_groups_a.size(), bulb_groups_b.size());
+  for (int i = 0; i < smallest; ++i) {
+    MALIPUT_ADD_RESULT(
+        c, MALIPUT_IS_EQUAL(bulb_groups_a.at(i), bulb_groups_b.at(i)));
+  }
+  return c.result();
+}
 }  // namespace test
 }  // namespace rules
 }  // namespace api

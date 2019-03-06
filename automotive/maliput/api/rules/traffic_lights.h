@@ -168,6 +168,71 @@ class BulbGroup final {
   std::vector<Bulb> bulbs_;
 };
 
+/// Models a traffic light. A traffic light is a physical signaling device
+/// typically located at road intersections. It contains one or more groups of
+/// light bulbs with varying colors and shapes. The lighting patterns of the
+/// bulbs signify right-of-way rule information to the agents navigating the
+/// intersection (e.g., vehicles, bicyclists, pedestrians, etc.). Typically, an
+/// intersection will be managed by multiple traffic lights.
+///
+/// Note that traffic lights are physical manifestations of underlying
+/// right-of-way rules and thus naturally have lower signal-to-noise ratio
+/// relative to the underlying rules. Thus, oracular agents should directly use
+/// the underlying right-of-way rules instead of traffic lights when navigating
+/// intersections. TrafficLight exists for testing autonomous vehicles that do
+/// not have access to right-of-way rules.
+class TrafficLight final {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TrafficLight);
+
+  /// Unique identifier for a traffic light.
+  using Id = TypeSpecificIdentifier<TrafficLight>;
+
+  /// Constructs a TrafficLight instance.
+  ///
+  /// @param id The traffic light's unique ID.
+  ///
+  /// @param position_road_network The linear offset of the traffic light's
+  /// frame relative to the road network's frame. The traffic light frame's
+  /// origin should approximate the traffic light's CoM.
+  ///
+  /// @param orientation_road_network The rotational offset of the traffic
+  /// light's frame relative to the road network's frame. The traffic light's
+  /// frame's +Z axis points in the traffic light's "up" direction. No
+  /// constraints are placed on the orientations of the +X and +Y axes. However,
+  /// it's recommended that they correspond, if possible, to the orientations of
+  /// the bulb group frames within this traffic light. In particular, when the
+  /// traffic light only has one bulb group, all three axes of both the traffic
+  /// light and bulb group should ideally match, if possible.
+  ///
+  /// @param bulb_groups The bulb groups that are part of this traffic light.
+  TrafficLight(const Id& id, const GeoPosition& position_road_network,
+               const Rotation& orientation_road_network,
+               const std::vector<BulbGroup>& bulb_groups);
+
+  /// Returns this traffic light's unique identifier.
+  const Id& id() const { return id_; }
+
+  /// Returns this traffic light's frame's position within the road network's
+  /// frame.
+  const GeoPosition& position_road_network() const {
+    return position_road_network_;
+  }
+
+  const Rotation& orientation_road_network() const {
+    return orientation_road_network_;
+  }
+
+  /// Returns the bulb groups contained within this traffic light.
+  const std::vector<BulbGroup>& bulb_groups() const { return bulb_groups_; }
+
+ private:
+  Id id_;
+  GeoPosition position_road_network_;
+  Rotation orientation_road_network_;
+  std::vector<BulbGroup> bulb_groups_;
+};
+
 }  // namespace rules
 }  // namespace api
 }  // namespace maliput

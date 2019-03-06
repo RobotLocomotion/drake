@@ -49,6 +49,15 @@ BulbGroup::BulbGroup(const BulbGroup::Id& id,
   DRAKE_THROW_UNLESS(bulbs_.size() > 0);
 }
 
+TrafficLight::TrafficLight(const TrafficLight::Id& id,
+                           const GeoPosition& position_road_network,
+                           const Rotation& orientation_road_network,
+                           const std::vector<BulbGroup>& bulb_groups)
+    : id_(id),
+      position_road_network_(position_road_network),
+      orientation_road_network_(orientation_road_network),
+      bulb_groups_(bulb_groups) {}
+
 }  // namespace rules
 }  // namespace api
 }  // namespace maliput

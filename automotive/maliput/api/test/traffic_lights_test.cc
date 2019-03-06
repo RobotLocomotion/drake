@@ -148,6 +148,76 @@ TEST_F(BulbGroupTest, Assignment) {
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_group_));
 }
 
+class TrafficLightTest : public ::testing::Test {
+ public:
+  TrafficLightTest()
+      : north_bulb_(Bulb::Id("north_bulb"), GeoPosition(0, 0, 0),
+                    Rotation::FromRpy(0, 0, 0), BulbColor::kRed,
+                    BulbType::kRound),
+        south_bulb_(Bulb::Id("south_bulb"), GeoPosition(0, 0, 0),
+                    Rotation::FromRpy(0, 0, 0), BulbColor::kRed,
+                    BulbType::kRound),
+        east_bulb_(Bulb::Id("east_bulb"), GeoPosition(0, 0, 0),
+                   Rotation::FromRpy(0, 0, 0), BulbColor::kRed,
+                   BulbType::kRound),
+        west_bulb_(Bulb::Id("west_bulb"), GeoPosition(0, 0, 0),
+                   Rotation::FromRpy(0, 0, 0), BulbColor::kRed,
+                   BulbType::kRound),
+        north_bulb_group_(BulbGroup::Id("north_group"), GeoPosition(0, 0.1, 0),
+                          Rotation::FromRpy(0, 0, M_PI_2), {north_bulb_}),
+        south_bulb_group_(BulbGroup::Id("south_group"), GeoPosition(0, -0.1, 0),
+                          Rotation::FromRpy(0, 0, -M_PI_2), {south_bulb_}),
+        east_bulb_group_(BulbGroup::Id("east_group"), GeoPosition(0.1, 0, 0),
+                         Rotation::FromRpy(0, 0, 0), {east_bulb_}),
+        west_bulb_group_(BulbGroup::Id("west_group"), GeoPosition(-0.1, 0, 0),
+                         Rotation::FromRpy(0, 0, M_PI), {west_bulb_}),
+        traffic_light_(TrafficLight::Id("four_way_stop"), GeoPosition(0, 0, 5),
+                       Rotation::FromRpy(0, 0, 0),
+                       {north_bulb_group_, south_bulb_group_, east_bulb_group_,
+                        west_bulb_group_}) {}
+
+  const Bulb north_bulb_;
+  const Bulb south_bulb_;
+  const Bulb east_bulb_;
+  const Bulb west_bulb_;
+
+  const BulbGroup north_bulb_group_;
+  const BulbGroup south_bulb_group_;
+  const BulbGroup east_bulb_group_;
+  const BulbGroup west_bulb_group_;
+
+  const TrafficLight traffic_light_;
+};
+
+TEST_F(TrafficLightTest, Accessors) {
+  EXPECT_EQ(traffic_light_.id(), TrafficLight::Id("four_way_stop"));
+  EXPECT_EQ(traffic_light_.position_road_network(), GeoPosition(0, 0, 5));
+  EXPECT_EQ(traffic_light_.orientation_road_network().matrix(),
+            Rotation::FromRpy(0, 0, 0).matrix());
+  EXPECT_EQ(traffic_light_.bulb_groups().size(), 4);
+}
+
+TEST_F(TrafficLightTest, Copying) {
+  const TrafficLight dut(traffic_light_);
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, traffic_light_));
+}
+
+TEST_F(TrafficLightTest, Assignment) {
+  const Bulb green_arrow_bulb(
+      Bulb::Id("green_arrow_bulb"), GeoPosition(-1, -2, -3),
+      Rotation::FromRpy(-4, -5, -6), BulbColor::kGreen, BulbType::kArrow,
+      M_PI_2 /* arrow_orientation_rad */);
+
+  const BulbGroup bulb_group(BulbGroup::Id("other_bulb_group"),
+                             GeoPosition(13, 14, 15),
+                             Rotation::FromRpy(17, 18, 19), {green_arrow_bulb});
+  TrafficLight dut(TrafficLight::Id("other_traffic_light"),
+                   GeoPosition(10, 11, 12), Rotation::FromRpy(1, 2, 3),
+                   {bulb_group});
+  dut = traffic_light_;
+  EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, traffic_light_));
+}
+
 }  // namespace
 }  // namespace rules
 }  // namespace api
