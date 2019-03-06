@@ -8,7 +8,34 @@ namespace drake {
 namespace geometry {
 
 /** The data for reporting the signed distance between two geometries, A and B.
- @tparam T The underlying scalar type. Must be a valid Eigen scalar. */
+ It provides the id's of the two geometries, the witness points Ca and Cb on
+ the surfaces of A and B, the signed distance, and the unit direction nhat_BA_W
+ of the gradient of the signed distance field of B evaluated at Cb (always
+ pointing outward from B's surface).
+     When A and B are separated, distance > 0; when A and B are touching or
+ penetrating, distance <= 0.
+     By definition, the unit direction of the gradient of the signed distance
+ field of A evaluated at Ca must be in the opposite direction of nhat_BA_W.
+ @note For non-touching objects, nhat_BA_W points from Cb to Ca, i.e.,
+       nhat_BA_W = (p_WCa - p_WCb) / (signed)distance.
+ @note For two touching objects, consider the case when the normal vector to
+       the surface of B at Cb is not unique but the outward normal vector
+       n_A to the surface of A at Ca is unique. For example, a corner of a
+       box B touches a sphere A, or the corner of a box B touches a planar
+       side of a box A. Then, nhat_BA_W will be in the opposite direction of
+       the unique n_A.
+                 __                      __
+                |  | box B     box B /\ |  |
+              __|__|                /  \|  |
+             /  \                   \  /|  | box A
+    sphere A \__/                    \/ |__|
+
+ @note Consider the case when both the normal vectors to the surface of B at
+       Cb and that of A at Ca are not unique.  For example, a corner of a box
+       B touches a corner of a box A. Then, nhat_BA_W will be one of the
+       valid outward unit normal vector to the surface of B at Cb.
+ @tparam T The underlying scalar type. Must be a valid Eigen scalar.
+ */
 template <typename T>
 struct SignedDistancePair{
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SignedDistancePair)
@@ -16,26 +43,23 @@ struct SignedDistancePair{
   SignedDistancePair() {}
 
   /** Constructor
-   @param a       The id of the first geometry (A).
-   @param b       The id of the second geometry (B).
-   @param p_A     The witness point on geometry A's surface, in A's frame.
-   @param p_B     The witness point on geometry B's surface, in B's frame.
-   @param dist    The signed distance between p_A and p_B. When A and B are
-                  separated, dist > 0; when A and B are touching or
-                  penetrating, dist <= 0.
-   @param n_BA_W  The unit direction of the gradient of the signed distance
-                  field of B evaluated at p_B, expressed in world frame. By
-                  definition, the unit direction of the gradient of the signed
-                  distance field of A evaluated at Ca must be in the opposite
-                  direction.*/
-  SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
-                     const Vector3<T>& p_B, T dist, const Vector3<T>& n_BA_W)
+   @param a         The id of the first geometry (A).
+   @param b         The id of the second geometry (B).
+   @param p_ACa_in  The witness point on geometry A's surface, in A's frame.
+   @param p_BCb_in  The witness point on geometry B's surface, in B's frame.
+   @param dist      The signed distance between p_A and p_B.
+   @param nhat_BA_W_in  The unit direction of the gradient of the signed
+                        distance field of B evaluated at p_B, expressed in
+                        the world frame.*/
+  SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
+                     const Vector3<T>& p_BCb_in, T dist,
+                     const Vector3<T>& nhat_BA_W_in)
       : id_A(a),
         id_B(b),
-        p_ACa(p_A),
-        p_BCb(p_B),
+        p_ACa(p_ACa_in),
+        p_BCb(p_BCb_in),
         distance(dist),
-        nhat_BA_W(n_BA_W) {}
+        nhat_BA_W(nhat_BA_W_in) {}
 
   // TODO(DamrongGuoy): Remove this constructor when it's not needed.  Right
   //   now the unit tests need it.  The downside is that Python binder calls
@@ -45,20 +69,17 @@ struct SignedDistancePair{
    We keep this constructor tempoarily for backward compatibility.
    @param a       The id of the first geometry (A).
    @param b       The id of the second geometry (B).
-   @param p_A     The witness point on geometry A's surface, in A's frame.
-   @param p_B     The witness point on geometry B's surface, in B's frame.
-   @param dist    The signed distance between p_A and p_B. When A and B are
-                  separated, dist > 0; when A and B are touching or
-                  penetrating, dist <= 0.*/
-  SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_A,
-                     const Vector3<T>& p_B, T dist)
+   @param p_ACa_in  The witness point on geometry A's surface, in A's frame.
+   @param p_BCb_in  The witness point on geometry B's surface, in B's frame.
+   @param dist    The signed distance between p_A and p_B.*/
+  SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
+                     const Vector3<T>& p_BCb_in, T dist)
       : id_A(a),
         id_B(b),
-        p_ACa(p_A),
-        p_BCb(p_B),
+        p_ACa(p_ACa_in),
+        p_BCb(p_BCb_in),
         distance(dist),
         nhat_BA_W(Vector3<T>::Zero()) {}
-
 
   /** The id of the first geometry in the pair. */
   GeometryId id_A;
@@ -76,27 +97,10 @@ struct SignedDistancePair{
   Vector3<T> p_ACa;
   /** The witness point on geometry B's surface, expressed in B's frame. */
   Vector3<T> p_BCb;
-  /** The signed distance between p_ACa and p_BCb (measured in a common frame).
-   When A and B are separated, distance > 0; when A and B are touching or
-   penetrating, distance <= 0.
-   */
+  /** The signed distance between p_ACa and p_BCb. */
   T distance{};
   /** The unit direction of the gradient of the signed distance field of B
-   evaluated at Cb, expressed in world frame. By definition, the unit direction
-   of the gradient of the signed distance field of A evaluated at Ca must be
-   in the opposite direction.
-   @note For non-touching objects, nhat_BA_W points from Cb to Ca, i.e.,
-   nhat_BA_W = (p_WCa - p_WCb) / (signed)distance.
-   @note Guaranteed to be defined, even when the objects are touching.
-   @note It is always an outward unit normal vector to the surface of B
-   at Cb whether A and B are separated, touching, or penetrating.
-   @note If the normal vector to the surface of B at Cb is not unique but the
-   outward normal vector n_A to the surface of A at Ca is unique, nhat_BA_W
-   will be in the opposite direction of n_A.
-   @note If both the normal vector to the surface of B at Cb and that of A at
-   Ca are not unique, nhat_BA_W will be one of the valid outward unit normal
-   vector to the surface of B at Cb.
-   */
+   evaluated at Cb, expressed in the world frame. */
   Vector3<T> nhat_BA_W;
 };
 
