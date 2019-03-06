@@ -53,6 +53,10 @@ int do_main(int argc, char* argv[]) {
     station->SetupDefaultStation();
   } else if (FLAGS_setup == "clutter_clearing") {
     station->SetupClutterClearingStation();
+    station->AddManipulandFromFile(
+        "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
+        math::RigidTransform<double>(math::RollPitchYaw<double>(-1.57, 0, 3),
+                               Eigen::Vector3d(-0.3, -0.55, 0.36)));
   } else {
     throw std::domain_error(
         "Unrecognized station type. Options are {default, clutter_clearing}.");

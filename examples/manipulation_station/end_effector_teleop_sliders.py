@@ -8,7 +8,8 @@ except ImportError:
 import numpy as np
 
 from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface)
+    ManipulationStation, ManipulationStationHardwareInterface,
+    CreateDefaultYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.simple_ui import SchunkWsgButtons
@@ -19,11 +20,15 @@ from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
+from pydrake.systems.lcm import LcmPublisherSystem
 from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
+from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.util.eigen_geometry import Isometry3
 
 from differential_ik import DifferentialIK
+
+from robotlocomotion import image_array_t
 
 
 # TODO(russt): Generalize this and move it to pydrake.manipulation.simple_ui.
@@ -189,10 +194,34 @@ else:
         station.SetupDefaultStation()
     elif args.setup == 'clutter_clearing':
         station.SetupClutterClearingStation()
+        ycb_objects = CreateDefaultYcbObjectList()
+        for model_file, X_WObject in ycb_objects:
+            station.AddManipulandFromFile(model_file, X_WObject)
 
     station.Finalize()
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),
                            station.GetOutputPort("pose_bundle"))
+
+    image_to_lcm_image_array = builder.AddSystem(ImageToLcmImageArrayT())
+    image_to_lcm_image_array.set_name("converter")
+    for name in station.get_camera_names():
+        cam_port = (
+            image_to_lcm_image_array.DeclareImageInputPort[PixelType.kRgba8U](
+                "camera_" + name))
+        builder.Connect(station.GetOutputPort("camera_" + name + "_rgb_image"),
+                        cam_port)
+
+    image_array_lcm_publisher = builder.AddSystem(
+        LcmPublisherSystem.Make(
+            channel="DRAKE_RGBD_CAMERA_IMAGES",
+            lcm_type=image_array_t,
+            lcm=None,
+            publish_period=0.1,
+            use_cpp_serializer=True))
+    image_array_lcm_publisher.set_name("rgbd_publisher")
+    builder.Connect(image_to_lcm_image_array.image_array_t_msg_output_port(),
+                    image_array_lcm_publisher.get_input_port(0))
+
     if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
             station.get_scene_graph(), zmq_url=args.meshcat,
