@@ -3,6 +3,7 @@
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
+#include "drake/automotive/maliput/api/rules/right_of_way_state_provider.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 
