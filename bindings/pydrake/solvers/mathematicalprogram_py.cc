@@ -295,6 +295,15 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           doc.MathematicalProgramResult.GetSolution
               .doc_1args_constEigenMatrixBase)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self,
+              const symbolic::Expression& e) { return self.GetSolution(e); },
+          doc.MathematicalProgramResult.GetSolution.doc_1args_e)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self,
+              const MatrixX<symbolic::Expression>& mat) {
+            return self.GetSolution(mat);
+          })
       .def("GetSuboptimalSolution",
           [](const MathematicalProgramResult& self,
               const symbolic::Variable& var, int solution_number) {
