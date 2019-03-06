@@ -369,6 +369,14 @@ PYBIND11_MODULE(symbolic, m) {
       },
       doc.Expression.Jacobian.doc);
 
+  m.def("Evaluate",
+      [](const MatrixX<Expression>& M, const Environment::map& env,
+          RandomGenerator* random_generator) {
+        return Evaluate(M, Environment{env}, random_generator);
+      },
+      py::arg("m"), py::arg("env") = Environment::map{},
+      py::arg("generator") = nullptr, doc.Evaluate.doc);
+
   py::class_<Formula> formula_cls(m, "Formula", doc.Formula.doc);
   formula_cls
       .def("GetFreeVariables", &Formula::GetFreeVariables,
@@ -575,6 +583,7 @@ PYBIND11_MODULE(symbolic, m) {
       drake::symbolic::Polynomial>();
 
   ExecuteExtraPythonCode(m);
+  // NOLINTNEXTLINE(readability/fn_size)
 }
 
 }  // namespace pydrake
