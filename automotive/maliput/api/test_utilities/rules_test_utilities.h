@@ -207,6 +207,14 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
+/// Predicate-formatter which tests equality of BulbState.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const BulbState& a,
+                                          const BulbState& b) {
+  return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
+}
+
 /// Predicate-formatter which tests equality of optional<double>.
 inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
@@ -231,6 +239,13 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.type(), b.type()));
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.arrow_orientation_rad(),
                                          b.arrow_orientation_rad()));
+  const std::vector<BulbState>& a_states = a.states();
+  const std::vector<BulbState>& b_states = b.states();
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a_states.size(), b_states.size()));
+  int smallest = std::min(a_states.size(), b_states.size());
+  for (int i = 0; i < smallest; ++i) {
+    MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a_states[i], b_states[i]));
+  }
   return c.result();
 }
 
