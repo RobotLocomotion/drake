@@ -14,8 +14,9 @@
 namespace drake {
 namespace trajectories {
 
-/// A scalar multi-variate piecewise polynomial.
 /**
+ * A scalar multi-variate piecewise polynomial.
+ *
  * %PiecewisePolynomial represents a list of contiguous segments in a scalar
  * independent variable (typically corresponding to time) with Polynomials
  * defined at each segment. We call the output from evaluating the
@@ -64,7 +65,9 @@ namespace trajectories {
 template <typename T>
 class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
  public:
-  /// Constructs an empty piecewise polynomial.
+  /**
+   *  Constructs an empty piecewise polynomial.
+   */
   PiecewisePolynomial() = default;
 
   // We are final, so this is okay.
@@ -75,9 +78,11 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   typedef MatrixX<T> CoefficientMatrix;
   typedef Eigen::Ref<CoefficientMatrix> CoefficientMatrixRef;
 
-  /// Single segment, constant value constructor over the interval [0, ∞].
-  /// The constructed %PiecewisePolynomial will return `constant_value` at
-  /// every evaluated point (i.e., `value(t) = constant_value` ∀t ∈ [0, ∞]).
+  /**
+   * Single segment, constant value constructor over the interval [0, ∞].
+   * The constructed %PiecewisePolynomial will return `constant_value` at
+   * every evaluated point (i.e., `value(t) = constant_value` ∀t ∈ [0, ∞]).
+   */
   template <typename Derived>
   explicit PiecewisePolynomial(const Eigen::MatrixBase<Derived>& constant_value)
       : PiecewiseTrajectory<T>(std::vector<double>(
@@ -144,19 +149,23 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   // @{
 
-  /// Constructs a %PiecewisePolynomial using matrix-output Polynomials defined
-  /// over each segment.
-  ///
-  /// @pre `polynomials.size() == breaks.size() - 1`
-  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  /**
+   * Constructs a %PiecewisePolynomial using matrix-output Polynomials defined
+   * over each segment.
+   *
+   * @pre `polynomials.size() == breaks.size() - 1`
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   */
   PiecewisePolynomial(std::vector<PolynomialMatrix> const& polynomials,
                       std::vector<double> const& breaks);
 
-  /// Constructs a %PiecewisePolynomial using scalar-output Polynomials defined
-  /// over each segment.
-  ///
-  /// @pre `polynomials.size() == breaks.size() - 1`
-  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+  /**
+   * Constructs a %PiecewisePolynomial using scalar-output Polynomials defined
+   * over each segment.
+   *
+   * @pre `polynomials.size() == breaks.size() - 1`
+   * @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
+   */
   PiecewisePolynomial(std::vector<PolynomialType> const& polynomials,
                       std::vector<double> const& breaks);
   // @}
@@ -435,12 +444,16 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   PiecewisePolynomial<T> integral(
       const CoefficientMatrixRef& value_at_start_time) const;
 
-  /// Returns `true` if this trajectory has no breaks/knots/polynomials.
+  /**
+   * Returns `true` if this trajectory has no breaks/knots/polynomials.
+   */
   bool empty() const { return polynomials_.empty(); }
 
-  /// Evaluates the trajectory at the given time without returning the entire
-  /// matrix. Equivalent to value(t)(row, col).
-  /// @warning See warnings in value().
+  /**
+   * Evaluates the trajectory at the given time without returning the entire
+   * matrix. Equivalent to value(t)(row, col).
+   * @warning See warnings in value().
+   */
   double scalarValue(double t, Eigen::Index row = 0,
                      Eigen::Index col = 0) const;
 
@@ -458,97 +471,120 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   MatrixX<T> value(double t) const override;
 
-  /// Gets the matrix of Polynomials corresponding to the given segment index.
-  /// @warning `segment_index` is not checked for validity.
+  /**
+   * Gets the matrix of Polynomials corresponding to the given segment index.
+   * @warning `segment_index` is not checked for validity.
+   */
   const PolynomialMatrix& getPolynomialMatrix(int segment_index) const;
 
-  /// Gets the Polynomial with the given matrix row and column index that
-  /// corresponds to the given segment index.
-  /// Equivalent to `getPolynomialMatrix(segment_index)(row, col)`.
-  /// @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
-  ///       validate `segment_index`.
+  /**
+   * Gets the Polynomial with the given matrix row and column index that
+   * corresponds to the given segment index.
+   * Equivalent to `getPolynomialMatrix(segment_index)(row, col)`.
+   * @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+   *       validate `segment_index`.
+   */
   const PolynomialType& getPolynomial(int segment_index, Eigen::Index row = 0,
                                       Eigen::Index col = 0) const;
 
-  /// Gets the degree of the Polynomial with the given matrix row and column
-  /// index that corresponds to the given segment index. Equivalent to
-  /// `getPolynomial(segment_index, row, col).GetDegree()`.
+  /**
+   * Gets the degree of the Polynomial with the given matrix row and column
+   * index that corresponds to the given segment index. Equivalent to
+   * `getPolynomial(segment_index, row, col).GetDegree()`.
+   */
   int getSegmentPolynomialDegree(int segment_index, Eigen::Index row = 0,
                                  Eigen::Index col = 0) const;
 
-  /// Returns the row count of the output matrices.
-  /// @throws std::runtime_error if empty().
+  /**
+   * Returns the row count of the output matrices.
+   * @throws std::runtime_error if empty().
+   */
   Eigen::Index rows() const override;
 
-  /// Returns the column count of the output matrices.
-  /// @throws std::runtime_error if empty().
+  /**
+   * Returns the column count of the output matrices.
+   * @throws std::runtime_error if empty().
+   */
   Eigen::Index cols() const override;
 
-  /// Adds each Polynomial in the PolynomialMatrix of `other` to the
-  /// corresponding Polynomial in the PolynomialMatrix of `this`, storing the
-  /// result in `this`. If `this` corresponds to t² and `other` corresponds to
-  /// t³, `this += other` will correspond to t³ + t².
-  /// @throws std::runtime_error if every element of `other.get_segment_times()`
-  /// is not within PiecewiseFunction::kEpsilonTime from
-  /// `this->get_segment_times().
+  /**
+   * Adds each Polynomial in the PolynomialMatrix of `other` to the
+   * corresponding Polynomial in the PolynomialMatrix of `this`, storing the
+   * result in `this`. If `this` corresponds to t² and `other` corresponds to
+   * t³, `this += other` will correspond to t³ + t².
+   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * is not within PiecewiseFunction::kEpsilonTime from
+   * `this->get_segment_times().
+   */
   PiecewisePolynomial& operator+=(const PiecewisePolynomial& other);
 
-  /// Subtracts each Polynomial in the PolynomialMatrix of `other` from the
-  /// corresponding Polynomial in the PolynomialMatrix of `this`, storing the
-  /// result in `this`. If `this` corresponds to t² and `other` corresponds to
-  /// t³, `this -= other` will correspond to t² - t³.
-  /// @throws std::runtime_error if every element of `other.get_segment_times()`
-  /// is not within PiecewiseFunction::kEpsilonTime from
-  /// `this->get_segment_times().
+  /**
+   * Subtracts each Polynomial in the PolynomialMatrix of `other` from the
+   * corresponding Polynomial in the PolynomialMatrix of `this`, storing the
+   * result in `this`. If `this` corresponds to t² and `other` corresponds to
+   * t³, `this -= other` will correspond to t² - t³.
+   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * is not within PiecewiseFunction::kEpsilonTime from
+   * `this->get_segment_times().
+   */
   PiecewisePolynomial& operator-=(const PiecewisePolynomial& other);
 
-  /// Multiplies each Polynomial in the PolynomialMatrix of `other` by the
-  /// corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
-  /// coefficient-wise multiplication), storing the result in `this`. If `this`
-  /// corresponds to t² and `other` corresponds to t³, `this *= other` will
-  /// correspond to t⁵.
-  /// @throws std::runtime_error if every element of `other.get_segment_times()`
-  /// is not within PiecewiseFunction::kEpsilonTime from
-  /// `this->get_segment_times().
+  /**
+   * Multiplies each Polynomial in the PolynomialMatrix of `other` by the
+   * corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
+   * coefficient-wise multiplication), storing the result in `this`. If `this`
+   * corresponds to t² and `other` corresponds to t³, `this *= other` will
+   * correspond to t⁵.
+   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * is not within PiecewiseFunction::kEpsilonTime from
+   * `this->get_segment_times().
+   */
   PiecewisePolynomial& operator*=(const PiecewisePolynomial& other);
 
   PiecewisePolynomial& operator+=(const CoefficientMatrix& coeff);
 
   PiecewisePolynomial& operator-=(const CoefficientMatrix& coeff);
 
-  /// Adds each Polynomial in the PolynomialMatrix of `other` to the
-  /// corresponding Polynomial in the PolynomialMatrix of `this`.
-  /// If `this` corresponds to t² and `other` corresponds to
-  /// t³, `this + other` will correspond to t³ + t².
-  /// @throws std::runtime_error if every element of `other.get_segment_times()`
-  /// is not within PiecewiseFunction::kEpsilonTime from
-  /// `this->get_segment_times().
+  /**
+   * Adds each Polynomial in the PolynomialMatrix of `other` to the
+   * corresponding Polynomial in the PolynomialMatrix of `this`.
+   * If `this` corresponds to t² and `other` corresponds to
+   * t³, `this + other` will correspond to t³ + t².
+   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * is not within PiecewiseFunction::kEpsilonTime from
+   * `this->get_segment_times().
+   */
   const PiecewisePolynomial operator+(const PiecewisePolynomial& other) const;
 
-  /// Subtracts each Polynomial in the PolynomialMatrix of `other` from the
-  /// corresponding Polynomial in the PolynomialMatrix of `this`.
-  /// If `this` corresponds to t² and `other` corresponds to
-  /// t³, `this - other` will correspond to t² - t³.
-  /// @throws std::runtime_error if every element of `other.get_segment_times()`
-  /// is not within PiecewiseFunction::kEpsilonTime from
-  /// `this->get_segment_times().
+  /**
+   * Subtracts each Polynomial in the PolynomialMatrix of `other` from the
+   * corresponding Polynomial in the PolynomialMatrix of `this`.
+   * If `this` corresponds to t² and `other` corresponds to
+   * t³, `this - other` will correspond to t² - t³.
+   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * is not within PiecewiseFunction::kEpsilonTime from
+   * `this->get_segment_times().
+   */
   const PiecewisePolynomial operator-(const PiecewisePolynomial& other) const;
 
-  /// Multiplies each Polynomial in the PolynomialMatrix of `other` by the
-  /// corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
-  /// coefficient-wise multiplication). If `this` corresponds to t² and `other`
-  /// corresponds to t³, `this *= other` will correspond to t⁵.
-  /// @throws std::runtime_error if every element of `other.get_segment_times()`
-  /// is not within PiecewiseFunction::kEpsilonTime from
-  /// `this->get_segment_times()1.
+  /**
+   * Multiplies each Polynomial in the PolynomialMatrix of `other` by the
+   * corresponding Polynomial in the PolynomialMatrix of `this` (i.e., a
+   * coefficient-wise multiplication). If `this` corresponds to t² and `other`
+   * corresponds to t³, `this *= other` will correspond to t⁵.
+   * @throws std::runtime_error if every element of `other.get_segment_times()`
+   * is not within PiecewiseFunction::kEpsilonTime from
+   * `this->get_segment_times()1.
+   */
   const PiecewisePolynomial operator*(const PiecewisePolynomial& other) const;
 
   const PiecewisePolynomial operator+(const CoefficientMatrix& coeff) const;
 
   const PiecewisePolynomial operator-(const CoefficientMatrix& coeff) const;
 
-  /// Checks whether a %PiecewisePolynomial is approximately equal to this one.
   /**
+   * Checks whether a %PiecewisePolynomial is approximately equal to this one.
+   *
    * Checks that every coefficient of `other` is within `tol` of the
    * corresponding coefficient of this %PiecewisePolynomial.
    * @throws std::exception if any Polynomial in either %PiecewisePolynomial is
@@ -556,38 +592,46 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   bool isApprox(const PiecewisePolynomial& other, double tol) const;
 
-  /// Concatenates `other` to the end of `this`.
-  ///
-  /// @warning The resulting %PiecewisePolynomial will only be continuous to the
-  ///          degree that the first Polynomial of `other` is continuous with
-  ///          the last Polynomial of `this`.
-  /// @param other %PiecewisePolynomial instance to concatenate.
-  /// @throws std::runtime_error if trajectories' dimensions do not match
-  ///                            each other (either rows() or cols() does
-  ///                            not match between this and `other`).
-  /// @throws std::runtime_error if `this->end_time()` and `other->start_time()`
-  ///                            are not within
-  ///                            PiecewiseTrajectory<T>::kEpsilonTime from
-  ///                            each other.
+  /**
+   * Concatenates `other` to the end of `this`.
+   *
+   * @warning The resulting %PiecewisePolynomial will only be continuous to the
+   *          degree that the first Polynomial of `other` is continuous with
+   *          the last Polynomial of `this`.
+   * @param other %PiecewisePolynomial instance to concatenate.
+   * @throws std::runtime_error if trajectories' dimensions do not match
+   *                            each other (either rows() or cols() does
+   *                            not match between this and `other`).
+   * @throws std::runtime_error if `this->end_time()` and `other->start_time()`
+   *                            are not within
+   *                            PiecewiseTrajectory<T>::kEpsilonTime from
+   *                            each other.
+   */
   void ConcatenateInTime(const PiecewisePolynomial& other);
 
-  /// Adds `offset` to all of the breaks. `offset` need not be a non-negative
-  /// number.
-  /// @note has no effect if empty().
+  /**
+   * Adds `offset` to all of the breaks. `offset` need not be a non-negative
+   * number.
+   * @note has no effect if empty().
+   */
   void shiftRight(double offset);
 
-  /// Replaces the specified block of the PolynomialMatrix at the given
-  /// segment index.
-  /// @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
-  ///       validate `segment_index`.
+  /**
+   * Replaces the specified block of the PolynomialMatrix at the given
+   * segment index.
+   * @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+   *       validate `segment_index`.
+   */
   void setPolynomialMatrixBlock(const PolynomialMatrix& replacement,
                                 int segment_index, Eigen::Index row_start = 0,
                                 Eigen::Index col_start = 0);
 
-  /// Returns the %PiecewisePolynomial comprising the `num_segments` segments
-  /// starting at the specified `start_segment_index`.
-  /// @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
-  ///       validate `segment_index`.
+  /**
+   * Returns the %PiecewisePolynomial comprising the `num_segments` segments
+   * starting at the specified `start_segment_index`.
+   * @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
+   *       validate `segment_index`.
+   */
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
  private:
