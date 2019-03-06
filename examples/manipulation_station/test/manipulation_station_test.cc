@@ -1,5 +1,7 @@
 #include "drake/examples/manipulation_station/manipulation_station.h"
 
+#include <map>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
@@ -347,7 +349,7 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
         dut.get_mutable_multibody_plant();
 
     geometry::dev::render::DepthCameraProperties camera_properties(
-        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+        640, 480, M_PI_4, dut.default_renderer_name(), 0.1, 2.0);
 
     math::RigidTransform<double> X_WF0(Eigen::Vector3d(0, 0, 0.2));
     math::RigidTransform<double> X_F0C0(Eigen::Vector3d(0.3, 0.2, 0.0));
@@ -370,6 +372,96 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
     EXPECT_TRUE(camera_poses.at("camera0").IsExactlyEqualTo(X_WF0 * X_F0C0));
     EXPECT_TRUE(
         camera_poses.at("camera1").IsExactlyEqualTo(X_WF0 * X_F0F1 * X_F1C1));
+  }
+}
+
+// TODO(SeanCurtis-TRI): Refactor this (and other copies of it) into a geometry
+// test utility.
+// A simple dummy render engine implementation to facilitate testing. The
+// methods are mostly no-ops. The single exception is in registering geometry.
+// Every call returns a valid RenderIndex with the value `n` for the `n`th
+// call to `RegisterVisual()`.
+class DummyRenderEngine final : public geometry::dev::render::RenderEngine {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
+  DummyRenderEngine() = default;
+  void UpdateViewpoint(const Eigen::Isometry3d&) const final {}
+  void RenderColorImage(const geometry::dev::render::CameraProperties&,
+                        systems::sensors::ImageRgba8U*, bool) const final {}
+  void RenderDepthImage(const geometry::dev::render::DepthCameraProperties&,
+                        systems::sensors::ImageDepth32F*) const final {}
+  void RenderLabelImage(const geometry::dev::render::CameraProperties&,
+                        systems::sensors::ImageLabel16I*, bool) const final {}
+  void ImplementGeometry(const geometry::Sphere& sphere,
+                         void* user_data) final {}
+  void ImplementGeometry(const geometry::Cylinder& cylinder,
+                         void* user_data) final {}
+  void ImplementGeometry(const geometry::HalfSpace& half_space,
+                         void* user_data) final {}
+  void ImplementGeometry(const geometry::Box& box, void* user_data) final {}
+  void ImplementGeometry(const geometry::Mesh& mesh, void* user_data) final {}
+  void ImplementGeometry(const geometry::Convex& convex,
+                         void* user_data) final {}
+
+  void set_moved_render_index(optional<geometry::dev::RenderIndex> index) {
+    moved_render_index_ = index;
+  }
+
+ protected:
+  optional<geometry::dev::RenderIndex> DoRegisterVisual(
+      const geometry::Shape&, const geometry::dev::PerceptionProperties&,
+      const Isometry3<double>&) final {
+    return geometry::dev::RenderIndex(calls_to_register_++);
+  }
+  void DoUpdateVisualPose(const Eigen::Isometry3d&,
+                          geometry::dev::RenderIndex) final {}
+
+  optional<geometry::dev::RenderIndex> DoRemoveGeometry(
+      geometry::dev::RenderIndex index) final {
+    return moved_render_index_;
+  }
+
+  std::unique_ptr<geometry::dev::render::RenderEngine> DoClone() const final {
+    return std::make_unique<DummyRenderEngine>(*this);
+  }
+
+ private:
+  int calls_to_register_{};
+  // The value that `DoRemoveGeometry()` returns. Configurable by test. Defaults
+  // to returning nothing.
+  optional<geometry::dev::RenderIndex> moved_render_index_{nullopt};
+};
+
+// Confirms initialization of renderers. With none specified, the default
+// renderer is used. Otherwise, the user-specified renderers are provided.
+GTEST_TEST(ManipulationStationTest, ConfigureRenderer) {
+  // Case: no user render engines specified; has renderer with default name.
+  {
+    ManipulationStation<double> dut;
+    dut.SetupDefaultStation();
+    dut.Finalize();
+    const auto& scene_graph = dut.get_render_scene_graph();
+    EXPECT_EQ(1, scene_graph.RendererCount());
+    EXPECT_TRUE(scene_graph.HasRenderer(dut.default_renderer_name()));
+  }
+
+  // Case: multiple user-specified render engines provided.
+  {
+    ManipulationStation<double> dut;
+    dut.SetupDefaultStation();
+    std::map<std::string, std::unique_ptr<geometry::dev::render::RenderEngine>>
+        engines;
+    const std::string name1 = "engine1";
+    engines[name1] = std::make_unique<DummyRenderEngine>();
+    const std::string name2 = "engine2";
+    engines[name2] = std::make_unique<DummyRenderEngine>();
+    dut.Finalize(std::move(engines));
+
+    const auto& scene_graph = dut.get_render_scene_graph();
+    EXPECT_EQ(2, scene_graph.RendererCount());
+    EXPECT_TRUE(scene_graph.HasRenderer(name1));
+    EXPECT_TRUE(scene_graph.HasRenderer(name2));
+    EXPECT_FALSE(scene_graph.HasRenderer(dut.default_renderer_name()));
   }
 }
 
