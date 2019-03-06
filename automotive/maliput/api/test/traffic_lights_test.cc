@@ -4,6 +4,7 @@
 // TODO(liang.fok) Satisfy clang-format via rules tests directory reorg.
 
 #include <exception>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -27,8 +28,12 @@ GTEST_TEST(BulbColorTest, InstantiateAndAssign) {
 
 GTEST_TEST(BulbColorTest, MapperTest) {
   const auto dut = BulbColorMapper();
-  constexpr int kNumColors{3};
-  EXPECT_EQ(dut.size(), kNumColors);
+  const std::vector<BulbColor> expected_colors{
+      BulbColor::kRed, BulbColor::kYellow, BulbColor::kGreen};
+  EXPECT_EQ(dut.size(), expected_colors.size());
+  for (BulbColor color : expected_colors) {
+    EXPECT_EQ(dut.count(color), 1);
+  }
 }
 
 GTEST_TEST(BulbTypeTest, InstantiateAndAssign) {
@@ -43,8 +48,32 @@ GTEST_TEST(BulbTypeTest, InstantiateAndAssign) {
 
 GTEST_TEST(BulbTypeTest, MapperTest) {
   const auto dut = BulbTypeMapper();
-  constexpr int kNumTypes{2};
-  EXPECT_EQ(dut.size(), kNumTypes);
+  const std::vector<BulbType> expected_types{BulbType::kRound,
+                                             BulbType::kArrow};
+  EXPECT_EQ(dut.size(), expected_types.size());
+  for (BulbType type : expected_types) {
+    EXPECT_EQ(dut.count(type), 1);
+  }
+}
+
+GTEST_TEST(BulbStateTest, InstantiateAndAssign) {
+  BulbState dut{};
+  EXPECT_EQ(dut, BulbState::kOff);
+  for (BulbState state : {BulbState::kOn, BulbState::kBlinking}) {
+    EXPECT_NE(dut, state);
+    dut = state;
+    EXPECT_EQ(dut, state);
+  }
+}
+
+GTEST_TEST(BulbStateTest, MapperTest) {
+  const auto dut = BulbStateMapper();
+  const std::vector<BulbState> expected_states{BulbState::kOff, BulbState::kOn,
+                                               BulbState::kBlinking};
+  EXPECT_EQ(dut.size(), expected_states.size());
+  for (BulbState state : expected_states) {
+    EXPECT_EQ(dut.count(state), 1);
+  }
 }
 
 GTEST_TEST(BulbConstructorTest, ArrowWithoutOrientation) {
@@ -76,6 +105,9 @@ TEST_F(BulbTest, Accessors) {
             Rotation::FromRpy(4, 5, 6).matrix());
   EXPECT_EQ(bulb_.color(), BulbColor::kRed);
   EXPECT_EQ(bulb_.type(), BulbType::kRound);
+  EXPECT_EQ(bulb_.states().size(), 2);
+  EXPECT_EQ(bulb_.states().at(0), BulbState::kOff);
+  EXPECT_EQ(bulb_.states().at(1), BulbState::kOn);
 }
 
 TEST_F(BulbTest, Copying) {
@@ -86,7 +118,8 @@ TEST_F(BulbTest, Copying) {
 TEST_F(BulbTest, Assignment) {
   Bulb dut(Bulb::Id("other_dut_id"), GeoPosition(7, 8, 9),
            Rotation::FromRpy(10, 11, 12), BulbColor::kGreen, BulbType::kArrow,
-           0 /* arrow_orientation_rad */);
+           0 /* arrow_orientation_rad */,
+           std::vector<BulbState>{BulbState::kBlinking});
   dut = bulb_;
   EXPECT_TRUE(MALIPUT_IS_EQUAL(dut, bulb_));
 }
