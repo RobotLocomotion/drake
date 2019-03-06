@@ -531,6 +531,10 @@ PYBIND11_MODULE(symbolic, m) {
       .def("Differentiate", &Polynomial::Differentiate,
           doc.Polynomial.Differentiate.doc)
       .def("AddProduct", &Polynomial::AddProduct, doc.Polynomial.AddProduct.doc)
+      .def("RemoveTermsWithSmallCoefficients",
+          &Polynomial::RemoveTermsWithSmallCoefficients,
+          py::arg("coefficient_tol"),
+          doc.Polynomial.RemoveTermsWithSmallCoefficients.doc)
       .def(py::self + py::self)
       .def(py::self + Monomial())
       .def(Monomial() + py::self)
