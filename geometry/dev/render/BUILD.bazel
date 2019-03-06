@@ -13,7 +13,6 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "render",
     deps = [
-        ":fidelity",
         ":render_engine",
         ":render_engine_impl",
         ":render_engine_vtk",
@@ -21,25 +20,21 @@ drake_cc_package_library(
     ],
 )
 
-drake_cc_library(
-    name = "fidelity",
-    hdrs = ["fidelity.h"],
-)
-
 # A build target for code that wants to interact with the *idea* of a render
 # engine but doesn't want any build dependencies on the implementation details.
 drake_cc_library(
     name = "render_engine",
+    srcs = ["render_engine.cc"],
     hdrs = [
         "camera_properties.h",
         "render_engine.h",
     ],
     deps = [
-        ":fidelity",
-        ":render_label",
         "//geometry:shape_specification",
+        "//geometry:utilities",
         "//geometry/dev:geometry_index",
         "//geometry/dev:geometry_roles",
+        "//systems/sensors:color_palette",
         "//systems/sensors:image",
     ],
 )
@@ -60,7 +55,7 @@ drake_cc_library(
     hdrs = ["render_engine_vtk.h"],
     deps = [
         ":render_engine",
-        "//common",
+        ":render_label",
         "//geometry/dev/render/shaders:depth_shaders",
         "//systems/sensors:color_palette",
         "//systems/sensors:vtk_util",

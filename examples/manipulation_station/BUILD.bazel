@@ -31,6 +31,7 @@ drake_cc_library(
         "//common:find_resource",
         "//geometry:scene_graph",
         "//geometry/dev:scene_graph",
+        "//geometry/dev/render:render_engine_vtk",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
         "//manipulation/schunk_wsg:schunk_wsg_position_controller",
         "//math:geometric_transform",
