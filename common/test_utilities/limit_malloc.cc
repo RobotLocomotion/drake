@@ -10,9 +10,21 @@
 #include <type_traits>
 #include <utility>
 
+// Functions that are called during dl_init must not use the sanitizer runtime.
+#ifdef __clang__
+#define DRAKE_NO_SANITIZE __attribute__((no_sanitize("address")))
+#else
+#define DRAKE_NO_SANITIZE
+#endif
+
 namespace drake {
 namespace test {
 namespace {
+
+// This variable is used as an early short-circuit for our malloc hooks.  When
+// false, we execute as minimal code footprint as possible.  This keeps dl_init
+// happy when its invoke malloc and we can't yet execute our C++ code.
+volatile bool g_any_monitor_has_ever_been_installed = false;
 
 // A set of limits and current tallies.
 class Monitor {
@@ -72,6 +84,7 @@ class ActiveMonitor {
   // Swaps the currently-active monitor, returning the prior one.
   static std::shared_ptr<Monitor> exchange(std::shared_ptr<Monitor> next) {
     auto& self = singleton();
+    g_any_monitor_has_ever_been_installed = true;
     std::lock_guard<std::mutex> guard(self.mutex_);
     self.active_.swap(next);
     return next;
@@ -84,22 +97,31 @@ class ActiveMonitor {
   }
 
   // To be called by our hooks when an allocation attempt occurs,
+  DRAKE_NO_SANITIZE
   static void malloc(size_t size) {
-    auto monitor = singleton().load();
-    if (monitor) {
-      monitor->malloc(size);
+    if (g_any_monitor_has_ever_been_installed) {
+      auto monitor = load();
+      if (monitor) {
+        monitor->malloc(size);
+      }
     }
   }
+  DRAKE_NO_SANITIZE
   static void calloc(size_t nmemb, size_t size) {
-    auto monitor = singleton().load();
-    if (monitor) {
-      monitor->calloc(nmemb, size);
+    if (g_any_monitor_has_ever_been_installed) {
+      auto monitor = load();
+      if (monitor) {
+        monitor->calloc(nmemb, size);
+      }
     }
   }
+  DRAKE_NO_SANITIZE
   static void realloc(void* ptr, size_t size, bool is_noop) {
-    auto monitor = singleton().load();
-    if (monitor) {
-      monitor->realloc(ptr, size, is_noop);
+    if (g_any_monitor_has_ever_been_installed) {
+      auto monitor = load();
+      if (monitor) {
+        monitor->realloc(ptr, size, is_noop);
+      }
     }
   }
 
@@ -187,3 +209,5 @@ void* realloc(void* ptr, size_t size) {
   return result;
 }
 #endif
+
+#undef DRAKE_NO_SANITIZE
