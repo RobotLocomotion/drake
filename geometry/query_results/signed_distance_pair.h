@@ -59,14 +59,21 @@ struct SignedDistancePair{
         p_ACa(p_ACa_in),
         p_BCb(p_BCb_in),
         distance(dist),
-        nhat_BA_W(nhat_BA_W_in) {}
+        nhat_BA_W(nhat_BA_W_in)
+  // TODO(DamrongGuoy): When we have a full implementation of computing
+  //  nhat_BA_W in ComputeSignedDistancePairwiseClosestPoints, add document:
+  //      @pre nhat_BA_W_in is unit-length.
+  //  and check a condition like this (within epsilon):
+  //      DRAKE_DEMAND(nhat_BA_W.norm() == T(1.));
+  {}
 
-  // TODO(DamrongGuoy): Remove this constructor when it's not needed.  Right
-  //   now the unit tests need it.  The downside is that Python binder calls
-  //   the doc for the above constructor ctor.doc_6args and this one
-  //   ctor.doc_5args.
+  // TODO(DamrongGuoy): Remove this constructor when we have a full
+  //  implementation of computing nhat_BA_W in
+  //  ComputeSignedDistancePairwiseClosestPoints.  Right now many unit tests
+  //  need it.  The downside is that Python binder calls the doc for the
+  //  above constructor ctor.doc_6args and this one ctor.doc_5args.
   /** Constructor.
-   We keep this constructor tempoarily for backward compatibility.
+   We keep this constructor temporarily for backward compatibility.
    @param a       The id of the first geometry (A).
    @param b       The id of the second geometry (B).
    @param p_ACa_in  The witness point on geometry A's surface, in A's frame.
