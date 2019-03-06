@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "drake/common/find_resource.h"
+#include "drake/geometry/dev/render/render_engine_vtk.h"
 #include "drake/geometry/dev/scene_graph.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
@@ -227,8 +228,7 @@ void ManipulationStation<T>::SetupClutterClearingStation(
     const int kWidth = 848;
     const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
     geometry::dev::render::DepthCameraProperties camera_properties(
-        kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
-        2.0);
+        kWidth, kHeight, fov_y, renderer_name_, 0.1, 2.0);
 
     RegisterRgbdCamera("0", plant_->world_frame(),
                        X_WCameraBody.value_or(math::RigidTransformd(
@@ -323,8 +323,7 @@ void ManipulationStation<T>::SetupDefaultStation(
     const int kWidth = 848;
     const double fov_y = std::atan(kHeight / 2. / kFocalY) * 2;
     geometry::dev::render::DepthCameraProperties camera_properties(
-        kWidth, kHeight, fov_y, geometry::dev::render::Fidelity::kLow, 0.1,
-        2.0);
+        kWidth, kHeight, fov_y, renderer_name_, 0.1, 2.0);
     for (const auto& camera_pair : camera_poses) {
       RegisterRgbdCamera(camera_pair.first, plant_->world_frame(),
                          camera_pair.second, camera_properties);
@@ -623,8 +622,12 @@ void ManipulationStation<T>::Finalize() {
 
   {  // RGB-D Cameras
     render_scene_graph_ =
-        builder.template AddSystem<geometry::dev::SceneGraph>(*scene_graph_);
+        builder.template AddSystem<geometry::dev::SceneGraph>();
     render_scene_graph_->set_name("dev_scene_graph_for_rendering");
+    render_scene_graph_->AddRenderer(
+        renderer_name_,
+        std::make_unique<geometry::dev::render::RenderEngineVtk>());
+    render_scene_graph_->CopyFrom(*scene_graph_);
 
     builder.Connect(plant_->get_geometry_poses_output_port(),
                     render_scene_graph_->get_source_pose_port(

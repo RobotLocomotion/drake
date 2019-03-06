@@ -347,7 +347,7 @@ GTEST_TEST(ManipulationStationTest, RegisterRgbdCameraTest) {
         dut.get_mutable_multibody_plant();
 
     geometry::dev::render::DepthCameraProperties camera_properties(
-        640, 480, M_PI_4, geometry::dev::render::Fidelity::kLow, 0.1, 2.0);
+        640, 480, M_PI_4, dut.renderer_name(), 0.1, 2.0);
 
     math::RigidTransform<double> X_WF0(Eigen::Vector3d(0, 0, 0.2));
     math::RigidTransform<double> X_F0C0(Eigen::Vector3d(0.3, 0.2, 0.0));
