@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// This struct stores the results from a computation performed with
 /// ImplicitStribeckSolver. See the ImplicitStribeckSolver class's documentation
@@ -35,8 +36,9 @@ struct ImplicitStribeckSolverResults {
   VectorX<T> tau_contact;
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::ImplicitStribeckSolverResults)
+    struct ::drake::multibody::internal::ImplicitStribeckSolverResults)

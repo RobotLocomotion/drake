@@ -987,7 +987,7 @@ void MultibodyPlant<T>::CalcContactResults(
       EvalPointPairPenetrations(context);
   const std::vector<Matrix3<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
-  const ImplicitStribeckSolverResults<T>& solver_results =
+  const internal::ImplicitStribeckSolverResults<T>& solver_results =
       EvalImplicitStribeckResults(context);
 
   const VectorX<T>& fn = solver_results.fn;
@@ -1395,7 +1395,7 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
 template <typename T>
 void MultibodyPlant<T>::CalcImplicitStribeckResults(
     const drake::systems::Context<T>& context0,
-    ImplicitStribeckSolverResults<T>* results) const {
+    internal::ImplicitStribeckSolverResults<T>* results) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
@@ -1459,7 +1459,8 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
       EvalPointPairPenetrations(context0);
   const int num_contacts = point_pairs0.size();
-  const ContactJacobians<T>& contact_jacobians = EvalContactJacobians(context0);
+  const internal::ContactJacobians<T>& contact_jacobians =
+      EvalContactJacobians(context0);
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored
   // by the time stepping scheme.
@@ -1548,7 +1549,7 @@ void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
   VectorX<T> v0 = x0.bottomRows(nv);
 
   // Solve for contact.
-  const ImplicitStribeckSolverResults<T>& solver_results =
+  const internal::ImplicitStribeckSolverResults<T>& solver_results =
       EvalImplicitStribeckResults(context0);
 
   // Retrieve the solution velocity for the next time step.
@@ -1728,12 +1729,12 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
       std::string("Contact Jacobians Jn(q) and Jt(q)."),
-      []() { return AbstractValue::Make(ContactJacobians<T>()); },
+      []() { return AbstractValue::Make(internal::ContactJacobians<T>()); },
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& contact_jacobians_cache =
-            cache_value->GetMutableValue<ContactJacobians<T>>();
+            cache_value->GetMutableValue<internal::ContactJacobians<T>>();
         this->CalcNormalAndTangentContactJacobians(
             context, EvalPointPairPenetrations(context),
             &contact_jacobians_cache.Jn, &contact_jacobians_cache.Jt,
@@ -1749,12 +1750,16 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   // Cache ImplicitStribeckSolver computations.
   auto& implicit_stribeck_solver_cache_entry = this->DeclareCacheEntry(
       std::string("Implicit Stribeck solver computations."),
-      []() { return AbstractValue::Make(ImplicitStribeckSolverResults<T>()); },
+      []() {
+        return AbstractValue::Make(
+            internal::ImplicitStribeckSolverResults<T>());
+      },
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& implicit_stribeck_solver_cache =
-            cache_value->GetMutableValue<ImplicitStribeckSolverResults<T>>();
+            cache_value
+                ->GetMutableValue<internal::ImplicitStribeckSolverResults<T>>();
         this->CalcImplicitStribeckResults(context,
                                           &implicit_stribeck_solver_cache);
       },
@@ -1821,7 +1826,7 @@ void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
 
   // Vector of generalized contact forces for the entire plant's multibody
   // system.
-  const ImplicitStribeckSolverResults<T>& solver_results =
+  const internal::ImplicitStribeckSolverResults<T>& solver_results =
       EvalImplicitStribeckResults(context);
   const VectorX<T>& tau_contact = solver_results.tau_contact;
 

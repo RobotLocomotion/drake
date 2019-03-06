@@ -7,6 +7,7 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
 
 /// Stores the computed contact Jacobians when a point contact model is used.
 /// At a given state of the multibody system, there will be `nc` contact pairs.
@@ -39,8 +40,9 @@ struct ContactJacobians {
   std::vector<Matrix3<T>> R_WC_list;
 };
 
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    struct ::drake::multibody::ContactJacobians)
+    struct ::drake::multibody::internal::ContactJacobians)

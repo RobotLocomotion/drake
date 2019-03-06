@@ -3107,14 +3107,14 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   // ImplicitStribeckSolverResults for further details on the returned data.
   void CalcImplicitStribeckResults(
       const drake::systems::Context<T>& context0,
-      ImplicitStribeckSolverResults<T>* results) const;
+      internal::ImplicitStribeckSolverResults<T>* results) const;
 
   // Eval version of the method CalcImplicitStribeckResults().
-  const ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
+  const internal::ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
       const systems::Context<T>& context) const {
     return this
         ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results_)
-        .template Eval<ImplicitStribeckSolverResults<T>>(context);
+        .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
   }
 
   // Helper method to fill in the ContactResults given the current context.
@@ -3311,11 +3311,11 @@ class MultibodyPlant : public MultibodyTreeSystem<T> {
   //
   // See ContactJacobians for specifics on the returned data storage.
   // This method throws std::exception if called pre-finalize. See Finalize().
-  const ContactJacobians<T>& EvalContactJacobians(
+  const internal::ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
     return this->get_cache_entry(cache_indexes_.contact_jacobians_)
-        .template Eval<ContactJacobians<T>>(context);
+        .template Eval<internal::ContactJacobians<T>>(context);
   }
 
   // The gravity field force element.
