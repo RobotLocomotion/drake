@@ -137,7 +137,8 @@ class BulbGroup final {
   /// Following a right-handed coordinate frame, the +Y axis should point left
   /// when facing the +X direction.
   ///
-  /// @param bulbs The bulbs that are part of this BulbGroup.
+  /// @param bulbs The bulbs that are part of this BulbGroup. There must be at
+  /// least one bulb within this group.
   BulbGroup(const Id& id, const GeoPosition& position_traffic_light,
             const Rotation& orientation_traffic_light,
             const std::vector<Bulb>& bulbs);
