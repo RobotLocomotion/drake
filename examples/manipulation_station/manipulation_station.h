@@ -298,6 +298,9 @@ class ManipulationStation : public systems::Diagram<T> {
   /// add additional elements into the world before calling Finalize().
   geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
 
+  /// Returns the name of the station's default renderer.
+  static std::string renderer_name() { return renderer_name_; }
+
   /// Returns a const reference to the SceneGraph used for rendering
   /// camera images. Since the SceneGraph for rendering is constructed in
   /// Finalize(), this throws when called before Finalize().
@@ -483,7 +486,7 @@ class ManipulationStation : public systems::Diagram<T> {
     const multibody::Frame<T>* parent_frame{};
     math::RigidTransform<double> X_PC{math::RigidTransform<double>::Identity()};
     geometry::dev::render::DepthCameraProperties properties{
-        0, 0, 0, geometry::dev::render::Fidelity::kLow, 0, 0};
+        0, 0, 0, renderer_name_, 0, 0};
   };
 
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
@@ -503,6 +506,7 @@ class ManipulationStation : public systems::Diagram<T> {
   geometry::SceneGraph<T>* scene_graph_;
   // This is made in Finalize().
   geometry::dev::SceneGraph<T>* render_scene_graph_{};
+  static constexpr const char* renderer_name_ = "manip_station_renderer";
 
   // Populated by RegisterIiwaControllerModel() and
   // RegisterWsgControllerModel().

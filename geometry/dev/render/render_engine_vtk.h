@@ -112,29 +112,19 @@ class ShaderCallback : public vtkCommand {
 class RenderEngineVtk final : public RenderEngine,
                               private detail::ModuleInitVtkRenderingOpenGL2 {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderEngineVtk);
+  /** \name Does not allow copy, move, or assignment  */
+  //@{
+#ifdef DRAKE_DOXYGEN_CXX
+  // Note: the copy assignment operator is actually private to serve as the
+  // basis for implementing the DoClone() method.
+  RenderEngineVtk(const RenderEngineVtk&) = delete;
+#endif
+  RenderEngineVtk& operator=(const RenderEngineVtk&) = delete;
+  RenderEngineVtk(RenderEngineVtk&&) = delete;
+  RenderEngineVtk& operator=(RenderEngineVtk&&) = delete;
+  //@}}
 
   RenderEngineVtk();
-
-  std::unique_ptr<RenderEngine> Clone() const override;
-
-  /** Inherits RenderEngine::AddFlatTerrain().  */
-  void AddFlatTerrain() override;
-
-  /** Inherits RenderEngine::RegisterVisual().  */
-  RenderIndex RegisterVisual(const Shape& shape,
-                             const PerceptionProperties& properties,
-                             const Isometry3<double>& X_FG) override;
-
-  /** Inherits RenderEngine::RemoveVisual().  */
-  optional<RenderIndex> RemoveVisual(RenderIndex index) override;
-
-  // TODO(SeanCurtis-TRI): I need a super-secret RegisterVisual in which the
-  // index is specified.
-
-  /** Inherits RenderEngine::RegisterVisual().  */
-  void UpdateVisualPose(const Eigen::Isometry3d& X_WG,
-                        RenderIndex index) const override;
 
   /** Inherits RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const Eigen::Isometry3d& X_WR) const override;
@@ -171,6 +161,27 @@ class RenderEngineVtk final : public RenderEngine,
   const systems::sensors::ColorI& get_flat_terrain_color() const;
 
  private:
+  // @see RenderEngine::DoRegisterVisual().
+  optional<RenderIndex> DoRegisterVisual(
+      const Shape& shape, const PerceptionProperties& properties,
+      const Isometry3<double>& X_WG) override;
+
+  // @see RenderEngine::DoUpdateVisualPose().
+  void DoUpdateVisualPose(const Eigen::Isometry3d& X_WG,
+                          RenderIndex index) override;
+
+  // @see RenderEngine::DoRemoveGeometry().
+  optional<RenderIndex> DoRemoveGeometry(RenderIndex index) override;
+
+  // see RenderEngine::DoClone().
+  std::unique_ptr<RenderEngine> DoClone() const override;
+
+  // Copy constructor for the purpose of cloning.
+  RenderEngineVtk(const RenderEngineVtk& other);
+
+  // Initializes the VTK pipelines.
+  void InitializePipelines();
+
   // Common interface for loading an obj file -- used for both mesh and convex
   // shapes.
   void ImplementObj(const std::string& file_name, double scale,
