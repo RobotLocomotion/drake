@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -73,7 +74,7 @@ class InternalGeometry {
   /** Returns the name of this geometry.  */
   const std::string& name() const { return name_; }
 
-  /** Returns the internal index of this geometry in the full scene graph.  */
+  /** Returns the index of this geometry in the full scene graph.  */
   InternalIndex internal_index() const { return internal_index_; }
 
   /** Returns the source id that registered the geometry.  */
@@ -220,11 +221,24 @@ class InternalGeometry {
     return nullptr;
   }
 
-  /** If this geometry has a perception role, this is that geometry's index in
-   the render engines. Will be undefined if it does not have the perception
-   role.  */
-  RenderIndex render_index() const { return render_index_; }
-  void set_render_index(RenderIndex index) { render_index_ = index; }
+  /** If this geometry has a perception role, this provides access to the
+   per-renderer render index. Note, the geometry may not be included in every
+   renderer.  */
+  optional<RenderIndex> render_index(const std::string& renderer_name) const;
+  void set_render_index(std::string renderer_name, RenderIndex index);
+
+  /** Clears the this geometry's render index associated with the named
+   renderer. If the geometry doesn't have an index for the named renderer,
+   nothing happens.
+   @note: this leaves the properties intact; it makes no effort to divine which
+   properties caused this geometry to be accepted by that renderer or its
+   uniqueness (both would be required for removing those properties).  */
+  void ClearRenderIndex(const std::string& renderer_name) {
+    auto iter = render_indices_.find(renderer_name);
+    if (iter != render_indices_.end()) {
+      render_indices_.erase(iter);
+    }
+  }
 
   /** If this geometry has a proximity role, this that geometry's index in the
    proximity engine. It will be undefined it it does not have the proximity
@@ -242,7 +256,7 @@ class InternalGeometry {
    no perception role previously, this has no effect.  */
   void RemovePerceptionRole() {
     perception_props_ = nullopt;
-    render_index_ = RenderIndex();
+    render_indices_.clear();
   }
 
   //@}
@@ -291,8 +305,9 @@ class InternalGeometry {
   optional<IllustrationProperties> illustration_props_{nullopt};
   optional<PerceptionProperties> perception_props_{nullopt};
 
-  // The index of the geometry in the render engine.
-  RenderIndex render_index_{};
+  // The render index of this geometry in *each* renderer it is registered in
+  // (keyed by the unique renderer name).
+  std::unordered_map<std::string, RenderIndex> render_indices_;
 
   // The index of the geometry in the engine. Note: is currently unused but will
   // gain importance when the API for *removing* geometry is added. It is the
