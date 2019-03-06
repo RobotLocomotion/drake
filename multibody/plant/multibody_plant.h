@@ -15,9 +15,11 @@
 #include "drake/common/random.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/implicit_stribeck_solver.h"
+#include "drake/multibody/plant/implicit_stribeck_solver_results.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -2892,6 +2894,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   /// @}
 
+  /// Evaluates all point pairs of contact for a given state of the model stored
+  /// in `context`.
+  /// Each entry in the returned vector corresponds to a single point pair
+  /// corresponding to two interpenetrating bodies A and B. The size of the
+  /// returned vector corresponds to the total number of contact penetration
+  /// pairs. If no geometry was registered, the output vector is empty.
+  /// @see PenetrationAsPointPair for further details on the returned data.
+  /// @throws std::exception if called pre-finalize. See Finalize().
+  const std::vector<geometry::PenetrationAsPointPair<T>>&
+  EvalPointPairPenetrations(const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return this->get_cache_entry(cache_indexes_.point_pairs_)
+        .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
+            context);
+  }
+
   /// Sets the `state` so that generalized positions and velocities are zero.
   /// @throws std::exception if called pre-finalize. See Finalize().
   void SetDefaultState(const systems::Context<T>& context,
@@ -2928,6 +2946,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Friend class to facilitate testing.
   friend class MultibodyPlantTester;
+
+  // This struct stores in one single place all indexes related to
+  // MultibodyPlant specific cache entries. These are initialized at Finalize()
+  // when the plant declares its cache entries.
+  struct CacheIndexes {
+    systems::CacheIndex contact_jacobians_;
+    systems::CacheIndex contact_results_;
+    systems::CacheIndex implicit_stribeck_solver_results_;
+    systems::CacheIndex point_pairs_;
+  };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
   // WARNING: This may *not* result in a plant with a valid state. Use
@@ -3017,6 +3045,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
 
+  // Declare the system:: level cache entries specific to MultibodyPlant.
+  void DeclareCacheEntries();
+
   // Helper method to assemble actuation input vector from the appropriate
   // ports.
   VectorX<T> AssembleActuationInput(
@@ -3059,6 +3090,37 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const VectorX<T>& stiffness, const VectorX<T>& damping,
       const VectorX<T>& mu,
       const VectorX<T>& v0, const VectorX<T>& phi0) const;
+
+  // This method uses the time stepping method described in
+  // ImplicitStribeckSolver to advance the model's state stored in
+  // `context0` taking a time step of size time_step().
+  // Contact forces and velocities are computed and stored in `results`. See
+  // ImplicitStribeckSolverResults for further details on the returned data.
+  void CalcImplicitStribeckResults(
+      const drake::systems::Context<T>& context0,
+      internal::ImplicitStribeckSolverResults<T>* results) const;
+
+  // Eval version of the method CalcImplicitStribeckResults().
+  const internal::ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
+      const systems::Context<T>& context) const {
+    return this
+        ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results_)
+        .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
+  }
+
+  // Helper method to fill in the ContactResults given the current context.
+  // If cached contact solver results are not up-to-date with `context`,
+  // they'll be  recomputed, see EvalImplicitStribeckResults(). The solver
+  // results are then used to compute contact results into `contacts`.
+  void CalcContactResults(const systems::Context<T>& context,
+                          ContactResults<T>* contacts) const;
+
+  // Eval version of the method CalcContactResults().
+  const ContactResults<T>& EvalContactResults(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.contact_results_)
+        .template Eval<ContactResults<T>>(context);
+  }
 
   void DoMapQDotToVelocity(
       const systems::Context<T>& context,
@@ -3121,7 +3183,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcFramePoseOutput(const systems::Context<T>& context,
                            geometry::FramePoseVector<T>* poses) const;
 
-  void CalcContactResultsOutput(
+  void CopyContactResultsOutput(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
@@ -3153,15 +3215,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const internal::VelocityKinematicsCache<T>& vc,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
       std::vector<SpatialForce<T>>* F_BBo_W_array) const;
-
-  // Helper method to fill in the ContactResults given the current context,
-  // point_pairs and the vector or orientations R_WC of each contact point
-  // frame C in the world frame W.
-  void CalcContactResults(
-      const systems::Context<T>& context,
-      const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs,
-      const std::vector<Matrix3<T>>& R_WC_set,
-      ContactResults<T>* contacts) const;
 
   // Helper method to add the contribution of external actuation forces to the
   // set of multibody `forces`. External actuation is applied through the
@@ -3219,6 +3272,42 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
+
+  // Evaluates the contact Jacobians for the given state of the plant stored in
+  // `context`.
+  // This method first evaluates the point pair penetrations in the system for
+  // the given `context`, see EvalPointPairPenetrations(). For each penetration
+  // pair involving bodies A and B, a contact frame C is defined by the
+  // rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W`
+  // equals the normal vector pointing from body B into body A, expressed in
+  // the world frame W. See PenetrationAsPointPair for further details on the
+  // definition of each contact pair. Versors `Cx_W` and `Cy_W` constitute a
+  // basis of the plane normal to `Cz_W` and are arbitrarily chosen. The
+  // contact frame basis can be accessed in the results, see
+  // ContactJacobians::R_WC_list. Further, for each contact pair evaluated,
+  // this method computes the Jacobians `Jn` and `Jt`. With the vector of
+  // generalized velocities v of size `nv` and `nc` the number of contact
+  // pairs;
+  //   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
+  //     separation speed for each contact point, defined to be positive when
+  //     bodies are moving away at the contact.
+  //   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
+  //     concatenates the tangential components of the relative velocity vector
+  //     `v_AcBc` in the frame C of contact. That is, for the k-th contact
+  //     pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
+  //     `Cx` and `Cy` directions.
+  //
+  // If no geometry was registered or if `nc = 0`, ContactJacobians holds empty
+  // results.
+  //
+  // See ContactJacobians for specifics on the returned data storage.
+  // This method throws std::exception if called pre-finalize. See Finalize().
+  const internal::ContactJacobians<T>& EvalContactJacobians(
+      const systems::Context<T>& context) const {
+    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+    return this->get_cache_entry(cache_indexes_.contact_jacobians_)
+        .template Eval<internal::ContactJacobians<T>>(context);
+  }
 
   // The gravity field force element.
   optional<const UniformGravityFieldElement<T>*> gravity_field_;
@@ -3409,11 +3498,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The solver used when the plant is modeled as a discrete system.
   std::unique_ptr<ImplicitStribeckSolver<T>> implicit_stribeck_solver_;
 
-  // TODO(sherm1) Add CacheIndex members here for cache entries that belong to
-  //              MBPlant, not MBTree.
-
-  // TODO(sherm1) Replace this mock cache entry with the real thing.
-  mutable ContactResults<T> contact_results_;
+  // All MultibodyPlant cache indexes are stored in cache_indexes_.
+  CacheIndexes cache_indexes_;
 };
 
 /// @cond
