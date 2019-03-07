@@ -110,9 +110,7 @@ void DefineFrameworkPyValues(py::module m) {
   py::class_<AbstractValue> abstract_value(m, "AbstractValue");
   DefClone(&abstract_value);
   abstract_value
-      // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
-      // Otherwise, a user could encounter undefind behavior via `SetFrom`.
-      .def("SetFrom", &AbstractValue::SetFromOrThrow,
+      .def("SetFrom", &AbstractValue::SetFrom,
           pydrake_doc.drake.AbstractValue.SetFrom.doc)
       .def("get_value", abstract_stub("get_value"),
           pydrake_doc.drake.AbstractValue.GetValue.doc)
