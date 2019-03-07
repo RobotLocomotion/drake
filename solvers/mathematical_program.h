@@ -2256,8 +2256,7 @@ class MathematicalProgram {
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the monomial
-   * basis of all indeterminates in the program with degree equal to half the
-   * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
+   * basis selected from the sparsity of @p p. It returns a pair of constraint bindings expressing:
    *
    *  - The coefficients matrix Q, which is positive semidefinite.
    *  - The coefficients matching conditions in linear equality constraint.
