@@ -233,7 +233,7 @@ GTEST_TEST(GeometryProperties, CopyMoveSemantics) {
       if (test.HasGroup(group_name)) {
         for (const auto& pair : reference.GetPropertiesInGroup(group_name)) {
           const std::string& name = pair.first;
-          int expected_value = pair.second->GetValueOrThrow<int>();
+          int expected_value = pair.second->get_value<int>();
           if (test.HasProperty(group_name, name)) {
             int test_value = test.GetProperty<int>(group_name, name);
             if (expected_value != test_value) {

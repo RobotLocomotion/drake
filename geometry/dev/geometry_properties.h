@@ -330,7 +330,7 @@ class GeometryProperties {
       const PropertyGroup& group = iter->second;
       const auto value_iter = group.find(name);
       if (value_iter != group.end()) {
-        return value_iter->second->GetValueOrThrow<ValueType>();
+        return value_iter->second->get_value<ValueType>();
       }
       throw std::logic_error(fmt::format("There is no property {} in group {}.",
                                          name, group_name));
@@ -353,7 +353,7 @@ class GeometryProperties {
       const PropertyGroup& group = iter->second;
       const auto value_iter = group.find(name);
       if (value_iter != group.end()) {
-        return value_iter->second->GetValueOrThrow<ValueType>();
+        return value_iter->second->get_value<ValueType>();
       }
     }
     return default_value;

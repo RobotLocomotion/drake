@@ -69,7 +69,7 @@ template <typename T>
 SceneGraph<T>::SceneGraph()
     : LeafSystem<T>(SystemTypeTag<geometry::SceneGraph>{}) {
   auto state_value = make_unique<GeometryStateValue<T>>();
-  initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
+  initial_state_ = &state_value->get_mutable_value();
   model_inspector_.set(initial_state_);
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
