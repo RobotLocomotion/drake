@@ -46,7 +46,7 @@ void ManipulatorMoveEndEffectorPlan<T>::HandlePlanGenericPlanDerived(
   unused(paramset);  // TODO(jwnimmer-tri) This seems bad.
 
   const auto& msg =
-      plan.GetValueOrThrow<lcmt_manipulator_plan_move_end_effector>();
+      plan.get_value<lcmt_manipulator_plan_move_end_effector>();
 
   // TODO(siyuan): should do better error handling wrt bad plan plan.
   DRAKE_DEMAND(static_cast<size_t>(msg.num_steps) == msg.utimes.size() &&

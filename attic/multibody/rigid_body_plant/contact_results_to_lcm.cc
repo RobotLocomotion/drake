@@ -22,7 +22,7 @@ void ContactResultsToLcmSystem<T>::CalcLcmContactOutput(
     const Context<T>& context, lcmt_contact_results_for_viz* output) const {
   // Get input / output.
   const auto& contact_results =
-      EvalAbstractInput(context, 0)->template GetValue<ContactResults<T>>();
+      get_input_port(0).template Eval<ContactResults<T>>(context);
   auto& msg = *output;
 
   msg.timestamp = static_cast<int64_t>(context.get_time() * 1e6);

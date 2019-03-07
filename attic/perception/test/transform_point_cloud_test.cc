@@ -87,8 +87,8 @@ class TransformPointCloudTest : public ::testing::Test {
 
   void CheckOutput(const std::string& dest_frame_name) {
     // Calculate the system's actual output.
-    transformer_->point_cloud_output_port().Calc(*context_, output_.get());
-    PointCloud output_cloud = output_->GetValueOrThrow<PointCloud>();
+    const PointCloud& output_cloud =
+        transformer_->point_cloud_output_port().Eval<PointCloud>(*context_);
 
     // Calculate the system's expected output.
     // The transform below uses `float` because the point cloud uses `float` as
@@ -111,7 +111,6 @@ class TransformPointCloudTest : public ::testing::Test {
   std::shared_ptr<RigidBodyFrame<double>> frame_;
   std::unique_ptr<TransformPointCloud> transformer_;
   std::unique_ptr<systems::Context<double>> context_;
-  std::unique_ptr<AbstractValue> output_;
   VectorX<double> state_input_;
   std::unique_ptr<PointCloud> cloud_input_;
 
@@ -128,8 +127,6 @@ class TransformPointCloudTest : public ::testing::Test {
     state_input_ = VectorX<double>::Zero(tree_->get_num_positions() +
                                          tree_->get_num_velocities());
     state_input_.head(tree_->get_num_positions()) << 0.3, -0.4, 2.3, 0, 0, 0;
-
-    output_ = transformer_->point_cloud_output_port().Allocate();
 
     context_ = transformer_->CreateDefaultContext();
     context_->FixInputPort(

@@ -140,7 +140,7 @@ class RigidBodyPointCloudFilterTest : public ::testing::Test {
 TEST_F(RigidBodyPointCloudFilterTest, RemoveBoxTest) {
   // Calculate the system's actual output.
   filter_->point_cloud_output_port().Calc(*context_, output_.get());
-  PointCloud output_cloud = output_->GetValueOrThrow<PointCloud>();
+  PointCloud output_cloud = output_->get_value<PointCloud>();
 
   EXPECT_GT(output_cloud.size(), 0);
 

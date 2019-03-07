@@ -107,7 +107,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
 
   // Gets the output from the plan eval block.
   diagram->CalcOutput(sim.get_context(), output.get());
-  const QpOutput& qp_output = output->get_data(0)->GetValue<QpOutput>();
+  const QpOutput& qp_output = output->get_data(0)->get_value<QpOutput>();
 
   // Expects the solved acceleration to match the desired acceleration well.
   EXPECT_TRUE(drake::CompareMatrices(input.desired_dof_motions().values(),

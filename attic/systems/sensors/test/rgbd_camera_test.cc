@@ -221,11 +221,11 @@ class RgbdCameraDiagramTest : public ::testing::Test {
  public:
   void Verify() {
     diagram_->CalcOutput(*context_, output_.get());
-    auto color = output_->GetMutableData(0)->GetMutableValue<
+    auto color = output_->GetMutableData(0)->get_mutable_value<
       sensors::ImageRgba8U>();
-    auto depth = output_->GetMutableData(1)->GetMutableValue<
+    auto depth = output_->GetMutableData(1)->get_mutable_value<
       sensors::ImageDepth32F>();
-    auto label = output_->GetMutableData(2)->GetMutableValue<
+    auto label = output_->GetMutableData(2)->get_mutable_value<
       sensors::ImageLabel16I>();
 
     EXPECT_EQ(color.width(), size_.width);
