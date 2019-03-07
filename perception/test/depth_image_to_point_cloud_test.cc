@@ -203,11 +203,11 @@ class DepthImageToPointCloudTest : public ::testing::Test {
       if (kFields & pc_flags::kRGBs) {
         DepthImageToPointCloud::Convert(
             camera_info, camera_pose, depth_image, color_image, scale,
-            &(cloud->GetMutableValueOrThrow<PointCloud>()));
+            &(cloud->get_mutable_value<PointCloud>()));
       } else {
         DepthImageToPointCloud::Convert(
             camera_info, camera_pose, depth_image, nullopt, scale,
-            &(cloud->GetMutableValueOrThrow<PointCloud>()));
+            &(cloud->get_mutable_value<PointCloud>()));
       }
     }
   }
@@ -437,7 +437,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
   abstract_value = std::make_unique<Value<PointCloud>>(0, fields);
   this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
                   abstract_value.get());
-  cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
+  cloud = &(abstract_value->get_value<PointCloud>());
   EXPECT_EQ(cloud->fields(), fields);
   EXPECT_TRUE(TestFixture::CompareClouds(*cloud, expected_cloud));
 
@@ -445,7 +445,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
   abstract_value = std::make_unique<Value<PointCloud>>(22, fields);
   this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
                   abstract_value.get());
-  cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
+  cloud = &(abstract_value->get_value<PointCloud>());
   EXPECT_EQ(cloud->fields(), fields);
   EXPECT_TRUE(TestFixture::CompareClouds(*cloud, expected_cloud));
 
@@ -464,7 +464,7 @@ TYPED_TEST(DepthImageToPointCloudTest, ResetStorage) {
     abstract_value = std::make_unique<Value<PointCloud>>(1, fields);
     this->DoConvert(camera, nullopt, depth_image, color_image, nullopt,
                     abstract_value.get());
-    cloud = &(abstract_value->GetValueOrThrow<PointCloud>());
+    cloud = &(abstract_value->get_value<PointCloud>());
     EXPECT_EQ(cloud->fields(), fields);
     EXPECT_TRUE(TestFixture::CompareClouds(*cloud, expected_cloud));
   }
