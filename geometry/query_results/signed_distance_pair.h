@@ -62,12 +62,12 @@ struct SignedDistancePair{
   SignedDistancePair() {}
 
   /** Constructor
-   @param a         The id of the first geometry (A).
-   @param b         The id of the second geometry (B).
-   @param p_ACa_in  The witness point on geometry A's surface, in A's frame.
-   @param p_BCb_in  The witness point on geometry B's surface, in B's frame.
-   @param dist      The signed distance between p_A and p_B.
-   @param nhat_BA_W_in  ∇φ_B(c_B) expressed in the world frame.
+   @param a            The id of the first geometry (A).
+   @param b            The id of the second geometry (B).
+   @param p_ACa_in     The witness point on geometry A's surface, in A's frame.
+   @param p_BCb_in     The witness point on geometry B's surface, in B's frame.
+   @param dist         The signed distance between p_A and p_B.
+   @param nhat_BA_W_in ∇φ_B(c_B) expressed in the world frame.
    @pre nhat_BA_W_in is unit-length. */
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
                      const Vector3<T>& p_BCb_in, T dist,
@@ -95,7 +95,7 @@ struct SignedDistancePair{
    @param b         The id of the second geometry (B).
    @param p_ACa_in  The witness point on geometry A's surface, in A's frame.
    @param p_BCb_in  The witness point on geometry B's surface, in B's frame.
-   @param dist    The signed distance between p_A and p_B.*/
+   @param dist      The signed distance between p_A and p_B.*/
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
                      const Vector3<T>& p_BCb_in, T dist)
       : id_A(a),
