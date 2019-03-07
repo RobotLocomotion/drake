@@ -47,18 +47,20 @@ using ValueForwardingCtorEnabled = typename std::enable_if_t<
 }  // namespace internal
 #endif
 
-/// A fully type-erased container class.
+/// A fully type-erased container class.  An AbstractValue stores an object of
+/// some type T (where T is declared during at construction time) that at
+/// runtime can be passed between functions without mentioning T.  Only when
+/// the stored T must be accessed does the user need to mention T again.
 ///
-/// Only Value<T> should inherit directly from AbstractValue. User-defined
-/// classes that define additional type-erased features should inherit from
-/// Value<T>.
+/// (Advanced.) Note that AbstractValue's getters and setters method declare
+/// that "If T does not match, a std::logic_error will be thrown with a helpful
+/// error message".  The code that implements this check uses hashing, so in
+/// the extraordinarily unlikely case of a 64-bit hash collision, the error may
+/// go undetected in Release builds. (Debug builds have extra checks that will
+/// trigger.)
 ///
-/// Most methods offer two variants, e.g., SetFrom and SetFromOrThrow.  The
-/// former variants are optimized to use static_casts in Release builds but
-/// will not throw exceptions when concrete Value types are mismatched; the
-/// latter variants are guaranteed to throw on mismatched types, but may be
-/// slower at runtime.  Prefer using the faster version only in performance-
-/// sensitive code (e.g., inner loops), and the safer version otherwise.
+/// (Advanced.) Only Value should inherit directly from AbstractValue.
+/// User-defined classes with additional features may inherit from Value.
 class AbstractValue {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValue)
@@ -69,8 +71,39 @@ class AbstractValue {
   template <typename T>
   static std::unique_ptr<AbstractValue> Make(const T& value);
 
-  // TODO(david-german-tri): Once this uses static_cast under the hood in
-  // Release builds, lower-case it.
+  /// Returns the value wrapped in this AbstractValue as a const reference.
+  /// The reference remains valid only until this object is set or destroyed.
+  /// @tparam T The originally declared type of this AbstractValue, e.g., from
+  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
+  /// std::logic_error will be thrown with a helpful error message.
+  template <typename T>
+  const T& get_value() const { return cast<T>().get_value(); }
+
+  /// Returns the value wrapped in this AbstractValue as mutable reference.
+  /// The reference remains valid only until this object is set or destroyed.
+  /// @tparam T The originally declared type of this AbstractValue, e.g., from
+  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
+  /// std::logic_error will be thrown with a helpful error message.
+  template <typename T>
+  T& get_mutable_value() { return cast<T>().get_mutable_value(); }
+
+  /// Sets the value wrapped in this AbstractValue.
+  /// @tparam T The originally declared type of this AbstractValue, e.g., from
+  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match, a
+  /// std::logic_error will be thrown with a helpful error message.
+  template <typename T>
+  void set_value(const T& v) { cast<T>().set_value(v); }
+
+  /// Returns the value wrapped in this AbstractValue, if T matches the
+  /// originally declared type of this AbstractValue.
+  /// @tparam T The originally declared type of this AbstractValue, e.g., from
+  /// AbstractValue::Make<T>() or Value<T>::Value().  If T does not match,
+  /// returns nullptr.
+  template <typename T>
+  const T* maybe_get_value() const;
+
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, an std::logic_error will be
@@ -79,11 +112,15 @@ class AbstractValue {
   template <typename T>
   const T& GetValue() const;
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Like GetValue, but throws std::logic_error on mismatched types even in
   /// Release builds.
   template <typename T>
   const T& GetValueOrThrow() const;
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Like GetValue, but quietly returns nullptr on mismatched types,
   /// even in Release builds.
   /// @returns A pointer to the stored value if T is the right type,
@@ -91,6 +128,8 @@ class AbstractValue {
   template <typename T>
   const T* MaybeGetValue() const;
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, an std::logic_error will be
@@ -100,11 +139,15 @@ class AbstractValue {
   template <typename T>
   T& GetMutableValue();
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Like GetMutableValue, but throws std::logic_error on mismatched types even
   /// in Release builds.
   template <typename T>
   T& GetMutableValueOrThrow();
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Sets the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// @param value_to_set The value to be copied or cloned into this
@@ -114,6 +157,8 @@ class AbstractValue {
   template <typename T>
   void SetValue(const T& value_to_set);
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Like SetValue, but throws on mismatched types even in Release builds.
   template <typename T>
   void SetValueOrThrow(const T& value_to_set);
@@ -121,12 +166,13 @@ class AbstractValue {
   /// Returns a copy of this AbstractValue.
   virtual std::unique_ptr<AbstractValue> Clone() const = 0;
 
-  /// Copies or clones the value in @p other to this value.
-  /// In Debug builds, if the types don't match, an std::logic_error will be
-  /// thrown with a helpful error message. In Release builds, this is not
-  /// guaranteed.
+  /// Copies the value in @p other to this value.  If other is not compatible
+  /// with this object, a std::logic_error will be thrown with a helpful error
+  /// message.
   virtual void SetFrom(const AbstractValue& other) = 0;
 
+  // TODO(jwnimmer-tri) Deprecate me.
+  /// (To be deprecated.)
   /// Like SetFrom, but throws std::logic_error on mismatched types even in
   /// Release builds.
   virtual void SetFromOrThrow(const AbstractValue& other) = 0;
@@ -138,7 +184,7 @@ class AbstractValue {
   /// Returns typeid(T) for this Value<T> object. If T is polymorphic, this
   /// does NOT reflect the typeid of the most-derived type of the contained
   /// object; the result is always the base type T.
-  const std::type_info& static_type_info() const { return static_type_info_; }
+  virtual const std::type_info& static_type_info() const = 0;
 
   /// Returns a human-readable name for the underlying type T. This may be
   /// slow but is useful for error messages. If T is polymorphic, this returns
@@ -147,32 +193,44 @@ class AbstractValue {
 
  protected:
 #if !defined(DRAKE_DOXYGEN_CXX)
-  explicit AbstractValue(const std::type_info& static_type_info)
-    : static_type_info_(static_type_info) {}
+  // Use a struct argument (instead of a bare size_t) so that no code
+  // tries to convert a single-element numeric initializer_list to
+  // a `const AbstractValue&`.  (This works around a bug in GCC 5.)
+  struct Wrap { size_t value{}; };
+  explicit AbstractValue(Wrap hash)
+      : type_hash_(hash.value) {}
 #endif
 
  private:
-  template <typename T>
-  bool is_matched() const;
+  template <typename T> bool is_maybe_matched() const;
+  template <typename T> const Value<T>& cast() const;
+  template <typename T> Value<T>& cast();
+  template <typename T> [[noreturn]] void ThrowCastError() const;
+  [[noreturn]] void ThrowCastError(const std::string&) const;
 
-  template <typename T>
-  Value<T>* DownCastMutableOrThrow();
-
-  template <typename T>
-  Value<T>* DownCastMutableOrMaybeThrow();
-
-  template <typename T>
-  const Value<T>* DownCastOrThrow() const;
-
-  template <typename T>
-  const Value<T>* DownCastOrMaybeThrow() const;
-
-  const std::type_info& static_type_info_;
+  // The TypeHash<T>::value supplied by the Value<T> constructor.
+  const size_t type_hash_;
 };
 
-/// A container class for an arbitrary type T. User-defined classes that
-/// require additional type-erased features should subclass Value<T>, taking
-/// care to define the copy constructors and override Clone().
+/// A container class for an arbitrary type T.  This class inherits from
+/// AbstractValue and therefore at runtime can be passed between functions
+/// without mentioning T.
+///
+/// Example:
+/// @code
+/// void print_string(const AbstractValue& arg) {
+///   const std::string& message = arg.get_value<std::string>();
+///   std::cerr << message;
+/// }
+/// void meow() {
+///   const Value<std::string> value("meow");
+///   print_string(value);
+/// }
+/// @endcode
+///
+/// (Advanced.) User-defined classes with additional features may subclass
+/// Value, but should take care to override Clone().
+///
 /// @tparam T Must be copy-constructible or cloneable.
 template <typename T>
 class Value : public AbstractValue {
@@ -216,9 +274,11 @@ class Value : public AbstractValue {
   ~Value() override {}
 
   /// Returns a const reference to the stored value.
+  /// The reference remains valid only until this object is set or destroyed.
   const T& get_value() const;
 
   /// Returns a mutable reference to the stored value.
+  /// The reference remains valid only until this object is set or destroyed.
   T& get_mutable_value();
 
   /// Replaces the stored value with a new one.
@@ -227,8 +287,9 @@ class Value : public AbstractValue {
   // AbstractValue overrides.
   std::unique_ptr<AbstractValue> Clone() const override;
   void SetFrom(const AbstractValue& other) override;
-  void SetFromOrThrow(const AbstractValue& other) override;
-  const std::type_info& type_info() const override;
+  void SetFromOrThrow(const AbstractValue& other) final;
+  const std::type_info& type_info() const final;
+  const std::type_info& static_type_info() const final;
 
   // A using-declaration adds these methods into our class's Doxygen.
   using AbstractValue::static_type_info;
@@ -436,9 +497,8 @@ struct TypeHasher<T<U, N, Ns...>> {
 // Computes a typename hash as a compile-time constant.  By putting it into a
 // static constexpr, we force the compiler to compute the hash at compile time.
 //
-// We (intend to) use these compile-time hashes to improve the performance of
-// the downcast checks in AbstractValue.  (That use is not yet implemented;
-// PR#10727 for actual use.)  The hash constant ends up being inlined into the
+// We use these compile-time hashes to improve the performance of the downcast
+// checks in AbstractValue.  The hash constant ends up being inlined into the
 // object code of AbstractValue's accessors.  (We cannot use `typeid(T).name()`
 // for this purpose at compile-time, because it's not constexpr.)
 //
@@ -520,110 +580,108 @@ std::unique_ptr<AbstractValue> AbstractValue::Make(const T& value) {
 }
 
 template <typename T>
+const T* AbstractValue::maybe_get_value() const {
+  if (!is_maybe_matched<T>()) { return nullptr; }
+  auto& self = static_cast<const Value<T>&>(*this);
+  return &self.get_value();
+}
+
+template <typename T>
 const T& AbstractValue::GetValue() const {
-  return DownCastOrMaybeThrow<T>()->get_value();
+  return get_value<T>();
 }
 
 template <typename T>
 const T& AbstractValue::GetValueOrThrow() const {
-  return DownCastOrThrow<T>()->get_value();
+  if (typeid(T) != static_type_info()) { ThrowCastError<T>(); }
+  return get_value<T>();
 }
 
 template <typename T>
 const T* AbstractValue::MaybeGetValue() const {
-  if (!is_matched<T>()) { return nullptr; }
+  if (typeid(T) != static_type_info()) { return nullptr; }
   auto* value = static_cast<const Value<T>*>(this);
   return &value->get_value();
 }
 
 template <typename T>
 T& AbstractValue::GetMutableValue() {
-  return DownCastMutableOrMaybeThrow<T>()->get_mutable_value();
+  return get_mutable_value<T>();
 }
 
 template <typename T>
 T& AbstractValue::GetMutableValueOrThrow() {
-  return DownCastMutableOrThrow<T>()->get_mutable_value();
+  if (typeid(T) != static_type_info()) { ThrowCastError<T>(); }
+  return get_mutable_value<T>();
 }
 
 template <typename T>
 void AbstractValue::SetValue(const T& value_to_set) {
-  DownCastMutableOrMaybeThrow<T>()->set_value(value_to_set);
+  set_value<T>(value_to_set);
 }
 
 template <typename T>
 void AbstractValue::SetValueOrThrow(const T& value_to_set) {
-  DownCastMutableOrThrow<T>()->set_value(value_to_set);
+  if (typeid(T) != static_type_info()) { ThrowCastError<T>(); }
+  set_value<T>(value_to_set);
 }
 
-// Returns true iff `this` is-a `Value<T>`.
+// In Debug mode, returns true iff `this` is-a `Value<T>`.  In Release mode, a
+// false return means `this` is definitely not a `Value<T>`; true means `this`
+// is-probably-a `Value<T>`, but might rarely appear even for mismatched types.
 template <typename T>
-bool AbstractValue::is_matched() const {
-  return typeid(T) == static_type_info_;
+bool AbstractValue::is_maybe_matched() const {
+  constexpr auto hash = internal::TypeHash<T>::value;
+  return (kDrakeAssertIsArmed || !hash) ? (typeid(T) == static_type_info()) :
+      (hash == type_hash_);
 }
 
-// Casts this to a Value<T>*. Throws if the cast fails.
+// Casts this to a `const Value<T>&`, with error checking that throws.
 template <typename T>
-Value<T>* AbstractValue::DownCastMutableOrThrow() {
-  // We cast away const in this private non-const method so that we can reuse
-  // DownCastOrThrow. This is equivalent to duplicating the logic of
-  // DownCastOrThrow with a non-const target type.
-  return const_cast<Value<T>*>(DownCastOrThrow<T>());
+const Value<T>& AbstractValue::cast() const {
+  if (!is_maybe_matched<T>()) { ThrowCastError<T>(); }
+  return static_cast<const Value<T>&>(*this);
 }
 
-// Casts this to a Value<T>*. In Debug builds, throws if the cast fails.
+// Casts this to a `Value<T>&`, with error checking that throws.
 template <typename T>
-Value<T>* AbstractValue::DownCastMutableOrMaybeThrow() {
-  // We cast away const in this private non-const method so that we can reuse
-  // DownCastOrMaybeThrow. This is equivalent to duplicating the logic of
-  // DownCastOrMaybeThrow with a non-const target type.
-  return const_cast<Value<T>*>(DownCastOrMaybeThrow<T>());
+Value<T>& AbstractValue::cast() {
+  if (!is_maybe_matched<T>()) { ThrowCastError<T>(); }
+  return static_cast<Value<T>&>(*this);
 }
 
-// Casts this to a const Value<T>*. Throws if the cast fails.
+// We use a separate method to report cast() errors so that cast() itself will
+// be inlined in Release builds.
 template <typename T>
-const Value<T>* AbstractValue::DownCastOrThrow() const {
-  if (!is_matched<T>()) {
-    throw std::logic_error(
-        "AbstractValue: a request to extract a value of type '" +
-        NiceTypeName::Get<T>() + "' failed because the actual type was '" +
-        GetNiceTypeName() + "'.");
-  }
-  return static_cast<const Value<T>*>(this);
-}
-
-// Casts this to a const Value<T>*. In Debug builds, throws if the cast fails.
-template <typename T>
-const Value<T>* AbstractValue::DownCastOrMaybeThrow() const {
-  // TODO(david-german-tri): Use static_cast in Release builds for speed.
-  return DownCastOrThrow<T>();
+void AbstractValue::ThrowCastError() const {
+  ThrowCastError(NiceTypeName::Get<T>());
 }
 
 template <typename T>
 template <typename T1, typename T2>
 Value<T>::Value()
-    : AbstractValue(typeid(T)),
+    : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_{} {
   Traits::reinitialize_if_necessary(&value_);
 }
 
 template <typename T>
 Value<T>::Value(const T& v)
-    : AbstractValue(typeid(T)),
+    : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_(Traits::to_storage(v)) {}
 
 // We construct-in-place into our Storage value_.
 template <typename T>
 template <typename Arg1, typename... Args, typename>
 Value<T>::Value(Arg1&& arg1, Args&&... args)
-    : AbstractValue(typeid(T)),
+    : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {}
 
 // We move a unique_ptr into our Storage value_.
 template <typename T>
 template <typename Arg1, typename... Args, typename, typename>
 Value<T>::Value(Arg1&& arg1, Args&&... args)
-    : AbstractValue(typeid(T)),
+    : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_{std::make_unique<T>(
           std::forward<Arg1>(arg1), std::forward<Args>(args)...)} {}
 
@@ -648,7 +706,7 @@ Value<T>::Value(Arg1&& arg1, Args&&... args)
 // unique_ptr<T> was transferred to Value<T> without any Clone.
 template <typename T>
 Value<T>::Value(std::unique_ptr<T> v)
-    : AbstractValue(typeid(T)),
+    : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_{Traits::to_storage(std::move(v))} {}
 
 template <typename T>
@@ -673,7 +731,7 @@ std::unique_ptr<AbstractValue> Value<T>::Clone() const {
 
 template <typename T>
 void Value<T>::SetFrom(const AbstractValue& other) {
-  value_ = Traits::to_storage(other.GetValue<T>());
+  value_ = Traits::to_storage(other.get_value<T>());
 }
 
 template <typename T>
@@ -684,6 +742,11 @@ void Value<T>::SetFromOrThrow(const AbstractValue& other) {
 template <typename T>
 const std::type_info& Value<T>::type_info() const {
   return typeid(get_value());
+}
+
+template <typename T>
+const std::type_info& Value<T>::static_type_info() const {
+  return typeid(T);
 }
 
 #endif  // DRAKE_DOXYGEN_CXX
