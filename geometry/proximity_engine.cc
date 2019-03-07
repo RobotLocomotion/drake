@@ -1018,7 +1018,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::unique_ptr<fcl::CollisionObject<double>> fcl_object;
     shape.Reify(this, &fcl_object);
     fcl_object->setTransform(X_WG);
+    fcl_object->computeAABB();
     anchored_tree_.registerObject(fcl_object.get());
+    anchored_tree_.update();
     ProximityIndex proximity_index(static_cast<int>(anchored_objects_.size()));
     EncodedData encoding(index, false /* is dynamic */);
     encoding.store_in(fcl_object.get());

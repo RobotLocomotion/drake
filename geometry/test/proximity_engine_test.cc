@@ -2560,6 +2560,43 @@ GTEST_TEST(ProximityEngineTests, Issue10577Regression_Osculation) {
   EXPECT_EQ(pairs.size(), 0);
 }
 
+// When anchored geometry is added to the proximity engine, the broadphase
+// algorithm needs to be properly updated, otherwise it assumes all of the
+// anchored geometry has the identity transformation. This test confirms that
+// this configuration occurs; the dynamic sphere and anchored sphere are
+// configured away from the origin in collision. Without proper broadphase
+// initialization for the anchored geometry, no collision is reported.
+GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
+  ProximityEngine<double> engine;
+  GeometryId id_D = GeometryId::get_new_id();
+  GeometryId id_A = GeometryId::get_new_id();
+  GeometryIndex index_D(0);
+  GeometryIndex index_A(1);
+  ProximityIndex engine_index_D =
+      engine.AddDynamicGeometry(Sphere(0.5), index_D);
+
+  Isometry3<double> X_WA{Translation3d{-3, 0, 0}};
+  ProximityIndex engine_index_A =
+      engine.AddAnchoredGeometry(Sphere(0.5), X_WA, index_A);
+
+  // These should have the same index value because one draws from the dynamic
+  // set, the other from the anchored.
+  ASSERT_EQ(engine_index_D, 0);
+  ASSERT_EQ(engine_index_A, 0);
+
+  Isometry3<double> X_WD{Translation3d{-3, 0.75, 0}};
+  // NOTE: The vector of indicies should *only* be the indices of the dynamic
+  // geometry. The only requirement for the vector of poses is that the
+  // poses[indices[i]] must be defined and should map to the geometry with
+  // index indices[i]. In this case, a single dynamic geometry with index 0,
+  // means it is sufficient to create a pose vector with a single pose.
+  engine.UpdateWorldPoses({X_WD}, {index_D});
+  std::vector<GeometryId> geometry_map{id_D, id_A};
+  auto pairs = engine.ComputePointPairPenetration(geometry_map);
+  EXPECT_EQ(pairs.size(), 1);
+}
+
+
 }  // namespace
 }  // namespace internal
 }  // namespace geometry
