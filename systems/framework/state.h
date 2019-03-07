@@ -98,7 +98,7 @@ class State {
   template <typename U>
   const U& get_abstract_state(int index) const {
     const AbstractValues& xa = get_abstract_state();
-    return xa.get_value(index).GetValue<U>();
+    return xa.get_value(index).get_value<U>();
   }
 
   /// Returns a mutable pointer to element @p index of the abstract state.
@@ -106,7 +106,7 @@ class State {
   template <typename U>
   U& get_mutable_abstract_state(int index) {
     AbstractValues& xa = get_mutable_abstract_state();
-    return xa.get_mutable_value(index).GetMutableValue<U>();
+    return xa.get_mutable_value(index).get_mutable_value<U>();
   }
 
   DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")

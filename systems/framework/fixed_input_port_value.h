@@ -56,7 +56,7 @@ class FixedInputPortValue {
   exception if this doesn't contain an object of that type. */
   template <typename T>
   const BasicVector<T>& get_vector_value() const {
-    return get_value().GetValueOrThrow<BasicVector<T>>();
+    return get_value().get_value<BasicVector<T>>();
   }
 
   /** Returns a pointer to the data inside this %FixedInputPortValue, and
@@ -85,7 +85,7 @@ class FixedInputPortValue {
             Eigen scalar. */
   template <typename T>
   BasicVector<T>* GetMutableVectorData() {
-    return &GetMutableData()->GetMutableValueOrThrow<BasicVector<T>>();
+    return &GetMutableData()->get_mutable_value<BasicVector<T>>();
   }
 
   /** Returns the serial number of the contained value. This counts up every

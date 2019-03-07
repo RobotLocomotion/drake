@@ -110,14 +110,15 @@ class Parameters {
   /// is out of bounds, and throws if the parameter is not of type V.
   template <typename V>
   const V& get_abstract_parameter(int index) const {
-    return get_abstract_parameter(index).template GetValue<V>();
+    return get_abstract_parameter(index).template get_value<V>();
   }
 
   /// Returns the abstract-valued parameter at @p index. Asserts if the index
   /// is out of bounds, and throws if the parameter is not of type V.
   template <typename V>
   V& get_mutable_abstract_parameter(int index) {
-    return get_mutable_abstract_parameter(index).template GetMutableValue<V>();
+    return get_mutable_abstract_parameter(index).
+        template get_mutable_value<V>();
   }
 
   const AbstractValues& get_abstract_parameters() const {

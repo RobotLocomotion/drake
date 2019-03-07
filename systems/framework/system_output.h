@@ -53,7 +53,7 @@ class SystemOutput {
   @throws std::bad_cast if the port is not vector-valued. */
   const BasicVector<T>* get_vector_data(int index) const {
     DRAKE_ASSERT(0 <= index && index < get_num_ports());
-    return &port_values_[index]->template GetValue<BasicVector<T>>();
+    return &port_values_[index]->template get_value<BasicVector<T>>();
   }
 
   /** (Advanced) Returns mutable access to an AbstractValue object that is
@@ -74,8 +74,7 @@ class SystemOutput {
   @throws std::bad_cast if the port is not vector-valued. */
   BasicVector<T>* GetMutableVectorData(int index) {
     DRAKE_ASSERT(0 <= index && index < get_num_ports());
-    return &port_values_[index]
-                ->template GetMutableValueOrThrow<BasicVector<T>>();
+    return &port_values_[index]->template get_mutable_value<BasicVector<T>>();
   }
 
  private:

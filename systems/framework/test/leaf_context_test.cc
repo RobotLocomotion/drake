@@ -141,7 +141,7 @@ class LeafContextTest : public ::testing::Test {
                                          int index) {
     const FixedInputPortValue* free_value =
         context.MaybeGetFixedInputPortValue(InputPortIndex(index));
-    return free_value ? &free_value->get_value().GetValue<std::string>()
+    return free_value ? &free_value->get_value().get_value<std::string>()
                       : nullptr;
   }
 
@@ -234,7 +234,7 @@ void VerifyClonedState(const State<double>& clone) {
   }
 
   EXPECT_EQ(1, clone.get_abstract_state().size());
-  EXPECT_EQ(42, clone.get_abstract_state().get_value(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state().get_value(0).get_value<int>());
   EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
@@ -529,7 +529,7 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
-  EXPECT_EQ(42, context_.get_abstract_state().get_value(0).GetValue<int>());
+  EXPECT_EQ(42, context_.get_abstract_state().get_value(0).get_value<int>());
   EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
@@ -547,7 +547,7 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(64.0, param1[3]);
   ASSERT_EQ(1, leaf_clone->num_abstract_parameters());
   EXPECT_TRUE(is_dynamic_castable<const TestAbstractType>(
-      &leaf_clone->get_abstract_parameter(0).GetValue<TestAbstractType>()));
+      &leaf_clone->get_abstract_parameter(0).get_value<TestAbstractType>()));
 
   // Verify that changes to the cloned parameters do not affect the originals.
   leaf_clone->get_mutable_numeric_parameter(0)[0] = 76.0;

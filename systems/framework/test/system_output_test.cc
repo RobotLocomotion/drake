@@ -45,7 +45,7 @@ TEST_F(SystemOutputTest, Access) {
       expected,
       output_.get_vector_data(0)->get_value());
 
-  EXPECT_EQ("foo", output_.get_data(2)->GetValue<std::string>());
+  EXPECT_EQ("foo", output_.get_data(2)->get_value<std::string>());
 }
 
 TEST_F(SystemOutputTest, Mutation) {
@@ -56,10 +56,10 @@ TEST_F(SystemOutputTest, Mutation) {
   expected << 7, 8;
   EXPECT_EQ(expected, output_.get_vector_data(0)->get_value());
 
-  output_.GetMutableData(2)->GetMutableValue<std::string>() = "bar";
+  output_.GetMutableData(2)->get_mutable_value<std::string>() = "bar";
 
   // Check that the contents changed.
-  EXPECT_EQ("bar", output_.get_data(2)->GetValue<std::string>());
+  EXPECT_EQ("bar", output_.get_data(2)->get_value<std::string>());
 }
 
 // Tests that a copy of a SystemOutput has a deep copy of the data.
@@ -67,13 +67,13 @@ TEST_F(SystemOutputTest, Copy) {
   SystemOutput<double> copy(output_);
   // Changes to the original port should not affect the copy.
   output_.GetMutableVectorData(0)->get_mutable_value() << 7, 8;
-  output_.GetMutableData(2)->GetMutableValue<std::string>() = "bar";
+  output_.GetMutableData(2)->get_mutable_value<std::string>() = "bar";
 
   VectorX<double> expected(2);
   expected << 5, 25;
   EXPECT_EQ(expected, copy.get_vector_data(0)->get_value());
 
-  EXPECT_EQ("foo", copy.get_data(2)->GetValue<std::string>());
+  EXPECT_EQ("foo", copy.get_data(2)->get_value<std::string>());
 
   // The type and value should be preserved.
   const BasicVector<double>* basic = copy.get_vector_data(1);

@@ -167,7 +167,7 @@ class Context : public ContextBase {
   template <typename U>
   const U& get_abstract_state(int index) const {
     const AbstractValues& xa = get_state().get_abstract_state();
-    return xa.get_value(index).GetValue<U>();
+    return xa.get_value(index).get_value<U>();
   }
 
   /// Returns the accuracy setting (if any). Note that the return type is
@@ -439,7 +439,7 @@ class Context : public ContextBase {
   template <typename U>
   U& get_mutable_abstract_state(int index) {
     AbstractValues& xa = get_mutable_abstract_state();
-    return xa.get_mutable_value(index).GetMutableValue<U>();
+    return xa.get_mutable_value(index).get_mutable_value<U>();
   }
 
   /// Returns a mutable reference to this %Context's parameters. Sends out of

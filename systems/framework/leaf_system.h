@@ -1745,7 +1745,7 @@ class LeafSystem : public System<T> {
     auto& port = CreateAbstractLeafOutputPort(
         NextOutputPortName(std::move(name)), MakeAllocCallback(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          OutputType& typed_result = result->get_mutable_value<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
         },
         std::move(prerequisites_of_calc));
@@ -1812,7 +1812,7 @@ class LeafSystem : public System<T> {
         NextOutputPortName(std::move(name)),
         [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          OutputType& typed_result = result->get_mutable_value<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
         },
         std::move(prerequisites_of_calc));

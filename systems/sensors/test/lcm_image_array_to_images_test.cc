@@ -41,13 +41,8 @@ void DecodeImageArray(
   context->FixInputPort(dut->image_array_t_input_port().get_index(),
                         std::move(input_value));
 
-  auto output = dut->AllocateOutput();
-  dut->CalcOutput(*context, output.get());
-
-  *color_image = output->get_data(
-      dut->color_image_output_port().get_index())->GetValue<ImageRgba8U>();
-  *depth_image = output->get_data(
-      dut->depth_image_output_port().get_index())->GetValue<ImageDepth32F>();
+  *color_image = dut->color_image_output_port().Eval<ImageRgba8U>(*context);
+  *depth_image = dut->depth_image_output_port().Eval<ImageDepth32F>(*context);
 }
 
 GTEST_TEST(LcmImageArrayToImagesTest, EmptyArrayTest) {

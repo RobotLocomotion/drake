@@ -31,7 +31,7 @@ GTEST_TEST(PoseBundleToDrawMessageTest, Conversion) {
   auto output = converter.AllocateOutput();
   converter.CalcOutput(*context, output.get());
 
-  const auto& message = output->get_data(0)->GetValue<lcmt_viewer_draw>();
+  const auto& message = output->get_data(0)->get_value<lcmt_viewer_draw>();
   EXPECT_EQ(2, message.num_links);
 
   EXPECT_EQ("foo", message.link_name[0]);

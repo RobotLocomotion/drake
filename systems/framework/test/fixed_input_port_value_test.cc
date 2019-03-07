@@ -157,8 +157,8 @@ TEST_F(FixedInputPortTest, Clone) {
 
   EXPECT_EQ(free0->get_vector_value<double>().get_value(),
             port0_value_->get_vector_value<double>().get_value());
-  EXPECT_EQ(free1->get_value().GetValue<std::string>(),
-            port1_value_->get_value().GetValue<std::string>());
+  EXPECT_EQ(free1->get_value().get_value<std::string>(),
+            port1_value_->get_value().get_value<std::string>());
 
   EXPECT_EQ(free0->serial_number(), port0_value_->serial_number());
   EXPECT_EQ(free1->serial_number(), port1_value_->serial_number());
@@ -169,9 +169,9 @@ TEST_F(FixedInputPortTest, Clone) {
   EXPECT_EQ(port0_value_->get_vector_value<double>().GetAtIndex(0), 99);
   EXPECT_EQ(free0->get_vector_value<double>().GetAtIndex(0), 5);
 
-  free1->GetMutableData()->GetMutableValue<std::string>() = "hello";
-  EXPECT_EQ(free1->get_value().GetValue<std::string>(), "hello");
-  EXPECT_EQ(port1_value_->get_value().GetValue<std::string>(), "foo");
+  free1->GetMutableData()->get_mutable_value<std::string>() = "hello";
+  EXPECT_EQ(free1->get_value().get_value<std::string>(), "hello");
+  EXPECT_EQ(port1_value_->get_value().get_value<std::string>(), "foo");
 }
 
 // Test that we can access values and that doing so does not send value change
@@ -183,7 +183,7 @@ TEST_F(FixedInputPortTest, Access) {
   EXPECT_EQ(tracker0_->num_notifications_received(), rcvd0_);
   EXPECT_EQ(port0_value_->serial_number(), serial0_);
 
-  EXPECT_EQ("foo", port1_value_->get_value().GetValue<std::string>());
+  EXPECT_EQ("foo", port1_value_->get_value().get_value<std::string>());
   EXPECT_EQ(free_tracker1_->num_notifications_sent(), sent1_);
   EXPECT_EQ(tracker1_->num_notifications_received(), rcvd1_);
   EXPECT_EQ(port1_value_->serial_number(), serial1_);
@@ -204,9 +204,9 @@ TEST_F(FixedInputPortTest, Mutation) {
   EXPECT_EQ(port0_value_->serial_number(), serial0_ + 1);
 
   // Change the abstract port's value.
-  port1_value_->GetMutableData()->GetMutableValue<std::string>() = "bar";
+  port1_value_->GetMutableData()->get_mutable_value<std::string>() = "bar";
   // Check that the contents changed.
-  EXPECT_EQ("bar", port1_value_->get_value().GetValue<std::string>());
+  EXPECT_EQ("bar", port1_value_->get_value().get_value<std::string>());
   // Check that notifications were sent and serial number bumped.
   EXPECT_EQ(free_tracker1_->num_notifications_sent(), sent1_ + 1);
   EXPECT_EQ(tracker1_->num_notifications_received(), rcvd1_ + 1);
