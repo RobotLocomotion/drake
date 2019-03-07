@@ -54,8 +54,8 @@ namespace trajectories {
  * under division.
  *
  * @warning %PiecewisePolynomial silently clips input evaluations outside of
- * their defined range. So `pp.value(-2.0, row, col)` in the example above would
- * evaluate to -1.0. See value().
+ * the range defined by the breaks. So `pp.value(-2.0, row, col)` in the example
+ * above would evaluate to -1.0. See value().
  *
  * @tparam T is a scalar type.
  *
@@ -116,8 +116,12 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @anchor polynomial_warning
    * <b>WARNING:</b> For robust floating point arithmetic, the polynomial for
    * a segment will be evaluated (using value()) by first
-   * subtracting the break time from the evaluation time, meaning that
-   * constructing the polynomial like:
+   * subtracting the break time from the evaluation time. In other words, when t
+   * lies in the half-open interval `[breaks[i], breaks[i+1])` then:
+   * @code
+   * value(t) == polynomials[i].eval(t - breaks[i])
+   * @endcode
+   * meaning that constructing the polynomial like:
    * @code
    * const std::vector<double> breaks = { 0.0, 1.0, 2.0 };
    * Polynomiald t("t");
@@ -133,11 +137,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * std::cout << pp.value(1.0+eps)(row, col) << std::endl;    // Outputs 1e-32
    * @endcode
    * because the second polynomial will be evaluated at 1.0+eps minus the break
-   * time for that polynomial (1.0), i.e., t=eps. In other words, when t
-   * lies in the half-open interval `[breaks[i], breaks[i+1])` then:
-   * @code
-   * value(t) == polynomials[i].eval(t - breaks[i])
-   * @endcode
+   * time for that polynomial (1.0), i.e., t=eps.
    * The intended result for the above example can be obtained by shifting the
    * piecewise polynomial like so:
    * @code
@@ -414,17 +414,24 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   // @}
 
   /**
-   * Returns a %PiecewisePolynomial where each segment is the nth derivative of
-   * the segment in the input %PiecewisePolynomial. Any rules or limitations of
-   * Polynomial::derivative() also apply to this function.
+   * Returns a %PiecewisePolynomial where each segment is the specified
+   * derivative of the corresponding segment in `this`. Any rules or limitations
+   * of Polynomial::derivative() also apply to this function.
    *
    * Derivatives evaluated at non-differentiable points return the value at the
    * left hand side of the interval.
+   * @param derivative_order The order of the derivative, namely, if
+   *        `derivative_order` = n, the n'th derivative of the polynomial will
+   *        be returned.
+   * @warning In the event of discontinuous derivatives evaluated at breaks,
+   *          it is not defined which polynomial (i.e., to the left or right
+   *          of the break) will be the one that is evaluated at the break.
    */
-  PiecewisePolynomial<T> derivative(int n = 1) const;
+  PiecewisePolynomial<T> derivative(int derivative_order = 1) const;
 
-  std::unique_ptr<Trajectory<T>> MakeDerivative(int n = 1) const override {
-    return derivative(n).Clone();
+  std::unique_ptr<Trajectory<T>> MakeDerivative(
+      int derivative_order = 1) const override {
+    return derivative(derivative_order).Clone();
   };
 
   /**
@@ -603,7 +610,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * @warning The resulting %PiecewisePolynomial will only be continuous to the
    *          degree that the first Polynomial of `other` is continuous with
-   *          the last Polynomial of `this`.
+   *          the last Polynomial of `this`. See warning about evaluating
+   *          discontinuous derivatives at breaks in derivative().
    * @param other %PiecewisePolynomial instance to concatenate.
    * @throws std::runtime_error if trajectories' dimensions do not match
    *                            each other (either rows() or cols() does
