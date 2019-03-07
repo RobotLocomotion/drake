@@ -9,14 +9,14 @@ namespace geometry {
 
 /** The data for reporting the signed distance between two geometries, A and B.
  It provides the id's of the two geometries, the witness points Ca and Cb on
- the surfaces of A and B, the signed distance, and the unit direction nhat_BA_W
- of ∇φ_B(c_B) the gradient of the signed distance field of B evaluated at Cb
- (always pointing outward from B's surface).
+ the surfaces of A and B, the signed distance, and nhat_BA_W = ∇φ_B(c_B), the
+ gradient of the signed distance field of B evaluated at Cb (always unit
+ length and always point outward from B's surface).
 
- - When A and B are separated, distance > 0; when A and B are touching or
- penetrating, distance <= 0.
- - By definition, the unit direction nhat_AB_W of ∇φ_A(c_A) must be in the
-   opposite direction of nhat_BA_W.
+ - When A and B are separated, distance > 0.
+ - When A and B are touching or penetrating, distance <= 0.
+ - By definition, nhat_AB_W = ∇φ_A(c_A) must be in the opposite direction of
+   nhat_BA_W.
  - For non-touching (separating or penetrating) objects, nhat_BA_W points
    from Cb to Ca, i.e., nhat_BA_W = (p_WCa - p_WCb) / distance.
  - In all cases (separation, osculation, or penetration), we have the invariant
@@ -34,8 +34,8 @@ namespace geometry {
 ```
 
  - If this is the case, we exploit the fact that nhat_BA_W = -nhat_AB_W and
-   evaluate nhat_AB_W = ∇φ_A(c_A). For example, a corner of a box B touches a
-   sphere A, or the corner of a box B touches a planar side of a box A. In
+   set nhat_BA_W equal to -∇φ_A(c_A). For example, a corner of a box B touches
+   a sphere A, or the corner of a box B touches a planar side of a box A. In
    these examples, we evaluate ∇φ_A(c_A) of the sphere A and the box A.
 
 ```
