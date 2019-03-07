@@ -53,7 +53,7 @@ class PoseSmootherTest : public ::testing::Test {
       const Isometry3d& input_pose, double input_time) {
     std::unique_ptr<AbstractValue> input(
         AbstractValue::Make(Isometry3<double>::Identity()));
-    input->SetValue(input_pose);
+    input->set_value(input_pose);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
     context_->set_time(input_time);
 
@@ -66,8 +66,8 @@ class PoseSmootherTest : public ::testing::Test {
         dut_->get_smoothed_velocity_output_port().get_index());
 
     CombinedState return_state(
-        output_pose_value->GetValue<Isometry3d>(),
-        output_velocity_value->GetValue<Vector6<double>>());
+        output_pose_value->get_value<Isometry3d>(),
+        output_velocity_value->get_value<Vector6<double>>());
 
     return return_state;
   }

@@ -43,7 +43,7 @@ class IiwaCommandReceiverTest : public testing::TestWithParam<int> {
       case 1: {
         // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
         fixed_input_.GetMutableData()->
-            template GetMutableValueOrThrow<lcmt_iiwa_command>() = message;
+            template get_mutable_value<lcmt_iiwa_command>() = message;
         return;
       }
     }
