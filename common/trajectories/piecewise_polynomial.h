@@ -39,13 +39,14 @@ namespace trajectories {
  *   knots[i](0, 0) = std::abs(breaks[i]);
  * }
  * const auto pp = PiecewisePolynomial<double>::FirstOrderHold(breaks, knots);
+ * const int row = 0, col = 0;
  *
  * // Evaluate the PiecewisePolynomial at some values.
- * std::cout << pp.scalar_value(-.5) << std::endl;  // Outputs 0.5.
- * std::cout << pp.scalar_value(0) << std::endl;    // Outputs 0.0;
+ * std::cout << pp.value(-.5)(row, col) << std::endl;    // Outputs 0.5.
+ * std::cout << pp.value(0.0)(row, col) << std::endl;    // Outputs 0.0;
  *
- * // Show how we can evaluate the first derivative (outputs 1.0).
- * std::cout << pp.derivative(1).scalar_value(-.5) << std::endl;
+ * // Show how we can evaluate the first derivative (outputs -1.0).
+ * std::cout << pp.derivative(1).value(-.5)(row, col) << std::endl;
  * @endcode
  *
  * PiecewisePolynomial objects can be added, subtracted, and multiplied.
@@ -53,7 +54,7 @@ namespace trajectories {
  * under division.
  *
  * @warning %PiecewisePolynomial silently clips input evaluations outside of
- * their defined range. So `pp.scalar_value(-2.0)` in the example above would
+ * their defined range. So `pp.value(-2.0, row, col)` in the example above would
  * evaluate to -1.0. See value().
  *
  * @tparam T is a scalar type.
@@ -126,14 +127,19 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * would give the following result:
    * @code
    * // Evaluate the PiecewisePolynomial on both sides of a break.
+   * const int row = 0, col = 0;
    * const double eps = 0.5 * std::numeric_limits<double>::epsilon();
-   * std::cout << pp.scalar_value(1.0-eps) << std::endl;    // Outputs 1.0
-   * std::cout << pp.scalar_value(1.0+eps) << std::endl;    // Outputs 1e-32
+   * std::cout << pp.value(1.0-eps)(row, col) << std::endl;    // Outputs 1.0
+   * std::cout << pp.value(1.0+eps)(row, col) << std::endl;    // Outputs 1e-32
    * @endcode
    * because the second polynomial will be evaluated at 1.0+eps minus the break
-   * time for that polynomial (1.0), i.e., t=eps. The intended result can be
-   * obtained by shifting the piecewise polynomial, like so (for the above
-   * example):
+   * time for that polynomial (1.0), i.e., t=eps. In other words, when t
+   * lies in the half-open interval `[breaks[i], breaks[i+1])` then:
+   * @code
+   * value(t) == polynomials[i].eval(t - breaks[i])
+   * @endcode
+   * The intended result for the above example can be obtained by shifting the
+   * piecewise polynomial like so:
    * @code
    * const std::vector<double> breaks = { 0.0, 1.0, 2.0 };
    * Polynomiald t("t");
@@ -143,8 +149,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    *
    * // Evaluate the PiecewisePolynomial on both sides of a break.
    * const double eps = 0.5 * std::numeric_limits<double>::epsilon();
-   * std::cout << pp.scalar_value(1.0-eps) << std::endl;    // Outputs 1.0
-   * std::cout << pp.scalar_value(1.0+eps) << std::endl;    // Outputs 1.0
+   * std::cout << pp.value(1.0-eps)(row, col) << std::endl;    // Outputs 1.0
+   * std::cout << pp.value(1.0+eps)(row, col) << std::endl;    // Outputs 1.0
    * @endcode
    */
   // @{
@@ -621,6 +627,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * segment index.
    * @note Calls PiecewiseTrajectory<T>::segment_number_range_check() to
    *       validate `segment_index`.
+   * @warning This code relies upon Eigen to verify that the replacement
+   *          block is not too large.
    */
   void setPolynomialMatrixBlock(const PolynomialMatrix& replacement,
                                 int segment_index, Eigen::Index row_start = 0,
