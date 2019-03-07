@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":signal_log",
         ":signal_logger",
         ":sine",
+        ":time_delay",
         ":time_varying_data",
         ":trajectory_source",
         ":wrap_to_system",
@@ -260,6 +261,17 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "time_delay",
+    srcs = ["time_delay.cc"],
+    hdrs = ["time_delay.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//systems/framework",
     ],
 )
 
@@ -557,6 +569,16 @@ drake_cc_googletest(
     deps = [
         ":sine",
         "//common:symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "time_delay_test",
+    deps = [
+        ":time_delay",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework",
         "//systems/framework/test_utilities",
