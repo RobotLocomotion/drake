@@ -63,10 +63,18 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
   const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
   const VectorBase<T>& xcdot0 = xc_deriv.get_vector();
 
-  // Update continuous state and time.
-  // This call invalidates t- and xc-dependent cache entries.
+  // Cache: xcdot0 references the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
+
+  // Update continuous state and time. This call marks t- and xc-dependent
+  // cache entries out of date, including xcdot0.
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
       context.get_time() + dt);  // t ← t₀ + h
+
+  // Cache: xcdot0 still references the derivative cache value, which is
+  // unchanged, although it is marked out of date.
+
   xc.PlusEqScaled(dt, xcdot0);   // xc(t₀ + h) ← xc(t₀) + dt * xcdot₀
 
   // This integrator always succeeds at taking the step.

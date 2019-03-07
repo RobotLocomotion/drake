@@ -122,10 +122,19 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
   const VectorBase<T>& vdot = xc_deriv.get_generalized_velocity();
   const VectorBase<T>& zdot = xc_deriv.get_misc_continuous_state();
 
+  // Cache: vdot and zdot reference the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
+
   // This invalidates computations that are dependent on v or z.
+  // Marks v- and z-dependent cache entries out of date, including vdot and
+  // zdot; time doesn't change here.
   std::pair<VectorBase<T>*, VectorBase<T>*> vz = context.GetMutableVZVectors();
   VectorBase<T>& v = *vz.first;
   VectorBase<T>& z = *vz.second;
+
+  // Cache: vdot and zdot still reference the derivative cache value, which is
+  // unchanged, although it is marked out of date.
 
   // Update the velocity and auxiliary state variables.
   v.PlusEqScaled(h, vdot);
@@ -136,8 +145,9 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
   // hasn't been invalidated if it was pre-computed.
   system.MapVelocityToQDot(context, v, &qdot_);
 
-  // Now set time and q to their final values. This invalidates time- and
-  // q-dependent computations as a side effect.
+  // Now set time and q to their final values. This marks time- and
+  // q-dependent cache entries out of date. That includes the derivative
+  // cache entry though we don't need it again here.
   VectorBase<T>& q =
       context.SetTimeAndGetMutableQVector(context.get_time() + h);
   q.PlusEqScaled(h, qdot_);

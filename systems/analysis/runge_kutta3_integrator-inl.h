@@ -74,9 +74,13 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& xcdot0 = derivs0_->get_vector();
 
+  // Cache: xcdot0 references a *copy* of the derivative result so is immune
+  // to subsequent evaluations.
+
   // Compute the first intermediate state and derivative
   // (at t⁽ᵃ⁾=t₀+h/2, x⁽ᵃ⁾, u⁽ᵃ⁾).
-  // This call invalidates t- and xc-dependent cache entries.
+  // This call marks t- and xc-dependent cache entries out of date, including
+  // the derivative cache entry.
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
       t0 + h / 2);                      // t⁽ᵃ⁾ ← t₀ + h/2
   xc.CopyToPreSizedVector(&save_xc0_);  // Save xc₀ while we can.
@@ -86,21 +90,37 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& xcdot_a = derivs1_->get_vector();  // xcdot⁽ᵃ⁾
 
+  // Cache: xcdot_a references a *copy* of the derivative result so is immune
+  // to subsequent evaluations.
+
   // Compute the second intermediate state and derivative
   // (at t⁽ᵇ⁾=t₁, x⁽ᵇ⁾, u⁽ᵇ⁾).
-  // This call invalidates t- and xc-dependent cache entries.
+  // This call marks t- and xc-dependent cache entries out of date, including
+  // the derivative cache entry.
   context.SetTimeAndNoteContinuousStateChange(t1);
   // xcⱼ ← xc₀ - h xcdot₀ + 2 h xcdot⁽ᵃ⁾
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{-h, xcdot0}, {2 * h, xcdot_a}});
+
   const VectorBase<T>& xcdot_b =  // xcdot⁽ᵇ⁾
       this->EvalTimeDerivatives(context).get_vector();
 
-  // Calculate the final O(h³) state at t₁.
+  // Cache: xcdot_b references the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
+
+  // Marks xc-dependent cache entries out of date, including xcdot_b; time
+  // doesn't change here.
   context.NoteContinuousStateChange();
+
+  // Calculate the final O(h³) state at t₁.
   // xc₁ ← xc₀ + h/6 xcdot₀ + 2/3 h xcdot⁽ᵃ⁾ + h/6 xcdot⁽ᵇ⁾
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   const T h6 = h / 6.0;
+
+  // Cache: xcdot_b still references the derivative cache value, which is
+  // unchanged, although it is marked out of date. xcdot0 and xcdot_a are
+  // unaffected.
   xc.PlusEqScaled({{h6,     xcdot0},
                    {4 * h6, xcdot_a},
                    {h6,     xcdot_b}});
@@ -113,7 +133,11 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // continuous state vector, where the various state components can be
   // analyzed.
   // ε = | xc₁ - (xc₀ + h xcdot⁽ᵃ⁾) | = | xc₀ + h xcdot⁽ᵃ⁾ - xc₁ |
+
+  // TODO(sherm1) Set err_est_vec_ to xc0 at the start and use it above to
+  //              avoid the need for save_xc0_ and this copy altogether.
   err_est_vec_ = save_xc0_;  // ε ← xc₀
+
   // TODO(sherm1) This is xcdot₀, not xcdot⁽ᵃ⁾! Should be xcdot_a; issue #10633.
   xcdot0.ScaleAndAddToVector(h, &err_est_vec_);      // ε += h xcdot₀   (WRONG!)
   // xcdot_a.ScaleAndAddToVector(h, &err_est_vec_);  // ε += h xcdot⁽ᵃ⁾ (RIGHT!)
