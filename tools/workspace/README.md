@@ -45,6 +45,9 @@ Most third-party software used by Drake will be incorporated via files named
 (`boost`, `eigen`, `vtk`, etc.).  Consult that file to check which download or
 installation helper is used; find the helper in the the list below to continue.
 
+Drake maintainers can use the bazel-bin/tools/workspace/new_release tool to
+report any out-of-date externals.
+
 ## Updating github_archive software versions
 
 For software downloaded from github.com and compiled from source, there are two
@@ -94,7 +97,7 @@ match the `commit=` tag, they should be updated (this is rare).
 Commit and pull-request the changed lines to Drake as usual.  Many changes like
 this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
-http://drake.mit.edu/jenkins.html#running-an-on-demand-build.
+https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
 ## Updating bitbucket_archive software versions
 
@@ -112,7 +115,7 @@ remove its commenting-out.  Then, `bazel build` should succeed.
 Commit and pull-request the changed lines to Drake as usual.  Many changes like
 this will be susceptible to Ubuntu vs macOS differences, so please opt-in to
 the macOS build(s) in Jenkins before merging, using the instructions at
-http://drake.mit.edu/jenkins.html#running-an-on-demand-build.
+https://drake.mit.edu/jenkins.html#running-an-on-demand-build.
 
 ## Updating pkg_config_repository software versions
 
@@ -154,6 +157,9 @@ it into Drake are roughly:
   `foo_repository()` macro or rule.  The details are given below.
 - Edit `tools/workspace/default.bzl` to load and conditionally call the new
   `foo_repository()` macro or rule.
+
+When indicating licenses in the source, use the identifier from the
+[SPDX License List](https://spdx.org/licenses/).
 
 ## When using a library from the host operating system
 

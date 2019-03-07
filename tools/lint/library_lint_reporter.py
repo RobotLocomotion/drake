@@ -35,7 +35,7 @@ def main():
     return_code = 0
 
     if args.untagged_package_library:
-        print(("error: The package {} has a cc_library(name = \":{}\") "
+        print(("ERROR: The package {} has a cc_library(name = \":{}\") "
                "declared without using drake_cc_package_library().").format(
             args.package_name,
             short_package_name))
@@ -44,7 +44,7 @@ def main():
     with open(args.missing_deps or '/dev/null') as opened:
         missing_deps = opened.readlines()
     if missing_deps:
-        print(("error: Missing deps in {}'s drake_cc_package_library.").format(
+        print(("ERROR: Missing deps in {}'s drake_cc_package_library.").format(
             args.package_name))
         print(("note: In the {} rule for drake_cc_package_library, "
                "add the following lines to the deps:").format(
@@ -66,7 +66,7 @@ def main():
                 item.startswith("@bazel_tools//"))
     ]
     if extra_deps:
-        print(("error: Extra deps in {}'s drake_cc_package_library.").format(
+        print(("ERROR: Extra deps in {}'s drake_cc_package_library.").format(
             args.package_name))
         print(("note: In the {} rule for drake_cc_package_library, "
                "remove the following lines from the deps:").format(

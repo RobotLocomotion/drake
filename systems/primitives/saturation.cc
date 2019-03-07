@@ -58,38 +58,31 @@ Saturation<T>::Saturation(const VectorX<T>& min_value,
 template <typename T>
 void Saturation<T>::CalcSaturatedOutput(const Context<T>& context,
                                         BasicVector<T>* output_vector) const {
-  // Evaluates the state output port.
-  auto y = output_vector->get_mutable_value();
-
-  const BasicVector<T>* input_vector =
-      this->EvalVectorInput(context, input_port_index_);
-
-  // Initializes on the default values
+  // Initializes on the default values.
   VectorX<T> u_min = min_value_, u_max = max_value_;
 
   // Extracts the min and/or max values if they are present in the input ports.
   if (min_max_ports_enabled_) {
-    const BasicVector<T>* max_value_vector =
-        this->EvalVectorInput(context, max_value_port_index_);
-    const BasicVector<T>* min_value_vector =
-        this->EvalVectorInput(context, min_value_port_index_);
-
+    const bool has_min = get_min_value_port().HasValue(context);
+    const bool has_max = get_max_value_port().HasValue(context);
     // Throws an error in case neither of the inputs are connected in
     // the case of the variable version of the Saturation system.
-    DRAKE_THROW_UNLESS(min_value_vector != nullptr
-        || max_value_vector != nullptr);
+    DRAKE_THROW_UNLESS(has_min || has_max);
 
-    if (min_value_vector != nullptr) {
-      u_min = min_value_vector->get_value();
+    if (has_min) {
+      u_min = get_min_value_port().Eval(context);
     }
-    if (max_value_vector != nullptr) {
-      u_max = max_value_vector->get_value();
+    if (has_max) {
+      u_max = get_max_value_port().Eval(context);
     }
   }
-
   DRAKE_THROW_UNLESS((u_min.array() <= u_max.array()).all());
 
-  const auto& u = input_vector->get_value();
+  // Evaluates the input port.
+  const auto& u = get_input_port().Eval(context);
+
+  // Evaluates the state output port.
+  auto y = output_vector->get_mutable_value();
 
   // Loop through and set the saturation values.
   for (int i = 0; i < u_min.size(); ++i) {

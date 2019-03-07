@@ -20,7 +20,7 @@ LcmDrivenLoop::LcmDrivenLoop(
   // Allocates extra context and output just for the driving subscriber, so
   // that this can explicitly query the message.
   sub_context_ = driving_sub_.CreateDefaultContext();
-  sub_output_ = driving_sub_.AllocateOutput(*sub_context_);
+  sub_output_ = driving_sub_.AllocateOutput();
   sub_swap_state_ = sub_context_->CloneState();
   sub_events_ = driving_sub_.AllocateCompositeEventCollection();
 
@@ -51,7 +51,7 @@ const AbstractValue& LcmDrivenLoop::WaitForMessage() {
   } else {
     DRAKE_DEMAND(false);
   }
-  sub_context_->get_mutable_state().CopyFrom(*sub_swap_state_);
+  sub_context_->get_mutable_state().SetFrom(*sub_swap_state_);
 
   driving_sub_.CalcOutput(*sub_context_, sub_output_.get());
   return *(sub_output_->get_data(0));

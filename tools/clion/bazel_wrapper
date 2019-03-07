@@ -74,7 +74,7 @@ def main(argv, execvp, write_stderr, popen):
     # Read until EOF.
     while True:
         line = bazel.stderr.readline()
-        if line == b"":
+        if len(line) == 0:
             break
         match = prog1.match(line) or prog2.match(line)
         if match is not None:

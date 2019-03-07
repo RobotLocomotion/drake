@@ -26,7 +26,7 @@ GTEST_TEST(TestEncoders, QuantizeOnly) {
   ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
-  auto output = encoders.AllocateOutput(*context);
+  auto output = encoders.AllocateOutput();
   auto measurement = output->get_vector_data(0);
 
   double tol = 1e-10;
@@ -59,7 +59,7 @@ GTEST_TEST(TestEncoders, SelectorOnly) {
   systems::sensors::RotaryEncoders<double> encoders(4, indices);
 
   auto context = encoders.CreateDefaultContext();
-  auto output = encoders.AllocateOutput(*context);
+  auto output = encoders.AllocateOutput();
   auto measurement = output->get_vector_data(0);
 
   double tol = 1e-10;
@@ -93,7 +93,7 @@ GTEST_TEST(TestEncoders, QuantizationAndSelector) {
   ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
-  auto output = encoders.AllocateOutput(*context);
+  auto output = encoders.AllocateOutput();
   auto measurement = output->get_vector_data(0);
 
   double tol = 1e-10;
@@ -132,7 +132,7 @@ GTEST_TEST(TestEncoders, CalibrationOffsets) {
   ticks_per_radian << tick_counts[0] / k2Pi, tick_counts[1] / k2Pi;
 
   auto context = encoders.CreateDefaultContext();
-  auto output = encoders.AllocateOutput(*context);
+  auto output = encoders.AllocateOutput();
   auto measurement = output->get_vector_data(0);
 
   // Set some offsets.
@@ -191,7 +191,7 @@ GTEST_TEST(TestEncoders, ScalarConversion) {
     context->FixInputPort(0, input);
 
     // Obtain the symbolic outputs.
-    auto outputs = dut.AllocateOutput(*context);
+    auto outputs = dut.AllocateOutput();
     dut.CalcOutput(*context, outputs.get());
     const systems::BasicVector<Expression>& output =
         *(outputs->get_vector_data(0));

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
+#include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -12,9 +14,10 @@ namespace sensors {
 /// The naming rule for the enum members is:
 /// k + (pixel format) + (bit per a channel) + (data type for channels).
 /// For the type for channels, one of the following capital letters is used.
-///   - I: int
-///   - U: unsigned int
-///   - F: float
+///
+/// - I: int
+/// - U: unsigned int
+/// - F: float
 enum class PixelType {
   /// The pixel format used by ImageRgb8U.
   kRgb8U = 0,
@@ -58,7 +61,23 @@ enum class PixelFormat {
   kExpr,
 };
 
-/// Traits class for Image.
+/// Traits class for Image, specialized by PixelType.
+///
+/// All traits specialization should offer at least these two constants:
+/// - kNumChannels: The number of channels.
+/// - kPixelFormat: The meaning and/or layout of the channels.
+///
+/// Specializations for kDepth... should also provide the following constants:
+/// - kTooClose: The depth value when the min sensing range is exceeded.
+/// - kTooFar: The depth value when the max sensing range is exceeded.
+///
+/// The kTooClose values <a href="http://www.ros.org/reps/rep-0117.html">differ
+/// from ROS</a>, which uses negative infinity in this scenario.  Drake uses
+/// zero because it results in less devastating bugs when users fail to check
+/// for the lower limit being hit, because using negative infinity does not
+/// prevent users from writing bad code, because uint16_t does not offer
+/// negative infinity and using 65535 for "too near" could be confusing, and
+/// because several cameras natively use zero for this case.
 template <PixelType>
 struct ImageTraits;
 
@@ -95,6 +114,9 @@ struct ImageTraits<PixelType::kDepth32F> {
   typedef float ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kDepth;
+  static constexpr ChannelType kTooClose = 0.0f;
+  static constexpr ChannelType kTooFar =
+      std::numeric_limits<ChannelType>::infinity();
 };
 
 template <>
@@ -102,6 +124,9 @@ struct ImageTraits<PixelType::kDepth16U> {
   typedef uint16_t ChannelType;
   static constexpr int kNumChannels = 1;
   static constexpr PixelFormat kPixelFormat = PixelFormat::kDepth;
+  static constexpr ChannelType kTooClose = 0;
+  static constexpr ChannelType kTooFar =
+      std::numeric_limits<ChannelType>::max();
 };
 
 template <>
@@ -128,3 +153,10 @@ struct ImageTraits<PixelType::kExpr> {
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+// Enable the pixel type enumeration to be used as a map key.
+namespace std {
+template <>
+struct hash<drake::systems::sensors::PixelType>
+    : public drake::DefaultHash {};
+}  // namespace std

@@ -448,6 +448,158 @@ GTEST_TEST(MultilaneLanesTest, MultipleLineLaneSegmentWithoutHint) {
   }
 }
 
+
+// This test creates a line segment that overlaps with an arc segment. Both
+// segments are single-lane segments whose lane curves start at the same point.
+// This tests exercises RoadGeometry::ToRoadPosition() to verify that the
+// correct positions are obtained with overlapped lane bounds.
+//
+// <pre>
+//                     - arc-segment
+//                   --
+//                 --
+//              ---
+//           ---   c
+//       ----
+//   ----          b
+//  a------------------------------- line-segment
+//
+// </pre>
+//
+// `a`, `b` and `c` are the GeoPositions to test.
+GTEST_TEST(MultilaneLanesTest, OverlappingLaneBounds) {
+  const HBounds kElevationBounds{0., kHeight};
+  const double kLinearTolerance{kVeryExact};   // meters.
+  const double kAngularTolerance{kVeryExact};  // radians.
+  const double kLaneWidth{2. * kWidth};
+  const double kScaleLength = 1.0;
+  const ComputationPolicy kComputationPolicy{
+    ComputationPolicy::kPreferAccuracy};
+  auto builder = multilane::BuilderFactory().Make(
+      kLaneWidth, kElevationBounds, kLinearTolerance,
+      kAngularTolerance, kScaleLength, kComputationPolicy);
+
+  // Initialize the road from the origin.
+  const EndpointZ kFlatZ{0., 0., 0., 0.};
+  const Endpoint kRoadOrigin{{0., 0., 0.}, kFlatZ};
+  const double kLength{50.};
+  const double kRadius{50.};
+  const double kDTheta{M_PI / 4.};
+  const int kOneLane{1};
+  const int kRefLane{0};
+  const double kZeroR0{0.};
+  const double kShoulder{2.0};
+  const LaneLayout kMonolaneLayout(kShoulder, kShoulder, kOneLane, kRefLane,
+                                   kZeroR0);
+
+  // Creates a simple straight-line segment road.
+  builder->Connect("line-segment", kMonolaneLayout,
+                   StartReference().at(kRoadOrigin, Direction::kForward),
+                   LineOffset(kLength),
+                   EndReference().z_at(kFlatZ, Direction::kForward));
+  // Creates a simple curve segment road.
+  builder->Connect("arc-segment", kMonolaneLayout,
+                   StartReference().at(kRoadOrigin, Direction::kForward),
+                   ArcOffset(kRadius, kDTheta),
+                   EndReference().z_at(kFlatZ, Direction::kForward));
+
+  std::unique_ptr<const api::RoadGeometry> rg =
+      builder->Build(api::RoadGeometryId{"multi-lane-line-segment"});
+
+  // Prepares the truth table to match different api::GeoPositions into
+  // api::RoadPositions.
+  const api::Lane* line_lane = GetLaneByJunctionId(*rg, "j:line-segment", 0, 0);
+  const api::Lane* arc_lane = GetLaneByJunctionId(*rg, "j:arc-segment", 0, 0);
+
+  double distance{};
+  api::RoadPosition test_road_position{};
+  api::GeoPosition nearest_position{};
+
+  // Checks the origin, where both lanes start from the same GeoPosition and
+  // there is no explicit preference for one or the other lane in maliput API
+  // as both have the same `r` coordinate and no hint is supplied.
+  const api::GeoPosition kAPoint(0., 0., 0.);
+  EXPECT_NO_THROW(test_road_position =
+                      rg->ToRoadPosition(kAPoint, nullptr,
+                                         &nearest_position, &distance));
+  EXPECT_NE(test_road_position.lane, nullptr);
+  EXPECT_TRUE(api::test::IsLanePositionClose(test_road_position.pos,
+                                             api::LanePosition(0., 0., 0.),
+                                             kLinearTolerance));
+  EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, kAPoint,
+                                            kLinearTolerance));
+  EXPECT_NEAR(distance, 0., kLinearTolerance);
+
+  // Using the same GeoPosition, but with a line-hint, we should get the
+  // result on the line-segment.
+  const api::RoadPosition kStartLineLane{
+      line_lane, api::LanePosition(0., 0., 0.)};
+  EXPECT_NO_THROW(test_road_position =
+                      rg->ToRoadPosition(kAPoint, &kStartLineLane,
+                                         &nearest_position, &distance));
+  EXPECT_EQ(test_road_position.lane->id(), line_lane->id());
+  EXPECT_TRUE(api::test::IsLanePositionClose(test_road_position.pos,
+                                             api::LanePosition(0., 0., 0.),
+                                             kLinearTolerance));
+  EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, kAPoint,
+                                            kLinearTolerance));
+  EXPECT_NEAR(distance, 0., kLinearTolerance);
+
+  // Same as before, but with a hint on the arc-segment.
+  const api::RoadPosition kStartArcLane{
+      arc_lane, api::LanePosition(0., 0., 0.)};
+  EXPECT_NO_THROW(test_road_position =
+                      rg->ToRoadPosition(kAPoint, &kStartArcLane,
+                                         &nearest_position, &distance));
+  EXPECT_EQ(test_road_position.lane->id(), arc_lane->id());
+  EXPECT_TRUE(api::test::IsLanePositionClose(test_road_position.pos,
+                                             api::LanePosition(0., 0., 0.),
+                                             kLinearTolerance));
+  EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, kAPoint,
+                                            kLinearTolerance));
+  EXPECT_NEAR(distance, 0., kLinearTolerance);
+
+  // Tests a GeoPosition in between line and arc lane curves. It is closer to
+  // the line segment (smaller `r` coordinate) but within the lane bounds of
+  // both road lanes.
+  // The following constants explain how to locate the point in space. An
+  // arbitrary kROffset distance from the curve-centerline was chosen as well
+  // as an `x` coordinate. The rest of the variables are derived from them.
+  const double kX{8.68};
+  const double kROffset{0.3};
+  const api::GeoPosition kBPoint(kX, kROffset, 0.);
+  EXPECT_NO_THROW(test_road_position =
+                      rg->ToRoadPosition(kBPoint, nullptr,
+                                         &nearest_position, &distance));
+  EXPECT_EQ(test_road_position.lane->id(), line_lane->id());
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      test_road_position.pos, api::LanePosition(kX, kROffset, 0.),
+      kLinearTolerance));
+  EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, kBPoint,
+                                            kLinearTolerance));
+  EXPECT_NEAR(distance, 0., kLinearTolerance);
+
+  // Tests a GeoPosition in between line and arc lane curves. It is closer to
+  // the arc segment (smaller `r` coordinate) but within the lane bounds of
+  // both road lanes.
+  // Using previous constants, another point is derived but closer to the
+  // arc-centerline.
+  const double kCTheta{std::asin(kX / (kRadius + kROffset))};
+  const double kCY{kRadius - (kRadius + kROffset) * std::cos(kCTheta)};
+  const api::GeoPosition kCPoint(kX, kCY, 0.);
+  EXPECT_NO_THROW(test_road_position =
+                      rg->ToRoadPosition(kCPoint, nullptr,
+                                         &nearest_position, &distance));
+  EXPECT_EQ(test_road_position.lane->id(), arc_lane->id());
+  EXPECT_TRUE(api::test::IsLanePositionClose(
+      test_road_position.pos,
+      api::LanePosition(kRadius * kCTheta, -kROffset, 0.),
+      kLinearTolerance));
+  EXPECT_TRUE(api::test::IsGeoPositionClose(nearest_position, kCPoint,
+                                            kLinearTolerance));
+  EXPECT_NEAR(distance, 0., kLinearTolerance);
+}
+
 }  // namespace
 }  // namespace multilane
 }  // namespace maliput

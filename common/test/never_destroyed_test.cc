@@ -9,12 +9,10 @@
 namespace drake {
 namespace {
 
-namespace {
 class Boom : public std::exception { };
 struct DtorGoesBoom {
   ~DtorGoesBoom() noexcept(false) { throw Boom(); }
 };
-}
 
 // Confirm that we see booms by default.
 GTEST_TEST(NeverDestroyedTest, BoomTest) {

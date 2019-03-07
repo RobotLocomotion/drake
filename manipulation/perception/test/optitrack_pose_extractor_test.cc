@@ -10,7 +10,6 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace manipulation {
@@ -29,7 +28,7 @@ class OptitrackPoseTest : public ::testing::Test {
     dut_ = std::make_unique<OptitrackPoseExtractor>(
         object_id, world_X_optitrack, 0.01 /* optitrack_lcm_status_period */);
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
 
     EXPECT_EQ(dut_->get_num_input_ports(), 1);
     EXPECT_EQ(dut_->get_num_output_ports(), 1);
@@ -37,8 +36,8 @@ class OptitrackPoseTest : public ::testing::Test {
 
   Isometry3<double> UpdateStateCalcOutput(
       const optitrack::optitrack_frame_t& input_frame) {
-    std::unique_ptr<systems::AbstractValue> input(
-        new systems::Value<optitrack::optitrack_frame_t>());
+    std::unique_ptr<AbstractValue> input(
+        new Value<optitrack::optitrack_frame_t>());
     input->SetValue(input_frame);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
 
@@ -62,11 +61,21 @@ TEST_F(OptitrackPoseTest, InvalidObjectTest) {
   optitrack::optitrack_rigid_body_t default_body{};
   default_body.id = 0;
 
+  // Need to initialize default_body.quat to a valid quaternion or else there
+  // is a downstream RotationMatrix class that throws an exception because
+  // the quaternion is invalid (e.g., it has NANs).
+  // Exceptions being thrown by the RotationMatrix class are not what this test
+  // is trying to achieve -- so properly initialize default_body.quat.
+  default_body.quat[0] = 1;
+  default_body.quat[1] = 0;
+  default_body.quat[2] = 0;
+  default_body.quat[3] = 0;
+
   test_frame.rigid_bodies.push_back(default_body);
   default_body.id = 1;
   test_frame.rigid_bodies.push_back(default_body);
-  // Test frame has only 2 bodies but DUT extracts pose of non-existent
-  // 3rd object (object ID = 2)
+  // Test frame has only 2 bodies but DUT (Device Under Test) extracts pose of
+  // non-existent 3rd object (object ID = 2)
   EXPECT_ANY_THROW(UpdateStateCalcOutput(test_frame));
 
   // Adding the appropriate number of bodies to the test frame will result

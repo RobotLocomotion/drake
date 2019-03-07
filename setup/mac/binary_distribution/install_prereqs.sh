@@ -17,8 +17,5 @@ fi
 /usr/local/bin/brew update
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
-if [[ ! -f /usr/include/expat.h || ! -f /usr/include/zlib.h ]]; then
-  /usr/bin/xcode-select --install
-fi
-
 /usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
+/usr/local/bin/pip3 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"

@@ -10,11 +10,13 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_test",
     "drake_transitive_installed_hdrs_filegroup",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
-load("//tools:drake.bzl", "drake_cc_binary")
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 
 # TODO(eric.cousineau): Try to make the CMake target `drake-marker` private,
 # such that no downstream users can use it?
@@ -39,9 +41,20 @@ drake_cc_binary(
     deps = LIBDRAKE_COMPONENTS,
 )
 
-# Gather all of libdrake.so's dependent headers.
+# Gather all of libdrake.so's dependent headers, excluding headers that are
+# stored in the attic.  (Those will be used only after some path mangling.)
 drake_transitive_installed_hdrs_filegroup(
-    name = "libdrake_headers",
+    name = "libdrake_headers_no_attic",
+    never_startswith = [
+        # The attic headers come in via `only_startswith = "attic/"` in a
+        # different rule, below.
+        "attic/",
+        # Drake's lcmtypes are installed via the //lcmtypes:install rule,
+        # because they part of a different CMake component than Drake main C++
+        # library.  They should not be part of libdrake.so's installed headers.
+        # (For CMake details, refer to //tools/install/libdrake:drake.cps.in.)
+        "lcmtypes/",
+    ],
     deps = LIBDRAKE_COMPONENTS,
 )
 
@@ -49,21 +62,42 @@ drake_transitive_installed_hdrs_filegroup(
 # (i.e. in Drake itself; not externals).
 install(
     name = "install",
+    install_tests = [
+        "test/snopt_visibility_install_test.py",
+    ],
     targets = ["libdrake.so"],
-    hdrs = [":libdrake_headers"],
+    hdrs = [":libdrake_headers_no_attic"],
     hdr_dest = "include/drake",
     allowed_externals = ["//:LICENSE.TXT"],  # Root for our #include paths.
     visibility = ["//:__pkg__"],
     deps = [
+        ":install_attic_headers",
         ":install_cmake_config",
     ],
+)
+
+# Gather the headers that are stored in the attic.
+drake_transitive_installed_hdrs_filegroup(
+    name = "libdrake_headers_only_attic",
+    only_startswith = "attic/",
+    deps = LIBDRAKE_COMPONENTS,
+)
+
+# Install headers that are stored in the attic by stripping off the "attic/"
+# component of the pathname.
+install(
+    name = "install_attic_headers",
+    hdrs = [":libdrake_headers_only_attic"],
+    hdr_dest = "include/drake",
+    hdr_strip_prefix = ["attic"],
+    allowed_externals = ["//:LICENSE.TXT"],
 )
 
 # Depend on Gurobi's shared library iff Gurobi is enabled.
 cc_library(
     name = "gurobi_deps",
     deps = select({
-        "//tools:with_gurobi": ["@gurobi"],
+        "//tools:with_gurobi": ["@gurobi//:gurobi_c"],
         "//conditions:default": [],
     }),
 )
@@ -92,6 +126,7 @@ cc_library(
         "@vtk//:vtkIOGeometry",
         "@vtk//:vtkIOImage",
         "@vtk//:vtkRenderingCore",
+        "@vtk//:vtkRenderingOSPRay",
         "@vtk//:vtkRenderingOpenGL2",
     ],
 )
@@ -112,7 +147,7 @@ cc_library(
 cc_library(
     name = "drake_shared_library",
     srcs = [":libdrake.so"],
-    hdrs = [":libdrake_headers"],
+    hdrs = [":libdrake_headers_no_attic"],
     # N.B. To pull in transitive `data` dependencies, we must list
     # `libdrake.so` as a data target.
     data = [":libdrake.so"],
@@ -120,7 +155,9 @@ cc_library(
     strip_include_prefix = "/",
     visibility = ["//:__pkg__"],
     deps = [
-        # The list of depended-on *.so files.
+        ":libdrake_headers_only_attic_cc_library",
+        # The list of depended-on *.so files. These should ONLY be shared
+        # libraries; do not add static dependencies here.
         ":gurobi_deps",
         ":mosek_deps",
         ":vtk_deps",
@@ -130,14 +167,43 @@ cc_library(
         "@ignition_rndf",
         "@lcm",
         "@libprotobuf",
-        "@osqp",
         "@scs//:scsdir",
         "@tinyxml2",
     ] + [
-        # The list of depended-on header-only libraries.
+        # The list of depended-on header-only libraries that libdrake's header
+        # files depend on.
+        "//lcmtypes:lcmtypes_drake_cc",
         "@eigen",
         "@fmt",
+        "@lcmtypes_bot2_core//:lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion//:lcmtypes_robotlocomotion",
+        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
+        "@spdlog",
         "@stx",
+    ],
+)
+
+# Include headers that are stored in the attic by stripping off the "attic/"
+# component of the pathname.
+cc_library(
+    name = "libdrake_headers_only_attic_cc_library",
+    hdrs = [":libdrake_headers_only_attic"],
+    include_prefix = "drake",
+    strip_include_prefix = "/attic",
+)
+
+drake_cc_test(
+    name = "drake_shared_library_test",
+    # Using `drake_shared_library` can cause timeouts in debug mode.
+    timeout = "moderate",
+    deps = [":drake_shared_library"],
+)
+
+drake_cc_googletest(
+    name = "fast_math_test",
+    tags = ["no_kcov"],  # See #10788.
+    deps = [
+        "//:drake_shared_library",
     ],
 )
 

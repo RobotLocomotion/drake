@@ -7,10 +7,10 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/state.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/framework/vector_base.h"
 
@@ -34,7 +34,7 @@ class SpringMassSystemTest : public ::testing::Test {
                                                          with_input_force);
     system_->set_name("test_system");
     context_ = system_->CreateDefaultContext();
-    system_output_ = system_->AllocateOutput(*context_);
+    system_output_ = system_->AllocateOutput();
     system_derivatives_ = system_->AllocateTimeDerivatives();
     const int nq = system_derivatives_->get_generalized_position().size();
     configuration_derivatives_ = std::make_unique<BasicVector<double>>(nq);
@@ -394,7 +394,7 @@ TEST_F(SpringMassSystemTest, Integrate) {
   // Allocate resources.
   for (int i = 0; i < kNumIntegrators; ++i) {
     contexts.push_back(system_->CreateDefaultContext());
-    outputs.push_back(system_->AllocateOutput(*contexts.back()));
+    outputs.push_back(system_->AllocateOutput());
     derivs.push_back(system_->AllocateTimeDerivatives());
   }
 

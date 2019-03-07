@@ -33,7 +33,7 @@ class TestGtestMain(unittest.TestCase):
             returncode, expected_returncode,
             "Expected returncode %r from %r but got %r with output %r" % (
                 expected_returncode, args, returncode, output))
-        return output
+        return output.decode('utf8')
 
     def test_pass(self):
         # The device under test should pass when -magic_number=1.0 is present.
@@ -42,7 +42,8 @@ class TestGtestMain(unittest.TestCase):
     def test_no_arguments(self):
         # The device under test should fail when -magic_number=1.0 is missing.
         output = self._check_call([], expected_returncode=1)
-        self.assertTrue("Expected: FLAGS_magic_number" in output)
+        self.assertTrue("Expected equality of these values:\n"
+                        "  FLAGS_magic_number" in output)
 
     def test_help(self):
         # The help string should mention all options.  Just spot-check for one
@@ -63,7 +64,7 @@ class TestGtestMain(unittest.TestCase):
         log_message = "[debug] Cross your fingers for the magic_number 1"
         args = ["-magic_number=1.0"]
         output = self._check_call(args, expected_returncode=0)
-        self.assertFalse(log_message in output)
+        self.assertFalse(log_message in output, output)
 
         # Once enabled, we see a debug log.
         args.append("-spdlog_level=debug")

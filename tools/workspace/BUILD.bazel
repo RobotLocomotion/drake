@@ -8,6 +8,26 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    visibility = [":__subpackages__"],
+    deps = ["//tools:module_py"],
+)
+
+drake_py_binary(
+    name = "new_release",
+    srcs = [
+        "metadata.py",
+        "new_release.py",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":module_py",
+        "@github3_py",
+    ],
+)
+
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
@@ -27,9 +47,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "lcm",
     "lcmtypes_bot2_core",
     "lcmtypes_robotlocomotion",
+    "meshcat",
+    "meshcat_python",
     "octomap",
     "osqp",
     "pybind11",
+    "qdldl",
     "scs",
     "sdformat",
     "spdlog",
@@ -37,6 +60,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "stx",
     "tinydir",
     "tinyobjloader",
+    "u_msgpack_python",
     "vtk",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "dreal",

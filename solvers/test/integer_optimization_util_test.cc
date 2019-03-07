@@ -4,6 +4,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/osqp_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -71,24 +72,24 @@ class IntegerOptimizationUtilTest : public ::testing::Test {
       b0_cnstr_.evaluator()->UpdateUpperBound(Vector1d(b_vals_[i](0)));
       b1_cnstr_.evaluator()->UpdateLowerBound(Vector1d(b_vals_[i](1)));
       b1_cnstr_.evaluator()->UpdateUpperBound(Vector1d(b_vals_[i](1)));
-      auto result = prog_.Solve();
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
+      MathematicalProgramResult result = Solve(prog_);
+      EXPECT_TRUE(result.is_success());
       double tol = 1E-3;
-      if (prog_.GetSolverId() == OsqpSolver::id()) {
+      if (result.get_solver_id() == OsqpSolver::id()) {
         // OSQP can solve linear program, but it is likely to fail in polishing,
         // thus the solution is less accurate.
         tol = 3E-3;
       }
-      EXPECT_NEAR(prog_.GetSolution(operand_result), operand_result_expected,
+      EXPECT_NEAR(result.GetSolution(operand_result), operand_result_expected,
                   tol);
 
       // Now update the objective to
       // min -b_and
       // The solution should be the same.
       cost.evaluator()->UpdateCoefficients(Vector1d(-1));
-      result = prog_.Solve();
-      EXPECT_EQ(result, SolutionResult::kSolutionFound);
-      EXPECT_NEAR(prog_.GetSolution(operand_result), operand_result_expected,
+      result = Solve(prog_);
+      EXPECT_TRUE(result.is_success());
+      EXPECT_NEAR(result.GetSolution(operand_result), operand_result_expected,
                   tol);
     }
   }
@@ -134,19 +135,11 @@ GTEST_TEST(TestBinaryCodeMatchConstraint, Test) {
           b_constraint.evaluator()->UpdateUpperBound(b_val);
           match_constraint.evaluator()->UpdateUpperBound(Vector1d(match_val));
           match_constraint.evaluator()->UpdateLowerBound(Vector1d(match_val));
-          const auto result = prog.Solve();
+          const auto result = Solve(prog);
           if (b0_val == 0 && b1_val == 1 && b2_val == 1) {
-            if (match_val == 1.0) {
-              EXPECT_EQ(result, SolutionResult::kSolutionFound);
-            } else {
-              EXPECT_NE(result, SolutionResult::kSolutionFound);
-            }
+            EXPECT_EQ(result.is_success(), match_val == 1.0);
           } else {
-            if (match_val == 0.0) {
-              EXPECT_EQ(result, SolutionResult::kSolutionFound);
-            } else {
-              EXPECT_NE(result, SolutionResult::kSolutionFound);
-            }
+            EXPECT_EQ(result.is_success(), match_val == 0.0);
           }
         }
       }

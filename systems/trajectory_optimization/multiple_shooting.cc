@@ -193,6 +193,8 @@ Eigen::VectorXd MultipleShooting::GetSampleTimes(
   return times;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 Eigen::MatrixXd MultipleShooting::GetInputSamples() const {
   Eigen::MatrixXd inputs(num_inputs_, N_);
   for (int i = 0; i < N_; i++) {
@@ -200,11 +202,33 @@ Eigen::MatrixXd MultipleShooting::GetInputSamples() const {
   }
   return inputs;
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 Eigen::MatrixXd MultipleShooting::GetStateSamples() const {
   Eigen::MatrixXd states(num_states_, N_);
   for (int i = 0; i < N_; i++) {
     states.col(i) = GetSolution(state(i));
+  }
+  return states;
+}
+#pragma GCC diagnostic pop
+
+Eigen::MatrixXd MultipleShooting::GetInputSamples(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::MatrixXd inputs(num_inputs_, N_);
+  for (int i = 0; i < N_; i++) {
+    inputs.col(i) = result.GetSolution(input(i));
+  }
+  return inputs;
+}
+
+Eigen::MatrixXd MultipleShooting::GetStateSamples(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::MatrixXd states(num_states_, N_);
+  for (int i = 0; i < N_; i++) {
+    states.col(i) = result.GetSolution(state(i));
   }
   return states;
 }

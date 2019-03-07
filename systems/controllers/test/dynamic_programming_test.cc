@@ -147,7 +147,7 @@ GTEST_TEST(FittedValueIteration, DoubleIntegrator) {
   // minimum time cost function (1 for all non-zero states).
   const auto cost_function = [&sys, &Q, &R](const Context<double>& context) {
     const Eigen::Vector2d x = context.get_continuous_state().CopyToVector();
-    const double u = sys.EvalVectorInput(context, 0)->GetAtIndex(0);
+    const double u = sys.get_input_port().Eval(context)[0];
     return x.dot(Q * x) + u * R * u;
   };
 

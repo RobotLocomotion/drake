@@ -2,12 +2,15 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
+#include "drake/systems/analysis/scalar_initial_value_problem-inl.h"
 
 namespace drake {
 namespace systems {
+namespace analysis {
 namespace {
 
 // Checks scalar IVP solver usage with multiple integrators.
@@ -68,7 +71,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
 }
 
 // Validates preconditions when constructing any given scalar IVP.
-GTEST_TEST(ScalarInitialValueProblemTest, ConstructorPreconditionValidation) {
+GTEST_TEST(ScalarInitialValueProblemTest, ConstructionPreconditionsValidation) {
   // Defines a generic ODE dx/dt = -x * t, that does not
   // model (nor attempts to model) any physical process.
   const ScalarInitialValueProblem<double>::
@@ -79,43 +82,43 @@ GTEST_TEST(ScalarInitialValueProblemTest, ConstructorPreconditionValidation) {
     return -x * t;
   };
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       const ScalarInitialValueProblem<double>::
           SpecifiedValues no_values;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, no_values);
-    }, std::logic_error);
+    }, std::logic_error, "No default.*");
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
           SpecifiedValues values_without_t0;
       values_without_t0.k = VectorX<double>();
       values_without_t0.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_t0);
-    }, std::logic_error);
+    }, std::logic_error, "No default initial time.*");
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
           SpecifiedValues values_without_x0;
       values_without_x0.t0 = 0.0;
       values_without_x0.k = VectorX<double>();
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_x0);
-    }, std::logic_error);
+    }, std::logic_error, "No default initial state.*");
 
-  EXPECT_THROW({
+  DRAKE_EXPECT_THROWS_MESSAGE({
       ScalarInitialValueProblem<double>::
           SpecifiedValues values_without_k;
       values_without_k.t0 = 0.0;
       values_without_k.x0 = 0.0;
       const ScalarInitialValueProblem<double> ivp(
           dummy_scalar_ode_function, values_without_k);
-    }, std::logic_error);
+    }, std::logic_error, "No default parameters.*");
 }
 
 // Validates preconditions when solving any given IVP.
-GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
+GTEST_TEST(ScalarInitialValueProblemTest, ComputationPreconditionsValidation) {
   // The initial time t₀, for IVP definition.
   const double kDefaultInitialTime = 0.0;
   // The initial state x₀, for IVP definition.
@@ -136,6 +139,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
         return -x + k[0];
       }, kDefaultValues);
 
+
   // Instantiates an invalid time for testing, i.e. a time to
   // solve for that's in the past with respect to the IVP initial
   // time.
@@ -151,18 +155,33 @@ GTEST_TEST(ScalarInitialValueProblemTest, SolvePreconditionValidation) {
   // parameter vector of the expected dimension.
   const VectorX<double> kValidParameters = VectorX<double>::Constant(2, 5.0);
 
-  EXPECT_THROW(ivp.Solve(kInvalidTime), std::logic_error);
+  // Instantiates error message patterns for testing.
+  const std::string kInvalidTimeErrorMessage{
+    "Cannot solve IVP for.*time.*"};
+  const std::string kInvalidParametersErrorMessage{
+    ".*parameters.*wrong dimension.*"};
 
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime), std::logic_error,
+                              kInvalidTimeErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime), std::logic_error,
+                              kInvalidTimeErrorMessage);
   {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = kInvalidParameters;
-    EXPECT_THROW(ivp.Solve(kValidTime, values), std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kValidTime, values), std::logic_error,
+                                kInvalidParametersErrorMessage);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ivp.DenseSolve(kValidTime, values), std::logic_error,
+        kInvalidParametersErrorMessage);
   }
 
   {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = kValidParameters;
-    EXPECT_THROW(ivp.Solve(kInvalidTime, values), std::logic_error);
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.Solve(kInvalidTime, values),
+                                std::logic_error, kInvalidTimeErrorMessage);
+    DRAKE_EXPECT_THROWS_MESSAGE(ivp.DenseSolve(kInvalidTime, values),
+                                std::logic_error, kInvalidTimeErrorMessage);
   }
 }
 
@@ -222,12 +241,18 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
+  const double Q0 = kInitialStoredCharge;
+  const double t0 = kInitialTime;
+  const double tf = kTotalTime;
   for (double Rs = kLowestResistance; Rs <= kHighestResistance ;
        Rs += kResistanceStep) {
     for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance ;
          Cs += kCapacitanceStep) {
       ScalarInitialValueProblem<double>::SpecifiedValues values;
       values.k = (VectorX<double>(2) << Rs, Cs).finished();
+
+      const std::unique_ptr<ScalarDenseOutput<double>> stored_charge_approx =
+          stored_charge_ivp.DenseSolve(tf, values);
 
       const double tau = Rs * Cs;
       const double tau_sq = tau * tau;
@@ -237,17 +262,25 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
         // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
         //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
         // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0.
-        const double exact_solution = (
+        const double solution = (
             tau_sq / (1. + tau_sq) * std::exp(-t / tau)
             + tau / std::sqrt(1. + tau_sq)
             * std::sin(t - std::atan(tau))) / Rs;
         EXPECT_NEAR(stored_charge_ivp.Solve(t, values),
-                    exact_solution, integration_accuracy_)
+                    solution, integration_accuracy_)
             << "Failure solving dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
-            << kInitialTime << "; [Rs, Cs]) = " << kInitialStoredCharge
-            << " for t = " << t << ", Rs = " << Rs
-            << " and Cs = " << Cs << " with an accuracy of "
+            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t << ", Rs = "
+            << Rs << " and Cs = " << Cs << " to an accuracy of "
             << integration_accuracy_;
+
+        EXPECT_NEAR(stored_charge_approx->EvaluateScalar(t),
+                    solution, integration_accuracy_)
+            << "Failure approximating the solution for"
+            << " dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
+            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t
+            << ", Rs = " << Rs << " and Cs = " << Cs
+            << " to an accuracy of " << integration_accuracy_
+            << " with solver's continuous extension.";
       }
     }
   }
@@ -288,21 +321,35 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
   const double kTotalTime = 1.0;
   const double kTimeStep = 0.1;
 
+  const double N0 = kInitialPopulation;
+  const double t0 = kInitialTime;
+  const double tf = kTotalTime;
   for (double r = kLowestMalthusParam; r <= kHighestMalthusParam;
        r += kMalthusParamStep) {
     ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = VectorX<double>::Constant(1, r).eval();
+
+    const std::unique_ptr<ScalarDenseOutput<double>> population_growth_approx =
+        population_growth_ivp.DenseSolve(tf, values);
+
     for (double t = kInitialTime; t <= kTotalTime; t += kTimeStep) {
       // Tests are performed against the closed form
       // solution for the IVP described above, which is
       // N(t; r) = N₀ * e^(r * t).
-      const double exact_solution = kInitialPopulation * std::exp(r * t);
-      EXPECT_NEAR(population_growth_ivp.Solve(t, values), exact_solution,
-                  integration_accuracy_)
+      const double solution = N0 * std::exp(r * t);
+      EXPECT_NEAR(population_growth_ivp.Solve(t, values),
+                  solution, integration_accuracy_)
           << "Failure solving dN/dt = r * N using N(t₀ = "
-          << kInitialTime << "; r) = " << kInitialPopulation
-          << " for t = " << t << " and r = " << r
-          << " to an accuracy of " << integration_accuracy_;
+          << t0 << "; r) = " << N0 << " for t = " << t
+          << " and r = " << r << " to an accuracy of "
+          << integration_accuracy_;
+
+      EXPECT_NEAR(population_growth_approx->EvaluateScalar(t),
+                  solution, integration_accuracy_)
+          << "Failure approximating the solution for dN/dt = r * N"
+          << " using N(t₀ = " << t0 << "; r) = " << N0 << " for t = "
+          << t << " and r = " << r << " to an accuracy of "
+          << integration_accuracy_ << " with solver's continuous extension.";
     }
   }
 }
@@ -312,5 +359,6 @@ INSTANTIATE_TEST_CASE_P(IncreasingAccuracyScalarInitialValueProblemTests,
                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 
 }  // namespace
+}  // namespace analysis
 }  // namespace systems
 }  // namespace drake

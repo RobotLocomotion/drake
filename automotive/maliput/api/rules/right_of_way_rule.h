@@ -1,7 +1,6 @@
 #pragma once
 
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "drake/automotive/maliput/api/rules/regions.h"
@@ -22,6 +21,7 @@ namespace rules {
 /// flows take turns traversing regions of the road network.
 ///
 /// Each rule instance comprises:
+///
 /// * a zone (a LaneSRoute) which specifies a contiguous longitudinal
 ///   lane-wise section of the road network to which the rule instance
 ///   applies;
@@ -118,7 +118,7 @@ class RightOfWayRule final {
   /// @param controlled_zone LaneSRoute to which this rule applies
   /// @param type the static semantics of this rule
   ///
-  /// Throws a std::exception if `states` is empty or if `states` contains
+  /// @throws std::exception if `states` is empty or if `states` contains
   /// duplicate State::Id's.
   RightOfWayRule(const Id& id,
                  const LaneSRoute& zone,
@@ -155,7 +155,7 @@ class RightOfWayRule final {
   ///
   /// This is a convenience function for returning a static rule's single state.
   ///
-  /// Throws a std::exception if `is_static()` is false.
+  /// @throws std::exception if `is_static()` is false.
   const State& static_state() const {
     DRAKE_THROW_UNLESS(is_static());
     return states_.begin()->second;
@@ -167,55 +167,6 @@ class RightOfWayRule final {
   ZoneType zone_type_{};
   std::unordered_map<State::Id, State> states_;
 };
-
-
-/// Abstract interface for the provider of the state of a dynamic
-/// (multiple state) RightOfWayRule.
-class RightOfWayStateProvider {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RightOfWayStateProvider)
-
-  virtual ~RightOfWayStateProvider() = default;
-
-  /// Result returned by GetState().
-  struct Result {
-    /// Information about a subsequent State.
-    struct Next {
-      /// ID of the State.
-      RightOfWayRule::State::Id id;
-      /// If known, estimated time until the transition to the State.
-      drake::optional<double> duration_until;
-    };
-
-    /// ID of the rule's current State.
-    RightOfWayRule::State::Id current_id;
-    /// Information about the rule's upcoming State if a state transition
-    /// is anticipated.
-    drake::optional<Next> next;
-  };
-
-  /// Gets the state of the RightOfWayRule identified by `id`.
-  ///
-  /// Returns a Result struct bearing the State::Id of the rule's current
-  /// state.  If a transition to a new state is anticipated,
-  /// Result::next will be populated and bear the State::Id of the next
-  /// state.  If the time until the transition is known, then
-  /// Result::next.duration_until will be populated with that duration.
-  ///
-  /// Returns nullopt if `id` is unrecognized, which would be the case
-  /// if no such rule exists or if the rule has only static semantics.
-  drake::optional<Result> GetState(const RightOfWayRule::Id& id) const {
-    return DoGetState(id);
-  }
-
- protected:
-  RightOfWayStateProvider() = default;
-
- private:
-  virtual drake::optional<Result> DoGetState(
-      const RightOfWayRule::Id& id) const = 0;
-};
-
 
 }  // namespace rules
 }  // namespace api

@@ -5,12 +5,14 @@ def drake_py_library(
         deps = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = (deps or []) + ["//:module_py"]
     native.py_library(
         name = name,
         deps = deps,
-        **kwargs)
+        **kwargs
+    )
 
 def _disable_test_impl(ctx):
     info = dict(
@@ -51,6 +53,7 @@ def _py_target_isolated(
     # See #8041 for more details.
     if py_target == None:
         fail("Must supply macro function for defining `py_target`.")
+
     # Do not isolate targets that are already isolated. This generally happens
     # when linting tests (which are isolated) are invoked for isolated Python
     # targets. Without this check, the actual test turns into
@@ -58,6 +61,7 @@ def _py_target_isolated(
     prefix = "py/"
     if isolate and not name.startswith(prefix):
         actual = prefix + name
+
         # Preserve original functionality.
         if not main:
             main = name + ".py"
@@ -68,9 +72,12 @@ def _py_target_isolated(
             srcs = srcs,
             main = main,
             visibility = visibility,
-            **kwargs)
+            **kwargs
+        )
+
         # Disable and redirect original name.
         package_prefix = "//" + native.package_name() + ":"
+
         # N.B. We make the disabled rule a test, even if the original was not.
         # This ensures that developers will see the redirect using both
         # `bazel run` or `bazel test`.
@@ -87,13 +94,23 @@ def _py_target_isolated(
             srcs = srcs,
             main = main,
             visibility = visibility,
-            **kwargs)
+            **kwargs
+        )
 
 def drake_py_binary(
         name,
         srcs = None,
+        main = None,
+        data = [],
         deps = None,
         isolate = False,
+        tags = [],
+        add_test_rule = 0,
+        test_rule_args = [],
+        test_rule_data = [],
+        test_rule_size = None,
+        test_rule_timeout = None,
+        test_rule_flaky = 0,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -102,15 +119,42 @@ def drake_py_binary(
         library code. This prevents submodules from leaking in as top-level
         submodules. For more detail, see #8041.
     """
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
-    deps = (deps or []) + ["//:module_py"]
+    deps = deps or []
+    if "//:module_py" not in deps:
+        deps += ["//:module_py"]
+    if main == None and len(srcs) == 1:
+        main = srcs[0]
     _py_target_isolated(
         name = name,
         py_target = native.py_binary,
         isolate = isolate,
         srcs = srcs,
+        main = main,
+        data = data,
         deps = deps,
-        **kwargs)
+        tags = tags,
+        **kwargs
+    )
+    if add_test_rule:
+        drake_py_test(
+            name = name + "_test",
+            srcs = srcs,
+            main = main,
+            deps = deps,
+            isolate = isolate,
+            args = test_rule_args,
+            data = data + test_rule_data,
+            size = test_rule_size,
+            timeout = test_rule_timeout,
+            flaky = test_rule_flaky,
+            tags = tags + ["nolint"],
+            # N.B. Same as the warning in `drake_pybind_cc_googletest`: numpy
+            # imports unittest unconditionally.
+            allow_import_unittest = True,
+            **kwargs
+        )
 
 def drake_py_unittest(
         name,
@@ -131,7 +175,8 @@ def drake_py_unittest(
         srcs = srcs + [helper],
         main = helper,
         allow_import_unittest = True,
-        **kwargs)
+        **kwargs
+    )
 
 def drake_py_test(
         name,
@@ -162,8 +207,11 @@ def drake_py_test(
         size = "small"
     if srcs == None:
         srcs = ["test/%s.py" % name]
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
-    deps = (deps or []) + ["//:module_py"]
+    deps = deps or []
+    if "//:module_py" not in deps:
+        deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
     _py_target_isolated(
@@ -173,7 +221,8 @@ def drake_py_test(
         size = size,
         srcs = srcs,
         deps = deps,
-        **kwargs)
+        **kwargs
+    )
 
 def py_test_isolated(
         name,
@@ -185,4 +234,5 @@ def py_test_isolated(
         name = name,
         py_target = native.py_test,
         isolate = True,
-        **kwargs)
+        **kwargs
+    )

@@ -7,7 +7,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/number_traits.h"
 #include "drake/math/autodiff.h"
 #include "drake/solvers/cost.h"
 #include "drake/solvers/function.h"
@@ -27,20 +26,28 @@ class GenericTrivialCost1 : public Cost {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              Eigen::VectorXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+              Eigen::VectorXd* y) const override {
+    DoEvalGeneric(x, y);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-              AutoDiffVecXd& y) const override {
-    y.resize(1);
-    y(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+              AutoDiffVecXd* y) const override {
+    DoEvalGeneric(x, y);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DoEvalGeneric(x, y);
   }
 
  private:
+  template <typename DerivedX, typename ScalarY>
+  void DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
+                     VectorX<ScalarY>* y) const {
+    y->resize(1);
+    (*y)(0) = x(0) * x(1) + x(2) / x(0) * private_val_;
+  }
+
   // Add a private data member to make sure no slicing on this class, derived
   // from Constraint.
   double private_val_{0};
@@ -60,11 +67,10 @@ class GenericTrivialCost2 {
 
   template <typename ScalarType>
   void eval(detail::VecIn<ScalarType> const& x,
-            // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
-            detail::VecOut<ScalarType>& y) const {
+            detail::VecOut<ScalarType>* y) const {
     DRAKE_ASSERT(static_cast<size_t>(x.rows()) == numInputs());
-    DRAKE_ASSERT(static_cast<size_t>(y.rows()) == numOutputs());
-    y(0) = x(0) * x(0) - x(1) * x(1) + 2;
+    DRAKE_ASSERT(static_cast<size_t>(y->rows()) == numOutputs());
+    (*y)(0) = x(0) * x(0) - x(1) * x(1) + 2;
   }
 };
 

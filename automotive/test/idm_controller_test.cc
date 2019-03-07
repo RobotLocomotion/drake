@@ -3,10 +3,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
-#include "drake/automotive/monolane_onramp_merge.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -43,7 +42,7 @@ class IdmControllerTest
     dut_.reset(new IdmController<double>(*road_, path_or_branches,
                cache_or_search_, period_sec_));
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
 
     const auto idm = dynamic_cast<const IdmController<double>*>(dut_.get());
     DRAKE_DEMAND(idm != nullptr);
@@ -96,7 +95,7 @@ class IdmControllerTest
     traffic_poses.set_velocity(kLeadIndex, lead_velocity);
     traffic_poses.set_pose(kEgoIndex, Eigen::Isometry3d(translation_ego));
     context_->FixInputPort(traffic_input_index_,
-                           systems::AbstractValue::Make(traffic_poses));
+                           AbstractValue::Make(traffic_poses));
   }
 
   std::unique_ptr<systems::System<double>> dut_;  //< The device under test.
@@ -117,23 +116,23 @@ TEST_P(IdmControllerTest, Topology) {
   SetUpIdm(ScanStrategy::kPath);
 
   ASSERT_EQ(3, dut_->get_num_input_ports());
-  const auto& ego_pose_input_descriptor =
+  const auto& ego_pose_input_port =
       dut_->get_input_port(ego_pose_input_index_);
-  EXPECT_EQ(systems::kVectorValued, ego_pose_input_descriptor.get_data_type());
-  EXPECT_EQ(7 /* PoseVector input */, ego_pose_input_descriptor.size());
-  const auto& ego_velocity_input_descriptor =
+  EXPECT_EQ(systems::kVectorValued, ego_pose_input_port.get_data_type());
+  EXPECT_EQ(7 /* PoseVector input */, ego_pose_input_port.size());
+  const auto& ego_velocity_input_port =
       dut_->get_input_port(ego_velocity_input_index_);
   EXPECT_EQ(systems::kVectorValued,
-            ego_velocity_input_descriptor.get_data_type());
-  EXPECT_EQ(6 /* FrameVelocity input */, ego_velocity_input_descriptor.size());
-  const auto& traffic_input_descriptor =
+            ego_velocity_input_port.get_data_type());
+  EXPECT_EQ(6 /* FrameVelocity input */, ego_velocity_input_port.size());
+  const auto& traffic_input_port =
       dut_->get_input_port(traffic_input_index_);
-  EXPECT_EQ(systems::kAbstractValued, traffic_input_descriptor.get_data_type());
+  EXPECT_EQ(systems::kAbstractValued, traffic_input_port.get_data_type());
 
   ASSERT_EQ(1, dut_->get_num_output_ports());
   const auto& output_port = dut_->get_output_port(acceleration_output_index_);
   EXPECT_EQ(systems::kVectorValued, output_port.get_data_type());
-  EXPECT_EQ(1 /* accleration output */, output_port.size());
+  EXPECT_EQ(1 /* acceleration output */, output_port.size());
 }
 
 // Tests that the unrestricted update has been registered and updates to the
@@ -227,7 +226,7 @@ TEST_P(IdmControllerTest, ToAutoDiff) {
 
   EXPECT_TRUE(is_autodiffxd_convertible(*dut_, [&](const auto& other_dut) {
     const auto other_context = other_dut.CreateDefaultContext();
-    const auto other_output = other_dut.AllocateOutput(*other_context);
+    const auto other_output = other_dut.AllocateOutput();
 
     // Verify that CalcOutput returns a result and validate its AutoDiff
     // derivatives.
@@ -256,7 +255,7 @@ TEST_P(IdmControllerTest, ToAutoDiff) {
     poses.set_velocity(0, traffic_velocity);
     poses.set_pose(0, Isometry3<AutoDiffXd>(translation));
     other_context->FixInputPort(traffic_input_index_,
-                                systems::AbstractValue::Make(poses));
+                                AbstractValue::Make(poses));
 
     const auto result =
         other_output->get_vector_data(acceleration_output_index_);

@@ -1,0 +1,28 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install", "install_files")
+
+licenses(["notice"])  # MIT
+
+VIEWER_FILES = [
+    "dist/index.html",
+    "dist/main.min.js",
+]
+
+exports_files(
+    VIEWER_FILES,
+    visibility = ["@meshcat_python//:__pkg__"],
+)
+
+install_files(
+    name = "install_viewer",
+    dest = "@PYTHON_SITE_PACKAGES@/meshcat/viewer",
+    files = VIEWER_FILES,
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
+    deps = [":install_viewer"],
+)

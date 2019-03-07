@@ -55,27 +55,24 @@ bazel build //examples/simple_gripper
 Running the Example
 -------------------
 
-Launch the visualizer
+Launch the visualizer (optionally visualizing contact forces or not)
+
+Without contact forces visualized:
 ```
-./bazel-bin/tools/drake_visualizer
+./bazel-bin/tools/drake_visualizer```
+With contact forces visualized:
+```
+./bazel-bin/tools/drake_visualizer --script multibody/rigid_body_plant/visualization/contact_viz.py
 ```
 
-Launch the kuka simulation. Due to
-[#7874](https://github.com/RobotLocomotion/drake/issues/7874), we first need to
-change our working directory to the `.runfiles` directory for this example
+Launch the simulation with
 ```
-cd bazel-bin/examples/simple_gripper/simple_gripper.runfiles/drake
-```
-Until [#7874](https://github.com/RobotLocomotion/drake/issues/7874) is resolved,
-this allows `sdformat` to find the SDF files for this demo.
-From within this directory we now launch the simulation with
-```
-./examples/simple_gripper/simple_gripper --simulation_time=10.0
+./bazel-bin/examples/simple_gripper/simple_gripper --simulation_time=10.0
 ```
 where for this particular invocation example we are specifying the simulation
 time in seconds as a command line option. To get a list of command line options
 for this example run
 ```
-./examples/simple_gripper/simple_gripper --help
+./bazel-bin/examples/simple_gripper/simple_gripper --help
 ```
 which will also provide a description for each option.

@@ -40,9 +40,7 @@ generate_export_header(
 # These options are used when building all LCM C/C++ code.
 # They do not flow downstream to LCM-using libraries.
 LCM_COPTS = [
-    "-Wno-all",
-    "-Wno-deprecated-declarations",
-    "-Wno-format-zero-length",
+    "-w",
     "-std=gnu11",
     "-fvisibility=hidden",
 ]
@@ -149,6 +147,7 @@ cc_binary(
         "lcmgen/emit_c.c",
         "lcmgen/emit_cpp.c",
         "lcmgen/emit_csharp.c",
+        "lcmgen/emit_go.c",
         "lcmgen/emit_java.c",
         "lcmgen/emit_lua.c",
         "lcmgen/emit_python.c",
@@ -219,8 +218,15 @@ generate_file(
     content = """
 import ctypes
 import os.path
+import six
 ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
-execfile(__path__[0] + \"/lcm-python/lcm/__init__.py\")
+_filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
+if six.PY2:
+    execfile(_filename)
+else:
+    with open(_filename) as f:
+        _code = compile(f.read(), _filename, 'exec')
+        exec(_code)
 """,
     visibility = ["//visibility:private"],
 )
@@ -296,7 +302,7 @@ install(
         ":_lcm.so",
         ":lcm-python-upstream",
     ],
-    library_dest = "lib/python2.7/site-packages/lcm",
+    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
     py_strip_prefix = ["lcm-python"],
 )
 

@@ -18,8 +18,8 @@ SystemSymbolicInspector::SystemSymbolicInspector(
       input_variables_(system.get_num_input_ports()),
       continuous_state_variables_(context_->get_continuous_state().size()),
       discrete_state_variables_(context_->get_num_discrete_state_groups()),
-      numeric_parameters_(context_->num_numeric_parameters()),
-      output_(system.AllocateOutput(*context_)),
+      numeric_parameters_(context_->num_numeric_parameter_groups()),
+      output_(system.AllocateOutput()),
       derivatives_(system.AllocateTimeDerivatives()),
       discrete_updates_(system.AllocateDiscreteVariables()),
       output_port_types_(system.get_num_output_ports()),
@@ -64,15 +64,8 @@ SystemSymbolicInspector::SystemSymbolicInspector(
   for (int i = 0; i < system.get_num_constraints(); i++) {
     const SystemConstraint<Expression>& constraint =
         system.get_constraint(SystemConstraintIndex(i));
-    VectorX<Expression> value;
-    constraint.Calc(*context_, &value);
-    for (int j = 0; j < value.size(); j++) {
-      if (constraint.is_equality_constraint()) {
-        constraints_.emplace(value[j] == 0.0);
-      } else {
-        constraints_.emplace(value[j] >= 0.0);
-      }
-    }
+    const double tol = 0.0;
+    constraints_.emplace(constraint.CheckSatisfied(*context_, tol));
   }
 }
 
@@ -127,7 +120,7 @@ void SystemSymbolicInspector::InitializeDiscreteState() {
 void SystemSymbolicInspector::InitializeParameters() {
   // For each numeric parameter vector i, set each element j to a symbolic
   // expression whose value is the variable "pi_j".
-  for (int i = 0; i < context_->num_numeric_parameters(); ++i) {
+  for (int i = 0; i < context_->num_numeric_parameter_groups(); ++i) {
     auto& pi = context_->get_mutable_numeric_parameter(i);
     numeric_parameters_[i].resize(pi.size());
     for (int j = 0; j < pi.size(); ++j) {

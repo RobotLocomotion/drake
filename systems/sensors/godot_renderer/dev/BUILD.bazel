@@ -7,10 +7,11 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
 
 drake_cc_library(
     name = "maybe_godotengine",
+    tags = ["manual"],
     deps = select({
         "//conditions:default": ["@godotengine"],
         "//tools/cc_toolchain:apple": [],
@@ -23,9 +24,15 @@ drake_cc_binary(
         "//conditions:default": ["dummy_ubuntu.cc"],
         "//tools/cc_toolchain:apple": ["dummy_macos.cc"],
     }),
+    tags = ["manual"],
     deps = [
         ":maybe_godotengine",
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_extra_srcs = [
+        "dummy_macos.cc",
+        "dummy_ubuntu.cc",
+    ],
+)

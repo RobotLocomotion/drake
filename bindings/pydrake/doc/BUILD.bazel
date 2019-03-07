@@ -1,0 +1,43 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:private"])
+
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_py_binary(
+    name = "gen_sphinx",
+    srcs = [
+        "gen_sphinx.py",
+        "pydrake_sphinx_extension.py",
+    ],
+    add_test_rule = 1,
+    data = [
+        "_static/css/custom.css",
+        "conf.py",
+    ],
+    imports = ["."],
+    main = "gen_sphinx.py",
+    # Some (currently disabled) Sphinx extensions try to reach out to the
+    # network; we should fail-fast if someone tries to turn them on.
+    tags = ["block-network"],
+    test_rule_args = ["--out_dir=<test>"],
+    test_rule_size = "medium",
+    deps = [
+        "//bindings/pydrake",  # We must import `pydrake` to document it.
+        "//doc:sphinx_base",
+    ],
+)
+
+drake_py_binary(
+    name = "serve_sphinx",
+    srcs = ["serve_sphinx.py"],
+    data = [":gen_sphinx"],
+    deps = ["//doc:sphinx_base"],
+)
+
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    enable_clang_format_lint = True,
+    python_lint_exclude = [":conf.py"],
+)

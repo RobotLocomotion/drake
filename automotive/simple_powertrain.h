@@ -10,15 +10,18 @@ namespace automotive {
 /// to the road.
 ///
 /// Input:
-///  - A unitless scalar value representing the throttle input to the power
-///    system.
+///
+/// - A unitless scalar value representing the throttle input to the power
+///   system.
 ///
 /// Output:
-///  - The force transmitted from the vehicle to the road [N].
+///
+/// - The force transmitted from the vehicle to the road [N].
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -53,7 +56,7 @@ class SimplePowertrain final : public systems::LinearSystem<T> {
 
   ~SimplePowertrain() override = default;
 
-  const systems::InputPortDescriptor<T>& get_throttle_input_port() const {
+  const systems::InputPort<T>& get_throttle_input_port() const {
     return systems::System<T>::get_input_port(0);
   }
 

@@ -3,13 +3,13 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -22,25 +22,20 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info("//bindings")
 
-# @note Symbols are NOT imported directly into
-# `__init__.py` to simplify dependency management, meaning that
-# classes are organized by their directory structure rather than
-# by C++ namespace.
 drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
 drake_pybind_library(
     name = "acrobot_py",
     cc_deps = [
-        "//examples/acrobot:acrobot_plant",
+        "//bindings/pydrake:documentation_pybind",
     ],
-    cc_so_name = "acrobot",
     cc_srcs = ["acrobot_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -52,9 +47,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "compass_gait_py",
     cc_deps = [
-        "//examples/compass_gait",
+        "//bindings/pydrake:documentation_pybind",
     ],
-    cc_so_name = "compass_gait",
     cc_srcs = ["compass_gait_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -64,12 +58,41 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
+    name = "manipulation_station_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
+    ],
+    cc_srcs = ["manipulation_station_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+    py_srcs = ["_manipulation_station_extra.py"],
+    visibility = ["//visibility:public"],
+)
+
+drake_pybind_library(
     name = "pendulum_py",
     cc_deps = [
-        "//examples/pendulum:pendulum_plant",
+        "//bindings/pydrake:documentation_pybind",
     ],
-    cc_so_name = "pendulum",
     cc_srcs = ["pendulum_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        "//bindings/pydrake/systems",
+    ],
+)
+
+drake_pybind_library(
+    name = "quadrotor_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+    ],
+    cc_srcs = ["quadrotor_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":module_py",
@@ -80,9 +103,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "rimless_wheel_py",
     cc_deps = [
-        "//examples/rimless_wheel",
+        "//bindings/pydrake:documentation_pybind",
     ],
-    cc_so_name = "rimless_wheel",
     cc_srcs = ["rimless_wheel_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -94,9 +116,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "van_der_pol_py",
     cc_deps = [
-        "//examples/van_der_pol",
+        "//bindings/pydrake:documentation_pybind",
     ],
-    cc_so_name = "van_der_pol",
     cc_srcs = ["van_der_pol_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -108,15 +129,20 @@ drake_pybind_library(
 PY_LIBRARIES_WITH_INSTALL = [
     ":acrobot_py",
     ":compass_gait_py",
+    ":manipulation_station_py",
     ":pendulum_py",
+    ":quadrotor_py",
     ":rimless_wheel_py",
     ":van_der_pol_py",
+    "//bindings/pydrake/examples/multibody",
 ]
 
 PY_LIBRARIES = [
     ":module_py",
 ]
 
+# Package roll-up (for Bazel dependencies).
+# N.B. `examples` packages do not have `all` modules.
 drake_py_library(
     name = "examples",
     imports = PACKAGE_INFO.py_imports,
@@ -146,9 +172,24 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "manipulation_station_test",
+    deps = [
+        ":manipulation_station_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+    ],
+)
+
+drake_py_unittest(
     name = "pendulum_test",
     deps = [
         ":pendulum_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "quadrotor_test",
+    deps = [
+        ":quadrotor_py",
     ],
 )
 
@@ -166,4 +207,7 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    enable_clang_format_lint = True,
+)

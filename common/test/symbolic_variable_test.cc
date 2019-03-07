@@ -52,6 +52,15 @@ class VariableTest : public ::testing::Test {
   }
 };
 
+// Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
+// constructor both create the same value.
+TEST_F(VariableTest, DefaultConstructors) {
+  const Variable v_default;
+  const Variable v_zero(0);
+  EXPECT_TRUE(v_default.is_dummy());
+  EXPECT_TRUE(v_zero.is_dummy());
+}
+
 TEST_F(VariableTest, GetId) {
   const Variable dummy{};
   const Variable x_prime{"x"};
@@ -129,18 +138,6 @@ TEST_F(VariableTest, ToString) {
   EXPECT_EQ(w_.to_string(), "w");
 }
 
-TEST_F(VariableTest, EqualityCheck) {
-  // `v₁ == v₂` and `v₁ != v₂` form instances of symbolic::Formula. Inside of
-  // EXPECT_{TRUE,FALSE}, they are converted to bool by Formula::Evaluate() with
-  // an empty environment. This test checks that we do not have
-  // `runtime_error("The following environment does not have an entry for the
-  // variable ...")` in the process.
-  EXPECT_TRUE(x_ != y_);
-  EXPECT_TRUE(x_ != z_);
-  EXPECT_FALSE(x_ == y_);
-  EXPECT_FALSE(x_ == z_);
-}
-
 // This test checks whether Variable is compatible with std::unordered_set.
 TEST_F(VariableTest, CompatibleWithUnorderedSet) {
   unordered_set<Variable> uset;
@@ -152,37 +149,6 @@ TEST_F(VariableTest, CompatibleWithUnorderedSet) {
 TEST_F(VariableTest, CompatibleWithUnorderedMap) {
   unordered_map<Variable, Variable> umap;
   umap.emplace(x_, y_);
-}
-
-TEST_F(VariableTest, MapEqual) {
-  // Checking equality between two map<Variable, T> invokes `v₁ == v₂`, which
-  // will calls Formula::Evaluate(). This test checks that we do not have
-  // `runtime_error("The following environment does not have an entry for the
-  // variable ...")` in the process.
-  const map<Variable, int> m1{{x_, 3}, {y_, 4}};
-  const map<Variable, int> m2{{x_, 5}, {y_, 6}};
-  const map<Variable, int> m3{{x_, 5}, {z_, 6}};
-  const map<Variable, int> m4{{y_, 4}, {x_, 3}};  // same as m1.
-
-  EXPECT_EQ(m1, m1);  // m1 == m1
-  EXPECT_NE(m1, m2);
-  EXPECT_NE(m1, m3);
-  EXPECT_EQ(m1, m4);  // m1 == m4
-
-  EXPECT_NE(m2, m1);
-  EXPECT_EQ(m2, m2);  // m2 == m2
-  EXPECT_NE(m2, m3);
-  EXPECT_NE(m2, m4);
-
-  EXPECT_NE(m3, m1);
-  EXPECT_NE(m3, m2);
-  EXPECT_EQ(m3, m3);  // m3 == m3
-  EXPECT_NE(m3, m4);
-
-  EXPECT_EQ(m4, m1);  // m4 == m1
-  EXPECT_NE(m4, m2);
-  EXPECT_NE(m4, m3);
-  EXPECT_EQ(m4, m4);  // m4 == m4
 }
 
 // This test checks whether Variable is compatible with std::vector.
@@ -406,6 +372,54 @@ TEST_F(VariableTest, MakeMatrixIntegerVariable) {
   EXPECT_EQ(m2(0, 0).get_type(), Variable::Type::INTEGER);
   EXPECT_EQ(m2(0, 1).get_name(), "x(0, 1)");
   EXPECT_EQ(m2(0, 1).get_type(), Variable::Type::INTEGER);
+}
+
+// Shows that a random uniform variable and std::uniform_real_distribution with
+// [0, 1) show the same behavior when the same random number generator is
+// passed.
+TEST_F(VariableTest, RandomUniform) {
+  RandomGenerator generator{};
+  RandomGenerator generator_copy{generator};
+
+  const Variable v{"v", Variable::Type::RANDOM_UNIFORM};
+  const double sample{Expression{v}.Evaluate(&generator)};
+
+  std::uniform_real_distribution<double> d(0.0, 1.0);  // [0, 1).
+  const double expected{d(generator_copy)};
+
+  EXPECT_EQ(sample, expected);
+}
+
+// Shows that a random Gaussian variable and std::normal_distribution with (mean
+// = 0.0, stddev = 1.0) show the same behavior when the same random number
+// generator is passed.
+TEST_F(VariableTest, RandomGaussian) {
+  RandomGenerator generator{};
+  RandomGenerator generator_copy{generator};
+
+  const Variable v{"v", Variable::Type::RANDOM_GAUSSIAN};
+  const double sample{Expression{v}.Evaluate(&generator)};
+
+  std::normal_distribution<double> d(0.0, 1.0);  // mean = 0, stddev = 1.0.
+  const double expected{d(generator_copy)};
+
+  EXPECT_EQ(sample, expected);
+}
+
+// Shows that a random exponential variable and std::exponential_distribution
+// with lambda = 1.0 show the same behavior when the same random number
+// generator is passed.
+TEST_F(VariableTest, RandomExponential) {
+  RandomGenerator generator{};
+  RandomGenerator generator_copy{generator};
+
+  const Variable v{"v", Variable::Type::RANDOM_EXPONENTIAL};
+  const double sample{Expression{v}.Evaluate(&generator)};
+
+  std::exponential_distribution<double> d(1.0);  // lambda = 1.0.
+  const double expected{d(generator_copy)};
+
+  EXPECT_EQ(sample, expected);
 }
 
 }  // namespace

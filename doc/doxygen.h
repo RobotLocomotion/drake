@@ -5,60 +5,73 @@
 
 <p>Drake's C++ library is composed primarily of an interface for solving
   numerical optimization problems, interfaces for modeling dynamical system,
-  and collection of state-of-the-art algorithms for optimization on dynamical
+  and a collection of state-of-the-art algorithms for optimization on dynamical
   systems:</p>
-<ul>
-  <li><a href="group__solvers.html">Formulating and Solving Optimization
-    Problems</a></li>
-  <li><a href="group__systems.html">Modeling Dynamical Systems</a></li>
-  <ul>
-    <li><a href="class_rigid_body_tree.html">Rigid-Body Kinematics and
-  Dynamics</a></li>
-    <li><a href="group__automotive__systems.html">Automotive Systems</a></li>
-    <li> \subpage stochastic_systems 
-  </ul>
-  <li>Algorithms</li>
-  <ul>
-    <li><a href="classdrake_1_1systems_1_1_simulator.html">Simulation</a></li>
-    <li>Analysis</li>
-    <li>Planning</li>
-    <li>Feedback Control Design</li>
-    <li>State Estimation</li>
-    <li>System Identification</li>
-  </ul>
-</ul>
-<p>For more general information, you can also visit the <a
-  href="http://drake.mit.edu">Drake documentation main page</a>.</p>
-</p>
 
-<p>Drake's C++ libraries use a small amount of template metaprogramming to
-  enable more advanced features (autodiff, symbolic computation, etc).  We
-  have tried to avoid users having to be expert template programmers, but this
-  is a good reference if you'd like to
-  <a href="http://www.generic-programming.org/languages/cpp/techniques.php">
-  learn more about generic programming</a>.</p>
+ <ul>
+   <li> @subpage solvers </li>
+   <li> @subpage systems </li>
+   <li> @subpage algorithms </li>
+   <li> @ref drake::examples "Examples" </li>
+   <li> @subpage technical_notes </li>
+ </ul>
+
+ <p>For more general information, you can also visit the <a
+  href="https://drake.mit.edu">Drake documentation main page</a>.</p>
+</p>
 
 <h3>How do I document the code I am contributing?</h3>
 
 <p>
 If you want to make your own Doxygen locally, see
-<a href="http://drake.mit.edu/documentation_instructions.html">Documentation
+<a href="https://drake.mit.edu/documentation_instructions.html">Documentation
 Generation Instructions</a></p>
 
 <p><a href="https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html">Check
 out the Doxygen C++ documentation</a></p>
 
 <p>Drake's Doxygen documentation is
-<a href="http://drake.mit.edu">hosted online</a> for the master branch, but is
+<a href="https://drake.mit.edu">hosted online</a> for the master branch, but is
 only updated nightly.</p>
 
-<h3>Technical Notes</h3>
-These links provide notes on Drake's design and implementation.
-
-- @ref multibody_concepts
-- @ref cache_design_notes
 
 */
+// Define groups here so we can control the ordering.
+/**
+  @defgroup solvers Formulating and Solving Optimization Problems
+  @defgroup systems Modeling Dynamical Systems
+  @defgroup algorithms Algorithms
+  @defgroup technical_notes Technical Notes
+*/
 
+// TODO(russt): Take a thorough pass through the algorithms group
+// documentation, adding brief descriptions of each and tagging the relevant
+// algorithms throughout the code.
+/** @addtogroup algorithms
+ @{
+   @defgroup multibody Multibody Dynamics
+   @defgroup simulation Simulation
+   @defgroup analysis Analysis
+   @defgroup planning Planning
+   @defgroup control Feedback Control Design
+   @defgroup estimation State Estimation
+   @defgroup identification System Identification
+ @}
+ */
 
+/** @addtogroup technical_notes
+
+ @{
+
+ @defgroup templates Template MetaProgramming
+
+ <p>Drake's C++ libraries use a small amount of template metaprogramming to
+  enable more advanced features (autodiff, symbolic computation, etc).  We
+  have tried to avoid users having to be expert template programmers, but this
+  is a good reference if you'd like to
+  <a href="http://www.generic-programming.org/languages/cpp/techniques.php">
+  learn more about generic programming</a>.</p>
+
+ @}
+*/
 

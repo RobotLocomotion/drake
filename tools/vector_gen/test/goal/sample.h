@@ -1,11 +1,13 @@
 #pragma once
 
-// GENERATED FILE DO NOT EDIT
+// GENERATED GOAL DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <Eigen/Core>
@@ -15,6 +17,13 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
+
+// TODO(jwnimmer-tri) Elevate this to drake/common.
+#if __has_cpp_attribute(nodiscard)
+#define DRAKE_VECTOR_GEN_NODISCARD [[nodiscard]]  // NOLINT(whitespace/braces)
+#else
+#define DRAKE_VECTOR_GEN_NODISCARD
+#endif
 
 namespace drake {
 namespace tools {
@@ -57,6 +66,26 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_unset(drake::dummy_value<T>::get());
   }
 
+  // Note: It's safe to implement copy and move because this class is final.
+
+  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /// MoveAssignable
+  //@{
+  Sample(const Sample& other)
+      : drake::systems::BasicVector<T>(other.values()) {}
+  Sample(Sample&& other) noexcept
+      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+  Sample& operator=(const Sample& other) {
+    this->values() = other.values();
+    return *this;
+  }
+  Sample& operator=(Sample&& other) noexcept {
+    this->values() = std::move(other.values());
+    other.values().resize(0);
+    return *this;
+  }
+  //@}
+
   /// Create a symbolic::Variable for each element with the known variable
   /// name.  This is only available for T == symbolic::Expression.
   template <typename U = T>
@@ -75,21 +104,80 @@ class Sample final : public drake::systems::BasicVector<T> {
   /// Some coordinate
   /// @note @c x is expressed in units of m/s.
   /// @note @c x has a limited domain of [0.0, +Inf].
-  const T& x() const { return this->GetAtIndex(K::kX); }
-  void set_x(const T& x) { this->SetAtIndex(K::kX, x); }
+  const T& x() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kX);
+  }
+  /// Setter that matches x().
+  void set_x(const T& x) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kX, x);
+  }
+  /// Fluent setter that matches x().
+  /// Returns a copy of `this` with x set to a new value.
+  DRAKE_VECTOR_GEN_NODISCARD
+  Sample<T> with_x(const T& x) const {
+    Sample<T> result(*this);
+    result.set_x(x);
+    return result;
+  }
   /// A very long documentation string that will certainly flow across multiple
   /// lines of C++
-  const T& two_word() const { return this->GetAtIndex(K::kTwoWord); }
+  /// @note @c two_word has a limited domain of [-Inf, 2.0].
+  const T& two_word() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kTwoWord);
+  }
+  /// Setter that matches two_word().
   void set_two_word(const T& two_word) {
+    ThrowIfEmpty();
     this->SetAtIndex(K::kTwoWord, two_word);
+  }
+  /// Fluent setter that matches two_word().
+  /// Returns a copy of `this` with two_word set to a new value.
+  DRAKE_VECTOR_GEN_NODISCARD
+  Sample<T> with_two_word(const T& two_word) const {
+    Sample<T> result(*this);
+    result.set_two_word(two_word);
+    return result;
   }
   /// A signed, normalized value
   /// @note @c absone has a limited domain of [-1.0, 1.0].
-  const T& absone() const { return this->GetAtIndex(K::kAbsone); }
-  void set_absone(const T& absone) { this->SetAtIndex(K::kAbsone, absone); }
+  const T& absone() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kAbsone);
+  }
+  /// Setter that matches absone().
+  void set_absone(const T& absone) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kAbsone, absone);
+  }
+  /// Fluent setter that matches absone().
+  /// Returns a copy of `this` with absone set to a new value.
+  DRAKE_VECTOR_GEN_NODISCARD
+  Sample<T> with_absone(const T& absone) const {
+    Sample<T> result(*this);
+    result.set_absone(absone);
+    return result;
+  }
   /// A value that is unset by default
-  const T& unset() const { return this->GetAtIndex(K::kUnset); }
-  void set_unset(const T& unset) { this->SetAtIndex(K::kUnset, unset); }
+  const T& unset() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::kUnset);
+  }
+  /// Setter that matches unset().
+  void set_unset(const T& unset) {
+    ThrowIfEmpty();
+    this->SetAtIndex(K::kUnset, unset);
+  }
+  /// Fluent setter that matches unset().
+  /// Returns a copy of `this` with unset set to a new value.
+  DRAKE_VECTOR_GEN_NODISCARD
+  Sample<T> with_unset(const T& unset) const {
+    Sample<T> result(*this);
+    result.set_unset(unset);
+    return result;
+  }
   //@}
 
   /// See SampleIndices::GetCoordinateNames().
@@ -98,12 +186,13 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
 
   /// Returns whether the current values of this vector are well-formed.
-  drake::Bool<T> IsValid() const {
+  drake::boolean<T> IsValid() const {
     using std::isnan;
-    auto result = (T(0) == T(0));
+    drake::boolean<T> result{true};
     result = result && !isnan(x());
     result = result && (x() >= T(0.0));
     result = result && !isnan(two_word());
+    result = result && (two_word() <= T(2.0));
     result = result && !isnan(absone());
     result = result && (absone() >= T(-1.0));
     result = result && (absone() <= T(1.0));
@@ -111,15 +200,29 @@ class Sample final : public drake::systems::BasicVector<T> {
     return result;
   }
 
-  // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(3);
-    (*value)[0] = x() - T(0.0);
-    (*value)[1] = absone() - T(-1.0);
-    (*value)[2] = T(1.0) - absone();
+  void GetElementBounds(Eigen::VectorXd* lower,
+                        Eigen::VectorXd* upper) const final {
+    const double kInf = std::numeric_limits<double>::infinity();
+    *lower = Eigen::Matrix<double, 4, 1>::Constant(-kInf);
+    *upper = Eigen::Matrix<double, 4, 1>::Constant(kInf);
+    (*lower)(K::kX) = 0.0;
+    (*upper)(K::kTwoWord) = 2.0;
+    (*lower)(K::kAbsone) = -1.0;
+    (*upper)(K::kAbsone) = 1.0;
+  }
+
+ private:
+  void ThrowIfEmpty() const {
+    if (this->values().size() == 0) {
+      throw std::out_of_range(
+          "The Sample vector has been moved-from; "
+          "accessor methods may no longer be used");
+    }
   }
 };
 
 }  // namespace test
 }  // namespace tools
 }  // namespace drake
+
+#undef DRAKE_VECTOR_GEN_NODISCARD

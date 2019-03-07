@@ -18,6 +18,7 @@ namespace automotive {
 /// for details on the approach.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -25,10 +26,10 @@ namespace automotive {
 ///
 /// Input Port 0: a LaneDirection representing the requested lane and direction
 ///   of travel.
-///   (InputPortDescriptor getter: lane_input())
+///   (InputPort getter: lane_input())
 ///
 /// Input Port 1: PoseVector for the ego car.
-///   (InputPortDescriptor getter: ego_pose_input())
+///   (InputPort getter: ego_pose_input())
 ///
 /// Output Port 0: A BasicVector of size one with the commanded steering angle.
 ///   (OutputPort getter: steering_command_output())
@@ -50,8 +51,8 @@ class PurePursuitController : public systems::LeafSystem<T> {
   ~PurePursuitController() override;
 
   /// Returns the port to the individual input/output ports.
-  const systems::InputPortDescriptor<T>& lane_input() const;
-  const systems::InputPortDescriptor<T>& ego_pose_input() const;
+  const systems::InputPort<T>& lane_input() const;
+  const systems::InputPort<T>& ego_pose_input() const;
   const systems::OutputPort<T>& steering_command_output() const;
 
  private:

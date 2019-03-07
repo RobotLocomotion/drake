@@ -16,7 +16,7 @@
 
 #+TITLE: maliput: Modeling Road Networks for Simulation
 #+AUTHOR: Matt Marjanović (maddog@tri.global)
-#+DATE: April 20, 2018
+#+DATE: March 1, 2019
 
 This document describes =maliput=, a model of road networks for use in
 agent and traffic simulations.  At the core of =maliput= is a
@@ -75,7 +75,7 @@ of fragments that are no longer immediately necessary.
 *** Overview
 At the core of =maliput= is a mathematical model for the geometry of
 the space around a road network; it is a model of both the road
-surface (of course) and the volume proximal to that surface.  In the
+surface and the volume proximal to that surface.  In the
 abstract, one can think of "a road" as a 2D manifold (the road
 surface) embedded in 3D space (the physical universe).  The manifold
 structure is important because much of driving involves figuring out
@@ -104,7 +104,7 @@ In super-mathy terms:
 #   road volume, and over each partition, we require that the maps are
 #   $C^1$ continuous.
 
-In the lexicon of =maliput= and its API, the road volume manifold is
+In the lexicon of =maliput= and its C++ API, the road volume manifold is
 called a =RoadGeometry=.  A =RoadGeometry= is partitioned into
 =Segments=, which correspond to stretches of asphalt (and the space
 above and/or below them).  Each =Segment= is a group of one or more
@@ -123,6 +123,9 @@ surface.  The routing graph (=Lanes= are joined end-to-end via
 =BranchPoints=) describes how one can get from one region of the road
 network to another.
 
+*** Scale Length and Tolerances
+/TODO: Explain the concepts of linear tolerance, angular tolerance, and
+characteristic scale length./
 *** =World= Frame versus =Lane= Frame
 Two types of coordinate frames are used in this model: the (single)
 =World=-frame and the (multiple) =Lane=-frames.  In both, distances
@@ -149,18 +152,16 @@ description of the geographic coordinate system (if any) used by a
 position.
 #+END_QUOTE
 
-A =Lane=-frame is a right-handed orthonormal coordinate system, with
-basis $(\hat{s},\hat{r},\hat{h})$ and positions expressed as
-curvilinear coordinates $(s,r,h)$.  Each =Lane= in a =RoadGeometry=
+A =Lane=-frame is a right-handed orthonormal curvilinear coordinate system, with
+positions expressed as coordinates $(s,r,h)$.  Each =Lane= in a =RoadGeometry=
 defines its own embedding into the =World=, and thus each =Lane=
 has its own =Lane=-frame.
 
 When embedded into the =World=, $s$ represents longitudinal distance
 (path-length) along a central reference curve (the /centerline/) which
-defines a given =Lane=, and $\hat{s}$ is tangent to the reference
-curve.  $r$ is lateral distance along the road surface; $\hat{r}$ is
-perpendicular to $\hat{s}$ and parallel to the surface.  $h$ is height
-above the road surface; $\hat{h} = \hat{s} \times \hat{r}$.  Unless
+defines a given =Lane=.  $r$ is lateral distance along the road surface,
+the path length along a geodesic perpendicular to the centerline.
+$h$ is height above the road surface, the distance along a normal.  Unless
 the lane is completely straight and flat, a =Lane=-frame acts like a
 non-inertial system: the $(s,r,h)$ are not isotropic[fn::$s$ is only
 guaranteed to correspond to true physical distance when $(r,h) =
@@ -169,33 +170,37 @@ true physical distance when $h = 0$ (i.e., along the road surface).]
 and the curves and twists in the embedding introduce fictitious
 forces in equations of motion expressed in these coordinates.
 
-We also introduce the notion of /isotropic coordinates/
-$(\sigma,\rho,\eta)$ corresponding to the non-isotropic $(s,r,h)$.  At
-every point $(s,r,h)$ in a =Lane= with its local
-$(\hat{s},\hat{r},\hat{h})$ coordinate frame, we define a
-corresponding $(\hat{\sigma},\hat{\rho},\hat{\eta})$ frame with the
-same orientation but different scale factors which make it isotropic.
-We don't use $(\sigma,\rho,\eta)$ to parameterize the space of the
-=Lane=, but rather to talk about physically-relevant velocities and
-accelerations.  In other words, at a given point in a =Lane=, the
-magnitude of a velocity $(\dot{\sigma},\dot{\rho},\dot{\eta})$ is
-unchanged when mapped to $(\dot{x},\dot{y},\dot{z})$, and the
-direction undergoes the same rotation for all velocity vectors
-anchored to that point.
+# TODO(maddog) Replace this gibberish with a proper description of the
+#              effects of the metric induced by the pushforward of W_L.
+# We also introduce the notion of /isotropic coordinates/
+# $(\sigma,\rho,\eta)$ corresponding to the non-isotropic $(s,r,h)$.  At
+# every point $(s,r,h)$ in a =Lane= with its local
+# $(\hat{s},\hat{r},\hat{h})$ coordinate frame, we define a
+# corresponding $(\hat{\sigma},\hat{\rho},\hat{\eta})$ frame with the
+# same orientation but different scale factors which make it isotropic.
+# We don't use $(\sigma,\rho,\eta)$ to parameterize the space of the
+# =Lane=, but rather to talk about physically-relevant velocities and
+# accelerations.  In other words, at a given point in a =Lane=, the
+# magnitude of a velocity $(\dot{\sigma},\dot{\rho},\dot{\eta})$ is
+# unchanged when mapped to $(\dot{x},\dot{y},\dot{z})$, and the
+# direction undergoes the same rotation for all velocity vectors
+# anchored to that point.
 
 Finally, we will colloquially use the term "=Road=-frame" to refer to
 a 4-tuple of parameters $(L,s,r,h)$ in which:
  * $L$ is an identifier which uniquely names a =Lane=;
  * $(s,r,h)$ are =Lane=-frame coordinates understood in the context
    of =Lane= $L$.
-One can construct a map $M: {(L,s,r,h)} \to \mathbb{R}^3$ from the
-road manifold into the =World=, as a union of the per- =Lane= maps.
-This $M$ is technically an /immersion/ and not an /embedding/ because
-it is not necessarily 1-to-1.  As described later on, multiple =Lanes=
+One can construct a map $W: \lbrace(L,s,r,h)\rbrace \to \mathbb{R}^3$ from the
+road manifold into the =World=, as a union of the per =Lane= maps.
+This $W$ is technically an /immersion/ and not an /embedding/ because
+it is not necessarily 1-to-1; as described later on, multiple =Lanes=
 in the same =Segment= will double-cover the same region of the
 $\mathbb{R}^3$ world frame.  Also, due to our representation of
 routing, double-coverage will occur where streets cross to form
-intersections, or where highways split or merge.
+intersections, or where highways split or merge.  This needs to be
+considered when determining the possible interactions of agents or
+objects that are located in nominally distinct regions of the =Lane= network.
 
 #+BEGIN_QUOTE
 Note:  Due to certain geometric constraints in =Lane=-frame parameterization,
@@ -206,20 +211,25 @@ surface/volume parameterizations in the future to complete the picture.
 
 *** Lanes as =Lanes=
 
-A =Lane= represents a lane of travel in a road network.  As discussed above,
-it defines a map from curvilinear coordinates to the =World=-frame:
+A =Lane= represents a lane of travel in a road network, expressing a path
+along a stretch of asphalt as well as a parameterization of that asphalt
+from one lateral edge to the other (including adjacent lanes of travel,
+shoulders, etc).
+
+As discussed above, a =Lane=, identified by $L$, defines a map $W_L$
+from curvilinear coordinates to the =World=-frame:
 \[
-G_L: (s,r,h) \to (x,y,z), \text{ for } s \in [0, s_\text{max}]
+W_L: (s,r,h) \mapsto (x,y,z), \text{ for } s \in [0, s_\text{max}]
 \]
-The curve traced out by $G_L$ along longitudinal coordinate $s$ (while $r$
-and $h$ are fixed to zero) is called the /centerline/ of the =Lane=.
+The curve traced out by $W_L$ along longitudinal coordinate $s$ (while $r$
+and $h$ are fixed to zero) is called the /centerline/ of the =Lane=:
 \[
-C_L: (s) \to (x,y,z), = G_L(s,0,0) \text{ for } s \in [0, s_\text{max}]
+C_L: s \mapsto (x,y,z), = W_L(s,0,0) \text{ for } s \in [0, s_\text{max}]
 \]
 The centerline is nominally the ideal trajectory of a vehicle travelling
 in the lane (and it is not necessarily in the geometric center of the lane,
-despite the name).  $G_L$ is required to be $G^1$ continuous, and
-$C_L$ is further required to be $C^1$ continuous.
+despite the name).  $W_L$ is required to be $C^1$ continuous, and thus
+$C_L$ is also required to be $C^1$ continuous.
 
 The space of the =Lane= is bounded in $s$ by $s \in [0,
 s_\text{max}]$.  $s_\text{max}$ is called the /length/ of the =Lane=
@@ -229,27 +239,29 @@ labelled the /start end/, and the $s=s_\text{max}$ end is the /finish
 end/.  However, a =Lane= is just a stretch of pavement with no
 preferred travel direction, and there is no direction of travel
 implied by these labels.[fn::Travel restrictions on a =Lane= are
-indicated by annotations, described later on.]
+indicated by road rule annotations, described later in
+Section [[Rules of the Road: =RoadRulebook=]].]
 
 A =Lane= is bounded laterally by $r \in B_\text{driveable}(s)$, where
 \[
-B_\text{driveable}: (s) \to [r_\text{min}, r_\text{max}] \text{ s.t. } r_\text{min}<=0 \text{ and } r_\text{max}>=0
+B_\text{driveable}: s \mapsto [r_\text{min}, r_\text{max}] \text{ s.t. } r_\text{min}<=0 \text{ and } r_\text{max}>=0
 \]
 defines inclusive min/max bounds which depend only on $s$.  These are
 the /driveable bounds/ for the =Lane=, the valid domain of $r$, which
 is intended to
-represent the full lateral extent of the paved, driveable asphalt for
+represent the full lateral extent of the paved, driveable asphalt including
 all adjacent =Lanes= in the same =Segment=.
+# TODO(maddog@tri.global) This begs for a picture.
 A =Lane= is also characterized by /nominal bounds/
 \[
-B_\text{nominal}: (s) \to [r_\text{min}, r_\text{max}] \text{ s.t. } B_\text{nominal} \subseteq B_\text{driveable}
+B_\text{nominal}: s \mapsto [r_\text{min}, r_\text{max}] \text{ s.t. } B_\text{nominal} \subseteq B_\text{driveable}
 \]
 which indicate what is considered to be "in" that specific travel lane
 (e.g., between the stripes).
 
 A =Lane= is bounded in height by $h \in H_\text{driveable}(s,r)$, where
 \[
-H_\text{driveable}: (s,r) \to [h_\text{min}, h_\text{max}] \text{ s.t. } h_\text{min}<=0 \text{ and } h_\text{max}>=0
+H_\text{driveable}: (s,r) \mapsto [h_\text{min}, h_\text{max}] \text{ s.t. } h_\text{min}<=0 \text{ and } h_\text{max}>=0
 \]
 defines inclusive min/max bounds which depend on $s$ and $r$.  These define
 the valid domain of $h$, which represents the full extent of the volume
@@ -259,7 +271,7 @@ Typically, $h_\text{min}$ is zero, but having $h_\text{min}<0$ allows a
 made by ground-penetrating radar).
 
 #+BEGIN_QUOTE
-Note: Because of the orthogonality of $(\hat{s},\hat{r},\hat{h})$, a
+Note: Because of the orthogonality of the $(s,r,h)$ coordinates, a
 curve with constant non-zero $(r,h)$ (imagine $r$ and $h$ "grid
 lines") is basically a parallel curve to the centerline $C_L$.  Thus,
 the shape of $C_L$ and/or the road surface may
@@ -277,10 +289,10 @@ of a given =Lane=.
 
 =BranchPoints= are the points where =Lanes= are connected end-to-end.
 They are so named because they are the branch-points in the decision
-tree of an agent, driving along the network, which must decide which
-new =Lane= to follow at the end of the current =Lane=.  Each end
-(/start/, /finish/) of a =Lane= has an associated
-=BranchPoint=.[fn::Typically, this means a =Lane= has precisely two
+tree of an agent driving in the network, which must decide which
+new =Lane= to follow at the end of its current =Lane=.  Each end
+(/start/ or /finish/) of a =Lane= has an associated
+=BranchPoint=.[fn::This means a =Lane= has precisely two
 =BranchPoints=, except for the peculiar case of a =Lane= which loops
 around and connects to itself, at a single =BranchPoint=.]  Each
 =BranchPoint= has at least one =Lane= associated with it, typically
@@ -288,29 +300,35 @@ two, and often more than that (when =Lanes= merge/diverge).[fn::A
 =BranchPoint= with only a single =Lane= attached to it is basically a
 dead-end.]
 
-We only allow the centerlines ($C_L(s)$) of =Lanes= to intersect at
-their ends, i.e., at =BranchPoints=.  We also require that the centerlines
-of the =Lanes= joined at a =BranchPoint= are $G^1$ continuous.  This
-implies that:
- * The =BranchPoint= is a well-defined point in the World frame.
- * The tangent vectors of the $C_L$ curves are (anti)parallel at the
-   =BranchPoint=.  In fact, except for the signs of $\hat{s}$ and $\hat{r}$,
-   the frames of all the =Lanes= will have the same orientation and scale.
- * Given two =Lanes= $J$ and $K$ joined at a =BranchPoint= located at
-   the /finish/ end of $J$, then a position $(s_\text{max,J}, r, h)_J$
-   in $J$ will map to either $(0, r, h)$ or $(s_\text{max,K}, -r,
-   h)_K$ in $K$ (depending on which end of $K$ is at the =BranchPoint=).
+We only allow =BranchPoints= to occur at the ends of =Lanes=, specifically at
+the ends of their centerlines ($C_L(s)$). We also require that the centerlines
+of the =Lanes= joined at a =BranchPoint= are $G^1$ continuous.  Together with
+the earlier-stated requirement of overall $G^1$ continuity of the road surface
+and the conditions on $r$ and $h$ being path-lengths, this implies that:
+ 1. The location of a =BranchPoint= is a well-defined point in the World frame.
+ 2. The tangent vectors of the $C_L$ curves are either parallel or
+    antiparallel with each other at the
+    =BranchPoint=.  In fact, except for the signs of $\hat{s}$ and $\hat{r}$,
+    the frames of all the =Lanes= will have the same orientation and scale.
+ 3. Given two =Lanes= $J$ and $K$ joined at a =BranchPoint= located at
+    the /finish/ end of $J$, then a position $(s_\text{max,J}, r, h)_J$
+    in $J$ will map to either $(0, r, h)$ or $(s_\text{max,K}, -r,
+    h)_K$ in $K$ (depending on which end of $K$ is at the =BranchPoint=).
 
-A =BranchPoint= fundamentally has two sides to it; the =Lanes=
-involved can be collected into two groups depending on the orientation
-(parallel versus antiparallel) of their tangent vectors.  One can
-imagine multiple =Lanes= converging on one side of a =BranchPoint=,
-flowing smoothly through it, and diverging into other =Lanes= on the
-other side.  The sides are arbitrary, so we label them with the
-arbitrary names "A" and "B".  With respect to a specific =Lane=,
-however, we call all the =Lanes= on the "same side" its /confluent
-lanes/ and we call all the =Lanes= on the "other side" its /ongoing
-lanes/.
+Given point (2) above, one can imagine multiple =Lanes= converging on one
+side of a =BranchPoint=, flowing smoothly through it, and diverging into
+other =Lanes= on the other side.  If one considers the
+"outward-travelling tangent vector"[fn::At the /finish/ end of a =Lane=,
+this is just the tangent of $C_L$; at the /start/ end of a =Lane=, it's
+the negative of the tangent, pointing in the $-s$ direction instead of
+the $+s$ direction.] of each =Lane=, then the =Lanes= can be grouped by
+common orientation of outward-travelling tangent vector into at most two
+groups.  Thus, a =BranchPoint= fundamentally has two sides to it.  The
+sides are arbitrary, so we label them with the arbitrary names "A" and
+"B".  With respect to a specific =Lane= $J$, regardless of which side $J$
+is on (be it A or B):
+ * the =Lanes= on the "same side" as $J$ are the /confluent lanes/ of $J$;
+ * the =Lanes= on the "other side" are the /ongoing lanes/ of $J$.
 
 # TODO: figure with sample branch-point topoloties:
 # * 1:1 --- simple continuation of one lane onto another;
@@ -343,7 +361,7 @@ presents a different $(s,r,h)$ parameterization of that same pavement.
 
 We would like for the driveable-bounds of each =Lane= to map to the
 same extent of physical space in the World frame, but that isn't always
-possible due to the geometric contraints of parallel curves.  However,
+possible due to the geometric constraints of parallel curves.  However,
 we do require that the union of the driveable-bounds of all =Lanes=
 in a =Segment= is simply-connected.  This means that:
  * a =Segment= doesn't have any "holes" in its driveable space (e.g.,
@@ -352,20 +370,25 @@ in a =Segment= is simply-connected.  This means that:
    to a position in another =Lane=-frame, though it may require
    expressing intermediate steps in other =Lanes= to do it.
 
-Recall that for =Lanes= in general, =Lane= centerlines are only
-allowed to intersect at their endpoints, and must have parallel
-tangents if they do.  This allows us to impose another constraint
+Within a =Segment=, we only allow the intersection of two =Lane= centerlines
+(such as a lane merge/split) to occur at the endpoints of the =Lanes=,
+which further implies that it may occur only at a =BranchPoint=.
+This allows us to impose another constraint
 on =Lanes= in a =Segment=:  they must be oriented and shaped such
 that there is a consistent "right-to-left" ordering in terms of
-increasing $r$.  In other words:
- * A =Lane= $K$ is considered "left of" =Lane= $J$ if and only if
-   there exists a point on the centerline $C_{LK}$ of $K$ that has a
-   position with $r > 0$ in the =Lane=-frame of $J$.  $K$ is "right
-   of" $J$ if and only if a point exists on $C_{LK}$ with position
-   $r < 0$ in the frame of $J$.
- * If =Lane= $K$ is to the left of =Lane= $J$, then $J$ must be to
-   the right of $K$.
- * Every pair of =Lanes= must have a left/right relationship.
+increasing $r$.  In other words, within a =Segment=:
+ 1. A =Lane= $K$ is considered "left of" =Lane= $J$ if and only if
+    there exists a point on the centerline $C_{K}$ of $K$ that has a
+    position with $r > 0$ in the =Lane=-frame of $J$.  $K$ is "right
+    of" $J$ if and only if a point exists on $C_{K}$ with position
+    $r < 0$ in the frame of $J$.
+ 2. If and only if =Lane= $K$ is to the left of =Lane= $J$, then $J$ must
+    be to the right of $K$.
+ 3. For every pair of distinct =Lanes= $J$ and $K$, $K$ must be either
+    to the left or to the right of $J$, and may not be both.
+A consequence of this ((2) in particular) is that the /start/ and /finish/
+ends of all the =Lanes= in a =Segment= are grouped together respectively
+so that the =Lanes= are generally "pointing in the same direction".
 Given the consistent ordering, we index the =Lanes= in a =Segment=
 with unique integers, beginning with zero for the rightmost =Lane= and
 increasing leftward.
@@ -373,7 +396,7 @@ increasing leftward.
 *** Intersecting =Segments= Grouped into =Junctions=
 
 It is possible for multiple =Segments= to cover the same pavement.
-In fact, that how intersections are represented, by criss-crossing
+In fact, that is how intersections are represented, by criss-crossing
 =Segments= which define the different paths through an intersection.
 Overlapping =Segments= also occur where the road merges or diverges,
 such as on-ramps, exit ramps, traffic circles, and a road that splits
@@ -383,23 +406,23 @@ to go around an impassable monument.
 terms of the union of the driveable-bounds of their =Lanes=) are
 grouped together into a =Junction=.  The primary (sole?) purpose of a
 =Junction= is to indicate that objects in its component =Segments= may
-spatially interact with eachother (e.g., collide!).  Conversely, if
+spatially interact with each other (e.g., collide!).  Conversely, if
 two =Segments= belong to two distinct =Junctions=, then objects within
 their respective driveable-bounds should /not/ be touching.  (Note
-that in considering intersection, we ignore the measure-zero overlap
-that occurs where =Segments= join end-to-end.)
+that in considering intersection, we ignore the overlaps
+that may occur where =Segments= join end-to-end via their =Lanes=.)
 
 Every =Segment= must belong to one and only one =Junction=, and a
-=Junction= is thus allowed to contain a single =Segment=.  (And,
-empty =Junctions= are not allowed.)
+every =Junction= must contain at least one =Segment=.
 
 When designing/implementing a =RoadGeometry=, it is good practice to
 structure the =Segments= to minimize the spatial extent of
 =Junctions=.  For example, a single long =Segment= which crosses
 through two intersections would cause both intersections to belong
-to the same =Junction=.  It would be better split that single =Segment=
-into three:  one crossing each intersection, and one in between that
-joins those two end-to-end (resulting in three independent =Junctions=).
+to the same =Junction=.  It would be better to split that single =Segment=
+into three:  one crossing each intersection and one in-between that
+joins those two end-to-end, resulting in three independent =Junctions=
+that are better localized.
 
 ** Abstract Geometry API: =RoadGeometry=
  * /TODO:/  Explain semantics of object ID's.  (cross-referencing, tiling,
@@ -413,28 +436,28 @@ joins those two end-to-end (resulting in three independent =Junctions=).
 *** =RoadGeometry=
     * accessors for component =Junctions=
     * accessors for component =BranchPoints=
-    * accessors for tolerances
+    * accessors for characteristic lengths and tolerances
       * =linear_tolerance=
       * =angular_tolerance=
-      * /TODO/ =scale_length=
+      * =scale_length=
 *** =Junction=
     * accessors for parent =RoadGeometry=, component =Junctions=
 *** =Segment=
     * accessors for parent =Junction=, component =Lanes=
 *** =Lane=
     * nominal $r$ bounds,
-      $B_\text{nominal}: (s) \to [r_\text{min}, r_\text{max}]$
+      $B_\text{nominal}: (s) \mapsto [r_\text{min}, r_\text{max}]$
     * driveable $r$ bounds,
-      $B_\text{driveable}: (s) \to [r_\text{min}, r_\text{max}]$
+      $B_\text{driveable}: (s) \mapsto [r_\text{min}, r_\text{max}]$
     * driveable $h$ bounds,
-      $H_\text{driveable}: (s,r) \to [h_\text{min}, h_\text{max}]$
-    * embedding $G_L: (s,r,h) \to (x,y,z)$
-    * inverse $G_L^{-1}: (x,y,z) \to (s,r,h)$
+      $H_\text{driveable}: (s,r) \mapsto [h_\text{min}, h_\text{max}]$
+    * embedding $W_L: (s,r,h) \mapsto (x,y,z)$
+    * inverse $W_L^{-1}: (x,y,z) \mapsto (s,r,h)$
     * =Lane=-frame orientation
-      $Q: (s,r,h) \to \text{orientation of }(\hat{s},\hat{r},\hat{h})$
+      $Q: (s,r,h) \mapsto \text{orientation of }(\hat{s},\hat{r},\hat{h})$
     * isotropic scale factors
-      $S: (s,r,h) \to (\frac{ds}{d\sigma},\frac{dr}{d\rho},\frac{dh}{d\eta})$
-    * derivatives of $G_L$ (to compute fictitious forces)
+      $S: (s,r,h) \mapsto (\frac{ds}{d\sigma},\frac{dr}{d\rho},\frac{dh}{d\eta})$
+    * derivatives of $W_L$ (to compute fictitious forces)
     * accessors for parent =Segment=, associated =BranchPoints=,
       and left/right =Lanes=, to traverse the object graph.
 *** =BranchPoint=
@@ -443,11 +466,359 @@ joins those two end-to-end (resulting in three independent =Junctions=).
     * accessor for the set of ongoing =Lanes= for a given =Lane=
     * accessor for the default branch (ongoing =Lane=) for a given =Lane=
     * accessor for parent =RoadGeometry=
-** Concrete Implementation: =maliput::monolane=
- * /TODO:/  Reference to =maliput::api= doxygen.
- * /TODO:/  Basics of geometric primitives
- * /TODO:/  Basics of Builder
- * /TODO:/  Basics of yaml format
+** Concrete Implementation: =maliput::multilane=
+=multilane=[fn::So-named because it admits multiple =Lanes= per
+=Segment=, an advance over its predecessor (=monolane=) which only
+admitted a single =Lane= per =Segment=.]  is an implementation of the
+=maliput= geometry API which synthesizes a road network from a small set
+of primitive building blocks, mimicking techniques used in the geometric
+design of real roads.  The basic geometry of a =Segment= is derived
+from the combination of a plane curve, an elevation
+function, and a superelevation function, combined together to define a
+ruled surface.  A =Segment= has a longitudinal /reference curve/
+(similar to a =Lane='s centerline) and each of the =Lanes= of a
+=Segment= is defined via a constant lateral offset, along the segment
+surface, from that reference curve.
+
+Three coordinate frames are involved in the following discussion:
+ * $(x,y,z)$ is a position in the =World=-frame.
+ * $(s,r,h)_{\LANE,i}$ is a position in the =Lane=-frame (discussed
+   in Section [[=World= Frame versus =Lane= Frame]]) of the =Lane= with
+   index $i$.
+ * $(p,r,h)_\SEG$ is a position in a curvilinear reference frame of
+   the =Segment=, analogous to $(s,r,h)_{\LANE,i}$ for a =Lane=.
+   The parameter $p_\SEG \in [0, 1]$ spans the =Segment= longitudinally.
+   $r_\SEG$ is a lateral offset from the =Segment='s reference curve,
+   along the =Segment= surface.  $h_\SEG$ is height above the surface.
+
+*** =Segment= Geometry
+# TODO(maddog) Reconsider the use of the word "geometry" below.
+The geometry of a =Segment= is completely derived from a map
+\[
+W: (p,r,h)_\SEG \mapsto (x,y,z)
+\]
+which we will construct in stages, starting with the =Segment= reference curve
+\[
+W(p_\SEG) \equiv W(p_\SEG,0,0),
+\]
+followed by the =Segment= surface
+\[
+W(p_\SEG,r_\SEG) \equiv W(p_\SEG,r_\SEG,0).
+\]
+The construction of $W(p_\SEG,r_\SEG,h_\SEG)$ will involve
+three fundamental functions, $G_\text{xy}$, $G_z$, and $\Theta$.
+
+The first fundamental function $G_\text{xy}$ defines a two dimensional
+/planar primitive curve/ in the $xy$ -plane:
+\[
+G_{xy}: p_\SEG \mapsto (x,y).
+\]
+This curve establishes the basic geometric primitive of the =Segment=
+(e.g., "constant-radius arc").
+We define $l$ as a path-length along this plane curve, in the range
+$[0, l_\text{max}]$, where $l_\text{max}$ is the total path-length
+of the curve.  $G_{xy}$ is specifically parameterized such that
+\[
+p_\SEG \equiv \frac{l}{l_\text{max}};
+\]
+in other words, $p_\SEG$ is linear in path-length along the planar
+primitive curve and $p_\SEG \in [0,1]$.
+
+The second fundamental function $G_z$ specifies elevation above the
+\(xy\)-plane (albeit with a peculiar scale factor):
+\[
+G_z: p_\SEG \mapsto \frac{1}{l_\text{max}}z.
+\]
+Taking $G_{xy} = (\begin{smallmatrix}G_x\\G_y\end{smallmatrix})$
+and $G_z$ together,
+# \[
+# \left(\begin{array}{c} G_{xy}\\ l_\text{max}G_z \end{array}\right):
+#  p_\SEG \mapsto
+# \left(\begin{array}{c}x\\y\\z\end{array}\right)
+# \]
+\[
+\left(\begin{array}{c}x\\y\\z\end{array}\right) =
+W(p_\SEG) =
+\left(\begin{array}{c} G_x(p_\SEG)\\
+                       G_y(p_\SEG)\\
+                       l_\text{max}G_z(p_\SEG) \end{array}\right)
+\]
+defines the three dimensional /reference curve/ $W(p_\SEG)$ for the =Segment=.
+$G_z$ is constructed with the scale factor of $1/l_\text{max}$ specifically
+so that:
+\begin{eqnarray*}
+      z & = & l_\text{max} G_z(p_\SEG)\\
+        & = & l_\text{max} G_z\left(\frac{l}{l_\text{max}}\right)\\
+\dot{z} & = & \frac{dz}{dl} = \frac{d}{dp_\SEG}G_z(p_\SEG)
+\end{eqnarray*}
+This allows us to derive the first derivative of $G_z$ directly from
+the =World=-frame slope $\dot{z} = \frac{dz}{dl}$ of the segment
+surface along its reference curve.  This is convenient because $\dot{z}$
+is what a road designer would nominally specify as the "slope of the road"
+or the "grade of the road".
+
+The third fundamental function $\Theta$ specifies the superelevation of
+the =Segment= surface:
+\[
+\Theta: p_\SEG \mapsto \frac{1}{l_\text{max}}\theta
+\]
+Superelevation $\theta$ is the "twist" in a road, given as a right-handed
+angle of rotation around the tangent of the reference curve $W(p_\SEG)$.
+Zero superelevation leaves the surface parallel with the
+$xy$ plane.[fn::Note that superelevation becomes ambiguous when the
+tangent of the reference curve points in the $\hat{z}$ direction.]
+As with $G_z$, $\Theta$ is scaled so that:
+\begin{eqnarray*}
+      \theta & = & l_\text{max} \Theta\left(\frac{l}{l_\text{max}}\right)\\
+\dot{\theta} & = &
+              \frac{d\theta}{dl} = \frac{d}{dp_\SEG}\Theta(p_\SEG)
+\end{eqnarray*}
+
+# With the three fundamental functions in hand, we can express the orientation
+# of the $(\hat{p},\hat{r},\hat{h})_\SEG$ frame along the reference curve,
+# with respect to the =World=-frame, as a roll/pitch/yaw rotation:
+We use all three fundamental functions to define a rotation
+$\mathbf{R}(p_\SEG)$ as:
+\begin{align*}
+\mathbf{R}(p_\SEG) &=
+ \mathbf{R}_{\gamma(p_\SEG)}
+ \mathbf{R}_{\beta(p_\SEG)} \mathbf{R}_{\alpha(p_\SEG)}
+\end{align*}
+where
+\begin{align*}
+\mathbf{R}_{\gamma(p_\SEG)} &=
+\left(\begin{array}{rrr}
+\cos\gamma & -\sin\gamma & 0 \\
+\sin\gamma &  \cos\gamma & 0 \\
+         0 &           0 & 1
+\end{array}\right) & \text{(yaw)}\\
+%
+\mathbf{R}_{\beta(p_\SEG)}  &=
+\left(\begin{array}{rrr}
+ \cos\beta & 0 & \sin\beta \\
+         0 & 1 &         0 \\
+-\sin\beta & 0 & \cos\beta
+\end{array}\right) & \text{(pitch)} \\
+%
+\mathbf{R}_{\alpha(p_\SEG)} &=
+\left(\begin{array}{rrr}
+1 &          0 &           0 \\
+0 & \cos\alpha & -\sin\alpha \\
+0 & \sin\alpha &  \cos\alpha
+\end{array}\right) & \text{(roll)}
+\end{align*}
+and
+\begin{align*}
+\gamma(p_\SEG) &=
+  \mathrm{atan2}\negthickspace\left(\frac{dG_y}{dp_\SEG},
+                      \frac{dG_x}{dp_\SEG}\right) & \text{(yaw)}\\
+\beta(p_\SEG)  &=
+  \arctan\negthickspace\left(\frac{dG_z}
+                                        {dp_\SEG}\right)
+& \text{(pitch)} \\
+\alpha(p_\SEG) &= l_\text{max}\Theta(p_\SEG) & \text{(roll)}
+\end{align*}
+# Note that $\hat{p}_\SEG$ is solely determined by $W(p_\SEG)$,
+# and as expected,
+# $\hat{p}_\SEG = \frac{W'(p_\SEG)}{\lVert W'(p_\SEG)\rVert}$.
+
+With $\mathbf{R}(p_\SEG)$, we can extend the =Segment= reference curve
+$W(p_\SEG)$ to construct the =Segment= /surface/ $W(p_\SEG,r_\SEG)$ as:
+\begin{align*}
+\left(\begin{array}{c}x\\y\\z\end{array}\right) =
+W(p_\SEG,r_\SEG) = \left(
+\begin{array}{c}
+   G_{xy}(p_\SEG)\\
+   l_\text{max} G_z(p_\SEG)
+\end{array} \right) +
+\mathbf{R}(p_\SEG)\negthickspace
+\begin{pmatrix}
+0\\ r_\SEG \\ 0 \end{pmatrix}.
+\end{align*}
+This function defines a /ruled surface/.  For any $p_\SEG$,
+$W(p_\SEG,r_\SEG)$ is linear in $r_\SEG$ and motion along
+$r_\SEG$ is in a straight line.
+
+Now that we have the surface embedding $W(p_\SEG,r_\SEG)$,
+we can derive
+the basis vectors $(\hat{p}, \hat{r}, \hat{h})_\SEG$ along the surface
+and the corresponding orientation $\mathbf{R}(p_\SEG,r_\SEG)$:
+\begin{align*}
+\mathbf{R}(p_\SEG,r_\SEG) &=
+                     \begin{pmatrix}\hat{p} & \hat{r} & \hat{h}\end{pmatrix}\\
+\hat{p}_\SEG &=
+ \frac{\partial_{p_\SEG} W(p_\SEG,r_\SEG)}{\lVert\partial_{p_\SEG} W(p_\SEG,r_\SEG)\rVert}\\
+\hat{r}_\SEG &=
+ \frac{\partial_{r_\SEG} W(p_\SEG,r_\SEG)}{\lVert\partial_{r_\SEG} W(p_\SEG,r_\SEG)\rVert}\\
+\hat{h}_\SEG &= \hat{p}_\SEG \times \hat{r}_\SEG
+\end{align*}
+
+A few things are worth noting at this point:
+ 1. $\hat{r}_\SEG = \mathbf{R}(p_\SEG)
+    \left(\begin{smallmatrix} 0\\1\\0 \end{smallmatrix}\right)$.  Thus,
+    $\hat{r}_\SEG$ is independent of $r_\SEG$.
+ 1. $\mathbf{R}(p_\SEG,r_\SEG) = \mathbf{R}(p_\SEG)$ along
+    $r_\SEG = 0$ just as it should be; the orientation along the
+    =Segment='s reference curve is consistent in both expressions.
+ 1. $\hat{p}_\SEG$ is /not necessarily/ independent of
+    $r_\SEG$.  Consequently, $\mathbf{R}(p_\SEG,r_\SEG)$ is not
+    necessarily equal to $\mathbf{R}(p_\SEG)$ for
+    $r_\SEG\ne 0$.  This will become important when we try to
+    join =Segments= end-to-end preserving $G^1$ continuity, discussed in
+    Section [[Ensuring $G^1$ Continuity]].
+
+/Finally/, with $\mathbf{R}(p_\SEG,r_\SEG)$ in hand (and points 1 and
+2 above), we can define the complete volumetric world map
+$W(p_\SEG,r_\SEG,h_\SEG)$ for a =Segment='s geometry:
+\begin{align*}
+\begin{pmatrix}x\\y\\z\end{pmatrix} = W(p_\SEG,r_\SEG,h_\SEG) = \left(
+\begin{array}{c}
+   G_x(p_\SEG)\\
+   G_y(p_\SEG)\\
+   l_\text{max} G_z(p_\SEG)
+\end{array} \right) +
+\mathbf{R}(p_\SEG,r_\SEG)\negthickspace
+\begin{pmatrix}
+0\\ r_\SEG \\ h_\SEG \end{pmatrix}.
+\end{align*}
+This is simply $W(p_\SEG,r_\SEG)$ displaced by $h_\SEG$ along
+the surface normal $\hat{h}_\SEG$.
+
+
+*** =Lane= Geometry
+
+A =Lane= derives its geometry from its =Segment=.  In =multilane=, the
+centerline of the =Lane= with index $i$ is a parallel curve with a constant
+lateral
+offset $r_i$ from the reference curve (at $r_\SEG = 0$) of the
+=Segment=.  We can express this relationship as a transform between
+$(s,r,h)_{\LANE,i}$ (=Lane=-frame) and $(p,r,h)_\SEG$
+(=Segment=-frame):
+\begin{align*}
+\begin{pmatrix} p_\SEG\\
+                r_\SEG\\
+                h_\SEG \end{pmatrix}
+&= \begin{pmatrix}    P(s_{\LANE,i})\\
+                   r_{\LANE,i} + r_i\\
+                         h_{\LANE,i} \end{pmatrix}
+\end{align*}
+The tricky part here is $P:s_{\LANE,i} \mapsto p_\SEG$, which relates
+$s_{\LANE,i}$ to $p_\SEG$, and involves the
+path-length integral over $W(p_\SEG,r_\SEG)$.
+
+=maliput= defines $s_{\LANE,i}$ as the path-length along a =Lane='s
+centerline, and in =multilane= that centerline is a curve with constant
+$r_\SEG = r_i$.  Thus:
+\begin{align*}
+s_{\LANE,i} = S(p_\SEG) &=
+ \left. \int \left\lVert \partial_{p_\SEG}W(p_\SEG, r_\SEG)
+ \right\rVert dp_\SEG \right\rvert_{r_\SEG = r_i}.
+\end{align*}
+The function $P$ that we need is the inverse of the path-integral $S$.
+
+Unfortunately, there is generally no closed-form solution for either
+$S$ or $P$, particularly if the surface is not flat.  =multilane= will
+compute $P(s_{\LANE,i})$ and $S(p_\SEG)$ analytically if
+possible (e.g., for some flat surfaces) and otherwise will use more costly
+numerical methods to ensure accurate results.[fn::Which makes us
+wonder, perhaps the =Lane=-frame of =maliput= would be better off
+using an arbitrary longitudinal parameter $p_{\LANE,i}$ which could
+be converted to a distance $s_{\LANE,i}$ on demand, instead of the other
+way around.]
+
+ * /TODO:/ Derivation of orientation at arbitrary $(s,r,h)_{\LANE,i}$ point.
+ * /TODO:/ Derivation of motion-derivatives.
+ * /TODO:/ Derivation of surface/path curvatures.
+
+*** Available Implementations of $G_\text{xy}$, $G_z$, and $\Theta$
+
+=multilane= currently implements one form for each of $G_{xy}$,
+$G_z$, and $\Theta$.  $G_{xy}$ is implemented for a constant curvature
+arc (which includes zero curvature, i.e., straight line segments).
+Elevation $G_z$ and superelevation $\Theta$ are implemented for cubic
+polynomials.  These forms were chosen because they provide the smallest,
+simplest set of primitives that allow for the assembly of fully
+three-dimensional road networks that maintain $G^1$ continuity across
+segment boundaries.
+
+The exact form that $G_{xy}$ takes is:
+\begin{align*}
+\begin{pmatrix} x\\ y \end{pmatrix} = G_\text{xy}(p_\SEG) &=
+    \begin{pmatrix}x_0\\ y_0\end{pmatrix} +
+\begin{cases} %\left\lbrace\begin{matrix}
+ \frac{1}{\kappa}\begin{pmatrix}
+\cos(\kappa l_\text{max} p_\SEG + \gamma_0 - \frac{\pi}{2}) - \cos(\gamma_0 - \frac{\pi}{2})\\
+\sin(\kappa l_\text{max} p_\SEG + \gamma_0 - \frac{\pi}{2}) - \sin(\gamma_0 - \frac{\pi}{2})
+\end{pmatrix} & \text{for }\kappa > 0\\
+%
+ l_\text{max} p_\SEG
+    \begin{pmatrix}\cos{\gamma_0}\\ \sin{\gamma_0}\end{pmatrix}
+    & \text{for }\kappa = 0\\
+%
+ \frac{1}{\kappa}\begin{pmatrix}
+\cos(\kappa l_\text{max} p_\SEG + \gamma_0 + \frac{\pi}{2}) - \cos(\gamma_0 + \frac{\pi}{2})\\
+\sin(\kappa l_\text{max} p_\SEG + \gamma_0 + \frac{\pi}{2}) - \sin(\gamma_0 + \frac{\pi}{2})
+\end{pmatrix} & \text{for }\kappa < 0\\
+\end{cases} %\end{matrix}
+\end{align*}
+where $\kappa$ is the signed curvature (positive is
+counterclockwise/leftward), $l_\text{max}$ is the arc length,
+$\left(\begin{smallmatrix}x_0\\y_0\end{smallmatrix}\right)$ is the
+starting point of the arc, and $\gamma_0$ is the initial yaw of the
+(tangent) of the arc (with $\gamma_0 = 0$ in the $+\hat{x}$
+direction).  Note that the $\kappa = 0$ expression is simply a line
+segment of length $l_\text{max}$, and it is the limit of the $\kappa
+\neq 0$ expressions as $\kappa \to 0$.
+
+With regards to geometric road design, a constant curvature
+$G_\text{xy}$ does not provide a complete toolkit.  Most road designs
+involve clothoid spirals, which are plane curves with curvature that
+is /linear/ in path length.[fn::This is so that vehicles can navigate
+roads using continuous changes in steering angle, and, likewise, so that
+their occupants will experience continuous changes in radial acceleration.]
+=multilane= is expected to extend support for clothoid $G_\text{xy}$
+in the future.
+
+For $G_z$ and $\Theta$, a cubic polynomial is the lowest-degree polynomial
+which allows for independently specifying the value and the first derivative
+at both endpoints.  Thus, $G_z$ takes the form:
+\begin{align*}
+\begin{split}
+\frac{1}{l_\text{max}}z = G_z(p_\SEG) &=
+ \frac{z_0}{l_\text{max}} +
+ \dot{z_0} p_\SEG +
+ \left(\frac{3(z_1 - z_0)}{l_\text{max}} - 2\dot{z_0} - \dot{z_1}\right)
+   p_\SEG^2 \\
+ &\quad + \left(\dot{z_0} + \dot{z_1} - \frac{2(z_1 - z_0)}{l_\text{max}}\right)
+   p_\SEG^3
+\end{split}
+\end{align*}
+where $z_0$ and $z_1$ are the initial and final elevation
+respectively, and $\dot{z_0}$ and $\dot{z_1}$ are the initial and
+final $\frac{dz}{dl}$, which is simply the slope of the road as
+measured by the intuitive "rise over run".  $\Theta$ has an identical
+expression, with every $z$ replaced by $\theta$.  Note that
+$\dot{\theta} = \frac{d\theta}{dl}$, the rate of twisting of the road,
+is not particularly intuitive, but that's ok because in general
+$\dot{\theta_0}$ and $\dot{\theta_1}$ will be set by =multilane= and
+not by the road designer, as we will see in Section [[Ensuring $G^1$
+Continuity]].
+
+*** Ensuring $G^1$ Continuity
+
+/TODO:  Tell me more!/
+
+*** =Builder= helper interface
+Users are not expected to assemble a =multilane::RoadGeometry= by
+constructing individual instances of =multilane::Lane=, etc, by hand.
+Instead, =multilane= provides a =Builder= interface which handles
+many of the constraints involved in constructing a valid =RoadGeometry=.
+
+/TODO:  Tell me more!/
+
+*** YAML file format
+
+/TODO:  Tell me more!/
 
 * Rules and Features Databases
 ** Rules of the Road: =RoadRulebook=
@@ -549,7 +920,7 @@ Six rule types are currently defined or proposed:
 
 A few common entities, which identify regions of the road network, occur in
 the various rule types:
- * =LaneId=: unique ID which identifies a =Lane= in a =RoadGeometry=;
+ * =LaneId=: unique ID of a =Lane= in a =RoadGeometry=;
  * =SRange=: inclusive longitudinal range $[s_0, s_1]$ between two
    s-coordinates;
  * =LaneSRange=: a =LaneId= paired with an =SRange=, describing a longitudinal
@@ -576,45 +947,280 @@ It comprises:
    * /TODO/ time-of-day/calendar condition
 
 *** =RightOfWayRule=: Stopping and Yielding
-A =RightOfWayRule= describes which vehicles have right-of-way (also known as
-"priority") when operating on intersecting regions of the road network.
-In the real world, such rules are typically signalled by stop signs, yield
-signs, and traffic lights, or are understood as implicit knowledge of the
-local laws (e.g., "vehicle on the right has priority at uncontrolled
+=RightOfWayRule= describes which vehicles have right-of-way (also
+known as "priority")[fn::Note that "right of way" does not mean "right
+to smash through obstacles".  A green light means
+that other cars should not enter an intersection, but the light turning
+green will not magically clear an intersection.  Even after acquiring
+the right-of-way, a vehicle should still respect the physical reality
+of its environment and operate in a safe manner.] when operating on
+intersecting regions of the road network.  In the real world, such
+rules are typically signalled by stop signs, yield signs, and traffic
+lights, or are understood as implicit knowledge of the local laws
+(e.g., "vehicle on the right has priority at uncontrolled
 intersections").
 
-=RightOfWayRule= comprises the static state of such rules:
-    * id
-    * controlled zone (=LaneSRoute=)
-      * /This is directional: the beginning of the range is considered
-        the "entry-point" or "stop-line"./
-    * type
-      * /Proceed/:  No contention with vehicles on other paths, but
-        vehicles should avoid stopping within the controlled zone
-        (e.g., pedestrian crosswalk).
-      * /Yield/:  E.g., a yield sign --- vehicle may continue but must yield
-        to conflicting traffic.
-      * /StopThenGo/:  E.g., a stop sign --- vehicle must come to a complete
-        stop before proceeding.
-      * /Dynamic/:  rule is determined by dynamic state.
-    * /TODO/ capture more complex yield semantics:
-      * controlled yield-to zones (e.g., whom to yield to when signals are
-        active/functioning)
-      * uncontrolled yield-to zones (e.g., whom to yield to when signals are
-        dark, e.g., fallback to 'yield to right' rule)
-      * e.g., capture semantics of N-way stop signs
-      * e.g., capture semantics of flashing turn arrows
+A =RightOfWayRule= instance is a collection of =RightOfWayRule::State=
+elements which all describe the right-of-way rules pertaining to a
+specific =zone= in the road network.  The elements of a =RightOfWayRule= are:
+#+ATTR_LATEX: :align |rl|
+|-------------+-------------------------------------------------|
+| =id=        | unique =RightOfWayRule::Id=                     |
+|-------------+-------------------------------------------------|
+| =zone=      | =LaneSRoute=                                    |
+|-------------+-------------------------------------------------|
+| =zone_type= | =ZoneType= enum {/StopExcluded/, /StopAllowed/} |
+|-------------+-------------------------------------------------|
+| =states=    | set of =State= mapped by =State::Id=            |
+|-------------+-------------------------------------------------|
+The =zone= is a directed longitudinal path in the road network,
+represented as a =LaneSRoute=; the rule applies to any vehicle
+traversing forward through the =zone=.  The =zone_type= specifies
+whether or not vehicles are allowed to come to a stop within the
+=zone=.  If the type is /StopExcluded/, then vehicles should not
+enter the =zone= if they do not expect to be able to completely
+transit the =zone= while they have the right-of-way, and vehicles
+should continue to transit and exit the =zone= if they lose the
+right-of-way while in the =zone=.  /StopExcluded/ implies a
+"stop line" at the beginning of the =zone=.  /StopAllowed/ has
+none of these expectations or restrictions.
 
-/Dynamic/ rules delegate to a =RightOfWayStateProvider= which provides
-a more complex enumeration of =DynamicState=:
-      * /Go/
-      * /PrepareToGo/
-      * /PrepareToStop/
-      * /ProceedWithCaution/
-      * /Stop/
-      * /StopThenGo/
-      * /Uncontrolled/ (e.g., dark mode)
-      * /Yield/
+Each =State= comprises:
+#+ATTR_LATEX: :align |rl|
+|------------+---------------------------------------------------------------|
+| =id=       | =State::Id= (unique within the context of the rule instance)  |
+|------------+---------------------------------------------------------------|
+| =type=     | =State::Type= enum: {/Go/, /Stop/, /StopThenGo/}              |
+|------------+---------------------------------------------------------------|
+| =yield_to= | list of =RightOfWayRule::Id=                                  |
+|------------+---------------------------------------------------------------|
+The state's =type= indicates whether a vehicle can /Go/ (has
+right-of-way), must /Stop/ (does not have right-of-way), or must
+/StopThenGo/ (has right-of-way after coming to a complete stop).
+The /Go/ and /StopThenGo/ types are modulated by =yield_to=, which is
+a (possibly empty) list of references to other rule instances
+whose right-of-way supersedes this rule.  A vehicle subject to a
+non-empty =yield_to= list does not necessarily have to stop, but its
+behavior should not hamper or interfere with the motion of
+vehicles which are controlled by rules in the =yield_to= list.
+
+Only one =State= of a rule may be in effect at any given time.  A rule
+instance which defines only a single =State= is called a /static
+rule/; its meaning is entirely static and fixed for all time.
+Conversely, a right-of-way rule instance with multiple =State=
+elements is a /dynamic rule/.  Although the collection of possible
+=State='s of a dynamic rule are fixed and described by the rule
+instance, knowing which =State= is in effect at any given time
+requires querying a =RightOfWayStateProvider=.
+
+=RightOfWayStateProvider= is an abstract interface that provides a query
+method that accepts a =RightOfWayRule::Id= and returns a result containing:
+#+ATTR_LATEX: :align |rl|
+|-----------------------+----------------------|
+| =current_id=          | =State::Id=          |
+|-----------------------+----------------------|
+| =next.id=             | optional =State::Id= |
+|-----------------------+----------------------|
+| =next.duration_until= | optional =double=    |
+|-----------------------+----------------------|
+=current_id= is the current =State= of the rule.  =next.id= is the
+/next/ =State= of the rule, if a transition is anticipated and the next
+state is known.  =next.duration_until= is the duration, if known,
+until the transition to the known next state.
+
+Following are discussions on =RightOfWayRule= configurations
+for a few example scenarios.
+
+*Example: Uncontrolled Midblock Pedestrian Crosswalk*
+
+#+CAPTION: Uncontrolled midblock pedestrian crosswalk.
+#+LABEL: fig:RoWR-lone-crosswalk
+#+ATTR_LATEX: :width 1.5in
+[[./right-of-way-example-lone-crosswalk.pdf]]
+
+Figure [[fig:RoWR-lone-crosswalk]] illustrates a very simple scenario:
+  * One-way traffic flows northbound, crossed by an uncontrolled pedestrian
+    crosswalk at midblock.
+  * The pedestrian traffic route is not modeled in the road network, so only
+    one zone (for the vehicular traffic intersecting the crosswalk) is involved.
+With only one zone and no changing signals, a single, static
+=RightOfWayRule= is required:
+#+ATTR_LATEX: :align |ll|lll|
+|-------------+----------------+------------+--------+------------|
+| Rule + Zone | =zone_type=    | State =id= | =type= | =yield_to= |
+|-------------+----------------+------------+--------+------------|
+|-------------+----------------+------------+--------+------------|
+| "North"     | /StopExcluded/ | "static"   | /Go/   | ---        |
+|-------------+----------------+------------+--------+------------|
+The =State::Id= chosen here ("static") is arbitrary.
+
+The zone is a =LaneSRoute= spanning from the southern edge of the
+crosswalk to the northern edge,
+with zone-type /StopExcluded/, which means that stopping
+within the zone is not allowed.  The single state has type /Go/, which
+means that vehicles have the right-of-way to proceed.  (Note that
+"when it is safe to do so" is always implied with any rule.)
+Furthermore, that single state has an empty =yield_to= list, which
+means no intersecting paths have priority over this one. (In fact,
+there are no intersecting paths.)
+
+This is a pretty trivial rule, since it has a single state which is
+always "Go".  However, it serves to capture the requirement that
+when a vehicle /does/ stop, it should avoid stopping in the crosswalk.
+
+Note that a more complete scenario, which actually modeled pedestrian
+traffic, would likely represent the crosswalk as a lane of its own
+(intersecting the vehicular lane) and the "North" rule would specify
+yielding to that crosswalk lane via the =yield_to= element.
+
+*Example: One-way Side Street onto Two-Lane Artery*
+
+#+CAPTION: Intersection with one-way side street onto two-lane artery.
+#+LABEL: fig:RoWR-one-way-to-two-way
+#+ATTR_LATEX: :width 5in
+[[./right-of-way-example-one-way-side-street.pdf]]
+
+Figure [[fig:RoWR-one-way-to-two-way]] is a scenario with an intersection:
+  * East-west traffic is two way and uncontrolled.
+  * Northbound traffic is controlled by a stop sign.
+  * There are four zones (paths) traversing the intersection
+    (illustrated by the four arrows).
+
+With four zones and no changing signals, four static rules are
+required.  The rules have been labeled by a combination of the initial
+heading and the turn direction of their paths. (E.g., "NB/Left" refers
+to "the northbound path that turns left".)  All the zones are of the
+/StopExcluded/ type, so that detail has been omitted from the rule table:
+#+ATTR_LATEX: :align |l|lll|
+|---------------+------------+--------------+------------------------------|
+| Rule + Zone   | State =id= | =type=       | =yield_to=                   |
+|---------------+------------+--------------+------------------------------|
+|---------------+------------+--------------+------------------------------|
+| "EB/Straight" | "static"   | /Go/         | ---                          |
+|---------------+------------+--------------+------------------------------|
+| "WB/Straight" | "static"   | /Go/         | ---                          |
+|---------------+------------+--------------+------------------------------|
+| "NB/Right"    | "static"   | /StopThenGo/ | "EB/Straight"                |
+|---------------+------------+--------------+------------------------------|
+| "NB/Left"     | "static"   | /StopThenGo/ | "EB/Straight", "WB/Straight" |
+|---------------+------------+--------------+------------------------------|
+The =State::Id='s chosen here ("static") are arbitrary.
+
+As in the earlier Pedestrian Crosswalk example, the static /Go/ rules
+of the eastbound and westbound paths show that they always have the
+right-of-way, but vehicles are still required to avoid stopping in the
+intersection.  Traffic turning right onto the artery (following the
+"NB/Right" path) must stop at the stop sign, and then yield to any
+eastbound traffic.  Traffic turning left onto the artery must stop
+and then yield to both eastbound and westbound traffic.
+
+*Example: Protected/Permitted Left Turn*
+
+#+CAPTION: Intersection with protected/permitted left turn.
+#+LABEL: fig:RoWR-protected-left
+#+ATTR_LATEX: :width 5in
+[[./right-of-way-example-protected-left.pdf]]
+
+Figure [[fig:RoWR-protected-left]] provides a more complex scenario with a
+dynamic signal-controlled intersection:
+  * The north-south street is one-way, northbound only.
+  * East-west traffic is two-way, with a dedicated left-turn lane for
+    eastbound traffic turning north.
+  * "Right Turn on Red" is allowed (which affects both northbound and
+    westbound vehicles).
+  * In the signalling cycle, eastbound traffic has both a protected-left
+    (green arrow) phase and a permitted-left (flashing yellow arrow) phase.
+  * There are a total of seven zones (paths) traversing the intersection
+    (illustrated by the seven arrows).
+
+With seven zones, seven rule instances are required.  The rules have
+been labeled by a combination of the initial heading and the turn
+direction of their paths. (E.g., "NB/Left" refers to "the northbound
+path that turns left".)  All the zones are of the /StopExcluded/ type,
+so that detail has been omitted from the rule table:
+#+ATTR_LATEX: :align |l|lll|
+|---------------+------------------+--------------+---------------------------|
+| Rule + Zone   | State =id=       | =type=       | =yield_to=                |
+|---------------+------------------+--------------+---------------------------|
+|---------------+------------------+--------------+---------------------------|
+| "NB/Right"    | "Red"            | /StopThenGo/ | "EB/Straight"             |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "NB/Straight" | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "NB/Left"     | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "EB/Straight" | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "EB/Left"     | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|               | "FlashingYellow" | /Go/         | "WB/Straight", "WB/Right" |
+|---------------+------------------+--------------+---------------------------|
+| "WB/Right"    | "Red"            | /StopThenGo/ | "NB/Straight", "EB/Left"  |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+| "WB/Straight" | "Red"            | /Stop/       | ---                       |
+|               | "Green"          | /Go/         | ---                       |
+|---------------+------------------+--------------+---------------------------|
+The =State::Id='s have been chosen to loosely match the states of the
+corresponding traffic signals.  (Note that typically a "yellow light"
+confers the same right-of-way as a "green light"; the only difference
+is that the yellow indicates that a transition to red is imminent.)
+
+Each rule has at least two states.  The straight-ahead rules
+(*/Straight) and the northbound left-turning rule (NB/Left) are quite
+straightforward: either "Stop" with no right-of-way or "Go" with full
+right-of-way.  The other turning rules are a bit more interesting.
+
+Since "Right Turn on Red" is allowed, both the "NB/Right" and "WB/Right"
+rules have /StopThenGo/ states (instead of /Stop/ states) that must
+yield to other traffic.  "NB/Right" must yield to eastbound traffic,
+and "WB/Right" must yield to northbound traffic.
+
+The "EB/Left" rule has two /Go/ states.  One is the protected turn state, in
+which the left turn is given full priority over oncoming westbound traffic.
+The other is the permitted turn state, in which the left turn must yield
+to westbound traffic.  In the US, a possible traffic light configuration
+for such an intersection would signal the protected turn by a solid
+green arrow, and the permitted turn by a flashing yellow arrow.
+
+*Example: Freeway Merge*
+
+#+CAPTION: Entrance ramp merging onto a 2-lane (one-way) freeway.
+#+LABEL: fig:RoWR-freeway-merge
+#+ATTR_LATEX: :width 5in
+[[./right-of-way-example-freeway-merge.pdf]]
+
+Figure [[fig:RoWR-freeway-merge]] is a scenario with a freeway merge:
+  * Freeway has two lanes of eastbound traffic.
+  * Entrance ramp merges onto the freeway from the right (south).
+  * Merging traffic must yield to traffic already on the freeway.
+  * Two zones traverse the area where the merge occurs (illustrated by
+    the two arrows).
+
+This is a static scenario with two static rules:
+#+ATTR_LATEX: :align |ll|lll|
+|-------------+---------------+------------+--------+------------|
+| Rule + Zone | =zone_type=   | State =id= | =type= | =yield_to= |
+|-------------+---------------+------------+--------+------------|
+|-------------+---------------+------------+--------+------------|
+| "Freeway"   | /StopAllowed/ | "static"   | /Go/   | ---        |
+| "Entrance"  | /StopAllowed/ | "static"   | /Go/   | "Freeway"  |
+|-------------+---------------+------------+--------+------------|
+The =State::Id='s chosen here ("static") are arbitrary.
+
+The only constraint encoded by these two rules is that the "Entrance"
+traffic should yield to the "Freeway" traffic.  Note that unlike
+previous examples, both zones in this scenario have a zone-type of
+/StopAllowed/.  That means there are no "stop lines" (real or
+implicit) and no exclusion zones that are expected to be left
+unblocked by stopped traffic.  Both rules' static states are of type
+/Go/, as well; neither path is expected to stop.  Ideally, the entrance
+traffic never stops, but instead speeds up to seamlessly merge into
+the freeway flow.
 
 *** /(TODO)/ =DirectionUsageRule=: Direction/Usage
 /Captures allowed direction-of-travel./
@@ -695,7 +1301,7 @@ and stripes are indicators for rules of the road).
    * potholes
 
 * Formatting                                                       :noexport:
-#+OPTIONS: toc:2
+#+OPTIONS: toc:2 H:4
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [12pt]
 #+LATEX_HEADER: \usepackage[scaled=0.85]{helvet}
@@ -705,6 +1311,9 @@ and stripes are indicators for rules of the road).
 #+LATEX_HEADER: \setlength{\parskip}{0.5em}
 #+LATEX_HEADER: \usepackage{enumitem}
 #+LATEX_HEADER: \setlist[itemize]{itemsep=0.1em,parsep=0.1em,topsep=0.1em,partopsep=0.1em}
+#+LATEX_HEADER: \setlist[enumerate]{itemsep=0.1em,parsep=0.1em,topsep=0.1em,partopsep=0.1em}
 #+LATEX_HEADER: \usepackage{amsmath}
 #+LATEX_HEADER: \renewcommand\floatpagefraction{0.8}
 #+LATEX_HEADER: \renewcommand\topfraction{0.8}
+#+LATEX_HEADER: \newcommand\SEG{\text{S}}
+#+LATEX_HEADER: \newcommand\LANE{\text{L}}

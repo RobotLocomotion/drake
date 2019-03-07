@@ -66,13 +66,21 @@ class RoadGeometry : public api::RoadGeometry {
   const api::BranchPoint* do_branch_point(int index) const override;
 
   // TODO(maddog@tri.global) Implement when someone needs it.
-  const IdIndex& DoById() const override { DRAKE_ABORT(); }
+  const IdIndex& DoById() const override {
+    throw std::runtime_error("RoadGeometry::DoById is not implemented");
+  }
 
   // This function will abort as it's not implemented and should not be called.
   api::RoadPosition DoToRoadPosition(const api::GeoPosition& geo_pos,
                                      const api::RoadPosition* hint,
                                      api::GeoPosition* nearest_position,
                                      double* distance) const override;
+
+  // TODO(maddog@tri.global)  rndf backend is not scale_length aware in any way,
+  //                          and really this property should be consistent
+  //                          with the geometry of the curves themselves.
+  //                          This value of 1 has been picked arbitrarily.
+  double do_scale_length() const override { return 1.; }
 
   double do_linear_tolerance() const override { return linear_tolerance_; }
 

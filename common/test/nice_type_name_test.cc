@@ -147,6 +147,13 @@ GTEST_TEST(NiceTypeNameTest, Enum) {
             "drake::nice_type_name_test::ForTesting::MyEnumClass");
 }
 
+// Test the type_info form of NiceTypeName::Get().
+GTEST_TEST(NiceTypeNameTest, FromTypeInfo) {
+  EXPECT_EQ(NiceTypeName::Get(typeid(int)), "int");
+  EXPECT_EQ(NiceTypeName::Get(typeid(nice_type_name_test::Derived)),
+            "drake::nice_type_name_test::Derived");
+}
+
 // Test the expression-accepting form of NiceTypeName::Get().
 GTEST_TEST(NiceTypeNameTest, Expressions) {
   using nice_type_name_test::Derived;

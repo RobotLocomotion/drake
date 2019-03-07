@@ -6,7 +6,7 @@ Sphinx Instructions
 
 This section contains instructions on how to use Sphinx with Drake.
 Sphinx is the framework for generating Drake's
-`website <http://drake.mit.edu>`_.
+`website <https://drake.mit.edu>`_.
 
 .. _sphinx-generation:
 

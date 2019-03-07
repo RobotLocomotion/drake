@@ -1,7 +1,14 @@
 import os
 import sys
 
+import six
+
 from drake.tools.lint.formatter import IncludeFormatter
+
+if six.PY3:
+    _open = open
+
+    def open(filename, mode="r"): return _open(filename, mode, encoding="utf8")
 
 
 def _check_invalid_line_endings(filename):
@@ -11,7 +18,7 @@ def _check_invalid_line_endings(filename):
     # Ask Python to read the file and determine the newlines convention.
     with open(filename, 'rU') as file:
         if not file:
-            print("error: unable to open " + filename)
+            print("ERROR: unable to open " + filename)
             return 1
         file.read()
         if file.newlines is None:
@@ -22,7 +29,7 @@ def _check_invalid_line_endings(filename):
     # Only allow Unix newlines.
     for newline in newlines:
         if newline != '\n':
-            print("error: non-Unix newline characters found")
+            print("ERROR: non-Unix newline characters found")
             return 1
 
     return 0
@@ -34,7 +41,7 @@ def _check_includes(filename):
     tool.format_includes()
     first_difference = tool.get_first_differing_original_index()
     if first_difference is not None:
-        print("error: " + filename + ":" + str(first_difference + 1) + ": " +
+        print("ERROR: " + filename + ":" + str(first_difference + 1) + ": " +
               "the #include ordering is incorrect")
         print("note: fix via bazel-bin/tools/lint/clang-format-includes " +
               filename)
@@ -52,20 +59,20 @@ def _check_shebang(filename):
         shebang = file.readline().rstrip("\n")
         has_shebang = shebang.startswith("#!")
     if is_executable and not has_shebang:
-        print("error: {} is executable but lacks a shebang".format(filename))
+        print("ERROR: {} is executable but lacks a shebang".format(filename))
         print("note: fix via chmod a-x '{}'".format(filename))
         return 1
     if has_shebang and not is_executable:
-        print("error: {} has a shebang but is not executable".format(filename))
+        print("ERROR: {} has a shebang but is not executable".format(filename))
         print("note: fix by removing the first line of the file")
         return 1
     shebang_whitelist = {
         "bash": "#!/bin/bash",
-        "directorPython": "#!/usr/bin/env directorPython",
-        "python": "#!/usr/bin/env python2"
+        "python": "#!/usr/bin/env python2",
+        "python3": "#!/usr/bin/env python3",
     }
     if has_shebang and shebang not in shebang_whitelist.values():
-        print(("error: shebang '{}' in the file '{}' is not in the shebang "
+        print(("ERROR: shebang '{}' in the file '{}' is not in the shebang "
               "whitelist").format(shebang, filename))
         for hint, replacement_shebang in shebang_whitelist.iteritems():
             if hint in shebang:

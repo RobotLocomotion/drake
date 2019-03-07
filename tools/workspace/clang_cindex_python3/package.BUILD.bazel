@@ -1,0 +1,13 @@
+# -*- python -*-
+
+licenses(["notice"])  # NCSA
+
+py_library(
+    name = "clang",
+    srcs = [
+        "clang/__init__.py",
+        "clang/cindex.py",
+        "clang/enumerations.py",
+    ],
+    visibility = ["//visibility:public"],
+)

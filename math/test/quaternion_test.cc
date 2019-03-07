@@ -31,7 +31,7 @@ Eigen::Quaterniond  GetGenericArbitraryQuaternion(const double half_angle,
 
 // Form a generic time-derivative of the quaternion [e0, e1, e2, e3] generated
 // by a pi/6 rotation about a generic vector.  Ensure the time-derivative
-// satisifies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
+// satisfies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
 // MotionGenesis was used to calculate these values of e0Dt, e1Dt, e2Dt, e3Dt.
 Eigen::Vector4d  GetQuaternionDtAssociatedWith30DegRotation() {
   const double e0Dt = -0.4211981425390414;
@@ -194,7 +194,7 @@ GTEST_TEST(CalculateAngularVelocityExpressedInBFromQuaternionDtTest, testA) {
 // This function tests CalculateQuaternionDtConstraintViolation.
 GTEST_TEST(CalculateQuaternionDtConstraintViolationTest, testA) {
   // MotionGenesis was used to calculate values for e0Dt, e1Dt, e2Dt, e3Dt that
-  // satisifies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
+  // satisfies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
   const Eigen::Quaterniond quat = GetGenericArbitraryQuaternion(M_PI/6, true);
   const Eigen::Vector4d quatDt = GetQuaternionDtAssociatedWith30DegRotation();
   const double z_bad = 0.99 * quatDt(3);
@@ -225,7 +225,7 @@ GTEST_TEST(IsQuaternionValid, testA) {
 // This function tests IsBothQuaternionAndQuaternionDtOK.
 GTEST_TEST(IsBothQuaternionAndQuaternionDtOK, testA) {
   // MotionGenesis was used to calculate values for e0Dt, e1Dt, e2Dt, e3Dt that
-  // satisifies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
+  // satisfies the constraint  e0*ė0 + e1*ė1 + e2*ė2 + e3*ė3 = 0.
   const Eigen::Quaterniond quat = GetGenericArbitraryQuaternion(M_PI/6, true);
   const Eigen::Vector4d quatDt = GetQuaternionDtAssociatedWith30DegRotation();
   const double z_bad = 0.99 * quatDt(3);

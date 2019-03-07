@@ -5,6 +5,11 @@ struct lcmt_schunk_wsg_status
   int64_t utime;  //< The timestamp in microseconds.
 
   double actual_position_mm;
+
+  // The combined force being applied by both gripper fingers in newtons.
+  // While some implementations may report a negative value for this field
+  // under some circumstances, it should always be interpreted as an unsigned
+  // quantity (absolute value).
   double actual_force;
   double actual_speed_mm_per_s;
 }

@@ -1,10 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
@@ -30,40 +33,57 @@ namespace controllers {
  * When unset, `vd*` is be treated as zero.
  *
  * Note that this class assumes the robot is fully actuated, its position
- * and velocity have the same dimension, it does not have a floating base.
- * If violated, the program will abort. It is discouraged to use this controller
- * for robots with closed kinematic loops.
+ * and velocity have the same dimension, and it does not have a floating base.
+ * If violated, the program will abort. This controller was not designed for
+ * closed loop systems: the controller accounts for neither constraint forces
+ * nor actuator forces applied at loop constraints. Use on such systems is not
+ * recommended.
  *
  * @tparam T The vector element type, which must be a valid Eigen scalar.
+ * @see InverseDynamics for an accounting of all forces incorporated into the
+ *      inverse dynamics computation.
  *
  * Instantiated templates for the following kinds of T's are provided:
+ *
  * - double
  *
  * @ingroup control_systems
  */
 template <typename T>
-class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
-                                  public Diagram<T> {
+class InverseDynamicsController : public Diagram<T>,
+                                  public StateFeedbackControllerInterface<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamicsController)
 
   /**
-   * Constructs the controller that takes ownership of a given RigidBodyTree
-   * unique pointer.
-   * @param robot Unique pointer whose ownership will be transfered to this
-   * instance.
-   * @param kp Position gain
-   * @param ki Integral gain
-   * @param kd Velocity gain
+   * Constructs an inverse dynamics controller for the given `plant` model.
+   * The %InverseDynamicsController holds an internal, non-owned reference to
+   * the MultibodyPlant object so you must ensure that `plant` has a longer
+   * lifetime than `this` %InverseDynamicsController.
+   * @param plant The model of the plant for control.
+   * @param kp Position gain.
+   * @param ki Integral gain.
+   * @param kd Velocity gain.
    * @param has_reference_acceleration If true, there is an extra BasicVector
    * input port for `vd*`. If false, `vd*` is treated as zero, and no extra
    * input port is declared.
+   * @pre `plant` has been finalized (plant.is_finalized() returns `true`).
+   * @throws std::exception if
+   *  - The plant is not finalized (see MultibodyPlant::Finalize()).
+   *  - The number of generalized velocities is not equal to the number of
+   *    generalized positions.
+   *  - The model is not fully actuated.
+   *  - Vector kp, ki and kd do not all have the same size equal to the number
+   *    of generalized positions.
    */
-  InverseDynamicsController(std::unique_ptr<RigidBodyTree<T>> robot,
-                            const VectorX<double>& kp,
-                            const VectorX<double>& ki,
-                            const VectorX<double>& kd,
-                            bool has_reference_acceleration);
+  InverseDynamicsController(
+      const multibody::MultibodyPlant<T>& plant,
+      const VectorX<double>& kp,
+      const VectorX<double>& ki,
+      const VectorX<double>& kd,
+      bool has_reference_acceleration);
+
+  ~InverseDynamicsController() override;
 
   /**
    * Sets the integral part of the PidController to @p value.
@@ -75,7 +95,7 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the reference acceleration.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_acceleration() const {
+  const InputPort<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(has_reference_acceleration_);
     DRAKE_DEMAND(input_port_index_desired_acceleration_ >= 0);
     return Diagram<T>::get_input_port(input_port_index_desired_acceleration_);
@@ -84,14 +104,14 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_input_port_estimated_state() const final {
+  const InputPort<T>& get_input_port_estimated_state() const final {
     return this->get_input_port(input_port_index_estimated_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_state() const final {
+  const InputPort<T>& get_input_port_desired_state() const final {
     return this->get_input_port(input_port_index_desired_state_);
   }
 
@@ -103,17 +123,19 @@ class InverseDynamicsController : public StateFeedbackControllerInterface<T>,
   }
 
   /**
-   * Returns a constant reference to the RigidBodyTree used for control.
+   * Returns a constant pointer to the MultibodyPlant used for control.
    */
-  const RigidBodyTree<T>& get_robot_for_control() const {
-    return *robot_for_control_;
+  const multibody::MultibodyPlant<T>* get_multibody_plant_for_control() const {
+    return multibody_plant_for_control_;
   }
 
  private:
-  void SetUp(const VectorX<double>& kp,
-      const VectorX<double>& ki, const VectorX<double>& kd);
+  void SetUp(const VectorX<double>& kp, const VectorX<double>& ki,
+      const VectorX<double>& kd,
+      const controllers::InverseDynamics<T>& inverse_dynamics,
+      DiagramBuilder<T>* diagram_builder);
 
-  std::unique_ptr<RigidBodyTree<T>> robot_for_control_{nullptr};
+  const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};
   const bool has_reference_acceleration_{false};
   int input_port_index_estimated_state_{-1};

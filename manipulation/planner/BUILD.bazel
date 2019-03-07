@@ -15,21 +15,7 @@ package(
 drake_cc_package_library(
     name = "planner",
     deps = [
-        ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
-        ":robot_plan_interpolator",
-    ],
-)
-
-drake_cc_library(
-    name = "constraint_relaxing_ik",
-    srcs = ["constraint_relaxing_ik.cc"],
-    hdrs = ["constraint_relaxing_ik.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_tree",
-        "//multibody/parsers",
     ],
 )
 
@@ -38,46 +24,12 @@ drake_cc_library(
     srcs = ["differential_inverse_kinematics.cc"],
     hdrs = ["differential_inverse_kinematics.h"],
     deps = [
-        "//multibody:rigid_body_tree",
-        "//multibody/multibody_tree",
-        "//multibody/parsers",
+        "//multibody/plant",
         "//solvers:mathematical_program",
     ],
 )
 
-drake_cc_library(
-    name = "robot_plan_interpolator",
-    srcs = ["robot_plan_interpolator.cc"],
-    hdrs = ["robot_plan_interpolator.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//multibody:rigid_body_tree",
-        "//multibody/parsers",
-        "//systems/framework:leaf_system",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
-    ],
-)
-
 # === test/ ===
-
-drake_cc_googletest(
-    name = "constraint_relaxing_ik_test",
-    timeout = "moderate",
-    srcs = ["test/constraint_relaxing_ik_test.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    # TODO(sam.creasey) This test currently times out on Mac with
-    # IPOPT.  Once IPOPT is tuned to provide better/faster IK results
-    # (see https://github.com/RobotLocomotion/drake/issues/3128 ) we
-    # should enable this test.
-    tags = ["snopt"],
-    deps = [
-        ":constraint_relaxing_ik",
-        "//common:find_resource",
-    ],
-)
 
 drake_cc_googletest(
     name = "differential_inverse_kinematics_test",
@@ -88,23 +40,7 @@ drake_cc_googletest(
         ":differential_inverse_kinematics",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/kuka_iiwa_arm:iiwa_common",
-        "//manipulation/util:world_sim_tree_builder",
-        "//multibody/benchmarks/kuka_iiwa_robot",
-    ],
-)
-
-drake_cc_googletest(
-    name = "robot_plan_interpolator_test",
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":robot_plan_interpolator",
-        "//common:find_resource",
-        "//systems/framework",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
+        "//multibody/parsing",
     ],
 )
 

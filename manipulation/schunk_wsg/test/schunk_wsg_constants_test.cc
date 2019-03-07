@@ -3,9 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/multibody/parsers/sdf_parser.h"
-#include "drake/multibody/rigid_body_tree.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace manipulation {
@@ -15,25 +14,20 @@ namespace {
 // Test that the constants defined in schunk_wsg_constants.h are
 // correct wrt `models/schunk_wsg_50.sdf`.
 GTEST_TEST(SchunkWsgConstantTest, ConstantTest) {
-  RigidBodyTree<double> wsg;
-  parsers::sdf::AddModelInstancesFromSdfFile(
-      FindResourceOrThrow(
-          "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"),
-      multibody::joints::kFixed, nullptr, &wsg);
+  multibody::MultibodyPlant<double> plant;
+  multibody::Parser parser(&plant);
+  parser.AddModelFromFile(FindResourceOrThrow(
+      "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf"));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("body"));
+  plant.Finalize();
 
-  const std::map<std::string, int> index_map =
-      wsg.computePositionNameToIndexMap();
+  EXPECT_EQ(plant.num_actuators(), kSchunkWsgNumActuators);
+  EXPECT_EQ(plant.num_positions(), kSchunkWsgNumPositions);
+  EXPECT_EQ(plant.num_velocities(), kSchunkWsgNumVelocities);
 
-  const int position_index = index_map.at("left_finger_sliding_joint");
-
-  const int velocity_index = position_index + wsg.get_num_positions();
-
-  EXPECT_EQ(wsg.get_num_positions(), kSchunkWsgNumPositions);
-  EXPECT_EQ(wsg.get_num_velocities(), kSchunkWsgNumVelocities);
-  EXPECT_EQ(wsg.get_num_actuators(), kSchunkWsgNumActuators);
-
-  EXPECT_EQ(position_index, kSchunkWsgPositionIndex);
-  EXPECT_EQ(velocity_index, kSchunkWsgVelocityIndex);
+  const auto& joint = plant.GetJointByName("left_finger_sliding_joint");
+  const auto& matrix = plant.MakeStateSelectorMatrix({joint.index()});
+  EXPECT_EQ(matrix(0, kSchunkWsgPositionIndex), 1.0);
 }
 
 }  // namespace

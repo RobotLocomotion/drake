@@ -52,7 +52,6 @@ struct LaneEnd {
 std::ostream& operator<<(std::ostream& out, const LaneEnd::Which& which_end);
 
 /// A 3-dimensional rotation.
-// TODO(Mitiguy) Rename/move this class to drake/math alongside RotationMatrix.
 class Rotation {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rotation)
@@ -88,8 +87,10 @@ class Rotation {
     quaternion_ = quaternion.normalized();
   }
 
-  /// Provides a rotation matrix representation of the rotation.
-  Matrix3<double> matrix() const { return quaternion_.toRotationMatrix(); }
+  /// Provides a 3x3 rotation matrix representation of "this" rotation.
+  Matrix3<double> matrix() const {
+    return math::RotationMatrix<double>(quaternion_).matrix();
+  }
 
   /// Provides a representation of rotation as a vector of angles
   /// `[roll, pitch, yaw]` (in radians).
@@ -126,6 +127,7 @@ std::ostream& operator<<(std::ostream& out, const Rotation& rotation);
 /// frame, consisting of three components x, y, and z.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
@@ -203,11 +205,13 @@ auto operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
 }
 
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
-///  * s is longitudinal position, as arc-length along a Lane's reference line.
-///  * r is lateral position, perpendicular to the reference line at s.
-///  * h is height above the road surface.
+///
+/// * s is longitudinal position, as arc-length along a Lane's reference line.
+/// * r is lateral position, perpendicular to the reference line at s.
+/// * h is height above the road surface.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression

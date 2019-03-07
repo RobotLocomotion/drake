@@ -1,4 +1,6 @@
-#include "drake/systems/primitives/gain-inl.h"
+/* clang-format off to disable clang-format-includes */
+#include "drake/systems/primitives/gain.h"
+/* clang-format on */
 
 #include <memory>
 #include <stdexcept>
@@ -39,7 +41,6 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
   const double kGain = 2.0;
   auto gain = make_unique<Gain<T>>(kGain /* gain */, 3 /* size */);
   auto context = gain->CreateDefaultContext();
-  auto output = gain->AllocateOutput(*context);
   auto input = make_unique<BasicVector<T>>(3 /* size */);
 
   // Sets the input values.
@@ -55,10 +56,8 @@ GTEST_TEST(GainScalarTypeTest, AutoDiff) {
 
   context->FixInputPort(0, std::move(input));
 
-  gain->CalcOutput(*context, output.get());
-
-  ASSERT_EQ(1, output->get_num_ports());
-  const auto& output_vector = output->get_vector_data(0)->get_value();
+  const auto& output_vector =
+      gain->get_output_port().Eval(*context);
 
   // The expected output value is the gain times the input vector.
   VectorX<T> expected = kGain * input_vector;
@@ -85,14 +84,12 @@ class SymbolicGainTest : public ::testing::Test {
     gain_ = make_unique<Gain<symbolic::Expression>>(kGain_ /* gain */,
                                                     3 /* length */);
     context_ = gain_->CreateDefaultContext();
-    output_ = gain_->AllocateOutput(*context_);
     input_ = make_unique<BasicVector<symbolic::Expression>>(3 /* length */);
   }
 
   double kGain_{2.0};
   unique_ptr<System<symbolic::Expression>> gain_;
   unique_ptr<Context<symbolic::Expression>> context_;
-  unique_ptr<SystemOutput<symbolic::Expression>> output_;
   unique_ptr<BasicVector<symbolic::Expression>> input_;
 };
 
@@ -108,16 +105,12 @@ TEST_F(SymbolicGainTest, VectorThroughGainSystem) {
 
   // Hook input of the expected size.
   context_->FixInputPort(0, move(input_));
-  gain_->CalcOutput(*context_, output_.get());
 
   // Checks that the number of output ports in the Gain system and the
   // SystemOutput are consistent.
-  EXPECT_EQ(1, output_->get_num_ports());
   EXPECT_EQ(1, gain_->get_num_output_ports());
-  const auto* output_vector(output_->get_vector_data(0));
-  EXPECT_NE(nullptr, output_vector);
   Eigen::Matrix<symbolic::Expression, 3, 1> expected{kGain_ * input_vector};
-  EXPECT_EQ(expected, output_vector->get_value());
+  EXPECT_EQ(expected, gain_->get_output_port(0).Eval(*context_));
   EXPECT_EQ(expected(0).Evaluate(), kGain_ * 1.0);
   EXPECT_EQ(expected(1).Evaluate(), kGain_ * 3.14);
   EXPECT_EQ(expected(2).Evaluate(), kGain_ * 2.18);

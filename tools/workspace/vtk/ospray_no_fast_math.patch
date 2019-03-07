@@ -1,0 +1,27 @@
+diff --git a/components/ospcommon/cmake/gcc.cmake b/components/ospcommon/cmake/gcc.cmake
+index 3463cd075..6b1c67130 100644
+--- a/components/ospcommon/cmake/gcc.cmake
++++ b/components/ospcommon/cmake/gcc.cmake
+@@ -30,8 +30,8 @@ ENDIF()
+
+ SET(CMAKE_CXX_FLAGS "${OSPRAY_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+ SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g     -Wstrict-aliasing=1")
+-SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1 -ffast-math -fno-finite-math-only ")
+-SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=1 -ffast-math -fno-finite-math-only ")
++SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1 ")
++SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=1 ")
+ SET(CMAKE_C_FLAGS "-std=c99 ${CMAKE_C_FLAGS}")
+
+ IF (APPLE)
+diff --git a/components/ospcommon/cmake/ispc.cmake b/components/ospcommon/cmake/ispc.cmake
+index 7d02f37c2..12f91aacd 100644
+--- a/components/ospcommon/cmake/ispc.cmake
++++ b/components/ospcommon/cmake/ispc.cmake
+@@ -186,7 +186,6 @@ MACRO (OSPRAY_ISPC_COMPILE)
+       ${ISPC_OPT_FLAGS}
+       --target=${ISPC_TARGET_ARGS}
+       --woff
+-      --opt=fast-math
+       ${ISPC_ADDITIONAL_ARGS}
+       -h ${ISPC_TARGET_DIR}/${fname}_ispc.h
+       -MMM  ${outdir}/${fname}.dev.idep

@@ -11,6 +11,7 @@
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solve.h"
 
 using Eigen::Vector3d;
 using Eigen::Matrix3d;
@@ -69,7 +70,8 @@ GTEST_TEST(RotationTest, TestRPYLimits) {
     for (double roll = rmin; roll <= rmax; roll += M_PI / 6) {
       for (double pitch = pmin; pitch <= pmax; pitch += M_PI / 6) {
         for (double yaw = ymin; yaw <= ymax; yaw += M_PI / 6) {
-          Matrix3d R = drake::math::rpy2rotmat(Vector3d(roll, pitch, yaw));
+          const drake::math::RollPitchYaw<double> rpy(roll, pitch, yaw);
+          Matrix3d R = rpy.ToMatrix3ViaRotationMatrix();
           Eigen::Map<Eigen::Matrix<double, 9, 1>> vecR(R.data(), R.size());
           prog.SetInitialGuessForAllVariables(vecR);
           for (const auto& b : bb_constraints) {
@@ -102,9 +104,10 @@ GTEST_TEST(RotationTest, TestSpectralPsd) {
   // R_desired is outside the unit ball.
   AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
   AddRotationMatrixSpectrahedralSdpConstraint(&prog, Rvar);
-  ASSERT_EQ(prog.Solve(), kSolutionFound);
+  MathematicalProgramResult result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
 
-  Matrix3d R = prog.GetSolution(Rvar);
+  Matrix3d R = result.GetSolution(Rvar);
 
   double tol = 1e-6;
   EXPECT_LE(R.col(0).lpNorm<2>(), 1 + tol);
@@ -150,9 +153,10 @@ GTEST_TEST(RotationTest, TestOrthonormal) {
   // R_desired is outside the unit ball.
   AddObjective(&prog, Rvar, 2 * Eigen::Matrix<double, 3, 3>::Ones());
   AddRotationMatrixOrthonormalSocpConstraint(&prog, Rvar);
-  ASSERT_EQ(prog.Solve(), kSolutionFound);
+  MathematicalProgramResult result = Solve(prog);
+  ASSERT_TRUE(result.is_success());
 
-  Matrix3d R = prog.GetSolution(Rvar);
+  Matrix3d R = result.GetSolution(Rvar);
 
   double tol = 1e-4;
   EXPECT_LE(R.col(0).lpNorm<2>(), 1 + tol);

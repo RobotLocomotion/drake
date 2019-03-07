@@ -6,6 +6,7 @@ values. */
 
 #include <cstdint>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -15,8 +16,8 @@ values. */
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -608,18 +609,21 @@ class Cache {
   dependency notifications are issued. */
   ~Cache() = default;
 
-  /** Allocates a new CacheEntryValue and corresponding DependencyTracker using
-  the given CacheIndex and DependencyTicket number. The CacheEntryValue
-  object is owned by this Cache and the returned reference remains valid
-  if other cache entry values are created. The created DependencyTracker
-  object is owned by the given DependencyGraph, which must be owned by
-  the same Context that owns this Cache. The graph must already contain
-  trackers for the indicated prerequisites. The new tracker will retain a
-  pointer to the created CacheEntryValue for invalidation purposes. */
+  /** Allocates a new CacheEntryValue and provides it a DependencyTracker using
+  the given CacheIndex and DependencyTicket number. The CacheEntryValue object
+  is owned by this Cache and the returned reference remains valid if other cache
+  entry values are created. If there is a pre-existing tracker with the given
+  ticket number (allowed only for well-known cached computations, such as time
+  derivatives), it is assigned the new cache entry value to manage. Otherwise a
+  new DependencyTracker is created. The created tracker object is owned by the
+  given DependencyGraph, which must be owned by the same Context that owns this
+  Cache. The graph must already contain trackers for the indicated
+  prerequisites. The tracker will retain a pointer to the created
+  CacheEntryValue for invalidation purposes. */
   CacheEntryValue& CreateNewCacheEntryValue(
       CacheIndex index, DependencyTicket ticket,
       const std::string& description,
-      const std::vector<DependencyTicket>& prerequisites,
+      const std::set<DependencyTicket>& prerequisites,
       DependencyGraph* graph);
 
   /** Returns true if there is a CacheEntryValue in this cache that has the

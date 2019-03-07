@@ -1,7 +1,11 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_googletest", "drake_cc_library")
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(
@@ -13,8 +17,8 @@ drake_cc_library(
     srcs = ["manipulator_move_joint_plan_eval_system.cc"],
     hdrs = ["manipulator_move_joint_plan_eval_system.h"],
     deps = [
+        "//attic/systems/controllers/plan_eval:plan_eval_base_system",
         "//lcmtypes:plan_eval_debug_info",
-        "//systems/controllers/plan_eval:plan_eval_base_system",
     ],
 )
 
@@ -24,11 +28,11 @@ drake_cc_library(
     hdrs = ["manipulator_joint_space_controller.h"],
     deps = [
         ":manipulator_move_joint_plan_eval_system",
-        "//multibody/parsers",
+        "//attic/multibody/parsers",
+        "//attic/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
+        "//attic/systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
+        "//attic/systems/controllers/qp_inverse_dynamics:robot_kinematic_state_translator_system",  # noqa
         "//systems/controllers:state_feedback_controller_interface",
-        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
-        "//systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
-        "//systems/controllers/qp_inverse_dynamics:robot_kinematic_state_translator_system",  # noqa
         "//systems/framework",
     ],
 )
@@ -39,18 +43,18 @@ drake_cc_googletest(
     name = "manipulator_joint_space_controller_test",
     srcs = ["test/manipulator_joint_space_controller_test.cc"],
     data = [
+        "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
+        "//attic/systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
         "//manipulation/models/iiwa_description:models",
-        "//systems/controllers/qp_inverse_dynamics:test/iiwa.alias_groups",  # noqa
-        "//systems/controllers/qp_inverse_dynamics:test/iiwa.id_controller_config",  # noqa
     ],
     tags = gurobi_test_tags(),
     deps = [
         ":manipulator_joint_space_controller",
+        "//attic/multibody/parsers",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/analysis:simulator",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/framework",
         "//systems/primitives:constant_vector_source",
     ],

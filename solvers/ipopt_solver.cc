@@ -4,6 +4,7 @@
 #include <cstring>
 #include <limits>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include <IpIpoptApplication.hpp>
@@ -109,7 +110,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   }
 
   AutoDiffVecXd ty(c.num_constraints());
-  c.Eval(math::initializeAutoDiff(this_x), ty);
+  c.Eval(math::initializeAutoDiff(this_x), &ty);
 
   // Store the results.  Since IPOPT directly knows the bounds of the
   // constraint, we don't need to apply any bounding information here.
@@ -161,8 +162,10 @@ struct ResultCache {
 // the duration of the Solve() call.
 class IpoptSolver_NLP : public Ipopt::TNLP {
  public:
-  explicit IpoptSolver_NLP(MathematicalProgram* problem)
-      : problem_(problem), result_(SolutionResult::kUnknownError) {}
+  explicit IpoptSolver_NLP(const MathematicalProgram& problem,
+                           const Eigen::VectorXd& x_init,
+                           MathematicalProgramResult* result)
+      : problem_(&problem), x_init_{x_init}, result_(result) {}
 
   virtual ~IpoptSolver_NLP() {}
 
@@ -174,7 +177,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     n = problem_->num_vars();
 
     // The IPOPT interface defines eval_f() and eval_grad_f() as
-    // ouputting a single number for the result, and the size of the
+    // outputting a single number for the result, and the size of the
     // output gradient array at the same order as the x variables.
     // Initialize the cost cache with those dimensions.
     cost_cache_.reset(new ResultCache(n, 1, n));
@@ -262,11 +265,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     unused(z_L, z_U, m, lambda);
 
     if (init_x) {
-      const Eigen::VectorXd& initial_guess = problem_->initial_guess();
-      DRAKE_ASSERT(initial_guess.size() == n);
+      DRAKE_ASSERT(x_init_.size() == n);
       for (Index i = 0; i < n; i++) {
-        if (!std::isnan(initial_guess[i])) {
-          x[i] = initial_guess[i];
+        if (!std::isnan(x_init_[i])) {
+          x[i] = x_init_[i];
         } else {
           x[i] = 0.0;
         }
@@ -384,26 +386,39 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                  const Number* g, const Number* lambda,
                                  Number obj_value, const IpoptData* ip_data,
                                  IpoptCalculatedQuantities* ip_cq) {
-    unused(z_L, z_U, m, g, lambda, ip_data, ip_cq);
+    unused(ip_data, ip_cq);
 
-    SolverResult solver_result(IpoptSolver::id());
+    IpoptSolverDetails& solver_details =
+        result_->SetSolverDetailsType<IpoptSolverDetails>();
+    solver_details.status = status;
+    solver_details.z_L = Eigen::Map<const Eigen::VectorXd>(z_L, n);
+    solver_details.z_U = Eigen::Map<const Eigen::VectorXd>(z_U, n);
+    solver_details.g = Eigen::Map<const Eigen::VectorXd>(g, m);
+    solver_details.lambda = Eigen::Map<const Eigen::VectorXd>(lambda, m);
 
+    result_->set_solution_result(SolutionResult::kUnknownError);
     switch (status) {
       case Ipopt::SUCCESS: {
-        result_ = SolutionResult::kSolutionFound;
+        result_->set_solution_result(SolutionResult::kSolutionFound);
+        break;
+      }
+      case Ipopt::STOP_AT_ACCEPTABLE_POINT: {
+        // This case happens because the user requested more lenient solution
+        // acceptability criteria so it is counted as solved.
+        result_->set_solution_result(SolutionResult::kSolutionFound);
         break;
       }
       case Ipopt::LOCAL_INFEASIBILITY: {
-        result_ = SolutionResult::kInfeasibleConstraints;
+        result_->set_solution_result(SolutionResult::kInfeasibleConstraints);
         break;
       }
       case Ipopt::DIVERGING_ITERATES: {
-        result_ = SolutionResult::kUnbounded;
-        obj_value = MathematicalProgram::kUnboundedCost;
+        result_->set_solution_result(SolutionResult::kUnbounded);
+        result_->set_optimal_cost(MathematicalProgram::kUnboundedCost);
         break;
       }
       case Ipopt::MAXITER_EXCEEDED: {
-        result_ = SolutionResult::kIterationLimit;
+        result_->set_solution_result(SolutionResult::kIterationLimit);
         drake::log()->warn(
             "IPOPT terminated after exceeding the maximum iteration limit.  "
             "Hint: Remember that IPOPT is an interior-point method "
@@ -411,7 +426,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         break;
       }
       default: {
-        result_ = SolutionResult::kUnknownError;
+        result_->set_solution_result(SolutionResult::kUnknownError);
         break;
       }
     }
@@ -420,12 +435,11 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     for (Index i = 0; i < n; i++) {
       solution(i) = x[i];
     }
-    solver_result.set_decision_variable_values(solution.cast<double>());
-    solver_result.set_optimal_cost(obj_value);
-    problem_->SetSolverResult(solver_result);
+    result_->set_x_val(solution.cast<double>());
+    if (result_->get_solution_result() != SolutionResult::kUnbounded) {
+      result_->set_optimal_cost(obj_value);
+    }
   }
-
-  SolutionResult result() const { return result_; }
 
  private:
   void EvaluateCosts(Index n, const Number* x) {
@@ -448,7 +462,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
             xvec(problem_->FindDecisionVariableIndex(binding.variables()(i)));
       }
 
-      binding.evaluator()->Eval(math::initializeAutoDiff(this_x), ty);
+      binding.evaluator()->Eval(math::initializeAutoDiff(this_x), &ty);
 
       cost_cache_->result[0] += ty(0).value();
 
@@ -494,55 +508,155 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     }
   }
 
-  MathematicalProgram* const problem_;
+  const MathematicalProgram* const problem_;
   std::unique_ptr<ResultCache> cost_cache_;
   std::unique_ptr<ResultCache> constraint_cache_;
-  SolutionResult result_;
+  Eigen::VectorXd x_init_;
+  MathematicalProgramResult* const result_;
 };
+
+template <typename T>
+bool HasOptionWithKey(const SolverOptions& solver_options,
+                      const std::string& key) {
+  return solver_options.GetOptions<T>(IpoptSolver::id()).count(key) > 0;
+}
+
+/**
+ * If the key has been set in ipopt_options, then this function is an no-op.
+ * Otherwise set this key with default_val.
+ */
+template <typename T>
+void SetIpoptOptionsHelper(const std::string& key, const T& default_val,
+                           SolverOptions* ipopt_options) {
+  if (!HasOptionWithKey<T>(*ipopt_options, key)) {
+    ipopt_options->SetOption(IpoptSolver::id(), key, default_val);
+  }
+}
+
+void SetIpoptOptions(const MathematicalProgram& prog,
+                     const optional<SolverOptions>& user_solver_options,
+                     Ipopt::IpoptApplication* app) {
+  SolverOptions merged_solver_options = user_solver_options.has_value()
+                                            ? user_solver_options.value()
+                                            : SolverOptions();
+  merged_solver_options.Merge(prog.solver_options());
+
+  // The default tolerance.
+  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
+  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
+  // constr_viol_tol
+  SetIpoptOptionsHelper<double>("tol", tol, &merged_solver_options);
+  SetIpoptOptionsHelper<double>("constr_viol_tol", tol, &merged_solver_options);
+  SetIpoptOptionsHelper<double>("acceptable_tol", tol, &merged_solver_options);
+  SetIpoptOptionsHelper<double>("acceptable_constr_viol_tol", tol,
+                                &merged_solver_options);
+  SetIpoptOptionsHelper<std::string>("hessian_approximation", "limited-memory",
+                                     &merged_solver_options);
+  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
+  // useful for debugging.
+  SetIpoptOptionsHelper<int>("print_level", 2, &merged_solver_options);
+
+  const auto& ipopt_options_double =
+      merged_solver_options.GetOptionsDouble(IpoptSolver::id());
+  const auto& ipopt_options_str =
+      merged_solver_options.GetOptionsStr(IpoptSolver::id());
+  const auto& ipopt_options_int =
+      merged_solver_options.GetOptionsInt(IpoptSolver::id());
+  for (const auto& it : ipopt_options_double) {
+    app->Options()->SetNumericValue(it.first, it.second);
+  }
+
+  for (const auto& it : ipopt_options_int) {
+    app->Options()->SetIntegerValue(it.first, it.second);
+  }
+
+  app->Options()->SetStringValue("sb", "yes");  // Turn off the banner.
+  for (const auto& it : ipopt_options_str) {
+    app->Options()->SetStringValue(it.first, it.second);
+  }
+}
 
 }  // namespace
 
-bool IpoptSolver::available() const { return true; }
+const char* IpoptSolverDetails::ConvertStatusToString() const {
+  switch (status) {
+    case Ipopt::SolverReturn::SUCCESS: {
+      return "Success";
+    }
+    case Ipopt::SolverReturn::MAXITER_EXCEEDED: {
+      return "Max iteration exceeded";
+    }
+    case Ipopt::SolverReturn::CPUTIME_EXCEEDED: {
+      return "CPU time exceeded";
+    }
+    case Ipopt::SolverReturn::STOP_AT_TINY_STEP: {
+      return "Stop at tiny step";
+    }
+    case Ipopt::SolverReturn::STOP_AT_ACCEPTABLE_POINT: {
+      return "Stop at acceptable point";
+    }
+    case Ipopt::SolverReturn::LOCAL_INFEASIBILITY: {
+      return "Local infeasibility";
+    }
+    case Ipopt::SolverReturn::USER_REQUESTED_STOP: {
+      return "User requested stop";
+    }
+    case Ipopt::SolverReturn::FEASIBLE_POINT_FOUND: {
+      return "Feasible point found";
+    }
+    case Ipopt::SolverReturn::DIVERGING_ITERATES: {
+      return "Divergent iterates";
+    }
+    case Ipopt::SolverReturn::RESTORATION_FAILURE: {
+      return "Restoration failure";
+    }
+    case Ipopt::SolverReturn::ERROR_IN_STEP_COMPUTATION: {
+      return "Error in step computation";
+    }
+    case Ipopt::SolverReturn::INVALID_NUMBER_DETECTED: {
+      return "Invalid number detected";
+    }
+    case Ipopt::SolverReturn::TOO_FEW_DEGREES_OF_FREEDOM: {
+      return "Too few degrees of freedom";
+    }
+    case Ipopt::SolverReturn::INVALID_OPTION: {
+      return "Invalid option";
+    }
+    case Ipopt::SolverReturn::OUT_OF_MEMORY: {
+      return "Out of memory";
+    }
+    case Ipopt::SolverReturn::INTERNAL_ERROR: {
+      return "Internal error";
+    }
+    case Ipopt::SolverReturn::UNASSIGNED: {
+      return "Unassigned";
+    }
+  }
+  return "Unknown enumerated SolverReturn value.";
+}
 
-SolutionResult IpoptSolver::Solve(MathematicalProgram& prog) const {
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
+bool IpoptSolver::is_available() { return true; }
+
+void IpoptSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  const double tol = 1e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
-  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
-  // constr_viol_tol
-  app->Options()->SetNumericValue("tol", tol);
-  app->Options()->SetNumericValue("constr_viol_tol", tol);
-  app->Options()->SetNumericValue("acceptable_tol", tol);
-  app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
-  app->Options()->SetStringValue("hessian_approximation", "limited-memory");
-  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
-  // useful for debugging.
-  app->Options()->SetIntegerValue("print_level", 2);
-
-  for (const auto& it : prog.GetSolverOptionsDouble(id())) {
-    app->Options()->SetNumericValue(it.first, it.second);
-  }
-
-  for (const auto& it : prog.GetSolverOptionsInt(id())) {
-    app->Options()->SetIntegerValue(it.first, it.second);
-  }
-
-  for (const auto& it : prog.GetSolverOptionsStr(id())) {
-    app->Options()->SetStringValue(it.first, it.second);
-  }
+  SetIpoptOptions(prog, merged_options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {
-    return SolutionResult::kInvalidInput;
+    result->set_solution_result(SolutionResult::kInvalidInput);
+    return;
   }
 
-  Ipopt::SmartPtr<IpoptSolver_NLP> nlp = new IpoptSolver_NLP(&prog);
+  Ipopt::SmartPtr<IpoptSolver_NLP> nlp =
+      new IpoptSolver_NLP(prog, initial_guess, result);
   status = app->OptimizeTNLP(nlp);
-
-  return nlp->result();
 }
 
 }  // namespace solvers

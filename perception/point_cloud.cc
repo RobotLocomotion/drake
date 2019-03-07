@@ -17,6 +17,7 @@ namespace {
 
 // Convenience aliases.
 typedef PointCloud::T T;
+typedef PointCloud::C C;
 typedef PointCloud::D D;
 
 }  // namespace
@@ -46,12 +47,18 @@ class PointCloud::Storage {
     size_ = new_size;
     if (fields_.contains(pc_flags::kXYZs))
       xyzs_.conservativeResize(NoChange, new_size);
+    if (fields_.contains(pc_flags::kNormals))
+      normals_.conservativeResize(NoChange, new_size);
+    if (fields_.contains(pc_flags::kRGBs))
+      rgbs_.conservativeResize(NoChange, new_size);
     if (fields_.has_descriptor())
       descriptors_.conservativeResize(NoChange, new_size);
     CheckInvariants();
   }
 
   Eigen::Ref<Matrix3X<T>> xyzs() { return xyzs_; }
+  Eigen::Ref<Matrix3X<T>> normals() { return normals_; }
+  Eigen::Ref<Matrix3X<C>> rgbs() { return rgbs_; }
   Eigen::Ref<MatrixX<T>> descriptors() { return descriptors_; }
 
  private:
@@ -59,6 +66,14 @@ class PointCloud::Storage {
     if (fields_.contains(pc_flags::kXYZs)) {
       const int xyz_size = xyzs_.cols();
       DRAKE_DEMAND(xyz_size == size());
+    }
+    if (fields_.contains(pc_flags::kNormals)) {
+      const int normals_size = normals_.cols();
+      DRAKE_DEMAND(normals_size == size());
+    }
+    if (fields_.contains(pc_flags::kRGBs)) {
+      const int rgbs_size = rgbs_.cols();
+      DRAKE_DEMAND(rgbs_size == size());
     }
     if (fields_.has_descriptor()) {
       const int descriptor_size = descriptors_.cols();
@@ -69,6 +84,8 @@ class PointCloud::Storage {
   const pc_flags::Fields fields_;
   int size_{};
   Matrix3X<T> xyzs_;
+  Matrix3X<T> normals_;
+  Matrix3X<C> rgbs_;
   MatrixX<T> descriptors_;
 };
 
@@ -172,6 +189,12 @@ void PointCloud::SetDefault(int start, int num) {
   if (has_xyzs()) {
     set(mutable_xyzs(), kDefaultValue);
   }
+  if (has_normals()) {
+    set(mutable_normals(), kDefaultValue);
+  }
+  if (has_rgbs()) {
+    set(mutable_rgbs(), kDefaultColor);
+  }
   if (has_descriptors()) {
     set(mutable_descriptors(), kDefaultValue);
   }
@@ -192,6 +215,12 @@ void PointCloud::SetFrom(const PointCloud& other,
       ResolvePairFields(*this, other, fields_in);
   if (fields_resolved.contains(pc_flags::kXYZs)) {
     mutable_xyzs() = other.xyzs();
+  }
+  if (fields_resolved.contains(pc_flags::kNormals)) {
+    mutable_normals() = other.normals();
+  }
+  if (fields_resolved.contains(pc_flags::kRGBs)) {
+    mutable_rgbs() = other.rgbs();
   }
   if (fields_resolved.has_descriptor()) {
     mutable_descriptors() = other.descriptors();
@@ -216,6 +245,30 @@ Eigen::Ref<const Matrix3X<T>> PointCloud::xyzs() const {
 Eigen::Ref<Matrix3X<T>> PointCloud::mutable_xyzs() {
   DRAKE_DEMAND(has_xyzs());
   return storage_->xyzs();
+}
+
+bool PointCloud::has_normals() const {
+  return fields_.contains(pc_flags::kNormals);
+}
+Eigen::Ref<const Matrix3X<T>> PointCloud::normals() const {
+  DRAKE_DEMAND(has_normals());
+  return storage_->normals();
+}
+Eigen::Ref<Matrix3X<T>> PointCloud::mutable_normals() {
+  DRAKE_DEMAND(has_normals());
+  return storage_->normals();
+}
+
+bool PointCloud::has_rgbs() const {
+  return fields_.contains(pc_flags::kRGBs);
+}
+Eigen::Ref<const Matrix3X<C>> PointCloud::rgbs() const {
+  DRAKE_DEMAND(has_rgbs());
+  return storage_->rgbs();
+}
+Eigen::Ref<Matrix3X<C>> PointCloud::mutable_rgbs() {
+  DRAKE_DEMAND(has_rgbs());
+  return storage_->rgbs();
 }
 
 bool PointCloud::has_descriptors() const {

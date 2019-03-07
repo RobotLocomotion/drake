@@ -7,7 +7,9 @@ import sys
 def main():
     prefix = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, os.path.join(
-        prefix, 'lib', 'python2.7', 'site-packages'))
+        prefix, 'lib',
+        'python{}.{}'.format(sys.version_info.major, sys.version_info.minor),
+        'site-packages'))
 
     import optitrack.optitrack_client
 

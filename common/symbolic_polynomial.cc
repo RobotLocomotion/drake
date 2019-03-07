@@ -98,7 +98,7 @@ class DecomposePolynomialVisitor {
     if (c_0 != 0) {
       new_map.emplace(Monomial{}, c_0);
     }
-    for (const pair<Expression, double>& p :
+    for (const pair<const Expression, double>& p :
          get_expr_to_coeff_map_in_addition(e)) {
       const Expression& e_i{p.first};
       const double c_i{p.second};
@@ -108,7 +108,7 @@ class DecomposePolynomialVisitor {
       //                     = c₀ + ∑ᵢ ∑ⱼ ((cᵢ * cⱼ) * mⱼ)
       // Note that we have cᵢ ≠ 0 ∧ cⱼ ≠ 0 → (cᵢ * cⱼ) ≠ 0.
       const Polynomial::MapType map_i = Visit(e_i, indeterminates);
-      for (const pair<Monomial, Expression>& term : map_i) {
+      for (const pair<const Monomial, Expression>& term : map_i) {
         const Monomial& m_j{term.first};
         const Expression& c_j{term.second};
         // Add (cᵢ * cⱼ) * mⱼ.
@@ -124,7 +124,7 @@ class DecomposePolynomialVisitor {
     const double c = get_constant_in_multiplication(e);
     Expression coeff{c};
     Monomial m{};
-    for (const pair<Expression, Expression>& p :
+    for (const pair<const Expression, Expression>& p :
          get_base_to_exponent_map_in_multiplication(e)) {
       const Expression& base_i{p.first};
       const Expression& exponent_i{p.second};
@@ -363,7 +363,8 @@ Polynomial::Polynomial(const Expression& e, const Variables& indeterminates)
 
 Variables Polynomial::indeterminates() const {
   Variables vars;
-  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+  for (const pair<const Monomial, Expression>& p :
+       monomial_to_coefficient_map_) {
     const Monomial& m_i{p.first};
     vars += m_i.GetVariables();
   }
@@ -372,7 +373,8 @@ Variables Polynomial::indeterminates() const {
 
 Variables Polynomial::decision_variables() const {
   Variables vars;
-  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+  for (const pair<const Monomial, Expression>& p :
+       monomial_to_coefficient_map_) {
     const Expression& e_i{p.second};
     vars += e_i.GetVariables();
   }
@@ -381,7 +383,8 @@ Variables Polynomial::decision_variables() const {
 
 int Polynomial::Degree(const Variable& v) const {
   int degree{0};
-  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+  for (const pair<const Monomial, Expression>& p :
+       monomial_to_coefficient_map_) {
     const Monomial& m{p.first};
     degree = std::max(degree, m.degree(v));
   }
@@ -390,7 +393,8 @@ int Polynomial::Degree(const Variable& v) const {
 
 int Polynomial::TotalDegree() const {
   int degree{0};
-  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+  for (const pair<const Monomial, Expression>& p :
+       monomial_to_coefficient_map_) {
     const Monomial& m{p.first};
     degree = std::max(degree, m.total_degree());
   }
@@ -406,7 +410,7 @@ Expression Polynomial::ToExpression() const {
   return accumulate(
       monomial_to_coefficient_map_.begin(), monomial_to_coefficient_map_.end(),
       Expression{0.0},
-      [](const Expression& init, const pair<Monomial, Expression>& p) {
+      [](const Expression& init, const pair<const Monomial, Expression>& p) {
         const Monomial& m{p.first};
         const Expression& coeff{p.second};
         return init + (coeff * m.ToExpression());
@@ -471,7 +475,8 @@ Polynomial Polynomial::Differentiate(const Variable& x) const {
 double Polynomial::Evaluate(const Environment& env) const {
   return accumulate(
       monomial_to_coefficient_map_.begin(), monomial_to_coefficient_map_.end(),
-      0.0, [&env](const double v, const pair<const Monomial, Expression> item) {
+      0.0,
+      [&env](const double v, const pair<const Monomial, Expression>& item) {
         const Monomial& monomial{item.first};
         const Expression& coeff{item.second};
         return v + monomial.Evaluate(env) * coeff.Evaluate(env);
@@ -506,7 +511,7 @@ Polynomial Polynomial::EvaluatePartial(const Variable& var,
 }
 
 Polynomial& Polynomial::operator+=(const Polynomial& p) {
-  for (const pair<Monomial, Expression>& item :
+  for (const pair<const Monomial, Expression>& item :
        p.monomial_to_coefficient_map_) {
     const Monomial& m{item.first};
     const Expression& coeff{item.second};
@@ -560,7 +565,8 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
 
 Polynomial& Polynomial::operator*=(const Monomial& m) {
   MapType new_map;
-  for (const pair<Monomial, Expression>& p : monomial_to_coefficient_map_) {
+  for (const pair<const Monomial, Expression>& p :
+       monomial_to_coefficient_map_) {
     const Monomial& m_i{p.first};
     const Expression& coeff_i{p.second};
     new_map.emplace(m * m_i, coeff_i);
@@ -578,8 +584,47 @@ Polynomial& Polynomial::operator*=(const double c) {
   return *this;
 }
 
+namespace {
+bool PolynomialEqual(const Polynomial& p1, const Polynomial& p2,
+                     bool do_expansion) {
+  // We do not use unordered_map<Monomial, Expression>::operator== as it uses
+  // Expression::operator== (which returns a symbolic formula) instead of
+  // Expression::EqualTo(which returns a bool), when the coefficient is a
+  // symbolic expression.
+  const Polynomial::MapType& map1{p1.monomial_to_coefficient_map()};
+  const Polynomial::MapType& map2{p2.monomial_to_coefficient_map()};
+  if (map1.size() != map2.size()) {
+    return false;
+  }
+  for (const auto& pair1 : map1) {
+    const Monomial& m{pair1.first};
+    const Expression& e1{pair1.second};
+    const auto it = map2.find(m);
+    if (it == map2.end()) {
+      // m is not in map2, so map1 and map2 are not the same.
+      return false;
+    }
+    const Expression& e2{it->second};
+    if (do_expansion) {
+      if (!e1.Expand().EqualTo(e2.Expand())) {
+        return false;
+      }
+    } else {
+      if (!e1.EqualTo(e2)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
+
 bool Polynomial::EqualTo(const Polynomial& p) const {
-  return monomial_to_coefficient_map_ == p.monomial_to_coefficient_map();
+  return PolynomialEqual(*this, p, false);
+}
+
+bool Polynomial::EqualToAfterExpansion(const Polynomial& p) const {
+  return PolynomialEqual(*this, p, true);
 }
 
 Formula Polynomial::operator==(const Polynomial& p) const {
@@ -588,7 +633,7 @@ Formula Polynomial::operator==(const Polynomial& p) const {
   //    That is, all coefficients should be zero.
   const Polynomial diff{p - *this};
   Formula ret{Formula::True()};
-  for (const pair<Monomial, Expression>& item :
+  for (const pair<const Monomial, Expression>& item :
        diff.monomial_to_coefficient_map_) {
     const Expression& coeff{item.second};
     ret = ret && (coeff == 0.0);
@@ -602,8 +647,26 @@ Formula Polynomial::operator!=(const Polynomial& p) const {
 
 Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
-  CheckInvariant();
+  DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
+}
+
+Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
+    double coefficient_tol) const {
+  DRAKE_DEMAND(coefficient_tol > 0);
+  MapType cleaned_polynomial{};
+  cleaned_polynomial.reserve(monomial_to_coefficient_map_.size());
+  for (const auto& term : monomial_to_coefficient_map_) {
+    if (is_constant(term.second) &&
+        std::abs(get_constant_value(term.second)) <= coefficient_tol) {
+      // The coefficients are small.
+      continue;
+    } else {
+      cleaned_polynomial.emplace_hint(cleaned_polynomial.end(), term.first,
+                                      term.second);
+    }
+  }
+  return Polynomial(cleaned_polynomial);
 }
 
 void Polynomial::CheckInvariant() const {

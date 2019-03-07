@@ -1,9 +1,9 @@
-#!/usr/bin/env python2
-
 """cpplint_wrapper.py -- Run cpplint.py using Drake's standard settings,
 summarizing its output for cleanliness, and providing a --fast option
 to run multiple linters in parallel.
 """
+
+from __future__ import print_function
 
 import argparse
 import functools
@@ -12,6 +12,8 @@ import os
 import re
 import subprocess
 import sys
+
+from six.moves import xrange
 
 
 def summarize_cpplint(cmdline_and_files, args):
@@ -23,10 +25,10 @@ def summarize_cpplint(cmdline_and_files, args):
     try:
         output = subprocess.check_output(
             cmdline_and_files,
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.STDOUT).decode('utf8')
         passed = True
     except subprocess.CalledProcessError as e:
-        output = e.output
+        output = e.output.decode('utf8')
         passed = False
 
     # Filter out known non-errors from everything else.
@@ -64,7 +66,7 @@ def worker_summarize_cpplint(cmdline_and_files, args):
 
 def multiprocess_cpplint(cmdline, files, args):
     """Given a cpplint subprocess command line (just the program and arguments),
-    separate list of files, and number of processess (None for "all CPUs"), run
+    separate list of files, and number of processes (None for "all CPUs"), run
     cpplint, display a progress bar, warning summary, and return a shell
     exitcode (0 on success, 1 on failure).
     """
@@ -91,13 +93,13 @@ def multiprocess_cpplint(cmdline, files, args):
     # Act on the results.
     num_errors = len(errors)
     if num_errors == 0:
-        print ' TOTAL %d files passed' % len(files)
+        print(' TOTAL %d files passed' % len(files))
         return 0
     else:
-        print ' TOTAL %d files checked, found %d warnings' % (
-            len(files), num_errors)
+        print(' TOTAL %d files checked, found %d warnings' % (
+            len(files), num_errors))
         for line in errors:
-            print >>sys.stdout, line
+            print(line)
         return 1
 
 
@@ -167,7 +169,7 @@ def main():
         if os.path.splitext(filename)[1][1:] in args.extensions]
     for filename in args_files:
         if os.path.splitext(filename)[1][1:] not in args.extensions:
-            print "Ignoring %s; not a valid file name." % filename
+            print("Ignoring %s; not a valid file name." % filename)
         else:
             files.append(filename)
 

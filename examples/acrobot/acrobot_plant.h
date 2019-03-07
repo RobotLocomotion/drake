@@ -14,16 +14,29 @@ namespace drake {
 namespace examples {
 namespace acrobot {
 
+/// @defgroup acrobot_systems Acrobot
+/// @{
+/// @brief Systems related to the Acrobot example.
+/// @ingroup example_systems
+/// @}
+
 /// The Acrobot - a canonical underactuated system as described in <a
 /// href="http://underactuated.mit.edu/underactuated.html?chapter=3">Chapter 3
 /// of Underactuated Robotics</a>.
 ///
+/// @system{ AcrobotPlant,
+///   @input_port{elbow_torque},
+///   @output_port{acrobot_state} }
+///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - symbolic::Expression
+///
+/// @ingroup acrobot_systems
 template <typename T>
 class AcrobotPlant : public systems::LeafSystem<T> {
  public:
@@ -43,9 +56,10 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 
   ///@{
   /// Manipulator equation of Acrobot: M(q)q̈ + bias(q,q̇) = B*u.
+  ///
   /// - M[2x2] is the mass matrix.
   /// - bias[2x1] includes the Coriolis term, gravity term and the damping term,
-  ///     i.e. bias[2x1] = C(q,v)*v - τ_g(q) + [b1*q̇₁;b2*q̇₂].
+  ///   i.e. bias[2x1] = C(q,v)*v - τ_g(q) + [b1*q̇₁;b2*q̇₂].
   // TODO(russt): Update this to the newest conventions.
   Vector2<T> DynamicsBiasTerm(const systems::Context<T> &context) const;
   Matrix2<T> MassMatrix(const systems::Context<T> &context) const;
@@ -94,6 +108,13 @@ class AcrobotPlant : public systems::LeafSystem<T> {
 };
 
 /// Constructs the Acrobot with (only) encoder outputs.
+///
+/// @system{ AcrobotWEncoder,
+///          @input_port{elbow_torque},
+///          @output_port{measured_joint_positions}
+///          @output_port{acrobot_state (optional)} }
+///
+/// @ingroup acrobot_systems
 template <typename T>
 class AcrobotWEncoder : public systems::Diagram<T> {
  public:
@@ -110,6 +131,7 @@ class AcrobotWEncoder : public systems::Diagram<T> {
 
 /// Constructs the LQR controller for stabilizing the upright fixed point using
 /// default LQR cost matrices which have been tested for this system.
+/// @ingroup acrobot_systems
 std::unique_ptr<systems::AffineSystem<double>> BalancingLQRController(
     const AcrobotPlant<double>& acrobot);
 

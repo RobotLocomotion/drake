@@ -52,6 +52,7 @@ namespace analysis {
 /// conditions described above.  The resulting Lyapunov function is
 ///   V(x) = ∑ pᵢ φᵢ(x),
 ///
+/// @ingroup analysis
 Eigen::VectorXd SampleBasedLyapunovAnalysis(
     const System<double>& system, const Context<double>& context,
     const std::function<VectorX<AutoDiffXd>(const VectorX<AutoDiffXd>& state)>&

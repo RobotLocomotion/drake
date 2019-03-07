@@ -10,7 +10,7 @@ package(
 exports_files(["protobuf.bzl"])
 
 # The protobuf.bzl looks here to find which protoc to use.
-# Drake uses the protoc found on $PATH (typically from the host OS).
+# Drake uses the protoc from the host OS.
 filegroup(
     name = "protoc",
     srcs = ["@protoc"],

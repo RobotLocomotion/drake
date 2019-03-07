@@ -26,8 +26,7 @@ bool MathProgHasBinaryVariables(const MathematicalProgram& prog) {
 }
 
 namespace {
-std::unique_ptr<MathematicalProgramSolverInterface> MakeSolver(
-    const SolverId& solver_id) {
+std::unique_ptr<SolverInterface> MakeSolver(const SolverId& solver_id) {
   if (solver_id == GurobiSolver::id() || solver_id == ScsSolver::id()) {
     if (solver_id == GurobiSolver::id()) {
       auto solver = std::make_unique<GurobiSolver>();
@@ -55,6 +54,7 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
     const std::list<symbolic::Variable>& binary_variables,
     const SolverId& solver_id)
     : prog_{prog.Clone()},
+      prog_result_{std::make_unique<MathematicalProgramResult>()},
       left_child_{nullptr},
       right_child_{nullptr},
       parent_{nullptr},
@@ -114,12 +114,13 @@ void AddVectorOfConstraintsToProgram(
   }
 }
 
-SolutionResult SolveProgramWithSolver(MathematicalProgram* prog,
-                                      const SolverId& solver_id) {
-  std::unique_ptr<MathematicalProgramSolverInterface> solver =
-      MakeSolver(solver_id);
+SolutionResult SolveProgramWithSolver(const MathematicalProgram& prog,
+                                      const SolverId& solver_id,
+                                      MathematicalProgramResult* result) {
+  std::unique_ptr<SolverInterface> solver = MakeSolver(solver_id);
   DRAKE_ASSERT(solver.get());
-  return solver->Solve(*prog);
+  solver->Solve(prog, {}, {}, result);
+  return result->get_solution_result();
 }
 }  // namespace
 
@@ -224,7 +225,8 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   }
   MixedIntegerBranchAndBoundNode* node = new MixedIntegerBranchAndBoundNode(
       new_prog, binary_variables_list, solver_id);
-  node->solution_result_ = SolveProgramWithSolver(node->prog_.get(), solver_id);
+  node->solution_result_ = SolveProgramWithSolver(
+      *node->prog_, solver_id, node->prog_result_.get());
   if (node->solution_result_ == SolutionResult::kSolutionFound) {
     node->CheckOptimalSolutionIsIntegral();
   }
@@ -239,7 +241,7 @@ void MixedIntegerBranchAndBoundNode::CheckOptimalSolutionIsIntegral() {
     throw std::runtime_error("The program does not have an optimal solution.");
   }
   for (const auto& var : remaining_binary_variables_) {
-    const double binary_var_val{prog_->GetSolution(var)};
+    const double binary_var_val{prog_result_->GetSolution(var)};
     if (std::isnan(binary_var_val)) {
       throw std::runtime_error(
           "The solution contains NAN, either the problem is not solved "
@@ -271,9 +273,7 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
           "function.");
     }
   }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 bool IsVariableInList(const std::list<symbolic::Variable>& variable_list,
@@ -323,10 +323,12 @@ void MixedIntegerBranchAndBoundNode::Branch(
   right_child_->FixBinaryVariable(binary_variable, 1);
   left_child_->parent_ = this;
   right_child_->parent_ = this;
-  left_child_->solution_result_ =
-      SolveProgramWithSolver(left_child_->prog_.get(), left_child_->solver_id_);
+  left_child_->solution_result_ = SolveProgramWithSolver(
+      *left_child_->prog_, left_child_->solver_id_,
+      left_child_->prog_result_.get());
   right_child_->solution_result_ = SolveProgramWithSolver(
-      right_child_->prog_.get(), right_child_->solver_id_);
+      *right_child_->prog_, right_child_->solver_id_,
+      right_child_->prog_result_.get());
   if (left_child_->solution_result_ == SolutionResult::kSolutionFound) {
     left_child_->CheckOptimalSolutionIsIntegral();
   }
@@ -345,13 +347,14 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
   std::tie(root_, map_old_vars_to_new_vars_) =
       MixedIntegerBranchAndBoundNode::ConstructRootNode(prog, solver_id);
   if (root_->solution_result() == SolutionResult::kSolutionFound) {
-    best_lower_bound_ = root_->prog()->GetOptimalCost();
+    best_lower_bound_ = root_->prog_result()->get_optimal_cost();
     // If an integral solution is found, then update the best solutions,
     // together with the best upper bound.
     if (root_->optimal_solution_is_integral()) {
       UpdateIntegralSolution(
-          root_->prog()->GetSolution(root_->prog()->decision_variables()),
-          root_->prog()->GetOptimalCost());
+          root_->prog_result()->GetSolution(
+              root_->prog()->decision_variables()),
+          root_->prog_result()->get_optimal_cost());
     }
   }
 }
@@ -496,9 +499,7 @@ MixedIntegerBranchAndBoundNode* MixedIntegerBranchAndBound::PickBranchingNode()
       }
     }
   }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 namespace {
@@ -517,10 +518,10 @@ MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(
     MixedIntegerBranchAndBoundNode* right_min_lower_bound_node =
         PickMinLowerBoundNodeInSubTree(bnb, *(sub_tree_root.right_child()));
     if (left_min_lower_bound_node && right_min_lower_bound_node) {
-      return left_min_lower_bound_node->prog()->GetOptimalCost() <
-                     right_min_lower_bound_node->prog()->GetOptimalCost()
-                 ? left_min_lower_bound_node
-                 : right_min_lower_bound_node;
+      return (left_min_lower_bound_node->prog_result()->get_optimal_cost() <
+              right_min_lower_bound_node->prog_result()->get_optimal_cost())
+          ? left_min_lower_bound_node
+          : right_min_lower_bound_node;
     } else if (left_min_lower_bound_node) {
       return left_min_lower_bound_node;
     } else if (right_min_lower_bound_node) {
@@ -564,7 +565,7 @@ double BestLowerBoundInSubTree(
     if (bnb.IsLeafNodeFathomed(sub_tree_root)) {
       switch (sub_tree_root.solution_result()) {
         case SolutionResult::kSolutionFound:
-          return sub_tree_root.prog()->GetOptimalCost();
+          return sub_tree_root.prog_result()->get_optimal_cost();
         case SolutionResult::kUnbounded:
           return -std::numeric_limits<double>::infinity();
         case SolutionResult::kInfeasibleConstraints:
@@ -575,7 +576,7 @@ double BestLowerBoundInSubTree(
               "node.");
       }
     }
-    return sub_tree_root.prog()->GetOptimalCost();
+    return sub_tree_root.prog_result()->get_optimal_cost();
   } else {
     const double left_best_lower_bound =
         BestLowerBoundInSubTree(bnb, *(sub_tree_root.left_child()));
@@ -606,7 +607,7 @@ const symbolic::Variable* PickMostOrLeastAmbivalentAsBranchingVariable(
     double value = sign * std::numeric_limits<double>::infinity();
     const symbolic::Variable* return_var{nullptr};
     for (const auto& var : node.remaining_binary_variables()) {
-      const double var_value = node.prog()->GetSolution(var);
+      const double var_value = node.prog_result()->GetSolution(var);
       const double var_value_to_half = std::abs(var_value - 0.5);
       if (sign * var_value_to_half < sign * value) {
         value = var_value_to_half;
@@ -650,9 +651,7 @@ const symbolic::Variable* MixedIntegerBranchAndBound::PickBranchingVariable(
           "SetUserDefinedVariableSelectionFunction to provide the user-defined "
           "function for selecting the branching variable.");
   }
-  // It is impossible to reach this DRAKE_ABORT(), but gcc throws the error
-  // Werror=return-type, if we do not have it here.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
@@ -663,7 +662,7 @@ bool MixedIntegerBranchAndBound::IsLeafNodeFathomed(
   if (leaf_node.solution_result() == SolutionResult::kInfeasibleConstraints) {
     return true;
   }
-  if (leaf_node.prog()->GetOptimalCost() > best_upper_bound_) {
+  if (leaf_node.prog_result()->get_optimal_cost() > best_upper_bound_) {
     return true;
   }
   if (leaf_node.solution_result() == SolutionResult::kSolutionFound &&
@@ -690,9 +689,11 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
   for (auto& child : {node->left_child(), node->right_child()}) {
     if (child->solution_result() == SolutionResult::kSolutionFound &&
         child->optimal_solution_is_integral()) {
-      const double child_node_optimal_cost = child->prog()->GetOptimalCost();
+      const double child_node_optimal_cost =
+          child->prog_result()->get_optimal_cost();
       const Eigen::VectorXd x_sol =
-          child->prog()->GetSolution(child->prog()->decision_variables());
+          child->prog_result()->GetSolution(
+              child->prog()->decision_variables());
       UpdateIntegralSolution(x_sol, child_node_optimal_cost);
     }
     if (search_integral_solution_by_rounding_) {
@@ -759,18 +760,19 @@ void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
       // Notice that roundoff_integer_val is of type double here. This is
       // because AddBoundingBoxConstraint(...) requires bounds of type double.
       const double roundoff_integer_val =
-          std::round(node.prog()->GetSolution(remaining_binary_variable));
+          std::round(node.prog_result()->GetSolution(
+              remaining_binary_variable));
       new_prog->AddBoundingBoxConstraint(roundoff_integer_val,
                                          roundoff_integer_val,
                                          remaining_binary_variable);
     }
-    const SolutionResult result =
-        SolveProgramWithSolver(new_prog.get(), node.solver_id());
-    if (result == SolutionResult::kSolutionFound) {
+    MathematicalProgramResult result;
+    SolveProgramWithSolver(*new_prog, node.solver_id(), &result);
+    if (result.is_success()) {
       // Found integral solution.
       UpdateIntegralSolution(
-          new_prog->GetSolution(new_prog->decision_variables()),
-          new_prog->GetOptimalCost());
+          result.GetSolution(new_prog->decision_variables()),
+          result.get_optimal_cost());
     }
   }
 }

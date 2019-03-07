@@ -35,6 +35,7 @@ namespace controllers {
  * @tparam T The vector element type, which must be a valid Eigen scalar.
  *
  * Instantiated templates for the following kinds of T's are provided:
+ *
  * - double
  * - AutoDiffXd
  * - symbolic::Expression
@@ -159,14 +160,14 @@ class PidController : public StateFeedbackControllerInterface<T>,
   /**
    * Returns the input port for the estimated state.
    */
-  const InputPortDescriptor<T>& get_input_port_estimated_state() const final {
+  const InputPort<T>& get_input_port_estimated_state() const final {
     return this->get_input_port(input_index_state_);
   }
 
   /**
    * Returns the input port for the desired state.
    */
-  const InputPortDescriptor<T>& get_input_port_desired_state() const final {
+  const InputPort<T>& get_input_port_desired_state() const final {
     return this->get_input_port(input_index_desired_state_);
   }
 
@@ -183,7 +184,8 @@ class PidController : public StateFeedbackControllerInterface<T>,
    * controller, since the internal wiring is unimportant and hard for human
    * viewers to parse.
    */
-  void GetGraphvizFragment(std::stringstream* dot) const override;
+  void GetGraphvizFragment(int max_depth,
+                           std::stringstream* dot) const override;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;

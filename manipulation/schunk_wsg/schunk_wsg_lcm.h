@@ -6,112 +6,181 @@
 #include <memory>
 #include <vector>
 
-#include "drake/common/trajectories/trajectory.h"
+#include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
-#include "drake/manipulation/schunk_wsg/gen/schunk_wsg_trajectory_generator_state_vector.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
 namespace manipulation {
 namespace schunk_wsg {
 
-// TODO(sam.creasey) Right now this class just outputs a position
-// which is not going to be sufficient to capture the entire control
-// state of the gripper (particularly the maximum force).
-
-/// Receives lcmt_schunk_wsg_command for a Schunk WSG (input port 0)
-/// along with the current state of the simulated WSG (input port 1),
-/// and emits target position/velocity for the actuated finger to
-/// reach the commanded target.  The force portion of the command
-/// message is passed through this system, but does not affect the
-/// generated trajectory.
-class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
+/// Handles the command for the Schunk WSG gripper from a LcmSubscriberSystem.
+///
+/// It has one input port: "command_message" for lcmt_schunk_wsg_command
+/// abstract values.
+///
+/// It has two output ports: one for the commanded finger position represented
+/// as the desired distance between the fingers in meters, and one for the
+/// commanded force limit.  The commanded position and force limit are scalars
+/// (BasicVector<double> of size 1).
+///
+/// @system{ SchunkWsgCommandReceiver,
+///   @input_port{command_message},
+///   @output_port{position}
+///   @output_port{force_limit} }
+class SchunkWsgCommandReceiver : public systems::LeafSystem<double> {
  public:
-  /// @param input_size The size of the state input port to create
-  /// (one reason this may vary is passing in the entire state of a
-  /// rigid body tree vs. having already demultiplexed the actuated
-  /// finger).
-  /// @param position_index The index in the state input vector
-  /// which contains the position of the actuated finger.
-  SchunkWsgTrajectoryGenerator(int input_size, int position_index);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandReceiver)
 
-  const systems::InputPortDescriptor<double>& get_command_input_port() const {
-    return this->get_input_port(0);
+  /// @param initial_position the commanded position to output if no LCM
+  /// message has been received yet.
+  ///
+  /// @param initial_force the commanded force limit to output if no LCM
+  /// message has been received yet.
+  SchunkWsgCommandReceiver(double initial_position = 0.02,
+                           double initial_force = 40);
+
+  const systems::OutputPort<double>& get_position_output_port() const {
+    return this->GetOutputPort("position");
   }
 
-  const systems::InputPortDescriptor<double>& get_state_input_port() const {
-    return this->get_input_port(1);
-  }
-
-  const systems::OutputPort<double>& get_target_output_port() const {
-    return this->get_output_port(target_output_port_);
-  }
-
-  const systems::OutputPort<double>& get_max_force_output_port() const {
-    return this->get_output_port(max_force_output_port_);
+  const systems::OutputPort<double>& get_force_limit_output_port() const {
+    return this->GetOutputPort("force_limit");
   }
 
  private:
-  void OutputTarget(const systems::Context<double>& context,
-                    systems::BasicVector<double>* output) const;
+  void CalcPositionOutput(const systems::Context<double>& context,
+                          systems::BasicVector<double>* output) const;
 
-  void OutputForce(const systems::Context<double>& context,
-                   systems::BasicVector<double>* output) const;
+  void CalcForceLimitOutput(const systems::Context<double>& context,
+                            systems::BasicVector<double>* output) const;
 
-  /// Latches the input port into the discrete state.
-  void DoCalcDiscreteVariableUpdates(
-      const systems::Context<double>& context,
-      const std::vector<const systems::DiscreteUpdateEvent<double>*>& events,
-      systems::DiscreteValues<double>* discrete_state) const override;
-
-  std::unique_ptr<systems::DiscreteValues<double>> AllocateDiscreteState()
-      const override;
-
-  void UpdateTrajectory(double cur_position, double target_position) const;
-
-  /// The minimum change between the last received command and the
-  /// current command to trigger a trajectory update.  Based on
-  /// manually driving the actual gripper using the web interface, it
-  /// appears that it will at least attempt to respond to commands as
-  /// small as 0.1mm.
-  const double kTargetEpsilon = 0.0001;
-
-  const int position_index_{};
-  const int target_output_port_{};
-  const int max_force_output_port_{};
-
-  // TODO(sam.creasey) I'd prefer to store the trajectory as
-  // discrete state, but unfortunately that's not currently possible
-  // as DiscreteValues may only contain BasicVector.
-  mutable std::unique_ptr<trajectories::Trajectory<double>> trajectory_;
+  const double initial_position_{};
+  const double initial_force_{};
 };
 
-/// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
-/// system has one input port for the current state of the simulated
-/// WSG (probably a RigidBodyPlant), and one optional input port for the
-/// measured gripping force.
-class SchunkWsgStatusSender : public systems::LeafSystem<double> {
- public:
-  SchunkWsgStatusSender(int input_state_size, int input_torque_size,
-                        int position_index, int velocity_index);
 
-  const systems::InputPortDescriptor<double>& get_input_port_wsg_state() const {
-    return this->get_input_port(input_port_wsg_state_);
+/// Send lcmt_schunk_wsg_command messages for a Schunk WSG gripper.  Has
+/// two input ports: one for the commanded finger position represented as the
+/// desired signed distance between the fingers in meters, and one for the
+/// commanded force limit.  The commanded position and force limit are
+/// scalars (BasicVector<double> of size 1).
+///
+/// @system{ SchunkWsgCommandSender,
+///   @input_port{position}
+///   @input_port{force_limit},
+///   @output_port{lcmt_schunk_wsg_command}
+/// }
+class SchunkWsgCommandSender : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgCommandSender)
+
+  SchunkWsgCommandSender();
+
+  const systems::InputPort<double>& get_position_input_port()
+  const {
+    return this->get_input_port(position_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>& get_input_port_measured_torque()
-      const {
-    return this->get_input_port(input_port_measured_torque_);
+  const systems::InputPort<double>& get_force_limit_input_port()
+  const {
+    return this->get_input_port(force_limit_input_port_);
+  }
+
+  const systems::OutputPort<double>& get_command_output_port() const {
+    return this->get_output_port(0);
+  }
+
+ private:
+  void CalcCommandOutput(
+      const systems::Context<double>& context,
+      lcmt_schunk_wsg_command* output) const;
+
+ private:
+  const systems::InputPortIndex position_input_port_{};
+  const systems::InputPortIndex force_limit_input_port_{};
+};
+
+
+/// Handles lcmt_schunk_wsg_status messages from a LcmSubscriberSystem.  Has
+/// two output ports: one for the measured state of the gripper, represented as
+/// the signed distance between the fingers in meters and its corresponding
+/// velocity, and one for the measured force.
+///
+/// @system{ SchunkWsgStatusReceiver,
+///   @input_port{lcmt_schunk_wsg_status},
+///   @output_port{state}
+///   @output_port{force}
+/// }
+class SchunkWsgStatusReceiver : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SchunkWsgStatusReceiver)
+
+  SchunkWsgStatusReceiver();
+
+  const systems::InputPort<double>& get_status_input_port() const {
+    return this->get_input_port(0);
+  }
+
+  const systems::OutputPort<double>& get_state_output_port()
+  const {
+    return this->get_output_port(state_output_port_);
+  }
+
+  const systems::OutputPort<double>& get_force_output_port()
+  const {
+    return this->get_output_port(force_output_port_);
+  }
+
+ private:
+  void CopyStateOut(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* output) const;
+
+  void CopyForceOut(
+      const systems::Context<double>& context,
+      systems::BasicVector<double>* output) const;
+
+ private:
+  const systems::OutputPortIndex state_output_port_{};
+  const systems::OutputPortIndex force_output_port_{};
+};
+
+
+/// Sends lcmt_schunk_wsg_status messages for a Schunk WSG.  This
+/// system has one input port for the current state of the WSG, and one
+/// optional input port for the measured gripping force.
+///
+/// @system{ SchunkStatusSender,
+///          @input_port{state}
+///          @input_port{force},
+///          @output_port{lcmt_schunk_wsg_status}
+/// }
+///
+/// The state input is a BasicVector<double> of size 2 -- with one position
+/// and one velocity -- representing the distance between the fingers (positive
+/// implies non-penetration).
+///
+/// @ingroup manipulation_systems
+class SchunkWsgStatusSender : public systems::LeafSystem<double> {
+ public:
+  SchunkWsgStatusSender();
+
+  const systems::InputPort<double>& get_state_input_port() const {
+    DRAKE_DEMAND(state_input_port_.is_valid());
+    return this->get_input_port(state_input_port_);
+  }
+
+  const systems::InputPort<double>& get_force_input_port() const {
+    return this->get_input_port(force_input_port_);
   }
 
  private:
   void OutputStatus(const systems::Context<double>& context,
                     lcmt_schunk_wsg_status* output) const;
 
-  const int position_index_{};
-  const int velocity_index_{};
-  int input_port_measured_torque_{};
-  int input_port_wsg_state_{};
+  systems::InputPortIndex state_input_port_{};
+  systems::InputPortIndex force_input_port_{};
 };
 
 }  // namespace schunk_wsg

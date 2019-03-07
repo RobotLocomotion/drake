@@ -29,8 +29,25 @@ struct ShapeTag{};
 /** The base interface for all shape specifications. It has no public
   constructor and cannot be instantiated directly. The Shape class has two
   key properties:
+
    - it is cloneable, and
-   - it can be "reified" (see ShapeReifier). */
+   - it can be "reified" (see ShapeReifier).
+
+  When you add a new subclass of Shape, you must:
+
+  1. add a pure virtual function ImplementGeometry() for the new shape in
+     ShapeReifier.
+  2. define ImplementGeometry() for the new shape in the subclasses of
+     ShapeReifier.
+  3. modify CopyShapeOrThrow() of ProximityEngine to support the new shape and
+     add an instance of the new shape to the CopySemantics test in
+     proximity_engine_test.cc.
+  4. test the new shape in the class BoxPenetrationTest of
+     proximity_engine_test.cc
+
+  Otherwise, you might get a runtime error. We do not have an automatic way to
+  enforce them at compile time.
+ */
 class Shape {
  public:
   virtual ~Shape();
@@ -65,12 +82,12 @@ class Shape {
    and to maintain sanity, we place the following requirements on derived
    classes:
 
-     1. they must have a public copy constructor,
-     2. they must be marked as final, and
-     3. their constructors must invoke the parent constructor with a ShapeTag
-        instance (as noted above), and
-     4. The ShapeReifier class must be extended to include an invocation of
-        ShapeReifier::ImplementGeometry() on the derived Shape class.
+   1. they must have a public copy constructor,
+   2. they must be marked as final, and
+   3. their constructors must invoke the parent constructor with a ShapeTag
+      instance (as noted above), and
+   4. The ShapeReifier class must be extended to include an invocation of
+      ShapeReifier::ImplementGeometry() on the derived Shape class.
 
    @tparam S    The derived shape class. It must derive from Shape. */
   template <typename S>
@@ -120,8 +137,12 @@ class Box final : public Shape {
 
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
-   respectively.  */
+   respectively. */
   Box(double width, double depth, double height);
+
+  /** Constructs a cube with the given `edge_size` for its width, depth, and
+   height. */
+  static Box MakeCube(double edge_size);
 
   /** Returns the box's dimension along the x axis. */
   double width() const { return size_(0); }
@@ -161,7 +182,7 @@ class HalfSpace final : public Shape {
                     length.
    @param p_FC      A point lying on the half-space's boundary measured
                     and expressed in frame F.
-   @retval `X_FC`   The pose of the canonical half-space in frame F.
+   @retval X_FC     The pose of the canonical half-space in frame F.
    @throws std::logic_error if the normal is _close_ to a zero-vector (e.g.,
                             ‖normal_F‖₂ < ε). */
   static Isometry3<double> MakePose(const Vector3<double>& Cz_F,
@@ -188,6 +209,35 @@ class Mesh final : public Shape {
 
  private:
   // NOTE: Cannot be const to support default copy/move semantics.
+  std::string filename_;
+  double scale_;
+};
+
+/** Support for convex shapes. */
+class Convex final : public Shape {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
+
+  /** Constructs a convex shape specification from the file located at the
+   given _absolute_ file path. Optionally uniformly scaled by the given scale
+   factor.
+   @param absolute_filename     The file name with absolute path. We only
+                                support an .obj file with only one polyhedron.
+                                We assume that the polyhedron is convex.
+   @param scale                 An optional scale to coordinates.
+
+   @throws std::runtime_error   if the .obj file doesn't define a single object.
+                                This can happen if it is empty, if there are
+                                multiple object-name statements (e.g.,
+                                "o object_name"), or if there are faces defined
+                                outside a single object-name statement.
+   */
+  explicit Convex(const std::string& absolute_filename, double scale = 1.0);
+
+  const std::string& filename() const { return filename_; }
+  double scale() const { return scale_; }
+
+ private:
   std::string filename_;
   double scale_;
 };
@@ -250,6 +300,7 @@ class ShapeReifier {
                                  void* user_data) = 0;
   virtual void ImplementGeometry(const Box& box, void* user_data) = 0;
   virtual void ImplementGeometry(const Mesh& mesh, void* user_data) = 0;
+  virtual void ImplementGeometry(const Convex& convex, void* user_data) = 0;
 };
 
 template <typename S>

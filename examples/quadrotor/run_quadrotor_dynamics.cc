@@ -29,7 +29,7 @@ using multibody::joints::kRollPitchYaw;
 using parsers::ModelInstanceIdTable;
 using parsers::urdf::AddModelInstanceFromUrdfFileToWorld;
 using parsers::sdf::AddModelInstancesFromSdfFile;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 
 namespace examples {
 namespace quadrotor {
@@ -44,6 +44,8 @@ class Quadrotor : public systems::Diagram<T> {
   Quadrotor() {
     this->set_name("Quadrotor");
 
+    // TODO(SeanCurtis-TRI): Port this to SceneGraph pending resolution of
+    // #10775.
     auto tree = std::make_unique<RigidBodyTree<T>>();
     ModelInstanceIdTable model_id_table = AddModelInstanceFromUrdfFileToWorld(
         FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),

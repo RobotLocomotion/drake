@@ -56,7 +56,7 @@ class HumanoidPlanEvalSystem
    * Returns input port of type robotlocomotion::robot_plan_t message that
    * contains the manipulation plan.
    */
-  const systems::InputPortDescriptor<double>& get_input_port_manip_plan_msg()
+  const systems::InputPort<double>& get_input_port_manip_plan_msg()
       const {
     return get_input_port(input_port_index_manip_plan_msg_);
   }

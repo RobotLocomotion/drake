@@ -128,7 +128,7 @@ class SplineLane : public Lane {
   // Provides a rotation matrix in terms of Euler angles, with only
   // yaw angle set as RNDF is defined without any change in elevation.
   // See heading_of_s for more information.
-  Matrix3<double> Rabg_of_s(double s) const;
+  math::RotationMatrix<double> Rabg_of_s(double s) const;
 
   // Returns the length of the curve.
   double do_length() const override {

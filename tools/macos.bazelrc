@@ -1,0 +1,22 @@
+# N.B. Ensure we only use Homebrew's Python in `/usr/local`.
+
+# Use Python 2 by default.
+build --python_path=/usr/local/bin/python2
+build --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python2
+
+# Explicit configuration for Python 3.
+build:python3 --python_path=/usr/local/bin/python3
+build:python3 --action_env=DRAKE_PYTHON_BIN_PATH=/usr/local/bin/python3
+
+# Configure ${PATH} for actions.
+# N.B. Ensure this is consistent with `execute.bzl`.
+build --action_env=PATH=/usr/local/bin:/usr/bin:/bin
+
+# Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
+# sanitizers.
+build:asan --copt -Wno-macro-redefined
+build:asan_everything --copt -Wno-macro-redefined
+build:tsan --copt -Wno-macro-redefined
+build:tsan_everything --copt -Wno-macro-redefined
+build:ubsan --copt -Wno-macro-redefined
+build:ubsan_everything --copt -Wno-macro-redefined

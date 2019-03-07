@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -10,6 +12,7 @@
 #include "drake/systems/framework/cache_entry.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
+#include "drake/systems/framework/output_port_base.h"
 
 namespace drake {
 namespace systems {
@@ -47,7 +50,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // intent that the label could be used programmatically.
   const std::string& get_name() const { return name_; }
 
-  /** Returns a human-readable name for this subsystem, for use in messages and
+  /** Returns a human-readable name for this system, for use in messages and
   logging. This will be the same as returned by get_name(), unless that would
   be an empty string. In that case we return a non-unique placeholder name,
   currently just "_" (a lone underscore). */
@@ -80,10 +83,17 @@ class SystemBase : public internal::SystemMessageInterface {
   are allocated based on resource requests that were made during System
   construction. */
   std::unique_ptr<ContextBase> AllocateContext() const {
-    // Get a concrete Context of the right type and make connections.
-    std::unique_ptr<ContextBase> context = MakeContext();
-    // Validate that restrictions imposed by subsystems are satisfied.
-    ValidateAllocatedContext(*context);
+    // Get a concrete Context of the right type, allocate internal resources
+    // like parameters, state, and cache entries, and set up intra- and
+    // inter-subcontext dependencies.
+    std::unique_ptr<ContextBase> context = DoAllocateContext();
+
+    // We depend on derived classes to call our InitializeContextBase() method
+    // after allocating the appropriate concrete Context.
+    DRAKE_DEMAND(
+        detail::SystemBaseContextBaseAttorney::is_context_base_initialized(
+            *context));
+
     return context;
   }
 
@@ -104,6 +114,7 @@ class SystemBase : public internal::SystemMessageInterface {
   scalar type-specific input port access. */
   //@{
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /** Returns the value of the input port with the given `port_index` as an
   AbstractValue, which is permitted for ports of any type. Causes the value to
   become up to date first if necessary, delegating to our parent Diagram.
@@ -118,11 +129,12 @@ class SystemBase : public internal::SystemMessageInterface {
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
     return EvalAbstractInputImpl(__func__, context, port);
   }
 
+  // TODO(jwnimmer-tri) Deprecate me.
   /** Returns the value of an abstract-valued input port with the given
   `port_index` as a value of known type `V`. Causes the value to become
   up to date first if necessary. See EvalAbstractInput() for
@@ -139,7 +151,7 @@ class SystemBase : public internal::SystemMessageInterface {
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(__func__, port_index);
+      ThrowNegativePortIndex(__func__, port_index);
     const InputPortIndex port(port_index);
 
     const AbstractValue* const abstract_value =
@@ -164,10 +176,22 @@ class SystemBase : public internal::SystemMessageInterface {
     return static_cast<int>(input_ports_.size());
   }
 
+  /** Returns the number of output ports currently allocated in this System.
+  These are indexed from 0 to %get_num_output_ports()-1. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_ports_.size());
+  }
+
   /** Returns a reference to an InputPort given its `port_index`.
   @pre `port_index` selects an existing input port of this System. */
   const InputPortBase& get_input_port_base(InputPortIndex port_index) const {
     return GetInputPortBaseOrThrow(__func__, port_index);
+  }
+
+  /** Returns a reference to an OutputPort given its `port_index`.
+  @pre `port_index` selects an existing output port of this System. */
+  const OutputPortBase& get_output_port_base(OutputPortIndex port_index) const {
+    return GetOutputPortBaseOrThrow(__func__, port_index);
   }
 
   /** Returns the total dimension of all of the vector-valued input ports (as if
@@ -175,6 +199,14 @@ class SystemBase : public internal::SystemMessageInterface {
   int get_num_total_inputs() const {
     int count = 0;
     for (const auto& in : input_ports_) count += in->size();
+    return count;
+  }
+
+  /** Returns the total dimension of all of the vector-valued output ports (as
+  if they were muxed). */
+  int get_num_total_outputs() const {
+    int count = 0;
+    for (const auto& out : output_ports_) count += out->size();
     return count;
   }
 
@@ -266,9 +298,10 @@ class SystemBase : public internal::SystemMessageInterface {
   constructible or cloneable. For methods below that are not given an explicit
   model value or construction ("make") method, the underlying type must also be
   default constructible.
-  @see drake::systems::Value for more about abstract values. */
+  @see drake::Value for more about abstract values. */
   //@{
 
+  /// @anchor DeclareCacheEntry_primary
   /** Declares a new %CacheEntry in this System using the least-restrictive
   definitions for the associated functions. Prefer one of the more-convenient
   signatures below if you can. The new cache entry is assigned a unique
@@ -300,10 +333,13 @@ class SystemBase : public internal::SystemMessageInterface {
     the list `{nothing_ticket()}`; an explicitly empty list `{}` is forbidden.
   @returns a const reference to the newly-created %CacheEntry.
   @throws std::logic_error if given an explicitly empty prerequisite list. */
+  // Arguments to these methods are moved from internally. Taking them by value
+  // rather than reference avoids a copy when the original argument is
+  // an rvalue.
   const CacheEntry& DeclareCacheEntry(
       std::string description, CacheEntry::AllocCallback alloc_function,
       CacheEntry::CalcCallback calc_function,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
   /** Declares a cache entry by specifying member functions to use both for the
@@ -314,18 +350,19 @@ class SystemBase : public internal::SystemMessageInterface {
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified. See the first
-  DeclareCacheEntry() signature above for more information about the parameters
-  and behavior.
-  @see drake::systems::Value */
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  for more information about the parameters and behavior.
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description,
       ValueType (MySystem::*make)() const,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
+  /// @anchor DeclareCacheEntry_model_and_calc
   /** Declares a cache entry by specifying a model value of concrete type
   `ValueType` and a calculator function that is a class member function (method)
   with signature: @code
@@ -334,17 +371,33 @@ class SystemBase : public internal::SystemMessageInterface {
   where `MySystem` is a class derived from `SystemBase`, `MyContext` is a class
   derived from `ContextBase`, and `ValueType` is any concrete type such that
   `Value<ValueType>` is permitted. (The method names are arbitrary.) Template
-  arguments will be deduced and do not need to be specified.
-  See the first DeclareCacheEntry() signature above for more information about
-  the parameters and behavior.
-  @see drake::systems::Value */
+  arguments will be deduced and do not need to be specified. See the
+  @ref DeclareCacheEntry_primary "primary DeclareCacheEntry() signature"
+  above for more information about the parameters and behavior.
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description, const ValueType& model_value,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
 
+  /** Declares a cache entry by specifying a model value of concrete type
+  `ValueType` and a calculator function that is a class member function (method)
+  with signature: @code
+    ValueType MySystem::CalcCacheValue(const MyContext&) const;
+  @endcode
+  Other than the calculator signature, this is identical to the other
+  @ref DeclareCacheEntry_model_and_calc "model and calculator signature",
+  please look there for more information. */
+  template <class MySystem, class MyContext, typename ValueType>
+  const CacheEntry& DeclareCacheEntry(
+      std::string description, const ValueType& model_value,
+      ValueType (MySystem::*calc)(const MyContext&) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  /// @anchor DeclareCacheEntry_calc_only
   /** Declares a cache entry by specifying only a calculator function that is a
   class member function (method) with signature:
   @code
@@ -365,12 +418,27 @@ class SystemBase : public internal::SystemMessageInterface {
   each allocation (not common), use one of the other signatures to explicitly
   provide a method for the allocator to call; that method can then invoke
   the `ValueType` default constructor each time it is called.
-  @see drake::systems::Value */
+  @see drake::Value */
   template <class MySystem, class MyContext, typename ValueType>
   const CacheEntry& DeclareCacheEntry(
       std::string description,
       void (MySystem::*calc)(const MyContext&, ValueType*) const,
-      std::vector<DependencyTicket> prerequisites_of_calc = {
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
+
+  /** Declares a cache entry by specifying only a calculator function that is a
+  class member function (method) with signature:
+  @code
+    ValueType MySystem::CalcCacheValue(const MyContext&) const;
+  @endcode
+  Other than the calculator method's signature, this is identical to the other
+  @ref DeclareCacheEntry_calc_only "calculator-only signature";
+  please look there for more information. */
+  template <class MySystem, class MyContext, typename ValueType>
+  const CacheEntry& DeclareCacheEntry(
+      std::string description,
+      ValueType (MySystem::*calc)(const MyContext&) const,
+      std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()});
   //@}
 
@@ -393,9 +461,9 @@ class SystemBase : public internal::SystemMessageInterface {
 
   Use these tickets to declare well-known sources as prerequisites of a
   downstream computation such as an output port, derivative, update, or cache
-  entry. The ticket numbers for these sources are the same for all subsystems.
-  For time and accuracy they refer to the same global resource; otherwise they
-  refer to the specified sources within the referencing subsystem.
+  entry. The ticket numbers for the built-in sources are the same for all
+  systems. For time and accuracy they refer to the same global resource;
+  otherwise they refer to the specified sources within the referencing system.
 
   A dependency ticket for a more specific resource (a particular input or
   output port, a discrete variable group, abstract state variable, a parameter,
@@ -404,13 +472,18 @@ class SystemBase : public internal::SystemMessageInterface {
   you can recover them with methods here knowing only the resource index. */
   //@{
 
-  /** Returns a ticket indicating dependence on every possible independent
-  source value, including time, state, input ports, parameters, and the accuracy
-  setting (but not cache entries). This is the default dependency for
-  computations that have not specified anything more refined. */
-  static DependencyTicket all_sources_ticket() {
-    return DependencyTicket(internal::kAllSourcesTicket);
-  }
+  // The DependencyTrackers associated with these tickets are allocated
+  // in ContextBase::CreateBuiltInTrackers() and the implementation there must
+  // be kept up to date with the API contracts here.
+
+  // The ticket methods are promoted in the System<T> class so that users can
+  // invoke them in their constructors without prefixing with this->. If you
+  // add, remove, rename, or reorder any of these be sure to update the
+  // promotions in system.h.
+
+  // Keep the order here the same as they are defined in the internal enum
+  // BuiltInTicketNumbers, with the "particular resource" indexed methods
+  // inserted prior to the corresponding built-in "all such resources" ticket.
 
   /** Returns a ticket indicating that a computation does not depend on *any*
   source value; that is, it is a constant. If this appears in a prerequisite
@@ -420,116 +493,125 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns a ticket indicating dependence on time. This is the same ticket
-  for all subsystems and refers to the same time value. */
+  for all systems and refers to the same time value. */
   static DependencyTicket time_ticket() {
     return DependencyTicket(internal::kTimeTicket);
   }
 
   /** Returns a ticket indicating dependence on the accuracy setting in the
-  Context. This is the same ticket for all subsystems and refers to the same
+  Context. This is the same ticket for all systems and refers to the same
   accuracy value. */
   static DependencyTicket accuracy_ticket() {
     return DependencyTicket(internal::kAccuracyTicket);
   }
 
   /** Returns a ticket indicating that a computation depends on configuration
-  state variables q. */
+  state variables q. There is no ticket representing just one of the state
+  variables qᵢ. */
   static DependencyTicket q_ticket() {
     return DependencyTicket(internal::kQTicket);
   }
 
   /** Returns a ticket indicating dependence on velocity state variables v. This
   does _not_ also indicate a dependence on configuration variables q -- you must
-  list that explicitly or use kinematics_ticket() instead. */
+  list that explicitly or use kinematics_ticket() instead. There is no ticket
+  representing just one of the state variables vᵢ. */
   static DependencyTicket v_ticket() {
     return DependencyTicket(internal::kVTicket);
   }
 
-  /** Returns a ticket indicating dependence on all of the miscellaneous
-  continuous state variables z. */
+  /** Returns a ticket indicating dependence on any or all of the miscellaneous
+  continuous state variables z. There is no ticket representing just one of
+  the state variables zᵢ. */
   static DependencyTicket z_ticket() {
     return DependencyTicket(internal::kZTicket);
   }
 
-  /** Returns a ticket indicating dependence on all of the continuous
+  /** Returns a ticket indicating dependence on _all_ of the continuous
   state variables q, v, or z. */
   static DependencyTicket xc_ticket() {
     return DependencyTicket(internal::kXcTicket);
   }
 
+  /** Returns a ticket indicating dependence on a particular discrete state
+  variable xdᵢ (may be a vector). (We sometimes refer to this as a "discrete
+  variable group".)
+  @see xd_ticket() to obtain a ticket for _all_ discrete variables. */
+  DependencyTicket discrete_state_ticket(DiscreteStateIndex index) const {
+    return discrete_state_tracker_info(index).ticket;
+  }
+
   /** Returns a ticket indicating dependence on all of the numerical
-  discrete state variables, in any discrete variable group. */
+  discrete state variables, in any discrete variable group.
+  @see discrete_state_ticket() to obtain a ticket for just one discrete
+       state variable. */
   static DependencyTicket xd_ticket() {
     return DependencyTicket(internal::kXdTicket);
   }
 
+  /** Returns a ticket indicating dependence on a particular abstract state
+  variable xaᵢ.
+  @see xa_ticket() to obtain a ticket for _all_ abstract variables. */
+  DependencyTicket abstract_state_ticket(AbstractStateIndex index) const {
+    return abstract_state_tracker_info(index).ticket;
+  }
+
   /** Returns a ticket indicating dependence on all of the abstract
-  state variables in the current Context. */
+  state variables in the current Context.
+  @see abstract_state_ticket() to obtain a ticket for just one abstract
+       state variable. */
   static DependencyTicket xa_ticket() {
     return DependencyTicket(internal::kXaTicket);
   }
 
   /** Returns a ticket indicating dependence on _all_ state variables x in this
-  subsystem, including continuous variables xc, discrete (numeric) variables xd,
+  system, including continuous variables xc, discrete (numeric) variables xd,
   and abstract state variables xa. This does not imply dependence on time,
-  parameters, or inputs; those must be specified separately. If you mean to
-  express dependence on all possible value sources, use all_sources_ticket()
-  instead. */
+  accuracy, parameters, or inputs; those must be specified separately. If you
+  mean to express dependence on all possible value sources, use
+  all_sources_ticket() instead. */
   static DependencyTicket all_state_ticket() {
     return DependencyTicket(internal::kXTicket);
   }
 
-  /** Returns a ticket for the cache entry that holds time derivatives of
-  the continuous variables. */
-  static DependencyTicket xcdot_ticket() {
-    return DependencyTicket(internal::kXcdotTicket);
+  /** Returns a ticket indicating dependence on a particular numeric parameter
+  pnᵢ (may be a vector).
+  @see pn_ticket() to obtain a ticket for _all_ numeric parameters. */
+  DependencyTicket numeric_parameter_ticket(NumericParameterIndex index) const {
+    return numeric_parameter_tracker_info(index).ticket;
   }
 
-  /** Returns a ticket for the cache entry that holds the discrete state
-  update for the numerical discrete variables in the state. */
-  static DependencyTicket xdhat_ticket() {
-    return DependencyTicket(internal::kXdhatTicket);
+  /** Returns a ticket indicating dependence on all of the numerical
+  parameters in the current Context.
+  @see numeric_parameter_ticket() to obtain a ticket for just one numeric
+       parameter. */
+  static DependencyTicket pn_ticket() {
+    return DependencyTicket(internal::kPnTicket);
   }
 
-  /** Returns a ticket indicating dependence on all the configuration
-  variables for this System. By default this is set to the continuous
-  second-order state variables q, but configuration may be represented
-  differently in some systems (discrete ones, for example), in which case this
-  ticket should have been set to depend on that representation. */
-  static DependencyTicket configuration_ticket() {
-    return DependencyTicket(internal::kConfigurationTicket);
+  /** Returns a ticket indicating dependence on a particular abstract
+  parameter paᵢ.
+  @see pa_ticket() to obtain a ticket for _all_ abstract parameters. */
+  DependencyTicket abstract_parameter_ticket(
+      AbstractParameterIndex index) const {
+    return abstract_parameter_tracker_info(index).ticket;
   }
 
-  /** Returns a ticket indicating dependence on all of the velocity variables
-  for this System. By default this is set to the continuous state variables v,
-  but velocity may be represented differently in some systems (discrete ones,
-  for example), in which case this ticket should have been set to depend on that
-  representation. */
-  static DependencyTicket velocity_ticket() {
-    return DependencyTicket(internal::kVelocityTicket);
-  }
-
-  /** Returns a ticket indicating dependence on all of the configuration
-  and velocity state variables of this System. This ticket depends on the
-  configuration_ticket and the velocity_ticket.
-  @see configuration_ticket(), velocity_ticket() */
-  static DependencyTicket kinematics_ticket() {
-    return DependencyTicket(internal::kKinematicsTicket);
+  /** Returns a ticket indicating dependence on all of the abstract
+  parameters pa in the current Context.
+  @see abstract_parameter_ticket() to obtain a ticket for just one abstract
+       parameter. */
+  static DependencyTicket pa_ticket() {
+    return DependencyTicket(internal::kPaTicket);
   }
 
   /** Returns a ticket indicating dependence on _all_ parameters p in this
-  subsystem, including numeric parameters pn, and abstract parameters pa. */
+  system, including numeric parameters pn, and abstract parameters pa. */
   static DependencyTicket all_parameters_ticket() {
     return DependencyTicket(internal::kAllParametersTicket);
   }
 
-  /** Returns a ticket indicating dependence on _all_ input ports u of this
-  subsystem. */
-  static DependencyTicket all_input_ports_ticket() {
-    return DependencyTicket(internal::kAllInputPortsTicket);
-  }
-
-  /** Returns a ticket indicating dependence on the input port indicated
+  /** Returns a ticket indicating dependence on input port uᵢ indicated
   by `index`.
   @pre `index` selects an existing input port of this System. */
   DependencyTicket input_port_ticket(InputPortIndex index) {
@@ -537,29 +619,270 @@ class SystemBase : public internal::SystemMessageInterface {
     return input_ports_[index]->ticket();
   }
 
+  /** Returns a ticket indicating dependence on _all_ input ports u of this
+  system.
+  @see input_port_ticket() to obtain a ticket for just one input port. */
+  static DependencyTicket all_input_ports_ticket() {
+    return DependencyTicket(internal::kAllInputPortsTicket);
+  }
+
+  /** Returns a ticket indicating dependence on every possible independent
+  source value, including time, accuracy, state, input ports, and parameters
+  (but not cache entries). This is the default dependency for computations that
+  have not specified anything more refined.
+  @see cache_entry_ticket() to obtain a ticket for a cache entry. */
+  static DependencyTicket all_sources_ticket() {
+    return DependencyTicket(internal::kAllSourcesTicket);
+  }
+
   /** Returns a ticket indicating dependence on the cache entry indicated
-  by `index`.
+  by `index`. Note that cache entries are _not_ included in the `all_sources`
+  ticket so must be listed separately.
   @pre `index` selects an existing cache entry in this System. */
   DependencyTicket cache_entry_ticket(CacheIndex index) {
     DRAKE_DEMAND(0 <= index && index < num_cache_entries());
     return cache_entries_[index]->ticket();
   }
+
+  /** Returns a ticket indicating dependence on all source values that may
+  affect configuration-dependent computations. In particular, this category
+  _does not_ include time, generalized velocities v, miscellaneous continuous
+  state variables z, or input ports. Generalized coordinates q are included, as
+  well as any discrete state variables that have been declared as configuration
+  variables, and configuration-affecting parameters. Finally we assume that
+  the accuracy setting may affect some configuration-dependent computations.
+  Examples: a parameter that affects length may change the computation of an
+  end-effector location. A change in accuracy requirement may require
+  recomputation of an iterative approximation of contact forces.
+  @see kinematics_ticket()
+
+  @note Currently there is no way to declare specific variables and parameters
+  to be configuration-affecting so we include all state variables and
+  parameters except for state variables v and z. */
+  // TODO(sherm1) Remove the above note once #9171 is resolved.
+  // The configuration_tracker implementation in ContextBase must be kept
+  // up to date with the above API contract.
+  static DependencyTicket configuration_ticket() {
+    return DependencyTicket(internal::kConfigurationTicket);
+  }
+
+  /** Returns a ticket indicating dependence on all source values that may
+  affect configuration- or velocity-dependent computations. This ticket depends
+  on the configuration_ticket defined above, and adds in velocity-affecting
+  source values. This _does not_ include time or input ports.
+  @see configuration_ticket()
+
+  @note Currently there is no way to declare specific variables and parameters
+  to be configuration- or velocity-affecting so we include all state variables
+  and parameters except for state variables z. */
+  // TODO(sherm1) Remove the above note once #9171 is resolved.
+  static DependencyTicket kinematics_ticket() {
+    return DependencyTicket(internal::kKinematicsTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds time derivatives of
+  the continuous variables.
+  @see EvalTimeDerivatives() */
+  static DependencyTicket xcdot_ticket() {
+    return DependencyTicket(internal::kXcdotTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the potential energy
+  calculation.
+  @see System::EvalPotentialEnergy() */
+  static DependencyTicket pe_ticket() {
+    return DependencyTicket(internal::kPeTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the kinetic energy
+  calculation.
+  @see System::EvalKineticEnergy() */
+  static DependencyTicket ke_ticket() {
+    return DependencyTicket(internal::kKeTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the conservative power
+  calculation.
+  @see System::EvalConservativePower() */
+  static DependencyTicket pc_ticket() {
+    return DependencyTicket(internal::kPcTicket);
+  }
+
+  /** Returns a ticket for the cache entry that holds the non-conservative
+  power calculation.
+  @see System::EvalNonConservativePower() */
+  static DependencyTicket pnc_ticket() {
+    return DependencyTicket(internal::kPncTicket);
+  }
+
+  /** (Internal use only) Returns a ticket indicating dependence on the output
+  port indicated by `index`. No user-definable quantities in a system can
+  meaningfully depend on that system's own output ports.
+  @pre `index` selects an existing output port of this System. */
+  DependencyTicket output_port_ticket(OutputPortIndex index) {
+    DRAKE_DEMAND(0 <= index && index < get_num_output_ports());
+    return output_ports_[index]->ticket();
+  }
+
+  /** Returns the number of declared discrete state groups (each group is
+  a vector-valued discrete state variable). */
+  int num_discrete_state_groups() const {
+    return static_cast<int>(discrete_state_tickets_.size());
+  }
+
+  /** Returns the number of declared abstract state variables. */
+  int num_abstract_states() const {
+    return static_cast<int>(abstract_state_tickets_.size());
+  }
+
+  /** Returns the number of declared numeric parameters (each of these is
+  a vector-valued parameter). */
+  int num_numeric_parameter_groups() const {
+    return static_cast<int>(numeric_parameter_tickets_.size());
+  }
+
+  /** Returns the number of declared abstract parameters. */
+  int num_abstract_parameters() const {
+    return static_cast<int>(abstract_parameter_tickets_.size());
+  }
   //@}
 
  protected:
+  /** (Internal use only) Default constructor. */
   SystemBase() = default;
 
-  /** Adds an already-constructed input port to this System. Insists that the
-  port already contains a reference to this System, and that the port's index is
-  already set to the next available input port index for this System. */
+  /** (Internal use only) Adds an already-constructed input port to this System.
+  Insists that the port already contains a reference to this System, and that
+  the port's index is already set to the next available input port index for
+  this System, that the port name is unique (just within this System), and that
+  the port name is non-empty. */
   // TODO(sherm1) Add check on suitability of `size` parameter for the port's
   // data type.
-  void CreateInputPort(std::unique_ptr<InputPortBase> port) {
+  void AddInputPort(std::unique_ptr<InputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
-    DRAKE_DEMAND(port->get_index() == this->get_num_input_ports());
+    DRAKE_DEMAND(port->get_index() == get_num_input_ports());
+    DRAKE_DEMAND(!port->get_name().empty());
+
+    // Check that name is unique.
+    for (InputPortIndex i{0}; i < get_num_input_ports(); i++) {
+      if (port->get_name() == get_input_port_base(i).get_name()) {
+        throw std::logic_error("System " + GetSystemName() +
+            " already has an input port named " +
+            port->get_name());
+      }
+    }
+
     input_ports_.push_back(std::move(port));
   }
+
+  /** (Internal use only) Adds an already-constructed output port to this
+  System. Insists that the port already contains a reference to this System, and
+  that the port's index is already set to the next available output port index
+  for this System, and that the name of the port is unique.
+  @throws std::logic_error if the name of the output port is not unique. */
+  // TODO(sherm1) Add check on suitability of `size` parameter for the port's
+  // data type.
+  void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
+    DRAKE_DEMAND(port != nullptr);
+    DRAKE_DEMAND(&port->get_system_base() == this);
+    DRAKE_DEMAND(port->get_index() == get_num_output_ports());
+    DRAKE_DEMAND(!port->get_name().empty());
+
+    // Check that name is unique.
+    for (OutputPortIndex i{0}; i < get_num_output_ports(); i++) {
+      if (port->get_name() == get_output_port_base(i).get_name()) {
+        throw std::logic_error("System " + GetSystemName() +
+                               " already has an output port named " +
+                               port->get_name());
+      }
+    }
+
+    output_ports_.push_back(std::move(port));
+  }
+
+  /** (Internal use only) Returns a name for the next input port, using the
+  given name if it isn't kUseDefaultName, otherwise making up a name like "u3"
+  from the next available input port index.
+  @pre `given_name` must not be empty. */
+  std::string NextInputPortName(
+      variant<std::string, UseDefaultName> given_name) const {
+    const std::string result =
+        given_name == kUseDefaultName
+           ? std::string("u") + std::to_string(get_num_input_ports())
+           : get<std::string>(std::move(given_name));
+    DRAKE_DEMAND(!result.empty());
+    return result;
+  }
+
+  /** (Internal use only) Returns a name for the next output port, using the
+  given name if it isn't kUseDefaultName, otherwise making up a name like "y3"
+  from the next available output port index.
+  @pre `given_name` must not be empty. */
+  std::string NextOutputPortName(
+      variant<std::string, UseDefaultName> given_name) const {
+    const std::string result =
+        given_name == kUseDefaultName
+           ? std::string("y") + std::to_string(get_num_output_ports())
+           : get<std::string>(std::move(given_name));
+    DRAKE_DEMAND(!result.empty());
+    return result;
+  }
+
+  /** (Internal use only) Assigns a ticket to a new discrete variable group
+  with the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddDiscreteStateGroup(DiscreteStateIndex index) {
+    DRAKE_DEMAND(index == num_discrete_state_groups());
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    discrete_state_tickets_.push_back(
+        {ticket, "discrete state group " + std::to_string(index)});
+  }
+
+  /** (Internal use only) Assigns a ticket to a new abstract state variable with
+  the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddAbstractState(AbstractStateIndex index) {
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    DRAKE_DEMAND(index == num_abstract_states());
+    abstract_state_tickets_.push_back(
+        {ticket, "abstract state " + std::to_string(index)});
+  }
+
+  /** (Internal use only) Assigns a ticket to a new numeric parameter with
+  the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddNumericParameter(NumericParameterIndex index) {
+    DRAKE_DEMAND(index == num_numeric_parameter_groups());
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    numeric_parameter_tickets_.push_back(
+        {ticket, "numeric parameter " + std::to_string(index)});
+  }
+
+  /** (Internal use only) Assigns a ticket to a new abstract parameter with
+  the given `index`.
+  @pre The supplied index must be the next available one; that is, indexes
+       must be assigned sequentially. */
+  void AddAbstractParameter(AbstractParameterIndex index) {
+    const DependencyTicket ticket(assign_next_dependency_ticket());
+    DRAKE_DEMAND(index == num_abstract_parameters());
+    abstract_parameter_tickets_.push_back(
+        {ticket, "abstract parameter " + std::to_string(index)});
+  }
+
+  /** (Internal use only) This is for cache entries associated with pre-defined
+  tickets, for example the cache entry for time derivatives. See the public API
+  for the most-general DeclareCacheEntry() signature for the meanings of the
+  other parameters here. */
+  const CacheEntry& DeclareCacheEntryWithKnownTicket(
+      DependencyTicket known_ticket,
+      std::string description, CacheEntry::AllocCallback alloc_function,
+      CacheEntry::CalcCallback calc_function,
+      std::set<DependencyTicket> prerequisites_of_calc = {
+          all_sources_ticket()});
 
   /** Returns a pointer to the service interface of the immediately enclosing
   Diagram if one has been set, otherwise nullptr. */
@@ -567,57 +890,59 @@ class SystemBase : public internal::SystemMessageInterface {
     return parent_service_;
   }
 
-  /** Assigns the next unused dependency ticket number, unique only within a
-  particular subsystem. Each call to this method increments the ticket
-  number. */
+  /** (Internal use only) Assigns the next unused dependency ticket number,
+  unique only within a particular system. Each call to this method increments
+  the ticket number. */
   DependencyTicket assign_next_dependency_ticket() {
     return next_available_ticket_++;
   }
 
-  /** Declares that `parent_service` is the service interface of the Diagram
-  that owns this subsystem. Aborts if the parent service has already been set to
-  something else. */
+  /** (Internal use only) Declares that `parent_service` is the service
+  interface of the Diagram that owns this subsystem. Aborts if the parent
+  service has already been set to something else. */
   // Use static method so Diagram can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
   static void set_parent_service(
       SystemBase* child,
       const internal::SystemParentServiceInterface* parent_service) {
-    DRAKE_DEMAND(child != nullptr);
-    child->set_parent_service(parent_service);
+    DRAKE_DEMAND(child != nullptr && parent_service != nullptr);
+    DRAKE_DEMAND(child->parent_service_ == nullptr ||
+                 child->parent_service_ == parent_service);
+    child->parent_service_ = parent_service;
   }
 
-  /** Allows Diagram to use private MakeContext() to invoke the same method
-  on its children. */
-  static std::unique_ptr<ContextBase> MakeContext(const SystemBase& system) {
-    return system.MakeContext();
-  }
+  /** (Internal use only) Given a `port_index`, returns a function to be called
+  when validating Context::FixInputPort requests. The function should attempt
+  to throw an exception if the input AbstractValue is invalid, so that errors
+  can be reported at Fix-time instead of EvalInput-time.*/
+  virtual std::function<void(const AbstractValue&)> MakeFixInputPortTypeChecker(
+      InputPortIndex port_index) const = 0;
 
-  /** Allows Diagram to use its private ValidateAllocatedContext() to invoke the
-  same method on its children. */
-  static void ValidateAllocatedContext(const SystemBase& system,
-                                       const ContextBase& context) {
-    system.ValidateAllocatedContext(context);
-  }
-
-  /** Shared code for updating an input port and returning a pointer to its
-  abstract value, or nullptr if the port is not connected. `func` should
-  be the user-visible API function name obtained with __func__. */
+  /** (Internal use only) Shared code for updating an input port and returning a
+  pointer to its abstract value, or nullptr if the port is not connected. `func`
+  should be the user-visible API function name obtained with __func__. */
   const AbstractValue* EvalAbstractInputImpl(const char* func,
                                              const ContextBase& context,
                                              InputPortIndex port_index) const;
 
-  /** Throws std::out_of_range to report a negative input `port_index` that was
-  passed to API method `func`. */
-  // We're taking an int here for the index; InputPortIndex can't be negative.
-  [[noreturn]] void ThrowNegativeInputPortIndex(const char* func,
-                                                int port_index) const;
+  /** Throws std::out_of_range to report a negative `port_index` that was
+  passed to API method `func`. Caller must ensure that the function name
+  makes it clear what kind of port we're complaining about. */
+  // We're taking an int here for the index; InputPortIndex and OutputPortIndex
+  // can't be negative.
+  [[noreturn]] void ThrowNegativePortIndex(const char* func,
+                                           int port_index) const;
 
-  /** Throws std::out_of_range to report bad `port_index` that was passed to
-  API method `func`. */
-  [[noreturn]] void ThrowInputPortIndexOutOfRange(const char* func,
-                                                  InputPortIndex port_index,
-                                                  int num_input_ports) const;
+  /** Throws std::out_of_range to report bad input `port_index` that was passed
+  to API method `func`. */
+  [[noreturn]] void ThrowInputPortIndexOutOfRange(
+      const char* func, InputPortIndex port_index) const;
+
+  /** Throws std::out_of_range to report bad output `port_index` that was passed
+  to API method `func`. */
+  [[noreturn]] void ThrowOutputPortIndexOutOfRange(
+      const char* func, OutputPortIndex port_index) const;
 
   /** Throws std::logic_error because someone misused API method `func`, that is
   only allowed for declared-vector input ports, on an abstract port whose
@@ -631,83 +956,125 @@ class SystemBase : public internal::SystemMessageInterface {
       const char* func, InputPortIndex port_index,
       const std::string& expected_type, const std::string& actual_type) const;
 
+  // This method is static for use from outside the System hierarchy but where
+  // the problematic System is clear.
+  /** Throws std::logic_error because someone called API method `func` claiming
+  the input port had some value type that was wrong. */
+  [[noreturn]] static void ThrowInputPortHasWrongType(
+      const char* func, const std::string& system_pathname, InputPortIndex,
+      const std::string& port_name, const std::string& expected_type,
+      const std::string& actual_type);
+
   /** Throws std::logic_error because someone called API method `func`, that
   requires this input port to be evaluatable, but the port was neither
   fixed nor connected. */
   [[noreturn]] void ThrowCantEvaluateInputPort(const char* func,
                                                InputPortIndex port_index) const;
 
-  /** Returns the InputPortBase at index `port_index`, throwing
-  std::out_of_range we don't like the port index. The name of the public API
-  method that received the bad index is provided in `func` and is included
-  in the error message. */
+  /** (Internal use only) Returns the InputPortBase at index `port_index`,
+  throwing std::out_of_range we don't like the port index. The name of the
+  public API method that received the bad index is provided in `func` and is
+  included in the error message. */
   const InputPortBase& GetInputPortBaseOrThrow(const char* func,
                                                int port_index) const {
     if (port_index < 0)
-      ThrowNegativeInputPortIndex(func, port_index);
+      ThrowNegativePortIndex(func, port_index);
     const InputPortIndex port(port_index);
     if (port_index >= get_num_input_ports())
-      ThrowInputPortIndexOutOfRange(func, port, get_num_input_ports());
+      ThrowInputPortIndexOutOfRange(func, port);
     return *input_ports_[port];
   }
 
-  /** Derived class implementations should allocate a suitable
-  default-constructed Context, with default-constructed subcontexts for
-  diagrams. The base class allocates trackers for known resources and
-  intra-subcontext dependencies. */
-  virtual std::unique_ptr<ContextBase> DoMakeContext() const = 0;
+  /** (Internal use only) Returns the OutputPortBase at index `port_index`,
+  throwing std::out_of_range we don't like the port index. The name of the
+  public API method that received the bad index is provided in `func` and is
+  included in the error message. */
+  const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
+                                                 int port_index) const {
+    if (port_index < 0)
+      ThrowNegativePortIndex(func, port_index);
+    const OutputPortIndex port(port_index);
+    if (port_index >= get_num_output_ports())
+      ThrowOutputPortIndexOutOfRange(func, port);
+    return *output_ports_[port_index];
+  }
 
-  /** Any derived class that imposes restrictions on the structure or content
-  of an acceptable Context should enforce those restrictions by overriding
-  this method. The supplied Context is guaranteed to have come from the
-  AllocateContext() sequence of this System so you don't need to check that.
-  This method is invoked _only_ during Context allocation and will not be
-  called during runtime use. It will _always_ be called as the final step in
-  Context allocation, even in Release builds.
-  @see DoCheckValidContext() for runtime checking. */
-  virtual void DoValidateAllocatedContext(const ContextBase& context) const = 0;
+  /** This method must be invoked from within derived class DoAllocateContext()
+  implementations right after the concrete Context object has been allocated.
+  It allocates cache entries, sets up all intra-Context dependencies, and marks
+  the ContextBase as initialized so that we can verify proper derived-class
+  behavior.
+  @pre The supplied context must not be null and must not already have been
+       initialized. */
+  void InitializeContextBase(ContextBase* context) const;
+
+  /** Derived class implementations should allocate a suitable concrete Context
+  type, then invoke the above InitializeContextBase() method. A Diagram must
+  then invoke AllocateContext() to obtain each of the subcontexts for its
+  DiagramContext, and must set up inter-subcontext dependencies among its
+  children and between itself and its children. Then context resources such as
+  parameters and state should be allocated. */
+  virtual std::unique_ptr<ContextBase> DoAllocateContext() const = 0;
 
   /** Derived classes must implement this to verify that the supplied
   Context is suitable, and throw an exception if not. This is a runtime check
   but may be expensive so is not guaranteed to be invoked except in Debug
-  builds.
-  @see DoValidateAllocatedContext() for one-time validity checking during
-       Context allocation. */
+  builds. */
   virtual void DoCheckValidContext(const ContextBase&) const = 0;
 
  private:
-  // Obtains a context of the right concrete type, with all internal trackers
-  // allocated and internal wiring set up.
-  std::unique_ptr<ContextBase> MakeContext() const;
-
-  // Check that all subsystems are prepared to deal with a context like this.
-  void ValidateAllocatedContext(const ContextBase& context) const {
-    DoValidateAllocatedContext(context);
-  }
-
-  // Declares that `parent_service` is the service interface of the immediately
-  // enclosing Diagram. Aborts if the parent service has already been set to
-  // something else.
-  void set_parent_service(
-      const internal::SystemParentServiceInterface* parent_service) {
-    DRAKE_DEMAND(parent_service_ == nullptr ||
-                 parent_service_ == parent_service);
-    parent_service_ = parent_service;
-  }
-
   void CreateSourceTrackers(ContextBase*) const;
+
+  // Used to create trackers for variable-number System-allocated objects.
+  struct TrackerInfo {
+    DependencyTicket ticket;
+    std::string description;
+  };
+
+  const TrackerInfo& discrete_state_tracker_info(
+      DiscreteStateIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_discrete_state_groups());
+    return discrete_state_tickets_[index];
+  }
+
+  const TrackerInfo& abstract_state_tracker_info(
+      AbstractStateIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_abstract_states());
+    return abstract_state_tickets_[index];
+  }
+
+  const TrackerInfo& numeric_parameter_tracker_info(
+      NumericParameterIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_numeric_parameter_groups());
+    return numeric_parameter_tickets_[index];
+  }
+
+  const TrackerInfo& abstract_parameter_tracker_info(
+      AbstractParameterIndex index) const {
+    DRAKE_DEMAND(0 <= index && index < num_abstract_parameters());
+    return abstract_parameter_tickets_[index];
+  }
 
   // Ports and cache entries hold their own DependencyTickets. Note that the
   // addresses of the elements are stable even if the std::vectors are resized.
 
   // Indexed by InputPortIndex.
   std::vector<std::unique_ptr<InputPortBase>> input_ports_;
-  // TODO(sherm1) Output ports go here.
+  // Indexed by OutputPortIndex.
+  std::vector<std::unique_ptr<OutputPortBase>> output_ports_;
   // Indexed by CacheIndex.
   std::vector<std::unique_ptr<CacheEntry>> cache_entries_;
 
   // States and parameters don't hold their own tickets so we track them here.
-  // TODO(sherm1) Add state & parameter trackers here.
+
+  // Indexed by DiscreteStateIndex.
+  std::vector<TrackerInfo> discrete_state_tickets_;
+  // Indexed by AbstractStateIndex.
+  std::vector<TrackerInfo> abstract_state_tickets_;
+  // Indexed by NumericParameterIndex.
+  std::vector<TrackerInfo> numeric_parameter_tickets_;
+  // Indexed by AbstractParameterIndex.
+  std::vector<TrackerInfo> abstract_parameter_tickets_;
 
   // Initialize to the first ticket number available after all the well-known
   // ones. This gets incremented as tickets are handed out for the optional
@@ -717,7 +1084,7 @@ class SystemBase : public internal::SystemMessageInterface {
   // The enclosing Diagram. Null/invalid when this is the root system.
   const internal::SystemParentServiceInterface* parent_service_{nullptr};
 
-  // Name of this subsystem.
+  // Name of this system.
   std::string name_;
 };
 
@@ -729,7 +1096,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description,
     ValueType (MySystem::*make)() const,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,
@@ -752,12 +1119,13 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   return entry;
 }
 
-// Takes an initial value and calc() member function.
+// Takes an initial value and calc() member function that has an output
+// argument.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
     std::string description, const ValueType& model_value,
     void (MySystem::*calc)(const MyContext&, ValueType*) const,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,
@@ -771,7 +1139,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   // copyable_unique_ptr does just that, so is suitable for capture by the
   // allocator functor here.
   copyable_unique_ptr<AbstractValue> owned_model(
-      new Value<ValueType>(model_value));
+      std::make_unique<Value<ValueType>>(model_value));
   auto alloc_callback = [model = std::move(owned_model)]() {
     return model->Clone();
   };
@@ -787,22 +1155,66 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   return entry;
 }
 
-// Takes just a calc() member function, value-initializes entry.
+// Takes an initial value and value-returning calc() member function.
+// See the above output-argument signature for an explanation of the code.
+// TODO(sherm1) Consider whether common code in this and the previous method
+// can be factored out and shared rather than repeated.
 template <class MySystem, class MyContext, typename ValueType>
 const CacheEntry& SystemBase::DeclareCacheEntry(
-    std::string description,
-    void (MySystem::*calc)(const MyContext&, ValueType*) const,
-    std::vector<DependencyTicket> prerequisites_of_calc) {
+    std::string description, const ValueType& model_value,
+    ValueType (MySystem::*calc)(const MyContext&) const,
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(std::is_base_of<SystemBase, MySystem>::value,
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of<ContextBase, MyContext>::value,
                 "Expected to be invoked with a ContextBase-derived Context.");
+  auto this_ptr = dynamic_cast<const MySystem*>(this);
+  DRAKE_DEMAND(this_ptr != nullptr);
+  copyable_unique_ptr<AbstractValue> owned_model(
+      std::make_unique<Value<ValueType>>(model_value));
+  auto alloc_callback = [model = std::move(owned_model)]() {
+    return model->Clone();
+  };
+  auto calc_callback = [this_ptr, calc](const ContextBase& context,
+                                        AbstractValue* result) {
+    const auto& typed_context = dynamic_cast<const MyContext&>(context);
+    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    typed_result = (this_ptr->*calc)(typed_context);
+  };
+  auto& entry = DeclareCacheEntry(
+      std::move(description), std::move(alloc_callback),
+      std::move(calc_callback), std::move(prerequisites_of_calc));
+  return entry;
+}
+
+// Takes just a calc() member function with an output argument, and
+// value-initializes the entry.
+template <class MySystem, class MyContext, typename ValueType>
+const CacheEntry& SystemBase::DeclareCacheEntry(
+    std::string description,
+    void (MySystem::*calc)(const MyContext&, ValueType*) const,
+    std::set<DependencyTicket> prerequisites_of_calc) {
   static_assert(
       std::is_default_constructible<ValueType>::value,
-      "SystemBase::DeclareCacheEntry(calc): the calc-only overload of "
+      "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
       "this method requires that the output type has a default constructor");
   // Invokes the above model-value method. Note that value initialization {}
   // is required here.
+  return DeclareCacheEntry(std::move(description), ValueType{}, calc,
+                           std::move(prerequisites_of_calc));
+}
+
+// Takes just a value-returning calc() member function, and
+// value-initializes the entry. See previous method for more information.
+template <class MySystem, class MyContext, typename ValueType>
+const CacheEntry& SystemBase::DeclareCacheEntry(
+    std::string description,
+    ValueType (MySystem::*calc)(const MyContext&) const,
+    std::set<DependencyTicket> prerequisites_of_calc) {
+  static_assert(
+      std::is_default_constructible<ValueType>::value,
+      "SystemBase::DeclareCacheEntry(calc): the calc-only overloads of "
+      "this method requires that the output type has a default constructor");
   return DeclareCacheEntry(std::move(description), ValueType{}, calc,
                            std::move(prerequisites_of_calc));
 }

@@ -1,0 +1,73 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+    "drake_py_library",
+)
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = [
+        "//bindings/pydrake/examples:module_py",
+    ],
+)
+
+drake_py_binary(
+    name = "cart_pole_passive_simulation",
+    srcs = ["cart_pole_passive_simulation.py"],
+    add_test_rule = 1,
+    data = [
+        "//examples/multibody/cart_pole:cart_pole.sdf",
+    ],
+    test_rule_args = [
+        "--target_realtime_rate=0",
+        "--simulation_time=0.1",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":module_py",
+        "//bindings/pydrake:lcm_py",
+        "//bindings/pydrake/multibody:multibody_tree_py",
+        "//bindings/pydrake/systems:analysis_py",
+    ],
+)
+
+PY_LIBRARIES = [
+    ":cart_pole_passive_simulation",
+]
+
+# Package roll-up (for Bazel dependencies).
+# N.B. `examples` packages do not have `all` modules.
+drake_py_library(
+    name = "multibody",
+    imports = PACKAGE_INFO.py_imports,
+    deps = PY_LIBRARIES,
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES,
+    py_dest = PACKAGE_INFO.py_dest,
+)
+
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    enable_clang_format_lint = True,
+)

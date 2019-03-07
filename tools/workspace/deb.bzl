@@ -33,7 +33,8 @@ def setup_new_deb_archive(repo_ctx):
         )
         result = execute_and_return(
             repo_ctx,
-            ["dpkg-deb", "-x", filename, "."])
+            ["dpkg-deb", "-x", filename, "."],
+        )
         if result.error:
             return result
 
@@ -46,8 +47,11 @@ def setup_new_deb_archive(repo_ctx):
 def _impl(repo_ctx):
     result = setup_new_deb_archive(repo_ctx)
     if result.error != None:
-        fail("Unable to complete setup for @{} repository: {}".
-             format(repo_ctx.name, result.error))
+        fail("Unable to complete setup for @{} repository: {}".format(
+            # (forced line break)
+            repo_ctx.name,
+            result.error,
+        ))
 
 new_deb_archive = repository_rule(
     attrs = {
@@ -83,7 +87,6 @@ new_deb_archive = repository_rule(
             e.g., `hdrs = glob(["usr/include/foo/**/*.h"]),`.
             """,
             mandatory = True,
-            single_file = True,
             allow_files = True,
         ),
     },

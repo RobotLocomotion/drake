@@ -66,17 +66,17 @@ void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
 
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x,
-    Eigen::VectorXd& y) const {
+    Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
-  Eval(math::initializeAutoDiff(x), y_t);
-  y = math::autoDiffToValueMatrix(y_t);
+  Eval(math::initializeAutoDiff(x), &y_t);
+  *y = math::autoDiffToValueMatrix(y_t);
 }
 
 // The format of the input to the eval() function is the
 // tuple { timestep, state 0, state 1, input 0, input 1 },
 // which has a total length of 1 + 2*num_states + 2*num_inputs.
 void DirectCollocationConstraint::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd& y) const {
+    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
   DRAKE_ASSERT(x.size() == 1 + (2 * num_states_) + (2 * num_inputs_));
 
   // Extract our input variables:
@@ -106,7 +106,14 @@ void DirectCollocationConstraint::DoEval(
 
   AutoDiffVecXd g;
   dynamics(xcol, 0.5 * (u0 + u1), &g);
-  y = xdotcol - g;
+  *y = xdotcol - g;
+}
+
+void DirectCollocationConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  throw std::logic_error(
+      "DirectCollocationConstraint does not support symbolic evaluation.");
 }
 
 Binding<Constraint> AddDirectCollocationConstraint(
@@ -178,6 +185,8 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
   AddCost(SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double>
 DirectCollocation::ReconstructInputTrajectory()
     const {
@@ -192,7 +201,10 @@ DirectCollocation::ReconstructInputTrajectory()
   }
   return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double>
 DirectCollocation::ReconstructStateTrajectory()
     const {
@@ -207,6 +219,42 @@ DirectCollocation::ReconstructStateTrajectory()
     if (context_->get_num_input_ports() > 0) {
       input_port_value_->GetMutableVectorData<double>()->SetFromVector(
           GetSolution(input(i)));
+    }
+    context_->get_mutable_continuous_state().SetFromVector(states[i]);
+    system_->CalcTimeDerivatives(*context_, continuous_state_.get());
+    derivatives[i] = continuous_state_->CopyToVector();
+  }
+  return PiecewisePolynomial<double>::Cubic(times_vec, states, derivatives);
+}
+#pragma GCC diagnostic pop
+
+PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
+    const solvers::MathematicalProgramResult& result) const {
+  DRAKE_DEMAND(context_->get_num_input_ports() > 0);
+  Eigen::VectorXd times = GetSampleTimes(result);
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> inputs(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    inputs[i] = result.GetSolution(input(i));
+  }
+  return PiecewisePolynomial<double>::FirstOrderHold(times_vec, inputs);
+}
+
+PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::VectorXd times = GetSampleTimes(result);
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> states(N());
+  std::vector<Eigen::MatrixXd> derivatives(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    states[i] = result.GetSolution(state(i));
+    if (context_->get_num_input_ports() > 0) {
+      input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+          result.GetSolution(input(i)));
     }
     context_->get_mutable_continuous_state().SetFromVector(states[i]);
     system_->CalcTimeDerivatives(*context_, continuous_state_.get());

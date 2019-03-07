@@ -9,7 +9,7 @@ load(
     "drake_vector_gen_lcm_sources",
 )
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
 )
@@ -86,11 +86,15 @@ drake_cc_googletest(
         ":sample",
         "//common:autodiff",
         "//common:symbolic",
+        "//common/test_utilities",
     ],
 )
 
 drake_cc_googletest(
     name = "sample_translator_test",
+    copts = [
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":sample_translator",
         "//common/test_utilities",

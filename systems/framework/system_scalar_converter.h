@@ -242,7 +242,7 @@ static std::unique_ptr<System<T>> Make(
   // is the only extrinsic property of the System and LeafSystem base classes
   // that is stored within the System itself.
   result->set_name(other.get_name());
-  return std::move(result);
+  return result;
 }
 // When Traits says not to convert.
 template <template <typename> class S, typename T, typename U>
@@ -250,7 +250,7 @@ static std::unique_ptr<System<T>> Make(
     bool, const System<U>&, std::false_type) {
   // AddIfSupported is guaranteed not to call us, but we *will* be compiled,
   // so we have to have some kind of function body.
-  DRAKE_ABORT();
+  throw std::logic_error("system_scalar_converter_detail");
 }
 }  // namespace system_scalar_converter_detail
 

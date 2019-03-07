@@ -1,0 +1,70 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = [":__subpackages__"],
+)
+
+drake_cc_library(
+    name = "allegro_common",
+    srcs = ["allegro_common.cc"],
+    hdrs = ["allegro_common.h"],
+    deps = [
+        "//lcmtypes:allegro",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "allegro_lcm",
+    srcs = ["allegro_lcm.cc"],
+    hdrs = ["allegro_lcm.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":allegro_common",
+        "//lcmtypes:allegro",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_allegro_constant_load_demo",
+    srcs = ["run_allegro_constant_load_demo.cc"],
+    data = [
+        "//manipulation/models/allegro_hand_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//common:text_logging_gflags",
+        "//geometry:geometry_visualization",
+        "//lcm",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis",
+        "//systems/primitives:constant_vector_source",
+        "//systems/rendering:pose_bundle_to_draw_message",
+        "@gflags",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "allegro_lcm_test",
+    deps = [
+        ":allegro_common",
+        ":allegro_lcm",
+        "//attic/manipulation/util:world_sim_tree_builder",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+    ],
+)
+
+add_lint_tests()

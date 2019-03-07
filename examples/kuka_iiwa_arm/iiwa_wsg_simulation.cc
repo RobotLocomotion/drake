@@ -49,6 +49,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+using manipulation::schunk_wsg::MakeMultibodyForceToWsgForceSystem;
+using manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem;
 using manipulation::schunk_wsg::SchunkWsgStatusSender;
 using manipulation::schunk_wsg::SchunkWsgController;
 using manipulation::util::WorldSimTreeBuilder;
@@ -57,7 +59,7 @@ using systems::Context;
 using systems::Diagram;
 using systems::DiagramBuilder;
 using systems::DrakeVisualizer;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::OutputPort;
 using systems::RigidBodyPlant;
 using systems::RungeKutta2Integrator;
@@ -159,17 +161,16 @@ int DoMain() {
 
   // Create the command subscriber and status publisher.
   auto iiwa_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+      MakeIiwaCommandLcmSubscriberSystem(
+          kIiwaArmNumJoints, "IIWA_COMMAND", &lcm));
   iiwa_command_sub->set_name("iiwa_command_subscriber");
   auto iiwa_command_receiver = builder.AddSystem<IiwaCommandReceiver>();
   iiwa_command_receiver->set_name("iwwa_command_receiver");
 
   auto iiwa_status_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_status_pub->set_name("iiwa_status_publisher");
-  iiwa_status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto iiwa_status_sender = builder.AddSystem<IiwaStatusSender>();
   iiwa_status_sender->set_name("iiwa_status_sender");
 
@@ -186,78 +187,88 @@ int DoMain() {
   iiwa_zero_acceleration_source->set_name("zero_acceleration");
 
   builder.Connect(iiwa_command_sub->get_output_port(),
-                  iiwa_command_receiver->get_input_port(0));
+                  iiwa_command_receiver->GetInputPort("command_message"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
+  // we should add commanded velocity estimation into the estimator, not use
+  // the state ports on the LCM systems (the KUKA doesn't use velocities).
   builder.Connect(iiwa_command_receiver->get_commanded_state_output_port(),
                   model->get_input_port_iiwa_state_command());
+#pragma GCC diagnostic pop
   builder.Connect(iiwa_zero_acceleration_source->get_output_port(),
                   model->get_input_port_iiwa_acceleration_command());
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The state estimator should have a velocity port.
   builder.Connect(model->get_output_port_iiwa_state(),
                   iiwa_status_sender->get_state_input_port());
-  builder.Connect(iiwa_command_receiver->get_output_port(0),
-                  iiwa_status_sender->get_command_input_port());
+#pragma GCC diagnostic pop
+  builder.Connect(iiwa_command_receiver->get_commanded_position_output_port(),
+                  iiwa_status_sender->get_position_commanded_input_port());
   builder.Connect(model->get_output_port_computed_torque(),
-                  iiwa_status_sender->get_commanded_torque_input_port());
+                  iiwa_status_sender->get_torque_commanded_input_port());
   builder.Connect(model->get_output_port_iiwa_measured_torque(),
-                  iiwa_status_sender->get_measured_torque_input_port());
+                  iiwa_status_sender->get_torque_measured_input_port());
   builder.Connect(model->get_output_port_contact_results(),
                   external_torque_converter->get_input_port(0));
   builder.Connect(external_torque_converter->get_output_port(0),
-                  iiwa_status_sender->get_external_torque_input_port());
-  builder.Connect(iiwa_status_sender->get_output_port(0),
+                  iiwa_status_sender->get_torque_external_input_port());
+  builder.Connect(iiwa_status_sender->get_output_port(),
                   iiwa_status_pub->get_input_port());
 
   auto wsg_command_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_schunk_wsg_command>(
-          "SCHUNK_WSG_COMMAND", &lcm));
+      systems::lcm::LcmSubscriberSystem::MakeFixedSize(
+          lcmt_schunk_wsg_command{}, "SCHUNK_WSG_COMMAND", &lcm));
   wsg_command_sub->set_name("wsg_command_subscriber");
   auto wsg_controller = builder.AddSystem<SchunkWsgController>();
 
   auto wsg_status_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_schunk_wsg_status>(
-          "SCHUNK_WSG_STATUS", &lcm));
+          "SCHUNK_WSG_STATUS", &lcm,
+          manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod
+          /* publish period */));
   wsg_status_pub->set_name("wsg_status_publisher");
-  wsg_status_pub->set_publish_period(
-      manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod);
 
-  auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>(
-      model->get_output_port_wsg_state().size(),
-      model->get_output_port_wsg_measured_torque().size(),
-      manipulation::schunk_wsg::kSchunkWsgPositionIndex,
-      manipulation::schunk_wsg::kSchunkWsgVelocityIndex);
+  auto wsg_status_sender = builder.AddSystem<SchunkWsgStatusSender>();
+  auto mbp_state_to_wsg_state = builder.AddSystem
+      (MakeMultibodyStateToWsgStateSystem<double>());
+  auto mbp_force_to_wsg_force = builder.AddSystem
+      (MakeMultibodyForceToWsgForceSystem<double>());
   wsg_status_sender->set_name("wsg_status_sender");
 
   builder.Connect(wsg_command_sub->get_output_port(),
-                  wsg_controller->get_command_input_port());
-  builder.Connect(wsg_controller->get_output_port(0),
+                  wsg_controller->GetInputPort("command_message"));
+  builder.Connect(wsg_controller->GetOutputPort("force"),
                   model->get_input_port_wsg_command());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_status_sender->get_input_port_wsg_state());
+                  mbp_state_to_wsg_state->get_input_port());
+  builder.Connect(mbp_state_to_wsg_state->get_output_port(),
+                  wsg_status_sender->get_state_input_port());
   builder.Connect(model->get_output_port_wsg_measured_torque(),
-                  wsg_status_sender->get_input_port_measured_torque());
+                  mbp_force_to_wsg_force->get_input_port());
+  builder.Connect(mbp_force_to_wsg_force->get_output_port(),
+                  wsg_status_sender->get_force_input_port());
   builder.Connect(model->get_output_port_wsg_state(),
-                  wsg_controller->get_state_input_port());
+                  wsg_controller->GetInputPort("state"));
   builder.Connect(*wsg_status_sender, *wsg_status_pub);
 
   auto iiwa_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "EST_ROBOT_STATE", &lcm));
+          "EST_ROBOT_STATE", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   iiwa_state_pub->set_name("iiwa_state_publisher");
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_iiwa_robot_state_msg(),
                   iiwa_state_pub->get_input_port());
-  iiwa_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto box_state_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<bot_core::robot_state_t>(
-          "OBJECT_STATE_EST", &lcm));
+          "OBJECT_STATE_EST", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   box_state_pub->set_name("box_state_publisher");
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   builder.Connect(model->get_output_port_object_robot_state_msg(),
                   box_state_pub->get_input_port());
-  box_state_pub->set_publish_period(kIiwaLcmStatusPeriod);
 
   auto sys = builder.Build();
   Simulator<double> simulator(*sys);
@@ -273,6 +284,7 @@ int DoMain() {
   simulator.set_publish_every_time_step(false);
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 

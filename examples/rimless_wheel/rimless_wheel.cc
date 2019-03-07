@@ -19,7 +19,7 @@ RimlessWheel<T>::RimlessWheel()
   // two feet/spokes are touching the ground, and angular velocity is
   // approximately zero).
   bool double_support = false;
-  this->DeclareAbstractState(systems::AbstractValue::Make(double_support));
+  this->DeclareAbstractState(AbstractValue::Make(double_support));
 
   // The minimal state of the system.
   this->DeclareVectorOutputPort(RimlessWheelContinuousState<T>(),

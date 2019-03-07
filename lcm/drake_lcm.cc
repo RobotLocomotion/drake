@@ -21,12 +21,23 @@ void Callback(const ::lcm::ReceiveBuffer* buffer,
 
 }  // namespace
 
-DrakeLcm::DrakeLcm() {}
+DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
+
+DrakeLcm::DrakeLcm(std::string lcm_url)
+    : requested_lcm_url_(std::move(lcm_url)),
+      lcm_(requested_lcm_url_) {}
 
 DrakeLcm::~DrakeLcm() { receive_thread_.reset(); }
 
 void DrakeLcm::StartReceiveThread() {
   DRAKE_DEMAND(receive_thread_ == nullptr);
+
+  // Ensure that LCM's self-test happens before our thread starts running.
+  // Without this, ThreadSanitizer builds may report false positives related to
+  // the self-test happening concurrently with the LCM publishing.
+  lcm_.getFileno();
+
+  // Now launch the thread.
   receive_thread_ = std::make_unique<LcmReceiveThread>(&lcm_);
 }
 
@@ -38,6 +49,10 @@ void DrakeLcm::StopReceiveThread() {
 }
 
 ::lcm::LCM* DrakeLcm::get_lcm_instance() { return &lcm_; }
+
+std::string DrakeLcm::get_requested_lcm_url() const {
+  return requested_lcm_url_;
+}
 
 void DrakeLcm::Publish(const std::string& channel, const void* data,
                        int data_size, optional<double>) {
@@ -52,16 +67,6 @@ void DrakeLcm::Subscribe(const std::string& channel, HandlerFunction handler) {
   HandlerFunction* const context = &handlers_.back();
   lcm_.subscribeFunction(channel, &Callback, context)->setQueueCapacity(1);
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-void DrakeLcm::Subscribe(const std::string& channel,
-                         DrakeLcmMessageHandlerInterface* handler) {
-  Subscribe(channel, std::bind(
-      std::mem_fn(&DrakeLcmMessageHandlerInterface::HandleMessage), handler,
-      channel, std::placeholders::_1, std::placeholders::_2));
-}
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 }  // namespace lcm
 }  // namespace drake

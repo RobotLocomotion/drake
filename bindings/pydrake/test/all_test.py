@@ -10,8 +10,8 @@ class TestAll(unittest.TestCase):
     def test_import_warnings(self):
         """Prints if we encounter any warnings (primarily from `pybind11`) when
         importing `pydrake.all`."""
-        # Ensure that we haven't imported anything from `pydrake`.
-        self.assertTrue("pydrake" not in sys.modules)
+        # Ensure that we haven't yet imported `pydrake.all`.
+        self.assertTrue("pydrake.all" not in sys.modules)
         # - While this may be redundant, let's do it for good measure.
         self.assertTrue("pydrake.all" not in sys.modules)
         # Enable *all* warnings, and ensure that we don't trigger them.
@@ -27,30 +27,43 @@ class TestAll(unittest.TestCase):
 
     def test_usage_no_all(self):
         from pydrake.common import FindResourceOrThrow
-        from pydrake.multibody.rigid_body_plant import RigidBodyPlant
-        from pydrake.multibody.rigid_body_tree import RigidBodyTree
+        from pydrake.multibody.parsing import Parser
+        from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
         from pydrake.systems.analysis import Simulator
+        from pydrake.systems.framework import DiagramBuilder
 
-        tree = RigidBodyTree(
+        builder = DiagramBuilder()
+        plant, _ = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant).AddModelFromFile(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-        simulator = Simulator(RigidBodyPlant(tree))
+        plant.Finalize()
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
 
     def test_usage_all(self):
         from pydrake.all import (
-            FindResourceOrThrow, RigidBodyPlant, RigidBodyTree, Simulator)
+            AddMultibodyPlantSceneGraph, DiagramBuilder, FindResourceOrThrow,
+            Parser, Simulator)
 
-        tree = RigidBodyTree(
+        builder = DiagramBuilder()
+        plant, _ = AddMultibodyPlantSceneGraph(builder)
+        Parser(plant).AddModelFromFile(
             FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"))
-        simulator = Simulator(RigidBodyPlant(tree))
+        plant.Finalize()
+        diagram = builder.Build()
+        simulator = Simulator(diagram)
 
     def test_usage_all_explicit(self):
         import pydrake.all
 
-        tree = pydrake.multibody.rigid_body_tree.RigidBodyTree(
+        builder = pydrake.systems.framework.DiagramBuilder()
+        plant, _ = pydrake.multibody.plant.AddMultibodyPlantSceneGraph(builder)
+        pydrake.multibody.parsing.Parser(plant).AddModelFromFile(
             pydrake.common.FindResourceOrThrow(
                 "drake/examples/pendulum/Pendulum.urdf"))
-        simulator = pydrake.systems.analysis.Simulator(
-            pydrake.multibody.rigid_body_plant.RigidBodyPlant(tree))
+        plant.Finalize()
+        diagram = builder.Build()
+        simulator = pydrake.systems.analysis.Simulator(diagram)
 
     def test_symbols_subset(self):
         """Tests a subset of symbols provided by `drake.all`. At least one
@@ -60,16 +73,36 @@ class TestAll(unittest.TestCase):
 
         # Subset of symbols.
         expected_symbols = (
+            # __init__
+            "getDrakePath",
+            # attic
+            # - solvers
+            "RigidBodyConstraint",
+            # - systems
+            # - - controllers
+            "RbtInverseDynamics",
+            # - - sensors
+            "RgbdCamera",
             # autodiffutils
             "AutoDiffXd",
             # automotive
             "SimpleCar",
             # common
+            # - __init__
             "AddResourceSearchPath",
+            # - compatibility
+            "maybe_patch_numpy_formatters",
+            # - containers
+            "EqualToDict",
+            # - eigen_geometry
+            "Isometry3",
+            "Quaternion",
             # forwarddiff
             "jacobian",
             "sin",
             "cos",
+            # geometry
+            "SceneGraph",
             # lcm
             "DrakeLcm",
             # symbolic
@@ -80,9 +113,22 @@ class TestAll(unittest.TestCase):
             "RoadGeometry",
             # - dragway
             "create_dragway",
+            # manipulation
+            # - planner
+            "DoDifferentialInverseKinematics",
             # multibody
+            # - benchmarks
+            "MakeAcrobotPlant",
+            # - inverse_kinematics
+            "InverseKinematics",
+            # - math
+            "SpatialVelocity",
+            # - parsing
+            "Parser",
             # - parsers
             "PackageMap",
+            # - plant
+            "MultibodyPlant",
             # - rigid_body_plant
             "RigidBodyPlant",
             # - rigid_body_tree
@@ -91,8 +137,10 @@ class TestAll(unittest.TestCase):
             # TODO(eric.cousineau): Avoid collision with `collision.Element`.
             # Import modules, since these names are generic.
             "Element",
-            # - multibody_tree
-            "SpatialVelocity",
+            # - tree
+            "MultibodyForces",
+            # perception
+            "PointCloud",
             # solvers
             # - gurobi
             "GurobiSolver",
@@ -110,15 +158,18 @@ class TestAll(unittest.TestCase):
             "LeafSystem",
             # - analysis
             "Simulator",
+            # - controllers
+            "InverseDynamics",
+            # - lcm
+            "PySerializer",
             # - primitives
             "Adder",
             # - rendering
             "PoseVector",
+            # - scalar_conversion
+            "TemplateSystem",
             # - sensors
             "Image",
-            # util
-            "Isometry3",
-            "Quaternion",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.

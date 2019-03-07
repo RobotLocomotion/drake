@@ -22,30 +22,34 @@ namespace automotive {
 /// dynamics.
 ///
 /// The states of the model are:
-///  - yaw angle Ψ [rad]
-///  - yaw rate Ψ_dot [rad/s]
-///  - slip angle at the center of mass β [rad]
-///  - velocity magnitude (vector magnitude at the slip angle) vel [m/s]
-///  - x-position of the center of mass sx [m]
-///  - y-position of the center of mass sy [m]
 ///
-/// N.B. "slip angle" (β) is the angle made between the body and the velocity
+/// - yaw angle Ψ [rad]
+/// - yaw rate Ψ_dot [rad/s]
+/// - slip angle at the center of mass β [rad]
+/// - velocity magnitude (vector magnitude at the slip angle) vel [m/s]
+/// - x-position of the center of mass sx [m]
+/// - y-position of the center of mass sy [m]
+///
+/// @note "slip angle" (β) is the angle made between the body and the velocity
 /// vector.  Thus, the velocity vector can be resolved into the body-relative
 /// componenets `vx_body = cos(β)` and `vy_body = sin(β)`.  `β = 0` means the
 /// velocity vector is pointing along the bicycle's longitudinal axis.
 ///
 /// Inputs:
-///  - Angle of the front wheel of the bicycle δ [rad]
-///    (InputPortDescriptor getter: get_steering_input_port())
-///  - Force acting on the rigid body F_in [N]
-///    (InputPortDescriptor getter: get_force_input_port())
+///
+/// - Angle of the front wheel of the bicycle δ [rad]
+///   (InputPort getter: get_steering_input_port())
+/// - Force acting on the rigid body F_in [N]
+///   (InputPort getter: get_force_input_port())
 ///
 /// Output:
-///  - A BicycleCarState containing the 6-dimensional state vector of the
-///    bicycle.
-///    (OutputPort getter: get_state_output_port())
+///
+/// - A BicycleCarState containing the 6-dimensional state vector of the
+///   bicycle.
+///   (OutputPort getter: get_state_output_port())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
@@ -75,12 +79,11 @@ class BicycleCar final : public systems::LeafSystem<T> {
 
   ~BicycleCar() override;
 
-  /// Returns a descriptor of the input port that contains the steering angle.
-  const systems::InputPortDescriptor<T>& get_steering_input_port() const;
+  /// Returns the input port that contains the steering angle.
+  const systems::InputPort<T>& get_steering_input_port() const;
 
-  /// Returns a descriptor of the input port that contains the applied
-  /// powertrain force.
-  const systems::InputPortDescriptor<T>& get_force_input_port() const;
+  /// Returns the input port that contains the applied powertrain force.
+  const systems::InputPort<T>& get_force_input_port() const;
 
   /// Returns the output port that contains the bicycle states.
   const systems::OutputPort<T>& get_state_output_port() const;

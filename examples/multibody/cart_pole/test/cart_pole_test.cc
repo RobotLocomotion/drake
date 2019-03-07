@@ -7,12 +7,12 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/multibody/cart_pole/gen/cart_pole_params.h"
-#include "drake/multibody/multibody_tree/joint_actuator.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/joint_actuator.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -23,8 +23,8 @@ namespace {
 
 using drake::multibody::Body;
 using drake::multibody::JointActuator;
-using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::MultibodyPlant;
+using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::UniformGravityFieldElement;
@@ -36,7 +36,7 @@ class CartPoleTest : public ::testing::Test {
     // Make the cart_pole model.
     const std::string full_name = FindResourceOrThrow(
         "drake/examples/multibody/cart_pole/cart_pole.sdf");
-    AddModelFromSdfFile(full_name, &cart_pole_);
+    Parser(&cart_pole_).AddModelFromFile(full_name);
 
     // Add gravity to the model.
     cart_pole_.AddForceElement<UniformGravityFieldElement>(
@@ -120,7 +120,7 @@ TEST_F(CartPoleTest, MassMatrix) {
 
   Matrix2<double> M;
   pole_pin_->set_angle(context_.get(), theta);
-  cart_pole_.model().CalcMassMatrixViaInverseDynamics(*context_, &M);
+  cart_pole_.CalcMassMatrixViaInverseDynamics(*context_, &M);
   Matrix2<double> M_expected = CartPoleHandWritenMassMatrix(theta);
 
   // Matrix verified to this tolerance.

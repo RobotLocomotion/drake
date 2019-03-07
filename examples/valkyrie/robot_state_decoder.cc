@@ -11,7 +11,9 @@ namespace systems {
 
 RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
     : translator_(tree),
-      robot_state_message_port_index_(DeclareAbstractInputPort().get_index()) {
+      robot_state_message_port_index_(DeclareAbstractInputPort(
+          kUseDefaultName,
+          Value<bot_core::robot_state_t>{}).get_index()) {
   DeclareAbstractOutputPort(
       KinematicsCache<double>(translator_.get_robot().CreateKinematicsCache()),
       &RobotStateDecoder::OutputKinematics);

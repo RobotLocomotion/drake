@@ -12,6 +12,9 @@ namespace drake {
 
 /// A type-safe non-negative index class.
 ///
+/// @note This is *purposely* a separate class from @ref geometry::Identifier.
+/// For more information, see @ref TypeSafeIndexVsIndentifier "this section".
+///
 /// This class serves as an upgrade to the standard practice of passing `int`s
 /// around as indices. In the common practice, a method that takes indices into
 /// multiple collections would have an interface like:
@@ -35,17 +38,17 @@ namespace drake {
 /// The type-safe index is a _stripped down_ `int`. Each uniquely declared
 /// index type has the following properties:
 ///
-///   - Valid index values are _explicitly_ constructed from `int` values.
-///   - The index is implicitly convertible to an `int` (to serve as an index).
-///   - The index supports increment, decrement, and in-place addition and
-///     subtraction to support standard index-like operations.
-///   - An index _cannot_ be constructed or compared to an index of another
-///     type.
-///   - In general, indices of different types are _not_ interconvertible.
-///   - Binary integer operators (e.g., +, -, |, *, etc.) _always_ produce `int`
-///     return values. One can even use operands of different index types in
-///     such a binary expression. It is the _programmer's_ responsibility to
-///     confirm that the resultant `int` value has meaning.
+/// - Valid index values are _explicitly_ constructed from `int` values.
+/// - The index is implicitly convertible to an `int` (to serve as an index).
+/// - The index supports increment, decrement, and in-place addition and
+///   subtraction to support standard index-like operations.
+/// - An index _cannot_ be constructed or compared to an index of another
+///   type.
+/// - In general, indices of different types are _not_ interconvertible.
+/// - Binary integer operators (e.g., +, -, |, *, etc.) _always_ produce `int`
+///   return values. One can even use operands of different index types in
+///   such a binary expression. It is the _programmer's_ responsibility to
+///   confirm that the resultant `int` value has meaning.
 ///
 /// While there _is_ the concept of an "invalid" index, this only exists to
 /// support default construction _where appropriate_ (e.g., using indices in
@@ -117,35 +120,6 @@ namespace drake {
 /// @code
 ///    for (MyIndex a(0); a < N; ++a) { ... }
 /// @endcode
-///
-/// __Type-safe Index vs Identifier__
-///
-/// In principle, the TypeSafeIndex is related to the
-/// @ref drake::geometry::Identifier "Identifier". In
-/// some sense, both are "type-safe `int`s". They differ in their semantics. We
-/// can consider `ints`, indexes, and identifiers as a list of `int` types with
-/// _decreasing_ functionality.
-///
-///   - The int, obviously, has the full range of C++ ints.
-///   - The TypeSafeIndex can be implicitly cast *to* an int, but there are a
-///     limited number of operations _on_ the index that produces other
-///     instances of the index (e.g., increment, in-place addition, etc.) They
-///     can be compared with `int` and other indexes of the same type. This
-///     behavior arises from the intention of having them serve as an _index_ in
-///     an ordered set (e.g., `std::vector`.)
-///   - The @ref drake::geometry::Identifier "Identifier" is the most
-///     restricted. They exist solely to serve as a unique identifier. They are
-///     immutable when created. Very few operations exist on them (comparison
-///     for _equality_ with other identifiers of the same type, hashing, writing
-///     to output stream).
-///
-/// Ultimately, indexes _can_ serve as identifiers (within the scope of the
-/// object they index into). Although, their mutability could make this a
-/// dangerous practice for a public API. Identifiers are more general in that
-/// they don't reflect an object's position in memory (hence the inability to
-/// transform to or compare with an `int`). This decouples details of
-/// implementation from the idea of the object. Combined with its immutability,
-/// it would serve well as a element of a public API.
 ///
 /// @sa drake::geometry::Identifier
 ///
@@ -353,8 +327,10 @@ class TypeSafeIndex {
   // without unsigned/signed comparison warnings (which Drake considers to be an
   // error). Furthermore, the SFINAE is necessary to prevent ambiguity.
   // Index == int can be resolved two ways:
-  //   - convert Index to int
-  //   - promote int to size_t
+  //
+  // - convert Index to int
+  // - promote int to size_t
+  //
   // SFINAE prevents the latter.
 
   /// Whitelist equality test with indices of this tag.

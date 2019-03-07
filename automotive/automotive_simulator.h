@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/automotive/car_vis_applicator.h"
 #include "drake/automotive/curve2.h"
 #include "drake/automotive/gen/maliput_railcar_state.h"
 #include "drake/automotive/gen/trajectory_car_state.h"
@@ -19,9 +18,8 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/automotive/trajectory_car.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/lcmt_viewer_load_robot.hpp"
-#include "drake/multibody/rigid_body_tree.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -39,6 +37,7 @@ namespace automotive {
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.
@@ -267,8 +266,9 @@ class AutomotiveSimulator {
   ///
   const maliput::api::Lane* FindLane(const std::string& name) const;
 
-  /// Returns the System whose name matches @p name.  Throws an exception if no
-  /// such system has been added, or multiple such systems have been added.
+  /// Returns the System whose name matches @p name.
+  /// @throws std::exception if no such system has been added, or multiple
+  /// such systems have been added.
   //
   /// This is the builder variant of the method.  It can only be used prior to
   /// Start() being called.
@@ -276,8 +276,9 @@ class AutomotiveSimulator {
   /// @pre Start() has NOT been called.
   systems::System<T>& GetBuilderSystemByName(std::string name);
 
-  /// Returns the System whose name matches @p name.  Throws an exception if no
-  /// such system has been added, or multiple such systems have been added.
+  /// Returns the System whose name matches @p name.
+  /// @throws std::exception if no such system has been added, or multiple such
+  /// systems have been added.
   ///
   /// This is the diagram variant of the method, which can only be used after
   /// Start() is called.
@@ -291,7 +292,7 @@ class AutomotiveSimulator {
   /// @pre Build() and BuildandInitialize() have NOT been called.
   void Build();
 
-  /// Builds the Diagram and intializes the Diagram Context to the predefined
+  /// Builds the Diagram and initializes the Diagram Context to the predefined
   /// initial states.
   ///
   /// @pre Build() and BuildandInitialize() have NOT been called.
@@ -341,7 +342,7 @@ class AutomotiveSimulator {
   void CheckNameUniqueness(const std::string& name);
 
   // Connects the provided pose and velocity output ports of a vehicle model to
-  // the PoseAggregator and adds a PriusVis for visualizing the vehicle.
+  // the PoseAggregator and adds Prius geometry for visualizing the vehicle.
   void ConnectCarOutputsAndPriusVis(int id,
     const systems::OutputPort<T>& pose_output,
     const systems::OutputPort<T>& velocity_output);
@@ -358,16 +359,10 @@ class AutomotiveSimulator {
   // @pre Start() has NOT been called.
   void AddPublisher(const TrajectoryCar<T>& system, int vehicle_number);
 
-  // Generates the URDF model of the road network and loads it into the
-  // `RigidBodyTree`. Member variable `road_` must be set prior to calling this
-  // method.
-  void GenerateAndLoadRoadNetworkUrdf();
-
-  // Creates a lcmt_load_robot message containing all visual elements in the
-  // simulation and sends it to the drake-visualizer.
-  void TransmitLoadMessage();
-
-  void SendLoadRobotMessage(const lcmt_viewer_load_robot& message);
+  // Generates the visualization mesh of the road network and adds it to the
+  // SceneGraph.  Member variable `road_` must be set prior to calling this
+  // method.  This method is a no-op if visualization is disabled.
+  void AddRoadNetworkToSceneGraph();
 
   void InitializeTrajectoryCars();
   void InitializeSimpleCars();
@@ -378,7 +373,6 @@ class AutomotiveSimulator {
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
 
   // === Start for building. ===
-  std::unique_ptr<RigidBodyTree<T>> tree_{std::make_unique<RigidBodyTree<T>>()};
 
   std::unique_ptr<systems::DiagramBuilder<T>> builder_{
       std::make_unique<systems::DiagramBuilder<T>>()};
@@ -403,20 +397,8 @@ class AutomotiveSimulator {
 
   // === End for building. ===
 
-  // Adds the PoseAggregator.
   systems::rendering::PoseAggregator<T>* aggregator_{};
-
-  // Takes the poses of the vehicles and outputs the poses of the visual
-  // elements that make up the visualization of the vehicles. For a system-level
-  // architecture diagram, see #5541.
-  CarVisApplicator<T>* car_vis_applicator_{};
-
-  // Takes the output of car_vis_applicator_ and creates an lcmt_viewer_draw
-  // message containing the latest poses of the visual elements.
-  systems::rendering::PoseBundleToDrawMessage* bundle_to_draw_{};
-
-  // Takes the output of bundle_to_draw_ and passes it to lcm_ for publishing.
-  systems::lcm::LcmPublisherSystem* lcm_publisher_{};
+  geometry::SceneGraph<T>* scene_graph_{};
 
   int next_vehicle_number_{0};
 

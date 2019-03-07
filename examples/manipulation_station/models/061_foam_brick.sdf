@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<sdf version='1.6'>
+<model name="foam_brick">
+  <link name="base_link">
+    <inertial>
+      <pose frame=''>0 0 0.025 0 0 0 </pose>
+      <mass>0.028</mass>
+        <inertia>
+          <ixx>1.17e-5</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>1.9e-5</iyy>
+          <iyz>0</iyz>
+          <izz>1.9e-5</izz>
+        </inertia>
+    </inertial>
+    <visual name='base_link'>
+      <pose frame=''>0 0 0.025 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.075 0.05 0.05</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0.31 0.01 0.13 1.0</diffuse>
+      </material>
+    </visual>
+
+    <!--
+      This places contact spheres on the corners of the visual box and a
+      *slightly* smaller inset contact box (centered on the visual origin). This
+      accounts for issues in the contact computation providing stable table
+      contact *and* supports grasping.
+
+      When the box is in stable contact with the ground plane, the corner
+      spheres will provide fixed contact points (simulating distributed contact
+      points around the face).  However, for arbitrary grip configuration, the
+      slightly inset box will provide contact with a *slight* offset (in this
+      case a deviation of 0.0005 m from the visual surface).
+     -->
+    <collision name='box_collision'>
+      <pose>0 0 0.025 0 0 0</pose>
+      <geometry>
+        <box> 
+          <size>0.074 0.049 0.049</size>
+        </box>
+      </geometry>
+      <material>
+        <diffuse>0 1 0 1.0</diffuse>
+      </material>
+    </collision>
+
+    <collision name='point_collision1'>
+      <pose>0.0375 0.025 0 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision2'>
+      <pose>0.0375 -0.025 0 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision3'>
+      <pose>-0.0375 0.025 0 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision4'>
+      <pose>-0.0375 -0.025 0 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision5'>
+      <pose>0.0375 0.025 0.05 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision6'>
+      <pose>0.0375 -0.025 0.05 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision7'>
+      <pose>-0.0375 0.025 0.05 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision8'>
+      <pose>-0.0375 -0.025 0.05 0 0 0</pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+   </link>
+</model>
+</sdf>

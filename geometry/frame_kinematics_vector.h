@@ -7,9 +7,39 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
+
+#ifndef DRAKE_DOXYGEN_CXX
+namespace detail {
+
+// A type-traits-style initializer for making sure that quantities in the frame
+// kinematics vector are initialized. This is because Eigen actively does *not*
+// initialize its data types and there is a code path by which uninitialized
+// values in the vector can be accessed.
+
+template <typename Value>
+struct KinematicsValueInitializer {
+  static void Initialize(Value* value) {
+    std::logic_error("Unsupported kinematics value");
+  }
+};
+
+template <typename S>
+struct KinematicsValueInitializer<Isometry3<S>> {
+  static void Initialize(Isometry3<S>* value) {
+    value->setIdentity();
+  }
+};
+
+// TODO(SeanCurtis-TRI): Add specializations for SpatialVelocity and
+// SpatialAcceleration (setting them to zero vectors) as those quantities are
+// added to SceneGraph.
+
+}  // namespace detail
+#endif  // DRAKE_DOXYGEN_CXX
 
 /** A %FrameKinematicsVector is used to report kinematics data for registered
  frames (identified by unique FrameId values) to SceneGraph.
@@ -34,7 +64,8 @@ namespace geometry {
  is consumed by SceneGraph.
 
  <!--
-   TODO: The FrameVelocityVector and FrameAccelerationVector are still to come.
+   TODO(SeanCurtis-TRI): The FrameVelocityVector and FrameAccelerationVector
+   are still to come.
   -->
 
  The usage of this method would be in the allocation and calculation
@@ -135,11 +166,25 @@ namespace geometry {
  -----------------|------------------------------------------|--------------
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | double
   FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | AutoDiffXd
+  FramePoseVector | FrameKinematicsVector<Isometry3<Scalar>> | Expression
   */
 template <class KinematicsValue>
 class FrameKinematicsVector {
+  // Forward declaration.
+  struct FlaggedValue;
+
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameKinematicsVector)
+
+  /** An object that represents the range of FrameId values in this class. It
+   is used in range-based for loops to iterate through registered frames.  */
+  using FrameIdRange = internal::MapKeyRange<FrameId, FlaggedValue>;
+
+  // TODO(SeanCurtis-TRI) Find some API language that cautions users that this
+  // result is not terribly useful on its own, but instead it will usually be
+  // assigned into (using operator=) from another FrameKinematicsVector.
+  /** Initializes the vector using an invalid SourceId with no frames .*/
+  FrameKinematicsVector();
 
   /** Initializes the vector on the owned ids.
    @param source_id  The source id of the owning geometry source.
@@ -179,9 +224,24 @@ class FrameKinematicsVector {
   /** Reports true if the given id is a member of this data. */
   bool has_id(FrameId id) const { return values_.count(id) > 0; }
 
+  /** Provides a range object for all of the frame ids in the vector.
+   This is intended to be used as:
+   @code
+   for (FrameId id : this_vector.frame_ids()) {
+    ...
+    // Obtain the KinematicsValue of an id by `this_vector.value(id)`
+    ...
+   }
+   @endcode
+   */
+  FrameIdRange frame_ids() const { return FrameIdRange(&values_); }
+
  private:
   // Utility function to help catch misuse.
   struct FlaggedValue {
+    FlaggedValue() {
+      detail::KinematicsValueInitializer<KinematicsValue>::Initialize(&value);
+    }
     int64_t version{0};
     KinematicsValue value;
   };
@@ -204,6 +264,7 @@ class FrameKinematicsVector {
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 

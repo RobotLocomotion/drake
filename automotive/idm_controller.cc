@@ -39,17 +39,18 @@ IdmController<T>::IdmController(const RoadGeometry& road,
           this->DeclareVectorInputPort(PoseVector<T>()).get_index()),
       ego_velocity_index_(
           this->DeclareVectorInputPort(FrameVelocity<T>()).get_index()),
-      traffic_index_(this->DeclareAbstractInputPort().get_index()),
+      traffic_index_(this->DeclareAbstractInputPort(
+          systems::kUseDefaultName, Value<PoseBundle<T>>()).get_index()),
       acceleration_index_(
           this->DeclareVectorOutputPort(systems::BasicVector<T>(1),
                                         &IdmController::CalcAcceleration)
               .get_index()) {
   this->DeclareNumericParameter(IdmPlannerParameters<T>());
   // TODO(jadecastro) It is possible to replace the following AbstractState with
-  // a caching sceme once #4364 lands, preventing the need to use abstract
+  // a caching scheme once #4364 lands, preventing the need to use abstract
   // states and periodic sampling time.
   if (road_position_strategy == RoadPositionStrategy::kCache) {
-    this->DeclareAbstractState(systems::AbstractValue::Make<RoadPosition>(
+    this->DeclareAbstractState(AbstractValue::Make<RoadPosition>(
         RoadPosition()));
     this->DeclarePeriodicUnrestrictedUpdate(period_sec, 0);
   }
@@ -59,19 +60,19 @@ template <typename T>
 IdmController<T>::~IdmController() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::ego_pose_input()
+const systems::InputPort<T>& IdmController<T>::ego_pose_input()
     const {
   return systems::System<T>::get_input_port(ego_pose_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::ego_velocity_input()
+const systems::InputPort<T>& IdmController<T>::ego_velocity_input()
     const {
   return systems::System<T>::get_input_port(ego_velocity_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& IdmController<T>::traffic_input() const {
+const systems::InputPort<T>& IdmController<T>::traffic_input() const {
   return systems::System<T>::get_input_port(traffic_index_);
 }
 
@@ -104,7 +105,7 @@ void IdmController<T>::CalcAcceleration(
 
   // Obtain the state if we've allocated it.
   RoadPosition ego_rp;
-  if (context.template get_state().get_abstract_state().size() != 0) {
+  if (context.get_state().get_abstract_state().size() != 0) {
     DRAKE_ASSERT(context.get_num_abstract_states() == 1);
     ego_rp = context.template get_abstract_state<RoadPosition>(0);
   }

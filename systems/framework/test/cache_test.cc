@@ -15,7 +15,6 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
-#include "drake/systems/framework/value.h"
 
 using std::string;
 using Eigen::Vector3d;
@@ -160,11 +159,44 @@ class CacheTest : public ::testing::Test {
   const DependencyTicket time_ticket_{internal::kTimeTicket};
   const DependencyTicket z_ticket_{internal::kZTicket};
   const DependencyTicket xc_ticket_{internal::kXcTicket};
+  const DependencyTicket xcdot_ticket_{internal::kXcdotTicket};
   const DependencyTicket all_sources_ticket_{internal::kAllSourcesTicket};
   DependencyTicket next_ticket_{internal::kNextAvailableTicket};
 
   CacheIndex next_cache_index_{cache().cache_size()};
 };
+
+// Normally creating a new CacheEntryValue creates a new DependencyTracker to
+// manage it. However, for well-known cached objects like the time derivatives
+// cache entry xcdot, the tracker is created during Context construction and
+// we are allowed to associate the cache entry value to it later.
+TEST_F(CacheTest, CanAssociateExistingTrackerWithNewCacheEntry) {
+  // Check that creating a new cache entry value creates the matching tracker.
+  int expected_num_trackers = graph().trackers_size();
+  CacheIndex index(next_cache_index_++);
+  DependencyTicket ticket(next_ticket_++);
+  EXPECT_FALSE(graph().has_tracker(ticket));
+  CacheEntryValue& normal_value = cache().CreateNewCacheEntryValue(
+      index, ticket, "normal cache entry", {nothing_ticket_}, &graph());
+  ++expected_num_trackers;
+  EXPECT_EQ(graph().trackers_size(), expected_num_trackers);
+  ASSERT_TRUE(graph().has_tracker(ticket));
+  EXPECT_EQ(graph().get_tracker(ticket).cache_entry_value(), &normal_value);
+
+  // Now check that we can attach a new cache entry value to an existing
+  // well-known tracker.
+  ASSERT_TRUE(graph().has_tracker(xcdot_ticket_));
+  const DependencyTracker& xcdot_tracker = graph().get_tracker(xcdot_ticket_);
+  EXPECT_EQ(xcdot_tracker.cache_entry_value(), nullptr);
+
+  index = next_cache_index_++;
+  CacheEntryValue& xcdot_value = cache().CreateNewCacheEntryValue(
+      index, xcdot_ticket_, "xcdot cache entry", {nothing_ticket_}, &graph());
+  // No new tracker should have been created.
+  EXPECT_EQ(graph().trackers_size(), expected_num_trackers);
+  EXPECT_EQ(graph().get_tracker(xcdot_ticket_).cache_entry_value(),
+            &xcdot_value);
+}
 
 // Check that SetInitialValue works and fails properly.
 TEST_F(CacheTest, SetInitialValueWorks) {
@@ -335,12 +367,12 @@ TEST_F(CacheTest, CanSwapValue) {
   EXPECT_EQ(entry_value.get_value<string>(), "new value");
 
 // In Debug builds, try a bad swap and expect it to be caught.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  std::unique_ptr<AbstractValue> empty_ptr;
-  EXPECT_THROW(entry_value.swap_value(&empty_ptr), std::logic_error);
-  auto bad_value = AbstractValue::Make<int>(29);
-  EXPECT_THROW(entry_value.swap_value(&bad_value), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    std::unique_ptr<AbstractValue> empty_ptr;
+    EXPECT_THROW(entry_value.swap_value(&empty_ptr), std::logic_error);
+    auto bad_value = AbstractValue::Make<int>(29);
+    EXPECT_THROW(entry_value.swap_value(&bad_value), std::logic_error);
+  }
 }
 
 TEST_F(CacheTest, InvalidationIsRecursive) {
@@ -485,15 +517,15 @@ TEST_F(CacheTest, ValueMethodsWork) {
   EXPECT_THROW(value.PeekAbstractValueOrThrow(), std::logic_error);
   EXPECT_THROW(value.PeekValueOrThrow<int>(), std::logic_error);
 
-#ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(value.get_abstract_value(), std::logic_error);
-  EXPECT_THROW(value.get_value<int>(), std::logic_error);
-  EXPECT_THROW(value.set_value<int>(5), std::logic_error);
-  EXPECT_THROW(value.is_out_of_date(), std::logic_error);
-  EXPECT_THROW(value.needs_recomputation(), std::logic_error);
-  EXPECT_THROW(value.mark_up_to_date(), std::logic_error);
-  EXPECT_THROW(value.swap_value(&swap_with_me), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(value.get_abstract_value(), std::logic_error);
+    EXPECT_THROW(value.get_value<int>(), std::logic_error);
+    EXPECT_THROW(value.set_value<int>(5), std::logic_error);
+    EXPECT_THROW(value.is_out_of_date(), std::logic_error);
+    EXPECT_THROW(value.needs_recomputation(), std::logic_error);
+    EXPECT_THROW(value.mark_up_to_date(), std::logic_error);
+    EXPECT_THROW(value.swap_value(&swap_with_me), std::logic_error);
+  }
 
   // Now provide an initial value (not yet up to date).
   value.SetInitialValue(PackValue(42));
@@ -510,10 +542,10 @@ TEST_F(CacheTest, ValueMethodsWork) {
   EXPECT_NO_THROW(value.PeekAbstractValueOrThrow());
 
   // The fast "get" methods must check for up to date in Debug builds.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(value.get_value<int>(), std::logic_error);
-  EXPECT_THROW(value.get_abstract_value(), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(value.get_value<int>(), std::logic_error);
+    EXPECT_THROW(value.get_abstract_value(), std::logic_error);
+  }
 
   // Swap doesn't care about up to date or not, but always marks the swapped-in
   // value out of date.
@@ -542,9 +574,9 @@ TEST_F(CacheTest, ValueMethodsWork) {
   EXPECT_THROW(value.SetValueOrThrow<int>(5), std::logic_error);
 
   // The fast "set" method must check for up to date in Debug builds.
-#ifdef DRAKE_ASSERT_IS_ARMED
-  EXPECT_THROW(value.set_value<int>(5), std::logic_error);
-#endif
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(value.set_value<int>(5), std::logic_error);
+  }
 
   // And "swap" still doesn't care about up to date on entry.
   value.swap_value(&swap_with_me);

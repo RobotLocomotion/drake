@@ -11,14 +11,18 @@ def _impl(repository_ctx):
     # Bring in our hand-written BUILD file for @com_google_protobuf.
     repository_ctx.symlink(
         Label("@drake//tools/workspace/com_google_protobuf:package.BUILD.bazel"),  # noqa
-        "BUILD.bazel")
+        "BUILD.bazel",
+    )
+
     # Bring in two vendored files from upstream.
     repository_ctx.symlink(
         Label("@drake//third_party:com_github_google_protobuf/protobuf.bzl"),
-        "protobuf.bzl")
+        "protobuf.bzl",
+    )
     repository_ctx.symlink(
         Label("@drake//third_party:com_github_google_protobuf/LICENSE"),
-        "LICENSE")
+        "LICENSE",
+    )
 
 com_google_protobuf_repository = repository_rule(
     implementation = _impl,

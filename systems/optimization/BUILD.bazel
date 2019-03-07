@@ -1,0 +1,80 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "optimization",
+    deps = [
+        ":system_constraint_adapter",
+        ":system_constraint_wrapper",
+    ],
+)
+
+drake_cc_library(
+    name = "system_constraint_wrapper",
+    srcs = ["system_constraint_wrapper.cc"],
+    hdrs = ["system_constraint_wrapper.h"],
+    deps = [
+        "//solvers:constraint",
+        "//systems/framework:system",
+        "//systems/framework:system_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "system_constraint_adapter",
+    srcs = ["system_constraint_adapter.cc"],
+    hdrs = ["system_constraint_adapter.h"],
+    deps = [
+        ":system_constraint_wrapper",
+        "//solvers:binding",
+        "//solvers:create_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "system_optimization_test_util",
+    testonly = 1,
+    srcs = ["test/system_optimization_test_util.cc"],
+    hdrs = ["test/system_optimization_test_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_wrapper_test",
+    deps = [
+        ":system_constraint_wrapper",
+        ":system_optimization_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "system_constraint_adapter_test",
+    deps = [
+        ":system_constraint_adapter",
+        ":system_optimization_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//math:gradient",
+        "//solvers:solve",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+add_lint_tests()

@@ -9,6 +9,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
 
@@ -292,17 +293,18 @@ GTEST_TEST(DirectTranscriptionTest, AddRunningCostTest) {
   prog.AddRunningCost(prog.state() * prog.state());
   prog.AddFinalCost(prog.state() * prog.state());
 
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  EXPECT_TRUE(result.is_success());
 
   // Compute the expected cost as c[N] + \Sum_{i = 0...N-1} h * c[i]
   //   where c[i] is the running cost and c[N] is the terminal cost.
   double expected_cost{0.};
   for (int i{0}; i < kNumSamples - 1; i++) {
     expected_cost +=
-        kTimeStep * std::pow(prog.GetSolution(prog.state(i))[0], 2.);
+        kTimeStep * std::pow(result.GetSolution(prog.state(i))[0], 2.);
   }
 
-  EXPECT_NEAR(prog.GetOptimalCost(), expected_cost, 1e-6);
+  EXPECT_NEAR(result.get_optimal_cost(), expected_cost, 1e-6);
 }
 
 // Check symbolic dynamics with parameters.

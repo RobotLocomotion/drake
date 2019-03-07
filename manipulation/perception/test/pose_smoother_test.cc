@@ -43,7 +43,7 @@ class PoseSmootherTest : public ::testing::Test {
           kPoseSmootherPeriod, filter_window_size);
 
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
 
     EXPECT_EQ(dut_->get_num_input_ports(), 1);
     EXPECT_EQ(dut_->get_num_output_ports(), 2);
@@ -51,8 +51,8 @@ class PoseSmootherTest : public ::testing::Test {
 
   CombinedState UpdateStateCalcOutput(
       const Isometry3d& input_pose, double input_time) {
-    std::unique_ptr<systems::AbstractValue> input(
-        systems::AbstractValue::Make(Isometry3<double>::Identity()));
+    std::unique_ptr<AbstractValue> input(
+        AbstractValue::Make(Isometry3<double>::Identity()));
     input->SetValue(input_pose);
     context_->FixInputPort(0 /* input port ID*/, std::move(input));
     context_->set_time(input_time);

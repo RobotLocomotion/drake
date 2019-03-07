@@ -1,44 +1,42 @@
-
 // Simple Discrete Time System Example
 //
 // This is meant to be a sort of "hello world" example for the
 // drake::system classes.  It defines a very simple discrete time system,
-// simulates it from a given initial condition, and plots the result.
+// simulates it from a given initial condition, and checks the result.
 
-#include "drake/common/unused.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/framework/vector_system.h"
+#include "drake/systems/framework/leaf_system.h"
+
+namespace drake {
+namespace systems {
+namespace {
 
 // Simple Discrete Time System
-//   x[n+1] = x[n]^3
-//   y = x
-class SimpleDiscreteTimeSystem : public drake::systems::VectorSystem<double> {
+//   x_{n+1} = x_n³
+//         y = x
+class SimpleDiscreteTimeSystem : public LeafSystem<double> {
  public:
-  SimpleDiscreteTimeSystem()
-      : drake::systems::VectorSystem<double>(0, 1) {  // Zero inputs, 1 output.
-    this->DeclarePeriodicDiscreteUpdate(1.0);
-    this->DeclareDiscreteState(1);  // One state variable.
+  SimpleDiscreteTimeSystem() {
+    DeclarePeriodicDiscreteUpdateEvent(1.0, 0.0,
+                                       &SimpleDiscreteTimeSystem::Update);
+    DeclareVectorOutputPort("y", BasicVector<double>(1),
+                            &SimpleDiscreteTimeSystem::CopyStateOut);
+    DeclareDiscreteState(1);  // One state variable.
   }
 
  private:
-  // x[n+1] = x[n]^3
-  virtual void DoCalcVectorDiscreteVariableUpdates(
-      const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
-      Eigen::VectorBlock<Eigen::VectorXd>* next_state) const {
-    drake::unused(context, input);
-    (*next_state)[0] = std::pow(state[0], 3.0);
+  // x_{n+1} = x_n³
+  void Update(const Context<double>& context,
+              DiscreteValues<double>* next_state) const {
+    const double x_n = context.get_discrete_state()[0];
+    (*next_state)[0] = std::pow(x_n, 3.0);
   }
 
   // y = x
-  virtual void DoCalcVectorOutput(
-      const drake::systems::Context<double>& context,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& input,
-      const Eigen::VectorBlock<const Eigen::VectorXd>& state,
-      Eigen::VectorBlock<Eigen::VectorXd>* output) const {
-    drake::unused(context, input);
-    *output = state;
+  void CopyStateOut(const Context<double>& context,
+                    BasicVector<double>* output) const {
+    const double x = context.get_discrete_state()[0];
+    (*output)[0] = x;
   }
 };
 
@@ -47,10 +45,10 @@ int main() {
   SimpleDiscreteTimeSystem system;
 
   // Create the simulator.
-  drake::systems::Simulator<double> simulator(system);
+  Simulator<double> simulator(system);
 
-  // Set the initial conditions x(0).
-  drake::systems::DiscreteValues<double>& state =
+  // Set the initial conditions x₀.
+  DiscreteValues<double>& state =
       simulator.get_mutable_context().get_mutable_discrete_state();
   state[0] = 0.99;
 
@@ -63,4 +61,12 @@ int main() {
   // TODO(russt): make a plot of the resulting trajectory.
 
   return 0;
+}
+
+}  // namespace
+}  // namespace systems
+}  // namespace drake
+
+int main() {
+  return drake::systems::main();
 }

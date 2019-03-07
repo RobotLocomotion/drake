@@ -6,9 +6,9 @@ import argparse
 import collections
 import os
 import subprocess
-import yaml
 
 import google.protobuf.text_format
+import yaml
 
 from drake.tools.vector_gen import named_vector_pb2
 from drake.tools.lint.clang_format import get_clang_format_path
@@ -116,7 +116,7 @@ def generate_indices_names_accessor_impl(cc, caller_context, fields):
     put(cc, INDICES_NAMES_ACCESSOR_IMPL_END % context, 2)
 
 
-# A second variant of a default constructor (field-by-field setting).
+# A default constructor with field-by-field setting.
 DEFAULT_CTOR_CUSTOM_BEGIN_API = """
   /// Default constructor.  Sets all rows to their default value:
 """
@@ -132,13 +132,11 @@ DEFAULT_CTOR_CUSTOM_FIELD_BODY = """
 DEFAULT_CTOR_CUSTOM_END = """
 }
 """
-DEFAULT_CTOR_FIELD_DEFAULT_VALUE = '0.0'  # When not otherwise overridden.
 DEFAULT_CTOR_FIELD_DUMMY_TOKEN = 'dummy'
 DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS = 'unknown'
 
 
 def generate_default_ctor(hh, caller_context, fields):
-    # Otherwise, emit a customized ctor.
     put(hh, DEFAULT_CTOR_CUSTOM_BEGIN_API % caller_context, 1)
     for field in fields:
         context = dict(caller_context)
@@ -163,6 +161,35 @@ def generate_default_ctor(hh, caller_context, fields):
         context.update(default_value=default_value)
         put(hh, DEFAULT_CTOR_CUSTOM_FIELD_BODY % context, 1)
     put(hh, DEFAULT_CTOR_CUSTOM_END % caller_context, 2)
+
+
+# The "rule of five methods" (but only four -- default dtor is fine).
+COPY_AND_ASSIGN = """
+  // Note: It's safe to implement copy and move because this class is final.
+
+  /// @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  /// MoveAssignable
+  //@{
+  %(camel)s(const %(camel)s& other)
+      : drake::systems::BasicVector<T>(other.values()) {}
+  %(camel)s(%(camel)s&& other) noexcept
+      : drake::systems::BasicVector<T>(std::move(other.values())) {}
+  %(camel)s& operator=(const %(camel)s& other) {
+    this->values() = other.values();
+    return *this;
+  }
+  %(camel)s& operator=(%(camel)s&& other) noexcept {
+    this->values() = std::move(other.values());
+    other.values().resize(0);
+    return *this;
+  }
+  //@}
+"""
+
+
+def generate_copy_and_assign(hh, caller_context):
+    # Otherwise, emit a customized ctor.
+    put(hh, COPY_AND_ASSIGN % caller_context, 2)
 
 
 # SetToNamedVariables (for symbolic::Expression only).
@@ -215,9 +242,23 @@ ACCESSOR_FIELD_DOC_RANGE = """
   /// @note @c %(field)s has a limited domain of [%(min_doc)s, %(max_doc)s].
 """
 ACCESSOR_FIELD_METHODS = """
-  const T& %(field)s() const { return this->GetAtIndex(K::%(kname)s); }
+  const T& %(field)s() const {
+    ThrowIfEmpty();
+    return this->GetAtIndex(K::%(kname)s);
+  }
+  /// Setter that matches %(field)s().
   void set_%(field)s(const T& %(field)s) {
+    ThrowIfEmpty();
     this->SetAtIndex(K::%(kname)s, %(field)s);
+  }
+  /// Fluent setter that matches %(field)s().
+  /// Returns a copy of `this` with %(field)s set to a new value.
+  DRAKE_VECTOR_GEN_NODISCARD
+  %(camel)s<T>
+  with_%(field)s(const T& %(field)s) const {
+    %(camel)s<T> result(*this);
+    result.set_%(field)s(%(field)s);
+    return result;
   }
 """
 ACCESSOR_END = """
@@ -251,11 +292,14 @@ GET_COORDINATE_NAMES = """
    }
 """
 
+# TODO(russt): Resolve names differences across the codebase. The vector gen
+# scripts call this IsValid, but the system and solvers Constraint classes call
+# it CheckSatisfied.
 IS_VALID_BEGIN = """
   /// Returns whether the current values of this vector are well-formed.
-  drake::Bool<T> IsValid() const {
+  drake::boolean<T> IsValid() const {
     using std::isnan;
-    auto result = (T(0) == T(0));
+    drake::boolean<T> result{true};
 """
 IS_VALID = """
     result = result && !isnan(%(field)s());
@@ -288,50 +332,41 @@ def generate_is_valid(hh, caller_context, fields):
     put(hh, IS_VALID_END % caller_context, 2)
 
 
-CALC_INEQUALITY_CONSTRAINT_BEGIN = """
-  // VectorBase override.
-  void CalcInequalityConstraint(drake::VectorX<T>* value) const final {
-    value->resize(%(num_constraints)d);
+GET_ELEMENT_BOUNDS_BEGIN = """
+  void GetElementBounds(Eigen::VectorXd* lower,
+                        Eigen::VectorXd* upper) const final {
+    const double kInf = std::numeric_limits<double>::infinity();
+    *lower = Eigen::Matrix<double, %(nfields)s, 1>::Constant(-kInf);
+    *upper = Eigen::Matrix<double, %(nfields)s, 1>::Constant(kInf);
 """
-CALC_INEQUALITY_CONSTRAINT_MIN_VALUE = """
-    (*value)[%(constraint_index)d] = %(field)s() - T(%(min_value)s);
+GET_ELEMENT_BOUNDS_LOWER = """
+    (*lower)(K::%(kname)s) = %(min_value)s;
 """
-CALC_INEQUALITY_CONSTRAINT_MAX_VALUE = """
-    (*value)[%(constraint_index)d] = T(%(max_value)s) - %(field)s();
+GET_ELEMENT_BOUNDS_UPPER = """
+    (*upper)(K::%(kname)s) = %(max_value)s;
 """
-CALC_INEQUALITY_CONSTRAINT_END = """
+GET_ELEMENT_BOUNDS_END = """
   }
 """
 
 
-def generate_calc_inequality_constraint(hh, caller_context, fields):
-    num_constraints = 0
-    for field in fields:
-        if field['min_value']:
-            num_constraints += 1
-        if field['max_value']:
-            num_constraints += 1
-    if num_constraints == 0:
+def generate_get_element_bounds(hh, caller_context, fields):
+    is_any_element_bounded = any(
+        [field['min_value'] or field['max_value'] for field in fields])
+    if not is_any_element_bounded:
         return
     context = dict(caller_context)
-    context.update(num_constraints=num_constraints)
-    put(hh, CALC_INEQUALITY_CONSTRAINT_BEGIN % context, 1)
-    constraint_index = 0
+    context.update(nfields=len(fields))
+    put(hh, GET_ELEMENT_BOUNDS_BEGIN % context, 1)
     for field in fields:
-        field_context = dict(caller_context)
-        field_context.update(field=field['name'])
+        context.update(kname=to_kname(field['name']))
         if field['min_value']:
-            field_context.update(constraint_index=constraint_index)
-            field_context.update(min_value=field['min_value'])
-            put(hh, CALC_INEQUALITY_CONSTRAINT_MIN_VALUE % field_context, 1)
-            constraint_index += 1
+            context.update(min_value=field['min_value'])
+            put(hh, GET_ELEMENT_BOUNDS_LOWER % context, 1)
         if field['max_value']:
-            field_context.update(constraint_index=constraint_index)
-            field_context.update(max_value=field['max_value'])
-            put(hh, CALC_INEQUALITY_CONSTRAINT_MAX_VALUE % field_context, 1)
-            constraint_index += 1
-    assert constraint_index == num_constraints
-    put(hh, CALC_INEQUALITY_CONSTRAINT_END % context, 2)
+            context.update(max_value=field['max_value'])
+            put(hh, GET_ELEMENT_BOUNDS_UPPER % context, 1)
+    put(hh, GET_ELEMENT_BOUNDS_END % context, 2)
 
 
 VECTOR_HH_PREAMBLE = """
@@ -340,9 +375,11 @@ VECTOR_HH_PREAMBLE = """
 %(generated_code_warning)s
 
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <Eigen/Core>
 
@@ -351,6 +388,13 @@ VECTOR_HH_PREAMBLE = """
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
+
+// TODO(jwnimmer-tri) Elevate this to drake/common.
+#if __has_cpp_attribute(nodiscard)
+#define DRAKE_VECTOR_GEN_NODISCARD [[nodiscard]]  // NOLINT(whitespace/braces)
+#else
+#define DRAKE_VECTOR_GEN_NODISCARD
+#endif
 
 %(opening_namespace)s
 """
@@ -366,11 +410,21 @@ class %(camel)s final : public drake::systems::BasicVector<T> {
 """
 
 VECTOR_CLASS_END = """
+ private:
+  void ThrowIfEmpty() const {
+    if (this->values().size() == 0) {
+      throw std::out_of_range(
+          "The %(camel)s vector has been moved-from; "
+          "accessor methods may no longer be used");
+    }
+  }
 };
 """
 
 VECTOR_HH_POSTAMBLE = """
 %(closing_namespace)s
+
+#undef DRAKE_VECTOR_GEN_NODISCARD
 """
 
 VECTOR_CC_PREAMBLE = """
@@ -395,6 +449,7 @@ TRANSLATOR_HH_PREAMBLE = """
 
 #include "%(cxx_include_path)s/%(snake)s.h"
 #include "%(lcm_package)s/lcmt_%(snake)s_t.hpp"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/lcm/lcm_and_vector_base_translator.h"
 
 %(opening_namespace)s
@@ -405,7 +460,11 @@ TRANSLATOR_CLASS_DECL = """
  * Translates between LCM message objects and VectorBase objects for the
  * %(camel)s type.
  */
-class %(camel)sTranslator final
+class
+    DRAKE_DEPRECATED("2019-05-01",
+        "The LcmAndVectorBaseTranslator and its related code "
+        "are scheduled to be removed, with no replacement.")
+    %(camel)sTranslator final
     : public drake::systems::lcm::LcmAndVectorBaseTranslator {
  public:
   %(camel)sTranslator()
@@ -570,10 +629,8 @@ def generate_code(
     # Default some field attributes if they are missing.
     for item in fields:
         if len(item['default_value']) == 0:
-            print("warning: using an implicit default_value is deprecated;")
-            print(" add '{}' to {}.{} to prevent future errors".format(
-                'default_value: "0.0"', snake, item['name']))
-            item['default_value'] = DEFAULT_CTOR_FIELD_DEFAULT_VALUE
+            print("error: a default_value for {}.{} is required".format(
+                snake, item['name']))
         if len(item['doc_units']) == 0:
             item['doc_units'] = DEFAULT_CTOR_FIELD_UNKNOWN_DOC_UNITS
 
@@ -611,12 +668,13 @@ def generate_code(
             generate_indices_names_accessor_decl(hh, context)
             put(hh, VECTOR_CLASS_BEGIN % context, 2)
             generate_default_ctor(hh, context, fields)
+            generate_copy_and_assign(hh, context)
             generate_set_to_named_variables(hh, context, fields)
             generate_do_clone(hh, context, fields)
             generate_accessors(hh, context, fields)
             put(hh, GET_COORDINATE_NAMES % context, 2)
             generate_is_valid(hh, context, fields)
-            generate_calc_inequality_constraint(hh, context, fields)
+            generate_get_element_bounds(hh, context, fields)
             put(hh, VECTOR_CLASS_END % context, 2)
             put(hh, VECTOR_HH_POSTAMBLE % context, 1)
 

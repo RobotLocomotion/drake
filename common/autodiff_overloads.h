@@ -33,6 +33,13 @@
 
 namespace Eigen {
 
+/// Overloads nexttoward to mimic std::nexttoward from <cmath>.
+template <typename DerType>
+double nexttoward(const Eigen::AutoDiffScalar<DerType>& from, long double to) {
+  using std::nexttoward;
+  return nexttoward(from.value(), to);
+}
+
 /// Overloads round to mimic std::round from <cmath>.
 template <typename DerType>
 double round(const Eigen::AutoDiffScalar<DerType>& x) {
@@ -45,6 +52,13 @@ template <typename DerType>
 bool isinf(const Eigen::AutoDiffScalar<DerType>& x) {
   using std::isinf;
   return isinf(x.value());
+}
+
+/// Overloads isfinite to mimic std::isfinite from <cmath>.
+template <typename DerType>
+bool isfinite(const Eigen::AutoDiffScalar<DerType>& x) {
+  using std::isfinite;
+  return isfinite(x.value());
 }
 
 /// Overloads isnan to mimic std::isnan from <cmath>.

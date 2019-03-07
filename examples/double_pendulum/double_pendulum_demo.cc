@@ -37,9 +37,8 @@ int main(int argc, char* argv[]) {
                           "make sure drake-visualizer is running!");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   logging::HandleSpdlogGflags();
-  // Instantiate LCM interface and start receiving.
+  // Instantiate LCM interface.
   auto lcm_interface = std::make_unique<lcm::DrakeLcm>();
-  lcm_interface->StartReceiveThread();
   // Load and parse double pendulum SDF from file into a tree.
   const std::string sdf_path = FindResourceOrThrow(kDoublePendulumSdfPath);
   auto tree = std::make_unique<RigidBodyTree<double>>();
@@ -62,7 +61,9 @@ int main(int argc, char* argv[]) {
   simulator->set_target_realtime_rate(FLAGS_realtime_rate);
   simulator->Initialize();
   // Run simulation.
+  lcm_interface->StartReceiveThread();
   simulator->StepTo(FLAGS_simulation_time);
+  lcm_interface->StopReceiveThread();
   return 0;
 }
 

@@ -19,6 +19,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -115,10 +116,17 @@ class Formula {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Formula)
 
-  /** Default constructor. */
-  Formula() { *this = True(); }
+  /** Default constructor.  Sets the value to Formula::False, to be consistent
+   * with value-initialized `bool`s.
+   */
+  Formula() : Formula(False()) {}
 
-  explicit Formula(std::shared_ptr<FormulaCell> ptr);
+  /** Constructs from a `bool`.  This overload is also used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit Formula(bool value) : Formula(value ? True() : False()) {}
+
+  explicit Formula(std::shared_ptr<const FormulaCell> ptr);
 
   /** Constructs a formula from @p var.
    * @pre @p var is of BOOLEAN type and not a dummy variable.
@@ -128,7 +136,7 @@ class Formula {
   FormulaKind get_kind() const;
   /** Gets free variables (unquantified variables). */
   Variables GetFreeVariables() const;
-  /** Checks structural equality*/
+  /** Checks structural equality. */
   bool EqualTo(const Formula& f) const;
   /** Checks lexicographical ordering between this and @p e.
    *
@@ -154,17 +162,25 @@ class Formula {
    * std::less<symbolic::Formula>. */
   bool Less(const Formula& f) const;
 
-  /** Evaluates under a given environment (by default, an empty environment).
+  /** Evaluates using a given environment (by default, an empty environment) and
+   * a random number generator. If there is a random variable in this formula
+   * which is unassigned in @p env, it uses @p random_generator to sample a
+   * value and use it to substitute all occurrences of the random variable in
+   * this formula.
    *
-   * @throws runtime_error if a variable `v` is needed for an evaluation but not
-   * provided by @p env.
-   *
-   * Note that for an equality e₁ = e₂ and an inequality e₁ ≠ e₂, this method
-   * partially evaluates e₁ and e₂ and checks the structural equality of the two
-   * results if @p env does not provide complete information to call Evaluate on
-   * e₁ and e₂.
+   * @throws std::runtime_error if a variable `v` is needed for an evaluation
+   *                            but not provided by @p env.
+   * @throws std::runtime_error if an unassigned random variable is detected
+   *                            while @p random_generator is `nullptr`.
    */
-  bool Evaluate(const Environment& env = Environment{}) const;
+  bool Evaluate(const Environment& env = Environment{},
+                RandomGenerator* random_generator = nullptr) const;
+
+  /** Evaluates using an empty environment and a random number generator.
+   *
+   * See the above overload for the exceptions that it might throw.
+   */
+  bool Evaluate(RandomGenerator* random_generator) const;
 
   /** Returns a copy of this formula replacing all occurrences of @p var
    * with @p e.
@@ -191,8 +207,7 @@ class Formula {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Formula& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher, const Formula& item) noexcept {
     DelegatingHasher delegating_hasher(
         [&hasher](const void* data, const size_t length) {
           return hasher(data, length);
@@ -223,30 +238,35 @@ class Formula {
   // Note that the following cast functions are only for low-level operations
   // and not exposed to the user of symbolic_formula.h. These functions are
   // declared in symbolic_formula_cell.h header.
-  friend std::shared_ptr<FormulaFalse> to_false(const Formula& f);
-  friend std::shared_ptr<FormulaTrue> to_true(const Formula& f);
-  friend std::shared_ptr<FormulaVar> to_variable(const Formula& f);
-  friend std::shared_ptr<RelationalFormulaCell> to_relational(const Formula& f);
-  friend std::shared_ptr<FormulaEq> to_equal_to(const Formula& f);
-  friend std::shared_ptr<FormulaNeq> to_not_equal_to(const Formula& f);
-  friend std::shared_ptr<FormulaGt> to_greater_than(const Formula& f);
-  friend std::shared_ptr<FormulaGeq> to_greater_than_or_equal_to(
+  friend std::shared_ptr<const FormulaFalse> to_false(const Formula& f);
+  friend std::shared_ptr<const FormulaTrue> to_true(const Formula& f);
+  friend std::shared_ptr<const FormulaVar> to_variable(const Formula& f);
+  friend std::shared_ptr<const RelationalFormulaCell> to_relational(
       const Formula& f);
-  friend std::shared_ptr<FormulaLt> to_less_than(const Formula& f);
-  friend std::shared_ptr<FormulaLeq> to_less_than_or_equal_to(const Formula& f);
-  friend std::shared_ptr<NaryFormulaCell> to_nary(const Formula& f);
-  friend std::shared_ptr<FormulaAnd> to_conjunction(const Formula& f);
-  friend std::shared_ptr<FormulaOr> to_disjunction(const Formula& f);
-  friend std::shared_ptr<FormulaNot> to_negation(const Formula& f);
-  friend std::shared_ptr<FormulaForall> to_forall(const Formula& f);
-  friend std::shared_ptr<FormulaIsnan> to_isnan(const Formula& f);
-  friend std::shared_ptr<FormulaPositiveSemidefinite> to_positive_semidefinite(
+  friend std::shared_ptr<const FormulaEq> to_equal_to(const Formula& f);
+  friend std::shared_ptr<const FormulaNeq> to_not_equal_to(const Formula& f);
+  friend std::shared_ptr<const FormulaGt> to_greater_than(const Formula& f);
+  friend std::shared_ptr<const FormulaGeq> to_greater_than_or_equal_to(
       const Formula& f);
+  friend std::shared_ptr<const FormulaLt> to_less_than(const Formula& f);
+  friend std::shared_ptr<const FormulaLeq> to_less_than_or_equal_to(
+      const Formula& f);
+  friend std::shared_ptr<const NaryFormulaCell> to_nary(const Formula& f);
+  friend std::shared_ptr<const FormulaAnd> to_conjunction(const Formula& f);
+  friend std::shared_ptr<const FormulaOr> to_disjunction(const Formula& f);
+  friend std::shared_ptr<const FormulaNot> to_negation(const Formula& f);
+  friend std::shared_ptr<const FormulaForall> to_forall(const Formula& f);
+  friend std::shared_ptr<const FormulaIsnan> to_isnan(const Formula& f);
+  friend std::shared_ptr<const FormulaPositiveSemidefinite>
+  to_positive_semidefinite(const Formula& f);
 
  private:
   void HashAppend(DelegatingHasher* hasher) const;
 
-  std::shared_ptr<FormulaCell> ptr_;
+  // Note: We use "const" FormulaCell type here because a FormulaCell object can
+  // be shared by multiple formulas, a formula should _not_ be able to change
+  // the cell that it points to.
+  std::shared_ptr<const FormulaCell> ptr_;
 };
 
 /** Returns a formula @p f, universally quantified by variables @p vars. */
@@ -298,6 +318,18 @@ Formula operator>=(const Expression& e1, const Expression& e2);
  * @throws std::runtime_error if NaN is detected during evaluation.
  */
 Formula isnan(const Expression& e);
+
+/** Returns a Formula determining if the given expression @p e is a
+ * positive or negative infinity.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isinf(const Expression& e);
+
+/** Returns a Formula determining if the given expression @p e has a finite
+ * value.
+ * @throws std::runtime_error if NaN is detected during evaluation.
+ */
+Formula isfinite(const Expression& e);
 
 /** Returns a symbolic formula constraining @p m to be a positive-semidefinite
  * matrix. By definition, a symmetric matrix @p m is positive-semidefinte if xᵀ
@@ -516,7 +548,7 @@ inline Formula logic_or(const Formula& f1, const Formula& f2) {
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `Eigen::Array<bool>` and is provided by Eigen.
 ///
-///    - Eigen::Array<double> == Eigen::Array<double>
+/// - Eigen::Array<double> == Eigen::Array<double>
 ///
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
@@ -878,7 +910,7 @@ operator!=(const ScalarType& v, const Derived& a) {
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `bool` and is provided by Eigen.
 ///
-///    - Eigen::Matrix<double> == Eigen::Matrix<double>
+/// - Eigen::Matrix<double> == Eigen::Matrix<double>
 ///
 /// Note that this method returns a conjunctive formula which keeps its
 /// conjuncts as `std::set<Formula>` internally. This set is ordered by
@@ -936,7 +968,7 @@ operator==(const DerivedA& m1, const DerivedB& m2) {
 /// Note that this function does *not* provide operator overloading for the
 /// following case. It returns `bool` and is provided by Eigen.
 ///
-///    - Eigen::Matrix<double> != Eigen::Matrix<double>
+/// - Eigen::Matrix<double> != Eigen::Matrix<double>
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if<
     std::is_same<typename Eigen::internal::traits<DerivedA>::XprKind,
@@ -1080,24 +1112,15 @@ struct ConditionTraits<symbolic::Formula> {
 };
 }  // namespace assert
 
-/// Specialization of ExtractBoolOrThrow for `Bool<symbolic::Expression>` which
-/// includes `symbolic::Formula`. It calls `Evaluate` with an empty environment
-/// and throws if there are free variables in the expression.
-template <>
-inline bool ExtractBoolOrThrow(const Bool<symbolic::Expression>& b) {
-  return b.value().Evaluate();
-}
-
 }  // namespace drake
 
 namespace std {
 /* Provides std::hash<drake::symbolic::Formula>. */
 template <>
-struct hash<drake::symbolic::Formula>
-    : public drake::DefaultHash {};
+struct hash<drake::symbolic::Formula> : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
-template<>
+template <>
 struct __is_fast_hash<hash<drake::symbolic::Formula>> : std::false_type {};
 #endif
 

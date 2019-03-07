@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace math {
@@ -96,10 +97,10 @@ GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, indefiniteY) {
 
 GTEST_TEST(TestDecomposePSDmatrixIntoXtransposeTimesX, almost_psd_Y) {
   // Y is almost PSD.
-  Eigen::Matrix3d U =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
-  const Eigen::Matrix3d Y =
-      U * Eigen::Vector3d(1, -1E-10, 2).asDiagonal() * U.transpose();
+  const RotationMatrixd U = RotationMatrixd::MakeYRotation(M_PI / 2);
+  const Eigen::Matrix3d Y = U.matrix()
+                          * Eigen::Vector3d(1, -1E-10, 2).asDiagonal()
+                          * U.transpose().matrix();
   // With tolerance being 0, DecomposePSDmatrixIntoXtransposeTimesX should
   // detect Y is not PSD.
   EXPECT_THROW(DecomposePSDmatrixIntoXtransposeTimesX(Y, 0),

@@ -58,16 +58,16 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override {
+              Eigen::VectorXd* y) const override {
     AutoDiffVecXd y_t;
-    Eval(math::initializeAutoDiff(x), y_t);
-    y = math::autoDiffToValueMatrix(y_t);
+    Eval(math::initializeAutoDiff(x), &y_t);
+    *y = math::autoDiffToValueMatrix(y_t);
   }
 
   // The format of the input to the eval() function is a vector
   // containing {input, state, next_state}.
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override {
+              AutoDiffVecXd* y) const override {
     DRAKE_ASSERT(x.size() == num_inputs_ + (2 * num_states_));
 
     // Extract our input variables:
@@ -83,7 +83,13 @@ class DiscreteTimeSystemConstraint : public solvers::Constraint {
     context_->get_mutable_discrete_state(0).SetFromVector(state);
 
     system_.CalcDiscreteVariableUpdates(*context_, discrete_state_);
-    y = next_state - discrete_state_->get_vector(0).CopyToVector();
+    *y = next_state - discrete_state_->get_vector(0).CopyToVector();
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    throw std::logic_error(
+        "DiscreteTimeSystemConstraint does not support symbolic evaluation.");
   }
 
  private:
@@ -125,24 +131,25 @@ DirectTranscription::DirectTranscription(const System<double>* system,
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
-DirectTranscription::DirectTranscription(const LinearSystem<double>* system,
-                                         const Context<double>& context,
-                                         int num_time_samples)
-    : MultipleShooting(system->get_num_total_inputs(),
+DirectTranscription::DirectTranscription(
+    const LinearSystem<double>* linear_system,
+    const Context<double>& context,
+    int num_time_samples)
+    : MultipleShooting(linear_system->get_num_total_inputs(),
                        context.get_num_total_states(), num_time_samples,
-                       std::max(system->time_period(),
+                       std::max(linear_system->time_period(),
                                 std::numeric_limits<double>::epsilon())
                        /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
-  ValidateSystem(*system, context);
+  ValidateSystem(*linear_system, context);
 
   for (int i = 0; i < N() - 1; i++) {
     AddLinearEqualityConstraint(
         state(i+1).cast<symbolic::Expression>() ==
-        system->A() * state(i).cast<symbolic::Expression>() +
-        system->B() * input(i).cast<symbolic::Expression>());
+        linear_system->A() * state(i).cast<symbolic::Expression>() +
+        linear_system->B() * input(i).cast<symbolic::Expression>());
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
@@ -180,6 +187,8 @@ void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   }
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double>
 DirectTranscription::ReconstructInputTrajectory()
     const {
@@ -194,7 +203,10 @@ DirectTranscription::ReconstructInputTrajectory()
   // TODO(russt): Implement DTTrajectories and return one of those instead.
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
 }
+#pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
     const {
   Eigen::VectorXd times = GetSampleTimes();
@@ -204,6 +216,35 @@ PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory()
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
     states[i] = GetSolution(state(i));
+  }
+  // TODO(russt): Implement DTTrajectories and return one of those instead.
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
+}
+#pragma GCC diagnostic pop
+
+PiecewisePolynomial<double> DirectTranscription::ReconstructInputTrajectory(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::VectorXd times = GetSampleTimes(result);
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> inputs(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    inputs[i] = result.GetSolution(input(i));
+  }
+  // TODO(russt): Implement DTTrajectories and return one of those instead.
+  return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, inputs);
+}
+
+PiecewisePolynomial<double> DirectTranscription::ReconstructStateTrajectory(
+    const solvers::MathematicalProgramResult& result) const {
+  Eigen::VectorXd times = GetSampleTimes(result);
+  std::vector<double> times_vec(N());
+  std::vector<Eigen::MatrixXd> states(N());
+
+  for (int i = 0; i < N(); i++) {
+    times_vec[i] = times(i);
+    states[i] = result.GetSolution(state(i));
   }
   // TODO(russt): Implement DTTrajectories and return one of those instead.
   return PiecewisePolynomial<double>::ZeroOrderHold(times_vec, states);
@@ -223,7 +264,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
   }
 
   symbolic::Substitution sub;
-  for (int i = 0; i < context.num_numeric_parameters(); i++) {
+  for (int i = 0; i < context.num_numeric_parameter_groups(); i++) {
     const auto& params = context.get_numeric_parameter(i).get_value();
     for (int j = 0; j < params.size(); j++) {
       sub.emplace(inspector->numeric_parameters(i)[j], params[j]);

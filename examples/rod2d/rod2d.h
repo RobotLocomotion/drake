@@ -15,6 +15,7 @@ namespace drake {
 namespace examples {
 namespace rod2d {
 
+// TODO(edrumwri): Track energy and add a test to check it.
 /** Dynamical system representation of a rod contacting a half-space in
 two dimensions.
 
@@ -22,29 +23,30 @@ two dimensions.
 In the discussion below and in code comments, we will use the 2D analog of our
 standard multibody notation as described in detail here:
 @ref multibody_notation.
-<!-- http://drake.mit.edu/doxygen_cxx/group__multibody__notation.html -->
+<!-- https://drake.mit.edu/doxygen_cxx/group__multibody__notation.html -->
 
 For a quick summary and translation to 2D:
- - When we combine rotational and translational quantities into a single
-   quantity in 3D, we call those "spatial" quantities. In 2D those combined
-   quantities are actually planar, but we will continue to refer to them as
-   "spatial" to keep the notation analogous and promote easy extension of 2D
-   pedagogical examples to 3D.
- - We use capital letters to represent bodies and coordinate frames. Frame F has
-   an origin point Fo, and a basis formed by orthogonal unit vector axes Fx and
-   Fy, with an implicit `Fz=Fx × Fy` always pointing out of the screen for a 2D
-   system. The inertial frame World is W, and the rod frame is R.
- - We also use capitals to represent points, and we allow a frame name F to be
-   used where a point is expected to represent its origin Fo.
- - We use `p_CD` to represent the position vector from point C to point D. Note
-   that if A and B are frames, `p_AB` means `p_AoBo`.
- - If we need to be explicit about the expressed-in frame F for any quantity, we
-   add the suffix `_F` to its symbol. So the position vector from C to D,
-   expressed in W, is `p_CD_W`.
- - R_AB is the rotation matrix giving frame B's orientation in frame A.
- - X_AB is the transformation matrix giving frame B's pose in frame A, combining
-   both a rotation and a translation; this is conventionally called a
-   "transform". A transform is a spatial quantity.
+
+- When we combine rotational and translational quantities into a single
+  quantity in 3D, we call those "spatial" quantities. In 2D those combined
+  quantities are actually planar, but we will continue to refer to them as
+  "spatial" to keep the notation analogous and promote easy extension of 2D
+  pedagogical examples to 3D.
+- We use capital letters to represent bodies and coordinate frames. Frame F has
+  an origin point Fo, and a basis formed by orthogonal unit vector axes Fx and
+  Fy, with an implicit `Fz=Fx × Fy` always pointing out of the screen for a 2D
+  system. The inertial frame World is W, and the rod frame is R.
+- We also use capitals to represent points, and we allow a frame name F to be
+  used where a point is expected to represent its origin Fo.
+- We use `p_CD` to represent the position vector from point C to point D. Note
+  that if A and B are frames, `p_AB` means `p_AoBo`.
+- If we need to be explicit about the expressed-in frame F for any quantity, we
+  add the suffix `_F` to its symbol. So the position vector from C to D,
+  expressed in W, is `p_CD_W`.
+- R_AB is the rotation matrix giving frame B's orientation in frame A.
+- X_AB is the transformation matrix giving frame B's pose in frame A, combining
+  both a rotation and a translation; this is conventionally called a
+  "transform". A transform is a spatial quantity.
 
 In 2D, with frames A and B the above quantities are (conceptually) matrices
 with the indicated dimensions: <pre>
@@ -58,11 +60,12 @@ represented by (x,y,θ).
 
 We use v for translational velocity of a point and w (ω) for rotational
 velocity of a frame. The symbols are:
- - `v_AP` is point P's velocity in frame A, expressed in frame A if no
-   other frame is given as a suffix.
- - `w_AB` is frame B's angular velocity in frame A, expressed in frame A
-   if no other frame is given as a suffix.
- - `V_AB` is frame B's spatial velocity in A, meaning `v_ABo` and `w_AB`.
+
+- `v_AP` is point P's velocity in frame A, expressed in frame A if no
+  other frame is given as a suffix.
+- `w_AB` is frame B's angular velocity in frame A, expressed in frame A
+  if no other frame is given as a suffix.
+- `V_AB` is frame B's spatial velocity in A, meaning `v_ABo` and `w_AB`.
 
 
 These quantities are conceptually: <pre>
@@ -75,9 +78,10 @@ velocity with just the scalar w=ω=@f$\dot{\theta}@f$ (that is, d/dt θ), and
 spatial velocity as (vx,vy,ω).
 
 Forces f and torques τ are represented similarly:
- - `f_P` is an in-plane force applied to a point P fixed to some rigid body.
- - `t_A` is an in-plane torque applied to frame A (meaning it is about Az).
- - `F_A` is a spatial force including both `f_Ao` and `t_A`.
+
+- `f_P` is an in-plane force applied to a point P fixed to some rigid body.
+- `t_A` is an in-plane torque applied to frame A (meaning it is about Az).
+- `F_A` is a spatial force including both `f_Ao` and `t_A`.
 
 The above symbols can be suffixed with an expressed-in frame if the frame is
 not already obvious, so `F_A_W` is a spatial force applied to frame A (at Ao)
@@ -109,6 +113,7 @@ h, and "left" and "right" endpoints `Rl=Ro-h*Rx` and `Rr=Ro+h*Rx` at which
 it can contact the halfspace whose surface is at Wy=0.
 
 This system can be simulated using one of three models:
+
 - continuously, using a compliant contact model (the rod is rigid, but contact
   between the rod and the half-space is modeled as compliant) simulated using
   ordinary differential equations (ODEs),
@@ -125,11 +130,12 @@ Coulomb friction. The problem is well known to correspond to an
 necessary to resolve the problem.
 
 This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
-this class, please refer to http://drake.mit.edu/cxx_inl.html.
+this class, please refer to https://drake.mit.edu/cxx_inl.html.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
 Instantiated templates for the following scalar types @p T are provided:
+
 - double
 
 They are already available to link against in the containing library.
@@ -142,15 +148,14 @@ States: planar position (state indices 0 and 1) and orientation (state
         index 2), and planar linear velocity (state indices 3 and 4) and
         scalar angular velocity (state index 5) in units of m, radians,
         m/s, and rad/s, respectively. Orientation is measured counter-
-        clockwise with respect to the x-axis. 
+        clockwise with respect to the x-axis.
 
 Outputs: Output Port 0 corresponds to the state vector; Output Port 1
          corresponds to a PoseVector giving the 3D pose of the rod in the world
          frame.
 
 - [Stewart, 2000]  D. Stewart, "Rigid-Body Dynamics with Friction and
-                   Impact". SIAM Rev., 42(1), 3-39, 2000. **/
-// TODO(edrumwri): Track energy and add a test to check it.
+                   Impact". SIAM Rev., 42(1), 3-39, 2000. */
 template <typename T>
 class Rod2D : public systems::LeafSystem<T> {
  public:

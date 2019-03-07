@@ -25,7 +25,6 @@ void TestGainSystem(const Gain<T>& gain_system,
 
   // Verifies that Gain allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state().size());
-  auto output = gain_system.AllocateOutput(*context);
   auto input =
       make_unique<BasicVector<double>>(gain_system.get_gain_vector().size());
 
@@ -39,15 +38,9 @@ void TestGainSystem(const Gain<T>& gain_system,
   // Hook input of the expected size.
   context->FixInputPort(0, std::move(input));
 
-  gain_system.CalcOutput(*context, output.get());
-
-  // Checks that the number of output ports in the Gain system and the
-  // SystemOutput are consistent.
-  ASSERT_EQ(1, output->get_num_ports());
+  // Checks the output.
   ASSERT_EQ(1, gain_system.get_num_output_ports());
-  const BasicVector<double>* output_vector = output->get_vector_data(0);
-  ASSERT_NE(nullptr, output_vector);
-  EXPECT_EQ(expected_output, output_vector->get_value());
+  EXPECT_EQ(expected_output, gain_system.get_output_port().Eval(*context));
 }
 
 // Tests the ability to use a double as the gain.

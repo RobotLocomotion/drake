@@ -23,7 +23,7 @@ class LinearFeasibilityProgram : public OptimizationProgram {
 
   ~LinearFeasibilityProgram() override {};
 
-  void CheckSolution(SolverType solver_type) const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 
  private:
   VectorDecisionVariable<3> x_;
@@ -47,7 +47,7 @@ class LinearProgram0 : public OptimizationProgram {
 
   ~LinearProgram0() override {};
 
-  void CheckSolution(SolverType solver_type) const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 
  private:
   VectorDecisionVariable<2> x_;
@@ -68,7 +68,7 @@ class LinearProgram1 : public OptimizationProgram {
 
   ~LinearProgram1() override {};
 
-  void CheckSolution(SolverType solver_type) const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 
  private:
   VectorDecisionVariable<2> x_;
@@ -96,7 +96,7 @@ class LinearProgram2 : public OptimizationProgram {
 
   ~LinearProgram2() override {};
 
-  void CheckSolution(SolverType solver_type) const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 
  private:
   VectorDecisionVariable<4> x_;
@@ -121,7 +121,7 @@ class LinearProgram3 : public OptimizationProgram {
 
   ~LinearProgram3() override {};
 
-  void CheckSolution(SolverType solver_type) const override;
+  void CheckSolution(const MathematicalProgramResult& result) const override;
 
  private:
   VectorDecisionVariable<3> x_;

@@ -2,6 +2,7 @@
 
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/snopt_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -46,10 +47,10 @@ GTEST_TEST(TestComplementaryProblem, bard1) {
 
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
-    auto result = snopt_solver.Solve(prog);
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    auto x_val = prog.GetSolution(x);
-    auto y_val = prog.GetSolution(y);
+    auto result = snopt_solver.Solve(prog, {}, {});
+    EXPECT_TRUE(result.is_success());
+    auto x_val = result.GetSolution(x);
+    auto y_val = result.GetSolution(y);
     EXPECT_NEAR(x_val(0), 1, 1E-6);
     EXPECT_NEAR(y_val(0), 0, 1E-6);
   }
@@ -82,10 +83,10 @@ GTEST_TEST(TestComplementaryProblem, flp2) {
   prog.AddBoundingBoxConstraint(0, 10, x);
   SnoptSolver snopt_solver;
   if (snopt_solver.available()) {
-    auto result = prog.Solve();
-    EXPECT_EQ(result, SolutionResult::kSolutionFound);
-    const auto x_val = prog.GetSolution(x);
-    const auto y_val = prog.GetSolution(y);
+    MathematicalProgramResult result = Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    const auto x_val = result.GetSolution(x);
+    const auto y_val = result.GetSolution(y);
     // Choose 1e-6 as the precision, since that is the default minor feasibility
     // tolerance of SNOPT.
     double precision = 1E-6;

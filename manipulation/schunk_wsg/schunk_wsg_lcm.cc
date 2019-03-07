@@ -6,7 +6,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_schunk_wsg_command.hpp"
 #include "drake/lcmt_schunk_wsg_status.hpp"
 
@@ -16,191 +15,134 @@ namespace schunk_wsg {
 
 using systems::BasicVector;
 using systems::Context;
-using systems::DiscreteValues;
 
-SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
-                                                           int position_index)
-    : position_index_(position_index),
-      target_output_port_(this->DeclareVectorOutputPort(
-                                  BasicVector<double>(2),
-                                  &SchunkWsgTrajectoryGenerator::OutputTarget)
-                              .get_index()),
-      max_force_output_port_(this->DeclareVectorOutputPort(
-                                     BasicVector<double>(1),
-                                     &SchunkWsgTrajectoryGenerator::OutputForce)
-                                 .get_index()) {
-  this->DeclareAbstractInputPort();
-  this->DeclareInputPort(systems::kVectorValued, input_size);
-  // The update period below matches the polling rate from
-  // drake-schunk-driver.
-  this->DeclarePeriodicDiscreteUpdate(0.05);
+SchunkWsgCommandReceiver::SchunkWsgCommandReceiver(double initial_position,
+                                                   double initial_force)
+    : initial_position_(initial_position), initial_force_(initial_force) {
+  this->DeclareVectorOutputPort("position", BasicVector<double>(1),
+                                &SchunkWsgCommandReceiver::CalcPositionOutput);
+  this->DeclareVectorOutputPort(
+      "force_limit", BasicVector<double>(1),
+      &SchunkWsgCommandReceiver::CalcForceLimitOutput);
+
+  lcmt_schunk_wsg_command uninitialized_message{};
+  this->DeclareAbstractInputPort(
+      "command_message",
+      Value<lcmt_schunk_wsg_command>(uninitialized_message));
 }
 
-void SchunkWsgTrajectoryGenerator::OutputTarget(
+void SchunkWsgCommandReceiver::CalcPositionOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
-      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          &context.get_discrete_state(0));
+  const auto& message =
+      this->get_input_port(0).Eval<lcmt_schunk_wsg_command>(context);
 
-  if (trajectory_) {
-    output->get_mutable_value() = trajectory_->value(
-        context.get_time() - traj_state->trajectory_start_time());
-  } else {
-    output->get_mutable_value() =
-        Eigen::Vector2d(traj_state->last_position(), 0);
+  double target_position = initial_position_;
+  if (message.utime != 0.0) {
+    target_position = message.target_position_mm / 1e3;
+    if (std::isnan(target_position)) {
+      target_position = 0;
+    }
   }
+
+  output->SetAtIndex(0, target_position);
 }
 
-void SchunkWsgTrajectoryGenerator::OutputForce(
+void SchunkWsgCommandReceiver::CalcForceLimitOutput(
     const Context<double>& context, BasicVector<double>* output) const {
-  const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
-      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          &context.get_discrete_state(0));
-  output->get_mutable_value() = Vector1d(traj_state->max_force());
-}
+  const auto& message =
+      this->get_input_port(0).Eval<lcmt_schunk_wsg_command>(context);
 
-void SchunkWsgTrajectoryGenerator::DoCalcDiscreteVariableUpdates(
-    const Context<double>& context,
-    const std::vector<const systems::DiscreteUpdateEvent<double>*>&,
-    DiscreteValues<double>* discrete_state) const {
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_schunk_wsg_command>();
-  // The target_position_mm field represents the distance between the two
-  // fingers in milimeters. This class generates trajectories for the negative
-  // of the distance between the fingers in meters.
-  double target_position = -command.target_position_mm / 1e3;
-  if (std::isnan(target_position)) {
-    target_position = 0;
+  double force_limit = initial_force_;
+  if (message.utime != 0.0) {
+    force_limit = message.force;
   }
 
-  const systems::BasicVector<double>* state = this->EvalVectorInput(context, 1);
-  const double cur_position = 2 * state->GetAtIndex(position_index_);
-
-  const SchunkWsgTrajectoryGeneratorStateVector<double>* last_traj_state =
-      dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          &context.get_discrete_state(0));
-  SchunkWsgTrajectoryGeneratorStateVector<double>* new_traj_state =
-      dynamic_cast<SchunkWsgTrajectoryGeneratorStateVector<double>*>(
-          &discrete_state->get_mutable_vector(0));
-  new_traj_state->set_last_position(cur_position);
-
-  double max_force = command.force;
-  if (std::isnan(max_force)) {
-    max_force = 0;
-  }
-  new_traj_state->set_max_force(max_force);
-
-  if (std::abs(last_traj_state->last_target_position() - target_position) >
-      kTargetEpsilon) {
-    UpdateTrajectory(cur_position, target_position);
-    new_traj_state->set_last_target_position(target_position);
-    new_traj_state->set_trajectory_start_time(context.get_time());
-  } else {
-    new_traj_state->set_last_target_position(
-        last_traj_state->last_target_position());
-    new_traj_state->set_trajectory_start_time(
-        last_traj_state->trajectory_start_time());
-  }
+  output->SetAtIndex(0, force_limit);
 }
 
-std::unique_ptr<DiscreteValues<double>>
-SchunkWsgTrajectoryGenerator::AllocateDiscreteState() const {
-  return std::make_unique<DiscreteValues<double>>(
-      std::make_unique<SchunkWsgTrajectoryGeneratorStateVector<double>>());
+SchunkWsgCommandSender::SchunkWsgCommandSender()
+    : position_input_port_(this->DeclareVectorInputPort(
+                                   "position", systems::BasicVector<double>(1))
+                               .get_index()),
+      force_limit_input_port_(
+          this->DeclareVectorInputPort("force_limit",
+                                       systems::BasicVector<double>(1))
+              .get_index()) {
+  this->DeclareAbstractOutputPort("lcmt_schunk_wsg_command",
+                                  &SchunkWsgCommandSender::CalcCommandOutput);
 }
 
-void SchunkWsgTrajectoryGenerator::UpdateTrajectory(
-    double cur_position, double target_position) const {
-  // The acceleration and velocity limits correspond to the maximum
-  // values available for manual control through the gripper's web
-  // interface.
-  const double kMaxVelocity = 2 * 0.42;  // m/s
-  const double kMaxAccel = 2 * 5.;       // m/s^2
-  const double kTimeToMaxVelocity = kMaxVelocity / kMaxAccel;
-  // TODO(sam.creasey) this should probably consider current speed
-  // if the gripper is already moving.
-  const double kDistanceToMaxVelocity =
-      0.5 * kMaxAccel * kTimeToMaxVelocity * kTimeToMaxVelocity;
+void SchunkWsgCommandSender::CalcCommandOutput(
+    const drake::systems::Context<double>& context,
+    drake::lcmt_schunk_wsg_command* output) const {
+  lcmt_schunk_wsg_command& command = *output;
 
-  std::vector<Eigen::MatrixXd> knots;
-  std::vector<double> times;
-  knots.push_back(Eigen::Vector2d(cur_position, 0));
-  times.push_back(0);
-
-  const double direction = (cur_position < target_position) ? 1 : -1;
-  const double delta = std::abs(target_position - cur_position);
-
-  // The trajectory creation code below is, to say the best, a bit
-  // primitive.  I (sam.creasey) would not be surprised if it could
-  // be significantly improved.  It's also based only on the
-  // configurable constants for the WSG 50, not on analysis of the
-  // actual motion of the gripper.
-  if (delta < kDistanceToMaxVelocity * 2) {
-    // If we can't accelerate to our maximum (and decelerate again)
-    // within the target travel distance, calculate the peak velocity
-    // we will reach and create a trajectory which ramps to that
-    // velocity and back down.
-    const double mid_distance = delta / 2;
-    const double mid_velocity =
-        kMaxVelocity * (mid_distance / kDistanceToMaxVelocity);
-    const double mid_time = mid_velocity / kMaxAccel;
-    knots.push_back(Eigen::Vector2d(cur_position + mid_distance * direction,
-                                    mid_velocity * direction));
-    times.push_back(mid_time);
-    knots.push_back(Eigen::Vector2d(target_position, 0));
-    times.push_back(mid_time * 2);
-  } else {
-    knots.push_back(
-        Eigen::Vector2d(cur_position + (kDistanceToMaxVelocity * direction),
-                        kMaxVelocity * direction));
-    times.push_back(kTimeToMaxVelocity);
-
-    const double time_at_max =
-        (delta - 2 * kDistanceToMaxVelocity) / kMaxVelocity;
-    knots.push_back(
-        Eigen::Vector2d(target_position - (kDistanceToMaxVelocity * direction),
-                        kMaxVelocity * direction));
-    times.push_back(kTimeToMaxVelocity + time_at_max);
-
-    knots.push_back(Eigen::Vector2d(target_position, 0));
-    times.push_back(kTimeToMaxVelocity + time_at_max + kTimeToMaxVelocity);
-  }
-  trajectory_.reset(new trajectories::PiecewisePolynomial<double>(
-      trajectories::PiecewisePolynomial<double>::FirstOrderHold(times, knots)));
+  command.utime = context.get_time() * 1e6;
+  command.target_position_mm = get_position_input_port().Eval(context)[0] * 1e3;
+  command.force = get_force_limit_input_port().Eval(context)[0];
 }
 
-SchunkWsgStatusSender::SchunkWsgStatusSender(int input_state_size,
-                                             int input_torque_size,
-                                             int position_index,
-                                             int velocity_index)
-    : position_index_(position_index), velocity_index_(velocity_index) {
-  input_port_wsg_state_ =
-      this->DeclareInputPort(systems::kVectorValued, input_state_size)
-          .get_index();
-  input_port_measured_torque_ =
-      this->DeclareInputPort(systems::kVectorValued, input_torque_size)
-          .get_index();
+SchunkWsgStatusReceiver::SchunkWsgStatusReceiver()
+    : state_output_port_(this->DeclareVectorOutputPort(
+                                 "state", systems::BasicVector<double>(2),
+                                 &SchunkWsgStatusReceiver::CopyStateOut)
+                             .get_index()),
+      force_output_port_(this->DeclareVectorOutputPort(
+                                 "force", systems::BasicVector<double>(1),
+                                 &SchunkWsgStatusReceiver::CopyForceOut)
+                             .get_index()) {
+  this->DeclareAbstractInputPort("lcmt_schunk_wsg_status",
+                                 Value<lcmt_schunk_wsg_status>());
+}
+
+void SchunkWsgStatusReceiver::CopyStateOut(
+    const drake::systems::Context<double>& context,
+    drake::systems::BasicVector<double>* output) const {
+  const auto& status =
+      get_status_input_port().Eval<lcmt_schunk_wsg_status>(context);
+  output->SetAtIndex(0, status.actual_position_mm / 1e3);
+  output->SetAtIndex(1, status.actual_speed_mm_per_s / 1e3);
+}
+
+void SchunkWsgStatusReceiver::CopyForceOut(
+    const drake::systems::Context<double>& context,
+    drake::systems::BasicVector<double>* output) const {
+  const auto& status =
+      get_status_input_port().Eval<lcmt_schunk_wsg_status>(context);
+  output->SetAtIndex(0, status.actual_force);
+}
+
+SchunkWsgStatusSender::SchunkWsgStatusSender() {
+  state_input_port_ =
+      this->DeclareInputPort(systems::kVectorValued, 2).get_index();
+  force_input_port_ =
+      this->DeclareInputPort(systems::kVectorValued, 1).get_index();
   this->DeclareAbstractOutputPort(&SchunkWsgStatusSender::OutputStatus);
 }
 
 void SchunkWsgStatusSender::OutputStatus(const Context<double>& context,
                                          lcmt_schunk_wsg_status* output) const {
   lcmt_schunk_wsg_status& status = *output;
-
   status.utime = context.get_time() * 1e6;
-  const systems::BasicVector<double>* state =
-      this->EvalVectorInput(context, input_port_wsg_state_);
-  const systems::BasicVector<double>* force =
-      this->EvalVectorInput(context, input_port_measured_torque_);
+
+  const auto& state = get_state_input_port().Eval(context);
   // The position and speed reported in this message are between the
   // two fingers rather than the position/speed of a single finger
   // (so effectively doubled).
-  status.actual_position_mm = -2 * state->GetAtIndex(position_index_) * 1e3;
-  status.actual_speed_mm_per_s = -2 * state->GetAtIndex(velocity_index_) * 1e3;
+  status.actual_position_mm = state[0] * 1e3;
+  status.actual_speed_mm_per_s = state[1] * 1e3;
 
-  if (force) {
-    status.actual_force = -force->GetAtIndex(0);
+  if (get_force_input_port().HasValue(context)) {
+    // In drake-schunk-driver, the driver attempts to apply a sign to the
+    // force value based on the last reported direction of gripper movement
+    // (the gripper always reports positive values).  This does not work very
+    // well, and as a result the sign is almost always negative (when
+    // non-zero) regardless of which direction the gripper was moving in when
+    // motion was blocked.  As it's not a reliable source of information in
+    // the driver (and should be removed there at some point), we don't try to
+    // replicate it here and instead report positive forces.
+    using std::abs;
+    status.actual_force = abs(get_force_input_port().Eval(context)[0]);
   } else {
     status.actual_force = 0;
   }

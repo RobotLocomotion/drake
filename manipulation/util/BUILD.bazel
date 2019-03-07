@@ -2,7 +2,6 @@
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
@@ -20,26 +19,8 @@ drake_cc_package_library(
     name = "util",
     deps = [
         ":bot_core_lcm_encode_decode",
-        ":frame_pose_tracker",
         ":moving_average_filter",
-        ":robot_state_msg_translator",
-        ":sim_diagram_builder",
-        ":simple_tree_visualizer",
         ":trajectory_utils",
-        ":world_sim_tree_builder",
-    ],
-)
-
-drake_cc_library(
-    name = "world_sim_tree_builder",
-    srcs = ["world_sim_tree_builder.cc"],
-    hdrs = ["world_sim_tree_builder.h"],
-    deps = [
-        "//common:find_resource",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:compliant_contact_model",
     ],
 )
 
@@ -54,42 +35,19 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "robot_state_msg_translator",
-    srcs = ["robot_state_msg_translator.cc"],
-    hdrs = ["robot_state_msg_translator.h"],
+drake_py_binary(
+    name = "geometry_inspector",
+    srcs = ["geometry_inspector.py"],
     deps = [
-        ":bot_core_lcm_encode_decode",
-        "//multibody:rigid_body_tree",
-        "//util",
-        "@lcmtypes_bot2_core",
+        "//bindings/pydrake",
     ],
 )
 
-drake_cc_library(
-    name = "sim_diagram_builder",
-    srcs = ["sim_diagram_builder.cc"],
-    hdrs = ["sim_diagram_builder.h"],
-    deps = [
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
-        "//systems/controllers:state_feedback_controller_interface",
-        "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "simple_tree_visualizer",
-    srcs = ["simple_tree_visualizer.cc"],
-    hdrs = ["simple_tree_visualizer.h"],
-    deps = [
-        "//common:essential",
-        "//lcm",
-        "//lcmtypes:viewer",
-        "//multibody/rigid_body_plant:create_load_robot_message",
-        "//multibody/rigid_body_plant:drake_visualizer",
-        "//systems/framework",
-        "//systems/rendering:drake_visualizer_client",
+drake_py_unittest(
+    name = "geometry_inspector_test",
+    data = [
+        ":geometry_inspector",
+        "//multibody/benchmarks/acrobot:models",
     ],
 )
 
@@ -108,25 +66,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_binary(
-    name = "simple_tree_visualizer_demo",
-    srcs = ["simple_tree_visualizer_demo.cc"],
-    add_test_rule = 1,
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    test_rule_args = ["--num_configurations=1"],
-    deps = [
-        ":simple_tree_visualizer",
-        "//common:essential",
-        "//common:find_resource",
-        "//lcm",
-        "//multibody/parsers",
-        "//systems/framework",
-        "@gflags",
-    ],
-)
-
 # TODO(naveenoid) : Move the moving_average_filter to within drake/perception.
 drake_cc_library(
     name = "moving_average_filter",
@@ -135,26 +74,15 @@ drake_cc_library(
     deps = ["//common:essential"],
 )
 
-drake_cc_library(
-    name = "frame_pose_tracker",
-    srcs = ["frame_pose_tracker.cc"],
-    hdrs = ["frame_pose_tracker.h"],
-    deps = [
-        "//multibody:rigid_body_tree",
-        "//multibody/multibody_tree/math:spatial_velocity",
-        "//multibody/rigid_body_plant",
-        "//systems/framework:leaf_system",
-        "//systems/rendering:frame_velocity",
-        "//systems/rendering:pose_bundle",
-    ],
-)
-
 drake_py_binary(
     name = "show_model",
     srcs = ["show_model.py"],
-    deps = [
-        "//bindings/pydrake",
-    ],
+    deps = ["//bindings/pydrake"],
+)
+
+drake_py_binary(
+    name = "meshlab_to_sdf",
+    srcs = ["meshlab_to_sdf.py"],
 )
 
 # === test/ ===
@@ -168,29 +96,11 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "robot_state_msg_translator_test",
-    # TODO(siyuan): we should eventually move the models for test outside of
-    # /examples.
-    data = [
-        "//examples/valkyrie:models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-    ],
-    deps = [
-        ":robot_state_msg_translator",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-    ],
-)
-
-drake_cc_googletest(
     name = "trajectory_utils_test",
     deps = [
         ":trajectory_utils",
         "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
@@ -204,48 +114,24 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "sim_diagram_builder_test",
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
-        "//manipulation/models/wsg_50_description:models",
-    ],
-    deps = [
-        ":sim_diagram_builder",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//lcm",
-        "//manipulation/util:world_sim_tree_builder",
-        "//multibody/rigid_body_plant",
-        "//systems/analysis",
-        "//systems/controllers:inverse_dynamics_controller",
-        "//systems/controllers:pid_controller",
-        "//systems/framework",
-        "//systems/primitives:constant_vector_source",
-    ],
-)
-
-drake_cc_googletest(
-    name = "frame_pose_tracker_test",
-    data = ["//manipulation/models/iiwa_description:models"],
-    deps = [
-        ":frame_pose_tracker",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_geometry_compare",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree",
-        "//multibody/parsers",
-        "//systems/framework",
-    ],
-)
-
 drake_py_unittest(
     name = "show_model_test",
     data = [
         ":show_model",
-        "//examples/acrobot:models",
-        "//examples/pendulum:models",
+        "//multibody/benchmarks/acrobot:models",
     ],
 )
 
-add_lint_tests()
+drake_py_unittest(
+    name = "meshlab_to_sdf_test",
+    srcs = [
+        "meshlab_to_sdf.py",
+        "test/meshlab_to_sdf_test.py",
+    ],
+)
+
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "convert_to_visualize_collisions.py",
+    ],
+)

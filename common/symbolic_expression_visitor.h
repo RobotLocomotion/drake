@@ -70,13 +70,12 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
     case ExpressionKind::Floor:
     case ExpressionKind::IfThenElse:
     case ExpressionKind::UninterpretedFunction:
-      // Should not be reachable because of `DRAKE_DEMAND(e.is_polynomial())` at
-      // the top.
-      DRAKE_ABORT();
+      // Unreachable because of `DRAKE_DEMAND(e.is_polynomial())` at the top.
+      throw std::domain_error(
+          "Unexpected Kind was is_polynomial in VisitPolynomial");
   }
-  // Should not be reachable. But we need the following to avoid "control
-  // reaches end of non-void function" gcc-warning.
-  DRAKE_ABORT();
+  // Unreachable because all switch cases are accounted for above.
+  DRAKE_UNREACHABLE();
 }
 
 /// Calls visitor object @p v with a symbolic-expression @p e, and arguments @p
@@ -173,9 +172,7 @@ Result VisitExpression(Visitor* v, const Expression& e, Args&&... args) {
     case ExpressionKind::UninterpretedFunction:
       return v->VisitUninterpretedFunction(e, std::forward<Args>(args)...);
   }
-  // Should not be reachable. But we need the following to avoid "control
-  // reaches end of non-void function" gcc-warning.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace symbolic

@@ -7,11 +7,25 @@
 namespace drake {
 namespace solvers {
 
-bool SnoptSolver::available() const {
-  return false;
+bool SnoptSolver::is_available() { return false; }
+
+void SnoptSolver::DoSolve(
+    const MathematicalProgram&,
+    const Eigen::VectorXd&,
+    const SolverOptions&,
+    MathematicalProgramResult*) const {
+  throw std::runtime_error(
+      "The SNOPT bindings were not compiled.  You'll need to use a different "
+      "solver.");
 }
 
-SolutionResult SnoptSolver::Solve(MathematicalProgram&) const {
+bool SnoptSolver::is_thread_safe() {
+  throw std::runtime_error(
+      "The SNOPT bindings were not compiled.  You'll need to use a different "
+      "solver.");
+}
+
+bool SnoptSolver::is_bounded_lp_broken() {
   throw std::runtime_error(
       "The SNOPT bindings were not compiled.  You'll need to use a different "
       "solver.");

@@ -120,7 +120,7 @@ drake_cc_googletest(
     deps = [
         ":piecewise_quaternion",
         "//common/test_utilities:eigen_matrix_compare",
-        "//util",
+        "//math:wrap_to",
     ],
 )
 

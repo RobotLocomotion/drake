@@ -1,3 +1,9 @@
-lxml==4.1.1
-pip
+lxml
+matplotlib
+pydot
 PyYAML
+pyzmq
+six
+tornado
+u-msgpack-python
+virtualenv

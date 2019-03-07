@@ -37,18 +37,29 @@ def _impl(repository_ctx):
         mosek_platform = "linux64x86"
         sha256 = "ab2f39c1668105acbdfbe6835f59f547dd8b076378d9943ab40839c70e1141a2"  # noqa
     else:
-        fail("Operating system is NOT supported",
-             attr = repository_ctx.os.name)
+        fail(
+            "Operating system is NOT supported",
+            attr = repository_ctx.os.name,
+        )
 
     # TODO(jwnimmer-tri) Port to use mirrors.bzl.
-    url = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2".format(  # noqa
-        mosek_major_version, mosek_minor_version, mosek_patch_version,
-        mosek_tweak_version, mosek_platform)
+    template = "http://download.mosek.com/stable/{}.{}.{}.{}/mosektools{}.tar.bz2"  # noqa
+    url = template.format(
+        mosek_major_version,
+        mosek_minor_version,
+        mosek_patch_version,
+        mosek_tweak_version,
+        mosek_platform,
+    )
     root_path = repository_ctx.path("")
     strip_prefix = "mosek/{}".format(mosek_major_version)
 
     repository_ctx.download_and_extract(
-        url, root_path, sha256 = sha256, stripPrefix = strip_prefix)
+        url,
+        root_path,
+        sha256 = sha256,
+        stripPrefix = strip_prefix,
+    )
 
     platform_prefix = "tools/platform/{}".format(mosek_platform)
 
@@ -68,7 +79,7 @@ def _impl(repository_ctx):
 
         for file in files:
             file_path = repository_ctx.path(
-                "{}/{}".format(platform_prefix, file)
+                "{}/{}".format(platform_prefix, file),
             )
 
             result = repository_ctx.execute([
@@ -79,8 +90,10 @@ def _impl(repository_ctx):
             ])
 
             if result.return_code != 0:
-                fail("Could NOT change shared library identification name",
-                     attr = result.stderr)
+                fail(
+                    "Could NOT change shared library identification name",
+                    attr = result.stderr,
+                )
 
         srcs = []
 
@@ -100,8 +113,10 @@ def _impl(repository_ctx):
             # runtime conflicts; however, this risk seems low.
             "bin/libcilkrts.so.5",
             "bin/libiomp5.so",
-            "bin/libmosek64.so.{}.{}".format(mosek_major_version,
-                                             mosek_minor_version),
+            "bin/libmosek64.so.{}.{}".format(
+                mosek_major_version,
+                mosek_minor_version,
+            ),
         ]
 
         linkopts = []
@@ -156,7 +171,10 @@ install(
 )
     """.format(srcs, hdrs, includes, linkopts, files, libraries_strip_prefix)
 
-    repository_ctx.file("BUILD.bazel", content = file_content,
-                        executable = False)
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
 mosek_repository = repository_rule(implementation = _impl)

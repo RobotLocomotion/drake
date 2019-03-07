@@ -6,7 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/util/drakeGeometryUtil.h"
+#include "drake/math/wrap_to.h"
 
 namespace drake {
 namespace trajectories {
@@ -130,7 +130,9 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
     EXPECT_TRUE(CompareMatrices(rot_spline.orientation(time[i]).coeffs(),
                                 internal_quat[i].coeffs(), 1e-10,
                                 MatrixCompareType::absolute));
-    double omega = angleDiff(ang[i], ang[i + 1]) / (time[i + 1] - time[i]);
+    double ang_diff = ang[i + 1] - ang[i];
+    double time_diff = time[i + 1] - time[i];
+    double omega = math::wrap_to(ang_diff, -M_PI, M_PI) / time_diff;
     EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(time[i]),
                                 omega * axis, 1e-10,
                                 MatrixCompareType::absolute));

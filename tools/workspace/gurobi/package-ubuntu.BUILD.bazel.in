@@ -16,7 +16,11 @@ genrule(
     visibility = ["//visibility:private"],
 )
 
-GUROBI_HDRS = glob([
+GUROBI_C_HDRS = glob([
+    "gurobi-distro/include/gurobi_c.h",
+]) or [":error-message.h"]
+
+GUROBI_CXX_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
     "gurobi-distro/include/gurobi_c++.h",
 ]) or [":error-message.h"]
@@ -27,8 +31,14 @@ GUROBI_HDRS = glob([
 # because the NEEDED statements in the executable will not square with the
 # RPATH statements.  I don't really know why this happens, but I suspect it
 # might be a Bazel bug.
-GUROBI_SRCS = glob([
+
+GUROBI_C_SRCS = glob([
     "gurobi-distro/lib/libgurobi80.so",
+]) or [":error-message.h"]
+
+GUROBI_CXX_SRCS = glob([
+    "gurobi-distro/lib/libgurobi80.so",
+    "gurobi-distro/lib/libgurobi_g++5.2.a",
 ]) or [":error-message.h"]
 
 GUROBI_INSTALL_LIBRARIES = glob([
@@ -41,9 +51,18 @@ GUROBI_DOCS = glob([
 ]) or [":error-message.h"]
 
 cc_library(
-    name = "gurobi",
-    srcs = GUROBI_SRCS,
-    hdrs = GUROBI_HDRS,
+    name = "gurobi_c",
+    srcs = GUROBI_C_SRCS,
+    hdrs = GUROBI_C_HDRS,
+    includes = ["gurobi-distro/include"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "gurobi_cxx",
+    srcs = GUROBI_CXX_SRCS,
+    hdrs = GUROBI_CXX_HDRS,
     includes = ["gurobi-distro/include"],
     linkopts = ["-pthread"],
     visibility = ["//visibility:public"],

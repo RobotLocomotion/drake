@@ -2,7 +2,7 @@ Demo Instructions
 =================
 
 These instructions only support the Bazel build system (not CMake).  For
-getting started with Bazel, see http://drake.mit.edu/bazel.html.
+getting started with Bazel, see https://drake.mit.edu/bazel.html.
 
 Running the demos
 -----------------
@@ -54,44 +54,6 @@ command line, for example:
 ```
 $ cd drake
 $ bazel-bin/automotive/steering_command_driver --mode=one-time --throttle=1.0 --steering-angle=0.4
-```
-
-Running the dynamics
---------------------
-
-The following instructions describe how to run `car_sim_lcm` — a
-dynamics-based simulation of a sedan that approximates a Toyota Prius. The model
-is simplistic; it does not model engine, transmission, or suspension
-dynamics, but it is still useful in terms of illustrating Drake's dynamics-based
-simulation capability. The model consists of four wheels where the front wheels
-are steered using
-[Ackermann steering](https://en.wikipedia.org/wiki/Ackermann_steering_geometry)
-and the rear wheels are fixed to an axle that spans the width of the
-vehicle (they rotate passively). In addition to being steerable, the front
-wheels also have velocity-controlled actuators that enable the vehicle to move
-forward and backward. PID controllers are used to control both the steering
-angle and front wheel rotational velocities. A simple sliding friction model is
-used for the contacts between the wheels and the ground. The input reference
-values for the PID controllers are settable via LCM using
-`lcmt_driving_command_t` messages published on channel "DRIVING_COMMAND". The
-current state of the simulation can be visualized in Drake Visualizer.
-
-To run `car_sim_lcm`, open a new terminal and execute the following commands:
-
-```
-$ cd drake
-$ bazel build automotive:demo automotive:car_sim_lcm
-$ bazel-bin/tools/drake_visualizer &
-$ bazel-bin/automotive/steering_command_driver &
-$ bazel run automotive:car_sim_lcm
-```
-
-Then drive the car using the `pygame` window per "Driving the Prius" above.
-
-You can also add a speed bump with a command-line switch:
-
-```
-$ bazel run automotive:car_sim_lcm -- --with_speed_bump
 ```
 
 Enable Chase Cam Mode in the Drake Visualizer

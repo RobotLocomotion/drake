@@ -8,9 +8,11 @@
 #include <algorithm>  // for cpplint only
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <map>
 #include <memory>
 #include <ostream>
+#include <random>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -22,12 +24,13 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/hash.h"
-#include "drake/common/number_traits.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -232,10 +235,29 @@ class Expression {
    */
   Polynomiald ToPolynomial() const;
 
-  /** Evaluates under a given environment (by default, an empty environment).
-   *  @throws std::runtime_error if NaN is detected during evaluation.
+  /** Evaluates using a given environment (by default, an empty environment) and
+   * a random number generator. If there is a random variable in this expression
+   * which is unassigned in @p env, this method uses @p random_generator to
+   * sample a value and use the value to substitute all occurrences of the
+   * variable in this expression.
+   *
+   * @throws std::runtime_error if there exists a non-random variable in this
+   *                            expression whose assignment is not provided by
+   *                            @p env.
+   * @throws std::runtime_error if an unassigned random variable is detected
+   *                            while @p random_generator is `nullptr`.
+   * @throws std::runtime_error if NaN is detected during evaluation.
    */
-  double Evaluate(const Environment& env = Environment{}) const;
+  double Evaluate(const Environment& env = Environment{},
+                  RandomGenerator* random_generator = nullptr) const;
+
+  /** Evaluates using an empty environment and a random number generator. It
+   * uses @p random_generator to sample values for the random variables in this
+   * expression.
+   *
+   * See the above overload for the exceptions that it might throw.
+   */
+  double Evaluate(RandomGenerator* random_generator) const;
 
   /** Partially evaluates this expression using an environment @p
    * env. Internally, this method promotes @p env into a substitution
@@ -299,8 +321,8 @@ class Expression {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Expression& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Expression& item) noexcept {
     DelegatingHasher delegating_hasher(
         [&hasher](const void* data, const size_t length) {
           return hasher(data, length);
@@ -398,8 +420,8 @@ class Expression {
   friend Expression if_then_else(const Formula& f_cond,
                                  const Expression& e_then,
                                  const Expression& e_else);
-  friend Expression uninterpreted_function(const std::string& name,
-                                           const Variables& vars);
+  friend Expression uninterpreted_function(std::string name,
+                                           std::vector<Expression> arguments);
 
   friend std::ostream& operator<<(std::ostream& os, const Expression& e);
   friend void swap(Expression& a, Expression& b) { std::swap(a.ptr_, b.ptr_); }
@@ -435,45 +457,52 @@ class Expression {
   // and not exposed to the user of drake/common/symbolic_expression.h
   // header. These functions are declared in
   // drake/common/symbolic_expression_cell.h header.
-  friend std::shared_ptr<ExpressionConstant> to_constant(const Expression& e);
-  friend std::shared_ptr<ExpressionVar> to_variable(const Expression& e);
-  friend std::shared_ptr<UnaryExpressionCell> to_unary(const Expression& e);
-  friend std::shared_ptr<BinaryExpressionCell> to_binary(const Expression& e);
-  friend std::shared_ptr<ExpressionAdd> to_addition(const Expression& e);
-  friend std::shared_ptr<ExpressionMul> to_multiplication(const Expression& e);
-  friend std::shared_ptr<ExpressionDiv> to_division(const Expression& e);
-  friend std::shared_ptr<ExpressionLog> to_log(const Expression& e);
-  friend std::shared_ptr<ExpressionAbs> to_abs(const Expression& e);
-  friend std::shared_ptr<ExpressionExp> to_exp(const Expression& e);
-  friend std::shared_ptr<ExpressionSqrt> to_sqrt(const Expression& e);
-  friend std::shared_ptr<ExpressionPow> to_pow(const Expression& e);
-  friend std::shared_ptr<ExpressionSin> to_sin(const Expression& e);
-  friend std::shared_ptr<ExpressionCos> to_cos(const Expression& e);
-  friend std::shared_ptr<ExpressionTan> to_tan(const Expression& e);
-  friend std::shared_ptr<ExpressionAsin> to_asin(const Expression& e);
-  friend std::shared_ptr<ExpressionAcos> to_acos(const Expression& e);
-  friend std::shared_ptr<ExpressionAtan> to_atan(const Expression& e);
-  friend std::shared_ptr<ExpressionAtan2> to_atan2(const Expression& e);
-  friend std::shared_ptr<ExpressionSinh> to_sinh(const Expression& e);
-  friend std::shared_ptr<ExpressionCosh> to_cosh(const Expression& e);
-  friend std::shared_ptr<ExpressionTanh> to_tanh(const Expression& e);
-  friend std::shared_ptr<ExpressionMin> to_min(const Expression& e);
-  friend std::shared_ptr<ExpressionMax> to_max(const Expression& e);
-  friend std::shared_ptr<ExpressionCeiling> to_ceil(const Expression& e);
-  friend std::shared_ptr<ExpressionFloor> to_floor(const Expression& e);
-  friend std::shared_ptr<ExpressionIfThenElse> to_if_then_else(
+  friend std::shared_ptr<const ExpressionConstant> to_constant(
       const Expression& e);
-  friend std::shared_ptr<ExpressionUninterpretedFunction>
+  friend std::shared_ptr<const ExpressionVar> to_variable(const Expression& e);
+  friend std::shared_ptr<const UnaryExpressionCell> to_unary(
+      const Expression& e);
+  friend std::shared_ptr<const BinaryExpressionCell> to_binary(
+      const Expression& e);
+  friend std::shared_ptr<const ExpressionAdd> to_addition(const Expression& e);
+  friend std::shared_ptr<const ExpressionMul> to_multiplication(
+      const Expression& e);
+  friend std::shared_ptr<const ExpressionDiv> to_division(const Expression& e);
+  friend std::shared_ptr<const ExpressionLog> to_log(const Expression& e);
+  friend std::shared_ptr<const ExpressionAbs> to_abs(const Expression& e);
+  friend std::shared_ptr<const ExpressionExp> to_exp(const Expression& e);
+  friend std::shared_ptr<const ExpressionSqrt> to_sqrt(const Expression& e);
+  friend std::shared_ptr<const ExpressionPow> to_pow(const Expression& e);
+  friend std::shared_ptr<const ExpressionSin> to_sin(const Expression& e);
+  friend std::shared_ptr<const ExpressionCos> to_cos(const Expression& e);
+  friend std::shared_ptr<const ExpressionTan> to_tan(const Expression& e);
+  friend std::shared_ptr<const ExpressionAsin> to_asin(const Expression& e);
+  friend std::shared_ptr<const ExpressionAcos> to_acos(const Expression& e);
+  friend std::shared_ptr<const ExpressionAtan> to_atan(const Expression& e);
+  friend std::shared_ptr<const ExpressionAtan2> to_atan2(const Expression& e);
+  friend std::shared_ptr<const ExpressionSinh> to_sinh(const Expression& e);
+  friend std::shared_ptr<const ExpressionCosh> to_cosh(const Expression& e);
+  friend std::shared_ptr<const ExpressionTanh> to_tanh(const Expression& e);
+  friend std::shared_ptr<const ExpressionMin> to_min(const Expression& e);
+  friend std::shared_ptr<const ExpressionMax> to_max(const Expression& e);
+  friend std::shared_ptr<const ExpressionCeiling> to_ceil(const Expression& e);
+  friend std::shared_ptr<const ExpressionFloor> to_floor(const Expression& e);
+  friend std::shared_ptr<const ExpressionIfThenElse> to_if_then_else(
+      const Expression& e);
+  friend std::shared_ptr<const ExpressionUninterpretedFunction>
   to_uninterpreted_function(const Expression& e);
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
 
  private:
-  explicit Expression(std::shared_ptr<ExpressionCell> ptr);
+  explicit Expression(std::shared_ptr<const ExpressionCell> ptr);
   void HashAppend(DelegatingHasher* hasher) const;
 
-  std::shared_ptr<ExpressionCell> ptr_;
+  // Note: We use "const" ExpressionCell type here because an ExpressionCell
+  // object can be shared by multiple expressions, an expression should _not_ be
+  // able to change the cell that it points to.
+  std::shared_ptr<const ExpressionCell> ptr_;
 };
 
 Expression operator+(Expression lhs, const Expression& rhs);
@@ -513,14 +542,15 @@ Expression floor(const Expression& e);
 Expression if_then_else(const Formula& f_cond, const Expression& e_then,
                         const Expression& e_else);
 
-/** Constructs an uninterpreted-function expression with @p name and @p vars.
- * An uninterpreted function is an opaque function that has no other property
- * than its name and a set of its arguments. This is useful to applications
- * where it is good enough to provide abstract information of a function without
- * exposing full details. Declaring sparsity of a system is a typical example.
+/** Constructs an uninterpreted-function expression with @p name and @p
+ * arguments. An uninterpreted function is an opaque function that has no other
+ * property than its name and a list of its arguments. This is useful to
+ * applications where it is good enough to provide abstract information of a
+ * function without exposing full details. Declaring sparsity of a system is a
+ * typical example.
  */
-Expression uninterpreted_function(const std::string& name,
-                                  const Variables& vars);
+Expression uninterpreted_function(std::string name,
+                                  std::vector<Expression> arguments);
 void swap(Expression& a, Expression& b);
 
 std::ostream& operator<<(std::ostream& os, const Expression& e);
@@ -636,9 +666,15 @@ const std::map<Expression, Expression>&
 get_base_to_exponent_map_in_multiplication(const Expression& e);
 
 /** Returns the name of an uninterpreted-function expression @p e.
- *  \pre{@p e is an uninterpreted-function expression.}
+ *  \pre @p e is an uninterpreted-function expression.
  */
 const std::string& get_uninterpreted_function_name(const Expression& e);
+
+/** Returns the arguments of an uninterpreted-function expression @p e.
+ *  \pre @p e is an uninterpreted-function expression.
+ */
+const std::vector<Expression>& get_uninterpreted_function_arguments(
+    const Expression& e);
 
 /** Returns the conditional formula in the if-then-else expression @p e.
  * @pre @p e is an if-then-else expression.
@@ -750,6 +786,41 @@ auto operator*(
     const Eigen::Transform<Expression, Dim, RhsMode, RhsOptions>& t2) {
   return t1.template cast<Expression>() * t2;
 }
+
+/// Evaluates a symbolic matrix @p m using @p env and @p random_generator.
+///
+/// If there is a random variable in @p m which is unassigned in @p env, this
+/// function uses @p random_generator to sample a value and use the value to
+/// substitute all occurrences of the random variable in @p m.
+///
+/// @returns a matrix of double whose size is the size of @p m.
+/// @throws std::runtime_error if NaN is detected during evaluation.
+/// @throws std::runtime_error if @p m includes unassigned random variables but
+///                               @p random_generator is `nullptr`.
+template <typename Derived>
+Eigen::Matrix<double, Derived::RowsAtCompileTime, Derived::ColsAtCompileTime, 0,
+              Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>
+Evaluate(const Eigen::MatrixBase<Derived>& m,
+         const Environment& env = Environment{},
+         RandomGenerator* random_generator = nullptr) {
+  static_assert(std::is_same<typename Derived::Scalar, Expression>::value,
+                "Evaluate only accepts a symbolic matrix.");
+  // Note that the return type is written out explicitly to help gcc 5 (on
+  // ubuntu).  Previously the implementation used `auto`, and placed  an `
+  // .eval()` at the end to prevent lazy evaluation.
+  if (random_generator == nullptr) {
+    return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
+  } else {
+    // Construct an environment by extending `env` by sampling values for the
+    // random variables in `m` which are unassigned in `env`.
+    const Environment env_with_random_variables{PopulateRandomVariables(
+        env, GetDistinctVariables(m), random_generator)};
+    return m.unaryExpr([&env_with_random_variables](const Expression& e) {
+      return e.Evaluate(env_with_random_variables);
+    });
+  }
+}
+
 }  // namespace symbolic
 
 /** Provides specialization of @c cond function defined in drake/common/cond.h
@@ -769,16 +840,10 @@ struct dummy_value<symbolic::Expression> {
   static symbolic::Expression get() { return symbolic::Expression::NaN(); }
 };
 
-/** Specializes is_numeric to be false for symbolic::Expression type. */
-template <>
-struct is_numeric<symbolic::Expression> {
-  static constexpr bool value = false;
-};
-
 /// Returns the symbolic expression's value() as a double.
 ///
-/// @throws If it is not possible to evaluate the symbolic expression with an
-/// empty environment.
+/// @throws std::exception if it is not possible to evaluate the symbolic
+/// expression with an empty environment.
 double ExtractDoubleOrThrow(const symbolic::Expression& e);
 
 }  // namespace drake
@@ -786,11 +851,10 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e);
 namespace std {
 /* Provides std::hash<drake::symbolic::Expression>. */
 template <>
-struct hash<drake::symbolic::Expression>
-    : public drake::DefaultHash {};
+struct hash<drake::symbolic::Expression> : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
-template<>
+template <>
 struct __is_fast_hash<hash<drake::symbolic::Expression>> : std::false_type {};
 #endif
 
@@ -811,6 +875,346 @@ struct equal_to<drake::symbolic::Expression> {
     return lhs.EqualTo(rhs);
   }
 };
+
+/* Provides std::numeric_limits<drake::symbolic::Expression>. */
+template <>
+struct numeric_limits<drake::symbolic::Expression>
+    : public numeric_limits<double> {};
+
+/// Provides std::uniform_real_distribution, U(a, b), for symbolic expressions.
+///
+/// When operator() is called, it returns a symbolic expression `a + (b - a) *
+/// v` where v is a symbolic random variable associated with the standard
+/// uniform distribution.
+///
+/// @see std::normal_distribution<drake::symbolic::Expression> for the internal
+/// representation of this implementation.
+template <>
+class uniform_real_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  /// Constructs a new distribution object with a minimum value @p a and a
+  /// maximum value @p b.
+  ///
+  /// @throw std::runtime_error if a and b are constant expressions but a > b.
+  explicit uniform_real_distribution(RealType a, RealType b = 1.0)
+      : a_{std::move(a)},
+        b_{std::move(b)},
+        random_variables_{std::make_shared<std::vector<Variable>>()} {
+    if (is_constant(a_) && is_constant(b_) &&
+        get_constant_value(a_) > get_constant_value(b_)) {
+      throw std::runtime_error(
+          "In constructing a uniform_real_distribution<Expression>, we "
+          "detected that the minimum distribution parameter " +
+          a_.to_string() +
+          " is greater than the maximum distribution parameter " +
+          b_.to_string() + ".");
+    }
+  }
+
+  /// Constructs a new distribution object with a = 0.0 and b = 1.0.
+  uniform_real_distribution() : uniform_real_distribution{0.0} {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(uniform_real_distribution);
+
+  /// Resets the internal state of the distribution object.
+  void reset() { index_ = 0; }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  result_type operator()() {
+    if (random_variables_->size() == index_) {
+      random_variables_->emplace_back(
+          "random_uniform_" + std::to_string(index_),
+          drake::symbolic::Variable::Type::RANDOM_UNIFORM);
+    }
+    const drake::symbolic::Variable& v{(*random_variables_)[index_++]};
+    return a_ + (b_ - a_) * v;
+  }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  ///
+  /// @note We provide this method, which takes a random generator, for
+  /// compatibility with the std::uniform_real_distribution::operator().
+  template <class Generator>
+  result_type operator()(Generator&) {
+    return (*this)();
+  }
+
+  /// Returns the minimum value a.
+  RealType a() const { return a_; }
+  /// Returns the maximum value b.
+  RealType b() const { return b_; }
+
+  /// Returns the minimum potentially generated value.
+  result_type min() const { return a_; }
+  /// Returns the maximum potentially generated value.
+  result_type max() const { return b_; }
+
+ private:
+  using Variable = drake::symbolic::Variable;
+
+  RealType a_;
+  RealType b_;
+  std::shared_ptr<std::vector<Variable>> random_variables_;
+  std::vector<Variable>::size_type index_{0};
+
+  friend bool operator==(
+      const uniform_real_distribution<drake::symbolic::Expression>& lhs,
+      const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
+    return lhs.a().EqualTo(rhs.a()) && lhs.b().EqualTo(rhs.b()) &&
+           (lhs.index_ == rhs.index_) &&
+           (lhs.random_variables_ == rhs.random_variables_);
+  }
+};
+
+inline bool operator!=(
+    const uniform_real_distribution<drake::symbolic::Expression>& lhs,
+    const uniform_real_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const uniform_real_distribution<drake::symbolic::Expression>& d) {
+  return os << d.a() << " " << d.b();
+}
+
+/// Provides std::normal_distribution, N(μ, σ), for symbolic expressions.
+///
+/// When operator() is called, it returns a symbolic expression `μ + σ * v`
+/// where v is a symbolic random variable associated with the standard normal
+/// (Gaussian) distribution.
+///
+/// It keeps a shared pointer to the vector of symbolic random variables that
+/// has been created for the following purposes:
+///
+///  - When `reset()` is called, it rewinds `index_` to zero so that the next
+///    operator (re)-uses the first symbolic random variable.
+///    @code
+///        random_device rd;
+///        RandomGenerator g{rd()};
+///        std::normal_distribution<Expression> d(0.0, 1.0);
+///
+///        const Expression e1{d(g)};
+///        const Expression e2{d(g)};
+///        d.reset();
+///        const Expression e3{d(g)};
+///
+///        EXPECT_FALSE(e1.EqualTo(e2));
+///        EXPECT_TRUE(e1.EqualTo(e3));
+///    @endcode
+///
+///  - When an instance of this class is copied, the original and copied
+///    distributions share the vector of symbolic random variables. We want to
+///    make sure that the two generate identical sequences of elements.
+///    @code
+///        random_device rd;
+///        RandomGenerator g{rd()};
+///
+///        std::normal_distribution<Expression> d1(0.0, 1.0);
+///        std::normal_distribution<Expression> d2(d1);
+///        const Expression e1_1{d1(g)};
+///        const Expression e1_2{d1(g)};
+///
+///        const Expression e2_1{d2(g)};
+///        const Expression e2_2{d2(g)};
+///
+///        EXPECT_TRUE(e1_1.EqualTo(e2_1));
+///        EXPECT_TRUE(e1_2.EqualTo(e2_2));
+///    @endcode
+template <>
+class normal_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  /// Constructs a new distribution object with @p mean and @p stddev.
+  ///
+  /// @throw std::runtime_error if stddev is a non-positive constant expression.
+  explicit normal_distribution(RealType mean, RealType stddev = 1.0)
+      : mean_{std::move(mean)},
+        stddev_{std::move(stddev)},
+        random_variables_{std::make_shared<std::vector<Variable>>()} {
+    if (is_constant(stddev_) && get_constant_value(stddev_) <= 0) {
+      throw std::runtime_error(
+          "In constructing a normal_distribution<Expression>, we "
+          "detected that the stddev distribution parameter " +
+          stddev_.to_string() + " is non-positive.");
+    }
+  }
+
+  /// Constructs a new distribution object with mean = 0.0 and stddev = 1.0.
+  normal_distribution() : normal_distribution{0.0} {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(normal_distribution);
+
+  /// Resets the internal state of the distribution object.
+  void reset() { index_ = 0; }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  result_type operator()() {
+    if (random_variables_->size() == index_) {
+      random_variables_->emplace_back(
+          "random_gaussian_" + std::to_string(index_),
+          drake::symbolic::Variable::Type::RANDOM_GAUSSIAN);
+    }
+    const drake::symbolic::Variable& v{(*random_variables_)[index_++]};
+    return mean_ + stddev_ * v;
+  }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  ///
+  /// @note We provide this method, which takes a random generator, for
+  /// compatibility with the std::normal_distribution::operator().
+  template <class Generator>
+  result_type operator()(Generator&) {
+    return (*this)();
+  }
+
+  /// Returns the mean μ distribution parameter.
+  RealType mean() const { return mean_; }
+  /// Returns the deviation σ distribution parameter.
+  RealType stddev() const { return stddev_; }
+
+  /// Returns the minimum potentially generated value.
+  ///
+  /// @note In libstdc++ std::normal_distribution<> defines min() and max() to
+  /// return -DBL_MAX and DBL_MAX while the one in libc++ returns -INFINITY and
+  /// INFINITY. We follows libc++ and return -INFINITY and INFINITY.
+  result_type min() const { return -std::numeric_limits<double>::infinity(); }
+  /// Returns the maximum potentially generated value.
+  result_type max() const { return std::numeric_limits<double>::infinity(); }
+
+ private:
+  using Variable = drake::symbolic::Variable;
+
+  RealType mean_;
+  RealType stddev_;
+  std::shared_ptr<std::vector<Variable>> random_variables_;
+  std::vector<Variable>::size_type index_{0};
+
+  friend bool operator==(
+      const normal_distribution<drake::symbolic::Expression>& lhs,
+      const normal_distribution<drake::symbolic::Expression>& rhs) {
+    return lhs.mean().EqualTo(rhs.mean()) &&
+           lhs.stddev().EqualTo(rhs.stddev()) && (lhs.index_ == rhs.index_) &&
+           (lhs.random_variables_ == rhs.random_variables_);
+  }
+};
+
+inline bool operator!=(
+    const normal_distribution<drake::symbolic::Expression>& lhs,
+    const normal_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const normal_distribution<drake::symbolic::Expression>& d) {
+  return os << d.mean() << " " << d.stddev();
+}
+
+/// Provides std::exponential_distribution, Exp(λ), for symbolic expressions.
+///
+/// When operator() is called, it returns a symbolic expression `v / λ` where v
+/// is a symbolic random variable associated with the standard exponential
+/// distribution (λ = 1).
+///
+/// @see std::normal_distribution<drake::symbolic::Expression> for the internal
+/// representation of this implementation.
+template <>
+class exponential_distribution<drake::symbolic::Expression> {
+ public:
+  using RealType = drake::symbolic::Expression;
+  using result_type = RealType;
+
+  /// Constructs a new distribution object with @p lambda.
+  ///
+  /// @throw std::runtime_error if lambda is a non-positive constant expression.
+  explicit exponential_distribution(RealType lambda)
+      : lambda_{std::move(lambda)},
+        random_variables_{std::make_shared<std::vector<Variable>>()} {
+    if (is_constant(lambda_) && get_constant_value(lambda_) <= 0) {
+      throw std::runtime_error(
+          "In constructing an exponential_distribution<Expression>, we "
+          "detected that the lambda distribution parameter " +
+          lambda_.to_string() + " is non-positive.");
+    }
+  }
+
+  /// Constructs a new distribution object with lambda = 1.0.
+  exponential_distribution() : exponential_distribution{1.0} {}
+
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(exponential_distribution);
+
+  /// Resets the internal state of the distribution object.
+  void reset() { index_ = 0; }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  result_type operator()() {
+    if (random_variables_->size() == index_) {
+      random_variables_->emplace_back(
+          "random_exponential_" + std::to_string(index_),
+          drake::symbolic::Variable::Type::RANDOM_EXPONENTIAL);
+    }
+    const drake::symbolic::Variable& v{(*random_variables_)[index_++]};
+    return v / lambda_;
+  }
+
+  /// Generates a symbolic expression representing a random value that is
+  /// distributed according to the associated probability function.
+  ///
+  /// @note We provide this method, which takes a random generator, for
+  /// compatibility with the std::exponential_distribution::operator().
+  template <class Generator>
+  result_type operator()(Generator&) {
+    return (*this)();
+  }
+
+  /// Returns the lambda λ distribution parameter.
+  RealType lambda() const { return lambda_; }
+  /// Returns the minimum potentially generated value.
+  result_type min() const { return 0.0; }
+
+  /// Returns the maximum potentially generated value.
+  /// @note that in libstdc++ exponential_distribution<>::max() returns DBL_MAX
+  /// while the one in libc++ returns INFINITY. We follows libc++ and return
+  /// INFINITY.
+  result_type max() const { return std::numeric_limits<double>::infinity(); }
+
+ private:
+  using Variable = drake::symbolic::Variable;
+
+  RealType lambda_;
+  std::shared_ptr<std::vector<Variable>> random_variables_;
+  std::vector<Variable>::size_type index_{0};
+
+  friend bool operator==(
+      const exponential_distribution<drake::symbolic::Expression>& lhs,
+      const exponential_distribution<drake::symbolic::Expression>& rhs) {
+    return lhs.lambda().EqualTo(rhs.lambda()) && (lhs.index_ == rhs.index_) &&
+           (lhs.random_variables_ == rhs.random_variables_);
+  }
+};
+
+inline bool operator!=(
+    const exponential_distribution<drake::symbolic::Expression>& lhs,
+    const exponential_distribution<drake::symbolic::Expression>& rhs) {
+  return !(lhs == rhs);
+}
+
+inline std::ostream& operator<<(
+    std::ostream& os,
+    const exponential_distribution<drake::symbolic::Expression>& d) {
+  return os << d.lambda();
+}
 
 }  // namespace std
 
@@ -883,7 +1287,7 @@ namespace drake {
 namespace symbolic {
 
 /// Constructs a vector of variables from the vector of variable expressions.
-/// @throw std::logic_error if there is an expression in @p vec which is not a
+/// @throws std::logic_error if there is an expression in @p vec which is not a
 /// variable.
 VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& evec);
@@ -909,6 +1313,18 @@ MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
 /// @pre {@p vars is non-empty}.
 MatrixX<Expression> Jacobian(const Eigen::Ref<const VectorX<Expression>>& f,
                              const Eigen::Ref<const VectorX<Variable>>& vars);
+
+/// Returns the Taylor series expansion of `f` around `a` of order `order`.
+///
+/// @param[in] f     Symbolic expression to approximate using Taylor series
+///                  expansion.
+/// @param[in] a     Symbolic environment which specifies the point of
+///                  approximation. If a partial environment is provided,
+///                  the unspecified variables are treated as symbolic
+///                  variables (e.g. decision variable).
+/// @param[in] order Positive integer which specifies the maximum order of the
+///                  resulting polynomial approximating `f` around `a`.
+Expression TaylorExpand(const Expression& f, const Environment& a, int order);
 
 /// Returns the distinct variables in the matrix of expressions.
 Variables GetDistinctVariables(const Eigen::Ref<const MatrixX<Expression>>& v);

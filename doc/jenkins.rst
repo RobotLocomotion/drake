@@ -3,19 +3,19 @@ GitHub PR Interaction with Jenkins
 **********************************
 
 When a new pull request is opened in the project and the author of the pull
-request is not a member of the GitHub project or whitelisted, the Jenkins
-GitHub Pull Request Builder @drake-jenkins-bot will ask
-"Can one of the admins verify this patch?"
+request is not a member of the RobotLocomotion GitHub organization, the Jenkins
+GitHub Pull Request Builder @drake-jenkins-bot will not automatically schedule
+builds.
 
-Respond:
+To allow the pull request to be tested, a member of the RobotLocomotion
+organization may comment:
 
-* "@drake-jenkins-bot ok to test" to accept this pull request for testing.
-* "@drake-jenkins-bot test this please" for a one time test run.
-* "@drake-jenkins-bot add to whitelist" to add the author to the whitelist.
+* ``@drake-jenkins-bot ok to test`` to accept this pull request for testing.
+* ``@drake-jenkins-bot test this please`` for a one time test run.
 
 If the build fails for other various reasons you can rebuild:
 
-* "@drake-jenkins-bot retest this please" to start a new build.
+* ``@drake-jenkins-bot retest this please`` to start a new build.
 
 You can also view the `Jenkins UI <https://drake-jenkins.csail.mit.edu/>`_
 directly.
@@ -25,27 +25,43 @@ directly.
 Running an On-Demand Build
 ==========================
 
-There are a number of Jenkins builds that do not normally run pre-merge, but
-do run post-merge or nightly.  The post-merge and nightly builds include
-long-running tests, lower-priority platforms (e.g. macOS), and
-specialized options (e.g.
-`MemorySanitizer <https://github.com/google/sanitizers/wiki/MemorySanitizer>`_).
+There are a number of Jenkins builds that do not normally run pre-merge, but do
+run post-merge, nightly, or weekly. These builds include lower-priority
+platforms (e.g., macOS), and specialized options (e.g.,
+`UndefinedBehaviorSanitizer <https://releases.llvm.org/6.0.0/tools/clang/docs/UndefinedBehaviorSanitizer.html>`_).
 Members of the RobotLocomotion organization can manually schedule these builds
 on pull requests that have not yet been merged, or on arbitrary commits in the
 ``RobotLocomotion/drake`` repository.
 
-1. Log in to `Jenkins <https://drake-jenkins.csail.mit.edu/>`_ using GitHub OAuth.
-2. Go to the `list of Experimental builds <https://drake-jenkins.csail.mit.edu/view/Experimental/>`_.
+To schedule a build of an open pull request merged with master, comment:
+
+* ``@drake-jenkins-bot <job-name> please``
+
+
+where ``<job-name>`` is the name of an
+`experimental job <https://drake-jenkins.csail.mit.edu/view/Experimental/>`_.
+
+For example:
+
+* ``@drake-jenkins-bot mac-high-sierra-clang-bazel-experimental-release please``
+* ``@drake-jenkins-bot linux-bionic-clang-bazel-experimental-valgrind-memcheck please``
+
+Alternatively, to schedule a build of an open pull request or arbitrary commit
+in the ``RobotLocomotion/drake`` repository:
+
+1. **Log in** to `Jenkins <https://drake-jenkins.csail.mit.edu/>`_ using GitHub OAuth.
+   (Make sure that you see your name the upper-right corner, *not* the words "Log in".)
+2. Go to the `list of experimental builds <https://drake-jenkins.csail.mit.edu/view/Experimental/>`_.
 3. Click on the specific build you want to schedule.
 4. Click on "Build with Parameters" in the left menu.
-5. Check the ``debug`` box if you want to build in Debug configuration.
-6. Enter ``pr/XYZ/head`` (HEAD of pull request), ``pr/XYZ/merge`` (pull request merged with master), or the desired commit SHA in the ``sha1`` field.
-7. Click ``Build``.
+5. Enter ``pr/XYZ/head`` (HEAD of pull request), ``pr/XYZ/merge`` (pull request
+   merged with master), or the desired commit SHA in the ``sha1`` field.
+6. Click ``Build``.
 
-The list of Experimental builds includes a build named ``experimental``, which
-automatically runs pre-merge, as well as numerous other builds for on-demand
-use. To help identify the on-demand build you want to run, you can consult the
-`list of Continuous builds <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_
-and the
-`list of Nightly builds <https://drake-jenkins.csail.mit.edu/view/Nightly/>`_,
-but you can't schedule Continuous or Nightly builds directly.
+The list of experimental builds includes builds that automatically run on opened
+and updated pull requests, as well as numerous other builds for on-demand use.
+To help identify the on-demand build you want to run, you can consult the lists
+of `continuous <https://drake-jenkins.csail.mit.edu/view/Continuous/>`_,
+`nightly <https://drake-jenkins.csail.mit.edu/view/Nightly/>`_, and
+`weekly <https://drake-jenkins.csail.mit.edu/view/Weekly/>`_ builds,
+but you should not schedule continuous, nightly, or weekly builds directly.

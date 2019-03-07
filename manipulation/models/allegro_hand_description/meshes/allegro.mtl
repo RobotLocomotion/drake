@@ -1,0 +1,14 @@
+# File produced by Open Asset Import Library (http://www.assimp.sf.net)
+# (assimp v3.1.187496374)
+
+newmtl AluminumBodyMaterial
+Kd 0.1 0.1 0.1
+Ka 0.05 0.05 0.05
+Ks 0.45 0.45 0.45
+illum 2
+
+newmtl SiliconeFingerTip
+Kd 1 1 1
+Ka 1 1 1
+Ks 1 1 1
+illum 1

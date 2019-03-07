@@ -6,9 +6,11 @@ import copy
 import unittest
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
+from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     AbstractValue,
-    BasicVector,
+    BasicVector, BasicVector_,
     Parameters,
     Value,
     VectorBase,
@@ -35,7 +37,7 @@ class TestValue(unittest.TestCase):
             for wrap in [pass_through, np.array]:
                 # Ensure that we can get vectors templated on double by
                 # reference.
-                expected_init = wrap(map(float, range(n)))
+                expected_init = wrap([float(x) for x in range(n)])
                 expected_add = wrap([x + 1 for x in expected_init])
                 expected_set = wrap([x + 10 for x in expected_init])
 
@@ -82,7 +84,7 @@ class TestValue(unittest.TestCase):
     def test_abstract_value_copyable(self):
         expected = "Hello world"
         value = Value[str](expected)
-        self.assertTrue(isinstance(value, AbstractValue))
+        self.assertIsInstance(value, AbstractValue)
         self.assertEqual(value.get_value(), expected)
         expected_new = "New value"
         value.set_value(expected_new)
@@ -128,24 +130,27 @@ class TestValue(unittest.TestCase):
 
     def test_abstract_value_make(self):
         value = AbstractValue.Make("Hello world")
-        self.assertTrue(isinstance(value, Value[str]))
+        self.assertIsInstance(value, Value[str])
         value = AbstractValue.Make(MoveOnlyType(10))
-        self.assertTrue(isinstance(value, Value[MoveOnlyType]))
+        self.assertIsInstance(value, Value[MoveOnlyType])
         value = AbstractValue.Make({"x": 10})
-        self.assertTrue(isinstance(value, Value[object]))
+        self.assertIsInstance(value, Value[object])
+        for T in [float, AutoDiffXd, Expression]:
+            value = AbstractValue.Make(BasicVector_[T](size=1))
+            self.assertIsInstance(value, Value[BasicVector_[T]])
 
     def test_abstract_value_unknown(self):
         value = make_unknown_abstract_value()
-        self.assertTrue(isinstance(value, AbstractValue))
+        self.assertIsInstance(value, AbstractValue)
         with self.assertRaises(RuntimeError) as cm:
             value.get_value()
         self.assertTrue(all(
-            s in cm.exception.message for s in [
+            s in str(cm.exception) for s in [
                 "AbstractValue",
                 "UnknownType",
                 "get_value",
                 "AddValueInstantiation",
-            ]), cm.exception.message)
+            ]), cm.exception)
 
     def test_parameters_api(self):
 
@@ -162,7 +167,7 @@ class TestValue(unittest.TestCase):
 
         params = Parameters(
             numeric=[model_numeric.Clone()], abstract=[model_abstract.Clone()])
-        self.assertEqual(params.num_numeric_parameters(), 1)
+        self.assertEqual(params.num_numeric_parameter_groups(), 1)
         self.assertEqual(params.num_abstract_parameters(), 1)
         # Numeric.
         compare(params.get_numeric_parameter(index=0), model_numeric)

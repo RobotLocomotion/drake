@@ -15,6 +15,7 @@
 #include "drake/common/text_logging_gflags.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_lcm.h"
+#include "drake/examples/kuka_iiwa_arm/kuka_torque_controller.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -24,7 +25,8 @@
 #include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
 #include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
+#include "drake/systems/controllers/state_feedback_controller_interface.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -39,6 +41,7 @@ DEFINE_bool(visualize_frames, true, "Visualize end effector frames");
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
+DEFINE_bool(torque_control, false, "Simulate using torque control mode.");
 
 namespace drake {
 namespace examples {
@@ -52,6 +55,8 @@ using systems::DiagramBuilder;
 using systems::FrameVisualizer;
 using systems::RigidBodyPlant;
 using systems::Simulator;
+using systems::controllers::rbt::InverseDynamicsController;
+using systems::controllers::StateFeedbackControllerInterface;
 
 int DoMain() {
   drake::lcm::DrakeLcm lcm;
@@ -77,36 +82,36 @@ int DoMain() {
 
   const RigidBodyTree<double>& tree = plant->get_rigid_body_tree();
   const int num_joints = tree.get_num_positions();
+  DRAKE_DEMAND(num_joints % kIiwaArmNumJoints == 0);
+  const int num_iiwa = num_joints/kIiwaArmNumJoints;
 
-  // Adds a iiwa controller
-  VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
-  SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
-
-  DRAKE_DEMAND(tree.get_num_positions() % kIiwaArmNumJoints == 0);
-  for (int offset = kIiwaArmNumJoints; offset < tree.get_num_positions();
-       offset += kIiwaArmNumJoints) {
-    const int end = offset + kIiwaArmNumJoints;
-    iiwa_kp.conservativeResize(end);
-    iiwa_kp.segment(offset, kIiwaArmNumJoints) =
-        iiwa_kp.head(kIiwaArmNumJoints);
-    iiwa_ki.conservativeResize(end);
-    iiwa_ki.segment(offset, kIiwaArmNumJoints) =
-        iiwa_ki.head(kIiwaArmNumJoints);
-    iiwa_kd.conservativeResize(end);
-    iiwa_kd.segment(offset, kIiwaArmNumJoints) =
-        iiwa_kd.head(kIiwaArmNumJoints);
+  // Adds a iiwa controller.
+  StateFeedbackControllerInterface<double>* controller = nullptr;
+  if (FLAGS_torque_control) {
+    VectorX<double> stiffness, damping_ratio;
+    SetTorqueControlledIiwaGains(&stiffness, &damping_ratio);
+    stiffness = stiffness.replicate(num_iiwa, 1);
+    damping_ratio = damping_ratio.replicate(num_iiwa, 1);
+    controller = builder.AddController<KukaTorqueController<double>>(
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
+        stiffness, damping_ratio);
+  } else {
+    VectorX<double> iiwa_kp, iiwa_kd, iiwa_ki;
+    SetPositionControlledIiwaGains(&iiwa_kp, &iiwa_ki, &iiwa_kd);
+    iiwa_kp = iiwa_kp.replicate(num_iiwa, 1);
+    iiwa_kd = iiwa_kd.replicate(num_iiwa, 1);
+    iiwa_ki = iiwa_ki.replicate(num_iiwa, 1);
+    controller = builder.AddController<InverseDynamicsController<double>>(
+        RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
+        iiwa_kp, iiwa_ki, iiwa_kd,
+        false /* without feedforward acceleration */);
   }
-
-  auto controller = builder.AddController<
-      systems::controllers::InverseDynamicsController<double>>(
-      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId, tree.Clone(),
-      iiwa_kp, iiwa_ki, iiwa_kd, false /* without feedforward acceleration */);
 
   // Create the command subscriber and status publisher.
   systems::DiagramBuilder<double>* base_builder = builder.get_mutable_builder();
   auto command_sub = base_builder->AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_iiwa_command>("IIWA_COMMAND",
-                                                                 &lcm));
+      MakeIiwaCommandLcmSubscriberSystem(
+          num_joints, "IIWA_COMMAND", &lcm));
   command_sub->set_name("command_subscriber");
   auto command_receiver =
       base_builder->AddSystem<IiwaCommandReceiver>(num_joints);
@@ -117,31 +122,44 @@ int DoMain() {
       base_builder->AddSystem<IiwaContactResultsToExternalTorque>(
           tree, iiwa_instances);
   auto status_pub = base_builder->AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>("IIWA_STATUS",
-                                                               &lcm));
+      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_status>(
+          "IIWA_STATUS", &lcm, kIiwaLcmStatusPeriod /* publish period */));
   status_pub->set_name("status_publisher");
-  status_pub->set_publish_period(kIiwaLcmStatusPeriod);
   auto status_sender = base_builder->AddSystem<IiwaStatusSender>(num_joints);
   status_sender->set_name("status_sender");
 
   base_builder->Connect(command_sub->get_output_port(),
-                        command_receiver->get_input_port(0));
+                        command_receiver->GetInputPort("command_message"));
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) The IIWA LCM systems should not know about velocities,
+  // we should add velocity estimation into this simulation, not use state
+  // ports on the LCM systems (the KUKA doesn't use velocities).
   base_builder->Connect(command_receiver->get_commanded_state_output_port(),
                         controller->get_input_port_desired_state());
   base_builder->Connect(plant->get_output_port(0),
                         status_sender->get_state_input_port());
-  base_builder->Connect(command_receiver->get_output_port(0),
-                        status_sender->get_command_input_port());
+#pragma GCC diagnostic pop
+  base_builder->Connect(command_receiver->get_commanded_position_output_port(),
+                        status_sender->get_position_commanded_input_port());
   base_builder->Connect(controller->get_output_port_control(),
-                        status_sender->get_commanded_torque_input_port());
+                        status_sender->get_torque_commanded_input_port());
   base_builder->Connect(plant->torque_output_port(),
-                        status_sender->get_measured_torque_input_port());
+                        status_sender->get_torque_measured_input_port());
   base_builder->Connect(plant->contact_results_output_port(),
                         external_torque_converter->get_input_port(0));
   base_builder->Connect(external_torque_converter->get_output_port(0),
-                        status_sender->get_external_torque_input_port());
-  base_builder->Connect(status_sender->get_output_port(0),
+                        status_sender->get_torque_external_input_port());
+  base_builder->Connect(status_sender->get_output_port(),
                         status_pub->get_input_port());
+  // Connect the torque input in torque control
+  if (FLAGS_torque_control) {
+    KukaTorqueController<double>* torque_controller =
+        dynamic_cast<KukaTorqueController<double>*>(controller);
+    DRAKE_DEMAND(torque_controller);
+    base_builder->Connect(command_receiver->get_commanded_torque_output_port(),
+                          torque_controller->get_input_port_commanded_torque());
+  }
 
   if (FLAGS_visualize_frames) {
     // TODO(sam.creasey) This try/catch block is here because even
@@ -189,6 +207,7 @@ int DoMain() {
   // Simulate for a very long time.
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 

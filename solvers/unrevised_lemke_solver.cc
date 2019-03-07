@@ -7,6 +7,7 @@
 #include <limits>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
 
 using drake::log;
 
@@ -76,63 +78,22 @@ VectorX<double> LinearSolver<double>::Solve(
 }  // anonymous namespace
 
 template <>
-SolutionResult
-    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<drake::Vector1d>>::Solve(
-    MathematicalProgram&) const {
-  DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
-                  "MathematicalProgram while templatized as an AutoDiff");
-  return SolutionResult::kUnknownError;
-}
-
-template <>
-SolutionResult
-    UnrevisedLemkeSolver<Eigen::AutoDiffScalar<Eigen::VectorXd>>::Solve(
-    MathematicalProgram&) const {
-  DRAKE_ABORT_MSG("UnrevisedLemkeSolver cannot yet be used in a "
-                  "MathematicalProgram while templatized as an AutoDiff");
-  return SolutionResult::kUnknownError;
+void UnrevisedLemkeSolver<AutoDiffXd>::DoSolve(
+    const MathematicalProgram&, const Eigen::VectorXd&,
+    const SolverOptions&, MathematicalProgramResult*) const {
+  throw std::logic_error(
+      "UnrevisedLemkeSolver cannot yet be used in a "
+      "MathematicalProgram while templatized as an AutoDiff");
 }
 
 template <typename T>
-// NOLINTNEXTLINE(*)  Don't lint old, non-style-compliant code below.
-SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
-  // This solver imposes restrictions that its problem:
-  //
-  // (1) Contains only linear complementarity constraints,
-  // (2) Has no element of any decision variable appear in more than one
-  //     constraint, and
-  // (3) Has every element of every decision variable in a constraint.
-  //
-  // Restriction 1 could reasonably be relaxed by reformulating other
-  // constraint types that can be expressed as LCPs (eg, convex QLPs),
-  // although this would also entail adding an output stage to convert
-  // the LCP results back to the desired form.  See eg. @RussTedrake on
-  // how to convert a linear equality constraint of n elements to an
-  // LCP of 2n elements.
-  //
-  // There is no obvious way to relax restriction 2.
-  //
-  // Restriction 3 could reasonably be relaxed to simply let unbound
-  // variables sit at 0.
-
-  DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.GetAllLinearConstraints().empty());
-  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
-
-  const auto& bindings = prog.linear_complementarity_constraints();
-
-  // Assert that the available LCPs cover the program and no two LCPs cover
-  // the same variable.
-  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
-    int coverings = 0;
-    for (const auto& binding : bindings) {
-      if (binding.ContainsVariable(prog.decision_variable(i))) {
-        coverings++;
-      }
-    }
-    DRAKE_ASSERT(coverings == 1);
-  }
+void UnrevisedLemkeSolver<T>::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
+  unused(initial_guess);
+  unused(merged_options);
 
   // Solve each individual LCP, writing the result back to the decision
   // variables through the binding and returning true iff all LCPs are
@@ -140,14 +101,10 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
   //
   // If any is infeasible, returns false and does not alter the decision
   // variables.
-  //
-
-  // We don't actually indicate different results.
-  SolverResult solver_result(UnrevisedLemkeSolverId::id());
 
   // Create a dummy variable for the number of pivots used.
   int num_pivots = 0;
-
+  const auto& bindings = prog.linear_complementarity_constraints();
   Eigen::VectorXd x_sol(prog.num_vars());
   for (const auto& binding : bindings) {
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
@@ -156,17 +113,18 @@ SolutionResult UnrevisedLemkeSolver<T>::Solve(MathematicalProgram& prog) const {
     bool solved = SolveLcpLemke(
         constraint->M(), constraint->q(), &constraint_solution, &num_pivots);
     if (!solved) {
-      prog.SetSolverResult(solver_result);
-      return SolutionResult::kUnknownError;
+      result->set_solution_result(SolutionResult::kUnknownError);
+      return;
     }
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {
       const int variable_index =
           prog.FindDecisionVariableIndex(binding.variables()(i));
       x_sol(variable_index) = constraint_solution(i);
     }
-    solver_result.set_optimal_cost(0.0);
   }
-  return SolutionResult::kSolutionFound;
+  result->set_optimal_cost(0.0);
+  result->set_x_val(x_sol);
+  result->set_solution_result(SolutionResult::kSolutionFound);
 }
 
 // Utility function for copying an r-dimensional column vector v (designated by
@@ -818,18 +776,17 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
     indep_variables_indices_[indep_variables_[i]] = i;
 
   // Output the independent and dependent variable tuples.
-  #ifdef SPDLOG_DEBUG_ON
   auto to_string = [](const std::vector<LCPVariable>& vars) -> std::string {
     std::ostringstream oss;
     for (int i = 0; i < static_cast<int>(vars.size()); ++i)
       oss << ((vars[i].is_z()) ? "z" : "w") << vars[i].index() << " ";
     return oss.str();
   };
+  unused(to_string);  // ... when in release mode.
   DRAKE_SPDLOG_DEBUG(log(), "Independent set variables: {}",
       to_string(indep_variables_));
   DRAKE_SPDLOG_DEBUG(log(), "Dependent set variables: {}",
       to_string(dep_variables_));
-  #endif
 
   // Pivot up to the maximum number of times.
   VectorX<T> q_prime(n), M_prime_col(n);
@@ -910,13 +867,69 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 }
 
 template <typename T>
-SolverId UnrevisedLemkeSolver<T>::solver_id() const {
-  return UnrevisedLemkeSolverId::id();
-}
+UnrevisedLemkeSolver<T>::UnrevisedLemkeSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+template <typename T>
+UnrevisedLemkeSolver<T>::~UnrevisedLemkeSolver() = default;
 
 SolverId UnrevisedLemkeSolverId::id() {
   static const never_destroyed<SolverId> singleton{"Unrevised Lemke"};
   return singleton.access();
+}
+
+template <typename T>
+SolverId UnrevisedLemkeSolver<T>::id() {
+  return UnrevisedLemkeSolverId::id();
+}
+
+template <typename T>
+bool UnrevisedLemkeSolver<T>::is_available() {
+  return true;
+}
+
+template <typename T>
+bool UnrevisedLemkeSolver<T>::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  // This solver imposes restrictions that its problem:
+  //
+  // (1) Contains only linear complementarity constraints,
+  // (2) Has no element of any decision variable appear in more than one
+  //     constraint, and
+  // (3) Has every element of every decision variable in a constraint.
+  //
+  // Restriction 1 could reasonably be relaxed by reformulating other
+  // constraint types that can be expressed as LCPs (eg, convex QLPs),
+  // although this would also entail adding an output stage to convert
+  // the LCP results back to the desired form.  See eg. @RussTedrake on
+  // how to convert a linear equality constraint of n elements to an
+  // LCP of 2n elements.
+  //
+  // There is no obvious way to relax restriction 2.
+  //
+  // Restriction 3 could reasonably be relaxed to simply let unbound
+  // variables sit at 0.
+  if (prog.required_capabilities() != ProgramAttributes({
+        ProgramAttribute::kLinearComplementarityConstraint})) {
+    return false;
+  }
+
+  // Check that the available LCPs cover the program and no two LCPs cover the
+  // same variable.
+  const auto& bindings = prog.linear_complementarity_constraints();
+  for (int i = 0; i < static_cast<int>(prog.num_vars()); ++i) {
+    int coverings = 0;
+    for (const auto& binding : bindings) {
+      if (binding.ContainsVariable(prog.decision_variable(i))) {
+        coverings++;
+      }
+    }
+    if (coverings != 1) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 }  // namespace solvers

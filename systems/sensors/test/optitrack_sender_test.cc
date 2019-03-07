@@ -3,24 +3,33 @@
 #include <gtest/gtest.h>
 #include "optitrack/optitrack_frame_t.hpp"
 
+#include "drake/geometry/frame_kinematics_vector.h"
 #include "drake/systems/framework/context.h"
-#include "drake/systems/sensors/optitrack_encoder.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
-using systems::sensors::TrackedBody;
 using optitrack::optitrack_frame_t;
 
 // This test sets up a systems::sensors::TrackedBody structure to be passed
-// through by the OptitrackLCMFrameSender test object. The output should be
+// through by the OptitrackLcmFrameSender test object. The output should be
 // an abstract value object templated on type `optitrack_frame_t`. This test
-// ensures that the TrackedBody input to the OptitrackLCMFrameSender system
+// ensures that the TrackedBody input to the OptitrackLcmFrameSender system
 // matches the output `optitrack_frame_t` object.
-GTEST_TEST(OptitrackSenderTest, OptitrackLCMSenderTest) {
-  OptitrackLCMFrameSender dut(1);  // Create a frame sender with 1 rigid body.
-  std::vector<TrackedBody> tracked_body(1);
+GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
+  geometry::SourceId source_id = geometry::SourceId::get_new_id();
+  geometry::FrameId frame_id = geometry::FrameId::get_new_id();
+  std::vector<geometry::FrameId> frame_ids{frame_id};
+  int optitrack_id = 11;
+
+  std::map<geometry::FrameId, std::pair<std::string, int>> frame_map;
+  frame_map[frame_id] = std::pair<std::string, int>(
+      "test_body", optitrack_id);
+  OptitrackLcmFrameSender dut(frame_map);
+
+  geometry::FramePoseVector<double> pose_vector(source_id, frame_ids);
+  pose_vector.clear();
 
   constexpr double tx = 0.2;  // x-translation for the test object
   constexpr double ty = 0.4;  // y-translation for the test object
@@ -28,21 +37,19 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLCMSenderTest) {
 
   // Sets up a test body with an arbitrarily chosen pose.
   Eigen::Vector3d axis(1 / sqrt(3), 1 / sqrt(3), 1 / sqrt(3));
-  tracked_body[0].id = 1;
-  tracked_body[0].body_name = "test_body";
-  tracked_body[0].T_WF = Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)).
-      pretranslate(Eigen::Vector3d(tx, ty, tz));
+  pose_vector.set_value(frame_id,
+                        Eigen::Isometry3d(Eigen::AngleAxis<double>(0.2, axis)).
+                        pretranslate(Eigen::Vector3d(tx, ty, tz)));
 
-  EXPECT_EQ(tracked_body[0].T_WF.translation()[0], tx);
-  EXPECT_EQ(tracked_body[0].T_WF.translation()[1], ty);
-  EXPECT_EQ(tracked_body[0].T_WF.translation()[2], tz);
+  EXPECT_EQ(pose_vector.value(frame_id).translation()[0], tx);
+  EXPECT_EQ(pose_vector.value(frame_id).translation()[1], ty);
+  EXPECT_EQ(pose_vector.value(frame_id).translation()[2], tz);
 
-  std::unique_ptr<systems::AbstractValue> input(
-      new systems::Value<std::vector<TrackedBody>>());
-  input->SetValue(tracked_body);
+  std::unique_ptr<AbstractValue> input(
+      new Value<geometry::FramePoseVector<double>>(pose_vector));
 
   auto context = dut.CreateDefaultContext();
-  auto output = dut.AllocateOutput(*context);
+  auto output = dut.AllocateOutput();
   context->FixInputPort(0 /* input port ID*/, std::move(input));
 
   dut.CalcUnrestrictedUpdate(*context, &context->get_mutable_state());
@@ -56,6 +63,8 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLCMSenderTest) {
   EXPECT_EQ(lcm_frame.utime, 0);
   EXPECT_EQ(lcm_frame.num_rigid_bodies, 1);
 
+  EXPECT_EQ(lcm_frame.rigid_bodies[0].id, optitrack_id);
+
   // Check the translations. Allow for some numerical error.
   EXPECT_NEAR(lcm_frame.rigid_bodies[0].xyz[0], tx, 1e-7);
   EXPECT_NEAR(lcm_frame.rigid_bodies[0].xyz[1], ty, 1e-7);
@@ -67,7 +76,7 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLCMSenderTest) {
       lcm_frame.rigid_bodies[0].quat[1], lcm_frame.rigid_bodies[0].quat[2]);
   Eigen::Isometry3d body_pose = Eigen::Isometry3d(quat_rotation).
       pretranslate(Eigen::Vector3d(tx, ty, tz));
-  EXPECT_TRUE(body_pose.isApprox(tracked_body[0].T_WF, 1e-1));
+  EXPECT_TRUE(body_pose.isApprox(pose_vector.value(frame_id), 1e-1));
 }
 
 }  // namespace sensors

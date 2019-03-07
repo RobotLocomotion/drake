@@ -2,18 +2,26 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags", "mosek_test_tags")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:test_tags.bzl",
+    "gurobi_test_tags",
+    "mosek_test_tags",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
     "drake_py_test",
     "drake_py_unittest",
+)
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_py_library_aliases",
 )
 
 package(default_visibility = [
@@ -29,19 +37,8 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
-)
-
-# TODO(eric.cousineau): Move this into `multibody`.
-drake_pybind_library(
-    name = "ik_py",
-    cc_srcs = ["ik_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        "//bindings/pydrake/multibody:rigid_body_tree_py",
-    ],
-    py_srcs = ["ik.py"],
 )
 
 # TODO(eric.cousineau): Rename `mathematicalprogram` to
@@ -50,8 +47,10 @@ drake_pybind_library(
     name = "mathematicalprogram_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/util:drake_optional_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["mathematicalprogram_py.cc"],
     package_info = PACKAGE_INFO,
@@ -59,12 +58,11 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
-    py_srcs = ["mathematicalprogram.py"],
 )
 
 drake_pybind_library(
     name = "gurobi_py",
-    cc_so_name = "gurobi",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["gurobi_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -72,7 +70,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "ipopt_py",
-    cc_so_name = "ipopt",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["ipopt_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -80,21 +78,59 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "mosek_py",
-    cc_so_name = "mosek",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["mosek_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
 )
 
+drake_pybind_library(
+    name = "osqp_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
+        # depend on on pydrake/common once the Value bindings have moved there.
+        "//bindings/pydrake/systems:systems_pybind",
+    ],
+    cc_srcs = ["osqp_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":mathematicalprogram_py",
+        # TODO(jwnimmer-tri) Only for AbstractValue; we should switch this to
+        # depend on on pydrake/common once the Value bindings have moved there.
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
+drake_pybind_library(
+    name = "snopt_py",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_srcs = ["snopt_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [":mathematicalprogram_py"],
+)
+
+PY_LIBRARIES_ATTIC_ALIASES = [
+    ":ik_py",
+]
+
+drake_py_library_aliases(
+    actual_subdir = "bindings/pydrake/attic/solvers",
+    add_deprecation_warning = 1,
+    deprecation_removal_date = "2019-05-01",
+    relative_labels = PY_LIBRARIES_ATTIC_ALIASES,
+)
+
 PY_LIBRARIES_WITH_INSTALL = [
     ":gurobi_py",
-    ":ik_py",
     ":ipopt_py",
     ":mathematicalprogram_py",
     ":mosek_py",
+    ":osqp_py",
+    ":snopt_py",
 ]
 
-PY_LIBRARIES = [
+PY_LIBRARIES = PY_LIBRARIES_ATTIC_ALIASES + [
     ":module_py",
 ]
 
@@ -130,7 +166,10 @@ drake_py_unittest(
         "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
         "//conditions:default": [],
     }),
-    deps = [":ipopt_py"],
+    deps = [
+        ":ipopt_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
 drake_py_unittest(
@@ -140,25 +179,26 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "mathematicalprogram_test",
-    tags = gurobi_test_tags(),
-    deps = [":mathematicalprogram_py"],
-)
-
-drake_py_test(
-    name = "pr2_ik_test",
-    # TODO(jwnimmer-tri) Port this to drake_py_unittest.
-    allow_import_unittest = True,
-    data = ["//examples/pr2:models"],
-    tags = ["snopt"],
-    deps = [":ik_py"],
+    name = "osqp_solver_test",
+    args = select({
+        "//tools:no_osqp": ["TestOsqpSolver.unavailable"],
+        "//conditions:default": [],
+    }),
+    deps = [":osqp_py"],
 )
 
 drake_py_unittest(
-    name = "rbt_ik_test",
-    data = ["//examples/pendulum:models"],
-    tags = ["snopt"],
-    deps = [":ik_py"],
+    name = "mathematicalprogram_test",
+    tags = gurobi_test_tags(gurobi_required = False),
+    deps = [
+        ":gurobi_py",
+        ":mathematicalprogram_py",
+        ":snopt_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    enable_clang_format_lint = True,
+)

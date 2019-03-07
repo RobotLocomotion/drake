@@ -15,7 +15,9 @@ RobotStateMsgToHumanoidStatusSystem::RobotStateMsgToHumanoidStatusSystem(
   alias_groups.LoadFromFile(alias_group_path);
   default_output_ = std::make_unique<HumanoidStatus>(&robot_, alias_groups);
 
-  DeclareAbstractInputPort();
+  DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      Value<bot_core::robot_state_t>{});
   DeclareAbstractOutputPort<RobotStateMsgToHumanoidStatusSystem,
                             RobotKinematicState<double>>(
       *default_output_,

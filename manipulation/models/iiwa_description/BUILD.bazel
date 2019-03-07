@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
 load("//tools/install:install_data.bzl", "install_data")
@@ -21,7 +21,8 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         "//common:find_resource",
-        "//multibody/parsers",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
 

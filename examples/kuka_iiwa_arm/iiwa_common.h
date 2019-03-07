@@ -8,17 +8,17 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/multibody/rigid_body_tree.h"
 
 namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-constexpr int kIiwaArmNumJoints = 7;
-
-/// Returns the maximum joint velocities provided by Kuka.
-/// @return Maximum joint velocities (rad/s).
-VectorX<double> get_iiwa_max_joint_velocities();
+// These details have moved to files under drake/manipulation/kuka_iiwa.
+// These forwarding aliases are placed here for compatibility purposes.
+using manipulation::kuka_iiwa::kIiwaArmNumJoints;
+using manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
 
 /// Computes the lumped inertia parameters of the gripper and the end effector
 /// link expressed in the end effector frame.
@@ -40,7 +40,7 @@ void VerifyIiwaTree(const RigidBodyTree<double>& tree);
 
 /// Builds a RigidBodyTree at the specified @position and @orientation from
 /// the model specified by @model_file_name.
-/// This method is a convinience wrapper over `AddModelInstanceFromUrdfFile`.
+/// This method is a convenience wrapper over `AddModelInstanceFromUrdfFile`.
 /// @see drake::parsers::urdf::AddModelInstanceFromUrdfFile
 void CreateTreedFromFixedModelAtPose(
     const std::string& model_file_name, RigidBodyTreed* tree,
@@ -51,6 +51,10 @@ void CreateTreedFromFixedModelAtPose(
 void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
                                     Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
+
+/// Used to set the feedback gains for the simulated torque controlled KUKA.
+void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
+                                  Eigen::VectorXd* damping_ratio);
 
 /// Scales a plan so that no step exceeds the robot's maximum joint velocities.
 /// The number of columns in @p keyframes must match the size of @p time.  Times

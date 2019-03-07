@@ -1,0 +1,217 @@
+# -*- python -*-
+
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_package_library = "attic_drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "controllers",
+    deps = [
+        ":control_util",
+        ":instantaneous_qp_controller",
+        ":polynomial_encode_decode",
+        ":qp_common",
+        ":rbt_inverse_dynamics",
+        ":rbt_inverse_dynamics_controller",
+        ":side",
+        ":yaml_util",
+        ":zmp_util",
+    ],
+)
+
+drake_cc_library(
+    name = "control_util",
+    srcs = ["controlUtil.cpp"],
+    hdrs = ["controlUtil.h"],
+    deps = [
+        "//attic/multibody:resolve_center_of_pressure",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/util",
+        "//common:essential",
+        "//common/trajectories:piecewise_polynomial",
+        "//math:autodiff",
+        "//math:expmap",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "side",
+    srcs = ["side.cc"],
+    hdrs = ["side.h"],
+    deps = [],
+)
+
+drake_cc_library(
+    name = "qp_common",
+    srcs = [],
+    hdrs = ["QPCommon.h"],
+    deps = [
+        ":control_util",
+        ":side",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/util",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "zmp_util",
+    srcs = ["zmpUtil.cpp"],
+    hdrs = ["zmpUtil.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "yaml_util",
+    srcs = ["yaml_util.cc"],
+    hdrs = ["yaml_util.h"],
+    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
+    # headers; yaml_util.h is only included internally within this package.
+    install_hdrs_exclude = ["yaml_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":qp_common",
+        "//common:essential",
+        "@yaml_cpp",
+    ],
+)
+
+drake_cc_library(
+    name = "polynomial_encode_decode",
+    srcs = ["polynomial_encode_decode.cc"],
+    hdrs = ["polynomial_encode_decode.h"],
+    deps = [
+        "//attic/util",
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:piecewise_polynomial",
+        "//lcmtypes:polynomial",
+        "//lcmtypes:polynomial_matrix",
+    ],
+)
+
+# This library is empty unless Gurobi is available.
+drake_cc_library(
+    name = "instantaneous_qp_controller",
+    srcs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.cpp"],
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "//tools:with_gurobi": ["InstantaneousQPController.h"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":control_util",
+        ":polynomial_encode_decode",
+        ":qp_common",
+        ":yaml_util",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
+        "//attic/util",
+        "//common:essential",
+        "//common:find_resource",
+        "//common:is_approx_equal_abstol",
+        "//lcmtypes:qp_controller_input",
+        "//lcmtypes:zmp_com_observer_state",
+        "//math:geometric_transform",
+        "//solvers:gurobi_qp",
+    ],
+)
+
+drake_cc_library(
+    name = "rbt_inverse_dynamics",
+    srcs = ["rbt_inverse_dynamics.cc"],
+    hdrs = ["rbt_inverse_dynamics.h"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "rbt_inverse_dynamics_controller",
+    srcs = ["rbt_inverse_dynamics_controller.cc"],
+    hdrs = ["rbt_inverse_dynamics_controller.h"],
+    deps = [
+        ":rbt_inverse_dynamics",
+        "//attic/multibody:rigid_body_tree",
+        "//systems/controllers:pid_controller",
+        "//systems/controllers:state_feedback_controller_interface",
+        "//systems/framework",
+        "//systems/primitives:adder",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:demultiplexer",
+        "//systems/primitives:pass_through",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_library(
+    name = "rbt_compute_torque",
+    testonly = 1,
+    hdrs = ["test/rbt_compute_torque.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+    ],
+)
+
+drake_cc_googletest(
+    name = "polynomial_encode_decode_test",
+    deps = [
+        ":polynomial_encode_decode",
+        "//common/test_utilities",
+        "//common/trajectories:random_piecewise_polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_inverse_dynamics_test",
+    data = [
+        "//examples/simple_four_bar:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rbt_compute_torque",
+        ":rbt_inverse_dynamics",
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/controllers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_inverse_dynamics_controller_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rbt_compute_torque",
+        ":rbt_inverse_dynamics_controller",
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/controllers/test_utilities",
+    ],
+)
+
+# The extra_srcs are required here because add_lint_tests() doesn't understand
+# how to extract labels from select() functions yet.
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+    cpplint_extra_srcs = [
+        "InstantaneousQPController.cpp",
+        "InstantaneousQPController.h",
+    ],
+)

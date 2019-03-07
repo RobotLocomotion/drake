@@ -19,7 +19,7 @@ namespace math {
  * @retval X. The matrix X satisfies XᵀX = Y and X.rows() = rank(Y).
  * @pre 1. Y is positive semidefinite.
  *      2. zero_tol is non-negative.
- *      @throw std::runtime_error when the pre-conditions are not satisfied.
+ * @throws std::runtime_error when the pre-conditions are not satisfied.
  */
 Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
     const Eigen::Ref<const Eigen::MatrixXd>& Y, double zero_tol);
@@ -57,8 +57,7 @@ Eigen::MatrixXd DecomposePSDmatrixIntoXtransposeTimesX(
  *         is positive semidefinite.
  *      2. `Q` and `b` are of the correct size.
  *      3. `tol` is non-negative.
- * @throw a runtime_error if the precondition is not
- * satisfied.
+ * @throws std::runtime_error if the precondition is not satisfied.
  */
 std::pair<Eigen::MatrixXd, Eigen::MatrixXd>
 DecomposePositiveQuadraticForm(const Eigen::Ref<const Eigen::MatrixXd>& Q,

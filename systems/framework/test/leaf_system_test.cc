@@ -1,26 +1,114 @@
 #include "drake/systems/framework/leaf_system.h"
 
+#include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <typeinfo>
 
 #include <Eigen/Dense>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/random.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/output_port_value.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
 namespace drake {
 namespace systems {
 namespace {
+
+// A shell System to test the event dispatchers are sent at least one event upon
+// a forced call.
+class ForcedDispatchOverrideSystem : public LeafSystem<double> {
+ public:
+  bool got_publish_event() const { return got_publish_event_; }
+  bool got_discrete_update_event() const {
+    return got_discrete_update_event_;
+  }
+  bool got_unrestricted_update_event() const {
+    return got_unrestricted_update_event_;
+  }
+  TriggerType get_publish_event_trigger_type() const {
+    return publish_event_trigger_type_;
+  }
+  TriggerType get_discrete_update_event_trigger_type() const {
+    return discrete_update_event_trigger_type_;
+  }
+  TriggerType get_unrestricted_update_event_trigger_type() const {
+    return unrestricted_update_event_trigger_type_;
+  }
+
+ private:
+  void DoPublish(
+      const Context<double>&,
+      const std::vector<const PublishEvent<double>*>& events) const final {
+    got_publish_event_ = (events.size() == 1);
+    if (got_publish_event_)
+      publish_event_trigger_type_ = events.front()->get_trigger_type();
+  }
+
+  void DoCalcDiscreteVariableUpdates(
+      const Context<double>&,
+      const std::vector<const DiscreteUpdateEvent<double>*>& events,
+      DiscreteValues<double>*) const final {
+    got_discrete_update_event_ = (events.size() == 1);
+    if (got_discrete_update_event_)
+      discrete_update_event_trigger_type_ = events.front()->get_trigger_type();
+  }
+
+  void DoCalcUnrestrictedUpdate(
+      const Context<double>&,
+      const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
+      State<double>*) const final {
+    got_unrestricted_update_event_ = (events.size() == 1);
+    if (got_unrestricted_update_event_) {
+      unrestricted_update_event_trigger_type_ =
+          events.front()->get_trigger_type();
+    }
+  }
+
+  // Variables used to determine whether the handlers have been called with
+  // forced update events. Note: updating method variables in event handlers
+  // is an anti-pattern, but we do it here to simplify test code.
+  mutable bool got_publish_event_{false};
+  mutable bool got_discrete_update_event_{false};
+  mutable bool got_unrestricted_update_event_{false};
+  mutable TriggerType publish_event_trigger_type_{TriggerType::kUnknown};
+  mutable TriggerType discrete_update_event_trigger_type_{
+    TriggerType::kUnknown
+  };
+  mutable TriggerType unrestricted_update_event_trigger_type_{
+    TriggerType::kUnknown
+  };
+};
+
+GTEST_TEST(ForcedDispatchOverrideSystemTest, Dispatchers) {
+  ForcedDispatchOverrideSystem system;
+  auto context = system.CreateDefaultContext();
+  auto discrete_values = system.AllocateDiscreteVariables();
+  auto state = context->CloneState();
+  system.Publish(*context);
+  system.CalcDiscreteVariableUpdates(*context, discrete_values.get());
+  system.CalcUnrestrictedUpdate(*context, state.get());
+  ASSERT_TRUE(system.got_publish_event());
+  ASSERT_TRUE(system.got_discrete_update_event());
+  ASSERT_TRUE(system.got_unrestricted_update_event());
+  EXPECT_TRUE(system.get_publish_event_trigger_type() == TriggerType::kForced);
+  EXPECT_TRUE(system.get_discrete_update_event_trigger_type() ==
+      TriggerType::kForced);
+  EXPECT_TRUE(system.get_unrestricted_update_event_trigger_type() ==
+      TriggerType::kForced);
+}
 
 // A shell System to test the default implementations.
 template <typename T>
@@ -30,10 +118,20 @@ class TestSystem : public LeafSystem<T> {
     this->set_name("TestSystem");
     this->DeclareNumericParameter(BasicVector<T>{13.0, 7.0});
     this->DeclareAbstractParameter(Value<std::string>("parameter value"));
+
+    this->DeclareDiscreteState(3);
+    this->DeclareAbstractState(AbstractValue::Make<int>(5));
+    this->DeclareAbstractState(
+        AbstractValue::Make<std::string>("second abstract state"));
   }
   ~TestSystem() override {}
 
   using LeafSystem<T>::DeclareContinuousState;
+  using LeafSystem<T>::DeclareVectorInputPort;
+  using LeafSystem<T>::DeclareAbstractInputPort;
+  using LeafSystem<T>::DeclareVectorOutputPort;
+  using LeafSystem<T>::DeclareAbstractOutputPort;
+  using LeafSystem<T>::DeclarePerStepEvent;
 
   void AddPeriodicUpdate() {
     const double period = 10.0;
@@ -66,14 +164,10 @@ class TestSystem : public LeafSystem<T> {
 
   void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
 
-  template <typename EventType>
-  void AddPerStepEvent() {
-    EventType event(Event<T>::TriggerType::kPerStep);
-    this->DeclarePerStepEvent(event);
-  }
-
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override {}
+
+  void CalcOutput(const Context<T>& context, BasicVector<T>* output) const {}
 
   const BasicVector<T>& GetVanillaNumericParameters(
       const Context<T>& context) const {
@@ -150,6 +244,69 @@ class TestSystem : public LeafSystem<T> {
       return unrestricted_update_callback_called_;
   }
 
+  // Verifies that the forced publish events collection has been allocated.
+  bool forced_publish_events_collection_allocated() const {
+    return this->forced_publish_events_exist();
+  }
+
+  // Verifies that the forced discrete update events collection has been
+  // allocated.
+  bool forced_discrete_update_events_collection_allocated() const {
+    return this->forced_discrete_update_events_exist();
+  }
+
+  // Verifies that the forced unrestricted update events collection has been=
+  // allocated.
+  bool forced_unrestricted_update_events_collection_allocated() const {
+    return this->forced_unrestricted_update_events_exist();
+  }
+
+  // Gets the forced publish events collection.
+  const EventCollection<PublishEvent<double>>&
+      get_forced_publish_events_collection() const {
+    return this->get_forced_publish_events();
+  }
+
+  // Gets the forced discrete update events collection.
+  const EventCollection<DiscreteUpdateEvent<double>>&
+      get_forced_discrete_update_events_collection() const {
+    return this->get_forced_discrete_update_events();
+  }
+
+  // Gets the forced unrestricted update events collection.
+  const EventCollection<UnrestrictedUpdateEvent<double>>&
+      get_forced_unrestricted_update_events_collection() const {
+    return this->get_forced_unrestricted_update_events();
+  }
+
+  // Sets the forced publish events collection.
+  void set_forced_publish_events_collection(
+      std::unique_ptr<EventCollection<PublishEvent<double>>>
+          publish_events) {
+    this->set_forced_publish_events(std::move(publish_events));
+  }
+
+  // Sets the forced discrete_update events collection.
+  void set_forced_discrete_update_events_collection(
+      std::unique_ptr<EventCollection<DiscreteUpdateEvent<double>>>
+          discrete_update_events) {
+    this->set_forced_discrete_update_events(std::move(discrete_update_events));
+  }
+
+  // Sets the forced unrestricted_update events collection.
+  void set_forced_unrestricted_update_events_collection(
+      std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<double>>>
+          unrestricted_update_events) {
+    this->set_forced_unrestricted_update_events(
+        std::move(unrestricted_update_events));
+  }
+
+  // Gets the mutable version of the forced publish events collection.
+  EventCollection<PublishEvent<double>>&
+      get_mutable_forced_publish_events_collection() {
+    return this->get_mutable_forced_publish_events();
+  }
+
  private:
   // This dummy witness function exists only to test that the
   // DeclareWitnessFunction() interface works as promised.
@@ -193,17 +350,72 @@ class LeafSystemTest : public ::testing::Test {
     event_info_ = system_.AllocateCompositeEventCollection();
     leaf_info_ = dynamic_cast<const LeafCompositeEventCollection<double>*>(
         event_info_.get());
+
+    // Make sure caching tests will work properly even if caching is off
+    // by default.
+    context_.EnableCaching();
   }
 
   TestSystem<double> system_;
-  LeafContext<double> context_;
+  std::unique_ptr<LeafContext<double>> context_ptr_ = system_.AllocateContext();
+  LeafContext<double>& context_ = *context_ptr_;
 
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
 };
 
+TEST_F(LeafSystemTest, ForcedEventCollectionsTest) {
+  // Verify that all collections are allocated.
+  EXPECT_TRUE(system_.forced_publish_events_collection_allocated());
+  EXPECT_TRUE(system_.forced_discrete_update_events_collection_allocated());
+  EXPECT_TRUE(system_.forced_unrestricted_update_events_collection_allocated());
+
+  // Verify that we can set the publish collection.
+  auto forced_publishes =
+      std::make_unique<LeafEventCollection<PublishEvent<double>>>();
+  auto* forced_publishes_pointer = forced_publishes.get();
+  system_.set_forced_publish_events_collection(std::move(forced_publishes));
+  EXPECT_EQ(&system_.get_forced_publish_events_collection(),
+      forced_publishes_pointer);
+  EXPECT_EQ(&system_.get_mutable_forced_publish_events_collection(),
+      forced_publishes_pointer);
+
+  // Verify that we can set the discrete update collection.
+  auto forced_discrete_updates =
+      std::make_unique<LeafEventCollection<DiscreteUpdateEvent<double>>>();
+  auto* forced_discrete_updates_pointer = forced_discrete_updates.get();
+  system_.set_forced_discrete_update_events_collection(
+      std::move(forced_discrete_updates));
+  EXPECT_EQ(&system_.get_forced_discrete_update_events_collection(),
+      forced_discrete_updates_pointer);
+
+  // Verify that we can set the forced unrestricted update collection.
+  auto forced_unrestricted_updates =
+      std::make_unique<LeafEventCollection<UnrestrictedUpdateEvent<double>>>();
+  auto* forced_unrestricted_updates_pointer = forced_unrestricted_updates.get();
+  system_.set_forced_unrestricted_update_events_collection(
+      std::move(forced_unrestricted_updates));
+  EXPECT_EQ(&system_.get_forced_unrestricted_update_events_collection(),
+      forced_unrestricted_updates_pointer);
+}
+
+TEST_F(LeafSystemTest, DefaultPortNameTest) {
+  EXPECT_EQ(system_.DeclareVectorInputPort(BasicVector<double>(2)).get_name(),
+            "u0");
+  EXPECT_EQ(system_.DeclareAbstractInputPort(Value<int>(1)).get_name(), "u1");
+
+  EXPECT_EQ(system_.DeclareVectorOutputPort(&TestSystem<double>::CalcOutput)
+                .get_name(), "y0");
+  EXPECT_EQ(
+      system_
+          .DeclareAbstractOutputPort(kUseDefaultName, BasicVector<double>(2),
+                                     &TestSystem<double>::CalcOutput)
+          .get_name(),
+      "y1");
+}
+
 // Tests that witness functions can be declared. Tests that witness functions
-// stop Simulator at desired points (i.e., the raison d'etre of a witness
+// stop Simulator at desired points (i.e., the raison d'être of a witness
 // function) are done in diagram_test.cc and
 // drake/systems/analysis/test/simulator_test.cc.
 TEST_F(LeafSystemTest, WitnessDeclarations) {
@@ -311,7 +523,6 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
   EXPECT_FALSE(system_.GetUniquePeriodicDiscreteUpdateAttribute());
 }
 
-
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
 TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
@@ -322,8 +533,7 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
   EXPECT_EQ(5.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is smaller than the offset, the next
@@ -340,15 +550,13 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
   {
     const auto& events =
         leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 }
 
@@ -362,8 +570,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
   EXPECT_EQ(15.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is larger than the offset, the next
@@ -376,8 +583,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
   EXPECT_EQ(25.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests that if the current time is exactly an update time, the next update
@@ -390,8 +596,7 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
   EXPECT_EQ(35.0, time);
   const auto& events = leaf_info_->get_discrete_update_events().get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            Event<double>::TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 }
 
 // Tests periodic events' scheduling when its offset is zero.
@@ -424,8 +629,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 
   // The update event fires at 15sec.
@@ -435,8 +639,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 
   // Both events fire at 60sec.
@@ -446,14 +649,12 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPeriodic);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
   }
 }
 
@@ -478,8 +679,34 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
   EXPECT_NEAR(2.445, time, 1e-8);
 }
 
+// Tests that discrete and abstract state dependency wiring is set up
+// correctly.
+TEST_F(LeafSystemTest, DiscreteAndAbstractStateTrackers) {
+  EXPECT_EQ(system_.num_discrete_state_groups(), 1);
+  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
+  const DependencyTracker& xd_tracker =
+      context->get_tracker(system_.xd_ticket());
+  for (DiscreteStateIndex i(0); i < system_.num_discrete_state_groups(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.discrete_state_ticket(i));
+    EXPECT_TRUE(xd_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(xd_tracker));
+  }
+
+  EXPECT_EQ(system_.num_abstract_states(), 2);
+  const DependencyTracker& xa_tracker =
+      context->get_tracker(system_.xa_ticket());
+  for (AbstractStateIndex i(0); i < system_.num_abstract_states(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.abstract_state_ticket(i));
+    EXPECT_TRUE(xa_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(xa_tracker));
+  }
+}
+
 // Tests that the leaf system reserved the declared Parameters with default
-// values, and that they are modifiable.
+// values, that they are modifiable, and that dependency wiring is set up
+// correctly for them.
 TEST_F(LeafSystemTest, NumericParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const BasicVector<double>& vec =
@@ -490,10 +717,22 @@ TEST_F(LeafSystemTest, NumericParameters) {
       system_.GetVanillaMutableNumericParameters(context.get());
   mutable_vec.SetAtIndex(1, 42.0);
   EXPECT_EQ(42.0, vec[1]);
+
+  EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
+  const DependencyTracker& pn_tracker =
+      context->get_tracker(system_.pn_ticket());
+  for (NumericParameterIndex i(0);
+       i < system_.num_numeric_parameter_groups(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.numeric_parameter_ticket(i));
+    EXPECT_TRUE(pn_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(pn_tracker));
+  }
 }
 
 // Tests that the leaf system reserved the declared abstract Parameters with
-// default values, and that they are modifiable.
+// default values, that they are modifiable, and that dependency wiring is set
+// up correctly for them.
 TEST_F(LeafSystemTest, AbstractParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const std::string& param = context->get_abstract_parameter(0 /*index*/)
@@ -504,11 +743,26 @@ TEST_F(LeafSystemTest, AbstractParameters) {
           .GetMutableValueOrThrow<std::string>();
   mutable_param = "modified parameter value";
   EXPECT_EQ("modified parameter value", param);
+
+  EXPECT_EQ(system_.num_abstract_parameters(), 1);
+  const DependencyTracker& pa_tracker =
+      context->get_tracker(system_.pa_ticket());
+  for (AbstractParameterIndex i(0); i < system_.num_abstract_parameters();
+       ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(system_.abstract_parameter_ticket(i));
+    EXPECT_TRUE(pa_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(pa_tracker));
+  }
 }
 
 // Tests that the leaf system reserved the declared misc continuous state.
 TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
   system_.DeclareContinuousState(2);
+
+  // Tests get_num_continuous_states without a context.
+  EXPECT_EQ(2, system_.get_num_continuous_states());
+
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
   EXPECT_EQ(2, xc.size());
@@ -521,6 +775,10 @@ TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
 // interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
   system_.DeclareContinuousState(MyVector2d());
+
+  // Tests get_num_continuous_states without a context.
+  EXPECT_EQ(2, system_.get_num_continuous_states());
+
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
   // Check that type was preserved.
@@ -536,6 +794,10 @@ TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
 // second-order structure.
 TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   system_.DeclareContinuousState(4, 3, 2);
+
+  // Tests get_num_continuous_states without a context.
+  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
+
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
   EXPECT_EQ(4 + 3 + 2, xc.size());
@@ -547,8 +809,12 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
 // Tests that the leaf system reserved the declared continuous state with
 // second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
-  using MyVector9d = MyVector<4 + 3 + 2, double>;
+  using MyVector9d = MyVector<double, 4 + 3 + 2>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
+
+  // Tests get_num_continuous_states without a context.
+  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
+
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
   // Check that type was preserved.
@@ -564,30 +830,27 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
 TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
 
-  system_.AddPerStepEvent<PublishEvent<double>>();
-  system_.AddPerStepEvent<DiscreteUpdateEvent<double>>();
-  system_.AddPerStepEvent<UnrestrictedUpdateEvent<double>>();
+  system_.DeclarePerStepEvent(PublishEvent<double>());
+  system_.DeclarePerStepEvent(DiscreteUpdateEvent<double>());
+  system_.DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
 
   system_.GetPerStepEvents(*context, event_info_.get());
 
   {
     const auto& events = leaf_info_->get_publish_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPerStep);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
   {
     const auto& events = leaf_info_->get_discrete_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPerStep);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
   {
     const auto& events =
         leaf_info_->get_unrestricted_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
-    EXPECT_EQ(events.front()->get_trigger_type(),
-              Event<double>::TriggerType::kPerStep);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
 }
 
@@ -598,29 +861,29 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DeclaredModelPortsSystem);
 
   DeclaredModelPortsSystem() {
-    this->DeclareInputPort(kVectorValued, 1);
-    this->DeclareVectorInputPort(MyVector2d());
-    this->DeclareAbstractInputPort(Value<int>(22));
-    this->DeclareVectorInputPort(MyVector2d(),
+    this->DeclareInputPort("input", kVectorValued, 1);
+    this->DeclareVectorInputPort("vector_input", MyVector2d());
+    this->DeclareAbstractInputPort("abstract_input", Value<int>(22));
+    this->DeclareVectorInputPort("uniform", MyVector2d(),
                                  RandomDistribution::kUniform);
-    this->DeclareVectorInputPort(MyVector2d(),
+    this->DeclareVectorInputPort("gaussian", MyVector2d(),
                                  RandomDistribution::kGaussian);
 
     // Output port 0 uses a BasicVector base class model.
-    this->DeclareVectorOutputPort(BasicVector<double>(3),
+    this->DeclareVectorOutputPort("basic_vector", BasicVector<double>(3),
                                   &DeclaredModelPortsSystem::CalcBasicVector3);
     // Output port 1 uses a class derived from BasicVector.
-    this->DeclareVectorOutputPort(MyVector4d(),
+    this->DeclareVectorOutputPort("my_vector", MyVector4d(),
                                   &DeclaredModelPortsSystem::CalcMyVector4d);
 
     // Output port 2 uses a concrete string model.
-    this->DeclareAbstractOutputPort(std::string("45"),
+    this->DeclareAbstractOutputPort("string", std::string("45"),
                                     &DeclaredModelPortsSystem::CalcString);
 
     // Output port 3 uses the "Advanced" methods that take a model
     // and a general calc function rather than a calc method.
     this->DeclareVectorOutputPort(
-        BasicVector<double>(2),
+        "advanced", BasicVector<double>(2),
         [](const Context<double>&, BasicVector<double>* out) {
           ASSERT_NE(out, nullptr);
           EXPECT_EQ(out->size(), 2);
@@ -663,18 +926,54 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 };
 
 // Tests that Declare{Vector,Abstract}{Input,Output}Port end up with the
-// correct topology.
+// correct topology, and that the all_input_ports dependency tracker is
+// properly subscribed to the input ports in an allocated context.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
   ASSERT_EQ(dut.get_num_input_ports(), 5);
   ASSERT_EQ(dut.get_num_output_ports(), 4);
 
-  const InputPortDescriptor<double>& in0 = dut.get_input_port(0);
-  const InputPortDescriptor<double>& in1 = dut.get_input_port(1);
-  const InputPortDescriptor<double>& in2 = dut.get_input_port(2);
-  const InputPortDescriptor<double>& in3 = dut.get_input_port(3);
-  const InputPortDescriptor<double>& in4 = dut.get_input_port(4);
+  // Check that SystemBase port APIs work properly.
+  const InputPortBase& in3_base = dut.get_input_port_base(InputPortIndex(3));
+  EXPECT_EQ(in3_base.get_index(), 3);
+  const DependencyTicket in3_ticket = dut.input_port_ticket(InputPortIndex(3));
+  const DependencyTicket in4_ticket = dut.input_port_ticket(InputPortIndex(4));
+  EXPECT_TRUE(in3_ticket.is_valid() && in4_ticket.is_valid());
+  EXPECT_NE(in3_ticket, in4_ticket);  // We don't know the actual values.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.get_input_port_base(InputPortIndex(10)), std::out_of_range,
+      "System.*get_input_port_base().*no input port.*10.*only 5.*");
+
+  // Check DependencyTracker setup for input ports.
+  auto context = dut.AllocateContext();
+  const DependencyTracker& all_inputs_tracker =
+      context->get_tracker(dut.all_input_ports_ticket());
+  for (InputPortIndex i(0); i < dut.get_num_input_ports(); ++i) {
+    const DependencyTracker& tracker =
+        context->get_tracker(dut.input_port_ticket(i));
+    EXPECT_TRUE(all_inputs_tracker.HasPrerequisite(tracker));
+    EXPECT_TRUE(tracker.HasSubscriber(all_inputs_tracker));
+  }
+
+  const OutputPortBase& out2_base =
+      dut.get_output_port_base(OutputPortIndex(2));
+  EXPECT_EQ(out2_base.get_index(), 2);
+  const DependencyTicket out2_ticket =
+      dut.output_port_ticket(OutputPortIndex(2));
+  const DependencyTicket out3_ticket =
+      dut.output_port_ticket(OutputPortIndex(3));
+  EXPECT_TRUE(out2_ticket.is_valid() && out3_ticket.is_valid());
+  EXPECT_NE(out2_ticket, out3_ticket);  // We don't know the actual values.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.get_output_port_base(OutputPortIndex(7)), std::out_of_range,
+      "System.*get_output_port_base().*no output port.*7.*only 4.*");
+
+  const InputPort<double>& in0 = dut.get_input_port(0);
+  const InputPort<double>& in1 = dut.get_input_port(1);
+  const InputPort<double>& in2 = dut.get_input_port(2);
+  const InputPort<double>& in3 = dut.get_input_port(3);
+  const InputPort<double>& in4 = dut.get_input_port(4);
 
   const OutputPort<double>& out0 = dut.get_output_port(0);
   const OutputPort<double>& out1 = dut.get_output_port(1);
@@ -714,6 +1013,84 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   EXPECT_EQ(in4.get_random_type(), RandomDistribution::kGaussian);
 }
 
+// A system that incorrectly declares an input port.
+class MissingModelAbstractInputSystem : public LeafSystem<double> {
+ public:
+  MissingModelAbstractInputSystem() {
+    this->DeclareInputPort("no_model_input", kAbstractValued, 0);
+  }
+};
+
+GTEST_TEST(ModelLeafSystemTest, MissingModelAbstractInput) {
+  MissingModelAbstractInputSystem dut;
+  dut.set_name("dut");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.AllocateInputAbstract(dut.get_input_port(0)),
+      std::exception,
+      "System::AllocateInputAbstract\\(\\): a System with abstract input "
+      "ports must pass a model_value to DeclareAbstractInputPort; the "
+      "port\\[0\\] named 'no_model_input' did not do so \\(System ::dut\\)");
+}
+
+// Check that model inputs place validity checks on FixInput calls.  (This is
+// more of an acceptance test than a unit test.  The relevant code is sprinkled
+// across a few files.)  Note that even the debug builds might not detect the
+// kind of use-after-free errors that this test tries to expose; the dynamic
+// analysis build configurations such as valgrind or msan might be needed in
+// order to detect the errors.
+GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
+  // The Context checks must be able to outlive the System that created them.
+  auto dut = std::make_unique<DeclaredModelPortsSystem>();
+  dut->set_name("dut");
+  auto context = dut->CreateDefaultContext();
+  dut.reset();
+
+  // The first port should only accept a 1d vector.
+  context->FixInputPort(0, Eigen::VectorXd::Constant(1, 0.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(0, Eigen::VectorXd::Constant(2, 0.0)),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::systems::BasicVector<double> with size=1 "
+      "for input port 'input' \\(index 0\\) but the actual type was "
+      "drake::systems::BasicVector<double> with size=2. "
+      "\\(System ::dut\\)");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(0, Value<std::string>{}),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "drake::Value<drake::systems::BasicVector<double>> "
+      "for input port 'input' \\(index 0\\) but the actual type was "
+      "drake::Value<std::string>. "
+      "\\(System ::dut\\)");
+
+  // The second port should only accept ints.
+  context->FixInputPort(2, Value<int>(11));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context->FixInputPort(2, Value<std::string>{}),
+      std::exception,
+      "System::FixInputPortTypeCheck\\(\\): expected value of type "
+      "int "
+      "for input port 'abstract_input' \\(index 2\\) but the actual type was "
+      "std::string. "
+      "\\(System ::dut\\)");
+}
+
+// Check that names can be assigned to the ports through all of the various
+// APIs.
+GTEST_TEST(ModelLeafSystemTest, ModelPortNames) {
+  DeclaredModelPortsSystem dut;
+
+  EXPECT_EQ(dut.get_input_port(0).get_name(), "input");
+  EXPECT_EQ(dut.get_input_port(1).get_name(), "vector_input");
+  EXPECT_EQ(dut.get_input_port(2).get_name(), "abstract_input");
+
+  EXPECT_EQ(dut.get_output_port(0).get_name(), "basic_vector");
+  EXPECT_EQ(dut.get_output_port(1).get_name(), "my_vector");
+  EXPECT_EQ(dut.get_output_port(2).get_name(), "string");
+  EXPECT_EQ(dut.get_output_port(3).get_name(), "advanced");
+}
+
 // Tests that the model values specified in Declare{...} are actually used by
 // the corresponding Allocate{...} methods to yield correct types and values.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
@@ -742,8 +1119,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
 // correct values.
 GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   DeclaredModelPortsSystem dut;
-  auto context = dut.CreateDefaultContext();
-  auto system_output = dut.AllocateOutput(*context);
+  auto system_output = dut.AllocateOutput();
 
   // Check that BasicVector<double>(3) came out.
   auto output0 = system_output->get_vector_data(0);
@@ -776,12 +1152,53 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
 
+  // Make sure caching is on locally, even if it is off by default.
+  context->EnableCaching();
+
+  // Calculate values for each output port and save copies of those values.
   std::vector<std::unique_ptr<AbstractValue>> values;
-  for (int i = 0; i < 4; ++i) {
+  for (OutputPortIndex i(0); i < 4; ++i) {
     const OutputPort<double>& out = dut.get_output_port(i);
     values.emplace_back(out.Allocate());
     out.Calc(*context, values.back().get());
   }
+
+  const auto& port2 = dut.get_output_port(OutputPortIndex(2));
+  const auto& cache2 =
+      dynamic_cast<const LeafOutputPort<double>&>(port2).cache_entry();
+  const auto& cacheval2 = cache2.get_cache_entry_value(*context);
+  EXPECT_EQ(cacheval2.serial_number(), 1);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_THROW(cache2.GetKnownUpToDate<std::string>(*context),
+               std::logic_error);
+  const std::string& str2_cached = port2.Eval<std::string>(*context);
+  EXPECT_EQ(str2_cached, "concrete string");
+  EXPECT_EQ(cacheval2.serial_number(), 2);
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cache2.GetKnownUpToDate<std::string>(*context),
+            "concrete string");  // Doesn't throw now.
+
+  // Check that setting time invalidates correctly. Note that the method
+  // *may* avoid invalidation if the time hasn't actually changed.
+
+  // Should invalidate time- and everything-dependents.
+  context->set_time(context->get_time() + 1.);
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
+  (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+  (void)port2.template Eval<AbstractValue>(*context);  // Should do nothing.
+  EXPECT_EQ(cacheval2.serial_number(), 3);
+
+  // Should invalidate accuracy- and everything-dependents. Note that the
+  // method *may* avoid invalidation if the accuracy hasn't actually changed.
+  EXPECT_FALSE(context->get_accuracy());  // None set initially.
+  context->set_accuracy(.000025);  // This is a change.
+  EXPECT_TRUE(cache2.is_out_of_date(*context));
+  (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
+  EXPECT_FALSE(cache2.is_out_of_date(*context));
+  EXPECT_EQ(cacheval2.serial_number(), 4);
 
   // Downcast to concrete types.
   const BasicVector<double>* vec0{};
@@ -806,13 +1223,72 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
 GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   DeclaredModelPortsSystem dut;
   auto context = dut.CreateDefaultContext();
-  ASSERT_EQ(context->num_numeric_parameters(), 1);
+  ASSERT_EQ(context->num_numeric_parameter_groups(), 1);
   const BasicVector<double>& param = context->get_numeric_parameter(0);
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
   EXPECT_EQ(1.1, param.GetAtIndex(0));
   EXPECT_EQ(2.2, param.GetAtIndex(1));
+}
+
+// Tests that various DeclareDiscreteState() signatures work correctly and
+// that the model values get used in SetDefaultContext().
+GTEST_TEST(ModelLeafSystemTest, ModelDiscreteState) {
+  class DeclaredModelDiscreteStateSystem : public LeafSystem<double> {
+   public:
+    // This should produce three discrete variable groups.
+    DeclaredModelDiscreteStateSystem() {
+      // Takes a BasicVector.
+      indexes_.push_back(
+          DeclareDiscreteState(MyVector2d(Eigen::Vector2d(1., 2.))));
+      // Takes an Eigen vector.
+      indexes_.push_back(DeclareDiscreteState(Eigen::Vector3d(3., 4., 5.)));
+      // Four state variables, initialized to zero.
+      indexes_.push_back(DeclareDiscreteState(4));
+    }
+    std::vector<DiscreteStateIndex> indexes_;
+  };
+
+  DeclaredModelDiscreteStateSystem dut;
+  EXPECT_EQ(dut.num_discrete_state_groups(), 3);
+  for (int i=0; i < static_cast<int>(dut.indexes_.size()); ++i)
+    EXPECT_TRUE(dut.indexes_[i] == i);
+
+  auto context = dut.CreateDefaultContext();
+  DiscreteValues<double>& xd = context->get_mutable_discrete_state();
+  EXPECT_EQ(xd.num_groups(), 3);
+
+  // Concrete type and value should have been preserved.
+  BasicVector<double>& xd0 = xd.get_mutable_vector(0);
+  EXPECT_TRUE(is_dynamic_castable<const MyVector2d>(&xd0));
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+
+  // Eigen vector should have been stored in a BasicVector-type object.
+  BasicVector<double>& xd1 = xd.get_mutable_vector(1);
+  EXPECT_EQ(typeid(xd1), typeid(BasicVector<double>));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+
+  // Discrete state with no model should act as though it were given an
+  // all-zero Eigen vector model.
+  BasicVector<double>& xd2 = xd.get_mutable_vector(2);
+  EXPECT_EQ(typeid(xd2), typeid(BasicVector<double>));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
+
+  // Now make changes, then see if SetDefaultContext() puts them back.
+  xd0.SetFromVector(Eigen::Vector2d(9., 10.));
+  xd1.SetFromVector(Eigen::Vector3d(11., 12., 13.));
+  xd2.SetFromVector(Eigen::Vector4d(1., 2., 3., 4.));
+
+  // Of course that had to work, but let's just prove it ...
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(9., 10.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(11., 12., 13.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(1., 2., 3., 4.));
+
+  dut.SetDefaultContext(&*context);
+  EXPECT_EQ(xd0.get_value(), Eigen::Vector2d(1., 2.));
+  EXPECT_EQ(xd1.get_value(), Eigen::Vector3d(3., 4., 5.));
+  EXPECT_EQ(xd2.get_value(), Eigen::Vector4d(0., 0., 0., 0.));
 }
 
 // Tests that DeclareAbstractState works expectedly.
@@ -835,9 +1311,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   EXPECT_NO_THROW(context->get_abstract_state<std::string>(1));
 
   // Mess with the abstract values on the context.
-  drake::systems::AbstractValues& values =
-      context->get_mutable_abstract_state();
-  drake::systems::AbstractValue& value = values.get_mutable_value(1);
+  AbstractValues& values = context->get_mutable_abstract_state();
+  AbstractValue& value = values.get_mutable_value(1);
   EXPECT_NO_THROW(value.SetValue<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
 
@@ -870,6 +1345,7 @@ class DummyVec2 : public BasicVector<double> {
   }
   DummyVec2() : DummyVec2(100., 200.) {}
 
+ private:
   // Note that the actual data is copied by the BasicVector base class.
   DummyVec2* DoClone() const override { return new DummyVec2; }
 };
@@ -914,8 +1390,13 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
     this->DeclareAbstractOutputPort(&DeclaredNonModelOutputSystem::CalcPOD);
   }
 
+  int calc_dummy_vec2_calls() const { return count_calc_dummy_vec2_; }
+  int calc_string_calls() const { return count_calc_string_; }
+  int calc_POD_calls() const { return count_calc_POD_; }
+
  private:
   void CalcDummyVec2(const Context<double>&, DummyVec2* out) const {
+    ++count_calc_dummy_vec2_;
     ASSERT_NE(out, nullptr);
     EXPECT_EQ(out->size(), 2);
     out->get_mutable_value() = Eigen::Vector2d(-100., -200);
@@ -927,22 +1408,32 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
   }
 
   void CalcString(const Context<double>&, std::string* out) const {
+    ++count_calc_string_;
     ASSERT_NE(out, nullptr);
     *out = "calc'ed string";
   }
 
   void CalcPOD(const Context<double>&, SomePOD* out) const {
+    ++count_calc_POD_;
     ASSERT_NE(out, nullptr);
     *out = {-10, 3.25};
   }
+
+  // Call counters for caching checks.
+  mutable int count_calc_dummy_vec2_{0};
+  mutable int count_calc_string_{0};
+  mutable int count_calc_POD_{0};
 };
 
-// Tests that non-model based Declare{Vector,Abstract}OutputPort generate
-// the expected output port allocators, and that their calc functions work.
+// Tests that non-model based Declare{Vector,Abstract}OutputPort generate the
+// expected output port allocators, and that their Calc and Eval functions work.
 GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   DeclaredNonModelOutputSystem dut;
   auto context = dut.CreateDefaultContext();
-  auto system_output = dut.AllocateOutput(*context);  // Invokes all allocators.
+  auto system_output = dut.AllocateOutput();  // Invokes all allocators.
+
+  // Make sure caching is on locally, even if it is off by default.
+  context->EnableCaching();
 
   // Check topology.
   EXPECT_EQ(dut.get_num_input_ports(), 0);
@@ -959,6 +1450,16 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(out3.get_data_type(), kAbstractValued);
   EXPECT_EQ(out4.get_data_type(), kAbstractValued);
 
+  // Sanity check output port prerequisites. Leaf ports should not designate
+  // a subsystem since they are resolved internally. We don't know the right
+  // dependency ticket, but at least it should be valid.
+  for (OutputPortIndex i(0); i < dut.get_num_output_ports(); ++i) {
+    internal::OutputPortPrerequisite prereq =
+        dut.get_output_port(i).GetPrerequisite();
+    EXPECT_FALSE(prereq.child_subsystem.has_value());
+    EXPECT_TRUE(prereq.dependency.is_valid());
+  }
+
   // Check that DummyVec2 came out, default constructed to (100,200).
   auto output0 = system_output->GetMutableVectorData(0);
   ASSERT_NE(output0, nullptr);
@@ -969,6 +1470,13 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out0.Calc(*context, system_output->GetMutableData(0));
   EXPECT_EQ(out0_dummy->get_value(), Eigen::Vector2d(-100., -200.));
 
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 1);
+  EXPECT_EQ(out0.Eval<BasicVector<double>>(*context).get_value(),
+            out0_dummy->get_value());
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);
+  out0.Eval<BasicVector<double>>(*context);
+  EXPECT_EQ(dut.calc_dummy_vec2_calls(), 2);  // Should have been cached.
+
   // Check that Value<string>() came out, default initialized to empty.
   auto output1 = system_output->GetMutableData(1);
   ASSERT_NE(output1, nullptr);
@@ -977,6 +1485,12 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_TRUE(downcast_output1->empty());
   out1.Calc(*context, output1);
   EXPECT_EQ(*downcast_output1, "calc'ed string");
+
+  EXPECT_EQ(dut.calc_string_calls(), 1);
+  EXPECT_EQ(out1.Eval<std::string>(*context), *downcast_output1);
+  EXPECT_EQ(dut.calc_string_calls(), 2);
+  out1.Eval<std::string>(*context);
+  EXPECT_EQ(dut.calc_string_calls(), 2);  // Should have been cached.
 
   // Check that Value<int> came out, default initialized to -2.
   auto output2 = system_output->GetMutableData(2);
@@ -1008,6 +1522,14 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   out4.Calc(*context, output4);
   EXPECT_EQ(downcast_output4->some_int, -10);
   EXPECT_EQ(downcast_output4->some_double, 3.25);
+
+  EXPECT_EQ(dut.calc_POD_calls(), 1);
+  const auto& eval_out = out4.Eval<SomePOD>(*context);
+  EXPECT_EQ(eval_out.some_int, -10);
+  EXPECT_EQ(eval_out.some_double, 3.25);
+  EXPECT_EQ(dut.calc_POD_calls(), 2);
+  out4.Eval<SomePOD>(*context);
+  EXPECT_EQ(dut.calc_POD_calls(), 2);  // Should have been cached.
 }
 
 // Tests both that an unrestricted update callback is called and that
@@ -1015,16 +1537,20 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
 TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
   // vectors.
-  std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
-  context->set_continuous_state(std::make_unique<ContinuousState<double>>(
+
+  // This needs to be a LeafContext for access to init_ methods.
+  auto context = dynamic_pointer_cast_or_throw<LeafContext<double>>(
+      system_.CreateDefaultContext());
+
+  context->init_continuous_state(std::make_unique<ContinuousState<double>>(
       std::make_unique<BasicVector<double>>(9), 3, 3, 3));
-  context->set_discrete_state(std::make_unique<DiscreteValues<double>>(
+  context->init_discrete_state(std::make_unique<DiscreteValues<double>>(
       std::make_unique<BasicVector<double>>(1)));
   std::vector<std::unique_ptr<AbstractValue>> abstract_data;
   abstract_data.push_back(PackValue(3));
   abstract_data.push_back(PackValue(5));
   abstract_data.push_back(PackValue(7));
-  context->set_abstract_state(
+  context->init_abstract_state(
       std::make_unique<AbstractValues>(std::move(abstract_data)));
 
   // Copy the state.
@@ -1035,13 +1561,11 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Verify no exception is thrown.
@@ -1055,15 +1579,13 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_continuous_state(std::make_unique<ContinuousState<double>>(
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Call the unrestricted update function, verifying that an exception
@@ -1083,17 +1605,15 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
       std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       s->set_discrete_state(
           std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
@@ -1112,14 +1632,12 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_abstract_state(std::make_unique<AbstractValues>());
     };
 
-    UnrestrictedUpdateEvent<double> event(Event<double>::TriggerType::kPeriodic,
-                                          callback);
-
-    event.add_to_composite(&leaf_events);
+    UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
   }
 
   // Call the unrestricted update function again, again verifying that an
@@ -1154,10 +1672,15 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
 
   ~DefaultFeedthroughSystem() override {}
 
-  void AddAbstractInputPort() { this->DeclareAbstractInputPort(); }
+  void AddAbstractInputPort() {
+    this->DeclareAbstractInputPort(kUseDefaultName, Value<std::string>{});
+  }
 
   void AddAbstractOutputPort() {
-    this->DeclareAbstractOutputPort(nullptr, nullptr);  // No alloc or calc.
+    this->DeclareAbstractOutputPort(
+        kUseDefaultName,
+        []() { return AbstractValue::Make<int>(0); },  // Dummies.
+        [](const ContextBase&, AbstractValue*) {});
   }
 };
 
@@ -1276,7 +1799,17 @@ template <typename T>
 class SymbolicSparsitySystem : public LeafSystem<T> {
  public:
   SymbolicSparsitySystem()
-      : LeafSystem<T>(SystemTypeTag<systems::SymbolicSparsitySystem>{}) {
+      : SymbolicSparsitySystem(
+            SystemTypeTag<systems::SymbolicSparsitySystem>{}) {}
+
+  // Scalar-converting copy constructor.
+  template <typename U>
+  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
+      : SymbolicSparsitySystem<T>() {}
+
+ protected:
+  explicit SymbolicSparsitySystem(SystemScalarConverter converter)
+      : LeafSystem<T>(std::move(converter)) {
     this->DeclareInputPort(kVectorValued, kSize);
     this->DeclareInputPort(kVectorValued, kSize);
 
@@ -1286,28 +1819,38 @@ class SymbolicSparsitySystem : public LeafSystem<T> {
                                   &SymbolicSparsitySystem::CalcY1);
   }
 
-  template <typename U>
-  SymbolicSparsitySystem(const SymbolicSparsitySystem<U>&)
-      : SymbolicSparsitySystem<T>() {}
-
  private:
   void CalcY0(const Context<T>& context,
                     BasicVector<T>* y0) const {
-    const auto& u1 = *(this->EvalVectorInput(context, 1));
-    y0->set_value(u1.get_value());
+    const auto& u1 = this->get_input_port(1).Eval(context);
+    y0->set_value(u1);
   }
 
   void CalcY1(const Context<T>& context,
               BasicVector<T>* y1) const {
-    const auto& u0 = *(this->EvalVectorInput(context, 0));
-    y1->set_value(u0.get_value());
+    const auto& u0 = this->get_input_port(0).Eval(context);
+    y1->set_value(u0);
   }
 
   const int kSize = 1;
 };
 
-GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
-  SymbolicSparsitySystem<double> system;
+// The sparsity reporting should be the same no matter which scalar type the
+// original system has been instantiated with.
+using FeedthroughTestScalars = ::testing::Types<
+  double,
+  AutoDiffXd,
+  symbolic::Expression>;
+
+template <typename T>
+class FeedthroughTypedTest : public ::testing::Test {};
+TYPED_TEST_CASE(FeedthroughTypedTest, FeedthroughTestScalars);
+
+// The sparsity of a System should be inferred from its symbolic form.
+TYPED_TEST(FeedthroughTypedTest, SymbolicSparsity) {
+  using T = TypeParam;
+  const SymbolicSparsitySystem<T> system;
+
   // Both the output ports have direct feedthrough from some input.
   EXPECT_TRUE(system.HasAnyDirectFeedthrough());
   EXPECT_TRUE(system.HasDirectFeedthrough(0));
@@ -1317,12 +1860,33 @@ GTEST_TEST(FeedthroughTest, SymbolicSparsity) {
   EXPECT_TRUE(system.HasDirectFeedthrough(0, 1));
   EXPECT_TRUE(system.HasDirectFeedthrough(1, 0));
   EXPECT_FALSE(system.HasDirectFeedthrough(1, 1));
-  // Confirm all pairs are returned.
+  // Confirm the exact set of desired pairs are returned.
   std::multimap<int, int> expected;
   expected.emplace(1, 0);
   expected.emplace(0, 1);
-  auto feedthrough_pairs = system.GetDirectFeedthroughs();
-  EXPECT_EQ(feedthrough_pairs, expected);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
+}
+
+// This system only supports T = symbolic::Expression; it does not support
+// scalar conversion.
+class NoScalarConversionSymbolicSparsitySystem
+    : public SymbolicSparsitySystem<symbolic::Expression> {
+ public:
+  NoScalarConversionSymbolicSparsitySystem()
+      : SymbolicSparsitySystem<symbolic::Expression>(
+            SystemScalarConverter{}) {}
+};
+
+// The sparsity of a System should be inferred from its symbolic form, even
+// when the system does not support scalar conversion.
+GTEST_TEST(FeedthroughTest, SymbolicSparsityWithoutScalarConversion) {
+  const NoScalarConversionSymbolicSparsitySystem system;
+
+  // Confirm the exact set of desired pairs are returned.
+  std::multimap<int, int> expected;
+  expected.emplace(1, 0);
+  expected.emplace(0, 1);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 // Sanity check the default implementation of ToAutoDiffXd, for cases that
@@ -1437,7 +2001,7 @@ class TestTriggerSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const PublishEvent<double>*>& events) const override {
     for (const PublishEvent<double>* event : events) {
-      if (event->get_trigger_type() == Event<double>::TriggerType::kForced)
+      if (event->get_trigger_type() == TriggerType::kForced)
         continue;
 
       // Call custom callback handler.
@@ -1452,19 +2016,17 @@ class TestTriggerSystem : public LeafSystem<double> {
       CompositeEventCollection<double>* events) const override {
     {
       PublishEvent<double> event(
-          Event<double>::TriggerType::kPerStep,
           std::bind(&TestTriggerSystem::StringCallback, this,
               std::placeholders::_1, std::placeholders::_2,
               std::make_shared<const std::string>("hello")));
-      event.add_to_composite(events);
+      event.AddToComposite(TriggerType::kPerStep, events);
     }
 
     {
       PublishEvent<double> event(
-          Event<double>::TriggerType::kPerStep,
           std::bind(&TestTriggerSystem::IntCallback, this,
               std::placeholders::_1, std::placeholders::_2, 42));
-      event.add_to_composite(events);
+      event.AddToComposite(TriggerType::kPerStep, events);
     }
   }
 
@@ -1572,10 +2134,11 @@ class ConstraintBasicVector final : public BasicVector<T> {
   ConstraintBasicVector() : BasicVector<T>(VectorX<T>::Zero(kSize)) {}
   BasicVector<T>* DoClone() const override { return new ConstraintBasicVector; }
 
-  // Declare a single constraint `this[0] >= bias`.
-  void CalcInequalityConstraint(VectorX<T>* value) const override {
-    value->resize(1);
-    (*value)[0] = (*this)[0] - T{bias};
+  void GetElementBounds(Eigen::VectorXd* lower,
+                        Eigen::VectorXd* upper) const override {
+    const double kInf = std::numeric_limits<double>::infinity();
+    *lower = Eigen::Vector3d(bias, -kInf, -kInf);
+    *upper = Eigen::Vector3d::Constant(kInf);
   }
 };
 
@@ -1585,6 +2148,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
 
   // Expose some protected methods for testing.
   using LeafSystem<double>::DeclareContinuousState;
+  using LeafSystem<double>::DeclareDiscreteState;
   using LeafSystem<double>::DeclareEqualityConstraint;
   using LeafSystem<double>::DeclareInequalityConstraint;
   using LeafSystem<double>::DeclareNumericParameter;
@@ -1627,9 +2191,12 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
             0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
 
-  EXPECT_EQ(dut.DeclareInequalityConstraint(
-                &ConstraintTestSystem::CalcStateConstraint, 2, "x"),
-            1);
+  EXPECT_EQ(
+      dut.DeclareInequalityConstraint(
+          &ConstraintTestSystem::CalcStateConstraint,
+          { Eigen::Vector2d::Zero(), nullopt },
+          "x"),
+      1);
   EXPECT_EQ(dut.get_num_constraints(), 2);
 
   auto context = dut.CreateDefaultContext();
@@ -1663,31 +2230,54 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   ConstraintTestSystem dut;
   EXPECT_EQ(dut.get_num_constraints(), 0);
 
-  SystemConstraint<double>::CalcCallback calc = [](
+  ContextConstraintCalc<double> calc0 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
   };
-  EXPECT_EQ(dut.DeclareInequalityConstraint(calc, 1, "x1"), 0);
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
+                                            { Vector1d::Zero(), nullopt },
+                                            "x1_lower"),
+            0);
   EXPECT_EQ(dut.get_num_constraints(), 1);
+
+  ContextConstraintCalc<double> calc1 = [](
+      const Context<double>& context, Eigen::VectorXd* value) {
+    *value =
+        Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
+                        context.get_continuous_state_vector().GetAtIndex(0));
+  };
+  EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
+                                            { nullopt, Eigen::Vector2d(2, 3) },
+                                            "x_upper"),
+            1);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(
       Eigen::Vector2d(5.0, 7.0));
 
   Eigen::VectorXd value;
-  const SystemConstraint<double>& inequality_constraint =
+  const SystemConstraint<double>& inequality_constraint0 =
       dut.get_constraint(SystemConstraintIndex(0));
-  inequality_constraint.Calc(*context, &value);
+  inequality_constraint0.Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 7.0);
-  EXPECT_FALSE(inequality_constraint.is_equality_constraint());
-  EXPECT_EQ(inequality_constraint.description(), "x1");
+  EXPECT_FALSE(inequality_constraint0.is_equality_constraint());
+  EXPECT_EQ(inequality_constraint0.description(), "x1_lower");
 
-  EXPECT_EQ(dut.DeclareEqualityConstraint(calc, 1, "x1eq"), 1);
-  EXPECT_EQ(dut.get_num_constraints(), 2);
+  const SystemConstraint<double>& inequality_constraint1 =
+      dut.get_constraint(SystemConstraintIndex(1));
+  inequality_constraint1.Calc(*context, &value);
+  EXPECT_EQ(value.rows(), 2);
+  EXPECT_EQ(value[0], 7.0);
+  EXPECT_EQ(value[1], 5.0);
+  EXPECT_FALSE(inequality_constraint1.is_equality_constraint());
+  EXPECT_EQ(inequality_constraint1.description(), "x_upper");
+
+  EXPECT_EQ(dut.DeclareEqualityConstraint(calc0, 1, "x1eq"), 2);
+  EXPECT_EQ(dut.get_num_constraints(), 3);
 
   const SystemConstraint<double>& equality_constraint =
-      dut.get_constraint(SystemConstraintIndex(1));
+      dut.get_constraint(SystemConstraintIndex(2));
   equality_constraint.Calc(*context, &value);
   EXPECT_EQ(value.rows(), 1);
   EXPECT_EQ(value[0], 7.0);
@@ -1707,6 +2297,9 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   ASSERT_EQ(dut.get_num_constraints(), 1);
   using Index = SystemConstraintIndex;
   const SystemConstraint<double>& constraint0 = dut.get_constraint(Index{0});
+  const double kInf = std::numeric_limits<double>::infinity();
+  EXPECT_TRUE(CompareMatrices(constraint0.lower_bound(), Vector1d(11)));
+  EXPECT_TRUE(CompareMatrices(constraint0.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint0.is_equality_constraint());
   EXPECT_THAT(constraint0.description(), ::testing::ContainsRegex(
       "^parameter 0 of type .*ConstraintBasicVector<double,11>$"));
@@ -1717,6 +2310,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareContinuousState(StateVector{}, 0, 0, StateVector::kSize);
   EXPECT_EQ(dut.get_num_constraints(), 2);
   const SystemConstraint<double>& constraint1 = dut.get_constraint(Index{1});
+  EXPECT_TRUE(CompareMatrices(constraint1.lower_bound(), Vector1d(22)));
+  EXPECT_TRUE(CompareMatrices(constraint1.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint1.is_equality_constraint());
   EXPECT_THAT(constraint1.description(), ::testing::ContainsRegex(
       "^continuous state of type .*ConstraintBasicVector<double,22>$"));
@@ -1727,6 +2322,8 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareVectorInputPort(InputVector{});
   EXPECT_EQ(dut.get_num_constraints(), 3);
   const SystemConstraint<double>& constraint2 = dut.get_constraint(Index{2});
+  EXPECT_TRUE(CompareMatrices(constraint2.lower_bound(), Vector1d(33)));
+  EXPECT_TRUE(CompareMatrices(constraint2.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint2.is_equality_constraint());
   EXPECT_THAT(constraint2.description(), ::testing::ContainsRegex(
       "^input 0 of type .*ConstraintBasicVector<double,33>$"));
@@ -1736,38 +2333,52 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
   EXPECT_EQ(dut.get_num_constraints(), 4);
   const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
+  EXPECT_TRUE(CompareMatrices(constraint3.lower_bound(), Vector1d(44)));
+  EXPECT_TRUE(CompareMatrices(constraint3.upper_bound(), Vector1d(kInf)));
   EXPECT_FALSE(constraint3.is_equality_constraint());
   EXPECT_THAT(constraint3.description(), ::testing::ContainsRegex(
       "^output 0 of type .*ConstraintBasicVector<double,44>$"));
+
+  // Declaring constrained model discrete state should add constraints.
+  // We want `vec[0] >= 55` on the state vector.
+  using DiscreteStateVector = ConstraintBasicVector<double, 55>;
+  dut.DeclareDiscreteState(DiscreteStateVector{});
+  EXPECT_EQ(dut.get_num_constraints(), 5);
+  const SystemConstraint<double>& constraint4 = dut.get_constraint(Index{4});
+  EXPECT_TRUE(CompareMatrices(constraint4.lower_bound(), Vector1d(55)));
+  EXPECT_TRUE(CompareMatrices(constraint4.upper_bound(), Vector1d(kInf)));
+  EXPECT_FALSE(constraint4.is_equality_constraint());
+  EXPECT_THAT(constraint4.description(), ::testing::ContainsRegex(
+      "^discrete state of type .*ConstraintBasicVector<double,55>$"));
 
   // We'll work through the Calc results all at the end, so that we don't
   // change the shape of the System and Context while we're Calc'ing.
   auto context = dut.CreateDefaultContext();
 
-  // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `-10.0 >= 0.0`.
+  // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `1.0 >= 11.0`.
   context->get_mutable_numeric_parameter(0).SetAtIndex(0, 1.0);
   Eigen::VectorXd value0;
   constraint0.Calc(*context, &value0);
-  EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(-10.0)));
+  EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(1.0)));
 
-  // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `-20.0 >= 0.0`.
+  // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `2.0 >= 22.0`.
   context->get_mutable_continuous_state_vector().SetAtIndex(0, 2.0);
   Eigen::VectorXd value1;
   constraint1.Calc(*context, &value1);
-  EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(-20.0)));
+  EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(2.0)));
 
-  // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `-30.0 >= 0.0`.
+  // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `3.0 >= 33.0`.
   InputVector input;
   input.SetAtIndex(0, 3.0);
   context->FixInputPort(0, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
-  EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(-30.0)));
+  EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(3.0)));
 
-  // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `-40.0 >= 0.0`.
+  // `y0[0] >= 44.0` with `y0[0] == 4.0` produces `4.0 >= 44.0`.
   Eigen::VectorXd value3;
   constraint3.Calc(*context, &value3);
-  EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(-40.0)));
+  EXPECT_TRUE(CompareMatrices(value3, Vector1<double>::Constant(4.0)));
 }
 
 // Note: this class is duplicated in diagram_test.
@@ -1848,15 +2459,12 @@ GTEST_TEST(InitializationTest, InitializationTest) {
    public:
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
-          Event<double>::TriggerType::kInitialization,
           std::bind(&InitializationTestSystem::InitPublish, this,
                     std::placeholders::_1, std::placeholders::_2));
       DeclareInitializationEvent(pub_event);
 
-      DeclareInitializationEvent(DiscreteUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
-      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>(
-          Event<double>::TriggerType::kInitialization));
+      DeclareInitializationEvent(DiscreteUpdateEvent<double>());
+      DeclareInitializationEvent(UnrestrictedUpdateEvent<double>());
     }
 
     bool get_pub_init() const { return pub_init_; }
@@ -1866,8 +2474,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
    private:
     void InitPublish(const Context<double>&,
                      const PublishEvent<double>& event) const {
-      EXPECT_EQ(event.get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+      EXPECT_EQ(event.get_trigger_type(), TriggerType::kInitialization);
       pub_init_ = true;
     }
 
@@ -1877,7 +2484,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
         DiscreteValues<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       EXPECT_EQ(events.front()->get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       dis_update_init_ = true;
     }
 
@@ -1887,7 +2494,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
         State<double>*) const final {
       EXPECT_EQ(events.size(), 1);
       EXPECT_EQ(events.front()->get_trigger_type(),
-                Event<double>::TriggerType::kInitialization);
+                TriggerType::kInitialization);
       unres_update_init_ = true;
     }
 
@@ -1915,6 +2522,154 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   EXPECT_TRUE(dut.get_unres_update_init());
 }
 
+// Although many of the tests above validate behavior of events when the
+// event dispatchers DoPublish() etc are overridden, the preferred method
+// for users is to provide individual handler functions for each event. There
+// is a set of sugar methods to facilitate that; this class uses them all.
+class EventSugarTestSystem : public LeafSystem<double> {
+ public:
+  EventSugarTestSystem() {
+    DeclareInitializationPublishEvent(
+        &EventSugarTestSystem::MyPublishHandler);
+    DeclareInitializationDiscreteUpdateEvent(
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclareInitializationUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    DeclarePerStepPublishEvent(
+        &EventSugarTestSystem::MyPublishHandler);
+    DeclarePerStepDiscreteUpdateEvent(
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclarePerStepUnrestrictedUpdateEvent(
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    DeclarePeriodicPublishEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MyPublishHandler);
+    DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MyDiscreteUpdateHandler);
+    DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MyUnrestrictedUpdateHandler);
+
+    // Two forced publish callbacks (to ensure sure that they are additive).
+    DeclareForcedPublishEvent(&EventSugarTestSystem::MyPublishHandler);
+    DeclareForcedPublishEvent(&EventSugarTestSystem::MySecondPublishHandler);
+
+    // These variants don't require an EventStatus return.
+    DeclarePeriodicPublishEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulPublishHandler);
+    DeclarePeriodicDiscreteUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulDiscreteUpdateHandler);
+    DeclarePeriodicUnrestrictedUpdateEvent(kPeriod, kOffset,
+        &EventSugarTestSystem::MySuccessfulUnrestrictedUpdateHandler);
+  }
+
+  const double kPeriod = 0.125;
+  const double kOffset = 0.25;
+
+  int num_publish() const {return num_publish_;}
+  int num_second_publish_handler_publishes() const {
+    return num_second_publish_handler_publishes_;
+  }
+  int num_discrete_update() const {return num_discrete_update_;}
+  int num_unrestricted_update() const {return num_unrestricted_update_;}
+
+ private:
+  EventStatus MyPublishHandler(const Context<double>& context) const {
+    MySuccessfulPublishHandler(context);
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MySecondPublishHandler(const Context<double>& context) const {
+    ++num_second_publish_handler_publishes_;
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MyDiscreteUpdateHandler(
+      const Context<double>& context,
+      DiscreteValues<double>* discrete_state) const {
+    MySuccessfulDiscreteUpdateHandler(context, &*discrete_state);
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus MyUnrestrictedUpdateHandler(const Context<double>& context,
+                                          State<double>* state) const {
+    MySuccessfulUnrestrictedUpdateHandler(context, &*state);
+    return EventStatus::Succeeded();
+  }
+
+  void MySuccessfulPublishHandler(const Context<double>&) const {
+    ++num_publish_;
+  }
+
+  void MySuccessfulDiscreteUpdateHandler(const Context<double>&,
+                                         DiscreteValues<double>*) const {
+    ++num_discrete_update_;
+  }
+
+  void MySuccessfulUnrestrictedUpdateHandler(const Context<double>&,
+                                             State<double>*) const {
+    ++num_unrestricted_update_;
+  }
+
+  mutable int num_publish_{0};
+  mutable int num_second_publish_handler_publishes_{0};
+  mutable int num_discrete_update_{0};
+  mutable int num_unrestricted_update_{0};
+};
+
+GTEST_TEST(EventSugarTest, EventsAreRegistered) {
+  EventSugarTestSystem dut;
+  auto context = dut.CreateDefaultContext();
+
+  auto init_events = dut.AllocateCompositeEventCollection();
+  dut.GetInitializationEvents(*context, &*init_events);
+  EXPECT_TRUE(init_events->HasPublishEvents());
+  EXPECT_TRUE(init_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(init_events->HasUnrestrictedUpdateEvents());
+
+  auto per_step_events = dut.AllocateCompositeEventCollection();
+  dut.GetPerStepEvents(*context, &*per_step_events);
+  EXPECT_TRUE(per_step_events->HasPublishEvents());
+  EXPECT_TRUE(per_step_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(per_step_events->HasUnrestrictedUpdateEvents());
+
+  auto timed_events = dut.AllocateCompositeEventCollection();
+  double next_event_time = dut.CalcNextUpdateTime(*context, &*timed_events);
+  EXPECT_EQ(next_event_time, 0.25);
+  EXPECT_TRUE(timed_events->HasPublishEvents());
+  EXPECT_TRUE(timed_events->HasDiscreteUpdateEvents());
+  EXPECT_TRUE(timed_events->HasUnrestrictedUpdateEvents());
+}
+
+GTEST_TEST(EventSugarTest, HandlersGetCalled) {
+  EventSugarTestSystem dut;
+  auto context = dut.CreateDefaultContext();
+  auto discrete_state = dut.AllocateDiscreteVariables();
+  auto state = context->CloneState();
+
+  auto all_events = dut.AllocateCompositeEventCollection();
+  dut.GetInitializationEvents(*context, &*all_events);
+
+  auto per_step_events = dut.AllocateCompositeEventCollection();
+  dut.GetPerStepEvents(*context, &*per_step_events);
+  all_events->Merge(*per_step_events);
+
+  auto timed_events = dut.AllocateCompositeEventCollection();
+  dut.CalcNextUpdateTime(*context, &*timed_events);
+  all_events->Merge(*timed_events);
+
+  dut.CalcUnrestrictedUpdate(
+      *context, all_events->get_unrestricted_update_events(), &*state);
+  dut.CalcDiscreteVariableUpdates(
+      *context, all_events->get_discrete_update_events(), &*discrete_state);
+  dut.Publish(*context, all_events->get_publish_events());
+  dut.Publish(*context);
+
+  EXPECT_EQ(dut.num_publish(), 5);
+  EXPECT_EQ(dut.num_second_publish_handler_publishes(), 1);
+  EXPECT_EQ(dut.num_discrete_update(), 4);
+  EXPECT_EQ(dut.num_unrestricted_update(), 4);
+}
 
 }  // namespace
 }  // namespace systems

@@ -1,0 +1,148 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+    "drake_cc_test",
+)
+load(
+    "@drake//tools/skylark:drake_proto.bzl",
+    "drake_cc_proto_library",
+)
+load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "inverse_kinematics",
+    deps = [
+        ":inverse_kinematics_core",
+        ":kinematic_constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematic_constraint",
+    srcs = [
+        "angle_between_vectors_constraint.cc",
+        "gaze_target_constraint.cc",
+        "kinematic_constraint_utilities.cc",
+        "minimum_distance_constraint.cc",
+        "orientation_constraint.cc",
+        "position_constraint.cc",
+    ],
+    hdrs = [
+        "angle_between_vectors_constraint.h",
+        "gaze_target_constraint.h",
+        "kinematic_constraint_utilities.h",
+        "minimum_distance_constraint.h",
+        "orientation_constraint.h",
+        "position_constraint.h",
+    ],
+    deps = [
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/plant",
+        "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "inverse_kinematics_core",
+    srcs = [
+        "inverse_kinematics.cc",
+    ],
+    hdrs = [
+        "inverse_kinematics.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":kinematic_constraint",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+    ],
+)
+
+#============ Test ============================
+
+drake_cc_library(
+    name = "inverse_kinematics_test_utilities",
+    testonly = 1,
+    srcs = ["test/inverse_kinematics_test_utilities.cc"],
+    hdrs = ["test/inverse_kinematics_test_utilities.h"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+        "//multibody/benchmarks/kuka_iiwa_robot",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/tree",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "position_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "orientation_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gaze_target_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "angle_between_vectors_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+    ],
+)
+
+drake_cc_googletest(
+    name = "minimum_distance_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_constraint",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inverse_kinematics_test",
+    # TODO(betsymcphail) Ubsan fails for this test. See #9475.
+    tags = [
+        "no_ubsan",
+    ],
+    deps = [
+        ":inverse_kinematics_core",
+        ":inverse_kinematics_test_utilities",
+        "//math:geometric_transform",
+        "//solvers:solve",
+    ],
+)
+
+add_lint_tests()

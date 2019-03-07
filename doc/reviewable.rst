@@ -32,33 +32,12 @@ rebase freely without corrupting the review history.
 Life of a Reviewable Comment
 ============================
 
-All threads in Reviewable must be resolved before you can merge your PR. The
-semantics of discussion resolution are a little tricky:
+All threads in Reviewable must be resolved before you can merge your PR.
 
-When a reviewer creates a new comment, the reviewer's disposition toward the
-thread may be "satisfied", "discussing", or "blocking".  Reviewers should:
-
-* Use **satisfied** to indicate that no action is required of the author.
-* Use **discussing** to indicate that the author must respond, but may
-  then close the thread without further input. However, if the author has
-  follow-up questions, the reviewer is responsible for iterating on it.
-  This is the default.
-* Use **blocking** to indicate that the author must take action on the
-  comment. The reviewer must then review and iterate on the fix with the
-  author. Once an acceptable resolution is achieved, the reviewer should
-  update disposition to **satisfied**.
-
-The author may respond to each comment with the same set of dispositions.
-Authors should:
-
-* Use **satisfied** to indicate that they believe the discussion is over.
-  If the reviewer's comment is not blocking, this will close the thread.
-  This is the default disposition when the "Done" or "Acknowledged" button
-  is clicked.
-* Use **discussing** to indicate that they require more input from the
-  reviewer.
-* Use **blocking** to indicate that they have not yet resolved the problem.
-  This serves as a safeguard against accidental merge.
+The semantics of discussion resolution is more nuanced than GitHub's default
+code review tool. We recommend to read `this explanation
+<https://github.com/Reviewable/Reviewable/issues/510#issue-272337333>`_ to
+understand the details.
 
 Before commenting on a line of code, reviewers should check to see if there
 is already a resolved discussion addressing the same topic. Resolved

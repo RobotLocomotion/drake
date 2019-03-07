@@ -15,12 +15,12 @@ namespace rendering {
 
 namespace pose_aggregator_detail { struct InputRecord; }
 
-/// A container with references to the input port descriptor for the pose input,
-/// and a reference to an input port descriptor for the velocity input.
+/// A container with references to the input port for the pose input, and a
+/// reference to the input port for the velocity input.
 template <typename T>
-struct PoseVelocityInputPortDescriptors {
-  const InputPortDescriptor<T>& pose_descriptor;
-  const InputPortDescriptor<T>& velocity_descriptor;
+struct PoseVelocityInputPorts {
+  const InputPort<T>& pose_input_port;
+  const InputPort<T>& velocity_input_port;
 };
 
 
@@ -33,6 +33,7 @@ struct PoseVelocityInputPortDescriptors {
 /// PoseAggregator is a multiplexer for heterogeneous sources of poses and the
 /// velocities of those poses.
 /// Supported sources are:
+///
 /// - A PoseVector input, which is a single pose {R, p}, and is vector-valued.
 /// - A FrameVelocity input, which corresponds to a PoseVector input, and
 ///   contains a single velocity {ω, v}, and is vector-valued.
@@ -47,6 +48,7 @@ struct PoseVelocityInputPortDescriptors {
 /// of reference.
 ///
 /// The output poses are named in the form `<source>` or `<source>::<pose>`.
+///
 /// - For poses derived from a PoseVector input, <source> is the bundle name
 ///   provided at construction time, and "::<pose>" is omitted.
 /// - For poses derived from a PoseBundle input, <source> is the bundle name
@@ -59,6 +61,7 @@ struct PoseVelocityInputPortDescriptors {
 /// an integer that is greater than or equal to zero. All poses with the same
 /// model instance ID must have unique names. This enables PoseAggregator to
 /// aggregate multiple instances of the same model.
+///
 /// - For poses derived from a PoseVector input, the instance ID is specified
 ///   when the input is declared.
 /// - For poses derived from a PoseBundle input, the instance ID is obtained
@@ -71,6 +74,7 @@ struct PoseVelocityInputPortDescriptors {
 ///
 /// This class is explicitly instantiated for the following scalar types. No
 /// other scalar types are supported.
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -82,6 +86,7 @@ class PoseAggregator : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseAggregator)
 
+  /// Constructs a default aggregator (with no inputs).
   PoseAggregator();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
@@ -92,19 +97,19 @@ class PoseAggregator : public LeafSystem<T> {
 
   /// Adds an input for a PoseVector. @p name must be unique for all inputs with
   /// the same @p model_instance_id.
-  const InputPortDescriptor<T>& AddSingleInput(const std::string& name,
+  const InputPort<T>& AddSingleInput(const std::string& name,
                                                int model_instance_id);
 
   /// Adds an input for a PoseVector, and a corresponding input for a
   /// FrameVelocity. @p name must be unique for all inputs with the same
   /// @p model_instance_id.
   ///
-  /// @return Descriptors for pose and velocity.
-  PoseVelocityInputPortDescriptors<T>
+  /// @return Input ports for pose and velocity.
+  PoseVelocityInputPorts<T>
   AddSinglePoseAndVelocityInput(const std::string& name, int model_instance_id);
 
   /// Adds an input for a PoseBundle containing @p num_poses poses.
-  const InputPortDescriptor<T>& AddBundleInput(const std::string& bundle_name,
+  const InputPort<T>& AddBundleInput(const std::string& bundle_name,
                                                int num_poses);
 
  private:
@@ -136,7 +141,7 @@ class PoseAggregator : public LeafSystem<T> {
                                                int num_poses);
 
   // Declares a System input port based on the given record.
-  const InputPortDescriptor<T>& DeclareInput(const InputRecord&);
+  const InputPort<T>& DeclareInput(const InputRecord&);
 
   // Returns the total number of poses from all inputs.
   int CountNumPoses() const;
@@ -153,13 +158,12 @@ namespace pose_aggregator_detail {
 // parameter @p T.
 struct InputRecord {
   enum PoseInputType {
-    kUnknown = 0,
     kSinglePose = 1,
     kSingleVelocity = 2,
     kBundle = 3,
   };
 
-  PoseInputType type{kUnknown};
+  PoseInputType type{kSinglePose};
   int num_poses{0};
   // name is only valid if type is kSingle{Pose, Velocity} or kBundle.
   std::string name{};

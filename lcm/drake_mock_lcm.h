@@ -8,7 +8,6 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
 namespace lcm {
@@ -42,9 +41,10 @@ class DrakeMockLcm : public DrakeLcmInterface {
   /**
    * Obtains the most recently "published" message on a particular channel.
    * This method automatically decodes the message into an LCM message whose
-   * type is specified by the template type. Throws a std::runtime_error
-   * exception if no LCM message was published on the provided channel or if the
-   * message failed to be decoded by the provided LCM message type.
+   * type is specified by the template type.
+   * @throws std::runtime_error if no LCM message was published on the provided
+   * channel or if the message failed to be decoded by the provided LCM message
+   * type.
    *
    * @tparam T The LCM message type.
    *
@@ -96,12 +96,6 @@ class DrakeMockLcm : public DrakeLcmInterface {
   optional<double> get_last_publication_time(const std::string& channel) const;
 
   void Subscribe(const std::string&, HandlerFunction) override;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  void Subscribe(const std::string&,
-                 DrakeLcmMessageHandlerInterface*) override;
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   /**
    * Fakes a callback. The callback is executed by the same thread as the one

@@ -74,35 +74,36 @@ cmake_configure_file(
     defines = [
         "PROJECT_NAME=SDFormat",
         "SDF_VERSION_NAME=",
-        # The sdformat library currently requires that it be able to find the
-        # SDF files that are installed in the cc_library :data variable, which
-        # is why we set the DATAROOTDIR below.
-        # TODO: change the sdformat library to not require this, or use bazel
-        # variables to find the correct location to place these files.
-        "CMAKE_INSTALL_FULL_DATAROOTDIR=external/sdformat/sdf/1.6",
         "SDF_PKG_VERSION=",
+        "CMAKE_INSTALL_FULL_DATAROOTDIR=does/not/exist",
     ],
     visibility = ["//visibility:private"],
 )
 
+# Public headers are indicated in sdformat's `include/sdf/CMakeLists.txt`.
 SDFORMAT_MOST_PUBLIC_HDRS = [
     "include/sdf/Assert.hh",
+    "include/sdf/Atmosphere.hh",
     "include/sdf/Box.hh",
     "include/sdf/Collision.hh",
     "include/sdf/Console.hh",
-    "include/sdf/Converter.hh",
     "include/sdf/Cylinder.hh",
     "include/sdf/Element.hh",
     "include/sdf/Error.hh",
     "include/sdf/Exception.hh",
     "include/sdf/Filesystem.hh",
     "include/sdf/Geometry.hh",
+    "include/sdf/Gui.hh",
     "include/sdf/Joint.hh",
     "include/sdf/JointAxis.hh",
+    "include/sdf/Light.hh",
     "include/sdf/Link.hh",
+    "include/sdf/Material.hh",
+    "include/sdf/Mesh.hh",
     "include/sdf/Model.hh",
     "include/sdf/Param.hh",
     "include/sdf/parser.hh",
+    "include/sdf/Physics.hh",
     "include/sdf/Plane.hh",
     "include/sdf/Root.hh",
     "include/sdf/SDFImpl.hh",
@@ -124,6 +125,27 @@ drake_generate_include_header(
     visibility = ["//visibility:private"],
 )
 
+# Generates EmbeddedSdf.hh.
+# TODO(jwnimmer-tri) Since the ruby code uses globbing to decide which files to
+# stringize, ideally we should create a temporary folder, copy the declared
+# `srcs` there, and then run the codegen tool -- so that its glob only finds
+# our declared `srcs`.  However, for now just relying on Bazel's runfiles tree
+# being reasonably well-defined seems good enough.
+genrule(
+    name = "embed_sdf",
+    srcs = [
+        "sdf/embedSdf.rb",
+    ] + glob([
+        "sdf/**/*.sdf",
+        "sdf/**/*.convert",
+    ]),
+    outs = ["include/sdf/EmbeddedSdf.hh"],
+    cmd = "$(location @ruby) -C$$(dirname $(location sdf/embedSdf.rb)) embedSdf.rb > $@",  # noqa
+    tools = [
+        "@ruby",
+    ],
+)
+
 SDFORMAT_ALL_PUBLIC_HDRS = SDFORMAT_MOST_PUBLIC_HDRS + [
     "include/sdf/sdf.hh",  # from genrule above
     "include/sdf/sdf_config.h",  # from cmake_configure_file above
@@ -138,11 +160,13 @@ cc_library(
     name = "sdformat",
     srcs = [
         "include/sdf/Converter.hh",
+        "include/sdf/EmbeddedSdf.hh",
         "include/sdf/ExceptionPrivate.hh",
         "include/sdf/SDFExtension.hh",
         "include/sdf/SDFImplPrivate.hh",
         "include/sdf/parser_private.hh",
         "include/sdf/parser_urdf.hh",
+        "src/Atmosphere.cc",
         "src/Box.cc",
         "src/Collision.cc",
         "src/Console.cc",
@@ -153,11 +177,16 @@ cc_library(
         "src/Exception.cc",
         "src/Filesystem.cc",
         "src/Geometry.cc",
+        "src/Gui.cc",
         "src/Joint.cc",
         "src/JointAxis.cc",
+        "src/Light.cc",
         "src/Link.cc",
+        "src/Material.cc",
+        "src/Mesh.cc",
         "src/Model.cc",
         "src/Param.cc",
+        "src/Physics.cc",
         "src/Plane.cc",
         "src/Root.cc",
         "src/SDF.cc",

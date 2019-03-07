@@ -5,13 +5,37 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    style="fill:none;stroke:none;stroke-linecap:square;stroke-miterlimit:10"
    height="450"
    width="850"
    id="svg349"
    stroke-miterlimit="10"
    viewBox="0 0 850 450"
-   version="1.1">
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="system_context_cache.svg">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="3763"
+     inkscape:window-height="1951"
+     id="namedview3766"
+     showgrid="false"
+     inkscape:zoom="3.8729412"
+     inkscape:cx="488.16923"
+     inkscape:cy="225"
+     inkscape:window-x="65"
+     inkscape:window-y="24"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg349" />
   <metadata
      id="metadata355">
     <rdf:RDF>
@@ -20,7 +44,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -672,7 +696,7 @@
          height="59"
          width="87"
          id="rect4237" /></flowRegion><flowPara
-       id="flowPara4239"></flowPara></flowRoot>  <text
+       id="flowPara4239" /></flowRoot>  <text
      id="text4248"
      y="238.33594"
      x="190.80315"
@@ -748,16 +772,19 @@
      id="text4248-5-7-7-2"
      y="75.285759"
      x="740.61243"
-     style="font-style:normal;font-weight:normal;font-size:16px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
-     xml:space="preserve"><tspan
-       style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic'"
-       y="75.285759"
+     style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:16px;line-height:125%;font-family:'Accanthis ADF Std No2';-inkscape-font-specification:'Accanthis ADF Std No2, Italic';text-align:start;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none"
+     xml:space="preserve"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3772"
        x="740.61243"
-       id="tspan4246-5-2-59-8">derivatives,</tspan><tspan
-       style="font-style:italic;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Italic'"
-       id="tspan4372"
+       y="75.285759"
+       style="-inkscape-font-specification:'Amiri Quran, Normal';font-family:'Amiri Quran';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:16.00000024px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">derivatives,</tspan><tspan
+       sodipodi:role="line"
+       id="tspan3774"
+       x="740.61243"
        y="95.285759"
-       x="740.61243">updates, etc.</tspan></text>
+       style="-inkscape-font-specification:'Amiri Quran, Normal';font-family:'Amiri Quran';font-weight:normal;font-style:normal;font-stretch:normal;font-variant:normal;font-size:16.00000024px;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">energy, etc.</tspan></text>
   <text
      id="text4248-5-7-7-5"
      y="357.80469"
@@ -767,4 +794,15 @@
        y="357.80469"
        x="302.59222"
        id="tspan4246-5-2-59-1">Fixed inputs</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="749.30133"
+     y="84.902794"
+     id="text3768"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3770"
+       x="749.30133"
+       y="84.902794"></tspan></text>
 </svg>

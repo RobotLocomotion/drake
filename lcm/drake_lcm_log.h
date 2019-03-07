@@ -11,7 +11,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 
 namespace drake {
 namespace lcm {
@@ -72,11 +71,6 @@ class DrakeLcmLog : public DrakeLcmInterface {
    * mode.
    */
   void Subscribe(const std::string& channel, HandlerFunction handler) override;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  void Subscribe(const std::string&, DrakeLcmMessageHandlerInterface*) override;
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
   /**
    * Returns the time in seconds for the next logged message's occurrence time

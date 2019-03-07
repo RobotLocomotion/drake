@@ -98,6 +98,14 @@ class TestCallPython(unittest.TestCase):
             client_status = client.wait()
             self.assertEqual(client_status, int(with_error))
 
+    def test_help(self):
+        text = subprocess.check_output(
+            [client_bin, "--help"], stderr=subprocess.STDOUT).decode("utf8")
+        # Print output, since `assertIn` does not provide user-friendly
+        # multiline error messages.
+        print(text)
+        self.assertTrue("Here's an example" in text)
+
     def test_basic(self):
         for with_error in [False, True]:
             print("[ with_error: {} ]".format(with_error))

@@ -28,7 +28,7 @@ class SpringMassSystemTest : public ::testing::Test {
             kTargetPosition);
 
     model_context_ = model_->CreateDefaultContext();
-    output_ = model_->AllocateOutput(*model_context_);
+    output_ = model_->AllocateOutput();
 
     // Gets the plant subcontext.
     plant_context_ =
@@ -87,7 +87,7 @@ TEST_F(SpringMassSystemTest, EvalTimeDerivatives) {
 
   // The derivatives of plant.
   const ContinuousState<double>& plant_xcdot =
-      model_->GetSubsystemDerivatives(*derivatives, &model_->get_plant());
+      model_->GetSubsystemDerivatives(model_->get_plant(), *derivatives);
 
   // Position derivative.
   EXPECT_EQ(v0, plant_xcdot.get_vector().GetAtIndex(0));

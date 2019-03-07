@@ -10,12 +10,8 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
-#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
-#include "drake/multibody/rigid_body_tree.h"
-#include "drake/multibody/rigid_body_tree_construction.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -40,11 +36,6 @@ int do_main() {
 
   DiagramBuilder<double> builder;
 
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"),
-      multibody::joints::kRollPitchYaw, tree.get());
-
   // The nominal hover position is at (0, 0, 1.0) in world coordinates.
   const Eigen::Vector3d kNominalPosition{((Eigen::Vector3d() << 0.0, 0.0, 1.0).
       finished())};
@@ -54,13 +45,15 @@ int do_main() {
   auto controller = builder.AddSystem(StabilizingLQRController(
       quadrotor, kNominalPosition));
   controller->set_name("controller");
-  auto visualizer =
-      builder.AddSystem<drake::systems::DrakeVisualizer>(*tree, &lcm);
-  visualizer->set_name("visualizer");
-
   builder.Connect(quadrotor->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(), quadrotor->get_input_port(0));
-  builder.Connect(quadrotor->get_output_port(0), visualizer->get_input_port(0));
+
+  // Set up visualization
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  quadrotor->RegisterGeometry(scene_graph);
+  builder.Connect(quadrotor->get_geometry_pose_output_port(),
+      scene_graph->get_source_pose_port(quadrotor->source_id()));
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
@@ -81,6 +74,10 @@ int do_main() {
 
     simulator.Initialize();
     simulator.set_target_realtime_rate(FLAGS_simulation_real_time_rate);
+
+    // The following accuracy is necessary for the example to satisfy its
+    // ending state tolerances.
+    simulator.get_mutable_integrator()->set_target_accuracy(5e-5);
     simulator.StepTo(FLAGS_trial_duration);
 
     // Goal state verification.

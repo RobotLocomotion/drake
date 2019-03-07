@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -15,9 +16,8 @@
 #include "drake/common/cond.h"
 #include "drake/common/drake_assert.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/framework/basic_vector.h"
-#include "drake/systems/framework/value.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
@@ -31,7 +31,7 @@ using maliput::api::Rotation;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::LeafContext;
 using systems::OutputPort;
 using systems::Parameters;
@@ -99,7 +99,7 @@ MaliputRailcar<T>::MaliputRailcar(const LaneDirection& initial_lane_direction)
 }
 
 template <typename T>
-const InputPortDescriptor<T>& MaliputRailcar<T>::command_input() const {
+const InputPort<T>& MaliputRailcar<T>::command_input() const {
   return this->get_input_port(command_input_port_index_);
 }
 
@@ -289,10 +289,10 @@ void MaliputRailcar<T>::ImplCalcTimeDerivatives(
 template <typename T>
 std::unique_ptr<systems::AbstractValues>
 MaliputRailcar<T>::AllocateAbstractState() const {
-  std::vector<std::unique_ptr<systems::AbstractValue>> abstract_values;
+  std::vector<std::unique_ptr<AbstractValue>> abstract_values;
   const LaneDirection lane_direction;
-  abstract_values.push_back(std::unique_ptr<systems::AbstractValue>(
-      std::make_unique<systems::Value<LaneDirection>>(lane_direction)));
+  abstract_values.push_back(std::unique_ptr<AbstractValue>(
+      std::make_unique<Value<LaneDirection>>(lane_direction)));
   return std::make_unique<systems::AbstractValues>(std::move(abstract_values));
 }
 
@@ -386,7 +386,7 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   const double current_length = current_lane_direction.lane->length();
 
   // Copies the present state into the new one.
-  next_state->CopyFrom(context.get_state());
+  next_state->SetFrom(context.get_state());
 
   ContinuousState<T>& cs = next_state->get_mutable_continuous_state();
   VectorBase<T>& cv = cs.get_mutable_vector();
@@ -450,7 +450,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     }
 
     if (!next_branch) {
-      DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
+      throw std::logic_error(
+          "MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
           "Vehicle should switch lanes but no default or ongoing branch "
           "exists.");
     } else {

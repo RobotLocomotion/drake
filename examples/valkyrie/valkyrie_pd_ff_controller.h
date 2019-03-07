@@ -3,7 +3,7 @@
 #include <memory>
 #include <utility>
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "bot_core/atlas_command_t.hpp"
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree.h"
@@ -19,7 +19,7 @@ class ValkyriePDAndFeedForwardController : public systems::LeafSystem<double> {
                          const VectorX<double>& nominal_torque,
                          const VectorX<double>& Kp, const VectorX<double>& Kd);
 
-  inline const InputPortDescriptor<double>& get_input_port_kinematics_result()
+  inline const InputPort<double>& get_input_port_kinematics_result()
       const {
     return get_input_port(input_port_index_kinematics_result_);
   }

@@ -1,0 +1,901 @@
+<?xml version='1.0'?>
+<!--
+  The file is converted from allegro_hand_description_left.xacro from the
+  unofficial ROS package of Allegro Hand (https://github.com/felixduvallet/
+  allegro-hand-ros/tree/master/allegro_hand_description). The conversion is
+  applied using the ROS package xacro to convert into urdf files, then
+  converted to sdf files. The model files (.obj files and .mtl files) are
+  converted from the .STL files from the same source. The physical parameters
+  of the model in the cited unofficial fork of the Allegro hand have
+  non-physical values. More precisely, many of the inertia matrices are not
+  SPD. Therefore we recomputed all the inertia matrices for this SDF model in
+  Drake. These values are estimated from the provided geometry and using a
+  constant density approximation on each component. We used the best available
+  value of mass available to us. Joint damping values are estimated based on
+  the expected angular velocity of each joint and using a typical load of
+  about 200 gr being held by the hand. This allows us to estimate a typical
+  torque at the joints which, together with a nominal value of angular
+  velocity, allows us to estimate a reasonable magnitude for joint damping. It
+  is worth noting that the unofficial version of these files were providing
+  non-physical values as much as 300 times larger. The effort limits of the
+  joints are justified to 0.7 Nm according to the manufacturer's specs (
+  http://www.simlab.co.kr/Allegro-Hand.htm#Specifications). The collision
+  geometry for link_13 (thumb base) has been omitted in this version. It
+  frequently led to meaningless collisions with other hand geometries but its
+  omission is justified because it is small enough that its removal is
+  unlikely to cause us to miss meaningful collisions.
+-->
+<sdf version='1.6'>
+  <model name='allegro_hand_left'>
+    <link name='hand_root'>
+      <pose frame=''>0 0 0 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.4154</mass>
+        <inertia>
+          <ixx>    2.089e-03</ixx>
+          <ixy>-0.003635e-03</ixy>
+          <ixz>   0.2233e-03</ixz>
+          <iyy>    1.829e-03</iyy>
+          <iyz> -0.01756e-03</iyz>
+          <izz>   0.4825e-03</izz>
+        </inertia>
+      </inertial>
+      <collision name='hand_root_fixed_joint_lump__palm_link_collision'>
+        <pose frame=''>-0.0093 0 0.0475 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0408 0.113 0.095</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='hand_root_fixed_joint_lump__palm_link_visual'>
+        <pose frame=''>0 0 0.095 -1.5708 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/base_link_left.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>  
+    <link name='link_8'>
+      <pose frame=''>0 0.0435 0.093458 -0.087267 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0119</mass>
+        <inertia>
+          <ixx>   1.954e-06</ixx>
+          <ixy>0.003034e-06</ixy>
+          <ixz> 0.08923e-06</ixz>
+          <iyy>   1.179e-06</iyy>
+          <iyz>-0.03707e-06</iyz>
+          <izz>   1.497e-06</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_8_collision'>
+        <pose frame=''>0 0 0.0082 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0164</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_8_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_0.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_8' type='revolute'>
+      <child>link_8</child>
+      <parent>hand_root</parent>
+      <axis>
+        <xyz>0 -0.087156 -0.996195</xyz>
+        <limit>
+          <lower>-0.47</lower>
+          <upper>0.47</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_9'>
+      <pose frame=''>0 0.044929 0.109796 -0.087267 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.065</mass>
+        <inertia>
+          <ixx>  7.192e-05</ixx>
+          <ixy>          0</ixy>
+          <ixz>          0</ixz>
+          <iyy>  7.438e-05</iyy>
+          <iyz>0.07322e-05</iyz>
+          <izz> 0.5406e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_9_collision'>
+        <pose frame=''>0 0 0.027 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.054</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_9_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_1.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_9' type='revolute'>
+      <child>link_9</child>
+      <parent>link_8</parent>
+      <axis>
+        <xyz>0 0.996195 -0.087156</xyz>
+        <limit>
+          <lower>-0.196</lower>
+          <upper>1.61</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_10'>
+      <pose frame=''>0 0.049636 0.16359 -0.087267 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0355</mass>
+        <inertia>
+          <ixx>     3.169e-05</ixx>
+          <ixy> 0.0001071e-05</ixy>
+          <ixz>-0.0004913e-05</ixz>
+          <iyy>     3.105e-05</iyy>
+          <iyz>  0.003875e-05</iyz>
+          <izz>    0.3203e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_10_collision'>
+        <pose frame=''>0 0 0.0192 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0384</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_10_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_2.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_10' type='revolute'>
+      <child>link_10</child>
+      <parent>link_9</parent>
+      <axis>
+        <xyz>0 0.996195 -0.087156</xyz>
+        <limit>
+          <lower>-0.174</lower>
+          <upper>1.709</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_11'>
+      <pose frame=''>0 0.052983 0.201844 -0.087267 0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0264</mass>
+        <inertia>
+          <ixx>   1.263e-05</ixx>
+          <ixy> 0.00021e-05</ixy>
+          <ixz>-0.00098e-05</ixz>
+          <iyy>   1.182e-05</iyy>
+          <iyz> -0.0013e-05</iyz>
+          <izz>  0.2484e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_11_collision'>
+        <pose frame=''>0 0 0.01335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0267</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name='link_11_tip_collision_1'>
+        <pose frame=''>0 0 0.0267 0 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.012</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='link_11_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_3.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='link_11_tip_visual_1'>
+        <pose frame=''>0 0 0.0267 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_3.0_tip.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_11' type='revolute'>
+      <child>link_11</child>
+      <parent>link_10</parent>
+      <axis>
+        <xyz>0 0.996195 -0.087156</xyz>
+        <limit>
+          <lower>-0.227</lower>
+          <upper>1.618</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_12'>
+      <pose frame=''>-0.0182 -0.019333 0.049013 -3.14159 -1.48353 -1.5708</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0176</mass>
+        <inertia>
+          <ixx> 0.8139e-05</ixx>
+          <ixy> 0.2552e-05</ixy>
+          <ixz> 0.3899e-05</ixz>
+          <iyy>  1.314e-05</iyy>
+          <iyz>-0.1463e-05</iyz>
+          <izz>  1.002e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_12_collision'>
+        <pose frame=''>-0.0179 0.009 0.0145 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0358 0.034 0.0455</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_12_visual'>
+        <pose frame=''>0 0 0 3.14159 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_12.0_left.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_12' type='revolute'>
+      <child>link_12</child>
+      <parent>hand_root</parent>
+      <axis>
+        <xyz>-0 -0.087156 0.996195</xyz>
+        <limit>
+          <lower>0.263</lower>
+          <upper>1.396</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_13'>
+      <pose frame=''>-0.0132 -0.056728 0.018638 -3.14159 -1.48353 -1.5708</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0119</mass>
+        <inertia>
+          <ixx>   1.926e-06</ixx>
+          <ixy> 0.00305e-06</ixy>
+          <ixz> 0.08866e-06</ixz>
+          <iyy>   1.153e-06</iyy>
+          <iyz>-0.03645e-06</iyz>
+          <izz>   1.496e-06</izz>
+        </inertia>
+      </inertial>
+      <!--
+      <collision name='link_13_collision'>
+        <pose frame=''>0 0 0.00885 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0177</size>
+          </box>
+        </geometry>
+      </collision>
+    -->
+      <visual name='link_13_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_13.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_13' type='revolute'>
+      <child>link_13</child>
+      <parent>link_12</parent>
+      <axis>
+        <xyz>0 0.996195 0.087156</xyz>
+        <limit>
+          <lower>-0.105</lower>
+          <upper>1.163</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_14'>
+      <pose frame=''>-0.0132 -0.074361 0.017096 -3.14159 -1.48353 -1.5708</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.038</mass>
+        <inertia>
+          <ixx>  3.670e-05</ixx>
+          <ixy> 0.0001e-05</ixy>
+          <ixz>0.01485e-05</ixz>
+          <iyy>  3.540e-05</iyy>
+          <iyz>-0.0037e-05</iyz>
+          <izz> 0.3633e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_14_collision'>
+        <pose frame=''>0 0 0.0257 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0514</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_14_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_14.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_14' type='revolute'>
+      <child>link_14</child>
+      <parent>link_13</parent>
+      <axis>
+        <xyz>-1 0 -0</xyz>
+        <limit>
+          <lower>-0.189</lower>
+          <upper>1.644</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_15'>
+      <pose frame=''>-0.0132 -0.125565 0.012616 -3.14159 -1.48353 -1.5708</pose>
+      <inertial>
+        <pose frame=''>0 0 0.012781 0 -0 0</pose>
+        <mass>0.0556</mass>
+        <inertia>
+          <ixx>  7.054e-05</ixx>
+          <ixy>          0</ixy>
+          <ixz>          0</ixz>
+          <iyy>  6.564e-05</iyy>
+          <iyz>-0.0033e-05</iyz>
+          <izz>  1.954e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_15_collision'>
+        <pose frame=''>0 0 0.02115 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0423</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name='link_15_tip_collision_1'>
+        <pose frame=''>0 0 0.0423 0 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.012</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='link_15_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_15.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='link_15_tip_visual_1'>
+        <pose frame=''>0 0 0.0423 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_15.0_tip.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_15' type='revolute'>
+      <child>link_15</child>
+      <parent>link_14</parent>
+      <axis>
+        <xyz>-1 0 -0</xyz>
+        <limit>
+          <lower>-0.162</lower>
+          <upper>1.719</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_4'>
+      <pose frame=''>0 0 0.0957 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0119</mass>
+        <inertia>
+          <ixx>   1.954e-06</ixx>
+          <ixy>0.003034e-06</ixy>
+          <ixz> 0.08923e-06</ixz>
+          <iyy>   1.179e-06</iyy>
+          <iyz>-0.03707e-06</iyz>
+          <izz>   1.497e-06</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_4_collision'>
+        <pose frame=''>0 0 0.0082 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0164</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_4_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_0.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_4' type='revolute'>
+      <child>link_4</child>
+      <parent>hand_root</parent>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-0.47</lower>
+          <upper>0.47</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_5'>
+      <pose frame=''>0 0 0.1121 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.065</mass>
+        <inertia>
+          <ixx>  7.192e-05</ixx>
+          <ixy>          0</ixy>
+          <ixz>          0</ixz>
+          <iyy>  7.438e-05</iyy>
+          <iyz>0.07322e-05</iyz>
+          <izz> 0.5406e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_5_collision'>
+        <pose frame=''>0 0 0.027 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.054</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_5_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_1.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_5' type='revolute'>
+      <child>link_5</child>
+      <parent>link_4</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-0.196</lower>
+          <upper>1.61</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_6'>
+      <pose frame=''>0 0 0.1661 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0355</mass>
+        <inertia>
+          <ixx>     3.169e-05</ixx>
+          <ixy> 0.0001071e-05</ixy>
+          <ixz>-0.0004913e-05</ixz>
+          <iyy>     3.105e-05</iyy>
+          <iyz>  0.003875e-05</iyz>
+          <izz>    0.3203e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_6_collision'>
+        <pose frame=''>0 0 0.0192 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0384</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_6_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_2.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_6' type='revolute'>
+      <child>link_6</child>
+      <parent>link_5</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-0.174</lower>
+          <upper>1.709</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_7'>
+      <pose frame=''>0 0 0.2045 0 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0264</mass>
+        <inertia>
+          <ixx>   1.263e-05</ixx>
+          <ixy> 0.00021e-05</ixy>
+          <ixz>-0.00098e-05</ixz>
+          <iyy>   1.182e-05</iyy>
+          <iyz> -0.0013e-05</iyz>
+          <izz>  0.2484e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_7_collision'>
+        <pose frame=''>0 0 0.01335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0267</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name='link_7_tip_collision_1'>
+        <pose frame=''>0 0 0.0267 0 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.012</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='link_7_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_3.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='link_7_tip_visual_1'>
+        <pose frame=''>0 0 0.0267 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_3.0_tip.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_7' type='revolute'>
+      <child>link_7</child>
+      <parent>link_6</parent>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>-0.227</lower>
+          <upper>1.618</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_0'>
+      <pose frame=''>0 -0.0435 0.093458 0.087267 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0119</mass>
+        <inertia>
+          <ixx>   1.954e-06</ixx>
+          <ixy>0.003034e-06</ixy>
+          <ixz> 0.08923e-06</ixz>
+          <iyy>   1.179e-06</iyy>
+          <iyz>-0.03707e-06</iyz>
+          <izz>   1.497e-06</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_0_collision'>
+        <pose frame=''>0 0 0.0082 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0164</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_0_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_0.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_0' type='revolute'>
+      <child>link_0</child>
+      <parent>hand_root</parent>
+      <axis>
+        <xyz>0 0.087156 -0.996195</xyz>
+        <limit>
+          <lower>-0.47</lower>
+          <upper>0.47</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_1'>
+      <pose frame=''>0 -0.044929 0.109796 0.087267 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.065</mass>
+        <inertia>
+          <ixx>  7.192e-05</ixx>
+          <ixy>          0</ixy>
+          <ixz>          0</ixz>
+          <iyy>  7.438e-05</iyy>
+          <iyz>0.07322e-05</iyz>
+          <izz> 0.5406e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_1_collision'>
+        <pose frame=''>0 0 0.027 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.054</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_1_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_1.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_1' type='revolute'>
+      <child>link_1</child>
+      <parent>link_0</parent>
+      <axis>
+        <xyz>0 0.996195 0.087156</xyz>
+        <limit>
+          <lower>-0.196</lower>
+          <upper>1.61</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_2'>
+      <pose frame=''>0 -0.049636 0.16359 0.087267 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0355</mass>
+        <inertia>
+          <ixx>     3.169e-05</ixx>
+          <ixy> 0.0001071e-05</ixy>
+          <ixz>-0.0004913e-05</ixz>
+          <iyy>     3.105e-05</iyy>
+          <iyz>  0.003875e-05</iyz>
+          <izz>    0.3203e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_2_collision'>
+        <pose frame=''>0 0 0.0192 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0384</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name='link_2_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_2.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_2' type='revolute'>
+      <child>link_2</child>
+      <parent>link_1</parent>
+      <axis>
+        <xyz>0 0.996195 0.087156</xyz>
+        <limit>
+          <lower>-0.174</lower>
+          <upper>1.709</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+    <link name='link_3'>
+      <pose frame=''>0 -0.052983 0.201844 0.087267 -0 0</pose>
+      <inertial>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <mass>0.0264</mass>
+        <inertia>
+          <ixx>   1.263e-05</ixx>
+          <ixy> 0.00021e-05</ixy>
+          <ixz>-0.00098e-05</ixz>
+          <iyy>   1.182e-05</iyy>
+          <iyz> -0.0013e-05</iyz>
+          <izz>  0.2484e-05</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_3_collision'>
+        <pose frame=''>0 0 0.01335 0 -0 0</pose>
+        <geometry>
+          <box>
+            <size>0.0196 0.0275 0.0267</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name='link_3_tip_collision_1'>
+        <pose frame=''>0 0 0.0267 0 -0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.012</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='link_3_visual'>
+        <pose frame=''>0 0 0 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_3.0.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='link_3_tip_visual_1'>
+        <pose frame=''>0 0 0.0267 0 -0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>../meshes/link_3.0_tip.obj</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='joint_3' type='revolute'>
+      <child>link_3</child>
+      <parent>link_2</parent>
+      <axis>
+        <xyz>0 0.996195 0.087156</xyz>
+        <limit>
+          <lower>-0.227</lower>
+          <upper>1.618</upper>
+          <effort>0.7</effort>
+        </limit>
+        <dynamics>
+          <damping>1.5e-2</damping>
+        </dynamics>
+        <use_parent_model_frame>1</use_parent_model_frame>
+      </axis>
+    </joint>
+  </model>
+</sdf>

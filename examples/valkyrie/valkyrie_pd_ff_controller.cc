@@ -5,8 +5,8 @@
 #include <memory>
 #include <string>
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "bot_core/atlas_command_t.hpp"
+#include "bot_core/robot_state_t.hpp"
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/valkyrie/robot_state_decoder.h"
@@ -38,7 +38,10 @@ ValkyriePDAndFeedForwardController::ValkyriePDAndFeedForwardController(
       feedforward_torque_(nominal_torque),
       Kp_(Kp),
       Kd_(Kd) {
-  input_port_index_kinematics_result_ = DeclareAbstractInputPort().get_index();
+  input_port_index_kinematics_result_ = DeclareAbstractInputPort(
+      kUseDefaultName,
+      Value<KinematicsCache<double>>(robot.CreateKinematicsCache()))
+          .get_index();
   output_port_index_atlas_command_ =
       DeclareAbstractOutputPort(
           &ValkyriePDAndFeedForwardController::OutputCommand)
@@ -187,7 +190,7 @@ void run_valkyrie_pd_ff_controller() {
 
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
-  auto output = diagram->AllocateOutput(*context);
+  auto output = diagram->AllocateOutput();
 
   lcm.StartReceiveThread();
   std::cout << "controller started\n";

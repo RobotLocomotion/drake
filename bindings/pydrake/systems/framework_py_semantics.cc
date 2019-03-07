@@ -4,16 +4,20 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/drake_optional_pybind.h"
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
+#include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
+#include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
-#include "drake/bindings/pydrake/util/drake_optional_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_pybind.h"
-#include "drake/bindings/pydrake/util/type_safe_index_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_context.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_output.h"
 
 using std::string;
 using std::unique_ptr;
@@ -24,15 +28,42 @@ namespace pydrake {
 
 using pysystems::DefClone;
 
+namespace {
+// Given an InputPort or OutputPort as self, return self.Eval(context).  In
+// python, always returns either a numpy.ndarray (when vector-valued) or the
+// unwrapped T in a Value<T> (when abstract-valued).
+template <typename SomeObject, typename T>
+py::object DoEval(const SomeObject* self, const systems::Context<T>& context) {
+  switch (self->get_data_type()) {
+    case systems::kVectorValued: {
+      const VectorX<T> eigen_copy = self->Eval(context);
+      return py::cast(eigen_copy);
+    }
+    case systems::kAbstractValued: {
+      const auto& abstract = self->template Eval<AbstractValue>(context);
+      // TODO(#9398): Figure out why `py_reference` is necessary.
+      py::object value_ref = py::cast(&abstract, py_reference);
+      return value_ref.attr("get_value")();
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+}  // namespace
+
 void DefineFrameworkPySemantics(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
+  constexpr auto& doc = pydrake_doc.drake.systems;
 
   m.attr("kAutoSize") = kAutoSize;
 
+  py::class_<UseDefaultName> use_default_name_cls(
+      m, "UseDefaultName", doc.UseDefaultName.doc);
+  m.attr("kUseDefaultName") = kUseDefaultName;
+
   py::enum_<PortDataType>(m, "PortDataType")
-    .value("kVectorValued", kVectorValued)
-    .value("kAbstractValued", kAbstractValued);
+      .value("kVectorValued", kVectorValued)
+      .value("kAbstractValued", kAbstractValued);
 
   BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
   BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
@@ -44,246 +75,426 @@ void DefineFrameworkPySemantics(py::module m) {
   BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
   BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
 
-  py::class_<FixedInputPortValue>(m, "FixedInputPortValue");
+  py::class_<FixedInputPortValue>(
+      m, "FixedInputPortValue", doc.FixedInputPortValue.doc)
+      .def("GetMutableData", &FixedInputPortValue::GetMutableData,
+          // TODO(#9398): Why is `py_reference` necessary?
+          py_reference_internal, doc.FixedInputPortValue.GetMutableData.doc);
 
   using AbstractValuePtrList = vector<unique_ptr<AbstractValue>>;
   // N.B. `AbstractValues` provides the ability to reference non-owned values,
   // without copying them. For consistency with other model-value Python
   // bindings, only the ownership variant is exposed.
-  py::class_<AbstractValues> abstract_values(m, "AbstractValues");
+  py::class_<AbstractValues> abstract_values(
+      m, "AbstractValues", doc.AbstractValues.doc);
   DefClone(&abstract_values);
-  abstract_values
-    .def(py::init<>())
-    .def(py::init<AbstractValuePtrList>())
-    .def("size", &AbstractValues::size)
-    .def("get_value", &AbstractValues::get_value, py_reference_internal)
-    .def("get_mutable_value",
-         &AbstractValues::get_mutable_value, py_reference_internal)
-    .def("CopyFrom", &AbstractValues::CopyFrom);
+  abstract_values  // BR
+      .def(py::init<>(), doc.AbstractValues.ctor.doc_0args)
+      .def(py::init<AbstractValuePtrList>(), doc.AbstractValues.ctor.doc_1args)
+      .def("size", &AbstractValues::size, doc.AbstractValues.size.doc)
+      .def("get_value", &AbstractValues::get_value, py_reference_internal,
+          doc.AbstractValues.get_value.doc)
+      .def("get_mutable_value", &AbstractValues::get_mutable_value,
+          py_reference_internal, doc.AbstractValues.get_mutable_value.doc)
+      .def("CopyFrom",
+          [](AbstractValues* self, const AbstractValues& other) {
+            WarnDeprecated(
+                "Use SetFrom instead of CopyFrom. "
+                "This method will be removed on 2019-06-01.");
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            self->CopyFrom(other);
+#pragma GCC diagnostic pop
+          },
+          doc.AbstractValues.CopyFrom.doc)
+      .def("SetFrom", &AbstractValues::SetFrom, doc.AbstractValues.SetFrom.doc);
 
-  auto bind_common_scalar_types = [m](auto dummy) {
+  {
+    using Class = TriggerType;
+    constexpr auto& cls_doc = doc.TriggerType;
+    py::enum_<TriggerType>(m, "TriggerType", cls_doc.doc)
+        .value("kUnknown", Class::kUnknown, cls_doc.kUnknown.doc)
+        .value("kInitialization", Class::kInitialization,
+            cls_doc.kInitialization.doc)
+        .value("kForced", Class::kForced, cls_doc.kForced.doc)
+        .value("kTimed", Class::kTimed, cls_doc.kTimed.doc)
+        .value("kPeriodic", Class::kPeriodic, cls_doc.kPeriodic.doc)
+        .value("kPerStep", Class::kPerStep, cls_doc.kPerStep.doc)
+        .value("kWitness", Class::kWitness, cls_doc.kWitness.doc);
+  }
+
+  // N.B. Capturing `&doc` should not be required; workaround per #9600.
+  auto bind_common_scalar_types = [m, &doc](auto dummy) {
     using T = decltype(dummy);
     DefineTemplateClassWithDefault<Context<T>>(
-        m, "Context", GetPyParam<T>())
-      .def("get_num_input_ports", &Context<T>::get_num_input_ports)
-      .def("FixInputPort",
-           py::overload_cast<int, const BasicVector<T>&>(
-               &Context<T>::FixInputPort),
-           py::arg("index"), py::arg("vec"),
-           py_reference_internal)
-      .def("FixInputPort",
-           py::overload_cast<int, unique_ptr<AbstractValue>>(
-               &Context<T>::FixInputPort),
-           py::arg("index"), py::arg("value"),
-           py_reference_internal,
-           // Keep alive, ownership: `AbstractValue` keeps `self` alive.
-           py::keep_alive<3, 1>())
-      .def("FixInputPort",
-           py::overload_cast<int, const Eigen::Ref<const VectorX<T>>&>(
-               &Context<T>::FixInputPort),
-           py::arg("index"), py::arg("data"),
-           py_reference_internal)
-      .def("get_time", &Context<T>::get_time)
-      .def("set_time", &Context<T>::set_time)
-      .def("set_accuracy", &Context<T>::set_accuracy)
-      .def("get_accuracy", &Context<T>::get_accuracy)
-      .def("Clone", &Context<T>::Clone)
-      .def("__copy__", &Context<T>::Clone)
-      .def("__deepcopy__", [](const Context<T>* self, py::dict /* memo */) {
-        return self->Clone();
-      })
-      .def("get_state", &Context<T>::get_state, py_reference_internal)
-      .def("get_mutable_state", &Context<T>::get_mutable_state,
-           py_reference_internal)
-      // Sugar methods
-      // - Continuous.
-      .def("get_continuous_state_vector",
-           &Context<T>::get_continuous_state_vector,
-           py_reference_internal)
-      .def("get_mutable_continuous_state_vector",
-           &Context<T>::get_mutable_continuous_state_vector,
-           py_reference_internal)
-      // - Discrete.
-      .def("get_discrete_state_vector",
-           &Context<T>::get_discrete_state_vector,
-           py_reference_internal)
-      .def("get_mutable_discrete_state_vector",
-           [](Context<T>* self) -> auto& {
-             return self->get_mutable_discrete_state().get_mutable_vector();
-           },
-           py_reference_internal)
-      // - Abstract.
-      .def("get_num_abstract_states", &Context<T>::get_num_abstract_states)
-      .def("get_abstract_state",
-           [](const Context<T>* self) -> auto& {
-             return self->get_abstract_state();
-           },
-           py_reference_internal)
-      .def("get_abstract_state",
-           [](const Context<T>* self, int index) -> auto& {
-             return self->get_abstract_state().get_value(index);
-           },
-           py_reference_internal)
-      .def("get_mutable_abstract_state",
-           [](Context<T>* self) -> auto& {
-             return self->get_mutable_abstract_state();
-           },
-           py_reference_internal)
-      .def("get_mutable_abstract_state",
-           [](Context<T>* self, int index) -> auto& {
-             return self->get_mutable_abstract_state().get_mutable_value(index);
-           },
-           py_reference_internal);
+        m, "Context", GetPyParam<T>(), doc.Context.doc)
+        .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
+        .def("get_num_input_ports", &Context<T>::get_num_input_ports,
+            doc.ContextBase.get_num_input_ports.doc)
+        .def("FixInputPort",
+            py::overload_cast<int, const BasicVector<T>&>(
+                &Context<T>::FixInputPort),
+            py::arg("index"), py::arg("vec"), py_reference_internal,
+            doc.Context.FixInputPort.doc_2args_index_vec)
+        .def("FixInputPort",
+            py::overload_cast<int, unique_ptr<AbstractValue>>(
+                &Context<T>::FixInputPort),
+            py::arg("index"), py::arg("value"), py_reference_internal,
+            // Keep alive, ownership: `AbstractValue` keeps `self` alive.
+            py::keep_alive<3, 1>(), doc.ContextBase.FixInputPort.doc)
+        .def("FixInputPort",
+            py::overload_cast<int, const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::FixInputPort),
+            py::arg("index"), py::arg("data"), py_reference_internal,
+            doc.Context.FixInputPort.doc_2args_index_data)
+        .def("get_time", &Context<T>::get_time, doc.Context.get_time.doc)
+        .def("set_time", &Context<T>::set_time, doc.Context.set_time.doc)
+        .def("set_accuracy", &Context<T>::set_accuracy,
+            doc.Context.set_accuracy.doc)
+        .def("get_accuracy", &Context<T>::get_accuracy,
+            doc.Context.get_accuracy.doc)
+        .def("Clone", &Context<T>::Clone, doc.Context.Clone.doc)
+        .def("__copy__", &Context<T>::Clone)
+        .def("__deepcopy__", [](const Context<T>* self,
+                                 py::dict /* memo */) { return self->Clone(); })
+        .def("get_state", &Context<T>::get_state, py_reference_internal,
+            doc.Context.get_state.doc)
+        .def("get_mutable_state", &Context<T>::get_mutable_state,
+            py_reference_internal, doc.Context.get_mutable_state.doc)
+        // Sugar methods
+        // - Continuous.
+        .def("get_continuous_state", &Context<T>::get_continuous_state,
+            py_reference_internal, doc.Context.get_continuous_state.doc)
+        .def("get_mutable_continuous_state",
+            &Context<T>::get_mutable_continuous_state, py_reference_internal,
+            doc.Context.get_mutable_continuous_state.doc)
+        .def("get_continuous_state_vector",
+            &Context<T>::get_continuous_state_vector, py_reference_internal,
+            doc.Context.get_continuous_state_vector.doc)
+        .def("SetContinuousState", &Context<T>::SetContinuousState,
+            doc.Context.SetContinuousState.doc)
+        .def("get_mutable_continuous_state_vector",
+            &Context<T>::get_mutable_continuous_state_vector,
+            py_reference_internal,
+            doc.Context.get_mutable_continuous_state_vector.doc)
+        // - Discrete.
+        .def("get_num_discrete_state_groups",
+            &Context<T>::get_num_discrete_state_groups,
+            doc.Context.get_num_discrete_state_groups.doc)
+        .def("get_discrete_state",
+            overload_cast_explicit<const DiscreteValues<T>&>(
+                &Context<T>::get_discrete_state),
+            py_reference_internal, doc.Context.get_discrete_state.doc_0args)
+        .def("get_mutable_discrete_state",
+            overload_cast_explicit<DiscreteValues<T>&>(
+                &Context<T>::get_mutable_discrete_state),
+            py_reference_internal,
+            doc.Context.get_mutable_discrete_state.doc_0args)
+        .def("get_discrete_state_vector",
+            &Context<T>::get_discrete_state_vector, py_reference_internal,
+            doc.Context.get_discrete_state_vector.doc)
+        .def("get_mutable_discrete_state_vector",
+            &Context<T>::get_mutable_discrete_state_vector,
+            py_reference_internal,
+            doc.Context.get_mutable_discrete_state_vector.doc)
+        .def("get_discrete_state",
+            overload_cast_explicit<const BasicVector<T>&, int>(
+                &Context<T>::get_discrete_state),
+            py_reference_internal, doc.Context.get_discrete_state.doc_1args)
+        .def("get_mutable_discrete_state",
+            overload_cast_explicit<BasicVector<T>&, int>(
+                &Context<T>::get_mutable_discrete_state),
+            py_reference_internal,
+            doc.Context.get_mutable_discrete_state.doc_1args)
+        // - Abstract.
+        .def("get_num_abstract_states", &Context<T>::get_num_abstract_states,
+            doc.Context.get_num_abstract_states.doc)
+        .def("get_abstract_state",
+            static_cast<const AbstractValues& (Context<T>::*)() const>(
+                &Context<T>::get_abstract_state),
+            py_reference_internal, doc.Context.get_abstract_state.doc_0args)
+        .def("get_abstract_state",
+            [](const Context<T>* self, int index) -> auto& {
+              return self->get_abstract_state().get_value(index);
+            },
+            py_reference_internal, doc.Context.get_abstract_state.doc_1args)
+        .def("get_mutable_abstract_state",
+            [](Context<T>* self) -> AbstractValues& {
+              return self->get_mutable_abstract_state();
+            },
+            py_reference_internal,
+            doc.Context.get_mutable_abstract_state.doc_0args)
+        .def("get_mutable_abstract_state",
+            [](Context<T>* self, int index) -> AbstractValue& {
+              return self->get_mutable_abstract_state().get_mutable_value(
+                  index);
+            },
+            py_reference_internal,
+            doc.Context.get_mutable_abstract_state.doc_1args)
+        .def("get_parameters", &Context<T>::get_parameters,
+            py_reference_internal, doc.Context.get_parameters.doc)
+        .def("num_numeric_parameter_groups",
+            &Context<T>::num_numeric_parameter_groups,
+            doc.Context.num_numeric_parameter_groups.doc)
+        .def("get_numeric_parameter", &Context<T>::get_numeric_parameter,
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_numeric_parameter.doc)
+        .def("num_abstract_parameters", &Context<T>::num_abstract_parameters,
+            doc.Context.num_abstract_parameters.doc)
+        .def("get_abstract_parameter", &Context<T>::get_abstract_parameter,
+            py::arg("index"), py_reference_internal,
+            doc.Context.get_numeric_parameter.doc);
 
     DefineTemplateClassWithDefault<LeafContext<T>, Context<T>>(
-        m, "LeafContext", GetPyParam<T>());
+        m, "LeafContext", GetPyParam<T>(), doc.LeafContext.doc);
 
     // Event mechanisms.
-    DefineTemplateClassWithDefault<Event<T>>(m, "Event", GetPyParam<T>());
+    DefineTemplateClassWithDefault<Event<T>>(
+        m, "Event", GetPyParam<T>(), doc.Event.doc)
+        .def("get_trigger_type", &Event<T>::get_trigger_type,
+            doc.Event.get_trigger_type.doc);
     DefineTemplateClassWithDefault<PublishEvent<T>, Event<T>>(
-        m, "PublishEvent", GetPyParam<T>());
+        m, "PublishEvent", GetPyParam<T>(), doc.PublishEvent.doc)
+        .def(
+            py::init(WrapCallbacks(
+                [](const TriggerType& trigger_type,
+                    const typename PublishEvent<T>::PublishCallback& callback) {
+                  return std::make_unique<PublishEvent<T>>(
+                      trigger_type, callback);
+                })),
+            py::arg("trigger_type"), py::arg("callback"),
+            "Users should not be calling these");
     DefineTemplateClassWithDefault<DiscreteUpdateEvent<T>, Event<T>>(
-        m, "DiscreteUpdateEvent", GetPyParam<T>());
+        m, "DiscreteUpdateEvent", GetPyParam<T>(), doc.DiscreteUpdateEvent.doc);
 
     // Glue mechanisms.
     DefineTemplateClassWithDefault<DiagramBuilder<T>>(
-        m, "DiagramBuilder", GetPyParam<T>())
-      .def(py::init<>())
-      .def(
-          "AddSystem",
-          [](DiagramBuilder<T>* self, unique_ptr<System<T>> arg1) {
-            return self->AddSystem(std::move(arg1));
-          },
-          // Keep alive, ownership: `System` keeps `self` alive.
-          py::keep_alive<2, 1>())
-      .def("Connect",
-           py::overload_cast<
-               const OutputPort<T>&, const InputPortDescriptor<T>&>(
-               &DiagramBuilder<T>::Connect))
-      .def("ExportInput", &DiagramBuilder<T>::ExportInput,
-           py_reference_internal)
-      .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
-           py_reference_internal)
-      .def("Build", &DiagramBuilder<T>::Build,
-           // Keep alive, transitive: `return` keeps `self` alive.
-           py::keep_alive<1, 0>())
-      .def("BuildInto", &DiagramBuilder<T>::BuildInto,
-           // Keep alive, transitive: `Diagram` keeps `self` alive.
-           py::keep_alive<2, 1>());
+        m, "DiagramBuilder", GetPyParam<T>(), doc.DiagramBuilder.doc)
+        .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
+        .def("AddSystem",
+            [](DiagramBuilder<T>* self, unique_ptr<System<T>> arg1) {
+              return self->AddSystem(std::move(arg1));
+            },
+            // Keep alive, ownership: `System` keeps `self` alive.
+            py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
+        .def("Connect",
+            py::overload_cast<const OutputPort<T>&, const InputPort<T>&>(
+                &DiagramBuilder<T>::Connect),
+            doc.DiagramBuilder.Connect.doc)
+        .def("ExportInput", &DiagramBuilder<T>::ExportInput, py::arg("input"),
+            py::arg("name") = kUseDefaultName, py_reference_internal,
+            doc.DiagramBuilder.ExportInput.doc)
+        .def("ExportOutput", &DiagramBuilder<T>::ExportOutput,
+            py::arg("output"), py::arg("name") = kUseDefaultName,
+            py_reference_internal, doc.DiagramBuilder.ExportOutput.doc)
+        .def("Build", &DiagramBuilder<T>::Build,
+            // Keep alive, transitive: `return` keeps `self` alive.
+            py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
+        .def("BuildInto", &DiagramBuilder<T>::BuildInto,
+            // Keep alive, transitive: `Diagram` keeps `self` alive.
+            py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc);
 
     DefineTemplateClassWithDefault<OutputPort<T>>(
-        m, "OutputPort", GetPyParam<T>())
-      .def("size", &OutputPort<T>::size)
-      .def("get_index", &OutputPort<T>::get_index);
+        m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
+        .def("size", &OutputPort<T>::size, doc.PortBase.size.doc)
+        .def("get_data_type", &OutputPort<T>::get_data_type,
+            doc.PortBase.get_data_type.doc)
+        .def("get_index", &OutputPort<T>::get_index,
+            doc.OutputPortBase.get_index.doc)
+        .def("Eval",
+            [](const OutputPort<T>* self, const Context<T>& context) {
+              return DoEval(self, context);
+            },
+            doc.OutputPort.Eval.doc)
+        .def("EvalAbstract",
+            [](const OutputPort<T>* self, const Context<T>& c) {
+              const auto& abstract = self->template Eval<AbstractValue>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&abstract, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this output port, typed "
+            "as an AbstractValue. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts an AbstractValue.",
+            py_reference_internal)
+        .def("EvalBasicVector",
+            [](const OutputPort<T>* self, const Context<T>& c) {
+              const auto& basic = self->template Eval<BasicVector<T>>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&basic, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this output port, typed "
+            "as a BasicVector. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts a BasicVector.",
+            py_reference_internal);
 
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
-        m, "SystemOutput", GetPyParam<T>());
-    DefClone(&system_output);
+        m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
     system_output
-      .def("get_num_ports", &SystemOutput<T>::get_num_ports)
-      .def("get_data", &SystemOutput<T>::get_data,
-           py_reference_internal)
-      .def("get_vector_data", &SystemOutput<T>::get_vector_data,
-           py_reference_internal);
+        .def("get_num_ports", &SystemOutput<T>::get_num_ports,
+            doc.SystemOutput.get_num_ports.doc)
+        .def("get_data", &SystemOutput<T>::get_data, py_reference_internal,
+            doc.SystemOutput.get_data.doc)
+        .def("get_vector_data", &SystemOutput<T>::get_vector_data,
+            py_reference_internal, doc.SystemOutput.get_vector_data.doc);
 
-    DefineTemplateClassWithDefault<InputPortDescriptor<T>>(
-        m, "InputPortDescriptor", GetPyParam<T>())
-      .def("size", &InputPortDescriptor<T>::size)
-      .def("get_data_type", &InputPortDescriptor<T>::get_data_type)
-      .def("get_index", &InputPortDescriptor<T>::get_index);
+    DefineTemplateClassWithDefault<InputPort<T>>(
+        m, "InputPort", GetPyParam<T>(), doc.InputPort.doc)
+        .def("size", &InputPort<T>::size, doc.PortBase.size.doc)
+        .def("get_data_type", &InputPort<T>::get_data_type,
+            doc.PortBase.get_data_type.doc)
+        .def("get_index", &InputPort<T>::get_index,
+            doc.InputPortBase.get_index.doc)
+        .def("Eval",
+            [](const InputPort<T>* self, const Context<T>& context) {
+              return DoEval(self, context);
+              DRAKE_UNREACHABLE();
+            },
+            doc.InputPort.Eval.doc)
+        .def("EvalAbstract",
+            [](const InputPort<T>* self, const Context<T>& c) {
+              const auto& abstract = self->template Eval<AbstractValue>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&abstract, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this input port, typed "
+            "as an AbstractValue. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts an AbstractValue.",
+            py_reference_internal)
+        .def("EvalBasicVector",
+            [](const InputPort<T>* self, const Context<T>& c) {
+              const auto& basic = self->template Eval<BasicVector<T>>(c);
+              // TODO(#9398): Figure out why `py_reference` is necessary.
+              return py::cast(&basic, py_reference);
+            },
+            py::arg("context"),
+            "(Advanced.) Returns the value of this input port, typed "
+            "as a BasicVector. Most users should call Eval() instead. "
+            "This method is only needed when the result will be passed "
+            "into some other API that only accepts a BasicVector.",
+            py_reference_internal);
 
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(
-        m, "Parameters", GetPyParam<T>());
+        m, "Parameters", GetPyParam<T>(), doc.Parameters.doc);
     DefClone(&parameters);
     using BasicVectorPtrList = vector<unique_ptr<BasicVector<T>>>;
     parameters
-      .def(py::init<>())
-      // TODO(eric.cousineau): Ensure that we can respect keep alive behavior
-      // with lists of pointers.
-      .def(py::init<BasicVectorPtrList, AbstractValuePtrList>(),
-           py::arg("numeric"), py::arg("abstract"))
-      .def(py::init<BasicVectorPtrList>(), py::arg("numeric"))
-      .def(py::init<AbstractValuePtrList>(), py::arg("abstract"))
-      .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("vec"),
-           // Keep alive, ownership: `vec` keeps `self` alive.
-           py::keep_alive<2, 1>())
-      .def(py::init<unique_ptr<AbstractValue>>(), py::arg("value"),
-           // Keep alive, ownership: `value` keeps `self` alive.
-           py::keep_alive<2, 1>())
-      .def("num_numeric_parameters", &Parameters<T>::num_numeric_parameters)
-      .def("num_abstract_parameters", &Parameters<T>::num_abstract_parameters)
-      .def("get_numeric_parameter", &Parameters<T>::get_numeric_parameter,
-           py_reference_internal, py::arg("index"))
-      .def("get_mutable_numeric_parameter",
-           &Parameters<T>::get_mutable_numeric_parameter,
-           py_reference_internal, py::arg("index"))
-      .def("get_numeric_parameters", &Parameters<T>::get_numeric_parameters,
-           py_reference_internal)
-      // TODO(eric.cousineau): Should this C++ code constrain the number of
-      // parameters???
-      .def("set_numeric_parameters", &Parameters<T>::set_numeric_parameters,
-           // WARNING: This will DELETE the existing parameters. See C++
-           // `AddValueInstantiation` for more information.
-           // Keep alive, ownership: `value` keeps `self` alive.
-           py::keep_alive<2, 1>(), py::arg("numeric_params"))
-      .def("get_abstract_parameter",
-           [](const Parameters<T>* self, int index) -> auto& {
-             return self->get_abstract_parameter(index);
-           },
-           py_reference_internal, py::arg("index"))
-      .def("get_mutable_abstract_parameter",
-           [](Parameters<T>* self, int index) -> auto& {
-             return self->get_mutable_abstract_parameter(index);
-           },
-           py_reference_internal, py::arg("index"))
-      .def("get_abstract_parameters", &Parameters<T>::get_abstract_parameters,
-           py_reference_internal)
-      .def("set_abstract_parameters", &Parameters<T>::set_abstract_parameters,
-           // WARNING: This will DELETE the existing parameters. See C++
-           // `AddValueInstantiation` for more information.
-           // Keep alive, ownership: `value` keeps `self` alive.
-           py::keep_alive<2, 1>(), py::arg("abstract_params"))
-      .def("SetFrom", &Parameters<T>::SetFrom);
+        .def(py::init<>(), doc.Parameters.ctor.doc_0args)
+        // TODO(eric.cousineau): Ensure that we can respect keep alive behavior
+        // with lists of pointers.
+        .def(py::init<BasicVectorPtrList, AbstractValuePtrList>(),
+            py::arg("numeric"), py::arg("abstract"),
+            doc.Parameters.ctor.doc_2args_numeric_abstract)
+        .def(py::init<BasicVectorPtrList>(), py::arg("numeric"),
+            doc.Parameters.ctor.doc_1args_numeric)
+        .def(py::init<AbstractValuePtrList>(), py::arg("abstract"),
+            doc.Parameters.ctor.doc_1args_abstract)
+        .def(py::init<unique_ptr<BasicVector<T>>>(), py::arg("vec"),
+            // Keep alive, ownership: `vec` keeps `self` alive.
+            py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_vec)
+        .def(py::init<unique_ptr<AbstractValue>>(), py::arg("value"),
+            // Keep alive, ownership: `value` keeps `self` alive.
+            py::keep_alive<2, 1>(), doc.Parameters.ctor.doc_1args_value)
+        .def("num_numeric_parameter_groups",
+            &Parameters<T>::num_numeric_parameter_groups,
+            doc.Parameters.num_numeric_parameter_groups.doc)
+        .def("num_abstract_parameters", &Parameters<T>::num_abstract_parameters,
+            doc.Parameters.num_abstract_parameters.doc)
+        .def("get_numeric_parameter", &Parameters<T>::get_numeric_parameter,
+            py_reference_internal, py::arg("index"),
+            doc.Parameters.get_numeric_parameter.doc)
+        .def("get_mutable_numeric_parameter",
+            &Parameters<T>::get_mutable_numeric_parameter,
+            py_reference_internal, py::arg("index"),
+            doc.Parameters.get_mutable_numeric_parameter.doc)
+        .def("get_numeric_parameters", &Parameters<T>::get_numeric_parameters,
+            py_reference_internal, doc.Parameters.get_numeric_parameters.doc)
+        // TODO(eric.cousineau): Should this C++ code constrain the number of
+        // parameters???
+        .def("set_numeric_parameters", &Parameters<T>::set_numeric_parameters,
+            // WARNING: This will DELETE the existing parameters. See C++
+            // `AddValueInstantiation` for more information.
+            // Keep alive, ownership: `value` keeps `self` alive.
+            py::keep_alive<2, 1>(), py::arg("numeric_params"),
+            doc.Parameters.set_numeric_parameters.doc)
+        .def("get_abstract_parameter",
+            [](const Parameters<T>* self, int index) -> auto& {
+              return self->get_abstract_parameter(index);
+            },
+            py_reference_internal, py::arg("index"),
+            doc.Parameters.get_abstract_parameter.doc_1args_index)
+        .def("get_mutable_abstract_parameter",
+            [](Parameters<T>* self, int index) -> AbstractValue& {
+              return self->get_mutable_abstract_parameter(index);
+            },
+            py_reference_internal, py::arg("index"),
+            doc.Parameters.get_mutable_abstract_parameter.doc_1args_index)
+        .def("get_abstract_parameters", &Parameters<T>::get_abstract_parameters,
+            py_reference_internal, doc.Parameters.get_abstract_parameters.doc)
+        .def("set_abstract_parameters", &Parameters<T>::set_abstract_parameters,
+            // WARNING: This will DELETE the existing parameters. See C++
+            // `AddValueInstantiation` for more information.
+            // Keep alive, ownership: `value` keeps `self` alive.
+            py::keep_alive<2, 1>(), py::arg("abstract_params"),
+            doc.Parameters.set_abstract_parameters.doc)
+        .def("SetFrom",
+            [](Parameters<T>* self, const Parameters<double>& other) {
+              self->SetFrom(other);
+            },
+            doc.Parameters.SetFrom.doc);
 
     // State.
-    DefineTemplateClassWithDefault<State<T>>(m, "State", GetPyParam<T>())
-        .def(py::init<>())
+    DefineTemplateClassWithDefault<State<T>>(
+        m, "State", GetPyParam<T>(), doc.State.doc)
+        .def(py::init<>(), doc.State.ctor.doc)
         .def("get_continuous_state", &State<T>::get_continuous_state,
-             py_reference_internal)
+            py_reference_internal, doc.State.get_continuous_state.doc)
         .def("get_mutable_continuous_state",
-             &State<T>::get_mutable_continuous_state, py_reference_internal)
+            &State<T>::get_mutable_continuous_state, py_reference_internal,
+            doc.State.get_mutable_continuous_state.doc)
         .def("get_discrete_state",
-             overload_cast_explicit<const DiscreteValues<T>&>(
-                 &State<T>::get_discrete_state),
-             py_reference_internal)
+            overload_cast_explicit<const DiscreteValues<T>&>(
+                &State<T>::get_discrete_state),
+            py_reference_internal, doc.State.get_discrete_state.doc)
         .def("get_mutable_discrete_state",
-             overload_cast_explicit<DiscreteValues<T>&>(
-                 &State<T>::get_mutable_discrete_state),
-             py_reference_internal);
+            overload_cast_explicit<DiscreteValues<T>&>(
+                &State<T>::get_mutable_discrete_state),
+            py_reference_internal, doc.State.get_mutable_discrete_state.doc);
 
     // - Constituents.
     DefineTemplateClassWithDefault<ContinuousState<T>>(
-        m, "ContinuousState", GetPyParam<T>())
-      .def(py::init<>())
-      .def("get_vector", &ContinuousState<T>::get_vector, py_reference_internal)
-      .def("get_mutable_vector",
-           &ContinuousState<T>::get_mutable_vector, py_reference_internal);
+        m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc)
+        .def(py::init<>(), doc.ContinuousState.ctor.doc_0args)
+        .def("size", &ContinuousState<T>::size, doc.ContinuousState.size.doc)
+        .def("get_vector", &ContinuousState<T>::get_vector,
+            py_reference_internal, doc.ContinuousState.get_vector.doc)
+        .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,
+            py_reference_internal, doc.ContinuousState.get_mutable_vector.doc);
 
     auto discrete_values = DefineTemplateClassWithDefault<DiscreteValues<T>>(
-        m, "DiscreteValues", GetPyParam<T>());
+        m, "DiscreteValues", GetPyParam<T>(), doc.DiscreteValues.doc);
     DefClone(&discrete_values);
     discrete_values
-      .def("num_groups", &DiscreteValues<T>::num_groups)
-      .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal)
-      .def("get_vector",
-           overload_cast_explicit<const BasicVector<T>&, int>(
-              &DiscreteValues<T>::get_vector),
-           py_reference_internal, py::arg("index") = 0)
-      .def("get_mutable_vector",
-           overload_cast_explicit<BasicVector<T>&, int>(
-              &DiscreteValues<T>::get_mutable_vector),
-           py_reference_internal, py::arg("index") = 0);
+        .def("num_groups", &DiscreteValues<T>::num_groups,
+            doc.DiscreteValues.num_groups.doc)
+        .def("get_data", &DiscreteValues<T>::get_data, py_reference_internal,
+            doc.DiscreteValues.get_data.doc)
+        .def("get_vector",
+            overload_cast_explicit<const BasicVector<T>&, int>(
+                &DiscreteValues<T>::get_vector),
+            py_reference_internal, py::arg("index") = 0,
+            doc.DiscreteValues.get_vector.doc_1args)
+        .def("get_mutable_vector",
+            overload_cast_explicit<BasicVector<T>&, int>(
+                &DiscreteValues<T>::get_mutable_vector),
+            py_reference_internal, py::arg("index") = 0,
+            doc.DiscreteValues.get_mutable_vector.doc_1args);
   };
   type_visit(bind_common_scalar_types, pysystems::CommonScalarPack{});
 }

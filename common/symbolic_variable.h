@@ -20,7 +20,16 @@
 namespace drake {
 namespace symbolic {
 
-/** Represents a symbolic variable. */
+/** Represents a symbolic variable.
+ *
+ * @note Expression::Evaluate and Formula::Evaluate methods take a symbolic
+ * environment (Variable → double) and a random number generator. When an
+ * expression or a formula includes random variables, `Evaluate` methods use the
+ * random number generator to draw a number for a random variable from the given
+ * distribution. Then this numeric value is used to substitute all the
+ * occurrences of the corresponding random variable in an expression or a
+ * formula.
+ */
 class Variable {
  public:
   typedef size_t Id;
@@ -28,10 +37,16 @@ class Variable {
   /** Supported types of symbolic variables. */
   // TODO(soonho-tri): refines the following descriptions.
   enum class Type {
-    CONTINUOUS,  ///< A CONTINUOUS variable takes a `double` value.
-    INTEGER,     ///< An INTEGER variable takes an `int` value.
-    BINARY,      ///< A BINARY variable takes an integer value from {0, 1}.
-    BOOLEAN,     ///< A BOOLEAN variable takes a `bool` value.
+    CONTINUOUS,       ///< A CONTINUOUS variable takes a `double` value.
+    INTEGER,          ///< An INTEGER variable takes an `int` value.
+    BINARY,           ///< A BINARY variable takes an integer value from {0, 1}.
+    BOOLEAN,          ///< A BOOLEAN variable takes a `bool` value.
+    RANDOM_UNIFORM,   ///< A random variable whose value will be drawn from
+                      ///< uniform real distributed ∈ [0,1).
+    RANDOM_GAUSSIAN,  ///< A random variable whose value will be drawn from
+                      ///< mean-zero, unit-variance normal.
+    RANDOM_EXPONENTIAL,  ///< A random variable whose value will be drawn from
+                         ///< exponential distribution with λ=1.
   };
 
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Variable)
@@ -49,6 +64,11 @@ class Variable {
       : id_{0},
         type_{Type::CONTINUOUS},
         name_{std::make_shared<std::string>()} {}
+
+  /** Constructs a default value.  This overload is used by Eigen when
+   * EIGEN_INITIALIZE_MATRICES_BY_ZERO is enabled.
+   */
+  explicit Variable(std::nullptr_t) : Variable() {}
 
   /** Constructs a variable with a string. If not specified, it has CONTINUOUS
    * type by default.*/
@@ -70,8 +90,8 @@ class Variable {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  friend void hash_append(
-      HashAlgorithm& hasher, const Variable& item) noexcept {
+  friend void hash_append(HashAlgorithm& hasher,
+                          const Variable& item) noexcept {
     using drake::hash_append;
     hash_append(hasher, item.id_);
     // We do not send the type_ or name_ to the hasher, because the id_ is
@@ -87,11 +107,11 @@ class Variable {
   Id id_{};  // Unique identifier.
   Type type_{Type::CONTINUOUS};
 
-  // Variable class has shared_ptr<string> instead of string to be
+  // Variable class has shared_ptr<const string> instead of string to be
   // drake::test::IsMemcpyMovable.
   // Please check https://github.com/RobotLocomotion/drake/issues/5974
   // for more information.
-  std::shared_ptr<std::string> name_;  // Name of variable.
+  std::shared_ptr<const std::string> name_;  // Name of variable.
 };
 
 std::ostream& operator<<(std::ostream& os, Variable::Type type);
@@ -296,8 +316,8 @@ Eigen::Matrix<Variable, rows, 1> MakeVectorIntegerVariable(
 namespace std {
 
 /* Provides std::hash<drake::symbolic::Variable>. */
-template <> struct hash<drake::symbolic::Variable>
-    : public drake::DefaultHash {};
+template <>
+struct hash<drake::symbolic::Variable> : public drake::DefaultHash {};
 
 /* Provides std::less<drake::symbolic::Variable>. */
 template <>
@@ -335,10 +355,9 @@ namespace symbolic {
 /// equal. That is, it returns true if and only if `m1(i, j)` is structurally
 /// equal to `m2(i, j)` for all `i`, `j`.
 template <typename DerivedA, typename DerivedB>
-typename std::enable_if<
-    is_eigen_scalar_same<DerivedA, Variable>::value &&
-        is_eigen_scalar_same<DerivedB, Variable>::value,
-    bool>::type
+typename std::enable_if<is_eigen_scalar_same<DerivedA, Variable>::value &&
+                            is_eigen_scalar_same<DerivedB, Variable>::value,
+                        bool>::type
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());

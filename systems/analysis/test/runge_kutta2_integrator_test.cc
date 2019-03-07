@@ -24,6 +24,16 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   EXPECT_THROW(integrator.set_target_accuracy(1.0), std::logic_error);
   EXPECT_THROW(integrator.request_initial_step_size_target(1.0),
                std::logic_error);
+
+  // Verifies that starting dense integration (i.e. demanding a dense
+  // output) fails if the integrator has not been initialized yet.
+  EXPECT_THROW(integrator.StartDenseIntegration(), std::logic_error);
+
+  // Verifies that stopping dense integration (i.e. precluding further updates
+  // of the dense output known to the integrator) fails if it has not
+  // been started (via StartDenseIntegration()) since last Initialize() call
+  // or construction.
+  EXPECT_THROW(integrator.StopDenseIntegration(), std::logic_error);
 }
 
 GTEST_TEST(IntegratorTest, ContextAccess) {
@@ -32,6 +42,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Setup integration step.
   const double dt  = 1e-3;
@@ -49,6 +60,7 @@ GTEST_TEST(IntegratorTest, ErrorEst) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double dt = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
   RungeKutta2Integrator<double> integrator(
       spring_mass, dt, context.get());
 
@@ -58,6 +70,15 @@ GTEST_TEST(IntegratorTest, ErrorEst) {
   EXPECT_THROW(integrator.set_target_accuracy(1e-1), std::logic_error);
   EXPECT_THROW(integrator.request_initial_step_size_target(dt),
                std::logic_error);
+}
+
+// Checks the validity of integrator statistics.
+void CheckStatsValidity(RungeKutta2Integrator<double>* integrator) {
+  EXPECT_GE(integrator->get_previous_integration_step_size(), 0.0);
+  EXPECT_GE(integrator->get_largest_step_size_taken(), 0.0);
+  EXPECT_GE(integrator->get_num_steps_taken(), 0);
+  EXPECT_EQ(integrator->get_error_estimate(), nullptr);
+  EXPECT_GT(integrator->get_num_derivative_evaluations(), 0);
 }
 
 // Try a purely continuous system with no sampling.
@@ -75,49 +96,62 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
+  context->EnableCaching();
 
   // Create the integrator.
   const double dt = 1.0/1024;
-  const double inf = std::numeric_limits<double>::infinity();
   RungeKutta2Integrator<double> integrator(spring_mass, dt, context.get());
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
-  const double omega = std::sqrt(spring_k / mass);
 
-  // Set initial condition using the Simulator's internal Context.
+  // Set initial conditions using integrator's internal Context.
   spring_mass.set_position(integrator.get_mutable_context(),
                            initial_position);
+  spring_mass.set_velocity(integrator.get_mutable_context(),
+                           initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
 
-  // Setup c1 and c2 for ODE constants.
-  const double C1 = initial_position;
-  const double C2 = initial_velocity / omega;
+  // Build a dense output while integrating the solution.
+  integrator.StartDenseIntegration();
 
   // Integrate for 1 second.
   const double t_final = 1.0;
-  double t;
-  for (t = 0.0; std::abs(t - t_final) > dt; t += dt)
-    integrator.IntegrateAtMost(inf, inf, dt);
+  integrator.IntegrateWithMultipleStepsToTime(t_final);
+  EXPECT_NEAR(context->get_time(), t_final, dt);  // Should be exact.
 
-  EXPECT_NEAR(context->get_time(), 1., dt);  // Should be exact.
+  // Get the final position and velocity.
+  const VectorBase<double>& xc_final = context->get_continuous_state_vector();
+  double x_final = xc_final.GetAtIndex(0);
 
-  // Get the final position.
-  const double x_final = context->get_continuous_state_vector().GetAtIndex(0);
+  // Get the closed form solution.
+  double x_final_true, unused_v_final_true;
+  spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
+                                    t_final, &x_final_true,
+                                    &unused_v_final_true);
 
   // Check the solution.
-  double true_sol = C1 * std::cos(omega * t) + C2 * std::sin(omega * t);
-  EXPECT_NEAR(true_sol, x_final, 5e-3);
+  const double xtol = 5e-3;
+  EXPECT_NEAR(x_final_true, x_final, xtol);
 
-  // Verify that integrator statistics are valid
-  EXPECT_GE(integrator.get_previous_integration_step_size(), 0.0);
-  EXPECT_GE(integrator.get_largest_step_size_taken(), 0.0);
-  EXPECT_GE(integrator.get_num_steps_taken(), 0);
-  EXPECT_EQ(integrator.get_error_estimate(), nullptr);
-  EXPECT_GT(integrator.get_num_derivative_evaluations(), 0);
+  // Reclaim dense output and prevent further updates to it.
+  std::unique_ptr<DenseOutput<double>> dense_output =
+      integrator.StopDenseIntegration();
+
+  // Verify that the built dense output is valid.
+  for (double t = 0; t <= t_final; t += dt / 2.) {
+    double x_true, unused_v_true;
+    spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
+                                      t, &x_true, &unused_v_true);
+    const VectorX<double> x = dense_output->Evaluate(t);
+    EXPECT_NEAR(x_true, x(0), xtol);
+  }
+
+  // Verify that integrator statistics are valid.
+  CheckStatsValidity(&integrator);
 }
 
 }  // namespace

@@ -1,0 +1,280 @@
+<sdf version='1.6'>
+  <model name='cupboard'>
+
+  <link name='cupboard_body'>
+  <pose> 0 0 0 0 0 0</pose>
+
+  <visual name='right_wall'>
+    <pose> 0 0.292 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.016 0.783</size>
+      </box>
+    </geometry>
+  </visual>
+
+  <visual name='left_wall'>
+    <pose> 0 -0.292 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.016 0.783</size>
+      </box>
+    </geometry>
+  </visual>
+
+  <collision name='right_wall'>
+    <pose> 0 0.292 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.016 0.783</size>
+      </box>
+    </geometry>
+  </collision>
+
+  <collision name='left_wall'>
+    <pose> 0 -0.292 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.016 0.783</size>
+      </box>
+    </geometry>
+  </collision>
+
+  </link>
+
+  <link name='top_and_bottom'>
+  <pose> 0 0 0 0 0 0</pose>
+
+  <visual name='bottom'>
+    <pose> 0 0 -0.3995 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </visual>
+
+  <visual name='top'>
+    <pose> 0 0 0.3995 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </visual>
+
+  <visual name='shelf_lower'>
+    <pose> 0 0 -0.13115 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </visual>
+
+  <visual name='shelf_upper'>
+    <pose> 0 0 0.13115 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </visual>
+
+  <collision name='bottom'>
+    <pose> 0 0 -0.3995 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </collision>
+
+  <collision name='top'>
+    <pose> 0 0 0.3995 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </collision>
+
+  <collision name='shelf_lower'>
+    <pose> 0 0 -0.13115 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </collision>
+
+  <collision name='shelf_upper'>
+    <pose> 0 0 0.13115 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.3 0.6 0.016</size>
+      </box>
+    </geometry>
+  </collision>  
+ </link>
+
+
+
+  <!-- joint between bottom_top and world -->
+  <joint name='top_and_bottom_cupboard_body' type='fixed'>
+    <child>top_and_bottom</child>
+    <parent>cupboard_body</parent>
+    <pose>0 0 0 0 0 0 </pose>
+  </joint>
+
+
+  <!-- joint between cupboard_body and left_door -->
+  <joint name='left_door_hinge' type='revolute'>
+    <child>left_door</child>
+    <parent>cupboard_body</parent>
+    <pose>-0.008 -0.1395 0 0 0 </pose>
+    <axis>
+      <xyz> 0 0 1 </xyz>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>1.0</damping>
+      </dynamics>
+    </axis>
+  </joint>
+
+  <link name='left_door'>
+  <pose> 0.158 -0.1445 0 0 0 0</pose>
+  <inertial>
+      <mass>1</mass>
+      <inertia>
+        <ixx>0.01042</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00542</iyy>
+        <iyz>0</iyz>
+        <izz>0.00542</izz>
+      </inertia>
+  </inertial>
+
+  <visual name='cylinder'>
+    <pose> 0.033 0.1245 0 0 0 0</pose>
+    <geometry>
+      <cylinder> 
+        <length>0.14</length>
+        <radius>0.005</radius>
+      </cylinder>
+    </geometry>
+  </visual>
+
+  <visual name='slab'>
+    <pose> 0 0 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.016 0.279 0.815</size>
+      </box>
+    </geometry>
+
+    <material>
+      <diffuse>1 0 0 1.0</diffuse>
+    </material>
+  </visual>
+
+  <collision name='cylinder'>
+    <pose> 0.033 0.1245 0 0 0 0</pose>
+    <geometry>
+      <cylinder> 
+        <length>0.14</length>
+        <radius>0.005</radius>
+      </cylinder>
+    </geometry>
+  </collision>
+
+  <collision name='slab'>
+    <pose> 0 0 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.016 0.279 0.815</size>
+      </box>
+    </geometry>
+  </collision>
+
+  </link>
+
+  <!-- joint between cupboard_body and left_door -->
+  <joint name='right_door_hinge' type='revolute'>
+    <child>right_door</child>
+    <parent>cupboard_body</parent>
+    <pose>-0.008 0.1395 0 0 0 </pose>
+    <axis>
+      <xyz> 0 0 1 </xyz>
+      <limit>
+        <effort>0</effort>
+      </limit>
+      <dynamics>
+        <damping>1.0</damping>
+      </dynamics>
+    </axis>
+  </joint>
+
+  <link name='right_door'>
+  <pose> 0.158 0.1445 0 0 0 0</pose>
+  <inertial>
+      <mass>1</mass>
+      <inertia>
+        <ixx>0.01042</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.00542</iyy>
+        <iyz>0</iyz>
+        <izz>0.00542</izz>
+      </inertia>
+  </inertial>
+
+  <visual name='cylinder'>
+    <pose> 0.033 -0.1245 0 0 0 0</pose>
+    <geometry>
+      <cylinder> 
+        <length>0.14</length>
+        <radius>0.005</radius>
+      </cylinder>
+    </geometry>
+  </visual>
+
+  <visual name='slab'>
+    <pose> 0 0 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.016 0.279 0.815</size>
+      </box>
+    </geometry>
+
+    <material>
+      <diffuse>1 0 0 1.0</diffuse>
+    </material>
+  </visual>
+
+  <collision name='cylinder'>
+    <pose> 0.033 -0.1245 0 0 0 0</pose>
+    <geometry>
+      <cylinder> 
+        <length>0.14</length>
+        <radius>0.005</radius>
+      </cylinder>
+    </geometry>
+  </collision>
+
+  <collision name='slab'>
+    <pose> 0 0 0 0 0 0</pose>
+    <geometry>
+      <box>
+       <size>0.016 0.279 0.815</size>
+      </box>
+    </geometry>
+  </collision>
+
+  </link>
+
+  </model>
+</sdf>

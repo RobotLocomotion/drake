@@ -1,9 +1,13 @@
 #include "drake/systems/analysis/antiderivative_function.h"
+#include "drake/systems/analysis/antiderivative_function-inl.h"
+
+#include "drake/common/default_scalars.h"
 
 namespace drake {
 namespace systems {
 
-template class AntiderivativeFunction<double>;
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class AntiderivativeFunction);
 
 }  // namespace systems
 }  // namespace drake

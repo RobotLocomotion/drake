@@ -1,5 +1,6 @@
 #include "drake/automotive/maliput/rndf/spline_lane.h"
 
+#include <stdexcept>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
@@ -38,7 +39,7 @@ api::LanePosition SplineLane::DoToLanePosition(const api::GeoPosition&,
                                                api::GeoPosition*,
                                                double*) const {
   // TODO(@agalbachicar) We need to find a way to implement it.
-  DRAKE_ABORT();
+  throw std::runtime_error("SplineLane::DoToLanePosition is not implemented");
 }
 
 api::GeoPosition SplineLane::DoToGeoPosition(
@@ -50,7 +51,7 @@ api::GeoPosition SplineLane::DoToGeoPosition(
   // Calculate x,y of (s,0,0).
   const Vector2<double> xy = xy_of_s(s);
   // Calculate orientation of (s,r,h) basis at (s,0,0).
-  const Matrix3<double> rotation_matrix = Rabg_of_s(s);
+  const math::RotationMatrix<double> rotation_matrix = Rabg_of_s(s);
   // Rotate (0,r,h) and sum with mapped (s,0,h).
   const Vector3<double> xyz =
       rotation_matrix * Vector3<double>(0., r, lane_pos.h()) +
@@ -118,8 +119,9 @@ double SplineLane::heading_dot_of_s(double s) const {
   return (m / (1.0 + heading * heading));
 }
 
-Matrix3<double> SplineLane::Rabg_of_s(double s) const {
-  return drake::math::ZRotation<double>(heading_of_s(s));
+math::RotationMatrix<double> SplineLane::Rabg_of_s(double s) const {
+  const double angle = heading_of_s(s);
+  return math::RotationMatrix<double>::MakeZRotation(angle);
 }
 
 api::RBounds SplineLane::do_lane_bounds(double) const {

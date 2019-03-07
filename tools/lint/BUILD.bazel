@@ -4,6 +4,11 @@ package(default_visibility = ["//visibility:public"])
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
+    "//tools/lint:python_lint.bzl",
+    "PYTHON_LINT_IGNORE_DEFAULT",
+    "python_lint",
+)
+load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
@@ -45,6 +50,14 @@ drake_py_library(
 )
 
 drake_py_binary(
+    name = "clang_format_lint",
+    srcs = ["clang_format_lint.py"],
+    deps = [
+        ":clang_format",
+    ],
+)
+
+drake_py_binary(
     name = "drakelint",
     srcs = ["drakelint.py"],
     # The clang-format-includes binary is not used by drakelint, because
@@ -73,7 +86,16 @@ drake_py_binary(
     name = "clang-format-includes",
     srcs = ["clang_format_includes.py"],
     main = "clang_format_includes.py",
-    deps = [":formatter"],
+    deps = [
+        ":formatter",
+        ":util",
+    ],
+)
+
+drake_py_binary(
+    name = "install_lint_reporter",
+    testonly = 1,
+    srcs = ["install_lint_reporter.py"],
 )
 
 drake_py_binary(
@@ -121,6 +143,13 @@ sh_test(
     data = [
         ":clang-format-includes",
     ],
+)
+
+# Exercise `ignore` for `python_lint`.
+python_lint(
+    existing_rules = [],
+    extra_srcs = ["test/python_lint_ignore_example.py"],
+    ignore = ["E402"],
 )
 
 add_lint_tests()

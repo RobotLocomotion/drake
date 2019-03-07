@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
@@ -9,10 +10,10 @@
 
 #include "drake/common/reset_on_copy.h"
 #include "drake/common/unused.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/dependency_tracker.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -24,9 +25,9 @@ class SystemBaseContextBaseAttorney;
 }  // namespace detail
 #endif
 
-/** Provides non-templatized functionality shared by the templatized derived
-classes. That includes caching and dependency tracking, and management of
-local values for fixed input ports.
+/** Provides non-templatized Context functionality shared by the templatized
+derived classes. That includes caching, dependency tracking, and management
+of local values for fixed input ports.
 
 Terminology: in general a Drake System is a tree structure composed of
 "subsystems", which are themselves System objects. The corresponding Context is
@@ -60,7 +61,9 @@ class ContextBase : public internal::ContextMessageInterface {
   modifications from the caching system, or (c) a bug in the caching system. The
   `is_disabled` flags are independent of the `out_of_date` flags, which continue
   to be maintained even when caching is disabled (though they are ignored). */
-  void DisableCaching() const;
+  void DisableCaching() const {
+    PropagateCachingChange(*this, &Cache::DisableCaching);
+  }
 
   /** (Debugging) Re-enables caching recursively for this context and all its
   subcontexts. The `is_disabled` flags are independent of the `out_of_date`
@@ -71,7 +74,9 @@ class ContextBase : public internal::ContextMessageInterface {
   everything out of date. You might want to do that, for example, for
   repeatability or because you modified something in the debugger and want to
   make sure it gets used. */
-  void EnableCaching() const;
+  void EnableCaching() const {
+    PropagateCachingChange(*this, &Cache::EnableCaching);
+  }
 
   /** (Debugging) Marks all cache entries out of date, recursively for this
   context and all its subcontexts. This forces the next `Eval()` request for
@@ -81,7 +86,9 @@ class ContextBase : public internal::ContextMessageInterface {
   is called or not, since the caching system should be maintaining this flag
   correctly. If they are not, see the documentation for SetIsCacheDisabled() for
   suggestions. */
-  void SetAllCacheEntriesOutOfDate() const;
+  void SetAllCacheEntriesOutOfDate() const {
+    PropagateCachingChange(*this, &Cache::SetAllEntriesOutOfDate);
+  }
 
   /** Returns the local name of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
@@ -145,6 +152,23 @@ class ContextBase : public internal::ContextMessageInterface {
     return static_cast<int>(input_port_tickets_.size());
   }
 
+  /** Returns the number of output ports represented in this context. */
+  int get_num_output_ports() const {
+    return static_cast<int>(output_port_tickets_.size());
+  }
+
+  /** Returns the dependency ticket associated with a particular input port. */
+  DependencyTicket input_port_ticket(InputPortIndex port_num) {
+    DRAKE_DEMAND(port_num < get_num_input_ports());
+    return input_port_tickets_[port_num];
+  }
+
+  /** Returns the dependency ticket associated with a particular output port. */
+  DependencyTicket output_port_ticket(OutputPortIndex port_num) {
+    DRAKE_DEMAND(port_num < get_num_output_ports());
+    return output_port_tickets_[port_num];
+  }
+
   /** Connects the input port at `index` to a FixedInputPortValue with
   the given abstract `value`. Returns a reference to the allocated
   FixedInputPortValue that will remain valid until this input port's value
@@ -156,13 +180,27 @@ class ContextBase : public internal::ContextMessageInterface {
   unconnected input port. See `Context<T>` for more-convenient overloads of
   FixInputPort() for vector values with elements of type T.
 
+  @note Calling this method on an already connected input port, i.e., an
+  input port that has previously been passed into a call to
+  DiagramBuilder::Connect(), causes FixedInputPortValue to override any other
+  value present on that port.
+
   @pre `index` selects an existing input port of this Context. */
   FixedInputPortValue& FixInputPort(
       int index, std::unique_ptr<AbstractValue> value);
 
   /** Same as above method but the value is passed by const reference instead
   of by unique_ptr. The port will contain a copy of the `value` (not retain a
-  pointer to the `value`). */
+  pointer to the `value`).
+
+  @note Calling this method on an already connected input port, i.e., an
+  input port that has previously been passed into a call to
+  DiagramBuilder::Connect(), causes FixedInputPortValue to override any other
+  value present on that port.
+
+  @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and we
+  only need one of the two -- overloading on ownership doesn't make sense for
+  pydrake.} */
   FixedInputPortValue& FixInputPort(int index, const AbstractValue& value) {
     return FixInputPort(index, value.Clone());
   }
@@ -183,14 +221,21 @@ class ContextBase : public internal::ContextMessageInterface {
     return input_port_values_[index].get_mutable();
   }
 
-  // For internal use only.
-#if !defined(DRAKE_DOXYGEN_CXX)
-
-  // Add the next input port. Expected index is supplied along with the
-  // assigned ticket. Subscribe the "all input ports" tracker to this one.
-  void AddInputPort(InputPortIndex expected_index, DependencyTicket ticket);
-
-#endif
+  /** (Internal use only) Returns the next change event serial number that is
+  unique for this entire Context tree, not just this subcontext. This number
+  is not reset after a Context is copied but continues to count up. */
+  int64_t start_new_change_event() {
+    // First search up to find the root Context (typically not far).
+    // TODO(sherm1) Consider precalculating this for faster access.
+    ContextBase* context = this;
+    while (context->parent_) {
+      // Only a root context has a non-negative change event value.
+      DRAKE_ASSERT(context->current_change_event_ == -1);
+      context = context->parent_;
+    }
+    DRAKE_ASSERT(context->current_change_event_ >= 0);
+    return ++context->current_change_event_;
+  }
 
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
@@ -209,8 +254,181 @@ class ContextBase : public internal::ContextMessageInterface {
   contained in the source are left null in the copy. */
   ContextBase(const ContextBase&) = default;
 
-  /** Clones a context but without copying any of its internal pointers; the
-  clone's pointers are set to null. */
+  /** @name      Add dependency tracking resources (Internal use only)
+  Methods in this group are used by SystemBase and unit testing while creating
+  a Context that can track dependencies for a given System. Although these
+  methods are protected, SystemBase is granted permission to invoke them (via
+  an attorney class). */
+  //@{
+
+  /** Adds the next input port. Expected index is supplied along with the
+  assigned ticket. Subscribes the "all input ports" tracker to this one.
+  The fixed_input_type_checker will be used for validation when setting a fixed
+  input, or may be null when no validation should be performed.  Typically the
+  fixed_input_type_checker is created by System::MakeFixInputPortTypeChecker.
+  The fixed_input_type_checker lifetime will be the same as this ContextBase,
+  so it should not depend on pointers that may go out of scope.  Most acutely,
+  the function must not depend on any captured SystemBase pointers. */
+  void AddInputPort(
+      InputPortIndex expected_index, DependencyTicket ticket,
+      std::function<void(const AbstractValue&)> fixed_input_type_checker);
+
+  /** Adds the next output port. Expected index is supplied along with the
+  assigned ticket. */
+  void AddOutputPort(
+      OutputPortIndex expected_index, DependencyTicket ticket,
+      const internal::OutputPortPrerequisite& prerequisite);
+
+  /** Adds a ticket to the list of discrete state tickets. */
+  void AddDiscreteStateTicket(DependencyTicket ticket) {
+    discrete_state_tickets_.push_back(ticket);
+  }
+
+  /** Adds a ticket to the list of abstract state tickets. */
+  void AddAbstractStateTicket(DependencyTicket ticket) {
+    abstract_state_tickets_.push_back(ticket);
+  }
+
+  /** Adds a ticket to the list of numeric parameter tickets. */
+  void AddNumericParameterTicket(DependencyTicket ticket) {
+    numeric_parameter_tickets_.push_back(ticket);
+  }
+
+  /** Adds a ticket to the list of abstract parameter tickets. */
+  void AddAbstractParameterTicket(DependencyTicket ticket) {
+    abstract_parameter_tickets_.push_back(ticket);
+  }
+  //@}
+
+  /// @anchor context_base_change_notification_methods
+  /** @name         Change notification methods (Internal use only)
+  These "Note" methods are used by framework-internal derived classes to effect
+  change notifications that propagate down from a DiagramContext (where the
+  change is initiated) through all its subcontexts, recursively. Such
+  notification sweeps result in the "out of date" flag being set in each of
+  the affected cache entry values. Each of these "Note" methods methods affects
+  only the local context, but all have identical signatures so can be passed
+  down the context tree to operate on every subcontext. The `change_event`
+  argument should be the result of the start_new_change_event() method. */
+  //@{
+
+  /** Notifies the local time tracker that time may have changed. */
+  void NoteTimeChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kTimeTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Notifies the local accuracy tracker that the accuracy setting
+  may have changed. */
+  void NoteAccuracyChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kAccuracyTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Notifies the local continuous, discrete, and abstract state trackers that
+  each of them may have changed, likely because someone has asked to modify the
+  whole state x. */
+  void NoteAllStateChanged(int64_t change_event) {
+    NoteAllContinuousStateChanged(change_event);
+    NoteAllDiscreteStateChanged(change_event);
+    NoteAllAbstractStateChanged(change_event);
+  }
+
+  /** Notifies the local q, v, and z trackers that each of them may have
+  changed, likely because someone has asked to modify continuous state xc. */
+  void NoteAllContinuousStateChanged(int64_t change_event) {
+    NoteAllQChanged(change_event);
+    NoteAllVZChanged(change_event);
+  }
+
+  /** Notifies the local v and z trackers that each of them may have
+  changed, likely because someone has asked to modify just the first-order
+  state variables in xc. */
+  void NoteAllVZChanged(int64_t change_event) {
+    NoteAllVChanged(change_event);
+    NoteAllZChanged(change_event);
+  }
+
+  /** Notifies the local q tracker that the q's may have changed. */
+  void NoteAllQChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kQTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Notifies the local v tracker that the v's may have changed. */
+  void NoteAllVChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kVTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Notifies the local z tracker that the z's may have changed. */
+  void NoteAllZChanged(int64_t change_event) {
+    get_tracker(DependencyTicket(internal::kZTicket))
+        .NoteValueChange(change_event);
+  }
+
+  /** Notifies each local discrete state group tracker that the value of
+  the discrete state group it manages may have changed. If there are no discrete
+  state groups owned by this context, nothing happens. A DiagramContext does
+  not own any discrete state groups. */
+  void NoteAllDiscreteStateChanged(int64_t change_event) {
+    for (auto ticket : discrete_state_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Notifies each local abstract state variable tracker that the value of the
+  abstract state variable it manages may have changed. If there are no abstract
+  state variables owned by this context, nothing happens. A DiagramContext does
+  not own any abstract state variables. */
+  void NoteAllAbstractStateChanged(int64_t change_event) {
+    for (auto ticket : abstract_state_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Notifies the local numeric and abstract parameter trackers that each of
+  them may have changed, likely because someone asked to modify all the
+  parameters. */
+  void NoteAllParametersChanged(int64_t change_event) {
+    NoteAllNumericParametersChanged(change_event);
+    NoteAllAbstractParametersChanged(change_event);
+  }
+
+  /** Notifies each local numeric parameter tracker that the value of the
+  parameter it manages may have changed. If there are no numeric parameters
+  owned by this context, nothing happens. A DiagramContext does not own any
+  parameters. */
+  void NoteAllNumericParametersChanged(int64_t change_event) {
+    for (auto ticket : numeric_parameter_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+
+  /** Notifies each local abstract parameter tracker that the value of the
+  parameter it manages may have changed. If there are no abstract parameters
+  owned by this context, nothing happens. A DiagramContext does not own any
+  parameters. */
+  void NoteAllAbstractParametersChanged(int64_t change_event) {
+    for (auto ticket : abstract_parameter_tickets_)
+      get_tracker(ticket).NoteValueChange(change_event);
+  }
+  //@}
+
+  /** Returns true if this context has no parent. */
+  bool is_root_context() const { return parent_ == nullptr; }
+
+  /** (Internal use only) Returns true if this context provides resources for
+  its own individual state variables or parameters. That means those variables
+  or parameters were declared by this context's corresponding System. Currently
+  only leaf systems may declare variables and parameters; diagram contexts
+  can use this method to check that invariant. */
+  bool owns_any_variables_or_parameters() const {
+    return !(discrete_state_tickets_.empty() &&
+             abstract_state_tickets_.empty() &&
+             numeric_parameter_tickets_.empty() &&
+             abstract_parameter_tickets_.empty());
+  }
+
+  /** (Internal use only) Clones a context but without copying any of its
+  internal pointers; the clone's pointers are set to null. */
   // Structuring this as a static method allows DiagramContext to invoke this
   // protected function on its children.
   static std::unique_ptr<ContextBase> CloneWithoutPointers(
@@ -218,14 +436,72 @@ class ContextBase : public internal::ContextMessageInterface {
     return source.DoCloneWithoutPointers();
   }
 
+  /** (Internal use only) Given a new context `clone` containing an
+  identically-structured dependency graph as the one in `source`, creates a
+  mapping of all tracker memory addresses from `source` to `clone`. This must be
+  done for the whole Context tree because pointers can point outside of their
+  containing subcontext. */
+  // Structuring this as a static method allows DiagramContext to invoke this
+  // protected function on its children.
+  static void BuildTrackerPointerMap(
+      const ContextBase& source, const ContextBase& clone,
+      DependencyTracker::PointerMap* tracker_map);
+
+  /** (Internal use only) Assuming `clone` is a recently-cloned Context that
+  has yet to have its internal pointers updated, sets those pointers now. The
+  given map is used to update tracker pointers. */
+  // Structuring this as a static method allows DiagramContext to invoke this
+  // protected function on its children.
+  static void FixContextPointers(
+      const ContextBase& source,
+      const DependencyTracker::PointerMap& tracker_map,
+      ContextBase* clone);
+
+  /** (Internal use only) Applies the given caching-change notification method
+  to `context`, and propagates the notification to subcontexts if `context` is
+  a DiagramContext. Used, for example, to enable and disable the cache. The
+  supplied `context` is const so depends on the cache being mutable. */
+  // Structuring this as a static method allows DiagramContext to invoke this
+  // protected method on its children.
+  static void PropagateCachingChange(const ContextBase& context,
+                                     void (Cache::*caching_change)()) {
+    (context.get_mutable_cache().*caching_change)();
+    context.DoPropagateCachingChange(caching_change);
+  }
+
+  /** (Internal use only) Applies the given bulk-change notification method
+  to the given `context`, and propagates the notification to subcontexts if this
+  is a DiagramContext. */
+  // Structuring this as a static method allows DiagramContext to invoke this
+  // protected method on its children.
+  static void PropagateBulkChange(
+      ContextBase* context, int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) {
+    (context->*note_bulk_change)(change_event);
+    context->DoPropagateBulkChange(change_event, note_bulk_change);
+  }
+
+  /** (Internal use only) This is a convenience method for invoking the
+  eponymous static method on `this` context (which occurs frequently). */
+  void PropagateBulkChange(
+      int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) {
+    PropagateBulkChange(this, change_event, note_bulk_change);
+  }
+
   /** Declares that `parent` is the context of the enclosing Diagram.
-  Aborts if the parent has already been set to something else. */
+  Aborts if the parent has already been set or is null. */
   // Use static method so DiagramContext can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
-  static void set_parent(ContextBase* child, const ContextBase* parent) {
+  static void set_parent(ContextBase* child, ContextBase* parent) {
     DRAKE_DEMAND(child != nullptr);
-    child->set_parent(parent);
+    DRAKE_DEMAND(parent != nullptr);
+    DRAKE_DEMAND(child->parent_ == nullptr);
+    child->parent_ = parent;
+    // This field is only used by the root context so set to an invalid
+    // value here.
+    child->current_change_event_ = -1;
   }
 
   /** Derived classes must implement this so that it performs the complete
@@ -236,13 +512,44 @@ class ContextBase : public internal::ContextMessageInterface {
   `return unique_ptr<ContextBase>(new DerivedType(*this));`. */
   virtual std::unique_ptr<ContextBase> DoCloneWithoutPointers() const = 0;
 
+  /** DiagramContext must implement this to invoke BuildTrackerPointerMap() on
+  each of its subcontexts. The default implementation does nothing which is
+  fine for a LeafContext. */
+  virtual void DoPropagateBuildTrackerPointerMap(
+      const ContextBase& clone,
+      DependencyTracker::PointerMap* tracker_map) const {
+    unused(clone, tracker_map);
+  }
+
+  /** DiagramContext must implement this to invoke FixContextPointers() on
+  each of its subcontexts. The default implementation does nothing which is
+  fine for a LeafContext. */
+  virtual void DoPropagateFixContextPointers(
+      const ContextBase& source,
+      const DependencyTracker::PointerMap& tracker_map) {
+    unused(source, tracker_map);
+  }
+
+  /** DiagramContext must implement this to invoke a caching behavior change on
+  each of its subcontexts. The default implementation does nothing which is
+  fine for a LeafContext. */
+  virtual void DoPropagateCachingChange(void (Cache::*caching_change)()) const {
+    unused(caching_change);
+  }
+
+  /** DiagramContext must implement this to invoke PropagateBulkChange()
+  on its subcontexts, passing along the indicated method that specifies the
+  particular bulk change (e.g. whole state, all parameters, all discrete state
+  variables, etc.). The default implementation does nothing which is fine for
+  a LeafContext. */
+  virtual void DoPropagateBulkChange(
+      int64_t change_event,
+      void (ContextBase::*note_bulk_change)(int64_t change_event)) {
+    unused(change_event, note_bulk_change);
+  }
+
  private:
   friend class detail::SystemBaseContextBaseAttorney;
-
-  void set_parent(const ContextBase* parent) {
-    DRAKE_DEMAND(parent_ == nullptr || parent_ == parent);
-    parent_ = parent;
-  }
 
   // Returns the parent Context or `nullptr` if this is the root Context.
   const ContextBase* get_parent_base() const { return parent_; }
@@ -265,27 +572,21 @@ class ContextBase : public internal::ContextMessageInterface {
   // to every Context (and every System).
   void CreateBuiltInTrackers();
 
-  // Given a new context `clone` with the same dependency graph as this one,
-  // create a mapping of all tracker memory addresses from `this` to `clone`.
-  // This must be done for the whole Context tree because pointers can point
-  // outside of their containing subcontext.
-  void BuildTrackerPointerMap(
-      const ContextBase& clone,
-      DependencyTracker::PointerMap* tracker_map) const;
-
-  // Assuming `this` is a recently-cloned Context that has yet to have its
-  // internal pointers updated, set those pointers now. The given map is used
-  // to update tracker pointers.
-  void FixContextPointers(const ContextBase& source,
-                          const DependencyTracker::PointerMap& tracker_map);
-
-  // TODO(sherm1) Use these tickets to reconstruct the dependency graph when
-  // cloning or transmogrifying a Context without a System present.
+  // We record tickets so we can reconstruct the dependency graph when cloning
+  // or transmogrifying a Context without a System present.
 
   // Index by InputPortIndex.
   std::vector<DependencyTicket> input_port_tickets_;
-
-  // TODO(sherm1) Output port, state, and parameter tickets go here.
+  // Index by OutputPortIndex.
+  std::vector<DependencyTicket> output_port_tickets_;
+  // Index by DiscreteStateIndex.
+  std::vector<DependencyTicket> discrete_state_tickets_;
+  // Index by AbstractStateIndex.
+  std::vector<DependencyTicket> abstract_state_tickets_;
+  // Index by NumericParameterIndex.
+  std::vector<DependencyTicket> numeric_parameter_tickets_;
+  // Index by AbstractParameterIndex.
+  std::vector<DependencyTicket> abstract_parameter_tickets_;
 
   // For each input port, the fixed value or null if the port is connected to
   // something else (in which case we need System help to get the value).
@@ -296,18 +597,34 @@ class ContextBase : public internal::ContextMessageInterface {
   std::vector<copyable_unique_ptr<FixedInputPortValue>>
       input_port_values_;
 
+  // For each input port, the type checker function will be used for validation
+  // when setting a fixed input.
+  std::vector<std::function<void(const AbstractValue&)>>
+      input_port_type_checkers_;
+
   // The cache of pre-computed values owned by this subcontext.
   mutable Cache cache_;
 
   // This is the dependency graph for values within this subcontext.
   DependencyGraph graph_;
 
+  // This is used only when this subcontext is serving as the root of a context
+  // tree, in which case it will be initialized to zero as shown. In any
+  // non-root context, it will be reset to -1 when the parent pointer is
+  // assigned and must never change from that value.
+  // Note that it does *not* get reset when copied.
+  int64_t current_change_event_{0};
+
   // The Context of the enclosing Diagram. Null/invalid when this is the root
   // context.
-  reset_on_copy<const ContextBase*> parent_;
+  reset_on_copy<ContextBase*> parent_;
 
   // Name of the subsystem whose subcontext this is.
   std::string system_name_;
+
+  // Used to validate that System-derived classes didn't forget to invoke the
+  // SystemBase method that properly sets up the ContextBase.
+  bool is_context_base_initialized_{false};
 };
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -318,17 +635,71 @@ namespace detail {
 // certain specific ContextBase private methods, and nothing else.
 class SystemBaseContextBaseAttorney {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney);
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SystemBaseContextBaseAttorney)
   SystemBaseContextBaseAttorney() = delete;
 
  private:
   friend class drake::systems::SystemBase;
+
   static void set_system_name(ContextBase* context, const std::string& name) {
     DRAKE_DEMAND(context != nullptr);
     context->set_system_name(name);
   }
   static const ContextBase* get_parent_base(const ContextBase& context) {
     return context.get_parent_base();
+  }
+
+  static void AddInputPort(
+      ContextBase* context, InputPortIndex expected_index,
+      DependencyTicket ticket,
+      std::function<void(const AbstractValue&)> type_checker) {
+    DRAKE_DEMAND(context != nullptr);
+    context->AddInputPort(expected_index, ticket, std::move(type_checker));
+  }
+
+  static void AddOutputPort(
+      ContextBase* context, OutputPortIndex expected_index,
+      DependencyTicket ticket,
+      const internal::OutputPortPrerequisite& prerequisite) {
+    DRAKE_DEMAND(context != nullptr);
+    context->AddOutputPort(expected_index, ticket, prerequisite);
+  }
+
+  // Provide SystemBase mutable access to the ticket lists.
+  static void AddDiscreteStateTicket(ContextBase* context,
+                                     DependencyTicket ticket) {
+    DRAKE_DEMAND(context != nullptr);
+    context->AddDiscreteStateTicket(ticket);
+  }
+
+  static void AddAbstractStateTicket(ContextBase* context,
+                                     DependencyTicket ticket) {
+    DRAKE_DEMAND(context != nullptr);
+    context->AddAbstractStateTicket(ticket);
+  }
+
+  static void AddNumericParameterTicket(ContextBase* context,
+                                        DependencyTicket ticket) {
+    DRAKE_DEMAND(context != nullptr);
+    context->AddNumericParameterTicket(ticket);
+  }
+
+  static void AddAbstractParameterTicket(ContextBase* context,
+                                         DependencyTicket ticket) {
+    DRAKE_DEMAND(context != nullptr);
+    context->AddAbstractParameterTicket(ticket);
+  }
+
+  static bool is_context_base_initialized(const ContextBase& context) {
+    return context.is_context_base_initialized_;
+  }
+
+  // SystemBase should invoke this when ContextBase has been successfully
+  // initialized.
+  static void mark_context_base_initialized(ContextBase* context) {
+    DRAKE_DEMAND(context);
+    DRAKE_DEMAND(!context->is_context_base_initialized_);
+    context->is_context_base_initialized_ = true;
   }
 };
 

@@ -4,8 +4,9 @@
 Bazel build system
 ******************
 
-The Bazel build system is officially supported for a subset of Drake on
-Ubuntu Xenial and macOS.
+The Bazel build system is officially supported for a subset of Drake on Ubuntu
+Xenial and Bionic and macOS High Sierra and Mojave.
+
 For more information, see:
 
  * https://bazel.build/
@@ -37,15 +38,23 @@ target label (and optional configuration options if desired).  We give some
 typical examples below; for more reading about target patterns, see:
 https://docs.bazel.build/versions/master/user-manual.html#target-patterns.
 
-Under Bazel, Clang is the default compiler on all platforms, but command-line
-options are available to use GCC on Ubuntu.
+On Ubuntu, the default compiler is the first ``gcc`` compiler in the
+``PATH``, usually GCC 5.4 on Xenial and GCC 7.3 on Bionic. On macOS, the
+default compiler is the Apple LLVM compiler. To use Clang 6.0 on Ubuntu, set
+the ``CC`` and ``CXX`` environment variables before running **bazel build**,
+**bazel test**, or any other **bazel** commands.
 
 Cheat sheet for operating on the entire project::
 
   cd /path/to/drake
-  bazel build //...                     # Build the entire project.
-  bazel test //...                      # Build and test the entire project.
-  bazel build --compiler=gcc-5 //...    # Build using gcc 5.x on Xenial.
+  bazel build //...                               # Build the entire project.
+  bazel test //...                                # Build and test the entire project.
+
+  CC=clang-6.0 CXX=clang++-6.0 bazel build //...  # Build using Clang 6.0 on Xenial.
+  CC=clang-6.0 CXX=clang++-6.0 bazel test //...   # Build and test using Clang 6.0 on Xenial.
+
+  CC=clang CXX=clang++ bazel build //...          # Build using Clang 6.0 on Bionic.
+  CC=clang CXX=clang++ bazel test //...           # Build and test using Clang 6.0 on Bionic.
 
 - The "``//``" means "starting from the root of the project".
 - The "``...``" means "everything including the subdirectories' ``BUILD`` files".
@@ -95,11 +104,29 @@ Cheat sheet for operating on specific portions of the project::
 
 - The "``:``" syntax separates target names from the directory path of the
   ``BUILD`` file they appear in.  In this case, for example,
-  ``drake/commmon/BUILD`` specifies ``cc_test(name = "polynomial_test")``.
+  ``drake/common/BUILD`` specifies ``cc_test(name = "polynomial_test")``.
 - Note that the configuration switches (``-c`` and ``--config``) influence the
   entire command.  For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
 - For the definitions of the "``--config``" options see ``drake/tools/bazel.rc``.
+
+Running with Flags
+------------------
+
+In general, to figure out what binary-specific arguments are available, add
+"``-- --help``" to your ``bazel run`` command. If the binary can only run via
+``bazel test``, look at `--test_arg <https://docs.bazel.build/versions/master/user-manual.html#flag--test_arg>`_.
+
+If a C++ unittest uses ``gtest`` (e.g. using ``drake_cc_googletest``),
+you can specify gtest-specific flags. As an example::
+
+  bazel run multibody/plant:multibody_plant_test -- --gtest_filter='*SimpleModelCreation*'
+
+If a Python unittest is run via ``drake_py_unittest_main.py`` (e.g. using
+``drake_py_unittest``), you can specify flags such as ``--trace`` or
+``--deprecation_action``. As an example::
+
+  bazel run bindings/pydrake:py/symbolic_test -- --trace=user --deprecation_action=error
 
 Debugging on macOS
 ------------------
@@ -116,6 +143,15 @@ This config turns off sandboxing, which allows a ``genrule`` to access the
 For more information, see https://github.com/bazelbuild/bazel/issues/2537.
 
 .. _buildifier:
+
+Python Versions
+===============
+By default, Python 2 will be used. To use Python 3 for both Bazel and the Python
+bindings, use ``--config=python3``.
+
+As an example to run all lint checks in Python 3::
+
+    bazel test --config=python3 --config=lint //...
 
 Updating BUILD files
 ====================
@@ -140,7 +176,7 @@ The Drake Bazel build currently supports the following proprietary solvers:
 
  * Gurobi 8.0.0
  * MOSEK 8.1
- * SNOPT 7.6
+ * SNOPT 7.4
 
 .. When upgrading SNOPT to a newer revision, re-enable TestPrintFile in
    solvers/test/snopt_solver_test.cc.
@@ -204,8 +240,8 @@ Using your own source archive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Download the SNOPT sources from the distributor in ``.tar.gz`` format (e.g.,
-   named ``snopt7.6.tar.gz``).
-2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.6.tar.gz``
+   named ``snopt7.4.tar.gz``).
+2. ``export SNOPT_PATH=/home/username/Downloads/snopt7.4.tar.gz``
 
 Using the RobotLocomotion git repository
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -213,9 +249,6 @@ Using the RobotLocomotion git repository
 1. Obtain access to the private RobotLocomotion/snopt GitHub repository.
 2. `Set up SSH access to github.com <https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/>`_.
 3. ``export SNOPT_PATH=git``
-
-The build will attempt to use this mechanism anytime SNOPT is enabled and a
-source archive has not been specified.
 
 Test the build (for either mechanism)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -228,6 +261,20 @@ The default value of ``--test_tag_filters`` in Drake's ``bazel.rc`` excludes
 these tests.  If you will be developing with SNOPT regularly, you may wish
 to specify a more convenient ``--test_tag_filters`` in a local ``.bazelrc``.
 See https://docs.bazel.build/versions/master/user-manual.html#bazelrc.
+
+Drake offers two flavors of SNOPT bindings for the MathematicalProgram:
+
+ - The ``--config snopt_f2c`` option selects the legacy bindings that use the
+   f2c compiler; these bindings will be removed on 2019-05-01.
+ - The ``--config snopt_fortran`` option selects the bindings that use the
+   gfortran compiler; these bindings will be supported for the foreseeable
+   future.
+ - The ``--config snopt`` option selects a default choice (currently f2c, but
+   will soon change to gfortran).
+
+The gfortran bindings are superior in several ways (such as being threadsafe),
+but have a known problem with unbounded linear programs (see drake issue
+`#10423 <https://github.com/RobotLocomotion/drake/issues/10423>`_).
 
 Optional Tools
 ==============
@@ -242,8 +289,6 @@ kcov
 
 ``kcov`` can analyze coverage for any binary that contains DWARF format
 debuggging symbols, and produce nicely formatted browse-able coverage reports.
-It is supported on Ubuntu and macOS only.  Install ``kcov`` from source
-following the instructions here: :ref:`Building kcov <building-kcov>`.
 
 To analyze test coverage, run the tests under ``kcov``::
 
@@ -256,7 +301,11 @@ you can turn it back on by also supplying ``--copt -O2``.
 The coverage report is written to the ``drake/bazel-kcov`` directory.  To
 view it, browse to ``drake/bazel-kcov/index.html``.
 
-.. toctree::
-   :hidden:
+kcov on macOS
+~~~~~~~~~~~~~
 
-   building_kcov
+Be sure that your account has developer mode enabled, which gives you the
+privileges necessary to run debuggers and similar tools. If you are an
+administrator, use this command::
+
+  sudo /usr/sbin/DevToolsSecurity --enable

@@ -6,9 +6,9 @@ from .autodiffutils import AutoDiffXd
 
 
 def derivative(function, x):
-    """
-    Compute the derivative of the function evaluated at the scalar input x
+    """Compute the derivative of the function evaluated at the scalar input x
     using Eigen's automatic differentiation.
+
     The function should be scalar-input and scalar-output.
     """
     x_ad = AutoDiffXd(x, np.ones(1))
@@ -17,9 +17,9 @@ def derivative(function, x):
 
 
 def gradient(function, x):
-    """
-    Compute the gradient of the function evaluated at the vector input x
+    """Compute the gradient of the function evaluated at the vector input x
     using Eigen's automatic differentiation.
+
     The function should be vector-input and scalar-output.
     """
     x_ad = np.empty(x.shape, dtype=AutoDiffXd)
@@ -32,9 +32,9 @@ def gradient(function, x):
 
 
 def jacobian(function, x):
-    """
-    Compute the jacobian of the function evaluated at the vector input x
+    """Compute the jacobian of the function evaluated at the vector input x
     using Eigen's automatic differentiation.
+
     The function should be vector-input and vector-output.
     """
     x_ad = np.empty(x.shape, dtype=np.object)

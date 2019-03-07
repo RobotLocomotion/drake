@@ -35,26 +35,26 @@ template <typename T>
 PoseAggregator<T>::~PoseAggregator() {}
 
 template <typename T>
-const InputPortDescriptor<T>& PoseAggregator<T>::AddSingleInput(
+const InputPort<T>& PoseAggregator<T>::AddSingleInput(
     const std::string& name, int model_instance_id) {
   return DeclareInput(MakeSinglePoseInputRecord(name, model_instance_id));
 }
 
 template <typename T>
-PoseVelocityInputPortDescriptors<T>
+PoseVelocityInputPorts<T>
 PoseAggregator<T>::AddSinglePoseAndVelocityInput(const std::string& name,
                                                  int model_instance_id) {
   // Add an input for the pose.
-  const auto& pose_descriptor =
+  const auto& pose_input_port =
       DeclareInput(MakeSinglePoseInputRecord(name, model_instance_id));
   // Add an input for the velocity.
-  const auto& velocity_descriptor =
+  const auto& velocity_input_port =
       DeclareInput(MakeSingleVelocityInputRecord(name, model_instance_id));
-  return {pose_descriptor, velocity_descriptor};
+  return {pose_input_port, velocity_input_port};
 }
 
 template <typename T>
-const InputPortDescriptor<T>& PoseAggregator<T>::AddBundleInput(
+const InputPort<T>& PoseAggregator<T>::AddBundleInput(
     const std::string& bundle_name, int num_poses) {
   return DeclareInput(MakePoseBundleInputRecord(bundle_name, num_poses));
 }
@@ -67,19 +67,18 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
 
   const int num_ports = this->get_num_input_ports();
   for (int port_index = 0; port_index < num_ports; ++port_index) {
+    const auto& port = this->get_input_port(port_index);
     const InputRecord& record = input_records_[port_index];
     const int num_poses = record.num_poses;
     switch (record.type) {
       case InputRecord::kSinglePose: {
-        const PoseVector<T>* value =
-            this->template EvalVectorInput<PoseVector>(context, port_index);
-        DRAKE_ASSERT(value != nullptr);
+        const auto& value = port.template Eval<PoseVector<T>>(context);
         DRAKE_ASSERT(pose_index < bundle.get_num_poses());
         bundle.set_name(pose_index, record.name);
-        bundle.set_pose(pose_index, value->get_isometry());
+        bundle.set_pose(pose_index, value.get_isometry());
         bundle.set_model_instance_id(pose_index, record.model_instance_id);
         pose_index++;
-        break;
+        continue;
       }
       case InputRecord::kSingleVelocity: {
         // Single velocities are associated with the single pose that must
@@ -88,9 +87,7 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
         DRAKE_ASSERT(input_records_[port_index - 1].type ==
                      InputRecord::kSinglePose);
 
-        const FrameVelocity<T>* value =
-            this->template EvalVectorInput<FrameVelocity>(context, port_index);
-        DRAKE_ASSERT(value != nullptr);
+        const auto& value = port.template Eval<FrameVelocity<T>>(context);
         const int prev_pose_index = pose_index - 1;
         DRAKE_ASSERT(bundle.get_name(prev_pose_index) == record.name);
         const int last_model_instance_id =
@@ -99,30 +96,29 @@ void PoseAggregator<T>::CalcPoseBundle(const Context<T>& context,
 
         // Write the velocity to the previous pose_index, and do not increment
         // the pose_index, because this input was not a pose.
-        bundle.set_velocity(prev_pose_index, *value);
-        break;
+        bundle.set_velocity(prev_pose_index, value);
+        continue;
       }
       case InputRecord::kBundle: {
         // Concatenate the poses of the input pose bundle into the output.
         // TODO(david-german-tri): Accept PoseBundles of variable width, with
         // variable names.
-        const PoseBundle<T>* value =
-            this->template EvalInputValue<PoseBundle<T>>(context, port_index);
-        DRAKE_ASSERT(num_poses == value->get_num_poses());
+        const auto& value = port.template Eval<PoseBundle<T>>(context);
+        DRAKE_ASSERT(num_poses == value.get_num_poses());
         const std::string& bundle_name = record.name;
         for (int j = 0; j < num_poses; ++j) {
           DRAKE_ASSERT(pose_index < bundle.get_num_poses());
-          bundle.set_pose(pose_index, value->get_pose(j));
-          bundle.set_velocity(pose_index, value->get_velocity(j));
-          bundle.set_name(pose_index, bundle_name + "::" + value->get_name(j));
+          bundle.set_pose(pose_index, value.get_pose(j));
+          bundle.set_velocity(pose_index, value.get_velocity(j));
+          bundle.set_name(pose_index, bundle_name + "::" + value.get_name(j));
           bundle.set_model_instance_id(pose_index,
-                                       value->get_model_instance_id(j));
+                                       value.get_model_instance_id(j));
           pose_index++;
         }
-        break;
+        continue;
       }
-      default: { DRAKE_ABORT_MSG("Unknown PoseInputType."); }
     }
+    DRAKE_UNREACHABLE();
   }
 }
 
@@ -176,7 +172,7 @@ PoseAggregator<T>::MakePoseBundleInputRecord(const std::string& bundle_name,
 }
 
 template <typename T>
-const InputPortDescriptor<T>&
+const InputPort<T>&
 PoseAggregator<T>::DeclareInput(const InputRecord& record) {
   input_records_.push_back(record);
   switch (record.type) {
@@ -185,11 +181,10 @@ PoseAggregator<T>::DeclareInput(const InputRecord& record) {
     case InputRecord::kSingleVelocity:
       return this->DeclareVectorInputPort(FrameVelocity<T>());
     case InputRecord::kBundle:
-      return this->DeclareAbstractInputPort();
-    case InputRecord::kUnknown:
-      break;
+      return this->DeclareAbstractInputPort(
+          kUseDefaultName, Value<PoseBundle<T>>());
   }
-  DRAKE_ABORT_MSG("Invariant failure");
+  DRAKE_UNREACHABLE();
 }
 
 }  // namespace rendering

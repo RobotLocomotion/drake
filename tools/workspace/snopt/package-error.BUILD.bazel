@@ -10,7 +10,7 @@ genrule(
     name = "error-message",
     srcs = ["error.txt"],
     outs = ["error-message.h"],
-    cmd = "cat $< && false",
+    cmd = "cat $< 1>&2 && false",
     visibility = ["//visibility:private"],
 )
 
@@ -22,6 +22,12 @@ cc_library(
 
 cc_library(
     name = "libf2c",
+    hdrs = [":error-message.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "snopt_cwrap",
     hdrs = [":error-message.h"],
     visibility = ["//visibility:public"],
 )

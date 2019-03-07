@@ -14,6 +14,7 @@
 #include "drake/common/symbolic.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/framework/vector_system.h"
 
 namespace drake {
@@ -179,17 +180,17 @@ void ComputeBackwardReachableSet() {
   cout << "    number of PSD constraints: "
        << prog.positive_semidefinite_constraints().size() << endl;
 
-  const solvers::SolutionResult result{prog.Solve()};
-  DRAKE_DEMAND(prog.GetSolverId() == solvers::MosekSolver::id());
-  DRAKE_DEMAND(result == solvers::SolutionResult::kSolutionFound);
+  const solvers::MathematicalProgramResult result = Solve(prog);
+  DRAKE_DEMAND(result.get_solver_id() == solvers::MosekSolver::id());
+  DRAKE_DEMAND(result.is_success());
 
   // Print the solution (if one is found).
-  cout << " Solution found with optimal cost: " << prog.GetOptimalCost()
+  cout << " Solution found with optimal cost: " << result.get_optimal_cost()
        << endl;
 
   Environment w_env;
   for (const auto& var : w.decision_variables()) {
-    w_env.insert(var, prog.GetSolution(var));
+    w_env.insert(var, result.GetSolution(var));
   }
   const Polynomial w_sol{w.EvaluatePartial(w_env)};
 

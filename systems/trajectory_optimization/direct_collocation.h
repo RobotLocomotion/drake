@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
@@ -51,11 +52,25 @@ class DirectCollocation : public MultipleShooting {
 
   ~DirectCollocation() override {}
 
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory()
   const override;
 
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory()
   const override;
+
+  trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
+      const solvers::MathematicalProgramResult& result) const override;
+
+  trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
+      const solvers::MathematicalProgramResult& result) const override;
 
  private:
   // Implements a running cost at all timesteps using trapezoidal integration.
@@ -75,7 +90,6 @@ class DirectCollocation : public MultipleShooting {
 /// Note that the DirectCollocation implementation allocates only ONE of
 /// these constraints, but binds that constraint multiple times (with
 /// different decision variables, along the trajectory).
-
 class DirectCollocationConstraint : public solvers::Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocationConstraint)
@@ -91,10 +105,13 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd& y) const override;
+              Eigen::VectorXd* y) const override;
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd& y) const override;
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
 
  private:
   DirectCollocationConstraint(const System<double>& system,
@@ -113,11 +130,11 @@ class DirectCollocationConstraint : public solvers::Constraint {
   const int num_inputs_{0};
 };
 
+// Note: The order of arguments is a compromise between GSG and the desire to
+// match the AddConstraint interfaces in MathematicalProgram.
 /// Helper method to add a DirectCollocationConstraint to the @p prog,
 /// ensuring that the order of variables in the binding matches the order
 /// expected by the constraint.
-// Note: The order of arguments is a compromise between GSG and the desire to
-// match the AddConstraint interfaces in MathematicalProgram.
 solvers::Binding<solvers::Constraint> AddDirectCollocationConstraint(
     std::shared_ptr<DirectCollocationConstraint> constraint,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& timestep,

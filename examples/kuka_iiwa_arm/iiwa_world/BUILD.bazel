@@ -1,10 +1,10 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
-    "drake_cc_library",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -19,13 +19,13 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "//attic/manipulation/util:sim_diagram_builder",
+        "//attic/manipulation/util:world_sim_tree_builder",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//examples/kuka_iiwa_arm:oracular_state_estimator",
         "//manipulation/schunk_wsg:schunk_wsg_constants",
-        "//manipulation/util:sim_diagram_builder",
-        "//manipulation/util:world_sim_tree_builder",
-        "//multibody/rigid_body_plant",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:pid_controller",
         "//systems/framework:diagram",
         "//systems/framework:diagram_builder",
@@ -38,6 +38,10 @@ drake_cc_binary(
     name = "multi_arm_with_gripper_demo",
     srcs = ["multi_arm_with_gripper_demo.cc"],
     add_test_rule = 1,
+    copts = [
+        # TODO(jwnimmer-tri) Update this example, or delete it.
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//manipulation/models/iiwa_description:models",
@@ -45,14 +49,14 @@ drake_cc_binary(
     ],
     test_rule_args = ["--simulation_sec=0.01"],
     deps = [
+        "//attic/manipulation/util:sim_diagram_builder",
+        "//attic/manipulation/util:world_sim_tree_builder",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common:text_logging_gflags",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//lcm",
         "//manipulation/schunk_wsg",
-        "//manipulation/util:sim_diagram_builder",
-        "//manipulation/util:world_sim_tree_builder",
         "//systems/analysis",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/controllers:pid_controller",
         "//systems/primitives:trajectory_source",
         "@gflags",

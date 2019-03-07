@@ -11,45 +11,30 @@ load(
     "@drake//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
 )
+load(
+    "@drake//tools/skylark:alias.bzl",
+    "drake_cc_library_aliases",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
 
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "sensors",
     deps = [
-        ":accelerometer",
         ":beam_model",
         ":beam_model_params",
         ":camera_info",
-        ":depth_sensor",
-        ":depth_sensor_to_lcm_point_cloud_message",
-        ":gyroscope",
+        ":color_palette",
         ":image",
         ":image_to_lcm_image_array_t",
-        ":optitrack_encoder",
+        ":image_writer",
+        ":lcm_image_array_to_images",
+        ":lcm_image_traits",
         ":optitrack_sender",
-        ":rgbd_camera",
-        ":rgbd_renderer",
         ":rotary_encoders",
         ":vtk_util",
-    ],
-)
-
-drake_cc_library(
-    name = "accelerometer",
-    srcs = [
-        "accelerometer.cc",
-        "accelerometer_output.cc",
-    ],
-    hdrs = [
-        "accelerometer.h",
-        "accelerometer_output.h",
-    ],
-    deps = [
-        "//multibody:rigid_body_tree",
-        "//multibody/rigid_body_plant",
-        "//systems/framework",
     ],
 )
 
@@ -64,7 +49,6 @@ drake_cc_library(
     hdrs = ["beam_model.h"],
     deps = [
         ":beam_model_params",
-        ":depth_sensor",
         "//common:unused",
         "//systems/framework",
     ],
@@ -85,7 +69,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "image",
-    srcs = ["image.cc"],
+    srcs = [
+        "image.cc",
+        "pixel_types.cc",
+    ],
     hdrs = [
         "image.h",
         "pixel_types.h",
@@ -98,6 +85,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "lcm_image_traits",
+    srcs = [
+        "lcm_image_traits.cc",
+    ],
+    hdrs = [
+        "lcm_image_traits.h",
+    ],
+    deps = [
+        ":image",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+drake_cc_library(
     name = "image_to_lcm_image_array_t",
     srcs = [
         "image_to_lcm_image_array_t.cc",
@@ -106,62 +107,46 @@ drake_cc_library(
         "image_to_lcm_image_array_t.h",
     ],
     deps = [
-        ":image",
+        ":lcm_image_traits",
         "//common:essential",
         "//systems/framework",
-        "@lcmtypes_robotlocomotion",
         "@zlib",
     ],
 )
 
 drake_cc_library(
-    name = "depth_sensor",
+    name = "lcm_image_array_to_images",
     srcs = [
-        "depth_sensor.cc",
-        "depth_sensor_output.cc",
-        "depth_sensor_specification.cc",
+        "lcm_image_array_to_images.cc",
     ],
     hdrs = [
-        "depth_sensor.h",
-        "depth_sensor_output.h",
-        "depth_sensor_specification.h",
+        "lcm_image_array_to_images.h",
     ],
     deps = [
-        "//multibody:rigid_body_tree",
+        ":lcm_image_traits",
+        "//common:essential",
         "//systems/framework",
-        "//systems/rendering:pose_vector",
+        "@lcmtypes_robotlocomotion",
+        "@libpng",
+        "@vtk//:vtkIOImage",
+        "@zlib",
     ],
 )
 
-drake_cc_library(
-    name = "depth_sensor_to_lcm_point_cloud_message",
+drake_cc_binary(
+    name = "lcm_image_array_receive_example",
     srcs = [
-        "depth_sensor_to_lcm_point_cloud_message.cc",
-    ],
-    hdrs = [
-        "depth_sensor_to_lcm_point_cloud_message.h",
+        "lcm_image_array_receive_example.cc",
     ],
     deps = [
-        ":depth_sensor",
-        "//multibody:rigid_body_tree",
-        "//systems/rendering:pose_vector",
-        "@lcmtypes_bot2_core",
-    ],
-)
-
-drake_cc_library(
-    name = "gyroscope",
-    srcs = [
-        "gyroscope.cc",
-        "gyroscope_output.cc",
-    ],
-    hdrs = [
-        "gyroscope.h",
-        "gyroscope_output.h",
-    ],
-    deps = [
-        "//multibody:rigid_body_tree",
-        "//systems/framework",
+        ":image_to_lcm_image_array_t",
+        ":lcm_image_array_to_images",
+        "//common:text_logging_gflags",
+        "//common:unused",
+        "//lcm",
+        "//systems/analysis:simulator",
+        "//systems/lcm:lcm_pubsub_system",
+        "@gflags",
     ],
 )
 
@@ -172,7 +157,12 @@ drake_cc_library(
     # We must not expose `#include <vtk/...>` in any of our installed headers;
     # vtk_util.h is only included internally within this package.
     install_hdrs_exclude = ["vtk_util.h"],
-    visibility = ["//visibility:private"],
+    # TODO(SeanCurtis-TRI): Remove this from sensors when the VTK rendering
+    # completely lives in geometry/render.
+    # Temporarily public so this can be shared by the old RgbdCamera in sensors
+    # and the *new* rendering infrastructure in geometry/render. Once the old
+    # is deprecated, this can be moved into geometry/render and made private.
+    visibility = ["//visibility:public"],
     deps = [
         "//common:essential",
         "@eigen",
@@ -183,83 +173,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "rgbd_renderer",
-    srcs = [
-        "rgbd_renderer.cc",
-        "rgbd_renderer_vtk.cc",
-    ],
-    hdrs = [
-        "color_palette.h",
-        "depth_shaders.h",
-        "rgbd_renderer.h",
-        "rgbd_renderer_vtk.h",
-    ],
-    deps = [
-        ":image",
-        ":vtk_util",
-        "//common",
-        "//multibody/shapes",
-        "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
-    ],
-)
-
-drake_cc_library(
-    name = "rgbd_camera",
-    srcs = ["rgbd_camera.cc"],
-    hdrs = ["rgbd_camera.h"],
-    deps = [
-        ":camera_info",
-        ":image",
-        ":rgbd_renderer",
-        ":vtk_util",
-        "//math:geometric_transform",
-        "//multibody:rigid_body_frame",
-        "//multibody:rigid_body_tree",
-        "//systems/framework",
-        "//systems/primitives",
-        "//systems/rendering:pose_vector",
-        "@eigen",
-        "@vtk//:vtkCommonCore",
-        "@vtk//:vtkCommonDataModel",
-        "@vtk//:vtkCommonTransforms",
-        "@vtk//:vtkFiltersGeneral",
-        "@vtk//:vtkFiltersSources",
-        "@vtk//:vtkIOGeometry",
-        "@vtk//:vtkIOImage",
-        "@vtk//:vtkRenderingCore",
-        "@vtk//:vtkRenderingOpenGL2",
-    ],
-)
-
-drake_cc_binary(
-    name = "rgbd_camera_publish_lcm_example",
-    srcs = [
-        "rgbd_camera_publish_lcm_example.cc",
-    ],
-    deps = [
-        ":image_to_lcm_image_array_t",
-        ":rgbd_camera",
-        "//common:unused",
-        "//lcm",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
-        "//systems/analysis:simulator",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_stamped_t_pose_vector_translator",
-        "@gflags",
-    ],
+    name = "color_palette",
+    hdrs = ["color_palette.h"],
+    deps = ["//common"],
 )
 
 drake_cc_library(
@@ -273,85 +189,31 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "accelerometer_example_diagram",
-    testonly = 1,
-    srcs = [
-        "test/accelerometer_test/accelerometer_example_diagram.cc",
-        "test/accelerometer_test/accelerometer_test_logger.cc",
-    ],
-    hdrs = [
-        "test/accelerometer_test/accelerometer_example_diagram.h",
-        "test/accelerometer_test/accelerometer_test_logger.h",
-    ],
-    data = [
-        "//examples/pendulum:models",
-    ],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":accelerometer",
-        "//common:essential",
-        "//common:find_resource",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
-        "//systems/primitives:constant_vector_source",
-        "//systems/primitives:signal_logger",
-    ],
-)
-
-drake_cc_binary(
-    name = "accelerometer_example",
-    testonly = 1,
-    srcs = [
-        "test/accelerometer_test/accelerometer_example.cc",
-    ],
-    deps = [
-        ":accelerometer_example_diagram",
-        "//common:text_logging_gflags",
-        "//lcm",
-        "//systems/analysis:simulator",
-        "@gflags",
-    ],
-)
-
-drake_cc_library(
     name = "optitrack_sender",
     srcs = ["optitrack_sender.cc"],
     hdrs = ["optitrack_sender.h"],
     deps = [
-        ":optitrack_encoder",
+        "//geometry:frame_kinematics",
         "//systems/framework:leaf_system",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
     ],
 )
 
 drake_cc_library(
-    name = "optitrack_encoder",
-    srcs = ["optitrack_encoder.cc"],
-    hdrs = ["optitrack_encoder.h"],
+    name = "image_writer",
+    srcs = ["image_writer.cc"],
+    hdrs = ["image_writer.h"],
     deps = [
-        "//systems/framework:leaf_system",
-        "//systems/rendering:pose_bundle",
+        ":image",
+        "//common:essential",
+        "//systems/framework",
+        "@spruce",
+        "@vtk//:vtkCommonDataModel",
+        "@vtk//:vtkIOImage",
     ],
 )
 
 # === test/ ===
-
-drake_cc_googletest(
-    name = "accelerometer_test",
-    srcs = [
-        "test/accelerometer_test/accelerometer_test.cc",
-    ],
-    data = [
-        "//multibody:models",
-    ],
-    deps = [
-        ":accelerometer_example_diagram",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//systems/analysis:simulator",
-    ],
-)
 
 drake_cc_googletest(
     name = "beam_model_test",
@@ -380,118 +242,31 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "depth_sensor_test",
-    srcs = ["test/depth_sensor_test.cc"],
-    deps = [
-        ":depth_sensor",
-        "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "depth_sensor_to_lcm_point_cloud_message_test",
-    srcs = ["test/depth_sensor_to_lcm_point_cloud_message_test.cc"],
-    deps = [
-        ":depth_sensor_to_lcm_point_cloud_message",
-        "//lcm:mock",
-    ],
-)
-
-drake_cc_googletest(
-    name = "gyroscope_test",
-    srcs = ["test/gyroscope_test.cc"],
-    data = [
-        "//multibody:models",
-    ],
-    deps = [
-        ":gyroscope",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
-    ],
-)
-
 filegroup(
     name = "test_models",
     testonly = 1,
     srcs = [
+        "test/models/background.jpg",
         "test/models/box.sdf",
+        "test/models/box_with_mesh.sdf",
+        "test/models/meshes/box.json",
         "test/models/meshes/box.obj",
         "test/models/meshes/box.png",
+        "test/models/meshes/box2.obj",
         "test/models/nothing.sdf",
         "test/models/sphere.sdf",
     ],
 )
 
 drake_cc_googletest(
-    name = "rgbd_camera_test",
-    data = [
-        ":test_models",
-    ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
+    name = "image_writer_test",
+    tags = vtk_test_tags(),
     deps = [
-        ":rgbd_camera",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-    ],
-)
-
-drake_cc_library(
-    name = "rgbd_renderer_test_util",
-    testonly = 1,
-    hdrs = ["test/rgbd_renderer_test_util.h"],
-)
-
-drake_cc_googletest(
-    name = "rgbd_renderer_vtk_test",
-    data = [
-        ":test_models",
-    ],
-    tags = [
-        # Disable under LeakSanitizer and Valgrind Memcheck due to
-        # driver-related leaks. For more information, see #7520.
-        "no_lsan",
-        "no_memcheck",
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
-    ],
-    deps = [
-        ":rgbd_renderer",
-        ":rgbd_renderer_test_util",
-        "//common:find_resource",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:geometric_transform",
-    ],
-)
-
-sh_test(
-    name = "rgbd_camera_publish_lcm_test",
-    size = "small",
-    srcs = ["rgbd_camera_publish_lcm_example"],
-    args = [
-        "--sdf_dir=" + native.package_name() + "/test/models",
-        "--duration=0.1",
-    ],
-    data = [
-        ":test_models",
-    ],
-    tags = [
-        # Mitigates driver-related issues when running under `bazel test`. For
-        # more information, see #7004.
-        "no-sandbox",
+        ":image_writer",
+        "//common:temp_directory",
+        "//common/test_utilities",
+        "@spruce",
+        "@vtk//:vtkIOImage",
     ],
 )
 
@@ -516,11 +291,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "optitrack_encoder_test",
-    srcs = ["test/optitrack_encoder_test.cc"],
+    name = "lcm_image_array_to_images_test",
+    data = glob([
+        "test/*.jpg",
+        "test/*.png",
+    ]),
     deps = [
-        ":optitrack_encoder",
-        "//systems/framework",
+        ":lcm_image_array_to_images",
+        "//common:find_resource",
     ],
 )
 
@@ -528,7 +306,6 @@ drake_cc_googletest(
     name = "optitrack_sender_test",
     srcs = ["test/optitrack_sender_test.cc"],
     deps = [
-        ":optitrack_encoder",
         ":optitrack_sender",
         "//systems/framework",
         "@optitrack_driver//lcmtypes:optitrack_lcmtypes",

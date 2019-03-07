@@ -8,7 +8,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_constants.h"
 #include "drake/manipulation/util/sim_diagram_builder.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/matrix_gain.h"
@@ -37,6 +37,24 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
   plant_ = builder.AddPlant(std::move(combined_plant));
   plant_->set_name("IiwaAndWsgCombinedPlant");
 
+  // This remaps a frame from a separate rigid body tree to a new tree.
+  // This is done because we communicate `RigidBodyFrame`s to specify the
+  // anchor location (`ModelInstanceInfo::world_offset`), but if this frame
+  // actually has a rigid body as a base, then we must ensure the body is valid
+  // for the new tree.
+  // TODO(eric.cousineau): Remove this hack.
+  auto remap_frame = [](
+      std::shared_ptr<RigidBodyFrame<double>> old_frame,
+      RigidBodyTree<double>* new_tree) {
+    return std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(),
+      old_frame->get_name(),
+      old_frame->has_as_rigid_body(nullptr) ?
+          nullptr : new_tree->FindBody(
+              old_frame->get_rigid_body().get_name()),
+      old_frame->get_transform_to_body());
+  };
+
   for (int i = 0; i < kNumArms; ++i) {
     const std::string suffix{"_" + std::to_string(i)};
     const auto& iiwa_output_port =
@@ -52,10 +70,11 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     auto single_arm = std::make_unique<RigidBodyTree<double>>();
     parsers::urdf::AddModelInstanceFromUrdfFile(
         iiwa_instances[i].absolute_model_path, multibody::joints::kFixed,
-        iiwa_instances[i].world_offset, single_arm.get());
+        remap_frame(iiwa_instances[i].world_offset, single_arm.get()),
+        single_arm.get());
 
     auto iiwa_controller = builder.template AddController<
-        systems::controllers::InverseDynamicsController<T>>(
+        systems::controllers::rbt::InverseDynamicsController<T>>(
         iiwa_instances[i].instance_id, std::move(single_arm), iiwa_kp, iiwa_ki,
         iiwa_kd, true /* with feedforward acceleration */);
     iiwa_controller->set_name("IIWAInverseDynamicsController" + suffix);
@@ -68,7 +87,8 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
             plant_->get_rigid_body_tree(), iiwa_instances[i].instance_id,
             kEndEffectorLinkName, wsg_instances[i].instance_id);
     RigidBody<T>* controller_ee =
-        iiwa_controller->get_robot_for_control().FindBody(kEndEffectorLinkName);
+        iiwa_controller->get_rigid_body_tree_for_control()->FindBody(
+            kEndEffectorLinkName);
     controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
     // Export iiwa's desired state input, and state output.
     input_port_iiwa_state_command_.push_back(base_builder->ExportInput(
@@ -108,7 +128,7 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     // bot_core::robot_state_t messages.
     auto iiwa_state_est =
         base_builder->template AddSystem<OracularStateEstimation<T>>(
-            iiwa_controller->get_robot_for_control());
+            *iiwa_controller->get_rigid_body_tree_for_control());
     iiwa_state_est->set_name("OracularStateEstimationIIWAState" + suffix);
     base_builder->Connect(iiwa_output_port,
                           iiwa_state_est->get_input_port_state());
@@ -127,7 +147,8 @@ IiwaAndWsgPlantWithStateEstimator<T>::IiwaAndWsgPlantWithStateEstimator(
     objects_.emplace_back(new RigidBodyTree<T>);
     parsers::urdf::AddModelInstanceFromUrdfFile(
         object_instances[i].absolute_model_path, multibody::joints::kQuaternion,
-        object_instances[i].world_offset, objects_.back().get());
+        remap_frame(object_instances[i].world_offset, objects_.back().get()),
+        objects_.back().get());
     auto object_state_est =
         base_builder->template AddSystem<OracularStateEstimation<T>>(
             *objects_.back());

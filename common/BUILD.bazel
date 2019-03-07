@@ -37,9 +37,9 @@ drake_cc_package_library(
         ":is_cloneable",
         ":is_less_than_comparable",
         ":nice_type_name",
-        ":number_traits",
         ":pointer_cast",
         ":polynomial",
+        ":random",
         ":reset_after_move",
         ":reset_on_copy",
         ":scoped_singleton",
@@ -50,6 +50,7 @@ drake_cc_package_library(
         ":temp_directory",
         ":type_safe_index",
         ":unused",
+        ":value",
     ],
 )
 
@@ -69,6 +70,7 @@ drake_cc_library(
         "drake_deprecated.h",
         "drake_optional.h",
         "drake_throw.h",
+        "drake_variant.h",
         "eigen_stl_types.h",
         "eigen_types.h",
         "never_destroyed.h",
@@ -76,6 +78,7 @@ drake_cc_library(
     ],
     deps = [
         "@eigen",
+        "@fmt",
         "@spdlog",
         "@stx",
     ],
@@ -93,7 +96,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "drake_bool",
-    hdrs = ["drake_bool.h"],
+    hdrs = [
+        "drake_bool.h",
+    ],
     deps = [
         ":autodiff",
         ":cond",
@@ -104,11 +109,6 @@ drake_cc_library(
 drake_cc_library(
     name = "dummy_value",
     hdrs = ["dummy_value.h"],
-)
-
-drake_cc_library(
-    name = "number_traits",
-    hdrs = ["number_traits.h"],
 )
 
 # Drake's specific ScalarType-providing libraries.
@@ -140,12 +140,12 @@ drake_cc_library(
     deps = [
         ":essential",
         ":nice_type_name",
-        ":number_traits",
     ],
 )
 
 drake_cc_library(
     name = "hash",
+    srcs = ["hash.cc"],
     hdrs = ["hash.h"],
     deps = [
         ":essential",
@@ -180,6 +180,8 @@ drake_cc_library(
     # rest of the header files by adding them in `srcs` section.
     srcs = [
         "symbolic.cc",
+        "symbolic_codegen.cc",
+        "symbolic_codegen.h",
         "symbolic_environment.cc",
         "symbolic_environment.h",
         "symbolic_expression.cc",
@@ -192,12 +194,16 @@ drake_cc_library(
         "symbolic_formula_cell.cc",
         "symbolic_formula_cell.h",
         "symbolic_formula_visitor.h",
+        "symbolic_ldlt.cc",
+        "symbolic_ldlt.h",
         "symbolic_monomial.cc",
         "symbolic_monomial.h",
         "symbolic_monomial_util.cc",
         "symbolic_monomial_util.h",
         "symbolic_polynomial.cc",
         "symbolic_polynomial.h",
+        "symbolic_rational_function.cc",
+        "symbolic_rational_function.h",
         "symbolic_simplification.cc",
         "symbolic_simplification.h",
         "symbolic_variable.cc",
@@ -215,10 +221,9 @@ drake_cc_library(
         ":essential",
         ":extract_double",
         ":hash",
-        ":number_traits",
         ":polynomial",
+        ":random",
         "//math:matrix_util",
-        "@fmt",
     ],
 )
 
@@ -362,6 +367,13 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "random",
+    srcs = ["random.cc"],
+    hdrs = ["random.h"],
+    deps = [":essential"],
+)
+
+drake_cc_library(
     name = "reset_after_move",
     hdrs = ["reset_after_move.h"],
 )
@@ -377,7 +389,6 @@ drake_cc_library(
     hdrs = ["pointer_cast.h"],
     deps = [
         ":nice_type_name",
-        "@fmt",
     ],
 )
 
@@ -466,6 +477,19 @@ drake_cc_library(
     hdrs = ["scoped_singleton.h"],
     deps = [
         ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "value",
+    srcs = ["value.cc"],
+    hdrs = ["value.h"],
+    deps = [
+        ":copyable_unique_ptr",
+        ":essential",
+        ":hash",
+        ":is_cloneable",
+        ":nice_type_name",
     ],
 )
 
@@ -565,6 +589,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "random_test",
+    deps = [
+        ":random",
+    ],
+)
+
+drake_cc_googletest(
     name = "reset_after_move_test",
     deps = [
         ":reset_after_move",
@@ -645,50 +676,29 @@ drake_cc_googletest(
     ],
 )
 
-# Needed by :drake_assert_test_compile_variants.
-genrule(
-    name = "capture_cc",
-    outs = ["capture_cc.env"],
-    cmd = "echo \"BAZEL_CC=$(CC)\" > '$@'",
-    visibility = ["//visibility:private"],
-)
-
-# Functional test that mistyped DRAKE_ASSERTs will failt to compile.
+# Functional test that mistyped DRAKE_ASSERTs will fail to compile.
 sh_test(
     name = "drake_assert_test_compile_variants",
     size = "small",
     srcs = ["test/drake_assert_test_compile_variants.sh"],
     args = [
-        "$(location :capture_cc.env)",
+        "$(location //tools/cc_toolchain:capture_cc.env)",
         "$(location :test/drake_assert_test_compile.cc)",
     ],
     data = [
-        "capture_cc.env",
         "drake_assert.h",
         "test/drake_assert_test_compile.cc",
         "unused.h",
-        "//third_party:com_github_bazelbuild_bazel/tools/cpp/osx_cc_wrapper.sh",  # noqa
-        "//tools/cc_toolchain:osx_cc_wrapper.sh",
+        "//tools/cc_toolchain:capture_cc.env",
+        "//tools/cc_toolchain:toolchain_deps",
     ],
 )
 
-# Utility script to indicate which compiler is being used.
-sh_binary(
+# TODO(eric.cousineau): Remove this alias and update `issue_template.md` to
+# use the actual target name after 2018/10/31.
+alias(
     name = "print_host_settings",
-    srcs = ["print_host_settings.sh"],
-    args = ["$(location :capture_cc.env)"],
-    data = [":capture_cc.env"],
-)
-
-# Test the above script; if CROSSTOOL is removed or changed, $(CC) may be an
-# invalid binary (related to #7763), and CI should catch this.
-# N.B. We have to use a proxy script since `print_host_settings` has `data`.
-sh_test(
-    name = "print_host_settings_test",
-    srcs = ["test/print_host_settings_test.sh"],
-    data = [":print_host_settings"],
-    # TODO(jwnimmer-tri) Temporarily disabled because it fails on macOS.
-    tags = ["manual"],
+    actual = "//tools/cc_toolchain:print_host_settings",
 )
 
 drake_cc_googletest(
@@ -725,6 +735,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_throw_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "drake_variant_test",
     deps = [
         ":essential",
     ],
@@ -835,6 +852,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -877,6 +895,15 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":sorted_vectors_have_intersection",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_codegen_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -948,6 +975,7 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":symbolic",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
@@ -959,6 +987,15 @@ drake_cc_googletest(
         ":symbolic",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_ldlt_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -980,6 +1017,24 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "symbolic_polynomial_matrix_test",
+    deps = [
+        ":essential",
+        ":symbolic",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_rational_function_test",
+    deps = [
+        ":symbolic",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symbolic_rational_function_matrix_test",
     deps = [
         ":essential",
         ":symbolic",
@@ -1050,10 +1105,36 @@ drake_cc_googletest(
     ],
 )
 
+# This version of text_logging_test is compiled with HAVE_SPDLOG enabled,
+# because that is what Drake's WORKSPACE provides for the @spdlog external.
 drake_cc_googletest(
     name = "text_logging_test",
+    defines = [
+        "TEXT_LOGGING_TEST_SPDLOG=1",
+    ],
+    use_default_main = False,
     deps = [
         ":essential",
+    ],
+)
+
+# This version of text_logging_test re-compiles all source files without
+# defining HAVE_SPDLOG, to ensure that the no-op stubs behave as desired.
+drake_cc_googletest(
+    name = "text_logging_no_spdlog_test",
+    srcs = [
+        "drake_copyable.h",
+        "never_destroyed.h",
+        "test/text_logging_test.cc",
+        "text_logging.cc",
+        "text_logging.h",
+    ],
+    defines = [
+        "TEXT_LOGGING_TEST_SPDLOG=0",
+    ],
+    use_default_main = False,
+    deps = [
+        "@fmt",
     ],
 )
 
@@ -1108,7 +1189,6 @@ drake_py_unittest(
     data = [
         ":cpplint_wrapper",
         ":eigen_types.h",
-        "@styleguide//:cpplint/cpplint_test_header.h",
     ],
 )
 
@@ -1124,11 +1204,18 @@ drake_py_unittest(
     ],
 )
 
+drake_cc_googletest(
+    name = "value_test",
+    deps = [
+        ":value",
+        "//common:essential",
+        "//systems/framework/test_utilities:my_vector",
+    ],
+)
+
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
-# - text_logging_test in fancy variants
-# - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
 add_lint_tests(

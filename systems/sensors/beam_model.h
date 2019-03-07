@@ -2,13 +2,13 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/leaf_system.h"
-#include "drake/systems/sensors/depth_sensor_specification.h"
 #include "drake/systems/sensors/gen/beam_model_params.h"
 
 namespace drake {
 namespace systems {
 namespace sensors {
 
+// TODO(russt): Add support for symbolic.
 /// Implements the "Beam Models of Range Finders" from section 6.3 of
 ///   Probabilistic Robotics (2006), by Thrun, Burgard, and Fox
 ///
@@ -43,11 +43,11 @@ namespace sensors {
 /// variable inputs.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
 /// @ingroup sensor_systems
-// TODO(russt): Add support for symbolic.
 template <typename T>
 class BeamModel final : public LeafSystem<T> {
  public:
@@ -55,25 +55,23 @@ class BeamModel final : public LeafSystem<T> {
 
   BeamModel(int num_depth_readings, double max_range);
 
-  explicit BeamModel(const DepthSensorSpecification& specification);
-
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit BeamModel(const BeamModel<U>&);
 
-  const InputPortDescriptor<T>& get_depth_input_port() const {
+  const InputPort<T>& get_depth_input_port() const {
     return this->get_input_port(0);
   }
-  const InputPortDescriptor<T>& get_event_random_input_port() const {
+  const InputPort<T>& get_event_random_input_port() const {
     return this->get_input_port(1);
   }
-  const InputPortDescriptor<T>& get_hit_random_input_port() const {
+  const InputPort<T>& get_hit_random_input_port() const {
     return this->get_input_port(2);
   }
-  const InputPortDescriptor<T>& get_short_random_input_port() const {
+  const InputPort<T>& get_short_random_input_port() const {
     return this->get_input_port(3);
   }
-  const InputPortDescriptor<T>& get_uniform_random_input_port() const {
+  const InputPort<T>& get_uniform_random_input_port() const {
     return this->get_input_port(4);
   }
 

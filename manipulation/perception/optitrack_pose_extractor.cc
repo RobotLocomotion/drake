@@ -7,7 +7,7 @@
 
 #include "drake/common/text_logging.h"
 #include "drake/math/quaternion.h"
-#include "drake/math/rotation_matrix.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -15,8 +15,6 @@ namespace manipulation {
 namespace perception {
 
 using systems::Context;
-using systems::DiscreteValues;
-using systems::BasicVector;
 
 Isometry3<double> ExtractOptitrackPose(
     const optitrack::optitrack_rigid_body_t& body) {
@@ -28,12 +26,9 @@ Isometry3<double> ExtractOptitrackPose(
   // normalized for use in double precision.
   q_wxyz.normalize();
   // Pose of rigid body frame `B` in Optitrack frame `O`.
-  Isometry3<double> X_OB;
-  X_OB.linear() = q_wxyz.toRotationMatrix();
-  X_OB.translation() =
-      Eigen::Vector3d(body.xyz[0], body.xyz[1], body.xyz[2]);
-  X_OB.makeAffine();
-  return X_OB;
+  const Eigen::Vector3d position(body.xyz[0], body.xyz[1], body.xyz[2]);
+  const math::RigidTransform<double> X_OB(q_wxyz, position);
+  return X_OB.GetAsIsometry3();
 }
 
 std::map<int, Isometry3<double>> ExtractOptitrackPoses(
@@ -72,15 +67,17 @@ OptitrackPoseExtractor::OptitrackPoseExtractor(
               .get_index()},
       X_WO_(X_WO) {
   DeclareAbstractState(
-      systems::AbstractValue::Make<Isometry3<double>>(
+      AbstractValue::Make<Isometry3<double>>(
           Isometry3<double>::Identity()));
-  this->DeclareAbstractInputPort();
+  this->DeclareAbstractInputPort(
+      systems::kUseDefaultName,
+      Value<optitrack::optitrack_frame_t>());
   // Internal state is an Isometry3d.
   this->DeclarePeriodicUnrestrictedUpdate(optitrack_lcm_status_period, 0);
 }
 
 void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
-    const systems::Context<double>& context,
+    const Context<double>& context,
     const std::vector<const systems::UnrestrictedUpdateEvent<double>*>&,
     systems::State<double>* state) const {
   // Extract Internal state.
@@ -88,9 +85,8 @@ void OptitrackPoseExtractor::DoCalcUnrestrictedUpdate(
       state->get_mutable_abstract_state<Isometry3<double>>(0);
 
   // Update world state from inputs.
-  const systems::AbstractValue* input = this->EvalAbstractInput(context, 0);
-  DRAKE_ASSERT(input != nullptr);
-  auto& message = input->GetValue<optitrack::optitrack_frame_t>();
+  const auto& input = this->get_input_port(0);
+  const auto& message = input.Eval<optitrack::optitrack_frame_t>(context);
   auto body = FindOptitrackBody(message, object_id_);
   if (!body.has_value()) {
     throw std::runtime_error(fmt::format(

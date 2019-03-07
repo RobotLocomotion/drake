@@ -1,9 +1,7 @@
 #include "drake/manipulation/util/bot_core_lcm_encode_decode.h"
 
 #include "drake/math/quaternion.h"
-#include "drake/math/rotation_matrix.h"
-
-using Eigen::Isometry3d;
+#include "drake/math/rigid_transform.h"
 
 void EncodeVector3d(const Eigen::Ref<const Eigen::Vector3d>& vec,
                     // NOLINTNEXTLINE(runtime/references)
@@ -40,12 +38,11 @@ void EncodePose(const Eigen::Isometry3d& pose,
 }
 
 Eigen::Isometry3d DecodePose(const bot_core::position_3d_t& msg) {
-  Isometry3d ret;
-  ret.translation() = DecodeVector3d(msg.translation);
-  auto quaternion = DecodeQuaternion(msg.rotation);
-  ret.linear() = drake::math::quat2rotmat(quaternion);
-  ret.makeAffine();
-  return ret;
+  const Eigen::Vector3d position = DecodeVector3d(msg.translation);
+  const Eigen::Vector4d wxyz = DecodeQuaternion(msg.rotation);
+  const Eigen::Quaterniond quat(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  const drake::math::RigidTransformd X(quat, position);
+  return X.GetAsIsometry3();
 }
 
 void EncodeTwist(const Eigen::Ref<const drake::TwistVector<double>>& twist,

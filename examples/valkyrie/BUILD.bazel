@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -25,10 +25,10 @@ drake_cc_library(
     srcs = ["robot_state_decoder.cc"],
     hdrs = ["robot_state_decoder.h"],
     deps = [
-        "//manipulation/util:robot_state_msg_translator",
-        "//multibody:rigid_body_tree",
+        "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/util",
         "//systems/framework:leaf_system",
-        "//util",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -38,7 +38,7 @@ drake_cc_library(
     srcs = ["actuator_effort_to_rigid_body_plant_input_converter.cc"],
     hdrs = ["actuator_effort_to_rigid_body_plant_input_converter.h"],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/framework",
     ],
 )
@@ -48,7 +48,7 @@ drake_cc_library(
     srcs = ["robot_command_to_desired_effort_converter.cc"],
     hdrs = ["robot_command_to_desired_effort_converter.h"],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree",
         "//systems/framework",
         "@lcmtypes_bot2_core",
     ],
@@ -64,17 +64,17 @@ drake_cc_binary(
     deps = [
         ":robot_state_decoder",
         ":valkyrie_constants",
+        "//attic/multibody:kinematics_cache",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
+        "//attic/util",
         "//common:essential",
         "//common:find_resource",
         "//lcm",
-        "//multibody:kinematics_cache",
-        "//multibody:rigid_body_tree",
-        "//multibody/joints",
-        "//multibody/parsers",
         "//systems/framework:diagram",
         "//systems/framework:leaf_system",
         "//systems/lcm:lcm_pubsub_system",
-        "//util",
         "@lcmtypes_bot2_core",
     ],
 )
@@ -84,10 +84,10 @@ drake_cc_library(
     srcs = ["robot_state_encoder.cc"],
     hdrs = ["robot_state_encoder.h"],
     deps = [
-        "//manipulation/util:robot_state_msg_translator",
-        "//multibody/rigid_body_plant",
-        "//systems/controllers:side",
-        "//util",
+        "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/systems/controllers:side",
+        "//attic/util",
     ],
 )
 
@@ -99,15 +99,15 @@ drake_cc_library(
         ":robot_command_to_desired_effort_converter",
         ":robot_state_encoder",
         ":valkyrie_constants",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:contact_results_to_lcm",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
         "//lcmtypes:contact_info_for_viz",
         "//lcmtypes:contact_results_for_viz",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:contact_results_to_lcm",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis",
         "//systems/framework",
         "//systems/lcm:lcm_pubsub_system",
@@ -133,16 +133,16 @@ drake_cc_googletest(
     deps = [
         ":robot_state_decoder",
         ":robot_state_encoder",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/util",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
         "//systems/framework:diagram",
         "//systems/primitives:constant_value_source",
         "//systems/primitives:constant_vector_source",
-        "//util",
     ],
 )
 
@@ -151,9 +151,9 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":robot_command_to_desired_effort_converter",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/framework:diagram",
         "//systems/primitives:constant_value_source",
     ],
@@ -163,23 +163,23 @@ drake_cc_googletest(
     name = "valkyrie_simulation_test",
     srcs = ["test/valkyrie_simulation_test.cc"],
     data = [":models"],
-    # Flaky because LCM self-test can fail (PR #7311)
-    flaky = 1,
     deps = [":valkyrie_simulator"],
 )
 
 drake_cc_googletest(
     name = "valkyrie_ik_test",
     data = [":models"],
+    # Non-deterministic IPOPT-related failures on macOS, see #10276.
+    flaky = 1,
     deps = [
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_constraint",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody/joints",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
-        "//multibody:inverse_kinematics",
-        "//multibody:rigid_body_constraint",
-        "//multibody:rigid_body_tree",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
     ],
 )
 

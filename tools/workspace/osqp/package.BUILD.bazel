@@ -15,21 +15,17 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-config_setting(
-    name = "linux",
-    values = {"cpu": "k8"},
-    visibility = ["//visibility:private"],
-)
-
-# Generates glob_opts.h based on the defines= we want in Drake.
+# Generates osqp_configure.h based on the defines= we want in Drake.
 cmake_configure_file(
-    name = "glob_opts",
-    src = "configure/glob_opts.h.in",
-    out = "include/glob_opts.h",
+    name = "configure_file",
+    src = "configure/osqp_configure.h.in",
+    out = "include/osqp_configure.h",
     defines = [
         "PRINTING",
         "PROFILING",
+        # Keep this in sync with 'INT_TYPE' from //tools/workspace/qdldl.
         "DLONG",
+        # Don't define 'DFLOAT' unless //tools/workspace/qdldl is also changed.
     ] + select({
         "@drake//tools/cc_toolchain:apple": [
             "IS_MAC",
@@ -42,52 +38,77 @@ cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
-cc_binary(
-    name = "libdrake_osqp.so",
-    srcs = glob([
-        "lin_sys/direct/suitesparse/*.c",
-        "lin_sys/direct/suitesparse/*.h",
-        "lin_sys/direct/suitesparse/amd/src/*.c",
-        "lin_sys/direct/suitesparse/amd/include/*.h",
-        "lin_sys/direct/suitesparse/ldl/src/*.c",
-        "lin_sys/direct/suitesparse/ldl/include/*.h",
-        "include/*.h",
-        "src/*.c",
-    ]) + ["include/glob_opts.h"],
-    includes = [
-        "include",
-        "lin_sys",
-        "lin_sys/direct/pardiso",
-        "lin_sys/direct/suitesparse",
-        "lin_sys/direct/suitesparse/amd/include",
-        "lin_sys/direct/suitesparse/ldl/include",
-    ],
-    linkopts = select({
-        ":linux": ["-Wl,-soname,libdrake_osqp.so"],
-        "//conditions:default": [],
-    }),
-    linkshared = 1,
-    visibility = ["//visibility:private"],
-)
-
 cc_library(
     name = "osqp",
-    srcs = [":libdrake_osqp.so"],
-    hdrs = glob([
-        "include/*.h",
-    ]) + ["include/glob_opts.h"],
+    hdrs = [
+        # From ./CMakeLists.txt at `osqp_headers`.
+        "include/auxil.h",
+        "include/constants.h",
+        "include/cs.h",
+        "include/ctrlc.h",
+        "include/glob_opts.h",
+        "include/kkt.h",
+        "include/lin_alg.h",
+        "include/lin_sys.h",
+        "include/osqp.h",
+        "include/osqp_configure.h",
+        "include/types.h",
+        "include/polish.h",
+        "include/proj.h",
+        "include/scaling.h",
+        "include/util.h",
+    ],
+    srcs = [
+        # From ./lin_sys/direct/qdldl/CMakeLists.txt at `amd_sources`.
+        "lin_sys/direct/qdldl/amd/include/amd.h",
+        "lin_sys/direct/qdldl/amd/include/amd_internal.h",
+        "lin_sys/direct/qdldl/amd/include/SuiteSparse_config.h",
+        "lin_sys/direct/qdldl/amd/src/amd_1.c",
+        "lin_sys/direct/qdldl/amd/src/amd_2.c",
+        "lin_sys/direct/qdldl/amd/src/amd_aat.c",
+        "lin_sys/direct/qdldl/amd/src/amd_control.c",
+        "lin_sys/direct/qdldl/amd/src/amd_defaults.c",
+        "lin_sys/direct/qdldl/amd/src/amd_info.c",
+        "lin_sys/direct/qdldl/amd/src/amd_order.c",
+        "lin_sys/direct/qdldl/amd/src/amd_post_tree.c",
+        "lin_sys/direct/qdldl/amd/src/amd_postorder.c",
+        "lin_sys/direct/qdldl/amd/src/amd_preprocess.c",
+        "lin_sys/direct/qdldl/amd/src/amd_valid.c",
+        "lin_sys/direct/qdldl/amd/src/SuiteSparse_config.c",
+        # From ./lin_sys/direct/qdldl/CMakeLists.txt at `qdldl_interface_src`.
+        "lin_sys/direct/qdldl/qdldl_interface.h",
+        "lin_sys/direct/qdldl/qdldl_interface.c",
+        # From ./CMakeLists.txt at `osqp_src`.
+        "src/auxil.c",
+        "src/cs.c",
+        "src/ctrlc.c",
+        "src/kkt.c",
+        "src/lin_alg.c",
+        "src/lin_sys.c",
+        "src/osqp.c",
+        "src/polish.c",
+        "src/proj.c",
+        "src/scaling.c",
+        "src/util.c",
+    ],
     includes = [
         "include",
+        "lin_sys/direct/qdldl",
+        "lin_sys/direct/qdldl/amd/include",
+    ],
+    copts = [
+        "-w",
+    ],
+    deps = [
+        "@qdldl",
     ],
 )
 
 install(
     name = "install",
-    targets = [":libdrake_osqp.so"],
     docs = [
         "LICENSE",
-        "lin_sys/direct/suitesparse/ldl/LICENSE",
-        "lin_sys/direct/suitesparse/amd/LICENSE",
+        "lin_sys/direct/qdldl/amd/LICENSE",
     ],
-    doc_strip_prefix = ["lin_sys/direct/suitesparse"],
+    doc_strip_prefix = ["lin_sys/direct/qdldl"],
 )

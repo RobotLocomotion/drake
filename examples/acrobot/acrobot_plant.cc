@@ -20,8 +20,9 @@ namespace acrobot {
 template <typename T>
 AcrobotPlant<T>::AcrobotPlant()
     : systems::LeafSystem<T>(systems::SystemTypeTag<acrobot::AcrobotPlant>{}) {
-  this->DeclareVectorInputPort(AcrobotInput<T>());
-  this->DeclareVectorOutputPort(AcrobotState<T>(), &AcrobotPlant::CopyStateOut);
+  this->DeclareVectorInputPort("elbow_torque", AcrobotInput<T>());
+  this->DeclareVectorOutputPort("acrobot_state", AcrobotState<T>(),
+                                &AcrobotPlant::CopyStateOut);
   this->DeclareContinuousState(AcrobotState<T>(), 2 /* num_q */, 2 /* num_v */,
                                0 /* num_z */);
   this->DeclareNumericParameter(AcrobotParams<T>());
@@ -159,10 +160,10 @@ AcrobotWEncoder<T>::AcrobotWEncoder(bool acrobot_state_as_second_output) {
           4, std::vector<int>{0, 1});
   encoder->set_name("encoder");
   builder.Cascade(*acrobot_plant_, *encoder);
-  builder.ExportInput(acrobot_plant_->get_input_port(0));
-  builder.ExportOutput(encoder->get_output_port());
+  builder.ExportInput(acrobot_plant_->get_input_port(0), "elbow_torque");
+  builder.ExportOutput(encoder->get_output_port(), "measured_joint_positions");
   if (acrobot_state_as_second_output)
-    builder.ExportOutput(acrobot_plant_->get_output_port(0));
+    builder.ExportOutput(acrobot_plant_->get_output_port(0), "acrobot_state");
 
   builder.BuildInto(this);
 }

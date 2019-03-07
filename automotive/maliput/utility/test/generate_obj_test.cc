@@ -6,15 +6,16 @@
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
-#include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/automotive/maliput/monolane/loader.h"
+#include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/connection.h"
+#include "drake/automotive/maliput/multilane/loader.h"
 #include "drake/common/find_resource.h"
 
 namespace drake {
 namespace maliput {
 namespace utility {
 
-namespace mono = maliput::monolane;
+namespace multi = maliput::multilane;
 
 class GenerateObjTest : public ::testing::Test {
  protected:
@@ -66,24 +67,110 @@ class GenerateObjTest : public ::testing::Test {
 };
 
 
+TEST_F(GenerateObjTest, NoEpsilonSampling) {
+  const double kLaneWidth{4.};
+  const double kLinearTolerance{0.01};
+  const double kAngularTolerance{0.01 * M_PI};
+  const double kScaleLength{1.};
+  const maliput::multilane::ComputationPolicy kComputationPolicy{
+      maliput::multilane::ComputationPolicy::kPreferSpeed};
+  const maliput::api::HBounds kElevationBounds{0., 5.2};
+
+  auto rb = multi::BuilderFactory().Make(kLaneWidth, kElevationBounds,
+                                         kLinearTolerance, kAngularTolerance,
+                                         kScaleLength, kComputationPolicy);
+
+  // Initialize roads lane layouts.
+  // Reference lane from which the reference curve of the segment is placed (at
+  // kRefR0 lateral distance).
+  const int kRefLane = 0;
+  // Distance between the reference curve and kRefLane lane curve.
+  const double kRefR0 = 0.;
+  const double kLeftShoulder{2.};
+  const double kRightShoulder{2.};
+  const int kLaneNumber{1};
+  const multi::LaneLayout lane_layout(kLeftShoulder, kRightShoulder,
+                                      kLaneNumber, kRefLane, kRefR0);
+
+  // Initialize the road from the origin.
+  const multi::EndpointXy kOriginXy{0., 0., 0.};
+  const multi::EndpointZ kFlatZ{0., 0., 0., {}};
+  const multi::Endpoint kRoadOrigin{kOriginXy, kFlatZ};
+
+  // Construct road.
+  const double kArcLength = 25.;
+  const double kArcRadius = 40.;
+  const auto street1 = rb->Connect(
+      "street1", lane_layout,
+      multi::StartReference().at(kRoadOrigin, multi::Direction::kForward),
+      multi::ArcOffset(kArcLength, -kArcRadius / kArcLength),
+      multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
+  const auto street2 = rb->Connect(
+      "street2", lane_layout,
+      multi::StartReference().at(*street1, api::LaneEnd::kFinish,
+                                 multi::Direction::kForward),
+      multi::ArcOffset(kArcLength, kArcRadius / kArcLength),
+      multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
+  rb->Connect(
+      "street3", lane_layout,
+      multi::StartReference().at(*street2, api::LaneEnd::kFinish,
+                                 multi::Direction::kForward),
+      multi::ArcOffset(kArcLength, -kArcRadius / kArcLength),
+      multi::EndReference().z_at(kFlatZ, multi::Direction::kForward));
+
+  const std::unique_ptr<const api::RoadGeometry> dut =
+      rb->Build(maliput::api::RoadGeometryId{"no-epsilon-sampling-dut"});
+
+  ObjFeatures features;
+  features.min_grid_resolution = 5.0;
+  features.simplify_mesh_threshold = 0.01;
+  const std::string basename{"NoEpsilonSampling"};
+  GenerateObjFile(dut.get(), directory_.getStr(), basename, features);
+
+  spruce::path actual_obj_path(directory_);
+  actual_obj_path.append(basename + ".obj");
+  EXPECT_TRUE(actual_obj_path.isFile());
+
+  spruce::path actual_mtl_path(directory_);
+  actual_mtl_path.append(basename + ".mtl");
+  EXPECT_TRUE(actual_mtl_path.isFile());
+
+  paths_to_cleanup_.push_back(actual_obj_path);
+  paths_to_cleanup_.push_back(actual_mtl_path);
+}
+
+
 class GenerateObjBasicDutTest : public GenerateObjTest {
  protected:
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  const api::RBounds kLaneBounds{-0.5, 0.5};
-  const api::RBounds kDriveableBounds{-1., 1.};
+  const double kLaneWidth = 1.;
+  const double kShoulder = 0.5;
   const api::HBounds kElevationBounds{0., 5.};
+  const double kScaleLength = 1.;
+  const multi::ComputationPolicy kComputationPolicy =
+      multi::ComputationPolicy::kPreferAccuracy;
+  const multi::LaneLayout kLaneLayout{kShoulder, kShoulder, 1 /* num_lanes */,
+                                      0 /* ref_lane */, 0. /* ref_r0 */};
+
+  std::unique_ptr<multi::BuilderBase> MakeMultilaneBuilder() {
+    return multi::BuilderFactory().Make(kLaneWidth, kElevationBounds,
+                                        kLinearTolerance, kAngularTolerance,
+                                        kScaleLength, kComputationPolicy);
+  }
 
   void SetUp() override {
     GenerateObjTest::SetUp();
 
-    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
-                    kLinearTolerance, kAngularTolerance);
+    auto b = MakeMultilaneBuilder();
 
-    const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
-    const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
-    b.Connect("0", start, 1., kZeroZ);
-    dut_ = b.Build(api::RoadGeometryId{"dut"});
+    const multi::EndpointZ kZeroZ{0., 0., 0., 0.};
+    const multi::Endpoint start{{0., 0., 0.}, kZeroZ};
+    b->Connect("0", kLaneLayout,
+               multi::StartReference().at(start, multi::Direction::kForward),
+               multi::LineOffset(1.),
+               multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
+    dut_ = b->Build(api::RoadGeometryId{"dut"});
   }
 
   std::unique_ptr<const api::RoadGeometry> dut_;
@@ -129,13 +216,14 @@ TEST_F(GenerateObjBasicDutTest, ChangeOrigin) {
 
   // Reconstruct the basic DUT, but starting at the offset instead of (0,0,0).
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
-                    kLinearTolerance, kAngularTolerance);
-
-    const mono::EndpointZ kZeroZ{kOffsetZ, 0., 0., 0.};
-    const mono::Endpoint start{{kOffsetX, kOffsetY, 0.}, kZeroZ};
-    b.Connect("0", start, 1., kZeroZ);
-    dut_ = b.Build(api::RoadGeometryId{"dut"});
+    auto b = MakeMultilaneBuilder();
+    const multi::EndpointZ kZeroZ{kOffsetZ, 0., 0., 0.};
+    const multi::Endpoint start{{kOffsetX, kOffsetY, 0.}, kZeroZ};
+    b->Connect("0", kLaneLayout,
+               multi::StartReference().at(start, multi::Direction::kForward),
+               multi::LineOffset(1.),
+               multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
+    dut_ = b->Build(api::RoadGeometryId{"dut"});
   }
 
   ObjFeatures obj_features;
@@ -220,15 +308,19 @@ TEST_F(GenerateObjBasicDutTest, StackedBranchPointsObjContent) {
 
   // Construct a RoadGeometry with two lanes that don't quite connect.
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
-                    kLinearTolerance, kAngularTolerance);
-
-    const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
-    const mono::Endpoint start0{{0., 0., 0.}, kZeroZ};
-    const mono::Endpoint start1{{10. * kLinearTolerance, 0., M_PI}, kZeroZ};
-    b.Connect("0", start0, 1., kZeroZ);
-    b.Connect("1", start1, 1., kZeroZ);
-    dut_ = b.Build(api::RoadGeometryId{"dut"});
+    auto b = MakeMultilaneBuilder();
+    const multi::EndpointZ kZeroZ{0., 0., 0., 0.};
+    const multi::Endpoint start0{{0., 0., 0.}, kZeroZ};
+    const multi::Endpoint start1{{10. * kLinearTolerance, 0., M_PI}, kZeroZ};
+    b->Connect("0", kLaneLayout,
+               multi::StartReference().at(start0, multi::Direction::kForward),
+               multi::LineOffset(1.),
+               multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
+    b->Connect("1", kLaneLayout,
+               multi::StartReference().at(start1, multi::Direction::kForward),
+               multi::LineOffset(1.),
+               multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
+    dut_ = b->Build(api::RoadGeometryId{"dut"});
   }
 
   GenerateObjFile(dut_.get(), directory_.getStr(), basename, ObjFeatures());
@@ -255,13 +347,16 @@ TEST_F(GenerateObjTest, DontTickleDrawLaneArrowAssert) {
   std::string dut_yaml = R"R(# -*- yaml -*-
 ---
 # distances are meters; angles are degrees.
-maliput_monolane_builder:
-  id: city_1
-  lane_bounds: [-2, 2]
-  driveable_bounds: [-4, 4]
+maliput_multilane_builder:
+  id: "city_1"
+  lane_width: 4
+  left_shoulder: 2
+  right_shoulder: 2
   elevation_bounds: [0, 5]
-  position_precision: 0.01
-  orientation_precision: 0.5
+  scale_length: 1.0
+  linear_tolerance: 0.01
+  angular_tolerance: 0.5
+  computation_policy: "prefer-accuracy"
   points:
     street_9_1_3:
       xypoint: [92.92893218813452, 307.0710678118655, -45.0]
@@ -270,12 +365,16 @@ maliput_monolane_builder:
       xypoint: [95.05025253169417, 304.9497474683058, -45.0]
       zpoint: [0.0, 0, 0, 0]
   connections:
-    street_9_1_3-street_9_1_4: {start: points.street_9_1_3, length: 3.000000000000014,
-      explicit_end: points.street_9_1_4}
+    street_9_1_3-street_9_1_4:
+      lanes: [1, 0, 0]
+      start: ["ref", "points.street_9_1_3.forward"]
+      length: 3.000000000000014
+      explicit_end: ["ref", "points.street_9_1_4.forward"]
   groups: {}
 )R";
 
-  const std::unique_ptr<const api::RoadGeometry> dut = mono::Load(dut_yaml);
+  const std::unique_ptr<const api::RoadGeometry> dut =
+      multi::Load(multi::BuilderFactory(), dut_yaml);
 
   const std::string basename{"DontTickleDrawLaneArrowAssert"};
   GenerateObjFile(dut.get(), directory_.getStr(), basename, ObjFeatures());
@@ -299,14 +398,20 @@ TEST_F(GenerateObjBasicDutTest, HighlightedSegments) {
 
   // Construct a RoadGeometry with two segments.
   {
-    mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
-                    kLinearTolerance, kAngularTolerance);
-
-    const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
-    const mono::Endpoint start0{{0., 0., 0.}, kZeroZ};
-    auto c0 = b.Connect("0", start0, 2., kZeroZ);
-    b.Connect("1", c0->end(), 2., kZeroZ);
-    dut_ = b.Build(api::RoadGeometryId{"dut"});
+    auto b = MakeMultilaneBuilder();
+    const multi::EndpointZ kZeroZ{0., 0., 0., 0.};
+    const multi::Endpoint start0{{0., 0., 0.}, kZeroZ};
+    auto c0 = b->Connect(
+        "0", kLaneLayout,
+        multi::StartReference().at(start0, multi::Direction::kForward),
+        multi::LineOffset(2.),
+        multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
+    b->Connect("1", kLaneLayout,
+               multi::StartReference().at(*c0, api::LaneEnd::Which::kFinish,
+                                          multi::Direction::kForward),
+               multi::LineOffset(2.),
+               multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
+    dut_ = b->Build(api::RoadGeometryId{"dut"});
   }
 
   ObjFeatures features;

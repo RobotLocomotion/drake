@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
 namespace examples {
@@ -28,11 +28,10 @@ namespace bouncing_ball {
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for collision.
 ///   If this argument is omitted, no geometry will be registered.
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<drake::multibody::MultibodyPlant<double>>
 MakeBouncingBallPlant(
     double radius, double mass,
-    const drake::multibody::multibody_plant::CoulombFriction<double>&
-        surface_friction,
+    const drake::multibody::CoulombFriction<double>& surface_friction,
     const Vector3<double>& gravity_W,
     geometry::SceneGraph<double>* scene_graph = nullptr);
 

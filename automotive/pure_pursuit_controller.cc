@@ -20,9 +20,11 @@ template <typename T>
 PurePursuitController<T>::PurePursuitController()
     : systems::LeafSystem<T>(
           systems::SystemTypeTag<automotive::PurePursuitController>{}),
-      lane_index_{this->DeclareAbstractInputPort().get_index()},
+      lane_index_{this->DeclareAbstractInputPort(
+          systems::kUseDefaultName, Value<LaneDirection>())
+              .get_index()},
       ego_pose_index_{
-          this->DeclareInputPort(systems::kVectorValued, PoseVector<T>::kSize)
+          this->DeclareVectorInputPort(PoseVector<T>{})
               .get_index()},
       steering_command_index_{
           this->DeclareVectorOutputPort(
@@ -37,13 +39,13 @@ template <typename T>
 PurePursuitController<T>::~PurePursuitController() {}
 
 template <typename T>
-const systems::InputPortDescriptor<T>& PurePursuitController<T>::lane_input()
+const systems::InputPort<T>& PurePursuitController<T>::lane_input()
     const {
   return systems::System<T>::get_input_port(lane_index_);
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>&
+const systems::InputPort<T>&
 PurePursuitController<T>::ego_pose_input() const {
   return systems::System<T>::get_input_port(ego_pose_index_);
 }

@@ -18,15 +18,18 @@ namespace automotive {
 /// right but *cannot* travel in reverse.
 ///
 /// parameters:
+///
 /// * uses systems::Parameters wrapping a SimpleCarParams
 ///
 /// state vector (planar for now):
+///
 /// * position: x, y, heading;
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
-//    heading is defined around the +z axis, so positive-turn-left
+///   heading is defined around the +z axis, so positive-turn-left
 /// * velocity
 ///
 /// input vector:
+///
 /// * steering angle (virtual center wheel angle);
 ///   a positive angle means a positive change in heading (left turn);
 ///   the value must lie within (-pi, +pi).
@@ -41,6 +44,7 @@ namespace automotive {
 /// for details, see drake::symbolic::Expression.
 ///
 /// Instantiated templates for the following ScalarTypes are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - drake::symbolic::Expression
@@ -53,6 +57,7 @@ class SimpleCar final : public systems::LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleCar)
 
+  /** Constructs a default car. */
   SimpleCar();
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

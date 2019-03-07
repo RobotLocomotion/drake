@@ -1,5 +1,13 @@
 /// @file
 /// Utilities for arithmetic on quaternions.
+// @internal Eigen's 4-argument Quaternion constructor uses (w, x, y, z) order.
+// HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
+// argument is a 4-element Vector, the elements must be in (x, y, z, w) order!
+// So, the following two calls will give you the SAME quaternion:
+// Quaternion<double>(q(0), q(1), q(2), q(3));
+// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
+// which is gross and will cause you much pain.  See:
+// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
 
 #pragma once
 
@@ -14,27 +22,6 @@
 
 namespace drake {
 namespace math {
-
-// Eigen's 4-argument Quaternion constructor uses (w, x, y, z) ordering.
-// HOWEVER: If you use Eigen's 1-argument Quaternion constructor, where the one
-// argument is a 4-element Vector, the elements must be in (x, y, z, w) order!
-// So, the following two calls will give you the SAME quaternion:
-// Quaternion<double>(q(0), q(1), q(2), q(3));
-// Quaternion<double>(Vector4d(q(3), q(0), q(1), q(2)))
-// which is gross and will cause you much pain.  See:
-// http://eigen.tuxfamily.org/dox/classEigen_1_1Quaternion.html#a91b6ea2cac13ab2d33b6e74818ee1490
-//
-// This method takes a nice, normal (w, x, y, z) order vector and gives you
-// the Quaternion you expect.
-// (Deprecated), use @ref Eigen::Quaternion(w, x, y, z).
-// TODO(mitiguy) Delete this code that was deprecated on May 1, 2018.
-template <typename Derived>
-DRAKE_DEPRECATED("This code is deprecated.  Use Eigen's Quaternion constructor "
-                 "Quaternion(w, x, y, z) -- not a home-brew 4-element vectors")
-Eigen::Quaternion<typename Derived::Scalar> quat2eigenQuaternion(
-    const Eigen::MatrixBase<Derived>& q) {
-  return Eigen::Quaternion<typename Derived::Scalar>(q(0), q(1), q(2), q(3));
-}
 
 /**
  * Returns a unit quaternion that represents the same orientation as `q1`,
@@ -121,14 +108,6 @@ typename Derived1::Scalar quatDiffAxisInvar(
          2 * pow(u(0) * r(1) + u(1) * r(2) + u(2) * r(3), 2);
 }
 
-template <typename Derived>
-typename Derived::Scalar quatNorm(const Eigen::MatrixBase<Derived>& q) {
-  // TODO(hongkai.dai@tri.global): Switch to Eigen's Quaternion when we fix
-  // the range problem in Eigen
-  using std::acos;
-  return acos(q(0));
-}
-
 /**
  * Q = Slerp(q1, q2, f) Spherical linear interpolation between two quaternions
  *   This function uses the implementation given in Algorithm 8 of [1].
@@ -182,22 +161,6 @@ Vector4<Scalar> Slerp(const Eigen::MatrixBase<Derived1>& q1,
   auto ret = (q1 * r).eval();
   ret += q2 * (q2_sign * s);
   return ret;
-}
-
-/**
- * Computes the rotation matrix from quaternion representation.
- * @tparam Derived An Eigen derived type, e.g., an Eigen Vector3d.
- * @param quaternion 4 x 1 unit length quaternion, @p q=[w;x;y;z]
- * @return 3 x 3 rotation matrix
- * (Deprecated), use @ref math::RotationMatrix(quaternion).
- */
-// TODO(mitiguy) change all calling sites to this function.
-template <typename Derived>
-Matrix3<typename Derived::Scalar> quat2rotmat(
-    const Eigen::MatrixBase<Derived>& v) {
-  const Eigen::Quaternion<typename Derived::Scalar> q(v(0), v(1), v(2), v(3));
-  const RotationMatrix<typename Derived::Scalar> R(q);
-  return R.matrix();
 }
 
 /**
@@ -260,7 +223,9 @@ bool AreQuaternionsEqualForOrientation(
   return quat1_canonical.isApprox(quat2_canonical, tolerance);
 }
 
-
+// Note: To avoid dependence on Eigen's internal ordering of elements in its
+// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
+// Return value `quatDt` *does* have a specific order as defined above.
 /** This function calculates a quaternion's time-derivative from its quaternion
  * and angular velocity. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
  *
@@ -274,9 +239,6 @@ bool AreQuaternionsEqualForOrientation(
  * @param w_AB_B  B's angular velocity in A, expressed in B.
  * @retval quatDt Time-derivative of quat_AB, i.e., [ẇ, ẋ, ẏ, ż].
  */
-// Note: To avoid dependence on Eigen's internal ordering of elements in its
-// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
-// Return value `quatDt` *does* have a specific order as defined above.
 template<typename T>
 Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
     const Eigen::Quaternion<T>& quat_AB,  const Vector3<T>& w_AB_B ) {
@@ -293,6 +255,9 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
 }
 
 
+// Note: To avoid dependence on Eigen's internal ordering of elements in its
+// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
+// Parameter `quatDt` *does* have a specific order as defined above.
 /** This function calculates angular velocity from a quaternion and its time-
  * derivative. Algorithm from [Kane, 1983] Section 1.13, Pages 58-59.
  *
@@ -306,9 +271,6 @@ Vector4<T> CalculateQuaternionDtFromAngularVelocityExpressedInB(
  * @param quatDt  Time-derivative of `quat_AB`, i.e. [ẇ, ẋ, ẏ, ż].
  * @retval w_AB_B  B's angular velocity in A, expressed in B.
  */
-// Note: To avoid dependence on Eigen's internal ordering of elements in its
-// Quaternion class, herein we use `e0 = quat.w()', `e1 = quat.x()`, etc.
-// Parameter `quatDt` *does* have a specific order as defined above.
 template <typename T>
 Vector3<T> CalculateAngularVelocityExpressedInBFromQuaternionDt(
     const Eigen::Quaternion<T>& quat_AB, const Vector4<T>& quatDt) {
@@ -410,7 +372,7 @@ bool IsBothQuaternionAndQuaternionDtOK(const Eigen::Quaternion<T>& quat,
 
 /** This function tests if a quaternion and a quaternions time-derivative
  * can calculate and match an angular velocity to within a tolerance.
- * Note: This function first tests if the quaternion [w, x, y, z] satisifies
+ * Note: This function first tests if the quaternion [w, x, y, z] satisfies
  * w^2 + x^2 + y^2 + z^2 = 1 (to within tolerance) and if its time-derivative
  * satisfies  w*ẇ + x*ẋ + y*ẏ + z*ż = 0  (to within tolerance).  Lastly, it
  * tests if each element of the angular velocity calculated from quat and quatDt
@@ -429,7 +391,7 @@ bool IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
                                        const Vector4<T>& quatDt,
                                        const Vector3<T>& w_B,
                                        const double tolerance) {
-  // Ensure time-derivative of quaternion satifies quarternionDt test.
+  // Ensure time-derivative of quaternion satisfies quarternionDt test.
   if ( !math::IsBothQuaternionAndQuaternionDtOK(quat, quatDt, tolerance) )
     return false;
 

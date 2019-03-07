@@ -7,7 +7,11 @@
 
 #pragma once
 
+#include <memory>
+
 #include "drake/common/eigen_types.h"
+#include "drake/systems/framework/vector_system.h"
+#include "drake/systems/primitives/matrix_gain.h"
 
 namespace drake {
 namespace manipulation {
@@ -17,6 +21,11 @@ constexpr int kSchunkWsgNumActuators = 2;
 constexpr int kSchunkWsgNumPositions = 2;
 constexpr int kSchunkWsgNumVelocities = 2;
 
+// TODO(russt): These constants are predicated on the idea that we can map
+// one finger's state => gripper state.  We should prefer using
+// MakeMultibodyStateToWsgState and MakeMultibodyForceToWsgForce instead.
+// But I cannot deprecate them yet without performing surgery on the old
+// controller.
 constexpr int kSchunkWsgPositionIndex = 0;
 constexpr int kSchunkWsgVelocityIndex =
     kSchunkWsgNumPositions + kSchunkWsgPositionIndex;
@@ -36,6 +45,53 @@ VectorX<T> GetSchunkWsgOpenPosition() {
        0.0550667).finished();
   // clang-format on
 }
+
+/// Extract the distance between the fingers (and its time derivative) out
+/// of the plant model which pretends the two fingers are independent.
+template <typename T>
+std::unique_ptr<systems::MatrixGain<T>>
+MakeMultibodyStateToWsgStateSystem() {
+  Eigen::Matrix<double, 2, 4> D;
+  // clang-format off
+  D << -1, 1, 0,  0,
+      0,  0, -1, 1;
+  // clang-format on
+  return std::make_unique<systems::MatrixGain<T>>(D);
+}
+
+template <typename T>
+class MultibodyForceToWsgForceSystem : public systems::VectorSystem<T> {
+ public:
+  MultibodyForceToWsgForceSystem()
+      : systems::VectorSystem<T>(
+            systems::SystemTypeTag<MultibodyForceToWsgForceSystem>{}, 2, 1) {}
+
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit MultibodyForceToWsgForceSystem(
+      const MultibodyForceToWsgForceSystem<U>&)
+      : MultibodyForceToWsgForceSystem<T>() {}
+
+  void DoCalcVectorOutput(
+      const systems::Context<T>&,
+      const Eigen::VectorBlock<const VectorX<T>>& input,
+      const Eigen::VectorBlock<const VectorX<T>>& state,
+    Eigen::VectorBlock<VectorX<T>>* output) const {
+    unused(state);
+    // gripper force = abs(-finger0 + finger1).
+    using std::abs;
+    (*output)(0) = abs(input(0) - input(1));
+  }
+};
+
+/// Extract the gripper measured force from the generalized forces on the two
+/// fingers.
+template <typename T>
+std::unique_ptr<systems::VectorSystem<T>>
+MakeMultibodyForceToWsgForceSystem() {
+  return std::make_unique<MultibodyForceToWsgForceSystem<T>>();
+}
+
 
 }  // namespace schunk_wsg
 }  // namespace manipulation

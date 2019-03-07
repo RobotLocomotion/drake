@@ -13,7 +13,7 @@ typename Generator::result_type generate_unique_seed() {
   return seed.access()++;
 }
 
-template std::mt19937::result_type generate_unique_seed<std::mt19937>();
+template RandomGenerator::result_type generate_unique_seed<RandomGenerator>();
 
 }  // namespace internal
 
@@ -24,7 +24,7 @@ int AddRandomInputs(double sampling_interval_sec,
   // there is (currently) no builder->GetSystems() method.
   for (const auto* system : builder->GetMutableSystems()) {
     for (int i = 0; i < system->get_num_input_ports(); i++) {
-      const systems::InputPortDescriptor<double>& port =
+      const systems::InputPort<double>& port =
           system->get_input_port(i);
       // Check for the random label.
       if (!port.is_random()) {
@@ -33,34 +33,34 @@ int AddRandomInputs(double sampling_interval_sec,
 
       typedef typename Diagram<double>::InputPortLocator InputPortLocator;
       // Check if the input is already wired up.
-      InputPortLocator id{port.get_system(), port.get_index()};
+      InputPortLocator id{&port.get_system(), port.get_index()};
       if (builder->connection_map_.count(id) > 0 ||
           builder->diagram_input_set_.count(id) > 0) {
         continue;
       }
 
+      count++;
       switch (port.get_random_type().value()) {
         case RandomDistribution::kUniform: {
           const auto* uniform = builder->AddSystem<UniformRandomSource>(
               port.size(), sampling_interval_sec);
           builder->Connect(uniform->get_output_port(0), port);
-        } break;
+          continue;
+        }
         case RandomDistribution::kGaussian: {
           const auto* gaussian = builder->AddSystem<GaussianRandomSource>(
               port.size(), sampling_interval_sec);
           builder->Connect(gaussian->get_output_port(0), port);
-        } break;
+          continue;
+        }
         case RandomDistribution::kExponential: {
           const auto* exponential = builder->AddSystem<ExponentialRandomSource>(
               port.size(), sampling_interval_sec);
           builder->Connect(exponential->get_output_port(0), port);
-        } break;
-        default: {
-          DRAKE_ABORT_MSG(
-              "InputPortDescriptor has an unsupported RandomDistribution.");
+          continue;
         }
       }
-      count++;
+      DRAKE_UNREACHABLE();
     }
   }
   return count;

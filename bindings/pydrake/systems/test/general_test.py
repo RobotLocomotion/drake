@@ -2,7 +2,10 @@
 
 from __future__ import print_function
 
+import pydrake.systems.framework as mut
+
 import copy
+import warnings
 
 import unittest
 import numpy as np
@@ -10,6 +13,7 @@ import numpy as np
 from pydrake.autodiffutils import (
     AutoDiffXd,
     )
+from pydrake.examples.pendulum import PendulumPlant
 from pydrake.symbolic import (
     Expression,
     )
@@ -19,35 +23,39 @@ from pydrake.systems.analysis import (
     Simulator, Simulator_,
     )
 from pydrake.systems.framework import (
+    AbstractValue,
     BasicVector, BasicVector_,
     Context_,
-    ContinuousState_,
+    ContinuousState, ContinuousState_,
     Diagram, Diagram_,
     DiagramBuilder, DiagramBuilder_,
     DiscreteUpdateEvent_,
     DiscreteValues_,
-    Event_,
-    InputPortDescriptor_,
+    Event, Event_,
+    InputPort_,
+    kUseDefaultName,
     LeafContext_,
     LeafSystem_,
     OutputPort_,
     Parameters_,
-    PublishEvent_,
+    PublishEvent, PublishEvent_,
     State_,
     Subvector_,
     Supervector_,
     System_,
     SystemOutput_,
-    VectorBase_,
+    VectorBase, VectorBase_,
+    TriggerType,
     VectorSystem_,
     )
-from pydrake.systems import primitives
 from pydrake.systems.primitives import (
     Adder, Adder_,
     AffineSystem,
+    ConstantValueSource,
     ConstantVectorSource, ConstantVectorSource_,
     Integrator,
     LinearSystem,
+    PassThrough,
     SignalLogger,
     )
 
@@ -84,8 +92,59 @@ class TestGeneral(unittest.TestCase):
         system = Adder(3, 10)
         self.assertEqual(system.get_num_input_ports(), 3)
         self.assertEqual(system.get_num_output_ports(), 1)
+        self.assertEqual(system.GetInputPort("u1").get_index(), 1)
+        self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
         # to this test point.
+
+    def test_context_api(self):
+        system = Adder(3, 10)
+        context = system.CreateDefaultContext()
+        self.assertIsInstance(
+            context.get_continuous_state(), ContinuousState)
+        self.assertIsInstance(
+            context.get_mutable_continuous_state(), ContinuousState)
+        self.assertIsInstance(
+            context.get_continuous_state_vector(), VectorBase)
+        self.assertIsInstance(
+            context.get_mutable_continuous_state_vector(), VectorBase)
+        # TODO(eric.cousineau): Consolidate main API tests for `Context` here.
+
+        pendulum = PendulumPlant()
+        context = pendulum.CreateDefaultContext()
+        self.assertEqual(context.num_numeric_parameter_groups(), 1)
+        self.assertTrue(
+            context.get_parameters().get_numeric_parameter(0) is
+            context.get_numeric_parameter(index=0))
+        self.assertEqual(context.num_abstract_parameters(), 0)
+        # TODO(russt): Bind _Declare*Parameter or find an example with an
+        # abstract parameter to actually call this method.
+        self.assertTrue(hasattr(context, "get_abstract_parameter"))
+        x = np.array([0.1, 0.2])
+        context.SetContinuousState(x)
+        np.testing.assert_equal(
+            context.get_continuous_state_vector().CopyToVector(), x)
+
+    def test_event_api(self):
+        # TriggerType - existence check.
+        TriggerType.kUnknown
+        TriggerType.kInitialization
+        TriggerType.kForced
+        TriggerType.kTimed
+        TriggerType.kPeriodic
+        TriggerType.kPerStep
+        TriggerType.kWitness
+
+        # PublishEvent.
+        # TODO(eric.cousineau): Test other event types when it is useful to
+        # expose them.
+
+        def callback(context, event): pass
+
+        event = PublishEvent(
+            trigger_type=TriggerType.kInitialization, callback=callback)
+        self.assertIsInstance(event, Event)
+        self.assertEqual(event.get_trigger_type(), TriggerType.kInitialization)
 
     def test_instantiations(self):
         # Quick check of instantions for given types.
@@ -103,7 +162,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(DiagramBuilder_)
         self._check_instantiations(OutputPort_)
         self._check_instantiations(SystemOutput_)
-        self._check_instantiations(InputPortDescriptor_)
+        self._check_instantiations(InputPort_)
         self._check_instantiations(Parameters_)
         self._check_instantiations(State_)
         self._check_instantiations(ContinuousState_)
@@ -145,7 +204,7 @@ class TestGeneral(unittest.TestCase):
 
             def check_output(context):
                 # Check number of output ports and value for a given context.
-                output = system.AllocateOutput(context)
+                output = system.AllocateOutput()
                 self.assertEqual(output.get_num_ports(), 1)
                 system.CalcOutput(context, output)
                 if T == float:
@@ -213,10 +272,11 @@ class TestGeneral(unittest.TestCase):
         builder.Connect(adder1.get_output_port(0),
                         integrator.get_input_port(0))
 
+        # Exercise naming variants.
         builder.ExportInput(adder0.get_input_port(0))
-        builder.ExportInput(adder0.get_input_port(1))
-        builder.ExportInput(adder1.get_input_port(1))
-        builder.ExportOutput(integrator.get_output_port(0))
+        builder.ExportInput(adder0.get_input_port(1), kUseDefaultName)
+        builder.ExportInput(adder1.get_input_port(1), "third_input")
+        builder.ExportOutput(integrator.get_output_port(0), "result")
 
         diagram = builder.Build()
         # TODO(eric.cousineau): Figure out unicode handling if needed.
@@ -236,6 +296,10 @@ class TestGeneral(unittest.TestCase):
         context.FixInputPort(1, input1)
         input2 = BasicVector([0.003, 0.004, 0.005])
         context.FixInputPort(2, input2)  # Test the BasicVector overload.
+
+        # Test __str__ methods.
+        self.assertRegexpMatches(str(context), "integrator")
+        self.assertEqual(str(input2), "[0.003, 0.004, 0.005]")
 
         # Initialize integrator states.
         integrator_xc = (
@@ -318,3 +382,76 @@ class TestGeneral(unittest.TestCase):
             RungeKutta3Integrator(
                 system=system,
                 context=simulator.get_mutable_context()))
+
+    def test_abstract_output_port_eval(self):
+        model_value = AbstractValue.Make("Hello World")
+        source = ConstantValueSource(copy.copy(model_value))
+        context = source.CreateDefaultContext()
+        output_port = source.get_output_port(0)
+
+        value = output_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, model_value.get_value())
+
+        value_abs = output_port.EvalAbstract(context)
+        self.assertEqual(type(value_abs), type(model_value))
+        self.assertEqual(value_abs.get_value(), model_value.get_value())
+
+    def test_vector_output_port_eval(self):
+        np_value = np.array([1., 2., 3.])
+        model_value = AbstractValue.Make(BasicVector(np_value))
+        source = ConstantVectorSource(np_value)
+        context = source.CreateDefaultContext()
+        output_port = source.get_output_port(0)
+
+        value = output_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np_value)
+
+        value_abs = output_port.EvalAbstract(context)
+        self.assertEqual(type(value_abs), type(model_value))
+        self.assertEqual(type(value_abs.get_value().get_value()), np.ndarray)
+        np.testing.assert_equal(value_abs.get_value().get_value(), np_value)
+
+        basic = output_port.EvalBasicVector(context)
+        self.assertEqual(type(basic), BasicVector)
+        self.assertEqual(type(basic.get_value()), np.ndarray)
+        np.testing.assert_equal(basic.get_value(), np_value)
+
+    def test_abstract_input_port_eval(self):
+        model_value = AbstractValue.Make("Hello World")
+        system = PassThrough(copy.copy(model_value))
+        context = system.CreateDefaultContext()
+        fixed = context.FixInputPort(0, copy.copy(model_value))
+        self.assertIsInstance(fixed.GetMutableData(), AbstractValue)
+        input_port = system.get_input_port(0)
+
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, model_value.get_value())
+
+        value_abs = input_port.EvalAbstract(context)
+        self.assertEqual(type(value_abs), type(model_value))
+        self.assertEqual(value_abs.get_value(), model_value.get_value())
+
+    def test_vector_input_port_eval(self):
+        np_value = np.array([1., 2., 3.])
+        model_value = AbstractValue.Make(BasicVector(np_value))
+        system = PassThrough(len(np_value))
+        context = system.CreateDefaultContext()
+        context.FixInputPort(0, np_value)
+        input_port = system.get_input_port(0)
+
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np_value)
+
+        value_abs = input_port.EvalAbstract(context)
+        self.assertEqual(type(value_abs), type(model_value))
+        self.assertEqual(type(value_abs.get_value().get_value()), np.ndarray)
+        np.testing.assert_equal(value_abs.get_value().get_value(), np_value)
+
+        basic = input_port.EvalBasicVector(context)
+        self.assertEqual(type(basic), BasicVector)
+        self.assertEqual(type(basic.get_value()), np.ndarray)
+        np.testing.assert_equal(basic.get_value(), np_value)

@@ -13,16 +13,17 @@ namespace particles {
 /// described in terms of its:
 ///
 /// - Inputs:
-///     - linear acceleration (input index 0), in @f$ m/s^2 @f$ units.
+///   - linear acceleration (input index 0), in @f$ m/s^2 @f$ units.
 /// - States/Outputs:
-///     - linear position (state/output index 0), in @f$ m @f$ units.
-///     - linear velocity (state/output index 1), in @f$ m/s @f$ units.
+///   - linear position (state/output index 0), in @f$ m @f$ units.
+///   - linear velocity (state/output index 1), in @f$ m/s @f$ units.
 ///
 /// @tparam T must be a valid Eigen ScalarType.
 ///
 /// @note
 /// Instantiated templates for the following scalar types
 /// @p T are provided:
+///
 /// - double
 ///
 template <typename T>

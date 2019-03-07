@@ -1,7 +1,10 @@
 #include "drake/manipulation/planner/differential_inverse_kinematics.h"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
+
+#include <fmt/format.h>
 
 #include "drake/solvers/osqp_solver.h"
 
@@ -9,7 +12,7 @@ namespace drake {
 namespace manipulation {
 namespace planner {
 
-namespace {
+namespace detail {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& q_current,
     const Eigen::Ref<const VectorX<double>>& v_current,
@@ -41,7 +44,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       q_current, v_current, V_WE_E_scaled.head(num_cart_constraints),
       J_WE_E_scaled.topRows(num_cart_constraints), parameters);
 }
-}  // namespace
+}  // namespace detail
 
 std::ostream& operator<<(std::ostream& os,
                          const DifferentialInverseKinematicsStatus value) {
@@ -52,9 +55,29 @@ std::ostream& operator<<(std::ostream& os,
       return os << "No solution found.";
     case (DifferentialInverseKinematicsStatus::kStuck):
       return os << "Stuck!";
-    default:
-      DRAKE_ABORT();
   }
+  DRAKE_UNREACHABLE();
+}
+
+const std::vector<std::shared_ptr<solvers::LinearConstraint>>&
+DifferentialInverseKinematicsParameters::get_linear_velocity_constraints()
+    const {
+  return linear_velocity_constraints_;
+}
+
+void DifferentialInverseKinematicsParameters::AddLinearVelocityConstraint(
+      const std::shared_ptr<solvers::LinearConstraint>
+          constraint) {
+  if (constraint->num_vars() != get_num_velocities()) {
+    throw std::invalid_argument(fmt::format(
+          "Number of variables, {}, does not match number of velocities, {}.",
+          constraint->num_vars(), get_num_velocities()));
+  }
+  linear_velocity_constraints_.push_back(constraint);
+}
+
+void DifferentialInverseKinematicsParameters::ClearLinearVelocityConstraints() {
+  linear_velocity_constraints_.clear();
 }
 
 Vector6<double> ComputePoseDiffInCommonFrame(const Isometry3<double>& pose0,
@@ -114,6 +137,7 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     A.rightCols(1) = -V_dir;
     prog.AddLinearEqualityConstraint(
         A, VectorX<double>::Zero(num_cart_constraints), {v_next, alpha});
+    // TODO(russt): This should not be hard-coded.
     const double kCartesianTrackingWeight = 100;
     cart_cost =
         prog.AddQuadraticErrorCost(Vector1<double>(kCartesianTrackingWeight),
@@ -121,10 +145,14 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
             .evaluator()
             .get();
 
+    // Constrain the unconstrained DoFs velocity to be small, which is used
+    // to fulfill the regularization cost.  We use the svd of J = UΣV', in
+    // which the columns of V corresponding to the small/zero singular values
+    // in Σ are the "unconstrained" degrees of freedom.  Since JacobiSVD
+    // always sorts the singular values in decreasing order, we expect these
+    // to be the last columns.  We assume that J is full row-rank, so has
+    // num_cart_constraints non-zero singular values.
     Eigen::JacobiSVD<MatrixX<double>> svd(J, Eigen::ComputeFullV);
-
-    // Add constrained the unconstrained dof's velocity to be small, which is
-    // used to fulfil the regularization cost.
     if (parameters.get_unconstrained_degrees_of_freedom_velocity_limit()) {
       const double uncon_v =
           parameters.get_unconstrained_degrees_of_freedom_velocity_limit()
@@ -135,6 +163,15 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
       }
     }
   }
+
+  for (const auto& constraint : parameters.get_linear_velocity_constraints()) {
+    prog.AddConstraint(
+        solvers::Binding<solvers::LinearConstraint>(constraint, v_next));
+  }
+
+  // A bunch of the operations below assume num_positions == num_velocities.
+  // TODO(russt): Generalize this
+  DRAKE_DEMAND(num_positions == num_velocities);
 
   // If redundant, add a small regularization term to q_nominal.
   const double dt{parameters.get_timestep()};
@@ -162,6 +199,8 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   // Add vd constraint.
   if (parameters.get_joint_acceleration_limits()) {
     prog.AddLinearConstraint(
+        // TODO(russt): This should be num_velocities if we generalize the
+        // implementation.
         identity_num_positions,
         parameters.get_joint_acceleration_limits()->first * dt + v_current,
         parameters.get_joint_acceleration_limits()->second * dt + v_current,
@@ -170,89 +209,61 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   // Solve
   solvers::OsqpSolver solver;
-  DRAKE_THROW_UNLESS(solver.available());
-  solvers::SolutionResult result = solver.Solve(prog);
+  solvers::MathematicalProgramResult result = solver.Solve(prog, {}, {});
 
-  if (result != solvers::SolutionResult::kSolutionFound) {
+  if (!result.is_success()) {
     return {nullopt, DifferentialInverseKinematicsStatus::kNoSolutionFound};
   }
 
   if (num_cart_constraints) {
     VectorX<double> cost(1);
-    cart_cost->Eval(prog.GetSolution(alpha), cost);
+    cart_cost->Eval(result.GetSolution(alpha), &cost);
     const double kMaxTrackingError = 5;
     const double kMinEndEffectorVel = 1e-2;
     if (cost(0) > kMaxTrackingError &&
-        prog.GetSolution(alpha)[0] <= kMinEndEffectorVel) {
+        result.GetSolution(alpha)[0] <= kMinEndEffectorVel) {
       // Not tracking the desired vel norm (large tracking error) and the
       // computed vel is small.
-      log()->info("v_next = {}", prog.GetSolution(v_next).transpose());
-      log()->info("alpha = {}", prog.GetSolution(alpha).transpose());
+      log()->info("v_next = {}", result.GetSolution(v_next).transpose());
+      log()->info("alpha = {}", result.GetSolution(alpha).transpose());
       return {nullopt, DifferentialInverseKinematicsStatus::kStuck};
     }
   }
 
-  return {prog.GetSolution(v_next),
+  return {result.GetSolution(v_next),
           DifferentialInverseKinematicsStatus::kSolutionFound};
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const Isometry3<double>& X_WE_desired,
-    const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  const Isometry3<double> X_WE =
-      robot.CalcFramePoseInWorldFrame(cache, frame_E);
-  const Vector6<double> V_WE_desired =
-      ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
-      parameters.get_timestep();
-  return DoDifferentialInverseKinematics(robot, cache, V_WE_desired, frame_E,
-                                         parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>& robot, const KinematicsCache<double>& cache,
-    const Vector6<double>& V_WE_desired, const RigidBodyFrame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters) {
-  Isometry3<double> X_WE = robot.CalcFramePoseInWorldFrame(cache, frame_E);
-  MatrixX<double> J_WE =
-      robot.CalcFrameSpatialVelocityJacobianInWorldFrame(cache, frame_E);
-  return DoDifferentialInverseKinematics(cache.getQ(), cache.getV(), X_WE, J_WE,
-                                         V_WE_desired, parameters);
-}
-
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const Isometry3<double> X_WE =
-      robot.CalcRelativeTransform(context, robot.world_frame(), frame_E);
-  MatrixX<double> J_WE(6, robot.num_velocities());
-  robot.CalcFrameGeometricJacobianExpressedInWorld(
+      plant.CalcRelativeTransform(context, plant.world_frame(), frame_E);
+  MatrixX<double> J_WE(6, plant.num_velocities());
+  plant.CalcFrameGeometricJacobianExpressedInWorld(
       context, frame_E, Vector3<double>::Zero(), &J_WE);
 
-  const auto& mbt_context =
-      dynamic_cast<const multibody::MultibodyTreeContext<double>&>(context);
-  return DoDifferentialInverseKinematics(mbt_context.get_positions(),
-                                         mbt_context.get_velocities(), X_WE,
-                                         J_WE, V_WE_desired, parameters);
+  return detail::DoDifferentialInverseKinematics(
+      plant.GetPositions(context), plant.GetVelocities(context),
+      X_WE, J_WE, V_WE_desired, parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyTree<double>& robot,
+    const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const Isometry3<double> X_WE =
-      robot.EvalBodyPoseInWorld(context, frame_E.body()) *
+      plant.EvalBodyPoseInWorld(context, frame_E.body()) *
       frame_E.CalcPoseInBodyFrame(context);
   const Vector6<double> V_WE_desired =
       ComputePoseDiffInCommonFrame(X_WE, X_WE_desired) /
       parameters.get_timestep();
-  return DoDifferentialInverseKinematics(robot, context, V_WE_desired, frame_E,
+  return DoDifferentialInverseKinematics(plant, context, V_WE_desired, frame_E,
                                          parameters);
 }
 

@@ -16,100 +16,82 @@ of the following:
 * ``status``: PRs only.  Indicates the status of the PR.
 
 Please only assign labels if you are reasonably confident they are correct.
-The Drake development team will apply appropriate labels to issues during
-the weekly scrub.
+The Drake development team will apply appropriate labels later as needed.
 
 Owner
 =====
 
-All GitHub issues should have an owner. The Platform Reviewer should check once
-per day that `all unassigned issues
-<https://github.com/RobotLocomotion/drake/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee>`_
-have an appropriate owner.
+Every issue must have at least one owner assigned.
+
+.. _issues-team:
 
 Team
 ====
-Every issue must have at least one ``team`` label. If no team agrees to own an
-issue at the weekly tracker scrub, the issue will be closed with an explanation.
-The teams, their leads, and their responsibilities are:
+
+Every issue must have at least one ``team`` label. The teams, their leads, and
+their responsibilities are:
+
+- ``automotive``
+
+  lead: jwnimmer-tri
+
+  responsibilities: ``drake/automotive/`` subdirectory
 
 - ``dynamics``
 
   lead: sherm1
 
-  responsibilities: physical accuracy, numerical methods, collision
+  responsibilities: physical accuracy, numerical methods, collision,
+  systems framework
 
-- ``interfaces``
-
-  lead: TBD
-
-  responsibilities: integration with other robotics frameworks
 - ``kitware``
 
-  lead: billhoffman
+  lead: jamiesnape
 
   responsibilities: build, continuous integration
-- ``optimization``
 
-  lead: ggould-tri
+- ``manipulation``
 
-  responsibilities: optimizers, solvers, symbolic analysis
-- ``robot locomotion group``
+  lead: hongkai-dai
 
-  lead: RussTedrake
+  responsibilities: optimizers, solvers, symbolic analysis,
+  ``drake/manipulation/`` subdirectory
 
-  responsibilities: MIT CSAIL research lab
-- ``sensors``
-
-  lead: ErikSobel-TRI
-
-  responsibilities: modeling light, sound, and devices
-- ``software core``
-
-  lead: david-german-tri
-
-  responsibilities: APIs, infrastructure, productivity
-- ``6.832``
+- ``robot locomotion group`` and ``6.832``
 
   lead: RussTedrake
 
-  responsibilities: MIT underactuated robotics course
+  responsibilities: MIT CSAIL research lab / MIT courses
 
-Type
-====
-Every issue must have at least one ``type``, and typically should have exactly
-one. Issues that require a code change will typically have type ``bug``,
-``feature request``, or ``cleanup``. There are a number of niche types for
-other kinds of issues, and the exact set is expected to evolve over time.
+.. _issues-priority:
 
 Priority
 ========
+
 The ``emergency`` priority indicates that the owning team should not work
-on anything else until the issue is resolved. A postmortem document should be
-opened at the same time as the ``emergency`` issue, linked in the description,
-and updated as the situation evolves. Exception: broken builds are emergencies,
-but a postmortem document is not required.
+on anything else until the issue is resolved.
 
-The ``high``, ``medium``, ``low``, and ``backlog`` priority levels have
-semantics determined by the owning team. The following rules of thumb may be
-useful:
+The other priorities are determined by the owning team. The following rules of
+thumb may be useful for issues:
 
-* high-priority issues are planned to receive attention within the month.
-* medium-priority issues are planned to receive attention within the quarter.
-* low-priority issues may be planned for a subsequent quarter.
-* backlog-priority issues will be handled on an ad-hoc basis, as time permits.
+* ``priority: high`` - planned to receive attention within the month.
+* ``priority: medium`` - planned to receive attention within the quarter.
+* ``priority: low`` - planned for a subsequent quarter.
+* ``priority: backlog`` - will be handled on an ad-hoc basis, as time permits.
 
 Configuration
 =============
-An issue may have configuration ``linux`` or ``mac``. It may additionally have
-configuration ``matlab``.  If no ``configuration`` label is present, the issue
-is assumed to affect all configurations.
+
+An issue may have configuration label(s) such as ``linux``, ``mac``,
+``python``, etc.  If no ``configuration`` label is present, the issue is
+assumed to affect all configurations.
 
 Status
 ======
-For the most part, we rely on reviewable.io to communicate PR status. There
-are only two ``status`` labels.  Both flags are optional, but Drake
-administrators managing the PR queue will respect them.
+
+For the most part, we rely on reviewable.io to communicate PR status.
+Status labels are optional, but Drake developers managing the PR queue
+will respect them.
 
 * ``do not review``: Use this status to indicate you do not want anyone to
   review your PR right now. This is useful if you created the PR to trigger

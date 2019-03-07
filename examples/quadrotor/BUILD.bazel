@@ -1,10 +1,10 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
 )
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -19,14 +19,17 @@ drake_cc_library(
     name = "quadrotor_plant",
     srcs = ["quadrotor_plant.cc"],
     hdrs = ["quadrotor_plant.h"],
+    data = [":models"],
     deps = [
+        "//attic/util",
         "//common:default_scalars",
+        "//geometry:scene_graph",
         "//math:geometric_transform",
         "//math:gradient",
+        "//multibody/parsing",
         "//systems/controllers:linear_quadratic_regulator",
         "//systems/framework:leaf_system",
         "//systems/primitives:affine_system",
-        "//util",
     ],
 )
 
@@ -34,20 +37,19 @@ drake_cc_binary(
     name = "run_quadrotor_dynamics",
     srcs = ["run_quadrotor_dynamics.cc"],
     add_test_rule = 1,
-    data = [":models"],
     test_rule_args = [
         "--duration=0.1",
         "--initial_height=0.051",
     ],
     deps = [
         ":quadrotor_plant",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//lcm",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/primitives:constant_vector_source",
@@ -59,7 +61,6 @@ drake_cc_binary(
     name = "run_quadrotor_lqr",
     srcs = ["run_quadrotor_lqr.cc"],
     add_test_rule = 1,
-    data = [":models"],
     test_rule_args = [
         "-simulation_trials=2",
         "-simulation_real_time_rate=0.0",
@@ -68,12 +69,8 @@ drake_cc_binary(
         ":quadrotor_plant",
         "//common:find_resource",
         "//common:is_approx_equal_abstol",
+        "//geometry:geometry_visualization",
         "//lcm",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "@gflags",
@@ -85,11 +82,11 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":quadrotor_plant",
+        "//attic/multibody:rigid_body_tree_construction",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody:rigid_body_tree_construction",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
         "//systems/framework/test_utilities",

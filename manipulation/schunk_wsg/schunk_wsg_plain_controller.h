@@ -42,12 +42,13 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *                           │   ┌──────────┐   ┌───────────┐   │   │
  *                 ┌─────────│──▶│          │   │Grip Force │   │   │
  *                 │   ┌──┐  └──▶│Saturation├──▶│To Joint   ├──▶│   │
- * max force ──────┴──▶│-1├─────▶│          │   │Force      │   └───┘
+ * max force / 2 ──┴──▶│-1├─────▶│          │   │Force      │   └───┘
  *                     └──┘      └──────────┘   └───────────┘
  *```
  * The blocks with double outlines (══) differ between the two control modes:
- *  - Generate Desired Control State
- *    - ControlMode::kPosition
+ *
+ * - Generate Desired Control State
+ *   - ControlMode::kPosition
  *```
  *        ┌───────────┐
  *        │Desired    │
@@ -73,8 +74,8 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *         grip   ───────▶│IGNORED │
  *         state          └────────┘
  *```
- *  - Handle Feed-Forward Force
- *    - ControlMode::kPosition
+ * - Handle Feed-Forward Force
+ *   - ControlMode::kPosition
  *```
  *                                     █────▶ mean finger force
  *         pid                         █
@@ -85,7 +86,7 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  *         forward ──────▶│IGNORED │
  *         force          └────────┘
  *```
- *    - ControlMode::kForce
+ *   - ControlMode::kForce
  *```
  *         pid
  *         controller ──────────────────────▶ mean finger force
@@ -101,6 +102,8 @@ enum class ControlMode { kPosition = 0, kForce = 1 };
  * Note that the "feed forward force" input is ignored for
  * ControlMode::kPosition and the "desired grip state" input is ignored for
  * ControlMode::kPosition.
+ *
+ * @ingroup manipulation_systems
  */
 class SchunkWsgPlainController
     : public systems::Diagram<double>,
@@ -112,29 +115,29 @@ class SchunkWsgPlainController
       ControlMode control_mode = ControlMode::kPosition, double kp = 2000,
       double ki = 0, double kd = 5);
 
-  /** Returns the descriptor for the feed-forward force input port.
+  /** Returns the feed-forward force input port.
    * @pre `this` was constructed with `control_mode` set to
    * `ControlMode::kForce`.*/
-  const systems::InputPortDescriptor<double>&
+  const systems::InputPort<double>&
   get_input_port_feed_forward_force() const {
     DRAKE_ASSERT(feed_forward_force_input_port_ >= 0);
     return this->get_input_port(feed_forward_force_input_port_);
   }
 
-  const systems::InputPortDescriptor<double>& get_input_port_max_force() const {
+  const systems::InputPort<double>& get_input_port_max_force() const {
     return this->get_input_port(max_force_input_port_);
   }
 
   // These methods implement StateFeedbackControllerInterface.
-  const systems::InputPortDescriptor<double>& get_input_port_estimated_state()
+  const systems::InputPort<double>& get_input_port_estimated_state()
       const override {
     return this->get_input_port(state_input_port_);
   }
 
-  /** Returns the descriptor for the desired grip state input port.
+  /** Returns the desired grip state input port.
    * @pre `this` was constructed with `control_mode` set to
    * `ControlMode::kPosition`.*/
-  const systems::InputPortDescriptor<double>& get_input_port_desired_state()
+  const systems::InputPort<double>& get_input_port_desired_state()
       const override {
     DRAKE_ASSERT(state_input_port_ >= 0);
     return this->get_input_port(desired_grip_state_input_port_);

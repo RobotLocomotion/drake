@@ -2,9 +2,11 @@
 
 #include <memory>
 #include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/context.h"
@@ -16,11 +18,12 @@
 namespace drake {
 namespace systems {
 
-/// %LeafContext contains all prerequisite data necessary to uniquely determine
-/// the results of computations performed by the associated LeafSystem.
-///
-/// @tparam T The mathematical type of the context, which must be a valid Eigen
-///           scalar.
+/** %LeafContext contains all prerequisite data necessary to uniquely determine
+the results of computations performed by the associated LeafSystem.
+@see Context for more information.
+
+@tparam T The mathematical type of the context, which must be a valid Eigen
+          scalar. */
 template <typename T>
 class LeafContext : public Context<T> {
  public:
@@ -33,37 +36,21 @@ class LeafContext : public Context<T> {
   //@}
 
   LeafContext()
-      : state_(std::make_unique<State<T>>()),
-        parameters_(std::make_unique<Parameters<T>>()) {}
+      : state_(std::make_unique<State<T>>()) {}
   ~LeafContext() override {}
 
-  const State<T>& get_state() const final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_;
-  }
-
-  State<T>& get_mutable_state() final {
-    DRAKE_ASSERT(state_ != nullptr);
-    return *state_.get();
-  }
-
-  // =========================================================================
-  // Accessors and Mutators for Parameters.
-
-  /// Sets the parameters to @p params, deleting whatever was there before.
-  void set_parameters(std::unique_ptr<Parameters<T>> params) {
-    parameters_ = std::move(params);
-  }
-
-  /// Returns the entire Parameters object.
-  const Parameters<T>& get_parameters() const final {
-    return *parameters_;
-  }
-
-  /// Returns the entire Parameters object.
-  Parameters<T>& get_mutable_parameters() final {
-    return *parameters_;
-  }
+#ifndef DRAKE_DOXYGEN_CXX
+  // Temporarily promoting these to public so that LeafSystem and testing code
+  // can construct a LeafContext with state & parameters. Users should never
+  // call these because state & parameters should not be resized once allocated
+  // (or at least should be done under Framework control so that dependency
+  // tracking can be correctly revised).
+  // TODO(sherm1) Make these inaccessible to users. See discussion in PR #9029.
+  using Context<T>::init_continuous_state;
+  using Context<T>::init_discrete_state;
+  using Context<T>::init_abstract_state;
+  using Context<T>::init_parameters;
+#endif
 
  protected:
   /// Protected copy constructor takes care of the local data members and
@@ -72,9 +59,6 @@ class LeafContext : public Context<T> {
   LeafContext(const LeafContext& source) : Context<T>(source) {
     // Make a deep copy of the state.
     state_ = source.CloneState();
-
-    // Make deep copies of the parameters.
-    set_parameters(source.parameters_->Clone());
 
     // Everything else was handled by the Context<T> copy constructor.
   }
@@ -99,19 +83,91 @@ class LeafContext : public Context<T> {
         xc_vector.Clone(), num_q, num_v, num_z));
 
     // Make deep copies of the discrete and abstract states.
-    clone->set_discrete_state(get_state().get_discrete_state().Clone());
-    clone->set_abstract_state(get_state().get_abstract_state().Clone());
+    clone->set_discrete_state(state_->get_discrete_state().Clone());
+    clone->set_abstract_state(state_->get_abstract_state().Clone());
 
     return clone;
   }
 
  private:
-  // The internal state of the System.
-  std::unique_ptr<State<T>> state_;
+  friend class LeafContextTest;
+  using ContextBase::AddInputPort;    // For LeafContextTest.
+  using ContextBase::AddOutputPort;
+  using ContextBase::AddDiscreteStateTicket;
+  using ContextBase::AddAbstractStateTicket;
+  using ContextBase::AddNumericParameterTicket;
+  using ContextBase::AddAbstractParameterTicket;
 
-  // The parameters of the system.
-  std::unique_ptr<Parameters<T>> parameters_;
+  const State<T>& do_access_state() const final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  State<T>& do_access_mutable_state() final {
+    DRAKE_ASSERT(state_ != nullptr);
+    return *state_;
+  }
+
+  /// Returns a partial textual description of the Context, intended to be
+  /// human-readable.  It is not guaranteed to be unambiguous nor complete.
+  std::string do_to_string() const final {
+    std::ostringstream os;
+
+    os << this->GetSystemPathname() << " Context\n";
+    os << std::string(this->GetSystemPathname().size() + 9, '-') << "\n";
+    os << "Time: " << this->get_time() << "\n";
+
+    if (this->get_continuous_state().size() ||
+        this->get_num_discrete_state_groups() ||
+        this->get_num_abstract_states()) {
+      os << "States:\n";
+      if (this->get_continuous_state().size()) {
+        os << "  " << this->get_continuous_state().size()
+           << " continuous states\n";
+        os << "    " << this->get_continuous_state_vector() << "\n";
+      }
+      if (this->get_num_discrete_state_groups()) {
+        os << "  " << this->get_num_discrete_state_groups()
+           << " discrete state groups with\n";
+        for (int i = 0; i < this->get_num_discrete_state_groups(); i++) {
+          os << "     " << this->get_discrete_state(i).size() << " states\n";
+          os << "       " << this->get_discrete_state(i) << "\n";
+        }
+      }
+      if (this->get_num_abstract_states()) {
+        os << "  " << this->get_num_abstract_states() << " abstract states\n";
+      }
+      os << "\n";
+    }
+
+    if (this->num_numeric_parameter_groups() ||
+        this->num_abstract_parameters()) {
+      os << "Parameters:\n";
+      if (this->num_numeric_parameter_groups()) {
+        os << "  " << this->num_numeric_parameter_groups()
+           << " numeric parameter groups";
+        os << " with\n";
+        for (int i = 0; i < this->num_numeric_parameter_groups(); i++) {
+          os << "     " << this->get_numeric_parameter(i).size()
+             << " parameters\n";
+          os << "       " << this->get_numeric_parameter(i) << "\n";
+        }
+      }
+      if (this->num_abstract_parameters()) {
+        os << "  " << this->num_abstract_parameters()
+           << " abstract parameters\n";
+      }
+    }
+    return os.str();
+  }
+
+
+  // The state values (x) for this LeafContext; this is never null.
+  std::unique_ptr<State<T>> state_;
 };
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafContext)

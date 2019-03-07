@@ -27,7 +27,7 @@ class BuildifierTest(unittest.TestCase):
         process = subprocess.Popen(
             command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         stdout, _ = process.communicate()
-        return process.returncode, stdout
+        return process.returncode, stdout.decode('utf8')
 
     def test_mode_check(self):
         returncode, output = self._call_buildifier(
@@ -46,7 +46,7 @@ class BuildifierTest(unittest.TestCase):
              "error: the required formatting is incorrect"),
             ("ERROR: tmp/BUILD.bazel:1: note: " +
              "fix via bazel-bin/tools/lint/buildifier tmp/BUILD.bazel"),
-            "NOTE: see http://drake.mit.edu/bazel.html#buildifier"
+            "NOTE: see https://drake.mit.edu/bazel.html#buildifier"
         ])
 
     def test_mode_fix(self):

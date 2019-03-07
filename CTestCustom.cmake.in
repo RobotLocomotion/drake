@@ -6,16 +6,21 @@ list(APPEND CTEST_CUSTOM_COVERAGE_EXCLUDE
   ".*/third_party/.*"
 )
 
+string(ASCII 27 ESC)
+
+# DEBUG may be colored yellow (CSI 33m) and WARNING may be colored magenta
+# (CSI 35m).
 list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
   "^DEBUG: "
   "^WARNING: "
   ":[0-9]+: Failure$"
+  "^${ESC}\\[(33mDEBUG|35mWARNING): ${ESC}\\[0m"
 )
 
+# ERROR may be colored red (CSI 31m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_ERROR_MATCH
   "^ERROR: "
-  "^FAIL: "
-  "^TIMEOUT: "
+  "^${ESC}\\[31m${ESC}\\[1mERROR: ${ESC}\\[0m"
 )
 
 # Ignore various Mac CROSSTOOL-related warnings.
@@ -26,7 +31,11 @@ list(APPEND CTEST_CUSTOM_WARNING_EXCEPTION
   "warning: '_FORTIFY_SOURCE' macro redefined \\[-Wmacro-redefined\\]"
 )
 
-list(APPEND CTEST_CUSTOM_WARNING_MATCH "^WARNING: ")
+# WARNING may be colored magenta (CSI 35m).
+list(APPEND CTEST_CUSTOM_WARNING_MATCH
+  "^WARNING: "
+  "^${ESC}\\[35mWARNING: ${ESC}\\[0m"
+)
 
 set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_ERRORS 100)
 set(CTEST_CUSTOM_MAXIMUM_NUMBER_OF_WARNINGS 100)

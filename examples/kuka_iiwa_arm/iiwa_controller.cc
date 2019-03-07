@@ -2,6 +2,7 @@
 ///
 /// Implements a controller for a KUKA iiwa arm.
 
+#include <iostream>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -21,7 +22,6 @@
 #include "drake/systems/lcm/lcm_driven_loop.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
-#include "drake/systems/primitives/demultiplexer.h"
 
 using robotlocomotion::robot_plan_t;
 
@@ -76,10 +76,11 @@ int DoMain() {
   } else if (interp_str == "pchip") {
     interpolator_type = InterpolatorType::Pchip;
   } else {
-    DRAKE_ABORT_MSG(
+    std::cerr <<
         "Robot plan interpolation type not recognized. "
         "Use the gflag --helpshort to display "
-        "flag options for interpolator type.");
+        "flag options for interpolator type.\n";
+    return EXIT_FAILURE;
   }
   auto plan_interpolator =
       builder.AddSystem<LcmPlanInterpolator>(urdf, interpolator_type);
@@ -120,7 +121,7 @@ int DoMain() {
           systems::lcm::UtimeMessageToSeconds<lcmt_iiwa_status>>());
 
   // Waits for the first message.
-  const systems::AbstractValue& first_msg = loop.WaitForMessage();
+  const AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
   const lcmt_iiwa_status& first_status = first_msg.GetValue<lcmt_iiwa_status>();

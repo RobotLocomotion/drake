@@ -102,7 +102,7 @@ def _proto_gen_impl(ctx):
     inputs += [plugin]
 
   if args:
-    ctx.action(
+    ctx.actions.run(
         inputs=inputs,
         outputs=ctx.outputs.outs,
         arguments=args + import_flags + [s.path for s in srcs],
@@ -127,7 +127,7 @@ proto_gen = rule(
         "protoc": attr.label(
             cfg = "host",
             executable = True,
-            single_file = True,
+            allow_single_file = True,
             mandatory = True,
         ),
         "plugin": attr.label(

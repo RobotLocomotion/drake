@@ -22,14 +22,17 @@ namespace {
 // Simple example which simulates the Acrobot, started near the upright, with an
 // LQR controller designed to stabilize the unstable fixed point.  Run
 // drake-visualizer to see the animated result.
+//
+// Note: See also examples/multibody/acrobot for an almost identical test
+// using the MultibodyPlant version of the Acrobot dynamics.
 
+DEFINE_double(simulation_sec, 10.0,
+              "Number of seconds to simulate.");
 DEFINE_double(realtime_factor, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 
-int do_main(int argc, char* argv[]) {
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
-
+int do_main() {
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
@@ -65,7 +68,7 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.StepTo(FLAGS_simulation_sec);
   return 0;
 }
 
@@ -75,5 +78,6 @@ int do_main(int argc, char* argv[]) {
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
-  return drake::examples::acrobot::do_main(argc, argv);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::acrobot::do_main();
 }

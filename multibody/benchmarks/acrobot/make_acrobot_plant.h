@@ -6,8 +6,8 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/scene_graph.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -148,7 +148,7 @@ class AcrobotParameters {
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
-std::unique_ptr<drake::multibody::multibody_plant::MultibodyPlant<double>>
+std::unique_ptr<MultibodyPlant<double>>
 MakeAcrobotPlant(const AcrobotParameters& default_parameters, bool finalize,
                  geometry::SceneGraph<double>* scene_graph = nullptr);
 

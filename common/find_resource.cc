@@ -215,12 +215,44 @@ optional<string> FindSentinelDir() {
   }
 }
 
+bool StartsWith(const string& str, const string& prefix) {
+  return str.compare(0, prefix.size(), prefix) == 0;
+}
+
+// Opportunistically searches inside the attic for multibody resource paths.
+// This function is not unit tested -- only acceptance-tested by the fact that
+// none of the tests in the attic fail.
+Result MaybeFindResourceInAttic(const string& resource_path) {
+  const string prefix("drake/");
+  DRAKE_DEMAND(StartsWith(resource_path, prefix));
+  const string substr = resource_path.substr(prefix.size());
+  for (const auto& directory : {
+           "multibody/collision/test",
+           "multibody/parsers/test/package_map_test",
+           "multibody/parsers/test/parsers_frames_test",
+           "multibody/parsers/test/urdf_parser_test",
+           "multibody/rigid_body_plant/test",
+           "multibody/shapes/test",
+           "multibody/test",
+           "systems/controllers/qp_inverse_dynamics/test"
+       }) {
+    if (StartsWith(substr, directory)) {
+      const Result attic_result =
+          FindResource(prefix + string("attic/") + substr);
+      if (attic_result.get_absolute_path() != nullopt) {
+        return attic_result;
+      }
+    }
+  }
+  return Result::make_error(resource_path, "Not an attic path");
+}
+
 }  // namespace
 
 const char* const kDrakeResourceRootEnvironmentVariableName =
     "DRAKE_RESOURCE_ROOT";
 
-// Saves search directorys path in a persistent variable.
+// Saves search directories path in a persistent variable.
 // This function is only accessible from this file and should not
 // be used outside of `GetResourceSearchPaths()` and
 // `AddResourceSearchPath()`.
@@ -254,7 +286,7 @@ Result FindResource(string resource_path) {
         "resource_path is not a relative path");
   }
   const std::string prefix("drake/");
-  if (resource_path.compare(0, prefix.size(), prefix) != 0) {
+  if (!StartsWith(resource_path, prefix)) {
     return Result::make_error(
         std::move(resource_path),
         "resource_path does not start with " + prefix);
@@ -307,6 +339,15 @@ Result FindResource(string resource_path) {
       return Result::make_success(
           std::move(resource_path), std::move(*absolute_path));
     }
+  }
+
+  // As a compatibility shim, for resource paths that have been moved into the
+  // attic, we opportunistically try a fallback search path for them.  This
+  // heuristic is only helpful for source trees -- any install data files from
+  // the attic should be installed without the "attic/" portion of their path.
+  const Result attic_result = MaybeFindResourceInAttic(resource_path);
+  if (attic_result.get_absolute_path() != nullopt) {
+    return attic_result;
   }
 
   // Nothing found.

@@ -1,19 +1,18 @@
 #include "drake/multibody/benchmarks/kuka_iiwa_robot/make_kuka_iiwa_model.h"
 
 #include "drake/common/default_scalars.h"
-#include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/fixed_offset_frame.h"
+#include "drake/multibody/tree/multibody_tree-inl.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 
 namespace drake {
 namespace multibody {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
 
-using Eigen::Isometry3d;
-using Eigen::Translation3d;
-using Eigen::Vector3d;
-
+using drake::multibody::FixedOffsetFrame;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
 using drake::multibody::RotationalInertia;
@@ -24,22 +23,6 @@ using drake::multibody::UnitInertia;
 using std::make_unique;
 using std::unique_ptr;
 
-/// Utility method for creating a transform from frame A to frame B.
-/// @param[in] R_AB Rotation matrix relating Ax, Ay, Az to Bx, By, Bz.
-/// @param[in] p_AoBo_A Position vector from Ao to Bo, expressed in A.
-/// @retval X_AB Tranform relating frame A to frame B.
-Eigen::Isometry3d MakeIsometry3d(const Eigen::Matrix3d& R_AB,
-                                 const Eigen::Vector3d& p_AoBo_A) {
-  // Initialize all of X_AB (may be more than just linear and translation).
-  Eigen::Isometry3d X_AB = Eigen::Isometry3d::Identity();
-  // X_AB.linear() returns a mutable references to the 3x3 rotation matrix
-  // part of X_AB.  X_AB.translation() returns a mutable reference to the
-  // 3x1 position vector part of X_AB.
-  X_AB.linear() = R_AB;
-  X_AB.translation() = p_AoBo_A;
-  return X_AB;
-}
-
 namespace internal {
 
 template <typename T>
@@ -49,25 +32,26 @@ KukaIiwaModelBuilder<T>::AddRevoluteJointFromSpaceXYZAnglesAndXYZ(
     const Body<T>& A,
     const Vector3<double>& q123A, const Vector3<double>& xyzA,
     const Body<T>& B, const Vector3<double>& revolute_unit_vector,
-    MultibodyTree<T>* model) {
+    multibody::internal::MultibodyTree<T>* model) {
   // Create transform from inboard body A to mobilizer inboard frame Ab.
   const math::RollPitchYaw<double> rpy(q123A);
   const math::RotationMatrix<double> R_AAb(rpy);
-  const Eigen::Isometry3d X_AAb = MakeIsometry3d(R_AAb.matrix(), xyzA);
+  const math::RigidTransformd X_AAb(R_AAb, xyzA);
 
   // Create transform from outboard body B to mobilizer outboard frame Ba.
-  const Eigen::Isometry3d X_BBa = MakeIsometry3d(Eigen::Matrix3d::Identity(),
-                                                 Vector3d(0, 0, 0));
+  const math::RigidTransformd X_BBa;  // Identity transform.
 
-  return model->template AddJoint<RevoluteJoint>(
-      joint_name, A, X_AAb, B, X_BBa, revolute_unit_vector);
+  return model->template AddJoint<RevoluteJoint>(joint_name,
+                              A, X_AAb.GetAsIsometry3(),
+                              B, X_BBa.GetAsIsometry3(), revolute_unit_vector);
 }
 
 template <typename T>
-unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
+unique_ptr<multibody::internal::MultibodyTree<T>>
+KukaIiwaModelBuilder<T>::Build() const {
   // Create a mostly empty MultibodyTree (it has a built-in "world" body).
   // Newtonian reference frame (linkN) is the world body.
-  auto model = make_unique<MultibodyTree<T>>();
+  auto model = make_unique<multibody::internal::MultibodyTree<T>>();
 
   // Create SpatialInertia for each link in this robot. M_Bo_B designates a
   // rigid body B's spatial inertia about Bo (B's origin), expressed in B.
@@ -159,6 +143,11 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
       linkG, Eigen::Vector3d::UnitZ(), model.get());
   model->AddJointActuator("iiwa_actuator_7", *joint);
 
+  // Add arbitrary tool frame.
+  model->template AddFrame<FixedOffsetFrame>(
+      "tool_arbitrary", model->GetFrameByName("iiwa_link_7"),
+      math::RigidTransformd(Eigen::Vector3d(0.1, 0.2, 0.3)).GetAsIsometry3());
+
   // Add force element for a constant gravity pointing downwards, that is, in
   // the negative z-axis direction.
   const Eigen::Vector3d gravity_vector = -gravity_ * Eigen::Vector3d::UnitZ();
@@ -168,11 +157,11 @@ unique_ptr<MultibodyTree<T>> KukaIiwaModelBuilder<T>::Build() const {
   if (finalize_model_) model->Finalize();
   return model;
 }
-}  // namespace internal
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class internal::KukaIiwaModelBuilder);
 
+}  // namespace internal
 }  // namespace kuka_iiwa_robot
 }  // namespace benchmarks
 }  // namespace multibody

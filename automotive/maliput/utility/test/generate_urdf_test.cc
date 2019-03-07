@@ -6,14 +6,14 @@
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
-#include "drake/automotive/maliput/monolane/builder.h"
-#include "drake/automotive/maliput/monolane/loader.h"
+#include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/loader.h"
 
 namespace drake {
 namespace maliput {
 namespace utility {
 
-namespace mono = maliput::monolane;
+namespace multi = maliput::multilane;
 
 class GenerateUrdfTest : public ::testing::Test {
  protected:
@@ -38,17 +38,27 @@ class GenerateUrdfTest : public ::testing::Test {
 TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   const double kLinearTolerance = 0.01;
   const double kAngularTolerance = 0.01 * M_PI;
-  const api::RBounds kLaneBounds{-1., 1.};
-  const api::RBounds kDriveableBounds{-2., 2.};
+  const double kLaneWidth = 2.;
+  const double kShoulder = 1.;
   const api::HBounds kElevationBounds{0., 5.};
-  mono::Builder b(kLaneBounds, kDriveableBounds, kElevationBounds,
-                  kLinearTolerance, kAngularTolerance);
+  const double kScaleLength = 1.;
+  const multi::ComputationPolicy kComputationPolicy =
+      multi::ComputationPolicy::kPreferAccuracy;
+  const multi::LaneLayout kLaneLayout{kShoulder, kShoulder, 1 /* num_lanes */,
+                                      0 /* ref_lane */, 0. /* ref_r0 */};
+  auto b = multi::BuilderFactory().Make(kLaneWidth, kElevationBounds,
+                                        kLinearTolerance, kAngularTolerance,
+                                        kScaleLength, kComputationPolicy);
 
-  const mono::EndpointZ kZeroZ{0., 0., 0., 0.};
-  const mono::Endpoint start{{0., 0., 0.}, kZeroZ};
-  b.Connect("0", start, 10., kZeroZ);
+  const multi::EndpointZ kZeroZ{0., 0., 0., 0.};
+  const multi::Endpoint start{{0., 0., 0.}, kZeroZ};
+
+  b->Connect("0", kLaneLayout,
+             multi::StartReference().at(start, multi::Direction::kForward),
+             multi::LineOffset(10.),
+             multi::EndReference().z_at(kZeroZ, multi::Direction::kForward));
   const std::unique_ptr<const api::RoadGeometry> dut =
-      b.Build(api::RoadGeometryId{"dut"});
+      b->Build(api::RoadGeometryId{"dut"});
 
   GenerateUrdfFile(dut.get(), directory_.getStr(), kJunkBasename,
                    ObjFeatures());
@@ -93,7 +103,6 @@ TEST_F(GenerateUrdfTest, AtLeastRunIt) {
   </joint>
 
   <link name="surface">
-    <inertial/>
     <visual name="v1">
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>

@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
 namespace symbolic {
 namespace {
 
+using test::ExprEqual;
 using test::FormulaEqual;
 
 class SymbolicExpressionMatrixTest : public ::testing::Test {
@@ -233,7 +235,7 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixOperatorExprEqExpr1) {
   m1 << x_, y_, z_, x_;
   m2 << z_, x_, y_, z_;
   const Formula f{m1 == m2};
-  EXPECT_EQ(f.to_string(), "((x = z) and (y = x) and (z = y))");
+  EXPECT_EQ(f.to_string(), "((x == z) and (y == x) and (z == y))");
   ASSERT_TRUE(is_conjunction(f));
   EXPECT_EQ(get_operands(f).size(), 3);
   EXPECT_TRUE(CheckMatrixOperatorEq(m1, m2));
@@ -428,6 +430,84 @@ TEST_F(SymbolicExpressionMatrixTest, MatrixVarRopMatrixVar) {
   EXPECT_TRUE(CheckMatrixOperatorNeq(matrix_var_2_, matrix_var_1_));
 }
 
+TEST_F(SymbolicExpressionMatrixTest, Evaluate) {
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
+
+  // 1. A_ is a fixed-size matrix (3 x 2) = [x  1]
+  //                                        [y -1]
+  //                                        [z  3.141592]
+  Eigen::Matrix<double, 3, 2> A_eval_expected;
+  // clang-format off
+  A_eval_expected << 1.0, 1.0,
+                     2.0, -1.0,
+                     3.0, 3.141592;
+  // clang-format on
+  const Eigen::Matrix<double, 3, 2> A_eval{Evaluate(1.0 * A_, env)};
+  EXPECT_EQ(A_eval_expected, A_eval);
+
+  // 2. B is a dynamic-size matrix (2 x 2) = [x-y  x]
+  //                                         [y    z]
+  MatrixX<Expression> B(2, 2);
+  Eigen::MatrixXd B_eval_expected(2, 2);
+  // clang-format off
+  B << x_ - y_, x_,
+       y_,      z_;
+  B_eval_expected << 1.0 - 2.0, 1.0,
+                     2.0,       3.0;
+  // clang-format on
+  const Eigen::MatrixXd B_eval{Evaluate(B, env)};
+  EXPECT_EQ(B_eval_expected, B_eval);
+
+  // 3. Check if Evaluate throws if it computes NaN in evaluation.
+  MatrixX<Expression> C(2, 2);
+  // clang-format off
+  C << x_, Expression::NaN(),
+       y_, z_;
+  // clang-format on
+  DRAKE_EXPECT_THROWS_MESSAGE(Evaluate(C, env), std::runtime_error,
+                              "NaN is detected during Symbolic computation.");
+}
+
+TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {
+  RandomGenerator g{};
+
+  const Variable uni{"uni", Variable::Type::RANDOM_UNIFORM};
+  const Variable gau{"gau", Variable::Type::RANDOM_GAUSSIAN};
+  const Variable exp{"exp", Variable::Type::RANDOM_EXPONENTIAL};
+  const Environment env{{{var_x_, 1.0}, {var_y_, 2.0}, {var_z_, 3.0}}};
+
+  // 1. A_ is a fixed-size matrix (3 x 2) = [x               uni * gau + exp]
+  //                                        [uni * gau + exp              -1]
+  //                                        [z                      3.141592]
+  Eigen::Matrix<Expression, 3, 2> A;
+  // clang-format off
+  A << x_,              uni * gau + exp,
+       uni * gau + exp,              -1,
+       z_,                     3.141592;
+  // clang-format on
+
+  // A(1,0) and A(0, 1) are the same symbolic expressions. Therefore, they
+  // should be evaluated to the same value regardless of sampled values for the
+  // random variables in A.
+  const Eigen::Matrix<double, 3, 2> A_eval{Evaluate(A, env, &g)};
+  EXPECT_PRED2(ExprEqual, A(1, 0), A(0, 1));
+  EXPECT_EQ(A_eval(1, 0), A_eval(0, 1));
+
+  // 2. B is a dynamic-size matrix (2 x 2) = [uni + gau + exp                x]
+  //                                         [y                uni + gau + exp]
+  MatrixX<Expression> B(2, 2);
+  // clang-format off
+  B << uni + gau + exp,              x_,
+       y_,              uni + gau + exp;
+  // clang-format on
+
+  // B(0, 0) and B(1, 1) are the same symbolic expressions. Therefore, they
+  // should be evaluated to the same value regardless of sampled values for the
+  // random variables in B.
+  const Eigen::Matrix<double, 2, 2> B_eval{Evaluate(B, env, &g)};
+  EXPECT_PRED2(ExprEqual, B(0, 0), B(1, 1));
+  EXPECT_EQ(B_eval(0, 0), B_eval(1, 1));
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

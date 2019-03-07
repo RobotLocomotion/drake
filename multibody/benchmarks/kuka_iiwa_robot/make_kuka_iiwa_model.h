@@ -5,20 +5,22 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/multibody/multibody_tree/joints/revolute_joint.h"
-#include "drake/multibody/multibody_tree/multibody_tree.h"
+#include "drake/multibody/tree/multibody_tree.h"
+#include "drake/multibody/tree/revolute_joint.h"
 
 namespace drake {
 namespace multibody {
 namespace benchmarks {
 namespace kuka_iiwa_robot {
-
 namespace internal {
 
 template <typename T>
 class KukaIiwaModelBuilder {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(KukaIiwaModelBuilder);
+
+  template <typename U>
+  using MultibodyTree = multibody::internal::MultibodyTree<U>;
 
   /// Instantiate a builder to make a MultibodyTree model of the KUKA iiwa arm
   /// as specified in this class' documentation.
@@ -135,6 +137,7 @@ class KukaIiwaModelBuilder {
   // Flag indicating if MultibodyTree::Finalize() will be called on the model.
   bool finalize_model_;
 };
+
 }  // namespace internal
 
 /// This method makes a MultibodyTree model for a Kuka Iiwa arm as specified
@@ -153,7 +156,7 @@ class KukaIiwaModelBuilder {
 /// @param[in] gravity
 ///   The value of the acceleration of gravity, in m/s².
 template <typename T>
-std::unique_ptr<MultibodyTree<T>> MakeKukaIiwaModel(
+std::unique_ptr<multibody::internal::MultibodyTree<T>> MakeKukaIiwaModel(
     bool finalize_model = true, double gravity = 9.81) {
   internal::KukaIiwaModelBuilder<T> builder(finalize_model, gravity);
   return builder.Build();

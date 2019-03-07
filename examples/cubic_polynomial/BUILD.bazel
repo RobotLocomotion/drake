@@ -1,8 +1,8 @@
 # -*- python -*-
 
-load("//tools:drake.bzl", "drake_cc_binary")
+load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:test_tags.bzl", "mosek_test_tags")
+load("@drake//tools/skylark:test_tags.bzl", "mosek_test_tags")
 
 drake_cc_binary(
     name = "region_of_attraction",
@@ -11,6 +11,7 @@ drake_cc_binary(
     tags = mosek_test_tags(),
     deps = [
         "//solvers:mathematical_program",
+        "//solvers:solve",
         "//systems/framework:vector_system",
     ],
 )
@@ -24,6 +25,7 @@ drake_cc_binary(
         "//common/proto:call_python",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
+        "//solvers:solve",
         "//systems/framework:vector_system",
     ],
 )

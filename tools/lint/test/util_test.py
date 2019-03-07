@@ -20,7 +20,7 @@ class UtilTest(unittest.TestCase):
         # Sanity-check relpaths.
         self.assertGreater(len(relpaths), 1000)
         self.assertTrue('.bazelproject' in relpaths)
-        self.assertTrue('setup/ubuntu/16.04/install_prereqs.sh' in relpaths)
+        self.assertTrue('setup/ubuntu/install_prereqs.sh' in relpaths)
         THIRD_PARTY_SOURCES_ALLOWED_TO_BE_FOUND = [
             "third_party/BUILD.bazel",
             "third_party/README.md",

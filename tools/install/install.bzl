@@ -5,9 +5,10 @@ load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load(
     "@drake//tools/skylark:pathutils.bzl",
     "dirname",
-    "output_path",
     "join_paths",
+    "output_path",
 )
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH", "PYTHON_VERSION")
 
 InstallInfo = provider()
 
@@ -40,6 +41,11 @@ def _rename(file_dest, rename):
         return join_paths(dirname(file_dest), renamed)
     return file_dest
 
+def _depset_to_list(l):
+    """Helper function to convert depset to list."""
+    iter_list = l.to_list() if type(l) == "depset" else l
+    return iter_list
+
 #------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
     """Compute output path (without destination prefix) for install action.
@@ -67,8 +73,8 @@ def _output_path(ctx, input_file, strip_prefix = [], warn_foreign = True):
     # If we get here, we were not able to resolve the path; give up, and print
     # a warning about installing the "foreign" file.
     if warn_foreign:
-        print("%s installing file %s which is not in current package"
-              % (ctx.label, input_file.path))
+        print("%s installing file %s which is not in current package" %
+              (ctx.label, input_file.path))
     return input_file.basename
 
 #------------------------------------------------------------------------------
@@ -77,13 +83,19 @@ def _guess_files(target, candidates, scope, attr_name):
         return candidates
 
     elif scope == "WORKSPACE":
-        return [f for f in candidates if
-                target.label.workspace_root == f.owner.workspace_root]
+        return [
+            f
+            for f in _depset_to_list(candidates)
+            if target.label.workspace_root == f.owner.workspace_root
+        ]
 
     elif scope == "PACKAGE":
-        return [f for f in candidates if
-                target.label.workspace_root == f.owner.workspace_root and
-                target.label.package == f.owner.package]
+        return [
+            f
+            for f in _depset_to_list(candidates)
+            if (target.label.workspace_root == f.owner.workspace_root and
+                target.label.package == f.owner.package)
+        ]
 
     else:
         msg_fmt = "'install' given unknown '%s' value '%s'"
@@ -91,8 +103,12 @@ def _guess_files(target, candidates, scope, attr_name):
 
 #------------------------------------------------------------------------------
 def _install_action(
-    ctx, artifact, dests, strip_prefixes = [], rename = {}, warn_foreign = True
-):
+        ctx,
+        artifact,
+        dests,
+        strip_prefixes = [],
+        rename = {},
+        warn_foreign = True):
     """Compute install action for a single file.
 
     This takes a single file artifact and returns the appropriate install
@@ -104,24 +120,44 @@ def _install_action(
     else:
         dest = dests
 
-    if "@WORKSPACE@" in dest:
-        dest = dest.replace("@WORKSPACE@", _workspace(ctx))
+    dest_replacements = (
+        ("@WORKSPACE@", _workspace(ctx)),
+        ("@PYTHON_SITE_PACKAGES@", PYTHON_SITE_PACKAGES_RELPATH),
+    )
+    for old, new in dest_replacements:
+        if old in dest:
+            dest = dest.replace(old, new)
 
     if type(strip_prefixes) == "dict":
-        strip_prefix = strip_prefixes.get(artifact.extension,
-                                          strip_prefixes[None])
+        strip_prefix = strip_prefixes.get(
+            artifact.extension,
+            strip_prefixes[None],
+        )
     else:
         strip_prefix = strip_prefixes
 
     file_dest = join_paths(
-        dest, _output_path(ctx, artifact, strip_prefix, warn_foreign))
+        dest,
+        _output_path(ctx, artifact, strip_prefix, warn_foreign),
+    )
     file_dest = _rename(file_dest, rename)
+
+    if "/attic/" in file_dest and not file_dest.startswith("lib/python"):
+        fail("Do not expose attic paths to the install tree ({})".format(
+            file_dest,
+        ))
 
     return struct(src = artifact, dst = file_dest)
 
 #------------------------------------------------------------------------------
-def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
-                     excluded_files = [], rename = {}, warn_foreign = True):
+def _install_actions(
+        ctx,
+        file_labels,
+        dests,
+        strip_prefixes = [],
+        excluded_files = [],
+        rename = {},
+        warn_foreign = True):
     """Compute install actions for files.
 
     This takes a list of labels (targets or files) and computes the install
@@ -152,7 +188,7 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
     # Iterate over files. We expect a list of labels, which will have a 'files'
     # attribute that is a list of file artifacts. Thus this two-level loop.
     for f in file_labels:
-        for a in f.files:
+        for a in _depset_to_list(f.files):
             # TODO(mwoehlke-kitware) refactor this to separate computing the
             # original relative path and the path with prefix(es) stripped,
             # then use the original relative path for both exclusions and
@@ -161,8 +197,14 @@ def _install_actions(ctx, file_labels, dests, strip_prefixes = [],
                 continue
 
             actions.append(
-                _install_action(ctx, a, dests, strip_prefixes,
-                                rename, warn_foreign)
+                _install_action(
+                    ctx,
+                    a,
+                    dests,
+                    strip_prefixes,
+                    rename,
+                    warn_foreign,
+                ),
             )
 
     return actions
@@ -181,28 +223,47 @@ def _install_cc_actions(ctx, target):
         "so": ctx.attr.library_strip_prefix,
         None: ctx.attr.runtime_strip_prefix,
     }
-    actions = _install_actions(ctx, [target], dests, strip_prefixes,
-                               rename = ctx.attr.rename)
+    actions = _install_actions(
+        ctx,
+        [target],
+        dests,
+        strip_prefixes,
+        rename = ctx.attr.rename,
+    )
 
     # Compute actions for guessed resource files.
     if ctx.attr.guess_data != "NONE":
-        data = [f for f in target.data_runfiles.files if f.is_source]
-        data = _guess_files(target, data, ctx.attr.guess_data, 'guess_data')
-        actions += _install_actions(ctx, [struct(files = data)],
-                                    ctx.attr.data_dest,
-                                    ctx.attr.data_strip_prefix,
-                                    ctx.attr.guess_data_exclude,
-                                    rename = ctx.attr.rename)
+        data = [
+            f
+            for f in _depset_to_list(target.data_runfiles.files)
+            if f.is_source
+        ]
+        data = _guess_files(target, data, ctx.attr.guess_data, "guess_data")
+        actions += _install_actions(
+            ctx,
+            [struct(files = data)],
+            ctx.attr.data_dest,
+            ctx.attr.data_strip_prefix,
+            ctx.attr.guess_data_exclude,
+            rename = ctx.attr.rename,
+        )
 
     # Compute actions for guessed headers.
     if ctx.attr.guess_hdrs != "NONE":
-        hdrs = _guess_files(target, target.cc.transitive_headers,
-                            ctx.attr.guess_hdrs, 'guess_hdrs')
-        actions += _install_actions(ctx, [struct(files = hdrs)],
-                                    ctx.attr.hdr_dest,
-                                    ctx.attr.hdr_strip_prefix,
-                                    ctx.attr.guess_hdrs_exclude,
-                                    rename = ctx.attr.rename)
+        hdrs = _guess_files(
+            target,
+            target.cc.transitive_headers,
+            ctx.attr.guess_hdrs,
+            "guess_hdrs",
+        )
+        actions += _install_actions(
+            ctx,
+            [struct(files = hdrs)],
+            ctx.attr.hdr_dest,
+            ctx.attr.hdr_strip_prefix,
+            ctx.attr.guess_hdrs_exclude,
+            rename = ctx.attr.rename,
+        )
 
     # Return computed actions.
     return actions
@@ -224,26 +285,40 @@ def _install_java_actions(ctx, target):
             _output_path(
                 ctx,
                 target.files_to_run.executable,
-                warn_foreign = False
-            )
+                warn_foreign = False,
+            ),
         ]
-    return _install_actions(ctx, [target], dests, strip_prefixes,
-                            excluded_files, rename = ctx.attr.rename)
+    return _install_actions(
+        ctx,
+        [target],
+        dests,
+        strip_prefixes,
+        excluded_files,
+        rename = ctx.attr.rename,
+    )
 
 #------------------------------------------------------------------------------
 # Compute install actions for a py_library or py_binary.
 # TODO(jamiesnape): Install native shared libraries that the target may use.
 def _install_py_actions(ctx, target):
-    return _install_actions(ctx, [target], ctx.attr.py_dest,
-                            ctx.attr.py_strip_prefix,
-                            rename = ctx.attr.rename)
+    return _install_actions(
+        ctx,
+        [target],
+        ctx.attr.py_dest,
+        ctx.attr.py_strip_prefix,
+        rename = ctx.attr.rename,
+    )
 
 #------------------------------------------------------------------------------
 # Compute install actions for a script or an executable.
 def _install_runtime_actions(ctx, target):
-    return _install_actions(ctx, [target], ctx.attr.runtime_dest,
-                            ctx.attr.runtime_strip_prefix,
-                            rename = ctx.attr.rename)
+    return _install_actions(
+        ctx,
+        [target],
+        ctx.attr.runtime_dest,
+        ctx.attr.runtime_strip_prefix,
+        rename = ctx.attr.rename,
+    )
 
 #------------------------------------------------------------------------------
 # Compute install actions for a java launchers.
@@ -255,13 +330,21 @@ def _install_java_launcher_actions(
         rename,
         target):
     main_class = target[MainClassInfo].main_class
+
     # List runtime_classpath and compute their install paths.
     classpath = []
     actions = []
 
-    for jar in target[MainClassInfo].classpath:
-        jar_install = _install_action(ctx, jar, java_dest, java_strip_prefix,
-                                      rename, warn_foreign = False)
+    for jar in _depset_to_list(target[MainClassInfo].classpath):
+        jar_install = _install_action(
+            ctx,
+            jar,
+            java_dest,
+            java_strip_prefix,
+            rename,
+            warn_foreign = False,
+        )
+
         # Adding double quotes around the generated scripts to avoid
         # white-space problems when running the generated shell script. This
         # string is used in a "for-loop" in the script.
@@ -273,9 +356,12 @@ def _install_java_launcher_actions(
     file_dest = _rename(file_dest, rename)
     jvm_flags = target[MainClassInfo].jvm_flags
 
-    actions.append(struct(dst = file_dest, classpath = classpath,
-                          jvm_flags = jvm_flags,
-                          main_class = main_class))
+    actions.append(struct(
+        dst = file_dest,
+        classpath = classpath,
+        jvm_flags = jvm_flags,
+        main_class = main_class,
+    ))
 
     return actions
 
@@ -294,9 +380,10 @@ def _install_test_actions(ctx):
 
     # For files, we run the file from the build tree.
     for test in ctx.attr.install_tests:
-        for f in test.files:
+        for f in _depset_to_list(test.files):
             test_actions.append(
-                struct(src = f, cmd = f.path))
+                struct(src = f, cmd = f.path),
+            )
 
     return test_actions
 
@@ -309,8 +396,11 @@ def _install_code(action):
 # Generate install code for a java launcher.
 def _java_launcher_code(action):
     return "create_java_launcher(%r, %r, %r, %r)" % (
-        action.dst, action.classpath, " ".join(action.jvm_flags),
-        action.main_class)
+        action.dst,
+        action.classpath,
+        " ".join(action.jvm_flags),
+        action.main_class,
+    )
 
 #END internal helpers
 #==============================================================================
@@ -323,6 +413,7 @@ def _install_impl(ctx):
     actions = []
     installed_tests = []
     rename = dict(ctx.attr.rename)
+
     # Collect install actions from dependencies.
     for d in ctx.attr.deps:
         actions += d[InstallInfo].install_actions
@@ -331,15 +422,27 @@ def _install_impl(ctx):
             installed_tests += d[InstalledTestInfo].tests
 
     # Generate actions for data, docs and includes.
-    actions += _install_actions(ctx, ctx.attr.docs, ctx.attr.doc_dest,
-                                strip_prefixes = ctx.attr.doc_strip_prefix,
-                                rename = rename)
-    actions += _install_actions(ctx, ctx.attr.data, ctx.attr.data_dest,
-                                strip_prefixes = ctx.attr.data_strip_prefix,
-                                rename = rename)
-    actions += _install_actions(ctx, ctx.attr.hdrs, ctx.attr.hdr_dest,
-                                strip_prefixes = ctx.attr.hdr_strip_prefix,
-                                rename = rename)
+    actions += _install_actions(
+        ctx,
+        ctx.attr.docs,
+        ctx.attr.doc_dest,
+        strip_prefixes = ctx.attr.doc_strip_prefix,
+        rename = rename,
+    )
+    actions += _install_actions(
+        ctx,
+        ctx.attr.data,
+        ctx.attr.data_dest,
+        strip_prefixes = ctx.attr.data_strip_prefix,
+        rename = rename,
+    )
+    actions += _install_actions(
+        ctx,
+        ctx.attr.hdrs,
+        ctx.attr.hdr_dest,
+        strip_prefixes = ctx.attr.hdr_strip_prefix,
+        rename = rename,
+    )
 
     for t in ctx.attr.targets:
         # TODO(jwnimmer-tri): Raise an error if a target has testonly=1.
@@ -356,7 +459,7 @@ def _install_impl(ctx):
                 ctx.attr.java_dest,
                 ctx.attr.java_strip_prefix,
                 rename,
-                t
+                t,
             )
         elif hasattr(t, "files_to_run") and t.files_to_run.executable:
             # Executable scripts copied from source directory.
@@ -390,9 +493,11 @@ def _install_impl(ctx):
     ctx.actions.expand_template(
         template = ctx.executable.install_script_template,
         output = ctx.outputs.executable,
-        substitutions = {"<<actions>>": "\n    ".join(script_actions)})
+        substitutions = {"<<actions>>": "\n    ".join(script_actions)},
+    )
 
     script_tests = []
+
     # Generate list containing all commands to run to test.
     for i in installed_tests:
         script_tests.append(i.cmd)
@@ -405,12 +510,13 @@ def _install_impl(ctx):
             output = ctx.outputs.install_tests_script,
             content = "\n".join(script_tests),
             is_executable = False,
-    )
+        )
 
     # Return actions.
     files = ctx.runfiles(
         files = [a.src for a in actions if not hasattr(a, "main_class")] +
-                [i.src for i in installed_tests])
+                [i.src for i in installed_tests],
+    )
     return [
         InstallInfo(install_actions = actions, rename = rename),
         InstalledTestInfo(tests = installed_tests),
@@ -419,7 +525,7 @@ def _install_impl(ctx):
 
 # TODO(mwoehlke-kitware) default guess_data to PACKAGE when we have better
 # default destinations.
-install = rule(
+_install_rule = rule(
     # Update buildifier-tables.json when this changes.
     attrs = {
         "deps": attr.label_list(providers = [InstallInfo]),
@@ -445,7 +551,7 @@ install = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "lib/python2.7/site-packages"),
+        "py_dest": attr.string(default = "@PYTHON_SITE_PACKAGES@"),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
         "install_tests": attr.label_list(
@@ -466,6 +572,13 @@ install = rule(
     implementation = _install_impl,
 )
 
+def install(tags = [], **kwargs):
+    # (The documentation for this function is immediately below.)
+    _install_rule(
+        tags = tags + ["install"],
+        **kwargs
+    )
+
 """Generate installation information for various artifacts.
 
 This generates installation information for various artifacts, including
@@ -480,9 +593,12 @@ bazel, but does not define an install) where this *is* the right thing to do,
 the ``allowed_externals`` argument may be used to specify a list of externals
 whose files it is okay to install, which will suppress the warning.
 
-Destination paths may include the placeholder ``@WORKSPACE@``, which is
-replaced with ``workspace`` (if specified) or the name of the workspace which
-invokes ``install``.
+Destination paths may include the following placeholders:
+
+* ``@WORKSPACE@``, replaced with ``workspace`` (if specified) or the name of
+  the workspace which invokes ``install``.
+* ``@PYTHON_SITE_PACKAGES``, replaced with the Python version-specific path of
+  "site-packages".
 
 Note:
     By default, headers and resource files to be installed must be explicitly
@@ -558,7 +674,7 @@ Args:
     java_dest: Destination for Java library targets (default = "share/java").
     java_strip_prefix: List of prefixes to remove from Java library paths.
     py_dest: Destination for Python targets
-        (default = "lib/python2.7/site-packages").
+        (default = "lib/python{MAJOR}.{MINOR}/site-packages").
     py_strip_prefix: List of prefixes to remove from Python paths.
     rename: Mapping of install paths to alternate file names, used to rename
       files upon installation.
@@ -573,6 +689,40 @@ Args:
     allowed_externals: List of external packages whose files may be installed.
 """
 
+def install_py2_duplicates_if_py3(
+        name,
+        targets = None,
+        py_dest = "@PYTHON_SITE_PACKAGES@",
+        **kwargs):
+    """
+    Creates a duplicate install, only if Python3 is Bazel's version of Python.
+    Otherwise, creates an empty install target.
+
+    For `py_dest`, `@PYTHON_SITE_PACKAGES@` will be replaced with
+    `lib/python2.7/site-packages`.
+
+    This is presently only used to support Python2-only `drake_visualizer`.
+    """
+    cur_major, _ = PYTHON_VERSION.split(".")
+    if cur_major == "3":
+        py2_targets = targets
+    else:
+        py2_targets = []
+
+    # Assuming that we will only have one supported major-minor version of
+    # Python2.
+    py2_major_minor = "2.7"
+    py2_dest = py_dest.replace(
+        "@PYTHON_SITE_PACKAGES@",
+        "lib/python{}/site-packages".format(py2_major_minor),
+    )
+    install(
+        name = name,
+        targets = py2_targets,
+        py_dest = py2_dest,
+        **kwargs
+    )
+
 #------------------------------------------------------------------------------
 # Generate information to install files to specified destination.
 def _install_files_impl(ctx):
@@ -581,13 +731,18 @@ def _install_files_impl(ctx):
     strip_prefix = ctx.attr.strip_prefix
 
     # Generate actions.
-    actions = _install_actions(ctx, ctx.attr.files, dest, strip_prefix,
-                               rename = ctx.attr.rename)
+    actions = _install_actions(
+        ctx,
+        ctx.attr.files,
+        dest,
+        strip_prefix,
+        rename = ctx.attr.rename,
+    )
 
     # Return computed actions.
     return [InstallInfo(install_actions = actions, rename = ctx.attr.rename)]
 
-install_files = rule(
+_install_files_rule = rule(
     # Update buildifier-tables.json when this changes.
     attrs = {
         "dest": attr.string(mandatory = True),
@@ -599,6 +754,13 @@ install_files = rule(
     },
     implementation = _install_files_impl,
 )
+
+def install_files(tags = [], **kwargs):
+    # (The documentation for this function is immediately below.)
+    _install_files_rule(
+        tags = tags + ["install"],
+        **kwargs
+    )
 
 """Generate installation information for files.
 
@@ -647,12 +809,11 @@ Args:
 
 #------------------------------------------------------------------------------
 def cmake_config(
-    package,
-    script = None,
-    version_file = None,
-    cps_file_name = None,
-    deps = []
-):
+        package,
+        script = None,
+        version_file = None,
+        cps_file_name = None,
+        deps = []):
     """Create CMake package configuration and package version files via an
     intermediate CPS file.
 
@@ -687,7 +848,8 @@ def cmake_config(
         )
     elif not cps_file_name:
         cps_file_name = "@drake//tools/workspace/{}:package.cps".format(
-            package)
+            package,
+        )
 
     package_lower = package.lower()
 
@@ -716,11 +878,10 @@ def cmake_config(
 
 #------------------------------------------------------------------------------
 def install_cmake_config(
-    package,
-    versioned = True,
-    name = "install_cmake_config",
-    visibility = ["//visibility:private"]
-):
+        package,
+        versioned = True,
+        name = "install_cmake_config",
+        visibility = ["//visibility:private"]):
     """Generate installation information for CMake package configuration and
     package version files. The rule name is always ``:install_cmake_config``.
 
@@ -760,17 +921,21 @@ def install_test(
     `install()` rule.
     """
     if native.package_name():
-        fail("This command should be called only once, when the main installation step occurs.")
+        fail("This command should be called only once, " +
+             "when the main installation step occurs.")
 
     src = "//tools/install:install_test.py"
 
     drake_py_unittest(
         name = name,
-        # This is an integration test with significant I/O that requires at
-        # least a "moderate" timeout so that debug builds are successful.
-        # Therefore, the test size is increased to "medium".
+        # This is an integration test with significant I/O that requires an
+        # "eternal" timeout so that debug builds are successful.
+        # Therefore, the test size is increased to "medium", and the timeout to
+        # "eternal".
+        # TODO(jamiesnape): Try to shorten the duration of this test.
         size = "medium",
         srcs = [src],
+        timeout = "eternal",
         deps = ["//tools/install:install_test_helper"],
         **kwargs
     )

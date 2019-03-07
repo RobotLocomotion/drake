@@ -27,4 +27,5 @@ class TestInstall(unittest.TestCase):
         # Execute the install actions.
         for cmd in lines:
             cmd = cmd.strip()
-            install_test_helper.check_call(os.path.join(os.getcwd(), cmd))
+            print("+ {}".format(cmd))
+            install_test_helper.check_call([os.path.join(os.getcwd(), cmd)])

@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/trajectory_optimization/direct_transcription.h"
 
 namespace drake {
@@ -73,12 +74,12 @@ template <typename T>
 void LinearModelPredictiveController<T>::CalcControl(
     const Context<T>& context, BasicVector<T>* control) const {
   const Eigen::VectorBlock<const VectorX<T>> current_state =
-      this->EvalEigenVectorInput(context, state_input_index_);
+      get_state_port().Eval(context);
 
   const Eigen::VectorXd current_input =
       SetupAndSolveQp(*base_context_, current_state);
 
-  const VectorX<T> input_ref = model_->EvalEigenVectorInput(*base_context_, 0);
+  const VectorX<T> input_ref = model_->get_input_port(0).Eval(*base_context_);
 
   control->SetFromVector(current_input + input_ref);
 
@@ -106,9 +107,10 @@ VectorX<T> LinearModelPredictiveController<T>::SetupAndSolveQp(
       base_context.get_discrete_state().get_vector().CopyToVector();
   prog.AddLinearConstraint(prog.initial_state() == current_state - state_ref);
 
-  DRAKE_DEMAND(prog.Solve() == solvers::SolutionResult::kSolutionFound);
+  const auto result = Solve(prog);
+  DRAKE_DEMAND(result.is_success());
 
-  return prog.GetInputSamples().col(0);
+  return prog.GetInputSamples(result).col(0);
 }
 
 template class LinearModelPredictiveController<double>;

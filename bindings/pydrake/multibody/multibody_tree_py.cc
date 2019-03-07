@@ -1,60 +1,64 @@
-#include "pybind11/eigen.h"
+/// @file
+/// Alias and bind deprecated symbols from old `//multibody/multibody_tree`
+/// package.
+
 #include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/util/eigen_geometry_pybind.h"
-#include "drake/multibody/multibody_tree/math/spatial_force.h"
-#include "drake/multibody/multibody_tree/math/spatial_vector.h"
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
 
 namespace drake {
 namespace pydrake {
+namespace {
+
+void ForwardSymbols(py::module from, py::module m) {
+  py::dict vars = m.attr("__dict__");
+  py::exec(py::str("from {} import *").format(from.attr("__name__")),
+      py::globals(), vars);
+
+  py::str deprecation = py::str(
+      "``{}`` is deprecated and will be removed on or around "
+      "2019-05-01. Please use ``{}`` instead")
+                            .format(m.attr("__name__"), from.attr("__name__"));
+  WarnDeprecated(deprecation);
+  m.doc() = py::str("Warning:\n    {}").format(deprecation);
+}
+
+// Bind deprecated symbols.
+void init_module(py::module m) {
+  ForwardSymbols(py::module::import("pydrake.multibody.tree"), m);
+}
 
 void init_math(py::module m) {
-  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::multibody;
+  ForwardSymbols(py::module::import("pydrake.multibody.math"), m);
+}
 
-  m.doc() = "MultibodyTree math functionality.";
-
-  using T = double;
-
-  py::class_<SpatialVector<SpatialVelocity, T>>(m, "SpatialVector")
-      .def("rotational",
-           [](const SpatialVector<SpatialVelocity, T>* self)
-               -> const Vector3<T>& { return self->rotational(); },
-           py_reference_internal)
-      .def("translational",
-           [](const SpatialVector<SpatialVelocity, T>* self)
-               -> const Vector3<T>& { return self->translational(); },
-           py_reference_internal);
-
-  py::class_<SpatialVelocity<T>, SpatialVector<SpatialVelocity, T>>(
-      m, "SpatialVelocity")
-      .def(py::init())
-      .def(py::init<const Eigen::Ref<const Vector3<T>>&,
-                    const Eigen::Ref<const Vector3<T>>&>(),
-           py::arg("w"), py::arg("v"));
-
-  // TODO(jadecastro, eric.cousineau): Bind additional classes as necessary.
+void init_multibody_plant(py::module m) {
+  ForwardSymbols(py::module::import("pydrake.multibody.plant"), m);
 }
 
 void init_all(py::module m) {
-  // Not sure if relative imports will work in this context, so we will
-  // manually spell it out.
   py::dict vars = m.attr("__dict__");
   py::exec(
-      "from pydrake.multibody.multibody_tree.math import *",
+      "from pydrake.multibody.multibody_tree import *\n"
+      "from pydrake.multibody.multibody_tree.math import *\n"
+      "from pydrake.multibody.multibody_tree.multibody_plant import *\n",
       py::globals(), vars);
+  // N.B. Deprecation will have been emitted by `multibody_tree` module already.
+  m.doc() =
+      "Warning:\n   ``pydrake.multibody.multibody_tree.all`` is deprecated "
+      "and will be removed on or around 2019-05-01.";
 }
 
-PYBIND11_MODULE(multibody_tree, m) {
-  m.doc() = "MultibodyTree functionality.";
+}  // namespace
 
-  // N.B. At present, we cannot have `math` as a submodule here, and in
-  // `pydrake`. The current solution is to manually define submodules.
-  // See the dicussion in #8282 for more information.
+PYBIND11_MODULE(multibody_tree, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
+
+  init_module(m);
   init_math(m.def_submodule("math"));
+  init_multibody_plant(m.def_submodule("multibody_plant"));
   init_all(m.def_submodule("all"));
 }
 

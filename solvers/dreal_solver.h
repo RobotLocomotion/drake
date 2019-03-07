@@ -9,12 +9,12 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 
-class DrealSolver : public MathematicalProgramSolverInterface {
+class DrealSolver final : public SolverBase {
  public:
   using Interval = dreal::Box::Interval;
   using IntervalBox = std::unordered_map<symbolic::Variable, Interval>;
@@ -27,19 +27,8 @@ class DrealSolver : public MathematicalProgramSolverInterface {
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DrealSolver)
 
-  DrealSolver() = default;
-  ~DrealSolver() override = default;
-
-  // This solver is implemented in various pieces depending on if
-  // Dreal was available during compilation.
-  bool available() const override;
-
-  SolutionResult Solve(MathematicalProgram& prog) const override;
-
-  SolverId solver_id() const override;
-
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
-  static SolverId id();
+  DrealSolver();
+  ~DrealSolver() final;
 
   /// Checks the satisfiability of a given formula @p f with a given precision
   /// @p delta.
@@ -63,6 +52,20 @@ class DrealSolver : public MathematicalProgramSolverInterface {
                                         const symbolic::Formula& constraint,
                                         double delta,
                                         LocalOptimization local_optimization);
+
+  /// @name Static versions of the instance methods with similar names.
+  //@{
+  static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+
+ private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
 };
 
 }  // namespace solvers

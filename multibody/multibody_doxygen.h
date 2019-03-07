@@ -5,8 +5,11 @@
 // For example, to link to the notation group: @ref multibody_notation
 // To link to the Spatial Inertia discussion: @ref multibody_spatial_inertia.
 
+
 //------------------------------------------------------------------------------
-/** @defgroup multibody_concepts Multibody Dynamics Concepts
+/** @addtogroup multibody Multibody Dynamics
+@{
+    @ingroup algorithms
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -35,20 +38,27 @@ is included in the external documentation.
 @warning Drake is under development and these concepts have not yet been
 adopted consistently throughout the code. New code uses these concepts and
 older code will be retrofitted over time. The documentation here applies to
-the new `MultibodyTree` family of classes; there are some differences from the
-earlier `RigidBodyTree` family.
+the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
+@ref drake::multibody::MultibodyPlant "MultibodyPlant"
+family of classes; there are some differences from the earlier `RigidBodyTree`
+family.
 
 <em><b>Developers</b>: you can link directly to specific discussion topics here
 from your Doxygen comments; instructions are at the top of the source file used
 to generate them.</em>
 
 Next topic: @ref multibody_notation
-**/
+
+  @defgroup multibody_notation Terminology and Notation
+  @defgroup multibody_spatial_algebra Spatial Algebra
+  @defgroup constraint_overview Multibody dynamics constraints
+@}
+*/
 
 
 //------------------------------------------------------------------------------
-/** @defgroup multibody_notation Terminology and Notation
-@ingroup multibody_concepts
+/** @addtogroup multibody_notation
+@ingroup multibody
 
 Drake uses consistent terminology and notation for multibody mechanics
 - for clear communication among Drake programmers and users,
@@ -96,7 +106,7 @@ but then refer in the text to A (source: just @c A) using the
 default font that is much easier to write and to read in the source.
 
 Next topic: @ref multibody_notation_basics
-**/
+*/
 
 // Developers: this document is somewhat of an exception to the motherhood-
 // and-apple-pie goals above. We're going to show how our code-friendly
@@ -188,7 +198,7 @@ Next we discuss the kinds of quantities we need to account for and present their
 typeset and code representations.
 
 Next topic: @ref multibody_frames_and_bodies
-**/
+*/
 
 /** @defgroup multibody_frames_and_bodies Frames and Bodies
 @ingroup multibody_notation
@@ -275,7 +285,7 @@ notation fits since some readers of your code may not be facile with this
 notation.
 
 Next topic: @ref multibody_quantities
-**/
+*/
 
 /** @defgroup multibody_quantities Multibody Quantities
 @ingroup multibody_notation
@@ -319,22 +329,25 @@ source file. However, each row must be specified on a single line of text. You
 can violate the 80-character style guide limit if you have to, but be
 reasonable! Alternately, use a footnote to avoid running over. -->
 
-Quantity            |Symbol|     Typeset    |   Code   | Meaning †
---------------------|:----:|:--------------:|:--------:|----------------------------
-Rotation matrix     |  R   |@f$^BR^C@f$     |`R_BC`    |Frame C's orientation in B
-Position vector     |  p   |@f$^Pp^Q@f$     |`p_PQ`    |Position from point P to point Q
-Transform/pose      |  X   |@f$^BX^C@f$     |`X_BC`    |Frame C's transform (pose) in B
-Angular velocity    |  w   |@f$^B\omega^C@f$|`w_BC`    |Frame C's angular velocity in B †
-Velocity            |  v   |@f$^Bv^Q@f$     |`v_BQ`    |%Point Q's velocity in B
-Spatial velocity    |  V   |@f$^BV^C@f$     |`V_BC`    |Frame C's spatial velocity in B
-Angular acceleration|alpha |@f$^B\alpha^C@f$|`alpha_BC`|Frame C's angular acceleration in B
-Acceleration        |  a   |@f$^Ba^Q@f$     |`a_BQ`    |%Point Q's acceleration in B
-Spatial acceleration|  A   |@f$^BA^C@f$     |`A_BC`    |Frame C's spatial acceleration in B
-Torque              |  t   |@f$\tau^{B}@f$  |`t_B`     |Torque on a body (or frame) B
-Force               |  f   |@f$f^{P}@f$     |`f_P`     |Force on a point P
-Spatial force       |  F   |@f$F^{P}@f$     |`F_P`     |Spatial force (torque/force) ††
-Inertia matrix      |  I   |@f$I^{B/Bo}@f$  |`I_BBo`   |Body B's inertia matrix about Bo
-Spatial inertia     |  M   |@f$M^{B/Bo}@f$  |`M_BBo`   |Body B's spatial inertia bout Bo †
+Quantity             |Symbol|     Typeset              |   Code     | Meaning †
+---------------------|:----:|:------------------------:|:----------:|----------------------------
+Rotation matrix      |  R   |@f$^BR^C@f$               |`R_BC`      |Frame C's orientation in frame B
+Position vector      |  p   |@f$^Pp^Q@f$               |`p_PQ`      |Position from point P to point Q
+Transform/pose       |  X   |@f$^BX^C@f$               |`X_BC`      |Frame C's transform (pose) in frame B
+Angular velocity     |  w   |@f$^B\omega^C@f$          |`w_BC`      |Frame C's angular velocity in frame B †
+Velocity             |  v   |@f$^Bv^Q@f$               |`v_BQ`      |%Point Q's translational velocity in frame B
+Spatial velocity     |  V   |@f$^BV^{C}@f$             |`V_BC`      |Frame C's spatial velocity in frame B
+Angular acceleration |alpha |@f$^B\alpha^C@f$          |`alpha_BC`  |Frame C's angular acceleration in frame B
+Acceleration         |  a   |@f$^Ba^Q@f$               |`a_BQ`      |%Point Q's translational acceleration in B
+Spatial acceleration |  A   |@f$^BA^{C}@f$             |`A_BC`      |Frame C's spatial acceleration in frame B
+Torque               |  t   |@f$t^{B}@f$               |`t_B`       |Torque on a body (or frame) B
+Force                |  f   |@f$f^{P}@f$               |`f_P`       |Force on a point P
+Spatial force        |  F   |@f$F^{P}@f$               |`F_P`       |Spatial force (torque/force) ††
+Inertia matrix       |  I   |@f$I^{B/Bo}@f$            |`I_BBo`     |Body B's inertia matrix about Bo
+Spatial inertia      |  M   |@f$M^{B/Bo}@f$            |`M_BBo`     |Body B's spatial inertia about Bo †
+Jacobian wrt q †††   | Jq   |@f$[J_{q}^{{}^Pp^Q}]_E@f$ |`Jq_p_PQ_E` |Q's position Jacobian from P <b>in</b> E wrt q
+Jacobian wrt q̇       | Jqdot|@f$J_{q̇}^{{}^Bv^Q}@f$     |`Jqdot_v_BQ`|Q's translational velocity Jacobian in B wrt q̇
+Jacobian wrt v       | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   |C's angular velocity Jacobian in B wrt v
 
 † In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
@@ -344,14 +357,35 @@ as @f$[^B\omega^C]_E @f$.
 expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
 <br>For more information, see @ref multibody_spatial_inertia
 
-†† In mechanical systems, it is often useful to <b>replace</b> a set of forces
-by an equivalent set with a force fᴾ placed at an arbitrary point P (fᴾ is equal
-to the set's resultant), together with a torque `t` equal to the moment of the
-set about P.  A spatial force Fᴾ containing `t` and fᴾ can be useful for
-representing this replacement.
+†† It is often useful to <b>replace</b> a set of forces by an equivalent set
+with a force @f$f^{P}@f$ (equal to the set's resultant) placed at an arbitrary
+point P, together with a torque @f$t@f$ equal to the moment of the set about
+P.  A spatial force Fᴾ containing @f$t@f$ and @f$f^P@f$ can represent this
+replacement.
+
+††† The Jacobian contains partial derivatives wrt (with respect to) scalars
+e.g., wrt q (generalized positions), or q̇, or v (generalized velocities).
+The example below shows the simplicity of Jacobian monogram:
+first is the Jacobian symbol (Jv), next is the kinematic quantity (v_BQ),
+last is an expressed-in frame (E).
+<br>Example: `Jv_v_BQ_E` is `Jv` (Jacobian wrt v),
+for `v_BQ` (velocity in frame B of point Q), expressed in frame E.
+<br> <b>Advanced:</b> Due to rules of vector differentiation, explicit Jacobian
+monogram notation for `Jq` (Jacobian wrt generalized positions q) requires an
+extra frame (e.g., `JBq` is partial differentiation in frame B wrt q).
+Frequently, the partial-differentiation-in-frame B is identical to the
+expressed-in-frame E and a shorthand notation can be used.
+<br>Example: `Jq_p_PQ_E` is `Jq` (Jacobian <b>in</b> frame E wrt q),
+for `p_PQ` (position from point P to point Q),
+expressed <b>in</b> frame E.
+<br> <b>Special relationship between position and velocity Jacobians:</b>
+When a point Q's position vector originates at a point Bo <b>fixed</b> in frame
+B and when there are no motion constraints (no relationships between q̇₁ ... q̇ₙ),
+@f$\;[J_{q}^{{}^{Bo}p^Q}]_B = [J_{q̇}^{{}^Bv^Q}]_B\;@f$ i.e.,
+`(Jq_p_BoQ_B = Jqdot_v_BQ_B)`.
 
 Next topic: @ref Dt_multibody_quantities
-**/
+*/
 
 //------------------------------------------------------------------------------
 /** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
@@ -402,11 +436,11 @@ uppercase letters are available as superscripts in unicode.  Consider choosing
 frame names to accommodate this strange quirk in unicode.
 
 Next topic: @ref multibody_spatial_algebra
-**/
+*/
 
 //------------------------------------------------------------------------------
-/** @defgroup multibody_spatial_algebra Spatial Algebra
-@ingroup multibody_concepts
+/** @addtogroup multibody_spatial_algebra
+@ingroup multibody
 
 Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group
@@ -418,7 +452,7 @@ mechanics implementation, the terminology and notation we use to document them,
 and their physical representations in code, typically as %Eigen objects.
 
 Next topic: @ref multibody_spatial_pose
-**/
+*/
 
 /** @defgroup multibody_spatial_pose Spatial Pose and Transform
 @ingroup multibody_spatial_algebra
@@ -545,7 +579,7 @@ frame symbols: <pre>
 </pre>
 
 Next topic: @ref multibody_spatial_vectors
-**/
+*/
 
 /** @defgroup multibody_spatial_vectors Spatial Vectors
 @ingroup multibody_spatial_algebra
@@ -621,7 +655,7 @@ might be identified with a different body. You should use fully-expanded
 symbols, and helpful comments, if there is any chance of confusion.
 
 Next topic: @ref multibody_spatial_inertia
-**/
+*/
 
 /** @defgroup multibody_spatial_inertia Spatial Mass Matrix (Spatial Inertia)
 @ingroup multibody_spatial_algebra
@@ -679,4 +713,4 @@ Given `M_BP_F` (@f$[M^{B/P}]_F@f$), its top left submatrix is `I_BP_F`
 (@f$[I^{B/P}]_F@f$) and position vector c = `p_PBcm_F` (@f$[^Pp^{B_{cm}}]_F@f$),
 that is, the position vector of the center of mass measured from point P and
 expressed in F. Note that if the "taken about" point is `Bcm`, then c=0.
-**/
+*/

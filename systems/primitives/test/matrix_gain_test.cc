@@ -21,7 +21,6 @@ class MatrixGainTest : public AffineLinearSystemTest {
     dut_->set_name("test_matrix_gain_system");
     context_ = dut_->CreateDefaultContext();
     input_vector_ = make_unique<BasicVector<double>>(2 /* size */);
-    system_output_ = dut_->AllocateOutput(*context_);
   }
 
  protected:
@@ -69,12 +68,9 @@ TEST_F(MatrixGainTest, Output) {
   Eigen::Vector2d u(2.17, 5.99);
   SetInput(u);
 
-  dut_->CalcOutput(*context_, system_output_.get());
-
   Eigen::VectorXd expected_output(2);
   expected_output = D_ * u;
-
-  EXPECT_EQ(system_output_->get_vector_data(0)->get_value(), expected_output);
+  EXPECT_EQ(dut_->get_output_port().Eval(*context_), expected_output);
 }
 
 // Tests converting to different scalar types.

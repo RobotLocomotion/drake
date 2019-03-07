@@ -2,7 +2,6 @@
 
 #include <algorithm>  // To suppress cpplint.
 #include <functional>
-#include <limits>
 #include <map>
 #include <memory>
 #include <numeric>
@@ -21,7 +20,6 @@ using std::accumulate;
 using std::dynamic_pointer_cast;
 using std::logic_error;
 using std::map;
-using std::numeric_limits;
 using std::pair;
 using std::runtime_error;
 using std::set;
@@ -122,6 +120,11 @@ dreal::Variable::Type convert_type(const symbolic::Variable::Type type) {
       return dreal::Variable::Type::BINARY;
     case symbolic::Variable::Type::BOOLEAN:
       return dreal::Variable::Type::BOOLEAN;
+    case symbolic::Variable::Type::RANDOM_UNIFORM:
+    case symbolic::Variable::Type::RANDOM_GAUSSIAN:
+    case symbolic::Variable::Type::RANDOM_EXPONENTIAL:
+      throw runtime_error(
+          "Random variables are not supported in dReal solver.");
   }
   throw runtime_error("Should be unreachable.");  // LCOV_EXCL_LINE
 }
@@ -418,208 +421,79 @@ optional<DrealSolver::IntervalBox> DrealSolver::Minimize(
   }
 }
 
-bool DrealSolver::available() const { return true; }
+bool DrealSolver::is_available() { return true; }
 
 namespace {
-
-// Extracts double value of @p option_name from @p prog. If not specified,
+// Extracts value of @p key from @p solver_options. If not specified,
 // returns @p default_value.
-double GetDoubleOption(MathematicalProgram* const prog,
-                       const string& option_name, const double default_value) {
-  double value{default_value};
-  const map<string, double>& double_options{
-      prog->GetSolverOptionsDouble(DrealSolver::id())};
-  const auto it = double_options.find(option_name);
-  if (it != double_options.end()) {
-    value = it->second;
+template <typename T>
+T GetOptionWithDefaultValue(const SolverOptions& solver_options,
+                            const std::string& key, const T& default_value) {
+  const auto& options = solver_options.GetOptions<T>(DrealSolver::id());
+  const auto it = options.find(key);
+  if (it != options.end()) {
+    return it->second;
   }
-  return value;
+  return default_value;
 }
 
-// Extracts integer value of @p option_name from @p prog. If not specified,
-// returns @p default_value.
-int GetIntOption(MathematicalProgram* const prog, const string& option_name,
-                 const int default_value) {
-  int value{default_value};
-  const map<string, int>& int_options{
-      prog->GetSolverOptionsInt(DrealSolver::id())};
-  const auto it = int_options.find(option_name);
-  if (it != int_options.end()) {
-    value = it->second;
+template <typename T>
+symbolic::Formula ExtractConstraints(const vector<Binding<T>>& bindings) {
+  symbolic::Formula f{symbolic::Formula::True()};
+  for (const Binding<T>& binding : bindings) {
+    f = f && binding.evaluator()->CheckSatisfied(binding.variables());
   }
-  return value;
-}
-
-// Returns `True` if lb is -∞. Otherwise returns a symbolic formula `lb <= e`.
-symbolic::Formula MakeLowerBound(const double lb,
-                                 const symbolic::Expression& e) {
-  if (lb == -numeric_limits<double>::infinity()) {
-    return symbolic::Formula::True();
-  } else {
-    return lb <= e;
-  }
-}
-
-// Returns `True` if ub is ∞. Otherwise returns a symbolic formula `e <= ub`.
-symbolic::Formula MakeUpperBound(const symbolic::Expression& e,
-                                 const double ub) {
-  if (ub == numeric_limits<double>::infinity()) {
-    return symbolic::Formula::True();
-  } else {
-    return e <= ub;
-  }
+  return f;
 }
 
 // Extracts bounding box constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractBoundingBoxConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<BoundingBoxConstraint>& binding :
-       prog.bounding_box_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<BoundingBoxConstraint>& constraint{binding.evaluator()};
-    const Eigen::VectorXd& lb{constraint->lower_bound()};
-    const Eigen::VectorXd& ub{constraint->upper_bound()};
-    for (int i = 0; i < constraint->num_constraints(); ++i) {
-      // Add lbᵢ ≤ xᵢ ≤ ubᵢ.
-      f = f && MakeLowerBound(lb(i), x(i)) && MakeUpperBound(x(i), ub(i));
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.bounding_box_constraints());
 }
 
 // Extracts linear constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLinearConstraints(const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LinearConstraint>& binding : prog.linear_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LinearConstraint>& constraint{binding.evaluator()};
-    const Eigen::VectorXd& lb{constraint->lower_bound()};
-    const Eigen::VectorXd& ub{constraint->upper_bound()};
-    const VectorX<symbolic::Expression> M{constraint->A() * x};
-    for (int i = 0; i < constraint->num_constraints(); ++i) {
-      // Add lbᵢ ≤ (Ax)(i) ≤ ubᵢ.
-      f = f && MakeLowerBound(lb(i), M(i)) && MakeUpperBound(M(i), ub(i));
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.linear_constraints());
 }
 
 // Extracts linear-equality constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLinearEqualityConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LinearEqualityConstraint>& binding :
-       prog.linear_equality_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LinearEqualityConstraint>& constraint{binding.evaluator()};
-    const Eigen::VectorXd& lb{constraint->lower_bound()};
-    const VectorX<symbolic::Expression> M{constraint->A() * x};
-    for (int i = 0; i < constraint->num_constraints(); ++i) {
-      // Add (Ax)(i) = lbᵢ.
-      f = f && (M(i) == lb(i));
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.linear_equality_constraints());
 }
 
 // Extracts Lorentz-cone constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLorentzConeConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LorentzConeConstraint>& binding :
-       prog.lorentz_cone_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LorentzConeConstraint>& constraint{binding.evaluator()};
-    const VectorX<symbolic::Expression> z{constraint->A() * x +
-                                          constraint->b()};
-    // z₀ ≥ 0
-    f = f && (z(0) >= 0);
-    // z₀² ≥ ∑ zᵢ² for i ∈ [1, n-1]
-    f = f && (pow(z(0), 2) >= z.tail(z.size() - 1).squaredNorm());
-  }
-  return f;
+  return ExtractConstraints(prog.lorentz_cone_constraints());
 }
 
 // Extracts rotated Lorentz-cone constraints in @p prog into a symbolic formula.
 // This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractRotatedLorentzConeConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<RotatedLorentzConeConstraint>& binding :
-       prog.rotated_lorentz_cone_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<RotatedLorentzConeConstraint>& constraint{
-        binding.evaluator()};
-    const VectorX<symbolic::Expression> z{constraint->A() * x +
-                                          constraint->b()};
-    // z₀ ≥ 0 ∧ z₁ ≥ 0
-    f = f && (z(0) >= 0) && (z(1) >= 0);
-    // z₀ * z₁ ≥ ∑ zᵢ² (for i ∈ [2, n-1])
-    f = f && (z(0) * z(1) >= z.tail(z.size() - 2).squaredNorm());
-  }
-
-  return f;
+  return ExtractConstraints(prog.rotated_lorentz_cone_constraints());
 }
 
 // Extracts linear-complementarity constraints in @p prog into a symbolic
 // formula. This is a helper function used in DrealSolver::Solve.
 symbolic::Formula ExtractLinearComplementarityConstraints(
     const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<LinearComplementarityConstraint>& binding :
-       prog.linear_complementarity_constraints()) {
-    const VectorXDecisionVariable& x{binding.variables()};
-    const shared_ptr<LinearComplementarityConstraint>& constraint{
-        binding.evaluator()};
-    const VectorX<symbolic::Expression> y =
-        constraint->M() * x + constraint->q();
-    // 1. Mx + q >= 0
-    for (VectorX<symbolic::Expression>::Index i = 0; i < y.size(); ++i) {
-      f = f && (y(i) >= 0);
-    }
-    // 2. x >= 0
-    for (VectorX<symbolic::Expression>::Index i = 0; i < x.size(); ++i) {
-      f = f && (x(i) >= 0);
-    }
-    // 3. x'(Mx + q) == 0
-    f = f && (x.dot(y) == 0);
-  }
-  return f;
+  return ExtractConstraints(prog.linear_complementarity_constraints());
 }
 
 // Extracts generic constraints in @p prog into a symbolic formula. This is a
 // helper function used in DrealSolver::Solve.
 //
-// @note All the generic constraints should be of `ExpressionConstraint`.
-// @throw std::logic_error if there is non-expression generic-constraint.
-//
-// TODO(soonho): Support other types of generic constraints.
+// @throws std::logic_error if there is a generic-constraint which does not
+// provide symbolic evaluation.
 symbolic::Formula ExtractGenericConstraints(const MathematicalProgram& prog) {
-  symbolic::Formula f{symbolic::Formula::True()};
-  for (const Binding<Constraint>& binding : prog.generic_constraints()) {
-    const shared_ptr<Constraint>& evaluator{binding.evaluator()};
-    const shared_ptr<ExpressionConstraint> expression_constraint =
-        dynamic_pointer_cast<ExpressionConstraint>(evaluator);
-    if (expression_constraint) {
-      const Eigen::VectorXd& lb{expression_constraint->lower_bound()};
-      const Eigen::VectorXd& ub{expression_constraint->upper_bound()};
-      const VectorX<symbolic::Expression>& expressions =
-          expression_constraint->expressions();
-      for (int i = 0; i < expression_constraint->num_constraints(); ++i) {
-        // Add lbᵢ ≤ eᵢ ≤ ubᵢ.
-        f = f && MakeLowerBound(lb(i), expressions(i)) &&
-            MakeUpperBound(expressions(i), ub(i));
-      }
-    } else {
-      throw logic_error("Non-expression generic-constraint is found.");
-    }
-  }
-  return f;
+  return ExtractConstraints(prog.generic_constraints());
 }
 
 // Extracts linear costs in @p prog and push them into @p costs vector. This is
@@ -629,7 +503,9 @@ void ExtractLinearCosts(const MathematicalProgram& prog,
   for (const Binding<LinearCost>& binding : prog.linear_costs()) {
     const VectorXDecisionVariable& x{binding.variables()};
     const shared_ptr<LinearCost>& cost{binding.evaluator()};
-    costs->push_back(cost->a().dot(x) + cost->b());
+    VectorX<symbolic::Expression> y;
+    cost->Eval(x, &y);
+    costs->push_back(y[0]);
   }
 }
 
@@ -639,26 +515,20 @@ void ExtractQuadraticCosts(const MathematicalProgram& prog,
   for (const Binding<QuadraticCost>& binding : prog.quadratic_costs()) {
     const VectorXDecisionVariable& x{binding.variables()};
     const shared_ptr<QuadraticCost>& cost{binding.evaluator()};
-    costs->push_back(
-        (.5 * x.transpose() * cost->Q() * x + cost->b().transpose() * x)(0) +
-        cost->c());
+    VectorX<symbolic::Expression> y;
+    cost->Eval(x, &y);
+    costs->push_back(y[0]);
   }
 }
 
 }  // namespace
 
-SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
-  if (!prog.positive_semidefinite_constraints().empty()) {
-    throw logic_error(
-        "DrealSolver does not support positive-semidefinite constraints.");
-  }
-  if (!prog.linear_matrix_inequality_constraints().empty()) {
-    throw logic_error(
-        "DrealSolver does not support linear-matrix-inequality constraints.");
-  }
-  if (!prog.generic_costs().empty()) {
-    throw logic_error("DrealSolver does not support generic costs.");
-  }
+void DrealSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
+  unused(initial_guess);
 
   // 1. Extracts the constraints from @p prog and constructs an equivalent
   // symbolic formula.
@@ -680,46 +550,45 @@ SolutionResult DrealSolver::Solve(MathematicalProgram& prog) const {
 
   // TODO(soonho): Support other dReal options. For now, we only support
   // "--preicision" and "--local-optimization".
-  const double precision{
-      GetDoubleOption(&prog, "precision", 0.001 /* default */)};
+
+  const double precision{GetOptionWithDefaultValue(
+      merged_options, "precision", 0.001 /* default */)};
   const LocalOptimization local_optimization{
-      GetIntOption(&prog, "use_local_optimization", 1 /* default */) > 0
+      GetOptionWithDefaultValue<int>(
+          merged_options, "use_local_optimization", 1 /* default */) > 0
           ? LocalOptimization::kUse
           : LocalOptimization::kNotUse};
-  optional<IntervalBox> result;
+  optional<IntervalBox> dreal_result;
   if (costs.size() == 0) {
     // No cost functions in the problem. Call Checksatisfiability.
-    result = CheckSatisfiability(constraints, precision);
+    dreal_result = CheckSatisfiability(constraints, precision);
   } else {
     // Call Minimize with cost = ∑ᵢ costs(i).
-    result = Minimize(
+    dreal_result = Minimize(
         accumulate(costs.begin(), costs.end(), symbolic::Expression::Zero(),
                    std::plus<symbolic::Expression>{}),
         constraints, precision, local_optimization);
   }
 
-  // 4. Sets up SolverResult and SolutionResult.
-  SolutionResult solution_result{SolutionResult::kUnknownError};
-  SolverResult solver_result{id()};
-  if (result) {
+  // 4. Sets MathematicalProgramResult.
+  result->set_solution_result(SolutionResult::kUnknownError);
+  if (dreal_result) {
     // 4.1. delta-SAT case.
     const int num_vars{prog.num_vars()};
     Eigen::VectorXd solution_vector(num_vars);
     // dReal returns an interval box instead of a point as a solution. We pick
-    // the mid-point from a returned box and assign it to the SolverResult.
-    for (const auto& item : *result) {
+    // the mid-point from a returned box and assign it to the result.
+    for (const auto& item : *dreal_result) {
       const symbolic::Variable& var{item.first};
       const double v{item.second.mid()};
       solution_vector(prog.FindDecisionVariableIndex(var)) = v;
     }
-    solution_result = SolutionResult::kSolutionFound;
-    solver_result.set_decision_variable_values(solution_vector);
+    result->set_solution_result(SolutionResult::kSolutionFound);
+    result->set_x_val(solution_vector);
   } else {
     // 4.2. UNSAT case
-    solution_result = SolutionResult::kInfeasibleConstraints;
+    result->set_solution_result(SolutionResult::kInfeasibleConstraints);
   }
-  prog.SetSolverResult(solver_result);
-  return solution_result;
 }
 
 }  // namespace solvers

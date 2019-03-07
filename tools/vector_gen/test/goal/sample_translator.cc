@@ -1,6 +1,6 @@
 #include "drake/tools/vector_gen/test/gen/sample_translator.h"
 
-// GENERATED FILE DO NOT EDIT
+// GENERATED GOAL DO NOT EDIT
 // See drake/tools/lcm_vector_gen.py.
 
 #include <stdexcept>

@@ -3,7 +3,7 @@
 // @file
 // Template method implementations for bead_on_a_wire.h.
 // Most users should only include that file, not this one.
-// For background, see http://drake.mit.edu/cxx_inl.html.
+// For background, see https://drake.mit.edu/cxx_inl.html.
 
 /* clang-format off to disable clang-format-includes */
 #include "drake/examples/bead_on_a_wire/bead_on_a_wire.h"
@@ -169,7 +169,10 @@ Eigen::VectorXd BeadOnAWire<T>::DoCalcVelocityChangeFromConstraintImpulses(
 
   // TODO(edrumwri): Test this method as soon as DAE solver is available,
   //                 (necessarily removing abort() first).
-  DRAKE_ABORT_MSG("This method requires testing.");
+  if (true) {
+    throw std::logic_error(
+        "DoCalcVelocityChangeFromConstraintImpulses requires testing.");
+  }
 
   // The bead on the wire is unit mass, so the velocity change is equal to
   // simply Jᵀλ

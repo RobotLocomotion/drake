@@ -1,0 +1,52 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # Apache-2.0
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Generates osqp_configure.h based on the defines= we want in Drake.
+cmake_configure_file(
+    name = "configure_file",
+    src = "configure/qdldl_types.h.in",
+    out = "include/qdldl_types.h",
+    defines = [
+        "QDLDL_BOOL_TYPE=unsigned char",
+        # Keep this sync'd with the 'DLONG' defined in //tools/workspace/osqp.
+        "QDLDL_INT_TYPE=long long",
+        # Keep this sync'd with the lack of 'DFLOAT' in //tools/workspace/osqp.
+        "QDLDL_FLOAT_TYPE=double",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "qdldl",
+    hdrs = [
+        "include/qdldl.h",
+        "include/qdldl_types.h",
+    ],
+    srcs = [
+        "src/qdldl.c",
+    ],
+    includes = [
+        "include",
+    ],
+)
+
+install(
+    name = "install",
+    docs = [
+        "LICENSE",
+    ],
+)

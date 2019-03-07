@@ -96,9 +96,9 @@ int DoMain() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  // Simulate for a very long time.
   simulator.StepTo(FLAGS_simulation_sec);
 
+  lcm.StopReceiveThread();
   return 0;
 }
 }  // namespace
@@ -106,4 +106,7 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::acrobot::DoMain(); }
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::acrobot::DoMain();
+}

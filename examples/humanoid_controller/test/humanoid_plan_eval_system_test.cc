@@ -75,13 +75,13 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     HumanoidStatus robot_status(&robot, alias_groups);
     robot_status.UpdateKinematics(0, q, v);
     auto state_source = builder.AddSystem<systems::ConstantValueSource<double>>(
-        systems::AbstractValue::Make<RobotKinematicState<double>>(
+        AbstractValue::Make<RobotKinematicState<double>>(
             robot_status));
 
     // Adds a dummy plan message.
     robotlocomotion::robot_plan_t msg{};
     auto plan_source = builder.AddSystem<systems::ConstantValueSource<double>>(
-        systems::AbstractValue::Make<robotlocomotion::robot_plan_t>(msg));
+        AbstractValue::Make<robotlocomotion::robot_plan_t>(msg));
 
     // State -> qp inverse dynamics.
     builder.Connect(state_source->get_output_port(0),
@@ -106,7 +106,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
 
     context_ = diagram_->CreateDefaultContext();
     context_->set_time(0);
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
 
     // Initializes.
     auto& plan_eval_context =
@@ -120,7 +120,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
     diagram_->CalcOutput(*context_, output_.get());
   }
 

@@ -81,9 +81,9 @@ template <typename T>
 void PidController<T>::DoCalcTimeDerivatives(
     const Context<T>& context, ContinuousState<T>* derivatives) const {
   const Eigen::VectorBlock<const VectorX<T>> state =
-      this->EvalEigenVectorInput(context, input_index_state_);
+      get_input_port_estimated_state().Eval(context);
   const Eigen::VectorBlock<const VectorX<T>> state_d =
-      this->EvalEigenVectorInput(context, input_index_desired_state_);
+      get_input_port_desired_state().Eval(context);
 
   // The derivative of the continuous state is the instantaneous position error.
   VectorBase<T>& derivatives_vector = derivatives->get_mutable_vector();
@@ -97,9 +97,9 @@ template <typename T>
 void PidController<T>::CalcControl(const Context<T>& context,
                                    BasicVector<T>* control) const {
   const Eigen::VectorBlock<const VectorX<T>> state =
-      this->EvalEigenVectorInput(context, input_index_state_);
+      get_input_port_estimated_state().Eval(context);
   const Eigen::VectorBlock<const VectorX<T>> state_d =
-      this->EvalEigenVectorInput(context, input_index_desired_state_);
+      get_input_port_desired_state().Eval(context);
 
   // State error.
   const VectorX<T> controlled_state_diff =
@@ -122,7 +122,9 @@ void PidController<T>::CalcControl(const Context<T>& context,
 
 // Adds a simple record-based representation of the PID controller to @p dot.
 template <typename T>
-void PidController<T>::GetGraphvizFragment(std::stringstream* dot) const {
+void PidController<T>::GetGraphvizFragment(int max_depth,
+                                           std::stringstream* dot) const {
+  unused(max_depth);
   std::string name = this->get_name();
   if (name.empty()) {
     name = "PID Controller";

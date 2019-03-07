@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 # Keep this constant in sync with library_lint_reporter.py.
 _TAG_EXCLUDE_FROM_PACKAGE = "exclude_from_package"
@@ -23,7 +23,8 @@ def library_lint(
     # lint problems, we will append arguments here that will be passed along to
     # the helper.
     library_lint_reporter_args = [
-        "--package-name", package_name,
+        "--package-name",
+        package_name,
     ]
     library_lint_reporter_data = []
 
@@ -35,11 +36,14 @@ def library_lint(
         # We only want cc_library.
         if one_rule["kind"] != "cc_library":
             continue
+
         # Ignore magic private libraries.
         if one_rule["name"].startswith("_"):
             continue
+
         # Found a cc_library.
         cc_library_rules.append(one_rule)
+
         # Is it a package_library?
         if "drake_cc_package_library" in one_rule["tags"]:
             not package_library_rule or fail("Two package libraries?")
@@ -56,7 +60,8 @@ def library_lint(
 
     # Sanity check the package_library_rule name.
     if package_library_rule and (
-            package_library_rule["name"] != short_package_name):
+        package_library_rule["name"] != short_package_name
+    ):
         fail("drake_cc_package_library should not allow wrong-names?!")
 
     # Unless the package_library rule exists and is testonly, then we should
@@ -78,63 +83,47 @@ def library_lint(
         "({})".format(all_libraries),
         # Remove items that have opted-out of the package_library.
         "except attr(tags, '{}', {})".format(
-            _TAG_EXCLUDE_FROM_PACKAGE, all_libraries),
+            _TAG_EXCLUDE_FROM_PACKAGE,
+            all_libraries,
+        ),
         # Maybe remove libraries tagged testonly = 1.
         "except attr(testonly, 1, {})".format(
-            all_libraries) if exclude_testonly else "",
+            all_libraries,
+        ) if exclude_testonly else "",
     ])
 
     # Find libraries that are deps of the package_library but shouldn't be.
-    extra_deps_expression = "deps({}, 1) except ({})".format(
-        package_name, correct_deps_expression)
+    extra_deps_expression = "deps({}, 1) except ({}) except {}".format(
+        package_name,
+        correct_deps_expression,
+        # This is fine (it's a dependency of our copt select() statement).
+        "//tools:drake_werror",
+    )
+
     # Find libraries that should be deps of the package_library but aren't.
     # Note that our library_lint_reporter.py tool filters out some false
     # positives from this report.
     missing_deps_expression = "({}) except deps({}, 1) ".format(
-        correct_deps_expression, package_name)
+        correct_deps_expression,
+        package_name,
+    )
 
     # If there was a package_library rule, ensure its deps are comprehensive.
     if package_library_rule:
-        # If snopt is disabled, we have to use a dummy scope and expression.
-        #
-        # Details: When snopt is enabled, we obtain the @snopt source code via
-        # git.  When snopt is disabled, there is no guarantee that git is still
-        # going to work (e.g., the repository is authenticated).  Normally this
-        # is not a problem.  However, during a `bazel query` or `genquery()`
-        # computation, Bazel still builds a graph where the conditional
-        # dependency on snopt is reified, and so its repository_rule gets run
-        # (and fails).  Thus, we shouldn't do any genquery() operations unless
-        # snopt is enabled.  Instead, we'll scope the genquery to a dummy
-        # label, and nerf the expression to be definitionally empty.
-        #
-        # TODO(jwnimmer-tri) Figure out how make linting work even when snopt
-        # is disabled.
-        dummy = "@bazel_tools//tools/cpp:empty"
-        dummy_expression = "{} except {}".format(dummy, dummy)
         native.genquery(
             name = "library_lint_missing_deps",
-            expression = select({
-                "//tools:with_snopt": missing_deps_expression,
-                "//conditions:default": dummy_expression,
-            }),
-            scope = select({
-                "//tools:with_snopt": scope,
-                "//conditions:default": [dummy],
-            }),
+            expression = missing_deps_expression,
+            scope = scope,
             testonly = 1,
+            tags = ["lint", "library_lint"],
             visibility = ["//visibility:private"],
         )
         native.genquery(
             name = "library_lint_extra_deps",
-            expression = select({
-                "//tools:with_snopt": extra_deps_expression,
-                "//conditions:default": dummy_expression,
-            }),
-            scope = select({
-                "//tools:with_snopt": scope,
-                "//conditions:default": [dummy],
-            }),
+            expression = extra_deps_expression,
+            scope = scope,
             testonly = 1,
+            tags = ["lint", "library_lint"],
             visibility = ["//visibility:private"],
         )
         library_lint_reporter_data += [
@@ -142,13 +131,16 @@ def library_lint(
             ":library_lint_extra_deps",
         ]
         library_lint_reporter_args += [
-            "--missing-deps", "$(location :library_lint_missing_deps)",
-            "--extra-deps", "$(location :library_lint_extra_deps)",
+            "--missing-deps",
+            "$(location :library_lint_missing_deps)",
+            "--extra-deps",
+            "$(location :library_lint_extra_deps)",
         ]
 
     # Report all of the library_lint results.
     py_test_isolated(
         name = "library_lint",
+        size = "small",
         srcs = ["@drake//tools/lint:library_lint_reporter.py"],
         main = "@drake//tools/lint:library_lint_reporter.py",
         args = library_lint_reporter_args,

@@ -28,6 +28,7 @@ namespace controllers {
 /// information between steps.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 ///
 /// @ingroup control_systems
@@ -36,6 +37,8 @@ class LinearModelPredictiveController : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LinearModelPredictiveController)
 
+  // TODO(jadecastro) Implement a version that regulates to an arbitrary
+  // trajectory.
   /// Constructor for an unconstrained MPC formulation with linearization
   /// occurring about the provided base_context.  Since this formulation is
   /// devoid of any externally-imposed input/state constraints, the controller
@@ -58,9 +61,6 @@ class LinearModelPredictiveController : public LeafSystem<T> {
   /// @pre base_context must have discrete states set as appropriate for the
   /// given @p model.  The input must also be initialized via
   /// `base_context->FixInputPort(0, u0)`, or otherwise initialized via Diagram.
-
-  // TODO(jadecastro) Implement a version that regulates to an arbitrary
-  // trajectory.
   LinearModelPredictiveController(
       std::unique_ptr<systems::System<double>> model,
       std::unique_ptr<systems::Context<double>> base_context,
@@ -68,7 +68,7 @@ class LinearModelPredictiveController : public LeafSystem<T> {
       double time_horizon);
     // TODO(jadecastro) Get time_period directly from the plant model.
 
-  const InputPortDescriptor<T>& get_state_port() const {
+  const InputPort<T>& get_state_port() const {
     return this->get_input_port(state_input_index_);
   }
   const OutputPort<T>& get_control_port() const {

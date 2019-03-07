@@ -16,6 +16,7 @@ namespace systems {
 /// @ingroup primitive_systems
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -38,6 +39,8 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   /// and equals the supplied @p source_value at all times.
   /// @param source_value the constant value of the output so that
   /// `y = source_value` at all times.
+  ///
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit ConstantVectorSource(const T& source_value);
 
   /// Constructs a system with a vector output that is constant, has the type of
@@ -45,13 +48,15 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   ///
   /// @note Objects created using this constructor overload do not support
   /// system scalar conversion.  See @ref system_scalar_conversion.
+  ///
+  /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
   explicit ConstantVectorSource(const BasicVector<T>& source_value);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit ConstantVectorSource(const ConstantVectorSource<U>& other);
 
-  ~ConstantVectorSource() override;
+  ~ConstantVectorSource() final;
 
   /// Return a read-only reference to the source value of this block in the
   /// given @p context.
@@ -71,7 +76,7 @@ class ConstantVectorSource final : public SingleOutputVectorSource<T> {
   // Outputs a signal with a fixed value as specified by the user.
   void DoCalcVectorOutput(
       const Context<T>& context,
-      Eigen::VectorBlock<VectorX<T>>* output) const override;
+      Eigen::VectorBlock<VectorX<T>>* output) const final;
 
   const int source_value_index_;
 };

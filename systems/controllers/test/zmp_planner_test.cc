@@ -109,7 +109,7 @@ class ZMPPlannerTest : public ::testing::Test {
   // the optimal control u (CoM acceleration) is achieved by:
   // min_u L(y, u) + dV / dx_bar * x_bar_dot,
   // where L = (y - y_d)^T * Qy * (y - y_d) + u^T * R u.
-  // The minimum is achived when the derivative w.r.t u equals to 0.
+  // The minimum is achieved when the derivative w.r.t u equals to 0.
   // This expands to:
   // 2 * (C * x + D * u - y_d)^T * Qy * D + 2 * u^T * R +
   // (2 * S1 * x_bar + S2)^T * B = 0.

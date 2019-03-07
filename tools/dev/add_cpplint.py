@@ -35,13 +35,13 @@ class FileProcessor(object):
         with open(build_file) as f:
             text = f.read()
         # Not robust, but hoping it's mentioned
-        if "cpplint()" not in text:
-            text = text.rstrip() + "\n\ncpplint()\n"
+        if "add_lint_tests()" not in text:
+            text = text.rstrip() + "\n\nadd_lint_tests()\n"
             with open(build_file, 'w') as f:
                 f.write(text)
             print "    Updated file"
         else:
-            print "    cpplint() already present"
+            print "    add_lint_tests() already present"
         self.build_files.add(build_file)
 
 def do_main():

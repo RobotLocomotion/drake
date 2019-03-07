@@ -1,13 +1,12 @@
 /// @file yaml_to_obj.cc
 ///
-/// Take a yaml file as input, build the resulting monolane or multilane road
-/// geometry, and render the road surface to a WaveFront OBJ output file.
+/// Take a yaml file as input, build the resulting multilane road geometry, and
+/// render the road surface to a WaveFront OBJ output file.
 #include <string>
 
 #include <gflags/gflags.h>
 #include "yaml-cpp/yaml.h"
 
-#include "drake/automotive/maliput/monolane/loader.h"
 #include "drake/automotive/maliput/multilane/builder.h"
 #include "drake/automotive/maliput/multilane/loader.h"
 #include "drake/automotive/maliput/utility/generate_obj.h"
@@ -15,10 +14,9 @@
 #include "drake/common/text_logging_gflags.h"
 
 DEFINE_string(yaml_file, "",
-              "yaml input file defining a monolane or multilane road geometry");
+              "yaml input file defining a multilane road geometry");
 DEFINE_string(obj_dir, ".", "Directory to contain rendered road surface");
-DEFINE_string(obj_file, "",
-              "Basename for output Wavefront OBJ and MTL files");
+DEFINE_string(obj_file, "", "Basename for output Wavefront OBJ and MTL files");
 DEFINE_double(max_grid_unit,
               drake::maliput::utility::ObjFeatures().max_grid_unit,
               "Maximum size of a grid unit in the rendered mesh covering the "
@@ -30,31 +28,32 @@ DEFINE_double(min_grid_resolution,
 DEFINE_bool(draw_elevation_bounds,
             drake::maliput::utility::ObjFeatures().draw_elevation_bounds,
             "Whether to draw the elevation bounds");
+DEFINE_double(simplify_mesh_threshold,
+              drake::maliput::utility::ObjFeatures().simplify_mesh_threshold,
+              "Optional tolerance for mesh simplification, in meters. Make it "
+              "equal to the road linear tolerance to get a mesh size reduction "
+              "while keeping geometrical fidelity.");
 
 namespace drake {
 namespace maliput {
 namespace utility {
 namespace {
 
-// Available maliput implentations to load.
+// Available maliput implementations to load.
 enum class MaliputImplementation {
-  kMonolane,   //< monolane implementation.
   kMultilane,  //< multilane implementation.
-  kUnknown     //< Used when none of the implementation could be identified.
+  kUnknown     //< Used when none of the implementations could be identified.
 };
 
 // Parses a file whose path is `filename` as a YAML and looks for a node called
-// "maliput_multilane_builder" or "maliput_monolane_builder".
-// When the first key is found, MaliputImplementation::kMultilane is returned.
-// When the second key is found, MaliputImplementation::kMonolane is returned.
-// Otherwise, MaliputImplementation::kUnknown is returned.
+// "maliput_multilane_builder". If it is found,
+// MaliputImplementation::kMultilane is returned. Otherwise,
+// MaliputImplementation::kUnknown is returned.
 MaliputImplementation GetMaliputImplementation(const std::string& filename) {
   const YAML::Node yaml_file = YAML::LoadFile(filename);
   DRAKE_DEMAND(yaml_file.IsMap());
   if (yaml_file["maliput_multilane_builder"]) {
     return MaliputImplementation::kMultilane;
-  } else if (yaml_file["maliput_monolane_builder"]) {
-    return MaliputImplementation::kMonolane;
   }
   return MaliputImplementation::kUnknown;
 }
@@ -83,15 +82,9 @@ int main(int argc, char* argv[]) {
       drake::log()->info("Loaded a multilane road geometry.");
       break;
     }
-    case MaliputImplementation::kMonolane: {
-      rg = drake::maliput::monolane::LoadFile(FLAGS_yaml_file);
-      drake::log()->info("Loaded a monolane road geometry.");
-      break;
-    }
-    default: {
+    case MaliputImplementation::kUnknown: {
       drake::log()->error("Unknown map.");
-      DRAKE_ABORT();
-      break;
+      return 1;
     }
   }
 
@@ -99,7 +92,7 @@ int main(int argc, char* argv[]) {
   features.max_grid_unit = FLAGS_max_grid_unit;
   features.min_grid_resolution = FLAGS_min_grid_resolution;
   features.draw_elevation_bounds = FLAGS_draw_elevation_bounds;
-
+  features.simplify_mesh_threshold = FLAGS_simplify_mesh_threshold;
   drake::log()->info("Generating OBJ.");
   GenerateObjFile(rg.get(), FLAGS_obj_dir, FLAGS_obj_file, features);
 

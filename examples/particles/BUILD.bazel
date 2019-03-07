@@ -1,10 +1,10 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
 )
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -36,11 +36,11 @@ drake_cc_binary(
     ],
     deps = [
         ":particles",
+        "//attic/multibody/parsers",
+        "//attic/multibody/rigid_body_plant:drake_visualizer",
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//lcm",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant:drake_visualizer",
         "//systems/analysis",
         "//systems/primitives:constant_vector_source",
     ],

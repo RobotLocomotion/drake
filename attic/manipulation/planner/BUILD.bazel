@@ -1,0 +1,111 @@
+# -*- python -*-
+
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_package_library = "attic_drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "planner",
+    deps = [
+        ":constraint_relaxing_ik",
+        ":rbt_differential_inverse_kinematics",
+        ":robot_plan_interpolator",
+    ],
+)
+
+drake_cc_library(
+    name = "constraint_relaxing_ik",
+    srcs = ["constraint_relaxing_ik.cc"],
+    hdrs = ["constraint_relaxing_ik.h"],
+    deps = [
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody/parsers",
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+# N.B. This is unit tested in //manipulation/planner (non-attic).
+drake_cc_library(
+    name = "rbt_differential_inverse_kinematics",
+    srcs = ["rbt_differential_inverse_kinematics.cc"],
+    hdrs = ["rbt_differential_inverse_kinematics.h"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//manipulation/planner:differential_inverse_kinematics",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_interpolator",
+    srcs = ["robot_plan_interpolator.cc"],
+    hdrs = ["robot_plan_interpolator.h"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody/parsers",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/framework:leaf_system",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "constraint_relaxing_ik_test",
+    timeout = "moderate",
+    srcs = ["test/constraint_relaxing_ik_test.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    # TODO(sam.creasey) This test currently times out on Mac with
+    # IPOPT.  Once IPOPT is tuned to provide better/faster IK results
+    # (see https://github.com/RobotLocomotion/drake/issues/3128 ) we
+    # should enable this test.
+    tags = ["snopt"],
+    deps = [
+        ":constraint_relaxing_ik",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_differential_inverse_kinematics_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":rbt_differential_inverse_kinematics",
+        "//attic/multibody/parsers",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//examples/kuka_iiwa_arm:iiwa_common",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_plan_interpolator_test",
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":robot_plan_interpolator",
+        "//common:find_resource",
+        "//systems/framework",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
+    ],
+)
+
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

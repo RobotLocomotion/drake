@@ -22,7 +22,18 @@ enum BaseField : int {
   kInherit = 1 << 0,
   /// XYZ point in Cartesian space.
   kXYZs = 1 << 1,
+  /// Normals.
+  kNormals = 1 << 2,
+  /// RGB colors.
+  kRGBs = 1 << 3,
 };
+
+namespace internal {
+
+// N.B. Ensure this is the largest bit.
+constexpr BaseField kMaxBitInUse = kRGBs;
+
+}  // namespace internal
 
 /// Describes an descriptor field with a name and the descriptor's size.
 ///
@@ -81,10 +92,9 @@ class Fields {
 
   /// @throws std::runtime_error if `base_fields` is not composed of valid
   /// `BaseField`s.
-  // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Fields(BaseFieldT base_fields)
+  Fields(BaseFieldT base_fields)  // NOLINT(runtime/explicit)
       : base_fields_(base_fields) {
-    if (base_fields < 0 || base_fields >= (kXYZs << 1))
+    if (base_fields < 0 || base_fields >= (internal::kMaxBitInUse << 1))
       throw std::runtime_error("Invalid BaseField specified.");
   }
 
@@ -169,15 +179,15 @@ class Fields {
   DescriptorType descriptor_type_{kDescriptorNone};
 };
 
+// Do not use implicit conversion because it becomes ambiguous.
 /// Makes operator| compatible for `BaseField` + `DescriptorType`.
 /// @see Fields::operator|= for preconditions.
-// Do not use implicit conversion because it becomes ambiguous.
 inline Fields operator|(const BaseFieldT& lhs, const DescriptorType& rhs) {
   return Fields(lhs) | Fields(rhs);
 }
 
 /// Makes operator| compatible for `DescriptorType` + `Fields`
-// (`DescriptorType` or `BaseFields`).
+/// (`DescriptorType` or `BaseFields`).
 /// @see Fields::operator|= for preconditions.
 inline Fields operator|(const DescriptorType& lhs, const Fields& rhs) {
   return Fields(lhs) | rhs;

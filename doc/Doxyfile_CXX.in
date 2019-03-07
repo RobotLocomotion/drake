@@ -1,4 +1,4 @@
-# Doxyfile 1.8.11
+# Doxyfile 1.8.15
 
 #---------------------------------------------------------------------------
 # Project related configuration options
@@ -8,10 +8,11 @@ PROJECT_NAME           = Drake
 PROJECT_NUMBER         =
 PROJECT_BRIEF          =
 PROJECT_LOGO           =
-OUTPUT_DIRECTORY       = "@BINARY_DIR@/doxygen_cxx"
+OUTPUT_DIRECTORY       = "@OUTPUT_DIRECTORY@"
 CREATE_SUBDIRS         = NO
 ALLOW_UNICODE_NAMES    = NO
 OUTPUT_LANGUAGE        = English
+OUTPUT_TEXT_DIRECTION  = None
 BRIEF_MEMBER_DESC      = YES
 REPEAT_BRIEF           = YES
 ABBREVIATE_BRIEF       = a \
@@ -38,14 +39,20 @@ INHERIT_DOCS           = YES
 SEPARATE_MEMBER_PAGES  = NO
 TAB_SIZE               = 2
 ALIASES                = "default=@n @a Default: " \
-                         "concept{1}=@ingroup \1\n@par Implemented concepts:\n@ref \1"
+                         "concept{1}=@ingroup \1\n@par Implemented concepts:\n@ref \1" \
+                         "system{3}=<table align=center cellpadding=0 cellspacing=0><tr align=center><td><table cellspacing=0 cellpadding=0>\2</table></td><td align=center style=\"border:solid;padding-left:20px;padding-right:20px\" bgcolor=#F0F0F0>\1</td><td><table cellspacing=0 cellpadding=0>\3</table></td></tr></table>" \
+                         "input_port{1}=<tr><td align=right style=\"padding:5px 0px 5px 0px\">\1 &rarr;</td></tr>" \
+                         "output_port{1}=<tr><td align=left style=\"padding:5px 0px 5px 0px\">&rarr; \1</td></tr>" \
+                         "exclude_from_pydrake_mkdoc{1}= "
 TCL_SUBST              =
 OPTIMIZE_OUTPUT_FOR_C  = NO
 OPTIMIZE_OUTPUT_JAVA   = NO
 OPTIMIZE_FOR_FORTRAN   = NO
 OPTIMIZE_OUTPUT_VHDL   = NO
+OPTIMIZE_OUTPUT_SLICE  = NO
 EXTENSION_MAPPING      =
 MARKDOWN_SUPPORT       = YES
+TOC_INCLUDE_HEADINGS   = 0
 AUTOLINK_SUPPORT       = YES
 BUILTIN_STL_SUPPORT    = YES
 CPP_CLI_SUPPORT        = NO
@@ -79,16 +86,16 @@ HIDE_COMPOUND_REFERENCE= NO
 SHOW_INCLUDE_FILES     = YES
 SHOW_GROUPED_MEMB_INC  = NO
 FORCE_LOCAL_INCLUDES   = NO
-INLINE_INFO            = YES
+INLINE_INFO            = NO
 SORT_MEMBER_DOCS       = YES
 SORT_BRIEF_DOCS        = NO
 SORT_MEMBERS_CTORS_1ST = NO
 SORT_GROUP_NAMES       = NO
 SORT_BY_SCOPE_NAME     = NO
 STRICT_PROTO_MATCHING  = NO
-GENERATE_TODOLIST      = YES
-GENERATE_TESTLIST      = YES
-GENERATE_BUGLIST       = YES
+GENERATE_TODOLIST      = NO
+GENERATE_TESTLIST      = NO
+GENERATE_BUGLIST       = NO
 GENERATE_DEPRECATEDLIST= YES
 ENABLED_SECTIONS       =
 MAX_INITIALIZER_LINES  = 30
@@ -108,7 +115,7 @@ WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = YES
 WARN_AS_ERROR          = NO
 WARN_FORMAT            = "$file:$line: $text"
-WARN_LOGFILE           = "@BINARY_DIR@/doxygen_cxx.log"
+WARN_LOGFILE           = "@WARN_LOGFILE@"
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
@@ -149,7 +156,7 @@ REFERENCES_RELATION    = NO
 REFERENCES_LINK_SOURCE = YES
 SOURCE_TOOLTIPS        = YES
 USE_HTAGS              = NO
-VERBATIM_HEADERS       = YES
+VERBATIM_HEADERS       = NO
 #---------------------------------------------------------------------------
 # Configuration options related to the alphabetical class index
 #---------------------------------------------------------------------------
@@ -163,14 +170,15 @@ GENERATE_HTML          = YES
 HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
-HTML_FOOTER            =
+HTML_FOOTER            = "@INPUT_ROOT@/drake/doc/footer.html"
 HTML_STYLESHEET        =
-HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_STYLESHEET  = "@INPUT_ROOT@/drake/doc/doxygen_extra.css"
 HTML_EXTRA_FILES       =
 HTML_COLORSTYLE_HUE    = 220
 HTML_COLORSTYLE_SAT    = 100
 HTML_COLORSTYLE_GAMMA  = 80
 HTML_TIMESTAMP         = NO
+HTML_DYNAMIC_MENUS     = YES
 HTML_DYNAMIC_SECTIONS  = NO
 HTML_INDEX_NUM_ENTRIES = 100
 GENERATE_DOCSET        = NO
@@ -204,7 +212,7 @@ FORMULA_FONTSIZE       = 10
 FORMULA_TRANSPARENT    = YES
 USE_MATHJAX            = YES
 MATHJAX_FORMAT         = HTML-CSS
-MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
+MATHJAX_RELPATH        = https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5
 MATHJAX_EXTENSIONS     =
 MATHJAX_CODEFILE       =
 SEARCHENGINE           = YES
@@ -221,6 +229,7 @@ GENERATE_LATEX         = NO
 LATEX_OUTPUT           = latex
 LATEX_CMD_NAME         = latex
 MAKEINDEX_CMD_NAME     = makeindex
+LATEX_MAKEINDEX_CMD    = \makeindex
 COMPACT_LATEX          = NO
 PAPER_TYPE             = letter
 EXTRA_PACKAGES         = amsmath
@@ -235,6 +244,7 @@ LATEX_HIDE_INDICES     = NO
 LATEX_SOURCE_CODE      = NO
 LATEX_BIB_STYLE        = plain
 LATEX_TIMESTAMP        = YES
+LATEX_EMOJI_DIRECTORY  =
 #---------------------------------------------------------------------------
 # Configuration options related to the RTF output
 #---------------------------------------------------------------------------
@@ -259,6 +269,7 @@ MAN_LINKS              = NO
 GENERATE_XML           = NO
 XML_OUTPUT             = xml
 XML_PROGRAMLISTING     = YES
+XML_NS_MEMB_FILE_SCOPE = NO
 #---------------------------------------------------------------------------
 # Configuration options related to the DOCBOOK output
 #---------------------------------------------------------------------------
@@ -285,14 +296,14 @@ EXPAND_ONLY_PREDEF     = YES
 SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
-PREDEFINED += DRAKE_DOXYGEN_CXX=1
+PREDEFINED            += DRAKE_DOXYGEN_CXX=1 HAVE_SPDLOG=1
 # =============================================================================
 # N.B. The spelling of the macro names between common/drake_copyable.h and this
 # file must be kept in sync!
 # =============================================================================
 # The following macros are carefully crafted to retain good markup when they
 # pass through Doxygen's preprocesor.
-PREDEFINED += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
+PREDEFINED            += DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(X):=" \
 /** \name Does not allow copy, move, or assignment */ \
 /** \{ */ \
 X(const X&) = delete; \
@@ -300,7 +311,7 @@ X& operator=(const X&) = delete; \
 X(X&&) = delete; \
 X& operator=(X&&) = delete; \
 /** \} */"
-PREDEFINED += DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(X):=" \
+PREDEFINED            += DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(X):=" \
 /** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
 /** \{ */ \
 X(const X&) = default; \
@@ -308,6 +319,18 @@ X& operator=(const X&) = default; \
 X(X&&) = default; \
 X& operator=(X&&) = default; \
 /** \} */"
+PREDEFINED            += DRAKE_DECLARE_COPY_AND_MOVE_AND_ASSIGN(X):=" \
+/** \name Implements CopyConstructible, CopyAssignable, MoveConstructible, MoveAssignable */ \
+/** \{ */ \
+X(const X&) = default; \
+X& operator=(const X&) = default; \
+X(X&&) = default; \
+X& operator=(X&&) = default; \
+/** \} */"
+PREDEFINED            += "DRAKE_DEPRECATED(removal_date,message):= \
+/** (Deprecated.) \deprecated message <br> \
+This will be removed from Drake on or after removal_date. */ \
+"
 # =============================================================================
 EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
@@ -323,7 +346,7 @@ PERL_PATH              =
 #---------------------------------------------------------------------------
 # Configuration options related to the dot tool
 #---------------------------------------------------------------------------
-CLASS_DIAGRAMS         = YES
+CLASS_DIAGRAMS         = NO
 MSCGEN_PATH            =
 DIA_PATH               =
 HIDE_UNDOC_RELATIONS   = NO
@@ -332,16 +355,16 @@ DOT_NUM_THREADS        = 0
 DOT_FONTNAME           = Helvetica
 DOT_FONTSIZE           = 10
 DOT_FONTPATH           =
-CLASS_GRAPH            = YES
-COLLABORATION_GRAPH    = YES
-GROUP_GRAPHS           = YES
+CLASS_GRAPH            = NO
+COLLABORATION_GRAPH    = NO
+GROUP_GRAPHS           = NO
 UML_LOOK               = NO
 UML_LIMIT_NUM_FIELDS   = 10
 TEMPLATE_RELATIONS     = NO
 INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES
-CALL_GRAPH             = YES
-CALLER_GRAPH           = YES
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
 GRAPHICAL_HIERARCHY    = YES
 DIRECTORY_GRAPH        = YES
 DOT_IMAGE_FORMAT       = svg
@@ -351,6 +374,7 @@ DOTFILE_DIRS           =
 MSCFILE_DIRS           =
 DIAFILE_DIRS           =
 PLANTUML_JAR_PATH      =
+PLANTUML_CFG_FILE      =
 PLANTUML_INCLUDE_PATH  =
 DOT_GRAPH_MAX_NODES    = 100
 MAX_DOT_GRAPH_DEPTH    = 0

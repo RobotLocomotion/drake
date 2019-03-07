@@ -1,21 +1,18 @@
+from __future__ import division
+
 import pydrake.systems.sensors as mut
 
-import numpy as np
 import unittest
 
+import numpy as np
+
 from pydrake.common import FindResourceOrThrow
-from pydrake.multibody.rigid_body_tree import (
-    AddModelInstancesFromSdfString,
-    FloatingBaseType,
-    RigidBodyTree,
-    RigidBodyFrame,
-    )
 from pydrake.systems.framework import (
-    InputPortDescriptor,
+    AbstractValue,
+    InputPort,
     OutputPort,
     Value,
     )
-from pydrake.util.eigen_geometry import Isometry3
 
 # Shorthand aliases, to reduce verbosity.
 pt = mut.PixelType
@@ -24,6 +21,7 @@ pf = mut.PixelFormat
 # Available image / pixel types.
 pixel_types = [
     pt.kRgba8U,
+    pt.kDepth16U,
     pt.kDepth32F,
     pt.kLabel16I,
 ]
@@ -31,6 +29,7 @@ pixel_types = [
 # Convenience aliases.
 image_type_aliases = [
     mut.ImageRgba8U,
+    mut.ImageDepth16U,
     mut.ImageDepth32F,
     mut.ImageLabel16I,
 ]
@@ -39,11 +38,20 @@ image_type_aliases = [
 class TestSensors(unittest.TestCase):
 
     def test_image_traits(self):
+        # Ensure that we test all available enums.
+        self.assertSetEqual(
+            set(pixel_types), set(mut.PixelType.__members__.values()))
+
         # Test instantiations of ImageTraits<>.
         t = mut.ImageTraits[pt.kRgba8U]
         self.assertEqual(t.kNumChannels, 4)
         self.assertEqual(t.ChannelType, np.uint8)
         self.assertEqual(t.kPixelFormat, pf.kRgba)
+
+        t = mut.ImageTraits[pt.kDepth16U]
+        self.assertEqual(t.kNumChannels, 1)
+        self.assertEqual(t.ChannelType, np.uint16)
+        self.assertEqual(t.kPixelFormat, pf.kDepth)
 
         t = mut.ImageTraits[pt.kDepth32F]
         self.assertEqual(t.kNumChannels, 1)
@@ -66,7 +74,7 @@ class TestSensors(unittest.TestCase):
             w = 640
             h = 480
             nc = ImageT.Traits.kNumChannels
-            image = ImageT(w, h)
+            image = ImageT(width=w, height=h)
             self.assertEqual(image.width(), w)
             self.assertEqual(image.height(), h)
             self.assertEqual(image.size(), h * w * nc)
@@ -76,8 +84,8 @@ class TestSensors(unittest.TestCase):
             self.assertEqual(image.data.shape, image.shape)
             self.assertEqual(image.data.dtype, ImageT.Traits.ChannelType)
 
-            w /= 2
-            h /= 2
+            w //= 2
+            h //= 2
             # WARNING: Resizing an image with an existing reference to
             # `image.data` will cause `image.data` + `image.mutable_data` to be
             # invalid.
@@ -158,8 +166,8 @@ class TestSensors(unittest.TestCase):
         fov_y = np.pi / 4
         focal_y = height / 2 / np.tan(fov_y / 2)
         focal_x = focal_y
-        center_x = width / 2
-        center_y = height / 2
+        center_x = width / 2 - 0.5
+        center_y = height / 2 - 0.5
         intrinsic_matrix = np.array([
             [focal_x, 0, center_x],
             [0, focal_y, center_y],
@@ -183,65 +191,38 @@ class TestSensors(unittest.TestCase):
                 (info.intrinsic_matrix() == intrinsic_matrix).all())
 
     def _check_input(self, value):
-        self.assertIsInstance(value, InputPortDescriptor)
+        self.assertIsInstance(value, InputPort)
 
     def _check_output(self, value):
         self.assertIsInstance(value, OutputPort)
 
-    def _check_ports(self, system):
-        self._check_input(system.state_input_port())
-        self._check_output(system.color_image_output_port())
-        self._check_output(system.depth_image_output_port())
-        self._check_output(system.label_image_output_port())
-        self._check_output(system.camera_base_pose_output_port())
+    def test_image_to_lcm_image_array_t(self):
+        # Test nominal constructor.
+        dut = mut.ImageToLcmImageArrayT(
+            color_frame_name="color", depth_frame_name="depth",
+            label_frame_name="label", do_compress=False)
+        for port in (
+                dut.color_image_input_port(), dut.depth_image_input_port(),
+                dut.label_image_input_port()):
+            self._check_input(port)
+        self._check_output(dut.image_array_t_msg_output_port())
 
-    def test_rgbd_camera(self):
-        sdf_path = FindResourceOrThrow(
-            "drake/systems/sensors/test/models/nothing.sdf")
-        tree = RigidBodyTree()
-        with open(sdf_path) as f:
-            sdf_string = f.read()
-        AddModelInstancesFromSdfString(
-            sdf_string, FloatingBaseType.kFixed, None, tree)
-        frame = RigidBodyFrame("rgbd camera frame", tree.FindBody("link"))
-        tree.addFrame(frame)
-
-        # Use HDTV size.
-        width = 1280
-        height = 720
-
-        camera = mut.RgbdCamera(
-            name="camera", tree=tree, frame=frame,
-            z_near=0.5, z_far=5.0,
-            fov_y=np.pi / 4, show_window=False,
-            width=width, height=height)
-
-        def check_info(camera_info):
-            self.assertIsInstance(camera_info, mut.CameraInfo)
-            self.assertEqual(camera_info.width(), width)
-            self.assertEqual(camera_info.height(), height)
-
-        check_info(camera.color_camera_info())
-        check_info(camera.depth_camera_info())
-        self.assertIsInstance(camera.color_camera_optical_pose(), Isometry3)
-        self.assertIsInstance(camera.depth_camera_optical_pose(), Isometry3)
-        self.assertTrue(camera.tree() is tree)
-        # N.B. `RgbdCamera` copies the input frame.
-        self.assertEqual(camera.frame().get_name(), frame.get_name())
-        self._check_ports(camera)
-
-        # Test discrete camera.
-        period = mut.RgbdCameraDiscrete.kDefaultPeriod
-        discrete = mut.RgbdCameraDiscrete(
-            camera=camera, period=period, render_label_image=True)
-        self.assertTrue(discrete.camera() is camera)
-        self.assertTrue(discrete.mutable_camera() is camera)
-        self.assertEqual(discrete.period(), period)
-        self._check_ports(discrete)
-
-        # That we can access the state as images.
-        context = discrete.CreateDefaultContext()
-        values = context.get_abstract_state()
-        self.assertIsInstance(values.get_value(0), Value[mut.ImageRgba8U])
-        self.assertIsInstance(values.get_value(1), Value[mut.ImageDepth32F])
-        self.assertIsInstance(values.get_value(2), Value[mut.ImageLabel16I])
+        # Test custom constructor, test functionality (up to getting abstract
+        # value).
+        dut = mut.ImageToLcmImageArrayT(do_compress=False)
+        # Declare ports.
+        for pixel_type in pixel_types:
+            name = str(pixel_type)
+            dut.DeclareImageInputPort[pixel_type](name=name)
+        context = dut.CreateDefaultContext()
+        for pixel_type in pixel_types:
+            name = str(pixel_type)
+            port = dut.GetInputPort(name)
+            self._check_input(port)
+            image = mut.Image[pixel_type](width=1, height=1)
+            context.FixInputPort(port.get_index(), AbstractValue.Make(image))
+        output = dut.AllocateOutput()
+        dut.CalcOutput(context, output)
+        # N.B. This Value[] is a C++ LCM object. See
+        # `lcm_py_bind_cpp_serializers.h` for more information.
+        self.assertIsInstance(output.get_data(0), AbstractValue)

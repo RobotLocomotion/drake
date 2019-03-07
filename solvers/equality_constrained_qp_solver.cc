@@ -2,8 +2,8 @@
 
 #include <cstring>
 #include <limits>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/common/autodiff.h"
@@ -14,13 +14,10 @@
 
 namespace drake {
 namespace solvers {
+namespace {
 
-bool EqualityConstrainedQPSolver::available() const { return true; }
-
-/**
- * Solves the un-constrained QP problem
- * min 0.5 * xᵀ * G * x + cᵀ * x
- */
+// Solves the un-constrained QP problem
+//  min 0.5 * xᵀ * G * x + cᵀ * x
 SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
                                     const Eigen::Ref<const Eigen::VectorXd>& c,
                                     double feasibility_tol,
@@ -64,8 +61,48 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
   }
 }
 
-SolutionResult EqualityConstrainedQPSolver::Solve(
-    MathematicalProgram& prog) const {
+struct EqualityConstrainedQPSolverOptions {
+  // The default tolerance is Eigen's dummy precision.
+  double feasibility_tol{Eigen::NumTraits<double>::dummy_precision()};
+};
+
+void GetEqualityConstrainedQPSolverOptions(
+    const SolverOptions& solver_options,
+    EqualityConstrainedQPSolverOptions* equality_qp_solver_options) {
+  DRAKE_ASSERT_VOID(solver_options.CheckOptionKeysForSolver(
+      EqualityConstrainedQPSolver::id(),
+      {EqualityConstrainedQPSolver::FeasibilityTolOptionName()}, {}, {}));
+
+  const auto& options_double =
+      solver_options.GetOptionsDouble(EqualityConstrainedQPSolver::id());
+  auto it = options_double.find(
+      EqualityConstrainedQPSolver::FeasibilityTolOptionName());
+  if (it != options_double.end()) {
+    if (it->second >= 0) {
+      equality_qp_solver_options->feasibility_tol = it->second;
+    } else {
+      throw std::invalid_argument(
+          "FeasibilityTol should be a non-negative number.");
+    }
+  }
+}
+
+}  // namespace
+
+EqualityConstrainedQPSolver::EqualityConstrainedQPSolver()
+    : SolverBase(&id, &is_available, &ProgramAttributesSatisfied) {}
+
+EqualityConstrainedQPSolver::~EqualityConstrainedQPSolver() = default;
+
+void EqualityConstrainedQPSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
+  // An equality constrained QP problem has analytical solution. It doesn't
+  // depend on the initial guess.
+  unused(initial_guess);
+
   // There are three ways to solve the KKT subproblem for convex QPs.
   // Formally, we want to solve:
   // | G  A' | | x | = | -c |
@@ -90,30 +127,9 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   // code have a solid understanding of equality constrained quadratic
   // programming before proceeding.
   // - J. Nocedal and S. Wright. Numerical Optimization. Springer, 1999.
-  DRAKE_ASSERT(prog.generic_constraints().empty());
-  DRAKE_ASSERT(prog.generic_costs().empty());
-  DRAKE_ASSERT(prog.linear_constraints().empty());
-  DRAKE_ASSERT(prog.bounding_box_constraints().empty());
-  DRAKE_ASSERT(prog.linear_complementarity_constraints().empty());
 
-  // The default tolerance is Eigen's dummy precision.
-  double feasibility_tol = Eigen::NumTraits<double>::dummy_precision();
-  std::map<std::string, double> option_double =
-      prog.GetSolverOptionsDouble(EqualityConstrainedQPSolver::id());
-  auto it = option_double.find("FeasibilityTol");
-  if (it != option_double.end()) {
-    if (it->second >= 0) {
-      feasibility_tol = it->second;
-      option_double.erase(it);
-    } else {
-      throw std::runtime_error(
-          "FeasibilityTol should be a non-negative number.");
-    }
-  }
-  if (!option_double.empty()) {
-    throw std::runtime_error(
-        "Unsupported option in EqualityConstrainedQPSolver.");
-  }
+  EqualityConstrainedQPSolverOptions solver_options_struct{};
+  GetEqualityConstrainedQPSolverOptions(merged_options, &solver_options_struct);
 
   size_t num_constraints = 0;
   for (auto const& binding : prog.linear_equality_constraints()) {
@@ -153,7 +169,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
   }
 
   Eigen::VectorXd x{};
-  optional<SolutionResult> solution_result;
+  SolutionResult solution_result{SolutionResult::kUnknownError};
   if (num_constraints > 0) {
     // Setup the linear constraints.
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(num_constraints, prog.num_vars());
@@ -191,9 +207,10 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       const Eigen::VectorXd rhs = AiG_T.transpose() * c + b;
       Eigen::VectorXd lambda = qr.solve(rhs);
 
-      solution_result = rhs.isApprox(A_iG_A_T * lambda, feasibility_tol)
-                          ? SolutionResult::kSolutionFound
-                          : SolutionResult::kInfeasibleConstraints;
+      solution_result =
+          rhs.isApprox(A_iG_A_T * lambda, solver_options_struct.feasibility_tol)
+              ? SolutionResult::kSolutionFound
+              : SolutionResult::kInfeasibleConstraints;
 
       // Solve G*x = A'y - c
       x = llt.solve(A.transpose() * lambda - c);
@@ -208,7 +225,7 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       Eigen::JacobiSVD<Eigen::MatrixXd> svd_A_thin(
           A, Eigen::ComputeThinU | Eigen::ComputeThinV);
       const Eigen::VectorXd x0 = svd_A_thin.solve(b);
-      if (!b.isApprox(A * x0, feasibility_tol)) {
+      if (!b.isApprox(A * x0, solver_options_struct.feasibility_tol)) {
         solution_result = SolutionResult::kInfeasibleConstraints;
         x = x0;
       } else {
@@ -235,20 +252,21 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
           Eigen::VectorXd y(N.cols());
           solution_result = SolveUnconstrainedQP(
               N.transpose() * G * N, x0.transpose() * G * N + c.transpose() * N,
-              feasibility_tol, &y);
+              solver_options_struct.feasibility_tol, &y);
           x = x0 + N * y;
         }
       }
     }
   } else {
     // num_constraints = 0
-    solution_result = SolveUnconstrainedQP(G, c, feasibility_tol, &x);
+    solution_result =
+        SolveUnconstrainedQP(G, c, solver_options_struct.feasibility_tol, &x);
   }
 
-  SolverResult solver_result(id());
-  solver_result.set_decision_variable_values(x);
+  result->set_x_val(x);
+  result->set_solution_result(solution_result);
   double optimal_cost{};
-  switch (solution_result.value()) {
+  switch (solution_result) {
     case SolutionResult::kSolutionFound: {
       optimal_cost = 0.5 * x.dot(G * x) + c.dot(x) + constant_term;
       break;
@@ -265,18 +283,30 @@ SolutionResult EqualityConstrainedQPSolver::Solve(
       optimal_cost = NAN;
     }
   }
-  solver_result.set_optimal_cost(optimal_cost);
-  prog.SetSolverResult(solver_result);
-  // Make sure solution_result is set.
-  DRAKE_DEMAND(!!solution_result);
-  return *solution_result;
+  result->set_optimal_cost(optimal_cost);
 }
 
-SolverId EqualityConstrainedQPSolver::solver_id() const { return id(); }
+std::string EqualityConstrainedQPSolver::FeasibilityTolOptionName() {
+  return "FeasibilityTol";
+}
 
 SolverId EqualityConstrainedQPSolver::id() {
   static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
   return singleton.access();
+}
+
+bool EqualityConstrainedQPSolver::is_available() { return true; }
+
+bool EqualityConstrainedQPSolver::ProgramAttributesSatisfied(
+    const MathematicalProgram& prog) {
+  static const never_destroyed<ProgramAttributes> solver_capabilities(
+      std::initializer_list<ProgramAttribute>{
+          ProgramAttribute::kQuadraticCost, ProgramAttribute::kLinearCost,
+          ProgramAttribute::kLinearEqualityConstraint});
+  // TODO(hongkai.dai) also make sure that there exists at least a quadratic
+  // cost.
+  return AreRequiredAttributesSupported(prog.required_capabilities(),
+                                        solver_capabilities.access());
 }
 
 }  // namespace solvers

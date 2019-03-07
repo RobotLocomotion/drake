@@ -1,0 +1,95 @@
+# -*- python -*-
+
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+    drake_cc_package_library = "attic_drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "trajectory_optimization",
+    deps = [
+        ":generalized_constraint_force_evaluator",
+        ":joint_limit_constraint_force_evaluator",
+        ":position_constraint_force_evaluator",
+    ],
+)
+
+drake_cc_library(
+    name = "generalized_constraint_force_evaluator",
+    srcs = ["generalized_constraint_force_evaluator.cc"],
+    hdrs = ["generalized_constraint_force_evaluator.h"],
+    deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//common:essential",
+        "//math:autodiff",
+        "//solvers:evaluator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "position_constraint_force_evaluator",
+    srcs = ["position_constraint_force_evaluator.cc"],
+    hdrs = ["position_constraint_force_evaluator.h"],
+    deps = [
+        ":generalized_constraint_force_evaluator",
+        "//attic/multibody:kinematics_cache_helper",
+        "//math:autodiff",
+    ],
+)
+
+drake_cc_library(
+    name = "joint_limit_constraint_force_evaluator",
+    srcs = ["joint_limit_constraint_force_evaluator.cc"],
+    hdrs = ["joint_limit_constraint_force_evaluator.h"],
+    deps = [
+        ":generalized_constraint_force_evaluator",
+        "//math:autodiff",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_library(
+    name = "generalized_constraint_force_evaluator_test_util",
+    testonly = 1,
+    srcs = [
+        "test/generalized_constraint_force_evaluator_test_util.cc",
+    ],
+    hdrs = ["test/generalized_constraint_force_evaluator_test_util.h"],
+    data = [
+        "//examples/simple_four_bar:models",
+    ],
+    deps = [
+        "//attic/multibody/parsers",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "position_constraint_force_evaluator_test",
+    deps = [
+        ":generalized_constraint_force_evaluator_test_util",
+        ":position_constraint_force_evaluator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_limit_constraint_force_evaluator_test",
+    deps = [
+        ":generalized_constraint_force_evaluator_test_util",
+        ":joint_limit_constraint_force_evaluator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:autodiff",
+    ],
+)
+
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

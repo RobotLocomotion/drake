@@ -1,10 +1,82 @@
 # -*- python -*-
 
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "@drake//tools/skylark:drake_runfiles_binary.bzl",
+    "drake_runfiles_binary",
+)
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "generate_pybind_documentation_header",
+)
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
 
 exports_files(
     ["package-create-cps.py"],
     visibility = ["@pybind11//:__pkg__"],
+)
+
+py_binary(
+    name = "run_mkdoc_with_python3",
+    srcs = [
+        "run_mkdoc_with_python3.py",
+        "//third_party:com_github_pybind_pybind11/mkdoc.py",
+    ],
+    data = ["@python3"],
+    default_python_version = "PY2",
+    deps = ["@clang_cindex_python3//:clang"],
+)
+
+drake_runfiles_binary(
+    name = "mkdoc",
+    target = ":run_mkdoc_with_python3",
+    visibility = ["//visibility:public"],
+)
+
+drake_cc_library(
+    name = "sample_header",
+    testonly = 1,
+    hdrs = ["test/sample_header.h"],
+    deps = [
+        "//common",
+    ],
+)
+
+generate_pybind_documentation_header(
+    name = "generate_sample_header",
+    testonly = 1,
+    out = "test/sample_header_documentation.h",
+    root_name = "sample_header_doc",
+    targets = [
+        ":sample_header",
+    ],
+)
+
+drake_cc_library(
+    name = "sample_header_documentation",
+    testonly = 1,
+    hdrs = ["test/sample_header_documentation.h"],
+    tags = ["nolint"],
+)
+
+drake_cc_googletest(
+    name = "sample_header_documentation_cc_test",
+    deps = [
+        ":sample_header_documentation",
+    ],
+)
+
+drake_py_unittest(
+    name = "sample_header_documentation_py_test",
+    data = [
+        "test/sample_header_documentation.expected.h",
+        "test/sample_header_documentation.h",
+    ],
 )
 
 add_lint_tests()

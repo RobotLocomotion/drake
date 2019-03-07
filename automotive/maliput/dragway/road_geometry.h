@@ -82,6 +82,8 @@ class RoadGeometry final : public api::RoadGeometry {
 
   double do_angular_tolerance() const final { return angular_tolerance_; }
 
+  double do_scale_length() const final { return scale_length_; }
+
   // Returns true iff `geo_pos` is "on" the dragway. It is on the dragway iff
   // `geo_pos.x` and `geo_pos.y` fall within the dragway's driveable region.
   bool IsGeoPositionOnDragway(const api::GeoPosition& geo_pos) const;
@@ -94,6 +96,7 @@ class RoadGeometry final : public api::RoadGeometry {
   const api::RoadGeometryId id_;
   const double linear_tolerance_{};
   const double angular_tolerance_{};
+  const double scale_length_{};
   const Junction junction_;
   api::BasicIdIndex id_index_;
 };

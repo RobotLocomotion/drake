@@ -5,7 +5,9 @@ from __future__ import print_function
 import pydrake.autodiffutils as mut
 from pydrake.autodiffutils import AutoDiffXd
 
+import copy
 import unittest
+
 import numpy as np
 import pydrake.math as drake_math
 
@@ -13,6 +15,7 @@ from pydrake.test.algebra_test_util import ScalarAlgebra, VectorizedAlgebra
 from pydrake.test.autodiffutils_test_util import (
     autodiff_scalar_pass_through,
     autodiff_vector_pass_through,
+    autodiff_vector3_pass_through,
 )
 
 # Use convenience abbreviation.
@@ -60,6 +63,14 @@ class TestAutoDiffXd(unittest.TestCase):
         self._check_scalar(
             autodiff_scalar_pass_through(1.),  # float
             AD(1., []))
+        # Test multi-element pass-through.
+        x = np.array([AD(1.), AD(2.), AD(3.)])
+        self._check_array(autodiff_vector_pass_through(x), x)
+        # Ensure fixed-size vectors are correctly converted (#9886).
+        self._check_array(autodiff_vector3_pass_through(x), x)
+        # Ensure we can copy.
+        self._check_scalar(copy.copy(a), a)
+        self._check_scalar(copy.deepcopy(a), a)
 
     def test_array_api(self):
         a = AD(1, [1., 0])
@@ -168,3 +179,31 @@ class TestAutoDiffXd(unittest.TestCase):
                 scalar_to_float=lambda x: x.value()))
         self.assertEqual(type(a), np.ndarray)
         self.assertEqual(a.shape, (2,))
+
+    def test_linear_algebra(self):
+        a_scalar = AD(1, [1., 0])
+        b_scalar = AD(2, [0, 1.])
+        A = np.array([[a_scalar, a_scalar]])
+        B = np.array([[b_scalar, b_scalar]]).T
+        C = np.dot(A, B)
+        self._check_array(C, [[AD(4, [4., 2])]])
+
+        # `matmul` not supported for `dtype=object` (#11332). `np.dot` should
+        # be used instead.
+        with self.assertRaises(TypeError):
+            C2 = np.matmul(A, B)
+
+        # Type mixing
+        Bf = np.array([[2., 2]]).T
+        C2 = np.dot(A, Bf)  # Leverages implicit casting.
+        self._check_array(C2, [[AD(4, [4., 0])]])
+
+        # Other methods.
+        X = np.array([[a_scalar, b_scalar], [b_scalar, a_scalar]])
+        self._check_scalar(np.trace(X), AD(2, [2., 0]))
+
+        # `inv` is a ufunc that we must implement, if possible. However, given
+        # that this is currently `dtype=object`, it would be extremely unwise
+        # to do so. See #8116 for alternative.
+        with self.assertRaises(TypeError):
+            Y = np.linalg.inv(X)

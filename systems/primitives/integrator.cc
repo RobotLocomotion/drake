@@ -19,7 +19,7 @@ Integrator<T>::Integrator(const Integrator<U>& other)
     : Integrator<T>(other.get_input_port().size()) {}
 
 template <typename T>
-Integrator<T>::~Integrator() {}
+Integrator<T>::~Integrator() = default;
 
 template <typename T>
 void Integrator<T>::set_integral_value(

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <sstream>
 
+#include "drake/common/symbolic.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/symbolic_extraction.h"
 
@@ -87,7 +88,7 @@ Binding<Constraint> ParseConstraint(
       // Unsatisfiable constraint with no variables, such as 1 <= 0 <= 2
       throw SymbolicError(v(i), lb(i), ub(i),
                           "unsatisfiable but called with"
-                          " ParseLinearConstraint");
+                          " ParseConstraint");
 
     } else {
       new_lb(i) = lb(i) - constant_term;
@@ -129,6 +130,78 @@ Binding<Constraint> ParseConstraint(
   }
 
   return CreateBinding(make_shared<LinearConstraint>(A, new_lb, new_ub), vars);
+}
+
+std::unique_ptr<Binding<Constraint>> MaybeParseLinearConstraint(
+    const symbolic::Expression& e, double lb, double ub) {
+  if (!e.is_polynomial()) {
+    return std::unique_ptr<Binding<Constraint>>{nullptr};
+  }
+  const Polynomial p{e};
+  if (p.TotalDegree() > 1) {
+    return std::unique_ptr<Binding<Constraint>>{nullptr};
+  }
+  // If p only has one indeterminates, then we can always return a bounding box
+  // constraint.
+  if (p.indeterminates().size() == 1) {
+    // We decompose the polynomial `p` into `constant_term + coeff * var`.
+    double coeff = 0;
+    double constant_term = 0;
+    for (const auto& term : p.monomial_to_coefficient_map()) {
+      if (term.first.total_degree() == 0) {
+        constant_term += get_constant_value(term.second);
+      } else {
+        coeff += get_constant_value(term.second);
+      }
+    }
+    // coeff should not be 0. The symbolic polynomial should be able to detect
+    // when the coefficient is 0, and remove it from
+    // monomial_to_coefficient_map.
+    DRAKE_DEMAND(coeff != 0);
+    double var_lower{}, var_upper{};
+    if (coeff > 0) {
+      var_lower = (lb - constant_term) / coeff;
+      var_upper = (ub - constant_term) / coeff;
+    } else {
+      var_lower = (ub - constant_term) / coeff;
+      var_upper = (lb - constant_term) / coeff;
+    }
+    return std::make_unique<Binding<Constraint>>(
+        std::make_shared<BoundingBoxConstraint>(Vector1d(var_lower),
+                                                Vector1d(var_upper)),
+        Vector1<symbolic::Variable>(*(p.indeterminates().begin())));
+  }
+  VectorX<symbolic::Variable> bound_variables(p.indeterminates().size());
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
+  int index = 0;
+  for (const auto& var : p.indeterminates()) {
+    bound_variables(index) = var;
+    map_var_to_index.emplace(var.get_id(), index++);
+  }
+  Eigen::RowVectorXd a(p.indeterminates().size());
+  a.setZero();
+  double lower = lb;
+  double upper = ub;
+  for (const auto& term : p.monomial_to_coefficient_map()) {
+    if (term.first.total_degree() == 0) {
+      const double coeff = get_constant_value(term.second);
+      lower -= coeff;
+      upper -= coeff;
+    } else {
+      const int var_index =
+          map_var_to_index.at(term.first.GetVariables().begin()->get_id());
+      a(var_index) = get_constant_value(term.second);
+    }
+  }
+  if (lower == upper) {
+    return std::make_unique<Binding<Constraint>>(
+        std::make_shared<LinearEqualityConstraint>(a, Vector1d(lower)),
+        bound_variables);
+  } else {
+    return std::make_unique<Binding<Constraint>>(
+        std::make_shared<LinearConstraint>(a, Vector1d(lower), Vector1d(upper)),
+        bound_variables);
+  }
 }
 
 namespace {
@@ -452,14 +525,13 @@ shared_ptr<Constraint> MakePolynomialConstraint(
         if (monomial.terms.size() == 0) {
           linear_constraint_lb[poly_num] -= monomial.coefficient;
           linear_constraint_ub[poly_num] -= monomial.coefficient;
-        } else if (monomial.terms.size() == 1) {
+        } else {
+          DRAKE_DEMAND(monomial.terms.size() == 1);  // Because isAffine().
           const Polynomiald::VarType term_var = monomial.terms[0].var;
           int var_num = (find(poly_vars.begin(), poly_vars.end(), term_var) -
                          poly_vars.begin());
           DRAKE_ASSERT(var_num < static_cast<int>(poly_vars.size()));
           linear_constraint_matrix(poly_num, var_num) = monomial.coefficient;
-        } else {
-          DRAKE_ABORT();  // Can't happen (unless isAffine() lied to us).
         }
       }
     }

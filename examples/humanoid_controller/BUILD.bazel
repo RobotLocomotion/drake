@@ -1,12 +1,12 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/skylark:test_tags.bzl", "gurobi_test_tags")
+load("@drake//tools/skylark:test_tags.bzl", "gurobi_test_tags")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -32,7 +32,7 @@ drake_cc_library(
     srcs = ["atlas_command_translator_system.cc"],
     hdrs = ["atlas_command_translator_system.h"],
     deps = [
-        "//systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
+        "//attic/systems/controllers/qp_inverse_dynamics:qp_output_translator_system",  # noqa
     ],
 )
 
@@ -41,11 +41,11 @@ drake_cc_library(
     srcs = ["humanoid_status.cc"],
     hdrs = ["humanoid_status.h"],
     deps = [
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody:rigid_body_tree_alias_groups",
+        "//attic/systems/controllers:side",
+        "//attic/systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
         "//common:essential",
-        "//multibody:rigid_body_tree",
-        "//multibody:rigid_body_tree_alias_groups",
-        "//systems/controllers:side",
-        "//systems/controllers/qp_inverse_dynamics:robot_kinematic_state",  # noqa
     ],
 )
 
@@ -54,8 +54,8 @@ drake_cc_library(
     srcs = ["humanoid_plan_eval_system.cc"],
     hdrs = ["humanoid_plan_eval_system.h"],
     deps = [
+        "//attic/systems/controllers/plan_eval:plan_eval_base_system",
         "//examples/humanoid_controller/dev:humanoid_manipulation_plan",
-        "//systems/controllers/plan_eval:plan_eval_base_system",
     ],
 )
 
@@ -65,9 +65,9 @@ drake_cc_library(
     hdrs = ["humanoid_status_translator_system.h"],
     deps = [
         ":humanoid_status",
-        "//manipulation/util:robot_state_msg_translator",
-        "//multibody:rigid_body_tree",
-        "//systems/controllers/qp_inverse_dynamics:lcm_utils",
+        "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/systems/controllers/qp_inverse_dynamics:lcm_utils",
         "//systems/framework:leaf_system",
     ],
 )
@@ -79,9 +79,9 @@ drake_cc_library(
         ":atlas_command_translator_system",
         ":humanoid_plan_eval_system",
         ":humanoid_status_translator_system",
+        "//attic/multibody/parsers",
+        "//attic/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
         "//lcm",
-        "//multibody/parsers",
-        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
         "//systems/framework",
         "//systems/lcm:lcm_pubsub_system",
         "@lcmtypes_bot2_core",
@@ -97,11 +97,11 @@ drake_cc_binary(
         "//examples/valkyrie:models",
     ],
     deps = [
+        "//attic/manipulation/util:robot_state_msg_translator",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//examples/valkyrie:valkyrie_constants",
-        "//manipulation/util:robot_state_msg_translator",
-        "//multibody:rigid_body_tree",
-        "//multibody/parsers",
         "@gflags",
         "@lcmtypes_bot2_core",
         "@lcmtypes_robotlocomotion",
@@ -137,9 +137,9 @@ drake_cc_googletest(
     ],
     deps = [
         ":atlas_command_translator_system",
+        "//attic/multibody/parsers",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
         "//systems/framework",
     ],
 )
@@ -156,14 +156,14 @@ drake_cc_googletest(
     deps = [
         ":humanoid_plan_eval_system",
         ":humanoid_status",
+        "//attic/multibody/parsers",
+        "//attic/systems/controllers/qp_inverse_dynamics:param_parser",
+        "//attic/systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//examples/valkyrie:valkyrie_constants",
-        "//multibody/parsers",
         "//systems/analysis:simulator",
         "//systems/controllers:setpoint",
-        "//systems/controllers/qp_inverse_dynamics:param_parser",
-        "//systems/controllers/qp_inverse_dynamics:qp_inverse_dynamics_system",  # noqa
         "//systems/framework",
         "//systems/primitives:constant_value_source",
     ],

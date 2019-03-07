@@ -8,34 +8,37 @@ Documentation Generation Instructions
 :ref:`build Drake from source <build_from_source>`. This is necessary because
 otherwise the various build targets mentioned below will not exist.
 
-This section contains instructions on how to generate Drake's documentation.
-This includes both API documentation
-(`C++ <http://drake.mit.edu/doxygen_cxx/index.html>`_),
-which uses `Doxygen <http://www.stack.nl/~dimitri/doxygen/>`_, and
-`Drake's website <http://drake.mit.edu>`_, which
-uses `Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_.
+This section contains instructions on how to generate Drake's documentation,
+which uses a combination of
+`Sphinx <http://www.sphinx-doc.org/en/stable/index.html>`_ and
+`Doxygen <https://www.stack.nl/~dimitri/doxygen/>`_.
+This includes API documentation
+(`C++ <https://drake.mit.edu/doxygen_cxx/index.html>`_ and
+`Python <https://drake.mit.edu/pydrake/index.html>`_) and
+`Drake's website <https://drake.mit.edu>`_.
 
 .. _documentation-generation-instructions-bazel:
 
 When using Bazel
 ================
 
-To generate the website (Sphinx) documentation::
+To generate the website and serve it locally with
+`webbrowser <https://docs.python.org/2/library/webbrowser.html>`_::
 
-    $ bazel run //doc:serve_sphinx
+    $ bazel run //doc:serve_sphinx [-- --browser=false]
 
-This will rebuild the website content and serve it to your web browser for
-preview using https://docs.python.org/2/library/webbrowser.html.
+The contents of the website are also available via
+``bazel build //doc:sphinx.zip``.
 
-To merely compile the website into ``bazel-genfiles/doc/sphinx.zip``
-without launching a preview::
-
-    $ bazel build //doc:sphinx.zip
-
-To generate the Doxygen documentation::
+To generate the C++ API documentation::
 
     $ cd drake
-    $ doc/doxygen.py [--quick]
+    $ bazel build //doc:doxygen
+    $ bazel-bin/doc/doxygen [--quick]
 
-To view the generated documentation, open using a web browser to
-``drake/build/drake/doc/doxygen_cxx/html/index.html``
+To generate the Python API documentation::
+
+    $ bazel run //bindings/pydrake/doc:serve_sphinx [-- --browser=false]
+
+The contents of the Python API documentation are also available via
+``bazel build //bindings/pydrake/doc:sphinx.zip``).

@@ -4,7 +4,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
-#include "drake/systems/framework/value.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {
@@ -52,7 +52,7 @@ GTEST_TEST(MyVectorTest, MakeMethod) {
   EXPECT_EQ(vector4->get_value(), Vector4d(10., 20., 30., 40.));
 }
 
-// Tests that cloning works and check compatiblity with copyable_unique_ptr
+// Tests that cloning works and check compatibility with copyable_unique_ptr
 // and AbstractValue.
 GTEST_TEST(MyVectorTest, Clone) {
   MyVector3d vector3(Vector3d(1., 2., 3.));

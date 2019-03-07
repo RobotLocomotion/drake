@@ -14,16 +14,72 @@ drake_cc_package_library(
     name = "analysis",
     deps = [
         ":antiderivative_function",
+        ":dense_output",
         ":explicit_euler_integrator",
+        ":hermitian_dense_output",
         ":implicit_euler_integrator",
         ":initial_value_problem",
         ":integrator_base",
         ":lyapunov",
+        ":monte_carlo",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":scalar_dense_output",
         ":scalar_initial_value_problem",
+        ":scalar_view_dense_output",
         ":semi_explicit_euler_integrator",
         ":simulator",
+        ":stepwise_dense_output",
+    ],
+)
+
+drake_cc_library(
+    name = "dense_output",
+    hdrs = ["dense_output.h"],
+    deps = [
+        "//common:essential",
+        "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "stepwise_dense_output",
+    hdrs = ["stepwise_dense_output.h"],
+    deps = [
+        ":dense_output",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "hermitian_dense_output",
+    hdrs = ["hermitian_dense_output.h"],
+    deps = [
+        ":stepwise_dense_output",
+        "//common:autodiff",
+        "//common:essential",
+        "//common:extract_double",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/framework:vector",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_dense_output",
+    hdrs = ["scalar_dense_output.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "scalar_view_dense_output",
+    hdrs = ["scalar_view_dense_output.h"],
+    deps = [
+        ":dense_output",
+        ":scalar_dense_output",
+        "//common:essential",
+        "@fmt",
     ],
 )
 
@@ -31,6 +87,9 @@ drake_cc_library(
     name = "integrator_base",
     hdrs = ["integrator_base.h"],
     deps = [
+        ":dense_output",
+        ":hermitian_dense_output",
+        ":stepwise_dense_output",
         "//systems/framework:context",
         "//systems/framework:system",
     ],
@@ -54,6 +113,17 @@ drake_cc_library(
         "//math:autodiff",
         "//math:gradient",
         "//solvers:mathematical_program",
+        "//solvers:solve",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "monte_carlo",
+    srcs = ["monte_carlo.cc"],
+    hdrs = ["monte_carlo.h"],
+    deps = [
+        ":simulator",
         "//systems/framework",
     ],
 )
@@ -114,8 +184,10 @@ drake_cc_library(
         "initial_value_problem-inl.h",
     ],
     deps = [
+        ":dense_output",
+        ":integrator_base",
         ":runge_kutta3_integrator",
-        "//common:essential",
+        "//common:default_scalars",
         "//systems/framework:context",
         "//systems/framework:continuous_state",
         "//systems/framework:leaf_system",
@@ -131,9 +203,13 @@ drake_cc_library(
     ],
     hdrs = [
         "scalar_initial_value_problem.h",
+        "scalar_initial_value_problem-inl.h",
     ],
     deps = [
         ":initial_value_problem",
+        ":scalar_dense_output",
+        ":scalar_view_dense_output",
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
     ],
@@ -146,9 +222,12 @@ drake_cc_library(
     ],
     hdrs = [
         "antiderivative_function.h",
+        "antiderivative_function-inl.h",
     ],
     deps = [
+        ":scalar_dense_output",
         ":scalar_initial_value_problem",
+        "//common:default_scalars",
         "//common:essential",
         "//common:unused",
     ],
@@ -178,11 +257,23 @@ drake_cc_googletest(
         ":simulator",
         "//common/test_utilities:is_dynamic_castable",
         "//systems/analysis/test_utilities",
+        "//systems/primitives",
+    ],
+)
+
+drake_cc_googletest(
+    name = "simulator_denorm_test",
+    # Valgrind doesn't support the floating point register
+    # instructions that this test uses.
+    tags = ["no_memcheck"],
+    deps = [
+        ":simulator",
     ],
 )
 
 drake_cc_googletest(
     name = "explicit_euler_integrator_test",
+    timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
         "//systems/analysis/test_utilities",
@@ -191,8 +282,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "implicit_euler_integrator_test",
-    # Test timeout increased to not timeout when run with Valgrind.
     timeout = "moderate",
+    shard_count = 2,
+    # Adding cache invalidation made this take too long with Valgrind.
+    # See Drake issue #9261.
+    tags = [
+        "no_memcheck",
+    ],
     deps = [
         ":implicit_euler_integrator",
         "//systems/analysis/test_utilities",
@@ -209,9 +305,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "monte_carlo_test",
+    deps = [
+        ":monte_carlo",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:pass_through",
+        "//systems/primitives:random_source",
+    ],
+)
+
+drake_cc_googletest(
     name = "runge_kutta2_integrator_test",
     deps = [
         ":runge_kutta2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis/test_utilities",
     ],
 )
@@ -222,37 +329,41 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":runge_kutta3_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
-        "//multibody/parsers",
-        "//multibody/rigid_body_plant",
+        "//multibody/plant",
         "//systems/analysis/test_utilities",
     ],
 )
 
 drake_cc_googletest(
     name = "semi_explicit_euler_integrator_test",
+    timeout = "moderate",
     deps = [
         ":explicit_euler_integrator",
         ":semi_explicit_euler_integrator",
-        "//multibody/joints",
-        "//multibody/rigid_body_plant",
+        "//multibody/plant",
         "//systems/analysis/test_utilities",
     ],
 )
 
 drake_cc_googletest(
     name = "initial_value_problem_test",
+    timeout = "moderate",
     deps = [
         ":initial_value_problem",
         ":runge_kutta2_integrator",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
 drake_cc_googletest(
     name = "scalar_initial_value_problem_test",
     deps = [
+        ":runge_kutta2_integrator",
         ":scalar_initial_value_problem",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -260,6 +371,31 @@ drake_cc_googletest(
     name = "antiderivative_function_test",
     deps = [
         ":antiderivative_function",
+        ":runge_kutta2_integrator",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hermitian_dense_output_test",
+    deps = [
+        ":hermitian_dense_output",
+        "//common:autodiff",
+        "//common:essential",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/trajectories:piecewise_polynomial",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scalar_view_dense_output_test",
+    deps = [
+        ":hermitian_dense_output",
+        ":scalar_view_dense_output",
+        "//common:autodiff",
+        "//common:essential",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -15,6 +15,13 @@ namespace systems {
  * Base class for a discrete- or continuous-time, time-varying affine
  * system, with potentially time-varying coefficients.
  *
+ * @ingroup primitive_systems
+ *
+ * @system{TimeVaryingAffineSystem,
+ *    @input_port{u(t)},
+ *    @output_port{y(t)}
+ * }
+ *
  * If `time_period > 0.0`, then the affine system will have the state update:
  *   @f[ x(t+h) = A(t) x(t) + B(t) u(t) + f_0(t), @f]
  * where `h` is the time_period.  If `time_period == 0.0`, then the system will
@@ -27,6 +34,8 @@ namespace systems {
  * where `y` denotes the output vector.
  *
  * @tparam T The scalar element type, which must be a valid Eigen scalar.
+ *
+ * @see AffineSystem
  */
 template <typename T>
 class TimeVaryingAffineSystem : public LeafSystem<T> {
@@ -34,7 +43,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TimeVaryingAffineSystem)
 
   /// Returns the input port containing the externally applied input.
-  const InputPortDescriptor<T>& get_input_port() const;
+  const InputPort<T>& get_input_port() const;
 
   /// Returns the output port containing the output state.
   const OutputPort<T>& get_output_port() const;
@@ -102,6 +111,11 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 
 /// A discrete OR continuous affine system (with constant coefficients).
 ///
+/// @system{AffineSystem,
+///   @input_port{u(t)},
+///   @output_port{y(t)}
+/// }
+///
 /// Let `u` denote the input vector, `x` denote the state vector, and
 /// `y` denote the output vector.
 ///
@@ -119,6 +133,7 @@ class TimeVaryingAffineSystem : public LeafSystem<T> {
 /// @tparam T The scalar element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 /// - symbolic::Expression
@@ -165,8 +180,8 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// Creates a unique pointer to AffineSystem<T> by decomposing @p dynamics and
   /// @p outputs using @p state_vars and @p input_vars.
   ///
-  /// @throws runtime_error if either @p dynamics or @p outputs is not affine in
-  /// @p state_vars and @p input_vars.
+  /// @throws std::runtime_error if either @p dynamics or @p outputs is not
+  /// affine in @p state_vars and @p input_vars.
   static std::unique_ptr<AffineSystem<T>> MakeAffineSystem(
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& output,

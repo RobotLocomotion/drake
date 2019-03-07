@@ -146,6 +146,7 @@ int main(int argc, char* argv[]) {
   simulator->Initialize();
   // Run simulation.
   simulator->StepTo(FLAGS_simulation_time);
+  interface->StopReceiveThread();
   return 0;
 }
 

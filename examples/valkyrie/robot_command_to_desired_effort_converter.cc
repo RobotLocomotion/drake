@@ -2,14 +2,16 @@
 
 #include <algorithm>
 
-#include "lcmtypes/bot_core/atlas_command_t.hpp"
+#include "bot_core/atlas_command_t.hpp"
 
 namespace drake {
 namespace systems {
 
 RobotCommandToDesiredEffortConverter::RobotCommandToDesiredEffortConverter(
     const std::vector<const RigidBodyActuator*>& actuators)
-    : robot_command_port_index_(DeclareAbstractInputPort().get_index()),
+    : robot_command_port_index_(DeclareAbstractInputPort(
+          kUseDefaultName,
+          Value<bot_core::atlas_command_t>{}).get_index()),
       desired_effort_port_indices_(DeclareDesiredEffortOutputPorts(actuators)) {
   set_name("RobotCommandToDesiredEffortConverter");
 }

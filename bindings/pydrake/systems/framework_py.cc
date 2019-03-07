@@ -7,6 +7,7 @@ namespace drake {
 namespace pydrake {
 
 PYBIND11_MODULE(framework, m) {
+  PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);
   m.doc() = "Bindings for the core Systems framework.";
 
   // Import autodiff and symbolic modules so that their types are declared for

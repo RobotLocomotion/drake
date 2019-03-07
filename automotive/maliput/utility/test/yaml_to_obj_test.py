@@ -22,7 +22,7 @@ class TestYamlObjing(unittest.TestCase):
 
     def test_yaml_files(self):
         this_dir = os.path.dirname(_THIS_DIR)
-        yaml_dir = os.path.join(this_dir, '../monolane')
+        yaml_dir = os.path.join(this_dir, '../multilane')
 
         yaml_files = glob.glob(os.path.join(yaml_dir, '*.yaml'))
         # NB:  Blacklist is empty now, but still here in case it is needed

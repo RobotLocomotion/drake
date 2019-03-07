@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "drake/common/drake_assert.h"
-#include "drake/systems/framework/value.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {
@@ -11,7 +11,7 @@ namespace systems {
 /// Makes a new AbstractValue containing the @p value.
 template <typename T>
 std::unique_ptr<AbstractValue> PackValue(T value) {
-  return std::unique_ptr<AbstractValue>(new Value<T>(value));
+  return std::make_unique<Value<T>>(value);
 }
 
 /// Extracts data of type T from the given @p value, or aborts if the

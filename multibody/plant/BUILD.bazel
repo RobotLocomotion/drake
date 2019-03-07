@@ -1,0 +1,396 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "plant",
+    deps = [
+        ":contact_info",
+        ":contact_jacobians",
+        ":contact_results",
+        ":coulomb_friction",
+        ":externally_applied_spatial_force",
+        ":implicit_stribeck_solver",
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_stribeck_solver",
+    srcs = ["implicit_stribeck_solver.cc"],
+    hdrs = ["implicit_stribeck_solver.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:extract_double",
+    ],
+)
+
+drake_cc_library(
+    name = "multibody_plant_core",
+    srcs = [
+        "multibody_plant.cc",
+    ],
+    hdrs = [
+        "multibody_plant.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":contact_jacobians",
+        ":contact_results",
+        ":coulomb_friction",
+        ":externally_applied_spatial_force",
+        ":implicit_stribeck_solver",
+        ":implicit_stribeck_solver_results",
+        "//common:default_scalars",
+        "//geometry:geometry_ids",
+        "//geometry:geometry_visualization",
+        "//geometry:scene_graph",
+        "//math:geometric_transform",
+        "//math:orthonormal_basis",
+        "//multibody/tree",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_info",
+    srcs = [
+        "contact_info.cc",
+    ],
+    hdrs = [
+        "contact_info.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//geometry/query_results:penetration_as_point_pair",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_jacobians",
+    srcs = [
+        "contact_jacobians.cc",
+    ],
+    hdrs = [
+        "contact_jacobians.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_stribeck_solver_results",
+    srcs = [
+        "implicit_stribeck_solver_results.cc",
+    ],
+    hdrs = [
+        "implicit_stribeck_solver_results.h",
+    ],
+    tags = ["exclude_from_package"],
+    deps = [
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results",
+    srcs = [
+        "contact_results.cc",
+    ],
+    hdrs = [
+        "contact_results.h",
+    ],
+    deps = [
+        ":contact_info",
+        "//common:default_scalars",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_results_to_lcm",
+    srcs = [
+        "contact_results_to_lcm.cc",
+    ],
+    hdrs = [
+        "contact_results_to_lcm.h",
+    ],
+    tags = [
+        # Don't add this library into the ":multibody_plant" package library.
+        # Use of MBP doesn't imply use of contact visualization so this
+        # dependency should be invoked explicitly.
+        "exclude_from_package",
+    ],
+    deps = [
+        ":contact_results",
+        ":plant",
+        "//lcmtypes:contact_info_for_viz",
+        "//lcmtypes:contact_results_for_viz",
+        "//systems/framework:diagram_builder",
+        "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "coulomb_friction",
+    srcs = [
+        "coulomb_friction.cc",
+    ],
+    hdrs = [
+        "coulomb_friction.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//common:drake_bool",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_stribeck_solver_test_util",
+    testonly = 1,
+    hdrs = ["test/implicit_stribeck_solver_test_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "externally_applied_spatial_force",
+    srcs = ["externally_applied_spatial_force.cc"],
+    hdrs = ["externally_applied_spatial_force.h"],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/math:spatial_force",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_googletest(
+    name = "implicit_stribeck_solver_test",
+    deps = [
+        ":implicit_stribeck_solver",
+        ":implicit_stribeck_solver_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "applied_generalized_force_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/controllers:inverse_dynamics_controller",
+    ],
+)
+
+drake_cc_googletest(
+    name = "externally_applied_spatial_force_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//multibody/parsing",
+        "//systems/primitives:constant_vector_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_test",
+    data = [
+        "test/split_pendulum.sdf",
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/simple_gripper:simple_gripper_models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/free_body:models",
+        "//multibody/parsing:test_models",
+    ],
+    deps = [
+        ":plant",
+        "//common:autodiff",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:geometry_set_tester",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/benchmarks/acrobot",
+        "//multibody/benchmarks/pendulum",
+        "//multibody/parsing",
+        "//systems/primitives:constant_vector_source",
+        "//systems/primitives:linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_symbolic_test",
+    deps = [
+        ":plant",
+        "//common/test_utilities:symbolic_test_util",
+        "//multibody/benchmarks/pendulum",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_library(
+    name = "kuka_iiwa_model_tests",
+    testonly = 1,
+    hdrs = ["test/kuka_iiwa_model_tests.h"],
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":plant",
+        "//common:autodiff",
+        "//common:find_resource",
+        "//math:geometric_transform",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "multibody_plant_jacobians_test",
+    data = [
+        "//examples/kuka_iiwa_arm/models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common:autodiff",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//math:gradient",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "frame_kinematics_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "external_forces_test",
+    deps = [
+        ":kuka_iiwa_model_tests",
+        ":plant",
+        "//common:autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_googletest(
+    name = "box_test",
+    timeout = "moderate",
+    data = ["test/box.sdf"],
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "contact_results_to_lcm_test",
+    deps = [
+        ":contact_results_to_lcm",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//multibody/benchmarks/acrobot",
+    ],
+)
+
+drake_cc_googletest(
+    name = "coulomb_friction_test",
+    deps = [
+        ":coulomb_friction",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "floating_body_test",
+    timeout = "moderate",
+    srcs = [
+        "test/floating_body_test.cc",
+    ],
+    deps = [
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/free_body",
+        "//multibody/test_utilities:floating_body_plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inclined_plane_test",
+    timeout = "moderate",
+    deps = [
+        ":plant",
+        "//multibody/benchmarks/inclined_plane",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_limits_test",
+    timeout = "long",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    shard_count = 3,
+    deps = [
+        ":plant",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spring_mass_system_test",
+    timeout = "moderate",
+    deps = [
+        ":plant",
+        "//common/test_utilities:symbolic_test_util",
+        "//systems/analysis:simulator",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+add_lint_tests()

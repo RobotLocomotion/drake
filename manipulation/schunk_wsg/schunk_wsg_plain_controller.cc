@@ -98,13 +98,13 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
   const auto max_force_passthrough =
       builder.AddSystem<systems::PassThrough<double>>(1);
   const auto positive_gain = builder.AddSystem<systems::MatrixGain<double>>(
-      MatrixX<double>::Ones(ng, 1));
+      0.5 * MatrixX<double>::Ones(ng, 1));
   const auto negative_gain = builder.AddSystem<systems::MatrixGain<double>>(
-      -MatrixX<double>::Ones(ng, 1));
+      -0.5 * MatrixX<double>::Ones(ng, 1));
   const auto saturation = builder.AddSystem<systems::Saturation<double>>(ng);
 
   // Add blocks to generate the desired control state.
-  const systems::InputPortDescriptor<double>* desired_grip_state_input_port{};
+  const systems::InputPort<double>* desired_grip_state_input_port{};
   const systems::OutputPort<double>* desired_control_state_output_port{};
   // Add a source for the desired mean finger state. The mean finger
   // position and velocity should be zero.
@@ -161,7 +161,7 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
   }
 
   // Add blocks to handle the feed-forward force
-  const systems::InputPortDescriptor<double>* feed_forward_force_input_port{};
+  const systems::InputPort<double>* feed_forward_force_input_port{};
   const systems::OutputPort<double>* mean_finger_force_output_port{};
   const systems::OutputPort<double>* grip_force_output_port{};
   switch (control_mode) {

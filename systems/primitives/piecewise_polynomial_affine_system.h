@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
@@ -19,6 +20,7 @@ namespace systems {
 /// @tparam T The scalar element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -40,9 +42,10 @@ class PiecewisePolynomialAffineSystem final
   ///  time_period=0.0 to denote a continuous time system.  @default 0.0
   PiecewisePolynomialAffineSystem(const TimeVaryingData& data,
                                   double time_period = 0.)
-      : PiecewisePolynomialAffineSystem<T>(
-            SystemTypeTag<systems::PiecewisePolynomialAffineSystem>{}, data,
-            time_period) {}
+      : TimeVaryingAffineSystem<T>(
+            SystemTypeTag<systems::PiecewisePolynomialAffineSystem>{},
+            data.A.rows(), data.B.cols(), data.C.rows(), time_period),
+        data_(data) {}
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -73,19 +76,6 @@ class PiecewisePolynomialAffineSystem final
   }
   /// @}
 
- protected:
-  /// Constructor that specifies scalar-type conversion support.
-  /// @param converter scalar-type conversion support helper (i.e., AutoDiff,
-  /// etc.); pass a default-constructed object if such support is not desired.
-  /// See @ref system_scalar_conversion and examples related to scalar-type
-  /// conversion support for more details.
-  PiecewisePolynomialAffineSystem(SystemScalarConverter converter,
-                                  const TimeVaryingData& data,
-                                  double time_period)
-      : TimeVaryingAffineSystem<T>(std::move(converter), data.A.rows(),
-                                   data.B.cols(), data.C.rows(), time_period),
-        data_(data) {}
-
  private:
   // Allow different specializations to access each other's private data.
   template <typename>
@@ -103,3 +93,6 @@ struct Traits<PiecewisePolynomialAffineSystem> : public NonSymbolicTraits {};
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    class ::drake::systems::PiecewisePolynomialAffineSystem)

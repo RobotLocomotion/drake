@@ -43,31 +43,33 @@ namespace automotive {
 /// provided RoadGeometry and the direction of travel.
 ///
 /// Assumptions:
-///   1) The planner supports only symmetric lane change rules, without giving
-///      preference to lanes to the left or right.
-///   2) The planner assumes all traffic behaves according to the Intelligent
-///      Driver Model (IDM).
-///   3) All neighboring lanes are confluent (i.e. with_s points in the same
-///      direction).
+///
+/// 1. The planner supports only symmetric lane change rules, without giving
+///    preference to lanes to the left or right.
+/// 2. The planner assumes all traffic behaves according to the Intelligent
+///    Driver Model (IDM).
+/// 3. All neighboring lanes are confluent (i.e. with_s points in the same
+///    direction).
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 ///
 /// They are already available to link against in the containing library.
 ///
 /// Input Port 0: A PoseVector for the ego car.
-///   (InputPortDescriptor getter: ego_pose_input())
+///   (InputPort getter: ego_pose_input())
 ///
 /// Input Port 1: A FrameVelocity for the ego car.
-///   (InputPortDescriptor getter: ego_velocity_input())
+///   (InputPort getter: ego_velocity_input())
 ///
 /// Input Port 2: A BasicVector containing the ego car's commanded acceleration
 ///   value intercepted from the vehicle's controller (e.g. IdmController).
-///   (InputPortDescriptor getter: ego_acceleration_input())
+///   (InputPort getter: ego_acceleration_input())
 ///
 /// Input Port 3: A PoseBundle for the traffic cars, possibly including the ego
 ///   car's pose.
-///   (InputPortDescriptor getter: traffic_input())
+///   (InputPort getter: traffic_input())
 ///
 /// Output Port 0: A LaneDirection containing a lane that the ego vehicle must
 ///   move into and the direction of travel with respect to the lane's canonical
@@ -102,10 +104,10 @@ class MobilPlanner : public systems::LeafSystem<T> {
 
   /// See the class description for details on the following input ports.
   /// @{
-  const systems::InputPortDescriptor<T>& ego_pose_input() const;
-  const systems::InputPortDescriptor<T>& ego_velocity_input() const;
-  const systems::InputPortDescriptor<T>& ego_acceleration_input() const;
-  const systems::InputPortDescriptor<T>& traffic_input() const;
+  const systems::InputPort<T>& ego_pose_input() const;
+  const systems::InputPort<T>& ego_velocity_input() const;
+  const systems::InputPort<T>& ego_acceleration_input() const;
+  const systems::InputPort<T>& traffic_input() const;
   const systems::OutputPort<T>& lane_output() const;
   /// @}
 

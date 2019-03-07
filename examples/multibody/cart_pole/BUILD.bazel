@@ -2,7 +2,7 @@
 # This file contains rules for Bazel; see drake/doc/bazel.rst.
 
 load(
-    "//tools:drake.bzl",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
@@ -13,6 +13,8 @@ load(
     "drake_cc_vector_gen_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
 
 drake_cc_vector_gen_library(
     name = "cart_pole_params",
@@ -32,26 +34,26 @@ drake_cc_binary(
         "//common:find_resource",
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",
-        "//systems/lcm:lcm_pubsub_system",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )
 
 drake_cc_googletest(
     name = "cart_pole_test",
-    data = ["cart_pole.sdf"],
+    data = [":models"],
     deps = [
         ":cart_pole_params",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
     ],
 )
+
+install_data()
 
 add_lint_tests()

@@ -10,9 +10,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
-#include "drake/systems/framework/value.h"
 
 namespace drake {
 namespace systems {
@@ -41,13 +41,8 @@ class FixedInputPortValue {
   FixedInputPortValue& operator=(FixedInputPortValue&&) = delete;
   /** @} */
 
-  /** Constructs an abstract-valued %FixedInputPortValue from a value
-  of arbitrary type. Takes ownership of the given value and sets the serial
-  number to 1. The value must not be null. */
-  explicit FixedInputPortValue(std::unique_ptr<AbstractValue> value)
-      : value_(std::move(value)), serial_number_{1} {
-    DRAKE_DEMAND(value_ != nullptr);
-  }
+  // Construction is private and only accessible to ContextBase via the
+  // attorney.
 
   ~FixedInputPortValue() = default;
 
@@ -77,7 +72,8 @@ class FixedInputPortValue {
 
   /** Returns a pointer to the data inside this %FixedInputPortValue, and
   notifies the dependent input port that the value has changed, invalidating
-  downstream computations. Throws std::bad_cast if the data is not vector data.
+  downstream computations.
+  @throws std::bad_cast if the data is not vector data.
 
   To ensure invalidation notifications are delivered, callers should call this
   method every time they wish to update the stored value. In particular, callers
@@ -96,6 +92,12 @@ class FixedInputPortValue {
   time the contained value changes, or when mutable access is granted. */
   int64_t serial_number() const { return serial_number_; }
 
+  /** Returns the ticket used to find the associated DependencyTracker. */
+  DependencyTicket ticket() const {
+    DRAKE_ASSERT(ticket_.is_valid());
+    return ticket_;
+  }
+
   /** Returns a const reference to the context that owns this object. */
   const ContextBase& get_owning_context() const {
     DRAKE_ASSERT(owning_subcontext_ != nullptr);
@@ -109,12 +111,26 @@ class FixedInputPortValue {
   // only for use by ContextBase.
   friend class copyable_unique_ptr<FixedInputPortValue>;
 
+  // Constructs an abstract-valued FixedInputPortValue from a value
+  // of arbitrary type. Takes ownership of the given value and sets the serial
+  // number to 1. The value must not be null.
+  explicit FixedInputPortValue(std::unique_ptr<AbstractValue> value)
+      : value_(std::move(value)), serial_number_{1} {
+    DRAKE_DEMAND(value_ != nullptr);
+  }
+
   // Copy constructor is only used for cloning and is not a complete copy --
   // owning_subcontext_ is left unassigned.
-  FixedInputPortValue(const FixedInputPortValue& source) =
-      default;
+  FixedInputPortValue(const FixedInputPortValue& source) = default;
 
-  // Informs this FixedInputPortValue of the subcontext that owns it.
+  // Informs this FixedInputPortValue of its assigned DependencyTracker
+  // so it knows who to notify when its value changes.
+  void set_ticket(DependencyTicket ticket) {
+    DRAKE_DEMAND(ticket.is_valid() && !ticket_.is_valid());
+    ticket_ = ticket;
+  }
+
+  // Informs this %FixedInputPortValue of the subcontext that owns it.
   // Aborts if this has already been done or given bad args.
   void set_owning_subcontext(ContextBase* owning_subcontext) {
     DRAKE_DEMAND(owning_subcontext != nullptr && owning_subcontext_ == nullptr);
@@ -134,11 +150,11 @@ class FixedInputPortValue {
   // recorded the number somewhere. If the serial number matches, the value
   // is either unchanged since you last saw it, or an identical copy.
   int64_t serial_number_{-1};
-};
 
-// TODO(sherm1) Get rid of this after 8/7/2018 (three months).
-DRAKE_DEPRECATED("Please use FixedInputPortValue instead.")
-typedef FixedInputPortValue FreestandingInputPortValue;
+  // Index of the dependency tracker for this fixed value. The input port
+  // should have registered with this tracker.
+  DependencyTicket ticket_;
+};
 
 #ifndef DRAKE_DOXYGEN_CXX
 namespace detail {
@@ -154,8 +170,24 @@ class ContextBaseFixedInputAttorney {
   // "Output" argument is first here since it is serving as a `this` pointer.
   static void set_owning_subcontext(FixedInputPortValue* fixed,
                                     ContextBase* owning_subcontext) {
-    DRAKE_DEMAND(owning_subcontext != nullptr && fixed != nullptr);
+    DRAKE_DEMAND(fixed != nullptr);
     fixed->set_owning_subcontext(owning_subcontext);
+  }
+
+  static void set_ticket(FixedInputPortValue* fixed,
+                         DependencyTicket ticket) {
+    DRAKE_DEMAND(fixed != nullptr);
+    fixed->set_ticket(ticket);
+  }
+
+  // This serves as the only accessible constructor for FixedInputPortValues.
+  // It must be followed immediately by inserting into a Context with the
+  // assigned ticket and the owning subcontext set using the above methods.
+  static std::unique_ptr<FixedInputPortValue> CreateFixedInputPortValue(
+      std::unique_ptr<AbstractValue> value) {
+    // Can't use make_unique here since constructor is private.
+    return std::unique_ptr<FixedInputPortValue>(
+        new FixedInputPortValue(std::move(value)));
   }
 };
 

@@ -6,10 +6,9 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
+#include "drake/geometry/geometry_visualization.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/joints/floating_base_types.h"
-#include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/multibody/rigid_body_plant/drake_visualizer.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
@@ -72,22 +71,30 @@ int DoMain() {
   auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
       {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
   dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
-  SolutionResult result = dircol.Solve();
-  if (result != SolutionResult::kSolutionFound) {
+  const auto result = solvers::Solve(dircol);
+  if (!result.is_success()) {
     std::cerr << "Failed to solve optimization for the swing-up trajectory"
               << std::endl;
     return 1;
   }
 
   const PiecewisePolynomial<double> pp_traj =
-      dircol.ReconstructInputTrajectory();
+      dircol.ReconstructInputTrajectory(result);
   const PiecewisePolynomial<double> pp_xtraj =
-      dircol.ReconstructStateTrajectory();
+      dircol.ReconstructStateTrajectory(result);
   auto input_trajectory = builder.AddSystem<systems::TrajectorySource>(pp_traj);
   input_trajectory->set_name("input trajectory");
   auto state_trajectory =
       builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
   state_trajectory->set_name("state trajectory");
+
+  auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
+  pendulum->RegisterGeometry(pendulum->get_parameters(*context),
+                             scene_graph);
+  const geometry::SourceId source_id = pendulum->source_id();
+  const int state_port_index = pendulum->get_state_output_port().get_index();
+  const int geometry_port_index =
+      pendulum->get_geometry_pose_output_port().get_index();
 
   // The choices of PidController constants here are fairly arbitrary,
   // but seem to effectively swing up the pendulum and hold it.
@@ -96,25 +103,18 @@ int DoMain() {
   const double Kd = 1;
   auto pid_controlled_pendulum =
       builder.AddSystem<systems::controllers::PidControlledSystem<double>>(
-          std::move(pendulum), Kp, Ki, Kd);
+          std::move(pendulum), Kp, Ki, Kd, state_port_index);
   pid_controlled_pendulum->set_name("PID Controlled Pendulum");
-
-  lcm::DrakeLcm lcm;
-  auto tree = std::make_unique<RigidBodyTree<double>>();
-  parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"),
-      multibody::joints::kFixed, tree.get());
-
-  auto publisher = builder.AddSystem<systems::DrakeVisualizer>(*tree, &lcm);
-  publisher->set_name("publisher");
 
   builder.Connect(input_trajectory->get_output_port(),
                   pid_controlled_pendulum->get_control_input_port());
   builder.Connect(state_trajectory->get_output_port(),
                   pid_controlled_pendulum->get_state_input_port());
-  builder.Connect(pid_controlled_pendulum->get_state_output_port(),
-                  publisher->get_input_port(0));
 
+  builder.Connect(pid_controlled_pendulum->get_output_port(geometry_port_index),
+                  scene_graph->get_source_pose_port(source_id));
+
+  geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
   auto diagram = builder.Build();
 
   systems::Simulator<double> simulator(*diagram);

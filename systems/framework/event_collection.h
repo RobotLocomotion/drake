@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/event.h"
@@ -171,9 +173,11 @@ class DiagramEventCollection final : public EventCollection<EventType> {
         owned_subevent_collection_(num_subsystems) {}
 
   /**
-   * Aborts if called, because no events should be added at the Diagram level.
+   * Throws if called, because no events should be added at the Diagram level.
    */
-  void add_event(std::unique_ptr<EventType>) override { DRAKE_ABORT(); }
+  void add_event(std::unique_ptr<EventType>) override {
+    throw std::logic_error("DiagramEventCollection::add_event is not allowed");
+  }
 
   /**
    * Returns the number of constituent EventCollection objects that correspond
@@ -705,3 +709,12 @@ class DiagramCompositeEventCollection final
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::CompositeEventCollection)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::LeafCompositeEventCollection)
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::DiagramCompositeEventCollection)

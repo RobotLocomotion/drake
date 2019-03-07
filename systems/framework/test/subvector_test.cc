@@ -48,6 +48,14 @@ TEST_F(SubvectorTest, Copy) {
   Eigen::Vector2d expected;
   expected << 2, 3;
   EXPECT_EQ(expected, subvec.CopyToVector());
+
+  Eigen::Vector2d pre_sized_good;
+  subvec.CopyToPreSizedVector(&pre_sized_good);
+  EXPECT_EQ(expected, pre_sized_good);
+
+  Eigen::Vector3d pre_sized_bad;
+  EXPECT_THROW(subvec.CopyToPreSizedVector(&pre_sized_bad),
+      std::exception);
 }
 
 // Tests that writes to the subvector pass through to the sliced vector.
@@ -102,11 +110,18 @@ TEST_F(SubvectorTest, ScaleAndAddToVector) {
   target << 100, 1000;
 
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  subvec.ScaleAndAddToVector(1, target);
+  subvec.ScaleAndAddToVector(1, &target);
 
   Eigen::Vector2d expected;
   expected << 102, 1003;
   EXPECT_EQ(expected, target);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  subvec.ScaleAndAddToVector(1, target);
+  expected << 104, 1006;
+  EXPECT_EQ(expected, target);
+#pragma GCC diagnostic pop
 }
 
 // TODO(david-german-tri): Once GMock is available in the Drake build, add a
@@ -122,7 +137,7 @@ TEST_F(SubvectorTest, PlusEqInvalidSize) {
 TEST_F(SubvectorTest, AddToVectorInvalidSize) {
   VectorX<double> target(3);
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  EXPECT_THROW(subvec.ScaleAndAddToVector(1, target), std::out_of_range);
+  EXPECT_THROW(subvec.ScaleAndAddToVector(1, &target), std::out_of_range);
 }
 
 // Tests SetZero functionality in VectorBase.
@@ -134,12 +149,17 @@ TEST_F(SubvectorTest, SetZero) {
 
 // Tests the infinity norm.
 TEST_F(SubvectorTest, InfNorm) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   Subvector<double> subvec(vector_.get(), 0, kSubVectorLength);
   EXPECT_EQ(subvec.NormInf(), 2);
+#pragma GCC diagnostic pop
 }
 
 // Tests the infinity norm for an autodiff type.
 TEST_F(SubvectorTest, InfNormAutodiff) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   AutoDiffXd element0;
   element0.value() = -11.5;
   element0.derivatives() = Eigen::Vector2d(1.5, -2.5);
@@ -164,6 +184,7 @@ TEST_F(SubvectorTest, InfNormAutodiff) {
   expected_norminf.derivatives() = Eigen::Vector2d(-1.5, 2.5);
   EXPECT_EQ(subvec.NormInf().value(), expected_norminf.value());
   EXPECT_EQ(subvec.NormInf().derivatives(), expected_norminf.derivatives());
+#pragma GCC diagnostic pop
 }
 
 // Tests all += * operations for VectorBase.

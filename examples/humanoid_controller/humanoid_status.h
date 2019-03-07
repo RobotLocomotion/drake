@@ -26,7 +26,7 @@ class BodyOfInterest {
   /**
    * @param name Name of this object. It does not have to match \p body's name.
    * @param body Reference to a RigidBody, which must be valid through the
-   * lifespan of this obejct.
+   * lifespan of this object.
    * @param off Offset expressed in the body frame.
    */
   BodyOfInterest(const std::string& name, const RigidBody<double>& body,
@@ -98,7 +98,7 @@ class HumanoidStatus final
 
   /**
    * @param robot Pointer to a RigidBodyTree, which must be valid through the
-   * lifespan of this obejct.
+   * lifespan of this object.
    */
   HumanoidStatus(const RigidBodyTree<double>* robot,
                  const RigidBodyTreeAliasGroups<double>& alias_group);

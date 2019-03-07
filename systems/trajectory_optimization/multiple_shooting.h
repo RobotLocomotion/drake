@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/solvers/mathematical_program.h"
@@ -106,7 +107,8 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// index @p index.
   Eigen::VectorBlock<const solvers::VectorXDecisionVariable> input(
       int index) const {
-    DRAKE_DEMAND(index >= 0 && index < N_);
+    DRAKE_DEMAND(index >= 0);
+    DRAKE_DEMAND(index < N_);
     return u_vars_.segment(index * num_inputs_, num_inputs_);
   }
 
@@ -177,9 +179,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// Note: Derived classes will need to type
   ///    using MultipleShooting::AddFinalCost;
   /// to "unhide" this method.
-  void AddFinalCost(const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
-    DRAKE_DEMAND(e.rows() == 1 && e.cols() == 1);
-    AddFinalCost(e(0, 0));
+  void AddFinalCost(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& matrix) {
+    DRAKE_DEMAND(matrix.rows() == 1 && matrix.cols() == 1);
+    AddFinalCost(matrix(0, 0));
   }
 
   typedef std::function<
@@ -234,10 +237,10 @@ class MultipleShooting : public solvers::MathematicalProgram {
   ///
   /// If time steps are decision variables, then the initial guess for
   /// the time steps are evenly distributed to match the duration of the
-  /// @p traj_init_u and @p traj_init_x. Throws std::runtime_error if
-  /// @p traj_init_u and @p traj_init_x are both empty, or if
-  /// @p traj_init_u and @p traj_init_x are both non-empty, and have
-  /// different start and end times.
+  /// @p traj_init_u and @p traj_init_x.
+  /// @throws std::runtime_error if @p traj_init_u and @p traj_init_x are both
+  /// empty, or if @p traj_init_u and @p traj_init_x are both non-empty, and
+  /// have different start and end times.
   // TODO(russt): Consider taking the actual breakpoints from
   // traj_init_{u,x} iff they match the number of sample times.
   void SetInitialTrajectory(
@@ -250,30 +253,88 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   /// Returns a vector containing the elapsed time at each knot point at the
   /// solution.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::VectorXd GetSampleTimes() const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return GetSampleTimes(this->GetSolution(h_vars_));
+#pragma GCC diagnostic pop
+  }
+
+  Eigen::VectorXd GetSampleTimes(
+      const solvers::MathematicalProgramResult& result) const {
+    return GetSampleTimes(result.GetSolution(h_vars_));
   }
 
   /// Returns a matrix containing the input values (arranged in columns) at
   /// each knot point at the solution.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::MatrixXd GetInputSamples() const;
+
+  /// Returns a matrix containing the input values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetInputSamples(
+      const solvers::MathematicalProgramResult& result) const;
 
   /// Returns a matrix containing the state values (arranged in columns) at
   /// each knot point at the solution.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   Eigen::MatrixXd GetStateSamples() const;
+
+  /// Returns a matrix containing the state values (arranged in columns) at
+  /// each knot point at the solution.
+  Eigen::MatrixXd GetStateSamples(
+      const solvers::MathematicalProgramResult& result) const;
 
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.  Requires that the system has at least one input
   /// port.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructInputTrajectory() const = 0;
+
+  virtual trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
+      const solvers::MathematicalProgramResult&) const {
+    // TODO(hongkai.dai): make this function an abstract virtual function, when
+    // we deprecate ReconstructInputTrajectory(). Currently I throw this error
+    // so that the derived classes in Drake can override it, and we do not break
+    // the derived class outside of drake master.
+    throw std::runtime_error(
+        "The derived class has to override this function.");
+  }
 
   /// Get the state trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
   /// the dynamic constraints.
+  DRAKE_DEPRECATED("2019-06-01",
+      "MathematicalProgram methods that assume the solution is stored inside "
+      "the program are deprecated; for details and porting advice, see "
+      "https://github.com/RobotLocomotion/drake/issues/9633.")
   virtual trajectories::PiecewisePolynomial<double>
   ReconstructStateTrajectory() const = 0;
+
+  virtual trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
+      const solvers::MathematicalProgramResult&) const {
+    // TODO(hongkai.dai): make this function an abstract virtual function, when
+    // we deprecate ReconstructStateTrajectory(). Currently I throw this error
+    // so that the derived classes in Drake can override it, and we do not break
+    // the derived class outside of drake master.
+    throw std::runtime_error(
+        "The derived class has to override this function.");
+  }
 
   double fixed_timestep() const {
     DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);

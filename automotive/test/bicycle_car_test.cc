@@ -23,7 +23,7 @@ class BicycleCarTest : public ::testing::Test {
     dut_.reset(new BicycleCar<double>());
 
     context_ = dut_->CreateDefaultContext();
-    output_ = dut_->AllocateOutput(*context_);
+    output_ = dut_->AllocateOutput();
     derivatives_ = dut_->AllocateTimeDerivatives();
   }
 
@@ -69,13 +69,13 @@ class BicycleCarTest : public ::testing::Test {
 TEST_F(BicycleCarTest, Topology) {
   ASSERT_EQ(2, dut_->get_num_input_ports()); /* steering angle, force input */
 
-  const auto& steering_input_descriptor = dut_->get_steering_input_port();
-  EXPECT_EQ(systems::kVectorValued, steering_input_descriptor.get_data_type());
-  EXPECT_EQ(kSteeringInputDimension, steering_input_descriptor.size());
+  const auto& steering_input_port = dut_->get_steering_input_port();
+  EXPECT_EQ(systems::kVectorValued, steering_input_port.get_data_type());
+  EXPECT_EQ(kSteeringInputDimension, steering_input_port.size());
 
-  const auto& force_input_descriptor = dut_->get_force_input_port();
-  EXPECT_EQ(systems::kVectorValued, force_input_descriptor.get_data_type());
-  EXPECT_EQ(kForceInputDimension, force_input_descriptor.size());
+  const auto& force_input_port = dut_->get_force_input_port();
+  EXPECT_EQ(systems::kVectorValued, force_input_port.get_data_type());
+  EXPECT_EQ(kForceInputDimension, force_input_port.size());
 
   ASSERT_EQ(1, dut_->get_num_output_ports()); /* state vector */
 

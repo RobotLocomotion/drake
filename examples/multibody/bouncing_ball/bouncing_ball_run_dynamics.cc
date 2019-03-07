@@ -8,18 +8,13 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/random_rotation.h"
-#include "drake/multibody/multibody_tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace examples {
@@ -46,17 +41,14 @@ using Eigen::Vector3d;
 using geometry::SceneGraph;
 using geometry::SourceId;
 using lcm::DrakeLcm;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::MultibodyTree;
-using drake::multibody::QuaternionFloatingMobilizer;
-using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::lcm::LcmPublisherSystem;
-using drake::systems::lcm::Serializer;
-using drake::systems::rendering::PoseBundleToDrawMessage;
-using drake::systems::RungeKutta2Integrator;
-using drake::systems::RungeKutta3Integrator;
-using drake::systems::SemiExplicitEulerIntegrator;
+using systems::ImplicitEulerIntegrator;
+using systems::RungeKutta2Integrator;
+using systems::RungeKutta3Integrator;
+using systems::SemiExplicitEulerIntegrator;
+
+// "multibody" namespace is ambiguous here without "drake::".
+using drake::multibody::CoulombFriction;
+using drake::multibody::MultibodyPlant;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;
@@ -78,7 +70,6 @@ int do_main() {
 
   MultibodyPlant<double>& plant = *builder.AddSystem(MakeBouncingBallPlant(
       radius, mass, coulomb_friction, -g * Vector3d::UnitZ(), &scene_graph));
-  const MultibodyTree<double>& model = plant.model();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(0.001);
 
@@ -91,36 +82,18 @@ int do_main() {
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
-  // Boilerplate used to connect the plant to a SceneGraph for
-  // visualization.
-  DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-  publisher.set_publish_period(1 / 60.0);
-
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
+
+  builder.Connect(scene_graph.get_query_output_port(),
+                  plant.get_geometry_query_input_port());
 
   builder.Connect(
       plant.get_geometry_poses_output_port(),
       scene_graph.get_source_pose_port(plant.get_source_id().value()));
-  builder.Connect(scene_graph.get_query_output_port(),
-                  plant.get_geometry_query_input_port());
 
-  builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
-
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(scene_graph);
-
-  // And build the Diagram:
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph);
+  auto diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
@@ -132,13 +105,12 @@ int do_main() {
   // Set at height z0 with random orientation.
   std::mt19937 generator(41);
   std::uniform_real_distribution<double> uniform(-1.0, 1.0);
-  model.SetDefaultContext(&plant_context);
   Matrix3d R_WB = math::UniformlyRandomRotationMatrix(&generator).matrix();
   Isometry3d X_WB = Isometry3d::Identity();
   X_WB.linear() = R_WB;
   X_WB.translation() = Vector3d(0.0, 0.0, z0);
-  model.SetFreeBodyPoseOrThrow(
-      model.GetBodyByName("Ball"), X_WB, &plant_context);
+  plant.SetFreeBodyPose(
+      &plant_context, plant.GetBodyByName("Ball"), X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 
@@ -220,7 +192,7 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "A simple acrobot demo using Drake's MultibodyTree,"
+      "A simple acrobot demo using Drake's MultibodyPlant,"
       "with SceneGraph visualization. "
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);

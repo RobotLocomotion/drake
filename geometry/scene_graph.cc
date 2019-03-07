@@ -14,16 +14,14 @@
 namespace drake {
 namespace geometry {
 
-using systems::AbstractValue;
 using systems::Context;
-using systems::InputPortDescriptor;
+using systems::InputPort;
 using systems::LeafContext;
 using systems::LeafSystem;
 using systems::rendering::PoseBundle;
 using systems::SystemOutput;
 using systems::SystemSymbolicInspector;
 using systems::SystemTypeTag;
-using systems::Value;
 using std::make_unique;
 using std::vector;
 
@@ -78,15 +76,15 @@ SceneGraph<T>::SceneGraph()
     : LeafSystem<T>(SystemTypeTag<geometry::SceneGraph>{}) {
   auto state_value = make_unique<GeometryStateValue<T>>();
   initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
+  model_inspector_.set(initial_state_);
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 
-  bundle_port_index_ =
-      this->DeclareAbstractOutputPort(&SceneGraph::MakePoseBundle,
-                                      &SceneGraph::CalcPoseBundle)
-          .get_index();
+  bundle_port_index_ = this->DeclareAbstractOutputPort("lcm_visualization",
+                               &SceneGraph::MakePoseBundle,
+                               &SceneGraph::CalcPoseBundle).get_index();
 
   query_port_index_ =
-      this->DeclareAbstractOutputPort(&SceneGraph::MakeQueryObject,
+      this->DeclareAbstractOutputPort("query",
                                       &SceneGraph::CalcQueryObject)
           .get_index();
 }
@@ -99,6 +97,7 @@ SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   // system to persist the same state.
   if (other.initial_state_ != nullptr) {
     *initial_state_ = *(other.initial_state_->ToAutoDiffXd());
+    model_inspector_.set(initial_state_);
   }
   context_has_been_allocated_ = other.context_has_been_allocated_;
 
@@ -142,10 +141,10 @@ bool SceneGraph<T>::SourceIsRegistered(SourceId id) const {
 }
 
 template <typename T>
-const systems::InputPortDescriptor<T>& SceneGraph<T>::get_source_pose_port(
-    SourceId id) {
+const systems::InputPort<T>& SceneGraph<T>::get_source_pose_port(
+    SourceId id) const {
   ThrowUnlessRegistered(id, "Can't acquire pose port for unknown source id: ");
-  return this->get_input_port(input_source_ids_[id].pose_port);
+  return this->get_input_port(input_source_ids_.at(id).pose_port);
 }
 
 template <typename T>
@@ -173,11 +172,30 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 
 template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
+    Context<T>* context, SourceId source_id, FrameId frame_id,
+    std::unique_ptr<GeometryInstance> geometry) const {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  return g_state.RegisterGeometry(source_id, frame_id, std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterGeometryWithParent(source_id, geometry_id,
                                                     std::move(geometry));
+}
+
+template <typename T>
+GeometryId SceneGraph<T>::RegisterGeometry(
+    Context<T>* context, SourceId source_id, GeometryId geometry_id,
+    std::unique_ptr<GeometryInstance> geometry) const {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  return g_state.RegisterGeometryWithParent(source_id, geometry_id,
+                                            std::move(geometry));
 }
 
 template <typename T>
@@ -189,9 +207,53 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
 }
 
 template <typename T>
+void SceneGraph<T>::RemoveGeometry(SourceId source_id, GeometryId geometry_id) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->RemoveGeometry(source_id, geometry_id);
+}
+
+template <typename T>
+void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
+                                   GeometryId geometry_id) const {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  g_state.RemoveGeometry(source_id, geometry_id);
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               ProximityProperties properties) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+void SceneGraph<T>::AssignRole(SourceId source_id,
+                               GeometryId geometry_id,
+                               IllustrationProperties properties) {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  initial_state_->AssignRole(source_id, geometry_id, std::move(properties));
+}
+
+template <typename T>
+const SceneGraphInspector<T>& SceneGraph<T>::model_inspector() const {
+  GS_THROW_IF_CONTEXT_ALLOCATED
+  return model_inspector_;
+}
+
+template <typename T>
 void SceneGraph<T>::ExcludeCollisionsWithin(const GeometrySet& geometry_set) {
   GS_THROW_IF_CONTEXT_ALLOCATED
   initial_state_->ExcludeCollisionsWithin(geometry_set);
+}
+
+template <typename T>
+void SceneGraph<T>::ExcludeCollisionsWithin(
+    Context<T>* context, const GeometrySet& geometry_set) const {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  g_state.ExcludeCollisionsWithin(geometry_set);
 }
 
 template <typename T>
@@ -202,19 +264,24 @@ void SceneGraph<T>::ExcludeCollisionsBetween(const GeometrySet& setA,
 }
 
 template <typename T>
+void SceneGraph<T>::ExcludeCollisionsBetween(Context<T>* context,
+                                             const GeometrySet& setA,
+                                             const GeometrySet& setB) const {
+  auto* g_context = static_cast<GeometryContext<T>*>(context);
+  auto& g_state = g_context->get_mutable_geometry_state();
+  g_state.ExcludeCollisionsBetween(setA, setB);
+}
+
+template <typename T>
 void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // This will fail only if the source generator starts recycling source ids.
   DRAKE_ASSERT(input_source_ids_.count(source_id) == 0);
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
-  source_ports.pose_port = this->DeclareAbstractInputPort().get_index();
-}
-
-template <typename T>
-QueryObject<T> SceneGraph<T>::MakeQueryObject() const {
-  // Returns a null-initialized QueryObject to be compatible with context
-  // allocation (see documentation on QueryObject).
-  return QueryObject<T>();
+  source_ports.pose_port =
+      this->DeclareAbstractInputPort(
+          initial_state_->get_source_name(source_id) + "_pose",
+          Value<FramePoseVector<T>>()).get_index();
 }
 
 template <typename T>
@@ -234,17 +301,27 @@ void SceneGraph<T>::CalcQueryObject(const Context<T>& context,
   const GeometryContext<T>* geom_context =
       dynamic_cast<const GeometryContext<T>*>(&context);
   DRAKE_DEMAND(geom_context);
-  // The result of calling calc should *always* produce a live query object.
-  output->context_ = geom_context;
-  output->scene_graph_ = this;
+  output->set(geom_context, this);
 }
 
 template <typename T>
 PoseBundle<T> SceneGraph<T>::MakePoseBundle() const {
   const auto& g_state = *initial_state_;
-  PoseBundle<T> bundle(g_state.get_num_frames());
+  // Collect only those frames that have illustration geometry -- based on the
+  // *model*.
+  // TODO(SeanCurtis-TRI): This happens *twice* now (once here and once in
+  // CalcPoseBundle); might be worth refactoring/caching it.
+  std::vector<FrameId> dynamic_frames;
+  for (const auto& pair : g_state.frames_) {
+    const FrameId frame_id = pair.first;
+    if (frame_id == world_frame_id()) continue;
+    if (g_state.NumGeometriesWithRole(frame_id, Role::kIllustration) > 0) {
+      dynamic_frames.push_back(frame_id);
+    }
+  }
+  PoseBundle<T> bundle(static_cast<int>(dynamic_frames.size()));
   int i = 0;
-  for (FrameId f_id : g_state.get_frame_ids()) {
+  for (FrameId f_id : dynamic_frames) {
     int frame_group = g_state.get_frame_group(f_id);
     bundle.set_model_instance_id(i, frame_group);
 
@@ -272,7 +349,19 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   // cache instead of this heavy-handed update.
   FullPoseUpdate(g_context);
   const auto& g_state = g_context.get_geometry_state();
-  for (FrameId f_id : g_state.get_frame_ids()) {
+
+  // Collect only those frames that have illustration geometry -- based on the
+  // *model*.
+  std::vector<FrameId> dynamic_frames;
+  for (const auto& pair : g_state.frames_) {
+    const FrameId frame_id = pair.first;
+    if (frame_id == world_frame_id()) continue;
+    if (g_state.NumGeometriesWithRole(frame_id, Role::kIllustration) > 0) {
+      dynamic_frames.push_back(frame_id);
+    }
+  }
+
+  for (FrameId f_id : dynamic_frames) {
     output->set_pose(i, g_state.get_pose_in_world(f_id));
     // TODO(SeanCurtis-TRI): Handle velocity.
     ++i;
@@ -298,20 +387,23 @@ void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
                            origin + " values on the input port.");
   };
 
+  // Process all sources *except*:
+  //   - the internal source and
+  //   - sources with no frames.
+  // The internal source will be included in source_frame_id_map_ but *not* in
+  // input_source_ids_.
   for (const auto& pair : state.source_frame_id_map_) {
     if (pair.second.size() > 0) {
       SourceId source_id = pair.first;
       const auto itr = input_source_ids_.find(source_id);
-      DRAKE_ASSERT(itr != input_source_ids_.end());
-      const int pose_port = itr->second.pose_port;
-      const auto pose_port_value =
-          this->template EvalAbstractInput(context, pose_port);
-      if (pose_port_value) {
+      if (itr != input_source_ids_.end()) {
+        const auto& pose_port = this->get_input_port(itr->second.pose_port);
+        if (!pose_port.HasValue(context)) {
+          throw_error(source_id, "pose");
+        }
         const auto& poses =
-            pose_port_value->template GetValue<FramePoseVector<T>>();
+            pose_port.template Eval<FramePoseVector<T>>(context);
         mutable_state.SetFramePoses(poses);
-      } else {
-        throw_error(source_id, "pose");
       }
     }
   }

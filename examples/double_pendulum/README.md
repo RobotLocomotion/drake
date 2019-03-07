@@ -36,7 +36,13 @@ bazel build examples/double_pendulum:double_pendulum_demo
 
 ## How do I run it?
 
-To run this demo, from Drake's repository root first run:
+To run this demo, invoke bazel to build and run drake_visualizer:
+
+```
+bazel run //tools:drake_visualizer
+```
+
+Alternatively, once built you may simply run it:
 
 ```
 ./bazel-bin/tools/drake_visualizer

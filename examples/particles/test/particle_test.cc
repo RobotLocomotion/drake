@@ -25,7 +25,7 @@ class ParticleTest : public ::testing::Test {
   void SetUp() override {
     this->dut_ = std::make_unique<Particle<T>>();
     this->context_ = this->dut_->CreateDefaultContext();
-    this->output_ = this->dut_->AllocateOutput(*context_);
+    this->output_ = this->dut_->AllocateOutput();
     this->derivatives_ = this->dut_->AllocateTimeDerivatives();
   }
 
@@ -66,10 +66,10 @@ TYPED_TEST_P(ParticleTest, OutputTest) {
 /// consistent with its state and input (velocity and acceleration).
 TYPED_TEST_P(ParticleTest, DerivativesTest) {
   // Set input.
-  const systems::InputPortDescriptor<TypeParam>& input_descriptor =
+  const systems::InputPort<TypeParam>& input_port =
       this->dut_->get_input_port(0);
   auto input = std::make_unique<systems::BasicVector<TypeParam>>(
-      input_descriptor.size());
+      input_port.size());
   input->SetZero();
   input->SetAtIndex(0, static_cast<TypeParam>(1.0));  // u0 = 1 m/s^2
   this->context_->FixInputPort(0, std::move(input));

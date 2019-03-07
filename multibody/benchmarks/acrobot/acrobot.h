@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "drake/common/eigen_types.h"
+#include "drake/math/rigid_transform.h"
 
 namespace drake {
 namespace multibody {
@@ -13,13 +14,14 @@ namespace benchmarks {
 /// of Underactuated Robotics</a>.
 ///
 /// This system essentially is a double pendulum consisting of two links.
-/// Link 1 is connected to the world by a "shoulder" revolute joint parametrized
-/// by angle theta1 and Link 2 is connected to Link 1 by an "elbow" revolute
-/// joint parametrized by angle theta2.
+/// Link 1 is connected to the world by a "shoulder" revolute joint
+/// parameterized by angle theta1 and Link 2 is connected to Link 1 by an
+/// "elbow" revolute joint parameterized by angle theta2.
 ///
 /// @tparam T The vector element type, which must be a valid Eigen scalar.
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 template <typename T>
@@ -31,24 +33,25 @@ class Acrobot {
   /// Essentially the two dimensional equations of the acrobot are described
   /// in a model frame D within a x-y plane with y the vertical direction
   /// and gravity pointing downwards.
-  /// Thefore the axes defining the model frame D are: <pre>
+  /// Therefore the axes defining the model frame D are: <pre>
   ///   z_W = normal_W.normalized()
   ///   y_W = (up - up.dot(z_W) * z_W).normalized()
   ///   x_W = y_W.cross(z_W)
   /// </pre>
   /// The remaining arguments define the properties of the double pendulum
   /// system:
-  ///   - m1: mass of the first link.
-  ///   - m2: mass of the second link.
-  ///   - l1: length of the first link.
-  ///   - l2: length of the second link.
-  ///   - lc1: length from the shoulder to the center of mass of the first link.
-  ///   - lc2: length from the elbow to the center of mass of the second link.
-  ///   - Ic1: moment of inertia about the center of mass for the first link.
-  ///   - Ic2: moment of inertia about the center of mass for the second link.
-  ///   - b1: damping coefficient of the shoulder joint.
-  ///   - b2: damping coefficient of the elbow joint.
-  ///   - g: acceleration of gavity.
+  ///
+  /// - m1: mass of the first link.
+  /// - m2: mass of the second link.
+  /// - l1: length of the first link.
+  /// - l2: length of the second link.
+  /// - lc1: length from the shoulder to the center of mass of the first link.
+  /// - lc2: length from the elbow to the center of mass of the second link.
+  /// - Ic1: moment of inertia about the center of mass for the first link.
+  /// - Ic2: moment of inertia about the center of mass for the second link.
+  /// - b1: damping coefficient of the shoulder joint.
+  /// - b2: damping coefficient of the elbow joint.
+  /// - g: acceleration of gavity.
   Acrobot(const Vector3<T>& normal, const Vector3<T>& up,
           double m1 = 1.0,
           double m2 = 1.0,
@@ -86,7 +89,7 @@ class Acrobot {
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WL1 the pose of link 1 measured and expressed in the world
   /// frame.
-  Isometry3<T> CalcLink1PoseInWorldFrame(const T& theta1) const;
+  math::RigidTransform<T> CalcLink1PoseInWorldFrame(const T& theta1) const;
 
   /// Computes the pose of the center of mass of link 2 measured and expressed
   /// in the world frame.
@@ -94,14 +97,14 @@ class Acrobot {
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WL2 the pose of link 2 measured and expressed in the world
   /// frame.
-  Isometry3<T> CalcLink2PoseInWorldFrame(
+  math::RigidTransform<T> CalcLink2PoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
   /// Computes the pose of the elbow outboard frame `Eo` in the world frame W.
   /// @param theta1 The shoulder angle in radians.
   /// @param theta2 The elbow angle in radians.
   /// @returns X_WEo the pose of the elbow frame Eo in the world frame W.
-  Isometry3<T> CalcElbowOutboardFramePoseInWorldFrame(
+  math::RigidTransform<T> CalcElbowOutboardFramePoseInWorldFrame(
       const T& theta1, const T& theta2) const;
 
   /// Computes the spatial velocity of the center of mass of link 1 expressed
@@ -185,7 +188,7 @@ class Acrobot {
       g_{9.81};    // Gravitational constant (m/s^2).
 
   // Transformation from the model frame D to the world frame W.
-  Isometry3<T> X_WD_{Isometry3<T>::Identity()};
+  math::RigidTransform<T> X_WD_;  // Default is identity transform.
 };
 
 }  // namespace benchmarks

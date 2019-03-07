@@ -5,7 +5,6 @@ import os
 import sys
 
 
-# TODO(jwnimmer-tri) Port clang-format-includes & cpplint_wrapper to use this.
 def find_all_sources(workspace_name):
     """Return [workspace, paths] list, where `workspace` is a path to the root
     of the given `workspace_name`, and `paths` are relative paths under it that
@@ -43,7 +42,7 @@ def find_all_sources(workspace_name):
     if not os.path.exists(workspace_file):
         raise RuntimeError("Cannot find WORKSPACE at " + workspace_root)
     # Walk the tree (ignoring symlinks), and collect a list of all workspace-
-    # relative filenames, but exluding a few specific items.
+    # relative filenames, but excluding a few specific items.
     relpaths = []
     for abs_dirpath, dirs, files in os.walk(workspace_root):
         assert abs_dirpath.startswith(workspace_root)

@@ -6,22 +6,29 @@
 #include <unordered_set>
 #include <utility>
 
+#include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/scalar_conversion_traits.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/vector_base.h"
 
 namespace drake {
 namespace systems {
 
+// TODO(sherm1) The ordering of the composite xc is useless and prevents us
+//              from describing every xc as a sequence [q v z]. Consider
+//              reimplementing so that xc=[q₁q₂ v₁v₂ z₁z₂].
 /// %ContinuousState is a view of, and optionally a container for, all the
 /// continuous state variables `xc` of a Drake System. Continuous state
 /// variables are those whose values are defined by differential equations,
 /// so we expect there to be a well-defined time derivative `xcdot` ≜ `d/dt xc`.
 ///
 /// The contents of `xc` are conceptually partitioned into three groups:
+///
 /// - `q` is generalized position
 /// - `v` is generalized velocity
 /// - `z` is other continuous state
@@ -69,9 +76,6 @@ namespace systems {
 /// @see DiagramContinuousState for more information.
 ///
 /// @tparam T A mathematical type compatible with Eigen's Scalar.
-// TODO(sherm1) The ordering of the composite xc is useless and prevents us
-//              from describing every xc as a sequence [q v z]. Consider
-//              reimplementing so that xc=[q₁q₂ v₁v₂ z₁z₂].
 template <typename T>
 class ContinuousState {
  public:
@@ -204,17 +208,21 @@ class ContinuousState {
     return *misc_continuous_state_.get();
   }
 
-  /// Copies the values from another ContinuousState of the same scalar type
-  /// into this State.
+  DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")
   void CopyFrom(const ContinuousState<T>& other) {
-    SetFromGeneric(other);
+    SetFrom(other);
   }
 
-  /// Initializes this ContinuousState (regardless of scalar type) from a
-  /// State<double>. All scalar types in Drake must support initialization from
-  /// doubles.
-  void SetFrom(const ContinuousState<double>& other) {
-    SetFromGeneric(other);
+  /// Copies the values from `other` into `this`, converting the scalar type as
+  /// necessary.
+  template <typename U>
+  void SetFrom(const ContinuousState<U>& other) {
+    DRAKE_THROW_UNLESS(size() == other.size());
+    DRAKE_THROW_UNLESS(num_q() == other.num_q());
+    DRAKE_THROW_UNLESS(num_v() == other.num_v());
+    DRAKE_THROW_UNLESS(num_z() == other.num_z());
+    SetFromVector(other.CopyToVector().unaryExpr(
+        scalar_conversion::ValueConverter<T, U>{}));
   }
 
   /// Sets the entire continuous state vector from an Eigen expression.
@@ -261,15 +269,6 @@ class ContinuousState {
   }
 
  private:
-  template <typename U>
-  void SetFromGeneric(const ContinuousState<U>& other) {
-    DRAKE_DEMAND(size() == other.size());
-    DRAKE_DEMAND(num_q() == other.num_q());
-    DRAKE_DEMAND(num_v() == other.num_v());
-    DRAKE_DEMAND(num_z() == other.num_z());
-    SetFromVector(other.CopyToVector().template cast<T>());
-  }
-
   // Demand that the representation invariants hold.
   void DemandInvariants() const {
     // Nothing is nullptr.
@@ -339,3 +338,6 @@ class ContinuousState {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::ContinuousState)

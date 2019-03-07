@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace solvers {
@@ -212,9 +213,10 @@ void ComputeHalfSpaceRelaxationForBoxSphereIntersection(
   Vector4<symbolic::Expression> lorentz_cone_vars;
   lorentz_cone_vars << 1, n_var;
   prog_normal.AddLorentzConeConstraint(lorentz_cone_vars);
-  prog_normal.Solve();
-  *n = prog_normal.GetSolution(n_var);
-  *d = prog_normal.GetSolution(d_var(0));
+  const auto result = Solve(prog_normal);
+  DRAKE_DEMAND(result.is_success());
+  *n = result.GetSolution(n_var);
+  *d = result.GetSolution(d_var(0));
 
   DRAKE_DEMAND((*n)(0) > 0 && (*n)(1) > 0 && (*n)(2) > 0);
   DRAKE_DEMAND(*d > 0 && *d < 1);

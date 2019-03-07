@@ -1,0 +1,928 @@
+#include "drake/multibody/rigid_body_plant/rigid_body_plant.h"
+
+#include <iostream>
+#include <memory>
+
+#include <Eigen/Geometry>
+#include <gtest/gtest.h>
+
+#include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/examples/pendulum/gen/pendulum_params.h"
+#include "drake/math/rotation_matrix.h"
+#include "drake/multibody/joints/prismatic_joint.h"
+#include "drake/multibody/joints/quaternion_floating_joint.h"
+#include "drake/multibody/parsers/model_instance_id_table.h"
+#include "drake/multibody/parsers/sdf_parser.h"
+#include "drake/multibody/parsers/urdf_parser.h"
+#include "drake/multibody/rigid_body_tree_construction.h"
+#include "drake/systems/primitives/linear_system.h"
+
+using Eigen::Isometry3d;
+using Eigen::Quaterniond;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using Eigen::VectorXd;
+using std::make_unique;
+using std::move;
+using std::unique_ptr;
+
+namespace drake {
+
+using multibody::joints::kFixed;
+using multibody::joints::kQuaternion;
+using parsers::ModelInstanceIdTable;
+using parsers::sdf::AddModelInstancesFromSdfFile;
+
+namespace systems {
+namespace {
+
+// Tests the ability to load an instance of a URDF model into a RigidBodyPlant.
+GTEST_TEST(RigidBodyPlantTest, TestLoadUrdf) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/world.urdf"),
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree_ptr.get());
+
+  RigidBodyPlant<double> plant(move(tree_ptr));
+
+  // Verifies that the number of states, inputs, and outputs are all zero.
+  EXPECT_EQ(plant.get_num_states(), 0);
+  EXPECT_EQ(plant.get_input_size(), 0);
+  EXPECT_EQ(plant.get_output_size(), 0);
+
+  // Obtains a const reference to the underlying RigidBodyTree within the
+  // RigidBodyPlant.
+  const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
+
+  // Checks that the bodies can be obtained by name and that they have the
+  // correct model name.
+  for (auto& body_name :
+       {"floor", "ramp_1", "ramp_2", "box_1", "box_2", "box_3", "box_4"}) {
+    RigidBody<double>* body = tree.FindBody(body_name);
+    EXPECT_NE(body, nullptr);
+    EXPECT_EQ(body->get_model_name(), "dual_ramps");
+  }
+}
+
+// Creates a rigid body tree with a floating base.
+std::unique_ptr<RigidBodyTree<double>> CreateFloatingRBTree() {
+  const int kNumPositions = 7;   // One quaternion + 3d position.
+  const int kNumVelocities = 6;  // Angular velocity + linear velocity.
+  RigidBodyTree<double>* tree = new RigidBodyTree<double>();
+
+  // Adds a single free body with a quaternion base.
+  RigidBody<double>* body;
+  tree->add_rigid_body(
+      unique_ptr<RigidBody<double>>(body = new RigidBody<double>()));
+  body->set_name("free_body");
+  // Sets body to have a non-zero spatial inertia. Otherwise the body gets
+  // welded by a fixed joint to the world by RigidBodyTree::compile().
+  body->set_mass(1.0);
+  body->set_spatial_inertia(Matrix6<double>::Identity());
+
+  body->add_joint(&tree->world(), make_unique<QuaternionFloatingJoint>(
+                                      "base", Isometry3d::Identity()));
+
+  tree->compile();
+
+  // Verifies the correct number of DOF's.
+  EXPECT_EQ(tree->get_num_bodies(), 2);
+  EXPECT_EQ(tree->get_num_positions(), kNumPositions);
+  // There are two bodies: the "world" and "free_body".
+  EXPECT_EQ(tree->get_num_velocities(), kNumVelocities);
+
+  return std::unique_ptr<RigidBodyTree<double>>(tree);
+}
+
+// Tests the generalized velocities to generalized coordinates time
+// derivatives for a free body with a quaternion base.
+GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBack) {
+  const double kTol = 5e-12;     // Loosest tolerance that all tests succeed.
+  const int kNumPositions = 7;   // One quaternion + 3d position.
+  const int kNumVelocities = 6;  // Angular velocity + linear velocity.
+  const int kNumStates = kNumPositions + kNumVelocities;
+
+  // Instantiates a RigidBodyPlant from a RigidBodyTree.
+  auto tree = CreateFloatingRBTree();
+  RigidBodyPlant<double> plant(std::move(tree));
+  auto context = plant.CreateDefaultContext();
+
+  // Verifies the number of states, inputs, and outputs.
+  EXPECT_EQ(plant.get_num_states(), kNumStates);
+  EXPECT_EQ(plant.get_num_positions(), kNumPositions);
+  EXPECT_EQ(plant.get_num_velocities(), kNumVelocities);
+  EXPECT_EQ(plant.get_input_size(), 0);  // There are no actuators.
+  EXPECT_EQ(plant.get_output_size(), kNumStates);
+
+  const Vector3d v0(1, 2, 3);    // Linear velocity in body's frame.
+  const Vector3d w0(-4, 5, -6);  // Angular velocity in body's frame.
+  BasicVector<double> generalized_velocities(plant.get_num_velocities());
+  generalized_velocities.get_mutable_value() << w0, v0;
+  BasicVector<double> positions_derivatives(plant.get_num_positions());
+
+  ASSERT_EQ(positions_derivatives.size(), kNumPositions);
+  ASSERT_EQ(generalized_velocities.size(), kNumVelocities);
+
+  // Transforms the generalized velocities to time derivative of generalized
+  // coordinates.
+  plant.MapVelocityToQDot(*context, generalized_velocities,
+                          &positions_derivatives);
+
+  // For zero rotation the velocity vector in the body's frame and in the
+  // world's frame is the same.
+  EXPECT_EQ(v0[0], positions_derivatives.GetAtIndex(0));
+  EXPECT_EQ(v0[1], positions_derivatives.GetAtIndex(1));
+  EXPECT_EQ(v0[2], positions_derivatives.GetAtIndex(2));
+
+  // Loop over roll-pitch-yaw values: this will run approximately 1,000 tests.
+  const double kAngleInc = 10.0 * M_PI / 180.0;  // 10 degree increments
+  for (double roll = 0; roll <= M_PI_2; roll += kAngleInc) {
+    for (double pitch = 0; pitch <= M_PI_2; pitch += kAngleInc) {
+      for (double yaw = 0; yaw <= M_PI_2; yaw += kAngleInc) {
+        // Get the mutable state.
+        VectorBase<double>& xc = context->get_mutable_state()
+                                     .get_mutable_continuous_state()
+                                     .get_mutable_generalized_position();
+
+        // Update the orientation.
+        const Quaterniond q = Eigen::AngleAxisd(roll, Vector3d::UnitZ()) *
+                              Eigen::AngleAxisd(pitch, Vector3d::UnitY()) *
+                              Eigen::AngleAxisd(yaw, Vector3d::UnitX());
+
+        // Verify normalization.
+        DRAKE_ASSERT(std::abs(q.norm() - 1.0) < 1e-15);
+        xc.SetAtIndex(3, q.w());
+        xc.SetAtIndex(4, q.x());
+        xc.SetAtIndex(5, q.y());
+        xc.SetAtIndex(6, q.z());
+
+        // Transform the generalized velocities to time derivative of
+        // generalized coordinates.
+        plant.MapVelocityToQDot(*context, generalized_velocities,
+                                &positions_derivatives);
+
+        // TODO(edrumwri): Uncomment the following test when the quaternion
+        // derivative code is correct. See #4121.
+
+        // Test q * qdot near zero.
+        Quaterniond qdot(positions_derivatives.GetAtIndex(3),
+                         positions_derivatives.GetAtIndex(4),
+                         positions_derivatives.GetAtIndex(5),
+                         positions_derivatives.GetAtIndex(6));
+        DRAKE_ASSERT(std::abs(q.dot(qdot)) < 1e-15);
+
+        // Map time derivative of generalized configuration back to generalized
+        // velocity.
+        plant.MapQDotToVelocity(*context, positions_derivatives,
+                                &generalized_velocities);
+
+        // Ordering is angular velocities first, linear velocities second.
+        EXPECT_NEAR(w0[0], generalized_velocities.GetAtIndex(0), kTol);
+        EXPECT_NEAR(w0[1], generalized_velocities.GetAtIndex(1), kTol);
+        EXPECT_NEAR(w0[2], generalized_velocities.GetAtIndex(2), kTol);
+        EXPECT_NEAR(v0[0], generalized_velocities.GetAtIndex(3), kTol);
+        EXPECT_NEAR(v0[1], generalized_velocities.GetAtIndex(4), kTol);
+        EXPECT_NEAR(v0[2], generalized_velocities.GetAtIndex(5), kTol);
+      }
+    }
+  }
+}
+
+// Tests the generalized velocities to generalized coordinates time
+// derivatives for a free body with a quaternion base *with discrete state
+// variables* (meaning that no such conversion should be performed).
+GTEST_TEST(RigidBodyPlantTest, MapVelocityToConfigurationDerivativesAndBackTS) {
+  // Instantiates a RigidBodyPlant from a RigidBodyTree.
+  const double dt = 1e-3;
+  auto tree = CreateFloatingRBTree();
+  RigidBodyPlant<double> plant(std::move(tree), dt);
+  auto context = plant.CreateDefaultContext();
+
+  // Make empty generalized velocity and positions_derivative vectors.
+  BasicVector<double> generalized_velocities(0);
+  BasicVector<double> positions_derivatives(0);
+
+  // Call the transformation functions. They should do nothing, since both
+  // vectors are zero sized *and* the state is discrete.
+  EXPECT_NO_THROW(plant.MapVelocityToQDot(
+      *context, generalized_velocities, &positions_derivatives));
+  EXPECT_NO_THROW(plant.MapQDotToVelocity(
+      *context, positions_derivatives, &generalized_velocities));
+}
+
+class KukaArmTest : public ::testing::TestWithParam<double> {
+ protected:
+  void SetUp() override {
+    auto tree = make_unique<RigidBodyTree<double>>();
+    drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+        FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
+                     "iiwa14_primitive_collision.urdf"),
+        drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+        tree.get());
+
+    kuka_plant_ = make_unique<RigidBodyPlant<double>>(move(tree),
+                                                      this->GetParam());
+
+    context_ = kuka_plant_->CreateDefaultContext();
+    output_ = kuka_plant_->AllocateOutput();
+    derivatives_ = kuka_plant_->AllocateTimeDerivatives();
+  }
+
+  const int kNumPositions_{7};
+  const int kNumVelocities_{7};
+  const int kNumActuators_{kNumPositions_};
+  const int kNumStates_{kNumPositions_ + kNumVelocities_};
+
+  unique_ptr<RigidBodyPlant<double>> kuka_plant_;
+  std::unique_ptr<Context<double>> context_;
+  std::unique_ptr<SystemOutput<double>> output_;
+  std::unique_ptr<ContinuousState<double>> derivatives_;
+};
+
+// Tests that the KUKA iiwa arm's RigidBodyPlant allocates a continuous state
+// of the proper size in the context.
+TEST_P(KukaArmTest, StateHasTheRightSizes) {
+  // Only check these if the state is continuous.
+  if (!kuka_plant_->is_state_discrete()) {
+    const VectorBase<double>& xc =
+        context_->get_continuous_state().get_generalized_position();
+    const VectorBase<double>& vc =
+        context_->get_continuous_state().get_generalized_velocity();
+    const VectorBase<double>& zc =
+        context_->get_continuous_state().get_misc_continuous_state();
+
+    EXPECT_EQ(kNumPositions_, xc.size());
+    EXPECT_EQ(kNumVelocities_, vc.size());
+    EXPECT_EQ(0, zc.size());
+  }
+}
+
+// Tests the method that obtains the zero configuration of the system for a
+// Kuka arm model. In this case the zero configuration corresponds to all joint
+// angles and velocities being zero.
+// The system configuration is written to a context.
+TEST_P(KukaArmTest, SetDefaultState) {
+  // Connect to a "fake" free standing input.
+  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
+  // derivatives per #3218.
+  context_->FixInputPort(
+      kuka_plant_->actuator_command_input_port().get_index(),
+      make_unique<BasicVector<double>>(kuka_plant_->get_num_actuators()));
+
+  // Asserts that for this case the zero configuration corresponds to a state
+  // vector with all entries equal to zero.
+  auto x = kuka_plant_->GetStateVector(*context_);
+  ASSERT_EQ(kNumStates_, x.size());
+  ASSERT_EQ(x, VectorXd::Zero(x.size()));
+}
+
+// Checks that the time step provided is correct.
+TEST_P(KukaArmTest, CheckTimeStep) {
+  EXPECT_EQ(kuka_plant_->get_time_step(), this->GetParam());
+}
+
+// Tests RigidBodyPlant<T>::CalcOutput() for a KUKA iiwa arm model.
+TEST_P(KukaArmTest, EvalOutput) {
+  auto& tree = kuka_plant_->get_rigid_body_tree();
+
+  // Checks that the number of input and output ports in the system and context
+  // are consistent.
+  ASSERT_EQ(1, kuka_plant_->get_num_input_ports());
+  ASSERT_EQ(1, context_->get_num_input_ports());
+  ASSERT_EQ(1, kuka_plant_->get_num_model_instances());
+
+  const int kModelInstanceId =
+      RigidBodyTreeConstants::kFirstNonWorldModelInstanceId;
+
+  // Checks the size of the input ports to match the number of generalized
+  // forces that can be applied.
+  ASSERT_EQ(kNumPositions_, kuka_plant_->get_num_positions());
+  ASSERT_EQ(kNumPositions_, kuka_plant_->get_num_positions(0));
+  ASSERT_EQ(kNumVelocities_, kuka_plant_->get_num_velocities());
+  ASSERT_EQ(kNumVelocities_, kuka_plant_->get_num_velocities(0));
+  ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states());
+  ASSERT_EQ(kNumStates_, kuka_plant_->get_num_states(0));
+  ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators());
+  ASSERT_EQ(kNumActuators_, kuka_plant_->get_num_actuators(0));
+  ASSERT_EQ(
+      kNumActuators_,
+      kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
+          .size());
+
+  // Connect to a "fake" free standing input.
+  // TODO(amcastro-tri): Connect to a ConstantVectorSource once Diagrams have
+  // derivatives per #3218.
+  VectorX<double> expected_torque(kuka_plant_->get_num_actuators());
+  for (int i = 0; i < kuka_plant_->get_num_actuators(); i++) {
+    expected_torque[i] = i + 1;
+  }
+  context_->FixInputPort(
+      kuka_plant_->model_instance_actuator_command_input_port(kModelInstanceId)
+          .get_index(),
+      make_unique<BasicVector<double>>(expected_torque));
+
+  // Sets the state to a non-zero value.
+  VectorXd desired_angles(kNumPositions_);
+  desired_angles << 0.5, 0.1, -0.1, 0.2, 0.3, -0.2, 0.15;
+  kuka_plant_->SetModelInstancePositions(context_.get(), kModelInstanceId,
+                                        desired_angles);
+  VectorXd desired_state(kNumStates_);
+  desired_state << desired_angles, VectorXd::Zero(kNumVelocities_);
+  auto x = kuka_plant_->GetStateVector(*context_);
+  ASSERT_EQ(x, desired_state);
+
+  // Output ports:
+  //
+  //    (1) plant state
+  //    (2) plant state derivative [only when non-discrete]
+  //    (3) model instance state for tree containing a single model instance
+  //    (4) kinematic results
+  //    (5) contact results
+  //    (6) model instance measure joint torque
+  //
+  // (In this context, there is only one model instance and thus only one model
+  // instance state port.)
+  if (kuka_plant_->is_state_discrete()) {
+    ASSERT_EQ(5, output_->get_num_ports());
+  } else {
+    ASSERT_EQ(6, output_->get_num_ports());
+  }
+
+  kuka_plant_->CalcOutput(*context_, output_.get());
+
+  if (!kuka_plant_->is_state_discrete()) {
+    const int state_derivative_output_port_index =
+        kuka_plant_->state_derivative_output_port().get_index();
+    EXPECT_EQ(
+        output_->get_vector_data(state_derivative_output_port_index)->size(),
+        kNumPositions_ + kNumVelocities_);
+  }
+
+  // Check that the per-instance port (we should only have one) equals
+  // the expected state.
+  const int output_index =
+      kuka_plant_->model_instance_state_output_port(kModelInstanceId)
+          .get_index();
+  const BasicVector<double>* instance_output =
+      output_->get_vector_data(output_index);
+  ASSERT_NE(nullptr, instance_output);
+  EXPECT_EQ(desired_state, instance_output->get_value().eval());
+
+  // Evaluates the correctness of the kinematics results port.
+  const int index = kuka_plant_->kinematics_results_output_port().get_index();
+  auto& kinematics_results =
+      output_->get_data(index)->GetValue<KinematicsResults<double>>();
+  ASSERT_EQ(kinematics_results.get_num_positions(), kNumPositions_);
+  ASSERT_EQ(kinematics_results.get_num_velocities(), kNumVelocities_);
+
+  VectorXd q = x.topRows(kNumPositions_);
+  VectorXd v = x.bottomRows(kNumVelocities_);
+  auto cache = tree.doKinematics(q, v);
+
+  for (int ibody = 0; ibody < kuka_plant_->get_num_bodies(); ++ibody) {
+    const Isometry3d pose = tree.relativeTransform(cache, 0, ibody);
+    const math::RotationMatrix<double> R(pose.linear());
+    const Eigen::Quaterniond quat = R.ToQuaternion();
+    const Vector3d position = pose.translation();
+    EXPECT_TRUE(quat.isApprox(kinematics_results.get_body_orientation(ibody)));
+    EXPECT_TRUE(position.isApprox(kinematics_results.get_body_position(ibody)));
+  }
+
+  // Check the measured joint torque should equal to zeros.
+  const int measured_torque_idx =
+      kuka_plant_->model_instance_torque_output_port(kModelInstanceId)
+          .get_index();
+  const BasicVector<double>* measured_torque =
+      output_->get_vector_data(measured_torque_idx);
+  ASSERT_NE(nullptr, measured_torque);
+  EXPECT_EQ(expected_torque, measured_torque->get_value().eval());
+}
+
+// Instantiate the value-parameterized tests to run twice: once with continuous
+// state and once with discrete state.
+INSTANTIATE_TEST_CASE_P(Blank, KukaArmTest,
+    testing::Values(0.0 /* continuous state */, 1e-3 /* discrete state */));
+
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForcesFormula) {
+  typedef RigidBodyPlant<double> RBP;
+  const double lower_limit = 10.;
+  const double upper_limit = 20.;
+  const double stiffness = 10.;
+  const double dissipation = 0.5;
+  const double delta = 1e-6;  // Perturbation used for continuity test.
+  const double epsilon = 1e-4;
+
+  // The joint limit force formula is quite complex.  This test checks each of
+  // its modes, to ensure that we didn't flip a sign somewhere.
+  PrismaticJoint joint("test_joint", Isometry3d::Identity(), Vector3d(1, 0, 0));
+  joint.setJointLimits(lower_limit, upper_limit);
+  joint.SetJointLimitDynamics(stiffness, dissipation);
+
+  // Force should be continuously near zero at the limit.
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit + delta, 0), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit, 0), 0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - delta, 0), 0, epsilon);
+  EXPECT_GT(RBP::JointLimitForce(joint, lower_limit - delta, 0), 0);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + delta, 0), 0, epsilon);
+  EXPECT_LT(RBP::JointLimitForce(joint, upper_limit + delta, 0), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit, 0), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit - delta, 0), 0);
+
+  // At zero velocity, expect a spring force law.
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, 0), stiffness,
+              epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, 0), -stiffness,
+              epsilon);
+
+  // At outward velocity, a much stiffer counterforce (ie, not "squishy").
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, -1),
+              stiffness * (1 + dissipation), epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, 1),
+              -stiffness * (1 + dissipation), epsilon);
+
+  // At inward velocity, a looser counterforce (ie, not "bouncy").
+  EXPECT_NEAR(RBP::JointLimitForce(joint, lower_limit - 1, 1),
+              stiffness * (1 - dissipation), epsilon);
+  EXPECT_NEAR(RBP::JointLimitForce(joint, upper_limit + 1, -1),
+              -stiffness * (1 - dissipation), epsilon);
+
+  // At rapid inward velocity, no negative counterforce (ie, not "sticky").
+  EXPECT_EQ(RBP::JointLimitForce(joint, lower_limit - 1, 10), 0);
+  EXPECT_EQ(RBP::JointLimitForce(joint, upper_limit + 1, -10), 0);
+}
+
+/// Given a starting @p position and @p applied_force, @return the resulting
+/// acceleration of the joint described in `limited_prismatic.sdf`.
+double GetPrismaticJointLimitAccel(double position, double applied_force) {
+  // Build two links connected by a limited prismatic joint.
+  auto tree = std::make_unique<RigidBodyTree<double>>();
+  AddModelInstancesFromSdfFile(
+      FindResourceOrThrow(
+          "drake/multibody/rigid_body_plant/test/limited_prismatic.sdf"),
+      kFixed, nullptr /* weld to frame */, tree.get());
+  RigidBodyPlant<double> plant(move(tree));
+
+  auto context = plant.CreateDefaultContext();
+  context->get_mutable_continuous_state()
+      .get_mutable_generalized_position()
+      .SetAtIndex(0, position);
+
+  // Apply a constant force on the input.
+  Vector1d input;
+  input << applied_force;
+  auto input_vector = std::make_unique<BasicVector<double>>(1);
+  input_vector->set_value(input);
+  context->FixInputPort(plant.actuator_command_input_port().get_index(),
+                        move(input_vector));
+
+  // Obtain the time derivatives; test that speed is zero, return acceleration.
+  auto derivatives = plant.AllocateTimeDerivatives();
+  plant.CalcTimeDerivatives(*context, derivatives.get());
+  auto xdot = derivatives->CopyToVector();
+  EXPECT_EQ(xdot(0), 0.);  // Not moving.
+  return xdot(1);
+}
+
+// Tests that joint limit forces are applied correctly in the rigid body
+// tree.  This tests for a sign error at rigid_body_plant.cc@417b03e:240.
+GTEST_TEST(rigid_body_plant_test, TestJointLimitForces) {
+  // Past the lower limit, acceleration should be upward.
+  EXPECT_GT(GetPrismaticJointLimitAccel(-1.05, 0.), 0.);
+
+  // Between the limits, acceleration should equal force (the moving mass in
+  // the SDF is 1kg).
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., -1.), -1.);
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., 0), 0.);
+  EXPECT_EQ(GetPrismaticJointLimitAccel(0., 1.), 1.);
+
+  // Past the upper limit, acceleration should be downward.
+  EXPECT_LT(GetPrismaticJointLimitAccel(1.05, 0.), 0.);
+}
+
+// Verifies that various model-instance-specific accessor methods work.
+GTEST_TEST(RigidBodyPlantTest, InstancePortTest) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/three_dof_robot.urdf"),
+      drake::multibody::joints::kFixed, nullptr /* weld to frame */,
+      tree_ptr.get());
+  auto weld_to_frame = std::allocate_shared<RigidBodyFrame<double>>(
+      Eigen::aligned_allocator<RigidBodyFrame<double>>(), "world", nullptr,
+      Vector3d(1., 1., 0));
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow(
+          "drake/multibody/test/rigid_body_tree/four_dof_robot.urdf"),
+      drake::multibody::joints::kFixed, weld_to_frame, tree_ptr.get());
+
+  RigidBodyPlant<double> plant(move(tree_ptr));
+
+  EXPECT_EQ(plant.get_num_states(), 14);
+  EXPECT_EQ(plant.get_input_size(), 7);
+  EXPECT_EQ(plant.get_output_size(), 14);
+
+  EXPECT_EQ(plant.get_num_actuators(0), 3);
+  EXPECT_EQ(plant.get_num_positions(0), 3);
+  EXPECT_EQ(plant.get_num_velocities(0), 3);
+  EXPECT_EQ(plant.get_num_states(0), 6);
+  EXPECT_EQ(plant.get_num_actuators(1), 4);
+  EXPECT_EQ(plant.get_num_positions(1), 4);
+  EXPECT_EQ(plant.get_num_velocities(1), 4);
+  EXPECT_EQ(plant.get_num_states(1), 8);
+
+  // TODO(liang.fok) The following has a bug, see #4697.
+  const RigidBodyTree<double>& tree = plant.get_rigid_body_tree();
+  const std::map<std::string, int> position_name_to_index_map =
+      tree.computePositionNameToIndexMap();
+  const int joint4_world = position_name_to_index_map.at("joint4");
+  ASSERT_EQ(joint4_world, 6);
+  const int joint4_instance =
+      plant.FindInstancePositionIndexFromWorldIndex(1, joint4_world);
+  EXPECT_EQ(joint4_instance, 3);
+  EXPECT_ANY_THROW(
+      plant.FindInstancePositionIndexFromWorldIndex(0, joint4_world));
+}
+
+GTEST_TEST(rigid_body_plant_test, BasicTimeSteppingTest) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow("drake/multibody/models/box.urdf"),
+      drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
+      tree_ptr.get());
+
+  const double timestep = 0.1;
+  RigidBodyPlant<double> continuous_plant(tree_ptr->Clone());
+  RigidBodyPlant<double> time_stepping_plant(move(tree_ptr), timestep);
+
+  auto continuous_context = continuous_plant.AllocateContext();
+  continuous_plant.SetDefaultContext(continuous_context.get());
+
+  auto time_stepping_context = time_stepping_plant.AllocateContext();
+  time_stepping_plant.SetDefaultContext(time_stepping_context.get());
+
+  // Check that the time-stepping model has the same states as the continuous,
+  // but as discrete state.
+  EXPECT_TRUE(continuous_context->has_only_continuous_state());
+  EXPECT_TRUE(time_stepping_context->has_only_discrete_state());
+  EXPECT_EQ(continuous_context->get_continuous_state().size(),
+            time_stepping_context->get_discrete_state(0).size());
+
+  // Check that the dynamics of the time-stepping model match the
+  // (backwards-)Euler approximation of the continuous time dynamics.
+  auto derivatives = continuous_plant.AllocateTimeDerivatives();
+  continuous_plant.CalcTimeDerivatives(*continuous_context, derivatives.get());
+  auto updates = time_stepping_plant.AllocateDiscreteVariables();
+  time_stepping_plant.CalcDiscreteVariableUpdates(
+      *time_stepping_context, updates.get());
+
+  const VectorXd x = continuous_context->get_continuous_state().CopyToVector();
+  EXPECT_TRUE(CompareMatrices(
+      x, time_stepping_context->get_discrete_state(0).CopyToVector()));
+
+  const VectorXd q = continuous_context->get_continuous_state()
+                         .get_generalized_position()
+                         .CopyToVector();
+  const VectorXd v = continuous_context->get_continuous_state()
+                         .get_generalized_velocity()
+                         .CopyToVector();
+
+  const VectorXd vn =
+      v + timestep * derivatives->get_generalized_velocity().CopyToVector();
+
+  auto kinsol = continuous_plant.get_rigid_body_tree().doKinematics(q, v);
+  const VectorXd qn =
+      q +
+      timestep *
+          continuous_plant.get_rigid_body_tree().transformVelocityToQDot(kinsol,
+                                                                         vn);
+  VectorXd xn(qn.rows() + vn.rows());
+  xn << qn, vn;
+
+  EXPECT_TRUE(CompareMatrices(updates->get_vector(0).CopyToVector(), xn));
+}
+
+}  // namespace
+
+// Note that the typical anonymous namespace cannot be used here, because the
+// testing namespace must be the same as the class namespace.
+
+// Test fixture class for checking data used for time stepping. This test
+// uses a sphere resting on a fixed ground plane to determine contact Jacobians;
+// the sphere, with contact point located directly under the center-of-mass,
+// simplifies the resulting Jacobian matrices.
+class RigidBodyPlantTimeSteppingDataTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Step size is arbitrarily chosen.
+    const double step_size = 1e-3;
+
+    // Load the ball SDF.
+    auto tree = std::make_unique<RigidBodyTree<double>>();
+    AddModelInstancesFromSdfFile(
+        FindResourceOrThrow(
+            "drake/multibody/rigid_body_plant/test/ball.sdf"),
+        kQuaternion, nullptr /* weld to frame */, tree.get());
+
+    // Get the ball geometry element.
+    RigidBody<double>* ball = tree->FindBody("ball");
+    ball_element_ = *ball->collision_elements_begin();
+
+    // Add a geometry to the world
+    const double plane_len = 100;
+    multibody::AddFlatTerrainToWorld(tree.get(), plane_len, plane_len);
+
+    // Get the world geometry element.
+    RigidBody<double>& world = tree->world();
+    plane_element_ = *world.collision_elements_begin();
+
+    // Create the plant.
+    plant_ = std::make_unique<RigidBodyPlant<double>>(move(tree), step_size);
+
+    // Create the context.
+    context_ = plant_->CreateDefaultContext();
+  }
+
+  std::unique_ptr<RigidBodyPlant<double>> plant_;
+  std::unique_ptr<Context<double>> context_;
+  drake::multibody::collision::Element* plane_element_;
+  drake::multibody::collision::Element* ball_element_;
+};
+
+// Checks that the normal contact Jacobian is correct.
+TEST_F(RigidBodyPlantTimeSteppingDataTest, NormalJacobian) {
+  // Construct the contact; body A is the ball.
+  const double radius = 0.05;
+  std::vector<multibody::collision::PointPair<double>> contacts;
+  contacts.push_back(multibody::collision::PointPair<double>());
+
+  // Contact point expressed in A's frame (p_AoC_A).
+  contacts.back().ptA = Vector3<double>(0, 0, -radius);
+
+  // Contact point expressed in B's frame (p_BoC_B).
+  contacts.back().ptB = Vector3<double>(0, 0, 0);
+  contacts.back().normal = Vector3<double>(0, 0, 1);
+  contacts.back().elementA = ball_element_;
+  contacts.back().elementB = plane_element_;
+  contacts.back().distance = 0;
+  const int num_contacts = static_cast<int>(contacts.size());
+  ASSERT_EQ(num_contacts, 1);
+
+  // Set the coordinates.
+  const int num_positions = 7;
+  VectorX<double> q(num_positions);
+  q.setZero();
+  q[2] = radius;   // Location of ball c.o.m.
+  q[3] = 1.0;      // 'w' coordinate of quaternion.
+
+  // Set the tolerance value.
+  const double tol = 100 * std::numeric_limits<double>::epsilon();
+
+  // Construct the tangent Jacobian. Note that the velocity coordinate layout
+  // in RigidBodyPlant differs from the position coordinate layout: coordinates
+  // 0-2 correspond to angular velocity, while coordinates 3-5 correspond to
+  // translational velocity.
+  const int num_velocities = 6;
+  MatrixX<double> N(num_contacts, num_velocities);
+  for (int i = 0; i < num_velocities; ++i) {
+    N.col(i) = plant_->ContactNormalJacobianMult(
+        contacts, q, VectorX<double>::Unit(num_velocities, i));
+  }
+
+  // Check whether the Jacobian is correct. Since the normal points along +z,
+  // and the contact point is directly below the c.o.m., all entries but
+  // N(0,5) should be zero; that entry should be equal to +1.
+  EXPECT_NEAR(N(0, 0), 0.0, tol);
+  EXPECT_NEAR(N(0, 1), 0.0, tol);
+  EXPECT_NEAR(N(0, 2), 0.0, tol);
+  EXPECT_NEAR(N(0, 3), 0.0, tol);
+  EXPECT_NEAR(N(0, 4), 0.0, tol);
+  EXPECT_NEAR(N(0, 5), 1.0, tol);
+
+  // Compute the kinematics cache.
+  const VectorX<double> zero_gv = VectorX<double>::Zero(num_velocities);
+  auto kinematics_cache = plant_->get_rigid_body_tree().doKinematics(q,
+      zero_gv);
+
+  // Check whether the transpose Jacobian is correct.
+  MatrixX<double> NT(num_velocities, num_contacts);
+  NT.col(0) = plant_->TransposedContactNormalJacobianMult(
+      contacts, kinematics_cache, VectorX<double>::Unit(1, 0));
+  EXPECT_LT((NT.transpose() - N).norm(), tol);
+}
+
+// Checks that the tangential contact Jacobian is correct.
+TEST_F(RigidBodyPlantTimeSteppingDataTest, TangentJacobian) {
+  // Construct the contact; body A is the ball.
+  const double radius = 0.05;
+  std::vector<multibody::collision::PointPair<double>> contacts;
+  contacts.push_back(multibody::collision::PointPair<double>());
+
+  // Contact point expressed in A's frame (p_AoC_A).
+  contacts.back().ptA = Vector3<double>(0, 0, -radius);
+
+  // Contact point expressed in B's frame (p_BoC_B).
+  contacts.back().ptB = Vector3<double>(0, 0, 0);
+  contacts.back().normal = Vector3<double>(0, 0, 1);
+  contacts.back().elementA = ball_element_;
+  contacts.back().elementB = plane_element_;
+  contacts.back().distance = 0;
+  const int num_contacts = static_cast<int>(contacts.size());
+  ASSERT_EQ(num_contacts, 1);
+
+  // Set the coordinates. Coordinates 0-2 correspond to translation and
+  // coordinates 3-6 correspond to orientation.
+  const int num_positions = 7;
+  VectorX<double> q(num_positions);
+  q.setZero();
+  q[2] = radius;   // Location of ball c.o.m.
+  q[3] = 1.0;      // 'w' coordinate of quaternion.
+
+  // Set the tolerance value.
+  const double tol = 100 * std::numeric_limits<double>::epsilon();
+
+  // Set half the number of edges in the friction cone.
+  const std::vector<int> half_num_cone_edges = { 2 };
+
+  // Construct the tangent Jacobian. Note that the velocity coordinate layout
+  // in RigidBodyPlant differs from the position coordinate layout: coordinates
+  // 0-2 correspond to angular velocity, while coordinates 3-5 correspond to
+  // translational velocity.
+  const int num_velocities = 6;
+  MatrixX<double> F(num_contacts * half_num_cone_edges.front(), num_velocities);
+  for (int i = 0; i < num_velocities; ++i) {
+    F.col(i) = plant_->ContactTangentJacobianMult(
+        contacts, q, VectorX<double>::Unit(num_velocities, i),
+        half_num_cone_edges);
+  }
+
+  // Check whether the Jacobian is correct. Two vectors will be constructed in
+  // the plane defined by the normal +z. The vectors can be constructed
+  // arbitrarily, but should be orthogonal to each other and to the contact
+  // normal. Additionally, the 'z' torque component (the third entry of each
+  // row), and the 'x' and 'y' torque components should be orthogonal.
+  for (int i = 0; i < num_contacts * half_num_cone_edges.front(); ++i) {
+    EXPECT_NEAR(F(i, 2), 0.0, tol);
+    EXPECT_NEAR(F.row(i).segment(3, 3).dot(Vector3<double>(0, 0, 1)), 0.0, tol);
+  }
+  // Torque components must be perpendicular (since this is a friction pyramid).
+  EXPECT_NEAR(F.row(0).segment(0, 2).dot(F.row(1).segment(0, 2)), 0.0, tol);
+  // Force components must be perpendicular (since this is a friction pyramid).
+  EXPECT_NEAR(F.row(0).segment(3, 3).dot(F.row(1).segment(3, 3)), 0.0, tol);
+
+  // Compute the kinematics cache.
+  const VectorX<double> zero_gv = VectorX<double>::Zero(num_velocities);
+  auto kinematics_cache = plant_->get_rigid_body_tree().doKinematics(q,
+      zero_gv);
+
+  // Check whether the transpose Jacobian is correct.
+  MatrixX<double> FT(num_velocities,
+      num_contacts * half_num_cone_edges.front());
+  FT.col(0) = plant_->TransposedContactTangentJacobianMult(
+      contacts, kinematics_cache, VectorX<double>::Unit(2, 0),
+      half_num_cone_edges);
+  FT.col(1) = plant_->TransposedContactTangentJacobianMult(
+      contacts, kinematics_cache, VectorX<double>::Unit(2, 1),
+      half_num_cone_edges);
+  EXPECT_LT((FT.transpose() - F).norm(), tol);
+}
+
+
+GTEST_TEST(RigidBodyPlantTest, LinearizePendulumTest) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
+      FindResourceOrThrow(
+          "drake/examples/pendulum/Pendulum.urdf"),
+      drake::multibody::joints::kFixed, tree_ptr.get());
+
+  RigidBodyPlant<double> pendulum(move(tree_ptr));
+  auto context = pendulum.CreateDefaultContext();
+  auto& state = context->get_mutable_continuous_state_vector();
+  state.SetFromVector(Eigen::Vector2d{M_PI, 0.});
+  context->FixInputPort(0, Vector1d{0.});
+
+  std::unique_ptr<LinearSystem<double>> linearized_pendulum =
+      systems::Linearize(pendulum, *context);
+
+  // Note: the default value of the params are kept in sync with the urdf
+  // parameters by the urdfDynamicsTest in the pendulum directory.
+  examples::pendulum::PendulumParams<double> params;
+  Eigen::Matrix2d A;
+  Eigen::Vector2d B;
+  // clang-format off
+  A << 0., 1.,
+      params.gravity() / params.length(), -params.damping() /
+              (params.mass() * params.length() * params.length());
+  B << 0,
+       1 / (params.mass()* params.length() * params.length());
+  // clang-format on
+
+  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->A(), A, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->B(), B, kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->C(),
+                              Eigen::Matrix2d::Identity(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(linearized_pendulum->D(), Eigen::Vector2d::Zero(),
+                              kTolerance));
+}
+
+GTEST_TEST(RigidBodyPlantTest, TimesteppingAutoDiffThrows) {
+  auto tree_ptr = make_unique<RigidBodyTree<double>>();
+  drake::parsers::urdf::AddModelInstanceFromUrdfFile(
+      FindResourceOrThrow("drake/multibody/models/box.urdf"),
+      drake::multibody::joints::kQuaternion, nullptr /* weld to frame */,
+      tree_ptr.get());
+
+  const double timestep = 0.1;
+  RigidBodyPlant<AutoDiffXd> time_stepping_plant(move(tree_ptr), timestep);
+
+  auto time_stepping_context = time_stepping_plant.CreateDefaultContext();
+
+  auto updates = time_stepping_plant.AllocateDiscreteVariables();
+  EXPECT_THROW(time_stepping_plant.CalcDiscreteVariableUpdates(
+                   *time_stepping_context, updates.get()),
+               std::runtime_error);
+}
+
+// Check that CalcTimeDerivatives throws iff there is contact between the
+// ball and the terrain.
+GTEST_TEST(RigidBodyPlantTest, BallAutoDiffThrowsTest) {
+  auto tree = make_unique<RigidBodyTree<double>>();
+  AddModelInstancesFromSdfFile(
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/ball.sdf"),
+      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      tree.get());
+
+  // Add a geometry to the world
+  const double plane_len = 100;
+  multibody::AddFlatTerrainToWorld(tree.get(), plane_len, plane_len);
+
+  RigidBodyPlant<AutoDiffXd> plant(move(tree));
+
+  auto context = plant.CreateDefaultContext();
+
+  VectorBase<AutoDiffXd>& position = context->get_mutable_continuous_state()
+                                         .get_mutable_generalized_position();
+
+  auto derivatives = plant.AllocateTimeDerivatives();
+
+  // Set the position to be above the ground (no other variables should matter).
+  position.SetAtIndex(2, 10.);
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()));
+
+  // Set the position to be below the ground (no other variables should matter).
+  position.SetAtIndex(2, -10.);
+  EXPECT_THROW(plant.CalcTimeDerivatives(*context, derivatives.get()),
+               std::runtime_error);
+}
+
+// Check that the gradients are returned correctly for a simple system (a
+// ball) with contact geometry, and a potential contact with the terrain, but
+// which is not currently making contact.
+GTEST_TEST(RigidBodyPlantTest, BallAutoDiffTest) {
+  auto tree = make_unique<RigidBodyTree<double>>();
+  AddModelInstancesFromSdfFile(
+      FindResourceOrThrow("drake/multibody/rigid_body_plant/test/ball.sdf"),
+      multibody::joints::kRollPitchYaw, nullptr /* weld to frame */,
+      tree.get());
+
+  // Add a geometry to the world
+  const double plane_len = 100;
+  multibody::AddFlatTerrainToWorld(tree.get(), plane_len, plane_len);
+
+  RigidBodyPlant<double> plant(move(tree));
+
+  auto context = plant.CreateDefaultContext();
+
+  VectorBase<double>& position = context->get_mutable_continuous_state()
+                                     .get_mutable_generalized_position();
+
+  auto derivatives = plant.AllocateTimeDerivatives();
+
+  // Set the position to be above the ground (no other variables should matter).
+  position.SetAtIndex(2, 10.);
+
+  // Check the gradients.
+  std::unique_ptr<AffineSystem<double>> linearized_plant =
+      systems::FirstOrderTaylorApproximation(plant, *context);
+
+  Eigen::Matrix<double, 12, 12> A;
+  // clang-format off
+  A << Eigen::MatrixXd::Zero(6, 6), Eigen::MatrixXd::Identity(6, 6),
+       Eigen::MatrixXd::Zero(6, 12);
+  // clang-format on
+
+  const double kTolerance = 20 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(linearized_plant->A(), A, kTolerance));
+  EXPECT_EQ(linearized_plant->B().rows(), 12);
+  EXPECT_EQ(linearized_plant->B().cols(), 0);
+  EXPECT_TRUE(CompareMatrices(linearized_plant->C(),
+                              Eigen::MatrixXd::Identity(12, 12), kTolerance));
+  EXPECT_EQ(linearized_plant->D().rows(), 12);
+  EXPECT_EQ(linearized_plant->D().cols(), 0);
+}
+
+}  // namespace systems
+}  // namespace drake

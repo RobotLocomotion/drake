@@ -209,5 +209,15 @@ GTEST_TEST(EigenTypesTest, EigenPtr_Assignment) {
   EXPECT_FALSE(mutable_ptr);
 }
 
+GTEST_TEST(EigenTypesTest, FixedSizeVector) {
+  Vector<double, 2> col;
+  EXPECT_EQ(col.rows(), 2);
+  EXPECT_EQ(col.cols(), 1);
+
+  RowVector<double, 2> row;
+  EXPECT_EQ(row.rows(), 1);
+  EXPECT_EQ(row.cols(), 2);
+}
+
 }  // namespace
 }  // namespace drake

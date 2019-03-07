@@ -15,8 +15,11 @@ namespace trajectories {
 /// segments of time (delimited by `breaks`) to implement a trajectory that
 /// is represented by simpler logic in each segment or "piece".
 ///
-/// @tparam T is the scalar type.  Explicit instantions are provided for
-///  - double
+/// @tparam T is the scalar type.
+///
+/// Instantiated templates for the following kinds of T's are provided:
+///
+/// - double
 template <typename T>
 class PiecewiseTrajectory : public Trajectory<T> {
  public:

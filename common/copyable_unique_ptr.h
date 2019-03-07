@@ -19,6 +19,7 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
 namespace drake {
 
+// TODO(SeanCurtis-TRI): Consider extending this to add the Deleter as well.
 /** A smart pointer with deep copy semantics.
 
  This is _similar_ to `std::unique_ptr` in that it does not permit shared
@@ -40,11 +41,12 @@ namespace drake {
  Generally, the API is modeled as closely as possible on the C++ standard
  `std::unique_ptr` API and %copyable_unique_ptr<T> is interoperable with
  `unique_ptr<T>` wherever that makes sense. However, there are some differences:
-   1. It always uses a default deleter.
-   2. There is no array version.
-   3. To allow for future copy-on-write optimizations, there is a distinction
-   between writable and const access, the get() method is modified to return
-   only a const pointer, with get_mutable() added to return a writable pointer.
+
+ 1. It always uses a default deleter.
+ 2. There is no array version.
+ 3. To allow for future copy-on-write optimizations, there is a distinction
+    between writable and const access, the get() method is modified to return
+    only a const pointer, with get_mutable() added to return a writable pointer.
 
  This class is entirely inline and has no computational or space overhead except
  when copying is required; it contains just a single pointer and does no
@@ -78,6 +80,7 @@ namespace drake {
  referenced object, such that the new copy contains an instance of `Base`
  instead of `Derived`. Some mistakes that would lead to this degenerate
  behavior:
+
    - The `Base` class has a public copy constructor.
    - The `Base` class's Clone() implementation does not invoke the `Derived`
    class's implementation of a suitable virtual method.
@@ -102,11 +105,10 @@ namespace drake {
  @tparam T   The type of the contained object, which *must* be copyable as
              defined above. May be an abstract or concrete type.
  */
-// TODO(SeanCurtis-TRI): Consider extending this to add the Deleter as well.
 template <typename T>
 class copyable_unique_ptr : public std::unique_ptr<T> {
  public:
-  /** @name                    Constructors **/
+  /** @name                    Constructors */
   /**@{*/
 
   /** Default constructor stores a `nullptr`. No heap allocation is performed.

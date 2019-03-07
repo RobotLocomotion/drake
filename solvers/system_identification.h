@@ -32,7 +32,7 @@ namespace solvers {
  *    Polynomial, for instance because they are inputs or state variables
  *    of the system.
  *
- * Note: The term "system identification" used throughout here refers to the
+ * @note The term "system identification" used throughout here refers to the
  * process of simplifying the equations defining a physical system to a
  * minimum number of "lumped" parameters and then estimating the values of
  * those parameters based on empirical data.
@@ -71,7 +71,7 @@ class SystemIdentification {
 
   /// Same as GetLumpedParametersFromPolynomial but for multiple Polynomials.
   /**
-   * It is preferrable to use this if you have multiple Polynomials as it
+   * It is preferable to use this if you have multiple Polynomials as it
    * saves you from having to union the resulting LumpingMapType results
    * together.
    */

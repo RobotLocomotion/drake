@@ -61,6 +61,7 @@ drake_cc_library(
     name = "expect_throws_message",
     testonly = 1,
     hdrs = ["expect_throws_message.h"],
+    deps = ["//common:essential"],
 )
 
 drake_cc_library(
@@ -94,6 +95,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "limit_malloc",
+    testonly = 1,
+    srcs = ["limit_malloc.cc"],
+    hdrs = ["limit_malloc.h"],
+    copts = [
+        # We shouldn't call __tsan_func_entry from allocations during dl_init.
+        "-fno-sanitize=thread",
+    ],
+    tags = [
+        # The limit_malloc library be used sparingly, and not by default.
+        # Don't add this library into the ":test_utilities" package library.
+        "exclude_from_package",
+    ],
+    deps = [
+        # Keep it simple and don't depend on any Drake code.
+    ],
+)
+
+drake_cc_library(
     name = "symbolic_test_util",
     testonly = 1,
     hdrs = ["symbolic_test_util.h"],
@@ -114,6 +134,39 @@ drake_cc_library(
     deps = [
         "//common:text_logging_gflags",
         "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "limit_malloc_test",
+    args = [
+        # By default, we will skip the death tests because they only pass on
+        # non-Apple, non-Sanitizer, non-Memcheck builds.  We will explicitly
+        # run them (below) for the configurations that succeed.
+        "--gtest_filter=-*DeathTest*",
+    ],
+    deps = [
+        ":limit_malloc",
+    ],
+)
+
+# N.B. All sh_tests are excluded from dynamic_analysis (sanitizer and memcheck)
+# build by default; these death tests are skipped under those configurations.
+sh_test(
+    name = "limit_malloc_death_test",
+    srcs = [":limit_malloc_test"],
+    args = select({
+        "//tools/cc_toolchain:apple": [
+            # The code to enforce malloc limits is not implemented on macOS.
+            "--gtest_filter=-*",
+        ],
+        "//conditions:default": [
+            # Run only the death tests, not the plain tests.
+            "--gtest_filter=*DeathTest*",
+        ],
+    }),
+    data = [
+        ":limit_malloc_test",
     ],
 )
 

@@ -17,8 +17,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
     : observed_system_(std::move(observed_system)),
       observer_gain_(observer_gain),
       observed_system_context_(std::move(observed_system_context)),
-      observed_system_output_(
-          observed_system_->AllocateOutput(*observed_system_context_)),
+      observed_system_output_(observed_system_->AllocateOutput()),
       observed_system_derivatives_(
           observed_system_->AllocateTimeDerivatives()) {
   DRAKE_DEMAND(observed_system_ != nullptr);
@@ -84,7 +83,7 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
     // TODO(russt): Avoid this dynamic allocation by fixing the input port once
     // and updating it here.
     observed_system_context_->FixInputPort(
-        0, this->EvalVectorInput(context, 1)->CopyToVector());
+        0, this->get_input_port(1).Eval(context));
   }
   // Set observed system state.
   observed_system_context_->get_mutable_continuous_state_vector().SetFrom(
@@ -97,7 +96,7 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
                                         observed_system_derivatives_.get());
 
   // Get the measurements.
-  auto y = this->EvalVectorInput(context, 0)->CopyToVector();
+  auto y = this->get_input_port(0).Eval(context);
   auto yhat = observed_system_output_->GetMutableVectorData(0)->CopyToVector();
 
   // Add in the observed gain terms.

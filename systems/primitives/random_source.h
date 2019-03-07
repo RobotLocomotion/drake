@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/random.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -14,12 +15,12 @@ namespace systems {
 
 namespace internal {
 
-template <typename Generator = std::mt19937>
+template <typename Generator = RandomGenerator>
 typename Generator::result_type generate_unique_seed();
 
 /// State for a given random distribution and generator. This owns both the
 /// distribution and the generator.
-template <typename Distribution, typename Generator = std::mt19937>
+template <typename Distribution, typename Generator = RandomGenerator>
 class RandomState {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomState)
@@ -62,8 +63,8 @@ class RandomState {
 /// ExponentialRandomSource.
 ///
 /// @ingroup primitive_systems
-template <typename Distribution, typename Generator = std::mt19937>
-class RandomSource : public LeafSystem<double> {
+template <typename Distribution, typename Generator = RandomGenerator>
+class RandomSource final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RandomSource)
 
@@ -87,7 +88,7 @@ class RandomSource : public LeafSystem<double> {
   void DoCalcUnrestrictedUpdate(
       const Context<double>&,
       const std::vector<const UnrestrictedUpdateEvent<double>*>&,
-      State<double>* state) const override {
+      State<double>* state) const final {
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
     auto& updates = state->get_mutable_discrete_state();
@@ -96,13 +97,13 @@ class RandomSource : public LeafSystem<double> {
     }
   }
 
-  std::unique_ptr<AbstractValues> AllocateAbstractState() const override {
+  std::unique_ptr<AbstractValues> AllocateAbstractState() const final {
     return std::make_unique<AbstractValues>(
         AbstractValue::Make(RandomState(seed_)));
   }
 
   void SetDefaultState(const Context<double>& context,
-                       State<double>* state) const override {
+                       State<double>* state) const final {
     unused(context);
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
@@ -114,7 +115,7 @@ class RandomSource : public LeafSystem<double> {
   }
 
   void SetRandomState(const Context<double>& context, State<double>* state,
-                      RandomGenerator* generator) const override {
+                      RandomGenerator* generator) const final {
     unused(context);
     auto& random_state =
         state->template get_mutable_abstract_state<RandomState>(0);
@@ -136,7 +137,7 @@ class RandomSource : public LeafSystem<double> {
 
 }  // namespace internal
 
-/// Generates uniformly distributed random numbers in the interval [0,1].
+/// Generates uniformly distributed random numbers in the interval [0.0, 1.0).
 ///
 /// @see internal::RandomSource
 /// @ingroup primitive_systems
@@ -160,7 +161,7 @@ typedef internal::RandomSource<std::exponential_distribution<double>>
     ExponentialRandomSource;
 
 /// For each subsystem input port in @p builder that is (a) not yet connected
-/// and (b) labeled as random in the InputPortDescriptor, this method will add a
+/// and (b) labeled as random in the InputPort, this method will add a
 /// new RandomSource system of the appropriate type and connect it to the
 /// subsystem input port.
 ///

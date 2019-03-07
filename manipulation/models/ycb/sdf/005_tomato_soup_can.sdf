@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<sdf version='1.6'>
+<model name="005_tomato_soup_can">
+  <!--
+    Axes:
+      +X - Left, when facing front (radial)
+      +Y - Towards Bottom (length of cylinder)
+      +Z - Towards Front (radial, with label)
+    Origin:
+      (0, 0, 0) at the center of the can.
+  -->
+
+  <!--
+    The inertial properties were calculated from the mass and dimensions given
+    with the YCB dataset. The tomato soup can is treated as a constant density
+    cylinder, which matches the collision shape.
+  -->
+  <link name="base_link_soup">
+    <inertial>
+      <mass>0.349000</mass>
+      <inertia>
+        <ixx>0.000402</ixx>
+        <ixy>0</ixy>
+        <ixz>0</ixz>
+        <iyy>0.000200</iyy>
+        <iyz>0</iyz>
+        <izz>0.000402</izz>
+      </inertia>
+    </inertial>
+
+    <visual name='base_link_soup'>
+      <pose frame=''>-0.0018  0.051 -0.084 1.57 0.13 0.0</pose>
+      <geometry>
+        <mesh>
+          <uri>../meshes/005_tomato_soup_can_textured.obj</uri>
+        </mesh>
+      </geometry>
+    </visual>
+
+    <!--
+      This places contact spheres on the corners of the visual volume and a
+      *slightly* smaller inset contact volume (centered on the visual origin).
+      This accounts for issues in the contact computation providing stable table
+      contact *and* supports grasping.
+      When the volume is in stable contact with the ground plane, the edge
+      spheres will provide fixed contact points (simulating distributed contact
+      points around the face).  However, for arbitrary grip configuration, the
+      slightly inset volume will provide contact with a *slight* offset (in
+      this case a deviation of 0.001 m from the visual surface).
+     -->
+    <collision name='box_collision'>
+      <pose>0 0 0 -1.57 0 0</pose>
+      <geometry>
+        <cylinder>
+          <radius>0.031850</radius>
+          <length>0.099900</length>
+        </cylinder>
+      </geometry>
+      <material>
+        <diffuse>0 1 0 1.0</diffuse>
+      </material>
+    </collision>
+
+    <collision name='point_collision1'>
+      <pose>0.016425 0.050450 0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision2'>
+      <pose>0.016425 -0.050450 0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision3'>
+      <pose>-0.016425 0.050450 0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision4'>
+      <pose>-0.016425 -0.050450 0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision5'>
+      <pose>0.016425 0.050450 -0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision6'>
+      <pose>0.016425 -0.050450 -0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision7'>
+      <pose>-0.016425 0.050450 -0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+    <collision name='point_collision8'>
+      <pose>-0.016425 -0.050450 -0.016425 0 0 0 </pose>
+      <geometry>
+        <sphere><radius>1e-7</radius></sphere>
+      </geometry>
+    </collision>
+
+   </link>
+</model>
+</sdf>

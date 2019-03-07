@@ -292,8 +292,7 @@ std::function<Expression(const Variable& x)>UnaryOpToFunction(UnaryTestOp op) {
     case Ceil:  return [](const Variable& x) { return ceil(x); };
     case Floor: return [](const Variable& x) { return floor(x); };
   }
-  // Should not be reachable.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 class SymbolicUnificationTestUnary
@@ -344,7 +343,7 @@ std::function<Expression(const Variable&, const Variable&)>
       return [](const Variable& x, const Variable& y) { return atan2(x, y); };
   }
   // Should not be reachable.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 class SymbolicUnificationTestBinary

@@ -1,4 +1,5 @@
 #include <memory>
+#include <string>
 
 #include <gflags/gflags.h>
 #include "fmt/ostream.h"
@@ -9,23 +10,21 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/multibody_tree/joints/prismatic_joint.h"
-#include "drake/multibody/multibody_tree/multibody_plant/multibody_plant.h"
-#include "drake/multibody/multibody_tree/parsing/multibody_plant_sdf_parser.h"
-#include "drake/multibody/multibody_tree/uniform_gravity_field_element.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/contact_results.h"
+#include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
-#include "drake/systems/lcm/lcm_publisher_system.h"
-#include "drake/systems/lcm/serializer.h"
 #include "drake/systems/primitives/sine.h"
-#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace examples {
@@ -41,15 +40,13 @@ using drake::lcm::DrakeLcm;
 using drake::math::RollPitchYaw;
 using drake::math::RotationMatrix;
 using drake::multibody::Body;
-using drake::multibody::multibody_plant::CoulombFriction;
-using drake::multibody::multibody_plant::MultibodyPlant;
-using drake::multibody::parsing::AddModelFromSdfFile;
+using drake::multibody::CoulombFriction;
+using drake::multibody::ConnectContactResultsToDrakeVisualizer;
+using drake::multibody::MultibodyPlant;
+using drake::multibody::Parser;
 using drake::multibody::PrismaticJoint;
 using drake::multibody::UniformGravityFieldElement;
 using drake::systems::ImplicitEulerIntegrator;
-using drake::systems::lcm::LcmPublisherSystem;
-using drake::systems::lcm::Serializer;
-using drake::systems::rendering::PoseBundleToDrawMessage;
 using drake::systems::RungeKutta2Integrator;
 using drake::systems::RungeKutta3Integrator;
 using drake::systems::SemiExplicitEulerIntegrator;
@@ -78,6 +75,9 @@ DEFINE_double(max_time_step, 1.0e-3,
               "is used.");
 DEFINE_double(accuracy, 1.0e-2, "Sets the simulation accuracy for variable step"
               "size integrators with error control.");
+DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
+    "discrete system with periodic updates of period 'max_time_step'."
+    "If 'false', the plant is modeled as a continuous system.");
 
 // Contact parameters
 DEFINE_double(penetration_allowance, 1.0e-2,
@@ -109,9 +109,9 @@ DEFINE_double(gripper_force, 10, "The force to be applied by the gripper. [N]. "
               "grip_width.");
 
 // Parameters for shaking the mug.
-DEFINE_double(amplitude, 0, "The amplitude of the harmonic oscillations "
+DEFINE_double(amplitude, 0.15, "The amplitude of the harmonic oscillations "
               "carried out by the gripper. [m].");
-DEFINE_double(frequency, 0, "The frequency of the harmonic oscillations "
+DEFINE_double(frequency, 2.0, "The frequency of the harmonic oscillations "
               "carried out by the gripper. [Hz].");
 
 // The pad was measured as a torus with the following major and minor radii.
@@ -123,13 +123,11 @@ const double kPadMinorRadius = 6e-3;   // 6 mm.
 // small spheres, approximates a torus attached to the finger.
 //
 // @param[in] plant the MultiBodyPlant in which to add the pads.
-// @param[in] scene_graph the associated SceneGraph.
 // @param[in] pad_offset the ring offset along the x-axis in the finger
 // coordinate frame, i.e., how far the ring protrudes from the center of the
 // finger.
 // @param[in] finger the Body representing the finger
 void AddGripperPads(MultibodyPlant<double>* plant,
-                    SceneGraph<double>* scene_graph,
                     const double pad_offset, const Body<double>& finger) {
   const int sample_count = FLAGS_ring_samples;
   const double sample_rotation = FLAGS_ring_orient * M_PI / 180.0;  // radians.
@@ -156,8 +154,12 @@ void AddGripperPads(MultibodyPlant<double>* plant,
     CoulombFriction<double> friction(
         FLAGS_ring_static_friction, FLAGS_ring_static_friction);
 
-    plant->RegisterCollisionGeometry(
-        finger, X_FS, Sphere(kPadMinorRadius), friction, scene_graph);
+    plant->RegisterCollisionGeometry(finger, X_FS, Sphere(kPadMinorRadius),
+                                     "collision" + std::to_string(i), friction);
+
+    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
+    plant->RegisterVisualGeometry(finger, X_FS, Sphere(kPadMinorRadius),
+                                  "visual" + std::to_string(i), red);
   }
 }
 
@@ -167,14 +169,21 @@ int do_main() {
   SceneGraph<double>& scene_graph = *builder.AddSystem<SceneGraph>();
   scene_graph.set_name("scene_graph");
 
-  MultibodyPlant<double>& plant = *builder.AddSystem<MultibodyPlant>();
+  DRAKE_DEMAND(FLAGS_max_time_step > 0);
+
+  MultibodyPlant<double>& plant =
+      FLAGS_time_stepping ?
+      *builder.AddSystem<MultibodyPlant>(FLAGS_max_time_step) :
+      *builder.AddSystem<MultibodyPlant>();
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  Parser parser(&plant);
   std::string full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_gripper.sdf");
-  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  parser.AddModelFromFile(full_name);
 
   full_name =
       FindResourceOrThrow("drake/examples/simple_gripper/simple_mug.sdf");
-  AddModelFromSdfFile(full_name, &plant, &scene_graph);
+  parser.AddModelFromFile(full_name);
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the
@@ -189,8 +198,7 @@ int do_main() {
   } else if (axis.isApprox(Vector3d::UnitX())) {
     fmt::print("Gripper motions forced in the horizontal direction.\n");
     // Add gravity to the model.
-    plant.AddForceElement<UniformGravityFieldElement>(
-        -9.81 * Vector3<double>::UnitZ());
+    plant.AddForceElement<UniformGravityFieldElement>();
   } else {
     throw std::runtime_error(
         "Only horizontal or vertical motions of the gripper are supported for "
@@ -209,17 +217,17 @@ int do_main() {
     // We then fix everything to the right finger and leave the left finger
     // "free" with no applied forces (thus we see it not moving).
     const double finger_width = 0.007;  // From the visual in the SDF file.
-    AddGripperPads(&plant, &scene_graph, -pad_offset, right_finger);
-    AddGripperPads(&plant, &scene_graph,
+    AddGripperPads(&plant, -pad_offset, right_finger);
+    AddGripperPads(&plant,
                    -(FLAGS_grip_width + finger_width) + pad_offset,
                    right_finger);
   } else {
-    AddGripperPads(&plant, &scene_graph, -pad_offset, right_finger);
-    AddGripperPads(&plant, &scene_graph, +pad_offset, left_finger);
+    AddGripperPads(&plant, -pad_offset, right_finger);
+    AddGripperPads(&plant, +pad_offset, left_finger);
   }
 
   // Now the model is complete.
-  plant.Finalize(&scene_graph);
+  plant.Finalize();
 
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
@@ -247,28 +255,22 @@ int do_main() {
   DRAKE_DEMAND(plant.num_actuators() == 2);
   DRAKE_DEMAND(plant.num_actuated_dofs() == 2);
 
-  // Boilerplate used to connect the plant to a SceneGraph for
-  // visualization.
-  DrakeLcm lcm;
-  const PoseBundleToDrawMessage& converter =
-      *builder.template AddSystem<PoseBundleToDrawMessage>();
-  LcmPublisherSystem& publisher =
-      *builder.template AddSystem<LcmPublisherSystem>(
-          "DRAKE_VIEWER_DRAW",
-          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(), &lcm);
-
   // Sanity check on the availability of the optional source id before using it.
   DRAKE_DEMAND(!!plant.get_source_id());
 
-  builder.Connect(
-      plant.get_geometry_poses_output_port(),
-      scene_graph.get_source_pose_port(plant.get_source_id().value()));
   builder.Connect(scene_graph.get_query_output_port(),
                   plant.get_geometry_query_input_port());
 
-  builder.Connect(scene_graph.get_pose_bundle_output_port(),
-                  converter.get_input_port(0));
-  builder.Connect(converter, publisher);
+  DrakeLcm lcm;
+  geometry::ConnectDrakeVisualizer(&builder, scene_graph, &lcm);
+  builder.Connect(
+      plant.get_geometry_poses_output_port(),
+      scene_graph.get_source_pose_port(plant.get_source_id().value()));
+
+  // Publish contact results for visualization.
+  // (Currently only available when time stepping.)
+  if (FLAGS_time_stepping)
+    ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   // Sinusoidal force input. We want the gripper to follow a trajectory of the
   // form x(t) = X0 * sin(ω⋅t). By differentiating once, we can compute the
@@ -280,7 +282,7 @@ int do_main() {
   // supports it.
 
   // The mass of the gripper in simple_gripper.sdf.
-  // TODO(amcastro-tri): we should call MultibodyTree::CalcMass() here.
+  // TODO(amcastro-tri): we should call MultibodyPlant::CalcMass() here.
   const double mass = 1.0890;  // kg.
   const double omega = 2 * M_PI * FLAGS_frequency;  // rad/s.
   const double x0 = FLAGS_amplitude;  // meters.
@@ -303,16 +305,12 @@ int do_main() {
   builder.Connect(harmonic_force.get_output_port(0),
                   plant.get_actuation_input_port());
 
-  // Last thing before building the diagram; dispatch the message to load
-  // geometry.
-  geometry::DispatchLoadMessage(scene_graph);
-
-  // And build the Diagram:
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+  auto diagram = builder.Build();
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
+  diagram_context->EnableCaching();
   diagram->SetDefaultContext(diagram_context.get());
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
@@ -328,10 +326,10 @@ int do_main() {
   const Body<double>& mug = plant.GetBodyByName("main_body");
 
   // Initialize the mug pose to be right in the middle between the fingers.
-  std::vector<Isometry3d> X_WB_all;
-  plant.model().CalcAllBodyPosesInWorld(plant_context, &X_WB_all);
-  const Vector3d& p_WBr = X_WB_all[right_finger.index()].translation();
-  const Vector3d& p_WBl = X_WB_all[left_finger.index()].translation();
+  const Vector3d& p_WBr = plant.EvalBodyPoseInWorld(
+      plant_context, right_finger).translation();
+  const Vector3d& p_WBl = plant.EvalBodyPoseInWorld(
+      plant_context, left_finger).translation();
   const double mug_y_W = (p_WBr(1) + p_WBl(1)) / 2.0;
 
   Isometry3d X_WM;
@@ -340,7 +338,7 @@ int do_main() {
                (FLAGS_rz * M_PI / 180) + M_PI);
   X_WM.linear() = RotationMatrix<double>(RollPitchYaw<double>(rpy)).matrix();
   X_WM.translation() = Vector3d(0.0, mug_y_W, 0.0);
-  plant.model().SetFreeBodyPoseOrThrow(mug, X_WM, &plant_context);
+  plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // Set the initial height of the gripper and its initial velocity so that with
   // the applied harmonic forces it continues to move in a harmonic oscillation
@@ -351,6 +349,7 @@ int do_main() {
   // Set up simulator.
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>* integrator{nullptr};
+
   if (FLAGS_integration_scheme == "implicit_euler") {
     integrator =
         simulator.reset_integrator<ImplicitEulerIntegrator<double>>(
@@ -384,17 +383,24 @@ int do_main() {
   simulator.Initialize();
   simulator.StepTo(FLAGS_simulation_time);
 
-  // Print some stats for variable time step integrators.
-  fmt::print("Integrator stats:\n");
-  fmt::print("Number of time steps taken = {:d}\n",
-             integrator->get_num_steps_taken());
-  if (!integrator->get_fixed_step_mode()) {
-    fmt::print("Initial time step taken = {:10.6g} s\n",
-               integrator->get_actual_initial_step_size_taken());
-    fmt::print("Largest time step taken = {:10.6g} s\n",
-               integrator->get_largest_step_size_taken());
-    fmt::print("Smallest adapted step size = {:10.6g} s\n",
-               integrator->get_smallest_adapted_step_size_taken());
+  if (FLAGS_time_stepping) {
+    fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
+    fmt::print("Number of time steps taken = {:d}\n",
+               simulator.get_num_steps_taken());
+  } else {
+    fmt::print("Stats for integrator {}:\n", FLAGS_integration_scheme);
+    fmt::print("Number of time steps taken = {:d}\n",
+               integrator->get_num_steps_taken());
+    if (!integrator->get_fixed_step_mode()) {
+      fmt::print("Initial time step taken = {:10.6g} s\n",
+                 integrator->get_actual_initial_step_size_taken());
+      fmt::print("Largest time step taken = {:10.6g} s\n",
+                 integrator->get_largest_step_size_taken());
+      fmt::print("Smallest adapted step size = {:10.6g} s\n",
+                 integrator->get_smallest_adapted_step_size_taken());
+      fmt::print("Number of steps shrunk due to error control = {:d}\n",
+                 integrator->get_num_step_shrinkages_from_error_control());
+    }
   }
 
   return 0;

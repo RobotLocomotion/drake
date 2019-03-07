@@ -1,6 +1,8 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
 def pypi_archive(
         name,
         package = None,
@@ -12,7 +14,7 @@ def pypi_archive(
         **kwargs):
     """Downloads and unpacks a PyPI package archive and adds it to the WORKSPACE
     as an external. Additional keyword arguments (except "urls") will be passed
-    through to the native call of "new_http_archive."
+    through to the call of "http_archive."
 
     Example:
         Download and use the "foo" package, version 1.2.3, hosted on PyPI at
@@ -99,10 +101,11 @@ def pypi_archive(
         for x in mirrors.get("pypi")
     ]
 
-    native.new_http_archive(
+    http_archive(
         name = name,
         build_file = build_file,
         sha256 = sha256,
         strip_prefix = strip_prefix,
         urls = urls,
-        **kwargs)
+        **kwargs
+    )

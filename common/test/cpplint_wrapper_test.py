@@ -6,8 +6,14 @@ import subprocess
 import sys
 import unittest
 
+import six
+
 
 class TestStringMethods(unittest.TestCase):
+
+    if six.PY2:
+        assertRegex = unittest.TestCase.assertRegexpMatches
+
     def setUp(self):
         self.cpplint_wrapper_exe, self.valid_header_filename = sys.argv[1:]
         self.assertTrue(
@@ -21,16 +27,16 @@ class TestStringMethods(unittest.TestCase):
         try:
             output = subprocess.check_output(
                 [sys.executable, self.cpplint_wrapper_exe] + args,
-                stderr=subprocess.STDOUT)
+                stderr=subprocess.STDOUT).decode('utf8')
             returncode = 0
         except subprocess.CalledProcessError as e:
-            output = e.output
+            output = e.output.decode('utf8')
             returncode = e.returncode
         self.assertEqual(returncode, expected_exitcode,
                          "output was:\n" + output)
         if expected_regexps is not None:
             for item in expected_regexps:
-                self.assertRegexpMatches(output, item)
+                self.assertRegex(output, item)
 
     def test_help(self):
         self.run_and_expect(
@@ -51,22 +57,18 @@ class TestStringMethods(unittest.TestCase):
             [r"Done processing .*/eigen_types.h",
              r"TOTAL 1 files passed"])
 
-    def test_true_positive(self):
-        # Test that the header is clean by default.
-        filename = (
-            "external/styleguide/cpplint/cpplint_test_header.h")
+    def test_pass_through_arguments(self):
+        filename = self.valid_header_filename
         self.run_and_expect(
             [filename],
             0,
-            [r"Checking \.+\r?\n",
-             r"TOTAL 1 files passed"])
-        # Test that pass-through arguments works.
+            [r"TOTAL 1 files passed"])
         self.run_and_expect(
             [filename, "--", "--linelength=40"],
             1,
             [r"Checking \.+\r?\n",
              r"TOTAL 1 files checked",
-             r"found [123] warnings",
+             r"found [1-9][0-9]* warnings",
              r"whitespace/line_length"])
 
     def test_ignored_extension(self):

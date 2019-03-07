@@ -40,6 +40,37 @@ as described in
 
 *Source Code:* https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization
 
+Perception
+==========
+
+Drake aims to have a wide suite of simulated sensors. As these tools
+expand, we'll include video highlighting their functionality.
+
+This video is a sneak preview of an RGB sensor model using an advanced
+illumination model provided by `OSPRay <https://www.ospray.org/>`_. This video
+was created by inserting a virtual RGB camera into the simulation (at an
+arbitrary fixed position in the simulation's world frame) of the controlled
+`Kuka arm <https://github.com/RobotLocomotion/drake/tree/master/examples/kuka_iiwa_arm/dev/monolithic_pick_and_place>`_.
+The material properties are simple to highlight the impact of the lighting model.
+(October 2018)
+
+.. raw :: html
+
+  <iframe width="800" height="224" src="https://www.youtube.com/embed/UKxytyIJmq8" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+
+Task and Motion Planning
+========================
+
+Caelan Garrett has examples using Drake in his STRIPStream/PDDLStream
+task-and-motion-planning framework.
+
+.. raw :: html
+
+  <img height="224" src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png"/>
+
+*Source Code:* https://github.com/caelan/pddlstream#drake
+
 
 Third Party Documentation / Tutorials
 =====================================

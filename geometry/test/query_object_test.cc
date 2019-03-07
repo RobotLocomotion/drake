@@ -6,6 +6,8 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_context.h"
+#include "drake/geometry/geometry_frame.h"
+#include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 
 namespace drake {
@@ -25,8 +27,7 @@ class QueryObjectTester {
   static std::unique_ptr<QueryObject<T>> MakeQueryObject(
       const GeometryContext<T>* context, const SceneGraph<T>* scene_graph) {
     auto q = std::unique_ptr<QueryObject<T>>(new QueryObject<T>());
-    q->scene_graph_ = scene_graph;
-    q->context_ = context;
+    q->set(context, scene_graph);
     return q;
   }
 
@@ -50,6 +51,7 @@ class QueryObjectTester {
 
 namespace {
 
+using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
 
@@ -86,6 +88,11 @@ TEST_F(QueryObjectTest, CopySemantics) {
   QOT::expect_default(from_live);
 }
 
+// NOTE: This doesn't test the specific queries; GeometryQuery simply wraps
+// the class (SceneGraph) that actually *performs* those queries. The
+// correctness of those queries is handled in geometry_state_test.cc. The
+// wrapper merely confirms that the state is correct and that wrapper
+// functionality is tested in DefaultQueryThrows.
 TEST_F(QueryObjectTest, DefaultQueryThrows) {
   unique_ptr<QueryObject<double>> default_object =
       QOT::MakeQueryObject<double>();
@@ -98,18 +105,38 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
   EXPECT_DEFAULT_ERROR(QOT::ThrowIfDefault(*default_object));
 
   // Enumerate *all* queries to confirm they throw the proper exception.
-  EXPECT_DEFAULT_ERROR(default_object->GetFrameId(GeometryId::get_new_id()));
-  EXPECT_DEFAULT_ERROR(default_object->GetSourceName(SourceId::get_new_id()));
   EXPECT_DEFAULT_ERROR(default_object->ComputePointPairPenetration());
+  EXPECT_DEFAULT_ERROR(
+      default_object->ComputeSignedDistancePairwiseClosestPoints());
+  EXPECT_DEFAULT_ERROR(
+      default_object->ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
 
 #undef EXPECT_DEFAULT_ERROR
 }
 
-// NOTE: This doesn't test the specific queries; GeometryQuery simply wraps
-// the class (SceneGraph) that actually *performs* those queries. The
-// correctness of those queries is handled in geometry_state_test.cc. The
-// wrapper merely confirms that the state is correct and that wrapper
-// functionality is tested in DefaultQueryThrows.
+// Confirms the inspector returned by the QueryObject is "correct" (in that
+// it accesses the correct state).
+GTEST_TEST(QueryObjectInspectTest, CreateValidInspector) {
+  SceneGraph<double> scene_graph;
+  SourceId source_id = scene_graph.RegisterSource("source");
+  auto identity = Isometry3<double>::Identity();
+  FrameId frame_id =
+      scene_graph.RegisterFrame(source_id, GeometryFrame("frame", identity));
+  GeometryId geometry_id = scene_graph.RegisterGeometry(
+      source_id, frame_id, make_unique<GeometryInstance>(
+                               identity, make_unique<Sphere>(1.0), "sphere"));
+  unique_ptr<Context<double>> context = scene_graph.AllocateContext();
+  auto geo_context = dynamic_cast<GeometryContext<double>*>(context.get());
+  unique_ptr<QueryObject<double>> query_object =
+      QueryObjectTester::MakeQueryObject<double>(geo_context, &scene_graph);
+
+  const SceneGraphInspector<double>& inspector = query_object->inspector();
+
+  // Perform a single query to confirm that the inspector has access to the
+  // state uniquely populated above (guaranteed via the uniqueness of frame and
+  // geometry identifiers).
+  EXPECT_EQ(inspector.GetFrameId(geometry_id), frame_id);
+}
 
 }  // namespace
 }  // namespace geometry

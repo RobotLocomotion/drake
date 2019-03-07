@@ -1,0 +1,130 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_package_library",
+)
+load(
+    "@drake//attic:build_macros.bzl",
+    drake_cc_binary = "attic_drake_cc_binary",
+    drake_cc_googletest = "attic_drake_cc_googletest",
+    drake_cc_library = "attic_drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "parsers",
+    deps = [
+        ":find_files",
+        ":parsing",
+    ],
+)
+
+drake_cc_library(
+    name = "parsing",
+    srcs = [
+        "model_instance_id_table.cc",
+        "parser_common.cc",
+        "sdf_parser.cc",
+        "urdf_parser.cc",
+        "xml_util.cc",
+    ],
+    hdrs = [
+        "model_instance_id_table.h",
+        "parser_common.h",
+        "sdf_parser.h",
+        "urdf_parser.h",
+        "xml_util.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":find_files",
+        "//attic/multibody:rigid_body_tree",
+        "//attic/multibody/rigid_body_plant:compliant_material",
+        "//multibody/parsing:detail_misc",
+        "@tinydir",
+        "@tinyxml2",
+    ],
+)
+
+drake_cc_library(
+    name = "find_files",
+    hdrs = [
+        "package_map.h",
+    ],
+    deps = [
+        "//multibody/parsing:package_map",
+    ],
+)
+
+drake_cc_googletest(
+    name = "compliant_material_parse_test",
+    deps = [":parsers"],
+)
+
+drake_cc_googletest(
+    name = "parsers_frames_test",
+    srcs = ["test/parsers_frames_test/parsers_frames_test.cc"],
+    data = [":test_models"],
+    deps = [
+        ":parsers",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "urdf_parser_test",
+    srcs = ["test/urdf_parser_test.cc"],
+    data = [
+        "//examples/atlas:models",
+        "//multibody/parsing:test_models",
+    ],
+    deps = [
+        ":parsers",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rbt_sdf_parser_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":parsers",
+        "//common:find_resource",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "xml_util_test",
+    deps = [
+        ":parsers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sdformat_test",
+    srcs = ["test/sdformat_test.cc"],
+    deps = [
+        "@sdformat",
+    ],
+)
+
+filegroup(
+    name = "test_models",
+    testonly = 1,
+    srcs = glob([
+        "test/**/*.obj",
+        "test/**/*.sdf",
+        "test/**/*.urdf",
+        "test/**/*.xml",
+    ]),
+)
+
+add_lint_tests(
+    cpplint_data = ["//attic:CPPLINT.cfg"],
+)

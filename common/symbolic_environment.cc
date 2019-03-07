@@ -2,6 +2,7 @@
 #include <cmath>
 #include <initializer_list>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -114,5 +115,39 @@ ostream& operator<<(ostream& os, const Environment& env) {
   }
   return os;
 }
+
+Environment PopulateRandomVariables(Environment env, const Variables& variables,
+                                    RandomGenerator* const random_generator) {
+  DRAKE_DEMAND(random_generator != nullptr);
+  for (const Variable& var : variables) {
+    const auto it = env.find(var);
+    if (it != env.end()) {
+      // The variable is already assigned by env, no need to sample.
+      continue;
+    }
+    switch (var.get_type()) {
+      case Variable::Type::CONTINUOUS:
+      case Variable::Type::BINARY:
+      case Variable::Type::BOOLEAN:
+      case Variable::Type::INTEGER:
+        // Do nothing for non-random variables.
+        break;
+      case Variable::Type::RANDOM_UNIFORM:
+        env.insert(var, std::uniform_real_distribution<double>{
+                            0.0, 1.0}(*random_generator));
+        break;
+      case Variable::Type::RANDOM_GAUSSIAN:
+        env.insert(
+            var, std::normal_distribution<double>{0.0, 1.0}(*random_generator));
+        break;
+      case Variable::Type::RANDOM_EXPONENTIAL:
+        env.insert(
+            var, std::exponential_distribution<double>{1.0}(*random_generator));
+        break;
+    }
+  }
+  return env;
+}
+
 }  // namespace symbolic
 }  // namespace drake

@@ -10,6 +10,7 @@
 #include "drake/solvers/integer_optimization_util.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/rotation_constraint.h"
+#include "drake/solvers/solve.h"
 
 using drake::symbolic::Expression;
 namespace drake {
@@ -162,9 +163,9 @@ TEST_P(TestBoxSphereCorner, TestOrthogonal) {
   prog_.AddLinearCost(R_.col(free_axis0).dot(box_pt) +
                       R_.col(free_axis1).dot(box_pt));
 
-  SolutionResult sol_result = prog_.Solve();
-  EXPECT_EQ(sol_result, SolutionResult::kSolutionFound);
-  const auto R_val = prog_.GetSolution(R_);
+  const auto result = Solve(prog_);
+  EXPECT_TRUE(result.is_success());
+  const auto R_val = result.GetSolution(R_);
   std::vector<Eigen::Matrix3d> Bpos_val(3);
   std::vector<Eigen::Matrix3d> Bneg_val(3);
   EXPECT_NEAR(R_val.col(free_axis0).dot(box_pt), 0, 1E-4);

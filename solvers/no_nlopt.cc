@@ -7,15 +7,16 @@
 namespace drake {
 namespace solvers {
 
-bool NloptSolver::available() const {
-  return false;
-}
+bool NloptSolver::is_available() { return false; }
 
-SolutionResult NloptSolver::Solve(MathematicalProgram&) const {
+void NloptSolver::DoSolve(
+    const MathematicalProgram&,
+    const Eigen::VectorXd&,
+    const SolverOptions&,
+    MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The Nlopt bindings were not compiled.  You'll need to use a different "
       "solver.");
 }
-
 }  // namespace solvers
 }  // namespace drake

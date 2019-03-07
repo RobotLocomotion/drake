@@ -26,7 +26,7 @@ from pydrake.maliput.api import (
 from pydrake.maliput.dragway import (
     create_dragway,
 )
-from pydrake.multibody.multibody_tree.math import (
+from pydrake.multibody.math import (
     SpatialVelocity,
 )
 from pydrake.systems.analysis import (
@@ -37,7 +37,7 @@ from pydrake.systems.rendering import (
     PoseBundle,
     PoseVector,
 )
-from pydrake.util.eigen_geometry import (
+from pydrake.common.eigen_geometry import (
     Isometry3,
     Quaternion,
 )
@@ -139,7 +139,7 @@ class TestAutomotive(unittest.TestCase):
         lane = rg.junction(0).segment(0).lane(0)
         pure_pursuit = PurePursuitController()
         context = pure_pursuit.CreateDefaultContext()
-        output = pure_pursuit.AllocateOutput(context)
+        output = pure_pursuit.AllocateOutput()
 
         # Fix the inputs.
         ld_value = framework.AbstractValue.Make(
@@ -147,7 +147,7 @@ class TestAutomotive(unittest.TestCase):
         lane_index = pure_pursuit.lane_input().get_index()
         context.FixInputPort(lane_index, ld_value)
 
-        pos = [1., 2., 3.]  # An aribtrary position with the lane.
+        pos = [1., 2., 3.]  # An arbitrary position with the lane.
         pose_vector = PoseVector()
         pose_vector.set_translation(pos)
         pose_index = pure_pursuit.ego_pose_input().get_index()
@@ -189,7 +189,7 @@ class TestAutomotive(unittest.TestCase):
             road_position_strategy=RoadPositionStrategy.kExhaustiveSearch,
             period_sec=0.)
         context = idm.CreateDefaultContext()
-        output = idm.AllocateOutput(context)
+        output = idm.AllocateOutput()
 
         # Fix the inputs.
         pose_vector1 = PoseVector()
@@ -235,7 +235,7 @@ class TestAutomotive(unittest.TestCase):
         simple_car = SimpleCar()
         simulator = Simulator(simple_car)
         context = simulator.get_mutable_context()
-        output = simple_car.AllocateOutput(context)
+        output = simple_car.AllocateOutput()
 
         # Fix the input.
         command = DrivingCommand()

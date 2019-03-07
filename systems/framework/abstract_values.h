@@ -5,7 +5,8 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/systems/framework/value.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {
@@ -20,16 +21,22 @@ class AbstractValues {
   // AbstractState is not copyable or moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AbstractValues)
 
-  // Constructs an empty AbstractValues.
+  /// Constructs an empty AbstractValues.
   AbstractValues();
 
   /// Constructs an AbstractValues that owns the underlying data.
+  ///
+  /// @exclude_from_pydrake_mkdoc{The next overload's docstring is better, and
+  /// we only need one of the two -- overloading on ownership doesn't make
+  /// sense for pydrake.}
   explicit AbstractValues(std::vector<std::unique_ptr<AbstractValue>>&& data);
 
   /// Constructs an AbstractValues that does not own the underlying data.
   explicit AbstractValues(const std::vector<AbstractValue*>& data);
 
   /// Constructs an AbstractValues that owns a single @p datum.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
   explicit AbstractValues(std::unique_ptr<AbstractValue> datum);
 
   virtual ~AbstractValues();
@@ -45,10 +52,15 @@ class AbstractValues {
   /// the index is out-of-bounds.
   AbstractValue& get_mutable_value(int index);
 
+  DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")
+  void CopyFrom(const AbstractValues& other) {
+    SetFrom(other);
+  }
+
   /// Copies all of the AbstractValues in @p other into this. Asserts if the
-  /// two are not equal in size. Throws if any of the elements are of
-  /// incompatible type.
-  void CopyFrom(const AbstractValues& other);
+  /// two are not equal in size.
+  /// @throws std::exception if any of the elements are of incompatible type.
+  void SetFrom(const AbstractValues& other);
 
   /// Returns a deep copy of all the data in this AbstractValues. The clone
   /// will own its own data. This is true regardless of whether the data being

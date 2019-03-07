@@ -1,26 +1,48 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <string>
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/decision_variable.h"
-#include "drake/solvers/mathematical_program_solver_interface.h"
+#include "drake/solvers/solver_base.h"
 
 namespace drake {
 namespace solvers {
 
-class GurobiSolver : public MathematicalProgramSolverInterface {
+/// The Gurobi solver details after calling Solve() function. The user can call
+/// MathematicalProgramResult::get_solver_details<GurobiSolver>() to obtain the
+/// details.
+struct GurobiSolverDetails {
+  /// The gurobi optimization time. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/runtime.html
+  double optimizer_time{};
+
+  /// The error message returned from Gurobi call. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/error_codes.html
+  int error_code{};
+
+  /// The status code when the optimize call has returned. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/optimization_status_codes.html
+  int optimization_status{};
+
+  /// The best known bound on the optimal objective. This is used in mixed
+  /// integer optimization. Please refer to
+  /// https://www.gurobi.com/documentation/8.0/refman/objbound.html
+  double objective_bound{NAN};
+};
+
+class GurobiSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
 
-  GurobiSolver() = default;
-  ~GurobiSolver() override = default;
+  /// Type of details stored in MathematicalProgramResult.
+  using Details = GurobiSolverDetails;
 
-  // This solver is implemented in various pieces depending on if
-  // Gurobi was available during compilation.
-  bool available() const override;
+  GurobiSolver();
+  ~GurobiSolver() final;
 
   /// Contains info returned to a user function that handles
   /// a Node or Solution callback.
@@ -103,14 +125,48 @@ class GurobiSolver : public MathematicalProgramSolverInterface {
     mip_sol_callback_ = callback;
   }
 
-  SolutionResult Solve(MathematicalProgram& prog) const override;
+  /**
+   * This type contains a valid Gurobi license environment, and is only to be
+   * used from AcquireLicense().
+  */
+  class License;
 
-  SolverId solver_id() const override;
 
-  /// @return same as MathematicalProgramSolverInterface::solver_id()
+  /**
+   * This acquires a Gurobi license environment shared among all GurobiSolver
+   * instances; the environment will stay valid as long as at least one
+   * shared_ptr returned by this function is alive.
+   * Call this ONLY if you must use different MathematicalProgram
+   * instances at different instances in time, and repeatedly acquiring the
+   * license is costly (e.g., requires contacting a license server).
+   * @return A shared pointer to a license environment that will stay valid
+   * as long as any shared_ptr returned by this function is alive. If Gurobi
+   * not available in your build, this will return a null (empty) shared_ptr.
+   * @throws std::runtime_error if Gurobi is available but a license cannot be
+   * obtained.
+   */
+  static std::shared_ptr<License> AcquireLicense();
+
+  /// @name Static versions of the instance methods with similar names.
+  //@{
   static SolverId id();
+  static bool is_available();
+  static bool ProgramAttributesSatisfied(const MathematicalProgram&);
+  //@}
+
+  // A using-declaration adds these methods into our class's Doxygen.
+  using SolverBase::Solve;
+  // NOLINTNEXTLINE(runtime/references)
+  SolutionResult Solve(MathematicalProgram&) const final;
 
  private:
+  void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+               const SolverOptions&, MathematicalProgramResult*) const final;
+
+  // Note that this is mutable to allow latching the allocation of env_
+  // during the first call of Solve() (which avoids grabbing a Gurobi license
+  // before we know that we actually want one).
+  mutable std::shared_ptr<License> license_;
   // Callbacks and generic user data to pass through,
   // or NULL if no callback has been supplied.
   MipNodeCallbackFunction mip_node_callback_;

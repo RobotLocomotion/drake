@@ -1,6 +1,11 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+  <!-- Provide additional material for the silver logo band. -->
+  <material name="Silver">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
+
   <!-- Import all Gazebo-customization elements, including Gazebo colors -->
   <xacro:include filename="$(find iiwa_description)/urdf/iiwa.gazebo.xacro" />
   <!-- Import Transmissions -->
@@ -142,11 +147,18 @@
       </inertial>
 
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="../meshes/visual/link_2.obj"/>
+          <mesh filename="../meshes/visual/link_2_orange.obj"/>
         </geometry>
         <material name="Orange"/>
+      </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_2_grey.obj"/>
+        </geometry>
+        <material name="Grey"/>
       </visual>
 
       <xacro:if value="${collision_type == 'mesh'}">
@@ -199,6 +211,20 @@
         </geometry>
         <material name="Grey"/>
       </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/kuka.obj"/>
+        </geometry>
+        <material name="Black"/>
+      </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/band.obj"/>
+        </geometry>
+        <material name="Silver"/>
+      </visual>
 
       <xacro:if value="${collision_type == 'mesh'}">
         <collision>
@@ -244,11 +270,18 @@
       </inertial>
 
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="../meshes/visual/link_4.obj"/>
+          <mesh filename="../meshes/visual/link_4_orange.obj"/>
         </geometry>
         <material name="Orange"/>
+      </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_4_grey.obj"/>
+        </geometry>
+        <material name="Grey"/>
       </visual>
 
       <xacro:if value="${collision_type == 'mesh'}">
@@ -301,6 +334,20 @@
         </geometry>
         <material name="Grey"/>
       </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/kuka.obj"/>
+        </geometry>
+        <material name="Black"/>
+      </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/band.obj"/>
+        </geometry>
+        <material name="Silver"/>
+      </visual>
 
       <xacro:if value="${collision_type == 'mesh'}">
         <collision>
@@ -346,9 +393,16 @@
       </inertial>
 
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
         <geometry>
-          <mesh filename="../meshes/visual/link_6.obj"/>
+          <mesh filename="../meshes/visual/link_6_grey.obj"/>
+        </geometry>
+        <material name="Grey"/>
+      </visual>
+      <visual>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <geometry>
+          <mesh filename="../meshes/visual/link_6_orange.obj"/>
         </geometry>
         <material name="Orange"/>
       </visual>
@@ -447,7 +501,7 @@
 
     <link name="${robot_name}_link_ee_kuka">
     </link>
-    <joint name="tool0_joint" type="fixed">
+    <joint name="${robot_name}_tool0_joint" type="fixed">
       <parent link="${robot_name}_link_7"/>
       <child link="${robot_name}_link_ee"/>
       <origin rpy="0 -1.570796326794897 0" xyz="0 0 0.045"/>

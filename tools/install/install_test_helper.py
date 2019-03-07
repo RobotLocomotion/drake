@@ -71,12 +71,12 @@ def create_temporary_dir(name='tmp'):
 def get_python_executable():
     """Use appropriate Python executable
 
-    Call python2 on MacOS to force using python brew install. Calling python
+    Call python2/3 on MacOS to force using python brew install. Calling python
     system would result in a crash since pydrake was built against brew python.
     On other systems, it will just fall-back to the current Python executable.
     """
     if sys.platform == "darwin":
-        return "python2"
+        return "python{}".format(sys.version_info.major)
     else:
         return sys.executable
 
@@ -109,7 +109,7 @@ def run_and_kill(cmd, timeout=2.0, from_install_dir=True):
     assert proc.wait() == -signal.SIGTERM
 
 
-def check_call(*args, **kwargs):
+def check_call(args, *extra_args, **kwargs):
     """Helper function for `subprocess.check_call()`.
 
     Install tests should use this function instead of
@@ -117,7 +117,10 @@ def check_call(*args, **kwargs):
     calls `subprocess.check_call()` and updates the current working directory
     to `/`.
     """
-    return subprocess.check_call(cwd='/', *args, **kwargs)
+    if args[0].endswith('.py'):
+        # Ensure that we test with the same Python version that Bazel is using.
+        args = [get_python_executable()] + args
+    return subprocess.check_call(args, cwd='/', *extra_args, **kwargs)
 
 
 def check_output(*args, **kwargs):
@@ -128,4 +131,14 @@ def check_output(*args, **kwargs):
     calls `subprocess.check_output()` and updates the current working directory
     to `/`.
     """
-    return subprocess.check_output(cwd='/', *args, **kwargs)
+    return subprocess.check_output(cwd='/', *args, **kwargs).decode('utf8')
+
+
+def get_python_site_packages_dir(install_dir):
+    return os.path.abspath(
+        os.path.join(
+            install_dir, "lib",
+            "python{}.{}".format(
+                sys.version_info.major, sys.version_info.minor),
+            "site-packages")
+    )

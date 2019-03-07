@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
-#include "drake/systems/framework/output_port_value.h"
+#include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -40,7 +40,7 @@ void CheckForSinglePeriodicEvent(const EventListType& events) {
   // met.
   if (events.size() == 1) {
     EXPECT_EQ(events.front()->get_trigger_type(),
-        Event<double>::TriggerType::kPeriodic);
+        TriggerType::kPeriodic);
   }
 }
 
@@ -60,7 +60,6 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
           kTenHertz, Value<SimpleAbstractType>(Eigen::Vector3d::Zero()));
     }
     context_ = hold_->CreateDefaultContext();
-    output_ = hold_->AllocateOutput(*context_);
     if (!is_abstract_) {
       context_->FixInputPort(
           0, std::make_unique<BasicVector<double>>(input_value_));
@@ -86,7 +85,6 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
 
   std::unique_ptr<System<double>> hold_;
   std::unique_ptr<Context<double>> context_;
-  std::unique_ptr<SystemOutput<double>> output_;
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
 
@@ -100,7 +98,6 @@ TEST_P(ZeroOrderHoldTest, Topology) {
   EXPECT_EQ(1, hold_->get_num_input_ports());
   EXPECT_EQ(1, context_->get_num_input_ports());
 
-  EXPECT_EQ(1, output_->get_num_ports());
   EXPECT_EQ(1, hold_->get_num_output_ports());
 
   EXPECT_FALSE(hold_->HasAnyDirectFeedthrough());
@@ -130,20 +127,13 @@ TEST_P(ZeroOrderHoldTest, Output) {
   if (!is_abstract_) {
     BasicVector<double>& xd = context_->get_mutable_discrete_state(0);
     xd.get_mutable_value() << output_expected;
-
-    hold_->CalcOutput(*context_, output_.get());
-
-    const BasicVector<double>* output_vector = output_->get_vector_data(0);
-    ASSERT_NE(nullptr, output_vector);
-    output = output_vector->CopyToVector();
+    output = hold_->get_output_port(0).Eval(*context_);
   } else {
     SimpleAbstractType& state_value =
         context_->get_mutable_abstract_state<SimpleAbstractType>(0);
     state_value = SimpleAbstractType(output_expected);
-
-    hold_->CalcOutput(*context_, output_.get());
-
-    output = output_->get_data(0)->GetValue<SimpleAbstractType>().value();
+    output = hold_->get_output_port(0).
+        template Eval<SimpleAbstractType>(*context_).value();
   }
   EXPECT_EQ(output_expected, output);
 }
@@ -222,20 +212,16 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
     auto& xd = context_->get_mutable_discrete_state(0);
     xd[0] = symbolic::Variable("x0");
 
-    output_ = hold_->AllocateOutput(*context_);
     update_ = hold_->AllocateDiscreteVariables();
   }
 
   std::unique_ptr<ZeroOrderHold<symbolic::Expression>> hold_;
   std::unique_ptr<Context<symbolic::Expression>> context_;
-  std::unique_ptr<SystemOutput<symbolic::Expression>> output_;
   std::unique_ptr<DiscreteValues<symbolic::Expression>> update_;
 };
 
 TEST_F(SymbolicZeroOrderHoldTest, Output) {
-  hold_->CalcOutput(*context_, output_.get());
-  ASSERT_EQ(1, output_->get_num_ports());
-  const auto& out = *output_->get_vector_data(0);
+  const auto& out = hold_->get_output_port().Eval(*context_);
   EXPECT_EQ("x0", out[0].to_string());
 }
 

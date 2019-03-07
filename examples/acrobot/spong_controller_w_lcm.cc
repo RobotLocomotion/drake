@@ -9,7 +9,10 @@
  * LcmPublisherSystem
  *
  */
+#include <chrono>
 #include <memory>
+
+#include <gflags/gflags.h>
 
 #include "drake/examples/acrobot/acrobot_lcm.h"
 #include "drake/examples/acrobot/spong_controller.h"
@@ -20,6 +23,9 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/systems/lcm/lcm_subscriber_system.h"
+
+DEFINE_double(time_limit_sec, std::numeric_limits<double>::infinity(),
+              "Number of seconds to run (default: infinity).");
 
 namespace drake {
 namespace examples {
@@ -58,11 +64,18 @@ int DoMain() {
 
   lcm.StartReceiveThread();
 
-  while (true) {
+  using clock = std::chrono::system_clock;
+  const auto& start_time = clock::now();
+  const auto& max_duration =
+      std::chrono::duration<double>(FLAGS_time_limit_sec);
+  while ((clock::now() - start_time) <= max_duration) {
     const systems::Context<double>& pub_context =
         diagram->GetSubsystemContext(*command_pub, *context);
     command_pub->Publish(pub_context);
   }
+
+  lcm.StopReceiveThread();
+  return 0;
 }
 
 }  // namespace
@@ -70,4 +83,7 @@ int DoMain() {
 }  // namespace examples
 }  // namespace drake
 
-int main() { return drake::examples::acrobot::DoMain(); }
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  return drake::examples::acrobot::DoMain();
+}

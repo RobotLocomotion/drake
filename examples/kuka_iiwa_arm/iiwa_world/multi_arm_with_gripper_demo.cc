@@ -9,7 +9,7 @@
 #include "drake/multibody/parsers/urdf_parser.h"
 #include "drake/multibody/rigid_body_plant/drake_visualizer.h"
 #include "drake/systems/analysis/simulator.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/trajectory_source.h"
 
@@ -114,7 +114,7 @@ void main() {
         single_arm.get());
 
     auto controller = builder.AddController<
-        systems::controllers::InverseDynamicsController<double>>(
+        systems::controllers::rbt::InverseDynamicsController<double>>(
         info.instance_id, std::move(single_arm), iiwa_kp, iiwa_ki, iiwa_kd,
         false /* no feedforward acceleration */);
     controller->set_name("controller" + std::to_string(info.instance_id));
@@ -127,7 +127,8 @@ void main() {
             plant->get_rigid_body_tree(), info.instance_id,
             kEndEffectorLinkName, wsg_info[ctr].instance_id);
     RigidBody<double>* controller_ee =
-        controller->get_robot_for_control().FindBody(kEndEffectorLinkName);
+        controller->get_rigid_body_tree_for_control()->FindBody(
+            kEndEffectorLinkName);
     controller_ee->set_spatial_inertia(lumped_gripper_inertia_EE);
 
     diagram_builder->Connect(iiwa_traj_src->get_output_port(),

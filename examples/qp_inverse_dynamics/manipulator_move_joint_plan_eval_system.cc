@@ -41,10 +41,10 @@ ManipulatorMoveJointPlanEvalSystem::ManipulatorMoveJointPlanEvalSystem(
           .get_index();
 
   abs_state_index_plan_ =
-      DeclareAbstractState(systems::AbstractValue::Make<VectorSetpoint<double>>(
+      DeclareAbstractState(AbstractValue::Make<VectorSetpoint<double>>(
           VectorSetpoint<double>(kAccDim)));
   abs_state_index_debug_ = DeclareAbstractState(
-      systems::AbstractValue::Make<lcmt_plan_eval_debug_info>(
+      AbstractValue::Make<lcmt_plan_eval_debug_info>(
           lcmt_plan_eval_debug_info()));
 }
 

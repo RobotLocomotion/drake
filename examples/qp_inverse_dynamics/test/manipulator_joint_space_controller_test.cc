@@ -6,7 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/joints/floating_base_types.h"
 #include "drake/multibody/parsers/urdf_parser.h"
-#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/rbt_inverse_dynamics_controller.h"
 #include "drake/systems/controllers/setpoint.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -73,7 +73,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
     VectorX<double> kp, kd;
     params_->LookupDesiredDofMotionGains(&kp, &kd);
     auto vanilla_id_controller =
-        builder.AddSystem<systems::controllers::InverseDynamicsController>(
+        builder.AddSystem<systems::controllers::rbt::InverseDynamicsController>(
             std::move(robot), kp, VectorX<double>::Zero(7), kd, true);
 
     // Estimated state source.
@@ -117,7 +117,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
 
     context_ = diagram_->CreateDefaultContext();
     context_->set_time(0);
-    output_ = diagram_->AllocateOutput(*context_);
+    output_ = diagram_->AllocateOutput();
 
     // Initializes.
     qp_id_controller->Initialize(
@@ -134,13 +134,13 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
     // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
 
     // Generates QpOuput from the inverse dynamics block within
     // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
          *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
 
     // Gets output.
     diagram_->CalcOutput(*context_, output_.get());

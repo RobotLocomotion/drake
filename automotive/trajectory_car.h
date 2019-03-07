@@ -27,18 +27,22 @@ namespace automotive {
 /// cannot travel in reverse.
 ///
 /// parameters:
+///
 /// * uses systems::Parameters wrapping a TrajectoryCarParams
 ///
 /// state vector:
+///
 /// * A TrajectoryCarState, consisting of a position and speed along the given
 ///   curve, provided as the constructor parameter.
 ///
 /// input vector:
+///
 /// * desired acceleration, a systems::BasicVector of size 1 (optional input).
 ///   If left unconnected, the trajectory car will travel at a constant speed
 ///   specified in the TrajectoryCarState.
 ///
 /// output port 0:
+///
 /// * position: x, y, heading;
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, so positive-turn-left
@@ -52,6 +56,7 @@ namespace automotive {
 ///   (OutputPort getter: velocity_output())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 ///
@@ -66,7 +71,9 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TrajectoryCar)
 
   /// Constructs a TrajectoryCar system that traces a given two-dimensional @p
-  /// curve.  Throws an error if the curve is empty (has a zero @p path_length).
+  /// curve.
+  /// @throws std::invalid_argument if the curve is empty (has a zero
+  /// @p path_length).
   explicit TrajectoryCar(const Curve2<double>& curve)
       : systems::LeafSystem<T>(
             systems::SystemTypeTag<automotive::TrajectoryCar>{}),
@@ -88,7 +95,7 @@ class TrajectoryCar final : public systems::LeafSystem<T> {
       : TrajectoryCar<T>(Curve2<double>(other.curve_.waypoints())) {}
 
   /// The command input port (optional).
-  const systems::InputPortDescriptor<T>& command_input() const {
+  const systems::InputPort<T>& command_input() const {
     return this->get_input_port(0);
   }
   /// See class description for details about the following ports.

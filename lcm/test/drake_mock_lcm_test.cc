@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/lcm/drake_lcm_message_handler_interface.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 using std::string;
@@ -84,29 +83,23 @@ GTEST_TEST(DrakeMockLcmTest, DecodeLastPublishedMessageAsTest) {
       channel_name), std::runtime_error);
 }
 
-// TODO(jwnimmer-tri) When the DrakeLcmMessageHandlerInterface class is
-// deleted, refactor this test to use the HandlerFunction interface.  For now,
-// since the DrakeLcmInterface code delegates to the HandlerFunction code, we
-// keep this all as-is so that all codepaths are covered by tests.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Handles received LCM messages.
-class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
+class MockMessageHandler final {
  public:
   // A constructor that initializes the memory for storing received LCM
   // messages.
   MockMessageHandler() { }
 
-  // This is the callback method.
-  void HandleMessage(const string& channel, const void* message_buffer,
-      int message_size) override {
-    channel_ = channel;
-    buffer_.resize(message_size);
-    std::memcpy(&buffer_[0], message_buffer, message_size);
+  void Subscribe(const std::string& channel, DrakeLcmInterface* dut) {
+    dut->Subscribe(channel, [this](const void* data, int size) {
+        this->HandleMessage(data, size);
+      });
   }
 
-  const string& get_channel() const {
-    return channel_;
+  // This is the callback method.
+  void HandleMessage(const void* message_buffer, int message_size) {
+    buffer_.resize(message_size);
+    std::memcpy(&buffer_[0], message_buffer, message_size);
   }
 
   const vector<uint8_t>& get_buffer() {
@@ -118,10 +111,8 @@ class MockMessageHandler : public DrakeLcmMessageHandlerInterface {
   }
 
  private:
-  string channel_{};
   vector<uint8_t> buffer_;
 };
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 
 // Tests DrakeMockLcm's ability to "subscribe" to an LCM channel.
 GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
@@ -133,8 +124,7 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
 
   // Instantiates a message handler.
   MockMessageHandler handler;
-
-  dut.Subscribe(kChannelName, &handler);
+  handler.Subscribe(kChannelName, &dut);
 
   // Defines a fake serialized message.
   const int kMessageSize = 10;
@@ -146,7 +136,6 @@ GTEST_TEST(DrakeMockLcmTest, SubscribeTest) {
 
   dut.InduceSubscriberCallback(kChannelName, &message_bytes[0], kMessageSize);
 
-  EXPECT_EQ(kChannelName, handler.get_channel());
   EXPECT_EQ(kMessageSize, handler.get_buffer_size());
 
   const vector<uint8_t>& received_bytes = handler.get_buffer();
@@ -167,8 +156,7 @@ GTEST_TEST(DrakeMockLcmTest, WithLoopbackTest) {
 
   // Instantiates a message handler.
   MockMessageHandler handler;
-
-  dut.Subscribe(kChannelName, &handler);
+  handler.Subscribe(kChannelName, &dut);
 
   // Defines a fake serialized message.
   const int kMessageSize = 10;
@@ -181,7 +169,6 @@ GTEST_TEST(DrakeMockLcmTest, WithLoopbackTest) {
   dut.Publish(kChannelName, &message_bytes[0], kMessageSize, nullopt);
 
   // Verifies that the message was received via loopback.
-  EXPECT_EQ(kChannelName, handler.get_channel());
   EXPECT_EQ(kMessageSize, handler.get_buffer_size());
 
   const vector<uint8_t>& received_bytes = handler.get_buffer();
@@ -201,8 +188,7 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
 
   // Instantiates a message handler.
   MockMessageHandler handler;
-
-  dut.Subscribe(kChannelName, &handler);
+  handler.Subscribe(kChannelName, &dut);
 
   // Defines a fake serialized message.
   const int kMessageSize = 10;
@@ -215,7 +201,6 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   dut.Publish(kChannelName, &message_bytes[0], kMessageSize, nullopt);
 
   // Verifies that the message was not received via loopback.
-  EXPECT_NE(kChannelName, handler.get_channel());
   EXPECT_NE(kMessageSize, handler.get_buffer_size());
 }
 
@@ -223,7 +208,7 @@ GTEST_TEST(DrakeMockLcmTest, EmptyChannelTest) {
   DrakeMockLcm dut;
 
   MockMessageHandler handler;
-  EXPECT_THROW(dut.Subscribe("", &handler), std::exception);
+  EXPECT_THROW(handler.Subscribe("", &dut), std::exception);
 
   lcmt_drake_signal message{};
   EXPECT_THROW(Publish(&dut, "", message), std::exception);

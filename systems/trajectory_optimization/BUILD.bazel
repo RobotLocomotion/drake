@@ -15,43 +15,7 @@ drake_cc_package_library(
     deps = [
         ":direct_collocation",
         ":direct_transcription",
-        ":generalized_constraint_force_evaluator",
-        ":joint_limit_constraint_force_evaluator",
         ":multiple_shooting",
-        ":position_constraint_force_evaluator",
-    ],
-)
-
-drake_cc_library(
-    name = "generalized_constraint_force_evaluator",
-    srcs = ["generalized_constraint_force_evaluator.cc"],
-    hdrs = ["generalized_constraint_force_evaluator.h"],
-    deps = [
-        "//common:essential",
-        "//math:autodiff",
-        "//multibody:rigid_body_tree",
-        "//solvers:evaluator_base",
-    ],
-)
-
-drake_cc_library(
-    name = "position_constraint_force_evaluator",
-    srcs = ["position_constraint_force_evaluator.cc"],
-    hdrs = ["position_constraint_force_evaluator.h"],
-    deps = [
-        ":generalized_constraint_force_evaluator",
-        "//math:autodiff",
-        "//multibody:kinematics_cache_helper",
-    ],
-)
-
-drake_cc_library(
-    name = "joint_limit_constraint_force_evaluator",
-    srcs = ["joint_limit_constraint_force_evaluator.cc"],
-    hdrs = ["joint_limit_constraint_force_evaluator.h"],
-    deps = [
-        ":generalized_constraint_force_evaluator",
-        "//math:autodiff",
     ],
 )
 
@@ -106,6 +70,7 @@ drake_cc_googletest(
     deps = [
         ":multiple_shooting",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
     ],
 )
 
@@ -114,6 +79,7 @@ drake_cc_googletest(
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
         "//systems/primitives:linear_system",
     ],
 )
@@ -123,43 +89,8 @@ drake_cc_googletest(
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
+        "//solvers:solve",
         "//systems/primitives:piecewise_polynomial_linear_system",
-    ],
-)
-
-drake_cc_library(
-    name = "generalized_constraint_force_evaluator_test_util",
-    testonly = 1,
-    srcs = [
-        "test/generalized_constraint_force_evaluator_test_util.cc",
-    ],
-    hdrs = ["test/generalized_constraint_force_evaluator_test_util.h"],
-    data = [
-        "//examples/simple_four_bar:models",
-    ],
-    deps = [
-        "//common:find_resource",
-        "//multibody/parsers",
-    ],
-)
-
-drake_cc_googletest(
-    name = "position_constraint_force_evaluator_test",
-    deps = [
-        ":generalized_constraint_force_evaluator_test_util",
-        ":position_constraint_force_evaluator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:autodiff",
-    ],
-)
-
-drake_cc_googletest(
-    name = "joint_limit_constraint_force_evaluator_test",
-    deps = [
-        ":generalized_constraint_force_evaluator_test_util",
-        ":joint_limit_constraint_force_evaluator",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:autodiff",
     ],
 )
 

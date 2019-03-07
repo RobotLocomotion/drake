@@ -19,6 +19,14 @@ namespace drake {
 namespace solvers {
 namespace {
 
+// This function is used to print information for each iteration to the console,
+// it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
+// https://docs.mosek.com/8.1/capi/solver-io.html. This printstr is copied
+// directly from https://docs.mosek.com/8.1/capi/solver-io.html#stream-logging.
+void MSKAPI printstr(void* , const char str[]) {
+  printf("%s", str);
+}
+
 // Add LinearConstraints and LinearEqualityConstraints to the Mosek task.
 template <typename C>
 MSKrescodee AddLinearConstraintsFromBindings(
@@ -577,6 +585,11 @@ MSKrescodee SpecifyVariableType(const MathematicalProgram& prog,
         throw std::runtime_error(
             "Boolean variables should not be used with Mosek solver.");
       }
+      case MathematicalProgram::VarType::RANDOM_UNIFORM:
+      case MathematicalProgram::VarType::RANDOM_GAUSSIAN:
+      case MathematicalProgram::VarType::RANDOM_EXPONENTIAL:
+        throw std::runtime_error(
+            "Random variables should not be used with Mosek solver.");
     }
   }
   return rescode;
@@ -602,13 +615,18 @@ class MosekSolver::License {
     }
     DRAKE_DEMAND(mosek_env_ != nullptr);
 
-    // Acquire the license for the base MOSEK system so that we can
-    // fail fast if the license file is missing or the server is
-    // unavailable. Any additional features should be checked out
-    // later by MSK_optimizetrm if needed (so there's still the
-    // possiblity of later failure at that stage if the desired
-    // feature is unavailable or another error occurs).
-    rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    const int num_tries = 3;
+    rescode = MSK_RES_TRM_INTERNAL;
+    for (int i = 0; i < num_tries && rescode != MSK_RES_OK; ++i) {
+      // Acquire the license for the base MOSEK system so that we can
+      // fail fast if the license file is missing or the server is
+      // unavailable. Any additional features should be checked out
+      // later by MSK_optimizetrm if needed (so there's still the
+      // possibility of later failure at that stage if the desired
+      // feature is unavailable or another error occurs).
+      rescode = MSK_checkoutlicense(mosek_env_, MSK_FEATURE_PTS);
+    }
+
     if (rescode != MSK_RES_OK) {
       throw std::runtime_error("Could not acquire MOSEK license.");
     }
@@ -637,9 +655,13 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   return GetScopedSingleton<MosekSolver::License>();
 }
 
-bool MosekSolver::available() const { return true; }
+bool MosekSolver::is_available() { return true; }
 
-SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
+void MosekSolver::DoSolve(
+    const MathematicalProgram& prog,
+    const Eigen::VectorXd& initial_guess,
+    const SolverOptions& merged_options,
+    MathematicalProgramResult* result) const {
   const int num_vars = prog.num_vars();
   MSKtask_t task = nullptr;
   MSKrescodee rescode;
@@ -661,6 +683,8 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
 
   // Create the optimization task.
   rescode = MSK_maketask(env, 0, num_vars, &task);
+  // Always check if rescode is MSK_RES_OK before we call any mosek functions.
+  // If it is not MSK_RES_OK, then bypasses everything and exits.
   if (rescode == MSK_RES_OK) {
     rescode = MSK_appendvars(task, num_vars);
   }
@@ -704,8 +728,77 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
   if (rescode == MSK_RES_OK) {
     rescode = AddLinearMatrixInequalityConstraint(prog, &task);
   }
+  if (rescode == MSK_RES_OK && stream_logging_) {
+    if (log_file_.empty()) {
+      rescode =
+          MSK_linkfunctotaskstream(task, MSK_STREAM_LOG, nullptr, printstr);
+    } else {
+      rescode =
+          MSK_linkfiletotaskstream(task, MSK_STREAM_LOG, log_file_.c_str(), 0);
+    }
+  }
 
-  SolutionResult result = SolutionResult::kUnknownError;
+  if (rescode == MSK_RES_OK) {
+    for (const auto& double_options :
+         merged_options.GetOptionsDouble(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnadouparam(task, double_options.first.c_str(),
+                                    double_options.second);
+      }
+    }
+    for (const auto& int_options : merged_options.GetOptionsInt(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnaintparam(task, int_options.first.c_str(),
+                                    int_options.second);
+      }
+    }
+    for (const auto& str_options : merged_options.GetOptionsStr(id())) {
+      if (rescode == MSK_RES_OK) {
+        rescode = MSK_putnastrparam(task, str_options.first.c_str(),
+                                    str_options.second.c_str());
+      }
+    }
+  }
+
+  // Mosek can accept the initial guess on its integer/binary variables, but
+  // not on the continuous variables. So it allows some of the variables'
+  // initial guess to be unset, while setting the others. If the initial guess
+  // for any variable is finite, then we ask Mosek to set the initial guess.
+  const bool has_any_finite_initial_guess =
+      initial_guess.unaryExpr([](double g) { return std::isfinite(g); }).any();
+  if (with_integer_or_binary_variable && has_any_finite_initial_guess) {
+    // Set the initial guess for the integer/binary variables.
+    DRAKE_ASSERT(initial_guess.size() == prog.num_vars());
+    MSKint32t num_mosek_vars{0};
+    if (rescode == MSK_RES_OK) {
+      // num_mosek_vars is guaranteed to be no less than prog.num_vars(), as we
+      // can add slack variables when we construct Mosek constraints. For
+      // example, when we call AddSecondOrderConeConstraints().
+      rescode = MSK_getnumvar(task, &num_mosek_vars);
+      DRAKE_DEMAND(num_mosek_vars >= prog.num_vars());
+    }
+    if (rescode == MSK_RES_OK) {
+      rescode = MSK_putintparam(task, MSK_IPAR_MIO_CONSTRUCT_SOL, MSK_ON);
+    }
+    int var_count = 0;
+    for (int i = 0; i < num_mosek_vars; ++i) {
+      if (!is_new_variable[i]) {
+        const auto var_type = prog.decision_variable(var_count).get_type();
+        if (var_type == MathematicalProgram::VarType::INTEGER ||
+            var_type == MathematicalProgram::VarType::BINARY) {
+          if (rescode == MSK_RES_OK) {
+            const MSKrealt initial_guess_i = initial_guess(var_count);
+            rescode =
+                MSK_putxxslice(task, MSK_SOL_ITG, i, i + 1, &initial_guess_i);
+          }
+        }
+        var_count++;
+      }
+    }
+    DRAKE_DEMAND(var_count == prog.num_vars());
+  }
+
+  result->set_solution_result(SolutionResult::kUnknownError);
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
@@ -729,11 +822,10 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
     solution_type = MSK_SOL_ITR;
   }
 
-  SolverResult solver_result(id());
-  // TODO(hongkai.dai@tri.global) : Add MOSEK paramaters.
+  // TODO(hongkai.dai@tri.global) : Add MOSEK parameters.
   // Mosek parameter are added by enum, not by string.
+  MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
   if (rescode == MSK_RES_OK) {
-    MSKsolstae solution_status;
     if (rescode == MSK_RES_OK) {
       rescode = MSK_getsolsta(task, solution_type, &solution_status);
     }
@@ -742,8 +834,9 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
         case MSK_SOL_STA_OPTIMAL:
         case MSK_SOL_STA_NEAR_OPTIMAL:
         case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL: {
-          result = SolutionResult::kSolutionFound;
+        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL:
+        case MSK_SOL_STA_PRIM_FEAS: {
+          result->set_solution_result(SolutionResult::kSolutionFound);
           MSKint32t num_mosek_vars;
           rescode = MSK_getnumvar(task, &num_mosek_vars);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
@@ -759,40 +852,48 @@ SolutionResult MosekSolver::Solve(MathematicalProgram& prog) const {
             }
           }
           if (rescode == MSK_RES_OK) {
-            solver_result.set_decision_variable_values(sol_vector);
+            result->set_x_val(sol_vector);
           }
           MSKrealt optimal_cost;
           rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
           if (rescode == MSK_RES_OK) {
-            solver_result.set_optimal_cost(optimal_cost);
+            result->set_optimal_cost(optimal_cost);
           }
           break;
         }
         case MSK_SOL_STA_DUAL_INFEAS_CER:
         case MSK_SOL_STA_NEAR_DUAL_INFEAS_CER:
-          result = SolutionResult::kDualInfeasible;
+          result->set_solution_result(SolutionResult::kDualInfeasible);
           break;
         case MSK_SOL_STA_PRIM_INFEAS_CER:
         case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result = SolutionResult::kInfeasibleConstraints;
+          result->set_solution_result(SolutionResult::kInfeasibleConstraints);
           break;
         }
         default: {
-          result = SolutionResult::kUnknownError;
+          result->set_solution_result(SolutionResult::kUnknownError);
           break;
         }
       }
     }
   }
 
-  prog.SetSolverResult(solver_result);
-  if (rescode != MSK_RES_OK) {
-    result = SolutionResult::kUnknownError;
+  MosekSolverDetails& solver_details =
+      result->SetSolverDetailsType<MosekSolverDetails>();
+  solver_details.rescode = rescode;
+  solver_details.solution_status = solution_status;
+  if (rescode == MSK_RES_OK) {
+    rescode = MSK_getdouinf(task, MSK_DINF_OPTIMIZER_TIME,
+                            &(solver_details.optimizer_time));
   }
+  // rescode is not used after this. If in the future, the user wants to call
+  // more MSK functions after this line, then he/she needs to check if rescode
+  // is OK. But do not modify result->solution_result_ if rescode is not OK
+  // after this line.
+  unused(rescode);
 
   MSK_deletetask(&task);
-  return result;
 }
 
 }  // namespace solvers

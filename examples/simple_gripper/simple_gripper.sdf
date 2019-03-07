@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.6'>
   <!-- Note: This is the accompaning SDF file for the example demo in
-       simple_gripper.cc and thefore these two files must be kept in sync.
+       simple_gripper.cc and therefore these two files must be kept in sync.
 
          This file defines the model for a simple gripper having two fingers.
        The right finger is fixed to the body of the gripper. The left finger

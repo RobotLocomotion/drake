@@ -1,0 +1,46 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "fibonacci_difference_equation",
+    hdrs = [
+        "fibonacci_difference_equation.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_binary(
+    name = "run_fibonacci",
+    srcs = ["run_fibonacci.cc"],
+    deps = [
+        ":fibonacci_difference_equation",
+        "//systems/analysis:simulator",
+        "//systems/primitives:signal_logger",
+        "@gflags",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "fibonacci_difference_equation_test",
+    deps = [
+        ":fibonacci_difference_equation",
+        "//systems/analysis",
+        "//systems/primitives:signal_logger",
+    ],
+)
+
+add_lint_tests()

@@ -72,6 +72,26 @@ inline bool PolyNotEqual(const Polynomial& p1, const Polynomial& p2) {
   return !PolyEqual(p1, p2);
 }
 
+inline bool PolyEqualAfterExpansion(const Polynomial& p1,
+                                    const Polynomial& p2) {
+  return p1.EqualToAfterExpansion(p2);
+}
+
+inline bool PolyNotEqualAfterExpansion(const Polynomial& p1,
+                                       const Polynomial& p2) {
+  return !p1.EqualToAfterExpansion(p2);
+}
+
+inline bool RationalFunctionEqual(const RationalFunction& f1,
+                                  const RationalFunction& f2) {
+  return f1.EqualTo(f2);
+}
+
+inline bool RationalFunctionNotEqual(const RationalFunction& f1,
+                                     const RationalFunction& f2) {
+  return !RationalFunctionEqual(f1, f2);
+}
+
 template <typename F>
 bool all_of(const std::vector<Formula>& formulas, const F& f) {
   return std::all_of(formulas.begin(), formulas.end(), f);
@@ -105,8 +125,9 @@ inline bool FormulaNotLess(const Formula& f1, const Formula& f2) {
  * @param p2 A polynomial.
  * @param tol The tolerance on the coefficients of p1 - p2.
  */
-::testing::AssertionResult PolynomialEqual(const symbolic::Polynomial& p1,
-                     const symbolic::Polynomial& p2, double tol) {
+inline ::testing::AssertionResult PolynomialEqual(
+    const symbolic::Polynomial& p1, const symbolic::Polynomial& p2,
+    double tol) {
   const symbolic::Polynomial diff = p1 - p2;
   // Check if the absolute value of the coefficient for each monomial is less
   // than tol.

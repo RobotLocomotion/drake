@@ -43,7 +43,8 @@ class Binding {
               std::shared_ptr<U>, std::shared_ptr<C>>::value>::type* = nullptr)
       : Binding(b.evaluator(), b.variables()) {}
 
-  DRAKE_DEPRECATED("Please use evaluator() instead of constraint()")
+  DRAKE_DEPRECATED("2019-06-01",
+      "Please use evaluator() instead of constraint()")
   const std::shared_ptr<C>& constraint() const { return evaluator_; }
 
   const std::shared_ptr<C>& evaluator() const { return evaluator_; }
@@ -51,7 +52,7 @@ class Binding {
   const VectorXDecisionVariable& variables() const { return vars_; }
 
   /**
-   * Returns true iff the given @p var is included in this Binding.*/
+   * Returns true iff the given @p var is included in this Binding. */
   bool ContainsVariable(const symbolic::Variable& var) const {
     for (int i = 0; i < vars_.rows(); ++i) {
       if (vars_(i).equal_to(var)) {

@@ -1,12 +1,15 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
-load("//tools/skylark:drake_py.bzl", "py_test_isolated")
+load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
+
+# N.B. Copied from `DEFAULT_IGNORE` in `pycodestyle.py`.
+PYTHON_LINT_IGNORE_DEFAULT = "E121,E123,E126,E226,E24,E704,W503".split(",")
 
 # Internal helper.
 def _python_lint(name_prefix, files, ignore):
-    if ignore:
-        ignore = ["--ignore=" + ",".join(["E%s" % e for e in ignore])]
+    ignore_types = PYTHON_LINT_IGNORE_DEFAULT + (ignore or [])
+    ignore_args = ["--ignore={}".format(",".join(ignore_types))]
 
     # Pycodestyle.
     locations = ["$(location %s)" % f for f in files]
@@ -15,10 +18,10 @@ def _python_lint(name_prefix, files, ignore):
         size = "small",
         srcs = ["@pycodestyle//:pycodestyle"],
         data = files,
-        args = (ignore or []) + locations,
+        args = ignore_args + locations,
         main = "@pycodestyle//:pycodestyle.py",
         srcs_version = "PY2AND3",
-        tags = ["pycodestyle", "lint"]
+        tags = ["pycodestyle", "lint"],
     )
 
     # Additional Drake lint.
@@ -29,11 +32,14 @@ def _python_lint(name_prefix, files, ignore):
         data = files,
         args = locations,
         main = "@drake//tools/lint:drakelint.py",
-        tags = ["drakelint", "lint"]
+        tags = ["drakelint", "lint"],
     )
 
-def python_lint(existing_rules = None, ignore = None, exclude = None,
-                extra_srcs = None):
+def python_lint(
+        existing_rules = None,
+        ignore = None,
+        exclude = None,
+        extra_srcs = None):
     """Runs the pycodestyle PEP 8 code style checker on all Python source files
     declared in rules in a BUILD file.  Also runs the drakelint.py linter.
 
@@ -41,8 +47,8 @@ def python_lint(existing_rules = None, ignore = None, exclude = None,
         existing_rules: The value of native.existing_result().values(), in case
             it has already been computed.  When not supplied, the value will be
             internally (re-)computed.
-        ignore: List of errors (as integers, without the 'E') to ignore
-            (default = []).
+        ignore: List of errors to ingore, in addition to
+            PYTHON_LINT_IGNORE_DEFAULT (as strings, with the 'E' or 'W').
         exclude: List of labels to exclude from linting, e.g., [:foo.py].
         extra_srcs: Source files that are not discoverable via rules.
 
@@ -57,7 +63,6 @@ def python_lint(existing_rules = None, ignore = None, exclude = None,
 
             python_lint()
     """
-
     if existing_rules == None:
         existing_rules = native.existing_rules().values()
     for rule in existing_rules:
@@ -69,8 +74,10 @@ def python_lint(existing_rules = None, ignore = None, exclude = None,
         srcs = rule.get("srcs", ())
         if type(srcs) == type(()):
             files = [
-                s for s in srcs
-                if s.endswith(".py") and s not in (exclude or [])]
+                s
+                for s in srcs
+                if s.endswith(".py") and s not in (exclude or [])
+            ]
         else:
             # The select() syntax returns an object we (apparently) can't
             # inspect.  TODO(jwnimmer-tri) Figure out how to lint these files.

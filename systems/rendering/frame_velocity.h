@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/multibody/multibody_tree/math/spatial_velocity.h"
+#include "drake/multibody/math/spatial_velocity.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {

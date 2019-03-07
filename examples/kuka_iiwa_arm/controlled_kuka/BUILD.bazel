@@ -1,9 +1,9 @@
 # -*- python -*-
 
 load(
-    "//tools:drake.bzl",
-    "drake_cc_library",
+    "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
+    "drake_cc_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
@@ -15,9 +15,9 @@ drake_cc_library(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
+        "//attic/multibody:inverse_kinematics",
+        "//attic/multibody/parsers",
         "//common/trajectories:piecewise_polynomial",
-        "//multibody:inverse_kinematics",
-        "//multibody/parsers",
     ],
 )
 
@@ -31,12 +31,12 @@ drake_cc_binary(
     ],
     deps = [
         ":controlled_kuka_trajectory",
+        "//attic/manipulation/util:sim_diagram_builder",
+        "//attic/systems/controllers:rbt_inverse_dynamics_controller",
         "//common:find_resource",
         "//examples/kuka_iiwa_arm:iiwa_common",
         "//lcm",
-        "//manipulation/util:sim_diagram_builder",
         "//systems/analysis:simulator",
-        "//systems/controllers:inverse_dynamics_controller",
         "//systems/primitives:trajectory_source",
         "@gflags",
     ],
@@ -57,13 +57,11 @@ drake_cc_binary(
         "//geometry:geometry_visualization",
         "//geometry:scene_graph",
         "//lcm",
-        "//multibody/multibody_tree/multibody_plant",
-        "//multibody/multibody_tree/parsing:multibody_plant_sdf_parser",
+        "//multibody/parsing",
+        "//multibody/plant",
         "//systems/analysis:simulator",
         "//systems/controllers:inverse_dynamics_controller",
-        "//systems/lcm:lcm_pubsub_system",
         "//systems/primitives:trajectory_source",
-        "//systems/rendering:pose_bundle_to_draw_message",
         "@gflags",
     ],
 )

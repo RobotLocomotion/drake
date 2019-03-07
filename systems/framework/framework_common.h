@@ -3,10 +3,14 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_optional.h"
+#include "drake/common/drake_variant.h"
 #include "drake/common/type_safe_index.h"
+#include "drake/common/value.h"
 
 namespace drake {
 namespace systems {
@@ -16,12 +20,12 @@ namespace systems {
 // the same meaning in both class hierarchies. A System and its Context always
 // have parallel internal structure.
 
-/** Identifies a particular source value or computation for purposes of
-declaring and managing dependencies. Unique only within a given subsystem
-and its corresponding subcontext. */
 // This is presented as an ID to end users but is implemented internally as
 // a typed integer index for fast access into the std::vector of dependency
 // trackers. That's why it is named differently than the other "indexes".
+/** Identifies a particular source value or computation for purposes of
+declaring and managing dependencies. Unique only within a given subsystem
+and its corresponding subcontext. */
 using DependencyTicket = TypeSafeIndex<class DependencyTag>;
 
 /** Serves as a unique identifier for a particular CacheEntry in a System and
@@ -59,6 +63,9 @@ using NumericParameterIndex = TypeSafeIndex<class NumericParameterTag>;
 and its corresponding Context. */
 using AbstractParameterIndex = TypeSafeIndex<class AbstractParameterTag>;
 
+/** Serves as the local index for constraints declared on a given System. */
+using SystemConstraintIndex = TypeSafeIndex<class SystemConstraintTag>;
+
 /** All system ports are either vectors of Eigen scalars, or black-box
 AbstractValues which may contain any type. */
 typedef enum {
@@ -66,17 +73,46 @@ typedef enum {
   kAbstractValued = 1,
 } PortDataType;
 
+// TODO(sherm1) Implement this.
 /** Port type indicating a vector value whose size is not prespecified but
 rather depends on what it is connected to (not yet implemented). */
-// TODO(sherm1) Implement this.
 constexpr int kAutoSize = -1;
 
+/** (Advanced.)  Tag type that indicates a system or port should use a default
+name, instead of a user-provided name.  Most users will use the kUseDefaultName
+constant, without ever having to mention this type. */
+struct UseDefaultName final {};
+
+/** Name to use when you want a default one generated. You should normally
+give meaningful names to all Drake System entities you create rather than
+using this. */
+constexpr UseDefaultName kUseDefaultName = {};
+
+/** (Advanced.) Sugar that compares a variant against kUseDefaultName. */
+inline bool operator==(
+    const variant<std::string, UseDefaultName>& value,
+    const UseDefaultName&) {
+  return holds_alternative<UseDefaultName>(value);
+}
+
 #ifndef DRAKE_DOXYGEN_CXX
-class AbstractValue;
 class ContextBase;
 class InputPortBase;
 
 namespace internal {
+
+// A utility to call the package-private constructor of some framework classes.
+class FrameworkFactory {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FrameworkFactory)
+  FrameworkFactory() = delete;
+  ~FrameworkFactory() = delete;
+
+  template <typename T, typename... Args>
+  static std::unique_ptr<T> Make(Args... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+  }
+};
 
 // TODO(sherm1) These interface classes shouldn't be here -- split into their
 // own headers. As written they obscure the limited use of these interfaces
@@ -202,25 +238,46 @@ class SystemParentServiceInterface {
 // Ticket numbers for conditionally-allocated objects like ports and cache
 // entries are allocated beginning with kNextAvailableTicket defined below.
 enum BuiltInTicketNumbers {
-  kNothingTicket        =  0,
-  kTimeTicket           =  1,
-  kAccuracyTicket       =  2,
-  kQTicket              =  3,
-  kVTicket              =  4,
-  kZTicket              =  5,
-  kXcTicket             =  6,
-  kXdTicket             =  7,
-  kXaTicket             =  8,
-  kXTicket              =  9,
-  kConfigurationTicket  = 10,
-  kVelocityTicket       = 11,
-  kKinematicsTicket     = 12,
-  kAllParametersTicket  = 13,
-  kAllInputPortsTicket  = 14,
-  kAllSourcesTicket     = 15,
-  kXcdotTicket          = 16,
-  kXdhatTicket          = 17,
-  kNextAvailableTicket  = kXdhatTicket+1
+  // This set of tickets represents independent source values in a Context,
+  // and groupings of such source values.
+  kNothingTicket        =  0,  // Indicates "not dependent on anything".
+  kTimeTicket           =  1,  // Time.
+  kAccuracyTicket       =  2,  // Accuracy.
+  kQTicket              =  3,  // Continuous configuration variables.
+  kVTicket              =  4,  // Continuous velocity variables.
+  kZTicket              =  5,  // Miscellaneous continuous variables.
+  kXcTicket             =  6,  // All continuous variables xc = {q, v, z}.
+  kXdTicket             =  7,  // All discrete (numeric) state variables.
+  kXaTicket             =  8,  // All abstract state variables.
+  kXTicket              =  9,  // All state variables x = {xc, xd, xa}.
+  kPnTicket             = 10,  // All numeric parameters.
+  kPaTicket             = 11,  // All abstract parameters.
+  kAllParametersTicket  = 12,  // All parameters p = {pn, pa}.
+  kAllInputPortsTicket  = 13,  // All input ports u.
+  kAllSourcesTicket     = 14,  // All of the above.
+  kConfigurationTicket  = 15,  // All values that may affect configuration.
+  kKinematicsTicket     = 16,  // Configuration plus velocity-affecting values.
+  kLastSourceTicket     = kKinematicsTicket,  // (Used in testing.)
+
+  // The rest of these are pre-defined computations with associated cache
+  // entries.
+  kXcdotTicket          = 17,  // d/dt xc = {qdot, vdot, zdot}.
+  kPeTicket             = 18,  // Potential energy.
+  kKeTicket             = 19,  // Kinetic energy.
+  kPcTicket             = 20,  // Conservative power.
+  kPncTicket            = 21,  // Non-conservative power.
+
+  kNextAvailableTicket  = kPncTicket+1
+};
+
+// Specifies the prerequisite of an output port. It will always be either
+// an internal cache entry within the subsystem that owns the output port, or
+// an output port of a child subsystem that is being forwarded as an output port
+// of the child's parent Diagram. If the `child_subsystem` index is missing it
+// indicates that the prerequisite is internal.
+struct OutputPortPrerequisite {
+  optional<SubsystemIndex> child_subsystem;
+  DependencyTicket dependency;
 };
 
 // These are some utility methods that are reused within the framework.

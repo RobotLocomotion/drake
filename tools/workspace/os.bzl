@@ -22,7 +22,8 @@ def exec_using_which(repository_ctx, command):
     if fullpath == None:
         return struct(
             stdout = "",
-            error = "could not find which '%s'" % command[0])
+            error = "could not find which '%s'" % command[0],
+        )
 
     # Run the executable.
     result = repository_ctx.execute([fullpath] + command[1:])
@@ -32,26 +33,32 @@ def exec_using_which(repository_ctx, command):
             command[0],
             command,
             result.stdout,
-            result.stderr)
+            result.stderr,
+        )
         return struct(stdout = result.stdout, error = error)
 
     # Success.
     return struct(stdout = result.stdout, error = None)
 
-def _make_result(error = None,
-                 ubuntu_release = None,
-                 macos_release = None):
+def _make_result(
+        error = None,
+        ubuntu_release = None,
+        macos_release = None):
     """Return a fully-populated struct result for determine_os, below."""
+    if ubuntu_release != None:
+        distribution = "ubuntu"
+    elif macos_release != None:
+        distribution = "macos"
+    else:
+        distribution = None
     return struct(
         error = error,
-        distribution = (
-            "ubuntu" if (ubuntu_release != None) else
-            "macos" if (macos_release != None) else
-            None),
+        distribution = distribution,
         is_macos = (macos_release != None),
         is_ubuntu = (ubuntu_release != None),
         ubuntu_release = ubuntu_release,
-        macos_release = macos_release)
+        macos_release = macos_release,
+    )
 
 def _determine_linux(repository_ctx):
     """Handle determine_os on Linux."""
@@ -64,7 +71,8 @@ def _determine_linux(repository_ctx):
         "sed",
         "-n",
         "/^\(NAME\|VERSION_ID\)=/{s/[^=]*=//;s/\"//g;p}",
-        "/etc/os-release"])
+        "/etc/os-release",
+    ])
     if sed.error != None:
         return _make_result(error = error_prologue + sed.error)
 
@@ -72,14 +80,16 @@ def _determine_linux(repository_ctx):
     lines = [line.strip() for line in sed.stdout.strip().split("\n")]
     distro = " ".join([x for x in lines if len(x) > 0])
 
-    # Match supported Ubuntu release(s).
-    for ubuntu_release in ["16.04"]:
+    # Match supported Ubuntu release(s). These should match those listed in
+    # both doc/developers.rst the root CMakeLists.txt.
+    for ubuntu_release in ["16.04", "18.04"]:
         if distro == "Ubuntu " + ubuntu_release:
             return _make_result(ubuntu_release = ubuntu_release)
 
     # Nothing matched.
     return _make_result(
-        error = error_prologue + "unsupported distribution '%s'" % distro)
+        error = error_prologue + "unsupported distribution '%s'" % distro,
+    )
 
 def _determine_macos(repository_ctx):
     """Handle determine_os on macOS."""
@@ -90,7 +100,8 @@ def _determine_macos(repository_ctx):
     # Run sw_vers to determine macOS version.
     sw_vers = exec_using_which(repository_ctx, [
         "sw_vers",
-        "-productVersion"])
+        "-productVersion",
+    ])
     if sw_vers.error != None:
         return _make_result(error = error_prologue + sw_vers.error)
 
@@ -98,12 +109,13 @@ def _determine_macos(repository_ctx):
     macos_release = ".".join(major_minor_versions)
 
     # Match supported macOS release(s).
-    if macos_release in ["10.11", "10.12", "10.13"]:
+    if macos_release in ["10.13", "10.14"]:
         return _make_result(macos_release = macos_release)
 
     # Nothing matched.
     return _make_result(
-        error = error_prologue + "unsupported macOS '%s'" % macos_release)
+        error = error_prologue + "unsupported macOS '%s'" % macos_release,
+    )
 
 def determine_os(repository_ctx):
     """
@@ -118,7 +130,7 @@ def determine_os(repository_ctx):
         - error: str iff any error occurred, else None
         - distribution: str either "ubuntu" or "macos" if no error
         - is_macos: True iff on a supported macOS release, else False
-        - macos_release: str like "10.13" iff on a supported macOS, else None
+        - macos_release: str like "10.14" iff on a supported macOS, else None
         - is_ubuntu: True iff on a supported Ubuntu version, else False
         - ubuntu_release: str like "16.04" iff on a supported ubuntu, else None
     """
@@ -142,7 +154,7 @@ def os_specific_alias(repository_ctx, mapping):
             of values are of the form name=actual as in alias(name, actual).
 
     The keys of mapping are searched in the following preferential order:
-    - Exact release, via e.g., "Ubuntu 16.04" or "macOS 10.12"
+    - Exact release, via e.g., "Ubuntu 16.04" or "macOS 10.14"
     - Any release, via "Ubuntu default" or "macOS default"
     - Anything else, via "default"
     """
@@ -184,9 +196,14 @@ package(default_visibility = ["//visibility:public"])
     for item in found_items:
         name, actual = item.split("=")
         file_content += 'alias(name = "{}", actual = "{}")\n'.format(
-            name, actual)
-    repository_ctx.file("BUILD.bazel", content = file_content,
-                        executable = False)
+            name,
+            actual,
+        )
+    repository_ctx.file(
+        "BUILD.bazel",
+        content = file_content,
+        executable = False,
+    )
 
 def _os_specific_alias_impl(repository_ctx):
     os_specific_alias(repository_ctx, repository_ctx.attr.mapping)

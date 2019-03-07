@@ -8,7 +8,7 @@
 #include "robotlocomotion/image_array_t.hpp"
 #include "robotlocomotion/image_t.hpp"
 
-#include "drake/systems/sensors/image.h"
+#include "drake/systems/sensors/lcm_image_traits.h"
 
 using std::string;
 using robotlocomotion::image_t;
@@ -53,20 +53,17 @@ void Pack(const Image<kPixelType>& image, image_t* msg) {
 }
 
 template <PixelType kPixelType>
-void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
-                          uint8_t pixel_format, uint8_t channel_type,
-                          const string& frame_name, image_t* msg,
+void PackImageToLcmImageT(const Image<kPixelType>& image, image_t* msg,
                           bool do_compress) {
   // TODO(kunimatsu-tri) Fix seq here that is always set to zero.
   msg->header.seq = 0;
-  msg->header.utime = utime;
-  msg->header.frame_name = frame_name;
   msg->width = image.width();
   msg->height = image.height();
   msg->row_stride = image.kPixelSize * msg->width;
   msg->bigendian = false;
-  msg->pixel_format = pixel_format;
-  msg->channel_type = channel_type;
+  msg->pixel_format =
+      LcmPixelTraits<ImageTraits<kPixelType>::kPixelFormat>::kPixelFormat;
+  msg->channel_type = LcmImageTraits<kPixelType>::kChannelType;
 
   if (do_compress) {
     Compress(image, msg);
@@ -75,47 +72,110 @@ void PackImageToLcmImageT(const Image<kPixelType>& image, int64_t utime,
   }
 }
 
+void PackImageToLcmImageT(const AbstractValue& untyped_image,
+                          PixelType pixel_type, int64_t utime,
+                          const string& frame_name, image_t* msg,
+                          bool do_compress) {
+  msg->header.utime = utime;
+  msg->header.frame_name = frame_name;
+
+  switch (pixel_type) {
+    case PixelType::kRgb8U: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kRgb8U>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kBgr8U: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kBgr8U>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kRgba8U: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kRgba8U>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kBgra8U: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kBgra8U>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kGrey8U: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kGrey8U>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kDepth16U: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kDepth16U>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kDepth32F: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kDepth32F>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kLabel16I: {
+      const auto& image_value =
+          untyped_image.GetValue<Image<PixelType::kLabel16I>>();
+      PackImageToLcmImageT(image_value, msg, do_compress);
+      break;
+    }
+    case PixelType::kExpr:
+      throw std::domain_error("PixelType::kExpr is not supported.");
+  }
+}
+
 }  // anonymous namespace
+
+ImageToLcmImageArrayT::ImageToLcmImageArrayT(bool do_compress)
+    : do_compress_(do_compress) {
+  image_array_t_msg_output_port_index_ =
+      DeclareAbstractOutputPort(&ImageToLcmImageArrayT::CalcImageArray)
+          .get_index();
+}
 
 ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
                                              const string& depth_frame_name,
                                              const string& label_frame_name,
                                              bool do_compress)
-    : color_frame_name_(color_frame_name),
-      depth_frame_name_(depth_frame_name),
-      label_frame_name_(label_frame_name),
-      do_compress_(do_compress) {
+    : do_compress_(do_compress) {
   color_image_input_port_index_ =
-      DeclareAbstractInputPort(systems::Value<ImageRgba8U>()).get_index();
-
+      DeclareImageInputPort<PixelType::kRgba8U>(color_frame_name).get_index();
   depth_image_input_port_index_ =
-      DeclareAbstractInputPort(systems::Value<ImageDepth32F>()).get_index();
-
+      DeclareImageInputPort<PixelType::kDepth32F>(depth_frame_name).get_index();
   label_image_input_port_index_ =
-      DeclareAbstractInputPort(systems::Value<ImageLabel16I>()).get_index();
+      DeclareImageInputPort<PixelType::kLabel16I>(label_frame_name).get_index();
 
   image_array_t_msg_output_port_index_ =
       DeclareAbstractOutputPort(&ImageToLcmImageArrayT::CalcImageArray)
           .get_index();
 }
 
-const InputPortDescriptor<double>&
-ImageToLcmImageArrayT::color_image_input_port() const {
+const InputPort<double>& ImageToLcmImageArrayT::color_image_input_port() const {
+  DRAKE_DEMAND(color_image_input_port_index_ >= 0);
   return this->get_input_port(color_image_input_port_index_);
 }
 
-const InputPortDescriptor<double>&
-ImageToLcmImageArrayT::depth_image_input_port() const {
+const InputPort<double>& ImageToLcmImageArrayT::depth_image_input_port() const {
+  DRAKE_DEMAND(depth_image_input_port_index_ >= 0);
   return this->get_input_port(depth_image_input_port_index_);
 }
 
-const InputPortDescriptor<double>&
-ImageToLcmImageArrayT::label_image_input_port() const {
+const InputPort<double>& ImageToLcmImageArrayT::label_image_input_port() const {
+  DRAKE_DEMAND(label_image_input_port_index_ >= 0);
   return this->get_input_port(label_image_input_port_index_);
 }
 
-const OutputPort<double>&
-ImageToLcmImageArrayT::image_array_t_msg_output_port() const {
+const OutputPort<double>& ImageToLcmImageArrayT::image_array_t_msg_output_port()
+    const {
   return System<double>::get_output_port(image_array_t_msg_output_port_index_);
 }
 
@@ -126,53 +186,15 @@ void ImageToLcmImageArrayT::CalcImageArray(
   msg->num_images = 0;
   msg->images.clear();
 
-  const AbstractValue* color_image_value =
-      this->EvalAbstractInput(context, color_image_input_port_index_);
+  for (int i = 0; i < get_num_input_ports(); i++) {
+    const auto& image_value = this->get_input_port(i).
+        template Eval<AbstractValue>(context);
 
-  const AbstractValue* depth_image_value =
-      this->EvalAbstractInput(context, depth_image_input_port_index_);
-
-  const AbstractValue* label_image_value =
-      this->EvalAbstractInput(context, label_image_input_port_index_);
-
-  if (color_image_value) {
-    const ImageRgba8U& color_image =
-        color_image_value->GetValue<ImageRgba8U>();
-
-    image_t color_image_msg;
-    PackImageToLcmImageT(color_image, msg->header.utime,
-                         image_t::PIXEL_FORMAT_RGBA,
-                         image_t::CHANNEL_TYPE_UINT8, color_frame_name_,
-                         &color_image_msg,
-                         do_compress_);
-    msg->images.push_back(color_image_msg);
-    msg->num_images++;
-  }
-
-  if (depth_image_value) {
-    const ImageDepth32F& depth_image =
-        depth_image_value->GetValue<ImageDepth32F>();
-    image_t depth_image_msg;
-    PackImageToLcmImageT(depth_image, msg->header.utime,
-                         image_t::PIXEL_FORMAT_DEPTH,
-                         image_t::CHANNEL_TYPE_FLOAT32, depth_frame_name_,
-                         &depth_image_msg,
-                         do_compress_);
-    msg->images.push_back(depth_image_msg);
-    msg->num_images++;
-  }
-
-  if (label_image_value) {
-    const ImageLabel16I& label_image =
-        label_image_value->GetValue<ImageLabel16I>();
-
-    image_t label_image_msg;
-    PackImageToLcmImageT(label_image, msg->header.utime,
-                         image_t::PIXEL_FORMAT_LABEL,
-                         image_t::CHANNEL_TYPE_INT16, label_frame_name_,
-                         &label_image_msg,
-                         do_compress_);
-    msg->images.push_back(label_image_msg);
+    image_t image_msg;
+    PackImageToLcmImageT(image_value, input_port_pixel_type_[i],
+                         msg->header.utime, this->get_input_port(i).get_name(),
+                         &image_msg, do_compress_);
+    msg->images.push_back(image_msg);
     msg->num_images++;
   }
 }

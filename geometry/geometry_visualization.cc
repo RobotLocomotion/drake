@@ -1,16 +1,23 @@
 #include "drake/geometry/geometry_visualization.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/geometry/geometry_state.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/lcmt_viewer_draw.hpp"
 #include "drake/lcmt_viewer_geometry_data.hpp"
 #include "drake/math/rotation_matrix.h"
+#include "drake/systems/lcm/lcm_publisher_system.h"
+#include "drake/systems/lcm/serializer.h"
+#include "drake/systems/rendering/pose_bundle_to_draw_message.h"
 
 namespace drake {
 namespace geometry {
@@ -105,6 +112,16 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.string_data = mesh.filename();
   }
 
+  // For visualization, Convex is the same as Mesh.
+  void ImplementGeometry(const Convex& mesh, void*) override {
+    geometry_data_.type = geometry_data_.MESH;
+    geometry_data_.num_float_data = 3;
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    geometry_data_.string_data = mesh.filename();
+  }
+
  private:
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
@@ -124,68 +141,88 @@ namespace internal {
 
 lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
     const GeometryState<double>& state) {
-  using internal::InternalAnchoredGeometry;
+  using internal::InternalFrame;
   using internal::InternalGeometry;
 
   lcmt_viewer_load_robot message{};
   // Populate the message.
-  const int frame_count = state.get_num_frames();
-  const int anchored_count =
-      static_cast<int>(state.anchored_geometry_index_id_map_.size());
 
-  // Include the world frame as one of the frames (if there are anchored
-  // geometries).
-  int total_link_count = frame_count + (anchored_count > 0 ? 1 : 0);
-  message.num_links = total_link_count;
-  message.link.resize(total_link_count);
+  // Collect the dynamic frames that actually have illustration geometry. These
+  // (plus possibly the world frame) are the frames that will be broadcast in
+  // the message.
+  std::vector<std::pair<FrameId, int>> dynamic_frames;
+  for (const auto& pair : state.frames_) {
+    const FrameId frame_id = pair.first;
+    // We'll handle the world frame special.
+    if (frame_id == InternalFrame::world_frame_id()) continue;
+    const int count =
+        state.NumGeometriesWithRole(frame_id, Role::kIllustration);
+    if (count > 0) {
+      dynamic_frames.push_back({frame_id, count});
+    }
+  }
+  // Add the world frame if it has geometries with illustration role.
+  const int anchored_count = state.NumGeometriesWithRole(
+      InternalFrame::world_frame_id(), Role::kIllustration);
+  const int frame_count = static_cast<int>(dynamic_frames.size()) +
+      (anchored_count > 0 ? 1 : 0);
+
+  message.num_links = frame_count;
+  message.link.resize(frame_count);
+
+  const Eigen::Vector4d default_color({0.9, 0.9, 0.9, 1.0});
 
   int link_index = 0;
   // Load anchored geometry into the world frame.
-  {
-    if (anchored_count) {
-      message.link[0].name = "world";
-      message.link[0].robot_num = 0;
-      message.link[0].num_geom = anchored_count;
-      message.link[0].geom.resize(anchored_count);
-      int geom_index = 0;
-      for (const auto& pair : state.anchored_geometries_) {
-        const InternalAnchoredGeometry& geometry = pair.second;
-        const Shape& shape = geometry.get_shape();
-        const Eigen::Vector4d& color =
-            geometry.get_visual_material().diffuse();
+  if (anchored_count) {
+    message.link[0].name = "world";
+    message.link[0].robot_num = 0;
+    message.link[0].num_geom = anchored_count;
+    message.link[0].geom.resize(anchored_count);
+    int geom_index = 0;
+    const InternalFrame& world_frame =
+        state.frames_.at(InternalFrame::world_frame_id());
+    for (const GeometryId id : world_frame.child_geometries()) {
+      const InternalGeometry& geometry = state.geometries_.at(id);
+      const IllustrationProperties* props = geometry.illustration_properties();
+      if (props != nullptr) {
+        const Shape& shape = geometry.shape();
+        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+            "phong", "diffuse", default_color);
         message.link[0].geom[geom_index] = MakeGeometryData(
-            shape, geometry.get_pose_in_parent(), color);
+            shape, geometry.X_FG(), color);
         ++geom_index;
       }
-      link_index = 1;
     }
+    link_index = 1;
   }
 
   // Load dynamic geometry into their own frames.
-  for (const auto& pair : state.frames_) {
-    const internal::InternalFrame& frame = pair.second;
-    SourceId s_id = state.get_source_id(frame.get_id());
+  for (const auto& pair : dynamic_frames) {
+    const FrameId frame_id = pair.first;
+    const int geometry_count = pair.second;
+    const internal::InternalFrame& frame = state.frames_.at(frame_id);
+    SourceId s_id = state.get_source_id(frame.id());
     const std::string& src_name = state.get_source_name(s_id);
     // TODO(SeanCurtis-TRI): The name in the load message *must* match the name
     // in the update message. Make sure this code and the SceneGraph output
     // use a common code-base to translate (source_id, frame) -> name.
-    message.link[link_index].name = src_name + "::" + frame.get_name();
-    message.link[link_index].robot_num = frame.get_frame_group();
-    const int geom_count = static_cast<int>(
-        frame.get_child_geometries().size());
-    message.link[link_index].num_geom = geom_count;
-    message.link[link_index].geom.resize(geom_count);
+    message.link[link_index].name = src_name + "::" + frame.name();
+    message.link[link_index].robot_num = frame.frame_group();
+    message.link[link_index].num_geom = geometry_count;
+    message.link[link_index].geom.resize(geometry_count);
     int geom_index = 0;
-    for (GeometryId geom_id : frame.get_child_geometries()) {
+    for (GeometryId geom_id : frame.child_geometries()) {
       const InternalGeometry& geometry = state.geometries_.at(geom_id);
-      GeometryIndex index = geometry.get_engine_index();
-      const Isometry3<double> X_FG = state.X_FG_.at(index);
-      const Shape& shape = geometry.get_shape();
-      const Eigen::Vector4d& color =
-          geometry.get_visual_material().diffuse();
-      message.link[link_index].geom[geom_index] =
-          MakeGeometryData(shape, X_FG, color);
-      ++geom_index;
+      const IllustrationProperties* props = geometry.illustration_properties();
+      if (props != nullptr) {
+        const Shape& shape = geometry.shape();
+        const Eigen::Vector4d& color = props->GetPropertyOrDefault(
+            "phong", "diffuse", default_color);
+        message.link[link_index].geom[geom_index] =
+            MakeGeometryData(shape, geometry.X_FG(), color);
+        ++geom_index;
+      }
     }
     ++link_index;
   }
@@ -195,19 +232,69 @@ lcmt_viewer_load_robot GeometryVisualizationImpl::BuildLoadMessage(
 
 }  // namespace internal
 
-void DispatchLoadMessage(const GeometryState<double>& state) {
-  using lcm::DrakeLcm;
-
+// TODO(sherm1) Per Sean Curtis, the load message should take its geometry
+// from a Context rather than directly out of the SceneGraph. If geometry
+// has been added to the Context it won't be loaded here. A runtime
+// geometry change will likely require a geometry-changed event.
+void DispatchLoadMessage(const SceneGraph<double>& scene_graph,
+                         lcm::DrakeLcmInterface* lcm) {
   lcmt_viewer_load_robot message =
-      internal::GeometryVisualizationImpl::BuildLoadMessage(state);
+      internal::GeometryVisualizationImpl::BuildLoadMessage(
+          *scene_graph.initial_state_);
   // Send a load message.
-  DrakeLcm lcm;
-  Publish(&lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
+  Publish(lcm, "DRAKE_VIEWER_LOAD_ROBOT", message);
 }
 
-void DispatchLoadMessage(const SceneGraph<double>& scene_graph) {
-  scene_graph.ThrowIfContextAllocated("DisplatchLoadMessage");
-  DispatchLoadMessage(*scene_graph.initial_state_);
+systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph,
+    const systems::OutputPort<double>& pose_bundle_output_port,
+    lcm::DrakeLcmInterface* lcm_optional) {
+  using systems::lcm::LcmPublisherSystem;
+  using systems::lcm::Serializer;
+  using systems::rendering::PoseBundleToDrawMessage;
+
+  DRAKE_DEMAND(builder != nullptr);
+
+  PoseBundleToDrawMessage* converter =
+      builder->template AddSystem<PoseBundleToDrawMessage>();
+
+  LcmPublisherSystem* publisher =
+      builder->template AddSystem<LcmPublisherSystem>(
+          "DRAKE_VIEWER_DRAW",
+          std::make_unique<Serializer<drake::lcmt_viewer_draw>>(),
+          lcm_optional, 1 / 60.0 /* publish period */);
+
+  // The functor we create in publisher here holds a reference to scene_graph,
+  // which must therefore live as long as publisher does. We can count on that
+  // because scene_graph is required to be contained in builder (see method
+  // documentation), along with the converter and publisher we just added.
+  // Builder will transfer ownership of all of these objects to the Diagram it
+  // eventually builds.
+  publisher->AddInitializationMessage([&scene_graph](
+      const systems::Context<double>&, lcm::DrakeLcmInterface* lcm) {
+    DispatchLoadMessage(scene_graph, lcm);
+  });
+
+  // Note that this will fail if scene_graph is not actually in builder.
+  builder->Connect(pose_bundle_output_port, converter->get_input_port(0));
+  builder->Connect(*converter, *publisher);
+
+  return publisher;
+}
+
+systems::lcm::LcmPublisherSystem* ConnectDrakeVisualizer(
+    systems::DiagramBuilder<double>* builder,
+    const SceneGraph<double>& scene_graph, lcm::DrakeLcmInterface* lcm) {
+  return ConnectDrakeVisualizer(builder, scene_graph,
+                                scene_graph.get_pose_bundle_output_port(), lcm);
+}
+
+IllustrationProperties MakeDrakeVisualizerProperties(
+    const Vector4<double>& diffuse) {
+  IllustrationProperties props;
+  props.AddProperty("phong", "diffuse", diffuse);
+  return props;
 }
 
 }  // namespace geometry

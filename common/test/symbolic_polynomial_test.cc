@@ -80,9 +80,14 @@ class SymbolicPolynomialTest : public ::testing::Test {
   };
 };
 
-TEST_F(SymbolicPolynomialTest, DefaultConstructor) {
-  const Polynomial p{};
+// Tests that default constructor and EIGEN_INITIALIZE_MATRICES_BY_ZERO
+// constructor both create the same value.
+TEST_F(SymbolicPolynomialTest, DefaultConstructors) {
+  const Polynomial p;
   EXPECT_TRUE(p.monomial_to_coefficient_map().empty());
+
+  const Polynomial p_zero(0);
+  EXPECT_TRUE(p_zero.monomial_to_coefficient_map().empty());
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructFromMapType1) {
@@ -117,7 +122,7 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType3) {
 TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {
   for (int i = 0; i < monomials_.size(); ++i) {
     const Polynomial p{monomials_[i]};
-    for (const std::pair<Monomial, Expression>& map :
+    for (const std::pair<const Monomial, Expression>& map :
          p.monomial_to_coefficient_map()) {
       EXPECT_EQ(map.first, monomials_[i]);
       EXPECT_EQ(map.second, 1);
@@ -782,6 +787,56 @@ TEST_F(SymbolicPolynomialTest, Hash) {
   EXPECT_NE(h(p1), h(p2));
 }
 
+TEST_F(SymbolicPolynomialTest, RemoveTermsWithSmallCoefficients) {
+  // Single term.
+  Polynomial p1{1e-5 * x_ * x_};
+  EXPECT_PRED2(PolyEqual, p1.RemoveTermsWithSmallCoefficients(1E-4),
+               Polynomial(0));
+  EXPECT_PRED2(PolyEqual, p1.RemoveTermsWithSmallCoefficients(1E-5),
+               Polynomial(0));
+  EXPECT_PRED2(PolyEqual, p1.RemoveTermsWithSmallCoefficients(1E-6), p1);
+
+  // Multiple terms.
+  Polynomial p2(2 * x_ * x_ + 3 * x_ * y_ + 1E-4 * x_ - 1E-4);
+  EXPECT_PRED2(PolyEqual, p2.RemoveTermsWithSmallCoefficients(1E-4),
+               Polynomial(2 * x_ * x_ + 3 * x_ * y_));
+
+  // Coefficients are expressions.
+  Polynomial::MapType p3_map{};
+  p3_map.emplace(Monomial(var_x_, 2), 2 * sin(y_));
+  p3_map.emplace(Monomial(var_x_, 1), 1E-4 * cos(y_));
+  p3_map.emplace(Monomial(var_x_, 3), 1E-4 * y_);
+  p3_map.emplace(Monomial(), 1E-6);
+  Polynomial::MapType p3_expected_map{};
+  p3_expected_map.emplace(Monomial(var_x_, 2), 2 * sin(y_));
+  p3_expected_map.emplace(Monomial(var_x_, 1), 1E-4 * cos(y_));
+  p3_expected_map.emplace(Monomial(var_x_, 3), 1E-4 * y_);
+  EXPECT_PRED2(PolyEqual,
+               Polynomial(p3_map).RemoveTermsWithSmallCoefficients(1E-3),
+               Polynomial(p3_expected_map));
+}
+
+TEST_F(SymbolicPolynomialTest, EqualTo) {
+  const Polynomial p1{var_x_};
+  EXPECT_PRED2(PolyEqual, p1, Polynomial(var_x_));
+  EXPECT_PRED2(PolyEqual, Polynomial(var_a_ * var_x_, var_xy_),
+               Polynomial(var_x_ * var_a_, var_xy_));
+  EXPECT_PRED2(test::PolyNotEqual, Polynomial(var_a_ * var_x_, var_xy_),
+               Polynomial(var_b_ * var_x_, var_xy_));
+}
+
+TEST_F(SymbolicPolynomialTest, EqualToAfterExpansion) {
+  const Polynomial p1(2 * var_a_ * var_x_ * var_x_ + var_y_, var_xy_);
+  const Polynomial p2(var_x_ * var_x_ + 2 * var_y_, var_xy_);
+  const Polynomial p3(2 * var_a_ * var_x_ + var_b_ * var_x_ * var_y_, var_xy_);
+  // p2 * p3 * p1 and p1 * p2 * p3 are not structurally equal.
+  EXPECT_PRED2(test::PolyNotEqual, p2 * p3 * p1, p1 * p2 * p3);
+  // But they are equal after expansion.
+  EXPECT_PRED2(test::PolyEqualAfterExpansion, p2 * p3 * p1, p1 * p2 * p3);
+
+  // p1 * p2 is not equal to p2 * p3 after expansion.
+  EXPECT_PRED2(test::PolyNotEqualAfterExpansion, p1 * p2, p2 * p3);
+}
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

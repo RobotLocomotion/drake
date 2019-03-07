@@ -1,15 +1,19 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+tap 'bazelbuild/tap'
+tap 'homebrew/cask-fonts' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'
 tap 'robotlocomotion/director'
 
 brew 'bash-completion'
-brew 'bazel'
-brew 'clang-format'
+brew 'bazelbuild/tap/bazel'
 brew 'diffstat'
 brew 'doxygen'
 brew 'freetype'
 brew 'graphviz'
 brew 'kcov'
+brew 'llvm@6'
 brew 'patchutils'
 brew 'pkg-config'
+
+cask 'font-dejavu-sans' unless File.exist? '/Library/Fonts/DejaVuSans.ttf'

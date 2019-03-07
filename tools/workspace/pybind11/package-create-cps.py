@@ -1,5 +1,3 @@
-#!/usr/bin/env python2
-
 import sys
 
 from drake.tools.install.cpsutils import read_defs
@@ -23,18 +21,10 @@ content = """
   "Version": "%(VERSION_MAJOR)s.%(VERSION_MINOR)s.%(VERSION_PATCH)s",
   "Requires": {
     "PythonInterp": {
-      "Version": "2.7",
-      "X-CMake-Find-Args": [
-        "EXACT",
-        "MODULE"
-      ]
+      "X-CMake-Find-Args": ["MODULE"]
     },
     "PythonLibs": {
-      "Version": "2.7",
-      "X-CMake-Find-Args": [
-        "EXACT",
-        "MODULE"
-      ]
+      "X-CMake-Find-Args": ["MODULE"]
     }
   },
   "Default-Components": [":pybind11"],

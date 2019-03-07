@@ -1,49 +1,48 @@
 #include "drake/geometry/proximity_engine.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <utility>
 
+#include <fcl/common/types.h>
 #include <fcl/fcl.h>
 #include <fcl/geometry/shape/box.h>
+#include <fcl/geometry/shape/convex.h>
 #include <fcl/narrowphase/collision_request.h>
+#include <fcl/narrowphase/distance_request.h>
+#include <spruce.hh>
+#include <tiny_obj_loader.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_variant.h"
 #include "drake/common/sorted_vectors_have_intersection.h"
+#include "drake/geometry/utilities.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
 
 using Eigen::Vector3d;
+using Eigen::Isometry3d;
 using std::make_shared;
 using std::make_unique;
 using std::move;
 using std::shared_ptr;
 using std::unique_ptr;
+using math::RigidTransformd;
+using math::RotationMatrixd;
 
 namespace {
 
-// TODO(SeanCurtis-TRI): Swap all Isometry3 for Transforms.
-
-// ADL-reliant helper functions for converting Isometry<T> to Isometry<double>.
-const Isometry3<double>& convert(const Isometry3<double>& transform) {
-  return transform;
-}
-
-template <class VectorType>
-Isometry3<double> convert(
-    const Isometry3<Eigen::AutoDiffScalar<VectorType>>& transform) {
-  Isometry3<double> result;
-  for (int r = 0; r < 4; ++r) {
-    for (int c = 0; c < 4; ++c) {
-      result.matrix()(r, c) = ExtractDoubleOrThrow(transform.matrix()(r, c));
-    }
-  }
-  return result;
-}
+// TODO(SeanCurtis-TRI): Swap all Isometry3 for RigidTransforms.
 
 // Utilities/functions for working with the encoding of collision object index
 // and mobility type in the fcl::CollisionObject user data field. The encoded
@@ -74,15 +73,15 @@ class EncodedData {
   explicit EncodedData(const fcl::CollisionObject<double>& fcl_object)
       : data_(reinterpret_cast<uintptr_t>(fcl_object.getUserData())) {}
 
-  // Factory method for creating EncodedData from the given `index`. By
-  // definition, the GeometryIndex only applies to dynamic geometry.
+  // Factory method for creating EncodedData from the given `index` for a
+  // dynamic geometry.
   static EncodedData encode_dynamic(GeometryIndex index) {
     return EncodedData(index, true);
   }
 
-  // Factory method for creating EncodedData from the given `index`. By
-  // definition, the AchoredGeometryIndex only applies to anchored geometry.
-  static EncodedData encode_anchored(AnchoredGeometryIndex index) {
+  // Factory method for creating EncodedData from the given `index` for an
+  // anchored geometry.
+  static EncodedData encode_anchored(GeometryIndex index) {
     return EncodedData(index, false);
   }
 
@@ -102,14 +101,14 @@ class EncodedData {
   bool is_dynamic() const { return (data_ & kIsDynamicMask) != 0; }
 
   // Reports the stored index.
-  int index() const { return static_cast<int>(data_ & ~kIsDynamicMask); }
+  GeometryIndex index() const {
+    return static_cast<GeometryIndex>(data_ & ~kIsDynamicMask);
+  }
 
   // Given an fcl object and maps from index to id of both dynamic and anchored
   // geometry, returns the geometry id for the given fcl object.
-  GeometryId id(const std::vector<GeometryId>& dynamic_map,
-                const std::vector<GeometryId>& anchored_map) const {
-    const uintptr_t i = index();
-    return is_dynamic() ? dynamic_map[i] : anchored_map[i];
+  GeometryId id(const std::vector<GeometryId>& geometry_map) const {
+    return geometry_map[index()];
   }
 
   // Reports the encoded data.
@@ -184,8 +183,7 @@ class CollisionFilterLegacy {
     auto it = std::lower_bound(cliques.begin(), cliques.end(), clique_id);
 
     // This test prevents duplicate clique ids from being added.
-    if (it == cliques.end() || clique_id < *it)
-      cliques.insert(it, clique_id);
+    if (it == cliques.end() || clique_id < *it) cliques.insert(it, clique_id);
   }
 
   int num_cliques(uintptr_t geometry_id) const {
@@ -194,7 +192,14 @@ class CollisionFilterLegacy {
   }
 
   // This method is not thread safe.
-  int next_clique_id() { return next_available_clique_++; }
+  int next_clique_id() {
+    int clique = next_available_clique_++;
+    if (clique < 0) {
+      throw std::logic_error(
+          "SceneGraph has run out of cliques (more than two billion served)");
+    }
+    return clique;
+  }
 
   // Test support; to detect when cliques are generated.
   int peek_next_clique() const { return next_available_clique_; }
@@ -206,18 +211,58 @@ class CollisionFilterLegacy {
   int next_available_clique_{0};
 };
 
+// Struct for use in DistanceCallback(). Contains the distance request
+// and accumulates result in a drake::geometry::SignedDistancePair vector.
+struct DistanceData {
+  DistanceData(const std::vector<GeometryId>* geometry_map_in,
+               const CollisionFilterLegacy* collision_filter_in)
+      : geometry_map(*geometry_map_in),
+        collision_filter(*collision_filter_in) {}
+  // Maps so the distance call back can map from engine index to geometry id.
+  const std::vector<GeometryId>& geometry_map;
+  const CollisionFilterLegacy& collision_filter;
+
+  // Distance request
+  fcl::DistanceRequestd request;
+
+  // Vectors of distance results
+  std::vector<SignedDistancePair<double>>* nearest_pairs{};
+};
+
+// Struct for use in DistanceFromPointCallback(). Contains the distance request
+// and accumulates result in a vector of drake::geometry::SignedDistanceToPoint.
+struct DistanceFromPointCallbackData {
+  DistanceFromPointCallbackData(
+      fcl::CollisionObjectd* query_in,
+      const std::vector<GeometryId>* geometry_map_in,
+      const double threshold_in,
+      std::vector<SignedDistanceToPoint<double>>* distances_in)
+      : query_point(query_in),
+        geometry_map(*geometry_map_in),
+        threshold(threshold_in),
+        distances(distances_in) {}
+
+  // The query point is represented as a zero-radius sphere.
+  fcl::CollisionObjectd* query_point;
+
+  // Maps so the distance call back can map from geometry index to geometry id.
+  const std::vector<GeometryId>& geometry_map;
+
+  // We ignore any object beyond this distance.
+  const double threshold;
+
+  std::vector<SignedDistanceToPoint<double>>* distances;
+};
+
 // Struct for use in SingleCollisionCallback(). Contains the collision request
 // and accumulates results in a drake::multibody::collision::PointPair vector.
 struct CollisionData {
-  CollisionData(const std::vector<GeometryId>* dynamic_map_in,
-                const std::vector<GeometryId>* anchored_map_in,
+  CollisionData(const std::vector<GeometryId>* geometry_map_in,
                 const CollisionFilterLegacy* collision_filter_in)
-      : dynamic_map(*dynamic_map_in),
-        anchored_map(*anchored_map_in),
+      : geometry_map(*geometry_map_in),
         collision_filter(*collision_filter_in) {}
   // Maps so the penetration call back can map from engine index to geometry id.
-  const std::vector<GeometryId>& dynamic_map;
-  const std::vector<GeometryId>& anchored_map;
+  const std::vector<GeometryId>& geometry_map;
   const CollisionFilterLegacy& collision_filter;
 
   // Collision request
@@ -226,6 +271,482 @@ struct CollisionData {
   // Vector of distance results
   std::vector<PenetrationAsPointPair<double>>* contacts{};
 };
+
+// An internal functor to support DistanceFromPointCallback() and
+// ComputeNarrowPhaseDistance(). It computes the signed distance to a query
+// point from a supported geometry. Each overload to the call operator
+// reports the signed distance (encoded as SignedDistanceToPoint) between the
+// functor's stored query point and the given geometry argument.
+class DistanceToPoint {
+ public:
+  // Constructs the functor DistanceToPoint.
+  // @param id    the id of the geometry G,
+  // @param X_WG  pose of the geometry G in World frame,
+  // @param p_WQ  position of the query point Q in World frame.
+  // @note Some parts of the geometry (id, pose) are initialized in this
+  // constructor, and the remaining part of the geometry (shape) is a parameter
+  // to the call operator() below.
+  DistanceToPoint(const GeometryId id,
+                  const RigidTransformd& X_WG,
+                  const Vector3d& p_WQ) :
+      geometry_id_(id), X_WG_(X_WG), p_WQ_(p_WQ) {}
+
+  // Overload for Sphere.
+  SignedDistanceToPoint<double> operator()(const fcl::Sphered& sphere);
+
+  // Overload for Box.
+  SignedDistanceToPoint<double> operator()(const fcl::Boxd& box);
+
+ private:
+  // Calculate a tolerance relative to a given `size` parameter with a lower
+  // bound of 1e-14 meter. If the `size` parameter is larger than 1 meter, we
+  // use the relative tolerance of 1e-14 times the `size`.  If the `size` is
+  // smaller than 1 meter, we use the absolute tolerance 1e-14 meter. The
+  // 1e-14-meter lower bound helps us handle possible round off errors arising
+  // from applying a pose X_WG to a geometry G. Given a query point Q exactly
+  // on the boundary ∂G, if we apply X_WG to both Q and G, the point Q is likely
+  // to deviate from ∂G more than the machine epsilon, which is around 2e-16.
+  static double RelativeTolerance(double size) {
+    return 1e-14 * std::max(1., size);
+  }
+  // This version of Sign(x) returns +1.0 for zero.
+  static double Sign(double x) { return (x < 0.0) ? -1. : 1.; }
+  // Picks the axis i whose coordinate p(i) is closest to the boundary value
+  // ±bounds(i). If there are ties, we prioritize according to an arbitrary
+  // ordering: +x,-x,+y,-y,+z,-z.
+  static int ExtremalAxis(const Vector3d& p, const Vector3d& bounds) {
+    double min_dist = std::numeric_limits<double>::infinity();
+    int axis = -1;
+    for (int i = 0; i < 3; ++i) {
+      for (const auto bound : {bounds(i), -bounds(i)}) {
+        const double dist = std::abs(bound - p(i));
+        if (dist < min_dist) {
+          min_dist = dist;
+          axis = i;
+        }
+      }
+    }
+    return axis;
+  }
+
+  // The id of the geometry G.
+  const GeometryId geometry_id_;
+  // The pose of the geometry G in World frame.
+  const RigidTransformd X_WG_;
+  // The position of the query point Q in World frame.
+  const Vector3d p_WQ_;
+};
+
+// An internal functor to compute sphere-sphere signed distance and sphere-box
+// signed distance.
+class DistancePairGeometry {
+ public:
+  DistancePairGeometry(const GeometryId& id_A, const GeometryId& id_B,
+                       const RigidTransformd& X_WA, const RigidTransformd& X_WB,
+                       fcl::DistanceResultd* result)
+      : id_A_(id_A), id_B_(id_B), X_WA_(X_WA), X_WB_(X_WB), result_(result) {}
+
+  // Given a sphere A centered at Ao with radius r and another geometry B,
+  // we want to compute
+  // 1. φ_A,B = the signed distance between the two objects, which is positive
+  //    for non-overlapping objects and equals the negative penetration depth
+  //    for overlapping objects.
+  // 2. Na, Nb = a pair of witness points, Na ∈ ∂A, Nb ∈ ∂B (not necessarily
+  //    unique), |Na-Nb| = |φ_A,B|.
+  //
+  // Define these functions: (available from SignedDistanceToPoint)
+  //   φ_B:ℝ³→ℝ, φ_B(p)  = signed distance to point p from B.
+  //   η_B:ℝ³→ℝ³, η_B(p) = a nearest point to p on the boundary ∂B (not
+  //                       necessarily unique).
+  //   ∇φ_B:ℝ³→ℝ³, ∇φ_B(p) = gradient vector of φ_B with respect to p.
+  //                         It has unit length by construction.
+  // Algorithm:
+  // 1. φ_A,B = φ_B(Ao) - r
+  // 2. Nb = η_B(Ao)
+  // 3. Na = Ao - r * ∇φ_B(Ao)
+  void operator()(const fcl::Sphered* sphere_A, const fcl::Sphered* sphere_B);
+  void operator()(const fcl::Sphered* sphere_A, const fcl::Boxd* box_B);
+  void operator()(const fcl::Boxd* box_A, const fcl::Sphered* sphere_B);
+
+ private:
+  // Performs step 3. Na = Ao - r * ∇φ_B(Ao).
+  // @param radius_A the radius of the sphere A.
+  // @param X_WA the pose of the sphere A.
+  // @param gradB_W the gradient vector ∇φ_B(Ao).
+  // @retval p_WNa the witness point Na ∈ ∂A expressed in World frame.
+  Vector3d WitnessPointOnSphere(
+      const double radius_A, const RigidTransformd& X_WA,
+      const Vector3d& gradB_W) const;
+
+  GeometryId id_A_;
+  GeometryId id_B_;
+  RigidTransformd X_WA_;
+  RigidTransformd X_WB_;
+  fcl::DistanceResultd* result_;
+};
+
+Vector3d DistancePairGeometry::WitnessPointOnSphere(
+    const double radius_A, const RigidTransformd& X_WA,
+    const Vector3d& gradB_W) const {
+  // Notation:
+  // gradB_W = ∇φ_B(Ao) expressed in World frame.
+  // gradB_A = ∇φ_B(Ao) expressed in A's frame.
+  const RotationMatrixd& R_WA = X_WA.rotation();
+  const RotationMatrixd R_AW = R_WA.transpose();
+  const Vector3d gradB_A = R_AW * gradB_W;
+  // By construction gradB_A has unit length.
+  const Vector3d p_ANa = -radius_A * gradB_A;
+  const Vector3d p_WNa = X_WA * p_ANa;
+  return p_WNa;
+}
+
+// Signed distance between two spheres.
+void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
+                                      const fcl::Sphered* sphere_B) {
+  const SignedDistanceToPoint<double> sphere_B_to_point_Ao =
+      DistanceToPoint {id_B_, X_WB_, X_WA_.translation()}(*sphere_B);
+  const double distance = sphere_B_to_point_Ao.distance - sphere_A->radius;
+  // Nb is the witness point on ∂B.
+  const Vector3d& p_BNb = sphere_B_to_point_Ao.p_GN;
+  const Vector3d p_WNb = X_WB_ * p_BNb;
+  // Na is the witness point on ∂A.
+  const Vector3d& gradB_W = sphere_B_to_point_Ao.grad_W;
+  const Vector3d p_WNa = WitnessPointOnSphere(sphere_A->radius, X_WA_, gradB_W);
+  // fcl::DistanceResult expects -1 for geometry shapes (triangle id or
+  // point id for meshes or point clouds, and cell id for octrees).
+  result_->update(distance, sphere_A, sphere_B, -1, -1, p_WNa, p_WNb);
+}
+
+// Signed distance between a sphere and a box.
+void DistancePairGeometry::operator()(const fcl::Sphered* sphere_A,
+                                      const fcl::Boxd* box_B) {
+  SignedDistanceToPoint<double> box_B_to_point_Ao =
+      DistanceToPoint {id_B_, X_WB_, X_WA_.translation()}(*box_B);
+  const double distance = box_B_to_point_Ao.distance - sphere_A->radius;
+  // Nb is the witness point on ∂B.
+  const Vector3d& p_BNb = box_B_to_point_Ao.p_GN;
+  const Vector3d p_WNb = X_WB_ * p_BNb;
+  // Na is the witness point on ∂A.
+  const Vector3d& gradB_W = box_B_to_point_Ao.grad_W;
+  const Vector3d p_WNa = WitnessPointOnSphere(sphere_A->radius, X_WA_, gradB_W);
+  // fcl::DistanceResult expects -1 for geometry shapes (triangle id or
+  // point id for meshes or point clouds, and cell id for octrees).
+  result_->update(distance, sphere_A, box_B, -1, -1, p_WNa, p_WNb);
+}
+
+// Signed distance between a box and a sphere. Instead of calling
+// operator()(sphere_B, box_A), we repeat almost the same computation again.
+// The reason is that to call operator()(sphere_B, box_A), we have to swap
+// the pose X_WA_ v.s. X_WB_ and id_A_ v.s. id_B_ before and after the call,
+// and we have to swap o1 v.s. o2 and the two nearest_points[2] in the result_
+// variable after the call. I think the overhead from swap() is not worth it.
+void DistancePairGeometry::operator()(const fcl::Boxd* box_A,
+                                      const fcl::Sphered* sphere_B) {
+  SignedDistanceToPoint<double> box_A_to_point_Bo =
+      DistanceToPoint {id_A_, X_WA_, X_WB_.translation()}(*box_A);
+  const double distance = box_A_to_point_Bo.distance - sphere_B->radius;
+  // Na is the witness point on ∂A.
+  const Vector3d& p_ANa = box_A_to_point_Bo.p_GN;
+  const Vector3d p_WNa = X_WA_ * p_ANa;
+  // Nb is the witness point on ∂B.
+  const Vector3d& gradA_W = box_A_to_point_Bo.grad_W;
+  const Vector3d p_WNb = WitnessPointOnSphere(sphere_B->radius, X_WB_, gradA_W);
+  // fcl::DistanceResult expects -1 for geometry shapes (triangle id or
+  // point id for meshes or point clouds, and cell id for octrees).
+  result_->update(distance, box_A, sphere_B, -1, -1, p_WNa, p_WNb);
+}
+
+// Helps DistanceCallback(). Do it in closed forms for sphere-sphere or
+// sphere-box. Otherwise, use FCL GJK/EPA.
+void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
+                                const fcl::CollisionObjectd* b,
+                                const std::vector<GeometryId>& geometry_map,
+                                const fcl::DistanceRequestd& request,
+                                fcl::DistanceResultd* result) {
+  const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
+  const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
+  const RigidTransformd X_WA(a->getTransform());
+  const RigidTransformd X_WB(b->getTransform());
+  const auto id_A = EncodedData(*a).id(geometry_map);
+  const auto id_B = EncodedData(*b).id(geometry_map);
+
+  DistancePairGeometry distance_pair(id_A, id_B, X_WA, X_WB, result);
+
+  switch (a_geometry->getNodeType()) {
+    case fcl::GEOM_SPHERE: {
+      switch (b_geometry->getNodeType()) {
+        case fcl::GEOM_SPHERE: {
+          auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
+          auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
+          distance_pair(sphere_A, sphere_B);
+          break;
+        }
+        case fcl::GEOM_BOX: {
+          auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
+          auto box_B = static_cast<const fcl::Boxd*>(b_geometry);
+          distance_pair(sphere_A, box_B);
+          break;
+        }
+        default: {
+          fcl::distance(a, b, request, *result);
+        }
+      }
+      break;
+    }
+    case fcl::GEOM_BOX: {
+      switch (b_geometry->getNodeType()) {
+        case fcl::GEOM_SPHERE: {
+          auto box_A = static_cast<const fcl::Boxd*>(a_geometry);
+          auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
+          distance_pair(box_A, sphere_B);
+          break;
+        }
+        default: {
+          fcl::distance(a, b, request, *result);
+        }
+      }
+      break;
+    }
+    default: {
+      fcl::distance(a, b, request, *result);
+    }
+  }
+}
+
+// The callback function in fcl::distance request. The final unnamed parameter
+// is `dist`, which is used in fcl::distance, that if the distance between two
+// geometries is proved to be greater than `dist` (for example, the smallest
+// distance between the bounding boxes containing object A and object B is
+// greater than `dist`), then fcl::distance will skip this callback. In our
+// case, as we want to compute the distance between any pair of geometries, we
+// leave `dist` unchanged as its default value (max_double). So the last
+// parameter is merely a placeholder, and not being used or updated in the
+// callback.
+bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
+                      fcl::CollisionObjectd* fcl_object_B_ptr,
+                      // NOLINTNEXTLINE
+                      void* callback_data, double&) {
+  auto& distance_data = *static_cast<DistanceData*>(callback_data);
+  const std::vector<GeometryId>& geometry_map = distance_data.geometry_map;
+  // We want to pass object_A and object_B to the narrowphase distance in a
+  // specific order. This way the broadphase distance is free to give us
+  // either (A,B) or (B,A), and the narrowphase distance will always give the
+  // same result.
+  const GeometryId orig_id_A = EncodedData(*fcl_object_A_ptr).id(geometry_map);
+  const GeometryId orig_id_B = EncodedData(*fcl_object_B_ptr).id(geometry_map);
+  const bool swap_AB = (orig_id_B < orig_id_A);
+  const GeometryId id_A = swap_AB ? orig_id_B : orig_id_A;
+  const GeometryId id_B = swap_AB ? orig_id_A : orig_id_B;
+  // NOTE: Although this function *takes* pointers to non-const objects to
+  // satisfy the fcl api, it should not exploit the non-constness to modify
+  // the collision objects. We ensure this by a reference to a const version
+  // and not directly use the provided pointers afterwards.
+  const fcl::CollisionObjectd& fcl_object_A =
+      *(swap_AB ? fcl_object_B_ptr : fcl_object_A_ptr);
+  const fcl::CollisionObjectd& fcl_object_B =
+      *(swap_AB ? fcl_object_A_ptr : fcl_object_B_ptr);
+
+  // Extract the collision filter keys from the fcl collision objects. These
+  // keys will also be used to map the fcl collision object back to the Drake
+  // GeometryId for colliding geometries.
+  const EncodedData encoding_A(fcl_object_A);
+  const EncodedData encoding_B(fcl_object_B);
+
+  const bool can_collide = distance_data.collision_filter.CanCollideWith(
+      encoding_A.encoded_data(), encoding_B.encoded_data());
+
+  if (can_collide) {
+    fcl::DistanceResultd result;
+    ComputeNarrowPhaseDistance(&fcl_object_A, &fcl_object_B, geometry_map,
+                               distance_data.request, &result);
+    const Vector3d p_ACa =
+        fcl_object_A.getTransform().inverse() * result.nearest_points[0];
+    const Vector3d p_BCb =
+        fcl_object_B.getTransform().inverse() * result.nearest_points[1];
+    distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
+                                              result.min_distance);
+  }
+
+  // Returning true would tell the broadphase manager to terminate early. Since
+  // we want to find all the signed distance present in the model's current
+  // configuration, we return false.
+  return false;
+}
+
+// Overload for Sphere.
+SignedDistanceToPoint<double> DistanceToPoint::operator()(
+    const fcl::Sphered& sphere) {
+  // TODO(DamrongGuoy): Move most code of this function into FCL.
+  const double radius = sphere.radius;
+  const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
+  const double dist_GQ = p_GQ_G.norm();
+  const double distance = dist_GQ - radius;
+
+  // The gradient is always in the direction from the center of the sphere to
+  // the query point Q, regardless of whether the point Q is outside or inside
+  // the sphere G.  The gradient is undefined if the query point Q is at the
+  // center of the sphere G.
+  //
+  // If the query point Q is near the center of the sphere G within a
+  // tolerance, we arbitrarily set the gradient vector as documented in
+  // query_object.h (QueryObject::ComputeSignedDistanceToPoint).
+  const double tolerance = RelativeTolerance(radius);
+  // Unit vector in x-direction of G's frame.
+  const Vector3d Gx(1., 0., 0.);
+  // Gradient vector expressed in G's frame.
+  Vector3d grad_G = (dist_GQ > tolerance) ? p_GQ_G / dist_GQ : Gx;
+
+  // Position vector of the nearest point N on G's surface from the query
+  // point Q, expressed in G's frame.
+  const Vector3d p_GN_G = radius * grad_G;
+  // Gradient vector expressed in World frame.
+  const Vector3d grad_W = X_WG_.rotation() * grad_G;
+
+  return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
+                                       grad_W};
+}
+
+// Overload for Box.
+SignedDistanceToPoint<double> DistanceToPoint::operator()(
+    const fcl::Boxd& box) {
+  // TODO(DamrongGuoy): Move most code of this function into FCL.
+  // Express the given query point Q in the frame of the box geometry G.
+  const Vector3d p_GQ_G = X_WG_.inverse() * p_WQ_;
+
+  // The box B is an axis-aligned box [-h(0),h(0)]x[-h(1),h(1)]x[-h(2),h(2)]
+  // centered at the origin, where h(i) is half the size of the box in the
+  // i-th coordinate.
+  const Vector3d half_size = box.side / 2.0;
+
+  // We need to classify Q as inside, outside, or on the boundary of B,
+  // where 'on the boundary' means within a tolerance of the boundary.
+  // This helper function takes the i-th coordinate `coord` of p_GQ_G.
+  // It returns the clamped value of `coord` within ±h(i). It also returns
+  // an enum to indicate whether the i-th coordinate is inside the interval
+  // (-h(i),+h(i)), or within a tolerance of the bounded value ±h(i), or
+  // outside the interval.
+  enum class Location {kInside, kBoundary, kOutside};
+  auto clamp = [&half_size](const int i, const double coord,
+                            Location* location) -> double {
+    const double tolerance = RelativeTolerance(half_size(i));
+    if (std::abs(coord) > half_size(i) + tolerance) {
+      *location = Location::kOutside;
+      return Sign(coord) * half_size(i);
+    } else if (std::abs(coord) >= half_size(i) - tolerance) {
+      *location = Location::kBoundary;
+      return Sign(coord) * half_size(i);
+    } else {
+      *location = Location::kInside;
+      return coord;
+    }
+  };
+
+  // The clamp point C has coordinates of Q clamped onto the box.
+  // Note that:
+  // 1. C is the nearest point to Q on ∂B if Q is classified as outside B.
+  // 2. C is at the same position as Q if Q is classified as inside B.
+  // 3. C is exactly on ∂B if Q is within a tolerance from ∂B.
+  Vector3d p_GC_G;
+  Vector3<Location> locations;
+  for (int i = 0; i < 3; ++i)
+    p_GC_G(i) = clamp(i, p_GQ_G(i), &locations(i));
+
+  // Initialize the position of the nearest point N on ∂B as that of C.
+  Vector3d p_GN_G = p_GC_G;
+  double distance;
+  Vector3d grad_G{0., 0., 0.};
+
+  if ((locations(0) == Location::kOutside)||
+      (locations(1) == Location::kOutside)||
+      (locations(2) == Location::kOutside)) {
+    // Q is outside the box.
+    Vector3d p_NQ_G = p_GQ_G - p_GN_G;
+    distance = p_NQ_G.norm();
+    DRAKE_DEMAND(distance != 0.);
+    grad_G = p_NQ_G / distance;
+  } else if ((locations(0) == Location::kBoundary)||
+      (locations(1) == Location::kBoundary)||
+      (locations(2) == Location::kBoundary)) {
+    // Q is on the boundary of the box.
+    distance = 0.0;
+    // A point on a face, on an edge, or on a vertex of the box has one, two,
+    // or three of locations(i) on boundary respectively.  The gradient
+    // at a point on an edge or a vertex of the box is undefined. Here, the
+    // calculation is equivalent to averaging outward unit normals of the
+    // faces that contain the point.
+    for (int i = 0; i < 3; ++i) {
+      if (locations(i) == Location::kBoundary)
+        grad_G(i) = Sign(p_GC_G(i));
+    }
+    grad_G.normalize();
+  } else {
+    // Q is inside the box.
+    // The nearest point N is the axis-aligned projection of Q onto one of
+    // the faces of the box.  The gradient vector is along that direction.
+    int axis = ExtremalAxis(p_GQ_G, half_size);
+    double sign = Sign(p_GQ_G(axis));
+    p_GN_G(axis) = sign * half_size(axis);
+    grad_G(axis) = sign;
+    distance = std::abs(p_GQ_G(axis)) - half_size(axis);
+  }
+
+  // Use R_WG for vectors. Use X_WG for points.
+  const auto& R_WG = X_WG_.rotation();
+  Vector3d grad_W = R_WG * grad_G;
+  return SignedDistanceToPoint<double>{geometry_id_, p_GN_G, distance,
+                                       grad_W};
+}
+
+// Callback function from fcl::distance to help ComputeSignedDistanceToPoint.
+bool DistanceFromPointCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
+                               fcl::CollisionObjectd* fcl_object_B_ptr,
+                               // NOLINTNEXTLINE
+                               void* callback_data, double& threshold) {
+  auto& data = *static_cast<DistanceFromPointCallbackData*>(callback_data);
+
+  // We intentionally pass the same number back to FCL in every callback.
+  // It instructs FCL to skip any objects proven to be beyond this threshold
+  // distance (for example, by checking bounding boxes).
+  threshold = data.threshold;
+
+  // We use `const` to prevent modification of the collision objects.
+  const fcl::CollisionObjectd* point_object = data.query_point;
+  const fcl::CollisionObjectd* geometry_object =
+      (data.query_point == fcl_object_A_ptr) ?
+      fcl_object_B_ptr : fcl_object_A_ptr;
+
+  const std::vector<GeometryId>& geometry_map = data.geometry_map;
+  GeometryId geometry_id = EncodedData(*geometry_object).id(geometry_map);
+
+  const fcl::CollisionGeometryd* collision_geometry =
+      geometry_object->collisionGeometry().get();
+
+  // TODO(DamrongGuoy): Replace this custom code when FCL does this for us with
+  // the required accuracy and performance.
+  //
+  DistanceToPoint distance_to_point(geometry_id,
+      RigidTransformd(geometry_object->getTransform()),
+      point_object->getTranslation());
+
+  SignedDistanceToPoint<double> distance;
+  switch (collision_geometry->getNodeType()) {
+    case fcl::GEOM_SPHERE:
+      distance = distance_to_point(
+          *static_cast<const fcl::Sphered*>(collision_geometry));
+      break;
+    case fcl::GEOM_BOX:
+      distance = distance_to_point(
+          *static_cast<const fcl::Boxd*>(collision_geometry));
+      break;
+    default:
+      return false;  // Returning false tells fcl to continue to other objects.
+  }
+
+  if (distance.distance <= data.threshold)
+    data.distances->emplace_back(distance);
+
+  return false;  // Returning false tells fcl to continue to other objects.
+}
 
 // Callback function for FCL's collide() function for retrieving a *single*
 // contact.
@@ -250,58 +771,72 @@ bool SingleCollisionCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
   const bool can_collide = collision_data.collision_filter.CanCollideWith(
       encoding_A.encoded_data(), encoding_B.encoded_data());
 
-  if (can_collide) {
-    // Unpack the callback data
-    const fcl::CollisionRequestd& request = collision_data.request;
+  // NOTE: Here and below, false is returned regardless of whether collision
+  // is detected or not because true tells the broadphase manager to terminate.
+  // Since we want *all* collisions, we return false.
+  if (!can_collide) return false;
 
-    // This callback only works for a single contact, this confirms a request
-    // hasn't been made for more contacts.
-    DRAKE_ASSERT(request.num_max_contacts == 1);
-    fcl::CollisionResultd result;
+  // Unpack the callback data
+  const fcl::CollisionRequestd& request = collision_data.request;
 
-    // Perform nearphase collision detection
-    fcl::collide(&fcl_object_A, &fcl_object_B, request, result);
+  // This callback only works for a single contact, this confirms a request
+  // hasn't been made for more contacts.
+  DRAKE_ASSERT(request.num_max_contacts == 1);
+  fcl::CollisionResultd result;
 
-    // Process the contact points
-    if (result.isCollision()) {
-      // NOTE: This assumes that the request is configured to use a single
-      // contact.
-      const fcl::Contactd& contact = result.getContact(0);
-      //  By convention, Drake requires the contact normal to point out of B and
-      //  into A. FCL uses the opposite convention.
-      Vector3d drake_normal = -contact.normal;
+  // Perform nearphase collision detection
+  fcl::collide(&fcl_object_A, &fcl_object_B, request, result);
 
-      // Signed distance is negative when penetration depth is positive.
-      double depth = contact.penetration_depth;
+  if (!result.isCollision()) return false;
 
-      // FCL returns a single contact point centered between the two penetrating
-      // surfaces. PenetrationAsPointPair expects
-      // two, one on the surface of body A (Ac) and one on the surface of body B
-      // (Bc). Choose points along the line defined by the contact point and
-      // normal, equidistant to the contact point. Recall that signed_distance
-      // is strictly non-positive, so signed_distance * drake_normal points out
-      // of A and into B.
-      Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
-      Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
+  // Process the contact points
+  // NOTE: This assumes that the request is configured to use a single
+  // contact.
+  const fcl::Contactd& contact = result.getContact(0);
 
-      PenetrationAsPointPair<double> penetration;
-      penetration.depth = depth;
-      // The engine doesn't know geometry ids; it returns engine indices. The
-      // caller must map engine indices to geometry ids.
-      const std::vector<GeometryId>& dynamic_map = collision_data.dynamic_map;
-      const std::vector<GeometryId>& anchored_map = collision_data.anchored_map;
-      penetration.id_A = encoding_A.id(dynamic_map, anchored_map);
-      penetration.id_B = encoding_B.id(dynamic_map, anchored_map);
-      penetration.p_WCa = p_WAc;
-      penetration.p_WCb = p_WBc;
-      penetration.nhat_BA_W = drake_normal;
-      collision_data.contacts->emplace_back(std::move(penetration));
-    }
+  // Signed distance is negative when penetration depth is positive.
+  const double depth = contact.penetration_depth;
+
+  // TODO(SeanCurtis-TRI): Remove this test when FCL issue 375 is fixed.
+  // FCL returns osculation as contact but doesn't guarantee a non-zero
+  // normal. Drake isn't really in a position to define that normal from the
+  // geometry or contact results so, if the geometry is sufficiently close
+  // to osculation, we consider the geometries to be non-penetrating.
+  if (depth <= std::numeric_limits<double>::epsilon()) return false;
+
+  // By convention, Drake requires the contact normal to point out of B
+  // and into A. FCL uses the opposite convention.
+  Vector3d drake_normal = -contact.normal;
+
+  // FCL returns a single contact point centered between the two
+  // penetrating surfaces. PenetrationAsPointPair expects
+  // two, one on the surface of body A (Ac) and one on the surface of body
+  // B (Bc). Choose points along the line defined by the contact point and
+  // normal, equidistant to the contact point. Recall that signed_distance
+  // is strictly non-positive, so signed_distance * drake_normal points
+  // out of A and into B.
+  Vector3d p_WAc = contact.pos - 0.5 * depth * drake_normal;
+  Vector3d p_WBc = contact.pos + 0.5 * depth * drake_normal;
+
+  PenetrationAsPointPair<double> penetration;
+  penetration.depth = depth;
+  // The engine doesn't know geometry ids; it returns engine indices. The
+  // caller must map engine indices to geometry ids.
+  const std::vector<GeometryId>& geometry_map = collision_data.geometry_map;
+  penetration.id_A = encoding_A.id(geometry_map);
+  penetration.id_B = encoding_B.id(geometry_map);
+  penetration.p_WCa = p_WAc;
+  penetration.p_WCb = p_WBc;
+  penetration.nhat_BA_W = drake_normal;
+  // Guarantee fixed ordering of pair (A, B). Swap the ids and points on
+  // surfaces and then flip the normal.
+  if (penetration.id_B < penetration.id_A) {
+    std::swap(penetration.id_A, penetration.id_B);
+    std::swap(penetration.p_WCa, penetration.p_WCb);
+    penetration.nhat_BA_W = -penetration.nhat_BA_W;
   }
+  collision_data.contacts->emplace_back(std::move(penetration));
 
-  // Returning true would tell the broadphase manager to terminate early. Since
-  // we want to find all the collisions present in the model's current
-  // configuration, we return false.
   return false;
 }
 
@@ -329,10 +864,20 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
       const auto& box = dynamic_cast<const fcl::Boxd&>(geometry);
       return make_shared<fcl::Boxd>(box.side);
     }
+    case fcl::GEOM_CONVEX: {
+      const auto& convex = dynamic_cast<const fcl::Convexd&>(geometry);
+      // TODO(DamrongGuoy): Change to the copy constructor Convex(other) when
+      //  we figure out why "Convex(const Convex& other) = default" created
+      //  link errors for Xenial Debug build.  For now we do deep copy of the
+      //  vertices and faces instead of simply copying the shared pointer.
+      return make_shared<fcl::Convexd>(
+          make_shared<const std::vector<Vector3d>>(convex.getVertices()),
+          convex.getFaceCount(),
+          make_shared<const std::vector<int>>(convex.getFaces()));
+    }
     case fcl::GEOM_ELLIPSOID:
     case fcl::GEOM_CAPSULE:
     case fcl::GEOM_CONE:
-    case fcl::GEOM_CONVEX:
     case fcl::GEOM_PLANE:
     case fcl::GEOM_TRIANGLE:
       throw std::logic_error(
@@ -448,35 +993,59 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return engine;
   }
 
-  GeometryIndex AddDynamicGeometry(const Shape& shape) {
+  ProximityIndex AddDynamicGeometry(const Shape& shape,
+                                    GeometryIndex index) {
     // The collision object gets instantiated in the reification process and
     // placed in this unique pointer.
     std::unique_ptr<fcl::CollisionObject<double>> fcl_object;
     shape.Reify(this, &fcl_object);
     dynamic_tree_.registerObject(fcl_object.get());
-    GeometryIndex index(static_cast<int>(dynamic_objects_.size()));
+    ProximityIndex proximity_index(static_cast<int>(dynamic_objects_.size()));
+    // Encode the *global* pose index so that the geometry id can be looked up
+    // in the event of a collision.
     EncodedData encoding(index, true /* is dynamic */);
     encoding.store_in(fcl_object.get());
     dynamic_objects_.emplace_back(std::move(fcl_object));
     collision_filter_.AddGeometry(encoding.encoded_data());
-    return index;
+    return proximity_index;
   }
 
-  AnchoredGeometryIndex AddAnchoredGeometry(const Shape& shape,
-                                            const Isometry3<double>& X_WG) {
+  ProximityIndex AddAnchoredGeometry(const Shape& shape,
+                                     const Isometry3<double>& X_WG,
+                                     GeometryIndex index) {
     // The collision object gets instantiated in the reification process and
     // placed in this unique pointer.
     std::unique_ptr<fcl::CollisionObject<double>> fcl_object;
     shape.Reify(this, &fcl_object);
     fcl_object->setTransform(X_WG);
     anchored_tree_.registerObject(fcl_object.get());
-    AnchoredGeometryIndex index(static_cast<int>(anchored_objects_.size()));
+    ProximityIndex proximity_index(static_cast<int>(anchored_objects_.size()));
     EncodedData encoding(index, false /* is dynamic */);
     encoding.store_in(fcl_object.get());
     anchored_objects_.emplace_back(std::move(fcl_object));
     collision_filter_.AddGeometry(encoding.encoded_data());
 
-    return index;
+    return proximity_index;
+  }
+
+  void UpdateGeometryIndex(ProximityIndex proximity_index, bool is_dynamic,
+                           GeometryIndex geometry_index) {
+    if (is_dynamic) {
+      EncodedData::encode_dynamic(geometry_index)
+          .store_in(dynamic_objects_[proximity_index].get());
+    } else {
+      EncodedData::encode_anchored(geometry_index)
+          .store_in(anchored_objects_[proximity_index].get());
+    }
+  }
+
+  optional<GeometryIndex> RemoveGeometry(ProximityIndex index,
+                                         bool is_dynamic) {
+    if (is_dynamic) {
+      return RemoveGeometry(index, &dynamic_tree_, &dynamic_objects_);
+    } else {
+      return RemoveGeometry(index, &anchored_tree_, &anchored_objects_);
+    }
   }
 
   int num_geometries() const {
@@ -489,14 +1058,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return static_cast<int>(anchored_objects_.size());
   }
 
+  void set_distance_tolerance(double tol) { distance_tolerance_ = tol; }
+
+  double distance_tolerance() const { return distance_tolerance_; }
+
   // TODO(SeanCurtis-TRI): I could do things here differently a number of ways:
   //  1. I could make this move semantics (or swap semantics).
   //  2. I could simply have a method that returns a mutable reference to such
   //    a vector and the caller sets values there directly.
-  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG) {
-    DRAKE_DEMAND(X_WG.size() == dynamic_objects_.size());
-    for (size_t i = 0; i < X_WG.size(); ++i) {
-      dynamic_objects_[i]->setTransform(convert(X_WG[i]));
+  void UpdateWorldPoses(const std::vector<Isometry3<T>>& X_WG,
+                        const std::vector<GeometryIndex>& indices) {
+    DRAKE_DEMAND(indices.size() == dynamic_objects_.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+      dynamic_objects_[i]->setTransform(convert(X_WG[indices[i]]));
+      dynamic_objects_[i]->computeAABB();
     }
     dynamic_tree_.update();
   }
@@ -516,8 +1091,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_cylinder, user_data);
   }
 
-  void ImplementGeometry(const HalfSpace&,
-                         void* user_data) override {
+  void ImplementGeometry(const HalfSpace&, void* user_data) override {
     // Note: Using `shared_ptr` because of FCL API requirements.
     auto fcl_half_space = make_shared<fcl::Halfspaced>(0, 0, 1, 0);
     TakeShapeOwnership(fcl_half_space, user_data);
@@ -528,21 +1102,189 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     TakeShapeOwnership(fcl_box, user_data);
   }
 
-  void ImplementGeometry(const Mesh&, void* user_data) override {
-    // TODO(SeanCurtis-TRI): Replace this with a legitimate fcl mesh. This
-    // assumes that a zero-radius sphere has no interesting interactions with
-    // other meshes. However, it *does* increase the collision space. :(
-    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);
-    TakeShapeOwnership(fcl_sphere, user_data);
+  void ImplementGeometry(const Mesh&, void*) override {
+    throw std::domain_error("The proximity engine does not support meshes yet");
   }
 
+  //
+  // Convert vertices from tinyobj format to FCL format.
+  //
+  // Vertices from tinyobj are in a vector of floating-points like this:
+  //     attrib.vertices = {c0,c1,c2, c3,c4,c5, c6,c7,c8,...}
+  //                     = {x, y, z,  x, y, z,  x, y, z,...}
+  // We will convert to a vector of Vector3d for FCL like this:
+  //     vertices = {{c0,c1,c2}, {c3,c4,c5}, {c6,c7,c8},...}
+  //              = {    v0,         v1,         v2,    ...}
+  //
+  // The size of `attrib.vertices` is three times the number of vertices.
+  //
+  std::vector<Vector3d> TinyObjToFclVertices(const tinyobj::attrib_t& attrib,
+                                             const double scale) const {
+    int num_coords = attrib.vertices.size();
+    DRAKE_DEMAND(num_coords % 3 == 0);
+    std::vector<Vector3d> vertices;
+    vertices.reserve(num_coords / 3);
+
+    auto iter = attrib.vertices.begin();
+    while (iter != attrib.vertices.end()) {
+      // We increment `iter` three times for x, y, and z coordinates.
+      double x = *(iter++) * scale;
+      double y = *(iter++) * scale;
+      double z = *(iter++) * scale;
+      vertices.emplace_back(x, y, z);
+    }
+
+    return vertices;
+  }
+
+  //
+  // Convert faces from tinyobj to FCL.
+  //
+  //
+  // A tinyobj mesh has an integer array storing the number of vertices of
+  // each polygonal face.
+  //     mesh.num_face_vertices = {n0,n1,n2,...}
+  //         face0 has n0 vertices.
+  //         face1 has n1 vertices.
+  //         face2 has n2 vertices.
+  //         ...
+  // A tinyobj mesh has a vector of vertices that belong to the faces.
+  //     mesh.indices = {v0_0, v0_1,..., v0_n0-1,
+  //                     v1_0, v1_1,..., v1_n1-1,
+  //                     v2_0, v2_1,..., v2_n2-1,
+  //                     ...}
+  //         face0 has vertices v0_0, v0_1,...,v0_n0-1.
+  //         face1 has vertices v1_0, v1_1,...,v1_n1-1.
+  //         face2 has vertices v2_0, v2_1,...,v2_n2-1.
+  //         ...
+  // For fcl::Convex, the `faces` is as an array of integers in this format.
+  //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
+  //               n1, v1_0,v1_1,...,v1_n1-1,
+  //               n2, v2_0,v2_1,...,v2_n2-1,
+  //               ...}
+  // where n_i is the number of vertices of face_i.
+  //
+  int TinyObjToFclFaces(const tinyobj::mesh_t& mesh,
+                        std::vector<int>* faces) const {
+    auto iter = mesh.indices.begin();
+    for (const int& num : mesh.num_face_vertices) {
+      faces->push_back(num);
+      std::for_each(iter, iter + num, [faces](const tinyobj::index_t& index) {
+        faces->push_back(index.vertex_index);
+      });
+      iter += num;
+    }
+
+    return mesh.num_face_vertices.size();
+  }
+
+  void ImplementGeometry(const Convex& convex, void* user_data) override {
+    // We use tiny_obj_loader to read the .obj file of the convex shape.
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+    // We keep polygonal faces without triangulating them. Some algorithms for
+    // convex geometry perform better with fewer faces.
+    bool do_tinyobj_triangulation = false;
+    // We use default value (NULL) for the base directory of .mtl file (material
+    // description), so it will be searched from the working directory.
+    const char* mtl_basedir = nullptr;
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err,
+        convex.filename().c_str(), mtl_basedir, do_tinyobj_triangulation);
+    if (!ret || !err.empty()) {
+      throw std::runtime_error("Error parsing file '" + convex.filename() +
+          "' : " + err);
+    }
+
+    // TODO(DamrongGuoy) Check that the input is a valid convex polyhedron.
+    // 1. Each face is a planar polygon.
+    // 2. Each face is a convex polygon.
+    // 3. The polyhedron is convex.
+
+    //
+    // Now we convert tinyobj data for fcl::Convex.
+    //
+
+    if (shapes.size() != 1) {
+      throw std::runtime_error("For Convex geometry, the .obj file must have "
+                               "one and only one object defined in it.");
+    }
+
+    auto vertices = std::make_shared<std::vector<Vector3d>>(
+        TinyObjToFclVertices(attrib, convex.scale()));
+
+    const tinyobj::mesh_t& mesh = shapes[0].mesh;
+
+    // We will have `faces.size()` larger than the number of faces. For each
+    // face_i, the vector `faces` contains both the number and indices of its
+    // vertices:
+    //     faces = { n0, v0_0,v0_1,...,v0_n0-1,
+    //               n1, v1_0,v1_1,...,v1_n1-1,
+    //               n2, v2_0,v2_1,...,v2_n2-1,
+    //               ...}
+    // where n_i is the number of vertices of face_i.
+    //
+    auto faces = std::make_shared<std::vector<int>>();
+    int num_faces = TinyObjToFclFaces(mesh, faces.get());
+
+    // Create fcl::Convex.
+    auto fcl_convex = make_shared<fcl::Convexd>(
+        vertices, num_faces, faces);
+    TakeShapeOwnership(fcl_convex, user_data);
+
+    // TODO(DamrongGuoy): Per f2f with SeanCurtis-TRI, we want ProximityEngine
+    // to own vertices and face by a map from filename.  This way we won't have
+    // to read the same file again and again when we create multiple Convex
+    // objects from the same file.
+  }
+
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints(
+      const std::vector<GeometryId>& geometry_map) const {
+    std::vector<SignedDistancePair<double>> witness_pairs;
+    DistanceData distance_data{&geometry_map, &collision_filter_};
+    distance_data.nearest_pairs = &witness_pairs;
+    distance_data.request.enable_nearest_points = true;
+    distance_data.request.enable_signed_distance = true;
+    distance_data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
+    distance_data.request.distance_tolerance = distance_tolerance_;
+
+    dynamic_tree_.distance(&distance_data, DistanceCallback);
+    dynamic_tree_.distance(
+        const_cast<fcl::DynamicAABBTreeCollisionManager<double>*>(
+            &anchored_tree_),
+        &distance_data, DistanceCallback);
+    return witness_pairs;
+  }
+
+  std::vector<SignedDistanceToPoint<double>> ComputeSignedDistanceToPoint(
+      const Vector3d& p_WQ,
+      const std::vector<GeometryId>& geometry_map,
+      const double threshold) const {
+    // We create a sphere of zero radius centered at the query point and put
+    // it into a fcl::CollisionObject.
+    auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
+    fcl::CollisionObjectd query_point(fcl_sphere);
+    query_point.setTranslation(p_WQ);
+
+    std::vector<SignedDistanceToPoint<double>> distances;
+
+    DistanceFromPointCallbackData data{&query_point, &geometry_map,
+                                       threshold, &distances};
+
+    anchored_tree_.distance(&query_point, &data, DistanceFromPointCallback);
+    dynamic_tree_.distance(&query_point, &data, DistanceFromPointCallback);
+
+    return distances;
+  }
+
+
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
-      const std::vector<GeometryId>& dynamic_map,
-      const std::vector<GeometryId>& anchored_map) const {
+      const std::vector<GeometryId>& geometry_map) const {
     std::vector<PenetrationAsPointPair<double>> contacts;
     // CollisionData stores references to the provided data structures.
-    CollisionData collision_data{&dynamic_map, &anchored_map,
-                                 &collision_filter_};
+    CollisionData collision_data{&geometry_map, &collision_filter_};
     collision_data.contacts = &contacts;
     collision_data.request.num_max_contacts = 1;
     collision_data.request.enable_contact = true;
@@ -572,7 +1314,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
   void ExcludeCollisionsWithin(
       const std::unordered_set<GeometryIndex>& dynamic,
-      const std::unordered_set<AnchoredGeometryIndex>& anchored) {
+      const std::unordered_set<GeometryIndex>& anchored) {
     // Preventing collision between members in a single set is simple: assign
     // every geometry to the same clique.
 
@@ -602,9 +1344,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   void ExcludeCollisionsBetween(
       const std::unordered_set<GeometryIndex>& dynamic1,
-      const std::unordered_set<AnchoredGeometryIndex>& anchored1,
+      const std::unordered_set<GeometryIndex>& anchored1,
       const std::unordered_set<GeometryIndex>& dynamic2,
-      const std::unordered_set<AnchoredGeometryIndex>& anchored2) {
+      const std::unordered_set<GeometryIndex>& anchored2) {
     // TODO(SeanCurtis-TRI): Update this with the new collision filter method.
 
     // NOTE: This is a brute-force implementation. It does not claim to be
@@ -655,9 +1397,17 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     }
   }
 
-  int get_next_clique() {
-    return collision_filter_.next_clique_id();
+  bool CollisionFiltered(GeometryIndex index1, bool is_dynamic_1,
+                         GeometryIndex index2, bool is_dynamic_2) const {
+    // Collisions between anchored geometries are implicitly filtered.
+    if (!is_dynamic_1 && !is_dynamic_2) return true;
+    EncodedData encoding1(index1, is_dynamic_1);
+    EncodedData encoding2(index2, is_dynamic_2);
+    return !collision_filter_.CanCollideWith(encoding1.encoded_data(),
+                                             encoding2.encoded_data());
   }
+
+  int get_next_clique() { return collision_filter_.next_clique_id(); }
 
   void set_clique(GeometryIndex index, int clique) {
     EncodedData encoding(index, true /* is dynamic */);
@@ -674,19 +1424,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // we compare the AABBs).
       auto ValidateObject = [](const fcl::CollisionObject<double>& test,
                                const fcl::CollisionObject<double>& ref) {
-        return test.getUserData() == ref.getUserData() &&
-            &test != &ref &&
-            test.getNodeType() == ref.getNodeType() &&
-            test.getObjectType() == ref.getObjectType() &&
-            test.getAABB().center() == ref.getAABB().center() &&
-            test.getAABB().width(), ref.getAABB().width() &&
-            test.getAABB().height(), ref.getAABB().height() &&
-            test.getAABB().depth(), ref.getAABB().depth();
+        return test.getUserData() == ref.getUserData() && &test != &ref &&
+               test.getNodeType() == ref.getNodeType() &&
+               test.getObjectType() == ref.getObjectType() &&
+               test.getAABB().center() == ref.getAABB().center() &&
+               test.getAABB().width() == ref.getAABB().width() &&
+               test.getAABB().height() == ref.getAABB().height() &&
+               test.getAABB().depth() == ref.getAABB().depth();
       };
       bool is_copy = true;
       is_copy = is_copy &&
-          this->dynamic_objects_.size() == other.dynamic_objects_.size();
-      is_copy = is_copy &&
+                this->dynamic_objects_.size() == other.dynamic_objects_.size();
+      is_copy =
+          is_copy &&
           this->anchored_objects_.size() == other.anchored_objects_.size();
       if (is_copy) {
         for (size_t i = 0; i < this->dynamic_objects_.size(); ++i) {
@@ -710,17 +1460,62 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return false;
   }
 
-  int peek_next_clique() const {
-    return collision_filter_.peek_next_clique();
+  int peek_next_clique() const { return collision_filter_.peek_next_clique(); }
+
+  const Isometry3<double>& GetX_WG(ProximityIndex index,
+                                   bool is_dynamic) const {
+    if (is_dynamic) {
+      return dynamic_objects_[index]->getTransform();
+    } else {
+      return anchored_objects_[index]->getTransform();
+    }
+  }
+
+  GeometryIndex GetGeometryIndex(ProximityIndex index, bool is_dynamic) const {
+    if (is_dynamic) {
+      return EncodedData(*dynamic_objects_[index]).index();
+    } else {
+      return EncodedData(*anchored_objects_[index]).index();
+    }
   }
 
  private:
   // Engine on one scalar can see the members of other engines.
   friend class ProximityEngineTester;
-  template <typename> friend class ProximityEngine;
+  template <typename>
+  friend class ProximityEngine;
+
+  // Removes the geometry with the given proximity index from the given tree. It
+  // potentially moves another object to take its slot in the vector of objects
+  // to maintain a contiguous memory block.
+  optional<GeometryIndex> RemoveGeometry(
+      ProximityIndex index, fcl::DynamicAABBTreeCollisionManager<double>* tree,
+      std::vector<std::unique_ptr<fcl::CollisionObject<double>>>* geometries) {
+    std::vector<unique_ptr<fcl::CollisionObject<double>>>& typed_geometries =
+        *geometries;
+    fcl::CollisionObjectd* fcl_object = typed_geometries[index].get();
+    const size_t old_size = tree->size();
+    tree->unregisterObject(fcl_object);
+    // NOTE: The FCL API provides no other mechanism for confirming the
+    // unregistration was successful.
+    DRAKE_DEMAND(old_size == tree->size() + 1);
+    optional<GeometryIndex> moved{};
+    DRAKE_DEMAND(typed_geometries.size() > 0);
+    const size_t last = typed_geometries.size() - 1;
+    if (index < last) {
+      // Removed geometry that *isn't* the last in the geometries. Swap last
+      // into empty slot.
+      const fcl::CollisionObjectd* move_object = typed_geometries[last].get();
+      EncodedData encoding(*move_object);
+      moved = encoding.index();
+      typed_geometries[index].swap(typed_geometries.back());
+    }
+    typed_geometries.pop_back();
+    return moved;
+  }
 
   // TODO(SeanCurtis-TRI): Convert these to scalar type T when I know how to
-  // transmogrify them. Otherwise, while the engine can be transmogrified, the
+  // transmogrify them. Otherwise, while the engine can't be transmogrified, the
   // results on an <AutoDiffXd> type will still be double.
 
   // Helper method called by the various ImplementGeometry overrides to
@@ -754,13 +1549,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The mechanism for dictating collision filtering.
   CollisionFilterLegacy collision_filter_;
+
+  // The tolerance that determines when the iterative process would terminate.
+  // @see ProximityEngine::set_distance_tolerance() for more details.
+  double distance_tolerance_{1E-6};
 };
 
 template <typename T>
 ProximityEngine<T>::ProximityEngine() : impl_(new Impl()) {}
 
 template <typename T>
-ProximityEngine<T>::~ProximityEngine() { delete impl_; }
+ProximityEngine<T>::~ProximityEngine() {
+  delete impl_;
+}
 
 template <typename T>
 ProximityEngine<T>::ProximityEngine(ProximityEngine<T>::Impl* impl)
@@ -796,14 +1597,28 @@ ProximityEngine<T>& ProximityEngine<T>::operator=(
 }
 
 template <typename T>
-GeometryIndex ProximityEngine<T>::AddDynamicGeometry(const Shape& shape) {
-  return impl_->AddDynamicGeometry(shape);
+ProximityIndex ProximityEngine<T>::AddDynamicGeometry(
+    const Shape& shape, GeometryIndex index) {
+  return impl_->AddDynamicGeometry(shape, index);
 }
 
 template <typename T>
-AnchoredGeometryIndex ProximityEngine<T>::AddAnchoredGeometry(
-    const Shape& shape, const Isometry3<double>& X_WG) {
-  return impl_->AddAnchoredGeometry(shape, X_WG);
+ProximityIndex ProximityEngine<T>::AddAnchoredGeometry(
+    const Shape& shape, const Isometry3<double>& X_WG, GeometryIndex index) {
+  return impl_->AddAnchoredGeometry(shape, X_WG, index);
+}
+
+template <typename T>
+void ProximityEngine<T>::UpdateGeometryIndex(ProximityIndex proximity_index,
+                                             bool is_dynamic,
+                                             GeometryIndex geometry_index) {
+  impl_->UpdateGeometryIndex(proximity_index, is_dynamic, geometry_index);
+}
+
+template <typename T>
+optional<GeometryIndex> ProximityEngine<T>::RemoveGeometry(
+    ProximityIndex index, bool is_dynamic) {
+  return impl_->RemoveGeometry(index, is_dynamic);
 }
 
 template <typename T>
@@ -822,6 +1637,16 @@ int ProximityEngine<T>::num_anchored() const {
 }
 
 template <typename T>
+void ProximityEngine<T>::set_distance_tolerance(double tol) {
+  impl_->set_distance_tolerance(tol);
+}
+
+template <typename T>
+double ProximityEngine<T>::distance_tolerance() const {
+  return impl_->distance_tolerance();
+}
+
+template <typename T>
 std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
     const {
   return unique_ptr<ProximityEngine<AutoDiffXd>>(
@@ -830,32 +1655,56 @@ std::unique_ptr<ProximityEngine<AutoDiffXd>> ProximityEngine<T>::ToAutoDiffXd()
 
 template <typename T>
 void ProximityEngine<T>::UpdateWorldPoses(
-    const std::vector<Isometry3<T>>& X_WG) {
-  impl_->UpdateWorldPoses(X_WG);
+    const std::vector<Isometry3<T>>& X_WG,
+    const std::vector<GeometryIndex>& indices) {
+  impl_->UpdateWorldPoses(X_WG, indices);
 }
+
+template <typename T>
+std::vector<SignedDistancePair<double>>
+ProximityEngine<T>::ComputeSignedDistancePairwiseClosestPoints(
+    const std::vector<GeometryId>& geometry_map) const {
+  return impl_->ComputeSignedDistancePairwiseClosestPoints(geometry_map);
+}
+
+template <typename T>
+std::vector<SignedDistanceToPoint<double>>
+ProximityEngine<T>::ComputeSignedDistanceToPoint(
+    const Vector3<double>& query,
+    const std::vector<GeometryId>& geometry_map,
+    const double threshold) const {
+  return impl_->ComputeSignedDistanceToPoint(query, geometry_map, threshold);
+}
+
 
 template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 ProximityEngine<T>::ComputePointPairPenetration(
-    const std::vector<GeometryId>& dynamic_map,
-    const std::vector<GeometryId>& anchored_map) const {
-  return impl_->ComputePointPairPenetration(dynamic_map, anchored_map);
+    const std::vector<GeometryId>& geometry_map) const {
+  return impl_->ComputePointPairPenetration(geometry_map);
 }
 
 template <typename T>
 void ProximityEngine<T>::ExcludeCollisionsWithin(
     const std::unordered_set<GeometryIndex>& dynamic,
-    const std::unordered_set<AnchoredGeometryIndex>& anchored) {
+    const std::unordered_set<GeometryIndex>& anchored) {
   impl_->ExcludeCollisionsWithin(dynamic, anchored);
 }
 
 template <typename T>
 void ProximityEngine<T>::ExcludeCollisionsBetween(
     const std::unordered_set<GeometryIndex>& dynamic1,
-    const std::unordered_set<AnchoredGeometryIndex>& anchored1,
+    const std::unordered_set<GeometryIndex>& anchored1,
     const std::unordered_set<GeometryIndex>& dynamic2,
-    const std::unordered_set<AnchoredGeometryIndex>& anchored2) {
+    const std::unordered_set<GeometryIndex>& anchored2) {
   impl_->ExcludeCollisionsBetween(dynamic1, anchored1, dynamic2, anchored2);
+}
+
+template <typename T>
+bool ProximityEngine<T>::CollisionFiltered(
+    GeometryIndex index1, bool is_dynamic_1,
+    GeometryIndex index2, bool is_dynamic_2) const {
+  return impl_->CollisionFiltered(index1, is_dynamic_1, index2, is_dynamic_2);
 }
 
 // Client-attorney interface for GeometryState to manipulate collision filters.
@@ -880,6 +1729,18 @@ bool ProximityEngine<T>::IsDeepCopy(const ProximityEngine<T>& other) const {
 template <typename T>
 int ProximityEngine<T>::peek_next_clique() const {
   return impl_->peek_next_clique();
+}
+
+template <typename T>
+const Isometry3<double>& ProximityEngine<T>::GetX_WG(ProximityIndex index,
+                                                     bool is_dynamic) const {
+  return impl_->GetX_WG(index, is_dynamic);
+}
+
+template <typename T>
+GeometryIndex ProximityEngine<T>::GetGeometryIndex(ProximityIndex index,
+                                                   bool is_dynamic) const {
+  return impl_->GetGeometryIndex(index, is_dynamic);
 }
 
 }  // namespace internal

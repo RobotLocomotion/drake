@@ -42,8 +42,10 @@ struct DynamicProgrammingOptions {
 
   /// If callable, this method is invoked during each major iteration of the
   /// dynamic programming algorithm, in order to facilitate e.g. graphical
-  /// inspection/debugging of the results.  Note: the first call happens at
-  /// iteration 1 (after the value iteration has run once), not zero.
+  /// inspection/debugging of the results.
+  ///
+  /// @note The first call happens at iteration 1 (after the value iteration
+  /// has run once), not zero.
   std::function<void(
       int iteration, const math::BarycentricMesh<double>& state_mesh,
       const Eigen::RowVectorXd& cost_to_go, const Eigen::MatrixXd& policy)>

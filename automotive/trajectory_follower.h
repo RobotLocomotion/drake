@@ -19,6 +19,7 @@ namespace automotive {
 /// of the the outputs are empty.
 ///
 /// output port 0: A SimpleCarState containing:
+///
 /// * position: x, y, heading;
 ///   heading is 0 rad when pointed +x, pi/2 rad when pointed +y;
 ///   heading is defined around the +z axis, positive-left-turn.
@@ -34,6 +35,7 @@ namespace automotive {
 ///   (OutputPort getter: velocity_output())
 ///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - drake::AutoDiffXd
 /// - symbolic::Expression

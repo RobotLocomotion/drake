@@ -16,9 +16,10 @@
 /// mathematical program -- many of these choices involve using more than
 /// the minimal three parameters and therefore require additional constraints
 /// For example:
-///  - the 4 parameters of a quaternion should form a vector with unit length.
-///  - the 9 parameters of a rotation matrix should form a matrix which is
-///    orthonormal (R.transpose() = R.inverse()) and det(R)=1.
+///
+/// - the 4 parameters of a quaternion should form a vector with unit length.
+/// - the 9 parameters of a rotation matrix should form a matrix which is
+///   orthonormal (R.transpose() = R.inverse()) and det(R)=1.
 ///
 /// Unfortunately, in the context of mathematical programming, most of these
 /// constraints are non-convex.  The methods below include convex relaxations
@@ -68,9 +69,8 @@ typedef uint32_t RollPitchYawLimits;
 ///   kPitch_NegPI_2_to_PI_2 (over 0_to_PI)
 /// because it adds one more constraint (when combined with constraints on roll
 /// and yaw).
-/// Note: The Roll-Pitch-Yaw coordinates follow the convention in @rpy2rotmat -
-/// representing extrinsic rotations about Space-fixed x-y-z axes,
-/// respectively.
+/// Note: The Roll-Pitch-Yaw angles follow the convention in RollPitchYaw,
+/// namely extrinsic rotations about Space-fixed x-y-z axes, respectively.
 void AddBoundingBoxConstraintsImpliedByRollPitchYawLimits(
     MathematicalProgram* prog,
     const Eigen::Ref<const MatrixDecisionVariable<3, 3>>& R,

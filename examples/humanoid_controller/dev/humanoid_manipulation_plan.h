@@ -10,6 +10,7 @@ namespace drake {
 namespace examples {
 namespace humanoid_controller {
 
+// TODO(siyuan): make quaternion floating joint work.
 /**
  * A baseline manipulation plan interpretor for a humanoid robot. The plan
  * essentially consists of a sequence of time and generalized positions,
@@ -18,7 +19,6 @@ namespace humanoid_controller {
  *
  * @see HandlePlanGenericPlanDerived for more details about the behavior.
  */
-// TODO(siyuan): make quaternion floating joint work.
 template <typename T>
 class HumanoidManipulationPlan
     : public systems::controllers::plan_eval::GenericPlan<T> {
@@ -42,7 +42,7 @@ class HumanoidManipulationPlan
 
   /**
    * Returns true if @p robot has at least 2 rigid bodies; the first rigid body
-   * has a RPY parametrized floating joint, and it has the same number of
+   * has a RPY parameterized floating joint, and it has the same number of
    * generalized positions and velocities.
    */
   bool IsRigidBodyTreeCompatible(const RigidBodyTree<T>& robot) const override;
@@ -102,7 +102,7 @@ class HumanoidManipulationPlan
    * and every configuration in `Q_plan` is statically stable given the support
    * region defined by the current foot poses. `T_plan` has to be strictly
    * increasing, and `T_plan[0]` is bigger than 0. The current implementation
-   * assumes that the message is encoded with a RPY parametrized floating base
+   * assumes that the message is encoded with a RPY parameterized floating base
    * model as opposed to a quaternion floating joint.
    *
    * This function returns without changing the current trajectories if the
@@ -111,14 +111,15 @@ class HumanoidManipulationPlan
    *
    * Aborts if assumptions about `T_plan` is not valid.
    *
-   * @throws if @p plan is not of type robotlocomotion::robot_plan_t
+   * @throws std::exception if @p plan is not of type
+   * robotlocomotion::robot_plan_t
    */
   void HandlePlanGenericPlanDerived(
       const systems::controllers::qp_inverse_dynamics::RobotKinematicState<T>&
           robot_status,
       const systems::controllers::qp_inverse_dynamics::ParamSet& paramset,
       const RigidBodyTreeAliasGroups<T>& alias_groups,
-      const systems::AbstractValue& plan) override;
+      const AbstractValue& plan) override;
 
   /**
    * Updates the X and Y dimension of the desired linear momentum change in

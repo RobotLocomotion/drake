@@ -4,6 +4,7 @@
 
 #include "drake/automotive/maliput/dragway/road_geometry.h"
 #include "drake/automotive/maliput/multilane/builder.h"
+#include "drake/automotive/maliput/multilane/connection.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -20,6 +21,7 @@ using maliput::api::GeoPosition;
 using maliput::api::RoadGeometryId;
 using maliput::multilane::ArcOffset;
 using maliput::multilane::Builder;
+using maliput::multilane::GroupFactory;
 using maliput::multilane::Direction;
 using maliput::multilane::Endpoint;
 using maliput::multilane::EndpointZ;
@@ -48,7 +50,8 @@ class PurePursuitTest : public ::testing::Test {
     const double kScaleLength{1.0};
     Builder builder(
         4. /* lane width */, {0., 5.}, 0.01, 0.01 * M_PI,
-        kScaleLength, ComputationPolicy::kPreferSpeed);
+        kScaleLength, ComputationPolicy::kPreferSpeed,
+        std::make_unique<GroupFactory>());
     builder.Connect("0", kLaneLayout,
                     StartReference().at(kStartEndpoint, Direction::kForward),
                     kCounterClockwiseArc,
@@ -255,7 +258,7 @@ TEST_F(PurePursuitTest, ComputeGoalPoint) {
   EXPECT_EQ(0., goal_position.z());
 }
 // TODO(jadecastro): Test with curved lanes once
-// monolane::Lane::ToRoadPosition() is implemented.
+// multilane::Lane::ToRoadPosition() is implemented.
 
 }  // namespace
 }  // namespace automotive

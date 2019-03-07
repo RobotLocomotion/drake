@@ -157,7 +157,7 @@ std::unique_ptr<MathematicalProgram> ConstructMathematicalProgram4() {
 void CheckNewRootNode(
     const MixedIntegerBranchAndBoundNode& root,
     const std::list<symbolic::Variable>& binary_vars_expected) {
-  // The left and right childs are empty.
+  // The left and right children are empty.
   EXPECT_FALSE(root.left_child());
   EXPECT_FALSE(root.right_child());
   // The parent node is empty.
@@ -183,9 +183,9 @@ void CheckNodeSolution(const MixedIntegerBranchAndBoundNode& node,
                        double optimal_cost, double tol = 1E-4) {
   const SolutionResult result = node.solution_result();
   EXPECT_EQ(result, SolutionResult::kSolutionFound);
-  EXPECT_TRUE(CompareMatrices(node.prog()->GetSolution(x), x_expected, tol,
-                              MatrixCompareType::absolute));
-  EXPECT_NEAR(node.prog()->GetOptimalCost(), optimal_cost, tol);
+  EXPECT_TRUE(CompareMatrices(node.prog_result()->GetSolution(x), x_expected,
+                              tol, MatrixCompareType::absolute));
+  EXPECT_NEAR(node.prog_result()->get_optimal_cost(), optimal_cost, tol);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestConstructRoot1) {
@@ -775,7 +775,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestBranchAndUpdate3) {
       dut.bnb()->root()->prog()->decision_variables();
 
   dut.BranchAndUpdate(dut.mutable_root(), x(0));
-  // Both left and right childs are unbounded.
+  // Both left and right children are unbounded.
   EXPECT_EQ(dut.bnb()->best_upper_bound(),
             std::numeric_limits<double>::infinity());
   EXPECT_EQ(dut.bnb()->best_lower_bound(),

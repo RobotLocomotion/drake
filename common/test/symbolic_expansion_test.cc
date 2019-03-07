@@ -11,14 +11,15 @@
 
 using std::function;
 using std::pair;
-using std::vector;
 using std::runtime_error;
+using std::vector;
 
 namespace drake {
 namespace symbolic {
 namespace {
 
 using test::ExprEqual;
+using test::ExprNotEqual;
 
 class SymbolicExpansionTest : public ::testing::Test {
  protected:
@@ -64,7 +65,7 @@ class SymbolicExpansionTest : public ::testing::Test {
 };
 
 TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
-  // The followings are all already expanded.
+  // The following are all already expanded.
   EXPECT_TRUE(CheckAlreadyExpanded(0));
   EXPECT_TRUE(CheckAlreadyExpanded(1));
   EXPECT_TRUE(CheckAlreadyExpanded(-1));
@@ -82,7 +83,7 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
 }
 
 TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPow) {
-  // The followings are all already expanded.
+  // The following are all already expanded.
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, y_)));            // x^y
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
   EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
@@ -94,7 +95,7 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPow) {
 
 TEST_F(SymbolicExpansionTest, ExpressionExpansion) {
   // test_exprs includes pairs of expression `e` and its expected expansion
-  // `expected`. For each pair (e, expected), we check the followings:
+  // `expected`. For each pair (e, expected), we check the following:
   //     1. e.Expand() is structurally equal to expected.
   //     2. Evaluate e and e.Expand() under multiple environments to check the
   //        correctness of expansions.
@@ -230,12 +231,16 @@ TEST_F(SymbolicExpansionTest, IfThenElse) {
                runtime_error);
 }
 
-// Expand() should not change uninterpreted functions.
 TEST_F(SymbolicExpansionTest, UninterpretedFunction) {
   const Expression uf1{uninterpreted_function("uf1", {})};
-  const Expression uf2{uninterpreted_function("uf2", {var_x_, var_y_})};
   EXPECT_PRED2(ExprEqual, uf1, uf1.Expand());
-  EXPECT_PRED2(ExprEqual, uf2, uf2.Expand());
+  const Expression e1{3 * (x_ + y_)};
+  const Expression e2{pow(x_ + y_, 2)};
+  const Expression uf2{uninterpreted_function("uf2", {e1, e2})};
+  EXPECT_PRED2(ExprNotEqual, uf2, uf2.Expand());
+  const Expression uf2_expand_expected{
+      uninterpreted_function("uf2", {e1.Expand(), e2.Expand()})};
+  EXPECT_PRED2(ExprEqual, uf2.Expand(), uf2_expand_expected);
 }
 
 TEST_F(SymbolicExpansionTest, DivideByConstant) {

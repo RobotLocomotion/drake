@@ -4,6 +4,9 @@ def path(repo_ctx, additional_search_paths = []):
     """Return the value of the PATH environment variable that would be used by
     the which() command."""
     search_paths = additional_search_paths
+
+    # N.B. Ensure ${PATH} in each platform `tools/*.bazelrc` matches these
+    # paths.
     if repo_ctx.os.name == "mac os x":
         search_paths = search_paths + ["/usr/local/bin"]
     search_paths = search_paths + ["/usr/bin", "/bin"]
@@ -15,7 +18,8 @@ def which(repo_ctx, program, additional_search_paths = []):
     user's PATH environment variable is ignored.
     """
     exec_result = repo_ctx.execute(["which", program], environment = {
-        "PATH": path(repo_ctx, additional_search_paths)})
+        "PATH": path(repo_ctx, additional_search_paths),
+    })
     if exec_result.return_code != 0:
         return None
     return repo_ctx.path(exec_result.stdout.strip())
@@ -31,25 +35,32 @@ def execute_and_return(repo_ctx, command, additional_search_paths = []):
         program = which(repo_ctx, command[0], additional_search_paths)
         if not program:
             error = "Could not find a program named '{}'".format(
-                command[0])
+                command[0],
+            )
             return struct(error = error)
     exec_result = repo_ctx.execute([program] + command[1:])
     if exec_result.return_code == 0:
         error = None
     else:
         error = "Failure running " + (
-            " ".join(["'{}'".format(x) for x in command]))
+            " ".join(["'{}'".format(x) for x in command])
+        )
         if exec_result.stdout:
             error += "\n" + exec_result.stdout
         if exec_result.stderr:
             error += "\n" + exec_result.stderr
     return struct(
         error = error,
-        stdout = exec_result.stdout)
+        stdout = exec_result.stdout,
+    )
 
 def execute_or_fail(repo_ctx, command):
-    """Runs the `command` (list) and immediately fails on any error."""
+    """Runs the `command` (list) and immediately fails on any error.
+    Returns a struct with the stdout value."""
     result = execute_and_return(repo_ctx, command)
     if result.error:
         fail("Unable to complete setup for @{} repository: {}".format(
-            repo_ctx.name, result.error))
+            repo_ctx.name,
+            result.error,
+        ))
+    return result

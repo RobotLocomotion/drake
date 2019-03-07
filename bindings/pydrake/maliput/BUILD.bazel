@@ -3,13 +3,13 @@
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
-    "//tools/skylark:pybind.bzl",
+    "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
 load(
-    "//tools/skylark:drake_py.bzl",
+    "@drake//tools/skylark:drake_py.bzl",
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
@@ -32,16 +32,16 @@ drake_py_library(
     srcs = ["__init__.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [
-        "//bindings/pydrake:common_py",
+        "//bindings/pydrake:module_py",
     ],
 )
 
 drake_pybind_library(
     name = "api_py",
     cc_deps = [
-        "//bindings/pydrake/util:wrap_pybind",
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
-    cc_so_name = "api",
     cc_srcs = ["api_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -51,7 +51,7 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "dragway_py",
-    cc_so_name = "dragway",
+    cc_deps = ["//bindings/pydrake:documentation_pybind"],
     cc_srcs = ["dragway_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -97,4 +97,7 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_data = ["//bindings/pydrake:.clang-format"],
+    enable_clang_format_lint = True,
+)

@@ -51,9 +51,9 @@ class InverseFunctionInterpolator {
   /// function image, which is inside the codomain of the direct function.
   /// @return interpolated @p derivative_order derivative
   /// @f$ x^{(derivative_order)}(y) @f$ .
-  /// @throws when @p derivative_order is a negative integer.
-  /// @throws when @p y is larger than the maximum range of the function's
-  /// codomain as described in the constructor's documentation.
+  /// @throws std::exception when @p derivative_order is a negative integer.
+  /// @throws std::exception when @p y is larger than the maximum range of the
+  /// function's codomain as described in the constructor's documentation.
   /// @throws std::runtime_error When @p y is smaller than the minimum range of
   /// the function's codomain as described in the constructor's documentation.
   double InterpolateMthDerivative(int derivative_order, double y);

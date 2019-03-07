@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/my_vector.h"
 
 namespace drake {
 namespace systems {
@@ -150,13 +151,18 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
 
 // Tests the infinity norm computation
 GTEST_TEST(BasicVectorTest, NormInf) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   BasicVector<double> vec(2);
   vec.get_mutable_value() << 3, -4;
   EXPECT_EQ(vec.NormInf(), 4);
+#pragma GCC diagnostic pop
 }
 
 // Tests the infinity norm for an autodiff type.
 GTEST_TEST(BasicVectorTest, NormInfAutodiff) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Set up the device under test ("dut").
   // The DUT is a vector with two values [-11.5, 22.5].
   // The ∂/∂t of DUT is [1.5, 3.5] (where t is some arbitrary variable).
@@ -186,6 +192,7 @@ GTEST_TEST(BasicVectorTest, NormInfAutodiff) {
   expected_norminf.derivatives() = Vector1d(-1.5);
   EXPECT_EQ(dut.NormInf().value(), expected_norminf.value());
   EXPECT_EQ(dut.NormInf().derivatives(), expected_norminf.derivatives());
+#pragma GCC diagnostic pop
 }
 
 // Tests all += * operations for BasicVector.
@@ -245,15 +252,37 @@ GTEST_TEST(BasicVectorTest, ZeroLengthStringStream) {
   EXPECT_EQ(s.str(), "foo [] bar");
 }
 
-
-// Tests the default set of inequality constraints (empty).
+// Tests the default set of bounds (empty).
 GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
   VectorX<double> value = VectorX<double>::Ones(22);
   BasicVector<double> vec(1);
-  vec.CalcInequalityConstraint(&value);
-  EXPECT_EQ(value.size(), 0);
+  Eigen::VectorXd lower, upper;
+  // Deliberately set lower/upper to size 2, to check if GetElementBounds will
+  // resize the bounds to empty size.
+  lower.resize(2);
+  upper.resize(2);
+  vec.GetElementBounds(&lower, &upper);
+  EXPECT_EQ(lower.size(), 0);
+  EXPECT_EQ(upper.size(), 0);
 }
 
+// Tests the protected `::values()` methods.
+GTEST_TEST(BasicVectorTest, ValuesAccess) {
+  MyVector2d dut;
+  dut[0] = 11.0;
+  dut[1] = 22.0;
+
+  // Values are as expected.
+  ASSERT_EQ(dut.values().size(), 2);
+  EXPECT_EQ(dut.values()[0], 11.0);
+  EXPECT_EQ(dut.values()[1], 22.0);
+  dut.values()[0] = 33.0;
+
+  // The const overload is the same.
+  const auto& const_dut = dut;
+  EXPECT_EQ(&dut.values(), &const_dut.values());
+  EXPECT_EQ(const_dut.values()[0], 33.0);
+}
 
 }  // namespace
 }  // namespace systems

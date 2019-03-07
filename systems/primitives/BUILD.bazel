@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":constant_value_source",
         ":constant_vector_source",
         ":demultiplexer",
+        ":discrete_derivative",
         ":first_order_low_pass_filter",
         ":gain",
         ":integrator",
@@ -98,6 +99,18 @@ drake_cc_library(
     srcs = ["demultiplexer.cc"],
     hdrs = ["demultiplexer.h"],
     deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_derivative",
+    srcs = ["discrete_derivative.cc"],
+    hdrs = ["discrete_derivative.h"],
+    deps = [
+        ":linear_system",
+        ":multiplexer",
+        ":pass_through",
         "//systems/framework",
     ],
 )
@@ -375,6 +388,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "discrete_derivative_test",
+    deps = [
+        ":discrete_derivative",
+        ":signal_logger",
+        ":trajectory_source",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "first_order_low_pass_filter_test",
     srcs = [
         "test/first_order_low_pass_filter_test.cc",
@@ -418,6 +445,7 @@ drake_cc_googletest(
         ":affine_linear_test",
         ":linear_system",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//examples/pendulum:pendulum_plant",
         "//systems/framework",
         "//systems/framework/test_utilities",
@@ -496,7 +524,7 @@ drake_cc_googletest(
         ":random_source",
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",
-        "//systems/analysis",
+        "//systems/analysis:simulator",
     ],
 )
 
@@ -511,9 +539,11 @@ drake_cc_googletest(
     name = "signal_logger_test",
     deps = [
         ":affine_system",
+        ":constant_vector_source",
         ":linear_system",
         ":signal_logger",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//systems/analysis:simulator",
         "//systems/framework",
     ],

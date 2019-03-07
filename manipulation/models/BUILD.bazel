@@ -7,10 +7,12 @@ install(
     name = "install_data",
     visibility = ["//visibility:public"],
     deps = [
+        "//manipulation/models/allegro_hand_description:install_data",
         "//manipulation/models/iiwa_description:install_data",
         "//manipulation/models/jaco_description:install_data",
         "//manipulation/models/wsg_50_description:install_data",
         "//manipulation/models/xtion_description:install_data",
+        "//manipulation/models/ycb:install_data",
     ],
 )
 

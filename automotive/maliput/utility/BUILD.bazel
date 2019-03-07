@@ -19,6 +19,7 @@ drake_cc_package_library(
     name = "utility",
     deps = [
         ":everything",
+        ":meshes",
     ],
 )
 
@@ -27,16 +28,33 @@ drake_cc_library(
     srcs = [
         "generate_obj.cc",
         "generate_urdf.cc",
+        "segment_analysis.cc",
     ],
     hdrs = [
         "generate_obj.h",
         "generate_urdf.h",
+        "segment_analysis.h",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":meshes",
+        "//automotive/maliput/api",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "meshes",
+    srcs = [
+        "mesh_simplification.cc",
+    ],
+    hdrs = [
+        "mesh.h",
+        "mesh_simplification.h",
     ],
     visibility = ["//visibility:private"],
     deps = [
         "//automotive/maliput/api",
-        "//math:geometric_transform",
-        "@fmt",
     ],
 )
 
@@ -45,7 +63,6 @@ drake_cc_binary(
     srcs = ["yaml_to_obj.cc"],
     deps = [
         ":utility",
-        "//automotive/maliput/monolane",
         "//automotive/maliput/multilane",
         "//common:text_logging_gflags",
         "@yaml_cpp",
@@ -92,7 +109,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":utility",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "//common",
         "@spruce",
     ],
@@ -102,8 +119,16 @@ drake_cc_googletest(
     name = "generate_urdf_test",
     deps = [
         ":utility",
-        "//automotive/maliput/monolane",
+        "//automotive/maliput/multilane",
         "@spruce",
+    ],
+)
+
+drake_cc_googletest(
+    name = "segment_analysis_test",
+    deps = [
+        ":utility",
+        "//automotive/maliput/multilane:loader",
     ],
 )
 
@@ -113,8 +138,14 @@ drake_py_unittest(
     args = ["$(location :yaml_to_obj)"],
     data = [
         ":yaml_to_obj",
-        "//automotive/maliput/monolane:yamls",
         "//automotive/maliput/multilane:yamls",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_simplification_test",
+    deps = [
+        ":meshes",
     ],
 )
 

@@ -1,11 +1,15 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "drake/geometry/geometry_context.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
+#include "drake/geometry/query_results/signed_distance_pair.h"
+#include "drake/geometry/query_results/signed_distance_to_point.h"
+#include "drake/geometry/scene_graph_inspector.h"
 
 namespace drake {
 namespace geometry {
@@ -45,6 +49,7 @@ class SceneGraph;
  @tparam T The scalar type. Must be a valid Eigen scalar.
 
  Instantiated templates for the following kinds of T's are provided:
+
  - double
  - AutoDiffXd
 
@@ -53,16 +58,19 @@ class SceneGraph;
 template <typename T>
 class QueryObject {
  public:
+  /** Constructs a default QueryObject (all pointers are null). */
+  QueryObject() = default;
+
+#ifndef DRAKE_DOXYGEN_CXX
   // NOTE: The copy semantics are provided to be compatible with AbstractValue.
   // The result will always be a "default" QueryObject (i.e., all pointers are
-  // null). There is no public constructor, the assumption is that the only way
-  // to acquire a reference/instance of QueryObject is through the
-  // SceneGraph output port. The SceneGraph is responsible for
-  // guaranteeing the returned QueryObject is "live" (via CalcQueryObject()).
+  // null). The SceneGraph is responsible for guaranteeing the returned
+  // QueryObject is "live" (via CalcQueryObject()).
   QueryObject(const QueryObject& other);
   QueryObject& operator=(const QueryObject&);
   // NOTE: The move semantics are implicitly deleted by the copy semantics.
   // There is no sense in "moving" a query object.
+#endif  // DRAKE_DOXYGEN_CXX
 
   // Note to developers on adding queries:
   //  All queries should call ThrowIfDefault() before taking any action.
@@ -70,21 +78,11 @@ class QueryObject {
   //  query_object_test.cc in the DefaultQueryThrows test to confirm that the
   //  query *is* calling ThrowIfDefault().
 
-  //----------------------------------------------------------------------------
-  /** @name                State queries */
-  //@{
-
-  /** Reports the name for the given source id.
-   @throws  std::runtime_error if the %QueryObject is in default configuration.
-   @throws  std::logic_error if the identifier is invalid. */
-  const std::string& GetSourceName(SourceId id) const;
-
-  /** Reports the id of the frame to which the given geometry id is registered.
-   @throws  std::runtime_error if the %QueryObject is in default configuration.
-   @throws  std::logic_error if the geometry id is invalid. */
-  FrameId GetFrameId(GeometryId geometry_id) const;
-
-  //@}
+  /** Provides an inspector for the topological structure of the underlying
+   scene graph data (see SceneGraphInspector for details).  */
+  const SceneGraphInspector<T>& inspector() const {
+    return inspector_;
+  }
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
@@ -102,12 +100,14 @@ class QueryObject {
    geometry are also not reported. The penetration between two geometries is
    characterized as a point pair (see PenetrationAsPointPair).
 
-   <!--
+   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner.
+
    This method is affected by collision filtering; element pairs that
    have been filtered will not produce contacts, even if their collision
    geometry is penetrating.
-   TODO(SeanCurtis-TRI): This isn't true yet.
 
+   <!--
    NOTE: This is currently declared as double because we haven't exposed FCL's
    templated functionality yet. When that happens, double -> T.
    -->
@@ -119,16 +119,161 @@ class QueryObject {
 
   //@}
 
+  //---------------------------------------------------------------------------
+  // TODO(DamrongGuoy): Write a better documentation for Signed Distance
+  // Queries.
+  /**
+   @anchor signed_distance_query
+   @name                   Signed Distance Queries
+
+   These queries provide the signed distance between two objects. Each query
+   has a specific definition of the signed distance being positive, negative,
+   or zero associated with some notions of being outside, inside, or on
+   the boundary.
+
+   These queries provide bookkeeping data like geometry id(s) of the geometries
+   involved and the important locations on the boundaries of these geometries.
+
+   The signed distance function is a continuous function. Its partial
+   derivatives are continuous almost everywhere.
+  */
+  //@{
+
+  // TODO(DamrongGuoy): Refactor documentation of
+  // ComputeSignedDistancePairwiseClosestPoints(). Move the common sections
+  // into Signed Distance Queries.
+  /**
+   Computes the signed distance together with the nearest points across all
+   pairs of geometries in the world. Reports both the separating geometries
+   and penetrating geometries.
+
+   This query provides φ(A, B), the signed distance between two objects A and B.
+
+   If the objects do not overlap (i.e., A ⋂ B = ∅), φ > 0 and represents the
+   minimal distance between the two objects. More formally:
+   φ = min(|Aₚ - Bₚ|)
+   ∀ Aₚ ∈ A and Bₚ ∈ B.
+   @note The pair (Aₚ, Bₚ) is a "witness" of the distance.
+   The pair need not be unique (think of two parallel planes).
+
+   If the objects touch or overlap (i.e., A ⋂ B ≠ ∅), φ ≤ 0 and can be
+   interpreted as the negative penetration depth. It is the smallest length of
+   the vector v, such that by shifting one object along that vector relative to
+   the other, the two objects will no longer be overlapping. More formally,
+   φ(A, B) = -min |v|.
+   s.t (Tᵥ · A) ⋂ B = ∅
+   where Tᵥ is a rigid transformation that displaces A by the vector v, namely
+   Tᵥ · A = {u + v | ∀ u ∈ A}.
+   By implication, there exist points Aₚ and Bₚ on the surfaces of objects A and
+   B, respectively, such that Aₚ + v = Bₚ, Aₚ ∈ A ∩ B, Bₚ ∈ A ∩ B. These points
+   are the witnesses to the penetration.
+
+   This method is affected by collision filtering; geometry pairs that
+   have been filtered will not produce signed distance query results.
+
+   Notice that this is an O(N²) operation, where N
+   is the number of geometries remaining in the world after applying collision
+   filter. We report the distance between dynamic objects, and between dynamic
+   and anchored objects. We DO NOT report the distance between two anchored
+   objects.
+   @retval near_pairs The signed distance for all unfiltered geometry pairs.
+  */
+  // TODO(hongkai.dai): add a distance bound as an optional input, such that the
+  // function doesn't return the pairs whose signed distance is larger than the
+  // distance bound.
+  std::vector<SignedDistancePair<double>>
+  ComputeSignedDistancePairwiseClosestPoints() const;
+
+  // TODO(DamrongGuoy): Improve and refactor documentation of
+  // ComputeSignedDistanceToPoint(). Move the common sections into Signed
+  // Distance Queries. Update documentation as we add more functionality.
+  // Right now it only supports spheres and boxes.
+  /**
+   Computes the signed distances and gradients to a query point from each
+   geometry in the scene.
+
+   @warning Currently supports spheres and boxes only. Silently ignores other
+   kinds of geometries, which will be added later.
+
+   This query provides φᵢ(p), φᵢ:ℝ³→ℝ, the signed distance to the position
+   p of a query point from geometry Gᵢ in the scene.  It returns an array of
+   the signed distances from all geometries.
+
+   Optionally you can specify a threshold distance that will filter out any
+   object beyond the threshold. By default, we report distances from the query
+   point to every object.
+
+   This query also provides the gradient vector ∇φᵢ(p) of the signed distance
+   function from geometry Gᵢ. Note that, in general, if p is outside Gᵢ, then
+   ∇φᵢ(p) equals the unit vector in the direction from the nearest point Nᵢ on
+   Gᵢ's surface to p. If p is inside Gᵢ, then ∇φᵢ(p) is in the direction from
+   p to Nᵢ. This observation is written formally as:
+
+   ∇φᵢ(p) = (p - Nᵢ)/|p - Nᵢ| if p is outside Gᵢ
+
+   ∇φᵢ(p) = -(p - Nᵢ)/|p - Nᵢ| if p is inside Gᵢ
+
+   Note that ∇φᵢ(p) is also defined on Gᵢ's surface, but we cannot use the
+   above formula.
+
+   @note For a sphere G, the signed distance function φᵢ(p) has an undefined
+   gradient vector at the center of the sphere--every point on the sphere's
+   surface has the same distance to the center.  In this case, we will assign
+   ∇φᵢ(p) the unit vector Gx (x-directional vector of G's frame) expressed
+   in World frame.
+
+   @note For a box, at a point p on an edge or a corner of the box, the signed
+   distance function φᵢ(p) has an undefined gradient vector.  In this case, we
+   will assign a unit vector in the direction of the average of the outward
+   face unit normals of the incident faces of the edge or the corner.
+   A point p is considered being on a face, or an edge, or a corner of the
+   box if its lies within a certain tolerance from them.
+
+   @note For a box B, if a point p is inside the box, and it is equidistant to
+   to multiple nearest faces, the signed distance function φᵢ(p) at p will have
+   an undefined gradient vector. There is a nearest point candidate associated
+   with each nearest face. In this case, we arbitrarily pick the point Nᵢ
+   associated with one of the nearest faces.  Please note that, due to the
+   possible round off error arising from applying a pose X_WG to B, there is no
+   guarantee which of the nearest faces will be used.
+
+   @note The signed distance function is a continuous function with respect to
+   the position of the query point, but its gradient vector field may
+   not be continuous. Specifically at a position equidistant to multiple
+   nearest points, its gradient vector field is not continuous.
+
+   @note For a convex object, outside the object at positive distance from
+   the boundary, the signed distance function is smooth (having continuous
+   first-order partial derivatives).
+
+   @param[in] p_WQ            Position of a query point Q in world frame W.
+   @param[in] threshold       We ignore any object beyond this distance.
+                              By default, it is infinity, so we report
+                              distances from the query point to every object.
+   @retval signed_distances   A vector populated with per-object signed
+                              distance values (and supporting data).
+                              See SignedDistanceToPoint.
+   */
+  std::vector<SignedDistanceToPoint<double>>
+  ComputeSignedDistanceToPoint(const Vector3<double> &p_WQ,
+                               const double threshold
+                               = std::numeric_limits<double>::infinity()) const;
+  //@}
+
  private:
-  // SceneGraph is the only class that can instantiate QueryObjects.
+  // SceneGraph is the only class that may call set().
   friend class SceneGraph<T>;
   // Convenience class for testing.
   friend class QueryObjectTester;
 
-  // Only the SceneGraph<T> can instantiate this class - it gets
-  // instantiated into a *copyable* default instance (to facilitate allocation
-  // in contexts).
-  QueryObject() = default;
+  const GeometryState<T>& geometry_state() const;
+
+  void set(const GeometryContext<T>* context,
+           const SceneGraph<T>* scene_graph) {
+    context_ = context;
+    scene_graph_ = scene_graph;
+    inspector_.set(&geometry_state());
+  }
 
   void ThrowIfDefault() const {
     if (!(context_ && scene_graph_)) {
@@ -163,6 +308,7 @@ class QueryObject {
   // context).
   const GeometryContext<T>* context_{nullptr};
   const SceneGraph<T>* scene_graph_{nullptr};
+  SceneGraphInspector<T> inspector_;
 };
 
 }  // namespace geometry

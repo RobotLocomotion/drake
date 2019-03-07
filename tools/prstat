@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # prstat -- Report the lines of code added or changed in the current tree vs
-# upsteam/master, excluding files that are known not to count against the line
+# upstream/master, excluding files that are known not to count against the line
 # limit for platform review.
 
 set -e

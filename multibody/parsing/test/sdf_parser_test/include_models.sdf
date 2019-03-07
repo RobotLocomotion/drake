@@ -1,0 +1,26 @@
+<sdf version='1.6'>
+  <world name="SimWorld">
+    <include>
+      <uri>model://simple_robot1</uri>
+    </include>
+    <include>
+      <uri>model://simple_robot2</uri>
+    </include>
+    <model name='weld_models'> 
+      <include>
+        <uri>model://simple_robot1</uri>
+      </include>
+      <include>
+        <uri>model://simple_robot2</uri>
+      </include>
+
+      <joint name='weld_robots' type='revolute'>
+        <parent>robot1::base_link</parent>
+        <child>robot2::base_link</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+        </axis>
+      </joint>
+    </model>
+  </world>
+</sdf>

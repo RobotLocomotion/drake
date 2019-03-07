@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_discrete_values.h"
@@ -55,6 +56,24 @@ TEST_F(DiscreteValuesTest, UnownedState) {
   EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
 }
 
+TEST_F(DiscreteValuesTest, AppendGroup) {
+  DiscreteValues<double> xd(std::move(data_));
+  ASSERT_EQ(xd.num_groups(), 2);
+  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+  const int group_num = xd.AppendGroup(std::make_unique<MyVector3d>(v11_));
+  EXPECT_EQ(group_num, 2);
+  ASSERT_EQ(xd.num_groups(), 3);
+
+  // Check that we didn't break previous values.
+  EXPECT_EQ(xd.get_vector(0).get_value(), v00_);
+  EXPECT_EQ(xd.get_vector(1).get_value(), v01_);
+
+  // Check that new value and type are preserved.
+  EXPECT_EQ(xd.get_vector(2).get_value(), v11_);
+  EXPECT_TRUE(is_dynamic_castable<MyVector3d>(&xd.get_vector(2)));
+}
+
 TEST_F(DiscreteValuesTest, NoNullsAllowed) {
   // Unowned.
   EXPECT_THROW(DiscreteValues<double>(
@@ -91,16 +110,44 @@ TEST_F(DiscreteValuesTest, Clone) {
 }
 
 TEST_F(DiscreteValuesTest, SetFrom) {
-  DiscreteValues<AutoDiffXd> ad_xd(
-      BasicVector<AutoDiffXd>::Make({AutoDiffXd(1.0), AutoDiffXd(2.0)}));
-  DiscreteValues<double> double_xd(BasicVector<double>::Make({3.0, 4.0}));
-  ad_xd.SetFrom(double_xd);
+  DiscreteValues<double> dut_double(
+      BasicVector<double>::Make({1.0, 2.0}));
+  DiscreteValues<AutoDiffXd> dut_autodiff(
+      BasicVector<AutoDiffXd>::Make({3.0, 4.0}));
+  DiscreteValues<symbolic::Expression> dut_symbolic(
+      BasicVector<symbolic::Expression>::Make({5.0, 6.0}));
 
-  const BasicVector<AutoDiffXd>& vec = ad_xd.get_vector(0);
-  EXPECT_EQ(3.0, vec[0].value());
-  EXPECT_EQ(0, vec[0].derivatives().size());
-  EXPECT_EQ(4.0, vec[1].value());
-  EXPECT_EQ(0, vec[1].derivatives().size());
+  // Check DiscreteValues<AutoDiff>::SetFrom<double>.
+  dut_autodiff.SetFrom(dut_double);
+  EXPECT_EQ(dut_autodiff.get_vector(0)[0].value(), 1.0);
+  EXPECT_EQ(dut_autodiff.get_vector(0)[0].derivatives().size(), 0);
+  EXPECT_EQ(dut_autodiff.get_vector(0)[1].value(), 2.0);
+  EXPECT_EQ(dut_autodiff.get_vector(0)[1].derivatives().size(), 0);
+
+  // Check DiscreteValues<Expression>::SetFrom<double>.
+  dut_symbolic.SetFrom(dut_double);
+  EXPECT_EQ(dut_symbolic.get_vector(0)[0], 1.0);
+  EXPECT_EQ(dut_symbolic.get_vector(0)[1], 2.0);
+
+  // Check DiscreteValues<double>::SetFrom<AutoDiff>.
+  dut_autodiff.get_mutable_vector(0)[0] = 7.0;
+  dut_autodiff.get_mutable_vector(0)[1] = 8.0;
+  dut_double.SetFrom(dut_autodiff);
+  EXPECT_EQ(dut_double.get_vector(0)[0], 7.0);
+  EXPECT_EQ(dut_double.get_vector(0)[1], 8.0);
+
+  // Check DiscreteValues<double>::SetFrom<Expression>.
+  dut_symbolic.get_mutable_vector(0)[0] = 9.0;
+  dut_symbolic.get_mutable_vector(0)[1] = 10.0;
+  dut_double.SetFrom(dut_symbolic);
+  EXPECT_EQ(dut_double.get_vector(0)[0], 9.0);
+  EXPECT_EQ(dut_double.get_vector(0)[1], 10.0);
+
+  // If there was an unbound variable, we get an exception.
+  dut_symbolic.get_mutable_vector(0)[0] = symbolic::Variable("x");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut_double.SetFrom(dut_symbolic),
+      std::exception, ".*variable x.*\n*");
 }
 
 // Tests that the convenience accessors for a DiscreteValues that contains

@@ -1,8 +1,12 @@
 #include "drake/automotive/maliput/multilane/road_curve.h"
 
-#include "drake/common/drake_assert.h"
+#include <algorithm>
+#include <memory>
+
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/scalar_dense_output.h"
 
 namespace drake {
 namespace maliput {
@@ -25,7 +29,7 @@ struct ArcLengthDerivativeFunction {
   // @return The arc length derivative value at the specified point.
   // @pre The given parameter vector @p k is bi-dimensional (holding r and h
   //      coordinates only).
-  // @throw std::logic_error if preconditions are not met.
+  // @throws std::logic_error if preconditions are not met.
   double operator()(const double& p, const VectorX<double>& k) const {
     if (k.size() != 2) {
       throw std::logic_error("Arc length derivative expects only r and"
@@ -58,7 +62,7 @@ struct InverseArcLengthODEFunction {
   // @return The inverse arc length derivative value at the specified point.
   // @pre The given parameter vector @p k is bi-dimensional (holding r and h
   //      coordinates only).
-  // @throw std::logic_error if preconditions are not met.
+  // @throws std::logic_error if preconditions are not met.
   double operator()(const double& s, const double& p,
                     const VectorX<double>& k) {
     unused(s);
@@ -119,7 +123,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
   // the same period and amplitude equal to the specified tolerance. The
   // difference in path length is bounded by 4e and the relative error is thus
   // bounded by 4e/L.
-  const double relative_tolerance = linear_tolerance_ / scale_length_;
+  relative_tolerance_ = linear_tolerance_ / scale_length_;
 
   // Sets `s_from_p`'s integration accuracy and step sizes. Said steps
   // should not be too large, because that could make accuracy control
@@ -133,7 +137,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
       s_from_p_func_->get_mutable_integrator();
   s_from_p_integrator->request_initial_step_size_target(0.1);
   s_from_p_integrator->set_maximum_step_size(1.0);
-  s_from_p_integrator->set_target_accuracy(relative_tolerance);
+  s_from_p_integrator->set_target_accuracy(relative_tolerance_);
 
   // Sets `p_from_s`'s integration accuracy and step sizes. Said steps
   // should not be too large, because that could make accuracy control
@@ -146,7 +150,7 @@ RoadCurve::RoadCurve(double linear_tolerance, double scale_length,
       p_from_s_ivp_->get_mutable_integrator();
   p_from_s_integrator->request_initial_step_size_target(0.1 * scale_length);
   p_from_s_integrator->set_maximum_step_size(scale_length);
-  p_from_s_integrator->set_target_accuracy(relative_tolerance);
+  p_from_s_integrator->set_target_accuracy(relative_tolerance_);
 }
 
 bool RoadCurve::AreFastComputationsAccurate(double r) const {
@@ -157,29 +161,73 @@ bool RoadCurve::AreFastComputationsAccurate(double r) const {
           && elevation().order() <= 1);
 }
 
-double RoadCurve::CalcSFromP(double p, double r) const {
+std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
   DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
+  const double absolute_tolerance = relative_tolerance_ * 1.;
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
     systems::AntiderivativeFunction<double>::SpecifiedValues values;
     values.k = (VectorX<double>(2) << r, 0.0).finished();
-    return s_from_p_func_->Evaluate(p, values);
+    // Prepares dense output for shared ownership, as std::function
+    // instances only take copyable callables.
+    const std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
+      s_from_p_func_->MakeDenseEvalFunction(1.0, values)};
+    DRAKE_DEMAND(dense_output->start_time() <= 0.);
+    DRAKE_DEMAND(dense_output->end_time() >= 1.);
+    return [dense_output, absolute_tolerance] (double p) -> double {
+      // Saturates p to lie within the [0., 1.] interval.
+      const double saturated_p = std::min(std::max(p, 0.), 1.);
+      DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
+      return dense_output->EvaluateScalar(saturated_p);
+    };
   }
-  return FastCalcSFromP(p, r);
+  return [this, r, absolute_tolerance] (double p) {
+    // Saturates p to lie within the [0., 1.] interval.
+    const double saturated_p = std::min(std::max(p, 0.), 1.);
+    DRAKE_THROW_UNLESS(std::abs(saturated_p - p) < absolute_tolerance);
+    return this->FastCalcSFromP(p, r);
+  };
 }
 
-double RoadCurve::CalcPFromS(double s, double r) const {
+double RoadCurve::CalcSFromP(double p, double r) const {
+  // Populates parameter vector with (r, h) coordinate values.
+  systems::AntiderivativeFunction<double>::SpecifiedValues values;
+  values.k = (VectorX<double>(2) << r, 0.0).finished();
+  return s_from_p_func_->Evaluate(p, values);
+}
+
+std::function<double(double)> RoadCurve::OptimizeCalcPFromS(double r) const {
   DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
+  const double full_length = CalcSFromP(1., r);
+  const double absolute_tolerance = relative_tolerance_ * full_length;
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
     systems::ScalarInitialValueProblem<double>::SpecifiedValues values;
     values.k = (VectorX<double>(2) << r, 0.0).finished();
-    return p_from_s_ivp_->Solve(s, values);
+    // Prepares dense output for shared ownership, as std::function
+    // instances only take copyable callables.
+    const std::shared_ptr<systems::ScalarDenseOutput<double>> dense_output{
+      p_from_s_ivp_->DenseSolve(full_length, values)};
+    DRAKE_DEMAND(dense_output->start_time() <= 0.);
+    DRAKE_DEMAND(dense_output->end_time() >= full_length);
+    return [dense_output, full_length,
+            absolute_tolerance] (double s) -> double {
+      // Saturates s to lie within the [0., full_length] interval.
+      const double saturated_s = std::min(std::max(s, 0.), full_length);
+      DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
+      return dense_output->EvaluateScalar(saturated_s);
+    };
   }
-  return FastCalcPFromS(s, r);
+  return [this, r, full_length, absolute_tolerance] (double s) {
+    // Saturates s to lie within the [0., full_length] interval.
+    const double saturated_s = std::min(std::max(s, 0.), full_length);
+    DRAKE_THROW_UNLESS(std::abs(saturated_s - s) < absolute_tolerance);
+    return this->FastCalcPFromS(s, r);
+  };
 }
+
 
 double RoadCurve::CalcGPrimeAsUsedForCalcSFromP(double p) const {
   if (computation_policy() == ComputationPolicy::kPreferSpeed) {
@@ -190,7 +238,7 @@ double RoadCurve::CalcGPrimeAsUsedForCalcSFromP(double p) const {
 
 Vector3<double> RoadCurve::W_of_prh(double p, double r, double h) const {
   // Calculates z (elevation) of (p,0,0).
-  const double z = elevation().f_p(p) * p_scale();
+  const double z = elevation().f_p(p) * l_max();
   // Calculates x,y of (p,0,0).
   const Vector2<double> xy = xy_of_p(p);
   // Calculates orientation of (p,r,h) basis at (p,0,0).
@@ -218,7 +266,7 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
   const double sg = std::sin(gamma);
 
   // Evaluate dα/dp, dβ/dp, dγ/dp...
-  const double d_alpha = superelevation().f_dot_p(p) * p_scale();
+  const double d_alpha = superelevation().f_dot_p(p) * l_max();
   const double d_beta = -cb * cb * elevation().f_ddot_p(p);
   const double d_gamma = heading_dot_of_p(p);
 
@@ -232,13 +280,13 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
   //
   //   ∂G(p)/∂p = G'(p)
   //
-  //   ∂Z(p)/∂p = p_scale * (z / p_scale) = p_scale * g'(p)
+  //   ∂Z(p)/∂p = l_max * (z / l_max) = l_max * g'(p)
   //
   //   ∂R_αβγ/∂p = (∂R_αβγ/∂α ∂R_αβγ/∂β ∂R_αβγ/∂γ)*(dα/dp, dβ/dp, dγ/dp)
   return
       Vector3<double>(G_prime.x(),
                       G_prime.y(),
-                      p_scale() * g_prime) +
+                      l_max() * g_prime) +
 
       Vector3<double>((((sa*sg)+(ca*sb*cg))*r + ((ca*sg)-(sa*sb*cg))*h),
                       (((-sa*cg)+(ca*sb*sg))*r - ((ca*cg)+(sa*sb*sg))*h),
@@ -257,7 +305,7 @@ Vector3<double> RoadCurve::W_prime_of_prh(double p, double r, double h,
 }
 
 Rot3 RoadCurve::Rabg_of_p(double p) const {
-  return Rot3(superelevation().f_p(p) * p_scale(),
+  return Rot3(superelevation().f_p(p) * l_max(),
               -std::atan(elevation().f_dot_p(p)),
               heading_of_p(p));
 }

@@ -3,6 +3,8 @@
 """Publishes steering commands over LCM.
 """
 
+from __future__ import print_function
+
 import argparse
 import collections
 import copy
@@ -166,28 +168,30 @@ def make_driving_command(throttle, steering_angle):
 
 class SteeringCommandPublisher:
     def __init__(self, input_method, lcm_tag, joy_name):
-        print 'Initializing...'
+        print('Initializing...')
         pygame.init()
         self.screen = pygame.display.set_mode((300, 70))
         pygame.display.set_caption(lcm_tag)
         self.font = pygame.font.SysFont('Courier', 20)
         if input_method == 'keyboard':
             self.event_processor = KeyboardEventProcessor()
-            print bcolors.OKBLUE + '--- Keyboard Control Instruction --- '\
-                + bcolors.ENDC
-            print 'To increase the throttle/brake: press and hold the Up/Down'\
-                + ' Arrow'
-            print 'To decrease the throttle/brake: release the Up/Down Arrow'
-            print 'To keep the the current throttle/brake: press the Space Bar'
-            print 'To increase left/right steering: press the Left/Right Arrow'
-            print bcolors.OKBLUE + '------------------------------------ ' \
-                + bcolors.ENDC
+            print(bcolors.OKBLUE + '--- Keyboard Control Instruction --- '
+                  + bcolors.ENDC)
+            print('To increase the throttle/brake: press and hold the Up/Down'
+                  + ' Arrow')
+            print('To decrease the throttle/brake: release the Up/Down Arrow')
+            print(
+                'To keep the the current throttle/brake: press the Space Bar')
+            print(
+                'To increase left/right steering: press the Left/Right Arrow')
+            print(bcolors.OKBLUE + '------------------------------------ '
+                  + bcolors.ENDC)
         else:
             self.event_processor = JoystickEventProcessor(joy_name)
         self.last_value = SteeringThrottleBrake(0, 0, 0)
         self.lc = lcm.LCM()
         self.lcm_tag = lcm_tag
-        print 'Ready'
+        print('Ready')
 
     def printLCMValues(self):
         self.screen.fill(5)
@@ -259,7 +263,8 @@ def main():
         return 0
 
     if 'pygame' not in sys.modules:
-        print >>sys.stderr, 'error: missing pygame; see README.md for help.'
+        print('error: missing pygame; see README.md for help.',
+              file=sys.stderr)
         return 1
 
     publisher = SteeringCommandPublisher(

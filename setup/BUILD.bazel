@@ -15,14 +15,15 @@ install_files(
             "mac/binary_distribution/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
-            "ubuntu/16.04/binary_distribution/install_prereqs.sh",
-            "ubuntu/16.04/binary_distribution/packages.txt",
+            "ubuntu/binary_distribution/install_prereqs.sh",
+            "ubuntu/binary_distribution/packages-bionic.txt",
+            "ubuntu/binary_distribution/packages-xenial.txt",
         ],
         "//conditions:default": [],
     }),
     strip_prefix = [
         "mac/binary_distribution",
-        "ubuntu/16.04/binary_distribution",
+        "ubuntu/binary_distribution",
     ],
     rename = {
         "share/drake/setup/install_prereqs.sh": "install_prereqs",

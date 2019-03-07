@@ -1,0 +1,118 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+drake_cc_package_library(
+    name = "kuka_iiwa",
+    deps = [
+        ":iiwa_command_receiver",
+        ":iiwa_command_sender",
+        ":iiwa_constants",
+        ":iiwa_status_receiver",
+        ":iiwa_status_sender",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa_constants",
+    srcs = ["iiwa_constants.cc"],
+    hdrs = ["iiwa_constants.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa_command_receiver",
+    srcs = ["iiwa_command_receiver.cc"],
+    hdrs = ["iiwa_command_receiver.h"],
+    deps = [
+        ":iiwa_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+        "//systems/lcm:lcm_pubsub_system",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa_command_sender",
+    srcs = ["iiwa_command_sender.cc"],
+    hdrs = ["iiwa_command_sender.h"],
+    deps = [
+        ":iiwa_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa_status_receiver",
+    srcs = ["iiwa_status_receiver.cc"],
+    hdrs = ["iiwa_status_receiver.h"],
+    deps = [
+        ":iiwa_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "iiwa_status_sender",
+    srcs = ["iiwa_status_sender.cc"],
+    hdrs = ["iiwa_status_sender.h"],
+    deps = [
+        ":iiwa_constants",
+        "//common:essential",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "iiwa_command_receiver_test",
+    deps = [
+        ":iiwa_command_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_command_sender_test",
+    deps = [
+        ":iiwa_command_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_status_receiver_test",
+    deps = [
+        ":iiwa_status_receiver",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iiwa_status_sender_test",
+    deps = [
+        ":iiwa_status_sender",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+add_lint_tests()

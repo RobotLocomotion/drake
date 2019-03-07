@@ -6,6 +6,7 @@
 #include "drake/automotive/simple_car.h"
 #include "drake/common/proto/call_matlab.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/solvers/solve.h"
 #include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 namespace drake {
@@ -101,12 +102,13 @@ GTEST_TEST(TrajectoryOptimizationTest, SimpleCarDircolTest) {
 
   prog.SetInitialTrajectory(trajectories::PiecewisePolynomial<double>(),
                             initial_state_trajectory);
-  EXPECT_EQ(prog.Solve(), solvers::SolutionResult::kSolutionFound);
+  const auto result = solvers::Solve(prog);
+  EXPECT_TRUE(result.is_success());
 
   // Plot the solution.
   // Note: see call_matlab.h for instructions on viewing the plot.
-  Eigen::MatrixXd inputs = prog.GetInputSamples();
-  Eigen::MatrixXd states = prog.GetStateSamples();
+  Eigen::MatrixXd inputs = prog.GetInputSamples(result);
+  Eigen::MatrixXd states = prog.GetStateSamples(result);
   common::CallMatlab("plot", states.row(SimpleCarStateIndices::kX),
                      states.row(SimpleCarStateIndices::kY));
   common::CallMatlab("xlabel", "x (m)");

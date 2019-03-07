@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile are used by the project
+# maintainers to create the precompiled doxygen binaries that are downloaded
+# during the build. They are neither called during the build nor expected to be
+# called by most developers or users of the project.
+
+set -euxo pipefail
+
+rm -f doxygen-*-bionic-x86_64.tar.gz doxygen-*-xenial-x86_64.tar.gz
+
+docker build --build-arg CODENAME=bionic --tag doxygen-bionic "${BASH_SOURCE%/*}"
+trap 'docker rmi doxygen-bionic' EXIT
+docker run --detach --name doxygen-bionic-build --tty doxygen-bionic
+trap 'docker stop doxygen-bionic-build && docker rm doxygen-bionic-build && docker rmi doxygen-bionic' EXIT
+docker cp doxygen-bionic-build:$(docker exec doxygen-bionic-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-bionic-x86_64.tar.gz') .
+
+docker build --build-arg CODENAME=xenial --tag doxygen-xenial "${BASH_SOURCE%/*}"
+trap 'docker stop doxygen-xenial-build && docker rm doxygen-xenial-build && docker rmi doxygen-bionic doxygen-xenial' EXIT
+docker run --detach --name doxygen-xenial-build --tty doxygen-xenial
+trap 'docker stop doxygen-bionic-build doxygen-xenial-build && docker rm doxygen-bionic-build doxygen-xenial-build && docker rmi doxygen-bionic doxygen-xenial' EXIT
+docker cp doxygen-xenial-build:$(docker exec doxygen-xenial-build find /opt/doxygen/bin/ -maxdepth 1 -name 'doxygen-*-xenial-x86_64.tar.gz') .
+
+shasum --algorithm 256 doxygen-*-bionic-x86_64.tar.gz doxygen-*-xenial-x86_64.tar.gz | tee doxygen-bionic-xenial-x86_64.tar.gz.sha256

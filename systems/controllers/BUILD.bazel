@@ -13,23 +13,16 @@ package(default_visibility = ["//visibility:public"])
 drake_cc_package_library(
     name = "controllers",
     deps = [
-        ":control_util",
         ":dynamic_programming",
-        ":instantaneous_qp_controller",
         ":inverse_dynamics",
         ":inverse_dynamics_controller",
         ":linear_model_predictive_controller",
         ":linear_quadratic_regulator",
         ":pid_controlled_system",
         ":pid_controller",
-        ":polynomial_encode_decode",
-        ":qp_common",
         ":setpoint",
-        ":side",
         ":state_feedback_controller_interface",
-        ":yaml_util",
         ":zmp_planner",
-        ":zmp_util",
     ],
 )
 
@@ -49,6 +42,7 @@ drake_cc_library(
         "//common:essential",
         "//math:wrap_to",
         "//solvers:mathematical_program",
+        "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/primitives:barycentric_system",
@@ -60,7 +54,7 @@ drake_cc_library(
     srcs = ["inverse_dynamics.cc"],
     hdrs = ["inverse_dynamics.h"],
     deps = [
-        "//multibody:rigid_body_tree",
+        "//multibody/plant",
         "//systems/framework",
     ],
 )
@@ -73,7 +67,7 @@ drake_cc_library(
         ":inverse_dynamics",
         ":pid_controller",
         ":state_feedback_controller_interface",
-        "//multibody:rigid_body_tree",
+        "//multibody/plant",
         "//systems/framework",
         "//systems/primitives:adder",
         "//systems/primitives:constant_vector_source",
@@ -88,6 +82,7 @@ drake_cc_library(
     hdrs = ["linear_model_predictive_controller.h"],
     deps = [
         "//common/trajectories:piecewise_polynomial",
+        "//solvers:solve",
         "//systems/primitives:linear_system",
         "//systems/trajectory_optimization:direct_transcription",
     ],
@@ -140,42 +135,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "control_util",
-    srcs = ["controlUtil.cpp"],
-    hdrs = ["controlUtil.h"],
-    deps = [
-        "//common:essential",
-        "//common/trajectories:piecewise_polynomial",
-        "//math:autodiff",
-        "//math:expmap",
-        "//math:geometric_transform",
-        "//multibody:resolve_center_of_pressure",
-        "//multibody:rigid_body_tree",
-        "//util",
-    ],
-)
-
-drake_cc_library(
-    name = "side",
-    srcs = ["side.cc"],
-    hdrs = ["side.h"],
-    deps = [],
-)
-
-drake_cc_library(
-    name = "qp_common",
-    srcs = [],
-    hdrs = ["QPCommon.h"],
-    deps = [
-        ":control_util",
-        ":side",
-        "//common:essential",
-        "//multibody:rigid_body_tree",
-        "//util",
-    ],
-)
-
-drake_cc_library(
     name = "zmp_planner",
     srcs = ["zmp_planner.cc"],
     hdrs = ["zmp_planner.h"],
@@ -183,72 +142,6 @@ drake_cc_library(
         ":linear_quadratic_regulator",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "zmp_util",
-    srcs = ["zmpUtil.cpp"],
-    hdrs = ["zmpUtil.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "yaml_util",
-    srcs = ["yaml_util.cc"],
-    hdrs = ["yaml_util.h"],
-    # We must not expose `#include <yaml-cpp/yaml.h>` in any of our installed
-    # headers; yaml_util.h is only included internally within this package.
-    install_hdrs_exclude = ["yaml_util.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":qp_common",
-        "//common:essential",
-        "@yaml_cpp",
-    ],
-)
-
-drake_cc_library(
-    name = "polynomial_encode_decode",
-    srcs = ["polynomial_encode_decode.cc"],
-    hdrs = ["polynomial_encode_decode.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//lcmtypes:piecewise_polynomial",
-        "//lcmtypes:polynomial",
-        "//lcmtypes:polynomial_matrix",
-        "//util",
-    ],
-)
-
-# This library is empty unless Gurobi is available.
-drake_cc_library(
-    name = "instantaneous_qp_controller",
-    srcs = select({
-        "//tools:with_gurobi": ["InstantaneousQPController.cpp"],
-        "//conditions:default": [],
-    }),
-    hdrs = select({
-        "//tools:with_gurobi": ["InstantaneousQPController.h"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":control_util",
-        ":polynomial_encode_decode",
-        ":qp_common",
-        ":yaml_util",
-        "//common:essential",
-        "//common:find_resource",
-        "//common:is_approx_equal_abstol",
-        "//lcmtypes:qp_controller_input",
-        "//lcmtypes:zmp_com_observer_state",
-        "//math:geometric_transform",
-        "//multibody/joints",
-        "//multibody/parsers",
-        "//solvers:gurobi_qp",
-        "//util",
     ],
 )
 
@@ -279,15 +172,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "polynomial_encode_decode_test",
-    deps = [
-        ":polynomial_encode_decode",
-        "//common/test_utilities",
-        "//common/trajectories:random_piecewise_polynomial",
-    ],
-)
-
-drake_cc_googletest(
     name = "inverse_dynamics_test",
     data = [
         "//examples/simple_four_bar:models",
@@ -297,7 +181,8 @@ drake_cc_googletest(
         ":inverse_dynamics",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
+        "//multibody/parsing",
+        "//systems/controllers/test_utilities",
     ],
 )
 
@@ -310,7 +195,8 @@ drake_cc_googletest(
         ":inverse_dynamics_controller",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsers",
+        "//multibody/parsing",
+        "//systems/controllers/test_utilities",
     ],
 )
 
@@ -365,9 +251,4 @@ drake_cc_googletest(
     ],
 )
 
-# The extra_srcs are required here because add_lint_tests() doesn't understand
-# how to extract labels from select() functions yet.
-add_lint_tests(cpplint_extra_srcs = [
-    "InstantaneousQPController.cpp",
-    "InstantaneousQPController.h",
-])
+add_lint_tests()

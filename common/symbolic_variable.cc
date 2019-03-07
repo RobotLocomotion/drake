@@ -30,7 +30,9 @@ Variable::Id Variable::get_next_id() {
 }
 
 Variable::Variable(string name, const Type type)
-    : id_{get_next_id()}, type_{type}, name_{make_shared<string>(move(name))} {
+    : id_{get_next_id()},
+      type_{type},
+      name_{make_shared<const string>(move(name))} {
   DRAKE_ASSERT(id_ > 0);
 }
 Variable::Id Variable::get_id() const { return id_; }
@@ -57,9 +59,14 @@ ostream& operator<<(ostream& os, Variable::Type type) {
       return os << "Integer";
     case Variable::Type::BOOLEAN:
       return os << "Boolean";
+    case Variable::Type::RANDOM_UNIFORM:
+      return os << "Random Uniform";
+    case Variable::Type::RANDOM_GAUSSIAN:
+      return os << "Random Gaussian";
+    case Variable::Type::RANDOM_EXPONENTIAL:
+      return os << "Random Exponential";
   }
-  // Should be unreachable.
-  DRAKE_ABORT();
+  DRAKE_UNREACHABLE();
 }
 
 MatrixX<Variable> MakeMatrixVariable(const int rows, const int cols,

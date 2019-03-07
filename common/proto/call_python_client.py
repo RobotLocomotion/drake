@@ -1,7 +1,45 @@
+"""
+Permits calling arbitrary functions and passing some forms of data from C++
+to Python (only one direction) as a server-client pair.
+
+The server in this case is the C++ program, and the client is this binary.
+For an example of C++ usage, see `call_python_server_test.cc`.
+
+Here's an example of running with the C++ test program:
+
+    cd drake
+    bazel build //common/proto:call_python_client_cli //common/proto:call_python_server_test  # noqa
+    # Create default pipe file.
+    rm -f /tmp/python_rpc && mkfifo /tmp/python_rpc
+
+    # In Terminal 1, run client.
+    ./bazel-bin/common/proto/call_python_client_cli
+
+    # In Terminal 2, run server (or your C++ program).
+    ./bazel-bin/common/proto/call_python_server_test
+
+To use in Jupyter (if you have it installed) without a FIFO file (such that
+it's non-blocking):
+
+    cd drake
+    bazel build //common/proto:call_python_client_cli //common/proto:call_python_server_test  # noqa
+    rm -f /tmp/python_rpc  # Do not make it FIFO
+
+    # In Terminal 1, run server, create output.
+    ./bazel-bin/common/proto/call_python_server_test
+
+    # In Terminal 2, run client in notebook.
+    ./bazel-bin/common/proto/call_python_client_cli \
+        -c jupyter notebook ${PWD}/common/proto/call_python_client_notebook.ipynb  # noqa
+    # Execute: Cell > Run All
+
+Note:
+    Occasionally, the plotting will not come through on the notebook. I (Eric)
+    am unsure why.
+"""
 from __future__ import print_function
 import argparse
 import os
-from Queue import Queue
 import signal
 import stat
 import sys
@@ -9,10 +47,13 @@ from threading import Thread
 import time
 import traceback
 
-import numpy as np
 # Hacky, but this is the simplest route right now.
 # @ref https://www.datadoghq.com/blog/engineering/protobuf-parsing-in-python/
 from google.protobuf.internal.decoder import _DecodeVarint32
+import numpy as np
+import six
+from six import text_type as unicode
+from six.moves.queue import Queue
 
 from drake.common.proto.matlab_rpc_pb2 import MatlabArray, MatlabRPC
 
@@ -62,17 +103,17 @@ def _get_required_helpers(scope_locals):
         """Parse a slice object from a string. """
         def to_piece(s):
             return s and int(s) or None
-        pieces = map(to_piece, expr.split(':'))
+        pieces = list(map(to_piece, expr.split(':')))
         if len(pieces) == 1:
             return slice(pieces[0], pieces[0] + 1)
         else:
             return slice(*pieces)
 
     def make_slice_arg(*args):
-        """Create a scalar or tuple for acessing objects via slices. """
+        """Create a scalar or tuple for accessing objects via slices. """
         out = [None] * len(args)
         for i, arg in enumerate(args):
-            if isinstance(arg, str):
+            if isinstance(arg, unicode):
                 out[i] = _make_slice(arg)
             else:
                 out[i] = arg
@@ -101,35 +142,6 @@ def _get_required_helpers(scope_locals):
 class _KwArgs(dict):
     # Indicates values meant solely for `**kwargs`.
     pass
-
-
-def _cexec(stmt, globals_, locals_):
-    # Enable executing a statement via evaluation so that we may control
-    # "locals" and "globals" explicitly.
-    eval_locals = dict(stmt=stmt, locals_=locals_, _cexec_impl=_cexec_impl)
-    # Dispatch to function that calls "exec" so that we can control locals
-    # and globals.
-    eval("_cexec_impl(stmt, locals_)", eval_locals, globals_)
-
-
-def _cexec_impl(_stmt, _locals):
-    # Implementation for `_cexec` to capture locals and globals.
-    locals().update(_locals)
-    _old_vars = None
-    _new_vars = None
-    _old_vars = locals().keys()
-    # Execute with context.
-    exec _stmt
-    # Figure out new things.
-    locals_new = locals()
-    _new_vars = set(locals_new.keys()) - set(_old_vars)
-    for var in _locals.keys():
-        if var not in locals_new:
-            del _locals[var]
-        else:
-            _locals[var] = locals()[var]
-    for var in _new_vars:
-        _locals[var] = locals()[var]
 
 
 class _ExecutionCheck(object):
@@ -250,7 +262,7 @@ class CallPythonClient(object):
     """
     def __init__(self, filename=None, stop_on_error=True,
                  scope_globals=None, scope_locals=None,
-                 threaded=True, wait=False):
+                 threaded=False, wait=False):
         if filename is None:
             # TODO(jamiesnape): Implement and use a
             # drake.common.GetRpcPipeTempDirectory function.
@@ -341,7 +353,7 @@ class CallPythonClient(object):
                 value = self._to_array(arg, np.double)
             elif arg.type == MatlabArray.CHAR:
                 assert arg.rows == 1
-                value = str(arg_raw)
+                value = arg_raw.decode('utf8')
             elif arg.type == MatlabArray.LOGICAL:
                 value = self._to_array(arg, np.bool)
             elif arg.type == MatlabArray.INT:
@@ -357,6 +369,7 @@ class CallPythonClient(object):
         # Call the function
         # N.B. No security measures to sanitize function name.
         function_name = msg.function_name
+        assert isinstance(function_name, unicode), type(function_name)
         out_id = None
         if len(msg.lhs) > 0:
             assert len(msg.lhs) == 1
@@ -367,7 +380,7 @@ class CallPythonClient(object):
         if function_name == "exec":
             assert len(inputs) == 1
             assert kwargs is None or len(kwargs) == 0
-            _cexec(inputs[0], self.scope_globals, self.scope_locals)
+            six.exec_(inputs[0], self.scope_globals, self.scope_locals)
             out = None
         else:
             out = eval(function_name + "(*_tmp_args, **_tmp_kwargs)",
@@ -546,7 +559,9 @@ def _read_next(f, msg):
 
 def main(argv):
     _ensure_sigint_handler()
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--no_wait", action='store_true',
         help="Close client after messages are processed. " +
@@ -559,13 +574,23 @@ def main(argv):
         "--stop_on_error", action='store_true',
         help="Stop client if there is an error when executing a call.")
     parser.add_argument("-f", "--file", type=str, default=None)
+    parser.add_argument(
+        "-c", "--command", type=str, nargs='+', default=None,
+        help="Execute command (e.g. `jupyter notebook`) instead of running "
+             "client.")
     args = parser.parse_args(argv)
 
-    client = CallPythonClient(
-        args.file, stop_on_error=args.stop_on_error,
-        threaded=not args.no_threading, wait=not args.no_wait)
-    good = client.run()
-    return good
+    if args.command is not None:
+        # Execute command s.t. it has access to the relevant PYTHNOPATH.
+        os.execvp(args.command[0], args.command)
+        # Control should not return to this program unless there was an error.
+        return False
+    else:
+        client = CallPythonClient(
+            args.file, stop_on_error=args.stop_on_error,
+            threaded=not args.no_threading, wait=not args.no_wait)
+        good = client.run()
+        return good
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/random.h"
 #include "drake/common/symbolic.h"
 
 namespace drake {
@@ -135,5 +136,11 @@ class Environment {
  private:
   map map_;
 };
+
+/** Populates the environment @p env by sampling values for the unassigned
+ *  random variables in @p variables using @p random_generator. */
+Environment PopulateRandomVariables(Environment env, const Variables& variables,
+                                    RandomGenerator* random_generator);
+
 }  // namespace symbolic
 }  // namespace drake

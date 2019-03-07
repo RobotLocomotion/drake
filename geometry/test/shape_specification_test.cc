@@ -38,10 +38,16 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
     // supported.
     EXPECT_TRUE(false) << "Don't test Meshes until they are fully supported";
   }
+  void ImplementGeometry(const Convex&, void* data) override {
+    received_user_data_ = data;
+    convex_made_ = true;
+  }
   void Reset() {
+    box_made_ = false;
     sphere_made_ = false;
     half_space_made_ = false;
     cylinder_made_ = false;
+    convex_made_ = false;
     received_user_data_ = nullptr;
   }
 
@@ -50,6 +56,7 @@ class ReifierTest : public ShapeReifier, public ::testing::Test {
   bool sphere_made_{false};
   bool cylinder_made_{false};
   bool half_space_made_{false};
+  bool convex_made_{false};
   void* received_user_data_{nullptr};
 };
 
@@ -70,6 +77,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(convex_made_);
 
   Reset();
 
@@ -79,6 +87,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_TRUE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(convex_made_);
 
   Reset();
 
@@ -88,6 +97,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_TRUE(cylinder_made_);
   EXPECT_FALSE(box_made_);
+  EXPECT_FALSE(convex_made_);
 
   Reset();
 
@@ -97,6 +107,17 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
   EXPECT_FALSE(half_space_made_);
   EXPECT_FALSE(cylinder_made_);
   EXPECT_TRUE(box_made_);
+  EXPECT_FALSE(convex_made_);
+
+  Reset();
+
+  Convex convex{"fictitious_name.obj", 1.0};
+  convex.Reify(this);
+  EXPECT_FALSE(sphere_made_);
+  EXPECT_FALSE(half_space_made_);
+  EXPECT_FALSE(cylinder_made_);
+  EXPECT_FALSE(box_made_);
+  EXPECT_TRUE(convex_made_);
 }
 
 // Confirms that the ReifiableShape properly clones the right types.
@@ -265,6 +286,15 @@ GTEST_TEST(HalfSpaceTest, MakePose) {
     p << 0, 0, 0;
     EXPECT_THROW(HalfSpace::MakePose(n, p), std::logic_error);
   }
+}
+
+// Confirms the Box::MakeCube correctness.
+GTEST_TEST(BoxTest, Cube) {
+  Box cube = Box::MakeCube(1.0);
+  EXPECT_EQ(cube.width(), 1.0);
+  EXPECT_EQ(cube.depth(), 1.0);
+  EXPECT_EQ(cube.height(), 1.0);
+  EXPECT_TRUE(CompareMatrices(cube.size(), Eigen::Vector3d::Constant(1.0)));
 }
 
 }  // namespace

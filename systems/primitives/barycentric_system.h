@@ -22,7 +22,7 @@ namespace systems {
 ///
 /// @see math::BarycentricMesh
 template <typename T>
-class BarycentricMeshSystem : public VectorSystem<T> {
+class BarycentricMeshSystem final : public VectorSystem<T> {
   // TODO(russt): Could generalize this to systems with state.
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BarycentricMeshSystem);
@@ -48,8 +48,8 @@ class BarycentricMeshSystem : public VectorSystem<T> {
   /// Returns a reference to the output values.
   const MatrixX<T>& get_output_values() const { return output_values_; }
 
- protected:
-  /// Evaluates the BarycentricMesh at the input and writes it to the output.
+ private:
+  // Evaluates the BarycentricMesh at the input and writes it to the output.
   virtual void DoCalcVectorOutput(
       const Context<T>& context,
       const Eigen::VectorBlock<const VectorX<T>>& input,
@@ -59,7 +59,6 @@ class BarycentricMeshSystem : public VectorSystem<T> {
     mesh_.Eval(output_values_, input, output);
   }
 
- private:
   const math::BarycentricMesh<T> mesh_;
   const MatrixX<T> output_values_;
 };

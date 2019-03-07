@@ -24,26 +24,21 @@ namespace automotive {
 /// PoseSelector for details.  The output of this block is an acceleration value
 /// passed as a command to the vehicle.
 ///
-/// Instantiated templates for the following kinds of T's are provided:
-/// - double
-///
-/// They are already available to link against in the containing library.
-///
 /// Input Port 0: PoseVector for the ego car.
-///   (InputPortDescriptor getter: ego_pose_input())
+///   (InputPort getter: ego_pose_input())
 ///
 /// Input Port 1: FrameVelocity of the ego car.
-///   (InputPortDescriptor getter: ego_velocity_input())
+///   (InputPort getter: ego_velocity_input())
 ///
 /// Input Port 2: PoseBundle for the traffic cars, possibly inclusive of the ego
 ///   car's pose.
-///   (InputPortDescriptor getter: traffic_input())
+///   (InputPort getter: traffic_input())
 ///
 /// Output Port 0: A BasicVector containing the acceleration request.
 ///   (OutputPort getter: acceleration_output())
 ///
-///
 /// Instantiated templates for the following kinds of T's are provided:
+///
 /// - double
 /// - AutoDiffXd
 ///
@@ -81,9 +76,9 @@ class IdmController : public systems::LeafSystem<T> {
 
   /// See the class description for details on the following input ports.
   /// @{
-  const systems::InputPortDescriptor<T>& ego_pose_input() const;
-  const systems::InputPortDescriptor<T>& ego_velocity_input() const;
-  const systems::InputPortDescriptor<T>& traffic_input() const;
+  const systems::InputPort<T>& ego_pose_input() const;
+  const systems::InputPort<T>& ego_velocity_input() const;
+  const systems::InputPort<T>& traffic_input() const;
   const systems::OutputPort<T>& acceleration_output() const;
   /// @}
 

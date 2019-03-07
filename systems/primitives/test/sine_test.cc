@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
@@ -32,7 +33,6 @@ void TestSineSystem(const Sine<T>& sine_system,
 
   // Verifies that Sine allocates no state variables in the context.
   EXPECT_EQ(0, context->get_continuous_state().size());
-  auto output = sine_system.AllocateOutput(*context);
 
   if (sine_system.is_time_based()) {
     // If the system is time based, the input_vectors Matrix should only contain
@@ -46,40 +46,17 @@ void TestSineSystem(const Sine<T>& sine_system,
       // Initialize the time in seconds to be used by the Sine system.
       context->set_time(input_vectors(0, i));
 
-      // Calculate the Sine system output.
-      sine_system.CalcOutput(*context, output.get());
-
-      // Checks that the number of output ports in the Sine system and the
-      // system output are consistent.
-      ASSERT_EQ(3, output->get_num_ports());
+      // Check the Sine output.
       ASSERT_EQ(3, sine_system.get_num_output_ports());
-
-      const BasicVector<double>* output_vector = output->get_vector_data(0);
-      const BasicVector<double>* first_deriv_vector =
-          output->get_vector_data(1);
-      const BasicVector<double>* second_deriv_vector =
-          output->get_vector_data(2);
-      ASSERT_NE(nullptr, output_vector);
-      ASSERT_NE(nullptr, first_deriv_vector);
-      ASSERT_NE(nullptr, second_deriv_vector);
-
-      Eigen::VectorXd expected_output = expected_outputs.col(i);
-      Eigen::VectorXd expected_first_deriv = expected_first_derivs.col(i);
-      Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
-
-      Eigen::VectorXd out_diff = expected_output - output_vector->get_value();
-      EXPECT_TRUE(
-          out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
-
-      Eigen::VectorXd deriv1_diff =
-          expected_first_deriv - first_deriv_vector->get_value();
-      EXPECT_TRUE(
-          deriv1_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
-
-      Eigen::VectorXd deriv2_diff =
-          expected_second_deriv - second_deriv_vector->get_value();
-      EXPECT_TRUE(
-          deriv2_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+      EXPECT_TRUE(CompareMatrices(
+          sine_system.get_output_port(0).Eval(*context),
+          expected_outputs.col(i), ktest_tolerance));
+      EXPECT_TRUE(CompareMatrices(
+          sine_system.get_output_port(1).Eval(*context),
+          expected_first_derivs.col(i), ktest_tolerance));
+      EXPECT_TRUE(CompareMatrices(
+          sine_system.get_output_port(2).Eval(*context),
+          expected_second_derivs.col(i), ktest_tolerance));
     }
   } else {
     // Loop over the input vectors and check that the Sine system outputs match
@@ -101,40 +78,17 @@ void TestSineSystem(const Sine<T>& sine_system,
       input->get_mutable_value() << input_vectors.col(i);
       context->FixInputPort(0, std::move(input));
 
-      // Calculate the Sine system output.
-      sine_system.CalcOutput(*context, output.get());
-
-      // Checks that the number of output ports in the Sine system and the
-      // system output are consistent.
-      ASSERT_EQ(3, output->get_num_ports());
+      // Check the Sine output.
       ASSERT_EQ(3, sine_system.get_num_output_ports());
-
-      const BasicVector<double>* output_vector = output->get_vector_data(0);
-      const BasicVector<double>* first_deriv_vector =
-          output->get_vector_data(1);
-      const BasicVector<double>* second_deriv_vector =
-          output->get_vector_data(2);
-      ASSERT_NE(nullptr, output_vector);
-      ASSERT_NE(nullptr, first_deriv_vector);
-      ASSERT_NE(nullptr, second_deriv_vector);
-
-      Eigen::VectorXd expected_output = expected_outputs.col(i);
-      Eigen::VectorXd expected_first_deriv = expected_first_derivs.col(i);
-      Eigen::VectorXd expected_second_deriv = expected_second_derivs.col(i);
-
-      Eigen::VectorXd out_diff = expected_output - output_vector->get_value();
-      EXPECT_TRUE(
-          out_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
-
-      Eigen::VectorXd deriv1_diff =
-          expected_first_deriv - first_deriv_vector->get_value();
-      EXPECT_TRUE(
-          deriv1_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
-
-      Eigen::VectorXd deriv2_diff =
-          expected_second_deriv - second_deriv_vector->get_value();
-      EXPECT_TRUE(
-          deriv2_diff.template lpNorm<Eigen::Infinity>() < ktest_tolerance);
+      EXPECT_TRUE(CompareMatrices(
+          sine_system.get_output_port(0).Eval(*context),
+          expected_outputs.col(i), ktest_tolerance));
+      EXPECT_TRUE(CompareMatrices(
+          sine_system.get_output_port(1).Eval(*context),
+          expected_first_derivs.col(i), ktest_tolerance));
+      EXPECT_TRUE(CompareMatrices(
+          sine_system.get_output_port(2).Eval(*context),
+          expected_second_derivs.col(i), ktest_tolerance));
     }
   }
 }

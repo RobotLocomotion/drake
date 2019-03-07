@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "lcmtypes/bot_core/robot_state_t.hpp"
+#include "bot_core/robot_state_t.hpp"
 
 #include "drake/manipulation/util/robot_state_msg_translator.h"
 #include "drake/multibody/rigid_body_frame.h"
@@ -42,14 +42,14 @@ class RobotStateEncoder final : public LeafSystem<double> {
   /// Returns the output port on which the LCM message is presented.
   const OutputPort<double>& lcm_message_port() const;
 
-  /// Returns descriptor of kinematics result input port.
-  const InputPortDescriptor<double>& kinematics_results_port() const;
+  /// Returns kinematics result input port.
+  const InputPort<double>& kinematics_results_port() const;
 
-  /// Returns descriptor of contact results input port.
-  const InputPortDescriptor<double>& contact_results_port() const;
+  /// Returns contact results input port.
+  const InputPort<double>& contact_results_port() const;
 
-  /// Returns descriptor of effort input port corresponding to @param actuator.
-  const InputPortDescriptor<double>& effort_port(
+  /// Returns effort input port corresponding to @param actuator.
+  const InputPort<double>& effort_port(
       const RigidBodyActuator& actuator) const;
 
  private:

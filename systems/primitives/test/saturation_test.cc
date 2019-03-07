@@ -21,7 +21,6 @@ void TestInputAndOutput(const Saturation<T>& saturation_system,
 
   // Verifies that Saturation allocates no state variables in the context.
   EXPECT_EQ(context->get_continuous_state().size(), 0);
-  auto output = saturation_system.AllocateOutput(*context);
   auto input = std::make_unique<BasicVector<T>>(port_size);
 
   input->get_mutable_value() << input_vector;
@@ -30,15 +29,11 @@ void TestInputAndOutput(const Saturation<T>& saturation_system,
   context->FixInputPort(saturation_system.get_input_port().get_index(),
                         std::move(input));
 
-  saturation_system.CalcOutput(*context, output.get());
-
   // Checks that the number of output ports in the Saturation system and the
   // SystemOutput are consistent.
-  ASSERT_EQ(output->get_num_ports(), 1);
   ASSERT_EQ(saturation_system.get_num_output_ports(), 1);
-  const BasicVector<T>* output_vector = output->get_vector_data(0);
-  ASSERT_NE(output_vector, nullptr);
-  EXPECT_EQ(output_vector->get_value(), expected_output);
+  EXPECT_EQ(saturation_system.get_output_port().Eval(*context),
+            expected_output);
 }
 
 template <typename T>
