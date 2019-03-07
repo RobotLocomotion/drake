@@ -15,7 +15,6 @@ namespace geometry {
 
  - When A and B are separated, distance > 0; when A and B are touching or
  penetrating, distance <= 0.
-                 __                      __
  - By definition, the unit direction nhat_AB_W of ∇φ_A(c_A) must be in the
    opposite direction of nhat_BA_W.
  - For non-touching (separating or penetrating) objects, nhat_BA_W points
@@ -25,15 +24,27 @@ namespace geometry {
  - In some cases, the gradient of the signed distance field of object B may
    not have a unique value. For example, at the corner of a box, movement in
    any direction in the vertex's Voronoi region is equally valid.
+
+```
+     ┆░░░░░░  Voronoi region of corner vertex C_b
+     ┆░░░░░░
+┌────⚫┄┄┄┄┄
+│    │ C_b
+└────┘
+```
+
  - If this is the case, we exploit the fact that nhat_BA_W = -nhat_AB_W and
    evaluate nhat_AB_W = ∇φ_A(c_A). For example, a corner of a box B touches a
    sphere A, or the corner of a box B touches a planar side of a box A. In
    these examples, we evaluate ∇φ_A(c_A) of the sphere A and the box A.
 
+```
+                 __                      __
                 |  | box B     box B /\ |  |
               __|__|                /  \|  |
              /  \                   \  /|  | box A
     sphere A \__/                    \/ |__|
+```
 
  - In the case where ∇φ_A(c_A) is also not unique, we select a direction such
    that nhat_BA_W and nhat_AB_W would both be valid directions for the two
