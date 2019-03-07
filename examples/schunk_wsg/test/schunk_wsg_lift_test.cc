@@ -430,7 +430,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   model->CalcOutput(simulator.get_context(), state_output.get());
   auto& interim_kinematics_results =
       state_output->get_data(kinematrics_results_index)
-          ->GetValue<KinematicsResults<double>>();
+          ->get_value<KinematicsResults<double>>();
   const int box_index = tree.FindBodyIndex("box");
   Vector3d init_box_pos =
       interim_kinematics_results.get_body_position(box_index);
@@ -507,7 +507,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   // Compute expected final position and compare with observed final position.
   auto& final_kinematics_results =
       state_output->get_data(kinematrics_results_index)
-          ->GetValue<KinematicsResults<double>>();
+          ->get_value<KinematicsResults<double>>();
   Vector3d final_finger_pos =
       final_kinematics_results.get_body_position(finger_index);
   Vector3d ideal_final_pos(init_box_pos);

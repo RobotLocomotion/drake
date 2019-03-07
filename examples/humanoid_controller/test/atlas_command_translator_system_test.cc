@@ -66,7 +66,7 @@ GTEST_TEST(JointLevelControllerTest, AtlasJointLevelControllerTest) {
           ->get_data(dynamic_cast<AtlasCommandTranslatorSystem*>(dut.get())
                          ->get_output_port_atlas_command()
                          .get_index())
-          ->GetValue<bot_core::atlas_command_t>();
+          ->get_value<bot_core::atlas_command_t>();
 
   EXPECT_EQ(dut_output_msg.utime,
             static_cast<uint64_t>(context->get_time() * 1e6));
