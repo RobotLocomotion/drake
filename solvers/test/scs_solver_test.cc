@@ -250,10 +250,17 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   }
 }
 
-GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample) {
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveSDPwithSecondOrderConeExample(scs_solver, 1E-5);
+    SolveSDPwithSecondOrderConeExample1(scs_solver, 1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    SolveSDPwithSecondOrderConeExample2(scs_solver, 1E-5);
   }
 }
 

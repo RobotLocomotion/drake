@@ -131,10 +131,17 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   }
 }
 
-GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample) {
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveSDPwithSecondOrderConeExample(mosek_solver, 1E-7);
+    SolveSDPwithSecondOrderConeExample1(mosek_solver, 1E-7);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveSDPwithSecondOrderConeExample2(mosek_solver, 1E-7);
   }
 }
 
