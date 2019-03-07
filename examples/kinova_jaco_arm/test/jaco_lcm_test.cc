@@ -50,7 +50,7 @@ GTEST_TEST(JacoLcmTest, JacoCommandPassthroughTest) {
   diagram->CalcOutput(*context, output.get());
 
   lcmt_jaco_command command_out =
-      output->get_data(0)->GetValue<lcmt_jaco_command>();
+      output->get_data(0)->get_value<lcmt_jaco_command>();
 
   ASSERT_EQ(command.num_joints, command_out.num_joints);
   for (int i = 0; i < command.num_joints; i++) {
@@ -120,7 +120,7 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
   diagram->CalcOutput(*context, output.get());
 
   lcmt_jaco_status status_out =
-      output->get_data(0)->GetValue<lcmt_jaco_status>();
+      output->get_data(0)->get_value<lcmt_jaco_status>();
 
   // Force and current won't actually pass through since they're not
   // part of the state in drake.

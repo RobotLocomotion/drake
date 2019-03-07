@@ -49,7 +49,7 @@ void AllegroCommandReceiver::DoCalcDiscreteVariableUpdates(
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_allegro_command>();
+  const auto& command = input->get_value<lcmt_allegro_command>();
 
   BasicVector<double>& state = discrete_state->get_mutable_vector(0);
   auto state_value = state.get_mutable_value();

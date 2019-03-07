@@ -108,7 +108,7 @@ GTEST_TEST(AllegroLcmTest, AllegroStatusSenderTest) {
 
   dut.CalcOutput(*context, output.get());
   lcmt_allegro_status status =
-      output->get_data(0)->GetValue<lcmt_allegro_status>();
+      output->get_data(0)->get_value<lcmt_allegro_status>();
   ASSERT_EQ(status.num_joints, kAllegroNumJoints);
   for (int i = 0; i < kAllegroNumJoints; i++) {
     EXPECT_EQ(status.joint_position_commanded[i], command(i));

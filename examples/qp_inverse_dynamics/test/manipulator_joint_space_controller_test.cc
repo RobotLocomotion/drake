@@ -169,7 +169,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
 // should be specified by params_ loaded from kControlConfigPath.
 TEST_F(ManipulatorJointSpaceControllerTest, PlanEvalTest) {
   const QpInput& qp_input =
-      output_->get_data(plan_eval_output_index_)->GetValue<QpInput>();
+      output_->get_data(plan_eval_output_index_)->get_value<QpInput>();
 
   // Desired generalized acceleration should match expected.
   EXPECT_TRUE(drake::CompareMatrices(
