@@ -166,7 +166,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
   MatrixX<T> J(n, n);
 
   // Evaluate f(t+h,xtplus) for the current state (current xtplus).
-  VectorX<T> f = EvalTimeDerivativesUsingContext();
+  const VectorX<T> f = EvalTimeDerivativesUsingContext();
 
   // Compute the Jacobian.
   VectorX<T> xtplus_prime = xtplus;
@@ -438,9 +438,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(const T& dt,
   Context<T>* context = this->get_mutable_context();
   DRAKE_ASSERT(xtplus &&
                xtplus->size() == context->get_continuous_state_vector().size());
-
-  // Get the initial state.
-  VectorX<T> xt0 = context->get_continuous_state_vector().CopyToVector();
 
   SPDLOG_DEBUG(drake::log(), "StepAbstract() entered for t={}, h={}, trial={}",
                context->get_time(), dt, trial);
