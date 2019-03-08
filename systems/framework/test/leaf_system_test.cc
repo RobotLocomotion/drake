@@ -127,6 +127,8 @@ class TestSystem : public LeafSystem<T> {
   ~TestSystem() override {}
 
   using LeafSystem<T>::DeclareContinuousState;
+  using LeafSystem<T>::DeclareDiscreteState;
+  using LeafSystem<T>::DeclareNumericParameter;
   using LeafSystem<T>::DeclareVectorInputPort;
   using LeafSystem<T>::DeclareAbstractInputPort;
   using LeafSystem<T>::DeclareVectorOutputPort;
@@ -1530,6 +1532,36 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(dut.calc_POD_calls(), 2);
   out4.Eval<SomePOD>(*context);
   EXPECT_EQ(dut.calc_POD_calls(), 2);  // Should have been cached.
+}
+
+// Tests that zero-sized vectors can be declared and used.
+GTEST_TEST(ZeroSizeSystemTest, AcceptanceTest) {
+  TestSystem<double> dut;
+
+  // Input.
+  const auto& in0 = dut.DeclareVectorInputPort(
+      kUseDefaultName, BasicVector<double>(0));
+  EXPECT_EQ(in0.get_data_type(), kVectorValued);
+  EXPECT_EQ(in0.size(), 0);
+
+  // Output.
+  const auto& out0 = dut.DeclareVectorOutputPort(
+      kUseDefaultName, BasicVector<double>(0),
+      [](const Context<double>&, BasicVector<double>*) {});
+  EXPECT_EQ(out0.get_data_type(), kVectorValued);
+  EXPECT_EQ(out0.size(), 0);
+
+  // State.
+  dut.DeclareContinuousState(0);
+  const auto& disc0 = dut.DeclareDiscreteState(0);
+
+  // Parameters.
+  const auto& param0 = dut.DeclareNumericParameter(BasicVector<double>(0));
+
+  auto context = dut.CreateDefaultContext();
+  EXPECT_EQ(context->get_continuous_state_vector().size(), 0);
+  EXPECT_EQ(context->get_discrete_state(disc0).size(), 0);
+  EXPECT_EQ(context->get_numeric_parameter(param0).size(), 0);
 }
 
 // Tests both that an unrestricted update callback is called and that

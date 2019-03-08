@@ -2466,15 +2466,15 @@ class LeafSystem : public System<T> {
     };
 
     return CreateCachedLeafOutputPort(
-        std::move(name), 0 /* size */, std::move(allocator),
+        std::move(name), nullopt /* size */, std::move(allocator),
         std::move(cache_calc_function), std::move(calc_prerequisites));
   }
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a
-  // reference to it. Pass fixed_size == 0 for abstract ports, or non-zero
-  // for vector ports. Prerequisites list must not be empty.
+  // reference to it. Pass fixed_size == nullopt for abstract ports, or the
+  // port size for vector ports. Prerequisites list must not be empty.
   LeafOutputPort<T>& CreateCachedLeafOutputPort(
-      std::string name, int fixed_size,
+      std::string name, const optional<int>& fixed_size,
       typename CacheEntry::AllocCallback allocator,
       typename CacheEntry::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {
@@ -2495,7 +2495,8 @@ class LeafSystem : public System<T> {
         this,  // implicit_cast<const SystemBase*>(this)
         std::move(name),
         oport_index, this->assign_next_dependency_ticket(),
-        fixed_size == 0 ? kAbstractValued : kVectorValued, fixed_size,
+        fixed_size.has_value() ? kVectorValued : kAbstractValued,
+        fixed_size.value_or(0),
         &cache_entry);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->AddOutputPort(std::move(port));
