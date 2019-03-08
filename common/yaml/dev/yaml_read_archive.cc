@@ -1,4 +1,4 @@
-#include "common/yaml_read_archive.h"
+#include "drake/common/yaml/dev/yaml_read_archive.h"
 
 #include <algorithm>
 
