@@ -169,6 +169,7 @@ MSKrescodee SetMosekLinearConstraintBound(
     }
     case LinearConstraintBoundType::kInequality: {
       if (std::isinf(lower) && std::isinf(upper)) {
+        DRAKE_DEMAND(lower < 0 && upper > 0);
         rescode = MSK_putconbound(task, linear_constraint_index, MSK_BK_FR,
                                   -MSK_INFINITY, MSK_INFINITY);
       } else if (std::isinf(lower) && !std::isinf(upper)) {
@@ -211,7 +212,7 @@ MSKrescodee AddLinearConstraintToMosek(
   DRAKE_ASSERT(A.rows() == lower.rows() && A.cols() == decision_vars.rows());
   DRAKE_ASSERT(B.rows() == lower.rows() &&
                B.cols() == static_cast<int>(slack_vars_mosek_indices.size()));
-  int num_mosek_constraint;
+  int num_mosek_constraint{};
   rescode = MSK_getnumcon(task, &num_mosek_constraint);
   if (rescode != MSK_RES_OK) {
     return rescode;
@@ -367,7 +368,7 @@ MSKrescodee AddLinearConstraintsFromBindings(
         matrix_variable_entry_to_selection_matrix_id) {
   MSKrescodee rescode{MSK_RES_OK};
   for (const auto& binding : constraint_list) {
-    auto constraint = binding.evaluator();
+    const auto& constraint = binding.evaluator();
     const Eigen::MatrixXd& A = constraint->A();
     const Eigen::VectorXd& lb = constraint->lower_bound();
     const Eigen::VectorXd& ub = constraint->upper_bound();
@@ -651,6 +652,9 @@ MSKrescodee AddLinearMatrixInequalityConstraint(
     }
     MSKint32t bar_X_index;
     rescode = MSK_getnumbarvar(*task, &bar_X_index);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
     bar_X_index -= 1;
     // Now form the matrix F_lower = [F1_lower F2_lower ... Fk_lower]
     std::vector<Eigen::Triplet<double>> F_lower_triplets;
@@ -856,6 +860,9 @@ MSKrescodee AddCosts(const MathematicalProgram& prog,
 
   int num_bar_var = 0;
   rescode = MSK_getnumbarvar(*task, &num_bar_var);
+  if (rescode != MSK_RES_OK) {
+    return rescode;
+  }
   // C_bar_lower_triplets[i] stores the triplets for C̅ᵢ.
   std::vector<std::vector<Eigen::Triplet<double>>> C_bar_lower_triplets(
       num_bar_var);
@@ -1126,7 +1133,7 @@ MSKrescodee AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
         // <A, X̅ᵢ> = 0, where
         // A(m, n) = 1 if m == n else 0.5
         // A(p, q) = -1 if p == q else -0.5
-        std::array<MSKint64t, 2> E_indices;
+        std::array<MSKint64t, 2> E_indices{};
         rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
             matrix_variable_entries[0],
             matrix_variable_entry_to_selection_matrix_id, &(E_indices[0]),
@@ -1143,7 +1150,7 @@ MSKrescodee AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable(
         }
 
         // weights[0] = A(m, n), weights[1] = A(p, q).
-        std::array<MSKrealt, 2> weights;
+        std::array<MSKrealt, 2> weights{};
         weights[0] = matrix_variable_entries[0].row_index() ==
                              matrix_variable_entries[0].col_index()
                          ? 1.0
