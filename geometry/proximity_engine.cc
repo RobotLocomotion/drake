@@ -906,6 +906,7 @@ unique_ptr<fcl::CollisionObjectd> CopyFclObjectOrThrow(
   auto copy = make_unique<fcl::CollisionObjectd>(geometry_copy);
   copy->setUserData(object.getUserData());
   copy->setTransform(object.getTransform());
+  copy->computeAABB();
   return copy;
 }
 
@@ -941,6 +942,7 @@ void BuildTreeFromReference(
   for (auto* other_object : other_objects) {
     target->registerObject(copy_map.at(other_object));
   }
+  target->update();
 }
 
 }  // namespace
