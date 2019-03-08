@@ -56,7 +56,7 @@ GTEST_TEST(OptitrackSenderTest, OptitrackLcmSenderTest) {
   dut.CalcOutput(*context, output.get());
   auto output_value = output->get_data(0);
 
-  auto lcm_frame =  output_value->GetValue<optitrack_frame_t>();
+  auto lcm_frame =  output_value->get_value<optitrack_frame_t>();
 
   // Compare the resultant lcm_frame values to those provided at the input to
   // the system.

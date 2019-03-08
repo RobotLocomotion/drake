@@ -145,7 +145,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @pre `port_index` selects an existing input port of this System.
   @pre the port's value must be retrievable from the stored abstract value
-       using `AbstractValue::GetValue<V>`.
+       using `AbstractValue::get_value<V>`.
 
   @tparam V The type of data expected. */
   template <typename V>
@@ -160,7 +160,7 @@ class SystemBase : public internal::SystemMessageInterface {
       return nullptr;  // An unconnected port.
 
     // We have a value, is it a V?
-    const V* const value = abstract_value->MaybeGetValue<V>();
+    const V* const value = abstract_value->maybe_get_value<V>();
     if (value == nullptr) {
       ThrowInputPortHasWrongType(__func__, port, NiceTypeName::Get<V>(),
                                  abstract_value->GetNiceTypeName());
@@ -1109,7 +1109,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
     const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    ValueType& typed_result = result->get_mutable_value<ValueType>();
     (this_ptr->*calc)(typed_context, &typed_result);
   };
   // Invoke the general signature above.
@@ -1146,7 +1146,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
     const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    ValueType& typed_result = result->get_mutable_value<ValueType>();
     (this_ptr->*calc)(typed_context, &typed_result);
   };
   auto& entry = DeclareCacheEntry(
@@ -1178,7 +1178,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
     const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    ValueType& typed_result = result->get_mutable_value<ValueType>();
     typed_result = (this_ptr->*calc)(typed_context);
   };
   auto& entry = DeclareCacheEntry(

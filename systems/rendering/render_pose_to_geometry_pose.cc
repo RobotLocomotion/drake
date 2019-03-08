@@ -29,7 +29,7 @@ RenderPoseToGeometryPose<T>::RenderPoseToGeometryPose(
       },
       [this, frame_id](const Context<T>& context, AbstractValue* calculated) {
         const Input& input = get_input_port().template Eval<Input>(context);
-        Output& output = calculated->GetMutableValueOrThrow<Output>();
+        Output& output = calculated->get_mutable_value<Output>();
         output.clear();
         output.set_value(frame_id, input.get_isometry());
       });

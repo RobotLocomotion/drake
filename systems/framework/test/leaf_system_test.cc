@@ -738,11 +738,11 @@ TEST_F(LeafSystemTest, NumericParameters) {
 TEST_F(LeafSystemTest, AbstractParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const std::string& param = context->get_abstract_parameter(0 /*index*/)
-                                 .GetValueOrThrow<std::string>();
+                                 .get_value<std::string>();
   EXPECT_EQ(param, "parameter value");
   std::string& mutable_param =
       context->get_mutable_abstract_parameter(0 /*index*/)
-          .GetMutableValueOrThrow<std::string>();
+          .get_mutable_value<std::string>();
   mutable_param = "modified parameter value";
   EXPECT_EQ("modified parameter value", param);
 
@@ -914,7 +914,7 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 
   void CalcAbstractString(const Context<double>&, AbstractValue* out) const {
     ASSERT_NE(out, nullptr);
-    out->GetMutableValueOrThrow<std::string>() = "abstract string";
+    out->get_mutable_value<std::string>() = "abstract string";
   }
 
   void CalcString(const Context<double>&, std::string* out) const {
@@ -1113,7 +1113,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
   auto input2 = dut.AllocateInputAbstract(dut.get_input_port(2));
   ASSERT_NE(input2, nullptr);
   int downcast_input2{};
-  EXPECT_NO_THROW(downcast_input2 = input2->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(downcast_input2 = input2->get_value<int>());
   EXPECT_EQ(downcast_input2, 22);
 }
 
@@ -1139,7 +1139,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   auto output2 = system_output->get_data(2);
   ASSERT_NE(output2, nullptr);
   std::string downcast_output2{};
-  EXPECT_NO_THROW(downcast_output2 = output2->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(downcast_output2 = output2->get_value<std::string>());
   EXPECT_EQ(downcast_output2, "45");
 
   // Check that BasicVector<double>(2) came out.
@@ -1207,11 +1207,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   const MyVector4d* vec1{};
   const std::string* str2{};
   const BasicVector<double>* vec3{};
-  EXPECT_NO_THROW(vec0 = &values[0]->GetValueOrThrow<BasicVector<double>>());
+  EXPECT_NO_THROW(vec0 = &values[0]->get_value<BasicVector<double>>());
   EXPECT_NO_THROW(vec1 = dynamic_cast<const MyVector4d*>(
-                      &values[1]->GetValueOrThrow<BasicVector<double>>()));
-  EXPECT_NO_THROW(str2 = &values[2]->GetValueOrThrow<std::string>());
-  EXPECT_NO_THROW(vec3 = &values[3]->GetValueOrThrow<BasicVector<double>>());
+                      &values[1]->get_value<BasicVector<double>>()));
+  EXPECT_NO_THROW(str2 = &values[2]->get_value<std::string>());
+  EXPECT_NO_THROW(vec3 = &values[3]->get_value<BasicVector<double>>());
 
   // Check the calculated values.
   EXPECT_EQ(vec0->get_value(), dut.expected_basic().get_value());
@@ -1315,7 +1315,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   // Mess with the abstract values on the context.
   AbstractValues& values = context->get_mutable_abstract_state();
   AbstractValue& value = values.get_mutable_value(1);
-  EXPECT_NO_THROW(value.SetValue<std::string>("whoops"));
+  EXPECT_NO_THROW(value.set_value<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
 
   // Ask it to reset to the defaults specified on system construction.
@@ -1378,7 +1378,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
         [](const Context<double>&, AbstractValue* out) {
           ASSERT_NE(out, nullptr);
           int* int_out{};
-          EXPECT_NO_THROW(int_out = &out->GetMutableValueOrThrow<int>());
+          EXPECT_NO_THROW(int_out = &out->get_mutable_value<int>());
           *int_out = 321;
         });
 
@@ -1483,7 +1483,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output1 = system_output->GetMutableData(1);
   ASSERT_NE(output1, nullptr);
   const std::string* downcast_output1{};
-  EXPECT_NO_THROW(downcast_output1 = &output1->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(downcast_output1 = &output1->get_value<std::string>());
   EXPECT_TRUE(downcast_output1->empty());
   out1.Calc(*context, output1);
   EXPECT_EQ(*downcast_output1, "calc'ed string");
@@ -1498,7 +1498,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output2 = system_output->GetMutableData(2);
   ASSERT_NE(output2, nullptr);
   const int* downcast_output2{};
-  EXPECT_NO_THROW(downcast_output2 = &output2->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(downcast_output2 = &output2->get_value<int>());
   EXPECT_EQ(*downcast_output2, -2);
   out2.Calc(*context, output2);
   EXPECT_EQ(*downcast_output2, 321);
@@ -1507,7 +1507,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output3 = system_output->GetMutableData(3);
   ASSERT_NE(output3, nullptr);
   const std::string* downcast_output3{};
-  EXPECT_NO_THROW(downcast_output3 = &output3->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(downcast_output3 = &output3->get_value<std::string>());
   EXPECT_EQ(*downcast_output3, "freshly made");
   out3.Calc(*context, output3);
   EXPECT_EQ(*downcast_output3, "calc'ed string");
@@ -1518,7 +1518,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output4 = system_output->GetMutableData(4);
   ASSERT_NE(output4, nullptr);
   const SomePOD* downcast_output4{};
-  EXPECT_NO_THROW(downcast_output4 = &output4->GetValueOrThrow<SomePOD>());
+  EXPECT_NO_THROW(downcast_output4 = &output4->get_value<SomePOD>());
   EXPECT_EQ(downcast_output4->some_int, 0);
   EXPECT_EQ(downcast_output4->some_double, 0.0);
   out4.Calc(*context, output4);

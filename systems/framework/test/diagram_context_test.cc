@@ -281,7 +281,7 @@ void VerifyClonedState(const State<double>& clone) {
   EXPECT_EQ(44.0, xd.get_vector(0).GetAtIndex(0));
   // - Abstract
   const AbstractValues& xa = clone.get_abstract_state();
-  EXPECT_EQ(42, xa.get_value(0).GetValue<int>());
+  EXPECT_EQ(42, xa.get_value(0).get_value<int>());
 }
 
 // Verifies that the @p params are a clone of the params constructed in
@@ -522,7 +522,7 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   clone->get_mutable_discrete_state(0).SetAtIndex(0, new_xd);
   clone->get_mutable_abstract_state<int>(0) = new_xa;
   clone->get_mutable_numeric_parameter(0).SetAtIndex(0, new_pn);
-  clone->get_mutable_abstract_parameter(0).SetValue<int>(new_pa);
+  clone->get_mutable_abstract_parameter(0).set_value<int>(new_pa);
 
   auto t_before = SaveNotifications(SystemBase::time_ticket());
   auto a_before = SaveNotifications(SystemBase::accuracy_ticket());
@@ -556,9 +556,9 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(6))  // numeric param.
                 .get_numeric_parameter(0)[0],
             new_pn);
-  EXPECT_EQ(context_->get_abstract_parameter(0).GetValue<int>(), new_pa);
+  EXPECT_EQ(context_->get_abstract_parameter(0).get_value<int>(), new_pa);
   EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(7))  // abstract param.
-                .get_abstract_parameter(0).GetValue<int>(),
+                .get_abstract_parameter(0).get_value<int>(),
             new_pa);
 
   VerifyNotifications("SetTimeStateAndParametersFrom: t",
