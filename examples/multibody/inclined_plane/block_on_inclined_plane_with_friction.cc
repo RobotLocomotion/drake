@@ -2,7 +2,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/text_logging_gflags.h"
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
@@ -42,10 +41,6 @@ DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined-plane a half-space (true) or box (false).");
 DEFINE_bool(is_block_with_4Spheres, true,
             "Is block B's contacting surface 4 spheres (true) or box (false).");
-
-using geometry::SceneGraph;
-using geometry::SourceId;
-using lcm::DrakeLcm;
 
 using drake::multibody::MultibodyPlant;
 
@@ -88,7 +83,7 @@ int do_main() {
   DRAKE_DEMAND(plant.num_positions() == 7);
 
   // Publish contact results for visualization.
-  DrakeLcm lcm;
+  lcm::DrakeLcm lcm;
   ConnectContactResultsToDrakeVisualizer(&builder, plant, &lcm);
 
   geometry::ConnectDrakeVisualizer(&builder, pair.scene_graph);
