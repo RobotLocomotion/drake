@@ -36,7 +36,7 @@ void AddBlockAndInclinedPlaneToPlant(
 
   // The inclined-plane is either a half-space or a box.
   const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
-  if (is_inclined_plane_half_space ) {
+  if (is_inclined_plane_half_space) {
     // Set inclined plane A's visual geometry to a half-space.
     // Make half-space A's top-surface pass through World origin Wo.
     const Vector3<double> p_WoAo_W = Vector3<double>::Zero();
