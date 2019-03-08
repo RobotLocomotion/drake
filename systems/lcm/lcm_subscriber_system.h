@@ -159,9 +159,8 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    *   this will be less than or equal to old_message_count
    * @pre If `message` is specified, this system must be abstract-valued.
    */
-  template <typename Rep, typename Period>
   int WaitForMessageTimeout(
-      int old_message_count, const std::chrono::duration<Rep, Period> timeout,
+      int old_message_count, const std::chrono::duration<double> timeout,
       AbstractValue* message = nullptr) const;
 
   /**

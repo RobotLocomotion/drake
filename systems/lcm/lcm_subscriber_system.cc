@@ -304,29 +304,30 @@ int LcmSubscriberSystem::WaitForMessage(
   return new_message_count;
 }
 
-template <typename Rep, typename Period>
 int LcmSubscriberSystem::WaitForMessageTimeout(
-    int old_message_count, const std::chrono::duration<Rep, Period> timeout,
+    int old_message_count, const std::chrono::duration<double> timeout,
     AbstractValue* message) const {
   DRAKE_ASSERT(serializer_ != nullptr);
 
-  auto start = std::chrono::steady_clock::now();
+  auto wakeup = std::chrono::steady_clock::now() + timeout;
 
   // The message buffer and counter are updated in HandleMessage(), which is
   // a callback function invoked by a different thread owned by the
   // drake::lcm::DrakeLcmInterface instance passed to the constructor. Thus,
   // for thread safety, these need to be properly protected by a mutex.
   std::unique_lock<std::mutex> lock(received_message_mutex_);
-
   // This while loop is necessary to guard for spurious wakeup:
   // https://en.wikipedia.org/wiki/Spurious_wakeup
   while (old_message_count >= received_message_count_) {
     // When wait returns, lock is atomically acquired. So it's thread safe to
     // read received_message_count_.
-    if (received_message_condition_variable_.wait_until(lock, start + timeout)
-        == std::cv_status::timeout) {
-      // If a timeout occurred, return -1 for no new message
-      return received_message_count_;
+    if (received_message_condition_variable_.wait_until(lock, wakeup)
+        == std::cv_status::timeout &&
+        old_message_count >= received_message_count_) {
+      // If a timeout occurred without meeting the message goal, then return
+      int new_message_count = received_message_count_;
+      lock.unlock();
+      return new_message_count;
     }
   }
   int new_message_count = received_message_count_;

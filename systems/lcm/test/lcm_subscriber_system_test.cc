@@ -259,6 +259,47 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
       future_message.get(), sample_data.value));
 }
 
+GTEST_TEST(LcmSubscriberSystemTest, WaitTimeoutTest) {
+  // Ensure that `WaitForMessageTimeout` works as expected.
+  drake::lcm::DrakeMockLcm lcm;
+  const std::string channel_name = "channel_name";
+
+  // Start device under test, with background LCM thread running.
+  auto dut = LcmSubscriberSystem::Make<lcmt_drake_signal>(channel_name, &lcm);
+
+  SampleData sample_data;
+
+  // Use simple atomic rather than condition variables, as it simplifies this
+  // implementation.
+  std::atomic<bool> started{};
+  auto wait = [&]() {
+    while (!started.load()) {}
+  };
+
+  // Test explicit value when a message is sent
+  started = false;
+  auto future_count = std::async(std::launch::async, [&]() {
+    EXPECT_EQ(dut->GetInternalMessageCount(), 0);
+    started = true;
+    return dut->WaitForMessageTimeout(0, std::chrono::milliseconds(10));
+  });
+
+  wait();
+  // Expect a timeout, since no message has been sent
+  EXPECT_EQ(future_count.get(), 0);
+
+  // Reset atomic and test with a publish
+  started = false;
+  auto second_count = std::async(std::launch::async, [&]() {
+    EXPECT_EQ(dut->GetInternalMessageCount(), 0);
+    started = true;
+    return dut->WaitForMessageTimeout(0, std::chrono::milliseconds(10));
+  });
+  wait();
+  sample_data.MockPublish(&lcm, channel_name);
+  EXPECT_GE(second_count.get(), 1);
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Subscribe and output a custom VectorBase type.
