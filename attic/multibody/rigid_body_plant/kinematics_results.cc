@@ -115,6 +115,5 @@ Eigen::VectorBlock<const VectorX<T>> KinematicsResults<T>::get_joint_velocity(
 }  // namespace systems
 }  // namespace drake
 
-// Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::KinematicsResults)

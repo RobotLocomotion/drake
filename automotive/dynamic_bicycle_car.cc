@@ -180,6 +180,5 @@ void DynamicBicycleCar<T>::DoCalcTimeDerivatives(
 }  // namespace automotive
 }  // namespace drake
 
-// Explicitly instantiate on default scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::automotive::DynamicBicycleCar)
