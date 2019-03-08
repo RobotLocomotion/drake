@@ -29,6 +29,9 @@ DEFINE_double(time_step, 1.0E-5,
 DEFINE_double(integration_accuracy, 1.0E-6,
               "Integration accuracy when the plant is modeled as a continuous "
               "system. Not used if time_step > 0.");
+DEFINE_double(LAx, 3.2,  "Inclined-plane A's length in Ax direction (meters).");
+DEFINE_double(LAy, 1.6,  "Inclined-plane A's length in Ay direction (meters).");
+DEFINE_double(LAz, 0.04, "Inclined-plane A's length in Az direction (meters).");
 DEFINE_double(muS_block, 0.3, "Block static friction coefficient.");
 DEFINE_double(muK_block, 0.3, "Block kinetic friction coefficient.");
 DEFINE_double(muS_inclined_plane, 0.3, "Inclined-plane static friction coef.");
@@ -47,11 +50,11 @@ using lcm::DrakeLcm;
 using drake::multibody::MultibodyPlant;
 
 int do_main() {
-  const double Lx = 0.4;        // Block length in x-direction (meters).
-  const double Ly = 0.2;        // Block length in y-direction (meters).
-  const double Lz = 0.04;       // Block length in z-direction (meters).
-  const double mass = 0.1;      // Block's mass (kg).
-  const double gravity = 9.81;  // Earth's gravitational acceleration (m/s^2).
+  const double LBx = 0.4;      // Block B's length in Bx-direction (meters).
+  const double LBy = 0.2;      // Block B's length in By-direction (meters).
+  const double LBz = 0.04;     // Block B's length in Bz-direction (meters).
+  const double mass = 0.1;     // Block B's mass (kg).
+  const double gravity = 9.8;  // Earth's gravitational acceleration (m/s^2).
   const drake::multibody::CoulombFriction<double>
       coefficient_friction_block(FLAGS_muS_block,
                                  FLAGS_muK_block);
@@ -65,8 +68,8 @@ int do_main() {
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
   MultibodyPlant<double>& plant = pair.plant;
   drake::multibody::benchmarks::block_on_inclined_plane_plant::
-      AddBlockAndInclinedPlaneToPlant(
-          Lx, Ly, Lz, mass, FLAGS_slope_degrees / 180 * M_PI, gravity,
+      AddBlockAndInclinedPlaneToPlant(FLAGS_LAx, FLAGS_LAy, FLAGS_LAz,
+          LBx, LBy, LBz, mass, FLAGS_slope_degrees / 180 * M_PI, gravity,
           coefficient_friction_block,
           coefficient_friction_inclined_plane,
           FLAGS_is_inclined_plane_half_space,
@@ -106,7 +109,7 @@ int do_main() {
 
   // Set the block's initial value so it is above the inclined plane.
   const drake::multibody::Body<double>& block = plant.GetBodyByName("BlockB");
-  const Vector3<double> p_WoBo_W(0, 0, 0.2);
+  const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, block,
                                     X_WB.GetAsIsometry3());
