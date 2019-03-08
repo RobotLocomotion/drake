@@ -566,10 +566,12 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     // TODO(DamrongGuoy): For sphere-{sphere,box,cylinder} we will start
     //  working on the right nhat when min_distance is 0 or almost 0 after
     //  PR #10813 lands to avoid conflicts with this PR #10823. For now,
-    //  we simply return nan in nhat when min_distance is 0 or almost 0.
+    //  we simply return NaN in nhat when min_distance is 0 or almost 0.
     const Vector3d nhat_BA_W =
         (std::abs(result.min_distance) < std::numeric_limits<double>::epsilon())
-            ? Vector3d(std::nan(""), std::nan(""), std::nan(""))
+            ? Vector3d(std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::quiet_NaN())
             : (p_WCa - p_WCb) / result.min_distance;
     distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
                                               result.min_distance, nhat_BA_W);

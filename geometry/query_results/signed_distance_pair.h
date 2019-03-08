@@ -70,7 +70,7 @@ struct SignedDistancePair{
    @param nhat_BA_W_in ∇φ_B(c_B) expressed in the world frame.
    @pre nhat_BA_W_in is unit-length. */
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
-                     const Vector3<T>& p_BCb_in, T dist,
+                     const Vector3<T>& p_BCb_in, const T& dist,
                      const Vector3<T>& nhat_BA_W_in)
       : id_A(a),
         id_B(b),
@@ -97,7 +97,7 @@ struct SignedDistancePair{
    @param p_BCb_in  The witness point on geometry B's surface, in B's frame.
    @param dist      The signed distance between p_A and p_B.*/
   SignedDistancePair(GeometryId a, GeometryId b, const Vector3<T>& p_ACa_in,
-                     const Vector3<T>& p_BCb_in, T dist)
+                     const Vector3<T>& p_BCb_in, const T& dist)
       : id_A(a),
         id_B(b),
         p_ACa(p_ACa_in),
