@@ -23,9 +23,8 @@ RobotStateDecoder::RobotStateDecoder(const RigidBodyTree<double>& tree)
 void RobotStateDecoder::OutputKinematics(
     const Context<double>& context, KinematicsCache<double>* output) const {
   // Input: robot_state_t message.
-  const auto& message =
-      EvalAbstractInput(context, robot_state_message_port_index_)
-          ->GetValue<bot_core::robot_state_t>();
+  const auto& message = get_input_port(robot_state_message_port_index_).
+      Eval<bot_core::robot_state_t>(context);
 
   // Output: KinematicsCache.
   auto& kinematics_cache = *output;

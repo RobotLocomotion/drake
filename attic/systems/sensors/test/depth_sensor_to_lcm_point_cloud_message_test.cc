@@ -63,7 +63,7 @@ class TestDepthSensorToLcmPointCloudMessage : public ::testing::Test {
     const int output_port_index =
         dut.pointcloud_message_output_port().get_index();
     return output_->get_data(output_port_index)->
-        template GetValue<bot_core::pointcloud_t>();
+        template get_value<bot_core::pointcloud_t>();
   }
 
   DepthSensorSpecification spec_;

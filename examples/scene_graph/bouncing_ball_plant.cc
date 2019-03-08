@@ -118,8 +118,8 @@ void BouncingBallPlant<T>::DoCalcTimeDerivatives(
   BouncingBallVector<T>& derivative_vector = get_mutable_state(derivatives);
 
   const geometry::QueryObject<T>& query_object =
-      this->EvalAbstractInput(context, geometry_query_port_)
-          ->template GetValue<geometry::QueryObject<T>>();
+      get_geometry_query_input_port().
+          template Eval<geometry::QueryObject<T>>(context);
 
   std::vector<PenetrationAsPointPair<T>> penetrations =
       query_object.ComputePointPairPenetration();

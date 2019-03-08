@@ -26,7 +26,7 @@ void AcrobotStateReceiver::CopyStateOut(
     const Context<double>& context, AcrobotState<double>* output) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
-  const auto& state = input->GetValue<lcmt_acrobot_x>();
+  const auto& state = input->get_value<lcmt_acrobot_x>();
   auto output_vec = output->get_mutable_value();
 
   output_vec(0) = state.theta1;
@@ -66,7 +66,7 @@ void AcrobotCommandReceiver::OutputCommandAsVector(
     systems::BasicVector<double>* output) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_acrobot_u>();
+  const auto& command = input->get_value<lcmt_acrobot_u>();
   output->SetAtIndex(0, command.tau);
 }
 

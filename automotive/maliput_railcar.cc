@@ -312,7 +312,7 @@ void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
 
   LaneDirection& lane_direction =
       state->get_mutable_abstract_state().get_mutable_value(0).
-          template GetMutableValue<LaneDirection>();
+          template get_mutable_value<LaneDirection>();
   lane_direction = initial_lane_direction_;
 }
 
