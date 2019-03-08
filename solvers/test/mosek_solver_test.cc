@@ -131,6 +131,27 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveSDPwithSecondOrderConeExample1(mosek_solver, 1E-7);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveSDPwithSecondOrderConeExample2(mosek_solver, 1E-7);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
+  MosekSolver mosek_solver;
+  if (mosek_solver.available()) {
+    SolveSDPwithOverlappingVariables(mosek_solver, 1E-7);
+  }
+}
+
 GTEST_TEST(MosekTest, TestLogFile) {
   // Test if we can print the logging info to a log file.
   MathematicalProgram prog;
