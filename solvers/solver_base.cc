@@ -55,6 +55,13 @@ void SolverBase::Solve(const MathematicalProgram& prog,
     merged_options.Merge(prog.solver_options());
     DoSolve(prog, x_init, merged_options, result);
   }
+  if (result->is_success()) {
+    symbolic::Environment env;
+    for (int i = 0; i < prog.num_vars(); ++i) {
+      env.insert(prog.decision_variable(i), result->get_x_val()(i));
+    }
+    result->set_symbolic_environment(env);
+  }
 }
 
 bool SolverBase::available() const {

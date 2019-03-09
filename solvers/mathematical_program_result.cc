@@ -79,17 +79,8 @@ double MathematicalProgramResult::GetSolution(
 
 symbolic::Expression MathematicalProgramResult::GetSolution(
     const symbolic::Expression& e) const {
-  DRAKE_ASSERT(decision_variable_index_.has_value());
-  symbolic::Environment env;
-  for (const auto& var : e.GetVariables()) {
-    const auto it = decision_variable_index_->find(var.get_id());
-    // We do not expect every variable to be in GetSolution (e.g. not the
-    // indeterminates).
-    if (it != decision_variable_index_->end()) {
-      env.insert(var, x_val_(it->second));
-    }
-  }
-  return e.EvaluatePartial(env);
+  DRAKE_ASSERT(env_.has_value());
+  return e.EvaluatePartial(env_.value());
 }
 
 double MathematicalProgramResult::GetSuboptimalSolution(

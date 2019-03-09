@@ -91,6 +91,14 @@ class MathematicalProgramResult final {
     decision_variable_index_ = std::move(decision_variable_index);
   }
 
+  /**
+   * Sets the symbolic Environment that maps each decision variable to its value
+   * int the solution.
+   */
+  void set_symbolic_environment(symbolic::Environment env) {
+    env_ = std::move(env);
+  }
+
   /** Sets SolutionResult. */
   void set_solution_result(SolutionResult solution_result) {
     solution_result_ = solution_result;
@@ -299,6 +307,7 @@ class MathematicalProgramResult final {
  private:
   optional<std::unordered_map<symbolic::Variable::Id, int>>
       decision_variable_index_{};
+  optional<symbolic::Environment> env_{};
   SolutionResult solution_result_{};
   Eigen::VectorXd x_val_;
   double optimal_cost_{};
