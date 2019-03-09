@@ -199,35 +199,40 @@ else:
             station.AddManipulandFromFile(model_file, X_WObject)
 
     station.Finalize()
-    ConnectDrakeVisualizer(builder, station.get_scene_graph(),
-                           station.GetOutputPort("pose_bundle"))
 
-    image_to_lcm_image_array = builder.AddSystem(ImageToLcmImageArrayT())
-    image_to_lcm_image_array.set_name("converter")
-    for name in station.get_camera_names():
-        cam_port = (
-            image_to_lcm_image_array.DeclareImageInputPort[PixelType.kRgba8U](
-                "camera_" + name))
-        builder.Connect(station.GetOutputPort("camera_" + name + "_rgb_image"),
-                        cam_port)
-
-    image_array_lcm_publisher = builder.AddSystem(
-        LcmPublisherSystem.Make(
-            channel="DRAKE_RGBD_CAMERA_IMAGES",
-            lcm_type=image_array_t,
-            lcm=None,
-            publish_period=0.1,
-            use_cpp_serializer=True))
-    image_array_lcm_publisher.set_name("rgbd_publisher")
-    builder.Connect(image_to_lcm_image_array.image_array_t_msg_output_port(),
-                    image_array_lcm_publisher.get_input_port(0))
-
+    # If using meshcat, don't render the cameras, since RgbdCamera rendering
+    # only works with drake-visualizer. Without this check, running this code
+    # in a docker container produces libGL errors.
     if args.meshcat:
         meshcat = builder.AddSystem(MeshcatVisualizer(
             station.get_scene_graph(), zmq_url=args.meshcat,
             open_browser=args.open_browser))
         builder.Connect(station.GetOutputPort("pose_bundle"),
                         meshcat.get_input_port(0))
+    else:
+        ConnectDrakeVisualizer(builder, station.get_scene_graph(),
+                               station.GetOutputPort("pose_bundle"))
+        image_to_lcm_image_array = builder.AddSystem(ImageToLcmImageArrayT())
+        image_to_lcm_image_array.set_name("converter")
+        for name in station.get_camera_names():
+            cam_port = (
+                image_to_lcm_image_array
+                .DeclareImageInputPort[PixelType.kRgba8U]("camera_" + name))
+            builder.Connect(
+                station.GetOutputPort("camera_" + name + "_rgb_image"),
+                cam_port)
+
+        image_array_lcm_publisher = builder.AddSystem(
+            LcmPublisherSystem.Make(
+                channel="DRAKE_RGBD_CAMERA_IMAGES",
+                lcm_type=image_array_t,
+                lcm=None,
+                publish_period=0.1,
+                use_cpp_serializer=True))
+        image_array_lcm_publisher.set_name("rgbd_publisher")
+        builder.Connect(
+            image_to_lcm_image_array.image_array_t_msg_output_port(),
+            image_array_lcm_publisher.get_input_port(0))
 
 robot = station.get_controller_plant()
 params = DifferentialInverseKinematicsParameters(robot.num_positions(),
