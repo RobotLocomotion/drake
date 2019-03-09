@@ -22,6 +22,7 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.rendering import PoseBundle
 from pydrake.multibody.plant import ContactResults
+import pydrake.perception as mut
 
 # TODO(eric.cousineau): Move this back to "third party" import positions
 # if/when PyCQA/pycodestyle#834 lands and is incorporated.
@@ -30,6 +31,7 @@ with warnings.catch_warnings():
         "ignore", category=ImportWarning,
         message="can't resolve package from __spec__")
     import meshcat
+import meshcat.geometry as g # noqa
 import meshcat.transformations as tf  # noqa
 
 
@@ -478,3 +480,35 @@ class MeshcatContactVisualizer(LeafSystem):
 
     def _get_visual_magnitude(self, magnitude):
         return magnitude / self._contact_force_scale
+
+class MeshcatPointCloudVisualizer(LeafSystem):
+    """
+    MeshcatPointCloudVisualizer.
+
+    @system{
+        @input_port{point_cloud},
+    }
+    """
+
+    def __init__(self, meshcat_viz, name="point_cloud"):
+        """
+        Args:
+            meshcat_viz: a MeshcatVisualizer object.
+        """
+        LeafSystem.__init__(self)
+
+        self._meshcat_viz = meshcat_viz
+        self._name = name
+
+        self.set_name('meshcat_point_cloud_visualizer')
+        self._DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
+
+        self._DeclareAbstractInputPort("point_cloud",
+                                       AbstractValue.Make(mut.PointCloud()))
+
+    def _DoPublish(self, context, event):
+        LeafSystem._DoPublish(self, context, event)
+        input = self.EvalAbstractInput(context, 0).get_value()
+
+        point_cloud = g.PointCloud(input.xyzs().T, input.rgbs().T)
+        self._meshcat_viz.vis[self._name].set_object(point_cloud)

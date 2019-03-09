@@ -21,7 +21,7 @@ from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (BasicVector, DiagramBuilder,
                                        LeafSystem)
 from pydrake.systems.lcm import LcmPublisherSystem
-from pydrake.systems.meshcat_visualizer import MeshcatVisualizer
+from pydrake.systems.meshcat_visualizer import MeshcatVisualizer, MeshcatPointCloudVisualizer
 from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.util.eigen_geometry import Isometry3
@@ -233,6 +233,15 @@ else:
         builder.Connect(
             image_to_lcm_image_array.image_array_t_msg_output_port(),
             image_array_lcm_publisher.get_input_port(0))
+
+        camera_info = CameraInfo(
+            width=848, height=480,
+            focal_x=635.491, focal_y=635.491,
+            center_x=431.021, center_y=238.404)
+        dut = builder.AddSystem(mut.DepthImageToPointCloud(camera_info=left_camera_info))
+        import pydrake.perception as mut
+        pc_vis = builder.AddSystem(MeshcatPointCloudVisualizer(meshcat))
+
 
 robot = station.get_controller_plant()
 params = DifferentialInverseKinematicsParameters(robot.num_positions(),
