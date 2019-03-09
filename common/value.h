@@ -9,6 +9,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/hash.h"
 #include "drake/common/is_cloneable.h"
 #include "drake/common/nice_type_name.h"
@@ -102,34 +103,29 @@ class AbstractValue {
   template <typename T>
   const T* maybe_get_value() const;
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, an std::logic_error will be
   /// thrown with a helpful error message. In Release builds, this is not
   /// guaranteed.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use get_value<T>() instead.")
   const T& GetValue() const;
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Like GetValue, but throws std::logic_error on mismatched types even in
   /// Release builds.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use get_value<T>() instead.")
   const T& GetValueOrThrow() const;
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Like GetValue, but quietly returns nullptr on mismatched types,
   /// even in Release builds.
   /// @returns A pointer to the stored value if T is the right type,
   ///          otherwise nullptr.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use maybe_get_value<T>() instead.")
   const T* MaybeGetValue() const;
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Returns the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// In Debug builds, if the types don't match, an std::logic_error will be
@@ -137,17 +133,15 @@ class AbstractValue {
   /// guaranteed. Intentionally not const: holders of const references to the
   /// AbstractValue should not be able to mutate the value it contains.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use get_mutable_value<T>() instead.")
   T& GetMutableValue();
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Like GetMutableValue, but throws std::logic_error on mismatched types even
   /// in Release builds.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use get_mutable_value<T>() instead.")
   T& GetMutableValueOrThrow();
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Sets the value wrapped in this AbstractValue, which must be of
   /// exactly type T.  T cannot be a superclass, abstract or otherwise.
   /// @param value_to_set The value to be copied or cloned into this
@@ -155,12 +149,12 @@ class AbstractValue {
   /// an std::logic_error will be thrown with a helpful error message. In
   /// Release builds, this is not guaranteed.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use set_value<T>() instead.")
   void SetValue(const T& value_to_set);
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Like SetValue, but throws on mismatched types even in Release builds.
   template <typename T>
+  DRAKE_DEPRECATED("2019-07-01", "Use set_value<T>() instead.")
   void SetValueOrThrow(const T& value_to_set);
 
   /// Returns a copy of this AbstractValue.
@@ -171,10 +165,9 @@ class AbstractValue {
   /// message.
   virtual void SetFrom(const AbstractValue& other) = 0;
 
-  // TODO(jwnimmer-tri) Deprecate me.
-  /// (To be deprecated.)
   /// Like SetFrom, but throws std::logic_error on mismatched types even in
   /// Release builds.
+  DRAKE_DEPRECATED("2019-07-01", "Use SetFrom() instead.")
   virtual void SetFromOrThrow(const AbstractValue& other) = 0;
 
   /// Returns typeid of the contained object of type T. If T is polymorphic,
@@ -736,7 +729,10 @@ void Value<T>::SetFrom(const AbstractValue& other) {
 
 template <typename T>
 void Value<T>::SetFromOrThrow(const AbstractValue& other) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   value_ = Traits::to_storage(other.GetValueOrThrow<T>());
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
