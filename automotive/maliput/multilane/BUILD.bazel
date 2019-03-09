@@ -97,6 +97,17 @@ filegroup(
 # === test/ ===
 
 drake_cc_googletest(
+    name = "2x2_intersection_test",
+    data = [
+        ":yamls",
+    ],
+    deps = [
+        ":loader",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
     name = "multilane_arc_road_curve_test",
     deps = [
         ":lanes",
