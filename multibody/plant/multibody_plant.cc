@@ -1764,10 +1764,11 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         this->CalcImplicitStribeckResults(context,
                                           &implicit_stribeck_solver_cache);
       },
-      // We explicitly declare the kinematics (q and v) dependence even though
-      // the Eval() above implicitly evaluates kinematics dependent cache
-      // entries.
-      {this->kinematics_ticket()});
+      // The implicit Stribeck computations are only valid when the plant is
+      // discrete. Therefore we mark this computation not a function of the full
+      // kinematics (which currently also include continuous state variables)
+      // but a function of the discrete variables only.
+      {this->xd_ticket()});
   cache_indexes_.implicit_stribeck_solver_results_ =
       implicit_stribeck_solver_cache_entry.cache_index();
 
