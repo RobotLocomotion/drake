@@ -16,7 +16,9 @@ drake_cc_package_library(
         ":autodiff",
         ":barycentric",
         ":continuous_algebraic_riccati_equation",
+        ":continuous_lyapunov_equation",
         ":discrete_algebraic_riccati_equation",
+        ":discrete_lyapunov_equation",
         ":eigen_sparse_triplet",
         ":evenly_distributed_pts_on_sphere",
         ":expmap",
@@ -79,8 +81,8 @@ drake_cc_library(
     srcs = ["continuous_lyapunov_equation.cc"],
     hdrs = ["continuous_lyapunov_equation.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:is_approx_equal_abstol",
+        "//common",
+        "//common:is_approx_equal_abstol",
     ],
 )
 
@@ -89,8 +91,8 @@ drake_cc_library(
     srcs = ["discrete_lyapunov_equation.cc"],
     hdrs = ["discrete_lyapunov_equation.h"],
     deps = [
-        "//drake/common",
-        "//drake/common:is_approx_equal_abstol",
+        "//common",
+        "//common:is_approx_equal_abstol",
     ],
 )
 
@@ -281,7 +283,7 @@ drake_cc_googletest(
     name = "continuous_lyapunov_equation_test",
     deps = [
         ":continuous_lyapunov_equation",
-        "//drake/common:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -313,7 +315,7 @@ drake_cc_googletest(
     name = "discrete_lyapunov_equation_test",
     deps = [
         ":discrete_lyapunov_equation",
-        "//drake/common:eigen_matrix_compare",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
