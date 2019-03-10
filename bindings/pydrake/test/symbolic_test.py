@@ -460,6 +460,11 @@ class TestSymbolicExpression(SymbolicTestCase):
         self.assertTrue((x + y).EqualTo(x + y))
         self.assertFalse((x + y).EqualTo(x - y))
 
+    def test_get_variables(self):
+        vars = e_x.GetVariables()
+        self.assertEqual(len(vars), 1)
+        self.assertTrue(list(vars)[0].EqualTo(x))
+
     def test_relational_operators(self):
         # TODO(eric.cousineau): Use `VectorizedAlgebra` overloads once #8315 is
         # resolved.

@@ -34,6 +34,7 @@ from .attic.all import *
 from . import getDrakePath
 from .autodiffutils import *
 from .automotive import *
+from .drawing import *
 from .forwarddiff import *
 from .geometry import *
 from .lcm import *
