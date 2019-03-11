@@ -5,33 +5,28 @@
 #include <type_traits>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
 namespace systems {
 namespace internal {
-/**
-Implements Drake policies for taking an object of a concrete type and
-storing it in an AbstractValue. There are subtly different policies regarding
-the handling of Eigen vector and BasicVector objects depending on whether the
-intended destination is a Drake numerical vector object (e.g., a vector port) or
-an abstract object. Call these "VectorPolicy" and "AbstractPolicy", resp.
 
-There are five overloads for the VectorPolicy and three for the AbstractPolicy.
-Signatures (1) and (2) are not present for the AbstractPolicy. The policies
-enforced by each of these methods are:
+/** Implements Drake policy for taking a concrete vector type and storing it in
+a Drake abstract object as a type-erased AbstractValue. We call this
+"AbstractPolicy" to distinguish it from the "VectorPolicy" implemented by
+ValueToVectorValue.
 
- 1. [VectorPolicy only] Any Eigen vector type is copied into a
-    `Value<BasicVector<T>>`.
- 2. [VectorPolicy only] Any BasicVector or type derived from BasicVector is
-    cloned into a `Value<BasicVector<T>>` although the stored object still has
-    the most-derived type.
- 3. Any AbstractValue object is simply cloned.
- 4. A `char *` type is copied into a Value<std::string>.
- 5. For any other type V
+<h4>AbstractPolicy</h4>
+
+ 1. Any AbstractValue object is simply cloned.
+ 2. A `char *` type is copied into a Value<std::string>.
+ 3. For any other type V
     - if V is copy-constructible it is copied into a `Value<V>`;
     - if V has an accessible Clone() method that returns `unique_ptr<V>` it is
       cloned into a `Value<V>`;
@@ -39,66 +34,54 @@ enforced by each of these methods are:
       where B is a base class of T, it is cloned into a `Value<B>`;
     - otherwise, compilation fails with a `static_assert` message.
 
-For the AbstractPolicy, overload (5) is used for Eigen vectors and BasicVectors
-which are treated in that case exactly like any other copyable or cloneable
-types.
-
 @warning Eigen expressions typically don't have simple Vector types. That
 doesn't matter under the VectorPolicy. However, under the AbstractPolicy you
-will get Value<V> for whatever odd Eigen operator type you provided. To avoid
-trouble, you should always pass a simple Eigen-typed variable, or use `.eval()`
-at the end of your Eigen expression to turn it into a simple type.
-
-<!-- TODO(sherm1) Figure out how to make the `.eval()` effect happen
-                  automatically. -->
-
-@tparam T The scalar type in use for vector objects.
-@tparam use_vector_policy Whether to use VectorPolicy or AbstractPolicy.
-*/
-template <typename T, bool use_vector_policy>
+will get Value<E> where E is the type of V.eval(). If you need to know E's
+type, use `ValueToAbstractValue::NiceEigenType<V>`. Better, put your expression
+V into an Eigen vector of known type before storing it in an AbstractValue. */
 class ValueToAbstractValue {
  public:
-  // Signature (1) (VectorPolicy only): used for any Eigen vector type, but the
-  // argument is copied to a BasicVector for the returned abstract value.
-  template <bool keep_this = use_vector_policy,
-      typename = std::enable_if_t<keep_this>>
-  static std::unique_ptr<AbstractValue> ToAbstract(
-      const Eigen::Ref<const VectorX<T>>& vector) {
-    return std::make_unique<Value<BasicVector<T>>>(vector);
-  }
-
-  // Signature (2) (VectorPolicy only): BasicVector must be
-  // special-cased so that we use a Value<BasicVector> to store a copy of the
-  // given object, even if it is from a subclass of BasicVector, and even if it
-  // has its own Clone() method. The actual type is preserved regardless.
-  template <bool keep_this = use_vector_policy,
-            typename = std::enable_if_t<keep_this>>
-  static std::unique_ptr<AbstractValue> ToAbstract(
-      const BasicVector<T>& vector) {
-    return std::make_unique<Value<BasicVector<T>>>(vector.Clone());
-  }
-
-  // Signature (3): used for AbstractValue or Value<U> arguments.
+  // Signature (1): used for AbstractValue or Value<U> arguments.
   static std::unique_ptr<AbstractValue> ToAbstract(const AbstractValue& value) {
     return value.Clone();
   }
 
-  // Signature (4): special case char* to std::string to avoid ugly compilation
+  // Signature (2): special case char* to std::string to avoid ugly compilation
   // messages for this case, where the user's intent is obvious.
   static std::unique_ptr<AbstractValue> ToAbstract(const char* c_string) {
     return std::make_unique<Value<std::string>>(c_string);
   }
 
-#ifdef DRAKE_DOXYGEN_CXX
-  template <typename ValueType>
-  static std::unique_ptr<AbstractValue> ToAbstract(const ValueType& value);
-#else
   // Returns true iff ValueType is compatible with Eigen::Ref.
   template <typename ValueType>
   static constexpr bool is_eigen_refable() {
     return is_eigen_refable_helper<ValueType>(1);  // Any int will do here.
   }
 
+  // This is the storage type we'll use for an Eigen vector type.
+  template <typename ValueType,
+            typename = std::enable_if_t<is_eigen_refable<ValueType>()>>
+  using NiceEigenType = std::remove_const_t<
+      std::remove_reference_t<decltype(std::declval<ValueType>().eval())>>;
+
+  // Signature (2b): special case any Eigen vector expression so that we
+  // can invoke eval() on it and store it as the simpler result type. If
+  // you need to know how it was stored, use NiceEigenType above.
+  template <typename Derived>
+  static std::unique_ptr<AbstractValue> ToAbstract(
+      const Eigen::MatrixBase<Derived>& eigen_expr) {
+    // Can't use NiceEigenType here because we don't have the original
+    // ValueType.
+    using TypeAfterEval = std::remove_const_t<
+        std::remove_reference_t<decltype(eigen_expr.eval())>>;
+    return std::make_unique<Value<TypeAfterEval>>(eigen_expr.eval());
+  }
+
+#ifdef DRAKE_DOXYGEN_CXX
+  // Signature(3) as we'd like it to appear.
+  template <typename ValueType>
+  static std::unique_ptr<AbstractValue> ToAbstract(const ValueType& value);
+#else
   // Returns true iff ValueType has an accessible Clone() method that
   // returns a unique_ptr<ValueType> or one of ValueType's base classes.
   template <typename ValueType>
@@ -106,21 +89,19 @@ class ValueToAbstractValue {
     return has_accessible_clone_helper<ValueType>(1);  // Any int will do here.
   }
 
-  // Signature (5): This signature won't instantiate if any of the
-  // non-templatized signatures above can be used (after possible conversions).
-  // If we allowed this to instantiate it would be chosen instead of performing
-  // those conversions. Note that this, rather than signature (2), will be used
-  // for BasicVector ValueTypes for abstract destinations but not for numerical
-  // vector destinations.
+  // Signature (3): This signature won't instantiate if signature (1) or (2b)
+  // can be used (after possible conversions). If we allowed this to instantiate
+  // it would be chosen instead of performing those conversions. Note that for
+  // the AbstractPolicy, BasicVector ValueTypes are handled with this generic
+  // method rather than by a specialized method as for VectorPolicy.
   template <typename ValueType,
             typename = std::enable_if_t<
                 !(std::is_base_of<AbstractValue, ValueType>::value ||
-                  (use_vector_policy &&
-                   (is_eigen_refable<ValueType>() ||
-                    std::is_base_of<BasicVector<T>, ValueType>::value)))>>
+                  is_eigen_refable<ValueType>())>>
   static std::unique_ptr<AbstractValue> ToAbstract(const ValueType& value) {
-    static_assert(std::is_copy_constructible<ValueType>::value ||
-                      has_accessible_clone<ValueType>(),
+    static_assert(
+        std::is_copy_constructible<ValueType>::value ||
+            has_accessible_clone<ValueType>(),
         "ValueToAbstractValue(): value type must be copy constructible or "
         "have an accessible Clone() method that returns std::unique_ptr.");
     return ValueHelper(value, 1, 1);
@@ -128,21 +109,9 @@ class ValueToAbstractValue {
 #endif
 
  private:
-  // This overload is chosen for the int argument if the Ref type exists,
-  // otherwise there is an SFINAE failure here.
   template <typename ValueType>
-  static constexpr bool is_eigen_refable_helper(
-      // That's a comma expression below, returning an int.
-      decltype(std::declval<Eigen::Ref<ValueType>>(), int())) {
-    return true;
-  }
-
-  // When the above method can't be instantiated, the int argument converts to
-  // a char and this method is invoked instead.
-  template <typename ValueType>
-  static constexpr bool is_eigen_refable_helper(char) {
-    return false;
-  }
+  using CopyReturnType =
+      decltype(ValueType(std::declval<const ValueType>()));
 
   template <typename ValueType>
   using CloneReturnType = std::remove_pointer_t<
@@ -170,7 +139,7 @@ class ValueToAbstractValue {
       typename = std::enable_if_t<std::is_copy_constructible<ValueType>::value>>
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType& value, int,
                                                     int) {
-    return std::make_unique<Value<ValueType>>(value);
+    return std::make_unique<Value<CopyReturnType<ValueType>>>(value);
   }
 
   // This is available if ValueType is cloneable, but is dispreferred if there
@@ -180,7 +149,7 @@ class ValueToAbstractValue {
   // itself. In that case we store the value using the base type, although
   // presumably the concrete type has been properly cloned.
   template <typename ValueType,
-            typename ClonedValueType = CloneReturnType<ValueType>>
+      typename ClonedValueType = CloneReturnType<ValueType>>
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType& value, int,
                                                     ...) {
     static_assert(
@@ -196,6 +165,131 @@ class ValueToAbstractValue {
   template <typename ValueType>
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType&, ...) {
     DRAKE_UNREACHABLE();
+  }
+
+  // This overload is chosen for the int argument if the Ref type exists,
+  // otherwise there is an SFINAE failure here.
+  template <typename ValueType>
+  static constexpr bool is_eigen_refable_helper(
+      // That's a comma expression below, returning an int.
+      decltype(std::declval<Eigen::Ref<ValueType>>(), int())) {
+    return true;
+  }
+
+  // When the above method can't be instantiated, the int argument converts to
+  // a char and this method is invoked instead.
+  template <typename ValueType>
+  static constexpr bool is_eigen_refable_helper(char) {
+    return false;
+  }
+};
+
+
+/** Implements Drake policy for taking a concrete vector type and storing it in
+a Drake numerical vector object as an AbstractValue of concrete type
+`Value<BasicVector<T>>`. We call this "VectorPolicy" to distinguish it from
+the "AbstractPolicy" implemented by ValueToAbstractValue.
+
+<h4>VectorPolicy</h4>
+
+ 1. Any Eigen vector type is copied into a `Value<BasicVector<T>>`.
+ 2. A scalar of type T is treated as though it were an Eigen Vector1<T>.
+ 3. Any BasicVector or type derived from BasicVector is cloned into a
+    `Value<BasicVector<T>>` although the stored object still has the
+    most-derived type.
+ 4. Any AbstractValue object is simply cloned. The resulting clone must have
+    exactly type `Value<BasicVector<T>>` or an std::logic_error is thrown.
+
+Any other type results in an std::logic_error being thrown (at runtime). This
+internal class is intended to be invoked by different user-visible APIs so
+provides for the API name to be included in any generated runtime error
+messages.
+
+@tparam T The scalar type in use for vector objects. */
+template <typename T>
+class ValueToVectorValue {
+ public:
+  // Signature (1): used for any Eigen vector type, but the argument is copied
+  // to a BasicVector for the returned abstract value.
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+      const Eigen::Ref<const VectorX<T>>& vector) {
+    unused(api_name);
+    return std::make_unique<Value<BasicVector<T>>>(vector);
+  }
+
+  // Signature (2): used for a scalar of type T. The argument is copied
+  // to a 1-element BasicVector for the returned abstract value.
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+                                                   const T& scalar) {
+    return ToAbstract(api_name, Vector1<T>(scalar));  // Use signature (1).
+  }
+
+  // Signature (3): BasicVector must be special-cased so that we use a
+  // Value<BasicVector> to store a copy of the given object, even if it is from
+  // a subclass of BasicVector, and even if it has its own Clone() method. The
+  // actual type is preserved regardless.
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+      const BasicVector<T>& vector) {
+    unused(api_name);
+    return std::make_unique<Value<BasicVector<T>>>(vector.Clone());
+  }
+
+  // Signature (4): used for AbstractValue or Value<U> arguments. After cloning,
+  // this must be exactly type Value<BasicVector<T>>.
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+      const AbstractValue& value) {
+    auto cloned = value.Clone();
+    if (cloned->maybe_get_value<BasicVector<T>>() != nullptr)
+      return cloned;
+
+    throw std::logic_error(
+        fmt::format("{}: the given AbstractValue containing type {} is not "
+                    "suitable for storage as a Drake vector quantity.",
+                    api_name, value.GetNiceTypeName()));
+  }
+
+  // The final signature exists just so we can throw an error message.
+  // We'll keep it hidden from Doxygen.
+#ifndef DRAKE_DOXYGEN_CXX
+  // Returns true iff ValueType is compatible with Eigen::Ref.
+  template <typename ValueType>
+  static constexpr bool is_eigen_refable() {
+    return is_eigen_refable_helper<ValueType>(1);  // Any int will do here.
+  }
+
+  // Signature (5): This signature won't instantiate if any of the
+  // non-templatized signatures above can be used (after possible conversions).
+  // If we allowed this to instantiate it would be chosen instead of performing
+  // those conversions.
+  template <typename ValueType,
+            typename = std::enable_if_t<
+                !(is_eigen_refable<ValueType>() ||
+                  std::is_base_of<BasicVector<T>, ValueType>::value ||
+                  std::is_base_of<AbstractValue, ValueType>::value)>>
+  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
+                                                   const ValueType& value) {
+    throw std::logic_error(
+        fmt::format("{}: the given value of type {} is not "
+                    "suitable for storage as a Drake vector quantity.",
+                    api_name, NiceTypeName::Get<ValueType>()));
+  }
+#endif
+
+ private:
+  // This overload is chosen for the int argument if the Ref type exists,
+  // otherwise there is an SFINAE failure here.
+  template <typename ValueType>
+  static constexpr bool is_eigen_refable_helper(
+      // That's a comma expression below, returning an int.
+      decltype(std::declval<Eigen::Ref<ValueType>>(), int())) {
+    return true;
+  }
+
+  // When the above method can't be instantiated, the int argument converts to
+  // a char and this method is invoked instead.
+  template <typename ValueType>
+  static constexpr bool is_eigen_refable_helper(char) {
+    return false;
   }
 };
 
