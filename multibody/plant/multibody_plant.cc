@@ -778,12 +778,6 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
   auto& Jt = *Jt_ptr;
   Jt.resize(2 * num_contacts, num_velocities());
 
-  if (R_WC_set != nullptr) R_WC_set->clear();
-
-  // Quick no-op exit. Notice we did resize Jn, Jt and R_WC_set to be zero
-  // sized.
-  if (num_contacts == 0) return;
-
   for (int icontact = 0; icontact < num_contacts; ++icontact) {
     const auto& point_pair = point_pairs_set[icontact];
 
@@ -966,34 +960,33 @@ MultibodyPlant<T>::CalcCombinedFrictionCoefficients(
 }
 
 template<typename T>
-void MultibodyPlant<T>::CopyContactResultsOutput(
-    const systems::Context<T>& context,
+void MultibodyPlant<T>::CalcContactResultsOutput(
+    const systems::Context<T>&,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  *contact_results = EvalContactResults(context);
+  // TODO(amcastro-tri): Eval() contact results when caching lands.
+  *contact_results = contact_results_;
 }
 
-template <typename T>
+template<typename T>
 void MultibodyPlant<T>::CalcContactResults(
-    const systems::Context<T>& context,
+    const systems::Context<T>&,
+    const std::vector<PenetrationAsPointPair<T>>& point_pairs,
+    const std::vector<Matrix3<T>>& R_WC_set,
     ContactResults<T>* contact_results) const {
-  DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Clear();
   if (num_collision_geometries() == 0) return;
-
-  const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalPointPairPenetrations(context);
-  const std::vector<Matrix3<T>>& R_WC_set =
-      EvalContactJacobians(context).R_WC_list;
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context);
-
-  const VectorX<T>& fn = solver_results.fn;
-  const VectorX<T>& ft = solver_results.ft;
-  const VectorX<T>& vt = solver_results.vt;
-  const VectorX<T>& vn = solver_results.vn;
-
+  DRAKE_DEMAND(contact_results != nullptr);
   const int num_contacts = point_pairs.size();
+  DRAKE_DEMAND(static_cast<int>(R_WC_set.size()) == num_contacts);
+
+  // Note: auto below resolves to VectorBlock<const VectorX<T>>.
+  using VectorXBlock = Eigen::VectorBlock<const VectorX<T>>;
+  const VectorXBlock fn = implicit_stribeck_solver_->get_normal_forces();
+  const VectorXBlock ft = implicit_stribeck_solver_->get_friction_forces();
+  const VectorXBlock vt =
+      implicit_stribeck_solver_->get_tangential_velocities();
+  const VectorXBlock vn = implicit_stribeck_solver_->get_normal_velocities();
+
   DRAKE_DEMAND(fn.size() == num_contacts);
   DRAKE_DEMAND(ft.size() == 2 * num_contacts);
   DRAKE_DEMAND(vn.size() == num_contacts);
@@ -1013,8 +1006,8 @@ void MultibodyPlant<T>::CalcContactResults(
     const Matrix3<T>& R_WC = R_WC_set[icontact];
 
     // Contact forces applied on B at contact point C.
-    const Vector3<T> f_Bc_C(-ft(2 * icontact), -ft(2 * icontact + 1),
-                            fn(icontact));
+    const Vector3<T> f_Bc_C(
+        -ft(2 * icontact), -ft(2 * icontact + 1), fn(icontact));
     const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
 
     // Slip velocity.
@@ -1024,8 +1017,9 @@ void MultibodyPlant<T>::CalcContactResults(
     const T separation_velocity = vn(icontact);
 
     // Add pair info to the contact results.
-    contact_results->AddContactInfo({bodyA_index, bodyB_index, f_Bc_W, p_WC,
-                                     separation_velocity, slip, pair});
+    contact_results->AddContactInfo(
+        {bodyA_index, bodyB_index, f_Bc_W, p_WC,
+         separation_velocity, slip, pair});
   }
 }
 
@@ -1325,8 +1319,8 @@ void MultibodyPlant<T>::DoCalcTimeDerivatives(
 
   // Compute contact forces on each body by penalty method.
   if (num_collision_geometries() > 0) {
-    const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-        EvalPointPairPenetrations(context);
+    std::vector<PenetrationAsPointPair<T>> point_pairs =
+        CalcPointPairPenetrations(context);
     CalcAndAddContactForcesByPenaltyMethod(
         context, pc, vc, point_pairs, &F_BBo_W_array);
   }
@@ -1396,13 +1390,17 @@ ImplicitStribeckSolverResult MultibodyPlant<T>::SolveUsingSubStepping(
   return info;
 }
 
-template <typename T>
-void MultibodyPlant<T>::CalcImplicitStribeckResults(
+// TODO(amcastro-tri): Consider splitting this method into smaller pieces.
+template<typename T>
+void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context0,
-    internal::ImplicitStribeckSolverResults<T>* results) const {
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
+    drake::systems::DiscreteValues<T>* updates) const {
   // Assert this method was called on a context storing discrete state.
   DRAKE_ASSERT(context0.get_num_discrete_state_groups() == 1);
   DRAKE_ASSERT(context0.get_continuous_state().size() == 0);
+
+  const double dt = time_step_;  // just a shorter alias.
 
   const int nq = this->num_positions();
   const int nv = this->num_velocities();
@@ -1441,6 +1439,10 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
     forces0.mutable_generalized_forces() +=
         applied_generalized_force_input.Eval(context0);
 
+  // TODO(amcastro-tri): Eval() point_pairs0 when caching lands.
+  const std::vector<PenetrationAsPointPair<T>> point_pairs0 =
+      CalcPointPairPenetrations(context0);
+
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.
   std::vector<SpatialAcceleration<T>> A_WB_array(internal_tree().num_bodies());
@@ -1460,11 +1462,20 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
       &minus_tau);
 
   // Compute normal and tangential velocity Jacobians at t0.
-  const std::vector<PenetrationAsPointPair<T>>& point_pairs0 =
-      EvalPointPairPenetrations(context0);
   const int num_contacts = point_pairs0.size();
-  const internal::ContactJacobians<T>& contact_jacobians =
-      EvalContactJacobians(context0);
+  MatrixX<T> Jn(num_contacts, nv);
+  MatrixX<T> Jt(2 * num_contacts, nv);
+  // For each contact point pair, the rotation matrix R_WC giving the
+  // orientation of the contact frame C in the world frame W.
+  // TODO(amcastro-tri): cache R_WC_set as soon as caching lands.
+  std::vector<Matrix3<T>> R_WC_set;
+  if (num_contacts > 0) {
+    // TODO(amcastro-tri): when it becomes a bottleneck, update the contact
+    // solver to use operators instead so that we don't have to form these
+    // Jacobian matrices explicitly (an O(num_contacts * nv) operation).
+    CalcNormalAndTangentContactJacobians(
+        context0, point_pairs0, &Jn, &Jt, &R_WC_set);
+  }
 
   // Get friction coefficient into a single vector. Dynamic friction is ignored
   // by the time stepping scheme.
@@ -1516,9 +1527,8 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   int num_substeps = 0;
   do {
     ++num_substeps;
-    info = SolveUsingSubStepping(num_substeps, M0, contact_jacobians.Jn,
-                                 contact_jacobians.Jt, minus_tau, stiffness,
-                                 damping, mu, v0, phi0);
+    info = SolveUsingSubStepping(
+        num_substeps, M0, Jn, Jt, minus_tau, stiffness, damping, mu, v0, phi0);
   } while (info != ImplicitStribeckSolverResult::kSuccess &&
            num_substeps < kNumMaxSubTimeSteps);
 
@@ -1527,45 +1537,21 @@ void MultibodyPlant<T>::CalcImplicitStribeckResults(
   // TODO(amcastro-tri): implement capability to dump solver statistics to a
   // file for analysis.
 
-  // Update the results.
-  results->v_next = implicit_stribeck_solver_->get_generalized_velocities();
-  results->fn = implicit_stribeck_solver_->get_normal_forces();
-  results->ft = implicit_stribeck_solver_->get_friction_forces();
-  results->vn = implicit_stribeck_solver_->get_normal_velocities();
-  results->vt = implicit_stribeck_solver_->get_tangential_velocities();
-  results->tau_contact =
-      implicit_stribeck_solver_->get_generalized_contact_forces();
-}
-
-// TODO(amcastro-tri): Consider splitting this method into smaller pieces.
-template<typename T>
-void MultibodyPlant<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context0,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&,
-    drake::systems::DiscreteValues<T>* updates) const {
-  const int nq = this->num_positions();
-  const int nv = this->num_velocities();
-
-  // Get the system state as raw Eigen vectors
-  // (solution at the previous time step).
-  auto x0 = context0.get_discrete_state(0).get_value();
-  VectorX<T> q0 = x0.topRows(nq);
-  VectorX<T> v0 = x0.bottomRows(nv);
-
-  // Solve for contact.
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context0);
-
   // Retrieve the solution velocity for the next time step.
-  const VectorX<T>& v_next = solver_results.v_next;
+  VectorX<T> v_next = implicit_stribeck_solver_->get_generalized_velocities();
 
   VectorX<T> qdot_next(this->num_positions());
   internal_tree().MapVelocityToQDot(context0, v_next, &qdot_next);
-  VectorX<T> q_next = q0 + time_step() * qdot_next;
+  VectorX<T> q_next = q0 + dt * qdot_next;
 
   VectorX<T> x_next(this->num_multibody_states());
   x_next << q_next, v_next;
   updates->get_mutable_vector(0).SetFromVector(x_next);
+
+  // Save contact results for analysis and visualization.
+  // TODO(amcastro-tri): remove next line once caching lands since point_pairs0
+  // and R_WC_set will be cached.
+  CalcContactResults(context0, point_pairs0, R_WC_set, &contact_results_);
 }
 
 template<typename T>
@@ -1613,7 +1599,7 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     this->DeclarePeriodicDiscreteUpdate(time_step_);
   }
 
-  DeclareCacheEntries();
+  // TODO(sherm1) Add ContactResults cache entry.
 
   // Declare per model instance actuation ports.
   int num_actuated_instances = 0;
@@ -1702,91 +1688,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   // Contact results output port.
   contact_results_port_ = this->DeclareAbstractOutputPort(
                                   "contact_results", ContactResults<T>(),
-                                  &MultibodyPlant<T>::CopyContactResultsOutput)
+                                  &MultibodyPlant<T>::CalcContactResultsOutput)
                               .get_index();
-}
-
-template <typename T>
-void MultibodyPlant<T>::DeclareCacheEntries() {
-  DRAKE_DEMAND(this->is_finalized());
-
-  // Cache entry for point contact queries.
-  auto& point_pairs_cache_entry = this->DeclareCacheEntry(
-      std::string("Point pair penetrations."),
-      []() {
-        return AbstractValue::Make(
-            std::vector<geometry::PenetrationAsPointPair<T>>());
-      },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& point_pairs_cache = cache_value->get_mutable_value<
-            std::vector<geometry::PenetrationAsPointPair<T>>>();
-        point_pairs_cache = this->CalcPointPairPenetrations(context);
-      },
-      {this->configuration_ticket()});
-  cache_indexes_.point_pairs_ = point_pairs_cache_entry.cache_index();
-
-  // Cache contact Jacobians.
-  auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
-      std::string("Contact Jacobians Jn(q) and Jt(q)."),
-      []() { return AbstractValue::Make(internal::ContactJacobians<T>()); },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& contact_jacobians_cache =
-            cache_value->get_mutable_value<internal::ContactJacobians<T>>();
-        this->CalcNormalAndTangentContactJacobians(
-            context, EvalPointPairPenetrations(context),
-            &contact_jacobians_cache.Jn, &contact_jacobians_cache.Jt,
-            &contact_jacobians_cache.R_WC_list);
-      },
-      // We explicitly declare the configuration dependence even though the
-      // Eval() above implicitly evaluates configuration dependent cache
-      // entries.
-      {this->configuration_ticket()});
-  cache_indexes_.contact_jacobians_ =
-      contact_jacobians_cache_entry.cache_index();
-
-  // Cache ImplicitStribeckSolver computations.
-  auto& implicit_stribeck_solver_cache_entry = this->DeclareCacheEntry(
-      std::string("Implicit Stribeck solver computations."),
-      []() {
-        return AbstractValue::Make(
-            internal::ImplicitStribeckSolverResults<T>());
-      },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& implicit_stribeck_solver_cache =
-            cache_value->get_mutable_value<
-                internal::ImplicitStribeckSolverResults<T>>();
-        this->CalcImplicitStribeckResults(context,
-                                          &implicit_stribeck_solver_cache);
-      },
-      // We explicitly declare the kinematics (q and v) dependence even though
-      // the Eval() above implicitly evaluates kinematics dependent cache
-      // entries.
-      {this->kinematics_ticket()});
-  cache_indexes_.implicit_stribeck_solver_results_ =
-      implicit_stribeck_solver_cache_entry.cache_index();
-
-  // Cache contact results.
-  auto& contact_results_cache_entry = this->DeclareCacheEntry(
-      std::string("Contact results."),
-      []() { return AbstractValue::Make(ContactResults<T>()); },
-      [this](const systems::ContextBase& context_base,
-             AbstractValue* cache_value) {
-        auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& contact_results_cache =
-            cache_value->get_mutable_value<ContactResults<T>>();
-        this->CalcContactResults(context, &contact_results_cache);
-      },
-      // We explicitly declare the dependence on the implicit Stribeck solver
-      // even though the Eval() above does the evaluation.
-      {this->cache_entry_ticket(
-          cache_indexes_.implicit_stribeck_solver_results_)});
-  cache_indexes_.contact_results_ = contact_results_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -1820,16 +1723,18 @@ void MultibodyPlant<T>::CopyContinuousStateOut(
 
 template <typename T>
 void MultibodyPlant<T>::CopyGeneralizedContactForcesOut(
-    ModelInstanceIndex model_instance, const Context<T>& context,
+    ModelInstanceIndex model_instance, const Context<T>&,
     BasicVector<T>* tau_vector) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(is_discrete());
 
   // Vector of generalized contact forces for the entire plant's multibody
   // system.
-  const internal::ImplicitStribeckSolverResults<T>& solver_results =
-      EvalImplicitStribeckResults(context);
-  const VectorX<T>& tau_contact = solver_results.tau_contact;
+  // TODO(amcastro-tri): Contact forces should be computed into a cache entry
+  // and evaluated here. Update this to use caching as soon as the capability
+  // lands.
+  const VectorX<T>& tau_contact =
+      implicit_stribeck_solver_->get_generalized_contact_forces();
 
   // Generalized velocities and generalized forces are ordered in the same way.
   // Thus we can call get_velocities_from_array().
