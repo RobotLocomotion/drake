@@ -387,6 +387,15 @@ drake_pybind_library(
 )
 
 drake_py_unittest(
+    name = "analysis_test",
+    deps = [
+        ":analysis_py",
+        ":framework_py",
+        ":primitives_py",
+    ],
+)
+
+drake_py_unittest(
     name = "lifetime_test",
     deps = [
         ":analysis_py",
