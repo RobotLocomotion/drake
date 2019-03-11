@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic.h"
+#include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -61,16 +62,32 @@ class SosConstraintTest : public ::testing::Test {
     }
     EXPECT_EQ(p.decision_variables(), Variables(Q_flat));
     result_ = Solve(prog_);
-    CheckPositiveDefiniteMatrix(Q);
+    CheckPositiveDefiniteMatrix(Q, monomial_basis, p.ToExpression());
   }
 
   // Checks Q has all eigen values as approximately non-negatives.
   // Precondition: result_ = Solve(prog_) has been called.
-  void CheckPositiveDefiniteMatrix(const MatrixXDecisionVariable& Q,
-                                   const double eps = 1e-07) {
+  void CheckPositiveDefiniteMatrix(
+      const MatrixXDecisionVariable& Q,
+      const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
+      const symbolic::Expression& sos_poly_expected, const double eps = 1e-07) {
     const Eigen::MatrixXd Q_val = result_.GetSolution(Q);
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Q_val);
     EXPECT_TRUE((es.eigenvalues().array() >= -eps).all());
+    // Compute mᵀ * Q * m;
+    symbolic::Polynomial sos_poly{};
+    for (int i = 0; i < Q_val.rows(); ++i) {
+      sos_poly.AddProduct(Q_val(i, i), pow(monomial_basis(i), 2));
+      for (int j = i + 1; j < Q_val.cols(); ++j) {
+        sos_poly.AddProduct(Q_val(i, j) + Q_val(j, i),
+                            monomial_basis(i) * monomial_basis(j));
+      }
+    }
+    symbolic::Polynomial diff_poly =
+        sos_poly - symbolic::Polynomial(result_.GetSolution(sos_poly_expected));
+    diff_poly = diff_poly.RemoveTermsWithSmallCoefficients(eps);
+    const symbolic::Polynomial zero_poly{};
+    EXPECT_PRED2(symbolic::test::PolyEqual, diff_poly, zero_poly);
   }
 
  protected:
@@ -179,13 +196,16 @@ TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
   EXPECT_TRUE(poly.EqualTo(expected_poly));
 }
 
-// Shows that f(x) = x² + 2x + 1 is SOS.
+// Shows that f(x) = 2x² + 2x + 1 is SOS.
 TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
   const auto& x = x_(0);
-  const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1);
+  const symbolic::Expression e = 2 * pow(x, 2) + 2 * x + 1;
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
-  CheckPositiveDefiniteMatrix(binding_pair.first);
+  CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
 // Finds the global minimum of f(x) = x⁶ − 10x⁵ + 51x⁴ − 166x³ + 342x² − 400x +
@@ -195,36 +215,42 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const auto& x = x_(0);
   const auto& c = c_(0);
   prog_.AddCost(-c);
-  const auto binding_pair = prog_.AddSosConstraint(
-      pow(x, 6) - 10 * pow(x, 5) + 51 * pow(x, 4) - 166 * pow(x, 3) +
-      342 * pow(x, 2) - 400 * x + 200 - c);
+  const symbolic::Expression e = pow(x, 6) - 10 * pow(x, 5) + 51 * pow(x, 4) -
+                                 166 * pow(x, 3) + 342 * pow(x, 2) - 400 * x +
+                                 200 - c;
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
   EXPECT_LE(result_.GetSolution(c), 1E-4);
-  CheckPositiveDefiniteMatrix(binding_pair.first, 1E-6 /* eps */);
+  CheckPositiveDefiniteMatrix(Q, m, e, 1E-6 /* eps */);
 }
 
 // Shows that f(x₀, x₁) = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴ is SOS.
 TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
   const auto& x0 = x_(0);
   const auto& x1 = x_(1);
-  const auto binding_pair =
-      prog_.AddSosConstraint(2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
-                             pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4));
+  const symbolic::Expression e = 2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
+                                 pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4);
+
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
-  CheckPositiveDefiniteMatrix(binding_pair.first);
+  CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
 
 TEST_F(SosConstraintTest, AddSosPolynomialViaMonomialBasis) {
   const auto& x = x_(0);
   Vector2<Monomial> basis{ 1, x };
-  const auto binding_pair = prog_.AddSosConstraint(2 * pow(x, 2) + 2 * x + 1,
-                                                   basis);
+  const symbolic::Expression e = 2 * pow(x, 2) + 2 * x + 1;
+  const auto Q = prog_.AddSosConstraint(e, basis);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
-  CheckPositiveDefiniteMatrix(binding_pair.first);
+  CheckPositiveDefiniteMatrix(Q, basis, e);
 }
 
 // Finds the global minimum of the non-convex polynomial f(x₀, x₁) = 4 * x₀² −
@@ -237,14 +263,17 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate2) {
   const auto& x1 = x_(1);
   const auto& c = c_(0);
   prog_.AddCost(-c);
-  const auto binding_pair = prog_.AddSosConstraint(
-      4 * pow(x0, 2) - 2.1 * pow(x0, 4) + 1.0 / 3.0 * pow(x0, 6) + x0 * x1 -
-      4 * x1 * x1 + 4 * pow(x1, 4) - c);
+  const symbolic::Expression e = 4 * pow(x0, 2) - 2.1 * pow(x0, 4) +
+                                 1.0 / 3.0 * pow(x0, 6) + x0 * x1 -
+                                 4 * x1 * x1 + 4 * pow(x1, 4) - c;
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
 
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
   EXPECT_NEAR(result_.GetSolution(c), -1.0316, 1E-4);
-  CheckPositiveDefiniteMatrix(binding_pair.first);
+  CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
 TEST_F(SosConstraintTest, SynthesizeLyapunovFunction) {

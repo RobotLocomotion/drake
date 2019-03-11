@@ -1422,6 +1422,7 @@ drake_cc_googletest(
         ":mathematical_program_lite",
         ":solve",
         ":sos_basis_generator",
+        "//common/test_utilities:symbolic_test_util",
     ],
 )
 

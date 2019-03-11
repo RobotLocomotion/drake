@@ -560,26 +560,28 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
+          // NOLINTNEXTLINE(whitespace/parens): Possible cpplint bug (#10886).
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
-              const Polynomial&)>(&MathematicalProgram::AddSosConstraint),
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const Polynomial&)>(
+              &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
+          // NOLINTNEXTLINE(whitespace/parens): Possible cpplint bug (#10886).
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
-              const Expression&)>(&MathematicalProgram::AddSosConstraint),
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const Expression&)>(
+              &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
       .def("AddVisualizationCallback",
           static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
