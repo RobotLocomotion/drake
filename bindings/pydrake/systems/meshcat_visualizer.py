@@ -13,7 +13,7 @@ import webbrowser
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
-from pydrake.common.eigen_geometry import Quaternion
+from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
@@ -490,7 +490,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     }
     """
 
-    def __init__(self, meshcat_viz, name="point_cloud"):
+    def __init__(self, meshcat_viz, X_WPointCloud=Isometry3.Identity(), name="point_cloud"):
         """
         Args:
             meshcat_viz: a MeshcatVisualizer object.
@@ -498,6 +498,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         LeafSystem.__init__(self)
 
         self._meshcat_viz = meshcat_viz
+        self._X_WPointCloud = X_WPointCloud
         self._name = name
 
         self.set_name('meshcat_point_cloud_visualizer')
@@ -510,5 +511,22 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         LeafSystem._DoPublish(self, context, event)
         input = self.EvalAbstractInput(context, 0).get_value()
 
-        point_cloud = g.PointCloud(input.xyzs().T, input.rgbs().T)
-        self._meshcat_viz.vis[self._name].set_object(point_cloud)
+        # remove any NaNs from the points
+        nan_indices = np.logical_not(np.isnan(input.xyzs()))
+        points = input.xyzs()[:, nan_indices[0, :]]
+        colors = input.rgbs()[:, nan_indices[0, :]]
+
+        points = self._apply_transform(points, self._X_WPointCloud)
+
+        # convert from rgb [0, 255] to [0, 1]
+        point_cloud = g.PointCloud(points, colors / 255.)
+
+        vis = self._meshcat_viz.vis
+        prefix = self._meshcat_viz.prefix
+        vis[prefix][self._name].set_object(point_cloud)
+
+    def _apply_transform(self, matrix, transform):
+        homogenous_matrix = np.ones((4, matrix.shape[1]))
+        homogenous_matrix[:3, :] = np.copy(matrix)
+
+        return transform.matrix().dot(homogenous_matrix)[:3, :]
