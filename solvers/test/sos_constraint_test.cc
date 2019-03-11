@@ -200,10 +200,12 @@ TEST_F(SosConstraintTest, NewSosPolynomialViaMonomialBasis) {
 TEST_F(SosConstraintTest, AddSosConstraintUnivariate1) {
   const auto& x = x_(0);
   const symbolic::Expression e = 2 * pow(x, 2) + 2 * x + 1;
-  const auto binding_pair = prog_.AddSosConstraint(e);
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
-  CheckPositiveDefiniteMatrix(binding_pair.first, binding_pair.second, e);
+  CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
 // Finds the global minimum of f(x) = x⁶ − 10x⁵ + 51x⁴ − 166x³ + 342x² − 400x +
@@ -216,12 +218,13 @@ TEST_F(SosConstraintTest, AddSosConstraintUnivariate2) {
   const symbolic::Expression e = pow(x, 6) - 10 * pow(x, 5) + 51 * pow(x, 4) -
                                  166 * pow(x, 3) + 342 * pow(x, 2) - 400 * x +
                                  200 - c;
-  const auto binding_pair = prog_.AddSosConstraint(e);
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
   EXPECT_LE(result_.GetSolution(c), 1E-4);
-  CheckPositiveDefiniteMatrix(binding_pair.first, binding_pair.second, e,
-                              1E-6 /* eps */);
+  CheckPositiveDefiniteMatrix(Q, m, e, 1E-6 /* eps */);
 }
 
 // Shows that f(x₀, x₁) = 2x₀⁴ + 2x₀³x₁ - x₀²x₁² + 5x₁⁴ is SOS.
@@ -231,10 +234,12 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate1) {
   const symbolic::Expression e = 2 * pow(x0, 4) + 2 * pow(x0, 3) * x1 -
                                  pow(x0, 2) * pow(x1, 2) + 5 * pow(x1, 4);
 
-  const auto binding_pair = prog_.AddSosConstraint(e);
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
-  CheckPositiveDefiniteMatrix(binding_pair.first, binding_pair.second, e);
+  CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
 
@@ -261,12 +266,14 @@ TEST_F(SosConstraintTest, AddSosConstraintMultivariate2) {
   const symbolic::Expression e = 4 * pow(x0, 2) - 2.1 * pow(x0, 4) +
                                  1.0 / 3.0 * pow(x0, 6) + x0 * x1 -
                                  4 * x1 * x1 + 4 * pow(x1, 4) - c;
-  const auto binding_pair = prog_.AddSosConstraint(e);
+  MatrixXDecisionVariable Q;
+  VectorX<symbolic::Monomial> m;
+  std::tie(Q, m) = prog_.AddSosConstraint(e);
 
   result_ = Solve(prog_);
   ASSERT_TRUE(result_.is_success());
   EXPECT_NEAR(result_.GetSolution(c), -1.0316, 1E-4);
-  CheckPositiveDefiniteMatrix(binding_pair.first, binding_pair.second, e);
+  CheckPositiveDefiniteMatrix(Q, m, e);
 }
 
 TEST_F(SosConstraintTest, SynthesizeLyapunovFunction) {

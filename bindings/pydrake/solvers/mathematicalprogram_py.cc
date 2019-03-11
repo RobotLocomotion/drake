@@ -560,6 +560,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
       .def("AddSosConstraint",
+          // NOLINTNEXTLINE(whitespace/parens): Possible cpplint bug (#10886).
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
@@ -571,6 +572,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
+          // NOLINTNEXTLINE(whitespace/parens): Possible cpplint bug (#10886).
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
