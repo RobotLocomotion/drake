@@ -1763,10 +1763,21 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         this->CalcImplicitStribeckResults(context,
                                           &implicit_stribeck_solver_cache);
       },
-      // We explicitly declare the kinematics (q and v) dependence even though
-      // the Eval() above implicitly evaluates kinematics dependent cache
-      // entries.
-      {this->kinematics_ticket()});
+      // We declare the implicit stribeck only dependent on the discrete
+      // variables as a way to emulate an abstract valued state with periodic
+      // updates, see issue #10888 for details. Currently, The systems::
+      // framework infrastructure to supporting this is
+      // System::CalcUnrestrictedUpdate() however, at the cost of system wide
+      // state copies that inccur on a very noticeable performance hit, see
+      // #10149.
+      // Until #10888 is addressed, this has the desired effect of emulating a
+      // "discrete port" for the contact results output port since the
+      // contact_results_cache_entry declared below only depends on this
+      // implicit_stribeck_solver_cache_entry.
+      // NOTE: this does emulates the right "experience" for users however at
+      // the expense of an abuse of the system framework we'd like to avoid.
+      // Tracking the implementation of a longer term solution in #10888.
+      {this->xd_ticket()});
   cache_indexes_.implicit_stribeck_solver_results_ =
       implicit_stribeck_solver_cache_entry.cache_index();
 
