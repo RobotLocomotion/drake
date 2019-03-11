@@ -16,7 +16,9 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
     MultibodyForces,
     RevoluteJoint,
+    SpatialInertia,
     UniformGravityFieldElement,
+    UnitInertia,
     WeldJoint,
     world_index,
 )
@@ -201,6 +203,13 @@ class TestPlant(unittest.TestCase):
     def check_old_spelling_exists(self, value):
         # Just to make it obvious when this is being tested.
         self.assertIsNot(value, None)
+
+    def test_inertia_api(self):
+        UnitInertia()
+        unit_inertia = UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4)
+        SpatialInertia()
+        SpatialInertia(mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
+                       G_SP_E=unit_inertia)
 
     def test_multibody_gravity_default(self):
         plant = MultibodyPlant()
