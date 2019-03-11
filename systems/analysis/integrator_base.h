@@ -316,7 +316,7 @@ class IntegratorBase {
    *
    * #### Details
    * Because time is maintained to finite precision, the integrator uses a
-   * scalar `h_floor` to constrain time step h ≥ `h_floor` such that 
+   * scalar `h_floor` to constrain time step h ≥ `h_floor` such that
    * `current_time + h > current_time` will be strictly satisfied.
    * The integrator will never automatically decrease its step below `h_floor`.
    * We calculate `h_floor=max(ε, ε⋅t)`, where t is the current time and ε is a
@@ -898,8 +898,27 @@ class IntegratorBase {
 
   /**
    * Derived classes must override this function to return the order of
-   * the integrator's error estimate. If the integrator does not provide an
-   * error estimate, the derived class implementation should return 0.
+   * the integrator's error estimate, meaning the asymptotic error of the error
+   * estimate. The error estimator approximates the true error e(.) between the
+   * actual state (obtained via a perhaps hypothetical closed form solution to
+   * the initial value problem) and the state computed by the integrator. e(.)
+   * is approximated by a Taylor Series expansion in the neighborhood around t:
+   * @verbatim
+   * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + ...
+   * @endverbatim
+   * The equation above can also be written as:
+   * @verbatim
+   * e(t+h) ≈ e(t) + he(t) + he'(t) + ½h²e''(t) + O(h³)
+   * @endverbatim
+   * where we have replaced the "..." with the asymptotic error of all terms
+   * truncated from the series. An error estimator that exhibits O(h³)
+   * truncation error, as above, is known as a third order error estimator.
+   * Asymptotic analysis implies that a third order error estimator increases
+   * the accuracy of its estimate by a factor of eight when h is scaled by
+   * one half, for h sufficiently small.
+   *
+   * If the integrator does not provide an error estimate, the derived class
+   * implementation should return 0.
    */
   virtual int get_error_estimate_order() const = 0;
 
