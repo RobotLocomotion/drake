@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":lyapunov",
         ":monte_carlo",
         ":radau_integrator",
+        ":region_of_attraction",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
@@ -170,6 +171,19 @@ drake_cc_library(
     hdrs = ["monte_carlo.h"],
     deps = [
         ":simulator",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "region_of_attraction",
+    srcs = ["region_of_attraction.cc"],
+    hdrs = ["region_of_attraction.h"],
+    deps = [
+        "//math:continuous_lyapunov_equation",
+        "//math:matrix_util",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
         "//systems/framework",
     ],
 )
@@ -481,6 +495,14 @@ drake_cc_googletest(
         "//systems/primitives:constant_vector_source",
         "//systems/primitives:pass_through",
         "//systems/primitives:random_source",
+    ],
+)
+
+drake_cc_googletest(
+    name = "region_of_attraction_test",
+    deps = [
+        ":region_of_attraction",
+        "//systems/primitives:symbolic_vector_system",
     ],
 )
 

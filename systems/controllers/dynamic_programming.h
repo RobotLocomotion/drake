@@ -18,6 +18,8 @@ namespace controllers {
 /// Consolidates the many possible options to be passed to the dynamic
 /// programming algorithms.
 struct DynamicProgrammingOptions {
+  DynamicProgrammingOptions() = default;
+
   /// A value between (0,1] that discounts future rewards.
   /// @see FittedValueIteration.
   double discount_factor{1.};
