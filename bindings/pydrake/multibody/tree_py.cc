@@ -268,9 +268,8 @@ PYBIND11_MODULE(tree, m) {
     py::class_<Class> cls(m, "UnitInertia", cls_doc.doc);
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
-        .def(py::init<const T&, const T&, const T&>(),
-             py::arg("Ixx"), py::arg("Iyy"), py::arg("Izz"),
-             cls_doc.ctor.doc_3args);
+        .def(py::init<const T&, const T&, const T&>(), py::arg("Ixx"),
+            py::arg("Iyy"), py::arg("Izz"), cls_doc.ctor.doc_3args);
   }
   {
     using Class = SpatialInertia<T>;
@@ -279,11 +278,10 @@ PYBIND11_MODULE(tree, m) {
     cls  // BR
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
-                      const UnitInertia<T>&>(),
-             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
-             cls_doc.ctor.doc_3args);
+                 const UnitInertia<T>&>(),
+            py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
+            cls_doc.ctor.doc_3args);
   }
-
 }
 
 }  // namespace pydrake
