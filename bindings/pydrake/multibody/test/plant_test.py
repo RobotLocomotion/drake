@@ -28,6 +28,7 @@ from pydrake.multibody.plant import (
     ContactResults,
     ContactResultsToLcmSystem,
     ConnectContactResultsToDrakeVisualizer,
+    CoulombFriction,
     MultibodyPlant,
     PointPairContactInfo,
 )
@@ -210,6 +211,9 @@ class TestPlant(unittest.TestCase):
         SpatialInertia()
         SpatialInertia(mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
                        G_SP_E=unit_inertia)
+
+    def test_friction_api(self):
+        CoulombFriction(static_friction=0.7, dynamic_friction=0.6)
 
     def test_multibody_gravity_default(self):
         plant = MultibodyPlant()
