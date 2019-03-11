@@ -27,8 +27,10 @@ namespace systems {
 /// For example, to define the system: ẋ = -x + x³, y = x, we could write
 /// @code
 ///   symbolic::Variable x("x");
-///   auto system = SymbolicVectorBuilder().state(x).dynamics(-x + pow(x,3))
-///                                        .output(x).Build();
+///   auto system = SymbolicVectorSystemBuilder().state(x)
+///                                              .dynamics(-x + pow(x,3))
+///                                              .output(x)
+///                                              .Build();
 /// @endcode
 ///
 /// Note: This will not be as performant as writing your own LeafSystem.
@@ -232,7 +234,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
 /// For example, to define the system: ẋ = -x + x³, y = x, we could write
 /// @code
 ///   symbolic::Variable x("x");
-///   auto system = SymbolicVectorBuilder().state(x)
+///   auto system = SymbolicVectorSystemBuilder().state(x)
 ///                                        .dynamics(-x + pow(x,3))
 ///                                        .output(x)
 ///                                        .Build();
