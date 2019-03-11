@@ -3,6 +3,7 @@ import pydrake.geometry as mut
 import unittest
 import warnings
 
+from pydrake.common import FindResourceOrThrow
 from pydrake.lcm import DrakeMockLcm
 from pydrake.systems.framework import DiagramBuilder, InputPort, OutputPort
 from pydrake.common.deprecation import DrakeDeprecationWarning
@@ -77,3 +78,19 @@ class TestGeometry(unittest.TestCase):
         self.assertTupleEqual(obj.p_ACa.shape, (3,))
         self.assertTupleEqual(obj.p_BCb.shape, (3,))
         self.assertIsInstance(obj.distance, float)
+
+    def test_shape_constructors(self):
+        sphere = mut.Sphere(radius=1.0)
+        self.assertIsInstance(sphere, mut.Shape)
+        cylinder = mut.Cylinder(radius=1.0,
+                                length=2.0)
+        box = mut.Box(width=1.0,
+                      depth=2.0,
+                      height=3.0)
+        halfspace = mut.HalfSpace()
+        box_mesh_path = FindResourceOrThrow(
+            "drake/systems/sensors/test/models/meshes/box.obj")
+        mesh = mut.Mesh(absolute_filename=box_mesh_path,
+                        scale=1.0)
+        convex = mut.Convex(absolute_filename=box_mesh_path,
+                            scale=1.0)
