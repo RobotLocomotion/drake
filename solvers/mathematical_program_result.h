@@ -122,7 +122,7 @@ class MathematicalProgramResult final {
   template <typename Solver>
   const typename Solver::Details& get_solver_details() const {
     return get_abstract_solver_details().
-        template GetValueOrThrow<typename Solver::Details>();
+        template get_value<typename Solver::Details>();
   }
 
   /** (Advanced.) Gets the type-erased solver details. Most users should use
@@ -146,7 +146,7 @@ class MathematicalProgramResult final {
         (solver_details_->static_type_info() != typeid(T))) {
       solver_details_ = std::make_unique<Value<T>>();
     }
-    return solver_details_->GetMutableValue<T>();
+    return solver_details_->get_mutable_value<T>();
   }
 
   /**
@@ -191,6 +191,39 @@ class MathematicalProgramResult final {
    * set_decision_variable_index().
    */
   double GetSolution(const symbolic::Variable& var) const;
+
+  /**
+   * Substitutes the value of all decision variables into the Expression.
+   * @param e The decision variable.
+   * @return the Expression that is the result of the substitution.
+   */
+  symbolic::Expression GetSolution(const symbolic::Expression& e) const;
+
+  /**
+   * Substitutes the value of all decision variables into the
+   * Matrix<Expression>.
+   * @tparam Derived An Eigen matrix containing Expression.
+   * @return the Matrix<Expression> that is the result of the substitution.
+   *
+   * @exclude_from_pydrake_mkdoc{Including this confuses mkdoc, resulting in
+   * doc_was_unable_to_choose_unambiguous_name. }
+   */
+  template <typename Derived>
+  typename std::enable_if<
+      std::is_same<typename Derived::Scalar, symbolic::Expression>::value,
+      Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
+          Derived::ColsAtCompileTime>>::type
+  GetSolution(const Eigen::MatrixBase<Derived>& m) const {
+    Eigen::Matrix<symbolic::Expression, Derived::RowsAtCompileTime,
+                  Derived::ColsAtCompileTime>
+        value(m.rows(), m.cols());
+    for (int i = 0; i < m.rows(); ++i) {
+      for (int j = 0; j < m.cols(); ++j) {
+        value(i, j) = GetSolution(m(i, j));
+      }
+    }
+    return value;
+  }
 
   /**
    * @anchor solution_pools

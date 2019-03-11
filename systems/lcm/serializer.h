@@ -73,7 +73,7 @@ class Serializer : public SerializerInterface {
       const void* message_bytes, int message_length,
       AbstractValue* abstract_value) const override {
     DRAKE_DEMAND(abstract_value != nullptr);
-    LcmMessage& message = abstract_value->GetMutableValue<LcmMessage>();
+    LcmMessage& message = abstract_value->get_mutable_value<LcmMessage>();
     int consumed = message.decode(message_bytes, 0, message_length);
     DRAKE_THROW_UNLESS(consumed == message_length);
   }
@@ -81,7 +81,7 @@ class Serializer : public SerializerInterface {
   void Serialize(const AbstractValue& abstract_value,
                  std::vector<uint8_t>* message_bytes) const override {
     DRAKE_DEMAND(message_bytes != nullptr);
-    const LcmMessage& message = abstract_value.GetValue<LcmMessage>();
+    const LcmMessage& message = abstract_value.get_value<LcmMessage>();
     const int message_length = message.getEncodedSize();
     message_bytes->resize(message_length);
     int consumed = message.encode(message_bytes->data(), 0, message_length);

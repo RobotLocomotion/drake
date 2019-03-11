@@ -22,8 +22,8 @@ void DoCompute(
   if (!GetDistinctVariables(a).empty()) {
     throw std::logic_error("Symbolic LDLT is not supported yet");
   }
-  double (*extractor)(const E&) = &drake::ExtractDoubleOrThrow;
-  const MatrixXd new_a = a.unaryExpr(extractor);
+  const MatrixXd new_a =
+      a.unaryExpr([](const E& e) { return drake::ExtractDoubleOrThrow(e); });
   auto ldlt = new_a.ldlt();
   *matrix = ldlt.matrixLDLT();
   *l1_norm = NAN;  // We could recompute this, if we really needed it.

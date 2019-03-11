@@ -145,7 +145,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @pre `port_index` selects an existing input port of this System.
   @pre the port's value must be retrievable from the stored abstract value
-       using `AbstractValue::GetValue<V>`.
+       using `AbstractValue::get_value<V>`.
 
   @tparam V The type of data expected. */
   template <typename V>
@@ -160,7 +160,7 @@ class SystemBase : public internal::SystemMessageInterface {
       return nullptr;  // An unconnected port.
 
     // We have a value, is it a V?
-    const V* const value = abstract_value->MaybeGetValue<V>();
+    const V* const value = abstract_value->maybe_get_value<V>();
     if (value == nullptr) {
       ThrowInputPortHasWrongType(__func__, port, NiceTypeName::Get<V>(),
                                  abstract_value->GetNiceTypeName());
@@ -646,10 +646,10 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns a ticket indicating dependence on all source values that may
   affect configuration-dependent computations. In particular, this category
-  _does not_ include time, generalized velocities v, or input ports.
-  Generalized coordinates q are included, as well as any discrete state
-  variables that have been declared as configuration variables, and
-  configuration-affecting parameters. Finally we assume that
+  _does not_ include time, generalized velocities v, miscellaneous continuous
+  state variables z, or input ports. Generalized coordinates q are included, as
+  well as any discrete state variables that have been declared as configuration
+  variables, and configuration-affecting parameters. Finally we assume that
   the accuracy setting may affect some configuration-dependent computations.
   Examples: a parameter that affects length may change the computation of an
   end-effector location. A change in accuracy requirement may require
@@ -658,8 +658,8 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @note Currently there is no way to declare specific variables and parameters
   to be configuration-affecting so we include all state variables and
-  parameters except for generalized velocities v. */
-  // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
+  parameters except for state variables v and z. */
+  // TODO(sherm1) Remove the above note once #9171 is resolved.
   // The configuration_tracker implementation in ContextBase must be kept
   // up to date with the above API contract.
   static DependencyTicket configuration_ticket() {
@@ -674,8 +674,8 @@ class SystemBase : public internal::SystemMessageInterface {
 
   @note Currently there is no way to declare specific variables and parameters
   to be configuration- or velocity-affecting so we include all state variables
-  and parameters. */
-  // TODO(sherm1) Remove the above bug notice once #9171 is resolved.
+  and parameters except for state variables z. */
+  // TODO(sherm1) Remove the above note once #9171 is resolved.
   static DependencyTicket kinematics_ticket() {
     return DependencyTicket(internal::kKinematicsTicket);
   }
@@ -1109,7 +1109,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
     const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    ValueType& typed_result = result->get_mutable_value<ValueType>();
     (this_ptr->*calc)(typed_context, &typed_result);
   };
   // Invoke the general signature above.
@@ -1146,7 +1146,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
     const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    ValueType& typed_result = result->get_mutable_value<ValueType>();
     (this_ptr->*calc)(typed_context, &typed_result);
   };
   auto& entry = DeclareCacheEntry(
@@ -1178,7 +1178,7 @@ const CacheEntry& SystemBase::DeclareCacheEntry(
   auto calc_callback = [this_ptr, calc](const ContextBase& context,
                                         AbstractValue* result) {
     const auto& typed_context = dynamic_cast<const MyContext&>(context);
-    ValueType& typed_result = result->GetMutableValue<ValueType>();
+    ValueType& typed_result = result->get_mutable_value<ValueType>();
     typed_result = (this_ptr->*calc)(typed_context);
   };
   auto& entry = DeclareCacheEntry(

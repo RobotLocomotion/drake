@@ -141,7 +141,7 @@ class LeafContextTest : public ::testing::Test {
                                          int index) {
     const FixedInputPortValue* free_value =
         context.MaybeGetFixedInputPortValue(InputPortIndex(index));
-    return free_value ? &free_value->get_value().GetValue<std::string>()
+    return free_value ? &free_value->get_value().get_value<std::string>()
                       : nullptr;
   }
 
@@ -234,7 +234,7 @@ void VerifyClonedState(const State<double>& clone) {
   }
 
   EXPECT_EQ(1, clone.get_abstract_state().size());
-  EXPECT_EQ(42, clone.get_abstract_state().get_value(0).GetValue<int>());
+  EXPECT_EQ(42, clone.get_abstract_state().get_value(0).get_value<int>());
   EXPECT_EQ(42, clone.get_abstract_state<int>(0));
 
   // Verify that the state type was preserved.
@@ -529,7 +529,7 @@ TEST_F(LeafContextTest, Clone) {
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
   EXPECT_EQ(42, context_.get_abstract_state<int>(0));
-  EXPECT_EQ(42, context_.get_abstract_state().get_value(0).GetValue<int>());
+  EXPECT_EQ(42, context_.get_abstract_state().get_value(0).get_value<int>());
   EXPECT_EQ(2048, clone->get_abstract_state<int>(0));
 
   // Verify that the parameters were copied.
@@ -547,7 +547,7 @@ TEST_F(LeafContextTest, Clone) {
   EXPECT_EQ(64.0, param1[3]);
   ASSERT_EQ(1, leaf_clone->num_abstract_parameters());
   EXPECT_TRUE(is_dynamic_castable<const TestAbstractType>(
-      &leaf_clone->get_abstract_parameter(0).GetValue<TestAbstractType>()));
+      &leaf_clone->get_abstract_parameter(0).get_value<TestAbstractType>()));
 
   // Verify that changes to the cloned parameters do not affect the originals.
   leaf_clone->get_mutable_numeric_parameter(0)[0] = 76.0;
@@ -660,7 +660,7 @@ void CheckAllCacheValuesUpToDateExcept(
   for (CacheIndex i(0); i < cache.cache_size(); ++i) {
     if (!cache.has_cache_entry_value(i)) continue;
     const CacheEntryValue& entry = cache.get_cache_entry_value(i);
-    EXPECT_EQ(entry.is_out_of_date(), !!should_be_out_of_date.count(i));
+    EXPECT_EQ(entry.is_out_of_date(), should_be_out_of_date.count(i) != 0) << i;
   }
 }
 
@@ -706,13 +706,23 @@ TEST_F(LeafContextTest, Invalidation) {
        depends[internal::kKinematicsTicket],
        depends[internal::kAllSourcesTicket]});
 
+  // This is everything that depends on generalized positions q.
+  const std::set<CacheIndex> q_dependent{
+      depends[internal::kQTicket], depends[internal::kXcTicket],
+      depends[internal::kXTicket], depends[internal::kConfigurationTicket],
+      depends[internal::kKinematicsTicket],
+      depends[internal::kAllSourcesTicket]};
+
+  // This is everything that depends on generalized velocities v and misc. z.
+  const std::set<CacheIndex> vz_dependent{
+      depends[internal::kVTicket], depends[internal::kZTicket],
+      depends[internal::kXcTicket], depends[internal::kXTicket],
+      depends[internal::kKinematicsTicket],
+      depends[internal::kAllSourcesTicket]};
+
   // This is everything that depends on continuous state.
-  const std::set<CacheIndex> xc_dependent
-      {depends[internal::kQTicket], depends[internal::kVTicket],
-       depends[internal::kZTicket], depends[internal::kXcTicket],
-       depends[internal::kXTicket], depends[internal::kConfigurationTicket],
-       depends[internal::kKinematicsTicket],
-       depends[internal::kAllSourcesTicket]};
+  std::set<CacheIndex> xc_dependent(q_dependent);
+  xc_dependent.insert(vz_dependent.cbegin(), vz_dependent.cend());
 
   // This is everything depends on continuous, discrete, or abstract state.
   std::set<CacheIndex> x_dependent(xc_dependent);
@@ -746,6 +756,39 @@ TEST_F(LeafContextTest, Invalidation) {
       context_.get_time() + 1.,
       context_.get_continuous_state_vector().CopyToVector());
   CheckAllCacheValuesUpToDateExcept(cache, t_and_xc_dependent);
+
+  context_.set_time(1.);
+  MarkAllCacheValuesUpToDate(&cache);
+  VectorBase<double>& xc1 =
+      context_.SetTimeAndGetMutableContinuousStateVector(2.);
+  CheckAllCacheValuesUpToDateExcept(cache, t_and_xc_dependent);
+  EXPECT_EQ(context_.get_time(), 2.);
+  EXPECT_EQ(&xc1, &context_.get_continuous_state_vector());
+
+  std::set<CacheIndex> t_and_q_dependent(q_dependent);
+  t_and_q_dependent.insert(depends[internal::kTimeTicket]);
+  MarkAllCacheValuesUpToDate(&cache);
+  VectorBase<double>& q1 = context_.SetTimeAndGetMutableQVector(3.);
+  CheckAllCacheValuesUpToDateExcept(cache, t_and_q_dependent);
+  EXPECT_EQ(context_.get_time(), 3.);
+  EXPECT_EQ(&q1, &context_.get_continuous_state().get_generalized_position());
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.SetTimeAndNoteContinuousStateChange(4.);
+  CheckAllCacheValuesUpToDateExcept(cache, t_and_xc_dependent);
+  EXPECT_EQ(context_.get_time(), 4.);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.NoteContinuousStateChange();
+  CheckAllCacheValuesUpToDateExcept(cache, xc_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  VectorBase<double>* v1{};
+  VectorBase<double>* z1{};
+  std::tie(v1, z1) = context_.GetMutableVZVectors();
+  CheckAllCacheValuesUpToDateExcept(cache, vz_dependent);
+  EXPECT_EQ(v1, &context_.get_continuous_state().get_generalized_velocity());
+  EXPECT_EQ(z1, &context_.get_continuous_state().get_misc_continuous_state());
 
   // Modify discrete state).
   const std::set<CacheIndex> xd_dependent

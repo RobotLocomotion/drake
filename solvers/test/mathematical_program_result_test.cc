@@ -67,6 +67,16 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       result.GetSolution(y), std::invalid_argument,
       "GetVariableValue: y is not captured by the variable_index map.");
+
+  // Get a solution of an Expression (with additional Variables).
+  const symbolic::Variable x_extra{"extra"};
+  const symbolic::Expression e{x0_ + x_extra};
+  EXPECT_TRUE(result.GetSolution(e).EqualTo(symbolic::Expression{x_val(0) +
+  x_extra}));
+  const Vector2<symbolic::Expression> m{x0_ + x_extra, x1_*x_extra};
+  const Vector2<symbolic::Expression> msol = result.GetSolution(m);
+  EXPECT_TRUE(msol[0].EqualTo(x_val(0) + x_extra));
+  EXPECT_TRUE(msol[1].EqualTo(x_val(1) * x_extra));
 }
 
 struct DummySolverDetails {

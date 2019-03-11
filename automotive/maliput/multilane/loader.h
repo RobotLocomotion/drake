@@ -282,10 +282,10 @@ std::unique_ptr<const api::RoadGeometry> LoadFile(
 /// A `connection` defines a `Segment` and must provide the number of lanes,
 /// start `endpoint` and end `endpoint_z` information. Either line `length` or
 /// `arc` must be provided to define the planar geometry of that `connection`.
-/// Optional extra information can also provided and it will modify the way the
-/// `connection` will be created. `connections` is a collection of `connection`s
-/// and those will be identified by their tag. Each tag will name a
-/// `connection`, can be referenced by other `connection`s and to create
+/// Optional extra information can also be provided and it will modify the way
+/// the `connection` will be created. `connections` is a collection of
+/// `connection`s and those will be identified by their tag. Each tag will name
+/// a `connection`, can be referenced by other `connection`s and to create
 /// `group`s, and will be used as `Segment`'s ID as well.
 ///
 /// `start` `endpoint` and `end` `endpoint_z` can either refer to a reference

@@ -160,7 +160,7 @@ void LcmSubscriberSystem::ProcessMessageAndStoreToAbstractState(
         &abstract_state->get_mutable_value(kStateIndexMessage));
   }
   abstract_state->get_mutable_value(kStateIndexMessageCount)
-      .GetMutableValue<int>() = received_message_count_;
+      .get_mutable_value<int>() = received_message_count_;
 }
 
 int LcmSubscriberSystem::GetMessageCount(const Context<double>& context) const {

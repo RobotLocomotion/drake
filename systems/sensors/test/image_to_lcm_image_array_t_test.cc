@@ -42,14 +42,8 @@ robotlocomotion::image_array_t SetUpInputAndOutput(
   context->FixInputPort(label_image_input_port.get_index(),
                         std::move(label_image_value));
 
-  auto output = dut->AllocateOutput();
-  dut->CalcOutput(*context, output.get());
-
-  auto output_image_array_t = output->get_data(
-      dut->image_array_t_msg_output_port().get_index())->GetValue<
-        robotlocomotion::image_array_t>();
-
-  return output_image_array_t;
+  return dut->image_array_t_msg_output_port().
+      Eval<robotlocomotion::image_array_t>(*context);
 }
 
 GTEST_TEST(ImageToLcmImageArrayT, ValidTest) {

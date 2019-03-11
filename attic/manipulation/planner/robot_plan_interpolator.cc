@@ -171,8 +171,7 @@ void RobotPlanInterpolator::DoCalcUnrestrictedUpdate(
   PlanData& plan =
       state->get_mutable_abstract_state<PlanData>(kAbsStateIdxPlan);
   const robot_plan_t& plan_input =
-      this->EvalAbstractInput(context, plan_input_port_)
-          ->GetValue<robot_plan_t>();
+      get_plan_input_port().Eval<robot_plan_t>(context);
 
   // I (sam.creasey) wish I could think of a more effective way to
   // determine that a new message has arrived, but unfortunately

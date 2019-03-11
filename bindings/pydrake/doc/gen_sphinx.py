@@ -109,6 +109,9 @@ def main():
     input_dir = dirname(abspath(__file__))
     gen_main(
         input_dir=input_dir, strict=False, src_func=write_doc_modules)
+    # TODO(eric.cousineau): Do some simple linting if this is run under
+    # `bazel test` (e.g. scan for instances of `TemporaryName`, scan for raw
+    # C++ types in type signatures, etc).
 
 
 if __name__ == "__main__":

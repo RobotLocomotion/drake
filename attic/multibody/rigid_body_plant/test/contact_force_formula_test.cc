@@ -81,7 +81,7 @@ class ContactFormulaTest : public ::testing::Test {
 
     plant_->CalcOutput(*context_.get(), output_.get());
     contacts_ =
-        output_->get_data(port_index)->GetValue<ContactResults<double>>();
+        output_->get_data(port_index)->get_value<ContactResults<double>>();
   }
 
   // Interprets the velocity of sphere 2 as the rate of change of penetration.

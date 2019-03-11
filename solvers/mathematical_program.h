@@ -2243,13 +2243,10 @@ class MathematicalProgram {
   /**
    * Adds constraints that a given polynomial @p p is a sums-of-squares (SOS),
    * that is, @p p can be decomposed into `mᵀQm`, where m is the @p
-   * monomial_basis. It returns a pair expressing:
-   *
-   *  - The coefficients matrix Q, which is positive semidefinite.
-   *  - The coefficients matching conditions in linear equality constraint.
+   * monomial_basis. It returns the coefficients matrix Q, which is positive
+   * semidefinite.
    */
-  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
-  AddSosConstraint(
+  MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Polynomial& p,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
 
@@ -2260,9 +2257,9 @@ class MathematicalProgram {
    * TotalDegree of @p p. It returns a pair of constraint bindings expressing:
    *
    *  - The coefficients matrix Q, which is positive semidefinite.
-   *  - The coefficients matching conditions in linear equality constraint.
+   *  - The monomial basis m.
    */
-  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
+  std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
   AddSosConstraint(const symbolic::Polynomial& p);
 
   /**
@@ -2270,27 +2267,23 @@ class MathematicalProgram {
    * sums-of-squares (SOS), that is, @p p can be decomposed into `mᵀQm`,
    * where m is the @p monomial_basis.  Note that it decomposes @p e into a
    * polynomial with respect to `indeterminates()` in this mathematical
-   * program. It returns a pair of constraint bindings expressing:
-   *
-   *  - The coefficients matrix Q, which is positive semidefinite.
-   *  - The coefficients matching conditions in linear equality constraint.
+   * program. It returns the coefficients matrix Q, which is positive
+   * semidefinite.
    */
-  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
-  AddSosConstraint(
+  MatrixXDecisionVariable AddSosConstraint(
       const symbolic::Expression& e,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis);
 
   /**
    * Adds constraints that a given symbolic expression @p e is a sums-of-squares
-   * (SOS), that is, @p e can be decomposed into `mTQm`. Note that it decomposes
+   * (SOS), that is, @p e can be decomposed into `mᵀQm`. Note that it decomposes
    * @p e into a polynomial with respect to `indeterminates()` in this
-   * mathematical program. It returns a pair of
-   * constraint bindings expressing:
+   * mathematical program. It returns a pair expressing:
    *
    *  - The coefficients matrix Q, which is positive semidefinite.
-   *  - The coefficients matching conditions in linear equality constraint.
+   *  - The monomial basis m.
    */
-  std::pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
+  std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
   AddSosConstraint(const symbolic::Expression& e);
 
   // template <typename FunctionType>

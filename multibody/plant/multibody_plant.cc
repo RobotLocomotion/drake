@@ -1848,7 +1848,7 @@ void MultibodyPlant<T>::DeclareSceneGraphPorts() {
   typename systems::LeafOutputPort<T>::CalcCallback pose_callback = [this](
       const Context<T>& context, AbstractValue* value) {
     this->CalcFramePoseOutput(
-        context, &value->GetMutableValue<FramePoseVector<T>>());
+        context, &value->get_mutable_value<FramePoseVector<T>>());
   };
   geometry_pose_port_ = this->DeclareAbstractOutputPort(
       "geometry_pose", pose_alloc, pose_callback).get_index();

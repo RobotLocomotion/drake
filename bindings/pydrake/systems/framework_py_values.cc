@@ -82,7 +82,8 @@ void DefineFrameworkPyValues(py::module m) {
             [](BasicVector<T>* self, int index) -> T& {
               return self->GetAtIndex(index);
             },
-            py_reference_internal, doc.BasicVector.GetAtIndex.doc);
+            py_reference_internal, doc.BasicVector.GetAtIndex.doc)
+        .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
         m, "Supervector", GetPyParam<T>(), doc.Supervector.doc);
@@ -109,9 +110,7 @@ void DefineFrameworkPyValues(py::module m) {
   py::class_<AbstractValue> abstract_value(m, "AbstractValue");
   DefClone(&abstract_value);
   abstract_value
-      // Only bind the exception variant, `SetFromOrThrow`, for use in Python.
-      // Otherwise, a user could encounter undefind behavior via `SetFrom`.
-      .def("SetFrom", &AbstractValue::SetFromOrThrow,
+      .def("SetFrom", &AbstractValue::SetFrom,
           pydrake_doc.drake.AbstractValue.SetFrom.doc)
       .def("get_value", abstract_stub("get_value"),
           pydrake_doc.drake.AbstractValue.GetValue.doc)

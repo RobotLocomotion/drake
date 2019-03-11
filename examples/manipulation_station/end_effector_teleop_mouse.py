@@ -2,7 +2,8 @@ import argparse
 import numpy as np
 
 from pydrake.examples.manipulation_station import (
-    ManipulationStation, ManipulationStationHardwareInterface)
+    ManipulationStation, ManipulationStationHardwareInterface,
+    CreateDefaultYcbObjectList)
 from pydrake.geometry import ConnectDrakeVisualizer
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.manipulation.planner import (
@@ -278,6 +279,9 @@ else:
         station.SetupDefaultStation()
     elif args.setup == 'clutter_clearing':
         station.SetupClutterClearingStation()
+        ycb_objects = CreateDefaultYcbObjectList()
+        for model_file, X_WObject in ycb_objects:
+            station.AddManipulandFromFile(model_file, X_WObject)
 
     station.Finalize()
     ConnectDrakeVisualizer(builder, station.get_scene_graph(),

@@ -39,6 +39,7 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<Context<double>> MakePlantContext() const {
     std::unique_ptr<Context<double>> context =
         plant_->CreateDefaultContext();
+    context->EnableCaching();
 
     // Set body linear and angular velocity.
     Vector3<double> v0(1., 2., 3.);    // Linear velocity in body's frame.
@@ -152,6 +153,7 @@ TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
 // Tests accuracy of integrator's dense output.
 TEST_F(RK3IntegratorTest, DenseOutputAccuracy) {
   std::unique_ptr<Context<double>> context = MakePlantContext();
+
   RungeKutta3Integrator<double> rk3(*plant_, context.get());
   rk3.set_maximum_step_size(0.1);
   rk3.set_target_accuracy(1e-6);

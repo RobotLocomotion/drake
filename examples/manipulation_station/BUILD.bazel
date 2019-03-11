@@ -24,6 +24,7 @@ drake_cc_library(
         ":models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/ycb:models",
     ],
     visibility = ["//visibility:public"],
     deps = [

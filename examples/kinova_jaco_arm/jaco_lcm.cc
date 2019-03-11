@@ -58,7 +58,7 @@ void JacoCommandReceiver::DoCalcDiscreteVariableUpdates(
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
-  const auto& command = input->GetValue<lcmt_jaco_command>();
+  const auto& command = input->get_value<lcmt_jaco_command>();
 
   // If we're using a default constructed message (haven't received
   // a command yet), keep using the initial state.
@@ -143,7 +143,7 @@ void JacoStatusReceiver::DoCalcDiscreteVariableUpdates(
     DiscreteValues<double>* discrete_state) const {
   const AbstractValue* input = this->EvalAbstractInput(context, 0);
   DRAKE_ASSERT(input != nullptr);
-  const auto& status = input->GetValue<lcmt_jaco_status>();
+  const auto& status = input->get_value<lcmt_jaco_status>();
 
   BasicVector<double>& state = discrete_state->get_mutable_vector(0);
   auto state_value = state.get_mutable_value();

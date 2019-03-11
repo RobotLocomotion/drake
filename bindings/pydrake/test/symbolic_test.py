@@ -906,6 +906,12 @@ class TestSymbolicPolynomial(SymbolicTestCase):
         p.AddProduct(sym.Expression(3), m)  # p += 3 * x
         self.assertEqualStructure(p.ToExpression(), 3 * x)
 
+    def test_remove_terms_with_small_coefficients(self):
+        e = 3 * x + 1e-12 * y
+        p = sym.Polynomial(e, [x, y])
+        q = p.RemoveTermsWithSmallCoefficients(1e-6)
+        self.assertEqualStructure(q.ToExpression(), 3 * x)
+
     def test_comparison(self):
         p = sym.Polynomial()
         self.assertEqualStructure(p, p)
@@ -992,6 +998,34 @@ class TestSymbolicPolynomial(SymbolicTestCase):
         self.assertEqualStructure(J[0], p_dx)
         self.assertEqualStructure(J[1], p_dy)
 
+    def test_matrix_evaluate_without_env(self):
+        m = np.array([[3, 4]])
+        evaluated1 = sym.Evaluate(m)
+        evaluated2 = sym.Evaluate(m=m)
+        self.assertTrue(np.array_equal(evaluated1, m))
+        self.assertTrue(np.array_equal(evaluated2, m))
+
+    def test_matrix_evaluate_with_env(self):
+        m = np.array([[x + y, x * y]])
+        env = {x: 3.0,
+               y: 4.0}
+        expected = np.array([[m[0, 0].Evaluate(env),
+                              m[0, 1].Evaluate(env)]])
+        evaluated1 = sym.Evaluate(m, env)
+        evaluated2 = sym.Evaluate(m=m, env=env)
+        self.assertTrue(np.array_equal(evaluated1, expected))
+        self.assertTrue(np.array_equal(evaluated2, expected))
+
+    def test_matrix_evaluate_with_random_generator(self):
+        u = sym.Variable("uni", sym.Variable.Type.RANDOM_UNIFORM)
+        m = np.array([[x + u, x - u]])
+        env = {x: 3.0}
+        g = pydrake.common.RandomGenerator()
+        evaluated1 = sym.Evaluate(m, env, g)
+        evaluated2 = sym.Evaluate(m=m, env=env, generator=g)
+        self.assertEqual(evaluated1[0, 0] + evaluated1[0, 1], 2 * env[x])
+        self.assertEqual(evaluated2[0, 0] + evaluated2[0, 1], 2 * env[x])
+
     def test_hash(self):
         p1 = sym.Polynomial(x * x, [x])
         p2 = sym.Polynomial(x * x, [x])
@@ -1001,7 +1035,7 @@ class TestSymbolicPolynomial(SymbolicTestCase):
         self.assertNotEqualStructure(p1, p2)
         self.assertNotEqual(hash(p1), hash(p2))
 
-    def test_evaluate(self):
+    def test_polynomial_evaluate(self):
         p = sym.Polynomial(a * x * x + b * x + c, [x])
         env = {a: 2.0,
                b: 3.0,

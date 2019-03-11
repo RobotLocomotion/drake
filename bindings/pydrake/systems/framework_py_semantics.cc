@@ -471,6 +471,7 @@ void DefineFrameworkPySemantics(py::module m) {
     DefineTemplateClassWithDefault<ContinuousState<T>>(
         m, "ContinuousState", GetPyParam<T>(), doc.ContinuousState.doc)
         .def(py::init<>(), doc.ContinuousState.ctor.doc_0args)
+        .def("size", &ContinuousState<T>::size, doc.ContinuousState.size.doc)
         .def("get_vector", &ContinuousState<T>::get_vector,
             py_reference_internal, doc.ContinuousState.get_vector.doc)
         .def("get_mutable_vector", &ContinuousState<T>::get_mutable_vector,

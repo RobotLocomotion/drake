@@ -34,7 +34,7 @@ GTEST_TEST(ContactResultToLcmSystem, EmptyMultibodyPlant) {
                                                 &lcm_message_value);
 
   const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.GetValue<lcmt_contact_results_for_viz>();
+      lcm_message_value.get_value();
 
   // We haven't stepped, so we should assume the time is the context's default
   // value.
@@ -88,7 +88,7 @@ GTEST_TEST(ContactResultToLcmSystem, NonEmptyMultibodyPlantEmptyContact) {
   lcm_system.get_lcm_message_output_port().Calc(*lcm_context,
                                                 &lcm_message_value);
   const lcmt_contact_results_for_viz& lcm_message =
-      lcm_message_value.GetValue<lcmt_contact_results_for_viz>();
+      lcm_message_value.get_value();
 
   // We haven't stepped, so we should assume the time is the context's default
   // value.

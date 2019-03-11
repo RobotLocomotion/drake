@@ -95,7 +95,7 @@ void HumanoidManipulationPlan<T>::HandlePlanGenericPlanDerived(
     const AbstractValue& plan) {
   unused(paramset);
 
-  const auto& msg = plan.GetValueOrThrow<robotlocomotion::robot_plan_t>();
+  const auto& msg = plan.get_value<robotlocomotion::robot_plan_t>();
 
   if (msg.utime == last_handle_plan_time_) return;
 

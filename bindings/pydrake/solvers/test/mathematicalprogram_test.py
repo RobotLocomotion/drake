@@ -98,7 +98,13 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
         self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
 
-    # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
+        self.assertTrue(result.GetSolution(
+            sym.Expression(qp.x[0])).EqualTo(1.))
+        m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
+        self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
+            result.GetSolution(qp.x[1])))
+
+# TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
     # perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):

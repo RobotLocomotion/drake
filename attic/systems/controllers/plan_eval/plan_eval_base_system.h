@@ -108,7 +108,7 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
                                    int index) const {
     return state->get_mutable_abstract_state()
         .get_mutable_value(index)
-        .GetMutableValue<Type>();
+        .get_mutable_value<Type>();
   }
 
   /**
@@ -118,7 +118,8 @@ class PlanEvalBaseSystem : public systems::LeafSystem<double> {
       systems::State<double>* state) const {
     return state->get_mutable_abstract_state()
         .get_mutable_value(abs_state_index_qp_input_)
-        .GetMutableValue<systems::controllers::qp_inverse_dynamics::QpInput>();
+        .get_mutable_value<
+            systems::controllers::qp_inverse_dynamics::QpInput>();
   }
 
  private:

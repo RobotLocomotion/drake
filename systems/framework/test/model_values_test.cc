@@ -29,7 +29,7 @@ GTEST_TEST(ModelValuesTest, AbstractValueTest) {
   EXPECT_EQ(dut.CloneModel(0).get(), nullptr);
   auto abstract_value = dut.CloneModel(1);
   ASSERT_NE(abstract_value.get(), nullptr);
-  EXPECT_EQ(abstract_value->GetValueOrThrow<int>(), 11);
+  EXPECT_EQ(abstract_value->get_value<int>(), 11);
 
   // Repeated clones work fine.
   ASSERT_NE(dut.CloneModel(1).get(), nullptr);
@@ -39,9 +39,9 @@ GTEST_TEST(ModelValuesTest, AbstractValueTest) {
   dut.AddModel(99, std::make_unique<Value<int>>(999));
   EXPECT_EQ(dut.size(), 100);
   EXPECT_EQ(dut.CloneModel(0).get(), nullptr);
-  EXPECT_EQ(dut.CloneModel(1)->GetValueOrThrow<int>(), 11);
+  EXPECT_EQ(dut.CloneModel(1)->get_value<int>(), 11);
   EXPECT_EQ(dut.CloneModel(50).get(), nullptr);
-  EXPECT_EQ(dut.CloneModel(99)->GetValueOrThrow<int>(), 999);
+  EXPECT_EQ(dut.CloneModel(99)->get_value<int>(), 999);
 
   // Unknown indices are nullptr.
   EXPECT_EQ(dut.CloneModel(1000000).get(), nullptr);
@@ -51,9 +51,9 @@ GTEST_TEST(ModelValuesTest, AbstractValueTest) {
   EXPECT_EQ(cloned_vec.size(), 100);
   for (int i = 0; i < 100; ++i) {
     if (i == 1) {
-      EXPECT_EQ(cloned_vec[i]->GetValueOrThrow<int>(), 11);
+      EXPECT_EQ(cloned_vec[i]->get_value<int>(), 11);
     } else if (i == 99) {
-      EXPECT_EQ(cloned_vec[i]->GetValueOrThrow<int>(), 999);
+      EXPECT_EQ(cloned_vec[i]->get_value<int>(), 999);
     } else {
       EXPECT_EQ(cloned_vec[i].get(), nullptr);
     }
@@ -78,7 +78,7 @@ GTEST_TEST(ModelValuesTest, VectorValueTest) {
   EXPECT_EQ(dut.CloneVectorModel<double>(4).get(), nullptr);
 
   // The AbstractValue is still okay.
-  EXPECT_EQ(dut.CloneModel(1)->GetValueOrThrow<int>(), 11);
+  EXPECT_EQ(dut.CloneModel(1)->get_value<int>(), 11);
 
   // Some BasicVector access patterns are okay.
   EXPECT_EQ(dut.CloneVectorModel<double>(3)->size(), 2);

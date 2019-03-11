@@ -70,7 +70,7 @@ class FramePoseTrackerTest : public ::testing::Test {
       const KinematicsResults<double>& input_results) {
     std::unique_ptr<AbstractValue> input(
         new Value<KinematicsResults<double>>(tree_.get()));
-    input->SetValue(input_results);
+    input->set_value(input_results);
 
     auto context_ = dut.CreateDefaultContext();
     auto output_ = dut.AllocateOutput();
@@ -83,7 +83,7 @@ class FramePoseTrackerTest : public ::testing::Test {
     auto output_value =
         output_->get_data(dut.get_pose_vector_output_port_index());
 
-    return output_value->GetValue<geometry::FramePoseVector<double>>();
+    return output_value->get_value<geometry::FramePoseVector<double>>();
   }
 
   std::unique_ptr<RigidBodyTree<double>> tree_;

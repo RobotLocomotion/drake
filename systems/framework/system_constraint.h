@@ -126,8 +126,6 @@ using SystemConstraintCalc =
 /// system will satisfy the following (in)equalities".  Examples could
 /// include conserved quantities or joint limits on a mechanism.
 ///
-/// TODO(hongkai.dai): this class can be used to generate solvers::Constraint.
-///
 /// This class is intentionally similar to, but (so far) independent from
 /// solvers::Constraint. This is primarily because there is no notion of
 /// decision variables in the system classes (yet); rather each individual
@@ -136,6 +134,9 @@ using SystemConstraintCalc =
 /// is being formulated, and must bind the system constraint to those variables
 /// (e.g. by populating the Context with the decision variables and calling
 /// Calc).
+///
+/// We can convert a SystemConstraint to a solvers::Constraint by using
+/// SystemConstraintWrapper or SystemConstraintAdapter.
 ///
 /// @see LeafSystem<T>::DeclareEqualityConstraint and
 ///      LeafSystem<T>::DeclareInequalityConstraint for use cases.

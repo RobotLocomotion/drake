@@ -1864,7 +1864,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
       State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
-                            .GetMutableValue<double>();
+                            .get_mutable_value<double>();
     state_num = id_ + context.get_time();
   }
 

@@ -80,12 +80,6 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
     }
   }
 
-  void SetFromOrThrow(const AbstractValue& other) override {
-    if (!do_double_assign(other)) {
-      Value<GeometryState<T>>::SetFromOrThrow(other);
-    }
-  }
-
  private:
   bool do_double_assign(const AbstractValue& other) {
     const GeometryStateValue<double>* double_value =
@@ -106,7 +100,7 @@ template <typename T>
 SceneGraph<T>::SceneGraph()
     : LeafSystem<T>(SystemTypeTag<geometry::dev::SceneGraph>{}) {
   auto state_value = make_unique<GeometryStateValue<T>>();
-  initial_state_ = &state_value->template GetMutableValue<GeometryState<T>>();
+  initial_state_ = &state_value->get_mutable_value();
   model_inspector_.set(initial_state_);
   geometry_state_index_ = this->DeclareAbstractState(std::move(state_value));
 

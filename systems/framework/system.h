@@ -107,7 +107,7 @@ class System : public SystemBase {
     DRAKE_ASSERT(index >= 0 && index < get_num_input_ports());
     DRAKE_ASSERT(get_input_port(index).get_data_type() == kVectorValued);
     std::unique_ptr<AbstractValue> value = DoAllocateInput(input_port);
-    return value->GetMutableValue<BasicVector<T>>().Clone();
+    return value->get_value<BasicVector<T>>().Clone();
   }
 
   /// Given an input port, allocates the abstract storage.  The @p input_port
@@ -1685,7 +1685,8 @@ class System : public SystemBase {
     CacheEntry::CalcCallback calc_derivatives = [this](
         const ContextBase& context_base, AbstractValue* result) {
       DRAKE_DEMAND(result != nullptr);
-      ContinuousState<T>& state = result->GetMutableValue<ContinuousState<T>>();
+      ContinuousState<T>& state =
+          result->get_mutable_value<ContinuousState<T>>();
       const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
       CalcTimeDerivatives(context, &state);
     };
@@ -2191,7 +2192,7 @@ class System : public SystemBase {
         return [expected_size, port_index, path_name, port_name](
             const AbstractValue& actual) {
           const BasicVector<T>* const actual_vector =
-              actual.MaybeGetValue<BasicVector<T>>();
+              actual.maybe_get_value<BasicVector<T>>();
           if (actual_vector == nullptr) {
             SystemBase::ThrowInputPortHasWrongType(
                 "FixInputPortTypeCheck", path_name, port_index, port_name,
@@ -2238,15 +2239,13 @@ class System : public SystemBase {
     }
 
     // We have a vector port with a value, it better be a BasicVector!
-    const BasicVector<T>* const basic_value =
-        abstract_value->MaybeGetValue<BasicVector<T>>();
-    DRAKE_DEMAND(basic_value != nullptr);
+    const auto* basic_vector = &abstract_value->get_value<BasicVector<T>>();
 
     // Shouldn't have been possible to create this vector-valued port with
     // the wrong size.
-    DRAKE_DEMAND(basic_value->size() == port.size());
+    DRAKE_DEMAND(basic_vector->size() == port.size());
 
-    return basic_value;
+    return basic_vector;
   }
 
   // The constraints_ vector encompass all constraints on this system, whether
