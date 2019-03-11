@@ -140,7 +140,7 @@ PYBIND11_MODULE(geometry, m) {
       .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
           doc.PenetrationAsPointPair.depth.doc);
 
-  // Very primitive exposure of Shape constructors.
+  // Shape constructors
   {
     py::class_<Shape>(m, "Shape", doc.Shape.ctor.doc);
     py::class_<Sphere, Shape>(m, "Sphere")
