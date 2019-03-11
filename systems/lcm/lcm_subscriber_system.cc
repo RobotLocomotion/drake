@@ -279,29 +279,8 @@ void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
 
 int LcmSubscriberSystem::WaitForMessage(
     int old_message_count, AbstractValue* message) const {
-  DRAKE_ASSERT(serializer_ != nullptr);
-
-  // The message buffer and counter are updated in HandleMessage(), which is
-  // a callback function invoked by a different thread owned by the
-  // drake::lcm::DrakeLcmInterface instance passed to the constructor. Thus,
-  // for thread safety, these need to be properly protected by a mutex.
-  std::unique_lock<std::mutex> lock(received_message_mutex_);
-
-  // This while loop is necessary to guard for spurious wakeup:
-  // https://en.wikipedia.org/wiki/Spurious_wakeup
-  while (old_message_count >= received_message_count_) {
-    // When wait returns, lock is atomically acquired. So it's thread safe to
-    // read received_message_count_.
-    received_message_condition_variable_.wait(lock);
-  }
-  int new_message_count = received_message_count_;
-  if (message) {
-      serializer_->Deserialize(
-          received_message_.data(), received_message_.size(), message);
-  }
-  lock.unlock();
-
-  return new_message_count;
+  return WaitForMessageTimeout(old_message_count,
+      std::chrono::duration<double>::max(), message);
 }
 
 int LcmSubscriberSystem::WaitForMessageTimeout(
@@ -310,6 +289,10 @@ int LcmSubscriberSystem::WaitForMessageTimeout(
   DRAKE_ASSERT(serializer_ != nullptr);
 
   auto wakeup = std::chrono::steady_clock::now() + timeout;
+  // Prevent overflow of the time_point if duration was max.
+  if (timeout == std::chrono::duration<double>::max()) {
+    wakeup = std::chrono::time_point<std::chrono::steady_clock>::max();
+  }
 
   // The message buffer and counter are updated in HandleMessage(), which is
   // a callback function invoked by a different thread owned by the
@@ -325,19 +308,15 @@ int LcmSubscriberSystem::WaitForMessageTimeout(
         == std::cv_status::timeout &&
         old_message_count >= received_message_count_) {
       // If a timeout occurred without meeting the message goal, then return
-      int new_message_count = received_message_count_;
-      lock.unlock();
-      return new_message_count;
+      return received_message_count_;
     }
   }
-  int new_message_count = received_message_count_;
   if (message) {
       serializer_->Deserialize(
           received_message_.data(), received_message_.size(), message);
   }
-  lock.unlock();
 
-  return new_message_count;
+  return received_message_count_;
 }
 
 int LcmSubscriberSystem::GetInternalMessageCount() const {
