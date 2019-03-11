@@ -73,7 +73,7 @@ TEST_F(ParametersTest, Clone) {
   clone->get_mutable_numeric_parameter(0).SetAtIndex(1, 42.0);
   EXPECT_EQ(6.0, params_->get_numeric_parameter(0).GetAtIndex(1));
   // - abstract
-  clone->get_mutable_abstract_parameter(0).SetValue<int>(256);
+  clone->get_mutable_abstract_parameter(0).set_value<int>(256);
   EXPECT_EQ(72, UnpackIntValue(params_->get_abstract_parameter(0)));
 }
 

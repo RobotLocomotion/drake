@@ -57,7 +57,7 @@ class MyOutputPort : public OutputPort<double> {
   void DoCalc(const Context<double>& diagram_context,
               AbstractValue* value) const override {
     EXPECT_NE(value, nullptr);
-    EXPECT_NO_THROW(value->SetValueOrThrow<BasicVector<double>>(
+    EXPECT_NO_THROW(value->set_value<BasicVector<double>>(
         MyVector2d(Vector2d(3., 4.))));
   }
 
@@ -171,14 +171,14 @@ unique_ptr<AbstractValue> alloc_myvector3() {
 // CalcCallback that expects to have a string to write on.
 void calc_string(const ContextBase&, AbstractValue* value) {
   ASSERT_NE(value, nullptr);
-  string& str_value = value->GetMutableValueOrThrow<string>();
+  string& str_value = value->get_mutable_value<string>();
   str_value = "from calc_string";
 }
 
 // CalcVectorCallback sets the 3-element output vector to 99,100,101.
 void calc_vector3(const ContextBase&, AbstractValue* value) {
   ASSERT_NE(value, nullptr);
-  auto& vec = value->template GetMutableValueOrThrow<BasicVector<double>>();
+  auto& vec = value->template get_mutable_value<BasicVector<double>>();
   EXPECT_EQ(vec.size(), 3);
   vec.set_value(Vector3d(99., 100., 101.));
 }
@@ -219,12 +219,12 @@ void AbstractPortCheck(const Context<double>& context,
                        const LeafOutputPort<double>& port,
                        string alloc_string) {
   unique_ptr<AbstractValue> val = port.Allocate();
-  EXPECT_EQ(val->GetValueOrThrow<string>(), alloc_string);
+  EXPECT_EQ(val->get_value<string>(), alloc_string);
   port.Calc(context, val.get());
   const string new_value("from calc_string");
-  EXPECT_EQ(val->GetValueOrThrow<string>(), new_value);
+  EXPECT_EQ(val->get_value<string>(), new_value);
   EXPECT_EQ(port.Eval<string>(context), new_value);
-  EXPECT_EQ(port.Eval<AbstractValue>(context).GetValueOrThrow<string>(),
+  EXPECT_EQ(port.Eval<AbstractValue>(context).get_value<string>(),
             new_value);
 
   // Can't Eval into the wrong type.
@@ -246,7 +246,7 @@ void VectorPortCheck(const Context<double>& context,
   // Treat the vector-valued port as a BasicVector, which
   // should have MyVector3d as concrete type.
   unique_ptr<AbstractValue> val = port.Allocate();
-  auto& basic = val->template GetMutableValueOrThrow<BasicVector<double>>();
+  auto& basic = val->template get_mutable_value<BasicVector<double>>();
   MyVector3d& myvector3 = dynamic_cast<MyVector3d&>(basic);
   EXPECT_EQ(basic.get_value(), alloc_value);
   EXPECT_EQ(myvector3.get_value(), alloc_value);
@@ -265,7 +265,7 @@ void VectorPortCheck(const Context<double>& context,
   EXPECT_EQ(eval_basic.CopyToVector(), new_value);
   EXPECT_EQ(eval_myvec3.CopyToVector(), new_value);
   EXPECT_EQ(
-      eval_abs.GetValueOrThrow<BasicVector<double>>().CopyToVector(),
+      eval_abs.get_value<BasicVector<double>>().CopyToVector(),
       new_value);
 }
 
@@ -383,8 +383,8 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
   auto value1 = out1.Allocate();
   const int* int0{};
   const int* int1{};
-  EXPECT_NO_THROW(int0 = &value0->GetValueOrThrow<int>());
-  EXPECT_NO_THROW(int1 = &value1->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(int0 = &value0->get_value<int>());
+  EXPECT_NO_THROW(int1 = &value1->get_value<int>());
   EXPECT_EQ(*int0, 0);  // Default value initialized.
   EXPECT_EQ(*int1, 0);
   out0.Calc(*context, value0.get());
@@ -405,9 +405,9 @@ GTEST_TEST(DiagramOutputPortTest, Nested) {
   const int* int0{};
   const int* int1{};
   const int* int2{};
-  EXPECT_NO_THROW(int0 = &value0->GetValueOrThrow<int>());
-  EXPECT_NO_THROW(int1 = &value1->GetValueOrThrow<int>());
-  EXPECT_NO_THROW(int2 = &value2->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(int0 = &value0->get_value<int>());
+  EXPECT_NO_THROW(int1 = &value1->get_value<int>());
+  EXPECT_NO_THROW(int2 = &value2->get_value<int>());
   EXPECT_EQ(*int0, 0);  // Default value initialized.
   EXPECT_EQ(*int1, 0);
   EXPECT_EQ(*int2, 0);

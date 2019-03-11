@@ -66,7 +66,7 @@ GTEST_TEST(MyVectorTest, Clone) {
 
   // Value<T> requires that T be copyable or cloneable.
   auto abstract3 = AbstractValue::Make(vector3);
-  auto& casted3 = abstract3->GetValueOrThrow<MyVector3d>();
+  auto& casted3 = abstract3->get_value<MyVector3d>();
   EXPECT_EQ(casted3.get_value(), vector3.get_value());
 
   // copyable_unique_ptr<T> requires that T be copyable or cloneable.

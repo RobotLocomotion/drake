@@ -88,8 +88,7 @@ ModelValues::CloneVectorModel(int index) const {
   if (abstract_result.get() == nullptr) {
     return nullptr;
   }
-  const BasicVector<T>& basic_vector =
-      abstract_result->GetValueOrThrow<BasicVector<T>>();
+  const auto& basic_vector = abstract_result->get_value<BasicVector<T>>();
   return basic_vector.Clone();
 }
 

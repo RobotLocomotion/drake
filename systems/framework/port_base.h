@@ -133,7 +133,7 @@ class PortBase {
 // Keep this inlineable.  Error reporting should happen in a separate method.
 template <typename ValueType>
 const ValueType& PortBase::PortEvalCast(const AbstractValue& abstract) const {
-  const ValueType* const value = abstract.MaybeGetValue<ValueType>();
+  const ValueType* const value = abstract.maybe_get_value<ValueType>();
   if (!value) {
     ThrowBadCast<ValueType>(abstract);
   }

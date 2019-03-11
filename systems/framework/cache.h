@@ -187,7 +187,7 @@ class CacheEntryValue {
   template <typename V>
   V& GetMutableValueOrThrow() {
     AbstractValue& value = GetMutableAbstractValueOrThrowHelper(__func__);
-    return value.GetMutableValueOrThrow<V>();
+    return value.get_mutable_value<V>();
   }
 
   /** (Advanced) Returns a reference to the contained value _without_ checking
@@ -210,7 +210,7 @@ class CacheEntryValue {
   template <typename V>
   const V& PeekValueOrThrow() const {
     ThrowIfNoValuePresent(__func__);
-    return value_->GetMutableValueOrThrow<V>();
+    return value_->get_value<V>();
   }
   //@}
 
@@ -251,7 +251,7 @@ class CacheEntryValue {
 #ifdef DRAKE_ASSERT_IS_ARMED
     return GetValueOrThrowHelper<V>(__func__);
 #else
-    return value_->GetValue<V>();
+    return value_->get_value<V>();
 #endif
   }
 
@@ -270,7 +270,7 @@ class CacheEntryValue {
 #ifdef DRAKE_ASSERT_IS_ARMED
     SetValueOrThrowHelper<V>(__func__, new_value);
 #else
-    value_->SetValue<V>(new_value);
+    value_->set_value<V>(new_value);
 #endif
     ++serial_number_;
     mark_up_to_date();
@@ -496,7 +496,7 @@ class CacheEntryValue {
   // Adds a check on the concrete value type also.
   template <typename T>
   const T& GetValueOrThrowHelper(const char* api) const {
-    return GetAbstractValueOrThrowHelper(api).GetValueOrThrow<T>();
+    return GetAbstractValueOrThrowHelper(api).get_value<T>();
   }
 
   // Fully-checked method with API name to use in error messages.
@@ -504,7 +504,7 @@ class CacheEntryValue {
   void SetValueOrThrowHelper(const char* api, const T& new_value) const {
     ThrowIfNoValuePresent(api);
     ThrowIfAlreadyComputed(api);
-    return value_->SetValueOrThrow<T>(new_value);
+    return value_->set_value<T>(new_value);
   }
 
   void ThrowIfNoValuePresent(const char* api) const {

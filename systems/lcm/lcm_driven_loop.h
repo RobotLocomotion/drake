@@ -40,7 +40,7 @@ class UtimeMessageToSeconds : public LcmMessageToTimeInterface {
   ~UtimeMessageToSeconds() {}
 
   double GetTimeInSeconds(const AbstractValue& abstract_value) const override {
-    const MessageType& msg = abstract_value.GetValue<MessageType>();
+    const MessageType& msg = abstract_value.get_value<MessageType>();
     return static_cast<double>(msg.utime) / 1e6;
   }
 };

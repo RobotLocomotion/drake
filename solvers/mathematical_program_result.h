@@ -122,7 +122,7 @@ class MathematicalProgramResult final {
   template <typename Solver>
   const typename Solver::Details& get_solver_details() const {
     return get_abstract_solver_details().
-        template GetValueOrThrow<typename Solver::Details>();
+        template get_value<typename Solver::Details>();
   }
 
   /** (Advanced.) Gets the type-erased solver details. Most users should use
@@ -146,7 +146,7 @@ class MathematicalProgramResult final {
         (solver_details_->static_type_info() != typeid(T))) {
       solver_details_ = std::make_unique<Value<T>>();
     }
-    return solver_details_->GetMutableValue<T>();
+    return solver_details_->get_mutable_value<T>();
   }
 
   /**

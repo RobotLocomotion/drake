@@ -73,7 +73,7 @@ TEST_F(IiwaStatusReceiverTest, AcceptanceTest) {
   Copy(torque_external, &status_.joint_torque_external);
   // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
   fixed_input_.GetMutableData()->
-      template GetMutableValueOrThrow<lcmt_iiwa_status>() = status_;
+      template get_mutable_value<lcmt_iiwa_status>() = status_;
 
   // Confirm that real message values are output correctly.
   EXPECT_TRUE(CompareMatrices(

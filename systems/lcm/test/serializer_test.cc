@@ -26,7 +26,7 @@ GTEST_TEST(SerializerTest, BasicTest) {
 
   // The default value should be zeroed.
   auto abstract_value = dut->CreateDefaultValue();
-  const auto& value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  const auto& value = abstract_value->get_value<lcmt_drake_signal>();
   EXPECT_EQ(value.dim, 0);
   EXPECT_EQ(value.val.size(), 0u);
   EXPECT_EQ(value.coord.size(), 0u);
@@ -44,7 +44,7 @@ GTEST_TEST(SerializerTest, BasicTest) {
   dut->Deserialize(message_bytes.data(), message_bytes.size(),
                    abstract_value.get());
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
-      abstract_value->GetValue<lcmt_drake_signal>(), sample_data));
+      abstract_value->get_value<lcmt_drake_signal>(), sample_data));
 }
 
 }  // namespace

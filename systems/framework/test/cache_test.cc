@@ -361,7 +361,7 @@ TEST_F(CacheTest, CanSwapValue) {
   EXPECT_EQ(entry_value.get_value<string>(), "initial");
   auto new_value = AbstractValue::Make<string>("new value");
   entry_value.swap_value(&new_value);
-  EXPECT_EQ(new_value->GetValue<string>(), "initial");
+  EXPECT_EQ(new_value->get_value<string>(), "initial");
   EXPECT_TRUE(entry_value.is_out_of_date());
   entry_value.mark_up_to_date();
   EXPECT_EQ(entry_value.get_value<string>(), "new value");
@@ -552,7 +552,7 @@ TEST_F(CacheTest, ValueMethodsWork) {
   value.swap_value(&swap_with_me);
   EXPECT_TRUE(value.is_out_of_date());  // Still out of date.
   EXPECT_EQ(value.PeekValueOrThrow<int>(), 29);
-  EXPECT_EQ(swap_with_me->GetValueOrThrow<int>(), 42);
+  EXPECT_EQ(swap_with_me->get_value<int>(), 42);
 
   value.GetMutableValueOrThrow<int>() = 43;
   EXPECT_EQ(value.PeekValueOrThrow<int>(), 43);
@@ -582,7 +582,7 @@ TEST_F(CacheTest, ValueMethodsWork) {
   value.swap_value(&swap_with_me);
   EXPECT_TRUE(value.is_out_of_date());  // Should have changed.
   EXPECT_EQ(value.PeekValueOrThrow<int>(), 42);
-  EXPECT_EQ(swap_with_me->GetValueOrThrow<int>(), 44);
+  EXPECT_EQ(swap_with_me->get_value<int>(), 44);
   value.mark_up_to_date();
 
   // Get the same value as concrete or abstract type.

@@ -564,7 +564,7 @@ class ValueIOTestSystem : public System<T> {
     const std::string* str_in =
         this->template EvalInputValue<std::string>(context, 0);
 
-    std::string& str_out = output->template GetMutableValue<std::string>();
+    std::string& str_out = output->template get_mutable_value<std::string>();
     str_out = *str_in + "output";
   }
 
@@ -573,7 +573,7 @@ class ValueIOTestSystem : public System<T> {
                         AbstractValue* output) const {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     const BasicVector<T>* vec_in = this->EvalVectorInput(context, 1);
-    auto& vec_out = output->template GetMutableValue<BasicVector<T>>();
+    auto& vec_out = output->template get_mutable_value<BasicVector<T>>();
     vec_out.get_mutable_value() = 2 * vec_in->get_value();
   }
 
@@ -751,7 +751,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(context_->get_num_input_ports(), 4);
   EXPECT_EQ(output_->get_num_ports(), 2);
 
-  EXPECT_EQ(output_->get_data(0)->GetValue<std::string>(),
+  EXPECT_EQ(output_->get_data(0)->get_value<std::string>(),
             std::string("inputoutput"));
   EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
 
@@ -773,7 +773,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   // Now allocate.
   test_sys_.AllocateFixedInputs(context_.get());
   // First input should have been re-allocated to the empty string.
-  EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->GetValue<std::string>(),
+  EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->get_value<std::string>(),
             "");
   // Second input should now be of type TestTypedVector.
   EXPECT_NE(dynamic_cast<const TestTypedVector<double> *>(
@@ -805,7 +805,7 @@ TEST_F(SystemIOTest, TransmogrifyAndFix) {
   dest_system.FixInputPortsFrom(test_sys_, *context_, dest_context.get());
 
   EXPECT_EQ(
-      dest_system.EvalAbstractInput(*dest_context, 0)->GetValue<std::string>(),
+      dest_system.EvalAbstractInput(*dest_context, 0)->get_value<std::string>(),
       "input");
 
   const TestTypedVector<AutoDiffXd>* fixed_vec =

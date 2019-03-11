@@ -2594,6 +2594,12 @@ GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
   std::vector<GeometryId> geometry_map{id_D, id_A};
   auto pairs = engine.ComputePointPairPenetration(geometry_map);
   EXPECT_EQ(pairs.size(), 1);
+
+  // Confirm that it survives copying.
+  ProximityEngine<double> engine_copy(engine);
+  engine_copy.UpdateWorldPoses({X_WD}, {index_D});
+  auto pairs_copy = engine_copy.ComputePointPairPenetration(geometry_map);
+  EXPECT_EQ(pairs_copy.size(), 1);
 }
 
 

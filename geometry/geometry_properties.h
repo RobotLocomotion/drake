@@ -314,7 +314,7 @@ class GeometryProperties {
                       name, group_name));
     }
 
-    const ValueType* value = value_iter->second->MaybeGetValue<ValueType>();
+    const ValueType* value = value_iter->second->maybe_get_value<ValueType>();
     if (value == nullptr) {
       throw std::logic_error(fmt::format(
           "GetProperty(): The property '{}' in group '{}' exists, "
@@ -359,7 +359,8 @@ class GeometryProperties {
       const Group& group = iter->second;
       const auto value_iter = group.find(name);
       if (value_iter != group.end()) {
-        const ValueType* value = value_iter->second->MaybeGetValue<ValueType>();
+        const ValueType* value =
+            value_iter->second->maybe_get_value<ValueType>();
         if (value == nullptr) {
           throw std::logic_error(fmt::format(
               "GetPropertyOrDefault(): The property '{}' in group '{}' exists, "

@@ -67,6 +67,11 @@ template <class T>
 bool RungeKutta2Integrator<T>::DoStep(const T& h) {
   Context<T>* const context = IntegratorBase<T>::get_mutable_context();
 
+  // CAUTION: This is performance-sensitive inner loop code that uses dangerous
+  // long-lived references into state and cache to avoid unnecessary copying and
+  // cache invalidation. Be careful not to insert calls to methods that could
+  // invalidate any of these references before they are used.
+
   // TODO(sherm1) Consider moving this notation description to IntegratorBase
   //              when it is more widely adopted.
   // Notation: we're using numeric subscripts for times t₀ and t₁, and
@@ -83,8 +88,12 @@ bool RungeKutta2Integrator<T>::DoStep(const T& h) {
       this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& xcdot0 = derivs0_->get_vector();
 
-  // First intermediate stage is an explicit Euler step.
-  // This call invalidates t- and xc-dependent cache entries.
+  // Cache: xcdot0 references a *copy* of the derivative result so is immune
+  // to subsequent evaluations.
+
+  // First intermediate stage is an explicit Euler step. This call marks t-
+  // and xc-dependent cache entries out of date, including the derivative
+  // cache entry.
   VectorBase<T>& xc = context->SetTimeAndGetMutableContinuousStateVector(
       context->get_time() + h);  // t⁽ᵃ⁾ ← t₁ = t₀ + h
   xc.PlusEqScaled(h, xcdot0);    // xc⁽ᵃ⁾ ← xc₀ + h * xcdot₀
@@ -93,13 +102,22 @@ bool RungeKutta2Integrator<T>::DoStep(const T& h) {
   const VectorBase<T>& xcdot_a =
       this->EvalTimeDerivatives(*context).get_vector();
 
-  // Because we captured a reference to xc above and now want to modify it in
-  // place and recalculate, we must manually tell the caching system that we've
-  // made that change since it is otherwise unobservable. There is an advanced
-  // method available for this purpose.
+  // Cache: xcdot_a references the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
 
-  // Invalidates xc-dependent context entries; time doesn't change here.
+  // Cache: Because we captured a reference to xc above and now want to modify
+  // it in place and recalculate, we must manually tell the caching system that
+  // we've made that change since it is otherwise unobservable. There is an
+  // advanced method available for this purpose.
+
+  // Marks xc-dependent cache entries out of date, including xcdot_a; time
+  // doesn't change here.
   context->NoteContinuousStateChange();
+
+  // Cache: xcdot_a still references the derivative cache value, which is
+  // unchanged, although it is marked out of date. xcdot0 is unaffected.
+
   // xc₁ = xc₀ + h * (xcdot₀ + xcdot⁽ᵃ⁾)/2
   //     = xc⁽ᵃ⁾ + h * (xcdot⁽ᵃ⁾ - xcdot₀)/2
   xc.PlusEqScaled({{h / 2, xcdot_a}, {-h / 2, xcdot0}});

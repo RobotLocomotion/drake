@@ -121,7 +121,7 @@ void MultibodyTreeSystem<T>::Finalize() {
                            AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& position_cache =
-            cache_value->GetMutableValue<PositionKinematicsCache<T>>();
+            cache_value->get_mutable_value<PositionKinematicsCache<T>>();
         tree->CalcPositionKinematicsCache(context, &position_cache);
       },
       {this->configuration_ticket()});
@@ -139,7 +139,7 @@ void MultibodyTreeSystem<T>::Finalize() {
                            AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& velocity_cache =
-            cache_value->GetMutableValue<VelocityKinematicsCache<T>>();
+            cache_value->get_mutable_value<VelocityKinematicsCache<T>>();
         tree->CalcVelocityKinematicsCache(
             context, tree->EvalPositionKinematics(context), &velocity_cache);
       },
@@ -159,7 +159,7 @@ void MultibodyTreeSystem<T>::Finalize() {
                            AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& H_PB_W_cache =
-            cache_value->GetMutableValue<std::vector<Vector6<T>>>();
+            cache_value->get_mutable_value<std::vector<Vector6<T>>>();
         tree->CalcAcrossNodeGeometricJacobianExpressedInWorld(
             context, tree->EvalPositionKinematics(context), &H_PB_W_cache);
       },

@@ -65,7 +65,7 @@ GTEST_TEST(InputPortTest, VectorTest) {
   EXPECT_EQ(eval_eigen, data);
   EXPECT_EQ(eval_basic.CopyToVector(), data);
   EXPECT_EQ(eval_myvec3.CopyToVector(), data);
-  EXPECT_EQ(eval_abs.GetValueOrThrow<BasicVector<T>>().CopyToVector(), data);
+  EXPECT_EQ(eval_abs.get_value<BasicVector<T>>().CopyToVector(), data);
 
   // Check error messages.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -121,7 +121,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   const std::string& eval_str = dut->Eval<std::string>(context);
   const AbstractValue& eval_abs = dut->Eval<AbstractValue>(context);
   EXPECT_EQ(eval_str, data);
-  EXPECT_EQ(eval_abs.GetValueOrThrow<std::string>(), data);
+  EXPECT_EQ(eval_abs.get_value<std::string>(), data);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut->Eval(context), std::exception,
