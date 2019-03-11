@@ -61,6 +61,55 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
 };
 
+/// Cubic equation t^3 + 3t^2 + 12t
+class Cubic : public LeafSystem<double> {
+ public:
+  Cubic() {
+    this->DeclareContinuousState(1);
+  }
+
+ private:
+  void DoCalcTimeDerivatives(const Context<double>& context, ContinuousState<double>* deriv) const override {
+    const double t = context.get_time();
+    (*deriv)[0] = t*t*t + 3*t*t + 12*t + 6;
+  }
+};
+
+// Tests accuracy for integrating cubic polynomial t^3 + 3t^2 + 12t + 6 over
+// [0, 1]. The indefinite integral of this polynomial is:
+// 0.25*t^4 + t^3 + 6t^2 + 6t + C.
+// The definite integral of this polynomial is:
+// 0.25*(1)^4 + (1)^3 + 6*(1)^2 + 6*(1) = 13.25
+// Note that the 3rd order integrator provides zero error if the fourth
+// derivative of the indefinite integral is zero, which it is.
+GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialTest) {
+  Cubic cubic;
+  auto cubic_context = cubic.CreateDefaultContext();
+  RungeKutta3Integrator<double> rk3(cubic, cubic_context.get());
+  const double t_final = 1.0;
+  rk3.set_maximum_step_size(t_final);
+  rk3.set_fixed_step_mode(true);
+  rk3.Initialize();
+  rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  EXPECT_NEAR(
+      cubic_context->get_continuous_state_vector()[0], 13.25,
+      10 * std::numeric_limits<double>::epsilon());
+}
+
+GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialErrorEstimatorTest) {
+  Cubic cubic;
+  auto cubic_context = cubic.CreateDefaultContext();
+  RungeKutta3Integrator<double> rk3(cubic, cubic_context.get());
+  const double t_final = 1.0;
+  rk3.set_maximum_step_size(t_final);
+  rk3.set_fixed_step_mode(true);
+  rk3.Initialize();
+  rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  const double err_est =
+      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+  EXPECT_NEAR(err_est, 0.0, std::numeric_limits<double>::epsilon());
+}
+
 // Tests accuracy when generalized velocity is not the time derivative of
 // generalized configuration against an RK2 integrator.
 TEST_F(RK3IntegratorTest, ComparisonWithRK2) {
