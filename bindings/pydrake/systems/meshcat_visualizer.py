@@ -483,17 +483,23 @@ class MeshcatContactVisualizer(LeafSystem):
 
 class MeshcatPointCloudVisualizer(LeafSystem):
     """
-    MeshcatPointCloudVisualizer.
+    MeshcatPointCloudVisualizer is a System block that visualizes a
+    `PointCloud` in meshcat. The `PointCloud` must have both XYZ and RGB
+    fields.
 
     @system{
         @input_port{point_cloud},
     }
     """
 
-    def __init__(self, meshcat_viz, X_WPointCloud=Isometry3.Identity(), name="point_cloud"):
+    def __init__(self, meshcat_viz, X_WPointCloud=Isometry3.Identity(),
+                 name="point_cloud"):
         """
         Args:
             meshcat_viz: a MeshcatVisualizer object.
+            X_WPointCloud: an optional Isometry3 of the transformation between
+                the input point cloud and world frame.
+            name: a string name of the meshcat object.
         """
         LeafSystem.__init__(self)
 
@@ -511,14 +517,14 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         LeafSystem._DoPublish(self, context, event)
         input = self.EvalAbstractInput(context, 0).get_value()
 
-        # remove any NaNs from the points
+        # Remove any NaNs from the points.
         nan_indices = np.logical_not(np.isnan(input.xyzs()))
         points = input.xyzs()[:, nan_indices[0, :]]
         colors = input.rgbs()[:, nan_indices[0, :]]
 
         points = self._apply_transform(points, self._X_WPointCloud)
 
-        # convert from rgb [0, 255] to [0, 1]
+        # Convert rgb values from [0, 255] to [0, 1].
         point_cloud = g.PointCloud(points, colors / 255.)
 
         vis = self._meshcat_viz.vis
@@ -526,6 +532,13 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         vis[prefix][self._name].set_object(point_cloud)
 
     def _apply_transform(self, matrix, transform):
+        # Applies a homogenous transformation to the given matrix.
+        # Args:
+        #     matrix: A (3, N) numpy matrix.
+        #     transform: An Isometry3.
+        # Returns:
+        #     The (3, N) transformed numpy matrix.
+
         homogenous_matrix = np.ones((4, matrix.shape[1]))
         homogenous_matrix[:3, :] = np.copy(matrix)
 
