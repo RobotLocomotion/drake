@@ -21,13 +21,24 @@ void VerifyAllPhasesHaveSameRuleCoverage(
     for (const auto& s : phase.rule_states()) {
       DRAKE_THROW_UNLESS(r.rule_states().count(s.first) == 1);
     }
+    DRAKE_THROW_UNLESS(
+        (r.bulb_states() == nullopt && phase.bulb_states() == nullopt) ||
+        (r.bulb_states() != nullopt && phase.bulb_states() != nullopt));
+    if (r.bulb_states() != nullopt) {
+      DRAKE_THROW_UNLESS(phase.bulb_states()->size() ==
+                         r.bulb_states()->size());
+      for (const auto& s : *phase.bulb_states()) {
+        DRAKE_THROW_UNLESS(r.bulb_states()->count(s.first) == 1);
+      }
+    }
   }
 }
 
 }  // namespace
 
-RightOfWayPhaseRing::RightOfWayPhaseRing(const Id& id,
-    const std::vector<RightOfWayPhase>& phases) : id_(id) {
+RightOfWayPhaseRing::RightOfWayPhaseRing(
+    const Id& id, const std::vector<RightOfWayPhase>& phases)
+    : id_(id) {
   DRAKE_THROW_UNLESS(phases.size() >= 1);
   for (const RightOfWayPhase& phase : phases) {
     // Construct index of phases by ID, ensuring uniqueness of ID's.

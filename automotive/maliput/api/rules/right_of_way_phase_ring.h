@@ -28,7 +28,8 @@ class RightOfWayPhaseRing final {
   ///
   /// @throws std::exception if `phases` is empty, `phases` contains duplicate
   /// RightOfWayPhase::Id's, or the phases define different sets of
-  /// RightOfWayRule::Ids.
+  /// RightOfWayRule::Ids. A std::exception will also be thrown if the phases
+  /// differ in the range of bulb states defined.
   RightOfWayPhaseRing(const Id& id, const std::vector<RightOfWayPhase>& phases);
 
   /// Returns the phase ring's identifier.

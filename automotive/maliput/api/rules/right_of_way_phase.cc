@@ -5,8 +5,9 @@ namespace maliput {
 namespace api {
 namespace rules {
 
-RightOfWayPhase::RightOfWayPhase(const Id& id, const RuleStates& rule_states)
-    : id_(id), rule_states_(rule_states) {}
+RightOfWayPhase::RightOfWayPhase(const Id& id, const RuleStates& rule_states,
+                                 optional<BulbStates> bulb_states)
+    : id_(id), rule_states_(rule_states), bulb_states_(bulb_states) {}
 
 }  // namespace rules
 }  // namespace api
