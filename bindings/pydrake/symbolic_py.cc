@@ -225,6 +225,8 @@ PYBIND11_MODULE(symbolic, m) {
             return self.EvaluatePartial(Environment{env});
           },
           doc.Expression.EvaluatePartial.doc)
+      .def("GetVariables", &Expression::GetVariables,
+          doc.Expression.GetVariables.doc)
       .def("Substitute",
           [](const Expression& self, const Variable& var, const Expression& e) {
             return self.Substitute(var, e);

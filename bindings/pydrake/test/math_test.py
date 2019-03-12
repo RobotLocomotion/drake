@@ -189,3 +189,14 @@ class TestMath(unittest.TestCase):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
         self.assertAlmostEqual(np.linalg.det(R), 1.0)
         self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
+
+    def test_quadratic_form(self):
+        Q = np.diag([1., 2., 3.])
+        X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)
+        np.testing.assert_array_almost_equal(X, np.sqrt(Q))
+        b = np.zeros(3)
+        c = 4.
+        R, d = mut.DecomposePositiveQuadraticForm(Q, b, c)
+        self.assertEqual(np.size(R, 0), 4)
+        self.assertEqual(np.size(R, 1), 3)
+        self.assertEqual(len(d), 4)
