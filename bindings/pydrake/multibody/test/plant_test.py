@@ -40,6 +40,7 @@ from pydrake.multibody.benchmarks.acrobot import (
 
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.geometry import (
+    Box,
     GeometryId,
     PenetrationAsPointPair,
     SignedDistancePair,
@@ -86,6 +87,23 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(x)))
         if nonzero:
             self.assertTrue(not np.all(x == 0), str(x))
+
+    def test_multibody_plant_construction_api(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
+        spatial_inertia = SpatialInertia()
+        body = plant.AddRigidBody(name="new_body",
+                                  M_BBo_B=spatial_inertia)
+        box = Box(width=0.5, depth=1.0, height=2.0)
+        body_X_BG = Isometry3()
+        body_friction = CoulombFriction(static_friction=0.6,
+                                        dynamic_friction=0.5)
+        plant.RegisterVisualGeometry(
+            body=body, X_BG=body_X_BG, shape=box, name="new_body_visual",
+            diffuse_color=[1., 0.64, 0.0, 0.5])
+        plant.RegisterCollisionGeometry(
+            body=body, X_BG=body_X_BG, shape=box, name="new_body_collision",
+            coulomb_friction=body_friction)
 
     def test_multibody_plant_api_via_parsing(self):
         # TODO(eric.cousineau): Decouple this when construction can be done
