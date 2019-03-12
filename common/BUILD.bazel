@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
+        ":name_value",
         ":nice_type_name",
         ":pointer_cast",
         ":polynomial",
@@ -341,6 +342,14 @@ drake_cc_library(
 drake_cc_library(
     name = "is_approx_equal_abstol",
     hdrs = ["is_approx_equal_abstol.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "name_value",
+    hdrs = ["name_value.h"],
     deps = [
         ":essential",
     ],
@@ -836,6 +845,13 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "name_value_test",
+    deps = [
+        ":name_value",
     ],
 )
 
