@@ -75,4 +75,12 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "contact_surface_test",
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry/query_results:contact_surface",
+    ],
+)
+
 add_lint_tests()
