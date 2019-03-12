@@ -1,4 +1,4 @@
-#include "common/yaml_read_archive.h"
+#include "drake/common/yaml/dev/yaml_read_archive.h"
 
 #include <cmath>
 #include <limits>
@@ -10,7 +10,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "common/visitor.h"
+#include "drake/common/yaml/dev/visitor.h"
 
 using anzu::common::YamlReadArchive;
 
@@ -197,7 +197,7 @@ class YamlReadArchiveTest : public ::testing::Test {
 };
 
 TEST_F(YamlReadArchiveTest, Double) {
-  const auto test = [this](const std::string& value, double expected) {
+  const auto test = [](const std::string& value, double expected) {
     const auto& x = AcceptNoThrow<DoubleStruct>(LoadSingleValue(value));
     EXPECT_EQ(x.value, expected);
   };
@@ -226,8 +226,8 @@ TEST_F(YamlReadArchiveTest, Double) {
 }
 
 TEST_F(YamlReadArchiveTest, StdArray) {
-  const auto test = [this](const std::string& value,
-                           const std::array<double, 3>& expected) {
+  const auto test = [](const std::string& value,
+                       const std::array<double, 3>& expected) {
     const auto& x = AcceptNoThrow<ArrayStruct>(LoadSingleValue(value));
     EXPECT_EQ(x.value, expected);
   };
@@ -236,8 +236,8 @@ TEST_F(YamlReadArchiveTest, StdArray) {
 }
 
 TEST_F(YamlReadArchiveTest, StdVector) {
-  const auto test = [this](const std::string& value,
-                           const std::vector<double>& expected) {
+  const auto test = [](const std::string& value,
+                       const std::vector<double>& expected) {
     const auto& x = AcceptNoThrow<VectorStruct>(LoadSingleValue(value));
     EXPECT_EQ(x.value, expected);
   };
@@ -246,8 +246,8 @@ TEST_F(YamlReadArchiveTest, StdVector) {
 }
 
 TEST_F(YamlReadArchiveTest, Optional) {
-  const auto test = [this](const std::string& doc,
-                           const drake::optional<double>& expected) {
+  const auto test = [](const std::string& doc,
+                       const drake::optional<double>& expected) {
     const auto& x = AcceptNoThrow<OptionalStruct>(Load(doc));
     if (expected.has_value()) {
       ASSERT_TRUE(x.value.has_value()) << *expected;
@@ -263,8 +263,8 @@ TEST_F(YamlReadArchiveTest, Optional) {
 }
 
 TEST_F(YamlReadArchiveTest, Variant) {
-  const auto test = [this](const std::string& doc,
-                           const Variant3& expected) {
+  const auto test = [](const std::string& doc,
+                       const Variant3& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));
     EXPECT_EQ(x.value, expected) << doc;
   };
@@ -275,8 +275,8 @@ TEST_F(YamlReadArchiveTest, Variant) {
 }
 
 TEST_F(YamlReadArchiveTest, EigenVector) {
-  const auto test = [this](const std::string& value,
-                           const Eigen::VectorXd& expected) {
+  const auto test = [](const std::string& value,
+                       const Eigen::VectorXd& expected) {
     const auto& vec = AcceptNoThrow<EigenVecStruct>(LoadSingleValue(value));
     const auto& vec3 = AcceptNoThrow<EigenVec3Struct>(LoadSingleValue(value));
     EXPECT_TRUE(drake::CompareMatrices(vec.value, expected));
@@ -287,8 +287,8 @@ TEST_F(YamlReadArchiveTest, EigenVector) {
 }
 
 TEST_F(YamlReadArchiveTest, EigenVectorX) {
-  const auto test = [this](const std::string& value,
-                           const Eigen::VectorXd& expected) {
+  const auto test = [](const std::string& value,
+                       const Eigen::VectorXd& expected) {
     const auto& x = AcceptNoThrow<EigenVecStruct>(LoadSingleValue(value));
     EXPECT_TRUE(drake::CompareMatrices(x.value, expected));
   };
@@ -299,8 +299,8 @@ TEST_F(YamlReadArchiveTest, EigenVectorX) {
 
 TEST_F(YamlReadArchiveTest, EigenMatrix) {
   using Matrix34d = Eigen::Matrix<double, 3, 4>;
-  const auto test = [this](const std::string& doc,
-                           const Eigen::MatrixXd& expected) {
+  const auto test = [](const std::string& doc,
+                       const Eigen::MatrixXd& expected) {
     const auto& mat = AcceptNoThrow<EigenMatrixStruct>(Load(doc));
     const auto& mat34 = AcceptNoThrow<EigenMatrix34Struct>(Load(doc));
     EXPECT_TRUE(drake::CompareMatrices(mat.value, expected));

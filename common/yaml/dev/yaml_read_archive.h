@@ -17,7 +17,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/drake_variant.h"
 #include "drake/common/nice_type_name.h"
-#include "common/visitor.h"
+#include "drake/common/yaml/dev/visitor.h"
 
 namespace anzu {
 namespace common {
@@ -224,7 +224,7 @@ class YamlReadArchive final {
   }
 
   // Steps through Types to extract 'size_t I' and 'typename T' for the Impl.
-  template <template <typename...> typename Variant, typename... Types>
+  template <template <typename...> class Variant, typename... Types>
   void VariantHelper(
       const std::string& tag, const char* name, Variant<Types...>* storage) {
     VariantHelperImpl<0, Variant<Types...>, Types...>(tag, name, storage);
