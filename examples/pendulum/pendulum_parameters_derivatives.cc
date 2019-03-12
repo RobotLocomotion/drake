@@ -25,7 +25,7 @@ int DoMain() {
 
   // Retrieve the (mutable) state from context so that we can set it.
   PendulumState<AutoDiffXd>& state =
-      PendulumPlant<AutoDiffXd>::get_mutable_state(context.get());
+      PendulumPlant<AutoDiffXd>::get_mutable_continuous_state(context.get());
 
   // An arbitrary state configuration around which we'll take derivatives with
   // respect to the mass parameter.
@@ -47,7 +47,7 @@ int DoMain() {
   auto derivatives = system.AllocateTimeDerivatives();
   system.CalcTimeDerivatives(*context, derivatives.get());
   const PendulumState<AutoDiffXd>& xdot =
-      PendulumPlant<AutoDiffXd>::get_state(*derivatives);
+      PendulumPlant<AutoDiffXd>::get_continuous_state(*derivatives);
 
   // NOLINTNEXTLINE(build/namespaces)  Usage documented by fmt library.
   using namespace fmt::literals;

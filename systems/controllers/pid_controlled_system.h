@@ -76,7 +76,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
   PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
-                      double Kd, int state_output_port_index = 0);
+                      double Kd, int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   /// @p plant full state is used for feedback control, and the vectorized gains
   /// are specified by @p Kp, @p Kd and @p Ki.
@@ -90,7 +91,8 @@ class PidControlledSystem : public Diagram<T> {
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
-                      int state_output_port_index = 0);
+                      int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -107,7 +109,8 @@ class PidControlledSystem : public Diagram<T> {
   /// plant that contains the (full) state information.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector, double Kp,
-                      double Ki, double Kd, int state_output_port_index = 0);
+                      double Ki, double Kd, int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   /// A constructor where the gains are vector values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -126,7 +129,8 @@ class PidControlledSystem : public Diagram<T> {
                       const MatrixX<double>& feedback_selector,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
-                      int state_output_port_index = 0);
+                      int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   ~PidControlledSystem() override;
 
@@ -141,6 +145,30 @@ class PidControlledSystem : public Diagram<T> {
   const InputPort<T>& get_state_input_port() const {
     return this->get_input_port(1);
   }
+
+  /// @return the plant's input port at location @p index. The input port index
+  /// numbering is that of the internal plant.
+  /// @note all plant input ports can be accessed except the control input port,
+  /// which is already internally connected by this PidControlledSystem.
+  /// @throws if @p index == control_input_port_index.
+  const InputPort<T>& get_plant_input_port(int index) {
+    if (index == control_input_port_index_) {
+      throw std::logic_error(fmt::format(
+          "The plant's control input port index {} is used internally and "
+          "cannot be accessed.",
+          control_input_port_index_));
+    }
+    // Output port indexes 0 and 1 are declared by this PidControlledSystem.
+    // The internal plant's first exported input port starts at index 2.
+    const int kPlantInputPortStartIndex = 2;
+    // We adjust the requested index to account for the fact that the plant's
+    // control input port is not exported.
+    int exported_plant_index =
+        index > control_input_port_index_ ? index - 1 : index;
+    return this->get_input_port(kPlantInputPortStartIndex +
+                                exported_plant_index);
+  }
+
 
   const OutputPort<T>& get_state_output_port() const {
     return this->get_output_port(state_output_port_index_);
@@ -211,6 +239,7 @@ class PidControlledSystem : public Diagram<T> {
 
   System<T>* plant_{nullptr};
   const int state_output_port_index_;
+  const int control_input_port_index_;
 };
 
 }  // namespace controllers

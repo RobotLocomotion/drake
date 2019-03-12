@@ -70,13 +70,14 @@ int DoMain() {
   auto controller = builder.AddSystem<PendulumEnergyShapingController>(
       params);
   controller->set_name("controller");
-  builder.Connect(pendulum->get_state_output_port(), controller->get_input_port
-      (0));
-  builder.Connect(controller->get_output_port(0), pendulum->get_input_port());
+  builder.Connect(pendulum->get_continuous_state_output_port(),
+                  controller->get_input_port(0));
+  builder.Connect(controller->get_output_port(0),
+                  pendulum->get_actuation_input_port());
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   pendulum->RegisterGeometry(params, scene_graph);
-  builder.Connect(pendulum->get_geometry_pose_output_port(),
+  builder.Connect(pendulum->get_geometry_poses_output_port(),
                   scene_graph->get_source_pose_port(pendulum->source_id()));
 
   geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
@@ -86,7 +87,7 @@ int DoMain() {
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           &simulator.get_mutable_context());
-  auto& state = pendulum->get_mutable_state(&pendulum_context);
+  auto& state = pendulum->get_mutable_continuous_state(&pendulum_context);
 
   // Desired energy is the total energy when the pendulum is at the upright.
   state.set_theta(M_PI);
