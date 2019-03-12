@@ -62,7 +62,7 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
 };
 
-/// Cubic equation t^3 + 3t^2 + 12t
+/// System for the cubic equation t^3 + t^2 + 12t
 class Cubic : public LeafSystem<double> {
  public:
   Cubic() {
@@ -72,11 +72,25 @@ class Cubic : public LeafSystem<double> {
  private:
   void DoCalcTimeDerivatives(const Context<double>& context, ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = t*t*t + 3*t*t + 12*t + 6;
+    (*deriv)[0] = 3*t*t + 2*t + 12;
   }
 };
 
-// Tests accuracy for integrating cubic polynomial t^3 + 3t^2 + 12t + 6 over
+/// System for the quadratic equation 2.5t^2 + 4t
+class Quadratic : public LeafSystem<double> {
+ public:
+  Quadratic() {
+    this->DeclareContinuousState(1);
+  }
+
+ private:
+  void DoCalcTimeDerivatives(const Context<double>& context, ContinuousState<double>* deriv) const override {
+    const double t = context.get_time();
+    (*deriv)[0] = 5*t + 4;
+  }
+};
+
+// Tests accuracy for integrating the quadratic polynomial t^3 + t^2 + 12t over
 // [0, 1]. The indefinite integral of this polynomial is:
 // 0.25*t^4 + t^3 + 6t^2 + 6t + C.
 // The definite integral of this polynomial is:
@@ -98,9 +112,9 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialTest) {
 }
 
 GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialErrorEstimatorTest) {
-  Cubic cubic;
-  auto cubic_context = cubic.CreateDefaultContext();
-  RungeKutta3Integrator<double> rk3(cubic, cubic_context.get());
+  Quadratic quadratic;
+  auto quadratic_context = quadratic.CreateDefaultContext();
+  RungeKutta3Integrator<double> rk3(quadratic, quadratic_context.get());
   const double t_final = 1.0;
   rk3.set_maximum_step_size(t_final);
   rk3.set_fixed_step_mode(true);
