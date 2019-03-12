@@ -15,16 +15,7 @@ drake_cc_package_library(
     name = "dev",
     visibility = ["//visibility:private"],
     deps = [
-        ":visitor",
         ":yaml_read_archive",
-    ],
-)
-
-drake_cc_library(
-    name = "visitor",
-    hdrs = ["visitor.h"],
-    deps = [
-        "//common:essential",
     ],
 )
 
@@ -33,8 +24,8 @@ drake_cc_library(
     srcs = ["yaml_read_archive.cc"],
     hdrs = ["yaml_read_archive.h"],
     deps = [
-        ":visitor",
         "//common:essential",
+        "//common:name_value",
         "//common:nice_type_name",
         "@yaml_cpp",
     ],
@@ -45,8 +36,8 @@ drake_cc_library(
 drake_cc_googletest(
     name = "yaml_read_archive_test",
     deps = [
-        ":visitor",
         ":yaml_read_archive",
+        "//common:name_value",
         "//common/test_utilities",
     ],
 )
