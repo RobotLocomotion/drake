@@ -155,7 +155,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 }
 
 // System where the state at t corresponds to the quadratic equation
-// 4t^2 + 4t + C, where C is the initial value (the state at t=0).
+// 4t² + 4t + C, where C is the initial value (the state at t=0).
 class Quadratic : public LeafSystem<double> {
  public:
   Quadratic() { this->DeclareContinuousState(1); }
@@ -165,12 +165,12 @@ class Quadratic : public LeafSystem<double> {
     const Context<double>& context,
     ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = 8*t + 4;
+    (*deriv)[0] = 8 * t + 4;
   }
 };
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
-// corresponding to f(t) ≡ 4t^2 + 4t + C, where C is the initial state) over
+// corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
 // t ∈ [0, 1]. The RK2 integrator is second order, meaning it uses the Taylor
 // Series expansion:
 // f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + O(h³)

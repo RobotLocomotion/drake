@@ -226,8 +226,8 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   // the estimate is bound by c*h^order, where c is some constant and h is
   // sufficiently small. We assume a constant of 1.0 below, and we check that
   // the improvement in the error estimate is not as good as c*h^(order+1).
-  // The c and h might need to be redetermined for a different problem and to
-  // bound the behavior for arbitrary error-controlled integrators.
+  // The c and h might need to be redetermined for a different problem or
+  // for untested error-controlled integrators.
   const int err_est_order = this->integrator->get_error_estimate_order();
   EXPECT_LE(err_est_2h_h_err, err_est_h_err / std::pow(2.0, err_est_order));
   EXPECT_GE(err_est_2h_h_err, err_est_h_err / std::pow(2.0, err_est_order + 1));

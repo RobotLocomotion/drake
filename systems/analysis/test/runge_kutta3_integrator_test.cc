@@ -73,7 +73,7 @@ class Cubic : public LeafSystem<double> {
       const Context<double>& context,
       ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = 3*t*t + 2*t + 12;
+    (*deriv)[0] = 3 * t * t + 2 * t + 12;
   }
 };
 
@@ -88,7 +88,7 @@ class Quadratic : public LeafSystem<double> {
       const Context<double>& context,
       ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = 8*t + 4;
+    (*deriv)[0] = 8 * t + 4;
   }
 };
 
