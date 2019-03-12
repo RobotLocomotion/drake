@@ -19,6 +19,7 @@ namespace {
 
 using api::GeoPosition;
 using api::Lane;
+using api::LaneEnd;
 using api::LaneId;
 using api::LanePosition;
 using api::RBounds;
@@ -201,6 +202,62 @@ TEST_F(Test2x2Intersection, CheckLaneNamesAndPositions) {
       EXPECT_TRUE(lane_bounds.min() <= lane_position.r());
       EXPECT_TRUE(lane_bounds.max() >= lane_position.r());
     }
+  }
+}
+
+TEST_F(Test2x2Intersection, CheckBranches) {
+  struct BranchInfo {
+    LaneId id;
+    LaneEnd::Which which_end;
+  };
+  // Tests the lanes that lead up to the intersection. These lanes have three
+  // ongoing branches: forward, left turn, and right turn. They have only one
+  // confluent branch, which is the lane itself.
+  const std::vector<BranchInfo> outside_intersection_test_cases{
+      // Segment west of intersection.
+      {LaneId("l:w_segment_0"), LaneEnd::kFinish},  // East bound lane.
+      {LaneId("l:w_segment_1"), LaneEnd::kFinish},  // West-bound lane.
+      // Segment south of intersection.
+      {LaneId("l:s_segment_0"), LaneEnd::kFinish},  // North-bound lane.
+      {LaneId("l:s_segment_1"), LaneEnd::kFinish},  // South-bound lane.
+      // Segment east of intersection.
+      {LaneId("l:e_segment_1"), LaneEnd::kStart},  // West-bound lane.
+      {LaneId("l:e_segment_0"), LaneEnd::kStart},  // East-bound lane.
+      // Segment north of intersection.
+      {LaneId("l:n_segment_1"), LaneEnd::kStart},  // South-bound lane.
+      {LaneId("l:n_segment_0"), LaneEnd::kStart},  // North-bound lane.
+  };
+  for (const auto& test_case : outside_intersection_test_cases) {
+    const Lane* lane = dut_->ById().GetLane(test_case.id);
+    EXPECT_NE(lane, nullptr);
+    EXPECT_EQ(lane->GetOngoingBranches(test_case.which_end)->size(), 3);
+    EXPECT_EQ(lane->GetConfluentBranches(test_case.which_end)->size(), 1);
+  }
+  // Tests the lanes within the intersection. For both ends of these lanes, they
+  // only have one ongoing branch, which is to the lane that either leads away
+  // from or towards the intersection. They have three confluent branches:
+  // forward, left turn, and right turn.
+  const std::vector<LaneId> inside_intersection_test_cases{
+      {LaneId("l:ew_intersection_segment_0")},
+      {LaneId("l:ew_intersection_segment_1")},
+      {LaneId("l:ns_intersection_segment_0")},
+      {LaneId("l:ns_intersection_segment_1")},
+      {LaneId("l:east_right_turn_segment_0")},
+      {LaneId("l:west_right_turn_segment_0")},
+      {LaneId("l:north_right_turn_segment_0")},
+      {LaneId("l:south_right_turn_segment_0")},
+      {LaneId("l:east_left_turn_segment_0")},
+      {LaneId("l:west_left_turn_segment_0")},
+      {LaneId("l:north_left_turn_segment_0")},
+      {LaneId("l:south_left_turn_segment_0")},
+  };
+  for (const auto& test_case : inside_intersection_test_cases) {
+    const Lane* lane = dut_->ById().GetLane(test_case);
+    EXPECT_NE(lane, nullptr);
+    EXPECT_EQ(lane->GetOngoingBranches(LaneEnd::kStart)->size(), 1);
+    EXPECT_EQ(lane->GetOngoingBranches(LaneEnd::kFinish)->size(), 1);
+    EXPECT_EQ(lane->GetConfluentBranches(LaneEnd::kStart)->size(), 3);
+    EXPECT_EQ(lane->GetConfluentBranches(LaneEnd::kFinish)->size(), 3);
   }
 }
 
