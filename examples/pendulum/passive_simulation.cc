@@ -31,11 +31,12 @@ int DoMain() {
   source->set_name("tau");
   auto pendulum = builder.AddSystem<PendulumPlant>();
   pendulum->set_name("pendulum");
-  builder.Connect(source->get_output_port(), pendulum->get_input_port());
+  builder.Connect(source->get_output_port(),
+                  pendulum->get_actuation_input_port());
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   pendulum->RegisterGeometry(params, scene_graph);
-  builder.Connect(pendulum->get_geometry_pose_output_port(),
+  builder.Connect(pendulum->get_geometry_poses_output_port(),
                   scene_graph->get_source_pose_port(pendulum->source_id()));
 
   geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
@@ -45,7 +46,8 @@ int DoMain() {
   systems::Context<double>& pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           &simulator.get_mutable_context());
-  PendulumState<double>& state = pendulum->get_mutable_state(&pendulum_context);
+  PendulumState<double>& state =
+      pendulum->get_mutable_continuous_state(&pendulum_context);
   state.set_theta(1.);
   state.set_thetadot(0.);
 

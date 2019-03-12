@@ -95,6 +95,20 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_library(
+    name = "trajectory_optimization_common",
+    hdrs = ["trajectory_optimization_common.h"],
+    deps = [
+        ":pendulum_plant",
+        "//geometry:geometry_visualization",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/controllers:pid_controlled_system",
+        "//systems/framework",
+        "//systems/primitives:trajectory_source",
+    ],
+)
+
 drake_cc_binary(
     name = "trajectory_optimization_simulation",
     srcs = ["trajectory_optimization_simulation.cc"],
@@ -105,16 +119,36 @@ drake_cc_binary(
     test_rule_flaky = 1,
     deps = [
         ":pendulum_plant",
+        ":trajectory_optimization_common",
         "//common:find_resource",
-        "//common:is_approx_equal_abstol",
         "//geometry:geometry_visualization",
-        "//lcm",
         "//solvers:solve",
-        "//systems/analysis:simulator",
-        "//systems/controllers:pid_controlled_system",
         "//systems/framework",
-        "//systems/primitives:trajectory_source",
         "//systems/trajectory_optimization:direct_collocation",
+        "//systems/trajectory_optimization:direct_transcription",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "trajectory_optimization_simulation_mbp",
+    srcs = ["trajectory_optimization_simulation_mbp.cc"],
+    add_test_rule = 1,
+    data = [":models"],
+    test_rule_args = ["--target_realtime_rate=0.0"],
+    # Non-deterministic IPOPT-related failures on macOS, see #10276.
+    test_rule_flaky = 1,
+    deps = [
+        ":pendulum_plant",
+        ":trajectory_optimization_common",
+        "//common:find_resource",
+        "//geometry:geometry_visualization",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//solvers:solve",
+        "//systems/framework",
+        "//systems/trajectory_optimization:direct_collocation",
+        "//systems/trajectory_optimization:direct_transcription",
         "@gflags",
     ],
 )

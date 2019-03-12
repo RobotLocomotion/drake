@@ -33,7 +33,8 @@ int DoMain() {
 
   // Prepare to linearize around the vertical equilibrium point (with tau=0)
   auto pendulum_context = pendulum->CreateDefaultContext();
-  auto& desired_state = pendulum->get_mutable_state(pendulum_context.get());
+  auto& desired_state =
+      pendulum->get_mutable_continuous_state(pendulum_context.get());
   desired_state.set_theta(M_PI);
   desired_state.set_thetadot(0);
   auto input = std::make_unique<PendulumInput<double>>();
@@ -53,14 +54,15 @@ int DoMain() {
       builder.AddSystem(systems::controllers::LinearQuadraticRegulator(
           *pendulum, *pendulum_context, Q, R));
   controller->set_name("controller");
-  builder.Connect(pendulum->get_state_output_port(),
+  builder.Connect(pendulum->get_continuous_state_output_port(),
                   controller->get_input_port());
-  builder.Connect(controller->get_output_port(), pendulum->get_input_port());
+  builder.Connect(controller->get_output_port(),
+                  pendulum->get_actuation_input_port());
 
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
   pendulum->RegisterGeometry(pendulum->get_parameters(*pendulum_context),
                              scene_graph);
-  builder.Connect(pendulum->get_geometry_pose_output_port(),
+  builder.Connect(pendulum->get_geometry_poses_output_port(),
                   scene_graph->get_source_pose_port(pendulum->source_id()));
 
   geometry::ConnectDrakeVisualizer(&builder, *scene_graph);
@@ -70,7 +72,7 @@ int DoMain() {
   systems::Context<double>& sim_pendulum_context =
       diagram->GetMutableSubsystemContext(*pendulum,
                                           &simulator.get_mutable_context());
-  auto& state = pendulum->get_mutable_state(&sim_pendulum_context);
+  auto& state = pendulum->get_mutable_continuous_state(&sim_pendulum_context);
   state.set_theta(M_PI + 0.1);
   state.set_thetadot(0.2);
 

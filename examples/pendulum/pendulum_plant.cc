@@ -1,6 +1,7 @@
 #include "drake/examples/pendulum/pendulum_plant.h"
 
 #include <cmath>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/geometry/geometry_frame.h"
@@ -26,26 +27,36 @@ using geometry::Sphere;
 using std::make_unique;
 
 template <typename T>
-PendulumPlant<T>::PendulumPlant()
+PendulumPlant<T>::PendulumPlant(double time_step)
     : systems::LeafSystem<T>(
-          systems::SystemTypeTag<pendulum::PendulumPlant>{}) {
+          systems::SystemTypeTag<pendulum::PendulumPlant>{}),
+          time_step_(time_step), is_discrete_(time_step > 0) {
   this->DeclareVectorInputPort(PendulumInput<T>());
   state_port_ = this->DeclareVectorOutputPort(PendulumState<T>(),
                                               &PendulumPlant::CopyStateOut)
                     .get_index();
-  this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */, 1 /* num_v */,
-                               0 /* num_z */);
+
+  if (is_discrete()) {
+    this->DeclareDiscreteState(PendulumState<T>());
+    this->DeclarePeriodicDiscreteUpdateEvent(time_step_, 0,
+                                             &PendulumPlant::DoStateUpdate);
+  } else {
+    this->DeclareContinuousState(PendulumState<T>(), 1 /* num_q */,
+                                 1 /* num_v */, 0 /* num_z */);
+  }
   this->DeclareNumericParameter(PendulumParams<T>());
 }
 
 template <typename T>
 template <typename U>
-PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p) : PendulumPlant() {
+PendulumPlant<T>::PendulumPlant(const PendulumPlant<U>& p)
+    : PendulumPlant(p.time_step()) {
   source_id_ = p.source_id();
   frame_id_ = p.frame_id();
 
   if (source_id_.is_valid()) {
     geometry_pose_port_ = AllocateGeometryPoseOutputPort();
+    geometry_query_port_ = AllocateGeometryQueryInputPort();
   }
 }
 
@@ -53,25 +64,37 @@ template <typename T>
 PendulumPlant<T>::~PendulumPlant() {}
 
 template <typename T>
-const systems::InputPort<T>& PendulumPlant<T>::get_input_port() const {
+const systems::InputPort<T>& PendulumPlant<T>::get_actuation_input_port()
+    const {
   return systems::System<T>::get_input_port(0);
 }
 
 template <typename T>
-const systems::OutputPort<T>& PendulumPlant<T>::get_state_output_port() const {
+const systems::OutputPort<T>&
+PendulumPlant<T>::get_continuous_state_output_port() const {
   return systems::System<T>::get_output_port(state_port_);
 }
 
 template <typename T>
-const systems::OutputPort<T>& PendulumPlant<T>::get_geometry_pose_output_port()
+const systems::OutputPort<T>& PendulumPlant<T>::get_geometry_poses_output_port()
     const {
   return systems::System<T>::get_output_port(geometry_pose_port_);
 }
 
 template <typename T>
+const systems::InputPort<T>& PendulumPlant<T>::get_geometry_query_input_port()
+const {
+  return systems::System<T>::get_input_port(geometry_query_port_);
+}
+
+template <typename T>
 void PendulumPlant<T>::CopyStateOut(const systems::Context<T>& context,
                                     PendulumState<T>* output) const {
-  output->set_value(get_state(context).get_value());
+  if (is_discrete()) {
+    output->set_value(get_discrete_state(context).get_value());
+  } else {
+    output->set_value(get_continuous_state(context).get_value());
+  }
 }
 
 template <typename T>
@@ -80,7 +103,8 @@ void PendulumPlant<T>::CopyPoseOut(const systems::Context<T>& context,
   DRAKE_DEMAND(poses->size() == 1);
   DRAKE_DEMAND(poses->source_id() == source_id_);
 
-  const T theta = get_state(context).theta();
+  const T theta = (is_discrete() ? get_discrete_state(context).theta()
+                                 : get_continuous_state(context).theta());
 
   poses->clear();
   Isometry3<T> pose = Isometry3<T>::Identity();
@@ -91,7 +115,7 @@ void PendulumPlant<T>::CopyPoseOut(const systems::Context<T>& context,
 template <typename T>
 T PendulumPlant<T>::CalcTotalEnergy(const systems::Context<T>& context) const {
   using std::pow;
-  const PendulumState<T>& state = get_state(context);
+  const PendulumState<T>& state = get_continuous_state(context);
   const PendulumParams<T>& params = get_parameters(context);
   // Kinetic energy = 1/2 m l² θ̇ ².
   const T kinetic_energy =
@@ -107,9 +131,12 @@ template <typename T>
 void PendulumPlant<T>::DoCalcTimeDerivatives(
     const systems::Context<T>& context,
     systems::ContinuousState<T>* derivatives) const {
-  const PendulumState<T>& state = get_state(context);
+  // No derivatives to compute if state is discrete.
+  if (is_discrete()) return;
+  const PendulumState<T>& state = get_continuous_state(context);
   const PendulumParams<T>& params = get_parameters(context);
-  PendulumState<T>& derivative_vector = get_mutable_state(derivatives);
+  PendulumState<T>& derivative_vector =
+      get_mutable_continuous_state(derivatives);
 
   derivative_vector.set_theta(state.thetadot());
   derivative_vector.set_thetadot(
@@ -117,6 +144,39 @@ void PendulumPlant<T>::DoCalcTimeDerivatives(
        params.mass() * params.gravity() * params.length() * sin(state.theta()) -
        params.damping() * state.thetadot()) /
       (params.mass() * params.length() * params.length()));
+}
+
+template <typename T>
+void PendulumPlant<T>::DoCalcDiscreteVariableUpdates(
+    const systems::Context<T>& context,
+    const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
+    systems::DiscreteValues<T>* discrete_state) const {
+  DoStateUpdate(context, discrete_state);
+  unused(events);
+}
+
+//// Compute the actual physics for an Euler update.
+template <typename T>
+void PendulumPlant<T>::DoStateUpdate(
+    const systems::Context<T>& context,
+    systems::DiscreteValues<T>* discrete_state) const {
+  const PendulumState<T>& state = get_discrete_state(context);
+  const PendulumParams<T>& params = get_parameters(context);
+  PendulumState<T>& state_vector = get_mutable_discrete_state(discrete_state);
+
+  PendulumState<T> derivative_vector;
+  derivative_vector.set_theta(state.thetadot());
+  derivative_vector.set_thetadot(
+      (get_tau(context) -
+       params.mass() * params.gravity() * params.length() * sin(state.theta()) -
+       params.damping() * state.thetadot()) /
+      (params.mass() * params.length() * params.length()));
+
+  // compute the euler update
+  state_vector.set_theta(state.theta() +
+                         derivative_vector.theta() * time_step_);
+  state_vector.set_thetadot(state.thetadot() +
+                            derivative_vector.thetadot() * time_step_);
 }
 
 template <typename T>
@@ -159,6 +219,9 @@ void PendulumPlant<T>::RegisterGeometry(
 
   // Now allocate the output port.
   geometry_pose_port_ = AllocateGeometryPoseOutputPort();
+
+  // Allocate the geometry query input port
+  geometry_query_port_ = AllocateGeometryQueryInputPort();
 }
 
 template <typename T>
@@ -167,6 +230,22 @@ systems::OutputPortIndex PendulumPlant<T>::AllocateGeometryPoseOutputPort() {
   return this->DeclareAbstractOutputPort("geometry_pose",
       geometry::FramePoseVector<T>(source_id_, {frame_id_}),
                                   &PendulumPlant<T>::CopyPoseOut)
+      .get_index();
+}
+
+// A dummy, placeholder type.
+struct SymbolicGeometryValue {};
+// An alias for QueryObject<T>, except when T = Expression.
+template <typename T>
+using ModelQueryObject = typename std::conditional<
+    std::is_same<T, symbolic::Expression>::value,
+    SymbolicGeometryValue, geometry::QueryObject<T>>::type;
+
+template <typename T>
+systems::InputPortIndex PendulumPlant<T>::AllocateGeometryQueryInputPort() {
+  DRAKE_DEMAND(source_id_.is_valid() && frame_id_.is_valid());
+  return this
+      ->DeclareAbstractInputPort("geometry_query", Value<ModelQueryObject<T>>{})
       .get_index();
 }
 

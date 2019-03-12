@@ -38,8 +38,16 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
+  /// @param input_port_index A valid input port index for @p system or
+  /// InputPortSelection.  All other inputs on the system will be left
+  /// disconnected (if they are disconnected in @p context) or will be fixed to
+  /// their current values (if they are connected/fixed in @p context).
+  /// @default kUseFirstInputIfItExists.
   DirectTranscription(const System<double>* system,
-                      const Context<double>& context, int num_time_samples);
+                      const Context<double>& context, int num_time_samples,
+                      variant<InputPortSelection, InputPortIndex>
+                      input_port_index =
+                      InputPortSelection::kUseFirstInputIfItExists);
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for *linear* discrete-time systems
@@ -121,8 +129,9 @@ class DirectTranscription : public MultipleShooting {
   // Attempts to create an autodiff version of the plant, and to impose
   // the generic (nonlinear) constraints to impose the dynamics.
   // Aborts if the conversion ToAutoDiffXd fails.
-  void AddAutodiffDynamicConstraints(const System<double>* system,
-                                     const Context<double>& context);
+  void AddAutodiffDynamicConstraints(
+      const System<double>* system, const Context<double>& context,
+      variant<InputPortSelection, InputPortIndex> input_port_index);
 
   // Constrain the final input to match the penultimate, otherwise the final
   // input is unconstrained.
@@ -137,7 +146,10 @@ class DirectTranscription : public MultipleShooting {
   // provided @p system and @p context have only one group of discrete states
   // and only one (possibly multidimensional) input.
   void ValidateSystem(const System<double>& system,
-                      const Context<double>& context);
+                      const Context<double>& context,
+                      variant<InputPortSelection, InputPortIndex>
+                      input_port_index =
+                      InputPortSelection::kUseFirstInputIfItExists);
 
   // AutoDiff versions of the System components (for the constraints).
   // These values are allocated iff the dynamic constraints are allocated
@@ -145,6 +157,7 @@ class DirectTranscription : public MultipleShooting {
   std::unique_ptr<const System<AutoDiffXd>> system_;
   std::unique_ptr<Context<AutoDiffXd>> context_;
   std::unique_ptr<DiscreteValues<AutoDiffXd>> discrete_state_;
+  const InputPort<AutoDiffXd>* input_port_{nullptr};
   FixedInputPortValue* input_port_value_{nullptr};  // Owned by the context.
 
   const bool discrete_time_system_{false};
