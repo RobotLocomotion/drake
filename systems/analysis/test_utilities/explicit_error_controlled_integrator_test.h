@@ -159,7 +159,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, BulletProofSetup) {
 }
 
 // Tests the error estimation capabilities.
-TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
+TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEstOrder) {
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
   const double initial_velocity = 0.01;
@@ -221,15 +221,16 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrEst) {
   const double err_est_2h_h_err = std::abs(err_est_2h_h -
       (x_true - kXApprox_2h_h));
 
-  // Verify that the error in the error estimate dropped as desired.
+  // Verify that the error in the error estimate dropped in accordance with the
+  // order of the error estimator. Theory indicates that asymptotic error in
+  // the estimate is bound by c*h^order, where c is some constant and h is
+  // sufficiently small. We assume a constant of 1.0 below, and we check that
+  // the improvement in the error estimate is not as good as c*h^(order+1).
+  // The c and h might need to be redetermined for a different problem and to
+  // bound the behavior for arbitrary error-controlled integrators.
   const int err_est_order = this->integrator->get_error_estimate_order();
   EXPECT_LE(err_est_2h_h_err, err_est_h_err / std::pow(2.0, err_est_order));
   EXPECT_GE(err_est_2h_h_err, err_est_h_err / std::pow(2.0, err_est_order + 1));
-
-  // Verify that difference between integration result and true result is
-  // captured by the error estimate. The 0.2 below indicates that the error
-  // estimate is quite conservative.
-//  EXPECT_NEAR(kXApprox, x_true, err_est);// * 0.2);
 }
 
 // Integrate a purely continuous system with no sampling using error control.
@@ -466,7 +467,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, CheckStat) {
 
 REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
-    BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
+    BulletProofSetup, ErrEstOrder, SpringMassStepEC, MaxStepSizeRespected,
     IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
 
 }  // namespace analysis_test

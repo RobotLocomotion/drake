@@ -913,7 +913,7 @@ class IntegratorBase {
    * where we have replaced the "..." with the asymptotic error of all terms
    * truncated from the series. An error estimator that exhibits O(h³)
    * truncation error, as above, is known as a third order error estimator.
-   * Asymptotic analysis implies that a third order error estimator increase
+   * Asymptotic analysis implies that a third order error estimator increases
    * the accuracy of its estimate by a factor of eight when h is scaled by
    * one half, for h sufficiently small.
    *

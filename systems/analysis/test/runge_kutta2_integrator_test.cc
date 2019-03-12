@@ -179,14 +179,20 @@ class Quadratic : public LeafSystem<double> {
 // RK2 integrator is indeed able to obtain the true result.
 GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   Quadratic quadratic;
+
   auto quadratic_context = quadratic.CreateDefaultContext();
+  const double C = 0.0;
+  quadratic_context->get_mutable_continuous_state_vector()[0] = C;
+
   const double t_final = 1.0;
+
   RungeKutta2Integrator<double> rk2(
       quadratic, t_final, quadratic_context.get());
   rk2.set_maximum_step_size(t_final);
   rk2.set_fixed_step_mode(true);
   rk2.Initialize();
   rk2.IntegrateWithSingleFixedStepToTime(t_final);
+
   const double expected_result = t_final * (4 * t_final + 4);
   EXPECT_NEAR(
       quadratic_context->get_continuous_state_vector()[0], expected_result,
