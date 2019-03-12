@@ -404,10 +404,10 @@ class TestRigidBodyTree(unittest.TestCase):
             urdf_path,
             floating_base_type=FloatingBaseType.kFixed)
 
-        # "base_part2" should have a single visual element.
-        base_part2 = tree.FindBody("base_part2")
-        self.assertIsNotNone(base_part2)
-        visual_elements = base_part2.get_visual_elements()
+        # "base" should have a single visual element.
+        base = tree.FindBody("base")
+        self.assertIsNotNone(base)
+        visual_elements = base.get_visual_elements()
         self.assertEqual(len(visual_elements), 1)
         self.assertIsInstance(visual_elements[0], shapes.VisualElement)
 

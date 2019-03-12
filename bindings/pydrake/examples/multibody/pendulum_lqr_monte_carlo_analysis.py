@@ -62,7 +62,7 @@ def main():
     Parser(pendulum).AddModelFromFile(file_name)
     pendulum.AddForceElement(UniformGravityFieldElement())
     pendulum.WeldFrames(pendulum.world_frame(),
-                        pendulum.GetFrameByName("base_part2"))
+                        pendulum.GetFrameByName("base"))
     pendulum.Finalize()
 
     # Set the pendulum to start at uniformly random
