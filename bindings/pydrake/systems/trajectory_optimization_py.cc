@@ -215,16 +215,22 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::class_<DirectTranscription, MultipleShooting>(
       m, "DirectTranscription", doc.DirectTranscription.doc)
       .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int>(),
+               const systems::Context<double>&, int,
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
           doc.DirectTranscription.ctor
-              .doc_3args_system_context_num_time_samples)
+              .doc_4args_system_context_num_time_samples_input_port_index)
       .def(py::init<const systems::LinearSystem<double>*,
-               const systems::Context<double>&, int>(),
+               const systems::Context<double>&, int,
+               variant<systems::InputPortSelection, systems::InputPortIndex>>(),
           py::arg("linear_system"), py::arg("context"),
           py::arg("num_time_samples"),
+          py::arg("input_port_index") =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
           doc.DirectTranscription.ctor
-              .doc_3args_linear_system_context_num_time_samples);
+              .doc_4args_linear_system_context_num_time_samples_input_port_index);
 }
 
 }  // namespace pydrake
