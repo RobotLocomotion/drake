@@ -2292,10 +2292,10 @@ class LeafSystem : public System<T> {
   /// events. Override this in your derived LeafSystem only if you require
   /// behavior other than the default dispatch behavior (not common).
   /// The default behavior is to traverse events in the arbitrary order they
-  /// appear in @p events, and for each event that has a callback function,
-  /// to invoke the callback with @p context and that event.
-  /// Note that the same (possibly modified) @p context is passed to subsequent
-  /// callbacks.
+  /// appear in `events` (see related warning in
+  /// System::CalcRawContextUpdate()), and for each event that has a callback
+  /// function, to invoke the callback with `context` and that event. Note that
+  /// the same (possibly modified) `context` is passed to subsequent callbacks.
   ///
   /// Do not override this just to handle an event -- instead declare the event
   /// and a handler callback for it.
@@ -2306,10 +2306,10 @@ class LeafSystem : public System<T> {
   /// error-checked the parameters so you don't have to. In particular,
   /// implementations may assume that the `context` is valid.
   ///
-  /// @param[in,out] context The "before" and "after" state that used both for
+  /// @param[in,out] context The "before" and "after" state used both for
   ///                        calculating the update to the state and holding the
   ///                        resulting update to the state.
-  /// @param[in]     events All the unrestricted update events that need
+  /// @param[in]     events All the raw Context update events that need
   ///                       handling.
   virtual void DoCalcRawContextUpdate(
       Context<T>* context,

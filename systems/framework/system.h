@@ -726,7 +726,7 @@ class System : public SystemBase {
   }
 
   /// This method is the public entry point for dispatching all unrestricted
-  /// update event handlers. Using all the unrestricted update handers in
+  /// update event handlers. Using all the unrestricted update handlers in
   /// @p events, it updates *any* state variables in the @p context, and
   /// outputs the results to @p state. It does not allow the dimensionality
   /// of the state variables to change. See the documentation for
@@ -771,14 +771,22 @@ class System : public SystemBase {
         context, this->get_forced_unrestricted_update_events(), state);
   }
 
-  /// This method is the public entry point for dispatching all raw Context
-  /// update event handlers. Using all the raw Context handers in
-  /// @p events, it updates `context`. It does not allow time, parameters, or
-  /// the dimensionality of the state variables to change. See the documentation
-  /// for DispatchRawContextUpdateHandler() for more details.
+  /// (Advanced) This method is the public entry point for dispatching all "raw"
+  /// Context update event handlers. Raw context updates are very fast- the
+  /// @System can update the Context directly instead of updating copies of
+  /// state- but has a high potential for danger because the state becomes
+  /// dependent upon the order that subsystems are updated in a Diagram.
+  ///
+  /// This particular method updates `context` using all of the
+  /// raw-Context-update handlers in `events`. The method does not allow time,
+  /// parameters, or the dimensionality of the state variables to change. See
+  /// the documentation for DispatchRawContextUpdateHandler() for more details.
   ///
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes or if the time in the Context changes in the callback.
+  /// @warning This method should be avoided to the greatest extent possible.
+  ///          Your computation can become nondeterministic if a Diagram
+  ///          contains multiple subsystems that do raw Context updates.
   void CalcRawContextUpdate(
       Context<T>* context,
       const EventCollection<RawContextUpdateEvent<T>>& events) const {
