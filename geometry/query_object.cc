@@ -19,6 +19,17 @@ QueryObject<T>& QueryObject<T>::operator=(const QueryObject<T>&) {
 }
 
 template <typename T>
+std::vector<ContactSurface<T>>
+QueryObject<T>::ComputeContactSurfaces() const {
+  ThrowIfDefault();
+
+  // TODO(DamrongGuoy): Modify this when the cache system is in place.
+  scene_graph_->FullPoseUpdate(*context_);
+  const GeometryState<T>& state = geometry_state();
+  return state.ComputeContactSurfaces();
+}
+
+template <typename T>
 std::vector<PenetrationAsPointPair<double>>
 QueryObject<T>::ComputePointPairPenetration() const {
   ThrowIfDefault();

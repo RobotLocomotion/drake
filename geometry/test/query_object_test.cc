@@ -110,7 +110,8 @@ TEST_F(QueryObjectTest, DefaultQueryThrows) {
       default_object->ComputeSignedDistancePairwiseClosestPoints());
   EXPECT_DEFAULT_ERROR(
       default_object->ComputeSignedDistanceToPoint(Vector3<double>::Zero()));
-
+  EXPECT_DEFAULT_ERROR(
+      default_object->ComputeContactSurfaces());
 #undef EXPECT_DEFAULT_ERROR
 }
 

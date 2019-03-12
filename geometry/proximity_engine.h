@@ -9,6 +9,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -199,6 +200,7 @@ class ProximityEngine {
       const double threshold = std::numeric_limits<double>::infinity()) const;
   //@}
 
+
   //----------------------------------------------------------------------------
   /** @name                Collision Queries
 
@@ -206,7 +208,19 @@ class ProximityEngine {
    if they overlap each other and are not explicitly excluded through
    @ref collision_filter_concepts "collision filtering". These algorithms find
    those colliding cases, characterize them, and report the essential
-   characteristics of that collision.  */
+   characteristics of that collision.
+
+   Computes the penetrations across all pairs of geometries in the world.
+   Only reports results for _penetrating_ geometries; if two geometries are
+   not penetrating, there will be no result for that pair. Geometries whose
+   surfaces are just touching (osculating) are not considered in penetration.
+   Surfaces whose penetration is within an epsilon of osculation, are likewise
+   not considered penetrating.
+
+   These methods are affected by collision filtering; geometry pairs that
+   have been filtered will not produce contacts, even if their collision
+   geometry is penetrating.
+   */
 
   //@{
 
@@ -216,22 +230,13 @@ class ProximityEngine {
   // and drake issue #10577. Once that is resolved, this definition can be
   // revisited (and ProximityEngineTest::Issue10577Regression_Osculation can
   // be updated).
-  /** Computes the penetrations across all pairs of geometries in the world.
-   Only reports results for _penetrating_ geometries; if two geometries are
-   not penetrating, there will be no result for that pair. Geometries whose
-   surfaces are just touching (osculating) are not considered in penetration.
-   Surfaces whose penetration is within an epsilon of osculation, are likewise
-   not considered penetrating.
-
-   The penetrations are characterized by pairs of points (providing some measure
+  /**
+   Computes the penetrations across all pairs of geometries in the world with
+   the penetrations characterized by pairs of points (providing some measure
    of the penetration "depth" of the two objects), but _not_ the overlapping
    volume.
 
-   This method is affected by collision filtering; geometry pairs that
-   have been filtered will not produce contacts, even if their collision
-   geometry is penetrating.
-
-   For two penetrating geometries g₁ and g₂, it is guaranteed that they will
+   For two penetrating geometries g_A and g_B, it is guaranteed that they will
    map to `id_A` and `id_B` in a fixed, repeatable manner.
 
    @param[in]   geometry_map  A map from geometry _index_ to the corresponding
@@ -240,6 +245,21 @@ class ProximityEngine {
             point pairs.  */
   std::vector<PenetrationAsPointPair<double>> ComputePointPairPenetration(
       const std::vector<GeometryId>& geometry_map) const;
+
+  /**
+   Computes the intersections across all pairs of geometries in the world with
+   the intersections characterized by contact surfaces (see ContactSurface).
+
+   For two intersecting geometries g_A and g_B, it is guaranteed that they will
+   map to `id_A` and `id_B` in a fixed, repeatable manner, where `id_A` and
+   `id_B` are GeometryId's of geometries g_A and g_B respectively.
+
+   @param[in]   geometry_map  A map from geometry _index_ to the corresponding
+                              global geometry identifier.
+   @returns A vector populated with all detected intersections characterized as
+            contact surfaces.  */
+  std::vector<ContactSurface<T>> ComputeContactSurfaces(
+      const std::vector<GeometryId>& /* geometry_map */) const;
 
   //@}
 

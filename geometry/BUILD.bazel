@@ -183,6 +183,7 @@ drake_cc_library(
         ":geometry_state",
         ":scene_graph_inspector",
         "//common:essential",
+        "//geometry/query_results:contact_surface",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_pair",
         "//geometry/query_results:signed_distance_to_point",
