@@ -9,6 +9,7 @@
 #include "drake/common/drake_optional.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_index.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -194,6 +195,19 @@ class ProximityEngine {
       const Vector3<double>& p_WQ,
       const std::vector<GeometryId>& geometry_map,
       const double threshold = std::numeric_limits<double>::infinity()) const;
+  //@}
+
+
+  //----------------------------------------------------------------------------
+  /** @name                Contact Surfaces
+   */
+  //@{
+
+  std::vector<ContactSurface<double>> ComputeContactSurfaces(
+      const std::vector<GeometryId>& /* geometry_map */) const {
+      return std::vector<ContactSurface<double>>();
+  }
+
   //@}
 
   //----------------------------------------------------------------------------
