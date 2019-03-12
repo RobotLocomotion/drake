@@ -748,6 +748,8 @@ class TestPlant(unittest.TestCase):
         self.assertTrue(contact_info.contact_force().shape == (3,))
         self.assertTrue(contact_info.contact_point().shape == (3,))
         self.assertTrue(isinstance(contact_info.slip_speed(), float))
+        self.assertIsInstance(
+            contact_info.point_pair(), PenetrationAsPointPair)
 
         # ContactResults
         contact_results = ContactResults()
