@@ -141,6 +141,12 @@ class TestSystem : public System<double> {
       const Context<double>& context,
       ContinuousState<double>* derivatives) const override {}
 
+  void DispatchRawContextUpdateHandler(
+      Context<double>* context,
+      const EventCollection<RawContextUpdateEvent<double>>&) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   void DispatchPublishHandler(
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
@@ -597,6 +603,12 @@ class ValueIOTestSystem : public System<T> {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
 
+  void DispatchRawContextUpdateHandler(
+      Context<T>* context,
+      const EventCollection<RawContextUpdateEvent<T>>&) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+
   std::unique_ptr<EventCollection<PublishEvent<T>>>
   AllocateForcedPublishEventCollection() const override {
     return LeafEventCollection<PublishEvent<T>>::MakeForcedEventCollection();
@@ -940,6 +952,11 @@ class ComputationTestSystem final : public System<double> {
       const Context<double>&,
       const EventCollection<UnrestrictedUpdateEvent<double>>&,
       State<double>*) const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+  }
+  void DispatchRawContextUpdateHandler(
+      Context<double>*,
+      const EventCollection<RawContextUpdateEvent<double>>&) const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
   }
   std::map<PeriodicEventData, std::vector<const Event<double>*>,

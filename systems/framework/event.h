@@ -595,6 +595,83 @@ template <typename T>
 UnrestrictedUpdateEvent<T>::UnrestrictedUpdateEvent(
     const UnrestrictedUpdateEvent<T>&) = default;
 
+/**
+ * This class represents a raw Context update event. It has an optional
+ * callback function to do custom handling of this event given a Context pointer
+ * and a const RawContextUpdateEvent object reference.
+ */
+template <typename T>
+class RawContextUpdateEvent final : public Event<T> {
+ public:
+  void operator=(const RawContextUpdateEvent&) = delete;
+  RawContextUpdateEvent(RawContextUpdateEvent&&) = delete;
+  void operator=(RawContextUpdateEvent&&) = delete;
+  bool is_discrete_update() const override { return false; }
+
+  /**
+   * Callback function that processes an unrestricted update event.
+   */
+  typedef std::function<void(Context<T>*, const RawContextUpdateEvent<T>&)>
+      RawContextUpdateCallback;
+
+  /// Makes an RawContextUpdateEvent with no trigger type, no event data, and
+  /// no specified callback function.
+  RawContextUpdateEvent() : Event<T>() {}
+
+  /// Makes a RawContextUpdateEvent with no trigger type, no event data, and
+  /// the specified callback function.
+  explicit RawContextUpdateEvent(const RawContextUpdateCallback& callback)
+      : Event<T>(), callback_(callback) {}
+
+  // Note: Users should not be calling these.
+  #if !defined(DRAKE_DOXYGEN_CXX)
+  // Makes an RawContextUpdateEvent with `trigger_type` and callback function
+  // `callback`. `callback` can be null.
+  RawContextUpdateEvent(const TriggerType& trigger_type,
+                        const RawContextUpdateCallback& callback)
+      : Event<T>(trigger_type), callback_(callback) {}
+
+  // Makes an UnrestrictedUpateEvent with @p trigger_type, no optional data, and
+  // no callback function.
+  explicit RawContextUpdateEvent(
+      const TriggerType& trigger_type)
+      : RawContextUpdateEvent(trigger_type, nullptr) {}
+  #endif
+
+  /**
+   * Calls the optional callback function, if one exists, with @p context,
+   * `this` and @p discrete_state.
+   */
+  void handle(Context<T>* context) const {
+    if (callback_ != nullptr) callback_(context, *this);
+  }
+
+ private:
+  RawContextUpdateEvent(const RawContextUpdateEvent&);
+
+  void DoAddToComposite(TriggerType trigger_type,
+                        CompositeEventCollection<T>* events) const final {
+    auto event = std::unique_ptr<RawContextUpdateEvent<T>>(this->DoClone());
+    event->set_trigger_type(trigger_type);
+    events->add_raw_context_update_event(std::move(event));
+  }
+
+  // Clones event data specific to RawContextUpdateEvent.
+  RawContextUpdateEvent<T>* DoClone() const final {
+    return new RawContextUpdateEvent(*this);
+  }
+
+  // Optional callback function that handles this unrestricted update event.
+  RawContextUpdateCallback callback_{nullptr};
+};
+
+// Workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57728 which
+// should be moved back into the class definition once we no longer need to
+// support GCC versions prior to 6.3.
+template <typename T>
+RawContextUpdateEvent<T>::RawContextUpdateEvent(
+    const RawContextUpdateEvent<T>&) = default;
+
 }  // namespace systems
 }  // namespace drake
 

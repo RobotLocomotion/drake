@@ -387,7 +387,8 @@ class LeafEventCollection final : public EventCollection<EventType> {
  * CompositeEventCollection<T> = {
  *   EventCollection<PublishEvent<T>>,
  *   EventCollection<DiscreteUpdateEvent<T>>,
- *   EventCollection<UnrestrictedUpdate<T>>}
+ *   EventCollection<UnrestrictedUpdate<T>>,
+ *   EventCollection<RawContextUpdate<T>>}
  * </pre>
  * There are two concrete derived classes: LeafCompositeEventCollection and
  * DiagramCompositeEventCollection. Adding new events to the collection is
@@ -409,6 +410,7 @@ class CompositeEventCollection {
     publish_events_->Clear();
     discrete_update_events_->Clear();
     unrestricted_update_events_->Clear();
+    raw_context_update_events_->Clear();
   }
 
   /**
@@ -417,7 +419,8 @@ class CompositeEventCollection {
   bool HasEvents() const {
     return (publish_events_->HasEvents() ||
             discrete_update_events_->HasEvents() ||
-            unrestricted_update_events_->HasEvents());
+            unrestricted_update_events_->HasEvents() ||
+            raw_context_update_events_->HasEvents());
   }
 
   /**
@@ -440,6 +443,14 @@ class CompositeEventCollection {
    */
   bool HasUnrestrictedUpdateEvents() const {
     return unrestricted_update_events_->HasEvents();
+  }
+
+  /**
+   * Returns `true` if and only if this collection contains one or more
+   * raw Context update events.
+   */
+  bool HasRawContextUpdateEvents() const {
+    return raw_context_update_events_->HasEvents();
   }
 
   /**
@@ -485,6 +496,21 @@ class CompositeEventCollection {
   }
 
   /**
+   * Assuming the internal raw Context update event collection is an instance
+   * of LeafEventCollection, adds the raw Context update event @p event
+   * (ownership is also transferred) to it.
+   * @throws std::bad_cast if the assumption is incorrect.
+   */
+  void add_raw_context_update_event(
+      std::unique_ptr<RawContextUpdateEvent<T>> event) {
+    DRAKE_DEMAND(event != nullptr);
+    auto& events =
+        dynamic_cast<LeafEventCollection<RawContextUpdateEvent<T>>&>(
+            this->get_mutable_raw_context_update_events());
+    events.add_event(std::move(event));
+  }
+
+  /**
    * Merges the contained homogeneous event collections (e.g.,
    * EventCollection<PublishEvent<T>>, EventCollection<DiscreteUpdateEvent<T>>,
    * etc.) from `this` and @p other, storing the results in `this`.
@@ -493,6 +519,7 @@ class CompositeEventCollection {
     publish_events_->Merge(other.get_publish_events());
     discrete_update_events_->Merge(other.get_discrete_update_events());
     unrestricted_update_events_->Merge(other.get_unrestricted_update_events());
+    raw_context_update_events_->Merge(other.get_raw_context_update_events());
   }
 
   /**
@@ -503,6 +530,7 @@ class CompositeEventCollection {
     discrete_update_events_->SetFrom(other.get_discrete_update_events());
     unrestricted_update_events_->SetFrom(
         other.get_unrestricted_update_events());
+    raw_context_update_events_->SetFrom(other.get_raw_context_update_events());
   }
 
   /**
@@ -529,6 +557,14 @@ class CompositeEventCollection {
   }
 
   /**
+   * Returns a const reference to the collection of raw Context update events.
+   */
+  const EventCollection<RawContextUpdateEvent<T>>&
+  get_raw_context_update_events() const {
+    return *raw_context_update_events_;
+  }
+
+  /**
    * Returns a mutable reference to the collection of publish events
    */
   EventCollection<PublishEvent<T>>& get_mutable_publish_events() const {
@@ -552,6 +588,14 @@ class CompositeEventCollection {
     return *unrestricted_update_events_;
   }
 
+  /**
+   * Returns a mutable reference to the collection of raw Context update events.
+   */
+  EventCollection<RawContextUpdateEvent<T>>&
+  get_mutable_raw_context_update_events() const {
+    return *raw_context_update_events_;
+  }
+
  protected:
   /**
    * Takes ownership of @p pub, @p discrete and @p unrestricted. Aborts if any
@@ -560,13 +604,16 @@ class CompositeEventCollection {
   CompositeEventCollection(
       std::unique_ptr<EventCollection<PublishEvent<T>>> pub,
       std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>> discrete,
-      std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> unrestricted)
+      std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>> unrestricted,
+      std::unique_ptr<EventCollection<RawContextUpdateEvent<T>>> raw_context)
       : publish_events_(std::move(pub)),
         discrete_update_events_(std::move(discrete)),
-        unrestricted_update_events_(std::move(unrestricted)) {
+        unrestricted_update_events_(std::move(unrestricted)),
+        raw_context_update_events_(std::move(raw_context)) {
     DRAKE_DEMAND(publish_events_ != nullptr);
     DRAKE_DEMAND(discrete_update_events_ != nullptr);
     DRAKE_DEMAND(unrestricted_update_events_ != nullptr);
+    DRAKE_DEMAND(raw_context_update_events_ != nullptr);
   }
 
  private:
@@ -575,6 +622,8 @@ class CompositeEventCollection {
       discrete_update_events_{nullptr};
   std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
       unrestricted_update_events_{nullptr};
+  std::unique_ptr<EventCollection<RawContextUpdateEvent<T>>>
+      raw_context_update_events_{nullptr};
 };
 
 /**
@@ -595,7 +644,9 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
             std::make_unique<LeafEventCollection<PublishEvent<T>>>(),
             std::make_unique<LeafEventCollection<DiscreteUpdateEvent<T>>>(),
             std::make_unique<
-                LeafEventCollection<UnrestrictedUpdateEvent<T>>>()) {}
+                LeafEventCollection<UnrestrictedUpdateEvent<T>>>(),
+            std::make_unique<
+                LeafEventCollection<RawContextUpdateEvent<T>>>()) {}
 
   /**
    * Returns a const reference to the collection of publish events.
@@ -622,6 +673,15 @@ class LeafCompositeEventCollection final : public CompositeEventCollection<T> {
     return dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>&>(
         CompositeEventCollection<T>::get_unrestricted_update_events());
   }
+
+  /**
+   * Returns a const reference to the collection of raw Context update events.
+   */
+  const LeafEventCollection<RawContextUpdateEvent<T>>&
+  get_raw_context_update_events() const {
+    return dynamic_cast<const LeafEventCollection<RawContextUpdateEvent<T>>&>(
+        CompositeEventCollection<T>::get_raw_context_update_events());
+  }
 };
 
 /**
@@ -646,6 +706,9 @@ class DiagramCompositeEventCollection final
                 subevents.size()),
             std::make_unique<
                 DiagramEventCollection<UnrestrictedUpdateEvent<T>>>(
+                subevents.size()),
+            std::make_unique<
+                DiagramEventCollection<RawContextUpdateEvent<T>>>(
                 subevents.size())),
         owned_subevent_collection_(std::move(subevents)) {
     size_t num_subsystems = owned_subevent_collection_.size();
@@ -675,6 +738,14 @@ class DiagramCompositeEventCollection final
       sub_unrestricted_update.set_subevent_collection(
           i, &(owned_subevent_collection_[i]
                    ->get_mutable_unrestricted_update_events()));
+
+      DiagramEventCollection<RawContextUpdateEvent<T>>&
+          sub_raw_context_update =
+              dynamic_cast<DiagramEventCollection<RawContextUpdateEvent<T>>&>(
+                  this->get_mutable_raw_context_update_events());
+      sub_raw_context_update.set_subevent_collection(
+          i, &(owned_subevent_collection_[i]
+                   ->get_mutable_raw_context_update_events()));
     }
   }
 

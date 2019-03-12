@@ -771,6 +771,41 @@ class System : public SystemBase {
         context, this->get_forced_unrestricted_update_events(), state);
   }
 
+  /// This method is the public entry point for dispatching all raw Context
+  /// update event handlers. Using all the raw Context handers in
+  /// @p events, it updates `context`. It does not allow time, parameters, or
+  /// the dimensionality of the state variables to change. See the documentation
+  /// for DispatchRawContextUpdateHandler() for more details.
+  ///
+  /// @throws std::logic_error if the dimensionality of the state variables
+  ///         changes or if the time in the Context changes in the callback.
+  void CalcRawContextUpdate(
+      Context<T>* context,
+      const EventCollection<RawContextUpdateEvent<T>>& events) const {
+    DRAKE_ASSERT_VOID(CheckValidContext(*context));
+    const int continuous_state_dim = context->get_continuous_state().size();
+    const int discrete_state_dim = context->get_discrete_state().num_groups();
+    const int abstract_state_dim = context->get_abstract_state().size();
+    const T current_time = context->get_time();
+
+    DispatchRawContextUpdateHandler(context, events);
+
+    if (continuous_state_dim != context->get_continuous_state().size() ||
+        discrete_state_dim != context->get_discrete_state().num_groups() ||
+        abstract_state_dim != context->get_abstract_state().size()) {
+      throw std::logic_error(
+          "State variable dimensions cannot be changed "
+          "in CalcRawContextUpdate().");
+    }
+
+    if (current_time != context->get_time()) {
+      throw std::logic_error("Time cannot be changed in "
+          "CalcRawContextUpdate().");
+    }
+
+    // TODO(edrumwri): Verify that the Parameters do not change.
+  }
+
   /// This method is called by a Simulator during its calculation of the size of
   /// the next continuous step to attempt. The System returns the next time at
   /// which some discrete action must be taken, and records what those actions
@@ -1586,8 +1621,8 @@ class System : public SystemBase {
   ///              if (event.has_handler)
   ///                event.handler(context)
   /// </pre>
-  /// Discrete update events and unrestricted update events are dispatched
-  /// similarly for a LeafSystem.
+  /// Discrete update events, unrestricted update events, and "raw" Context
+  /// update events are dispatched similarly for a LeafSystem.
   ///
   /// For a Diagram (or user implemented equivalent classes), these functions
   /// must iterate through all subsystems, extract their corresponding
@@ -1621,6 +1656,12 @@ class System : public SystemBase {
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state) const = 0;
+
+  /// This function dispatches all raw Context update events to the appropriate
+  /// handlers.
+  virtual void DispatchRawContextUpdateHandler(
+      Context<T>* context,
+      const EventCollection<RawContextUpdateEvent<T>>& events) const = 0;
   //@}
 
   //----------------------------------------------------------------------------

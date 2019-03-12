@@ -1182,6 +1182,30 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     }
   }
 
+  // For each subsystem, if there is an unrestricted update event in its
+  // corresponding subevent collection, calls its CalcRawContextUpdate
+  // method with the appropriate subcontext, subevent collection and substate.
+  void DispatchRawContextUpdateHandler(
+      Context<T>* context,
+      const EventCollection<RawContextUpdateEvent<T>>& event_info) const final {
+    auto diagram_context = dynamic_cast<DiagramContext<T>*>(context);
+    DRAKE_DEMAND(diagram_context);
+
+    const DiagramEventCollection<RawContextUpdateEvent<T>>& info =
+        dynamic_cast<const DiagramEventCollection<RawContextUpdateEvent<T>>&>(
+            event_info);
+
+    for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
+      const EventCollection<RawContextUpdateEvent<T>>& subinfo =
+          info.get_subevent_collection(i);
+
+      if (subinfo.HasEvents()) {
+        Context<T>& subcontext = diagram_context->GetMutableSubsystemContext(i);
+        registered_systems_[i]->CalcRawContextUpdate(&subcontext, subinfo);
+      }
+    }
+  }
+
   // Tries to recursively find @p target_system's BaseStuff
   // (context / state / etc). nullptr is returned if @p target_system is not
   // a subsystem of this diagram. This template function should only be used

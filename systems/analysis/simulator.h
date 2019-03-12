@@ -432,7 +432,14 @@ class Simulator {
   /// Gets the number of "unrestricted" updates performed since the last
   /// Initialize() call.
   int64_t get_num_unrestricted_updates() const {
-    return num_unrestricted_updates_; }
+    return num_unrestricted_updates_;
+  }
+
+  /// Gets the number of "raw" updates to the Context performed since the last
+  /// Initialize() call.
+  int64_t get_num_raw_context_updates() const {
+    return num_raw_context_updates_;
+  }
 
   /// Gets a pointer to the integrator used to advance the continuous aspects
   /// of the system.
@@ -510,6 +517,9 @@ class Simulator {
             std::unique_ptr<const System<T>> owned_system,
             std::unique_ptr<Context<T>> context);
 
+  void HandleRawContextUpdate(
+      const EventCollection<RawContextUpdateEvent<T>>& events);
+
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
 
@@ -576,6 +586,9 @@ class Simulator {
   // These are recorded at initialization or statistics reset.
   double initial_simtime_{nan()};  // Simulated time at start of period.
   TimePoint initial_realtime_;     // Real time at start of period.
+
+  // The number of "raw" Context updates since the last statistics reset.
+  int64_t num_raw_context_updates_{0};
 
   // The number of discrete updates since the last statistics reset.
   int64_t num_discrete_updates_{0};
@@ -747,8 +760,12 @@ void Simulator<T>::Initialize() {
   auto init_events = system_.AllocateCompositeEventCollection();
   system_.GetInitializationEvents(*context_, init_events.get());
 
-  // Do unrestricted updates first.
+  // Do raw Context updates first.
+  HandleRawContextUpdate(init_events->get_raw_context_update_events());
+
+  // Do unrestricted updates next.
   HandleUnrestrictedUpdate(init_events->get_unrestricted_update_events());
+
   // Do restricted (discrete variable) updates next.
   HandleDiscreteUpdate(init_events->get_discrete_update_events());
 
@@ -802,6 +819,19 @@ void Simulator<T>::Initialize() {
 
   // Initialize runtime variables.
   initialization_done_ = true;
+}
+
+// Processes RawContextUpdateEvent events.
+template <typename T>
+void Simulator<T>::HandleRawContextUpdate(
+    const EventCollection<RawContextUpdateEvent<T>>& events) {
+  if (events.HasEvents()) {
+    system_.CalcRawContextUpdate(context_.get(), events);
+    ++num_raw_context_updates_;
+
+    // Mark the witness function vector as needing to be redetermined.
+    redetermine_active_witnesses_ = true;
+  }
 }
 
 // Processes UnrestrictedUpdateEvent events.
@@ -905,7 +935,8 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     T next_update_time = std::numeric_limits<double>::infinity();
     T next_publish_time = std::numeric_limits<double>::infinity();
     if (timed_events_->HasDiscreteUpdateEvents() ||
-        timed_events_->HasUnrestrictedUpdateEvents()) {
+        timed_events_->HasUnrestrictedUpdateEvents() ||
+        timed_events_->HasRawContextUpdateEvents()) {
       next_update_time = next_timed_event_time_;
     }
     if (timed_events_->HasPublishEvents()) {
