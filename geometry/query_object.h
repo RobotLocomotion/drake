@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/geometry/geometry_context.h"
+#include "drake/geometry/query_results/contact_surface.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/query_results/signed_distance_pair.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
@@ -83,6 +84,23 @@ class QueryObject {
   const SceneGraphInspector<T>& inspector() const {
     return inspector_;
   }
+
+  /**
+   @anchor create_contact_surface
+   @name              Create Contact Surfaces
+
+   These queries provide the contact surfaces between pairs of penetrating
+   objects.
+   */
+  //@{
+
+  /**
+   Computes contact surfaces for all pairs of penetrating geometries in the
+   world.
+   */
+  std::vector<ContactSurface<double>> ComputeContactSurfaces() const;
+
+  //@}
 
   //----------------------------------------------------------------------------
   /** @name                Collision Queries

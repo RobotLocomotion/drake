@@ -376,6 +376,20 @@ class GeometryState {
   //@}
 
   //----------------------------------------------------------------------------
+  /** @name                Contact Surfaces
+
+   These queries create contact surfaces. */
+  //@{
+
+  /** See QueryObject::ComputeContactSurfaces() for documentation.  */
+  std::vector<ContactSurface<double>> ComputeContactSurfaces() const {
+    return geometry_engine_->ComputeContactSurfaces(
+        geometry_index_to_id_map_);
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /** @name                Collision Queries
 
    These queries detect _collisions_ between geometry. Two geometries collide
