@@ -180,9 +180,9 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
     auto contact_forces_value = contact_forces_port.Allocate();
     // Verify the correct type.
     EXPECT_NO_THROW(
-        contact_forces_value->GetValueOrThrow<BasicVector<double>>());
+        contact_forces_value->get_value<BasicVector<double>>());
     const BasicVector<double>& contact_forces =
-        contact_forces_value->GetValueOrThrow<BasicVector<double>>();
+        contact_forces_value->get_value<BasicVector<double>>();
     EXPECT_EQ(contact_forces.size(), 6);
     // Compute the generalized contact forces using the system's API.
     contact_forces_port.Calc(plant_context, contact_forces_value.get());

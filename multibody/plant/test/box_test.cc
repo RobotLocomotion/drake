@@ -106,9 +106,9 @@ GTEST_TEST(Box, UnderStiction) {
   std::unique_ptr<AbstractValue> contact_results_value =
       plant.get_contact_results_output_port().Allocate();
   EXPECT_NO_THROW(
-      contact_results_value->GetValueOrThrow<ContactResults<double>>());
+      contact_results_value->get_value<ContactResults<double>>());
   const ContactResults<double>& contact_results =
-      contact_results_value->GetValueOrThrow<ContactResults<double>>();
+      contact_results_value->get_value<ContactResults<double>>();
   // Compute the poses for each geometry in the model.
   plant.get_contact_results_output_port().Calc(
       plant_context, contact_results_value.get());
