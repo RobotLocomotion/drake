@@ -11,9 +11,9 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/symbolic.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
-#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
+#include "drake/systems/trajectory_optimization/trajectory_optimization.h"
 
 namespace drake {
 namespace systems {
@@ -35,7 +35,7 @@ namespace trajectory_optimization {
 /// This class assumes that there are a fixed number (N) time steps/samples, and
 /// that the trajectory is discretized into timesteps h (N-1 of these), state x
 /// (N of these), and control input u (N of these).
-class MultipleShooting : public solvers::MathematicalProgram {
+class MultipleShooting : public TrajectoryOptimization {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting)
 
@@ -118,7 +118,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// variables are substituted with the relevant variables for each current
   /// time index.  The particular integration scheme is determined by the
   /// derived class implementation.
-  void AddRunningCost(const symbolic::Expression& g) { DoAddRunningCost(g); }
+  void AddRunningCost(const symbolic::Expression& g) override {
+    DoAddRunningCost(g);
+  }
 
   /// Adds support for passing in a (scalar) matrix Expression, which is a
   /// common output of most symbolic linear algebra operations.
@@ -170,7 +172,7 @@ class MultipleShooting : public solvers::MathematicalProgram {
   /// where any instances of time(), state(), and/or input() placeholder
   /// variables are substituted with the relevant variables for each current
   /// time index.
-  void AddFinalCost(const symbolic::Expression& e) {
+  void AddFinalCost(const symbolic::Expression& e) override {
     AddCost(SubstitutePlaceholderVariables(e, N_ - 1));
   }
 
@@ -388,6 +390,9 @@ class MultipleShooting : public solvers::MathematicalProgram {
 
   const solvers::VectorXDecisionVariable& x_vars() const { return x_vars_; }
 
+ protected:
+  int SamplesPerSequentialVariable() const override;
+
  private:
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
@@ -404,14 +409,14 @@ class MultipleShooting : public solvers::MathematicalProgram {
   solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
                                              // input/state sample or the empty
                                              // vector (if timesteps are fixed).
-  const solvers::VectorXDecisionVariable x_vars_;
-  const solvers::VectorXDecisionVariable u_vars_;
+  solvers::VectorXDecisionVariable x_vars_;
+  solvers::VectorXDecisionVariable u_vars_;
 
   // See description of the public time(), state(), and input() accessor methods
   // for details about the placeholder variables.
   const solvers::VectorDecisionVariable<1> placeholder_t_var_;
-  const solvers::VectorXDecisionVariable placeholder_x_vars_;
-  const solvers::VectorXDecisionVariable placeholder_u_vars_;
+  solvers::VectorXDecisionVariable placeholder_x_vars_;
+  solvers::VectorXDecisionVariable placeholder_u_vars_;
 };
 
 }  // namespace trajectory_optimization

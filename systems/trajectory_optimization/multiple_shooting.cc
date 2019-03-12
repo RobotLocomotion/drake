@@ -25,17 +25,6 @@ using trajectories::PiecewisePolynomial;
 // x state
 // u control input
 
-namespace {
-
-solvers::VectorXDecisionVariable MakeNamedVariables(const std::string& prefix,
-                                                    int num) {
-  solvers::VectorXDecisionVariable vars(num);
-  for (int i = 0; i < num; i++)
-    vars(i) = symbolic::Variable(prefix + std::to_string(i));
-  return vars;
-}
-}
-
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples, double fixed_timestep)
     : num_inputs_(num_inputs),
@@ -44,16 +33,22 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
       timesteps_are_decision_variables_(false),
       fixed_timestep_(fixed_timestep),
       h_vars_(solvers::VectorXDecisionVariable(0)),
-      x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
-      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
       placeholder_t_var_(
-          solvers::VectorDecisionVariable<1>(symbolic::Variable("t"))),
-      placeholder_x_vars_(MakeNamedVariables("x", num_states_)),
-      placeholder_u_vars_(MakeNamedVariables("u", num_inputs_)) {
+          solvers::VectorDecisionVariable<1>(symbolic::Variable("t"))) {
   DRAKE_DEMAND(num_time_samples > 1);
   DRAKE_DEMAND(num_states_ > 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
   DRAKE_DEMAND(fixed_timestep > 0);
+  placeholder_x_vars_ = NewSequentialVariables(num_states_, "x");
+  placeholder_u_vars_ = NewSequentialVariables(num_inputs_, "u");
+  x_vars_ = solvers::VectorXDecisionVariable(N_ * num_states);
+  u_vars_ = solvers::VectorXDecisionVariable(N_ * num_inputs);
+  for (int i = 0; i < N_; ++i) {
+    x_vars_.segment(num_states_ * i, num_states_) =
+        GetSequentialVariablesAtIndex(placeholder_x_vars_, i);
+    u_vars_.segment(num_inputs_ * i, num_inputs_) =
+        GetSequentialVariablesAtIndex(placeholder_u_vars_, i);
+  }
 }
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
@@ -65,18 +60,24 @@ MultipleShooting::MultipleShooting(int num_inputs, int num_states,
       N_(num_time_samples),
       timesteps_are_decision_variables_(true),
       h_vars_(NewContinuousVariables(N_ - 1, "h")),
-      x_vars_(NewContinuousVariables(num_states_ * N_, "x")),
-      u_vars_(NewContinuousVariables(num_inputs_ * N_, "u")),
       placeholder_t_var_(
-          solvers::VectorDecisionVariable<1>(symbolic::Variable("t"))),
-      placeholder_x_vars_(MakeNamedVariables("x", num_states_)),
-      placeholder_u_vars_(MakeNamedVariables("u", num_inputs_)) {
+          solvers::VectorDecisionVariable<1>(symbolic::Variable("t"))) {
   DRAKE_DEMAND(num_time_samples > 1);
   DRAKE_DEMAND(num_states_ > 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
   DRAKE_DEMAND(minimum_timestep > 0);  // == 0 tends to cause numerical issues.
   DRAKE_DEMAND(maximum_timestep >= minimum_timestep &&
                std::isfinite(maximum_timestep));
+  placeholder_x_vars_ = NewSequentialVariables(num_states_, "x");
+  placeholder_u_vars_ = NewSequentialVariables(num_inputs_, "u");
+  x_vars_ = solvers::VectorXDecisionVariable(N_ * num_states);
+  u_vars_ = solvers::VectorXDecisionVariable(N_ * num_inputs);
+  for (int i = 0; i < N_; ++i) {
+    x_vars_.segment(num_states_ * i, num_states_) =
+        GetSequentialVariablesAtIndex(placeholder_x_vars_, i);
+    u_vars_.segment(num_inputs_ * i, num_inputs_) =
+        GetSequentialVariablesAtIndex(placeholder_u_vars_, i);
+  }
 
   AddBoundingBoxConstraint(minimum_timestep, maximum_timestep, h_vars_);
 }
@@ -247,12 +248,8 @@ MultipleShooting::ConstructPlaceholderVariableSubstitution(
     sub.emplace(placeholder_t_var_(0), interval_index * fixed_timestep_);
   }
 
-  for (int i = 0; i < num_states_; i++)
-    sub.emplace(placeholder_x_vars_(i),
-                x_vars_(interval_index * num_states_ + i));
-  for (int i = 0; i < num_inputs_; i++)
-    sub.emplace(placeholder_u_vars_(i),
-                u_vars_(interval_index * num_inputs_ + i));
+  AddPlaceholderVariableSubstitutionsForIndex(interval_index, &sub);
+
   return sub;
 }
 
@@ -265,6 +262,8 @@ symbolic::Formula MultipleShooting::SubstitutePlaceholderVariables(
     const symbolic::Formula& f, int interval_index) const {
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
+
+int MultipleShooting::SamplesPerSequentialVariable() const { return N_; }
 
 }  // namespace trajectory_optimization
 }  // namespace systems
