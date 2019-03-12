@@ -80,17 +80,15 @@ class TestGeometry(unittest.TestCase):
         self.assertIsInstance(obj.distance, float)
 
     def test_shape_constructors(self):
-        sphere = mut.Sphere(radius=1.0)
-        self.assertIsInstance(sphere, mut.Shape)
-        cylinder = mut.Cylinder(radius=1.0,
-                                length=2.0)
-        box = mut.Box(width=1.0,
-                      depth=2.0,
-                      height=3.0)
-        halfspace = mut.HalfSpace()
         box_mesh_path = FindResourceOrThrow(
             "drake/systems/sensors/test/models/meshes/box.obj")
-        mesh = mut.Mesh(absolute_filename=box_mesh_path,
-                        scale=1.0)
-        convex = mut.Convex(absolute_filename=box_mesh_path,
-                            scale=1.0)
+        shapes = [
+            mut.Sphere(radius=1.0),
+            mut.Cylinder(radius=1.0, length=2.0),
+            mut.Box(width=1.0, depth=2.0, height=3.0),
+            mut.HalfSpace(),
+            mut.Mesh(absolute_filename=box_mesh_path, scale=1.0),
+            mut.Convex(absolute_filename=box_mesh_path, scale=1.0)
+        ]
+        for shape in shapes:
+            self.assertIsInstance(shape, mut.Shape)
