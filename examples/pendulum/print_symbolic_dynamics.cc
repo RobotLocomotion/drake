@@ -47,7 +47,7 @@ VectorX<Expression> MultibodyPlantDynamics() {
   plant.AddForceElement<UniformGravityFieldElement>();
   Parser parser(&plant);
   parser.AddModelFromFile(FindResourceOrThrow(urdf_path));
-  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base_part2"));
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
   plant.Finalize();
   auto symbolic_plant_ptr = System<double>::ToSymbolic(plant);
   const MultibodyPlant<Expression>& symbolic_plant = *symbolic_plant_ptr;
