@@ -7,8 +7,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/solvers/choose_best_solver.h"
+#include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
@@ -170,6 +175,78 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
     EXPECT_TRUE(
         CompareMatrices(dynamic_constraint_val, dynamic_constraint_expected) ||
         CompareMatrices(dynamic_constraint_val, -dynamic_constraint_expected));
+  }
+}
+
+// This example tests the System specialization of the constructor. The test
+// sets up and solves the pendulum swing-up trajectory optimization problem
+// using a discretized MultibodyPlant, with constraints on initial and final
+// states, and input torque.
+GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSystemTest) {
+  const char* const urdf_path =
+      "drake/examples/pendulum/Pendulum.urdf";
+
+  // The time step here is somewhat arbitrary. The value chosen here provides
+  // a reasonably fast solve.
+  const double kTimeStep = 0.05;
+  auto pendulum =
+      std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
+  pendulum->AddForceElement<multibody::UniformGravityFieldElement>();
+  multibody::Parser sparser(pendulum.get());
+  sparser.AddModelFromFile(FindResourceOrThrow(urdf_path));
+  pendulum->WeldFrames(pendulum->world_frame(),
+                       pendulum->GetFrameByName("base"));
+  pendulum->Finalize();
+
+  // Create the DirectTranscription object, and specify which input port
+  // on the MultibodyPlant corresponds to the control input.
+  auto context = pendulum->CreateDefaultContext();
+  const int actuation_port_index =
+      pendulum->get_actuation_input_port().get_index();
+  const int kNumTimeSamples = 100;
+  DirectTranscription dirtran(pendulum.get(), *context, kNumTimeSamples,
+                              actuation_port_index);
+
+  // Adds a torque actuation limit.
+  const double kTorqueLimit = 3.0;  // N*m.
+  const solvers::VectorXDecisionVariable &u = dirtran.input();
+  dirtran.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dirtran.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
+
+  const int kNumStateVariables = 2;
+  BasicVector<double> initial_state(kNumStateVariables);
+  BasicVector<double> final_state(kNumStateVariables);
+
+  // Set the initial and final state constraints.
+  const int kTheta_index = 0, kThetadot_index = 1;
+  initial_state.SetAtIndex(kTheta_index, 0.0);
+  initial_state.SetAtIndex(kThetadot_index, 0.0);
+  final_state.SetAtIndex(kTheta_index, M_PI);
+  final_state.SetAtIndex(kThetadot_index, 0.0);
+  dirtran.AddLinearConstraint(dirtran.initial_state() ==
+                              initial_state.get_value());
+  dirtran.AddLinearConstraint(dirtran.final_state() == final_state.get_value());
+
+  const double R = 10;  // Cost on input "effort".
+  dirtran.AddRunningCost((R * u) * u);
+
+  // Create an initial guess for the state trajectory.
+  const double timespan_init = 4;
+  auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
+      {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
+  dirtran.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
+
+  // IPOPT fails for a convergence tolerance < 1.4e-8. Set this tolerance
+  // manually if IPOPT is the chosen solver.
+  if (solvers::ChooseBestSolver(dirtran) == solvers::IpoptSolver::id()) {
+    solvers::IpoptSolver ipopt_solver;
+    solvers::SolverOptions options;
+    options.SetOption(ipopt_solver.id(), "tol", 1.4e-8);
+    const auto result = ipopt_solver.Solve(dirtran, {}, options);
+    DRAKE_DEMAND(result.is_success());
+  } else {
+    const auto result = solvers::Solve(dirtran);
+    DRAKE_DEMAND(result.is_success());
   }
 }
 
