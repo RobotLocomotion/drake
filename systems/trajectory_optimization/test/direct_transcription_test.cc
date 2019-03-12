@@ -7,8 +7,12 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/piecewise_polynomial_linear_system.h"
@@ -170,6 +174,65 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
     EXPECT_TRUE(
         CompareMatrices(dynamic_constraint_val, dynamic_constraint_expected) ||
         CompareMatrices(dynamic_constraint_val, -dynamic_constraint_expected));
+  }
+}
+
+// This example tests the System specialization of the constructor. The test
+// sets up and solves the pendulum swing-up trajectory optimization problem
+// using a MultibodyPlant, with initial and final state constraints, and
+// input constraints.
+GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSystemTest) {
+  const char* const urdf_path =
+      "drake/examples/pendulum/Pendulum.urdf";
+  const double kTimeStep = 0.05;
+  auto pendulum =
+      std::make_unique<multibody::MultibodyPlant<double>>(kTimeStep);
+  pendulum->AddForceElement<multibody::UniformGravityFieldElement>();
+  multibody::Parser sparser(pendulum.get());
+  sparser.AddModelFromFile(FindResourceOrThrow(urdf_path));
+  pendulum->WeldFrames(pendulum->world_frame(),
+                       pendulum->GetFrameByName("base_part2"));
+  pendulum->Finalize();
+
+  auto context = pendulum->CreateDefaultContext();
+  const int actuation_port_index =
+      pendulum->get_actuation_input_port().get_index();
+  const int kNumTimeSamples = 100;
+  DirectTranscription dirtran(pendulum.get(), *context, kNumTimeSamples,
+                              actuation_port_index);
+
+  const double kTorqueLimit = 3.0;  // N*m.
+  const solvers::VectorXDecisionVariable &u = dirtran.input();
+  dirtran.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dirtran.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
+
+  const int kNumStateVariables = 2;
+  BasicVector<double> initial_state(kNumStateVariables);
+  BasicVector<double> final_state(kNumStateVariables);
+
+  const int kTheta_index = 0;
+  const int kThetadot_index = 1;
+  initial_state.SetAtIndex(kTheta_index, 0.0);
+  initial_state.SetAtIndex(kThetadot_index, 0.0);
+  final_state.SetAtIndex(kTheta_index, M_PI);
+  final_state.SetAtIndex(kThetadot_index, 0.0);
+
+  dirtran.AddLinearConstraint(dirtran.initial_state() ==
+                              initial_state.get_value());
+  dirtran.AddLinearConstraint(dirtran.final_state() == final_state.get_value());
+
+  const double R = 10;  // Cost on input "effort".
+  dirtran.AddRunningCost((R * u) * u);
+
+  const double timespan_init = 4;
+  auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
+      {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
+  dirtran.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
+
+  solvers::SnoptSolver solver;
+  if (solver.is_available()) {
+    const auto result = solver.Solve(dirtran, {}, {});
+    DRAKE_DEMAND(result.is_success());
   }
 }
 

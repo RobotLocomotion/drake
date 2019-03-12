@@ -153,6 +153,12 @@ drake_cc_binary(
 
 # === test/ ===
 
+filegroup(
+    name = "pendulum_model",
+    srcs = ["Pendulum.urdf"],
+    visibility = ["//visibility:public"],
+)
+
 drake_cc_googletest(
     name = "urdf_dynamics_test",
     data = ["Pendulum.urdf"],
