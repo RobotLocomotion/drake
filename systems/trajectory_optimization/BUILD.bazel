@@ -16,6 +16,19 @@ drake_cc_package_library(
         ":direct_collocation",
         ":direct_transcription",
         ":multiple_shooting",
+        ":sequential_expression_manager",
+    ],
+)
+
+drake_cc_library(
+    name = "sequential_expression_manager",
+    srcs = ["sequential_expression_manager.cc"],
+    hdrs = [
+        "sequential_expression_manager.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:symbolic",
     ],
 )
 
@@ -24,10 +37,10 @@ drake_cc_library(
     srcs = ["multiple_shooting.cc"],
     hdrs = ["multiple_shooting.h"],
     deps = [
+        ":sequential_expression_manager",
         "//common:essential",
         "//common/trajectories:piecewise_polynomial",
         "//solvers:mathematical_program",
-        "//systems/framework",
     ],
 )
 
@@ -43,6 +56,7 @@ drake_cc_library(
         ":multiple_shooting",
         "//math:autodiff",
         "//math:gradient",
+        "//systems/framework",
     ],
 )
 
@@ -58,6 +72,7 @@ drake_cc_library(
         ":multiple_shooting",
         "//math:autodiff",
         "//math:gradient",
+        "//systems/framework",
         "//systems/primitives:linear_system",
         "//systems/primitives:piecewise_polynomial_linear_system",
     ],
@@ -93,6 +108,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//solvers:solve",
         "//systems/primitives:piecewise_polynomial_linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sequential_expression_manager_test",
+    deps = [
+        ":sequential_expression_manager",
+        "@fmt",
     ],
 )
 
