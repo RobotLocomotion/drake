@@ -115,19 +115,21 @@ double get_period(const System<double>* system) {
 
 DirectTranscription::DirectTranscription(const System<double>* system,
                                          const Context<double>& context,
-                                         int num_time_samples)
-    : MultipleShooting(
-          system->get_num_total_inputs(), context.get_num_total_states(),
-          num_time_samples, get_period(system)),
+                                         int num_time_samples,
+                                         int input_port_index)
+    : MultipleShooting(system->get_input_port(input_port_index).size(),
+                       context.get_num_total_states(), num_time_samples,
+                       get_period(system)),
       discrete_time_system_(true) {
   // Note: this constructor is for discrete-time systems.  For continuous-time
   // systems, you must use a different constructor that specifies the timesteps.
-  ValidateSystem(*system, context);
+  ValidateSystem(*system, context, input_port_index);
 
   // First try symbolic dynamics.
-  if (!AddSymbolicDynamicConstraints(system, context)) {
-    AddAutodiffDynamicConstraints(system, context);
-  }
+  //  if (!AddSymbolicDynamicConstraints(system, context)) {
+  //    AddAutodiffDynamicConstraints(system, context);
+  //  }
+  AddAutodiffDynamicConstraints(system, context, input_port_index);
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
@@ -291,7 +293,8 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
 }
 
 void DirectTranscription::AddAutodiffDynamicConstraints(
-    const System<double>* system, const Context<double>& context) {
+    const System<double>* system, const Context<double>& context,
+    int input_port_index) {
   system_ = system->ToAutoDiffXd();
   DRAKE_DEMAND(system_ != nullptr);
   context_ = system_->CreateDefaultContext();
@@ -300,9 +303,55 @@ void DirectTranscription::AddAutodiffDynamicConstraints(
   context_->SetTimeStateAndParametersFrom(context);
 
   if (context_->get_num_input_ports() > 0) {
-    // Allocate the input port and keep an alias around.
-    input_port_value_ = &context_->FixInputPort(
-        0, system_->AllocateInputVector(system_->get_input_port(0)));
+    // Specify the input port of interest
+    if (input_port_index >= 0 &&
+        input_port_index < system->get_num_input_ports()) {
+      // This is the input port we care about.
+      auto input_port = &(system->get_input_port(input_port_index));
+
+      // Verify that the input port is not abstract valued.
+      if (input_port &&
+          input_port->get_data_type() == PortDataType::kAbstractValued) {
+        throw std::logic_error(
+            "Port requested for differentiation is abstract, and "
+            "differentiation "
+            "of abstract ports is not supported.");
+      }
+
+      // Allocate the input port and keep an alias around.
+      input_port_value_ = &context_->FixInputPort(
+          input_port_index, system_->AllocateInputVector(
+                                system_->get_input_port(input_port_index)));
+    }
+    // Fix autodiff'd versions of the inputs to the autodiff'd Context.
+    for (int i = 0; i < system->get_num_input_ports(); ++i) {
+      // The input port we care about shouldn't be connected.
+      if (i == input_port_index) {
+        continue;
+      }
+
+      const InputPort<double>& input_port_i =
+          system->get_input_port(InputPortIndex(i));
+
+      // Look for abstract valued port.
+      if (input_port_i.get_data_type() == PortDataType::kAbstractValued) {
+        if (input_port_i.HasValue(context)) {
+          throw std::logic_error(fmt::format(
+              "Unable to linearize system with connected abstract port ({}) - "
+              "connected abstract ports not yet supported.",
+              input_port_i.get_name()));
+        }
+        continue;
+      }
+
+      // Must be a vector valued port. First look to see whether it's connected
+      // or zero-dimensional.
+      if ((input_port_i.size() > 0) && !input_port_i.HasValue(context)) {
+          Eigen::VectorXd u(input_port_i.size());
+          u.setZero();
+          context_->FixInputPort(i, u.cast<AutoDiffXd>());
+      }
+    }
   }
 
   // For N-1 timesteps, add a constraint which depends on the knot
@@ -322,6 +371,17 @@ void DirectTranscription::ConstrainEqualInputAtFinalTwoTimesteps() {
   if (num_inputs() > 0) {
     AddLinearEqualityConstraint(input(N() - 2) == input(N() - 1));
   }
+}
+
+void DirectTranscription::ValidateSystem(const System<double>& system,
+                                         const Context<double>& context,
+                                         int input_port_index) {
+  DRAKE_DEMAND(context.has_only_discrete_state());
+  DRAKE_DEMAND(context.get_num_discrete_state_groups() == 1);
+  DRAKE_DEMAND(num_states() == context.get_discrete_state(0).size());
+  DRAKE_DEMAND(num_inputs() == (context.get_num_input_ports() > 0
+                                ? system.get_input_port(input_port_index).size()
+                                : 0));
 }
 
 void DirectTranscription::ValidateSystem(const System<double>& system,

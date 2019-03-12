@@ -39,7 +39,8 @@ class DirectTranscription : public MultipleShooting {
   ///    optimization.
   /// @param num_time_samples The number of knot points in the trajectory.
   DirectTranscription(const System<double>* system,
-                      const Context<double>& context, int num_time_samples);
+                      const Context<double>& context, int num_time_samples,
+                      int input_port_index);
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for *linear* discrete-time systems
@@ -122,7 +123,8 @@ class DirectTranscription : public MultipleShooting {
   // the generic (nonlinear) constraints to impose the dynamics.
   // Aborts if the conversion ToAutoDiffXd fails.
   void AddAutodiffDynamicConstraints(const System<double>* system,
-                                     const Context<double>& context);
+                                     const Context<double>& context,
+                                     int input_port_index);
 
   // Constrain the final input to match the penultimate, otherwise the final
   // input is unconstrained.
@@ -132,6 +134,13 @@ class DirectTranscription : public MultipleShooting {
   // TODO(jadecastro) Allow MultipleShooting to take on N-1 inputs, and remove
   // this constraint.
   void ConstrainEqualInputAtFinalTwoTimesteps();
+
+  // Ensures that the MultipleShooting problem is well-formed and that the
+  // provided @p system and @p context have only one group of discrete states
+  // and only one (possibly multidimensional) input.
+  void ValidateSystem(const System<double>& system,
+                      const Context<double>& context,
+                      int input_port_index);
 
   // Ensures that the MultipleShooting problem is well-formed and that the
   // provided @p system and @p context have only one group of discrete states

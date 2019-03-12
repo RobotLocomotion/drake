@@ -14,7 +14,7 @@
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
-#include "drake/systems/trajectory_optimization/direct_collocation.h"
+#include "drake/systems/trajectory_optimization/direct_transcription.h"
 
 using drake::solvers::SolutionResult;
 
@@ -33,26 +33,22 @@ DEFINE_double(target_realtime_rate, 1.0,
 int DoMain() {
   systems::DiagramBuilder<double> builder;
 
-  auto pendulum = std::make_unique<PendulumPlant<double>>();
+  auto pendulum = std::make_unique<PendulumPlant<double>>(0.01);
   pendulum->set_name("pendulum");
 
   auto context = pendulum->CreateDefaultContext();
 
-  const int kNumTimeSamples = 21;
-  const double kMinimumTimeStep = 0.2;
-  const double kMaximumTimeStep = 0.5;
-  systems::trajectory_optimization::DirectCollocation dircol(
-      pendulum.get(), *context, kNumTimeSamples, kMinimumTimeStep,
-      kMaximumTimeStep);
+  const int actuation_port_index =
+      pendulum->get_input_port().get_index();
 
-  dircol.AddEqualTimeIntervalsConstraints();
+  const int kNumTimeSamples = 500;
+  systems::trajectory_optimization::DirectTranscription dirtran(
+      pendulum.get(), *context, kNumTimeSamples, actuation_port_index);
 
-  // TODO(russt): Add this constraint to PendulumPlant and get it automatically
-  // through DirectCollocation.
+  const solvers::VectorXDecisionVariable& u = dirtran.input();
   const double kTorqueLimit = 3.0;  // N*m.
-  const solvers::VectorXDecisionVariable& u = dircol.input();
-  dircol.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
-  dircol.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
+  dirtran.AddConstraintToAllKnotPoints(-kTorqueLimit <= u(0));
+  dirtran.AddConstraintToAllKnotPoints(u(0) <= kTorqueLimit);
 
   PendulumState<double> initial_state, final_state;
   initial_state.set_theta(0.0);
@@ -60,42 +56,49 @@ int DoMain() {
   final_state.set_theta(M_PI);
   final_state.set_thetadot(0.0);
 
-  dircol.AddLinearConstraint(dircol.initial_state() ==
+  dirtran.AddLinearConstraint(dirtran.initial_state() ==
                              initial_state.get_value());
-  dircol.AddLinearConstraint(dircol.final_state() == final_state.get_value());
+  dirtran.AddLinearConstraint(dirtran.final_state() == final_state.get_value());
 
   const double R = 10;  // Cost on input "effort".
-  dircol.AddRunningCost((R * u) * u);
+  dirtran.AddRunningCost((R * u) * u);
 
-  const double timespan_init = 4;
+  const double timespan_init = 5;
   auto traj_init_x = PiecewisePolynomial<double>::FirstOrderHold(
       {0, timespan_init}, {initial_state.get_value(), final_state.get_value()});
-  dircol.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
-  const auto result = solvers::Solve(dircol);
+  dirtran.SetInitialTrajectory(PiecewisePolynomial<double>(), traj_init_x);
+  const auto result = solvers::Solve(dirtran);
   if (!result.is_success()) {
     std::cerr << "Failed to solve optimization for the swing-up trajectory"
-              << std::endl;
+              << " using solver "<< result.get_solver_id().name() << std::endl;
+    std::cerr << "Solution result: " << result.get_solution_result();
     return 1;
+  } else {
+    std::cerr << "Solved with solver " << result.get_solver_id().name()
+              << std::endl;
   }
 
   const PiecewisePolynomial<double> pp_traj =
-      dircol.ReconstructInputTrajectory(result);
+      dirtran.ReconstructInputTrajectory(result);
   const PiecewisePolynomial<double> pp_xtraj =
-      dircol.ReconstructStateTrajectory(result);
+      dirtran.ReconstructStateTrajectory(result);
   auto input_trajectory = builder.AddSystem<systems::TrajectorySource>(pp_traj);
   input_trajectory->set_name("input trajectory");
   auto state_trajectory =
       builder.AddSystem<systems::TrajectorySource>(pp_xtraj);
   state_trajectory->set_name("state trajectory");
 
+  // Simulate with the continuous time plant.
+  auto spendulum = std::make_unique<PendulumPlant<double>>();
+
   auto scene_graph = builder.AddSystem<geometry::SceneGraph>();
-  pendulum->RegisterGeometry(pendulum->get_parameters(*context),
+  spendulum->RegisterGeometry(spendulum->get_parameters(*context),
                              scene_graph);
-  const geometry::SourceId source_id = pendulum->source_id();
-  const int state_port_index = pendulum->get_state_output_port().get_index();
-  const int input_port_index = pendulum->get_input_port().get_index();
+  const geometry::SourceId source_id = spendulum->source_id();
+  const int state_port_index = spendulum->get_state_output_port().get_index();
+  const int input_port_index = spendulum->get_input_port().get_index();
   const int geometry_port_index =
-      pendulum->get_geometry_pose_output_port().get_index();
+      spendulum->get_geometry_pose_output_port().get_index();
 
   // The choices of PidController constants here are fairly arbitrary,
   // but seem to effectively swing up the pendulum and hold it.
@@ -104,7 +107,7 @@ int DoMain() {
   const double Kd = 1;
   auto pid_controlled_pendulum =
       builder.AddSystem<systems::controllers::PidControlledSystem<double>>(
-          std::move(pendulum), Kp, Ki, Kd, state_port_index, input_port_index);
+          std::move(spendulum), Kp, Ki, Kd, state_port_index, input_port_index);
   pid_controlled_pendulum->set_name("PID Controlled Pendulum");
 
   builder.Connect(input_trajectory->get_output_port(),

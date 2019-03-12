@@ -35,7 +35,7 @@ class PendulumPlant final : public systems::LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PendulumPlant);
 
   /** Constructs a default plant. */
-  PendulumPlant();
+  PendulumPlant(double time_step = 0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -74,24 +74,47 @@ class PendulumPlant final : public systems::LeafSystem<T> {
     return this->get_input_port().Eval(context)(0);
   }
 
-  static const PendulumState<T>& get_state(
+  // TODO(rcory) check time step before returning continuous or discrete states.
+  static const PendulumState<T>& get_continuous_state(
       const systems::ContinuousState<T>& cstate) {
     return dynamic_cast<const PendulumState<T>&>(cstate.get_vector());
   }
 
-  static const PendulumState<T>& get_state(const systems::Context<T>& context) {
-    return get_state(context.get_continuous_state());
+  static const PendulumState<T>& get_continuous_state(
+      const systems::Context<T>& context) {
+    return get_continuous_state(context.get_continuous_state());
   }
 
-  static PendulumState<T>& get_mutable_state(
+  static PendulumState<T>& get_mutable_continuous_state(
       systems::ContinuousState<T>* cstate) {
     return dynamic_cast<PendulumState<T>&>(cstate->get_mutable_vector());
   }
 
-  static PendulumState<T>& get_mutable_state(systems::Context<T>* context) {
-    return get_mutable_state(&context->get_mutable_continuous_state());
+  static PendulumState<T>& get_mutable_continuous_state(
+      systems::Context<T>* context) {
+    return get_mutable_continuous_state(
+        &context->get_mutable_continuous_state());
   }
 
+  static const PendulumState<T>& get_discrete_state(
+      const systems::DiscreteValues<T>& dstate) {
+    return dynamic_cast<const PendulumState<T>&>(dstate.get_vector());
+  }
+
+  static const PendulumState<T>& get_discrete_state(
+      const systems::Context<T>& context) {
+    return get_discrete_state(context.get_discrete_state());
+  }
+
+  static PendulumState<T>& get_mutable_discrete_state(
+      systems::DiscreteValues<T>* dstate) {
+    return dynamic_cast<PendulumState<T>&>(dstate->get_mutable_vector());
+  }
+
+  static PendulumState<T>& get_mutable_discrete_state(
+      systems::Context<T>* context) {
+    return get_mutable_discrete_state(&context->get_mutable_discrete_state());
+  }
 
   const PendulumParams<T>& get_parameters(
       const systems::Context<T>& context) const {
@@ -103,6 +126,9 @@ class PendulumPlant final : public systems::LeafSystem<T> {
     return this->template GetMutableNumericParameter<PendulumParams>(
         context, 0);
   }
+
+  double time_step() const {return time_step_; }
+  bool is_discrete() const { return is_discrete_; }
 
  private:
   systems::OutputPortIndex AllocateGeometryPoseOutputPort();
@@ -119,10 +145,23 @@ class PendulumPlant final : public systems::LeafSystem<T> {
       const systems::Context<T>& context,
       systems::ContinuousState<T>* derivatives) const override;
 
+  void DoCalcDiscreteVariableUpdates(
+      const systems::Context<T>& context,
+      const std::vector<const systems::DiscreteUpdateEvent<T>*>& events,
+      systems::DiscreteValues<T>* discrete_state) const override;
+
+  void DoStateUpdate(const systems::Context<T>& context,
+                     systems::DiscreteValues<T>* discrete_state) const;
 
   // Port handles.
   int state_port_{-1};
   int geometry_pose_port_{-1};
+
+  // If the plant is modeled as a discrete system with periodic updates,
+  // time_step_ corresponds to the period of those updates. Otherwise, if the
+  // plant is modeled as a continuous system, it is exactly zero.
+  double time_step_{0};
+  bool is_discrete_{false};
 
   // Geometry source identifier for this system to interact with SceneGraph.
   geometry::SourceId source_id_{};

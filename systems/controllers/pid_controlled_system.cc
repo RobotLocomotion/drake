@@ -11,15 +11,17 @@ namespace controllers {
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
                                             double Kp, double Ki, double Kd,
-                                            int state_output_port_index)
-    : state_output_port_index_(state_output_port_index) {
-  const int input_size = plant->get_input_port(0).size();
+                                            int state_output_port_index,
+                                            int control_input_port_index)
+    : state_output_port_index_(state_output_port_index),
+    control_input_port_index_(control_input_port_index) {
+  const int input_size = plant->get_input_port(control_input_port_index_).size();
   const Eigen::VectorXd Kp_v = Eigen::VectorXd::Ones(input_size) * Kp;
   const Eigen::VectorXd Ki_v = Eigen::VectorXd::Ones(input_size) * Ki;
   const Eigen::VectorXd Kd_v = Eigen::VectorXd::Ones(input_size) * Kd;
   const MatrixX<double> selector =
-    MatrixX<double>::Identity(plant->get_input_port(0).size() * 2,
-                              plant->get_input_port(0).size() * 2);
+    MatrixX<double>::Identity(plant->get_input_port(control_input_port_index_).size() * 2,
+                              plant->get_input_port(control_input_port_index_).size() * 2);
   Initialize(std::move(plant), selector, Kp_v, Ki_v, Kd_v);
 }
 
@@ -28,17 +30,21 @@ PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
                                             const Eigen::VectorXd& Kp,
                                             const Eigen::VectorXd& Ki,
                                             const Eigen::VectorXd& Kd,
-                                            int state_output_port_index)
+                                            int state_output_port_index,
+                                            int control_input_port_index)
     : PidControlledSystem(std::move(plant), MatrixX<double>::Identity(
                                                 2 * Kp.size(), 2 * Kp.size()),
-                          Kp, Ki, Kd, state_output_port_index) {}
+                          Kp, Ki, Kd, state_output_port_index,
+                          control_input_port_index) {}
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
-    double Kp, double Ki, double Kd, int state_output_port_index)
-    : state_output_port_index_(state_output_port_index) {
-  const int input_size = plant->get_input_port(0).size();
+    double Kp, double Ki, double Kd, int state_output_port_index,
+    int control_input_port_index)
+    : state_output_port_index_(state_output_port_index),
+    control_input_port_index_(control_input_port_index) {
+  const int input_size = plant->get_input_port(control_input_port_index_).size();
   const Eigen::VectorXd Kp_v = Eigen::VectorXd::Ones(input_size) * Kp;
   const Eigen::VectorXd Ki_v = Eigen::VectorXd::Ones(input_size) * Ki;
   const Eigen::VectorXd Kd_v = Eigen::VectorXd::Ones(input_size) * Kd;
@@ -49,8 +55,10 @@ template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
     std::unique_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
-    const Eigen::VectorXd& Kd, int state_output_port_index)
-    : state_output_port_index_(state_output_port_index) {
+    const Eigen::VectorXd& Kd, int state_output_port_index,
+    int control_input_port_index)
+    : state_output_port_index_(state_output_port_index),
+    control_input_port_index_(control_input_port_index) {
   Initialize(std::move(plant), feedback_selector, Kp, Ki, Kd);
 }
 
@@ -68,12 +76,21 @@ void PidControlledSystem<T>::Initialize(
   // state_output_port_index_ will be checked by the get_output_port call below.
 
   auto input_ports =
-      ConnectController(plant_->get_input_port(0),
+      ConnectController(plant_->get_input_port(control_input_port_index_),
                         plant_->get_output_port(state_output_port_index_),
                         feedback_selector, Kp, Ki, Kd, &builder);
 
   builder.ExportInput(input_ports.control_input_port);
   builder.ExportInput(input_ports.state_input_port);
+
+  // Export all remaining plant input ports for external use.
+  for (int i = 0; i < plant_->get_num_input_ports(); i++) {
+    if (i == control_input_port_index_) {
+      continue;
+    } else {
+      builder.ExportInput(plant_->get_input_port(i));
+    }
+  }
 
   for (int i=0; i < plant_->get_num_output_ports(); i++) {
     builder.ExportOutput(plant_->get_output_port(i));

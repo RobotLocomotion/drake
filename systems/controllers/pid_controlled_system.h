@@ -76,7 +76,8 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] state_output_port_index identifies the output port on the
   /// plant that contains the (full) state information.
   PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
-                      double Kd, int state_output_port_index = 0);
+                      double Kd, int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   /// @p plant full state is used for feedback control, and the vectorized gains
   /// are specified by @p Kp, @p Kd and @p Ki.
@@ -90,7 +91,8 @@ class PidControlledSystem : public Diagram<T> {
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
-                      int state_output_port_index = 0);
+                      int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -107,7 +109,8 @@ class PidControlledSystem : public Diagram<T> {
   /// plant that contains the (full) state information.
   PidControlledSystem(std::unique_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector, double Kp,
-                      double Ki, double Kd, int state_output_port_index = 0);
+                      double Ki, double Kd, int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   /// A constructor where the gains are vector values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -126,7 +129,8 @@ class PidControlledSystem : public Diagram<T> {
                       const MatrixX<double>& feedback_selector,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
-                      int state_output_port_index = 0);
+                      int state_output_port_index = 0,
+                      int control_input_port_index = 0);
 
   ~PidControlledSystem() override;
 
@@ -211,6 +215,7 @@ class PidControlledSystem : public Diagram<T> {
 
   System<T>* plant_{nullptr};
   const int state_output_port_index_;
+  const int control_input_port_index_;
 };
 
 }  // namespace controllers

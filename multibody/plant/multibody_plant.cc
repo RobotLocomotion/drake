@@ -943,7 +943,8 @@ template<typename T>
 std::vector<PenetrationAsPointPair<T>>
 MultibodyPlant<T>::CalcPointPairPenetrations(
     const systems::Context<T>&) const {
-  throw std::domain_error("This method only supports T = double.");
+//  throw std::domain_error("This method only supports T = double.");
+  return std::vector<PenetrationAsPointPair<T>>();
 }
 
 template<typename T>
