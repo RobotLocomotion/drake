@@ -13,20 +13,20 @@ compiled and run on systems running unsupported operating systems or with
 incompatible configurations to the software dependencies. Docker is available
 for `all major operating systems <https://www.docker.com/community-edition>`_.
 
-Two Docker containers are provided with Drake to allow developers to test and
-develop without needing to configure a supported operating system. These
-containers will build Drake in isolated Ubuntu 16.04 environments.
+Several Docker containers are provided with Drake to allow developers to test
+and develop without needing to configure a supported operating system. These
+containers will build Drake in isolated Ubuntu environments.
 
-The Nvidia Dockerfile is based upon the Nvidia Docker plugin base image, which
-also contains CUDA support. The opensource Dockerfile is based on the
-the vanilla Ubuntu 16.04 image and is intended to support open source graphics
+The NVIDIA Dockerfiles is based upon the nvdia-docker base image, which
+also contains CUDA support. The open source Dockerfiles are based on the
+the offical Ubuntu base images and are intended to support open source graphics
 card drivers such as Nouveau and Intel. Should you need to build inside of
 another base image (FROM line in the Dockerfile), they are available `here
 <https://hub.docker.com/explore/>`_.
 
 .. note::
 
-  This docker image is provided as an experimental feature and is not
+  The Drake Docker images are provided as an experimental feature and is not
   presently covered by continuous integration.
 
   However, there are downstream usages of Drake within a Docker container:
@@ -38,85 +38,90 @@ another base image (FROM line in the Dockerfile), they are available `here
 
 .. _docker_getting_started:
 
-Getting Started
-===============
-In order to get docker installed, please follow guides specific to your
-operating system. The typical steps are:
+Installing Docker Community Edition
+===================================
+Follow the instructions on the Docker website to
+`install stable Docker Community Edition <https://docs.docker.com/install/>`_.
 
-  #. Install docker from your distribution's package manager or official installer
-     from `Docker
-     <https://store.docker.com/search?type=edition&offering=community>`_
+.. _installing_nvidia_docker_20:
 
-  #. Enable Docker to run as a daemon/service
-  #. Add appropriate users to the docker group to give permissions to interact
-     with the Docker service
+Installing nvidia-docker 2.0
+============================
+If you have an NVIDIA GPU and are running a recent version of Linux, optionally
+follow the instructions on the NVIDIA website to
+`install NVIDIA CUDA 10.1 drivers and toolkit <https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html>`_.
 
-  #. Log out and back in to update user groups
-  #. Happy dockering!
-
-These steps on Ubuntu 16.04 x86_64 are:
+These steps on Ubuntu 18.04 (Bionic Beaver) are as follows:
 
 ::
 
-  $ wget https://download.docker.com/linux/ubuntu/dists/xenial/pool/stable/amd64/docker-ce_17.03.1~ce-0~ubuntu-xenial_amd64.deb
-  $ sudo dpkg -i docker-ce_17.03.1~ce-0~ubuntu-xenial_amd64.deb
-  $ sudo systemctl start docker
-  $ sudo usermod -aG docker <username>
+   sudo apt-get update
+   sudo apt-get install --no-install-recommends build-essential linux-headers-$(uname -r) wget
+   wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.1.105-1_amd64.deb
+   sudo dpkg -i cuda-repo-ubuntu1804_10.1.105-1_amd64.deb
+   rm -f cuda-repo-ubuntu1804_10.1.105-1_amd64.deb
+   sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+   sudo apt-get update
+   sudo apt-get install --no-install-recommends cuda-10-1
 
-Log out and then back in.
+Then, follow the instructions on the nvidia-docker wiki to
+`install nvidia-docker 2.0 <https://github.com/NVIDIA/nvidia-docker/wiki/Installation-(version-2.0)>`_.
 
 .. _docker_building:
 
-Building
-========
+Building a Drake Docker Image
+=============================
 
-Clone the Drake source code as described in
-:ref:`Getting Drake <getting_drake>`.
-
-The the following build commands will copy the full ``drake`` directory
-from your host machine into the Docker container where it may be built and run.
-
-Nvidia
-~~~~~~
-When using the Nvidia proprietary drivers:
+Install ``git``, clone the Drake source code as described in
+:ref:`Getting Drake <getting_drake>`, and then change into the root of the
+cloned repository and build a drake image from one of the provided Dockerfiles
+as follows:
 
 ::
 
-  $ cd drake
-  $ docker build -t drake -f setup/ubuntu/docker/xenial/Dockerfile.nvidia-cuda-8.0-devel-ubuntu16.04 .
+  git clone https://github.com/RobotLocomotion/drake.git
+  cd drake
+  docker build --file <dockerfile> --tag drake .
 
-Open Source
-~~~~~~~~~~~
-When using open source video drivers (Nouveau, Intel, ...):
+where ``<dockerfile>`` is one of the following files:
+
+* ``setup/ubuntu/docker/xenial/Dockerfile``: Ubuntu 16.04 (Xenial Xerus) base
+  image
+* ``setup/ubuntu/docker/xenial/Dockerfile.nvidia-cuda-10.1-devel-ubuntu16.04``:
+  Ubuntu 16.04 (Xenial Xerus) base image with nvidia-docker support
+* ``setup/ubuntu/docker/bionic/Dockerfile``: Ubuntu 18.04 (Bionic Beaver) base
+  image
+* ``setup/ubuntu/docker/bionic/Dockerfile.nvidia-cuda-10.1-devel-ubuntu18.04``:
+  Ubuntu 18.04 (Bionic Beaver) base image with nvidia-docker support
+
+Verify that image has been build successfully using the ``docker images``
+command. You should see an informational message similar to the following:
 
 ::
 
-  $ cd drake
-  $ docker build -t drake -f setup/ubuntu/docker/xenial/Dockerfile .
-
-If successful, ``docker images`` should show an image named drake and
-``docker ps`` will show any running Docker containers on your system.
+  REPOSITORY          TAG                      IMAGE ID            CREATED             SIZE
+  drake               latest                   000000000000        About a minute ago  6.45GB
 
 .. _docker_running:
 
-Running
-=======
+Running a Drake Docker Image
+============================
 
-.. _docker_running_simulation:
-
-The simplest run command is
+The simplest run commands are:
 
 ::
 
-  $ docker run -it drake bash
+  docker run --interactive --tty drake bash
+  docker run --interactive --runtime=nvidia --tty drake bash
 
-which will give you bash shell access to the Ubuntu 16.04 Docker container
+Use ``--runtime=nvidia`` if you built your image with nvidia-docker support.
+These commands will give you bash shell access to a running Docker container
 where you can run commands such as:
 
 ::
 
-  $ bazel build //...
-  $ bazel test //...
+  bazel build //...
+  bazel test //...
 
 These commands will build all packages using bazel and run all tests.
 
@@ -124,96 +129,78 @@ Graphical Interface
 ~~~~~~~~~~~~~~~~~~~
 
 The run command in order to get graphical interfaces from the Docker container
-is a bit more involved. Two systems are described below one with Nvidia
-proprietary graphics card drivers and one with open source drivers like Nouveau
-and Intel.
-
-.. _docker_running_simulation_nvidia:
-
-Nvidia drivers:
----------------
-The `nvidia-docker <https://github.com/NVIDIA/nvidia-docker/>`_ plugin is
-required in order to pass Xorg drawing commands to your host system when the
-proprietary Nvidia GPU drivers are installed. To install Nvidia GPU drivers with
-apt on Ubuntu 16.04::
-
-  $ sudo apt install nvidia-361 nvidia-modprobe
-
-To install nvidia-docker on Ubuntu 16.04:
+is a bit more involved:
 
 ::
 
-  $ wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
-  $ sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
-  $ nvidia-docker run --rm nvidia/cuda nvidia-smi
+  xhost +local:root; docker run \
+    --env=DISPLAY \
+    --env=QT_X11_NO_MITSHM=1 \
+    --interactive \
+    --ipc=host \
+    --privileged \
+    --tty \
+    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+    drake; xhost -local:root
 
+  xhost +local:root; docker run \
+    --env=DISPLAY \
+    --env=QT_X11_NO_MITSHM=1 \
+    --interactive \
+    --ipc=host \
+    --privileged \
+    --runtime=nvidia \
+    --tty \
+    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+    drake; xhost -local:root
 
-::
+As above, use ``--runtime=nvidia`` if you built your image with nvidia-docker
+support. The default command defined behavior will start the Drake Visualizer
+and run the bowling ball simulation.
 
-  $ xhost +local:root; nvidia-docker run -i --rm -e DISPLAY \
-  -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \
-  --privileged -t drake; xhost -local:root
+``xhost +local:root`` and ``xhost -local:root`` allow and remove access for
+non-network connections to your local X server and pass the necessary X11
+parameters for graphical display of programs within the Docker container.
 
-The default command defined behavior will start the Drake Visualizer and run
-the bowling ball simulation.
-
-Walking through this command:
-
-* ``xhost +local:root`` will allow access for non-network connections to your
-  local X server and pass the necessary X11 parameters for graphical display of
-  programs within the Docker container.
-* ``docker-nvidia`` is an Nvidia plugin that couples with the proprietary
-  Nvidia drivers and gives access to advanced features like CUDA.
-* ``-i`` assigns a tty for interactive text connections within the console.
-* ``--rm`` will clean up after the image, omit this to allow the container's
-  file system to persist.
-* ``-e DISPLAY`` forwards your host DISPLAY environment variable to the Docker
-  container.
-* ``-e QT_X11_NO_MITSHM=1`` specifies to not use the MIT magic cookie.
-* ``-v /tmp/.X11-unix:/tmp/.X11-unix`` shares the host .X11 interface with the
-  Docker container as a volume.
-* ``--privileged`` is only needed on selinux systems.
-* ``-t drake`` provides the Docker container name, and
-* ``xhost -local:root`` removes the permission given earlier for local
-  non-network connections to X.
-
-See the `Docker Run Reference
-<https://docs.docker.com/engine/reference/run/>`_ for more information on
+See the `docker run reference
+<https://docs.docker.com/engine/reference/commandline/run/>`_ for information on
 run options.
 
 It is also possible to enter a bash shell for interactive development with:
 
 ::
 
-  $ xhost +local:root; nvidia-docker run -i --rm -e DISPLAY \
-  -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \
-  --privileged -t drake bash; xhost -local:root
+  xhost +local:root; docker run \
+    --env=DISPLAY \
+    --env=QT_X11_NO_MITSHM=1 \
+    --interactive \
+    --ipc=host \
+    --privileged \
+    --tty \
+    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+    drake bash; xhost -local:root
+
+  xhost +local:root; docker run \
+    --env=DISPLAY \
+    --env=QT_X11_NO_MITSHM=1 \
+    --interactive \
+    --ipc=host \
+    --privileged \
+    --runtime=nvidia \
+    --tty \
+    --volume=/tmp/.X11-unix:/tmp/.X11-unix:rw \
+    drake bash; xhost -local:root
 
 where you may want to try various demonstrations, e.g.:
 
 ::
 
-  $ bazel run //examples/contact_model:bowling_ball
-  $ bazel run //examples/kuka_iiwa_arm:kuka_simulation
-  $ bazel run //examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
+  bazel run //examples/contact_model:bowling_ball
+  bazel run //examples/kuka_iiwa_arm:kuka_simulation
+  bazel run //examples/kuka_iiwa_arm/dev/monolithic_pick_and_place:monolithic_pick_and_place_demo
 
 
 Note: these are currently not rendering properly due to VTK .obj/.mtl importing.
-
-
-.. _docker_running_simulation_open:
-
-Open source drivers:
-~~~~~~~~~~~~~~~~~~~~
-With open source graphics drivers like Nouveau and Intel you do not need the
-Nvidia Docker plugin.
-
-::
-
-  $ xhost +local:root; docker run -i --rm -e DISPLAY \
-  -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix \
-  --privileged -t drake; xhost -local:root
-
 
 Sharing Files Between Host and Docker:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

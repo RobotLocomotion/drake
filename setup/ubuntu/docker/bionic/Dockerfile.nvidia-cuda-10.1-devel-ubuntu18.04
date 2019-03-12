@@ -1,4 +1,4 @@
-FROM nvidia/cuda:8.0-devel-ubuntu16.04
+FROM nvidia/cuda:10.1-devel-ubuntu18.04
 WORKDIR /drake
 COPY setup/ubuntu setup/ubuntu
 RUN set -eux \
