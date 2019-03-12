@@ -62,42 +62,44 @@ class RK3IntegratorTest : public ::testing::Test {
   std::unique_ptr<multibody::MultibodyPlant<double>> plant_{};
 };
 
-/// System for the cubic equation t^3 + t^2 + 12t
+// System where the state at t corresponds to the cubic equation
+// t^3 + t^2 + 12t + C, where C is the initial value (the state at t=0).
 class Cubic : public LeafSystem<double> {
  public:
-  Cubic() {
-    this->DeclareContinuousState(1);
-  }
+  Cubic() { this->DeclareContinuousState(1); }
 
  private:
-  void DoCalcTimeDerivatives(const Context<double>& context, ContinuousState<double>* deriv) const override {
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
     (*deriv)[0] = 3*t*t + 2*t + 12;
   }
 };
 
-/// System for the quadratic equation 2.5t^2 + 4t
+// System where the state at t corresponds to the quadratic equation
+// 4t^2 + 4t + C, where C is the initial value (the state at t=0).
 class Quadratic : public LeafSystem<double> {
  public:
-  Quadratic() {
-    this->DeclareContinuousState(1);
-  }
+  Quadratic() { this->DeclareContinuousState(1); }
 
  private:
-  void DoCalcTimeDerivatives(const Context<double>& context, ContinuousState<double>* deriv) const override {
+  void DoCalcTimeDerivatives(
+      const Context<double>& context,
+      ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
-    (*deriv)[0] = 5*t + 4;
+    (*deriv)[0] = 8*t + 4;
   }
 };
 
-// Tests accuracy for integrating the quadratic polynomial t^3 + t^2 + 12t over
-// [0, 1]. The indefinite integral of this polynomial is:
-// 0.25*t^4 + t^3 + 6t^2 + 6t + C.
-// The definite integral of this polynomial is:
-// 0.25*(1)^4 + (1)^3 + 6*(1)^2 + 6*(1) = 13.25
-// Note that the 3rd order integrator provides zero error if the fourth
-// derivative of the indefinite integral is zero, which it is.
-GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialTest) {
+// Tests accuracy for integrating the cubic system (with the state at time t
+// corresponding to f(t) ≡ t^3 + t^2 + 12t + C) over
+// t ∈ [0, 1]. RK3 is a third order integrator, meaning that it uses the Taylor
+// Series expansion:
+// f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + ⅙h³f'''(t) + O(h⁴)
+// The formula above indicates that the approximation error will be zero if
+// f''''(t) = 0, which is true for the cubic equation.
+GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   Cubic cubic;
   auto cubic_context = cubic.CreateDefaultContext();
   RungeKutta3Integrator<double> rk3(cubic, cubic_context.get());
@@ -106,12 +108,41 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialTest) {
   rk3.set_fixed_step_mode(true);
   rk3.Initialize();
   rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  const double expected_answer = t_final * (t_final * (t_final + 1) + 12);
   EXPECT_NEAR(
-      cubic_context->get_continuous_state_vector()[0], 13.25,
+      cubic_context->get_continuous_state_vector()[0], expected_answer,
       10 * std::numeric_limits<double>::epsilon());
+
+  // Now verify that the error in the second-order error estimate shrinks by a
+  // factor of eight, as the Taylor Series formula would predict. Note that the
+  // true error is zero.
+
+  // First obtain the error estimate using a single step of h.
+  const double err_est_h =
+      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  // Now obtain the error estimate using two half steps of h/2.
+  cubic_context->get_mutable_continuous_state_vector()[0] = 0.0;
+  cubic_context->set_time(0.0);
+  rk3.IntegrateWithSingleFixedStepToTime(t_final/2);
+  rk3.IntegrateWithSingleFixedStepToTime(t_final);
+  const double err_est_2h_2 =
+      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+
+  // The second order estimate should be approximately 8 times smaller.
+  EXPECT_NEAR(err_est_2h_2 * 8, err_est_h,
+      250 * std::numeric_limits<double>::epsilon());
 }
 
-GTEST_TEST(RK3IntegratorErrorEstimatorTest, PolynomialErrorEstimatorTest) {
+// Tests accuracy for integrating the quadratic system (with the state at time t
+// corresponding to f(t) ≡ 4t^2 + 4t + C, where C is the initial state) over
+// t ∈ [0, 1]. The error estimator from RK3 is
+// second order, meaning that it uses the Taylor Series expansion:
+// f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + O(h³)
+// This formula indicates that the approximation error will be zero if
+// f'''(t) = 0, which is true for the quadratic equation. We check that the
+// error estimator gives a perfect error estimate for this function.
+GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   Quadratic quadratic;
   auto quadratic_context = quadratic.CreateDefaultContext();
   RungeKutta3Integrator<double> rk3(quadratic, quadratic_context.get());
