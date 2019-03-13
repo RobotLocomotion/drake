@@ -89,6 +89,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
+        "//math:geometric_transform",
     ],
 )
 

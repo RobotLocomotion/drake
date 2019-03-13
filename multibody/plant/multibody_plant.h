@@ -3271,7 +3271,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
-      std::vector<Matrix3<T>>* R_WC_set = nullptr) const;
+      std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
 
   // Evaluates the contact Jacobians for the given state of the plant stored in
   // `context`.

@@ -41,6 +41,7 @@ using systems::InputPort;
 using systems::OutputPort;
 using systems::State;
 
+using drake::math::RotationMatrix;
 using drake::multibody::MultibodyForces;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -764,7 +765,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const systems::Context<T>& context,
     const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
     MatrixX<T>* Jn_ptr, MatrixX<T>* Jt_ptr,
-    std::vector<Matrix3<T>>* R_WC_set) const {
+    std::vector<RotationMatrix<T>>* R_WC_set) const {
   DRAKE_DEMAND(Jn_ptr != nullptr);
   DRAKE_DEMAND(Jt_ptr != nullptr);
 
@@ -835,13 +836,13 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
     // arbitrary, with the only requirement being that they form a valid right
     // handed basis with nhat_BA.
-    const Matrix3<T> R_WC = math::ComputeBasisFromAxis(2, nhat_BA_W);
+    const RotationMatrix<T> R_WC(math::ComputeBasisFromAxis(2, nhat_BA_W));
     if (R_WC_set != nullptr) {
       R_WC_set->push_back(R_WC);
     }
 
-    const Vector3<T> that1_W = R_WC.col(0);  // that1 = Cx.
-    const Vector3<T> that2_W = R_WC.col(1);  // that2 = Cy.
+    const Vector3<T> that1_W = R_WC.matrix().col(0);  // that1 = Cx.
+    const Vector3<T> that2_W = R_WC.matrix().col(1);  // that2 = Cy.
 
     // The velocity of Bc relative to Ac is
     //   v_AcBc_W = v_WBc - v_WAc.
@@ -983,7 +984,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
-  const std::vector<Matrix3<T>>& R_WC_set =
+  const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
   const internal::ImplicitStribeckSolverResults<T>& solver_results =
       EvalImplicitStribeckResults(context);
@@ -1010,7 +1011,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
     const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
 
-    const Matrix3<T>& R_WC = R_WC_set[icontact];
+    const RotationMatrix<T>& R_WC = R_WC_set[icontact];
 
     // Contact forces applied on B at contact point C.
     const Vector3<T> f_Bc_C(-ft(2 * icontact), -ft(2 * icontact + 1),
