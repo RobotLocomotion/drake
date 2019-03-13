@@ -1720,7 +1720,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& point_pairs_cache = cache_value->GetMutableValue<
+        auto& point_pairs_cache = cache_value->get_mutable_value<
             std::vector<geometry::PenetrationAsPointPair<T>>>();
         point_pairs_cache = this->CalcPointPairPenetrations(context);
       },
@@ -1735,7 +1735,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& contact_jacobians_cache =
-            cache_value->GetMutableValue<internal::ContactJacobians<T>>();
+            cache_value->get_mutable_value<internal::ContactJacobians<T>>();
         this->CalcNormalAndTangentContactJacobians(
             context, EvalPointPairPenetrations(context),
             &contact_jacobians_cache.Jn, &contact_jacobians_cache.Jt,
@@ -1758,9 +1758,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& implicit_stribeck_solver_cache =
-            cache_value
-                ->GetMutableValue<internal::ImplicitStribeckSolverResults<T>>();
+        auto& implicit_stribeck_solver_cache = cache_value->get_mutable_value<
+            internal::ImplicitStribeckSolverResults<T>>();
         this->CalcImplicitStribeckResults(context,
                                           &implicit_stribeck_solver_cache);
       },
@@ -1790,7 +1789,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
         auto& contact_results_cache =
-            cache_value->GetMutableValue<ContactResults<T>>();
+            cache_value->get_mutable_value<ContactResults<T>>();
         this->CalcContactResults(context, &contact_results_cache);
       },
       // We explicitly declare the dependence on the implicit Stribeck solver

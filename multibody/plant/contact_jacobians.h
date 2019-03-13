@@ -17,7 +17,7 @@ namespace internal {
 /// A, expressed in the world frame W. See PenetrationAsPointPair for further
 /// details on the definition of each contact pair. Versors `Cx_W` and `Cy_W`
 /// constitute a basis of the plane normal to `Cz_W` and are arbitrarily chosen.
-/// Bellow, v denotes the vector of generalized velocities, of size `nv`.
+/// Below, v denotes the vector of generalized velocities, of size `nv`.
 /// @see MultibodyPlant::EvalContactJacobians().
 template <class T>
 struct ContactJacobians {
