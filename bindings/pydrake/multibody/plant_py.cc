@@ -600,7 +600,8 @@ PYBIND11_MODULE(plant, m) {
         .def("contact_force", &Class::contact_force)
         .def("contact_point", &Class::contact_point)
         .def("slip_speed", &Class::slip_speed)
-        .def("separation_speed", &Class::separation_speed);
+        .def("separation_speed", &Class::separation_speed)
+        .def("point_pair", &Class::point_pair);
   }
 
   // ContactResults
