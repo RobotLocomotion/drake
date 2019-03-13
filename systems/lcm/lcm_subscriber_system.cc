@@ -289,7 +289,8 @@ int LcmSubscriberSystem::WaitForMessageTimeout(
   DRAKE_ASSERT(serializer_ != nullptr);
 
   auto wakeup = std::chrono::steady_clock::now() + timeout;
-  // Prevent overflow of the time_point if duration was max.
+  // If duration was max, set to max clock. Needed because max duration<double>
+  // is represented as inf, and this leads to issues with wait_until.
   if (timeout == std::chrono::duration<double>::max()) {
     wakeup = std::chrono::time_point<std::chrono::steady_clock>::max();
   }
@@ -304,8 +305,8 @@ int LcmSubscriberSystem::WaitForMessageTimeout(
   while (old_message_count >= received_message_count_) {
     // When wait returns, lock is atomically acquired. So it's thread safe to
     // read received_message_count_.
-    if (received_message_condition_variable_.wait_until(lock, wakeup)
-        == std::cv_status::timeout &&
+    if (received_message_condition_variable_.wait_until(lock, wakeup) ==
+            std::cv_status::timeout &&
         old_message_count >= received_message_count_) {
       // If a timeout occurred without meeting the message goal, then return
       return received_message_count_;

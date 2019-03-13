@@ -270,11 +270,15 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   EXPECT_EQ(timeout_count.get(), old_count);
 
   // Reset atomic and test WaitForMessageTimeout, with a message
+  // Note: this generates a race condition between the timeout and the receive
+  // thread. Success relies on the probability of failure being extremely small,
+  // but it is theoretically possible for WaitForMessageTimeout to timeout
+  // before the message is received, leading to test failure.
   started = false;
   auto second_timeout_count = std::async(std::launch::async, [&]() {
     EXPECT_EQ(dut->GetInternalMessageCount(), old_count);
     started = true;
-    return dut->WaitForMessageTimeout(old_count, std::chrono::milliseconds(10));
+    return dut->WaitForMessageTimeout(old_count, std::chrono::milliseconds(20));
   });
   wait();
   sample_data.MockPublish(&lcm, channel_name);

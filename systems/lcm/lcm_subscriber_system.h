@@ -151,12 +151,12 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /**
    * Blocks the caller until its internal message count exceeds
-   * `old_message_count` or until the timeout elapses
+   * `old_message_count` or until the timeout elapses.
    * @param old_message_count Internal message counter.
-   * @param timeout the duration to wait before returning
+   * @param timeout The duration to wait before returning.
    * @param message If non-null, will return the received message.
    * @return Returns the new count of received messages. If a timeout occurred,
-   *   this will be less than or equal to old_message_count
+   *   this will be less than or equal to old_message_count.
    * @pre If `message` is specified, this system must be abstract-valued.
    */
   int WaitForMessageTimeout(
