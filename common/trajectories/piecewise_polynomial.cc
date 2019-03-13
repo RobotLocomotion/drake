@@ -163,7 +163,7 @@ PiecewisePolynomial<T>& PiecewisePolynomial<T>::
 operator-=(const PiecewisePolynomial<T>& other) {
   if (!this->SegmentTimesEqual(other))
     throw runtime_error(
-        "Addition not yet implemented when segment times are not equal");
+        "Subtraction not yet implemented when segment times are not equal");
   for (size_t i = 0; i < polynomials_.size(); i++)
     polynomials_[i] -= other.polynomials_[i];
   return *this;
@@ -319,8 +319,7 @@ void PiecewisePolynomial<T>::setPolynomialMatrixBlock(
 
 template <typename T>
 PiecewisePolynomial<T>
-PiecewisePolynomial<T>::slice(int start_segment_index,
-                                            int num_segments) const {
+PiecewisePolynomial<T>::slice(int start_segment_index, int num_segments) const {
   this->segment_number_range_check(start_segment_index);
   this->segment_number_range_check(start_segment_index + num_segments - 1);
 
@@ -347,20 +346,22 @@ double PiecewisePolynomial<T>::segmentValueAtGlobalAbscissa(
 
 template <typename T>
 Eigen::Index PiecewisePolynomial<T>::rows() const {
-  if (polynomials_.size() > 0)
+  if (polynomials_.size() > 0) {
     return polynomials_[0].rows();
-  else
+  } else {
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of rows is undefined.");
+  }
 }
 
 template <typename T>
 Eigen::Index PiecewisePolynomial<T>::cols() const {
-  if (polynomials_.size() > 0)
+  if (polynomials_.size() > 0) {
     return polynomials_[0].cols();
-  else
+  } else {
     throw std::runtime_error(
         "PiecewisePolynomial has no segments. Number of columns is undefined.");
+  }
 }
 
 // Static generators for splines.

@@ -127,6 +127,8 @@ class TestSystem : public LeafSystem<T> {
   ~TestSystem() override {}
 
   using LeafSystem<T>::DeclareContinuousState;
+  using LeafSystem<T>::DeclareDiscreteState;
+  using LeafSystem<T>::DeclareNumericParameter;
   using LeafSystem<T>::DeclareVectorInputPort;
   using LeafSystem<T>::DeclareAbstractInputPort;
   using LeafSystem<T>::DeclareVectorOutputPort;
@@ -736,11 +738,11 @@ TEST_F(LeafSystemTest, NumericParameters) {
 TEST_F(LeafSystemTest, AbstractParameters) {
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const std::string& param = context->get_abstract_parameter(0 /*index*/)
-                                 .GetValueOrThrow<std::string>();
+                                 .get_value<std::string>();
   EXPECT_EQ(param, "parameter value");
   std::string& mutable_param =
       context->get_mutable_abstract_parameter(0 /*index*/)
-          .GetMutableValueOrThrow<std::string>();
+          .get_mutable_value<std::string>();
   mutable_param = "modified parameter value";
   EXPECT_EQ("modified parameter value", param);
 
@@ -809,7 +811,7 @@ TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
 // Tests that the leaf system reserved the declared continuous state with
 // second-order structure of interesting custom type.
 TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
-  using MyVector9d = MyVector<4 + 3 + 2, double>;
+  using MyVector9d = MyVector<double, 4 + 3 + 2>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
   // Tests get_num_continuous_states without a context.
@@ -912,7 +914,7 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 
   void CalcAbstractString(const Context<double>&, AbstractValue* out) const {
     ASSERT_NE(out, nullptr);
-    out->GetMutableValueOrThrow<std::string>() = "abstract string";
+    out->get_mutable_value<std::string>() = "abstract string";
   }
 
   void CalcString(const Context<double>&, std::string* out) const {
@@ -1052,7 +1054,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::systems::BasicVector<double> with size=1 "
-      "for input port\\[0\\] but the actual type was "
+      "for input port 'input' \\(index 0\\) but the actual type was "
       "drake::systems::BasicVector<double> with size=2. "
       "\\(System ::dut\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1060,7 +1062,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "drake::Value<drake::systems::BasicVector<double>> "
-      "for input port\\[0\\] but the actual type was "
+      "for input port 'input' \\(index 0\\) but the actual type was "
       "drake::Value<std::string>. "
       "\\(System ::dut\\)");
 
@@ -1071,7 +1073,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelInputGovernsFixedInput) {
       std::exception,
       "System::FixInputPortTypeCheck\\(\\): expected value of type "
       "int "
-      "for input port\\[2\\] but the actual type was "
+      "for input port 'abstract_input' \\(index 2\\) but the actual type was "
       "std::string. "
       "\\(System ::dut\\)");
 }
@@ -1111,7 +1113,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsInput) {
   auto input2 = dut.AllocateInputAbstract(dut.get_input_port(2));
   ASSERT_NE(input2, nullptr);
   int downcast_input2{};
-  EXPECT_NO_THROW(downcast_input2 = input2->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(downcast_input2 = input2->get_value<int>());
   EXPECT_EQ(downcast_input2, 22);
 }
 
@@ -1137,7 +1139,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsAllocOutput) {
   auto output2 = system_output->get_data(2);
   ASSERT_NE(output2, nullptr);
   std::string downcast_output2{};
-  EXPECT_NO_THROW(downcast_output2 = output2->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(downcast_output2 = output2->get_value<std::string>());
   EXPECT_EQ(downcast_output2, "45");
 
   // Check that BasicVector<double>(2) came out.
@@ -1205,11 +1207,11 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   const MyVector4d* vec1{};
   const std::string* str2{};
   const BasicVector<double>* vec3{};
-  EXPECT_NO_THROW(vec0 = &values[0]->GetValueOrThrow<BasicVector<double>>());
+  EXPECT_NO_THROW(vec0 = &values[0]->get_value<BasicVector<double>>());
   EXPECT_NO_THROW(vec1 = dynamic_cast<const MyVector4d*>(
-                      &values[1]->GetValueOrThrow<BasicVector<double>>()));
-  EXPECT_NO_THROW(str2 = &values[2]->GetValueOrThrow<std::string>());
-  EXPECT_NO_THROW(vec3 = &values[3]->GetValueOrThrow<BasicVector<double>>());
+                      &values[1]->get_value<BasicVector<double>>()));
+  EXPECT_NO_THROW(str2 = &values[2]->get_value<std::string>());
+  EXPECT_NO_THROW(vec3 = &values[3]->get_value<BasicVector<double>>());
 
   // Check the calculated values.
   EXPECT_EQ(vec0->get_value(), dut.expected_basic().get_value());
@@ -1313,7 +1315,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelAbstractState) {
   // Mess with the abstract values on the context.
   AbstractValues& values = context->get_mutable_abstract_state();
   AbstractValue& value = values.get_mutable_value(1);
-  EXPECT_NO_THROW(value.SetValue<std::string>("whoops"));
+  EXPECT_NO_THROW(value.set_value<std::string>("whoops"));
   EXPECT_EQ(context->get_abstract_state<std::string>(1), "whoops");
 
   // Ask it to reset to the defaults specified on system construction.
@@ -1376,7 +1378,7 @@ class DeclaredNonModelOutputSystem : public LeafSystem<double> {
         [](const Context<double>&, AbstractValue* out) {
           ASSERT_NE(out, nullptr);
           int* int_out{};
-          EXPECT_NO_THROW(int_out = &out->GetMutableValueOrThrow<int>());
+          EXPECT_NO_THROW(int_out = &out->get_mutable_value<int>());
           *int_out = 321;
         });
 
@@ -1481,7 +1483,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output1 = system_output->GetMutableData(1);
   ASSERT_NE(output1, nullptr);
   const std::string* downcast_output1{};
-  EXPECT_NO_THROW(downcast_output1 = &output1->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(downcast_output1 = &output1->get_value<std::string>());
   EXPECT_TRUE(downcast_output1->empty());
   out1.Calc(*context, output1);
   EXPECT_EQ(*downcast_output1, "calc'ed string");
@@ -1496,7 +1498,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output2 = system_output->GetMutableData(2);
   ASSERT_NE(output2, nullptr);
   const int* downcast_output2{};
-  EXPECT_NO_THROW(downcast_output2 = &output2->GetValueOrThrow<int>());
+  EXPECT_NO_THROW(downcast_output2 = &output2->get_value<int>());
   EXPECT_EQ(*downcast_output2, -2);
   out2.Calc(*context, output2);
   EXPECT_EQ(*downcast_output2, 321);
@@ -1505,7 +1507,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output3 = system_output->GetMutableData(3);
   ASSERT_NE(output3, nullptr);
   const std::string* downcast_output3{};
-  EXPECT_NO_THROW(downcast_output3 = &output3->GetValueOrThrow<std::string>());
+  EXPECT_NO_THROW(downcast_output3 = &output3->get_value<std::string>());
   EXPECT_EQ(*downcast_output3, "freshly made");
   out3.Calc(*context, output3);
   EXPECT_EQ(*downcast_output3, "calc'ed string");
@@ -1516,7 +1518,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   auto output4 = system_output->GetMutableData(4);
   ASSERT_NE(output4, nullptr);
   const SomePOD* downcast_output4{};
-  EXPECT_NO_THROW(downcast_output4 = &output4->GetValueOrThrow<SomePOD>());
+  EXPECT_NO_THROW(downcast_output4 = &output4->get_value<SomePOD>());
   EXPECT_EQ(downcast_output4->some_int, 0);
   EXPECT_EQ(downcast_output4->some_double, 0.0);
   out4.Calc(*context, output4);
@@ -1530,6 +1532,36 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   EXPECT_EQ(dut.calc_POD_calls(), 2);
   out4.Eval<SomePOD>(*context);
   EXPECT_EQ(dut.calc_POD_calls(), 2);  // Should have been cached.
+}
+
+// Tests that zero-sized vectors can be declared and used.
+GTEST_TEST(ZeroSizeSystemTest, AcceptanceTest) {
+  TestSystem<double> dut;
+
+  // Input.
+  const auto& in0 = dut.DeclareVectorInputPort(
+      kUseDefaultName, BasicVector<double>(0));
+  EXPECT_EQ(in0.get_data_type(), kVectorValued);
+  EXPECT_EQ(in0.size(), 0);
+
+  // Output.
+  const auto& out0 = dut.DeclareVectorOutputPort(
+      kUseDefaultName, BasicVector<double>(0),
+      [](const Context<double>&, BasicVector<double>*) {});
+  EXPECT_EQ(out0.get_data_type(), kVectorValued);
+  EXPECT_EQ(out0.size(), 0);
+
+  // State.
+  dut.DeclareContinuousState(0);
+  const auto& disc0 = dut.DeclareDiscreteState(0);
+
+  // Parameters.
+  const auto& param0 = dut.DeclareNumericParameter(BasicVector<double>(0));
+
+  auto context = dut.CreateDefaultContext();
+  EXPECT_EQ(context->get_continuous_state_vector().size(), 0);
+  EXPECT_EQ(context->get_discrete_state(disc0).size(), 0);
+  EXPECT_EQ(context->get_numeric_parameter(param0).size(), 0);
 }
 
 // Tests both that an unrestricted update callback is called and that
@@ -1561,7 +1593,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
     };
 
     UnrestrictedUpdateEvent<double> event(TriggerType::kPeriodic, callback);
@@ -1579,7 +1611,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_continuous_state(std::make_unique<ContinuousState<double>>(
           std::make_unique<BasicVector<double>>(4), 4, 0, 0));
     };
@@ -1605,7 +1637,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
       std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       disc_data.push_back(std::make_unique<BasicVector<double>>(1));
       s->set_discrete_state(
@@ -1632,7 +1664,7 @@ TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
   {
     UnrestrictedUpdateEvent<double>::UnrestrictedUpdateCallback callback = [](
         const Context<double>& c, const Event<double>&, State<double>* s) {
-      s->CopyFrom(*c.CloneState());
+      s->SetFrom(*c.CloneState());
       s->set_abstract_state(std::make_unique<AbstractValues>());
     };
 

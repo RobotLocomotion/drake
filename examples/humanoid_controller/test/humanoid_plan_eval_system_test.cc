@@ -120,7 +120,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
     std::unique_ptr<systems::State<double>> state = context_->CloneState();
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
     diagram_->CalcOutput(*context_, output_.get());
   }
 
@@ -137,7 +137,7 @@ class HumanoidPlanEvalAndQpInverseDynamicsTest : public ::testing::Test {
 TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, InputShouldBeZero) {
   EXPECT_EQ(context_->get_time(), 0);
   const QpInput& qp_input =
-      output_->get_data(qp_input_index_)->template GetValue<QpInput>();
+      output_->get_data(qp_input_index_)->template get_value<QpInput>();
   EXPECT_EQ(qp_input.desired_dof_motions().values().norm(), 0);
   for (auto const& body_motion_pair : qp_input.desired_body_motions()) {
     EXPECT_EQ(body_motion_pair.second.values().norm(), 0);
@@ -153,9 +153,9 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, InputShouldBeZero) {
 // specific weights, desired accelerations and various constraints.
 TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, DofAcceleration) {
   const QpInput& qp_input =
-      output_->get_data(qp_input_index_)->template GetValue<QpInput>();
+      output_->get_data(qp_input_index_)->template get_value<QpInput>();
   const QpOutput& qp_output =
-      output_->get_data(qp_output_index_)->template GetValue<QpOutput>();
+      output_->get_data(qp_output_index_)->template get_value<QpOutput>();
 
   for (int i = 0; i < qp_input.desired_dof_motions().size(); ++i) {
     switch (qp_input.desired_dof_motions().constraint_type(i)) {
@@ -178,7 +178,7 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, DofAcceleration) {
 // We expect the solved contact points' accelerations to be very small.
 TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, ContactAcceleration) {
   const QpOutput& qp_output =
-      output_->get_data(qp_output_index_)->template GetValue<QpOutput>();
+      output_->get_data(qp_output_index_)->template get_value<QpOutput>();
 
   for (const auto& contact_pair : qp_output.resolved_contacts()) {
     EXPECT_TRUE(drake::CompareMatrices(contact_pair.second.body_acceleration(),
@@ -190,9 +190,9 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, ContactAcceleration) {
 // We expect the solved bodies accelerations to track the desired pretty well.
 TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, BodyAcceleration) {
   const QpInput& qp_input =
-      output_->get_data(qp_input_index_)->template GetValue<QpInput>();
+      output_->get_data(qp_input_index_)->template get_value<QpInput>();
   const QpOutput& qp_output =
-      output_->get_data(qp_output_index_)->template GetValue<QpOutput>();
+      output_->get_data(qp_output_index_)->template get_value<QpOutput>();
 
   for (const auto& body_motion_pair : qp_output.body_accelerations()) {
     EXPECT_TRUE(drake::CompareMatrices(
@@ -206,9 +206,9 @@ TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, BodyAcceleration) {
 // well.
 TEST_F(HumanoidPlanEvalAndQpInverseDynamicsTest, CentroidalMomentum) {
   const QpInput& qp_input =
-      output_->get_data(qp_input_index_)->template GetValue<QpInput>();
+      output_->get_data(qp_input_index_)->template get_value<QpInput>();
   const QpOutput& qp_output =
-      output_->get_data(qp_output_index_)->template GetValue<QpOutput>();
+      output_->get_data(qp_output_index_)->template get_value<QpOutput>();
 
   for (int i = 0; i < 6; i++) {
     switch (qp_input.desired_centroidal_momentum_dot().constraint_type(i)) {

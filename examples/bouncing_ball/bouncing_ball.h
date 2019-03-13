@@ -118,7 +118,7 @@ class BouncingBall final : public systems::LeafSystem<T> {
         context.get_continuous_state().get_vector();
 
     // Copy the present state to the new one.
-    next_state->CopyFrom(context.get_state());
+    next_state->SetFrom(context.get_state());
 
     // Verify that velocity is non-positive.
     DRAKE_DEMAND(cstate.GetAtIndex(1) <= 0.0);

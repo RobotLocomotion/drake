@@ -1864,7 +1864,7 @@ class SystemWithAbstractState : public LeafSystem<double> {
       State<double>* state) const override {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
-                            .GetMutableValue<double>();
+                            .get_mutable_value<double>();
     state_num = id_ + context.get_time();
   }
 
@@ -1955,7 +1955,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
   // Swaps in the new state, and the abstract data for sys0 should be updated.
-  context_->get_mutable_state().CopyFrom(*x_buf);
+  context_->get_mutable_state().SetFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
 
@@ -1974,7 +1974,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   diagram_.CalcUnrestrictedUpdate(
       *context_, events->get_unrestricted_update_events(), x_buf.get());
   // Both sys0 and sys1's abstract data should be updated.
-  context_->get_mutable_state().CopyFrom(*x_buf);
+  context_->get_mutable_state().SetFrom(*x_buf);
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
@@ -2493,7 +2493,7 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
   // Does unrestricted update first.
   diagram->CalcUnrestrictedUpdate(
       *context, events->get_unrestricted_update_events(), tmp_state.get());
-  context->get_mutable_state().CopyFrom(*tmp_state);
+  context->get_mutable_state().SetFrom(*tmp_state);
 
   // Does discrete updates second.
   diagram->CalcDiscreteVariableUpdates(*context,

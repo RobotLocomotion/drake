@@ -46,11 +46,11 @@ GTEST_TEST(JacoLcmTest, JacoCommandPassthroughTest) {
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
   diagram->CalcDiscreteVariableUpdates(*context, update.get());
-  context->get_mutable_discrete_state().CopyFrom(*update);
+  context->get_mutable_discrete_state().SetFrom(*update);
   diagram->CalcOutput(*context, output.get());
 
   lcmt_jaco_command command_out =
-      output->get_data(0)->GetValue<lcmt_jaco_command>();
+      output->get_data(0)->get_value<lcmt_jaco_command>();
 
   ASSERT_EQ(command.num_joints, command_out.num_joints);
   for (int i = 0; i < command.num_joints; i++) {
@@ -116,11 +116,11 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
       diagram->AllocateDiscreteVariables();
   update->SetFrom(context->get_mutable_discrete_state());
   diagram->CalcDiscreteVariableUpdates(*context, update.get());
-  context->get_mutable_discrete_state().CopyFrom(*update);
+  context->get_mutable_discrete_state().SetFrom(*update);
   diagram->CalcOutput(*context, output.get());
 
   lcmt_jaco_status status_out =
-      output->get_data(0)->GetValue<lcmt_jaco_status>();
+      output->get_data(0)->get_value<lcmt_jaco_status>();
 
   // Force and current won't actually pass through since they're not
   // part of the state in drake.

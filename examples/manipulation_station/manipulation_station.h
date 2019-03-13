@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -139,15 +140,18 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
 
-  /// Adds a default iiwa, wsg, two bins, and object clutter, then calls
+  /// Adds a default iiwa, wsg, two bins, and a camera, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
   /// the appropriate arguments.
   /// @note Must be called before Finalize().
   /// @note Only one of the `Setup___()` methods should be called.
+  /// @param X_WCameraBody Transformation between the world and the camera body.
   /// @param collision_model Determines which sdf is loaded for the IIWA.
   void SetupClutterClearingStation(
+      const optional<const math::RigidTransformd>& X_WCameraBody = {},
       IiwaCollisionModel collision_model = IiwaCollisionModel::kNoCollision);
 
+  // TODO(kmuhlrad): Rename SetupMITClassStation.
   /// Adds a default iiwa, wsg, cupboard, and 8020 frame for the MIT
   /// Intelligent Robot Manipulation class, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
@@ -173,8 +177,8 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @pre `state` must be the systems::State<T> object contained in
   /// `station_context`.
   void SetRandomState(const systems::Context<T>& station_context,
-                       systems::State<T>* state, RandomGenerator* generator)
-                       const override;
+                      systems::State<T>* state,
+                      RandomGenerator* generator) const override;
 
   /// Notifies the ManipulationStation that the IIWA robot model instance can
   /// be identified by @p iiwa_instance as well as necessary information to
@@ -247,6 +251,13 @@ class ManipulationStation : public systems::Diagram<T> {
       const std::string& name, const multibody::Frame<T>& parent_frame,
       const math::RigidTransform<double>& X_PCameraBody,
       const geometry::dev::render::DepthCameraProperties& properties);
+
+  /// Adds a single object for the robot to manipulate
+  /// @note Must be called before Finalize().
+  /// @param model_file The path to the .sdf model file of the object.
+  /// @param X_WObject The pose of the object in world frame.
+  void AddManipulandFromFile(const std::string& model_file,
+                             const math::RigidTransform<double>& X_WObject);
 
   // TODO(russt): Add scalar copy constructor etc once we support more
   // scalar types than T=double.  See #9573.
@@ -343,9 +354,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetIiwaPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetIiwaPosition(const Eigen::Ref<const VectorX<T>>& q,
                        systems::Context<T>* station_context) const {
     SetIiwaPosition(station_context, q);
@@ -370,9 +380,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetIiwaVelocity(const Eigen::Ref<const VectorX<T>>& v,
                        systems::Context<T>* station_context) const {
     SetIiwaVelocity(station_context, v);
@@ -403,9 +412,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgPosition(*station_context, &station_context->get_mutable_state(), q);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetWsgPosition(const T& q, systems::Context<T>* station_context) const {
     SetWsgPosition(station_context, q);
   }
@@ -421,9 +429,8 @@ class ManipulationStation : public systems::Diagram<T> {
     SetWsgVelocity(*station_context, &station_context->get_mutable_state(), v);
   }
 
-  DRAKE_DEPRECATED(
-      "Prefer the version with the Context as the first argument."
-      "This method will be deleted after 2019-04-01.")
+  DRAKE_DEPRECATED("2019-04-01",
+      "Prefer the version with the Context as the first argument.")
   void SetWsgVelocity(const T& v, systems::Context<T>* station_context) const {
     SetWsgVelocity(station_context, v);
   }
@@ -505,6 +512,7 @@ class ManipulationStation : public systems::Diagram<T> {
   // Store references to objects as *body* indices instead of model indices,
   // because this is needed for MultibodyPlant::SetFreeBodyPose(), etc.
   std::vector<multibody::BodyIndex> object_ids_;
+  std::vector<math::RigidTransform<T>> object_poses_;
 
   // Registered camera related information.
   std::map<std::string, CameraInformation> camera_information_;

@@ -7,9 +7,12 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/framework_common.h"
+#include "drake/systems/framework/scalar_conversion_traits.h"
 
 namespace drake {
 namespace systems {
@@ -143,14 +146,23 @@ class DiscreteValues {
     return *data_[index];
   }
 
-  /// Writes the values from @p other into this DiscreteValues, possibly
-  /// writing through to unowned data. Asserts if the dimensions don't match.
-  void CopyFrom(const DiscreteValues<T>& other) { SetFromGeneric(other); }
+  DRAKE_DEPRECATED("2019-06-01",
+      "Use SetFrom instead of CopyFrom.")
+  void CopyFrom(const DiscreteValues<T>& other) { SetFrom(other); }
 
   /// Resets the values in this DiscreteValues from the values in @p other,
   /// possibly writing through to unowned data. Asserts if the dimensions don't
   /// match.
-  void SetFrom(const DiscreteValues<double>& other) { SetFromGeneric(other); }
+  template <typename U>
+  void SetFrom(const DiscreteValues<U>& other) {
+    DRAKE_THROW_UNLESS(num_groups() == other.num_groups());
+    for (int i = 0; i < num_groups(); i++) {
+      DRAKE_THROW_UNLESS(data_[i] != nullptr);
+      data_[i]->set_value(
+          other.get_vector(i).get_value().unaryExpr(
+              scalar_conversion::ValueConverter<T, U>{}));
+    }
+  }
 
   /// Creates a deep copy of this object with the same substructure but with all
   /// data owned by the copy. That is, if the original was a
@@ -174,16 +186,6 @@ class DiscreteValues {
     for (const BasicVector<T>* datum : data_)
       cloned_data.push_back(datum->Clone());
     return std::make_unique<DiscreteValues<T>>(std::move(cloned_data));
-  }
-
-  template <typename U>
-  void SetFromGeneric(const DiscreteValues<U>& other) {
-    DRAKE_ASSERT(num_groups() == other.num_groups());
-    for (int i = 0; i < num_groups(); i++) {
-      DRAKE_ASSERT(data_[i] != nullptr);
-      data_[i]->set_value(
-          other.get_vector(i).get_value().template cast<T>());
-    }
   }
 
   // Pointers to the data comprising the values. If the data is owned, these

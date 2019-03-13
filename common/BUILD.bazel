@@ -368,7 +368,9 @@ drake_cc_library(
 
 drake_cc_library(
     name = "random",
+    srcs = ["random.cc"],
     hdrs = ["random.h"],
+    deps = [":essential"],
 )
 
 drake_cc_library(
@@ -583,6 +585,13 @@ drake_cc_googletest(
         ":drake_bool",
         ":symbolic",
         "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "random_test",
+    deps = [
+        ":random",
     ],
 )
 
@@ -1207,7 +1216,6 @@ drake_cc_googletest(
 # TODO(jwnimmer-tri) These tests are currently missing...
 # - drake_assert_test in fancy variants
 # - drake_assert_test_compile in fancy variants
-# - drake_deprecated_test in fancy variants
 # - cpplint_wrapper_test.py
 
 add_lint_tests(

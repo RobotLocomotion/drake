@@ -125,7 +125,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
              input_port_index < system.get_num_input_ports()) {
     input_port = &(autodiff_system->get_input_port(input_port_index));
   } else if (input_port_index != kNoInput) {
-    DRAKE_ABORT_MSG("Invalid input_port_index specified.");
+    throw std::domain_error("Invalid input_port_index specified.");
   }
 
   // By default, use the first input / output ports (if they exist).
@@ -138,7 +138,7 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
              output_port_index < system.get_num_output_ports()) {
     output_port = &(autodiff_system->get_output_port(output_port_index));
   } else if (output_port_index != kNoOutput) {
-    DRAKE_ABORT_MSG("Invalid output_port_index specified.");
+    throw std::domain_error("Invalid output_port_index specified.");
   }
 
   // Verify that the input port is not abstract valued.
@@ -176,14 +176,18 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       continue;
     }
 
-    // Must be a vector valued port. First look to see whether it's connected.
-    if (!input_port_i.HasValue(context)) {
-      throw std::logic_error(fmt::format(
-          "Vector-valued input port {} must be either fixed or connected to "
-          "the output of another system.", input_port_i.get_name()));
+    // Must be a vector valued port. First look to see whether it's connected
+    // or zero-dimensional.
+    if (input_port_i.size() > 0) {
+      if (!input_port_i.HasValue(context)) {
+        throw std::logic_error(fmt::format(
+            "Vector-valued input port {} must be either fixed or connected to "
+            "the output of another system.", input_port_i.get_name()));
+      }
+
+      Eigen::VectorBlock<const VectorX<double>> u = input_port_i.Eval(context);
+      autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
     }
-    Eigen::VectorBlock<const VectorX<double>> u = input_port_i.Eval(context);
-    autodiff_context->FixInputPort(i, u.cast<AutoDiffXd>());
   }
 
   Eigen::VectorXd u0 = Eigen::VectorXd::Zero(num_inputs);

@@ -68,12 +68,10 @@ void RobotStateEncoder::OutputRobotState(const Context<double>& context,
   // separately here to avoid excessive calls given the same context.
   // This shouldn't be necessary when cache is correctly implemented.
   const auto& contact_results =
-      EvalAbstractInput(context, contact_results_port_index_)
-          ->GetValue<ContactResults<double>>();
+      contact_results_port().Eval<ContactResults<double>>(context);
 
   const auto& kinematics_results =
-      EvalAbstractInput(context, kinematics_results_port_index_)
-          ->GetValue<KinematicsResults<double>>();
+      kinematics_results_port().Eval<KinematicsResults<double>>(context);
 
   SetStateAndEfforts(kinematics_results, context, &message);
   SetForceTorque(kinematics_results, contact_results, &message);

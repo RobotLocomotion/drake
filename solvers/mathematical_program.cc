@@ -914,25 +914,27 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   return it->second;
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
-MathematicalProgram::AddSosConstraint(
+MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   const auto pair = NewSosPolynomial(monomial_basis);
   const symbolic::Polynomial& sos_poly{pair.first};
   const MatrixXDecisionVariable& Q{pair.second};
-  const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
-  return make_pair(Q, leq_binding);
+  const symbolic::Polynomial poly_diff = sos_poly - p;
+  for (const auto& term : poly_diff.monomial_to_coefficient_map()) {
+    AddLinearEqualityConstraint(term.second, 0);
+  }
+  return Q;
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  return AddSosConstraint(
-      p, ConstructMonomialBasis(p));
+  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
+  const MatrixXDecisionVariable Q = AddSosConstraint(p, m);
+  return std::make_pair(Q, m);
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
-MathematicalProgram::AddSosConstraint(
+MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   return AddSosConstraint(
@@ -940,7 +942,7 @@ MathematicalProgram::AddSosConstraint(
       monomial_basis);
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});
@@ -955,6 +957,34 @@ void MathematicalProgram::SetInitialGuess(
     const symbolic::Variable& decision_variable, double variable_guess_value) {
   x_initial_guess_(FindDecisionVariableIndex(decision_variable)) =
       variable_guess_value;
+}
+
+void MathematicalProgram::SetDecisionVariableValueInVector(
+    const symbolic::Variable& decision_variable,
+    double decision_variable_new_value,
+    EigenPtr<Eigen::VectorXd> values) const {
+  DRAKE_THROW_UNLESS(values != nullptr);
+  DRAKE_THROW_UNLESS(values->size() == num_vars());
+  const int index = FindDecisionVariableIndex(decision_variable);
+  (*values)(index) = decision_variable_new_value;
+}
+
+void MathematicalProgram::SetDecisionVariableValueInVector(
+    const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables,
+    const Eigen::Ref<const Eigen::MatrixXd>& decision_variables_new_values,
+    EigenPtr<Eigen::VectorXd> values) const {
+  DRAKE_THROW_UNLESS(values != nullptr);
+  DRAKE_THROW_UNLESS(values->size() == num_vars());
+  DRAKE_THROW_UNLESS(
+      decision_variables.rows() == decision_variables_new_values.rows());
+  DRAKE_THROW_UNLESS(
+      decision_variables.cols() == decision_variables_new_values.cols());
+  for (int i = 0; i < decision_variables.rows(); ++i) {
+    for (int j = 0; j < decision_variables.cols(); ++j) {
+      const int index = FindDecisionVariableIndex(decision_variables(i, j));
+      (*values)(index) = decision_variables_new_values(i, j);
+    }
+  }
 }
 
 #pragma GCC diagnostic push

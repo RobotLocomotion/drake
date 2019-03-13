@@ -386,7 +386,7 @@ void QuasistaticSystem<Scalar>::DoCalcWnWfJnJfPhiAnalytic(
   static_cast<void>(Jn_ptr);
   static_cast<void>(Jf_ptr);
   static_cast<void>(phi_ptr);
-  DRAKE_ABORT_MSG(
+  throw std::logic_error(
       "Analytic expressions for Wn, Wf, Jn, Jf and phi are not "
       "available.");
 }

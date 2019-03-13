@@ -13,6 +13,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace pydrake {
@@ -101,6 +102,11 @@ PYBIND11_MODULE(plant, m) {
             },
             py_reference_internal, py::arg("frame"),
             doc.MultibodyPlant.AddFrame.doc)
+        .def("AddRigidBody",
+            py::overload_cast<const std::string&,
+                const SpatialInertia<double>&>(&Class::AddRigidBody),
+            py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
+            doc.MultibodyPlant.AddRigidBody.doc_2args)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
             py::arg("X_AB") = Isometry3<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
@@ -395,6 +401,19 @@ PYBIND11_MODULE(plant, m) {
         .def("RegisterAsSourceForSceneGraph",
             &Class::RegisterAsSourceForSceneGraph, py::arg("scene_graph"),
             doc.MultibodyPlant.RegisterAsSourceForSceneGraph.doc)
+        .def("RegisterVisualGeometry",
+            py::overload_cast<const Body<T>&, const Isometry3<double>&,
+                const geometry::Shape&, const std::string&,
+                const Vector4<double>&, geometry::SceneGraph<T>*>(
+                &Class::RegisterVisualGeometry),
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
+            doc.MultibodyPlant.RegisterVisualGeometry
+                .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
+        .def("RegisterCollisionGeometry", &Class::RegisterCollisionGeometry,
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            doc.MultibodyPlant.RegisterCollisionGeometry.doc)
         .def("get_source_id", &Class::get_source_id,
             doc.MultibodyPlant.get_source_id.doc)
         .def("get_geometry_query_input_port",
@@ -445,23 +464,7 @@ PYBIND11_MODULE(plant, m) {
         .def("world_body", &Class::world_body, py_reference_internal,
             doc.MultibodyPlant.world_body.doc)
         .def("world_frame", &Class::world_frame, py_reference_internal,
-            doc.MultibodyPlant.world_frame.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("tree",
-        [](const Class& self) {
-          // Avoid cyclic references at declaration time. Only import here for
-          // bindings of `MultibodyTree`.
-          py::module::import("pydrake.multibody.multibody_tree");
-          return &self.tree();
-        },
-        py_reference_internal,
-        pydrake_doc.drake.multibody.internal.MultibodyTreeSystem.tree.doc);
-    DeprecateAttribute(cls, "tree",
-        "`tree()` will soon be internal. Please use `MultibodyPlant` "
-        "methods directly instead.");
-#pragma GCC diagnostic pop
-    cls  // BR
+            doc.MultibodyPlant.world_frame.doc)
         .def("is_finalized", &Class::is_finalized,
             doc.MultibodyPlant.is_finalized.doc)
         .def("Finalize", py::overload_cast<SceneGraph<T>*>(&Class::Finalize),
@@ -623,6 +626,14 @@ PYBIND11_MODULE(plant, m) {
             &Class::get_contact_result_input_port, py_reference_internal)
         .def("get_lcm_message_output_port", &Class::get_lcm_message_output_port,
             py_reference_internal);
+  }
+
+  // CoulombFriction
+  {
+    using Class = CoulombFriction<T>;
+    py::class_<Class>(m, "CoulombFriction")
+        .def(py::init<const T&, const T&>(), py::arg("static_friction"),
+            py::arg("dynamic_friction"), doc.CoulombFriction.ctor.doc_2args);
   }
 
   m.def("AddMultibodyPlantSceneGraph",

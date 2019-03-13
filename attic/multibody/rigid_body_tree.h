@@ -154,7 +154,7 @@ class RigidBodyTree {
    */
   int get_num_model_instances() const { return num_model_instances_; }
 
-  DRAKE_DEPRECATED("Please use get_num_model_instances().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_model_instances().")
   int get_number_of_model_instances() const;
 
 
@@ -234,11 +234,11 @@ class RigidBodyTree {
   std::string get_velocity_name(int velocity_num) const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("Please use get_position_name.")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_position_name.")
   std::string getPositionName(int position_num) const;
 
 // TODO(liang.fok) Remove this deprecated method prior to release 1.0.
-  DRAKE_DEPRECATED("Please use get_velocity_name.")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_velocity_name.")
   std::string getVelocityName(int velocity_num) const;
 
   std::string getStateName(int state_num) const;
@@ -758,7 +758,8 @@ class RigidBodyTree {
   /// ancestor bodies instead of using an output argument.
   std::vector<int> FindAncestorBodies(int body_index) const;
 
-  DRAKE_DEPRECATED("Please use void RigidBodyTree::FindAncestorBodies().")
+  DRAKE_DEPRECATED("2019-12-31",
+      "Please use void RigidBodyTree::FindAncestorBodies().")
   // TODO(#2274) Fix NOLINTNEXTLINE(runtime/references).
   void findAncestorBodies(std::vector<int>& ancestor_bodies, int body) const;
 
@@ -1324,7 +1325,7 @@ class RigidBodyTree {
  * This is a deprecated version of `FindBody(...)`. Please use `FindBody(...)`
  * instead.
  */
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBody().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use RigidBodyTree::FindBody().")
   RigidBody<T>* findLink(const std::string& link_name,
                       const std::string& model_name = "",
                       int model_id = -1) const;
@@ -1374,7 +1375,7 @@ class RigidBodyTree {
  * This is a deprecated version of `FindBodyIndex(...)`. Please use
  * `FindBodyIndex(...)` instead.
  */
-  DRAKE_DEPRECATED("Please use RigidBodyTree::FindBodyIndex().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use RigidBodyTree::FindBodyIndex().")
   int findLinkId(const std::string& link_name, int model_id = -1) const;
 
   /**
@@ -1400,7 +1401,7 @@ class RigidBodyTree {
   RigidBody<T>* FindChildBodyOfJoint(const std::string& joint_name,
                                      int model_instance_id = -1) const;
 
-  DRAKE_DEPRECATED("Please use FindChildBodyOfJoint().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use FindChildBodyOfJoint().")
   RigidBody<T>* findJoint(
           const std::string& joint_name, int model_id = -1) const;
 
@@ -1428,7 +1429,7 @@ class RigidBodyTree {
   int FindIndexOfChildBodyOfJoint(const std::string& joint_name,
                                   int model_instance_id = -1) const;
 
-  DRAKE_DEPRECATED("Please use FindIndexOfChildBodyOfJoint().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use FindIndexOfChildBodyOfJoint().")
   int findJointId(const std::string& joint_name, int model_id = -1) const;
 
   /**
@@ -1478,7 +1479,7 @@ class RigidBodyTree {
    */
   int get_num_frames() const;
 
-  DRAKE_DEPRECATED("Please use get_num_bodies().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_bodies().")
   int get_number_of_bodies() const;
 
   std::string getBodyOrFrameName(int body_or_frame_id) const;
@@ -1632,7 +1633,7 @@ class RigidBodyTree {
    */
   int get_num_positions() const { return num_positions_; }
 
-  DRAKE_DEPRECATED("Please use get_num_positions().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_positions().")
   int number_of_positions() const;
 
   /**
@@ -1640,7 +1641,7 @@ class RigidBodyTree {
    */
   int get_num_velocities() const { return num_velocities_; }
 
-  DRAKE_DEPRECATED("Please use get_num_velocities().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use get_num_velocities().")
   int number_of_velocities() const;
 
   /**
@@ -1666,7 +1667,7 @@ class RigidBodyTree {
   std::vector<std::shared_ptr<RigidBodyFrame<T>>> frames_;
 
  public:
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-12-31",
       "Direct access to `bodies` has been deprecated, "
       "mutable access has been removed. Use `get_bodies` and `add_rigid_body` "
       "instead")
@@ -1676,7 +1677,7 @@ class RigidBodyTree {
   // TODO(amcastro-tri): start using accessors body(int).
   auto& get_bodies() const { return bodies_; }
 
-  DRAKE_DEPRECATED(
+  DRAKE_DEPRECATED("2019-12-31",
       "Direct access to `frames` has been deprecated, "
       "mutable access has been removed. Use `get_frames` and `addFrame` "
       "instead")

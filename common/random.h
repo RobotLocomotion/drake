@@ -2,21 +2,32 @@
 
 #include <random>
 
-namespace drake {
-// TODO(russt): As discussed with sammy-tri, we could replace this with a
-// a templated class that exposes the required methods from the concept.
+#include "drake/common/drake_copyable.h"
 
-// N.B. Denoting alias in docs for Python.
-/// Defines the implementation of the stdc++ concept UniformRandomBitGenerator
-/// to be used in Drake. This is provided as a work-around to enable the use of
-/// the generator in virtual methods (which cannot be templated on the generator
-/// type) of system classes.
-///
-/// @note This is an alias for mt19937, 32-bit Mersenne Twister by Matsumoto
-/// and Nishimura, 1998. See
-/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine for
-/// more information.
-using RandomGenerator = std::mt19937;
+namespace drake {
+/// Defines Drake's canonical implementation of the UniformRandomBitGenerator
+/// C++ concept (as well as a few conventional extras beyond the concept, e.g.,
+/// seeds).  This uses the 32-bit Mersenne Twister mt19937 by Matsumoto and
+/// Nishimura, 1998.  For more information, see
+/// https://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine
+class RandomGenerator {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RandomGenerator)
+
+  using result_type = std::mt19937::result_type;
+
+  RandomGenerator() = default;
+  explicit RandomGenerator(result_type value) : generator_(value) {}
+
+  static constexpr result_type min() { return std::mt19937::min(); }
+  static constexpr result_type max() { return std::mt19937::max(); }
+  result_type operator()() { return generator_(); }
+
+  static constexpr result_type default_seed = std::mt19937::default_seed;
+
+ private:
+  std::mt19937 generator_{};
+};
 
 /// Drake supports explicit reasoning about a few carefully chosen random
 /// distributions.

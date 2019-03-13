@@ -151,13 +151,18 @@ GTEST_TEST(BasicVectorTest, ReinitializeInvalid) {
 
 // Tests the infinity norm computation
 GTEST_TEST(BasicVectorTest, NormInf) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   BasicVector<double> vec(2);
   vec.get_mutable_value() << 3, -4;
   EXPECT_EQ(vec.NormInf(), 4);
+#pragma GCC diagnostic pop
 }
 
 // Tests the infinity norm for an autodiff type.
 GTEST_TEST(BasicVectorTest, NormInfAutodiff) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // Set up the device under test ("dut").
   // The DUT is a vector with two values [-11.5, 22.5].
   // The ∂/∂t of DUT is [1.5, 3.5] (where t is some arbitrary variable).
@@ -187,6 +192,7 @@ GTEST_TEST(BasicVectorTest, NormInfAutodiff) {
   expected_norminf.derivatives() = Vector1d(-1.5);
   EXPECT_EQ(dut.NormInf().value(), expected_norminf.value());
   EXPECT_EQ(dut.NormInf().derivatives(), expected_norminf.derivatives());
+#pragma GCC diagnostic pop
 }
 
 // Tests all += * operations for BasicVector.
@@ -262,7 +268,7 @@ GTEST_TEST(BasicVectorTest, DefaultCalcInequalityConstraint) {
 
 // Tests the protected `::values()` methods.
 GTEST_TEST(BasicVectorTest, ValuesAccess) {
-  MyVector<2, double> dut;
+  MyVector2d dut;
   dut[0] = 11.0;
   dut[1] = 22.0;
 

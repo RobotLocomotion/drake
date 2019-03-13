@@ -294,7 +294,47 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             return self.GetSolution(var);
           },
           doc.MathematicalProgramResult.GetSolution
-              .doc_1args_constEigenMatrixBase);
+              .doc_1args_constEigenMatrixBase)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self,
+              const symbolic::Expression& e) { return self.GetSolution(e); },
+          doc.MathematicalProgramResult.GetSolution.doc_1args_e)
+      .def("GetSolution",
+          [](const MathematicalProgramResult& self,
+              const MatrixX<symbolic::Expression>& mat) {
+            return self.GetSolution(mat);
+          })
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const symbolic::Variable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_var_solution_number)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const VectorXDecisionVariable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_constEigenMatrixBase_int)
+      .def("GetSuboptimalSolution",
+          [](const MathematicalProgramResult& self,
+              const MatrixXDecisionVariable& var, int solution_number) {
+            return self.GetSuboptimalSolution(var, solution_number);
+          },
+          doc.MathematicalProgramResult.GetSuboptimalSolution
+              .doc_2args_constEigenMatrixBase_int)
+      .def("num_suboptimal_solution()",
+          [](const MathematicalProgramResult& self) {
+            return self.num_suboptimal_solution();
+          },
+          doc.MathematicalProgramResult.num_suboptimal_solution.doc)
+      .def("get_suboptimal_objective",
+          [](const MathematicalProgramResult& self, int solution_number) {
+            return self.get_suboptimal_objective(solution_number);
+          },
+          doc.MathematicalProgramResult.get_suboptimal_objective.doc);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
@@ -407,16 +447,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearConstraint),
+          py::arg("A"), py::arg("lb"), py::arg("ub"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearConstraint.doc_4args_A_lb_ub_vars)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Expression&, double, double)>(
               &MathematicalProgram::AddLinearConstraint),
+          py::arg("e"), py::arg("lb"), py::arg("ub"),
           doc.MathematicalProgram.AddLinearConstraint.doc_3args_e_lb_ub)
       .def("AddLinearConstraint",
           static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const VectorX<symbolic::Expression>>&,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&)>(
+              &MathematicalProgram::AddLinearConstraint),
+          py::arg("v"), py::arg("lb"), py::arg("ub"),
+          doc.MathematicalProgram.AddLinearConstraint.doc_3args_v_lb_ub)
+      .def("AddLinearConstraint",
+          static_cast<Binding<LinearConstraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddLinearConstraint),
-          doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
+          py::arg("f"), doc.MathematicalProgram.AddLinearConstraint.doc_1args_f)
       .def("AddLinearEqualityConstraint",
           static_cast<Binding<LinearEqualityConstraint> (
               MathematicalProgram::*)(const Eigen::Ref<const Eigen::MatrixXd>&,
@@ -510,26 +560,28 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
+          // NOLINTNEXTLINE(whitespace/parens): Possible cpplint bug (#10886).
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
-              const Polynomial&)>(&MathematicalProgram::AddSosConstraint),
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const Polynomial&)>(
+              &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
+          // NOLINTNEXTLINE(whitespace/parens): Possible cpplint bug (#10886).
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
-              const Expression&)>(&MathematicalProgram::AddSosConstraint),
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const Expression&)>(
+              &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
       .def("AddVisualizationCallback",
           static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
@@ -695,6 +747,34 @@ PYBIND11_MODULE(mathematicalprogram, m) {
             prog.SetInitialGuessForAllVariables(x0);
           },
           doc.MathematicalProgram.SetInitialGuessForAllVariables.doc)
+      .def("SetDecisionVariableValueInVector",
+          [](const MathematicalProgram& prog,
+              const symbolic::Variable& decision_variable,
+              double decision_variable_new_value,
+              Eigen::Ref<Eigen::VectorXd> values) {
+            prog.SetDecisionVariableValueInVector(
+                decision_variable, decision_variable_new_value, &values);
+          },
+          py::arg("decision_variable"), py::arg("decision_variable_new_value"),
+          py::arg("values"),
+          doc.MathematicalProgram.SetDecisionVariableValueInVector
+              .doc_3args_decision_variable_decision_variable_new_value_values)
+      .def("SetDecisionVariableValueInVector",
+          [](const MathematicalProgram& prog,
+              const Eigen::Ref<const MatrixXDecisionVariable>&
+                  decision_variables,
+              const Eigen::Ref<const Eigen::MatrixXd>&
+                  decision_variables_new_values,
+              Eigen::Ref<Eigen::VectorXd> values) {
+            prog.SetDecisionVariableValueInVector(
+                decision_variables, decision_variables_new_values, &values);
+          },
+          py::arg("decision_variables"),
+          py::arg("decision_variables_new_values"), py::arg("values"),
+          doc.MathematicalProgram
+              .SetDecisionVariableValueInVector
+              // NOLINTNEXTLINE(whitespace/line_length)
+              .doc_3args_decision_variables_decision_variables_new_values_values)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
       .def("SetSolverOption", &SetSolverOptionBySolverType<int>,

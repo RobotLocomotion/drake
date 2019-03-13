@@ -2,19 +2,19 @@
 
 #include <gtest/gtest.h>
 
-/* This test verifies that the Drake build can still succeed if a deprecated
-class or function is in use, and (through CMakeLists.txt rules) that when
-deprecation warnings are promoted to errors, the build would fail. */
+// This test verifies that the Drake build still succeeds if a deprecated class
+// or function is in use.
 
 namespace {
 
-class DRAKE_DEPRECATED("Use MyNewClass instead.") MyClass {
+class DRAKE_DEPRECATED("2038-01-19", "Use MyNewClass instead.") MyClass {
 };
 
 class MyNewClass {
 };
 
-DRAKE_DEPRECATED("Don't use this function; use NewMethod() instead.")
+DRAKE_DEPRECATED("2038-01-19",
+    "Don't use this function; use NewMethod() instead.")
 int OldMethod(int arg) { return arg; }
 
 int NewMethod(int arg) { return arg; }

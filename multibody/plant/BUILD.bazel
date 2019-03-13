@@ -223,6 +223,7 @@ drake_cc_googletest(
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody/benchmarks/acrobot:models",
+        "//multibody/benchmarks/free_body:models",
         "//multibody/parsing:test_models",
     ],
     deps = [
@@ -306,6 +307,7 @@ drake_cc_googletest(
         ":plant",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:limit_malloc",
         "//math:geometric_transform",
     ],
 )

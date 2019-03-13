@@ -98,12 +98,7 @@ drake_pybind_library(
 drake_pybind_library(
     name = "multibody_tree_py",
     cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:drake_optional_pybind",
-        "//bindings/pydrake/common:eigen_geometry_pybind",
-        "//bindings/pydrake/common:type_safe_index_pybind",
-        "//bindings/pydrake/systems:systems_pybind",
     ],
     cc_srcs = ["multibody_tree_py.cc"],
     package_info = PACKAGE_INFO,
@@ -225,6 +220,7 @@ drake_py_unittest(
         ":multibody_tree_py",
         ":plant_py",
         ":tree_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -241,6 +237,7 @@ drake_py_unittest(
     deps = [
         ":benchmarks_py",
         ":inverse_kinematics_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

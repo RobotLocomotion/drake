@@ -78,7 +78,7 @@ void ParseGeometry(sdf::ElementPtr sdf_geometry_element,
     return;
   }
   // TODO(hidmic): Support mesh and sphere geometries.
-  DRAKE_ABORT_MSG("Unsupported geometry!");
+  throw std::domain_error("Unsupported geometry!");
 }
 
 // Parses a visual geometry from the given SDF element and adds a
@@ -258,7 +258,7 @@ ParseJointType(sdf::ElementPtr sdf_joint_element,
     return std::move(joint);
   }
   // TODO(hidmic): Support prismatic and fixed joints.
-  DRAKE_ABORT_MSG("Unsupported joint type!");
+  throw std::domain_error("Unsupported joint type!");
 }
 
 // Parses a joint from the given SDF element and adds a DrakeJoint instance

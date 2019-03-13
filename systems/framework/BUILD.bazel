@@ -52,6 +52,7 @@ drake_cc_package_library(
         ":system_symbolic_inspector",
         ":value_checker",
         ":value_deprecated",
+        ":value_to_abstract_value",
         ":vector",
         ":vector_system",
     ],
@@ -77,6 +78,19 @@ drake_cc_library(
         "//common:dummy_value",
         "//common:essential",
         "//common:symbolic",
+    ],
+)
+
+drake_cc_library(
+    name = "value_to_abstract_value",
+    hdrs = [
+        "value_to_abstract_value.h",
+    ],
+    deps = [
+        ":vector",
+        "//common:essential",
+        "//common:value",
+        "@fmt",
     ],
 )
 
@@ -136,6 +150,7 @@ drake_cc_library(
     hdrs = ["continuous_state.h"],
     deps = [
         ":framework_common",
+        ":system_scalar_converter",
         ":vector",
         "//common:autodiff",
         "//common:default_scalars",
@@ -149,6 +164,7 @@ drake_cc_library(
     hdrs = ["discrete_values.h"],
     deps = [
         ":framework_common",
+        ":system_scalar_converter",
         ":value_deprecated",
         ":vector",
         "//common:autodiff",
@@ -685,6 +701,7 @@ drake_cc_googletest(
         ":continuous_state",
         ":diagram_continuous_state",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:my_vector",
     ],
 )
@@ -744,6 +761,7 @@ drake_cc_googletest(
         ":diagram_discrete_values",
         ":discrete_values",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:is_dynamic_castable",
         "//systems/framework/test_utilities",
     ],
@@ -905,6 +923,17 @@ drake_cc_googletest(
     name = "value_checker_test",
     deps = [
         ":value_checker",
+    ],
+)
+
+drake_cc_googletest(
+    name = "value_to_abstract_value_test",
+    deps = [
+        ":value_to_abstract_value",
+        "//common:essential",
+        "//common:unused",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework/test_utilities",
     ],
 )
 

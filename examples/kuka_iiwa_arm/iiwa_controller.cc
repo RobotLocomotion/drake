@@ -2,6 +2,7 @@
 ///
 /// Implements a controller for a KUKA iiwa arm.
 
+#include <iostream>
 #include <memory>
 
 #include <gflags/gflags.h>
@@ -75,10 +76,11 @@ int DoMain() {
   } else if (interp_str == "pchip") {
     interpolator_type = InterpolatorType::Pchip;
   } else {
-    DRAKE_ABORT_MSG(
+    std::cerr <<
         "Robot plan interpolation type not recognized. "
         "Use the gflag --helpshort to display "
-        "flag options for interpolator type.");
+        "flag options for interpolator type.\n";
+    return EXIT_FAILURE;
   }
   auto plan_interpolator =
       builder.AddSystem<LcmPlanInterpolator>(urdf, interpolator_type);
@@ -122,7 +124,7 @@ int DoMain() {
   const AbstractValue& first_msg = loop.WaitForMessage();
   double msg_time =
       loop.get_message_to_time_converter().GetTimeInSeconds(first_msg);
-  const lcmt_iiwa_status& first_status = first_msg.GetValue<lcmt_iiwa_status>();
+  const auto& first_status = first_msg.get_value<lcmt_iiwa_status>();
   VectorX<double> q0(kNumJoints);
   DRAKE_DEMAND(kNumJoints == first_status.num_joints);
   for (int i = 0; i < kNumJoints; i++)

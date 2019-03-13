@@ -83,10 +83,10 @@ TYPED_TEST_CASE(TypedValueTest, Implementations);
 // Value<T>() should work if and only if T is default-constructible.
 GTEST_TEST(ValueTest, DefaultConstructor) {
   const AbstractValue& value_int = Value<int>();
-  EXPECT_EQ(0, value_int.GetValue<int>());
+  EXPECT_EQ(0, value_int.get_value<int>());
 
   const AbstractValue& value_bare_struct = Value<BareStruct>();
-  EXPECT_EQ(0, value_bare_struct.GetValue<BareStruct>().data);
+  EXPECT_EQ(0, value_bare_struct.get_value<BareStruct>().data);
 
   static_assert(!std::is_default_constructible<Value<CopyableInt>>::value,
                 "Value<CopyableInt>() should not work.");
@@ -95,14 +95,14 @@ GTEST_TEST(ValueTest, DefaultConstructor) {
                 "Value<CloneableInt>() should not work.");
 
   const AbstractValue& value_move_or_clone_int = Value<MoveOrCloneInt>();
-  EXPECT_EQ(0, value_move_or_clone_int.GetValue<MoveOrCloneInt>().data);
+  EXPECT_EQ(0, value_move_or_clone_int.get_value<MoveOrCloneInt>().data);
 }
 
 // Value<T>(int) should work (possibly using forwarding).
 TYPED_TEST(TypedValueTest, ForwardingConstructor) {
   using T = TypeParam;
   const AbstractValue& abstract_value = Value<T>(22);
-  EXPECT_EQ(22, abstract_value.GetValue<T>());
+  EXPECT_EQ(22, abstract_value.get_value<T>());
 }
 
 // A two-argument constructor should work using forwarding.  (The forwarding
@@ -111,7 +111,7 @@ TYPED_TEST(TypedValueTest, ForwardingConstructor) {
 GTEST_TEST(ValueTest, ForwardingConstructorTwoArgs) {
   using T = CopyableInt;
   const AbstractValue& value = Value<T>(11, 2);
-  EXPECT_EQ(22, value.GetValue<T>());
+  EXPECT_EQ(22, value.get_value<T>());
 }
 
 // Passing a single reference argument to the Value<T> constructor should use
@@ -141,7 +141,7 @@ TYPED_TEST(TypedValueTest, UniquePtrConstructor) {
   auto original = std::make_unique<T>(22);
   const Value<T> value{std::move(original)};
   EXPECT_EQ(original.get(), nullptr);
-  EXPECT_EQ(22, value.template GetValue<T>());
+  EXPECT_EQ(22, value.get_value());
 }
 
 TYPED_TEST(TypedValueTest, Make) {
@@ -149,7 +149,7 @@ TYPED_TEST(TypedValueTest, Make) {
   // TODO(jwnimmer-tri) We should be able to forward this too, and lose the
   // explicit construction of T{42}.
   auto abstract_value = AbstractValue::Make<T>(T{42});
-  EXPECT_EQ(42, abstract_value->template GetValue<T>());
+  EXPECT_EQ(42, abstract_value->template get_value<T>());
 }
 
 GTEST_TEST(ValueTest, NiceTypeName) {
@@ -163,7 +163,7 @@ GTEST_TEST(ValueTest, NiceTypeName) {
 
   // Must return the name of the most-derived type.
   EXPECT_EQ(base_value->GetNiceTypeName(),
-            "drake::systems::MyVector<2,double>");
+            "drake::systems::MyVector<double,2>");
 }
 
 GTEST_TEST(ValueTest, TypeInfo) {
@@ -183,12 +183,23 @@ GTEST_TEST(ValueTest, TypeInfo) {
   EXPECT_EQ(base_value->type_info(), typeid(MyVector2d));
 }
 
-// Check that MaybeGetValue() returns nullptr for wrong-type requests,
+// Check that maybe_get_value() returns nullptr for wrong-type requests,
 // and returns the correct value for right-type requests.
 GTEST_TEST(ValueTest, MaybeGetValue) {
   auto double_value = AbstractValue::Make<double>(3.);
   auto string_value = AbstractValue::Make<std::string>("hello");
 
+  EXPECT_EQ(double_value->maybe_get_value<std::string>(), nullptr);
+  EXPECT_EQ(string_value->maybe_get_value<double>(), nullptr);
+
+  ASSERT_NE(double_value->maybe_get_value<double>(), nullptr);
+  EXPECT_EQ(*double_value->maybe_get_value<double>(), 3.);
+
+  ASSERT_NE(string_value->maybe_get_value<std::string>(), nullptr);
+  EXPECT_EQ(*string_value->maybe_get_value<std::string>(), "hello");
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(double_value->MaybeGetValue<std::string>(), nullptr);
   EXPECT_EQ(string_value->MaybeGetValue<double>(), nullptr);
 
@@ -197,16 +208,25 @@ GTEST_TEST(ValueTest, MaybeGetValue) {
 
   ASSERT_NE(string_value->MaybeGetValue<std::string>(), nullptr);
   EXPECT_EQ(*string_value->MaybeGetValue<std::string>(), "hello");
+#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, Access) {
   using T = TypeParam;
   Value<T> value(3);
   const AbstractValue& erased = value;
+
+  EXPECT_EQ(3, erased.get_value<T>());
+  ASSERT_NE(erased.maybe_get_value<T>(), nullptr);
+  EXPECT_EQ(3, *erased.maybe_get_value<T>());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(3, erased.GetValue<T>());
   EXPECT_EQ(3, erased.GetValueOrThrow<T>());
   ASSERT_NE(erased.MaybeGetValue<T>(), nullptr);
   EXPECT_EQ(3, *erased.MaybeGetValue<T>());
+#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, Clone) {
@@ -214,15 +234,23 @@ TYPED_TEST(TypedValueTest, Clone) {
   Value<T> value(43);
   const AbstractValue& erased = value;
   std::unique_ptr<AbstractValue> cloned = erased.Clone();
-  EXPECT_EQ(43, cloned->GetValue<T>());
+  EXPECT_EQ(43, cloned->get_value<T>());
 }
 
 TYPED_TEST(TypedValueTest, Mutation) {
   using T = TypeParam;
-  Value<T> value(5);
-  value.set_value(T{6});
+  Value<T> value(3);
+  value.set_value(T{4});
   AbstractValue& erased = value;
-  EXPECT_EQ(6, erased.GetValue<T>());
+
+  EXPECT_EQ(4, erased.get_value<T>());
+  erased.set_value<T>(T{5});
+  EXPECT_EQ(5, erased.get_value<T>());
+  erased.SetFrom(Value<T>(6));
+  EXPECT_EQ(6, erased.get_value<T>());
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   erased.SetValue<T>(T{7});
   EXPECT_EQ(7, erased.GetValue<T>());
   erased.SetValueOrThrow<T>(T{8});
@@ -231,16 +259,26 @@ TYPED_TEST(TypedValueTest, Mutation) {
   EXPECT_EQ(9, erased.GetValue<T>());
   erased.SetFromOrThrow(Value<T>(10));
   EXPECT_EQ(10, erased.GetValue<T>());
+#pragma GCC diagnostic pop
 }
 
 TYPED_TEST(TypedValueTest, BadCast) {
   using T = TypeParam;
   Value<double> value(4);
   AbstractValue& erased = value;
+
+  EXPECT_THROW(erased.get_value<T>(), std::logic_error);
+  EXPECT_THROW(erased.get_mutable_value<T>(), std::logic_error);
+  EXPECT_THROW(erased.set_value<T>(T{3}), std::logic_error);
+  EXPECT_THROW(erased.SetFrom(Value<T>(2)), std::logic_error);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_THROW(erased.GetValueOrThrow<T>(), std::logic_error);
   EXPECT_THROW(erased.GetMutableValueOrThrow<T>(), std::logic_error);
   EXPECT_THROW(erased.SetValueOrThrow<T>(T{3}), std::logic_error);
   EXPECT_THROW(erased.SetFromOrThrow(Value<T>(2)), std::logic_error);
+#pragma GCC diagnostic pop
 }
 
 class PrintInterface {
@@ -286,12 +324,12 @@ GTEST_TEST(ValueTest, ClassType) {
   Point point(1, 2);
   Value<Point> value(point);
   AbstractValue& erased = value;
-  erased.GetMutableValue<Point>().set_x(-1);
-  EXPECT_EQ(-1, erased.GetValue<Point>().x());
-  EXPECT_EQ(2, erased.GetValue<Point>().y());
-  erased.GetMutableValueOrThrow<Point>().set_y(-2);
-  EXPECT_EQ(-1, erased.GetValue<Point>().x());
-  EXPECT_EQ(-2, erased.GetValue<Point>().y());
+  erased.get_mutable_value<Point>().set_x(-1);
+  EXPECT_EQ(-1, erased.get_value<Point>().x());
+  EXPECT_EQ(2, erased.get_value<Point>().y());
+  erased.get_mutable_value<Point>().set_y(-2);
+  EXPECT_EQ(-1, erased.get_value<Point>().x());
+  EXPECT_EQ(-2, erased.get_value<Point>().y());
 }
 
 class SubclassOfPoint : public Point {
@@ -305,7 +343,7 @@ GTEST_TEST(ValueTest, CannotUneraseToParentClass) {
   SubclassOfPoint point;
   Value<SubclassOfPoint> value(point);
   AbstractValue& erased = value;
-  EXPECT_THROW(erased.GetMutableValueOrThrow<Point>(), std::logic_error);
+  EXPECT_THROW(erased.get_mutable_value<Point>(), std::logic_error);
 }
 
 // A child class of Value<T> that requires T to satisfy PrintInterface, and
@@ -367,6 +405,8 @@ void CheckHash(const std::string& name) {
 namespace {
 struct AnonStruct {};
 class AnonClass {};
+enum class AnonEnum { kFoo, kBar };
+template <AnonEnum K> class AnonEnumTemplate {};
 }  // namespace
 
 #ifdef __APPLE__
@@ -381,9 +421,10 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
   CheckHash<double>("double");
   CheckHash<Point>("drake::test::Point");
 
-  // Anonymous structs and classes.
+  // Anonymous structs and classes, and an enum class.
   CheckHash<AnonStruct>("drake::test::{anonymous}::AnonStruct");
   CheckHash<AnonClass>("drake::test::{anonymous}::AnonClass");
+  CheckHash<AnonEnum>("drake::test::{anonymous}::AnonEnum");
 
   // Templated containers without default template arguments.
   const std::string stdcc = kApple ? "std::__1" : "std";
@@ -405,9 +446,6 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
       ">", fmt::arg("std", stdcc)));
 
   // Const-qualified types.
-  CheckHash<std::vector<const double>>(fmt::format(
-      "{std}::vector<const double,{std}::allocator<const double>>",
-      fmt::arg("std", stdcc)));
   CheckHash<std::shared_ptr<const double>>(fmt::format(
       "{std}::shared_ptr<const double>",
       fmt::arg("std", stdcc)));
@@ -436,6 +474,24 @@ GTEST_TEST(TypeHashTest, WellKnownValues) {
           "const double,"
           "{std}::shared_ptr<Eigen::Matrix<double,3,3,0,3,3>>>>>",
       fmt::arg("std", stdcc)));
+
+  // Templated on a value (instead of a typename).  We cannot (yet) compute a
+  // compile-time typename hash for this case.
+  EXPECT_EQ(internal::TypeHash<AnonEnumTemplate<AnonEnum::kFoo>>::value, 0);
+}
+
+// Tests that a type mismatched is detected for a mismatched non-type template
+// parameter, even in Release builds.  When the TypeHash fails (is zero), it's
+// important that AbstractValue fall back to using typeinfo comparison instead.
+GTEST_TEST(ValueTest, NonTypeTemplateParameter) {
+  using T1 = AnonEnumTemplate<AnonEnum::kFoo>;
+  using T2 = AnonEnumTemplate<AnonEnum::kBar>;
+  Value<T1> foo_value;
+  Value<T2> bar_value;
+  AbstractValue& foo = foo_value;
+  EXPECT_NO_THROW(foo.get_value<T1>());
+  EXPECT_THROW(foo.get_value<T2>(), std::exception);
+  EXPECT_THROW(foo.SetFrom(bar_value), std::exception);
 }
 
 }  // namespace test

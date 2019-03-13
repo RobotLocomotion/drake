@@ -4,16 +4,8 @@
 #include <stdexcept>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
-
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declaration because we only need the type name for deprecation
-// purposes; we never call any methods on an RBT.
-template <class T>
-class RigidBodyTree;
-#endif
 
 namespace drake {
 namespace systems {
@@ -52,32 +44,6 @@ class InverseDynamics : public LeafSystem<T> {
   };
 
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(InverseDynamics)
-
-#ifndef DRAKE_DOXYGEN_CXX
-  // TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
-  // Remember to remove the forward declaration above at the same time.
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  InverseDynamics(const RigidBodyTree<T>*, bool) : mode_{} {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-
-  DRAKE_DEPRECATED(
-      "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/9987")
-  InverseDynamics(const RigidBodyTree<T>*, InverseDynamicsMode) : mode_{} {
-    throw std::runtime_error(
-        "Inverse dynamics for RigidBodyTree no longer uses this class; for new "
-        "instructions, see https://github.com/RobotLocomotion/drake/pull/9987");
-  }
-#endif
-
-  DRAKE_DEPRECATED("Please use constructor with InverseDynamicsMode.")
-  InverseDynamics(const multibody::MultibodyPlant<T>* plant,
-                  bool pure_gravity_compensation);
 
   // @TODO(edrumwri) Find a cleaner way of approaching the consideration of
   // external forces. I like to imagine a dichotomy of approaches for
@@ -123,14 +89,6 @@ class InverseDynamics : public LeafSystem<T> {
   const InputPort<T>& get_input_port_desired_acceleration() const {
     DRAKE_DEMAND(!this->is_pure_gravity_compensation());
     return this->get_input_port(input_port_index_desired_acceleration_);
-  }
-
-  /**
-   * Returns the output port for the actuation torques.
-   */
-  DRAKE_DEPRECATED("Please use get_output_port_force().")
-  const OutputPort<T>& get_output_port_torque() const {
-    return this->get_output_port(output_port_index_force_);
   }
 
   /**

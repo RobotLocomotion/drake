@@ -37,9 +37,7 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
                           Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
-    derivs_ = system.AllocateTimeDerivatives();
   }
-
 
   /**
    * Explicit Euler integrator does not support error estimation.
@@ -51,34 +49,43 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
 
  private:
   bool DoStep(const T& dt) override;
-
-  // These are pre-allocated temporaries for use by integration
-  std::unique_ptr<ContinuousState<T>> derivs_;
 };
 
 /**
- * Integrates the system forward in time by dt. This value is determined
- * by IntegratorBase::Step().
+ * Integrates the system forward in time by dt, starting at the current time t₀.
+ * This value of dt is determined by IntegratorBase::Step().
  */
 template <class T>
 bool ExplicitEulerIntegrator<T>::DoStep(const T& dt) {
-  // Find the continuous state xc within the Context, just once.
-  auto context = IntegratorBase<T>::get_mutable_context();
-  VectorBase<T>& xc = context->get_mutable_continuous_state_vector();
+  Context<T>& context = *this->get_mutable_context();
 
-  // TODO(sherm1) This should be calculating into the cache so that
-  // Publish() doesn't have to recalculate if it wants to output derivatives.
-  this->CalcTimeDerivatives(*context, derivs_.get());
+  // CAUTION: This is performance-sensitive inner loop code that uses dangerous
+  // long-lived references into state and cache to avoid unnecessary copying and
+  // cache invalidation. Be careful not to insert calls to methods that could
+  // invalidate any of these references before they are used.
 
-  // Compute derivative and update configuration and velocity.
-  // xc(t+h) = xc(t) + dt * xcdot(t, xc(t), u(t))
-  const auto& xcdot = derivs_->get_vector();
-  xc.PlusEqScaled(dt, xcdot);  // xc += dt * xcdot
-  context->set_time(context->get_time() + dt);
+  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)).
+  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
+  const VectorBase<T>& xcdot0 = xc_deriv.get_vector();
+
+  // Cache: xcdot0 references the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
+
+  // Update continuous state and time. This call marks t- and xc-dependent
+  // cache entries out of date, including xcdot0.
+  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
+      context.get_time() + dt);  // t ← t₀ + h
+
+  // Cache: xcdot0 still references the derivative cache value, which is
+  // unchanged, although it is marked out of date.
+
+  xc.PlusEqScaled(dt, xcdot0);   // xc(t₀ + h) ← xc(t₀) + dt * xcdot₀
 
   // This integrator always succeeds at taking the step.
   return true;
 }
+
 }  // namespace systems
 }  // namespace drake
 

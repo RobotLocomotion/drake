@@ -23,12 +23,16 @@ namespace {
 // (e.g. picking up an object) and perhaps a slightly more descriptive name.
 
 using Eigen::VectorXd;
+using math::RigidTransform;
+using math::RollPitchYaw;
+using math::RotationMatrix;
 
 DEFINE_double(target_realtime_rate, 1.0,
               "Playback speed.  See documentation for "
               "Simulator::set_target_realtime_rate() for details.");
 DEFINE_double(duration, 4.0, "Simulation duration.");
 DEFINE_bool(test, false, "Disable random initial conditions in test mode.");
+DEFINE_string(setup, "clutter_clearing", "Manipulation Station setup option.");
 
 int do_main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -37,7 +41,18 @@ int do_main(int argc, char* argv[]) {
 
   // Create the "manipulation station".
   auto station = builder.AddSystem<ManipulationStation>();
-  station->SetupClutterClearingStation();
+  if (FLAGS_setup == "clutter_clearing") {
+    station->SetupClutterClearingStation(nullopt);
+    station->AddManipulandFromFile(
+        "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
+        RigidTransform<double>(RollPitchYaw<double>(-1.57, 0, 3),
+                               Eigen::Vector3d(-0.3, -0.55, 0.36)));
+  } else if (FLAGS_setup == "default") {
+    station->SetupDefaultStation();
+  } else {
+    throw std::domain_error(
+        "Unrecognized setup option. Options are {default, clutter_clearing}.");
+  }
   station->Finalize();
 
   geometry::ConnectDrakeVisualizer(&builder, station->get_mutable_scene_graph(),
@@ -100,8 +115,9 @@ int do_main(int argc, char* argv[]) {
   // Check that the arm is (very roughly) in the commanded position.
   VectorXd q = station->GetIiwaPosition(station_context);
   if (!is_approx_equal_abstol(q, q0, 1.e-3)) {
-    std::cout << "q - q0  = " << (q - q0).transpose() << std::endl;
-    DRAKE_ABORT_MSG("q is not sufficiently close to q0.");
+    std::cout << "q is not sufficiently close to q0.\n";
+    std::cout << "q - q0  = " << (q - q0).transpose() << "\n";
+    return EXIT_FAILURE;
   }
 
   return 0;

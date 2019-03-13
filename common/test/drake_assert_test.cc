@@ -36,10 +36,13 @@ GTEST_TEST(DrakeAssertDeathTest, AbortTest) {
 
 GTEST_TEST(DrakeAssertDeathTest, AbortMsgTest) {
   ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   ASSERT_DEATH(
       { DRAKE_ABORT_MSG("stuff"); },
       "abort: Failure at .*drake_assert_test.cc:.. in TestBody..: "
       "condition 'stuff' failed");
+#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(DrakeAssertDeathTest, DemandTest) {

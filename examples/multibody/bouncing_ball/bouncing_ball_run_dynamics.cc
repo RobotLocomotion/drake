@@ -9,7 +9,6 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/math/random_rotation.h"
-#include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
@@ -50,7 +49,6 @@ using systems::SemiExplicitEulerIntegrator;
 // "multibody" namespace is ambiguous here without "drake::".
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
-using drake::multibody::QuaternionFloatingMobilizer;
 
 int do_main() {
   systems::DiagramBuilder<double> builder;

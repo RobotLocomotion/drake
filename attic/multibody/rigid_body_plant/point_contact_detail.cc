@@ -20,6 +20,5 @@ unique_ptr<ContactDetail<T>> PointContactDetail<T>::Clone() const {
 }  // namespace systems
 }  // namespace drake
 
-// Explicitly instantiates on the most common scalar types.
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class ::drake::systems::PointContactDetail)

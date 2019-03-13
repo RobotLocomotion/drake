@@ -2489,25 +2489,23 @@ TEST_F(BoxPenetrationTest, TangentConvex2) {
 
 // Attempting to add a dynamic Mesh should cause an abort.
 GTEST_TEST(ProximityEngineTests, AddDynamicMesh) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   ProximityEngine<double> engine;
   Mesh mesh{"invalid/path/thing.obj", 1.0};
-  ASSERT_DEATH(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       engine.AddDynamicGeometry(mesh, GeometryIndex(0)),
-      "abort: .*proximity_engine.*"
-      "The proximity engine does not support meshes yet.*");
+      std::exception,
+      ".*The proximity engine does not support meshes yet.*");
 }
 
 // Attempting to add a anchored Mesh should cause an abort.
 GTEST_TEST(ProximityEngineTests, AddAnchoredMesh) {
-  ::testing::FLAGS_gtest_death_test_style = "threadsafe";
   ProximityEngine<double> engine;
   Mesh mesh{"invalid/path/thing.obj", 1.0};
-  ASSERT_DEATH(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       engine.AddAnchoredGeometry(mesh, Isometry3d::Identity(),
                                  GeometryIndex(0)),
-      "abort: .*proximity_engine.*"
-      "The proximity engine does not support meshes yet.*");
+      std::exception,
+      ".*The proximity engine does not support meshes yet.*");
 }
 
 // This is a one-off test. Exposed in issue #10577. A point penetration pair
@@ -2561,6 +2559,49 @@ GTEST_TEST(ProximityEngineTests, Issue10577Regression_Osculation) {
   auto pairs = engine.ComputePointPairPenetration(geometry_map);
   EXPECT_EQ(pairs.size(), 0);
 }
+
+// When anchored geometry is added to the proximity engine, the broadphase
+// algorithm needs to be properly updated, otherwise it assumes all of the
+// anchored geometry has the identity transformation. This test confirms that
+// this configuration occurs; the dynamic sphere and anchored sphere are
+// configured away from the origin in collision. Without proper broadphase
+// initialization for the anchored geometry, no collision is reported.
+GTEST_TEST(ProximityEngineTests, AnchoredBroadPhaseInitialization) {
+  ProximityEngine<double> engine;
+  GeometryId id_D = GeometryId::get_new_id();
+  GeometryId id_A = GeometryId::get_new_id();
+  GeometryIndex index_D(0);
+  GeometryIndex index_A(1);
+  ProximityIndex engine_index_D =
+      engine.AddDynamicGeometry(Sphere(0.5), index_D);
+
+  Isometry3<double> X_WA{Translation3d{-3, 0, 0}};
+  ProximityIndex engine_index_A =
+      engine.AddAnchoredGeometry(Sphere(0.5), X_WA, index_A);
+
+  // These should have the same index value because one draws from the dynamic
+  // set, the other from the anchored.
+  ASSERT_EQ(engine_index_D, 0);
+  ASSERT_EQ(engine_index_A, 0);
+
+  Isometry3<double> X_WD{Translation3d{-3, 0.75, 0}};
+  // NOTE: The vector of indicies should *only* be the indices of the dynamic
+  // geometry. The only requirement for the vector of poses is that the
+  // poses[indices[i]] must be defined and should map to the geometry with
+  // index indices[i]. In this case, a single dynamic geometry with index 0,
+  // means it is sufficient to create a pose vector with a single pose.
+  engine.UpdateWorldPoses({X_WD}, {index_D});
+  std::vector<GeometryId> geometry_map{id_D, id_A};
+  auto pairs = engine.ComputePointPairPenetration(geometry_map);
+  EXPECT_EQ(pairs.size(), 1);
+
+  // Confirm that it survives copying.
+  ProximityEngine<double> engine_copy(engine);
+  engine_copy.UpdateWorldPoses({X_WD}, {index_D});
+  auto pairs_copy = engine_copy.ComputePointPairPenetration(geometry_map);
+  EXPECT_EQ(pairs_copy.size(), 1);
+}
+
 
 }  // namespace
 }  // namespace internal

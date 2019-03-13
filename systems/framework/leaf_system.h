@@ -211,7 +211,7 @@ class LeafSystem : public System<T> {
         model_discrete_state_.num_groups() == xd.num_groups());
 
     if (model_discrete_state_.num_groups() > 0) {
-      xd.CopyFrom(model_discrete_state_);
+      xd.SetFrom(model_discrete_state_);
     } else {
       // With no model vector, we just zero all the discrete variables.
       for (int i = 0; i < xd.num_groups(); i++) {
@@ -221,7 +221,7 @@ class LeafSystem : public System<T> {
     }
 
     AbstractValues& xa = state->get_mutable_abstract_state();
-    xa.CopyFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
+    xa.SetFrom(AbstractValues(model_abstract_states_.CloneAllModels()));
   }
 
   /// Default implementation: sets all numeric parameters to the model vector
@@ -1745,7 +1745,7 @@ class LeafSystem : public System<T> {
     auto& port = CreateAbstractLeafOutputPort(
         NextOutputPortName(std::move(name)), MakeAllocCallback(model_value),
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          OutputType& typed_result = result->get_mutable_value<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
         },
         std::move(prerequisites_of_calc));
@@ -1812,7 +1812,7 @@ class LeafSystem : public System<T> {
         NextOutputPortName(std::move(name)),
         [this_ptr, make]() { return AbstractValue::Make((this_ptr->*make)()); },
         [this_ptr, calc](const Context<T>& context, AbstractValue* result) {
-          OutputType& typed_result = result->GetMutableValue<OutputType>();
+          OutputType& typed_result = result->get_mutable_value<OutputType>();
           (this_ptr->*calc)(context, &typed_result);
         },
         std::move(prerequisites_of_calc));
@@ -2347,8 +2347,8 @@ class LeafSystem : public System<T> {
     const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
             events);
-    // TODO(siyuan): should have a API level CopyFrom for DiscreteValues.
-    discrete_state->CopyFrom(context.get_discrete_state());
+    // TODO(siyuan): should have a API level SetFrom for DiscreteValues.
+    discrete_state->SetFrom(context.get_discrete_state());
     // Only call DoCalcDiscreteVariableUpdates if there are discrete update
     // events.
     DRAKE_DEMAND(leaf_events.HasEvents());
@@ -2466,15 +2466,15 @@ class LeafSystem : public System<T> {
     };
 
     return CreateCachedLeafOutputPort(
-        std::move(name), 0 /* size */, std::move(allocator),
+        std::move(name), nullopt /* size */, std::move(allocator),
         std::move(cache_calc_function), std::move(calc_prerequisites));
   }
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a
-  // reference to it. Pass fixed_size == 0 for abstract ports, or non-zero
-  // for vector ports. Prerequisites list must not be empty.
+  // reference to it. Pass fixed_size == nullopt for abstract ports, or the
+  // port size for vector ports. Prerequisites list must not be empty.
   LeafOutputPort<T>& CreateCachedLeafOutputPort(
-      std::string name, int fixed_size,
+      std::string name, const optional<int>& fixed_size,
       typename CacheEntry::AllocCallback allocator,
       typename CacheEntry::CalcCallback calculator,
       std::set<DependencyTicket> calc_prerequisites) {
@@ -2495,7 +2495,8 @@ class LeafSystem : public System<T> {
         this,  // implicit_cast<const SystemBase*>(this)
         std::move(name),
         oport_index, this->assign_next_dependency_ticket(),
-        fixed_size == 0 ? kAbstractValued : kVectorValued, fixed_size,
+        fixed_size.has_value() ? kVectorValued : kAbstractValued,
+        fixed_size.value_or(0),
         &cache_entry);
     LeafOutputPort<T>* const port_ptr = port.get();
     this->AddOutputPort(std::move(port));

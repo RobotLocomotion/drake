@@ -257,9 +257,32 @@ GTEST_TEST(ManipulationStationTest, CheckCollisionVariants) {
   EXPECT_EQ(station2.get_controller_plant().num_collision_geometries(), 0);
 }
 
+GTEST_TEST(ManipulationStationTest, AddManipulandFromFile) {
+  ManipulationStation<double> station(0.002);
+  const int num_base_instances =
+      station.get_multibody_plant().num_model_instances();
+
+  station.AddManipulandFromFile(
+      "drake/manipulation/models/ycb/sdf/003_cracker_box.sdf",
+      math::RigidTransform<double>::Identity());
+
+  // Check that the cracker box was added.
+  EXPECT_EQ(station.get_multibody_plant().num_model_instances(),
+            num_base_instances + 1);
+
+  station.AddManipulandFromFile(
+      "drake/manipulation/models/ycb/sdf/004_sugar_box.sdf",
+      math::RigidTransform<double>::Identity());
+
+  // Check that the sugar box was added.
+  EXPECT_EQ(station.get_multibody_plant().num_model_instances(),
+            num_base_instances + 2);
+}
+
 GTEST_TEST(ManipulationStationTest, SetupClutterClearingStation) {
   ManipulationStation<double> station(0.002);
-  station.SetupClutterClearingStation(IiwaCollisionModel::kNoCollision);
+  station.SetupClutterClearingStation(math::RigidTransform<double>::Identity(),
+                                      IiwaCollisionModel::kNoCollision);
   station.Finalize();
 
   // Make sure we get through the setup and initialization.

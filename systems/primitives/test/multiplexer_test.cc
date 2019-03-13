@@ -26,7 +26,7 @@ class MultiplexerTest : public ::testing::Test {
   }
 
   void InitializeFromMyVector() {
-    mux_ = make_unique<Multiplexer<double>>(MyVector<2, double>());
+    mux_ = make_unique<Multiplexer<double>>(MyVector2d());
     context_ = mux_->CreateDefaultContext();
   }
 
@@ -88,11 +88,10 @@ TEST_F(MultiplexerTest, ModelVectorConstructor) {
   ASSERT_EQ(1, mux_->get_num_output_ports());
   ASSERT_EQ(2, mux_->get_output_port(0).size());
 
-  // Confirm that the vector is truly MyVector<2, double>.
+  // Confirm that the vector is truly MyVector2d.
   context_->FixInputPort(0, {0.0});
   context_->FixInputPort(1, {0.0});
-  typedef MyVector<2, double> MyVectorSizeTwo;
-  ASSERT_NO_THROW(mux_->get_output_port(0).Eval<MyVectorSizeTwo>(*context_));
+  ASSERT_NO_THROW(mux_->get_output_port(0).Eval<MyVector2d>(*context_));
 }
 
 TEST_F(MultiplexerTest, IsStateless) {

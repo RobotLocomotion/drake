@@ -64,8 +64,8 @@ class SystemConstraintAdapter {
    *  2. linear equality ( aᵀx = b )
    *  3. linear inequality ( lower <= aᵀx <= upper )
    *
-   * If the SystemConstraint cannot be parsed to the forms above, then return
-   * false, and clear @p constraints. Otherwise return true.
+   * If the SystemConstraint cannot be parsed to the forms above, then returns
+   * nullopt; otherwise returns a vector containing the parsed constraint.
    * @param index The index of the constraint in the System object.
    * @param context The context used to evaluate the SystemConstraint.
    * @retval constraints If the SystemConstraint can be parsed to the constraint
@@ -79,6 +79,39 @@ class SystemConstraintAdapter {
   MaybeCreateConstraintSymbolically(
       SystemConstraintIndex index,
       const Context<symbolic::Expression>& context) const;
+
+  /**
+   * Given a SystemConstraint and the Context to evaluate this SystemConstraint,
+   * parses the constraint to a generic nonlinear constraint
+   * lower <= SystemConstraint.Calc(context) <= upper.
+   * If the SystemConstraint cannot be parsed to the form above, then returns
+   * empty; otherwise returns a parsed constraint, together with the bound
+   * variables.
+   * We currently only support systems without abstract state or abstract
+   * parameters.
+   * @param index The index of the constraint in the System object.
+   * @param context The context used to evaluate the SystemConstraint. @note
+   * each expression in @p context (like state, parameter, etc) should be either
+   * a single symbolic variable, or a constant. Currently we do not support
+   * complicated symbolic expressions.
+   * @retval constraint A generic nonlinear constraint parsed from
+   * SystemConstraint. If the SystemConstraint cannot be parsed to the generic
+   * constraint using @p context instantiated with symbolic::Expression, then
+   * constraint.has_value() = false.
+   * @throw invalid_argument if the system contains abstract state or abstract
+   * parameters.
+   */
+  optional<solvers::Binding<solvers::Constraint>>
+  MaybeCreateGenericConstraintSymbolically(
+      SystemConstraintIndex index,
+      const Context<symbolic::Expression>& context) const;
+
+  /**
+   * Getters for the system instantiated with AutoDiffXd.
+   */
+  const System<AutoDiffXd>& system_autodiff() const {
+    return *system_autodiff_;
+  }
 
   /**
    * Returns the symbolic system. Throws a runtime error if the system cannot be

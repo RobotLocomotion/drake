@@ -28,7 +28,7 @@ class MilliSecTimeStampMessageToSeconds : public LcmMessageToTimeInterface {
   ~MilliSecTimeStampMessageToSeconds() {}
 
   double GetTimeInSeconds(const AbstractValue& abstract_value) const override {
-    const lcmt_drake_signal& msg = abstract_value.GetValue<lcmt_drake_signal>();
+    const auto& msg = abstract_value.get_value<lcmt_drake_signal>();
     return static_cast<double>(msg.timestamp) / 1e3;
   }
 };

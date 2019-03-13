@@ -134,13 +134,13 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
     // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
         *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
 
     // Generates QpOuput from the inverse dynamics block within
     // ManipulatorJointSpaceController.
     diagram_->CalcUnrestrictedUpdate(
          *context_, events->get_unrestricted_update_events(), state.get());
-    context_->get_mutable_state().CopyFrom(*state);
+    context_->get_mutable_state().SetFrom(*state);
 
     // Gets output.
     diagram_->CalcOutput(*context_, output_.get());
@@ -169,7 +169,7 @@ class ManipulatorJointSpaceControllerTest : public ::testing::Test {
 // should be specified by params_ loaded from kControlConfigPath.
 TEST_F(ManipulatorJointSpaceControllerTest, PlanEvalTest) {
   const QpInput& qp_input =
-      output_->get_data(plan_eval_output_index_)->GetValue<QpInput>();
+      output_->get_data(plan_eval_output_index_)->get_value<QpInput>();
 
   // Desired generalized acceleration should match expected.
   EXPECT_TRUE(drake::CompareMatrices(

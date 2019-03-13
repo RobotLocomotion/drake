@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -311,7 +312,7 @@ void MaliputRailcar<T>::SetDefaultState(const Context<T>&,
 
   LaneDirection& lane_direction =
       state->get_mutable_abstract_state().get_mutable_value(0).
-          template GetMutableValue<LaneDirection>();
+          template get_mutable_value<LaneDirection>();
   lane_direction = initial_lane_direction_;
 }
 
@@ -385,7 +386,7 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
   const double current_length = current_lane_direction.lane->length();
 
   // Copies the present state into the new one.
-  next_state->CopyFrom(context.get_state());
+  next_state->SetFrom(context.get_state());
 
   ContinuousState<T>& cs = next_state->get_mutable_continuous_state();
   VectorBase<T>& cv = cs.get_mutable_vector();
@@ -449,7 +450,8 @@ void MaliputRailcar<T>::DoCalcUnrestrictedUpdate(
     }
 
     if (!next_branch) {
-      DRAKE_ABORT_MSG("MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
+      throw std::logic_error(
+          "MaliputRailcar::DoCalcUnrestrictedUpdate: ERROR: "
           "Vehicle should switch lanes but no default or ongoing branch "
           "exists.");
     } else {

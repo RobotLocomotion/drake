@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/optimization/test/system_optimization_test_util.h"
@@ -100,6 +101,141 @@ GTEST_TEST(SystemConstraintAdapterTest, SolveDummySystemConstraint) {
   EXPECT_GE(p_val(0) * x_val(0) + x_val(1), 2 - tol);
   EXPECT_GE(x_val(2) - x_val(1) * x_val(1) - p_val(0) * x_val(0) * x_val(0),
             -tol);
+}
+
+GTEST_TEST(SystemConstraintAdapterTest,
+           MaybeCreateGenericConstraintSymbolically) {
+  DummySystem<double> system;
+
+  SystemConstraintAdapter adapter(&system);
+
+  auto context_symbolic = adapter.system_symbolic().CreateDefaultContext();
+  const symbolic::Variable a("a");
+  const symbolic::Variable b("b");
+  const symbolic::Variable c("c");
+  const symbolic::Variable t("t");
+  const double x1_val = 1;
+  const double x2_val = 2;
+  context_symbolic->get_mutable_continuous_state_vector().SetFromVector(
+      Vector3<symbolic::Expression>(a, x1_val, x2_val));
+  context_symbolic->get_mutable_discrete_state_vector().SetAtIndex(0, c);
+  context_symbolic->get_mutable_numeric_parameter(0).GetAtIndex(0) = b;
+  context_symbolic->set_time(t);
+
+  optional<solvers::Binding<solvers::Constraint>> binding =
+      adapter.MaybeCreateGenericConstraintSymbolically(
+          system.constraint_index(), *context_symbolic);
+  ASSERT_TRUE(binding.has_value());
+  // We make no promise on the ordering of the bound variables.
+  // TODO(hongkai.dai): t is not used in evaluating the system constraint. Hence
+  // it is better to remove t from the bound variables.
+  EXPECT_EQ(symbolic::Variables(binding->variables()),
+            symbolic::Variables({a, b, c, t}));
+  double a_val = 2;
+  double b_val = 3;
+  double c_val = 4;
+  double t_val = 5;
+
+  AutoDiffVecXd abct_autodiff = math::initializeAutoDiffGivenGradientMatrix(
+      Eigen::Vector4d(a_val, b_val, c_val, t_val),
+      Eigen::Matrix4Xd::Identity(4, 4));
+
+  // Implicitly relying on auto to all resolve to the same type.
+  auto set_bound_variable_value = [&a, &b, &c, &t](
+      const VectorX<symbolic::Variable>& bound_variables, auto a_value,
+      auto b_value, auto c_value, auto t_value) {
+    VectorX<decltype(a_value)> bound_variable_values(bound_variables.rows());
+    for (int i = 0; i < bound_variables.rows(); ++i) {
+      if (bound_variables(i).get_id() == a.get_id()) {
+        bound_variable_values(i) = a_value;
+      } else if (bound_variables(i).get_id() == b.get_id()) {
+        bound_variable_values(i) = b_value;
+      } else if (bound_variables(i).get_id() == c.get_id()) {
+        bound_variable_values(i) = c_value;
+      } else if (bound_variables(i).get_id() == t.get_id()) {
+        bound_variable_values(i) = t_value;
+      } else {
+        throw std::runtime_error(
+            "The bound_variables should only include a, b and t.");
+      }
+    }
+    return bound_variable_values;
+  };
+
+  // Evaluate this constraint.
+  auto context_double = system.CreateDefaultContext();
+  auto context_autodiff = adapter.system_autodiff().CreateDefaultContext();
+  context_double->get_mutable_continuous_state_vector().SetFromVector(
+      Vector3<double>(a_val, x1_val, x2_val));
+  context_autodiff->get_mutable_continuous_state_vector().SetFromVector(
+      Vector3<AutoDiffXd>(abct_autodiff(0), x1_val, x2_val));
+  context_double->get_mutable_numeric_parameter(0).GetAtIndex(0) = b_val;
+  context_autodiff->get_mutable_numeric_parameter(0).GetAtIndex(0) =
+      abct_autodiff(1);
+  context_double->get_mutable_discrete_state_vector().SetAtIndex(0, c_val);
+  context_autodiff->get_mutable_discrete_state_vector().GetAtIndex(0) =
+      abct_autodiff(2);
+  context_double->set_time(t_val);
+  context_autodiff->set_time(abct_autodiff(3));
+  Eigen::VectorXd constraint_val_expected;
+  DummySystemConstraintCalc(*context_double, &constraint_val_expected);
+
+  Eigen::VectorXd constraint_val;
+  binding->evaluator()->Eval(
+      set_bound_variable_value(binding->variables(), a_val, b_val, c_val,
+                               t_val),
+      &constraint_val);
+  const double tol = 3 * kEps;
+  EXPECT_TRUE(CompareMatrices(constraint_val, constraint_val_expected, tol));
+
+  // Evaluate this constraint with autodiff.
+  VectorX<AutoDiffXd> constraint_autodiff_expected;
+  DummySystemConstraintCalc(*context_autodiff, &constraint_autodiff_expected);
+  AutoDiffVecXd constraint_autodiff;
+  binding->evaluator()->Eval(
+      set_bound_variable_value(binding->variables(), abct_autodiff(0),
+                               abct_autodiff(1), abct_autodiff(2),
+                               abct_autodiff(3)),
+      &constraint_autodiff);
+  EXPECT_TRUE(CompareMatrices(
+      math::autoDiffToValueMatrix(constraint_autodiff),
+      math::autoDiffToValueMatrix(constraint_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(
+      math::autoDiffToGradientMatrix(constraint_autodiff),
+      math::autoDiffToGradientMatrix(constraint_autodiff_expected), tol));
+
+  // If the context contains complicated symbolic expressions (other than a
+  // variable and a constant), the adapter won't be able to create the generic
+  // constraint.
+  context_symbolic->get_mutable_continuous_state_vector().GetAtIndex(0) = a + b;
+  EXPECT_FALSE(adapter
+                   .MaybeCreateGenericConstraintSymbolically(
+                       system.constraint_index(), *context_symbolic)
+                   .has_value());
+}
+
+GTEST_TEST(SystemConstraintAdapterTest,
+           MaybeCreateGenericConstraintSymbolicallyFailure) {
+  auto check_failure = [](const DummySystem<double>& system,
+                          const std::string& failure_message) {
+    SystemConstraintAdapter adapter(&system);
+    auto context = adapter.system_symbolic().CreateDefaultContext();
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        adapter.MaybeCreateGenericConstraintSymbolically(
+            system.constraint_index(), *context),
+        std::invalid_argument, failure_message);
+  };
+
+  // With abstract state, no abstract parameters.
+  DummySystem<double> system1(true, false);
+  check_failure(
+      system1,
+      "SystemConstraintAdapter: cannot handle system with abstract state.*");
+  // No abstract state, with abstract parameters.
+  DummySystem<double> system2(false, true);
+  check_failure(system2,
+                "SystemConstraintAdapter: cannot handle system with abstract "
+                "parameter.*");
 }
 
 GTEST_TEST(SystemConstraintAdapterTest, ExternalSystemConstraint) {

@@ -73,12 +73,11 @@ TEST_F(ParametersTest, Clone) {
   clone->get_mutable_numeric_parameter(0).SetAtIndex(1, 42.0);
   EXPECT_EQ(6.0, params_->get_numeric_parameter(0).GetAtIndex(1));
   // - abstract
-  clone->get_mutable_abstract_parameter(0).SetValue<int>(256);
+  clone->get_mutable_abstract_parameter(0).set_value<int>(256);
   EXPECT_EQ(72, UnpackIntValue(params_->get_abstract_parameter(0)));
 }
 
-// Constructs a symbolic::Expression parameters with the same dimensions as
-// params_, and tests we can upconvert the latter into the former.
+// Tests we can promote Parameters<double> to Parameters<symbolic::Expression>.
 TEST_F(ParametersTest, SetSymbolicFromDouble) {
   auto symbolic_params = MakeParams<symbolic::Expression>();
   symbolic_params->SetFrom(*params_);
@@ -94,6 +93,25 @@ TEST_F(ParametersTest, SetSymbolicFromDouble) {
   // The abstract parameters have simply been cloned.
   EXPECT_EQ(72, UnpackIntValue(symbolic_params->get_abstract_parameter(0)));
   EXPECT_EQ(144, UnpackIntValue(symbolic_params->get_abstract_parameter(1)));
+}
+
+// Tests we can demote Parameters<symbolic::Expression> to Parameters<double>.
+TEST_F(ParametersTest, SetDoubleFromSymbolic) {
+  auto symbolic_params = MakeParams<symbolic::Expression>();
+  auto& p0 = symbolic_params->get_mutable_numeric_parameter(0);
+  auto& p1 = symbolic_params->get_mutable_numeric_parameter(1);
+  p0[0] = 4.0;
+  p0[1] = 7.0;
+  p1[0] = 10.0;
+  p1[1] = 13.0;
+
+  params_->SetFrom(*symbolic_params);
+  const auto& actual_p0 = params_->get_numeric_parameter(0);
+  const auto& actual_p1 = params_->get_numeric_parameter(1);
+  EXPECT_EQ(4.0, actual_p0[0]);
+  EXPECT_EQ(7.0, actual_p0[1]);
+  EXPECT_EQ(10.0, actual_p1[0]);
+  EXPECT_EQ(13.0, actual_p1[1]);
 }
 
 // Constructs an AutoDiffXd parameters with the same dimensions as

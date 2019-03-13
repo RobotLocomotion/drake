@@ -38,7 +38,7 @@ void EvalOutputHelper(const LcmSubscriberSystem& sub, Context<double>* context,
     } else {
       DRAKE_DEMAND(false);
     }
-    context->get_mutable_state().CopyFrom(*tmp_state);
+    context->get_mutable_state().SetFrom(*tmp_state);
   }
   sub.CalcOutput(*context, output);
 }
@@ -176,7 +176,7 @@ GTEST_TEST(LcmSubscriberSystemTest, SerializerTest) {
 
   const AbstractValue* abstract_value = output->get_data(0);
   ASSERT_NE(abstract_value, nullptr);
-  auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
 }
 
@@ -202,7 +202,7 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
 
   const AbstractValue* abstract_value = output->get_data(0);
   ASSERT_NE(abstract_value, nullptr);
-  auto value = abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  auto value = abstract_value->get_value<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(value, sample_data.value));
 
   // Smaller messages should also work.
@@ -212,7 +212,7 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
   EvalOutputHelper(*dut, context.get(), output.get());
   const AbstractValue* small_abstract_value = output->get_data(0);
   ASSERT_NE(small_abstract_value, nullptr);
-  auto small_value = small_abstract_value->GetValueOrThrow<lcmt_drake_signal>();
+  auto small_value = small_abstract_value->get_value<lcmt_drake_signal>();
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(small_value, smaller_data.value));
 }
 

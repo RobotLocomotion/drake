@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -10,11 +11,10 @@ namespace systems {
 
 /**
  * A first-order, semi-explicit Euler integrator. State is updated in the
- * following manner:
- * <pre>
- * v(t₀+h) = v(t₀) + dv/dt(t₀) * h
- * dq/dt  = N * v(t₀+h)
- * q(t₀+h) = q(t₀) + dq/dt * h
+ * following manner: <pre>
+ *     v(t₀+h) = v(t₀) + dv/dt(t₀) * h
+ *       dq/dt = N(q(t₀)) * v(t₀+h)
+ *     q(t₀+h) = q(t₀) + dq/dt * h
  * </pre>
  * where `v` are the generalized velocity variables and `q` are generalized
  * coordinates. `h` is the integration step size, and `N` is a matrix 
@@ -84,11 +84,9 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
    */
   SemiExplicitEulerIntegrator(const System<T>& system, const T& max_step_size,
                               Context<T>* context = nullptr)
-      : IntegratorBase<T>(system, context) {
+      : IntegratorBase<T>(system, context),
+        qdot_(context->get_continuous_state().num_q()) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
-    derivs_ = system.AllocateTimeDerivatives();
-    qdot_ = std::make_unique<BasicVector<T>>(
-            context->get_continuous_state().get_generalized_position().size());
   }
 
   /**
@@ -103,11 +101,10 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
   bool supports_error_estimation() const override { return false; }
 
  private:
-  bool DoStep(const T& dt) override;
+  bool DoStep(const T& h) override;
 
-  // These are pre-allocated temporaries for use by integration
-  std::unique_ptr<ContinuousState<T>> derivs_;
-  std::unique_ptr<BasicVector<T>> qdot_;
+  // This is a pre-allocated temporary for use by integration
+  BasicVector<T> qdot_;
 };
 
 /**
@@ -115,41 +112,55 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  * by IntegratorBase::StepOnce().
  */
 template <class T>
-bool SemiExplicitEulerIntegrator<T>::DoStep(const T& dt) {
-  // Find the continuous state xc within the Context, just once.
-  auto context = this->get_mutable_context();
-  auto& xc = context->get_mutable_continuous_state();
-  const auto& system = this->get_system();
+bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
+  const System<T>& system = this->get_system();
+  Context<T>& context = *this->get_mutable_context();
 
-  // Retrieve the generalized coordinates and velocities and auxiliary
-  // variables.
-  VectorBase<T>& q = xc.get_mutable_generalized_position();
-  VectorBase<T>& v = xc.get_mutable_generalized_velocity();
-  VectorBase<T>& z = xc.get_mutable_misc_continuous_state();
+  // CAUTION: This is performance-sensitive inner loop code that uses dangerous
+  // long-lived references into state and cache to avoid unnecessary copying and
+  // cache invalidation. Be careful not to insert calls to methods that could
+  // invalidate any of these references before they are used.
 
-  // TODO(sherm1) This should be calculating into the cache so that
-  // Publish() doesn't have to recalculate if it wants to output derivatives.
-  this->CalcTimeDerivatives(this->get_context(), derivs_.get());
-
+  // Evaluate derivative xcdot(t₀) ← xcdot(t₀, x(t₀), u(t₀)).
+  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
   // Retrieve the accelerations and auxiliary variable derivatives.
-  const auto& vdot = derivs_->get_generalized_velocity();
-  const auto& zdot = derivs_->get_misc_continuous_state();
+  const VectorBase<T>& vdot = xc_deriv.get_generalized_velocity();
+  const VectorBase<T>& zdot = xc_deriv.get_misc_continuous_state();
 
-  // Update the generalized velocity and auxiliary variables.
-  v.PlusEqScaled({ {dt, vdot} });
-  z.PlusEqScaled({ {dt, zdot} });
+  // Cache: vdot and zdot reference the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
 
-  // Convert the generalized velocity to the time derivative of generalized
-  // coordinates and update the generalized coordinates.
-  system.MapVelocityToQDot(*context, v, qdot_.get());
-  q.PlusEqScaled({ {dt, *qdot_} });
+  // This invalidates computations that are dependent on v or z.
+  // Marks v- and z-dependent cache entries out of date, including vdot and
+  // zdot; time doesn't change here.
+  std::pair<VectorBase<T>*, VectorBase<T>*> vz = context.GetMutableVZVectors();
+  VectorBase<T>& v = *vz.first;
+  VectorBase<T>& z = *vz.second;
 
-  // Update the time.
-  context->set_time(context->get_time() + dt);
+  // Cache: vdot and zdot still reference the derivative cache value, which is
+  // unchanged, although it is marked out of date.
+
+  // Update the velocity and auxiliary state variables.
+  v.PlusEqScaled(h, vdot);
+  z.PlusEqScaled(h, zdot);
+
+  // Convert the updated generalized velocity to the time derivative of
+  // generalized coordinates. Note that this mapping is q-dependent and
+  // hasn't been invalidated if it was pre-computed.
+  system.MapVelocityToQDot(context, v, &qdot_);
+
+  // Now set time and q to their final values. This marks time- and
+  // q-dependent cache entries out of date. That includes the derivative
+  // cache entry though we don't need it again here.
+  VectorBase<T>& q =
+      context.SetTimeAndGetMutableQVector(context.get_time() + h);
+  q.PlusEqScaled(h, qdot_);
 
   // This integrator always succeeds at taking the step.
   return true;
 }
+
 }  // namespace systems
 }  // namespace drake
 

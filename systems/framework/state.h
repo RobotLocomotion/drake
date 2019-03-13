@@ -6,6 +6,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/systems/framework/abstract_values.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
@@ -97,7 +98,7 @@ class State {
   template <typename U>
   const U& get_abstract_state(int index) const {
     const AbstractValues& xa = get_abstract_state();
-    return xa.get_value(index).GetValue<U>();
+    return xa.get_value(index).get_value<U>();
   }
 
   /// Returns a mutable pointer to element @p index of the abstract state.
@@ -105,23 +106,20 @@ class State {
   template <typename U>
   U& get_mutable_abstract_state(int index) {
     AbstractValues& xa = get_mutable_abstract_state();
-    return xa.get_mutable_value(index).GetMutableValue<U>();
+    return xa.get_mutable_value(index).get_mutable_value<U>();
   }
 
-  /// Copies the values from another State of the same scalar type into this
-  /// State.
+  DRAKE_DEPRECATED("2019-06-01", "Use SetFrom instead of CopyFrom.")
   void CopyFrom(const State<T>& other) {
-    continuous_state_->CopyFrom(other.get_continuous_state());
-    discrete_state_->CopyFrom(other.get_discrete_state());
-    abstract_state_->CopyFrom(other.get_abstract_state());
+    SetFrom(other);
   }
 
-  /// Initializes this state (regardless of scalar type) from a State<double>.
-  /// All scalar types in Drake must support initialization from doubles.
-  void SetFrom(const State<double>& other) {
+  /// Initializes this state from a State<U>.
+  template <typename U>
+  void SetFrom(const State<U>& other) {
     continuous_state_->SetFrom(other.get_continuous_state());
     discrete_state_->SetFrom(other.get_discrete_state());
-    abstract_state_->CopyFrom(other.get_abstract_state());
+    abstract_state_->SetFrom(other.get_abstract_state());
   }
 
  private:

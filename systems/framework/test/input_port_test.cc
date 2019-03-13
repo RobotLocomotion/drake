@@ -65,18 +65,18 @@ GTEST_TEST(InputPortTest, VectorTest) {
   EXPECT_EQ(eval_eigen, data);
   EXPECT_EQ(eval_basic.CopyToVector(), data);
   EXPECT_EQ(eval_myvec3.CopyToVector(), data);
-  EXPECT_EQ(eval_abs.GetValueOrThrow<BasicVector<T>>().CopyToVector(), data);
+  EXPECT_EQ(eval_abs.get_value<BasicVector<T>>().CopyToVector(), data);
 
   // Check error messages.
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut->Eval<std::string>(context), std::exception,
       "InputPort::Eval..: wrong value type std::string specified; "
-      "actual type was drake::systems::MyVector<3,double> "
+      "actual type was drake::systems::MyVector<double,3> "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut->Eval<MyVector2d>(context), std::exception,
-      "InputPort::Eval..: wrong value type .*MyVector<2,double> specified; "
-      "actual type was .*MyVector<3,double> "
+      "InputPort::Eval..: wrong value type .*MyVector<double,2> specified; "
+      "actual type was .*MyVector<double,3> "
       "for InputPort.*2.*of.*dummy.*DummySystem.*");
 }
 
@@ -121,7 +121,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
   const std::string& eval_str = dut->Eval<std::string>(context);
   const AbstractValue& eval_abs = dut->Eval<AbstractValue>(context);
   EXPECT_EQ(eval_str, data);
-  EXPECT_EQ(eval_abs.GetValueOrThrow<std::string>(), data);
+  EXPECT_EQ(eval_abs.get_value<std::string>(), data);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       dut->Eval(context), std::exception,

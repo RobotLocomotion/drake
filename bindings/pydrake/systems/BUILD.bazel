@@ -369,6 +369,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         ":test_util_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
@@ -397,7 +398,9 @@ drake_py_unittest(
     data = [
         "//examples/kuka_iiwa_arm:models",
         "//examples/multibody/cart_pole:models",
+        "//examples/quadrotor:models",
         "//manipulation/models/iiwa_description:models",
+        "//systems/sensors:test_models",
     ],
     deps = [
         ":analysis_py",
@@ -449,6 +452,7 @@ drake_py_unittest(
     name = "trajectory_optimization_test",
     deps = [
         ":trajectory_optimization_py",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples:pendulum_py",
     ],
 )

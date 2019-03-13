@@ -10,6 +10,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
     "drake_cc_test",
     "drake_transitive_installed_hdrs_filegroup",
 )
@@ -196,6 +197,14 @@ drake_cc_test(
     # Using `drake_shared_library` can cause timeouts in debug mode.
     timeout = "moderate",
     deps = [":drake_shared_library"],
+)
+
+drake_cc_googletest(
+    name = "fast_math_test",
+    tags = ["no_kcov"],  # See #10788.
+    deps = [
+        "//:drake_shared_library",
+    ],
 )
 
 add_lint_tests(

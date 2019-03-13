@@ -91,9 +91,7 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
 
   explicit ImplicitEulerIntegrator(const System<T>& system,
                                    Context<T>* context = nullptr)
-      : IntegratorBase<T>(system, context) {
-    derivs_ = system.AllocateTimeDerivatives();
-  }
+      : IntegratorBase<T>(system, context) {}
 
   /// Selecting the wrong such Jacobian determination scheme will slow (possibly
   /// critically) the implicit integration process. Automatic differentiation is
@@ -256,30 +254,20 @@ class ImplicitEulerIntegrator final : public IntegratorBase<T> {
   VectorX<T> Solve(const VectorX<T>& rhs) const;
   bool AttemptStepPaired(const T& dt, VectorX<T>* xtplus_euler,
                          VectorX<T>* xtplus_trap);
-  bool StepAbstract(const T& dt,
-                    const std::function<VectorX<T>()>& g,
-                    int scale,
-                    VectorX<T>* xtplus, int trial = 1);
+  bool StepAbstract(const T& dt, const std::function<VectorX<T>()>& g,
+                    int scale, VectorX<T>* xtplus, int trial = 1);
   bool CalcMatrices(const T& tf, const T& dt, int scale,
                     const VectorX<T>& xtplus, int trial);
   MatrixX<T> CalcJacobian(const T& tf, const VectorX<T>& xtplus);
   bool DoStep(const T& dt) override;
-  bool StepImplicitEuler(const T& dt);
-  bool StepImplicitTrapezoid(const T& dt, const VectorX<T>& dx0,
+  bool StepImplicitEuler(const T& h);
+  bool StepImplicitTrapezoid(const T& h, const VectorX<T>& dx0,
                              VectorX<T>* xtplus);
-  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&,
-                                        const Context<T>&,
-                                        ContinuousState<T>* state);
-  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&,
-                                        const Context<T>&,
-                                        ContinuousState<T>* state);
+  MatrixX<T> ComputeForwardDiffJacobian(const System<T>&, Context<T>*);
+  MatrixX<T> ComputeCentralDiffJacobian(const System<T>&, Context<T>*);
   MatrixX<T> ComputeAutoDiffJacobian(const System<T>& system,
                                      const Context<T>& context);
-  VectorX<T> CalcTimeDerivativesUsingContext();
-
-  // This is a pre-allocated temporary for use by integration. It stores
-  // the derivatives computed at x(t+h).
-  std::unique_ptr<ContinuousState<T>> derivs_;
+  VectorX<T> EvalTimeDerivativesUsingContext();
 
   // A simple LU factorization is all that is needed; robustness in the solve
   // comes naturally as dt << 1. Keeping this data in the class definition

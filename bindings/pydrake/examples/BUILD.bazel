@@ -62,6 +62,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:drake_optional_pybind",
     ],
     cc_srcs = ["manipulation_station_py.cc"],
     package_info = PACKAGE_INFO,
@@ -69,6 +70,7 @@ drake_pybind_library(
         ":module_py",
         "//bindings/pydrake/systems",
     ],
+    py_srcs = ["_manipulation_station_extra.py"],
     visibility = ["//visibility:public"],
 )
 

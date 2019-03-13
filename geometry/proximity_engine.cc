@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iterator>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -558,12 +559,22 @@ bool DistanceCallback(fcl::CollisionObjectd* fcl_object_A_ptr,
     fcl::DistanceResultd result;
     ComputeNarrowPhaseDistance(&fcl_object_A, &fcl_object_B, geometry_map,
                                distance_data.request, &result);
-    const Vector3d p_ACa =
-        fcl_object_A.getTransform().inverse() * result.nearest_points[0];
-    const Vector3d p_BCb =
-        fcl_object_B.getTransform().inverse() * result.nearest_points[1];
+    const Vector3d& p_WCa = result.nearest_points[0];
+    const Vector3d& p_WCb = result.nearest_points[1];
+    const Vector3d p_ACa = fcl_object_A.getTransform().inverse() * p_WCa;
+    const Vector3d p_BCb = fcl_object_B.getTransform().inverse() * p_WCb;
+    // TODO(DamrongGuoy): For sphere-{sphere,box,cylinder} we will start
+    //  working on the right nhat when min_distance is 0 or almost 0 after
+    //  PR #10813 lands to avoid conflicts with this PR #10823. For now,
+    //  we simply return NaN in nhat when min_distance is 0 or almost 0.
+    const Vector3d nhat_BA_W =
+        (std::abs(result.min_distance) < std::numeric_limits<double>::epsilon())
+            ? Vector3d(std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::quiet_NaN(),
+                       std::numeric_limits<double>::quiet_NaN())
+            : (p_WCa - p_WCb) / result.min_distance;
     distance_data.nearest_pairs->emplace_back(id_A, id_B, p_ACa, p_BCb,
-                                              result.min_distance);
+                                              result.min_distance, nhat_BA_W);
   }
 
   // Returning true would tell the broadphase manager to terminate early. Since
@@ -895,6 +906,7 @@ unique_ptr<fcl::CollisionObjectd> CopyFclObjectOrThrow(
   auto copy = make_unique<fcl::CollisionObjectd>(geometry_copy);
   copy->setUserData(object.getUserData());
   copy->setTransform(object.getTransform());
+  copy->computeAABB();
   return copy;
 }
 
@@ -930,6 +942,7 @@ void BuildTreeFromReference(
   for (auto* other_object : other_objects) {
     target->registerObject(copy_map.at(other_object));
   }
+  target->update();
 }
 
 }  // namespace
@@ -1017,7 +1030,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::unique_ptr<fcl::CollisionObject<double>> fcl_object;
     shape.Reify(this, &fcl_object);
     fcl_object->setTransform(X_WG);
+    fcl_object->computeAABB();
     anchored_tree_.registerObject(fcl_object.get());
+    anchored_tree_.update();
     ProximityIndex proximity_index(static_cast<int>(anchored_objects_.size()));
     EncodedData encoding(index, false /* is dynamic */);
     encoding.store_in(fcl_object.get());
@@ -1102,7 +1117,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void ImplementGeometry(const Mesh&, void*) override {
-    DRAKE_ABORT_MSG("The proximity engine does not support meshes yet");
+    throw std::domain_error("The proximity engine does not support meshes yet");
   }
 
   //

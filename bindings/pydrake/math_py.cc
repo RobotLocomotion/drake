@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/orthonormal_basis.h"
+#include "drake/math/quadratic_form.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -118,18 +119,26 @@ PYBIND11_MODULE(math, m) {
       // .def("IsIdentityToEpsilon", ...)
       .def("inverse", &RigidTransform<T>::inverse,
           doc.RigidTransform.inverse.doc)
-      // TODO(eric.cousineau): Use `matmul` operator once we support Python3.
       .def("multiply",
           [](const RigidTransform<T>* self, const RigidTransform<T>& other) {
             return *self * other;
           },
           py::arg("other"), doc.RigidTransform.operator_mul.doc_1args_other)
+      .def("__matmul__",
+          [](const RigidTransform<T>* self, const RigidTransform<T>& other) {
+            return *self * other;
+          },
+          py::arg("other"), "See ``multiply``.")
       .def("multiply",
           [](const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
             return *self * p_BoQ_B;
           },
-          py::arg("p_BoQ_B"),
-          doc.RigidTransform.operator_mul.doc_1args_p_BoQ_B);
+          py::arg("p_BoQ_B"), doc.RigidTransform.operator_mul.doc_1args_p_BoQ_B)
+      .def("__matmul__",
+          [](const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
+            return *self * p_BoQ_B;
+          },
+          py::arg("p_BoQ_B"), "See ``multiply``.");
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
@@ -144,6 +153,12 @@ PYBIND11_MODULE(math, m) {
           doc.RollPitchYaw.ctor.doc_1args_R)
       .def(py::init<const Eigen::Quaternion<T>&>(), py::arg("quaternion"),
           doc.RollPitchYaw.ctor.doc_1args_quaternion)
+      .def(py::init([](const Matrix3<T>& matrix) {
+        return RollPitchYaw<T>(RotationMatrix<T>(matrix));
+      }),
+          py::arg("matrix"),
+          "Construct from raw rotation matrix. See RotationMatrix overload "
+          "for more information.")
       .def("vector", &RollPitchYaw<T>::vector, doc.RollPitchYaw.vector.doc)
       .def("roll_angle", &RollPitchYaw<T>::roll_angle,
           doc.RollPitchYaw.roll_angle.doc)
@@ -166,13 +181,16 @@ PYBIND11_MODULE(math, m) {
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("rpy"),
           doc.RotationMatrix.ctor.doc_1args_rpy)
       .def("matrix", &RotationMatrix<T>::matrix, doc.RotationMatrix.matrix.doc)
-      // Do not define an operator until we have the Python3 `@` operator so
-      // that operations are similar to those of arrays.
       .def("multiply",
           [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
             return self * other;
           },
           doc.RotationMatrix.operator_mul.doc_1args_other)
+      .def("__matmul__",
+          [](const RotationMatrix<T>& self, const RotationMatrix<T>& other) {
+            return self * other;
+          },
+          "See ``multiply``")
       .def("inverse", &RotationMatrix<T>::inverse,
           doc.RotationMatrix.inverse.doc)
       .def("ToQuaternion",
@@ -182,16 +200,25 @@ PYBIND11_MODULE(math, m) {
       .def_static("Identity", &RotationMatrix<T>::Identity,
           doc.RotationMatrix.Identity.doc);
 
+  // Quadratic Form.
+  m  // BR
+      .def("DecomposePSDmatrixIntoXtransposeTimesX",
+          &DecomposePSDmatrixIntoXtransposeTimesX, py::arg("Y"),
+          py::arg("zero_tol"), doc.DecomposePSDmatrixIntoXtransposeTimesX.doc)
+      .def("DecomposePositiveQuadraticForm", &DecomposePositiveQuadraticForm,
+          py::arg("Q"), py::arg("b"), py::arg("c"), py::arg("tol") = 0,
+          doc.DecomposePositiveQuadraticForm.doc);
+
   // General math overloads.
   // N.B. Additional overloads will be added for autodiff, symbolic, etc, by
   // those respective modules.
-  // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs, either
-  // using __array_ufunc__ or user dtypes.
+  // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs,
+  // either using __array_ufunc__ or user dtypes.
   // N.B. The ordering in which the overloads are resolved will change based on
   // when modules are loaded. However, there should not be ambiguous implicit
   // conversions between autodiff and symbolic, and double overloads should
   // always occur first, so it shouldn't be a problem.
-  // See `math_overloads_test`, which tests this specifically.
+  // See`math_overloads_test`, which tests this specifically.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   m  // BR
       .def("log", [](double x) { return log(x); })

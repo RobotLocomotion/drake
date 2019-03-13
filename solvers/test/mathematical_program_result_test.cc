@@ -27,6 +27,7 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
   EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
+  EXPECT_EQ(result.num_suboptimal_solution(), 0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       result.get_abstract_solver_details(), std::logic_error,
       "The solver_details has not been set yet.");
@@ -38,11 +39,16 @@ TEST_F(MathematicalProgramResultTest, Setters) {
   result.set_solution_result(SolutionResult::kSolutionFound);
   const Eigen::Vector2d x_val(0, 1);
   result.set_x_val(x_val);
+  result.AddSuboptimalSolution(0.1, Eigen::Vector2d(1, 2));
   EXPECT_TRUE(CompareMatrices(result.get_x_val(), x_val));
   EXPECT_TRUE(CompareMatrices(result.GetSolution(), x_val));
   EXPECT_EQ(result.GetSolution(x0_), x_val(0));
   EXPECT_EQ(result.GetSolution(x1_), x_val(1));
   EXPECT_EQ(result.GetSolution(Vector2<symbolic::Variable>(x0_, x1_)), x_val);
+  EXPECT_EQ(result.num_suboptimal_solution(), 1);
+  EXPECT_EQ(result.GetSuboptimalSolution(x0_, 0), 1);
+  EXPECT_EQ(result.GetSuboptimalSolution(x1_, 0), 2);
+  EXPECT_EQ(result.get_suboptimal_objective(0), 0.1);
   DRAKE_EXPECT_THROWS_MESSAGE(result.set_x_val(Eigen::Vector3d::Zero()),
                               std::invalid_argument,
                               "MathematicalProgramResult::set_x_val, the "
@@ -58,11 +64,19 @@ TEST_F(MathematicalProgramResultTest, Setters) {
 
   // Getting solution for a variable y not in decision_variable_index_.
   symbolic::Variable y("y");
-  DRAKE_EXPECT_THROWS_MESSAGE(result.GetSolution(y), std::invalid_argument,
-                              "MathematicalProgramResult::GetSolution, y is "
-                              "not captured by the decision_variable_index "
-                              "map, passed in "
-                              "set_decision_variable_index\\(\\).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      result.GetSolution(y), std::invalid_argument,
+      "GetVariableValue: y is not captured by the variable_index map.");
+
+  // Get a solution of an Expression (with additional Variables).
+  const symbolic::Variable x_extra{"extra"};
+  const symbolic::Expression e{x0_ + x_extra};
+  EXPECT_TRUE(result.GetSolution(e).EqualTo(symbolic::Expression{x_val(0) +
+  x_extra}));
+  const Vector2<symbolic::Expression> m{x0_ + x_extra, x1_*x_extra};
+  const Vector2<symbolic::Expression> msol = result.GetSolution(m);
+  EXPECT_TRUE(msol[0].EqualTo(x_val(0) + x_extra));
+  EXPECT_TRUE(msol[1].EqualTo(x_val(1) * x_extra));
 }
 
 struct DummySolverDetails {

@@ -8,8 +8,8 @@ namespace drake {
 namespace systems {
 namespace scalar_conversion {
 
-/// A templated traits class for whether an `S<T>` can be converted into an
-/// `S<U>`; the default value is true for all values of `S`, `T`, and `U`.
+/// A templated traits class for whether an `S<U>` can be converted into an
+/// `S<T>`; the default value is true for all values of `S`, `T`, and `U`.
 /// Particular scalar-dependent classes (`S`) may specialize this template to
 /// indicate whether the framework should support conversion for any given
 /// combination of `T` and `U`.
@@ -85,6 +85,24 @@ struct FromDoubleTraits {
   using supported = typename std::conditional<
     std::is_same<U, double>::value,
     std::true_type, std::false_type>::type;
+};
+
+/// Converts a scalar `U u` to its corresponding scalar `T t`.  When U == T,
+/// the scalar is unchanged.  When demoting Expression to non-Expression,
+/// throws when there are unbound variables.  In all other cases, information
+/// beyond the double value (e.g., possible derivatives) might be discarded.
+template <typename T, typename U>
+struct ValueConverter {
+  T operator()(const U& u) const {
+    return ExtractDoubleOrThrow(u);
+  }
+};
+template <typename T>
+struct ValueConverter<T, T> {
+  using U = T;
+  T operator()(const U& u) const {
+    return u;
+  }
 };
 
 }  // namespace scalar_conversion

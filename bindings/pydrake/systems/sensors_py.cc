@@ -123,6 +123,7 @@ PYBIND11_MODULE(sensors, m) {
       };
 
       py::class_<ImageT> image(m, TemporaryClassName<ImageT>().c_str());
+      AddTemplateClass(m, "Image", image, py_param);
       image  // BR
           .def(py::init<int, int>(), py::arg("width"), py::arg("height"),
               doc.Image.ctor.doc_2args)
@@ -142,7 +143,6 @@ PYBIND11_MODULE(sensors, m) {
       // Constants.
       image.attr("Traits") = traits;
       // - Do not duplicate aliases (e.g. `kNumChannels`) for now.
-      AddTemplateClass(m, "Image", image, py_param);
       // Add type alias for instantiation.
       const std::string suffix = pixel_type_name.substr(1);
       m.attr(("Image" + suffix).c_str()) = image;

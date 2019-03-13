@@ -33,7 +33,7 @@ namespace {
 // Free functions suitable for defining cache entries.
 auto Alloc3 = []() { return AbstractValue::Make<int>(3); };
 auto Calc99 = [](const ContextBase&, AbstractValue* result) {
-  result->SetValue(99);
+  result->set_value(99);
 };
 
 // This one is fatally flawed since null is not allowed.
@@ -355,7 +355,7 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   // EvalAbstract() should retrieve the same object as Eval() did.
   const AbstractValue& abstract_value_eval = entry0().EvalAbstract(context_);
   EXPECT_EQ(value0.serial_number(), expected_serial_num);  // No change.
-  EXPECT_EQ(abstract_value_eval.GetValueOrThrow<int>(), 99);
+  EXPECT_EQ(abstract_value_eval.get_value<int>(), 99);
 
   // GetKnownUpToDateAbstract() should return the same object as EvalAbstract().
   const AbstractValue& abstract_value_get =
@@ -373,7 +373,7 @@ TEST_F(CacheEntryTest, ValueMethodsWork) {
   // stored value.
   std::unique_ptr<AbstractValue> out = AbstractValue::Make<string>("something");
   string_entry().Calc(context_, &*out);
-  EXPECT_EQ(out->GetValue<string>(), "calculated_result");
+  EXPECT_EQ(out->get_value<string>(), "calculated_result");
   EXPECT_EQ(string_entry().GetKnownUpToDate<string>(context_), "initial");
   EXPECT_EQ(string_value.serial_number(), expected_serial_num);  // No change.
 
@@ -581,7 +581,7 @@ TEST_F(CacheEntryTest, CanSwapValue) {
   EXPECT_EQ(entry_value.get_value<string>(), "initial");
   auto new_value = AbstractValue::Make<string>("new value");
   entry_value.swap_value(&new_value);
-  EXPECT_EQ(new_value->GetValue<string>(), "initial");
+  EXPECT_EQ(new_value->get_value<string>(), "initial");
   EXPECT_TRUE(entry_value.is_out_of_date());
   entry_value.mark_up_to_date();
   EXPECT_EQ(entry_value.get_value<string>(), "new value");

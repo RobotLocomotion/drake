@@ -188,8 +188,7 @@ GTEST_TEST(GeometryProperties, GetPropertyFailure) {
   ASSERT_TRUE(properties.AddProperty(group_name, prop_name, 7.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       properties.GetProperty<int>(group_name, prop_name), std::logic_error,
-      ".*a request to extract a value of type 'int' failed .* actual type was "
-      "'double'.");
+      ".* 'int' failed .* actual type was 'double'.");
 }
 
 GTEST_TEST(GeometryProperties, PropertyCounts) {
@@ -294,7 +293,7 @@ GTEST_TEST(GeometryProperties, CopyMoveSemantics) {
       if (test.has_group(group_name)) {
         for (const auto& pair : reference.GetGroupProperties(group_name)) {
           const std::string& name = pair.first;
-          int expected_value = pair.second->GetValueOrThrow<int>();
+          int expected_value = pair.second->get_value<int>();
           if (test.HasProperty(group_name, name)) {
             int test_value = test.GetProperty<int>(group_name, name);
             if (expected_value != test_value) {

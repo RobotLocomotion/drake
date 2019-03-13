@@ -71,7 +71,8 @@ Result VisitPolynomial(Visitor* v, const Expression& e, Args&&... args) {
     case ExpressionKind::IfThenElse:
     case ExpressionKind::UninterpretedFunction:
       // Unreachable because of `DRAKE_DEMAND(e.is_polynomial())` at the top.
-      DRAKE_ABORT_MSG("Unexpected Kind was is_polynomial");
+      throw std::domain_error(
+          "Unexpected Kind was is_polynomial in VisitPolynomial");
   }
   // Unreachable because all switch cases are accounted for above.
   DRAKE_UNREACHABLE();

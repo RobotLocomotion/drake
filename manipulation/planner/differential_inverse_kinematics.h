@@ -10,22 +10,10 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_optional.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
-
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declarations because we only need the type name for deprecation
-// purposes; we never call any methods on an RBT.
-template <class T>
-class RigidBodyTree;
-template <class T>
-class RigidBodyFrame;
-template <class T>
-class KinematicsCache;
-#endif
 
 namespace drake {
 namespace manipulation {
@@ -293,35 +281,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const MatrixX<double>>& J,
     const DifferentialInverseKinematicsParameters& parameters);
 
-#ifndef DRAKE_DOXYGEN_CXX
-// TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
-// Remember to remove the forward declaration above at the same time.
-DRAKE_DEPRECATED(
-    "DiffIK for RigidBodyTree no longer uses this file; for new "
-    "instructions, see https://github.com/RobotLocomotion/drake/pull/10047")
-inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>&, const KinematicsCache<double>&,
-    const Vector6<double>&, const RigidBodyFrame<double>&,
-    const DifferentialInverseKinematicsParameters&) {
-  throw std::runtime_error(
-      "DiffIK for RigidBodyTree no longer uses this file; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/10047");
-}
-// TODO(jwnimmer-tri) Remove these stubs on or about 2019-03-01.
-// Remember to remove the forward declaration above at the same time.
-DRAKE_DEPRECATED(
-    "DiffIK for RigidBodyTree no longer uses this file; for new "
-    "instructions, see https://github.com/RobotLocomotion/drake/pull/10047")
-inline DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const RigidBodyTree<double>&, const KinematicsCache<double>&,
-    const Isometry3<double>&, const RigidBodyFrame<double>&,
-    const DifferentialInverseKinematicsParameters&) {
-  throw std::runtime_error(
-      "DiffIK for RigidBodyTree no longer uses this file; for new "
-      "instructions, see https://github.com/RobotLocomotion/drake/pull/10047");
-}
-#endif
-
 /**
  * A wrapper over
  * DoDifferentialInverseKinematics(q_current, v_current, V, J, params)
@@ -366,22 +325,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const multibody::MultibodyPlant<double>& robot,
-    const systems::Context<double>& context,
-    const Isometry3<double>& X_WE_desired,
-    const multibody::Frame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters);
-
-DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::internal::MultibodyTree<double>& robot,
-    const systems::Context<double>& context,
-    const Vector6<double>& V_WE_desired,
-    const multibody::Frame<double>& frame_E,
-    const DifferentialInverseKinematicsParameters& parameters);
-
-DRAKE_DEPRECATED("Please use the MultibodyPlant version.")
-DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::internal::MultibodyTree<double>& robot,
     const systems::Context<double>& context,
     const Isometry3<double>& X_WE_desired,
     const multibody::Frame<double>& frame_E,

@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/manipulation/kuka_iiwa/internal_iiwa_command_translator.h"
 
 namespace drake {
 namespace manipulation {
@@ -33,13 +32,6 @@ class IiwaCommandReceiverTest : public testing::TestWithParam<int> {
         return context_.FixInputPort(
             dut_.GetInputPort("command_message").get_index(),
             Value<lcmt_iiwa_command>{});
-      case 2:
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        return context_.FixInputPort(
-            dut_.GetInputPort("command_vector").get_index(),
-            internal::IiwaCommand<double>(N));
-#pragma GCC diagnostic pop
     }
     throw std::logic_error("Bad param");
   }
@@ -51,18 +43,7 @@ class IiwaCommandReceiverTest : public testing::TestWithParam<int> {
       case 1: {
         // TODO(jwnimmer-tri) This systems framework API is not very ergonomic.
         fixed_input_.GetMutableData()->
-            template GetMutableValueOrThrow<lcmt_iiwa_command>() = message;
-        return;
-      }
-      case 2: {
-        auto& vector = dynamic_cast<internal::IiwaCommand<double>&>(
-            *fixed_input_.template GetMutableVectorData<double>());
-        vector.set_utime(message.utime);
-        vector.set_joint_position(Eigen::Map<const Eigen::VectorXd>(
-            message.joint_position.data(), message.joint_position.size()));
-        message.joint_torque.resize(N, 0.0);
-        vector.set_joint_torque(Eigen::Map<const Eigen::VectorXd>(
-            message.joint_torque.data(), message.joint_torque.size()));
+            template get_mutable_value<lcmt_iiwa_command>() = message;
         return;
       }
     }
@@ -168,7 +149,7 @@ TEST_P(IiwaCommandReceiverTest, DeprecatedVelocityTest) {
 
 INSTANTIATE_TEST_CASE_P(
     EachInput, IiwaCommandReceiverTest,
-    ::testing::Values(0, 1, 2));
+    ::testing::Values(0, 1));
 
 }  // namespace
 }  // namespace kuka_iiwa

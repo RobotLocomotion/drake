@@ -4,11 +4,12 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.examples.manipulation_station import (
+    CreateDefaultYcbObjectList,
     IiwaCollisionModel,
     ManipulationStation,
     ManipulationStationHardwareInterface
 )
-from pydrake.math import RigidTransform
+from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.tree import ModelInstanceIndex
 from pydrake.multibody.parsing import Parser
@@ -39,8 +40,8 @@ class TestManipulationStation(unittest.TestCase):
         station.SetIiwaVelocity(context, v)
         np.testing.assert_array_equal(v, station.GetIiwaVelocity(context))
 
-        q = 4.23
-        v = 8.51
+        q = 0.0423
+        v = 0.0851
         station.SetWsgPosition(context, q)
         self.assertEqual(q, station.GetWsgPosition(context))
         station.SetWsgVelocity(context, v)
@@ -92,6 +93,38 @@ class TestManipulationStation(unittest.TestCase):
         self.assertEqual(plant.num_positions(), 9)
         self.assertEqual(plant.num_velocities(), 9)
 
+    def test_clutter_clearing_setup(self):
+        station = ManipulationStation(time_step=0.001)
+        station.SetupClutterClearingStation()
+
+        num_station_bodies = (
+            station.get_multibody_plant().num_model_instances())
+
+        ycb_objects = CreateDefaultYcbObjectList()
+        for model_file, X_WObject in ycb_objects:
+            station.AddManipulandFromFile(model_file, X_WObject)
+
+        station.Finalize()
+
+        context = station.CreateDefaultContext()
+        q = np.linspace(0.04, 0.6, num=7)
+        v = np.linspace(-2.3, 0.5, num=7)
+        station.SetIiwaPosition(context, q)
+        np.testing.assert_array_equal(q, station.GetIiwaPosition(context))
+        station.SetIiwaVelocity(context, v)
+        np.testing.assert_array_equal(v, station.GetIiwaVelocity(context))
+
+        q = 0.0423
+        v = 0.0851
+        station.SetWsgPosition(context, q)
+        self.assertEqual(q, station.GetWsgPosition(context))
+        station.SetWsgVelocity(context, v)
+        self.assertEqual(v, station.GetWsgVelocity(context))
+
+        self.assertEqual(len(station.get_camera_names()), 1)
+        self.assertEqual(station.get_multibody_plant().num_model_instances(),
+                         num_station_bodies + len(ycb_objects))
+
     def test_iiwa_collision_model(self):
         # Check that all of the elements of the enum were spelled correctly.
         IiwaCollisionModel.kNoCollision
@@ -103,3 +136,7 @@ class TestManipulationStation(unittest.TestCase):
         # Don't actually call Connect here, since it would block.
         station.get_controller_plant()
         self.assertEqual(len(station.get_camera_names()), 2)
+
+    def test_ycb_object_creation(self):
+        ycb_objects = CreateDefaultYcbObjectList()
+        self.assertEqual(len(ycb_objects), 6)

@@ -306,6 +306,52 @@ GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {
   // AddMultibodyPlantSceneGraphResult<double> extra{*plant, *scene_graph};
 }
 
+GTEST_TEST(ActuationPortsTest, CheckActuation) {
+  // Create a MultibodyPlant consisting of two model instances, one actuated
+  // and the other unactuated.
+  MultibodyPlant<double> plant;
+  const std::string acrobot_path = FindResourceOrThrow(
+      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string cylinder_path = FindResourceOrThrow(
+      "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf");
+  auto acrobot_instance = Parser(&plant).AddModelFromFile(acrobot_path);
+  auto cylinder_instance = Parser(&plant).AddModelFromFile(cylinder_path);
+  plant.Finalize();
+
+  // Verify the number of actuators.
+  EXPECT_EQ(plant.num_actuated_dofs(acrobot_instance), 1);
+  EXPECT_EQ(plant.num_actuated_dofs(cylinder_instance), 0);
+
+  // Verify that we can get the actuation input ports.
+  EXPECT_NO_THROW(plant.get_actuation_input_port());
+  EXPECT_NO_THROW(plant.get_actuation_input_port(acrobot_instance));
+  EXPECT_NO_THROW(plant.get_actuation_input_port(cylinder_instance));
+
+  // Try to compute the derivatives without connecting the acrobot_instance
+  // port.
+  std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
+  std::unique_ptr<ContinuousState<double>> continuous_state = plant.
+      AllocateTimeDerivatives();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.CalcTimeDerivatives(*context, continuous_state.get()),
+      std::logic_error, "Actuation input port for model instance .* must "
+          "be connected.");
+
+  // Verify that derivatives can be computed after fixing the acrobot actuation
+  // input port.
+  context->FixInputPort(
+      plant.get_actuation_input_port(acrobot_instance).get_index(),
+      Vector1d(0.0));
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
+
+  // Verify that derivatives can be computed after fixing the cylinder actuation
+  // input port with an empty vector.
+  context->FixInputPort(
+      plant.get_actuation_input_port(cylinder_instance).get_index(),
+      VectorXd(0));
+  EXPECT_NO_THROW(plant.CalcTimeDerivatives(*context, continuous_state.get()));
+}
+
 // Fixture to perform a number of computational tests on an acrobot model.
 class AcrobotPlantTests : public ::testing::Test {
  public:
@@ -626,9 +672,9 @@ TEST_F(AcrobotPlantTests, VisualGeometryRegistration) {
 
   unique_ptr<AbstractValue> poses_value =
       plant_->get_geometry_poses_output_port().Allocate();
-  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
+  EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& poses =
-      poses_value->GetValueOrThrow<FramePoseVector<double>>();
+      poses_value->get_value<FramePoseVector<double>>();
   EXPECT_EQ(poses.source_id(), plant_->get_source_id());
   EXPECT_EQ(poses.size(), 2);  // Only two frames move.
 
@@ -1102,9 +1148,9 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   unique_ptr<AbstractValue> poses_value =
       plant.get_geometry_poses_output_port().Allocate();
-  EXPECT_NO_THROW(poses_value->GetValueOrThrow<FramePoseVector<double>>());
+  EXPECT_NO_THROW(poses_value->get_value<FramePoseVector<double>>());
   const FramePoseVector<double>& pose_data =
-      poses_value->GetValueOrThrow<FramePoseVector<double>>();
+      poses_value->get_value<FramePoseVector<double>>();
   EXPECT_EQ(pose_data.source_id(), plant.get_source_id());
   EXPECT_EQ(pose_data.size(), 2);  // Only two frames move.
 
@@ -1174,9 +1220,9 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   unique_ptr<Context<double>> context = scene_graph.CreateDefaultContext();
   unique_ptr<AbstractValue> state_value =
       scene_graph.get_query_output_port().Allocate();
-  EXPECT_NO_THROW(state_value->GetValueOrThrow<QueryObject<double>>());
+  EXPECT_NO_THROW(state_value->get_value<QueryObject<double>>());
   const QueryObject<double>& query_object =
-      state_value->GetValueOrThrow<QueryObject<double>>();
+      state_value->get_value<QueryObject<double>>();
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
@@ -1278,9 +1324,9 @@ TEST_F(AcrobotPlantTests, EvalContinuousStateOutputPort) {
 
   unique_ptr<AbstractValue> state_value =
       plant_->get_continuous_state_output_port().Allocate();
-  EXPECT_NO_THROW(state_value->GetValueOrThrow<BasicVector<double>>());
+  EXPECT_NO_THROW(state_value->get_value<BasicVector<double>>());
   const BasicVector<double>& state_out =
-      state_value->GetValueOrThrow<BasicVector<double>>();
+      state_value->get_value<BasicVector<double>>();
   EXPECT_EQ(state_out.size(), plant_->num_multibody_states());
 
   // Compute the poses for each geometry in the model.

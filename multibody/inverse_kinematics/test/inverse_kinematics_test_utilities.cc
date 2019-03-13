@@ -102,10 +102,10 @@ std::unique_ptr<systems::Diagram<T>> BuildTwoFreeSpheresDiagram(
   const auto& sphere2 = (*plant)->GetBodyByName("body2");
   (*plant)->RegisterCollisionGeometry(
       sphere1, X_B1S1, geometry::Sphere(radius1), "sphere1_collision",
-      multibody::multibody_plant::CoulombFriction<double>(), *scene_graph);
+      multibody::CoulombFriction<double>(), *scene_graph);
   (*plant)->RegisterCollisionGeometry(
       sphere2, X_B2S2, geometry::Sphere(radius2), "sphere2_collision",
-      multibody::multibody_plant::CoulombFriction<double>(), *scene_graph);
+      multibody::CoulombFriction<double>(), *scene_graph);
   *sphere1_index = sphere1.body_frame().index();
   *sphere2_index = sphere2.body_frame().index();
   (*plant)->Finalize(*scene_graph);

@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 
 import pydrake
-from pydrake.common.deprecation import DrakeDeprecationWarning
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.symbolic as sym
 
@@ -98,7 +98,13 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(result.GetSolution(qp.x[0]), 1.0)
         self.assertTrue(np.allclose(result.GetSolution(qp.x), x_expected))
 
-    # TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
+        self.assertTrue(result.GetSolution(
+            sym.Expression(qp.x[0])).EqualTo(1.))
+        m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
+        self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
+            result.GetSolution(qp.x[1])))
+
+# TODO(jwnimmer-tri) MOSEK is also able to solve mixed integer programs;
     # perhaps we should test both of them?
     @unittest.skipUnless(GurobiSolver().available(), "Requires Gurobi")
     def test_mixed_integer_optimization(self):
@@ -224,10 +230,8 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
 
         # Test deprecated method.
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('once', DrakeDeprecationWarning)
+        with catch_drake_warnings(expected_count=1):
             c = binding.constraint()
-            self.assertEqual(len(w), 1)
 
     def test_constraint_api(self):
         prog = mp.MathematicalProgram()
@@ -293,9 +297,7 @@ class TestMathematicalProgram(unittest.TestCase):
         constraints = qp.constraints
         constraint_values_expected = [1., 1., 2., 3.]
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', DrakeDeprecationWarning)
-
+        with catch_drake_warnings(action='ignore'):
             prog.Solve()
             self.assertTrue(np.allclose(prog.GetSolution(x), x_expected))
 
@@ -375,8 +377,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertTrue(result.is_success())
 
         # Test SubstituteSolution(sym.Expression)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', DrakeDeprecationWarning)
+        with catch_drake_warnings(action='ignore'):
             prog.Solve()
             # TODO(eric.cousineau): Expose `SymbolicTestCase` so that other
             # tests can use the assertion utilities.
@@ -418,7 +419,11 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddBoundingBoxConstraint(lb, ub, x)
         prog.AddBoundingBoxConstraint(0., 1., x[0])
         prog.AddBoundingBoxConstraint(0., 1., x)
-        prog.AddLinearConstraint(np.eye(2), np.zeros(2), np.ones(2), x)
+        prog.AddLinearConstraint(A=np.eye(2), lb=np.zeros(2), ub=np.ones(2),
+                                 vars=x)
+        prog.AddLinearConstraint(e=x[0], lb=0, ub=1)
+        prog.AddLinearConstraint(v=x, lb=[0, 0], ub=[1, 1])
+        prog.AddLinearConstraint(f=(x[0] == 0))
 
         prog.AddLinearEqualityConstraint(np.eye(2), np.zeros(2), x)
         prog.AddLinearEqualityConstraint(x[0] == 1)
@@ -482,6 +487,18 @@ class TestMathematicalProgram(unittest.TestCase):
         # Test setting all values at once.
         prog.SetInitialGuessForAllVariables(x0)
         check_and_reset()
+
+        # Check an extrinsic guess.  We sanity check changes to the guess using
+        # loose "any" and "all" predicates rather than specific indices because
+        # we should not presume how variables map into indices.
+        guess = np.ndarray(count)
+        guess.fill(np.nan)
+        self.assertTrue(all([np.isnan(i) for i in guess]))
+        prog.SetDecisionVariableValueInVector(x[0], x0[0], guess)
+        self.assertFalse(all([np.isnan(i) for i in guess]))
+        self.assertTrue(any([np.isnan(i) for i in guess]))
+        prog.SetDecisionVariableValueInVector(x_matrix, x0_matrix, guess)
+        self.assertFalse(any([np.isnan(i) for i in guess]))
 
     @unittest.skipIf(
         SNOPT_NO_GUROBI,

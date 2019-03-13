@@ -284,7 +284,7 @@ class CacheEntry {
   template <typename ValueType>
   const ValueType& ExtractValueOrThrow(const AbstractValue& abstract,
                                        const char* api) const {
-    const ValueType* value = abstract.MaybeGetValue<ValueType>();
+    const ValueType* value = abstract.maybe_get_value<ValueType>();
     if (!value)
       ThrowBadValueType<ValueType>(api, abstract);
     return *value;

@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -113,7 +114,7 @@ class RigidBody {
   template<typename JointType>
   JointType* add_joint(RigidBody* parent, std::unique_ptr<JointType> joint) {
     if (joint_ != nullptr) {
-      DRAKE_ABORT_MSG(
+      throw std::logic_error(
           "Attempting to assign a new joint to a body that already has one");
     }
     set_parent(parent);
@@ -175,7 +176,7 @@ class RigidBody {
   bool has_parent_body() const { return parent_ != nullptr; }
 
   // TODO(liang.fok): Remove this deprecated method prior to Release 1.0.
-  DRAKE_DEPRECATED("Please use has_parent_body().")
+  DRAKE_DEPRECATED("2019-12-31", "Please use has_parent_body().")
   bool hasParent() const;
 
   /**

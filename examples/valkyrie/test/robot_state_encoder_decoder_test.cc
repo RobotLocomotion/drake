@@ -104,7 +104,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   auto kinematics_results_value = make_unique<Value<KinematicsResults<double>>>(
       KinematicsResults<double>(&tree));
   KinematicsResults<double>& kinematics_results =
-      kinematics_results_value->GetMutableValue<KinematicsResults<double>>();
+      kinematics_results_value->get_mutable_value();
 
   std::default_random_engine generator;  // Same seed every time, but that's OK.
   std::normal_distribution<double> distribution;
@@ -148,7 +148,7 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   auto contact_results_value =
       make_unique<Value<ContactResults<double>>>(ContactResults<double>());
   ContactResults<double>& contact_results =
-      contact_results_value->GetMutableValue<ContactResults<double>>();
+      contact_results_value->get_mutable_value();
 
   double spatial_forces_start = 0.0;
   for (Side side : Side::values) {
@@ -225,8 +225,8 @@ void TestEncodeThenDecode(FloatingBaseType floating_base_type) {
   diagram->CalcOutput(*context, output.get());
 
   // TODO(tkoolen): magic numbers.
-  auto cache_output = output->get_data(0)->GetValue<KinematicsCache<double>>();
-  auto msg_output = output->get_data(1)->GetValue<robot_state_t>();
+  auto cache_output = output->get_data(0)->get_value<KinematicsCache<double>>();
+  auto msg_output = output->get_data(1)->get_value<robot_state_t>();
 
   // Tolerance because we're converting to float and back:
   double tolerance = 10. * std::numeric_limits<float>::epsilon();

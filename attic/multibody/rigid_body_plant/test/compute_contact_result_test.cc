@@ -61,7 +61,7 @@ class ContactResultTest : public ContactResultTestCommon<double> {
 
     const int port_index = plant_->contact_results_output_port().get_index();
     contact_results_ =
-        output_->get_data(port_index)->GetValue<ContactResults<double>>();
+        output_->get_data(port_index)->get_value<ContactResults<double>>();
     return contact_results_;
   }
 

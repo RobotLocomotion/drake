@@ -84,11 +84,6 @@ int DoMain() {
 
   auto scene_tree = GenerateSceneTree(&clutter_instances, FLAGS_repetitions);
 
-  std::stringstream clutter_instances_string;
-  for (auto& it : clutter_instances) {
-    clutter_instances_string << it << ",";
-  }
-
   VectorX<double> q_nominal =
       VectorX<double>::Random(scene_tree->get_num_positions());
 

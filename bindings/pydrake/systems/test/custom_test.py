@@ -35,9 +35,7 @@ from pydrake.systems.test.test_util import (
     call_vector_system_overrides,
     )
 
-from pydrake.common.deprecation import (
-    DrakeDeprecationWarning,
-    )
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 def noop(*args, **kwargs):
@@ -389,7 +387,9 @@ class TestCustom(unittest.TestCase):
             values.get_value(0).get_value(), model_value.get_value())
         self.assertEqual(
             values.get_mutable_value(0).get_value(), model_value.get_value())
-        values.CopyFrom(values.Clone())
+        values.SetFrom(values.Clone())
+        with catch_drake_warnings(expected_count=1):
+            values.CopyFrom(values.Clone())
 
         # - Check diagram context accessors.
         builder = DiagramBuilder()
@@ -429,11 +429,16 @@ class TestCustom(unittest.TestCase):
                             BasicVector_[T](num_state),
                             num_q=num_q, num_v=num_v, num_z=num_z)
 
+                def _DoCalcTimeDerivatives(self, context, derivatives):
+                    derivatives.get_mutable_vector().SetZero()
+
             for index in range(4):
                 system = TrivialSystem(index)
                 context = system.CreateDefaultContext()
                 self.assertEqual(
                     context.get_continuous_state_vector().size(), 6)
+                self.assertEqual(system.AllocateTimeDerivatives().size(), 6)
+                self.assertEqual(system.EvalTimeDerivatives(context).size(), 6)
 
     def test_discrete_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
@@ -510,10 +515,8 @@ class TestCustom(unittest.TestCase):
         class ParseFloatSystem(LeafSystem_[float]):
             def __init__(self):
                 LeafSystem_[float].__init__(self)
-                with warnings.catch_warnings(record=True) as w:
-                    warnings.simplefilter("default", DrakeDeprecationWarning)
+                with catch_drake_warnings(expected_count=1):
                     self._DeclareAbstractInputPort("in")
-                    test.assertEqual(len(w), 1)
                 self._DeclareVectorOutputPort("out", BasicVector(1), self._Out)
 
             def _Out(self, context, y_data):

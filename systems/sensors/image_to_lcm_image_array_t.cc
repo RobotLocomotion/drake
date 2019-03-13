@@ -82,54 +82,54 @@ void PackImageToLcmImageT(const AbstractValue& untyped_image,
   switch (pixel_type) {
     case PixelType::kRgb8U: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kRgb8U>>();
+          untyped_image.get_value<Image<PixelType::kRgb8U>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kBgr8U: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kBgr8U>>();
+          untyped_image.get_value<Image<PixelType::kBgr8U>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kRgba8U: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kRgba8U>>();
+          untyped_image.get_value<Image<PixelType::kRgba8U>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kBgra8U: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kBgra8U>>();
+          untyped_image.get_value<Image<PixelType::kBgra8U>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kGrey8U: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kGrey8U>>();
+          untyped_image.get_value<Image<PixelType::kGrey8U>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kDepth16U: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kDepth16U>>();
+          untyped_image.get_value<Image<PixelType::kDepth16U>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kDepth32F: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kDepth32F>>();
+          untyped_image.get_value<Image<PixelType::kDepth32F>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kLabel16I: {
       const auto& image_value =
-          untyped_image.GetValue<Image<PixelType::kLabel16I>>();
+          untyped_image.get_value<Image<PixelType::kLabel16I>>();
       PackImageToLcmImageT(image_value, msg, do_compress);
       break;
     }
     case PixelType::kExpr:
-      DRAKE_ABORT_MSG("PixelType::kExpr is not supported.");
+      throw std::domain_error("PixelType::kExpr is not supported.");
   }
 }
 
