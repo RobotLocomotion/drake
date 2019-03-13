@@ -487,28 +487,52 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     `PointCloud` in meshcat. The `PointCloud` must have both XYZ and RGB
     fields.
 
+    Note that this class can, but doesn't have to, be used with a drake
+    `MeshcatVisualizer` system. Here is an example of using it with a drake
+    `MeshcatVisualzer` system:
+
+    ```
+    viz = builder.AddSystem(MeshcatVisualizer(scene_graph))
+    pc_viz = builder.AddSystem(
+        MeshcatPointCloudVisualizer(viz.vis, viz.draw_period))
+    ```
+
+    Otherwise, this class can be initialized with a new meshcat Visualizer
+    instance without needing to visualize any scene graphs.
+
+    ```
+    viz = meshcat.Visualizer()
+    pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
+    ```
+
     @system{
         @input_port{point_cloud},
     }
     """
 
-    def __init__(self, meshcat_viz, X_WPointCloud=Isometry3.Identity(),
-                 name="point_cloud"):
+    def __init__(self, meshcat_instance, draw_period=0.033333,
+                 name="point_cloud", transform=Isometry3.Identity()):
         """
         Args:
-            meshcat_viz: a MeshcatVisualizer object.
-            X_WPointCloud: an optional Isometry3 of the transformation between
-                the input point cloud and world frame.
-            name: a string name of the meshcat object.
+            meshcat_instance: A native meshcat Visualizer object. Note that
+                this is an instance returned from calling
+                `meshcat.Visualizer()`, not a Drake MeshcatVisualizer system.
+                This allows point clouds to be visualized independently of
+                scene graphs.
+            draw_period: The rate at which this class publishes to the
+                visualizer.
+            name: The string name of the meshcat object.
+            transform: An optional Isometry3 transformation to apply to the
+                point cloud.
         """
         LeafSystem.__init__(self)
 
-        self._meshcat_viz = meshcat_viz
-        self._X_WPointCloud = X_WPointCloud
+        self._meshcat_viz = meshcat_instance
+        self._transform = transform
         self._name = name
 
         self.set_name('meshcat_point_cloud_visualizer')
-        self._DeclarePeriodicPublish(self._meshcat_viz.draw_period, 0.0)
+        self._DeclarePeriodicPublish(draw_period, 0.0)
 
         self._DeclareAbstractInputPort("point_cloud",
                                        AbstractValue.Make(mut.PointCloud()))
@@ -522,24 +546,8 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         points = input.xyzs()[:, nan_indices[0, :]]
         colors = input.rgbs()[:, nan_indices[0, :]]
 
-        points = self._apply_transform(points, self._X_WPointCloud)
-
         # Convert rgb values from [0, 255] to [0, 1].
         point_cloud = g.PointCloud(points, colors / 255.)
 
-        vis = self._meshcat_viz.vis
-        prefix = self._meshcat_viz.prefix
-        vis[prefix][self._name].set_object(point_cloud)
-
-    def _apply_transform(self, matrix, transform):
-        # Applies a homogenous transformation to the given matrix.
-        # Args:
-        #     matrix: A (3, N) numpy matrix.
-        #     transform: An Isometry3.
-        # Returns:
-        #     The (3, N) transformed numpy matrix.
-
-        homogenous_matrix = np.ones((4, matrix.shape[1]))
-        homogenous_matrix[:3, :] = np.copy(matrix)
-
-        return transform.matrix().dot(homogenous_matrix)[:3, :]
+        self._meshcat_viz[self._name].set_object(point_cloud)
+        self._meshcat_viz[self._name].set_transform(self._transform.matrix())

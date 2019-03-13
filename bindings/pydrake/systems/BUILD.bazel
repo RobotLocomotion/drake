@@ -299,8 +299,8 @@ drake_py_library(
 
 install(
     name = "install",
-    targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
+    targets = PY_LIBRARIES + [":all_py"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
 )
 
@@ -408,6 +408,7 @@ drake_py_unittest(
         ":meshcat_visualizer_py",
         ":test_util_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:perception_py",
         "//bindings/pydrake/multibody",
     ],
 )

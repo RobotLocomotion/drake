@@ -1,5 +1,6 @@
 import unittest
 
+import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -9,14 +10,16 @@ from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
     MeshcatVisualizer,
-    MeshcatContactVisualizer
+    MeshcatContactVisualizer,
+    MeshcatPointCloudVisualizer
 )
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.multibody.plant import MultibodyPlant
 
+import pydrake.perception as mut
 
 class TestMeshcat(unittest.TestCase):
     def test_cart_pole(self):
@@ -190,6 +193,83 @@ class TestMeshcat(unittest.TestCase):
 
         diagram = builder.Build()
         diagram_context = diagram.CreateDefaultContext()
+
+        simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.StepTo(1.0)
+
+    def test_point_cloud_visualization_drake(self):
+        """A table, unrelated to the point cloud."""
+        table_file_path = FindResourceOrThrow(
+            "drake/examples/kuka_iiwa_arm/models/table/"
+            "extra_heavy_duty_table_surface_only_collision.sdf")
+
+        builder = DiagramBuilder()
+        plant = MultibodyPlant(0.002)
+        _, scene_graph = AddMultibodyPlantSceneGraph(builder, plant)
+        table_model = Parser(plant=plant).AddModelFromFile(table_file_path)
+        plant.Finalize()
+
+        # Add meshcat visualizer.
+        viz = builder.AddSystem(
+            MeshcatVisualizer(scene_graph,
+                              zmq_url=None,
+                              open_browser=False))
+        builder.Connect(
+            scene_graph.get_pose_bundle_output_port(),
+            viz.get_input_port(0))
+
+        # Add point cloud visualization.
+        transform = Isometry3.Identity()
+        transform.set_translation([0.1, 0.2, 0.3])
+        pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz.vis,
+                                                               viz.draw_period,
+                                                               "cloud",
+                                                               transform))
+
+        # Make sure the system runs.
+        diagram = builder.Build()
+        diagram_context = diagram.CreateDefaultContext()
+
+        context = diagram.GetMutableSubsystemContext(pc_viz, diagram_context)
+
+        pc = mut.PointCloud(
+            new_size=1,
+            fields=mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs))
+        pc.mutable_xyzs()[:3, 0] = [0.1, 0.2, 0.3]
+        pc.mutable_rgbs()[:3, 0] = [0.1, 0.2, 0.3]
+
+        context.FixInputPort(
+            pc_viz.GetInputPort("point_cloud").get_index(),
+            AbstractValue.Make(pc))
+
+        simulator = Simulator(diagram, diagram_context)
+        simulator.set_publish_every_time_step(False)
+        simulator.StepTo(1.0)
+
+    def test_point_cloud_visualization_standalone(self):
+        """A small point cloud"""
+        builder = DiagramBuilder()
+
+        # Add point cloud visualization.
+        viz = meshcat.Visualizer()
+        pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
+
+        # Make sure the system runs.
+        diagram = builder.Build()
+        diagram_context = diagram.CreateDefaultContext()
+
+        context = diagram.GetMutableSubsystemContext(pc_viz, diagram_context)
+
+        pc = mut.PointCloud(
+            new_size=1,
+            fields=mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs))
+        pc.mutable_xyzs()[:3, 0] = [0.1, 0.2, 0.3]
+        pc.mutable_rgbs()[:3, 0] = [0.1, 0.2, 0.3]
+
+        context.FixInputPort(
+            pc_viz.GetInputPort("point_cloud").get_index(),
+            AbstractValue.Make(pc))
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
