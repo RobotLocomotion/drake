@@ -1182,7 +1182,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     }
   }
 
-  // For each subsystem, if there is an unrestricted update event in its
+  // For each subsystem, if there is a raw Context update event in its
   // corresponding subevent collection, calls its CalcRawContextUpdate
   // method with the appropriate subcontext, subevent collection and substate.
   void DispatchRawContextUpdateHandler(

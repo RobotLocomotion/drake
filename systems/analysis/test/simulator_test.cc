@@ -1994,7 +1994,7 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
       publish_times_.push_back(context.get_time());
     }
 
-    // No method can be override for raw Context updates.
+    // The dispatcher cannot be overriden for raw Context updates.
     void RawUpdate(
         Context<double>* context,
         const RawContextUpdateEvent<double>& e) const {

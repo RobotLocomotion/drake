@@ -779,16 +779,16 @@ class System : public SystemBase {
   /// updated in a Diagram.
   ///
   /// Functionally, the raw Context update has the same power as an
-  /// unrestricted update: it can modify any part of the state, *but only
-  /// parts of the state*, not time or parameters. This method exists only
-  /// to allow certain subsystems that require frequent unrestricted updates
-  /// to be simulated more quickly when the state is large; Simulator
-  /// currently copies the state twice on unrestricted updates, which is slow
-  /// (and motivated the introduction of the raw Context update strategy).
+  /// unrestricted update: it can modify any part of the state.
+  /// This method exists only to allow certain subsystems that
+  /// require frequent unrestricted updates to be simulated more quickly when
+  /// the state is large; Simulator currently copies the state twice on
+  /// unrestricted updates, which is slow (and motivated the introduction of the
+  /// raw Context updating strategy).
   ///
   /// CalcRawContextUpdate(.) updates `context` using all of the
-  /// raw-Context-update handlers in `events`. The method does not allow time,
-  /// parameters, or the dimensionality of the state variables to change.
+  /// raw-Context-update handlers in `events`. Time, parameters, and the
+  /// dimensionality of the state variables should not be changed.
   ///
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes or if the time in the Context changes in the callback.
