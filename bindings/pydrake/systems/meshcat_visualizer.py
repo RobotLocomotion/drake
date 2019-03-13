@@ -31,7 +31,7 @@ with warnings.catch_warnings():
         "ignore", category=ImportWarning,
         message="can't resolve package from __spec__")
     import meshcat
-import meshcat.geometry as g # noqa
+import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 
 
@@ -480,6 +480,7 @@ class MeshcatContactVisualizer(LeafSystem):
 
     def _get_visual_magnitude(self, magnitude):
         return magnitude / self._contact_force_scale
+
 
 class MeshcatPointCloudVisualizer(LeafSystem):
     """

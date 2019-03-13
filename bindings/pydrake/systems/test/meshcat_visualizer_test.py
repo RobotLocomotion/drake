@@ -21,6 +21,7 @@ from pydrake.multibody.plant import MultibodyPlant
 
 import pydrake.perception as mut
 
+
 class TestMeshcat(unittest.TestCase):
     def test_cart_pole(self):
         """Cart-Pole with simple geometry."""
