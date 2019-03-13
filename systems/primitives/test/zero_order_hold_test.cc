@@ -8,10 +8,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 #include "drake/systems/framework/system_output.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
+#include "drake/systems/primitives/sine.h"
 
 namespace drake {
 namespace systems {
@@ -83,7 +86,7 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
     }
   }
 
-  std::unique_ptr<System<double>> hold_;
+  std::unique_ptr<ZeroOrderHold<double>> hold_;
   std::unique_ptr<Context<double>> context_;
   std::unique_ptr<CompositeEventCollection<double>> event_info_;
   const LeafCompositeEventCollection<double>* leaf_info_;
@@ -126,20 +129,21 @@ TEST_P(ZeroOrderHoldTest, Output) {
   Eigen::Vector3d output;
   if (!is_abstract_) {
     BasicVector<double>& xd = context_->get_mutable_discrete_state(0);
-    xd.get_mutable_value() << output_expected;
-    output = hold_->get_output_port(0).Eval(*context_);
+    xd.SetFromVector(output_expected);
+    output = hold_->get_output_port().Eval(*context_);
   } else {
     SimpleAbstractType& state_value =
         context_->get_mutable_abstract_state<SimpleAbstractType>(0);
     state_value = SimpleAbstractType(output_expected);
-    output = hold_->get_output_port(0).
+    output = hold_->get_output_port().
         template Eval<SimpleAbstractType>(*context_).value();
   }
   EXPECT_EQ(output_expected, output);
 }
 
 // Tests that when the current time is exactly on the sampling period, a update
-// is requested in the future.
+// is requested in the future. (This is only verifying that the periodic
+// update infrastructure works as expected; not ZOH-specific.)
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
   // Calculate the next update time.
   context_->set_time(0.0);
@@ -153,7 +157,8 @@ TEST_P(ZeroOrderHoldTest, NextUpdateTimeMustNotBeCurrentTime) {
 }
 
 // Tests that when the current time is between updates, a update is requested
-// at the appropriate time in the future.
+// at the appropriate time in the future. (This is only verifying that the
+// periodic update infrastructure works as expected; not ZOH-specific.)
 TEST_P(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   // Calculate the next update time.
   context_->set_time(76.32);
@@ -166,21 +171,16 @@ TEST_P(ZeroOrderHoldTest, NextUpdateTimeIsInTheFuture) {
   CheckForUpdateAction();
 }
 
-// Tests that discrete updates update the state.
+// Tests that LatchInputPortToState() updates the state.
 TEST_P(ZeroOrderHoldTest, Update) {
-  // Fire off an update event.
+  // Emulate an update event.
+  hold_->LatchInputPortToState(&*context_);
   Eigen::Vector3d value;
   if (!is_abstract_) {
-    std::unique_ptr<DiscreteValues<double>> update =
-        hold_->AllocateDiscreteVariables();
-    hold_->CalcDiscreteVariableUpdates(*context_, update.get());
-    // Check that the state has been updated to the input.
-    const BasicVector<double>& xd = update->get_vector(0);
-    value = xd.CopyToVector();
+    value = hold_->get_output_port().Eval(*context_);
   } else {
-    State<double>& state = context_->get_mutable_state();
-    hold_->CalcUnrestrictedUpdate(*context_, &state);
-    value = state.get_abstract_state<SimpleAbstractType>(0).value();
+    value =
+        hold_->get_output_port().Eval<SimpleAbstractType>(*context_).value();
   }
   EXPECT_EQ(input_value_, value);
 }
@@ -196,6 +196,68 @@ TEST_P(ZeroOrderHoldTest, ToSymbolic) {
 // Instantiate parameterized test cases for is_abstract_ = {false, true}
 INSTANTIATE_TEST_CASE_P(test, ZeroOrderHoldTest,
     ::testing::Values(false, true));
+
+// Create a simple Diagram like this:
+//    +-----------------------------------------------------+
+//    |                                                     |
+//    |  +------------+                  +-----------+      |
+//    |  |            |                  |           |      |
+//    |  |            | y=a sin(wt+p)    |           | y=x  |   y
+//    |  |    sine    +------------------> u  ZOH    +---------->
+//    |  |            |                  |           |      |
+//    |  |            |                  |     x     |      |
+//    |  +------------+                  +-----------+      |
+//    |                                                     |
+//    +-----------------------------------------------------+
+//
+// Then simulate for various intervals and make sure ZOH sampled its continuous
+// input at the expected times.
+GTEST_TEST(ZeroOrderHoldTest, UseInDiagram) {
+  const double amplitude = 10.;
+  const double frequency = 2.*M_PI;  // times t
+  const double phase = M_PI/4;
+  const int size = 1;  // Just a 1-element output vector.
+
+  auto sine_eval = [&](double t) {
+    return amplitude * std::sin(frequency * t + phase);
+  };
+
+  DiagramBuilder<double> builder;
+  auto sine =
+      builder.AddSystem<Sine<double>>(amplitude, frequency, phase, size);
+  sine->set_name("sine");
+
+  auto dut = builder.AddSystem<ZeroOrderHold<double>>(
+      kTenHertz,  // period
+      1);         // size
+  dut->set_name("zoh");
+
+  // Connect output of sine to input of zoh.
+  builder.Connect(sine->get_output_port(0), dut->get_input_port());
+  // Make zoh output be the output of the diagram.
+  builder.ExportOutput(dut->get_output_port(), "zoh_output");
+  auto diagram = builder.Build();
+
+  Simulator<double> simulator(*diagram);
+  const Context<double>& context = simulator.get_context();
+  simulator.Initialize();
+
+  auto eval = [&]() { return diagram->get_output_port(0).Eval(context)[0]; };
+
+  // No update should have occurred yet.
+  EXPECT_EQ(0., eval());
+
+  simulator.StepTo(0);  // Force an update at 0.
+
+  // Should have sampled at t=0.
+  EXPECT_NEAR(sine_eval(0.), eval(), 1e-14);
+
+  simulator.StepTo(.15);  // Should have sampled at t=0.1, NOT t=.15.
+  EXPECT_NEAR(sine_eval(0.1), eval(), 1e-14);
+
+  simulator.StepTo(.91);  // Last sample at 0.9.
+  EXPECT_NEAR(sine_eval(0.9), eval(), 1e-14);
+}
 
 class SymbolicZeroOrderHoldTest : public ::testing::Test {
  protected:
@@ -226,9 +288,11 @@ TEST_F(SymbolicZeroOrderHoldTest, Output) {
 }
 
 TEST_F(SymbolicZeroOrderHoldTest, Update) {
-  hold_->CalcDiscreteVariableUpdates(*context_, update_.get());
-  const auto& xd = update_->get_vector(0);
-  EXPECT_EQ("u0", xd[0].to_string());
+  // Before latching the input, the output should just show the initial
+  // state value "x0".
+  EXPECT_EQ("x0", hold_->get_output_port().Eval(*context_)[0].to_string());
+  hold_->LatchInputPortToState(&*context_);
+  EXPECT_EQ("u0", hold_->get_output_port().Eval(*context_)[0].to_string());
 }
 
 }  // namespace
