@@ -47,6 +47,15 @@ class Bulb final {
   /// Unique identifier for a Bulb.
   using Id = TypeSpecificIdentifier<class Bulb>;
 
+  /// Defines the bounding box of the bulb. @p lower_bound_bulb and
+  /// @p upper_bound_bulb should be in opposite corners of a virtual box
+  /// surrounding the bulb. The bounding box should be oriented such that the
+  /// edges of the box are parallel with the bulb's frame's axes.
+  struct BoundingBox {
+    Eigen::Vector3d lower_bound_bulb;
+    Eigen::Vector3d upper_bound_bulb;
+  };
+
   /// Constructs a Bulb instance.
   ///
   /// @param id The bulb's unique ID.
@@ -80,11 +89,25 @@ class Bulb final {
   ///
   /// @param states The possible states of this bulb. If this is nullopt, this
   /// bulb has states {BulbState::kOff, BulbState::kOn}.
+  ///
+  /// @param bounding_box The bounding box of the bulb. The default value is the
+  /// approximate dimensions of a 12" lens with a visor. These dimensions are
+  /// 14" (0.356m) tall, 14" (0.356m) wide, and 16.62" (0.422m) deep. The visor
+  /// is 9.62" (0.245m) deep, meaning the body of the light bulb is 7" (0.177m)
+  /// deep. These dimensions were obtained from the following website:
+  /// https://www.oksolar.com/images/signal_dimensions_large.jpg. Assuming the
+  /// visor has negligible mass, and the origin of the bulb's frame is in the
+  /// middle of the light bulb's body, the bounding box has a lower bound of
+  /// (2.75", 7", -7") and an upper bound of (-2.75", -7", 7"). In metric units,
+  /// this is a lower bound of (0.06985m, 0.1778m, -0.1778m) and an upper bound
+  /// of (-0.06985m, -0.1778m, 0.1778m).
   Bulb(const Id& id, const GeoPosition& position_bulb_group,
        const Rotation& orientation_bulb_group, const BulbColor& color,
        const BulbType& type,
        const optional<double>& arrow_orientation_rad = nullopt,
-       const optional<std::vector<BulbState>>& states = nullopt);
+       const optional<std::vector<BulbState>>& states = nullopt,
+       const BoundingBox& bounding_box = {{0.06985, 0.1778, -0.1778},
+                                          {-0.06985, -0.1778, 0.1778}});
 
   /// Returns this Bulb instance's unique identifier.
   const Id& id() const { return id_; }
@@ -116,6 +139,9 @@ class Bulb final {
   /// Returns the possible states of this bulb.
   const std::vector<BulbState>& states() const { return states_; }
 
+  /// Returns the bounding box of the bulb.
+  const BoundingBox& bounding_box() const { return bounding_box_; }
+
  private:
   Id id_;
   GeoPosition position_bulb_group_;
@@ -124,6 +150,7 @@ class Bulb final {
   BulbType type_ = BulbType::kRound;
   optional<double> arrow_orientation_rad_ = nullopt;
   std::vector<BulbState> states_;
+  BoundingBox bounding_box_;
 };
 
 /// Models a group of bulbs within a traffic light. All of the bulbs within a
