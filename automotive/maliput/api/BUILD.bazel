@@ -110,6 +110,8 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rules_test",
     srcs = [
+        "test/right_of_way_phase_ring_test.cc",
+        "test/right_of_way_phase_test.cc",
         "test/right_of_way_state_provider_test.cc",
         "test/rules_regions_test.cc",
         "test/rules_right_of_way_test.cc",
