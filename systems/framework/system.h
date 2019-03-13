@@ -772,12 +772,21 @@ class System : public SystemBase {
   }
 
   /// (Advanced) This method is the public entry point for dispatching all "raw"
-  /// Context update event handlers. Raw context updates are very fast- the
-  /// @System can update the Context directly instead of updating copies of
-  /// state- but has a high potential for danger because the state becomes
-  /// dependent upon the order that subsystems are updated in a Diagram.
+  /// Context update event handlers. Raw Context updates are a very fast type
+  /// of unrestricted update- where the @System can update the Context directly
+  /// instead of updating copies of state- but has a high potential for danger
+  /// because the state becomes dependent upon the order that subsystems are
+  /// updated in a Diagram.
   ///
-  /// This particular method updates `context` using all of the
+  /// Functionally, the raw Context update has the same power as an
+  /// unrestricted update: it can modify any part of the state, *but only
+  /// parts of the state*, not time or parameters. This method exists only
+  /// to allow certain subsystems that require frequent unrestricted updates
+  /// to be simulated more quickly when the state is large; Simulator
+  /// currently copies the state twice on unrestricted updates, which is slow
+  /// (and motivated the introduction of the raw Context update strategy).
+  ///
+  /// CalcRawContextUpdate(.) updates `context` using all of the
   /// raw-Context-update handlers in `events`. The method does not allow time,
   /// parameters, or the dimensionality of the state variables to change. See
   /// the documentation for DispatchRawContextUpdateHandler() for more details.

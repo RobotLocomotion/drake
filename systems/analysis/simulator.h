@@ -182,6 +182,11 @@ point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
 events. That includes initialization publish events, per-step publish events,
 and periodic or timed publish events that trigger at t₀.
 
+@note As indicated in System::CalcRawContextUpdate(), raw Context updates
+are just a special form of unrestricted update. When Simulator performs
+the unrestricted updates, the raw Context updates are performed first and
+the "regular" unrestricted updates follow.
+
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
 Instantiated templates for the following kinds of T's are provided and

@@ -2289,22 +2289,11 @@ class LeafSystem : public System<T> {
   }
 
   /// Derived-class event dispatcher for all simultaneous raw Context update
-  /// events. Override this in your derived LeafSystem only if you require
-  /// behavior other than the default dispatch behavior (not common).
-  /// The default behavior is to traverse events in the arbitrary order they
+  /// events.  This method traverses events in the arbitrary order they
   /// appear in `events` (see related warning in
   /// System::CalcRawContextUpdate()), and for each event that has a callback
   /// function, to invoke the callback with `context` and that event. Note that
   /// the same (possibly modified) `context` is passed to subsequent callbacks.
-  ///
-  /// Do not override this just to handle an event -- instead declare the event
-  /// and a handler callback for it.
-  ///
-  /// This method is called only from the virtual
-  /// DispatchRawContextUpdateHandler(), which is only called from the
-  /// non-virtual public CalcRawContextUpdate(), which will already have
-  /// error-checked the parameters so you don't have to. In particular,
-  /// implementations may assume that the `context` is valid.
   ///
   /// @param[in,out] context The "before" and "after" state used both for
   ///                        calculating the update to the state and holding the
@@ -2313,7 +2302,7 @@ class LeafSystem : public System<T> {
   ///                       handling.
   virtual void DoCalcRawContextUpdate(
       Context<T>* context,
-      const std::vector<const RawContextUpdateEvent<T>*>& events) const {
+      const std::vector<const RawContextUpdateEvent<T>*>& events) const final {
     for (const RawContextUpdateEvent<T>* event : events) {
       event->handle(context);
     }

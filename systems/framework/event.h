@@ -596,7 +596,9 @@ UnrestrictedUpdateEvent<T>::UnrestrictedUpdateEvent(
     const UnrestrictedUpdateEvent<T>&) = default;
 
 /**
- * This class represents a raw Context update event. It has an optional
+ * This class represents a raw Context update event. As noted in
+ * System::CalcRawContextUpdate(), this kind of update is just a special
+ * unrestricted update. This event has an optional
  * callback function to do custom handling of this event given a Context pointer
  * and a const RawContextUpdateEvent object reference. See strong warnings about
  * raw updates to the Context in System::CalcRawContextUpdate().
