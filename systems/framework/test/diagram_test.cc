@@ -222,7 +222,7 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
 }
 
 // Tests whether the diagram exhibits the correct behavior for
-// GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates
+// GetUniquePeriodicDiscreteUpdateAttribute() with non-unique updates.
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check diagrams with no recursion.
   PeriodicEventData periodic_data;
@@ -1978,6 +1978,144 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
+
+class SystemWithAbstractStateUpdatedRaw : public LeafSystem<double> {
+ public:
+  SystemWithAbstractStateUpdatedRaw(int id, double update_period) : id_(id) {
+    RawContextUpdateEvent<double> raw_event(
+        std::bind(&SystemWithAbstractStateUpdatedRaw::RawUpdate, this,
+                  std::placeholders::_1, std::placeholders::_2));
+    DeclarePeriodicEvent(update_period, 0 /* offset */, raw_event);
+    DeclareAbstractState(AbstractValue::Make<double>(id_));
+
+    // Verify that no periodic discrete updates are registered.
+    EXPECT_FALSE(this->GetUniquePeriodicDiscreteUpdateAttribute());
+  }
+
+  ~SystemWithAbstractStateUpdatedRaw() override {}
+
+  int get_id() const { return id_; }
+
+ private:
+  // Abstract state is set to time + id.
+  void RawUpdate(
+      Context<double>* context, const RawContextUpdateEvent<double>&) const {
+    double& state_num = context->get_mutable_state().
+        get_mutable_abstract_state().get_mutable_value(0).
+        get_mutable_value<double>();
+    state_num = id_ + context->get_time();
+  }
+
+  int id_{0};
+};
+
+class AbstractStateDiagramUpdatedRaw : public Diagram<double> {
+ public:
+  AbstractStateDiagramUpdatedRaw() : Diagram<double>() {
+    DiagramBuilder<double> builder;
+    sys0_ = builder.template AddSystem<SystemWithAbstractStateUpdatedRaw>(
+        0, 2.);
+    sys0_->set_name("sys0");
+    sys1_ = builder.template AddSystem<SystemWithAbstractStateUpdatedRaw>(
+        1, 3.);
+    sys1_->set_name("sys1");
+    builder.BuildInto(this);
+  }
+
+  // Note: we define this here so that we do not have to support
+  // forced-raw-Context-updates generally.
+  void CalcRawContextUpdate(Context<double>* context,
+      const EventCollection<RawContextUpdateEvent<double>>& events) const {
+    System<double>::CalcRawContextUpdate(context, events);
+  }
+
+  const SystemWithAbstractStateUpdatedRaw& get_sys(int i) const {
+    if (i == 0)
+      return *sys0_;
+    return *sys1_;
+  }
+
+  SystemWithAbstractStateUpdatedRaw* get_mutable_sys0() { return sys0_; }
+  SystemWithAbstractStateUpdatedRaw* get_mutable_sys1() { return sys1_; }
+
+ private:
+  SystemWithAbstractStateUpdatedRaw* sys0_{nullptr};
+  SystemWithAbstractStateUpdatedRaw* sys1_{nullptr};
+};
+
+class AbstractStateDiagramUpdatedRawTest : public ::testing::Test {
+ protected:
+  void SetUp() override { context_ = diagram_.CreateDefaultContext(); }
+
+  double get_sys0_abstract_data_as_double() {
+    const Context<double>& sys_context =
+        diagram_.GetSubsystemContext(*diagram_.get_mutable_sys0(), *context_);
+    return sys_context.get_abstract_state<double>(0);
+  }
+
+  double get_sys1_abstract_data_as_double() {
+    const Context<double>& sys_context =
+        diagram_.GetSubsystemContext(*diagram_.get_mutable_sys1(), *context_);
+    return sys_context.get_abstract_state<double>(0);
+  }
+
+  AbstractStateDiagramUpdatedRaw diagram_;
+  std::unique_ptr<Context<double>> context_;
+};
+
+TEST_F(AbstractStateDiagramUpdatedRawTest, CalcRawContextUpdate) {
+  double time = 1;
+  context_->set_time(time);
+
+  // The abstract data should be initialized to their ids.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // First action time should be 2 sec, and only sys0 will be updating.
+  auto events = diagram_.AllocateCompositeEventCollection();
+  EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 2.);
+  {
+    const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.get_sys(0), *events);
+    EXPECT_TRUE(
+        subevent_collection.get_raw_context_update_events().HasEvents());
+  }
+  {
+    const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.get_sys(1), *events);
+    EXPECT_FALSE(
+        subevent_collection.get_raw_context_update_events().HasEvents());
+  }
+
+  // Does the raw Context update.
+  diagram_.CalcRawContextUpdate(
+      context_.get(), events->get_raw_context_update_events());
+
+  // The abstract data for sys0 should be updated.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), 1);
+
+  // Sets time to 5.5, both system should be updating at 6 sec.
+  time = 5.5;
+  context_->set_time(time);
+  EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6.);
+  for (int i = 0; i < 2; i++) {
+    const auto& subevent_collection =
+        diagram_.GetSubsystemCompositeEventCollection(
+            diagram_.get_sys(i), *events);
+    EXPECT_TRUE(
+        subevent_collection.get_raw_context_update_events().HasEvents());
+  }
+
+  diagram_.CalcRawContextUpdate(
+      context_.get(), events->get_raw_context_update_events());
+  // Both sys0 and sys1's abstract data should be updated.
+  EXPECT_EQ(get_sys0_abstract_data_as_double(), (time + 0));
+  EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
+}
+
 
 // Test diagram. Top level diagram (big_diagram) has 3 components:
 // diagram0, int2, diagram1, where diagram0 has int0 and int1, and

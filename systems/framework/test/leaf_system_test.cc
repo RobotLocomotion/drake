@@ -164,6 +164,13 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
+  // Note: we define this here so that we do not have to support
+  // forced-raw-Context-updates generally.
+  void CalcRawContextUpdate(Context<double>* context,
+      const EventCollection<RawContextUpdateEvent<double>>& events) const {
+    System<double>::CalcRawContextUpdate(context, events);
+  }
+
   void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -835,6 +842,7 @@ TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   system_.DeclarePerStepEvent(PublishEvent<double>());
   system_.DeclarePerStepEvent(DiscreteUpdateEvent<double>());
   system_.DeclarePerStepEvent(UnrestrictedUpdateEvent<double>());
+  system_.DeclarePerStepEvent(RawContextUpdateEvent<double>());
 
   system_.GetPerStepEvents(*context, event_info_.get());
 
@@ -851,6 +859,12 @@ TEST_F(LeafSystemTest, DeclarePerStepEvents) {
   {
     const auto& events =
         leaf_info_->get_unrestricted_update_events().get_events();
+    EXPECT_EQ(events.size(), 1);
+    EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
+  }
+  {
+    const auto& events =
+        leaf_info_->get_raw_context_update_events().get_events();
     EXPECT_EQ(events.size(), 1);
     EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPerStep);
   }
@@ -1564,9 +1578,143 @@ GTEST_TEST(ZeroSizeSystemTest, AcceptanceTest) {
   EXPECT_EQ(context->get_numeric_parameter(param0).size(), 0);
 }
 
+// Tests that a raw Context update callback is called and that
+// modifications to time and state dimension are caught.
+TEST_F(LeafSystemTest, CallbackAndInvalidRawContextUpdates) {
+  // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
+  // vectors.
+
+  // This needs to be a LeafContext for access to init_ methods.
+  auto context = dynamic_pointer_cast_or_throw<LeafContext<double>>(
+      system_.CreateDefaultContext());
+
+  context->init_continuous_state(std::make_unique<ContinuousState<double>>(
+      std::make_unique<BasicVector<double>>(9), 3, 3, 3));
+  context->init_discrete_state(std::make_unique<DiscreteValues<double>>(
+      std::make_unique<BasicVector<double>>(1)));
+  std::vector<std::unique_ptr<AbstractValue>> abstract_data;
+  abstract_data.push_back(PackValue(3));
+  abstract_data.push_back(PackValue(5));
+  abstract_data.push_back(PackValue(7));
+  context->init_abstract_state(
+      std::make_unique<AbstractValues>(std::move(abstract_data)));
+
+  // Create a raw update callback that zeros the continuous state.
+  LeafCompositeEventCollection<double> leaf_events;
+  {
+    RawContextUpdateEvent<double>::RawContextUpdateCallback callback = [](
+        Context<double>* c, const Event<double>&) {
+      c->get_mutable_continuous_state_vector().SetZero();
+    };
+
+    RawContextUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
+  }
+
+  // Verify no exception is thrown.
+  EXPECT_NO_THROW(system_.CalcRawContextUpdate(
+      context.get(), leaf_events.get_raw_context_update_events()));
+
+  // Change the function to change the continuous state dimension.
+  // Call the raw update function again, now verifying that an
+  // exception is thrown.
+  leaf_events.Clear();
+  {
+    RawContextUpdateEvent<double>::RawContextUpdateCallback callback = [](
+        Context<double>* c, const Event<double>&) {
+      c->get_mutable_state().set_continuous_state(
+          std::make_unique<ContinuousState<double>>(
+              std::make_unique<BasicVector<double>>(4), 4, 0, 0));
+    };
+
+    RawContextUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
+  }
+
+  // Call the raw Context update function, verifying that an exception
+  // is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.CalcRawContextUpdate(
+          context.get(), leaf_events.get_raw_context_update_events()),
+          std::logic_error, "State variable dimensions cannot be changed.*");
+
+  // Restore the continuous state (size).
+  context->get_mutable_state().set_continuous_state(
+      std::make_unique<ContinuousState<double>>(
+          std::make_unique<BasicVector<double>>(9), 3, 3, 3));
+
+  // Change the function to change the time. Call the raw update function
+  // again, now verifying that an exception is thrown.
+  leaf_events.Clear();
+  {
+    RawContextUpdateEvent<double>::RawContextUpdateCallback callback = [](
+        Context<double>* c, const Event<double>&) {
+      c->set_time(c->get_time() + 1.0);
+    };
+
+    RawContextUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
+  }
+
+  // Call the raw Context update function, verifying that an exception
+  // is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.CalcRawContextUpdate(
+          context.get(), leaf_events.get_raw_context_update_events()),
+          std::logic_error, "Time cannot be changed.*");
+
+  // Change the event to indicate to change the discrete state dimension.
+  leaf_events.Clear();
+  {
+    RawContextUpdateEvent<double>::RawContextUpdateCallback callback = [](
+        Context<double>* c, const Event<double>&) {
+      std::vector<std::unique_ptr<BasicVector<double>>> disc_data;
+      disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+      disc_data.push_back(std::make_unique<BasicVector<double>>(1));
+      c->get_mutable_state().set_discrete_state(
+          std::make_unique<DiscreteValues<double>>(std::move(disc_data)));
+    };
+
+    RawContextUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
+  }
+
+  // Call the unrestricted update function again, again verifying that an
+  // exception is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.CalcRawContextUpdate(
+          context.get(), leaf_events.get_raw_context_update_events()),
+          std::logic_error, "State variable dimensions cannot be changed.*");
+
+  // Restore the discrete state (size).
+  context->get_mutable_state().set_discrete_state(
+      std::make_unique<DiscreteValues<double>>(
+          std::make_unique<BasicVector<double>>(1)));
+
+  // Change the event to indicate to change the abstract state dimension.
+  leaf_events.Clear();
+  {
+    RawContextUpdateEvent<double>::RawContextUpdateCallback callback = [](
+        Context<double>* c, const Event<double>&) {
+      c->get_mutable_state().set_abstract_state(
+            std::make_unique<AbstractValues>());
+    };
+
+    RawContextUpdateEvent<double> event(TriggerType::kPeriodic, callback);
+    event.AddToComposite(&leaf_events);
+  }
+
+  // Call the unrestricted update function again, again verifying that an
+  // exception is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      system_.CalcRawContextUpdate(
+          context.get(), leaf_events.get_raw_context_update_events()),
+          std::logic_error, "State variable dimensions cannot be changed.*");
+}
+
 // Tests both that an unrestricted update callback is called and that
 // modifications to state dimension are caught.
-TEST_F(LeafSystemTest, CallbackAndInvalidUpdates) {
+TEST_F(LeafSystemTest, CallbackAndInvalidUnrestrictedUpdates) {
   // Create 9, 1, and 3 dimensional continuous, discrete, and abstract state
   // vectors.
 
@@ -2497,11 +2645,24 @@ GTEST_TEST(InitializationTest, InitializationTest) {
 
       DeclareInitializationEvent(DiscreteUpdateEvent<double>());
       DeclareInitializationEvent(UnrestrictedUpdateEvent<double>());
+
+      RawContextUpdateEvent<double> raw_event(
+          std::bind(&InitializationTestSystem::InitRawUpdate, this,
+                    std::placeholders::_1, std::placeholders::_2));
+      DeclareInitializationEvent(raw_event);
+    }
+
+    // Note: we define this here so that we do not have to support
+    // forced-raw-Context-updates generally.
+    void CalcRawContextUpdate(Context<double>* context,
+        const EventCollection<RawContextUpdateEvent<double>>& events) const {
+      System<double>::CalcRawContextUpdate(context, events);
     }
 
     bool get_pub_init() const { return pub_init_; }
     bool get_dis_update_init() const { return dis_update_init_; }
     bool get_unres_update_init() const { return unres_update_init_; }
+    bool get_raw_context_update_init() const { return raw_update_init_; }
 
    private:
     void InitPublish(const Context<double>&,
@@ -2530,9 +2691,18 @@ GTEST_TEST(InitializationTest, InitializationTest) {
       unres_update_init_ = true;
     }
 
+    void InitRawUpdate(
+        Context<double>*,
+        const RawContextUpdateEvent<double>& event)
+        const {
+      EXPECT_EQ(event.get_trigger_type(), TriggerType::kInitialization);
+      raw_update_init_ = true;
+    }
+
     mutable bool pub_init_{false};
     mutable bool dis_update_init_{false};
     mutable bool unres_update_init_{false};
+    mutable bool raw_update_init_{false};
   };
 
   InitializationTestSystem dut;
@@ -2548,10 +2718,13 @@ GTEST_TEST(InitializationTest, InitializationTest) {
                                   discrete_updates.get());
   dut.CalcUnrestrictedUpdate(
       *context, init_events->get_unrestricted_update_events(), state.get());
+  dut.CalcRawContextUpdate(
+      context.get(), init_events->get_raw_context_update_events());
 
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
   EXPECT_TRUE(dut.get_unres_update_init());
+  EXPECT_TRUE(dut.get_raw_context_update_init());
 }
 
 // Although many of the tests above validate behavior of events when the
