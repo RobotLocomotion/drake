@@ -219,6 +219,22 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
+/// Predicate-formatter which tests equality of Bulb::BoundingBox.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const Bulb::BoundingBox& a,
+                                          const Bulb::BoundingBox& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  for (int i = 0; i < 3; ++i) {
+    MALIPUT_ADD_RESULT(
+        c, MALIPUT_IS_EQUAL(a.lower_bound_bulb(i), b.lower_bound_bulb(i)));
+    MALIPUT_ADD_RESULT(
+        c, MALIPUT_IS_EQUAL(a.upper_bound_bulb(i), b.upper_bound_bulb(i)));
+  }
+  return c.result();
+}
+
 /// Predicate-formatter which tests equality of Bulb.
 inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
@@ -241,6 +257,7 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   for (int i = 0; i < smallest; ++i) {
     MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a_states[i], b_states[i]));
   }
+  MALIPUT_IS_EQUAL(a.bounding_box(), b.bounding_box());
   return c.result();
 }
 

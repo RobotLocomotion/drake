@@ -33,13 +33,15 @@ std::unordered_map<BulbState, const char*, DefaultHash> BulbStateMapper() {
 Bulb::Bulb(const Bulb::Id& id, const GeoPosition& position_bulb_group,
            const Rotation& orientation_bulb_group, const BulbColor& color,
            const BulbType& type, const optional<double>& arrow_orientation_rad,
-           const optional<std::vector<BulbState>>& states)
+           const optional<std::vector<BulbState>>& states,
+           const BoundingBox& bounding_box)
     : id_(id),
       position_bulb_group_(position_bulb_group),
       orientation_bulb_group_(orientation_bulb_group),
       color_(color),
       type_(type),
-      arrow_orientation_rad_(arrow_orientation_rad) {
+      arrow_orientation_rad_(arrow_orientation_rad),
+      bounding_box_(bounding_box) {
   DRAKE_THROW_UNLESS(type_ != BulbType::kArrow ||
                      arrow_orientation_rad_ != nullopt);
   if (type_ != BulbType::kArrow) {
