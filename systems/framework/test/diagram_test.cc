@@ -1979,6 +1979,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(get_sys1_abstract_data_as_double(), (time + 1));
 }
 
+// NOTE: This class is nearly identical to SystemWithAbstractState, but with
+// unrestricted updates replaced by raw Context updates.
 class SystemWithAbstractStateUpdatedRaw : public LeafSystem<double> {
  public:
   SystemWithAbstractStateUpdatedRaw(int id, double update_period) : id_(id) {
@@ -2009,6 +2011,8 @@ class SystemWithAbstractStateUpdatedRaw : public LeafSystem<double> {
   int id_{0};
 };
 
+// NOTE: This class is nearly identical to AbstractStateDiagram, but using
+// SystemWithAbstractStateUpdatedRaw rather than SystemWithAbstractState.
 class AbstractStateDiagramUpdatedRaw : public Diagram<double> {
  public:
   AbstractStateDiagramUpdatedRaw() : Diagram<double>() {
@@ -2043,6 +2047,8 @@ class AbstractStateDiagramUpdatedRaw : public Diagram<double> {
   SystemWithAbstractStateUpdatedRaw* sys1_{nullptr};
 };
 
+// NOTE: This class is nearly identical to AbstractStateDiagramTest but with
+// using AbstractStateDiagramUpdatedRaw replaced by AbstractStateDiagram.
 class AbstractStateDiagramUpdatedRawTest : public ::testing::Test {
  protected:
   void SetUp() override { context_ = diagram_.CreateDefaultContext(); }

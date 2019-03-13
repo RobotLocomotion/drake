@@ -924,8 +924,12 @@ void Simulator<T>::StepTo(const T& boundary_time) {
     // "violence" to the state, i.e. unrestricted -> discrete -> continuous ->
     // publish. The "timed" actions happen before the "per step" ones.
 
-    // Do unrestricted updates first.
+    // Do raw Context updates first.
+    HandleRawContextUpdate(merged_events->get_raw_context_update_events());
+
+    // Do unrestricted updates next.
     HandleUnrestrictedUpdate(merged_events->get_unrestricted_update_events());
+
     // Do restricted (discrete variable) updates next.
     HandleDiscreteUpdate(merged_events->get_discrete_update_events());
 

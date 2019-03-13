@@ -773,8 +773,8 @@ class System : public SystemBase {
 
   /// (Advanced) This method is the public entry point for dispatching all "raw"
   /// Context update event handlers. Raw Context updates are a very fast type
-  /// of unrestricted update- where the @System can update the Context directly
-  /// instead of updating copies of state- but has a high potential for danger
+  /// of unrestricted update where the @System can update the Context directly
+  /// instead of updating copies of state, but it has high potential for danger
   /// because the state becomes dependent upon the order that subsystems are
   /// updated in a Diagram.
   ///
@@ -788,8 +788,7 @@ class System : public SystemBase {
   ///
   /// CalcRawContextUpdate(.) updates `context` using all of the
   /// raw-Context-update handlers in `events`. The method does not allow time,
-  /// parameters, or the dimensionality of the state variables to change. See
-  /// the documentation for DispatchRawContextUpdateHandler() for more details.
+  /// parameters, or the dimensionality of the state variables to change.
   ///
   /// @throws std::logic_error if the dimensionality of the state variables
   ///         changes or if the time in the Context changes in the callback.

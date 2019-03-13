@@ -2300,9 +2300,9 @@ class LeafSystem : public System<T> {
   ///                        resulting update to the state.
   /// @param[in]     events All the raw Context update events that need
   ///                       handling.
-  virtual void DoCalcRawContextUpdate(
+  void DoCalcRawContextUpdate(
       Context<T>* context,
-      const std::vector<const RawContextUpdateEvent<T>*>& events) const final {
+      const std::vector<const RawContextUpdateEvent<T>*>& events) const {
     for (const RawContextUpdateEvent<T>* event : events) {
       event->handle(context);
     }

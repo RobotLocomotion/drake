@@ -1942,6 +1942,14 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
       this->DeclarePerStepEvent(event);
     }
 
+    void AddPerStepRawContextUpdateEvent() {
+      RawContextUpdateEvent<double> update_event(
+          TriggerType::kPerStep,
+          std::bind(&PerStepActionTestSystem::RawUpdate, this,
+                    std::placeholders::_1, std::placeholders::_2));
+      this->DeclarePerStepEvent(update_event);
+    }
+
     const std::vector<double>& get_publish_times() const {
       return publish_times_;
     }
@@ -1952,6 +1960,10 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
 
     const std::vector<double>& get_unrestricted_update_times() const {
       return unrestricted_update_times_;
+    }
+
+    const std::vector<double>& get_raw_context_update_times() const {
+      return raw_context_update_times_;
     }
 
    private:
@@ -1982,6 +1994,13 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
       publish_times_.push_back(context.get_time());
     }
 
+    // No method can be override for raw Context updates.
+    void RawUpdate(
+        Context<double>* context,
+        const RawContextUpdateEvent<double>& e) const {
+      raw_context_update_times_.push_back(context->get_time());
+    }
+
     // A hack to test actions easily.
     // Note that these should really be part of the Context, and users should
     // NOT use this as an example code.
@@ -2001,12 +2020,14 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     mutable std::vector<double> publish_times_;
     mutable std::vector<double> discrete_update_times_;
     mutable std::vector<double> unrestricted_update_times_;
+    mutable std::vector<double> raw_context_update_times_;
   };
 
   PerStepActionTestSystem sys;
   sys.AddPerStepPublishEvent();
   sys.AddPerStepUnrestrictedUpdateEvent();
   sys.AddPerStepDiscreteUpdateEvent();
+  sys.AddPerStepRawContextUpdateEvent();
   Simulator<double> sim(sys);
 
   // Forces simulator to use fixed-step integration.
@@ -2029,15 +2050,18 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
   auto& publish_times = sys.get_publish_times();
   auto& discrete_update_times = sys.get_discrete_update_times();
   auto& unrestricted_update_times = sys.get_unrestricted_update_times();
+  auto& raw_context_update_times = sys.get_raw_context_update_times();
   ASSERT_EQ(publish_times.size(), N + 1);  // Once at end of Initialize().
   ASSERT_EQ(sys.get_discrete_update_times().size(), N);
   ASSERT_EQ(sys.get_unrestricted_update_times().size(), N);
+  ASSERT_EQ(sys.get_raw_context_update_times().size(), N);
   for (int i = 0; i < N; ++i) {
     // Publish happens at the end of a step (including end of Initialize());
     // unrestricted and discrete updates happen at the beginning of a step.
     EXPECT_NEAR(publish_times[i], i * dt, 1e-12);
     EXPECT_NEAR(discrete_update_times[i], i * dt, 1e-12);
     EXPECT_NEAR(unrestricted_update_times[i], i * dt, 1e-12);
+    EXPECT_NEAR(raw_context_update_times[i], i * dt, 1e-12);
   }
   // There is a final end-of-step publish, but no final updates.
   EXPECT_NEAR(publish_times[N], N * dt, 1e-12);
@@ -2063,11 +2087,18 @@ GTEST_TEST(SimulatorTest, Initialization) {
       DeclarePerStepEvent<UnrestrictedUpdateEvent<double>>(
           UnrestrictedUpdateEvent<double>(
               TriggerType::kPerStep));
+
+      RawContextUpdateEvent<double> update_event(
+          TriggerType::kInitialization,
+          std::bind(&InitializationTestSystem::RawUpdate, this,
+                    std::placeholders::_1, std::placeholders::_2));
+      DeclareInitializationEvent(update_event);
     }
 
     bool get_pub_init() const { return pub_init_; }
     bool get_dis_update_init() const { return dis_update_init_; }
     bool get_unres_update_init() const { return unres_update_init_; }
+    bool get_raw_update_init() const { return raw_update_init_; }
 
    private:
     void InitPublish(const Context<double>& context,
@@ -2106,9 +2137,17 @@ GTEST_TEST(SimulatorTest, Initialization) {
       }
     }
 
+    void RawUpdate(Context<double>* context,
+                   const RawContextUpdateEvent<double>& event) const {
+      EXPECT_EQ(context->get_time(), 0);
+      EXPECT_EQ(event.get_trigger_type(), TriggerType::kInitialization);
+      raw_update_init_ = true;
+    }
+
     mutable bool pub_init_{false};
     mutable bool dis_update_init_{false};
     mutable bool unres_update_init_{false};
+    mutable bool raw_update_init_{false};
   };
 
   InitializationTestSystem sys;
@@ -2118,6 +2157,7 @@ GTEST_TEST(SimulatorTest, Initialization) {
   EXPECT_TRUE(sys.get_pub_init());
   EXPECT_TRUE(sys.get_dis_update_init());
   EXPECT_TRUE(sys.get_unres_update_init());
+  EXPECT_TRUE(sys.get_raw_update_init());
 }
 
 GTEST_TEST(SimulatorTest, OwnedSystemTest) {
