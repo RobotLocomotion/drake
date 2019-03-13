@@ -1764,20 +1764,28 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         this->CalcImplicitStribeckResults(context,
                                           &implicit_stribeck_solver_cache);
       },
-      // We declare the implicit stribeck only dependent on the discrete
-      // variables as a way to emulate an abstract valued state with periodic
-      // updates, see issue #10888 for details. Currently, The systems::
-      // framework infrastructure to supporting this is
-      // System::CalcUnrestrictedUpdate() however, at the cost of system wide
-      // state copies that inccur on a very noticeable performance hit, see
-      // #10149.
-      // Until #10888 is addressed, this has the desired effect of emulating a
-      // "discrete port" for the contact results output port since the
-      // contact_results_cache_entry declared below only depends on this
-      // implicit_stribeck_solver_cache_entry.
-      // NOTE: this does emulates the right "experience" for users however at
-      // the expense of an abuse of the system framework we'd like to avoid.
-      // Tracking the implementation of a longer term solution in #10888.
+      // The Correct Solution:
+      // The Implicit Stribeck solver solution S is a function of state x,
+      // actuation input u (and externally applied forces) and even time if any
+      // of the force elements in the model is time dependent. We can write this
+      // as S = S(t, x, u).
+      // Even though this variables can change continuously with time, we want
+      // the solver solution to be updated periodically (with period
+      // time_step()) only. That is ImplicitStribeckSolverResults should be
+      // handled as an abstract state with periodic updates. In the systems::
+      // framework terminology, we'd like having an "unrestricted update" with a
+      // periodic event trigger.
+      // The Problem (#10149):
+      // From issue #10149 we know unrestricted updates inccur on a very
+      // noticeably performance hit that at this stage we are not willing to
+      // pay.
+      // The Work Around (#10888):
+      // To emulate the correct behavior until #10149 is addressed we declare
+      // the Implicit Stribeck solver solution dependent only on the discrete
+      // state. This is not the correct solution given these results do depend
+      // on time and (even continuous) inputs. However it does emulate the
+      // discrete update of these values as if zero-order held, which is what we
+      // want.
       {this->xd_ticket()});
   cache_indexes_.implicit_stribeck_solver_results_ =
       implicit_stribeck_solver_cache_entry.cache_index();
