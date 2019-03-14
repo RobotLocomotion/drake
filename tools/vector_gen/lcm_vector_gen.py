@@ -253,7 +253,7 @@ ACCESSOR_FIELD_METHODS = """
   }
   /// Fluent setter that matches %(field)s().
   /// Returns a copy of `this` with %(field)s set to a new value.
-  DRAKE_VECTOR_GEN_NODISCARD
+  DRAKE_NODISCARD
   %(camel)s<T>
   with_%(field)s(const T& %(field)s) const {
     %(camel)s<T> result(*this);
@@ -384,17 +384,11 @@ VECTOR_HH_PREAMBLE = """
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
-
-// TODO(jwnimmer-tri) Elevate this to drake/common.
-#if __has_cpp_attribute(nodiscard)
-#define DRAKE_VECTOR_GEN_NODISCARD [[nodiscard]]  // NOLINT(whitespace/braces)
-#else
-#define DRAKE_VECTOR_GEN_NODISCARD
-#endif
 
 %(opening_namespace)s
 """
@@ -423,8 +417,6 @@ VECTOR_CLASS_END = """
 
 VECTOR_HH_POSTAMBLE = """
 %(closing_namespace)s
-
-#undef DRAKE_VECTOR_GEN_NODISCARD
 """
 
 VECTOR_CC_PREAMBLE = """
