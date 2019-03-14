@@ -13,17 +13,11 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_bool.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/dummy_value.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/symbolic.h"
 #include "drake/systems/framework/basic_vector.h"
-
-// TODO(jwnimmer-tri) Elevate this to drake/common.
-#if __has_cpp_attribute(nodiscard)
-#define DRAKE_VECTOR_GEN_NODISCARD [[nodiscard]]  // NOLINT(whitespace/braces)
-#else
-#define DRAKE_VECTOR_GEN_NODISCARD
-#endif
 
 namespace drake {
 namespace tools {
@@ -115,7 +109,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches x().
   /// Returns a copy of `this` with x set to a new value.
-  DRAKE_VECTOR_GEN_NODISCARD
+  DRAKE_NODISCARD
   Sample<T> with_x(const T& x) const {
     Sample<T> result(*this);
     result.set_x(x);
@@ -135,7 +129,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches two_word().
   /// Returns a copy of `this` with two_word set to a new value.
-  DRAKE_VECTOR_GEN_NODISCARD
+  DRAKE_NODISCARD
   Sample<T> with_two_word(const T& two_word) const {
     Sample<T> result(*this);
     result.set_two_word(two_word);
@@ -154,7 +148,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches absone().
   /// Returns a copy of `this` with absone set to a new value.
-  DRAKE_VECTOR_GEN_NODISCARD
+  DRAKE_NODISCARD
   Sample<T> with_absone(const T& absone) const {
     Sample<T> result(*this);
     result.set_absone(absone);
@@ -172,7 +166,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches unset().
   /// Returns a copy of `this` with unset set to a new value.
-  DRAKE_VECTOR_GEN_NODISCARD
+  DRAKE_NODISCARD
   Sample<T> with_unset(const T& unset) const {
     Sample<T> result(*this);
     result.set_unset(unset);
@@ -224,5 +218,3 @@ class Sample final : public drake::systems::BasicVector<T> {
 }  // namespace test
 }  // namespace tools
 }  // namespace drake
-
-#undef DRAKE_VECTOR_GEN_NODISCARD
