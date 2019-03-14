@@ -143,7 +143,7 @@ int do_main() {
 }  // namespace
 }  // namespace inclined_plane_with_block
 }  // namespace examples
-}  // multibody
+}  // namespace multibody
 }  // namespace drake
 
 int main(int argc, char* argv[]) {
