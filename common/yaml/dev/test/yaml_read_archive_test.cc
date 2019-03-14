@@ -8,9 +8,9 @@
 #include <Eigen/Core>
 #include <gtest/gtest.h>
 
+#include "drake/common/name_value.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/common/yaml/dev/visitor.h"
 
 using anzu::common::YamlReadArchive;
 
@@ -27,7 +27,7 @@ struct DoubleStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(value));
+    a->Visit(DRAKE_NVP(value));
   }
 };
 
@@ -40,7 +40,7 @@ struct ArrayStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(value));
+    a->Visit(DRAKE_NVP(value));
   }
 
   ArrayStruct() {
@@ -53,7 +53,7 @@ struct VectorStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(value));
+    a->Visit(DRAKE_NVP(value));
   }
 
   VectorStruct() {
@@ -66,7 +66,7 @@ struct OptionalStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(value));
+    a->Visit(DRAKE_NVP(value));
   }
 
   OptionalStruct() {
@@ -92,7 +92,7 @@ struct VariantStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(value));
+    a->Visit(DRAKE_NVP(value));
   }
 
   VariantStruct() {
@@ -105,7 +105,7 @@ struct VariantWrappingStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(inner));
+    a->Visit(DRAKE_NVP(inner));
   }
 };
 
@@ -115,7 +115,7 @@ struct EigenStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(value));
+    a->Visit(DRAKE_NVP(value));
   }
 
   EigenStruct() {
@@ -134,7 +134,7 @@ struct OuterStruct {
 
     template <typename Archive>
     void Serialize(Archive* a) {
-      a->Visit(ANZU_NVP(inner_value));
+      a->Visit(DRAKE_NVP(inner_value));
     }
   };
 
@@ -143,8 +143,8 @@ struct OuterStruct {
 
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(ANZU_NVP(outer_value));
-    a->Visit(ANZU_NVP(inner_struct));
+    a->Visit(DRAKE_NVP(outer_value));
+    a->Visit(DRAKE_NVP(inner_struct));
   }
 };
 
