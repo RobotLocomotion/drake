@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":constant_vector_source",
         ":demultiplexer",
         ":discrete_derivative",
+        ":discrete_time_delay",
         ":first_order_low_pass_filter",
         ":gain",
         ":integrator",
@@ -111,6 +112,17 @@ drake_cc_library(
         ":linear_system",
         ":multiplexer",
         ":pass_through",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_delay",
+    srcs = ["discrete_time_delay.cc"],
+    hdrs = ["discrete_time_delay.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
         "//systems/framework",
     ],
 )
@@ -395,6 +407,19 @@ drake_cc_googletest(
         ":trajectory_source",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_delay_test",
+    deps = [
+        ":affine_system",
+        ":discrete_time_delay",
+        ":sine",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework/test_utilities",
