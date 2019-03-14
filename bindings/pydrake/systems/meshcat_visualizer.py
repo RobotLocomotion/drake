@@ -561,7 +561,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         # Use only valid points.
         # `Q` is a point in the point cloud.
         valid = np.logical_not(np.isnan(point_cloud_P.xyzs()))
-        valid = np.any(valid, axis=0)  # Reduce along XYZ axis.
+        valid = np.all(valid, axis=0)  # Reduce along XYZ axis.
         p_PQ_list = point_cloud_P.xyzs()[:, valid]
         if point_cloud_P.has_rgbs():
             rgbs = point_cloud_P.rgbs()[:, valid]
