@@ -1,4 +1,4 @@
-#include "drake/multibody/benchmarks/inclined_plane/block_on_inclined_plane_plant.h"
+#include "drake/multibody/benchmarks/inclined_plane_with_block/inclined_plane_with_block_plant.h"
 
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
@@ -6,9 +6,9 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
-namespace block_on_inclined_plane_plant {
+namespace inclined_plane_with_block_plant {
 
-void AddBlockAndInclinedPlaneToPlant(
+void AddInclinedPlaneWithBlockToPlant(
     double LAx, double LAy, double LAz,
     double LBx, double LBy, double LBz, double mB, double slope, double gravity,
     const CoulombFriction<double>& coefficient_of_friction_block,
@@ -146,7 +146,7 @@ void AddBlockAndInclinedPlaneToPlant(
       -gravity * Vector3<double>::UnitZ());
 }
 
-}  // namespace block_on_inclined_plane_plant
+}  // namespace inclined_plane_with_block_plant
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

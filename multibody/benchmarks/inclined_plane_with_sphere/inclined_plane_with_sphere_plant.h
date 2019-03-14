@@ -8,7 +8,7 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
-namespace inclined_plane {
+namespace inclined_plane_with_sphere_plant {
 
 /// This method adds a sphere rolling down an inclined plane.
 ///
@@ -27,13 +27,13 @@ namespace inclined_plane {
 ///   Plant to contain the sphere and plane.
 /// @throws std::exception if plant is nullptr.
 /// @pre plant must be registered with a scene graph.
-void AddInclinedPlaneToPlant(
+void AddInclinedPlaneWithSpherePlant(
     double radius, double mass, double slope,
     const CoulombFriction<double>& surface_friction,
     double gravity,
     MultibodyPlant<double>* plant);
 
-}  // namespace inclined_plane
+}  // namespace inclined_plane_with_sphere_plant
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

@@ -10,27 +10,9 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_binary(
-    name = "inclined_plane_run_dynamics",
-    srcs = ["inclined_plane_run_dynamics.cc"],
-    add_test_rule = 1,
-    test_rule_args = [
-        "--simulation_time=0.1",
-        "--target_realtime_rate=0.0",
-    ],
-    deps = [
-        "//common:text_logging_gflags",
-        "//geometry:geometry_visualization",
-        "//multibody/benchmarks/inclined_plane",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram",
-        "@gflags",
-    ],
-)
-
-drake_cc_binary(
-    name = "block_on_inclined_plane_with_friction",
+    name = "inclined_plane_with_block",
     srcs = [
-        "block_on_inclined_plane_with_friction.cc",
+        "inclined_plane_with_block.cc",
     ],
     add_test_rule = 1,
     test_rule_args = [
@@ -40,7 +22,7 @@ drake_cc_binary(
     deps = [
         "//common:text_logging_gflags",
         "//geometry:geometry_visualization",
-        "//multibody/benchmarks/inclined_plane",
+        "//multibody/benchmarks/inclined_plane_with_block",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/framework:diagram",

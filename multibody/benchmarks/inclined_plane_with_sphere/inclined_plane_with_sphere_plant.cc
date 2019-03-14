@@ -1,4 +1,4 @@
-#include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
+#include "drake/multibody/benchmarks/inclined_plane_with_sphere/inclined_plane_with_sphere_plant.h"
 
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
@@ -6,14 +6,13 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
-namespace inclined_plane {
+namespace inclined_plane_with_sphere_plant {
 
-using geometry::HalfSpace;
 using geometry::SceneGraph;
 using geometry::Sphere;
 using Eigen::AngleAxisd;
 
-void AddInclinedPlaneToPlant(
+void AddInclinedPlaneWithSpherePlant(
     double radius, double mass, double slope,
     const CoulombFriction<double>& surface_friction, double gravity,
     MultibodyPlant<double>* plant) {
@@ -33,15 +32,16 @@ void AddInclinedPlaneToPlant(
   // (the default initial condition) there is a contact point at point_W.
   const Vector3<double> point_W = -normal_W * radius;
 
-  // A half-space for the inclined plane geometry.
+  // Set the inclined-plane's collision geometry.
   plant->RegisterCollisionGeometry(
-      plant->world_body(), HalfSpace::MakePose(normal_W, point_W), HalfSpace(),
-      "collision", surface_friction);
+      plant->world_body(), geometry::HalfSpace::MakePose(normal_W, point_W),
+      geometry::HalfSpace(), "collision", surface_friction);
 
-  // Visual for the ground.
-  plant->RegisterVisualGeometry(plant->world_body(),
-                                HalfSpace::MakePose(normal_W, point_W),
-                                HalfSpace(), "visual");
+  // Set the inclined-plane's visual geometry.
+  const Vector4<double> green(0.5, 1.0, 0.5, 1.0);
+  plant->RegisterVisualGeometry(
+      plant->world_body(), geometry::HalfSpace::MakePose(normal_W, point_W),
+      geometry::HalfSpace(), "visual", green);
 
   // Add sphere geometry for the ball.
   // Pose X_BG of geometry frame G in the ball frame B is an identity transform.
@@ -85,7 +85,7 @@ void AddInclinedPlaneToPlant(
       -gravity * Vector3<double>::UnitZ());
 }
 
-}  // namespace inclined_plane
+}  // namespace inclined_plane_with_sphere_plant
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

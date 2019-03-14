@@ -7,14 +7,14 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
-#include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
+#include "drake/multibody/benchmarks/inclined_plane_with_sphere/inclined_plane_with_sphere_plant.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
 namespace examples {
 namespace multibody {
-namespace inclined_plane {
+namespace inclined_plane_with_sphere {
 namespace {
 
 DEFINE_double(target_realtime_rate, 1.0,
@@ -40,7 +40,6 @@ using geometry::SourceId;
 using lcm::DrakeLcm;
 
 // "multibody" namespace is ambiguous here without "drake::".
-using drake::multibody::benchmarks::inclined_plane::AddInclinedPlaneToPlant;
 using drake::multibody::CoulombFriction;
 using drake::multibody::MultibodyPlant;
 
@@ -60,8 +59,9 @@ int do_main() {
   auto pair = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
   MultibodyPlant<double>& plant = pair.plant;
-  AddInclinedPlaneToPlant(
-      radius, mass, slope, surface_friction, g, &plant);
+  drake::multibody::benchmarks::inclined_plane_with_sphere_plant::
+      AddInclinedPlaneWithSpherePlant(radius, mass, slope, surface_friction, g,
+                                      &plant);
   plant.Finalize();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(1.0e-5);
@@ -99,7 +99,7 @@ int do_main() {
 }
 
 }  // namespace
-}  // namespace inclined_plane
+}  // namespace inclined_plane_with_sphere
 }  // namespace multibody
 }  // namespace examples
 }  // namespace drake
@@ -111,5 +111,5 @@ int main(int argc, char* argv[]) {
       "Launch drake-visualizer before running this example.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
-  return drake::examples::multibody::inclined_plane::do_main();
+  return drake::examples::multibody::inclined_plane_with_sphere::do_main();
 }

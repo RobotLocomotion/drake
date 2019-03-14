@@ -75,7 +75,8 @@ LIBDRAKE_COMPONENTS = [
     "//math",
     "//multibody/benchmarks/acrobot",
     "//multibody/benchmarks/free_body",
-    "//multibody/benchmarks/inclined_plane",
+    "//multibody/benchmarks/inclined_plane_with_block",
+    "//multibody/benchmarks/inclined_plane_with_sphere",
     "//multibody/benchmarks/kuka_iiwa_robot",
     "//multibody/benchmarks/mass_damper_spring",
     "//multibody/benchmarks/pendulum",
@@ -86,6 +87,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/parsing",
     "//multibody/plant",
     "//multibody/plant:contact_results_to_lcm",  # unpackaged
+    "//multibody/plant:implicit_stribeck_solver_results",  # unpackaged
     "//multibody/tree",
     "//perception",
     "//solvers",

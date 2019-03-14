@@ -8,7 +8,7 @@
 namespace drake {
 namespace multibody {
 namespace benchmarks {
-namespace block_on_inclined_plane_plant {
+namespace inclined_plane_with_block_plant {
 
 /// This method creates mass, geometry, and surface friction properties for a
 /// uniform-density block B whose bottom surface makes contact with the
@@ -44,7 +44,7 @@ namespace block_on_inclined_plane_plant {
 /// @param[out] plant Plant that contains inclined-plane A and block B.
 /// @throws std::exception if plant is nullptr or there is invalid data.
 /// @pre plant must be registered with a scene graph.
-void AddBlockAndInclinedPlaneToPlant(
+void AddInclinedPlaneWithBlockToPlant(
     double LAx, double LAy, double LAz,
     double LBx, double LBy, double LBz, double mB, double slope, double gravity,
     const CoulombFriction<double>& coefficient_of_friction_blockB,
@@ -52,7 +52,7 @@ void AddBlockAndInclinedPlaneToPlant(
     bool is_inclined_plane_half_space, bool is_block_with_4Spheres,
     MultibodyPlant<double>* plant);
 
-}  // namespace block_on_inclined_plane_plant
+}  // namespace inclined_plane_with_block_plant
 }  // namespace benchmarks
 }  // namespace multibody
 }  // namespace drake

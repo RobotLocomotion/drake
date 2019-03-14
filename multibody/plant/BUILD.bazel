@@ -361,7 +361,7 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":plant",
-        "//multibody/benchmarks/inclined_plane",
+        "//multibody/benchmarks/inclined_plane_with_sphere",
         "//systems/analysis:simulator",
     ],
 )

@@ -5,7 +5,7 @@
 
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/benchmarks/inclined_plane/make_inclined_plane_plant.h"
+#include "drake/multibody/benchmarks/inclined_plane_with_sphere/inclined_plane_with_sphere_plant.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/systems/analysis/simulator.h"
@@ -15,7 +15,6 @@
 namespace drake {
 
 using geometry::SceneGraph;
-using multibody::benchmarks::inclined_plane::AddInclinedPlaneToPlant;
 using systems::BasicVector;
 using systems::Context;
 using systems::Diagram;
@@ -90,8 +89,9 @@ TEST_P(InclinedPlaneTest, RollingSphereTest) {
 
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(time_step_));
-  AddInclinedPlaneToPlant(
-      radius, mass, slope, surface_friction, g, &plant);
+  drake::multibody::benchmarks::inclined_plane_with_sphere_plant::
+      AddInclinedPlaneWithSpherePlant(radius, mass, slope, surface_friction, g,
+                                      &plant);
   plant.Finalize();
   // Set how much penetration (in meters) we are willing to accept.
   plant.set_penetration_allowance(penetration_allowance_);
