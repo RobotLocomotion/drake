@@ -502,8 +502,8 @@ def _get_native_visualizer(viz):
 class MeshcatPointCloudVisualizer(LeafSystem):
     """
     MeshcatPointCloudVisualizer is a System block that visualizes a
-    `PointCloud` in meshcat. The `PointCloud` must have both XYZ and RGB
-    fields. RGB values must be on the range [0..255].
+    `PointCloud` in meshcat. The `PointCloud` must have XYZ values. RGB values
+    are optional; if provided, they must be on the range [0..255].
 
     The XYZ values are assumed to be in the point cloud frame `P`.
 
