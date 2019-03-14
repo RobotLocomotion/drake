@@ -465,6 +465,24 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
                                 fcl::DistanceResultd* result) {
   const fcl::CollisionGeometryd* a_geometry = a->collisionGeometry().get();
   const fcl::CollisionGeometryd* b_geometry = b->collisionGeometry().get();
+
+  // We use FCL's GJK/EPA fallback in those geometries we haven't explicitly
+  // supported. However, FCL doesn't support: half spaces, planes, triangles, or
+  // octtrees in that workflow. We need to give intelligent feedback rather than
+  // the segfault otherwise produced.
+  // NOTE: Currently this only tests for halfspace (because it is an otherwise
+  // supported geometry type in SceneGraph. When meshes, planes, and/or octrees
+  // are supported, this error would have to be modified.
+  // TODO(SeanCurtis-TRI): Remove this test when FCL supports signed distance
+  // queries for halfspaces (see issue #10905). Also see FCL issue
+  // https://github.com/flexible-collision-library/fcl/issues/383.
+  if (a_geometry->getNodeType() == fcl::GEOM_HALFSPACE ||
+      b_geometry->getNodeType() == fcl::GEOM_HALFSPACE) {
+    throw std::logic_error(
+        "Signed distance queries on halfspaces are not currently supported. "
+        "Try using a large box instead.");
+  }
+
   const RigidTransformd X_WA(a->getTransform());
   const RigidTransformd X_WB(b->getTransform());
   const auto id_A = EncodedData(*a).id(geometry_map);
@@ -479,17 +497,16 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
           auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
           auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
           distance_pair(sphere_A, sphere_B);
-          break;
+          return;
         }
         case fcl::GEOM_BOX: {
           auto sphere_A = static_cast<const fcl::Sphered*>(a_geometry);
           auto box_B = static_cast<const fcl::Boxd*>(b_geometry);
           distance_pair(sphere_A, box_B);
+          return;
+        }
+        default:
           break;
-        }
-        default: {
-          fcl::distance(a, b, request, *result);
-        }
       }
       break;
     }
@@ -499,18 +516,17 @@ void ComputeNarrowPhaseDistance(const fcl::CollisionObjectd* a,
           auto box_A = static_cast<const fcl::Boxd*>(a_geometry);
           auto sphere_B = static_cast<const fcl::Sphered*>(b_geometry);
           distance_pair(box_A, sphere_B);
+          return;
+        }
+        default:
           break;
-        }
-        default: {
-          fcl::distance(a, b, request, *result);
-        }
       }
       break;
     }
-    default: {
-      fcl::distance(a, b, request, *result);
-    }
+    default:
+      break;
   }
+  fcl::distance(a, b, request, *result);
 }
 
 // The callback function in fcl::distance request. The final unnamed parameter
