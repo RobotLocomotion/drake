@@ -36,6 +36,7 @@ import meshcat.transformations as tf  # noqa
 
 _DEFAULT_PUBLISH_PERIOD = 1 / 30.
 
+
 def _convert_mesh(geom):
     # Given a LCM geometry message, forms a meshcat geometry and material
     # for that geometry, as well as a local tf to the meshcat geometry
@@ -558,18 +559,21 @@ class MeshcatPointCloudVisualizer(LeafSystem):
         LeafSystem._DoPublish(self, context, event)
         point_cloud_P = self.EvalAbstractInput(context, 0).get_value()
 
-        # Use only valid points.
         # `Q` is a point in the point cloud.
-        valid = np.logical_not(np.isnan(point_cloud_P.xyzs()))
+        p_PQs = point_cloud_P.xyzs()
+        # Use only valid points.
+        valid = np.logical_not(np.isnan(p_PQs))
         valid = np.all(valid, axis=0)  # Reduce along XYZ axis.
-        p_PQ_list = point_cloud_P.xyzs()[:, valid]
+        p_PQs = p_PQs[:, valid]
         if point_cloud_P.has_rgbs():
             rgbs = point_cloud_P.rgbs()[:, valid]
         else:
-            rgbs = self._default_rgb
+            # Need manual broadcasting.
+            count = p_PQs.shape[1]
+            rgbs = np.tile(np.array([self._default_rgb]).T, (1, count))
         # pydrake `PointCloud.rgbs()` are on [0..255], while meshcat
         # `PointCloud` colors are on [0..1].
-        rgbs = rgbs / 255.  # Do NOT do in-place division!
+        rgbs = rgbs / 255.  # Do not use in-place so we can promote types.
         # Send to meshcat.
-        self._meshcat_viz[self._name].set_object(g.PointCloud(p_PQ_list, rgbs))
+        self._meshcat_viz[self._name].set_object(g.PointCloud(p_PQs, rgbs))
         self._meshcat_viz[self._name].set_transform(self._X_WP.matrix())
