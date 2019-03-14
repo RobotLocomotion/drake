@@ -4,6 +4,7 @@
 #include <iostream>
 #include <regex>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <spruce.hh>
 
@@ -67,6 +68,12 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
   if (solver.available()) {
     TestQPonUnitBallExample(solver);
   }
+}
+
+GTEST_TEST(SnoptTest, NameTest) {
+  EXPECT_THAT(
+      SnoptSolver::id().name(),
+      testing::StartsWith("SNOPT/"));
 }
 
 GTEST_TEST(SnoptTest, TestSetOption) {
