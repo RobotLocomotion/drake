@@ -230,7 +230,8 @@ class MathematicalProgramResult final {
    * Evaluate a Binding at the solution.
    * @param binding A binding between a constraint/cost and the variables.
    * @pre The binding.variables() must be the within the decision variables in
-   * the MathematicalProgram that generated this MathematicalProgramResult.
+   * the MathematicalProgram that generated this %MathematicalProgramResult.
+   * @pre The user must have called set_decision_variable_index() function.
    */
   template <typename Evaluator>
   Eigen::VectorXd EvalBinding(const Binding<Evaluator>& binding) const {
