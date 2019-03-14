@@ -54,6 +54,7 @@ class SpringMassStateVector : public BasicVector<T> {
   void set_conservative_work(const T& e);
 
  private:
+  DRAKE_NODISCARD
   SpringMassStateVector<T>* DoClone() const override;
 };
 

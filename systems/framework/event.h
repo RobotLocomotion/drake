@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
@@ -42,6 +43,7 @@ class EventData {
   }
 
  protected:
+  DRAKE_NODISCARD
   virtual EventData* DoClone() const = 0;
 };
 
@@ -68,6 +70,7 @@ class PeriodicEventData : public EventData {
   void set_offset_sec(double offset_sec) { offset_sec_ = offset_sec; }
 
  private:
+  DRAKE_NODISCARD
   EventData* DoClone() const override {
     PeriodicEventData* clone = new PeriodicEventData;
     clone->period_sec_ = period_sec_;
@@ -136,6 +139,7 @@ class WitnessTriggeredEventData : public EventData {
   void set_xcf(const ContinuousState<T>* xcf) { xcf_ = xcf; }
 
  private:
+  DRAKE_NODISCARD
   EventData* DoClone() const override {
     WitnessTriggeredEventData<T>* clone = new WitnessTriggeredEventData;
     clone->triggered_witness_ = triggered_witness_;
@@ -342,6 +346,7 @@ class Event {
    * Event-specific data is cloned using the Clone() method. Data specific
    * to the class derived from Event must be cloned by the implementation.
    */
+  DRAKE_NODISCARD
   virtual Event* DoClone() const = 0;
 
  private:
@@ -423,6 +428,7 @@ class PublishEvent final : public Event<T> {
   }
 
   // Clones PublishEvent-specific data.
+  DRAKE_NODISCARD
   PublishEvent<T>* DoClone() const final { return new PublishEvent(*this); }
 
   // Optional callback function that handles this publish event.
@@ -501,6 +507,7 @@ class DiscreteUpdateEvent final : public Event<T> {
   }
 
   // Clones DiscreteUpdateEvent-specific data.
+  DRAKE_NODISCARD
   DiscreteUpdateEvent<T>* DoClone() const final {
     return new DiscreteUpdateEvent(this->get_trigger_type(), callback_);
   }

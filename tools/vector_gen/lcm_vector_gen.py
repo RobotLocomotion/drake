@@ -218,6 +218,7 @@ def generate_set_to_named_variables(hh, caller_context, fields):
 
 
 DO_CLONE = """
+  DRAKE_NODISCARD
   %(camel)s<T>* DoClone() const final {
     return new %(camel)s;
   }

@@ -29,6 +29,7 @@ class TestVector : public BasicVector<T> {
 
   explicit TestVector(int size) : BasicVector<T>(size) { names_.resize(size); }
 
+  DRAKE_NODISCARD
   TestVector* DoClone() const override {
     TestVector* ret = new TestVector(this->size());
     ret->names_ = names_;

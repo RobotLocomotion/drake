@@ -91,6 +91,7 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_unset(symbolic::Variable("unset"));
   }
 
+  DRAKE_NODISCARD
   Sample<T>* DoClone() const final { return new Sample; }
 
   /// @name Getters and Setters
