@@ -2905,7 +2905,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::vector<geometry::PenetrationAsPointPair<T>>&
   EvalPointPairPenetrations(const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return this->get_cache_entry(cache_indexes_.point_pairs_)
+    return this->get_cache_entry(cache_indexes_.point_pairs)
         .template Eval<std::vector<geometry::PenetrationAsPointPair<T>>>(
             context);
   }
@@ -2951,10 +2951,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // MultibodyPlant specific cache entries. These are initialized at Finalize()
   // when the plant declares its cache entries.
   struct CacheIndexes {
-    systems::CacheIndex contact_jacobians_;
-    systems::CacheIndex contact_results_;
-    systems::CacheIndex implicit_stribeck_solver_results_;
-    systems::CacheIndex point_pairs_;
+    systems::CacheIndex contact_jacobians;
+    systems::CacheIndex contact_results;
+    systems::CacheIndex implicit_stribeck_solver_results;
+    systems::CacheIndex point_pairs;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -3045,7 +3045,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Helper method to declare state, cache entries, and ports after Finalize().
   void DeclareStateCacheAndPorts();
 
-  // Declare the system:: level cache entries specific to MultibodyPlant.
+  // Declare the system-level cache entries specific to MultibodyPlant.
   void DeclareCacheEntries();
 
   // Helper method to assemble actuation input vector from the appropriate
@@ -3104,7 +3104,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const internal::ImplicitStribeckSolverResults<T>& EvalImplicitStribeckResults(
       const systems::Context<T>& context) const {
     return this
-        ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results_)
+        ->get_cache_entry(cache_indexes_.implicit_stribeck_solver_results)
         .template Eval<internal::ImplicitStribeckSolverResults<T>>(context);
   }
 
@@ -3118,7 +3118,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Eval version of the method CalcContactResults().
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.contact_results_)
+    return this->get_cache_entry(cache_indexes_.contact_results)
         .template Eval<ContactResults<T>>(context);
   }
 
@@ -3305,7 +3305,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const internal::ContactJacobians<T>& EvalContactJacobians(
       const systems::Context<T>& context) const {
     DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    return this->get_cache_entry(cache_indexes_.contact_jacobians_)
+    return this->get_cache_entry(cache_indexes_.contact_jacobians)
         .template Eval<internal::ContactJacobians<T>>(context);
   }
 
