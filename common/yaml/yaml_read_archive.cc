@@ -1,4 +1,4 @@
-#include "drake/common/yaml/dev/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_read_archive.h"
 
 #include <algorithm>
 
@@ -6,8 +6,8 @@
 
 #include "drake/common/nice_type_name.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 
 YAML::Node YamlReadArchive::GetSubNode(
     const char* name, YAML::NodeType::value expected_type) const {
@@ -95,5 +95,5 @@ const char* YamlReadArchive::to_string(YAML::NodeType::value x) {
   return "UNKNOWN";
 }
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake

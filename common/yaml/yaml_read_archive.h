@@ -19,31 +19,40 @@
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 
-/// YAML-backed implementation of the Serialize/Archive pattern.
+/// Loads data from a YAML file into a C++ structure, using the Serialize /
+/// Archive pattern.
 ///
-/// TODO(jeremy.nimmer) Add documentation of YAML / struct mapping.
-/// TODO(jeremy.nimmer) Add much more diagnostics / error reporting.
-/// TODO(jeremy.nimmer) Add much more input data test coverage.
+/// TODO(jwnimmer-tri) Add documentation of YAML / struct mapping.
+///
+/// For inspiration and background, see:
+/// https://www.boost.org/doc/libs/current/libs/serialization/doc/tutorial.html
 class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
+  /// Creates an archive that reads from @p root.  See the %YamlReadArchive
+  /// class overview for details.
   explicit YamlReadArchive(const YAML::Node& root)
       : YamlReadArchive(root, nullptr) {}
 
+  /// Sets the contents `serializable` based on the YAML file associated with
+  /// this archive.  See the %YamlReadArchive class overview for details.
   template <typename Serializable>
   YamlReadArchive& Accept(Serializable* serializable) {
     if (!root_) {
-      // TODO(jeremy.nimmer) This should probably be a ReportMissingYaml error.
+      // TODO(jwnimmer-tri) This should probably be a ReportMissingYaml error.
       return *this;
     }
     DoAccept(this, serializable, static_cast<int32_t>(0));
     return *this;
   }
 
+  /// Sets the value pointed to by `nvp.value()` based on the YAML file
+  /// associated with this archive.  See the %YamlReadArchive class overview
+  /// for details.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     this->Visit(nvp, VisitShouldMemorizeType::kYes);
@@ -120,8 +129,6 @@ class YamlReadArchive final {
     this->VisitArray(nvp.name(), N, nvp.value()->data());
   }
 
-  // TODO(jeremy.nimmer) Implement these.
-#if 0
   // For std::map.
   template <typename NVP, typename K, typename V, typename C>
   void DoVisit(const NVP& nvp, const std::map<K, V, C>&, int32_t) {
@@ -133,7 +140,6 @@ class YamlReadArchive final {
   void DoVisit(const NVP& nvp, const std::unordered_map<K, V, H, E>&, int32_t) {
     this->VisitMap(nvp);
   }
-#endif
 
   // For drake::optional (which is std::optional iff we have new enough C++).
   template <typename NVP, typename T>
@@ -187,7 +193,7 @@ class YamlReadArchive final {
   void VisitScalar(const NVP& nvp) {
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Scalar);
     if (!sub_node) { return; }
-    // TODO(jeremy.nimmer) Add better reporting of type errors here.
+    // TODO(jwnimmer-tri) Add better reporting of type errors here.
     using T = typename NVP::value_type;
     *nvp.value() = sub_node.template as<T>();
   }
@@ -357,6 +363,12 @@ class YamlReadArchive final {
     }
   }
 
+  template <typename NVP>
+  void VisitMap(const NVP& nvp) {
+    // TODO(jwnimmer-tri) Implement me.
+    throw std::logic_error("Map-like values are not yet supported");
+  }
+
   //@}
 
   // If root_ is a Map and has child with the given name and type, return the
@@ -376,5 +388,5 @@ class YamlReadArchive final {
   const std::type_info* debug_visit_type_{};
 };
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake
