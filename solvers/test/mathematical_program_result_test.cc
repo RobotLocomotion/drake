@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/solvers/cost.h"
 
 namespace drake {
 namespace solvers {
@@ -104,6 +105,16 @@ TEST_F(MathematicalProgramResultTest, SetSolverDetails) {
   // constructor were called, dummy_solver_details.data won't be equal to 1.
   dummy_solver_details = result.SetSolverDetailsType<DummySolverDetails>();
   EXPECT_EQ(result.get_solver_details<DummySolver>().data, data);
+}
+
+TEST_F(MathematicalProgramResultTest, EvalBinding) {
+  MathematicalProgramResult result;
+  result.set_decision_variable_index(decision_variable_index_);
+  const Eigen::Vector2d x_val(0, 1);
+  result.set_x_val(x_val);
+  const Binding<LinearCost> cost{std::make_shared<LinearCost>(Vector1d(2), 0),
+                                 Vector1<symbolic::Variable>(x1_)};
+  EXPECT_TRUE(CompareMatrices(result.EvalBinding(cost), Vector1d(2)));
 }
 
 #pragma GCC diagnostic push

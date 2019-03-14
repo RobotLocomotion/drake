@@ -334,7 +334,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           [](const MathematicalProgramResult& self, int solution_number) {
             return self.get_suboptimal_objective(solution_number);
           },
-          doc.MathematicalProgramResult.get_suboptimal_objective.doc);
+          doc.MathematicalProgramResult.get_suboptimal_objective.doc)
+      .def("EvalBinding",
+          [](const MathematicalProgramResult& self,
+              const Binding<EvaluatorBase>& binding) {
+            return self.EvalBinding(binding);
+          },
+          doc.MathematicalProgramResult.EvalBinding.doc);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
