@@ -34,6 +34,7 @@ with warnings.catch_warnings():
 import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
 
+_DEFAULT_PUBLISH_PERIOD = 1 / 30.
 
 def _convert_mesh(geom):
     # Given a LCM geometry message, forms a meshcat geometry and material
@@ -162,7 +163,7 @@ class MeshcatVisualizer(LeafSystem):
 
     def __init__(self,
                  scene_graph,
-                 draw_period=0.033333,
+                 draw_period=_DEFAULT_PUBLISH_PERIOD,
                  prefix="drake",
                  zmq_url="default",
                  open_browser=None):
@@ -318,7 +319,7 @@ class MeshcatContactVisualizer(LeafSystem):
                  plant=None):
         """
         Args:
-            meshcat_viz: a MeshcatVisualizer object.
+            meshcat_viz: A pydrake MeshcatVisualizer instance.
             force_threshold: contact forces whose norms are smaller than
                 force_threshold are not displayed.
             contact_force_scale: a contact force with norm F (in Newtons) is
@@ -484,24 +485,36 @@ class MeshcatContactVisualizer(LeafSystem):
         return magnitude / self._contact_force_scale
 
 
+def _get_native_visualizer(viz):
+    # Resolve `viz` to a native `meshcat.Visualizer` instance. If `viz` is
+    # a pydrake `MeshcatVisualizer`, return the native visualizer.
+    if isinstance(viz, meshcat.Visualizer):
+        return viz
+    elif isinstance(viz, MeshcatVisualizer):
+        return viz.vis
+    else:
+        raise ValueError(
+            "Type {} is not {{meshcat.Visualizer, {}}}".format(
+                type(viz).__name__, MeshcatVisualizer.__name__))
+
+
 class MeshcatPointCloudVisualizer(LeafSystem):
     """
     MeshcatPointCloudVisualizer is a System block that visualizes a
     `PointCloud` in meshcat. The `PointCloud` must have both XYZ and RGB
-    fields.
+    fields. RGB values must be on the range [0..255].
 
-    Note that this class can, but doesn't have to, be used with a drake
-    `MeshcatVisualizer` system. Here is an example of using it with a drake
-    `MeshcatVisualzer` system:
+    The XYZ values are assumed to be in the point cloud frame `P`.
+
+    An example using a pydrake MeshcatVisualizer:
 
     ```
     viz = builder.AddSystem(MeshcatVisualizer(scene_graph))
     pc_viz = builder.AddSystem(
-        MeshcatPointCloudVisualizer(viz.vis, viz.draw_period))
+        MeshcatPointCloudVisualizer(viz, viz.draw_period))
     ```
 
-    Otherwise, this class can be initialized with a new meshcat Visualizer
-    instance without needing to visualize any scene graphs.
+    Using a native meshcat.Visualizer:
 
     ```
     viz = meshcat.Visualizer()
@@ -509,48 +522,54 @@ class MeshcatPointCloudVisualizer(LeafSystem):
     ```
 
     @system{
-        @input_port{point_cloud},
+        @input_port{point_cloud_P},
     }
     """
 
-    def __init__(self, meshcat_instance, draw_period=0.033333,
-                 name="point_cloud", transform=Isometry3.Identity()):
+    def __init__(self, meshcat_viz, draw_period=_DEFAULT_PUBLISH_PERIOD,
+                 name="point_cloud", X_WP=Isometry3.Identity(),
+                 default_rgb=[255., 255., 255.]):
         """
         Args:
-            meshcat_instance: A native meshcat Visualizer object. Note that
-                this is an instance returned from calling
-                `meshcat.Visualizer()`, not a Drake MeshcatVisualizer system.
-                This allows point clouds to be visualized independently of
-                scene graphs.
+            meshcat_viz: Either a native meshcat.Visualizer or a pydrake
+                MeshcatVisualizer object.
             draw_period: The rate at which this class publishes to the
                 visualizer.
             name: The string name of the meshcat object.
-            transform: An optional Isometry3 transformation to apply to the
-                point cloud.
+            X_WP: Pose of point cloud frame `P` in meshcat world frame `W`.
+                Default is identity.
+            default_rgb: RGB value for published points if the PointCloud does
+                not provide RGB values.
         """
         LeafSystem.__init__(self)
 
-        self._meshcat_viz = meshcat_instance
-        self._transform = transform
+        self._meshcat_viz = _get_native_visualizer(meshcat_viz)
+        self._X_WP = X_WP
+        self._default_rgb = np.array(default_rgb)
         self._name = name
 
         self.set_name('meshcat_point_cloud_visualizer')
         self._DeclarePeriodicPublish(draw_period, 0.0)
 
-        self._DeclareAbstractInputPort("point_cloud",
+        self._DeclareAbstractInputPort("point_cloud_P",
                                        AbstractValue.Make(mut.PointCloud()))
 
     def _DoPublish(self, context, event):
         LeafSystem._DoPublish(self, context, event)
-        input = self.EvalAbstractInput(context, 0).get_value()
+        point_cloud_P = self.EvalAbstractInput(context, 0).get_value()
 
-        # Remove any NaNs from the points.
-        nan_indices = np.logical_not(np.isnan(input.xyzs()))
-        points = input.xyzs()[:, nan_indices[0, :]]
-        colors = input.rgbs()[:, nan_indices[0, :]]
-
-        # Convert rgb values from [0, 255] to [0, 1].
-        point_cloud = g.PointCloud(points, colors / 255.)
-
-        self._meshcat_viz[self._name].set_object(point_cloud)
-        self._meshcat_viz[self._name].set_transform(self._transform.matrix())
+        # Use only valid points.
+        # `Q` is a point in the point cloud.
+        valid = np.logical_not(np.isnan(point_cloud_P.xyzs()))
+        valid = np.any(valid, axis=0)  # Reduce along XYZ axis.
+        p_PQ_list = point_cloud_P.xyzs()[:, valid]
+        if point_cloud_P.has_rgbs():
+            rgbs = point_cloud_P.rgbs()[:, valid]
+        else:
+            rgbs = self._default_rgb
+        # pydrake `PointCloud.rgbs()` are on [0..255], while meshcat
+        # `PointCloud` colors are on [0..1].
+        rgbs = rgbs / 255.  # Do NOT do in-place division!
+        # Send to meshcat.
+        self._meshcat_viz[self._name].set_object(g.PointCloud(p_PQ_list, rgbs))
+        self._meshcat_viz[self._name].set_transform(self._X_WP.matrix())
