@@ -199,56 +199,7 @@ class TestMeshcat(unittest.TestCase):
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(1.0)
 
-    def test_point_cloud_visualization_drake(self):
-        """A table, unrelated to the point cloud."""
-        table_file_path = FindResourceOrThrow(
-            "drake/examples/kuka_iiwa_arm/models/table/"
-            "extra_heavy_duty_table_surface_only_collision.sdf")
-
-        builder = DiagramBuilder()
-        plant = MultibodyPlant(0.002)
-        _, scene_graph = AddMultibodyPlantSceneGraph(builder, plant)
-        table_model = Parser(plant=plant).AddModelFromFile(table_file_path)
-        plant.Finalize()
-
-        # Add meshcat visualizer.
-        viz = builder.AddSystem(
-            MeshcatVisualizer(scene_graph,
-                              zmq_url=None,
-                              open_browser=False))
-        builder.Connect(
-            scene_graph.get_pose_bundle_output_port(),
-            viz.get_input_port(0))
-
-        # Add point cloud visualization.
-        transform = Isometry3.Identity()
-        transform.set_translation([0.1, 0.2, 0.3])
-        pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz.vis,
-                                                               viz.draw_period,
-                                                               "cloud",
-                                                               transform))
-
-        # Make sure the system runs.
-        diagram = builder.Build()
-        diagram_context = diagram.CreateDefaultContext()
-
-        context = diagram.GetMutableSubsystemContext(pc_viz, diagram_context)
-
-        pc = mut.PointCloud(
-            new_size=1,
-            fields=mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs))
-        pc.mutable_xyzs()[:3, 0] = [0.1, 0.2, 0.3]
-        pc.mutable_rgbs()[:3, 0] = [0.1, 0.2, 0.3]
-
-        context.FixInputPort(
-            pc_viz.GetInputPort("point_cloud").get_index(),
-            AbstractValue.Make(pc))
-
-        simulator = Simulator(diagram, diagram_context)
-        simulator.set_publish_every_time_step(False)
-        simulator.StepTo(1.0)
-
-    def test_point_cloud_visualization_standalone(self):
+    def test_point_cloud_visualization(self):
         """A small point cloud"""
         builder = DiagramBuilder()
 
@@ -262,11 +213,15 @@ class TestMeshcat(unittest.TestCase):
 
         context = diagram.GetMutableSubsystemContext(pc_viz, diagram_context)
 
+        # 10x this amount makes the visualizer less responsive.
+        num_points = 100000
         pc = mut.PointCloud(
-            new_size=1,
+            new_size=num_points,
             fields=mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs))
-        pc.mutable_xyzs()[:3, 0] = [0.1, 0.2, 0.3]
-        pc.mutable_rgbs()[:3, 0] = [0.1, 0.2, 0.3]
+        pc.mutable_xyzs()[:3, :] = (
+            np.random.uniform(-0.1, 0.1, (3, num_points)))
+        pc.mutable_rgbs()[:3, :] = (
+            np.random.uniform(0., 255.0, (3, num_points)))
 
         context.FixInputPort(
             pc_viz.GetInputPort("point_cloud").get_index(),
