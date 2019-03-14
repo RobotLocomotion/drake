@@ -322,12 +322,23 @@ namespace internal {
 //
 // Returns true on success / false on failure.
 constexpr bool hash_template_argument_from_pretty_func(
-    const char* pretty, bool discard_nested, FNV1aHasher* result) {
+    const char* pretty, int which_argument,
+    bool discard_nested, bool discard_cast,
+    FNV1aHasher* result) {
   // Advance to the typename after the "T = ".
   const char* p = pretty;
-  for (; (*p != '='); ++p) {}  // Advance to '='.
-  ++p;                         // Advance to ' '.
-  ++p;                         // Advance to the typename we want.
+  for (int n = 0; n <= which_argument; ++n) {
+    for (; (*p != '='); ++p) {}  // Advance to the '=' that we want.
+    ++p;                         // Advance to ' '.
+    ++p;                         // Advance to the typename we want.
+  }
+
+  // For enums, GCC's pretty says "(MyEnum)0" not "MyEnum::kFoo".  We'll strip
+  // off the useless parenthetical.
+  if (discard_cast && (*p == '(')) {
+    for (; (*p != ')'); ++p) {}  // Advance to the ')'.
+    ++p;
+  }
 
   // Hash the characters in the typename, ending either when the typename ends
   // (';' or ']') or maybe when the first template argument begins ('<').
@@ -361,7 +372,7 @@ constexpr bool hash_template_argument_from_pretty_func(
     }
 
     // If the type has parens (such as a function pointer or std::function),
-    // then we can't handle it.  Add support for function types involves not
+    // then we can't handle it.  Adding support for function types involves not
     // only unpacking the return and argument types, but also adding support
     // for const / volatile / reference / etc.).
     if (*p == '(') {
@@ -375,21 +386,39 @@ constexpr bool hash_template_argument_from_pretty_func(
   return true;
 }
 
+// Akin to C++17 std::void_t<>.
+template <typename...>
+using typehasher_void_t = void;
+
+// Traits type to ask whether T::NonTypeTemplateParameter exists.
+template <typename T, typename U = void>
+struct TypeHasherHasNonTypeTemplateParameter {
+  static constexpr bool value = false;
+};
+template <typename T>
+struct TypeHasherHasNonTypeTemplateParameter<
+    T, typehasher_void_t<typename T::NonTypeTemplateParameter>> {
+  static constexpr bool value = true;
+};
+
 // Provides a struct templated on T so that __PRETTY_FUNCTION__ will express T
 // at compile time.  The calc() function feeds the string representation of T
 // to `result`.  Returns true on success / false on failure.  This base struct
 // handles non-templated values (e.g., int); in a specialization down below, we
 // handle template template T's.
-template <typename T>
+template <typename T, bool = TypeHasherHasNonTypeTemplateParameter<T>::value>
 struct TypeHasher {
   // Returns true on success / false on failure.
   static constexpr bool calc(FNV1aHasher* result) {
     // With discard_nested disabled here, the hasher will fail if it sees a
     // '<' in the typename.  If that happens, it means that the parameter pack
     // specialization(s) below did not match as expected.
+    const int which_argument = 0;
     const bool discard_nested = false;
+    const bool discard_cast = false;
     return hash_template_argument_from_pretty_func(
-        __PRETTY_FUNCTION__, discard_nested, result);
+        __PRETTY_FUNCTION__, which_argument,
+        discard_nested, discard_cast, result);
   }
 };
 
@@ -420,12 +449,15 @@ struct ParameterPackHasher<A, B...> {
 // each template argument separately from T's outer type (as explained in the
 // overview above).
 template <template <typename...> class T, class... Args>
-struct TypeHasher<T<Args...>> {
+struct TypeHasher<T<Args...>, false> {
   static constexpr bool calc(FNV1aHasher* result) {
     // First, hash just the "T" template template type, not the "<Args...>".
+    const int which_argument = 0;
     const bool discard_nested = true;
+    const bool discard_cast = false;
     bool success = hash_template_argument_from_pretty_func(
-        __PRETTY_FUNCTION__, discard_nested, result);
+        __PRETTY_FUNCTION__, which_argument,
+        discard_nested, discard_cast, result);
     // Then, hash the "<Args...>".  Add delimiters so that parameter pack
     // nesting is correctly hashed.
     result->add_byte('<');
@@ -435,16 +467,45 @@ struct TypeHasher<T<Args...>> {
   }
 };
 
-// Provides a struct templated on an `int`, similar to TypeHasher<T> but where
-// the template parameters are int(s), not typenames.
-template <int N>
-struct IntHasher {
+// Provides a struct templated on `Typename Konstant`, similar to TypeHasher<T>
+// but here the "Konstant"'s string is hashed, not a typename.
+template <typename T, T K>
+struct ValueHasher {
   static constexpr bool calc(FNV1aHasher* result) {
+    const int which_argument = 1;
     const bool discard_nested = false;
+    const bool discard_cast = true;
     return hash_template_argument_from_pretty_func(
-        __PRETTY_FUNCTION__, discard_nested, result);
+        __PRETTY_FUNCTION__, which_argument,
+        discard_nested, discard_cast, result);
   }
 };
+
+// Specializes TypeHasher for a non-type template value so that we have the
+// value the template argument separately from T's outer type (as explained in
+// the overview above).
+template <typename T>
+struct TypeHasher<T, true> {
+  static constexpr bool calc(FNV1aHasher* result) {
+    // First, hash just the "T" template template type, not the "<U u>".
+    const int which_argument = 0;
+    const bool discard_nested = true;
+    const bool discard_cast = false;
+    hash_template_argument_from_pretty_func(
+        __PRETTY_FUNCTION__, which_argument,
+        discard_nested, discard_cast, result);
+    // Then, hash the "<U=u>".
+    using U = typename T::NonTypeTemplateParameter::value_type;
+    result->add_byte('<');
+    bool success = TypeHasher<U>::calc(result);
+    result->add_byte('=');
+    success = success &&
+        ValueHasher<U, T::NonTypeTemplateParameter::value>::calc(result);
+    result->add_byte('>');
+    return success;
+  }
+};
+
 // Provides a struct templated on Ns... with a calc() that hashes a sequence of
 // ints (an int parameter pack).
 template <int... Ns>
@@ -458,7 +519,11 @@ struct IntPackHasher<> {
 template <int N, int... Ns>
 struct IntPackHasher<N, Ns...> {
   static constexpr bool calc(FNV1aHasher* result) {
-    bool success = IntHasher<N>::calc(result);
+    result->add_byte('i');
+    result->add_byte('n');
+    result->add_byte('t');
+    result->add_byte('=');
+    bool success = ValueHasher<int, N>::calc(result);
     if (sizeof...(Ns)) {
       result->add_byte(',');
       success = success && IntPackHasher<Ns...>::calc(result);
@@ -470,12 +535,15 @@ struct IntPackHasher<N, Ns...> {
 // Specializes TypeHasher for Eigen-like types.
 template <template <typename, int, int...> class T,
           typename U, int N, int... Ns>
-struct TypeHasher<T<U, N, Ns...>> {
+struct TypeHasher<T<U, N, Ns...>, false> {
   static constexpr bool calc(FNV1aHasher* result) {
     // First, hash just the "T" template template type, not the "<U, N, Ns...>".
+    const int which_argument = 0;
     const bool discard_nested = true;
+    const bool discard_cast = false;
     bool success = hash_template_argument_from_pretty_func(
-        __PRETTY_FUNCTION__, discard_nested, result);
+        __PRETTY_FUNCTION__, which_argument,
+        discard_nested, discard_cast, result);
     // Then, hash the "<U, N, Ns...>".  Add delimiters so that parameter pack
     // nesting is correctly hashed.
     result->add_byte('<');
@@ -515,6 +583,25 @@ struct TypeHash {
 };
 template <typename T>
 constexpr size_t TypeHash<T>::value;
+
+// This is called once per process per T whose type_hash is 0.  We can use it
+// to warn about TypeHash failures.
+int ReportZeroHash(const std::type_info& detail);
+
+// Any code in this file that uses TypeHash::value calls us for it's T.
+template <typename T, size_t hash>
+struct ReportUseOfTypeHash {
+  static void used() {
+    // By default, do nothing.
+  }
+};
+template <typename T>
+struct ReportUseOfTypeHash<T, 0> {
+  static void used() {
+    static int dummy = ReportZeroHash(typeid(T));
+    (void)(dummy);
+  }
+};
 
 // For copyable types, we can store a T directly within Value<T> and we don't
 // need any special tricks to create or retrieve it.
@@ -625,6 +712,7 @@ void AbstractValue::SetValueOrThrow(const T& value_to_set) {
 template <typename T>
 bool AbstractValue::is_maybe_matched() const {
   constexpr auto hash = internal::TypeHash<T>::value;
+  internal::ReportUseOfTypeHash<T, hash>::used();
   return (kDrakeAssertIsArmed || !hash) ? (typeid(T) == static_type_info()) :
       (hash == type_hash_);
 }
@@ -655,20 +743,25 @@ template <typename T1, typename T2>
 Value<T>::Value()
     : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_{} {
+  internal::ReportUseOfTypeHash<T, internal::TypeHash<T>::value>::used();
   Traits::reinitialize_if_necessary(&value_);
 }
 
 template <typename T>
 Value<T>::Value(const T& v)
     : AbstractValue(Wrap{internal::TypeHash<T>::value}),
-      value_(Traits::to_storage(v)) {}
+      value_(Traits::to_storage(v)) {
+  internal::ReportUseOfTypeHash<T, internal::TypeHash<T>::value>::used();
+}
 
 // We construct-in-place into our Storage value_.
 template <typename T>
 template <typename Arg1, typename... Args, typename>
 Value<T>::Value(Arg1&& arg1, Args&&... args)
     : AbstractValue(Wrap{internal::TypeHash<T>::value}),
-      value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {}
+      value_{std::forward<Arg1>(arg1), std::forward<Args>(args)...} {
+  internal::ReportUseOfTypeHash<T, internal::TypeHash<T>::value>::used();
+}
 
 // We move a unique_ptr into our Storage value_.
 template <typename T>
@@ -676,7 +769,9 @@ template <typename Arg1, typename... Args, typename, typename>
 Value<T>::Value(Arg1&& arg1, Args&&... args)
     : AbstractValue(Wrap{internal::TypeHash<T>::value}),
       value_{std::make_unique<T>(
-          std::forward<Arg1>(arg1), std::forward<Args>(args)...)} {}
+          std::forward<Arg1>(arg1), std::forward<Args>(args)...)} {
+  internal::ReportUseOfTypeHash<T, internal::TypeHash<T>::value>::used();
+}
 
 // An explanation of the this constructor:
 //
@@ -700,7 +795,9 @@ Value<T>::Value(Arg1&& arg1, Args&&... args)
 template <typename T>
 Value<T>::Value(std::unique_ptr<T> v)
     : AbstractValue(Wrap{internal::TypeHash<T>::value}),
-      value_{Traits::to_storage(std::move(v))} {}
+      value_{Traits::to_storage(std::move(v))} {
+  internal::ReportUseOfTypeHash<T, internal::TypeHash<T>::value>::used();
+}
 
 template <typename T>
 const T& Value<T>::get_value() const {
