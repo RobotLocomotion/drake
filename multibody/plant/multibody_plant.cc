@@ -1771,14 +1771,13 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // as S = S(t, x, u).
       // Even though this variables can change continuously with time, we want
       // the solver solution to be updated periodically (with period
-      // time_step()) only. That is ImplicitStribeckSolverResults should be
+      // time_step()) only. That is, ImplicitStribeckSolverResults should be
       // handled as an abstract state with periodic updates. In the systems::
-      // framework terminology, we'd like having an "unrestricted update" with a
-      // periodic event trigger.
+      // framework terminology, we'd like to have an "unrestricted update" with
+      // a periodic event trigger.
       // The Problem (#10149):
-      // From issue #10149 we know unrestricted updates inccur on a very
-      // noticeably performance hit that at this stage we are not willing to
-      // pay.
+      // From issue #10149 we know unrestricted updates incur a very noticeably
+      // performance hit that at this stage we are not willing to pay.
       // The Work Around (#10888):
       // To emulate the correct behavior until #10149 is addressed we declare
       // the Implicit Stribeck solver solution dependent only on the discrete
