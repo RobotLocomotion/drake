@@ -120,7 +120,9 @@ class MeshcatVisualizer(LeafSystem):
     port of a SceneGraph and visualizes the scene in Meshcat.
 
     The most common workflow would be to run
-    `bazel run @meshcat_python//:meshcat-server`
+
+        bazel run @meshcat_python//:meshcat-server
+
     in another terminal, open the url printed in that terminal in your
     browser, then to run drake apps (potentially many times) that publish to
     that default url.

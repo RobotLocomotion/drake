@@ -1,3 +1,19 @@
+"""
+Tests for meshcat functionality.
+
+Example workflow visualize a specific test case:
+
+    # Terminal 1: Run Server.
+    bazel run @meshcat_python//:meshcat-server -- \
+        --zmq-url=tcp://127.0.0.1:6000
+
+    # Terminal 2: Run test case.
+    bazel run --run_under='env TEST_ZMQ_URL=tcp://127.0.0.1:6000' \
+        //bindings/pydrake/systems:py/meshcat_visualizer_test -- \
+        'TestMeshcat.test_point_cloud_visualization'
+"""
+
+import os
 import unittest
 
 import meshcat
@@ -21,6 +37,8 @@ from pydrake.multibody.plant import MultibodyPlant
 
 import pydrake.perception as mut
 
+ZMQ_URL = os.environ.get("TEST_ZMQ_URL")
+
 
 class TestMeshcat(unittest.TestCase):
     def test_cart_pole(self):
@@ -36,7 +54,7 @@ class TestMeshcat(unittest.TestCase):
         assert cart_pole.geometry_source_is_registered()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=None,
+                                                         zmq_url=ZMQ_URL,
                                                          open_browser=False))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
@@ -71,7 +89,7 @@ class TestMeshcat(unittest.TestCase):
         kuka.Finalize()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=None,
+                                                         zmq_url=ZMQ_URL,
                                                          open_browser=False))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
@@ -119,7 +137,7 @@ class TestMeshcat(unittest.TestCase):
         # Add meshcat visualizer.
         viz = builder.AddSystem(
             MeshcatVisualizer(scene_graph,
-                              zmq_url=None,
+                              zmq_url=ZMQ_URL,
                               open_browser=False))
         builder.Connect(
             scene_graph.get_pose_bundle_output_port(),
@@ -204,7 +222,7 @@ class TestMeshcat(unittest.TestCase):
         builder = DiagramBuilder()
 
         # Add point cloud visualization.
-        viz = meshcat.Visualizer()
+        viz = meshcat.Visualizer(zmq_url=ZMQ_URL)
         pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
 
         # Make sure the system runs.
