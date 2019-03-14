@@ -16,8 +16,8 @@
 #include "drake/common/drake_optional.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/drake_variant.h"
+#include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
-#include "drake/common/yaml/dev/visitor.h"
 
 namespace anzu {
 namespace common {
@@ -62,10 +62,10 @@ class YamlReadArchive final {
   void Visit(const NameValuePair& nvp, VisitShouldMemorizeType trace) {
     if (trace == VisitShouldMemorizeType::kYes) {
       debug_visit_name_ = nvp.name();
-      debug_visit_type_ = &typeid(nvp.get_value());
+      debug_visit_type_ = &typeid(*nvp.value());
     }
     // Use int32_t for the final argument to prefer the specialized overload.
-    this->DoVisit(nvp, nvp.get_value(), static_cast<int32_t>(0));
+    this->DoVisit(nvp, *nvp.value(), static_cast<int32_t>(0));
     if (trace == VisitShouldMemorizeType::kYes) {
       debug_visit_name_ = nullptr;
       debug_visit_type_ = nullptr;
@@ -207,7 +207,7 @@ class YamlReadArchive final {
     using T = typename NVP::value_type::value_type;
     drake::optional<T>& storage = *nvp.value();
     if (!storage) { storage = T{}; }
-    this->Visit(MakeNameValue(nvp.name(), &storage.value()),
+    this->Visit(drake::MakeNameValue(nvp.name(), &storage.value()),
                 VisitShouldMemorizeType::kNo);
   }
 
@@ -238,7 +238,7 @@ class YamlReadArchive final {
     if (((I == 0) && (tag.empty() || (tag == "?"))) ||
         IsTagMatch(drake::NiceTypeName::Get<T>(), tag)) {
       T typed_storage{};
-      this->Visit(MakeNameValue(name, &typed_storage));
+      this->Visit(drake::MakeNameValue(name, &typed_storage));
       storage->template emplace<I>(std::move(typed_storage));
       return;
     }
@@ -294,7 +294,7 @@ class YamlReadArchive final {
       YAML::Node item_node(YAML::NodeType::Map);
       item_node[item_name] = sub_node[i];
       YamlReadArchive item_archive(item_node, this);
-      item_archive.Visit(MakeNameValue(item_name.c_str(), &data[i]));
+      item_archive.Visit(drake::MakeNameValue(item_name.c_str(), &data[i]));
     }
   }
 
@@ -351,7 +351,8 @@ class YamlReadArchive final {
         YAML::Node item_node(YAML::NodeType::Map);
         item_node[item_name] = sub_node[i][j];
         YamlReadArchive item_archive(item_node, this);
-        item_archive.Visit(MakeNameValue(item_name.c_str(), &storage(i, j)));
+        item_archive.Visit(drake::MakeNameValue(
+            item_name.c_str(), &storage(i, j)));
       }
     }
   }
