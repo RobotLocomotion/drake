@@ -217,6 +217,8 @@ GTEST_TEST(LcmSubscriberSystemTest, FixedSizeSerializerTest) {
 }
 
 GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
+  using namespace std::chrono_literals;
+
   // Ensure that `WaitForMessage` works as expected.
   drake::lcm::DrakeMockLcm lcm;
   const std::string channel_name = "channel_name";
@@ -263,7 +265,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   started = false;
   auto timeout_count = std::async(std::launch::async, [&]() {
     started = true;
-    return dut->WaitForMessageTimeout(old_count, std::chrono::milliseconds(10));
+    return dut->WaitForMessageTimeout(old_count, 10ms);
   });
   wait();
   // Expect a timeout, since no message has been sent
@@ -278,7 +280,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   auto second_timeout_count = std::async(std::launch::async, [&]() {
     EXPECT_EQ(dut->GetInternalMessageCount(), old_count);
     started = true;
-    return dut->WaitForMessageTimeout(old_count, std::chrono::milliseconds(20));
+    return dut->WaitForMessageTimeout(old_count, 20ms);
   });
   wait();
   sample_data.MockPublish(&lcm, channel_name);
