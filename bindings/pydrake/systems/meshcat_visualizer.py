@@ -121,7 +121,7 @@ class MeshcatVisualizer(LeafSystem):
     MeshcatVisualizer is a System block that connects to the pose bundle output
     port of a SceneGraph and visualizes the scene in Meshcat.
 
-    The most common workflow would be to run
+    The most common workflow would be to run::
 
         bazel run @meshcat_python//:meshcat-server
 
@@ -134,15 +134,14 @@ class MeshcatVisualizer(LeafSystem):
     def add_argparse_argument(parser):
         """
         Provides a common command-line interface for including meshcat support
-        in a python executable.  Example:
+        in a python executable.  Example::
+
             parser = argparse.ArgumentParser(description=__doc__)
             ...
             MeshcatVisualizer.add_argparse_argument(parser)
             ...
             args = parser.parse_args()
-
             ...
-
             if args.meshcat:
                 meshcat = builder.AddSystem(MeshcatVisualizer(
                         scene_graph, zmq_url=args.meshcat,
@@ -176,20 +175,21 @@ class MeshcatVisualizer(LeafSystem):
             prefix: Appears as the root of the tree structure in the meshcat
                 data structure
             zmq_url: Optionally set a url to connect to the visualizer.
-                Use zmp_url="default" to the value obtained by running a
-                single `meshcat-server` in another terminal.
-                Use zmp_url=None or zmq_url="new" to start a new server (as a
-                child of this process); a new web browser will be opened (the
-                url will also be printed to the console).
-                Use e.g. zmq_url="tcp://127.0.0.1:6000" to specify a
+                Use ``zmp_url="default"`` to the value obtained by running a
+                single ``meshcat-server`` in another terminal.
+                Use ``zmp_url=None`` or ``zmq_url="new"`` to start a new server
+                (as a child of this process); a new web browser will be opened
+                (the url will also be printed to the console).
+                Use e.g. ``zmq_url="tcp://127.0.0.1:6000"`` to specify a
                 specific address.
             open_browser: Set to True to open the meshcat browser url in your
                 default web browser.  The default value of None will open the
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
 
-        Note: This call will not return until it connects to the
-              meshcat-server.
+        Note:
+            This call will not return until it connects to the
+            ``meshcat-server``.
         """
         LeafSystem.__init__(self)
 
@@ -241,10 +241,11 @@ class MeshcatVisualizer(LeafSystem):
 
     def load(self):
         """
-        Loads `meshcat` visualization elements.
+        Loads ``meshcat`` visualization elements.
 
-        @pre The `scene_graph` used to construct this object must be part of a
-        fully constructed diagram (e.g. via `DiagramBuilder.Build()`).
+        Precondition:
+            The ``scene_graph`` used to construct this object must be part of a
+            fully constructed diagram (e.g. via ``DiagramBuilder.Build()``).
         """
         self.vis[self.prefix].delete()
 
@@ -296,10 +297,9 @@ class MeshcatVisualizer(LeafSystem):
 class MeshcatContactVisualizer(LeafSystem):
     """
     MeshcatContactVisualizer is a System block that visualizes contact
-    forces. It is connected to
-    1) the pose bundle output port of a SceneGraph, and
-    2) the contact results output port of the SceneGraph's associated
-        MultibodyPlant.
+    forces. It is connected to (1) the pose bundle output port of a SceneGraph,
+    and (2) the contact results output port of the SceneGraph's associated
+    MultibodyPlant.
     """
 
     class _ContactState(object):
@@ -502,29 +502,27 @@ def _get_native_visualizer(viz):
 class MeshcatPointCloudVisualizer(LeafSystem):
     """
     MeshcatPointCloudVisualizer is a System block that visualizes a
-    `PointCloud` in meshcat. The `PointCloud` must have XYZ values. RGB values
-    are optional; if provided, they must be on the range [0..255].
+    PointCloud in meshcat. The PointCloud:
 
-    The XYZ values are assumed to be in the point cloud frame `P`.
+    * Must have XYZ values. Assumed to be in point cloud frmae, ``P``.
+    * RGB values are optional; if provided, they must be on the range [0..255].
 
-    An example using a pydrake MeshcatVisualizer:
+    An example using a pydrake MeshcatVisualizer::
 
-    ```
-    viz = builder.AddSystem(MeshcatVisualizer(scene_graph))
-    pc_viz = builder.AddSystem(
-        MeshcatPointCloudVisualizer(viz, viz.draw_period))
-    ```
+        viz = builder.AddSystem(MeshcatVisualizer(scene_graph))
+        pc_viz = builder.AddSystem(
+            MeshcatPointCloudVisualizer(viz, viz.draw_period))
 
-    Using a native meshcat.Visualizer:
+    Using a native meshcat.Visualizer::
 
-    ```
-    viz = meshcat.Visualizer()
-    pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
-    ```
+        viz = meshcat.Visualizer()
+        pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
 
-    @system{
-        @input_port{point_cloud_P},
-    }
+    System ports::
+
+        @system{
+            @input_port{point_cloud_P},
+        }
     """
 
     def __init__(self, meshcat_viz, draw_period=_DEFAULT_PUBLISH_PERIOD,
@@ -537,7 +535,7 @@ class MeshcatPointCloudVisualizer(LeafSystem):
             draw_period: The rate at which this class publishes to the
                 visualizer.
             name: The string name of the meshcat object.
-            X_WP: Pose of point cloud frame `P` in meshcat world frame `W`.
+            X_WP: Pose of point cloud frame ``P`` in meshcat world frame ``W``.
                 Default is identity.
             default_rgb: RGB value for published points if the PointCloud does
                 not provide RGB values.
