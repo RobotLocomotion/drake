@@ -618,8 +618,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "zero_order_hold_test",
     deps = [
+        ":sine",
         ":zero_order_hold",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],
