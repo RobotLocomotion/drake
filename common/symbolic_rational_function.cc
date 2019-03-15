@@ -14,7 +14,7 @@ RationalFunction::RationalFunction(const Polynomial& numerator,
     throw std::invalid_argument(
         "RationalFunction: the denominator should not be 0.");
   }
-  CheckIndeterminates();
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
 }
 
 RationalFunction::RationalFunction(const Polynomial& p)
@@ -96,13 +96,13 @@ RationalFunction& RationalFunction::operator-=(double c) { return *this += -c; }
 RationalFunction& RationalFunction::operator*=(const RationalFunction& f) {
   numerator_ *= f.numerator();
   denominator_ *= f.denominator();
-  CheckIndeterminates();
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
   return *this;
 }
 
 RationalFunction& RationalFunction::operator*=(const Polynomial& p) {
   numerator_ *= p;
-  CheckIndeterminates();
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
   return *this;
 }
 
@@ -117,7 +117,7 @@ RationalFunction& RationalFunction::operator/=(const RationalFunction& f) {
   }
   numerator_ *= f.denominator();
   denominator_ *= f.numerator();
-  CheckIndeterminates();
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
   return *this;
 }
 
@@ -126,7 +126,7 @@ RationalFunction& RationalFunction::operator/=(const Polynomial& p) {
     throw std::logic_error("RationalFunction: operator/=: The divider is 0.");
   }
   denominator_ *= p;
-  CheckIndeterminates();
+  DRAKE_ASSERT_VOID(CheckIndeterminates());
   return *this;
 }
 
