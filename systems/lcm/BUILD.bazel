@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":connect_lcm_scope",
         ":lcm_driven_loop",
+        ":lcm_interface_system",
         ":lcm_log_playback_system",
         ":lcm_pubsub_system",
         ":lcmt_drake_signal_translator",
@@ -62,7 +63,18 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//lcm:translator_base",
-        "//systems/framework",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "lcm_interface_system",
+    srcs = ["lcm_interface_system.cc"],
+    hdrs = ["lcm_interface_system.h"],
+    deps = [
+        "//lcm:real",
+        "//systems/framework:leaf_system",
+        "@lcm",
     ],
 )
 
@@ -82,7 +94,7 @@ drake_cc_library(
         ":translator",
         "//common:value",
         "//lcm:real",
-        "//systems/framework",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -97,7 +109,7 @@ drake_cc_library(
     deps = [
         ":lcm_pubsub_system",
         "//lcm:lcm_log",
-        "//systems/framework",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -123,7 +135,7 @@ drake_cc_library(
     deps = [
         ":translator",
         "//lcmtypes:drake_signal",
-        "//systems/framework",
+        "//systems/framework:vector",
     ],
 )
 
@@ -158,6 +170,18 @@ drake_cc_library(
         ":translator",
         "//lcmtypes:drake_signal",
         "//systems/framework/test_utilities:my_vector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "lcm_interface_system_test",
+    deps = [
+        ":lcm_interface_system",
+        ":lcm_pubsub_system",
+        "//lcm:real",
+        "//lcmtypes:drake_signal",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
     ],
 )
 

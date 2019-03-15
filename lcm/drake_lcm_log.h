@@ -72,6 +72,11 @@ class DrakeLcmLog : public DrakeLcmInterface {
    */
   void Subscribe(const std::string& channel, HandlerFunction handler) override;
 
+  int HandleSubscriptions(int timeout_millis) override {
+    (void)(timeout_millis);
+    throw std::logic_error("HandleSubscriptions not implemented yet");
+  }
+
   /**
    * Returns the time in seconds for the next logged message's occurrence time
    * or infinity if there are no more messages in the current log.
