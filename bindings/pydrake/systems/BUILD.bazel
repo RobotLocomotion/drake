@@ -408,6 +408,7 @@ drake_py_unittest(
         ":meshcat_visualizer_py",
         ":test_util_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:perception_py",
         "//bindings/pydrake/multibody",
     ],
 )

@@ -13,7 +13,7 @@ import webbrowser
 import numpy as np
 
 from drake import lcmt_viewer_load_robot
-from pydrake.common.eigen_geometry import Quaternion
+from pydrake.common.eigen_geometry import Quaternion, Isometry3
 from pydrake.geometry import DispatchLoadMessage, SceneGraph
 from pydrake.lcm import DrakeMockLcm
 from pydrake.math import RigidTransform, RotationMatrix
@@ -22,6 +22,7 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.rendering import PoseBundle
 from pydrake.multibody.plant import ContactResults
+import pydrake.perception as mut
 
 # TODO(eric.cousineau): Move this back to "third party" import positions
 # if/when PyCQA/pycodestyle#834 lands and is incorporated.
@@ -30,7 +31,10 @@ with warnings.catch_warnings():
         "ignore", category=ImportWarning,
         message="can't resolve package from __spec__")
     import meshcat
+import meshcat.geometry as g  # noqa
 import meshcat.transformations as tf  # noqa
+
+_DEFAULT_PUBLISH_PERIOD = 1 / 30.
 
 
 def _convert_mesh(geom):
@@ -117,8 +121,10 @@ class MeshcatVisualizer(LeafSystem):
     MeshcatVisualizer is a System block that connects to the pose bundle output
     port of a SceneGraph and visualizes the scene in Meshcat.
 
-    The most common workflow would be to run
-    `bazel run @meshcat_python//:meshcat-server`
+    The most common workflow would be to run::
+
+        bazel run @meshcat_python//:meshcat-server
+
     in another terminal, open the url printed in that terminal in your
     browser, then to run drake apps (potentially many times) that publish to
     that default url.
@@ -128,15 +134,14 @@ class MeshcatVisualizer(LeafSystem):
     def add_argparse_argument(parser):
         """
         Provides a common command-line interface for including meshcat support
-        in a python executable.  Example:
+        in a python executable.  Example::
+
             parser = argparse.ArgumentParser(description=__doc__)
             ...
             MeshcatVisualizer.add_argparse_argument(parser)
             ...
             args = parser.parse_args()
-
             ...
-
             if args.meshcat:
                 meshcat = builder.AddSystem(MeshcatVisualizer(
                         scene_graph, zmq_url=args.meshcat,
@@ -158,7 +163,7 @@ class MeshcatVisualizer(LeafSystem):
 
     def __init__(self,
                  scene_graph,
-                 draw_period=0.033333,
+                 draw_period=_DEFAULT_PUBLISH_PERIOD,
                  prefix="drake",
                  zmq_url="default",
                  open_browser=None):
@@ -170,20 +175,21 @@ class MeshcatVisualizer(LeafSystem):
             prefix: Appears as the root of the tree structure in the meshcat
                 data structure
             zmq_url: Optionally set a url to connect to the visualizer.
-                Use zmp_url="default" to the value obtained by running a
-                single `meshcat-server` in another terminal.
-                Use zmp_url=None or zmq_url="new" to start a new server (as a
-                child of this process); a new web browser will be opened (the
-                url will also be printed to the console).
-                Use e.g. zmq_url="tcp://127.0.0.1:6000" to specify a
+                Use ``zmp_url="default"`` to the value obtained by running a
+                single ``meshcat-server`` in another terminal.
+                Use ``zmp_url=None`` or ``zmq_url="new"`` to start a new server
+                (as a child of this process); a new web browser will be opened
+                (the url will also be printed to the console).
+                Use e.g. ``zmq_url="tcp://127.0.0.1:6000"`` to specify a
                 specific address.
             open_browser: Set to True to open the meshcat browser url in your
                 default web browser.  The default value of None will open the
                 browser iff a new meshcat server is created as a subprocess.
                 Set to False to disable this.
 
-        Note: This call will not return until it connects to the
-              meshcat-server.
+        Note:
+            This call will not return until it connects to the
+            ``meshcat-server``.
         """
         LeafSystem.__init__(self)
 
@@ -235,10 +241,11 @@ class MeshcatVisualizer(LeafSystem):
 
     def load(self):
         """
-        Loads `meshcat` visualization elements.
+        Loads ``meshcat`` visualization elements.
 
-        @pre The `scene_graph` used to construct this object must be part of a
-        fully constructed diagram (e.g. via `DiagramBuilder.Build()`).
+        Precondition:
+            The ``scene_graph`` used to construct this object must be part of a
+            fully constructed diagram (e.g. via ``DiagramBuilder.Build()``).
         """
         self.vis[self.prefix].delete()
 
@@ -290,10 +297,9 @@ class MeshcatVisualizer(LeafSystem):
 class MeshcatContactVisualizer(LeafSystem):
     """
     MeshcatContactVisualizer is a System block that visualizes contact
-    forces. It is connected to
-    1) the pose bundle output port of a SceneGraph, and
-    2) the contact results output port of the SceneGraph's associated
-        MultibodyPlant.
+    forces. It is connected to (1) the pose bundle output port of a SceneGraph,
+    and (2) the contact results output port of the SceneGraph's associated
+    MultibodyPlant.
     """
 
     class _ContactState(object):
@@ -314,7 +320,7 @@ class MeshcatContactVisualizer(LeafSystem):
                  plant=None):
         """
         Args:
-            meshcat_viz: a MeshcatVisualizer object.
+            meshcat_viz: A pydrake MeshcatVisualizer instance.
             force_threshold: contact forces whose norms are smaller than
                 force_threshold are not displayed.
             contact_force_scale: a contact force with norm F (in Newtons) is
@@ -478,3 +484,94 @@ class MeshcatContactVisualizer(LeafSystem):
 
     def _get_visual_magnitude(self, magnitude):
         return magnitude / self._contact_force_scale
+
+
+def _get_native_visualizer(viz):
+    # Resolve `viz` to a native `meshcat.Visualizer` instance. If `viz` is
+    # a pydrake `MeshcatVisualizer`, return the native visualizer.
+    if isinstance(viz, meshcat.Visualizer):
+        return viz
+    elif isinstance(viz, MeshcatVisualizer):
+        return viz.vis
+    else:
+        raise ValueError(
+            "Type {} is not {{meshcat.Visualizer, {}}}".format(
+                type(viz).__name__, MeshcatVisualizer.__name__))
+
+
+class MeshcatPointCloudVisualizer(LeafSystem):
+    """
+    MeshcatPointCloudVisualizer is a System block that visualizes a
+    PointCloud in meshcat. The PointCloud:
+
+    * Must have XYZ values. Assumed to be in point cloud frmae, ``P``.
+    * RGB values are optional; if provided, they must be on the range [0..255].
+
+    An example using a pydrake MeshcatVisualizer::
+
+        viz = builder.AddSystem(MeshcatVisualizer(scene_graph))
+        pc_viz = builder.AddSystem(
+            MeshcatPointCloudVisualizer(viz, viz.draw_period))
+
+    Using a native meshcat.Visualizer::
+
+        viz = meshcat.Visualizer()
+        pc_viz = builder.AddSystem(MeshcatPointCloudVisualizer(viz))
+
+    System ports::
+
+        @system{
+            @input_port{point_cloud_P},
+        }
+    """
+
+    def __init__(self, meshcat_viz, draw_period=_DEFAULT_PUBLISH_PERIOD,
+                 name="point_cloud", X_WP=Isometry3.Identity(),
+                 default_rgb=[255., 255., 255.]):
+        """
+        Args:
+            meshcat_viz: Either a native meshcat.Visualizer or a pydrake
+                MeshcatVisualizer object.
+            draw_period: The rate at which this class publishes to the
+                visualizer.
+            name: The string name of the meshcat object.
+            X_WP: Pose of point cloud frame ``P`` in meshcat world frame ``W``.
+                Default is identity.
+            default_rgb: RGB value for published points if the PointCloud does
+                not provide RGB values.
+        """
+        LeafSystem.__init__(self)
+
+        self._meshcat_viz = _get_native_visualizer(meshcat_viz)
+        self._X_WP = X_WP
+        self._default_rgb = np.array(default_rgb)
+        self._name = name
+
+        self.set_name('meshcat_point_cloud_visualizer')
+        self._DeclarePeriodicPublish(draw_period, 0.0)
+
+        self._DeclareAbstractInputPort("point_cloud_P",
+                                       AbstractValue.Make(mut.PointCloud()))
+
+    def _DoPublish(self, context, event):
+        LeafSystem._DoPublish(self, context, event)
+        point_cloud_P = self.EvalAbstractInput(context, 0).get_value()
+
+        # `Q` is a point in the point cloud.
+        p_PQs = point_cloud_P.xyzs()
+        # Use only valid points.
+        valid = np.logical_not(np.isnan(p_PQs))
+        valid = np.all(valid, axis=0)  # Reduce along XYZ axis.
+        p_PQs = p_PQs[:, valid]
+        if point_cloud_P.has_rgbs():
+            rgbs = point_cloud_P.rgbs()[:, valid]
+        else:
+            # Need manual broadcasting.
+            count = p_PQs.shape[1]
+            rgbs = np.tile(np.array([self._default_rgb]).T, (1, count))
+        # pydrake `PointCloud.rgbs()` are on [0..255], while meshcat
+        # `PointCloud` colors are on [0..1].
+        rgbs = rgbs / 255.  # Do not use in-place so we can promote types.
+        # Send to meshcat.
+        self._meshcat_viz[self._name].set_object(g.PointCloud(p_PQs, rgbs))
+        self._meshcat_viz[self._name].set_transform(self._X_WP.matrix())
