@@ -91,7 +91,7 @@ class Sample final : public drake::systems::BasicVector<T> {
     this->set_unset(symbolic::Variable("unset"));
   }
 
-  Sample<T>* DoClone() const final { return new Sample; }
+  DRAKE_NODISCARD Sample<T>* DoClone() const final { return new Sample; }
 
   /// @name Getters and Setters
   //@{
@@ -109,8 +109,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches x().
   /// Returns a copy of `this` with x set to a new value.
-  DRAKE_NODISCARD
-  Sample<T> with_x(const T& x) const {
+  DRAKE_NODISCARD Sample<T> with_x(const T& x) const {
     Sample<T> result(*this);
     result.set_x(x);
     return result;
@@ -129,8 +128,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches two_word().
   /// Returns a copy of `this` with two_word set to a new value.
-  DRAKE_NODISCARD
-  Sample<T> with_two_word(const T& two_word) const {
+  DRAKE_NODISCARD Sample<T> with_two_word(const T& two_word) const {
     Sample<T> result(*this);
     result.set_two_word(two_word);
     return result;
@@ -148,8 +146,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches absone().
   /// Returns a copy of `this` with absone set to a new value.
-  DRAKE_NODISCARD
-  Sample<T> with_absone(const T& absone) const {
+  DRAKE_NODISCARD Sample<T> with_absone(const T& absone) const {
     Sample<T> result(*this);
     result.set_absone(absone);
     return result;
@@ -166,8 +163,7 @@ class Sample final : public drake::systems::BasicVector<T> {
   }
   /// Fluent setter that matches unset().
   /// Returns a copy of `this` with unset set to a new value.
-  DRAKE_NODISCARD
-  Sample<T> with_unset(const T& unset) const {
+  DRAKE_NODISCARD Sample<T> with_unset(const T& unset) const {
     Sample<T> result(*this);
     result.set_unset(unset);
     return result;

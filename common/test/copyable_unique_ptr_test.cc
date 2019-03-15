@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/is_cloneable.h"
 #include "drake/common/test_utilities/is_dynamic_castable.h"
 #include "drake/common/unused.h"
@@ -150,7 +151,7 @@ struct CloneOnly : Base {
   }
  protected:
   CloneOnly(const CloneOnly& other) : Base(other.value) {}
-  virtual CloneOnly* DoClone() const {
+  DRAKE_NODISCARD virtual CloneOnly* DoClone() const {
     return new CloneOnly(value, Origin::CLONE);
   }
 };
@@ -180,7 +181,7 @@ struct CloneOnlyChildWithClone : CloneOnly {
     return unique_ptr<CloneOnlyChildWithClone>(DoClone());
   }
  protected:
-  CloneOnlyChildWithClone* DoClone() const override {
+  DRAKE_NODISCARD CloneOnlyChildWithClone* DoClone() const override {
     return new CloneOnlyChildWithClone(value, Origin::CLONE);
   }
 };
@@ -196,7 +197,7 @@ struct CloneOnlyChildWithCopyVClone : CloneOnly {
       : CloneOnly(v, org) {}
   CloneOnlyChildWithCopyVClone(const CloneOnlyChildWithCopyVClone&) = default;
  protected:
-  CloneOnlyChildWithCopyVClone* DoClone() const override {
+  DRAKE_NODISCARD CloneOnlyChildWithCopyVClone* DoClone() const override {
     return new CloneOnlyChildWithCopyVClone(value, Origin::CLONE);
   }
 };

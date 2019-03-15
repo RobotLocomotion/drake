@@ -218,7 +218,7 @@ def generate_set_to_named_variables(hh, caller_context, fields):
 
 
 DO_CLONE = """
-  %(camel)s<T>* DoClone() const final {
+  DRAKE_NODISCARD %(camel)s<T>* DoClone() const final {
     return new %(camel)s;
   }
 """
@@ -253,8 +253,7 @@ ACCESSOR_FIELD_METHODS = """
   }
   /// Fluent setter that matches %(field)s().
   /// Returns a copy of `this` with %(field)s set to a new value.
-  DRAKE_NODISCARD
-  %(camel)s<T>
+  DRAKE_NODISCARD %(camel)s<T>
   with_%(field)s(const T& %(field)s) const {
     %(camel)s<T> result(*this);
     result.set_%(field)s(%(field)s);
