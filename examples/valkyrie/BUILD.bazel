@@ -72,7 +72,7 @@ drake_cc_binary(
         "//common:essential",
         "//common:find_resource",
         "//lcm",
-        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
         "//systems/lcm:lcm_pubsub_system",
         "@lcmtypes_bot2_core",

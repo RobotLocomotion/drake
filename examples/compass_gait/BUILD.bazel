@@ -54,6 +54,7 @@ drake_cc_binary(
         "//lcm",
         "//math:geometric_transform",
         "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
         "@gflags",
     ],
 )
