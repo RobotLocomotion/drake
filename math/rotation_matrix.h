@@ -323,6 +323,7 @@ class RotationMatrix {
   }
 
   /// Returns the Matrix3 underlying a %RotationMatrix.
+  /// @see col(), row()
   const Matrix3<T>& matrix() const { return R_AB_; }
 
   /// Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
@@ -332,6 +333,7 @@ class RotationMatrix {
   /// <br>row(1) returns Ay expressed in terms of Bx, By, Bz.
   /// <br>row(2) returns Az expressed in terms of Bx, By, Bz.
   /// @param[in] i requested row index, between 0 and 2 (0 <= i <= 2).
+  /// @see col(), matrix()
   /// @throws std::runtime_error if i < 0 or i > 2.
     const Vector3<T> row(int i) const {
     const bool is_i_valid = (0 <= i && i <= 2);
@@ -346,6 +348,7 @@ class RotationMatrix {
   /// <br>col(1) returns By expressed in terms of Ax, Ay, Az.
   /// <br>col(2) returns Bz expressed in terms of Ax, Ay, Az.
   /// @param[in] i requested column index, between 0 and 2 (0 <= i <= 2).
+  /// @see row(), matrix()
   /// @throws std::runtime_error if i < 0 or i > 2.
   const Vector3<T> col(int i) const {
     const bool is_i_valid = (0 <= i && i <= 2);
