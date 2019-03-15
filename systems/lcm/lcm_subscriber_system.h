@@ -141,27 +141,21 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   /**
    * Blocks the caller until its internal message count exceeds
-   * `old_message_count`.
+   * `old_message_count` with an optional timeout.
    * @param old_message_count Internal message counter.
+   *
    * @param message If non-null, will return the received message.
-   * @pre If `message` is specified, this system must be abstract-valued.
-   */
-  int WaitForMessage(
-      int old_message_count, AbstractValue* message = nullptr) const;
-
-  /**
-   * Blocks the caller until its internal message count exceeds
-   * `old_message_count` or until the timeout elapses.
-   * @param old_message_count Internal message counter.
-   * @param timeout The duration to wait before returning.
-   * @param message If non-null, will return the received message.
+   *
+   * @param timeout The duration (in seconds) to wait before returning; a
+   * non-positive duration will not time out.
+   *
    * @return Returns the new count of received messages. If a timeout occurred,
-   *   this will be less than or equal to old_message_count.
+   * this will be less than or equal to old_message_count.
+   *
    * @pre If `message` is specified, this system must be abstract-valued.
    */
-  int WaitForMessageTimeout(
-      int old_message_count, const std::chrono::duration<double> timeout,
-      AbstractValue* message = nullptr) const;
+  int WaitForMessage(int old_message_count, AbstractValue* message = nullptr,
+                     double timeout = -1.) const;
 
   /**
    * (Advanced.) Writes the most recently received message (and message count)

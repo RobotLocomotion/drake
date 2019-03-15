@@ -278,40 +278,49 @@ void LcmSubscriberSystem::HandleMessage(const void* buffer, int size) {
 }
 
 int LcmSubscriberSystem::WaitForMessage(
-    int old_message_count, AbstractValue* message) const {
-  return WaitForMessageTimeout(old_message_count,
-      std::chrono::duration<double>::max(), message);
-}
-
-int LcmSubscriberSystem::WaitForMessageTimeout(
-    int old_message_count, const std::chrono::duration<double> timeout,
-    AbstractValue* message) const {
+    int old_message_count, AbstractValue* message, double timeout) const {
   DRAKE_ASSERT(serializer_ != nullptr);
 
-  auto wakeup = std::chrono::steady_clock::now() + timeout;
-  // If duration was max, set to max clock. Needed because max duration<double>
-  // is represented as inf, and this leads to issues with wait_until.
-  if (timeout == std::chrono::duration<double>::max()) {
-    wakeup = std::chrono::time_point<std::chrono::steady_clock>::max();
-  }
+// NOLINTNEXTLINE(build/namespaces): The chrono literals are just so convenient.
+  using namespace std::chrono_literals;
+  using Clock = std::chrono::steady_clock;
+  using Duration = Clock::duration;
+  using TimePoint = Clock::time_point;
 
   // The message buffer and counter are updated in HandleMessage(), which is
   // a callback function invoked by a different thread owned by the
   // drake::lcm::DrakeLcmInterface instance passed to the constructor. Thus,
   // for thread safety, these need to be properly protected by a mutex.
   std::unique_lock<std::mutex> lock(received_message_mutex_);
-  // This while loop is necessary to guard for spurious wakeup:
-  // https://en.wikipedia.org/wiki/Spurious_wakeup
-  while (old_message_count >= received_message_count_) {
-    // When wait returns, lock is atomically acquired. So it's thread safe to
-    // read received_message_count_.
-    if (received_message_condition_variable_.wait_until(lock, wakeup) ==
-            std::cv_status::timeout &&
-        old_message_count >= received_message_count_) {
-      // If a timeout occurred without meeting the message goal, then return
+
+  // Predicate to handle spurious wakeup -- in other words, we can stop if we
+  // detect a message has *actually* been received.
+  auto message_received = [&]() {
+    return received_message_count_ > old_message_count;
+  };
+  if (timeout <= 0) {
+    // No timeout.
+    received_message_condition_variable_.wait(lock, message_received);
+  } else {
+    // With timeout.
+
+    const Duration requested = std::chrono::duration_cast<Duration>(
+        std::chrono::duration<double>(timeout));
+    // Hour-encoding of ten years. Empirical evidence suggests that
+    // condition_variable::wait_* doesn't work over the full domain of otherwise
+    // valid Duration values (i.e., it can be "too large"). So, for
+    // exceptionally "large" timeouts, we cap it, silently, at ten years; if
+    // this proves too short for any given process, we can modify it later.
+    const Duration kMaxDuration(87600h);
+    const Duration duration =
+        requested < kMaxDuration ? requested : kMaxDuration;
+    DRAKE_ASSERT(TimePoint::max() - duration > Clock::now());
+    if (!received_message_condition_variable_.wait_for(lock, duration,
+                                                       message_received)) {
       return received_message_count_;
     }
   }
+
   if (message) {
       serializer_->Deserialize(
           received_message_.data(), received_message_.size(), message);

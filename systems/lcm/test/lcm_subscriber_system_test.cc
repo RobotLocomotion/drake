@@ -263,7 +263,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   started = false;
   auto timeout_count = std::async(std::launch::async, [&]() {
     started = true;
-    return dut->WaitForMessageTimeout(old_count, std::chrono::milliseconds(10));
+    return dut->WaitForMessage(old_count, nullptr, 0.01 /** 10 ms */);
   });
   wait();
   // Expect a timeout, since no message has been sent
@@ -278,7 +278,7 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   auto second_timeout_count = std::async(std::launch::async, [&]() {
     EXPECT_EQ(dut->GetInternalMessageCount(), old_count);
     started = true;
-    return dut->WaitForMessageTimeout(old_count, std::chrono::milliseconds(20));
+    return dut->WaitForMessage(old_count, nullptr, 0.02 /** 20 ms */);
   });
   wait();
   sample_data.MockPublish(&lcm, channel_name);
