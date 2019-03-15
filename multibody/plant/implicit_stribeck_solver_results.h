@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
 

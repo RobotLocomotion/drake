@@ -1726,7 +1726,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         point_pairs_cache = this->CalcPointPairPenetrations(context);
       },
       {this->configuration_ticket()});
-  cache_indexes_.point_pairs_ = point_pairs_cache_entry.cache_index();
+  cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
@@ -1746,7 +1746,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // Eval() above implicitly evaluates configuration dependent cache
       // entries.
       {this->configuration_ticket()});
-  cache_indexes_.contact_jacobians_ =
+  cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
   // Cache ImplicitStribeckSolver computations.
@@ -1786,7 +1786,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // discrete update of these values as if zero-order held, which is what we
       // want.
       {this->xd_ticket()});
-  cache_indexes_.implicit_stribeck_solver_results_ =
+  cache_indexes_.implicit_stribeck_solver_results =
       implicit_stribeck_solver_cache_entry.cache_index();
 
   // Cache contact results.
@@ -1803,8 +1803,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // We explicitly declare the dependence on the implicit Stribeck solver
       // even though the Eval() above does the evaluation.
       {this->cache_entry_ticket(
-          cache_indexes_.implicit_stribeck_solver_results_)});
-  cache_indexes_.contact_results_ = contact_results_cache_entry.cache_index();
+          cache_indexes_.implicit_stribeck_solver_results)});
+  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 }
 
 template <typename T>
