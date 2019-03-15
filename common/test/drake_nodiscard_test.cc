@@ -7,8 +7,7 @@
 namespace drake {
 namespace {
 
-DRAKE_NODISCARD
-int foo() { return 0; }
+DRAKE_NODISCARD int foo() { return 0; }
 
 GTEST_TEST(NodiscardTest, CompilationTest) {
   const int bar = foo();

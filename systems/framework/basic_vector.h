@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/dummy_value.h"
 #include "drake/systems/framework/vector_base.h"
@@ -142,7 +143,7 @@ class BasicVector : public VectorBase<T> {
   ///
   /// Subclasses of BasicVector must override DoClone to return their covariant
   /// type.
-  virtual BasicVector<T>* DoClone() const {
+  DRAKE_NODISCARD virtual BasicVector<T>* DoClone() const {
     return new BasicVector<T>(this->size());
   }
 
