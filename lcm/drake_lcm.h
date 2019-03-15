@@ -82,6 +82,8 @@ class DrakeLcm : public DrakeLcmInterface {
 
   void Subscribe(const std::string&, HandlerFunction) override;
 
+  int HandleSubscriptions(int timeout_millis) override;
+
  private:
   std::string requested_lcm_url_;
   ::lcm::LCM lcm_;

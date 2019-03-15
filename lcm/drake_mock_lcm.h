@@ -111,6 +111,11 @@ class DrakeMockLcm : public DrakeLcmInterface {
   void InduceSubscriberCallback(const std::string& channel, const void* data,
                                int data_size);
 
+  int HandleSubscriptions(int timeout_millis) override {
+    (void)(timeout_millis);
+    throw std::logic_error("HandleSubscriptions not implemented yet");
+  }
+
  private:
   bool enable_loop_back_{false};
 

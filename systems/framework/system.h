@@ -788,7 +788,7 @@ class System : public SystemBase {
     T time{NAN};
     DoCalcNextUpdateTime(context, events, &time);
     using std::isnan;
-    DRAKE_ASSERT(!isnan(time));
+    DRAKE_DEMAND(!isnan(time));
     return time;
   }
 
