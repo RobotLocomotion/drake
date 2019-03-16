@@ -18,7 +18,8 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
     const Ref<const VectorX<Variable>>& input_vars,
     const Ref<const VectorX<Expression>>& dynamics,
     const Ref<const VectorX<Expression>>& output, double time_period)
-    : time_var_(time_var),
+    : LeafSystem<T>(SystemTypeTag<systems::SymbolicVectorSystem>{}),
+      time_var_(time_var),
       state_vars_(state_vars),
       input_vars_(input_vars),
       dynamics_(dynamics),
@@ -56,7 +57,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
       DRAKE_ASSERT(output_[i].GetVariables().IsSubsetOf(all_vars));
     }
     this->DeclareVectorOutputPort(BasicVector<T>(output_.rows()),
-                                  &SymbolicVectorSystem::CalcOutput);
+                                  &SymbolicVectorSystem<T>::CalcOutput);
   }
 
   // Allocate a symbolic::Environment once to be cloned/reused below.
@@ -79,8 +80,10 @@ optional<bool> SymbolicVectorSystem<T>::DoHasDirectFeedthrough(
 }
 
 template <typename T>
-void SymbolicVectorSystem<T>::PopulateEnvironmentFromContext(
-    const Context<double>& context, Environment* env) const {
+template <typename U>
+std::enable_if_t<!std::is_same<U, symbolic::Expression>::value, void>
+SymbolicVectorSystem<T>::PopulateEnvironmentFromContext(
+    const Context<U>& context, Environment* env) const {
   if (time_var_) {
     (*env)[*time_var_] = context.get_time();
   }
@@ -101,7 +104,33 @@ void SymbolicVectorSystem<T>::PopulateEnvironmentFromContext(
 }
 
 template <typename T>
-void SymbolicVectorSystem<T>::CalcOutput(
+template <typename U>
+std::enable_if_t<std::is_same<U, symbolic::Expression>::value, void>
+SymbolicVectorSystem<T>::PopulateSubstitutionFromContext(
+    const Context<U>& context, symbolic::Substitution* s) const {
+  if (time_var_) {
+    (*s)[*time_var_] = context.get_time();
+  }
+
+  if (state_vars_.size() > 0) {
+    const VectorX<U>& state =
+        (time_period_ > 0.0)
+            ? context.get_discrete_state_vector().get_value()
+            : context.get_continuous_state_vector().CopyToVector();
+    for (int i = 0; i < state_vars_.size(); i++) {
+      (*s)[state_vars_[i]] = state[i];
+    }
+  }
+  if (input_vars_.size() > 0) {
+    const auto& input = get_input_port().Eval(context);
+    for (int i = 0; i < input_vars_.size(); i++) {
+      (*s)[input_vars_[i]] = input[i];
+    }
+  }
+}
+
+template <>
+void SymbolicVectorSystem<double>::CalcOutput(
     const Context<double>& context, BasicVector<double>* output_vector) const {
   DRAKE_DEMAND(output_.size() > 0);
   Environment env = env_;
@@ -112,34 +141,82 @@ void SymbolicVectorSystem<T>::CalcOutput(
   }
 }
 
-template <typename T>
-void SymbolicVectorSystem<T>::DoCalcTimeDerivatives(
-    const Context<T>& context, ContinuousState<T>* derivatives) const {
+template <>
+void SymbolicVectorSystem<Expression>::CalcOutput(
+    const Context<Expression>& context,
+    BasicVector<Expression>* output_vector) const {
+  DRAKE_DEMAND(output_.size() > 0);
+  symbolic::Substitution s;
+  PopulateSubstitutionFromContext(context, &s);
+
+  for (int i = 0; i < output_.size(); i++) {
+    output_vector->SetAtIndex(i, output_[i].Substitute(s));
+  }
+}
+
+template <>
+void SymbolicVectorSystem<double>::DoCalcTimeDerivatives(
+    const Context<double>& context,
+    ContinuousState<double>* derivatives) const {
   DRAKE_DEMAND(time_period_ == 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
   Environment env = env_;
   PopulateEnvironmentFromContext(context, &env);
 
-  VectorBase<T>& xdot = derivatives->get_mutable_vector();
+  VectorBase<double>& xdot = derivatives->get_mutable_vector();
   for (int i = 0; i < dynamics_.size(); i++) {
     xdot[i] = dynamics_[i].Evaluate(env);
   }
 }
 
-template <typename T>
-void SymbolicVectorSystem<T>::DoCalcDiscreteVariableUpdates(
-    const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-    drake::systems::DiscreteValues<T>* updates) const {
+template <>
+void SymbolicVectorSystem<Expression>::DoCalcTimeDerivatives(
+    const Context<Expression>& context,
+    ContinuousState<Expression>* derivatives) const {
+  DRAKE_DEMAND(time_period_ == 0.0);
+  DRAKE_DEMAND(dynamics_.size() > 0);
+  symbolic::Substitution s;
+  PopulateSubstitutionFromContext(context, &s);
+
+  VectorBase<Expression>& xdot = derivatives->get_mutable_vector();
+  for (int i = 0; i < dynamics_.size(); i++) {
+    xdot[i] = dynamics_[i].Substitute(s);
+  }
+}
+
+template <>
+void SymbolicVectorSystem<double>::DoCalcDiscreteVariableUpdates(
+    const drake::systems::Context<double>& context,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<double>*>&
+        events,
+    drake::systems::DiscreteValues<double>* updates) const {
   unused(events);
   DRAKE_DEMAND(time_period_ > 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
   Environment env = env_;
   PopulateEnvironmentFromContext(context, &env);
 
-  VectorBase<T>& xnext = updates->get_mutable_vector();
+  VectorBase<double>& xnext = updates->get_mutable_vector();
   for (int i = 0; i < dynamics_.size(); i++) {
     xnext[i] = dynamics_[i].Evaluate(env);
+  }
+}
+
+template <>
+void SymbolicVectorSystem<Expression>::DoCalcDiscreteVariableUpdates(
+    const drake::systems::Context<Expression>& context,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<Expression>*>&
+        events,
+    drake::systems::DiscreteValues<Expression>* updates) const {
+  unused(events);
+  DRAKE_DEMAND(time_period_ > 0.0);
+  DRAKE_DEMAND(dynamics_.size() > 0);
+  symbolic::Substitution s;
+  PopulateSubstitutionFromContext(context, &s);
+
+  VectorBase<Expression>& xnext = updates->get_mutable_vector();
+  for (int i = 0; i < dynamics_.size(); i++) {
+    xnext[i] = dynamics_[i].Substitute(s);
   }
 }
 
@@ -147,3 +224,5 @@ void SymbolicVectorSystem<T>::DoCalcDiscreteVariableUpdates(
 }  // namespace drake
 
 template class ::drake::systems::SymbolicVectorSystem<double>;
+template class ::drake::systems::SymbolicVectorSystem<
+    drake::symbolic ::Expression>;

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace systems {
@@ -100,8 +101,8 @@ GTEST_TEST(SymbolicVectorSystemTest, ScalarPassThrough) {
   // y = u.
   Variable u("u");
   SymbolicVectorSystem<double> system(
-      {}, Vector0<Variable>{}, Vector1<Variable>{u},
-      Vector0<Expression>{}, Vector1<Expression>{u});
+      {}, Vector0<Variable>{}, Vector1<Variable>{u}, Vector0<Expression>{},
+      Vector1<Expression>{u});
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->is_stateless());
@@ -118,9 +119,8 @@ GTEST_TEST(SymbolicVectorSystemTest, ScalarPassThrough) {
 GTEST_TEST(SymbolicVectorSystemTest, VectorPassThrough) {
   // y = u.
   Vector2<Variable> u{Variable{"u0"}, Variable{"u1"}};
-  SymbolicVectorSystem<double> system({}, Vector0<Variable>{}, u,
-                                      Vector0<Expression>{},
-                                      u.cast<Expression>());
+  SymbolicVectorSystem<double> system(
+      {}, Vector0<Variable>{}, u, Vector0<Expression>{}, u.cast<Expression>());
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->is_stateless());
@@ -137,8 +137,8 @@ GTEST_TEST(SymbolicVectorSystemTest, VectorPassThrough) {
 GTEST_TEST(SymbolicVectorSystemTest, OutputScaledTime) {
   Variable t("t");
   SymbolicVectorSystem<double> system(
-      t, Vector0<Variable>{}, Vector0<Variable>{},
-      Vector0<Expression>{}, Vector1<Expression>{2. * t});
+      t, Vector0<Variable>{}, Vector0<Variable>{}, Vector0<Expression>{},
+      Vector1<Expression>{2. * t});
 
   auto context = system.CreateDefaultContext();
   EXPECT_TRUE(context->is_stateless());
@@ -172,7 +172,7 @@ GTEST_TEST(SymbolicVectorSystemTest, ContinuousStateOnly) {
                               Vector1d{-xval + xval * xval * xval}));
 }
 
-GTEST_TEST(SymbolicVectorSystemTest, DiscreteStateOnlyTest) {
+GTEST_TEST(SymbolicVectorSystemTest, DiscreteStateOnly) {
   // xnext = -x + x^3
   Variable x{"x"};
   SymbolicVectorSystem<double> system(
@@ -189,8 +189,84 @@ GTEST_TEST(SymbolicVectorSystemTest, DiscreteStateOnlyTest) {
   context->get_mutable_discrete_state_vector()[0] = xval;
   auto discrete_variables = system.AllocateDiscreteVariables();
   system.CalcDiscreteVariableUpdates(*context, discrete_variables.get());
-  EXPECT_TRUE(CompareMatrices(discrete_variables->get_vector().CopyToVector(),
+  EXPECT_TRUE(CompareMatrices(discrete_variables->get_vector().get_value(),
                               Vector1d{-xval + xval * xval * xval}));
+}
+
+GTEST_TEST(SymbolicVectorSystemTest, ContinuousTimeSymbolic) {
+  Variable t("t");
+  Vector2<Variable> x{Variable{"x0"}, Variable{"x1"}};
+  Vector2<Variable> u{Variable{"u0"}, Variable{"u1"}};
+  auto system = SymbolicVectorSystemBuilder()
+                    .time(t)
+                    .state(x)
+                    .input(u)
+                    .dynamics(Vector2<Expression>{t, x[1] + u[1]})
+                    .output(Vector2<Expression>{x[0] + u[0], t})
+                    .Build<Expression>();
+
+  auto context = system->CreateDefaultContext();
+
+  Variable tc("tc");
+  Vector2<Expression> xc{Variable{"xc0"}, Variable{"xc1"}};
+  Vector2<Expression> uc{Variable{"uc0"}, Variable{"uc1"}};
+
+  context->set_time(tc);
+  context->SetContinuousState(xc);
+  context->FixInputPort(0, uc);
+
+  const auto& xdot = system->EvalTimeDerivatives(*context).get_vector();
+  EXPECT_TRUE(xdot.GetAtIndex(0).EqualTo(tc));
+  EXPECT_TRUE(xdot.GetAtIndex(1).EqualTo(xc[1] + uc[1]));
+
+  const auto& y = system->get_output_port()
+                      .template Eval<BasicVector<Expression>>(*context)
+                      .get_value();
+  EXPECT_TRUE(y[0].EqualTo(xc[0] + uc[0]));
+  EXPECT_TRUE(y[1].EqualTo(tc));
+}
+
+GTEST_TEST(SymbolicVectorSystemTest, DiscreteTimeSymbolic) {
+  Variable t("t");
+  Vector2<Variable> x{Variable{"x0"}, Variable{"x1"}};
+  Vector2<Variable> u{Variable{"u0"}, Variable{"u1"}};
+  auto system = SymbolicVectorSystemBuilder()
+                    .time(t)
+                    .state(x)
+                    .input(u)
+                    .dynamics(Vector2<Expression>{t, x[1] + u[1]})
+                    .output(Vector2<Expression>{x[0] + u[0], t})
+                    .time_period(1.0)
+                    .Build<Expression>();
+
+  auto context = system->CreateDefaultContext();
+
+  Variable tc("tc");
+  Vector2<Expression> xc{Variable{"xc0"}, Variable{"xc1"}};
+  Vector2<Expression> uc{Variable{"uc0"}, Variable{"uc1"}};
+
+  context->set_time(tc);
+  context->get_mutable_discrete_state_vector().SetFromVector(xc);
+  context->FixInputPort(0, uc);
+
+  auto discrete_variables = system->AllocateDiscreteVariables();
+  system->CalcDiscreteVariableUpdates(*context, discrete_variables.get());
+  const auto& xnext = discrete_variables->get_vector().get_value();
+  EXPECT_TRUE(xnext[0].EqualTo(tc));
+  EXPECT_TRUE(xnext[1].EqualTo(xc[1] + uc[1]));
+
+  const auto& y = system->get_output_port()
+                      .template Eval<BasicVector<Expression>>(*context)
+                      .get_value();
+  EXPECT_TRUE(y[0].EqualTo(xc[0] + uc[0]));
+  EXPECT_TRUE(y[1].EqualTo(tc));
+}
+
+GTEST_TEST(SymbolicVectorSystemTest, TestScalarConversion) {
+  Variable x{"x"};
+  auto system = SymbolicVectorSystemBuilder().state(x).dynamics(-x).Build();
+
+  EXPECT_TRUE(is_symbolic_convertible(*system));
 }
 
 }  // namespace
