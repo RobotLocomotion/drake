@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
@@ -10,6 +11,7 @@ namespace systems {
 namespace {
 
 using Eigen::Vector2d;
+using Eigen::Vector4d;
 using Eigen::VectorXd;
 using symbolic::Expression;
 using symbolic::Variable;
@@ -266,7 +268,50 @@ GTEST_TEST(SymbolicVectorSystemTest, TestScalarConversion) {
   Variable x{"x"};
   auto system = SymbolicVectorSystemBuilder().state(x).dynamics(-x).Build();
 
+  EXPECT_TRUE(is_autodiffxd_convertible(*system));
   EXPECT_TRUE(is_symbolic_convertible(*system));
+}
+
+GTEST_TEST(SymbolicVectorSystemTest, TestAutodiffXd) {
+  Variable t{"t"};
+  Variable x{"x"};
+  Vector2<Variable> u{Variable{"u0"}, Variable{"u1"}};
+  auto system = SymbolicVectorSystemBuilder()
+                    .time(t)
+                    .state(x)
+                    .input(u)
+                    .dynamics(-x + pow(x, 3))
+                    .output(t + 2. * u[0] + 3. * u[1])
+                    .Build();
+
+  auto autodiff_system = system->ToAutoDiffXd();
+  auto context = autodiff_system->CreateDefaultContext();
+
+  const double tval = 1.23;
+  const double xval = 0.45;
+  const Vector2d uval{5.6, 7.8};
+  Vector4d txuval;
+  txuval << tval, xval, uval;
+
+  const VectorX<AutoDiffXd> txu = math::initializeAutoDiff(txuval);
+
+  context->set_time(txu[0]);
+  context->SetContinuousState(txu.segment<1>(1));
+  context->FixInputPort(0, txu.tail<2>());
+  const auto xdotval =
+      autodiff_system->EvalTimeDerivatives(*context).CopyToVector();
+
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(xdotval),
+                              Vector1d{-xval + xval * xval * xval}));
+  EXPECT_TRUE(CompareMatrices(xdotval[0].derivatives(),
+                              Vector4d{0, -1. + 3. * xval * xval, 0, 0}));
+
+  const auto& yval = autodiff_system->get_output_port(0)
+                         .template Eval<BasicVector<AutoDiffXd>>(*context)
+                         .get_value();
+  EXPECT_TRUE(CompareMatrices(math::autoDiffToValueMatrix(yval),
+                              Vector1d{tval + 2 * uval[0] + 3 * uval[1]}));
+  EXPECT_TRUE(CompareMatrices(yval[0].derivatives(), Vector4d{1., 0, 2., 3.}));
 }
 
 }  // namespace
