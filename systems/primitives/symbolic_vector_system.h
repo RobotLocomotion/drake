@@ -33,6 +33,7 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 ///
 /// - double
+/// - symbolic::Expression
 template <typename T>
 class SymbolicVectorSystem final : public LeafSystem<T> {
  public:
@@ -74,10 +75,14 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
           Vector0<symbolic::Expression>{},
       double time_period = 0.0);
 
-  // TODO(russt): Add sugar to the constructor to make the default values
-  //  cleaner.  (What I really want is something like kwargs).
-
   // TODO(russt): Add support for parameters.
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit SymbolicVectorSystem(const SymbolicVectorSystem<U>& other)
+      : SymbolicVectorSystem<T>(other.time_var_, other.state_vars_,
+                                other.input_vars_, other.dynamics_,
+                                other.output_, other.time_period_) {}
 
   ~SymbolicVectorSystem() override = default;
 
@@ -99,19 +104,60 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
                                         int output_port) const final;
 
   // Shared code for setting up an environment for evaluation.
-  void PopulateEnvironmentFromContext(const Context<double>& context,
-                                      symbolic::Environment* env) const;
+  template <typename U = T>
+  std::enable_if_t<!std::is_same<U, symbolic::Expression>::value, void>
+  PopulateEnvironmentFromContext(const Context<U>& context,
+                                 symbolic::Environment* env) const;
 
-  void CalcOutput(const Context<double>& context,
-                  BasicVector<double>* output_vector) const;
+  // Shared code for setting up a symbolic::Substitution.
+  template <typename U = T>
+  std::enable_if_t<std::is_same<U, symbolic::Expression>::value, void>
+  PopulateSubstitutionFromContext(const Context<U>& context,
+                                  symbolic::Substitution* s) const;
+
+  template <typename U>
+  std::enable_if_t<std::is_same<U, double>::value, void> CalcOutput(
+      const Context<U>& context, BasicVector<U>* output_vector) const;
+
+  template <typename U>
+  std::enable_if_t<std::is_same<U, symbolic::Expression>::value, void>
+  CalcOutput(const Context<U>& context, BasicVector<U>* output_vector) const;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
-                             ContinuousState<T>* derivatives) const final;
+                             ContinuousState<T>* derivatives) const final {
+    DoCalcTimeDerivativesImpl(context, derivatives);
+  }
+
+  template <typename U>
+  std::enable_if_t<std::is_same<U, double>::value, void>
+  DoCalcTimeDerivativesImpl(const Context<U>& context,
+                            ContinuousState<U>* derivatives) const;
+
+  template <typename U>
+  std::enable_if_t<std::is_same<U, symbolic::Expression>::value, void>
+  DoCalcTimeDerivativesImpl(const Context<U>& context,
+                            ContinuousState<U>* derivatives) const;
 
   void DoCalcDiscreteVariableUpdates(
       const drake::systems::Context<T>& context,
       const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
-      drake::systems::DiscreteValues<T>* updates) const final;
+      drake::systems::DiscreteValues<T>* updates) const final {
+    DoCalcDiscreteVariableUpdatesImpl(context, events, updates);
+  }
+
+  template <typename U>
+  std::enable_if_t<std::is_same<U, double>::value, void>
+  DoCalcDiscreteVariableUpdatesImpl(
+      const drake::systems::Context<U>& context,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>& events,
+      drake::systems::DiscreteValues<U>* updates) const;
+
+  template <typename U>
+  std::enable_if_t<std::is_same<U, symbolic::Expression>::value, void>
+  DoCalcDiscreteVariableUpdatesImpl(
+      const drake::systems::Context<U>& context,
+      const std::vector<const drake::systems::DiscreteUpdateEvent<U>*>& events,
+      drake::systems::DiscreteValues<U>* updates) const;
 
   const optional<symbolic::Variable> time_var_{nullopt};
   const VectorX<symbolic::Variable> state_vars_{};
@@ -236,8 +282,23 @@ class SymbolicVectorSystemBuilder {
   double time_period_{0.0};
 };
 
+// Explicitly disable AutoDiffXd (for now).
+namespace scalar_conversion {
+template <>
+struct Traits<SymbolicVectorSystem> {
+  template <typename T, typename U>
+  using supported =
+      typename std::conditional<!std::is_same<T, AutoDiffXd>::value &&
+                                    !std::is_same<U, AutoDiffXd>::value,
+                                std::true_type, std::false_type>::type;
+};
+
+}  // namespace scalar_conversion
+
 }  // namespace systems
 }  // namespace drake
 
-// TODO(russt): support AutoDiffXd and symbolic::Expression.
+// TODO(russt): support AutoDiffXd.
 extern template class ::drake::systems::SymbolicVectorSystem<double>;
+extern template class ::drake::systems::SymbolicVectorSystem<
+    drake::symbolic::Expression>;
