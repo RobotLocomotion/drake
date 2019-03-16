@@ -18,7 +18,8 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
     const Ref<const VectorX<Variable>>& input_vars,
     const Ref<const VectorX<Expression>>& dynamics,
     const Ref<const VectorX<Expression>>& output, double time_period)
-    : time_var_(time_var),
+    : LeafSystem<T>(SystemTypeTag<systems::SymbolicVectorSystem>{}),
+      time_var_(time_var),
       state_vars_(state_vars),
       input_vars_(input_vars),
       dynamics_(dynamics),
@@ -56,7 +57,7 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
       DRAKE_ASSERT(output_[i].GetVariables().IsSubsetOf(all_vars));
     }
     this->DeclareVectorOutputPort(BasicVector<T>(output_.rows()),
-                                  &SymbolicVectorSystem::CalcOutput);
+                                  &SymbolicVectorSystem<T>::CalcOutput);
   }
 
   // Allocate a symbolic::Environment once to be cloned/reused below.
@@ -79,71 +80,85 @@ optional<bool> SymbolicVectorSystem<T>::DoHasDirectFeedthrough(
 }
 
 template <typename T>
-void SymbolicVectorSystem<T>::PopulateEnvironmentFromContext(
-    const Context<double>& context, Environment* env) const {
+template <typename Container>
+void SymbolicVectorSystem<T>::PopulateFromContext(
+    const Context<T>& context, Container* penv) const {
+  Container& env = *penv;
   if (time_var_) {
-    (*env)[*time_var_] = context.get_time();
+    env[*time_var_] = context.get_time();
   }
   if (state_vars_.size() > 0) {
     const VectorBase<T>& state = (time_period_ > 0.0)
                                      ? context.get_discrete_state_vector()
                                      : context.get_continuous_state_vector();
     for (int i = 0; i < state_vars_.size(); i++) {
-      (*env)[state_vars_[i]] = state[i];
+      env[state_vars_[i]] = state[i];
     }
   }
   if (input_vars_.size() > 0) {
     const auto& input = get_input_port().Eval(context);
     for (int i = 0; i < input_vars_.size(); i++) {
-      (*env)[input_vars_[i]] = input[i];
+      env[input_vars_[i]] = input[i];
     }
+  }
+}
+
+// TODO(eric.cousineau): Consider decoupling output from `VectorBase` and use
+// `EigenPtr` or something.
+
+template <>
+void SymbolicVectorSystem<double>::EvaluateWithContext(
+    const Context<double>& context, const VectorX<Expression>& expr,
+    VectorBase<double>* out) const {
+  Environment env = env_;
+  PopulateFromContext(context, &env);
+  for (int i = 0; i < out->size(); i++) {
+    out->SetAtIndex(i, expr[i].Evaluate(env));
+  }
+}
+
+template <>
+void SymbolicVectorSystem<Expression>::EvaluateWithContext(
+    const Context<Expression>& context, const VectorX<Expression>& expr,
+    VectorBase<Expression>* out) const {
+  symbolic::Substitution s;
+  PopulateFromContext(context, &s);
+  for (int i = 0; i < out->size(); i++) {
+    out->SetAtIndex(i, expr[i].Substitute(s));
   }
 }
 
 template <typename T>
 void SymbolicVectorSystem<T>::CalcOutput(
-    const Context<double>& context, BasicVector<double>* output_vector) const {
+    const Context<T>& context, BasicVector<T>* output_vector) const {
   DRAKE_DEMAND(output_.size() > 0);
-  Environment env = env_;
-  PopulateEnvironmentFromContext(context, &env);
-
-  for (int i = 0; i < output_.size(); i++) {
-    output_vector->SetAtIndex(i, output_[i].Evaluate(env));
-  }
+  EvaluateWithContext(context, output_, output_vector);
 }
 
 template <typename T>
 void SymbolicVectorSystem<T>::DoCalcTimeDerivatives(
-    const Context<T>& context, ContinuousState<T>* derivatives) const {
+    const Context<T>& context,
+    ContinuousState<T>* derivatives) const {
   DRAKE_DEMAND(time_period_ == 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
-  Environment env = env_;
-  PopulateEnvironmentFromContext(context, &env);
-
-  VectorBase<T>& xdot = derivatives->get_mutable_vector();
-  for (int i = 0; i < dynamics_.size(); i++) {
-    xdot[i] = dynamics_[i].Evaluate(env);
-  }
+  EvaluateWithContext(context, dynamics_, &derivatives->get_mutable_vector());
 }
 
 template <typename T>
 void SymbolicVectorSystem<T>::DoCalcDiscreteVariableUpdates(
     const drake::systems::Context<T>& context,
-    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>& events,
+    const std::vector<const drake::systems::DiscreteUpdateEvent<T>*>&
+        events,
     drake::systems::DiscreteValues<T>* updates) const {
   unused(events);
   DRAKE_DEMAND(time_period_ > 0.0);
   DRAKE_DEMAND(dynamics_.size() > 0);
-  Environment env = env_;
-  PopulateEnvironmentFromContext(context, &env);
-
-  VectorBase<T>& xnext = updates->get_mutable_vector();
-  for (int i = 0; i < dynamics_.size(); i++) {
-    xnext[i] = dynamics_[i].Evaluate(env);
-  }
+  EvaluateWithContext(context, dynamics_, &updates->get_mutable_vector());
 }
 
 }  // namespace systems
 }  // namespace drake
 
 template class ::drake::systems::SymbolicVectorSystem<double>;
+template class ::drake::systems::SymbolicVectorSystem<
+    drake::symbolic ::Expression>;

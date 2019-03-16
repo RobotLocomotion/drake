@@ -33,6 +33,7 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 ///
 /// - double
+/// - symbolic::Expression
 template <typename T>
 class SymbolicVectorSystem final : public LeafSystem<T> {
  public:
@@ -74,10 +75,14 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
           Vector0<symbolic::Expression>{},
       double time_period = 0.0);
 
-  // TODO(russt): Add sugar to the constructor to make the default values
-  //  cleaner.  (What I really want is something like kwargs).
-
   // TODO(russt): Add support for parameters.
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit SymbolicVectorSystem(const SymbolicVectorSystem<U>& other)
+      : SymbolicVectorSystem<T>(other.time_var_, other.state_vars_,
+                                other.input_vars_, other.dynamics_,
+                                other.output_, other.time_period_) {}
 
   ~SymbolicVectorSystem() override = default;
 
@@ -98,12 +103,16 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   optional<bool> DoHasDirectFeedthrough(int input_port,
                                         int output_port) const final;
 
-  // Shared code for setting up an environment for evaluation.
-  void PopulateEnvironmentFromContext(const Context<double>& context,
-                                      symbolic::Environment* env) const;
+  template <typename Container>
+  void PopulateFromContext(const Context<T>& context, Container* penv) const;
 
-  void CalcOutput(const Context<double>& context,
-                  BasicVector<double>* output_vector) const;
+  // Evaluate context to an output.
+  void EvaluateWithContext(
+      const Context<T>& context, const VectorX<symbolic::Expression>& expr,
+      VectorBase<T>* out) const;
+
+  void CalcOutput(const Context<T>& context,
+                  BasicVector<T>* output_vector) const;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;
@@ -236,8 +245,39 @@ class SymbolicVectorSystemBuilder {
   double time_period_{0.0};
 };
 
+// Explicitly disable AutoDiffXd (for now).
+namespace scalar_conversion {
+template <>
+struct Traits<SymbolicVectorSystem> {
+  template <typename T, typename U>
+  using supported =
+      typename std::conditional<!std::is_same<T, AutoDiffXd>::value &&
+                                    !std::is_same<U, AutoDiffXd>::value,
+                                std::true_type, std::false_type>::type;
+};
+
+}  // namespace scalar_conversion
+
+#ifndef DRAKE_DOXYGEN_CXX
+// Forward-declare specializations, prior to DRAKE_DECLARE... below.
+template <>
+void SymbolicVectorSystem<double>::EvaluateWithContext(
+    const Context<double>& context,
+    const VectorX<symbolic::Expression>& expr,
+    VectorBase<double>* out) const;
+
+template <>
+void SymbolicVectorSystem<symbolic::Expression>::EvaluateWithContext(
+    const Context<symbolic::Expression>& context,
+    const VectorX<symbolic::Expression>& expr,
+    VectorBase<symbolic::Expression>* out) const;
+#endif
+
 }  // namespace systems
 }  // namespace drake
 
-// TODO(russt): support AutoDiffXd and symbolic::Expression.
+// TODO(russt): support AutoDiffXd, and switch to using
+// DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS.
 extern template class ::drake::systems::SymbolicVectorSystem<double>;
+extern template class ::drake::systems::SymbolicVectorSystem<
+    drake::symbolic::Expression>;
