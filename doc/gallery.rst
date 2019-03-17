@@ -29,6 +29,23 @@ rigid-body contact.
 *Source Code:* `drake/examples/kuka_iiwa_arm <https://github.com/RobotLocomotion/drake/tree/master/examples/kuka_iiwa_arm>`_
 
 
+Manipulation class at MIT
+=========================
+
+Drake is being used to teach a new `course on manipulation at MIT
+<http://manipulation.csail.mit.edu>`_.  The course software/materials give a
+complete autonomous manipulation pipeline, including deep and geometric
+perception, planning, and control.  Here are few highlight videos of the class
+"manipulation station" (the three views are rendered from the RGB-D cameras
+mounted on the station):
+
+.. raw :: html
+
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/zUS33rvbRsc" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+*Source Code:* `drake/examples/manipulation_station <https://github.com/RobotLocomotion/drake/tree/master/examples/manipulation_station>`_
+
+
 Trajectory Optimization
 =======================
 
