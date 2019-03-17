@@ -8,6 +8,7 @@
 #include <list>
 #include <stdexcept>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -511,23 +512,58 @@ MSKrescodee AddBoundingBoxConstraints(
   return rescode;
 }
 
-/*
- * This is the helper function to add two types of second order cone
- * constraints:
- * 1. A Lorentz cone constraint:
- *    z = A*x+b
- *    z0 >= sqrt(z1^2 + .. zN^2)
- * 2. A rotated Lorentz cone constraint:
- *    z = A*x+b
- *    z0*z1 >= z2^2 + .. + zN^2,
- *    z0 >= 0, z1 >=0
- * Mosek does not allow two cones to share variables. To overcome this,
- * we will add a new set of variable (z0, ..., zN)
- */
+// Aggregate all the Lorentz and rotated Lorentz cone constraints to a stacked
+// vector A*x+b, and each small chunk of this vector is in the conic constraint.
 template <typename C>
-MSKrescodee AddSecondOrderConeConstraints(
+void AggregateSecondOrderConeConstraint(
     const MathematicalProgram& prog,
     const std::vector<Binding<C>>& second_order_cone_constraints,
+    std::vector<Eigen::Triplet<double>>* A_triplets, Eigen::VectorXd* b,
+    std::vector<int>* cone_sizes, std::vector<MSKconetypee>* cone_types,
+    std::unordered_set<int>* second_order_cone_variable_indices,
+    int* A_row_count) {
+  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
+  for (const auto& second_order_cone_constraint :
+       second_order_cone_constraints) {
+    cone_sizes->push_back(second_order_cone_constraint.evaluator()->b().rows());
+    cone_types->push_back(is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD);
+    const Eigen::SparseMatrix<double> Ai_sparse =
+        second_order_cone_constraint.evaluator()->A().sparseView();
+    for (int i = 0; i < Ai_sparse.outerSize(); ++i) {
+      const int decision_variable_index = prog.FindDecisionVariableIndex(
+          second_order_cone_constraint.variables()(i));
+      second_order_cone_variable_indices->insert(decision_variable_index);
+      for (Eigen::SparseMatrix<double>::InnerIterator it(Ai_sparse, i); it;
+           ++it) {
+        // Unfortunately Mosek's definition of rotated Lorentz cone is different
+        // from ours. The rotated Lorentz cone in Mosek is defined as
+        // 2*z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
+        // Our definition of rotated Lorentz cone is
+        //   z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
+        // So there is a factor of 2 for rotated Lorentz cone.
+        // With this difference in rotated Lorentz cone, the first row of
+        // Ai_sparse and second_order_cone_constraint.evaluator()->b() needs to
+        // be divided by a factor of 2.
+        const double A_triplet_val =
+            it.row() == 0 && is_rotated_cone ? it.value() / 2 : it.value();
+        A_triplets->emplace_back(*A_row_count + it.row(),
+                                 decision_variable_index, A_triplet_val);
+      }
+    }
+    b->conservativeResize(*A_row_count +
+                          second_order_cone_constraint.evaluator()->b().rows());
+    b->tail(second_order_cone_constraint.evaluator()->b().rows()) =
+        second_order_cone_constraint.evaluator()->b();
+    if (is_rotated_cone) {
+      (*b)(*A_row_count) /= 2.0;
+    }
+    *A_row_count += second_order_cone_constraint.evaluator()->b().rows();
+  }
+}
+
+// Adds the second order cone constraint
+MSKrescodee AddSecondOrderConeConstraints(
+    const MathematicalProgram& prog,
     const std::unordered_map<int, MatrixVariableEntry>&
         decision_variable_index_to_mosek_matrix_variable,
     const std::unordered_map<int, int>&
@@ -535,75 +571,175 @@ MSKrescodee AddSecondOrderConeConstraints(
     std::unordered_map<MatrixVariableEntry::Id, MSKint64t>*
         matrix_variable_entry_to_selection_matrix_id,
     MSKtask_t* task) {
-  static_assert(std::is_same<C, LorentzConeConstraint>::value ||
-                    std::is_same<C, RotatedLorentzConeConstraint>::value,
-                "Should be either Lorentz cone constraint or rotated Lorentz "
-                "cone constraint");
-  bool is_rotated_cone = std::is_same<C, RotatedLorentzConeConstraint>::value;
   MSKrescodee rescode = MSK_RES_OK;
-  for (auto const& binding : second_order_cone_constraints) {
-    const auto& A = binding.evaluator()->A();
-    const auto& b = binding.evaluator()->b();
-    const int num_z = A.rows();
+  // Mosek imposes the constraint that z is in the Lorentz or rotated Lorentz
+  // cone, where z are non-matrix variables in Mosek. Moreover, Mosek doesn't
+  // allow different cones to share variables. Hence we first stack all Lorentz
+  // and rotated Lorentz cones to get a big vector A*x+b, where x =
+  // prog.decision_variables(), together with a std::vector<int> cone_sizes,
+  // where cone_sizes[i] is the dimension of the i'th cone. Namely we can
+  // partition the vector A*x+b into smaller chunks, the i'th chunk is in the
+  // i'th cone. Then we determine if we introduce slack variables according to
+  // the following criteria
+  // 1. If x(j) is not a matrix variable entry, A(i, j) = 1, A(i, j) is the only
+  // non-zero entry in the i'th row of A, and j'th column of A, b(i) = 0, then
+  // we do not introduce a slack variable, and z(i) is x(j)
+  // 2. Otherwise, introduce the slack variable z(i), with the linear constraint
+  // z(i) = A(i, :) * x + b(i)
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  Eigen::VectorXd b;
+  // The indices of the second order cone constraint bounded variables in the
+  // decision variables.
+  std::unordered_set<int> second_order_cone_variable_indices;
+  std::vector<int> cone_sizes;
+  const int num_cones = prog.lorentz_cone_constraints().size() +
+                        prog.rotated_lorentz_cone_constraints().size();
+  cone_sizes.reserve(num_cones);
+  std::vector<MSKconetypee> cone_types;
+  cone_types.reserve(num_cones);
+  int A_row_count = 0;
+  AggregateSecondOrderConeConstraint(
+      prog, prog.lorentz_cone_constraints(), &A_triplets, &b, &cone_sizes,
+      &cone_types, &second_order_cone_variable_indices, &A_row_count);
+  AggregateSecondOrderConeConstraint(
+      prog, prog.rotated_lorentz_cone_constraints(), &A_triplets, &b,
+      &cone_sizes, &cone_types, &second_order_cone_variable_indices,
+      &A_row_count);
+  if (A_triplets.size() > 0) {
+    // Form a column major and a row major matrix A, so that we can determine if
+    // A(i, j) is the only non-zero entry of A in the i'th row and j'th column.
+    Eigen::SparseMatrix<double, Eigen::ColMajor> A_col_major(A_row_count,
+                                                             prog.num_vars());
+    A_col_major.setFromTriplets(A_triplets.begin(), A_triplets.end());
+    Eigen::SparseMatrix<double, Eigen::RowMajor> A_row_major(A_row_count,
+                                                             prog.num_vars());
+    A_row_major.setFromTriplets(A_triplets.begin(), A_triplets.end());
+    // The vector z = A * x + b is in the Cartesian product of cones
+    // K1 x K2 x ... x Kn. Some entries of z are the decision variables of @p
+    // prog, some entries are newly created slack variables in mosek. We denote
+    // the newly created variables as z_slack, and we will also impose the
+    // linear constraint z_slack = A_slack * x + b_slack.
+
+    // z_indices_in_mosek[i] is the indices of the mosek variables z(i).
+    std::vector<MSKint32t> z_indices_in_mosek(A_row_count);
+    std::vector<bool> add_slack_variable(A_row_count, false);
+    int slack_variable_count = 0;
+    for (int i = 0; i < A_row_count; ++i) {
+      if (b(i) != 0) {
+        add_slack_variable[i] = true;
+        slack_variable_count++;
+        continue;
+      }
+      const int row_num_nonzeros = *(A_row_major.outerIndexPtr() + i + 1) -
+                                   *(A_row_major.outerIndexPtr() + i);
+      if (row_num_nonzeros != 1) {
+        add_slack_variable[i] = true;
+        slack_variable_count++;
+        continue;
+      }
+      // the i'th row of A has only 1 nonzero entry.
+      Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(
+          A_row_major, i);
+      if (it.value() != 1) {
+        // A(i, j) != 1
+        add_slack_variable[i] = true;
+        slack_variable_count++;
+        continue;
+      }
+      auto mosek_variable_it =
+          decision_variable_index_to_mosek_nonmatrix_variable.find(it.col());
+      if (mosek_variable_it ==
+          decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+        // x(j) is a matrix variable entry.
+        add_slack_variable[i] = true;
+        slack_variable_count++;
+        continue;
+      }
+      // Now check if A(i, j) is the only non-zero entry in the j'th
+      // column.
+      const int j = it.col();
+      const int col_num_nonzeros = *(A_col_major.outerIndexPtr() + j + 1) -
+                                   *(A_col_major.outerIndexPtr() + j);
+      if (col_num_nonzeros != 1) {
+        add_slack_variable[i] = true;
+        slack_variable_count++;
+        continue;
+      }
+      if (!add_slack_variable[i]) {
+        // If we do not add the slack variable, then z[i] is x(j).
+        z_indices_in_mosek[i] = mosek_variable_it->second;
+      }
+    }
+    const int num_slack_variables = slack_variable_count;
     MSKint32t num_mosek_vars = 0;
     rescode = MSK_getnumvar(*task, &num_mosek_vars);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    rescode = MSK_appendvars(*task, num_z);
+    rescode = MSK_appendvars(*task, num_slack_variables);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
-    std::vector<MSKint32t> new_var_indices(num_z);
-    for (int i = 0; i < num_z; ++i) {
-      new_var_indices[i] = num_mosek_vars + i;
-      rescode = MSK_putvarbound(*task, new_var_indices[i], MSK_BK_FR,
+    for (int i = 0; i < num_slack_variables; ++i) {
+      rescode = MSK_putvarbound(*task, num_mosek_vars + i, MSK_BK_FR,
                                 -MSK_INFINITY, MSK_INFINITY);
       if (rescode != MSK_RES_OK) {
         return rescode;
       }
     }
-    MSKconetypee cone_type = is_rotated_cone ? MSK_CT_RQUAD : MSK_CT_QUAD;
-    rescode =
-        MSK_appendcone(*task, cone_type, 0.0, num_z, new_var_indices.data());
-    if (rescode != MSK_RES_OK) {
-      return rescode;
+    // Set z_indices_in_mosek to the newly created mosek variable indices.
+    slack_variable_count = 0;
+    for (int i = 0; i < A_row_count; ++i) {
+      if (add_slack_variable[i]) {
+        z_indices_in_mosek[i] = num_mosek_vars + slack_variable_count;
+        slack_variable_count++;
+      }
     }
-
-    // Add the linear constraint
-    // z = A*x+b
-    // Unfortunately Mosek's definition of rotated Lorentz cone is different
-    // from ours. The rotated Lorentz cone in Mosek is defined as
-    // 2*z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
-    // Our definition of rotated Lorentz cone is
-    //   z(0) * z(1) >= z(2)^2 + ... + z(n-1)^2
-    // So there is a factor of 2 for rotated Lorentz cone.
-    // With this difference in rotated Lorentz cone, the first row of constraint
-    // z = A * x + b needs special treatment.
-    // If using Lorentz cone,
-    // Add the linear constraint
-    //   z0 = a0^T * x + b0;
-    // If using rotated Lorentz cone, add the linear constraint
-    // 2*z0 = a0^T * x + b0
-    const Eigen::SparseMatrix<double> A_sparse = -A.sparseView();
-    Eigen::SparseMatrix<double> B_sparse(num_z, num_z);
-    B_sparse.setIdentity();
-    B_sparse.coeffRef(0, 0) = is_rotated_cone ? 2.0 : 1.0;
-    std::vector<MSKint32t> z_mosek_indices(num_z);
-    for (int i = 0; i < num_z; ++i) {
-      z_mosek_indices[i] = num_mosek_vars + i;
+    // Now add the conic constraint
+    int z_count = 0;
+    for (int i = 0; i < num_cones; ++i) {
+      rescode = MSK_appendcone(*task, cone_types[i], 0.0, cone_sizes[i],
+                               z_indices_in_mosek.data() + z_count);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      z_count += cone_sizes[i];
     }
-    rescode = AddLinearConstraintToMosek(
-        prog, A_sparse, B_sparse, b, b, binding.variables(), z_mosek_indices,
-        LinearConstraintBoundType::kEquality,
-        decision_variable_index_to_mosek_matrix_variable,
-        decision_variable_index_to_mosek_nonmatrix_variable,
-        matrix_variable_entry_to_selection_matrix_id, *task);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
+    if (num_slack_variables > 0) {
+      // Now form the linear constraint z_slack = A_slack * x + b_slack.
+      std::vector<Eigen::Triplet<double>> A_slack_triplets;
+      A_slack_triplets.reserve(A_triplets.size());
+      Eigen::VectorXd b_slack(num_slack_variables);
+      slack_variable_count = 0;
+      std::vector<MSKint32t> z_slack_mosek_indices(num_slack_variables);
+      for (int i = 0; i < A_row_count; ++i) {
+        if (add_slack_variable[i]) {
+          z_slack_mosek_indices[slack_variable_count] =
+              num_mosek_vars + slack_variable_count;
+          b_slack(slack_variable_count) = b(i);
+          for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(
+                   A_row_major, i);
+               it; ++it) {
+            A_slack_triplets.emplace_back(slack_variable_count, it.col(),
+                                          it.value());
+          }
+          slack_variable_count++;
+        }
+      }
+      Eigen::SparseMatrix<double> A_slack(num_slack_variables, prog.num_vars());
+      A_slack.setFromTriplets(A_slack_triplets.begin(), A_slack_triplets.end());
+      Eigen::SparseMatrix<double> z_slack_identity(num_slack_variables,
+                                                   num_slack_variables);
+      z_slack_identity.setIdentity();
+      rescode = AddLinearConstraintToMosek(
+          prog, A_slack, -z_slack_identity, -b_slack, -b_slack,
+          prog.decision_variables(), z_slack_mosek_indices,
+          LinearConstraintBoundType::kEquality,
+          decision_variable_index_to_mosek_matrix_variable,
+          decision_variable_index_to_mosek_nonmatrix_variable,
+          matrix_variable_entry_to_selection_matrix_id, *task);
     }
   }
-  // Expect rescode == MSK_RES_OK.
   return rescode;
 }
 
@@ -1342,20 +1478,10 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         &matrix_variable_entry_to_selection_matrix_id, &task);
   }
 
-  // Add Lorentz cone constraints.
+  // Add Lorentz and rotated Lorentz cone constraints.
   if (rescode == MSK_RES_OK) {
     rescode = AddSecondOrderConeConstraints(
-        prog, prog.lorentz_cone_constraints(),
-        decision_variable_index_to_mosek_matrix_variable,
-        decision_variable_index_to_mosek_nonmatrix_variable,
-        &matrix_variable_entry_to_selection_matrix_id, &task);
-  }
-
-  // Add rotated Lorentz cone constraints.
-  if (rescode == MSK_RES_OK) {
-    rescode = AddSecondOrderConeConstraints(
-        prog, prog.rotated_lorentz_cone_constraints(),
-        decision_variable_index_to_mosek_matrix_variable,
+        prog, decision_variable_index_to_mosek_matrix_variable,
         decision_variable_index_to_mosek_nonmatrix_variable,
         &matrix_variable_entry_to_selection_matrix_id, &task);
   }
@@ -1454,73 +1580,70 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
 
   MSKsolstae solution_status{MSK_SOL_STA_UNKNOWN};
   if (rescode == MSK_RES_OK) {
-    if (rescode == MSK_RES_OK) {
-      rescode = MSK_getsolsta(task, solution_type, &solution_status);
-    }
-    if (rescode == MSK_RES_OK) {
-      switch (solution_status) {
-        case MSK_SOL_STA_OPTIMAL:
-        case MSK_SOL_STA_NEAR_OPTIMAL:
-        case MSK_SOL_STA_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL:
-        case MSK_SOL_STA_PRIM_FEAS: {
-          result->set_solution_result(SolutionResult::kSolutionFound);
-          MSKint32t num_mosek_vars;
-          rescode = MSK_getnumvar(task, &num_mosek_vars);
+    rescode = MSK_getsolsta(task, solution_type, &solution_status);
+  }
+  if (rescode == MSK_RES_OK) {
+    switch (solution_status) {
+      case MSK_SOL_STA_OPTIMAL:
+      case MSK_SOL_STA_NEAR_OPTIMAL:
+      case MSK_SOL_STA_INTEGER_OPTIMAL:
+      case MSK_SOL_STA_NEAR_INTEGER_OPTIMAL:
+      case MSK_SOL_STA_PRIM_FEAS: {
+        result->set_solution_result(SolutionResult::kSolutionFound);
+        MSKint32t num_mosek_vars;
+        rescode = MSK_getnumvar(task, &num_mosek_vars);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
+        rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
+        MSKint32t num_bar_x;
+        rescode = MSK_getnumbarvar(task, &num_bar_x);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        std::vector<Eigen::VectorXd> mosek_bar_x_sol(num_bar_x);
+        for (int i = 0; i < num_bar_x; ++i) {
+          MSKint32t bar_xi_dim;
+          rescode = MSK_getdimbarvarj(task, i, &bar_xi_dim);
           DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd mosek_sol_vector(num_mosek_vars);
-          rescode = MSK_getxx(task, solution_type, mosek_sol_vector.data());
-          MSKint32t num_bar_x;
-          rescode = MSK_getnumbarvar(task, &num_bar_x);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          std::vector<Eigen::VectorXd> mosek_bar_x_sol(num_bar_x);
-          for (int i = 0; i < num_bar_x; ++i) {
-            MSKint32t bar_xi_dim;
-            rescode = MSK_getdimbarvarj(task, i, &bar_xi_dim);
-            DRAKE_ASSERT(rescode == MSK_RES_OK);
-            mosek_bar_x_sol[i].resize(bar_xi_dim * (bar_xi_dim + 1) / 2);
-            rescode =
-                MSK_getbarxj(task, solution_type, i, mosek_bar_x_sol[i].data());
-          }
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          Eigen::VectorXd sol_vector(num_decision_vars);
-          for (int i = 0; i < num_decision_vars; ++i) {
-            auto it1 =
-                decision_variable_index_to_mosek_nonmatrix_variable.find(i);
-            if (it1 !=
-                decision_variable_index_to_mosek_nonmatrix_variable.end()) {
-              sol_vector(i) = mosek_sol_vector(it1->second);
-            } else {
-              auto it2 =
-                  decision_variable_index_to_mosek_matrix_variable.find(i);
-              sol_vector(i) = mosek_bar_x_sol[it2->second.bar_matrix_index()](
-                  it2->second.IndexInLowerTrianglePart());
-            }
-          }
-          if (rescode == MSK_RES_OK) {
-            result->set_x_val(sol_vector);
-          }
-          MSKrealt optimal_cost;
-          rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
-          DRAKE_ASSERT(rescode == MSK_RES_OK);
-          if (rescode == MSK_RES_OK) {
-            result->set_optimal_cost(optimal_cost);
-          }
-          break;
+          mosek_bar_x_sol[i].resize(bar_xi_dim * (bar_xi_dim + 1) / 2);
+          rescode =
+              MSK_getbarxj(task, solution_type, i, mosek_bar_x_sol[i].data());
         }
-        case MSK_SOL_STA_DUAL_INFEAS_CER:
-        case MSK_SOL_STA_NEAR_DUAL_INFEAS_CER:
-          result->set_solution_result(SolutionResult::kDualInfeasible);
-          break;
-        case MSK_SOL_STA_PRIM_INFEAS_CER:
-        case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
-          result->set_solution_result(SolutionResult::kInfeasibleConstraints);
-          break;
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        Eigen::VectorXd sol_vector(num_decision_vars);
+        for (int i = 0; i < num_decision_vars; ++i) {
+          auto it1 =
+              decision_variable_index_to_mosek_nonmatrix_variable.find(i);
+          if (it1 !=
+              decision_variable_index_to_mosek_nonmatrix_variable.end()) {
+            sol_vector(i) = mosek_sol_vector(it1->second);
+          } else {
+            auto it2 = decision_variable_index_to_mosek_matrix_variable.find(i);
+            sol_vector(i) = mosek_bar_x_sol[it2->second.bar_matrix_index()](
+                it2->second.IndexInLowerTrianglePart());
+          }
         }
-        default: {
-          result->set_solution_result(SolutionResult::kUnknownError);
-          break;
+        if (rescode == MSK_RES_OK) {
+          result->set_x_val(sol_vector);
         }
+        MSKrealt optimal_cost;
+        rescode = MSK_getprimalobj(task, solution_type, &optimal_cost);
+        DRAKE_ASSERT(rescode == MSK_RES_OK);
+        if (rescode == MSK_RES_OK) {
+          result->set_optimal_cost(optimal_cost);
+        }
+        break;
+      }
+      case MSK_SOL_STA_DUAL_INFEAS_CER:
+      case MSK_SOL_STA_NEAR_DUAL_INFEAS_CER:
+        result->set_solution_result(SolutionResult::kDualInfeasible);
+        break;
+      case MSK_SOL_STA_PRIM_INFEAS_CER:
+      case MSK_SOL_STA_NEAR_PRIM_INFEAS_CER: {
+        result->set_solution_result(SolutionResult::kInfeasibleConstraints);
+        break;
+      }
+      default: {
+        result->set_solution_result(SolutionResult::kUnknownError);
+        break;
       }
     }
   }
