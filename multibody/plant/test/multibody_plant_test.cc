@@ -1495,6 +1495,14 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+  for (const auto& link_name : {"link1", "link2", "link3"}) {
+    auto collision_geometries = plant_autodiff.GetCollisionGeometriesForBody(
+        plant_autodiff.GetBodyByName(link_name));
+    for (const auto& geometry : collision_geometries) {
+      EXPECT_EQ(plant_autodiff.default_coulomb_friction(geometry),
+                plant.default_coulomb_friction(geometry));
+    }
+  }
 
   // Make sure the geometry ports were included in the autodiffed plant.
   EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
