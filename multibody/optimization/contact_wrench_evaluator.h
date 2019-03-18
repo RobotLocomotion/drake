@@ -64,6 +64,8 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
     return x.tail(num_lambda_);
   }
 
+  systems::Context<AutoDiffXd>* get_mutable_context() const { return context_; }
+
  private:
   const MultibodyPlant<AutoDiffXd>* plant_;
   systems::Context<AutoDiffXd>* context_;
