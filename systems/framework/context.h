@@ -389,6 +389,35 @@ class Context : public ContextBase {
     xc_vector.SetFromVector(xc);
   }
 
+  /// Sets the discrete state to @p xd, assuming there is just one discrete
+  /// state group. The supplied vector must be the same size as the existing
+  /// discrete state. Sends out of date notifications for all
+  /// discrete-state-dependent computations. Use the other signature for this
+  /// method if you have multiple discrete state groups.
+  /// @pre There is exactly one discrete state group.
+  void SetDiscreteState(const Eigen::Ref<const VectorX<T>>& xd) {
+    if (get_num_discrete_state_groups() != 1) {
+      throw std::logic_error(fmt::format(
+          "Context::SetDiscreteState(): expected exactly 1 discrete state "
+          "group but there were {} groups. Use the other signature if "
+          "you have multiple groups.", get_num_discrete_state_groups()));
+    }
+    SetDiscreteState(DiscreteStateIndex(0), xd);
+  }
+
+  /// Sets the iᵗʰ discrete state group to @p xd_i. The supplied vector must be
+  /// the same size as the existing discrete state group. Sends out of date
+  /// notifications for all computations that depend on this discrete state
+  /// group.
+  /// @pre @p group_index must identify an existing group.
+  /// @note Currently notifies dependents of _all_ groups.
+  // TODO(sherm1) Invalidate only dependents of this one discrete group.
+  void SetDiscreteState(int group_index,
+                        const Eigen::Ref<const VectorX<T>>& xd) {
+    get_mutable_discrete_state(DiscreteStateIndex(group_index))
+        .SetFromVector(xd);
+  }
+
   /// Returns a mutable reference to the discrete component of the state,
   /// which may be of size zero. Sends out of date notifications for all
   /// discrete-state-dependent computations.
@@ -417,6 +446,20 @@ class Context : public ContextBase {
   BasicVector<T>& get_mutable_discrete_state(int index) {
     DiscreteValues<T>& xd = get_mutable_discrete_state();
     return xd.get_mutable_vector(index);
+  }
+
+  /// Sets the value of the iᵗʰ abstract state variable. Sends out of date
+  /// notifications for all computations that depend on that abstract state
+  /// variable. The template type will be inferred and need not be specified
+  /// explicitly.
+  ///
+  /// @pre @p index must identify an existing abstract state variable.
+  /// @pre the abstract state's type must match the template argument.
+  /// @note Currently notifies dependents of _any_ abstract state variable.
+  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
+  template <typename ValueType>
+  void SetAbstractState(int index, const ValueType& value) {
+    get_mutable_abstract_state<ValueType>(index) = value;
   }
 
   /// Returns a mutable reference to the abstract component of the state,
