@@ -323,13 +323,13 @@ class Context : public ContextBase {
   // TODO(sherm1) All these methods perform invalidation sweeps so aren't
   // entitled to lower_case_names. Deprecate and replace (see #9205).
 
+  // TODO(sherm1) Consider whether this should avoid the notification sweep
+  // if the new time is the same as the old time.
   /// Sets the current time in seconds. Sends out of date notifications for all
   /// time-dependent computations (at least if the time has actually changed).
   /// Time must have the same value in every subcontext within the same Diagram
   /// context tree so may only be modified at the root context of the tree.
   /// @throws std::logic_error if this is not the root context.
-  // TODO(sherm1) Consider whether this should avoid the notification sweep
-  // if the new time is the same as the old time.
   void set_time(const T& time_sec) {
     ThrowIfNotRootContext(__func__, "Time");
     const int64_t change_event = this->start_new_change_event();
@@ -375,18 +375,47 @@ class Context : public ContextBase {
     get_mutable_continuous_state().SetFromVector(xc);
   }
 
+  // TODO(sherm1) Consider whether this should avoid invalidation of
+  // time-dependent quantities if the new time is the same as the old time.
   /// Sets time to @p time_sec and continuous state to @p xc. Performs a single
   /// notification sweep to avoid duplicate notifications for computations that
   /// depend on both time and state.
   /// @throws std::logic_error if this is not the root context.
-  // TODO(sherm1) Consider whether this should avoid invalidation of
-  // time-dependent quantities if the new time is the same as the old time.
   void SetTimeAndContinuousState(const T& time_sec,
                                  const Eigen::Ref<const VectorX<T>>& xc) {
     VectorBase<T>& xc_vector =
         SetTimeAndGetMutableContinuousStateHelper(__func__, time_sec)
             .get_mutable_vector();
     xc_vector.SetFromVector(xc);
+  }
+
+  /// Sets the discrete state to @p xd, assuming there is just one discrete
+  /// state group. The supplied vector must be the same size as the existing
+  /// discrete state. Sends out of date notifications for all
+  /// discrete-state-dependent computations. Use the other signature for this
+  /// method if you have multiple discrete state groups.
+  /// @pre There is exactly one discrete state group.
+  void SetDiscreteState(const Eigen::Ref<const VectorX<T>>& xd) {
+    if (get_num_discrete_state_groups() != 1) {
+      throw std::logic_error(fmt::format(
+          "Context::SetDiscreteState(): expected exactly 1 discrete state "
+          "group but there were {} groups. Use the other signature if "
+          "you have multiple groups.", get_num_discrete_state_groups()));
+    }
+    SetDiscreteState(DiscreteStateIndex(0), xd);
+  }
+
+  // TODO(sherm1) Invalidate only dependents of this one discrete group.
+  /// Sets the discrete state group indicated by @p group_index to @p xd.
+  /// The supplied vector @p xd must be the same size as the existing discrete
+  /// state group. Sends out of date notifications for all computations that
+  /// depend on this discrete state group.
+  /// @pre @p group_index identifies an existing group.
+  /// @note Currently notifies dependents of _all_ groups.
+  void SetDiscreteState(int group_index,
+                        const Eigen::Ref<const VectorX<T>>& xd) {
+    get_mutable_discrete_state(DiscreteStateIndex(group_index))
+        .SetFromVector(xd);
   }
 
   /// Returns a mutable reference to the discrete component of the state,
@@ -408,15 +437,29 @@ class Context : public ContextBase {
     return get_mutable_discrete_state().get_mutable_vector();
   }
 
+  // TODO(sherm1) Invalidate only dependents of this one discrete group.
   /// Returns a mutable reference to group (vector) @p index of the discrete
   /// state. Sends out of date notifications for all computations that depend
   /// on this discrete state group.
   /// @pre @p index must identify an existing group.
   /// @note Currently notifies dependents of _all_ groups.
-  // TODO(sherm1) Invalidate only dependents of this one discrete group.
   BasicVector<T>& get_mutable_discrete_state(int index) {
     DiscreteValues<T>& xd = get_mutable_discrete_state();
     return xd.get_mutable_vector(index);
+  }
+
+  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
+  /// Sets the value of the abstract state variable selected by @p index. Sends
+  /// out of date notifications for all computations that depend on that
+  /// abstract state variable. The template type will be inferred and need not
+  /// be specified explicitly.
+  ///
+  /// @pre @p index must identify an existing abstract state variable.
+  /// @pre the abstract state's type must match the template argument.
+  /// @note Currently notifies dependents of _any_ abstract state variable.
+  template <typename ValueType>
+  void SetAbstractState(int index, const ValueType& value) {
+    get_mutable_abstract_state<ValueType>(index) = value;
   }
 
   /// Returns a mutable reference to the abstract component of the state,
@@ -429,13 +472,13 @@ class Context : public ContextBase {
     return do_access_mutable_state().get_mutable_abstract_state();
   }
 
+  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   /// Returns a mutable reference to element @p index of the abstract state.
   /// Sends out of date notifications for all computations that depend on this
   /// abstract state variable.
   /// @pre @p index must identify an existing element.
   /// @pre the abstract state's type must match the template argument.
   /// @note Currently notifies dependents of _any_ abstract state variable.
-  // TODO(sherm1) Invalidate only dependents of this one abstract variable.
   template <typename U>
   U& get_mutable_abstract_state(int index) {
     AbstractValues& xa = get_mutable_abstract_state();
@@ -453,12 +496,12 @@ class Context : public ContextBase {
     return *parameters_;
   }
 
+  // TODO(sherm1) Invalidate only dependents of this one parameter.
   /// Returns a mutable reference to element @p index of the vector-valued
   /// (numeric) parameters. Sends out of date notifications for all computations
   /// dependent on this parameter.
   /// @pre @p index must identify an existing numeric parameter.
   /// @note Currently notifies dependents of _all_ numeric parameters.
-  // TODO(sherm1) Invalidate only dependents of this one parameter.
   BasicVector<T>& get_mutable_numeric_parameter(int index) {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
@@ -466,12 +509,12 @@ class Context : public ContextBase {
     return parameters_->get_mutable_numeric_parameter(index);
   }
 
+  // TODO(sherm1) Invalidate only dependents of this one parameter.
   /// Returns a mutable reference to element @p index of the abstract-valued
   /// parameters. Sends out of date notifications for all computations dependent
   /// on this parameter.
   /// @pre @p index must identify an existing abstract parameter.
   /// @note Currently notifies dependents of _all_ abstract parameters.
-  // TODO(sherm1) Invalidate only dependents of this one parameter.
   AbstractValue& get_mutable_abstract_parameter(int index) {
     const int64_t change_event = this->start_new_change_event();
     PropagateBulkChange(change_event,
@@ -479,6 +522,10 @@ class Context : public ContextBase {
     return parameters_->get_mutable_abstract_parameter(index);
   }
 
+  // TODO(sherm1) Should treat fixed input port values same as parameters.
+  // TODO(sherm1) Change the name of this method to be more inclusive since it
+  //              also copies accuracy (now) and fixed input port values
+  //              (pending above TODO).
   /// Sets this context's time, accuracy, state, and parameters from the
   /// `double` values in @p source, regardless of this context's scalar type.
   /// Sends out of date notifications for all dependent computations in this
@@ -486,10 +533,6 @@ class Context : public ContextBase {
   /// @throws std::logic_error if this is not the root context.
   /// @note Currently does not copy fixed input port values from `source`.
   /// See System::FixInputPortsFrom() if you want to copy those.
-  // TODO(sherm1) Should treat fixed input port values same as parameters.
-  // TODO(sherm1) Change the name of this method to be more inclusive since it
-  //              also copies accuracy (now) and fixed input port values
-  //              (pending above TODO).
   template <typename U>
   void SetTimeStateAndParametersFrom(const Context<U>& source) {
     ThrowIfNotRootContext(__func__, "Time");
@@ -563,6 +606,8 @@ class Context : public ContextBase {
     return FixInputPort(index, *vec);
   }
 
+  // TODO(sherm1) Consider whether to avoid invalidation if the new value is
+  // the same as the old one.
   /// Records the user's requested accuracy. If no accuracy is requested,
   /// computations are free to choose suitable defaults, or to refuse to
   /// proceed without an explicit accuracy setting. Any accuracy-dependent
@@ -597,8 +642,6 @@ class Context : public ContextBase {
   /// The common thread among these examples is that they all share the
   /// same %Context, so by keeping accuracy here it can be used effectively to
   /// control all accuracy-dependent computations.
-  // TODO(sherm1) Consider whether to avoid invalidation if the new value is
-  // the same as the old one.
   void set_accuracy(const optional<double>& accuracy) {
     ThrowIfNotRootContext(__func__, "Accuracy");
     const int64_t change_event = this->start_new_change_event();

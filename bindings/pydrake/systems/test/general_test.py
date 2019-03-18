@@ -14,6 +14,7 @@ from pydrake.autodiffutils import (
     AutoDiffXd,
     )
 from pydrake.examples.pendulum import PendulumPlant
+from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import (
     Expression,
     )
@@ -124,6 +125,25 @@ class TestGeneral(unittest.TestCase):
         context.SetContinuousState(x)
         np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), x)
+
+        # RimlessWheel has a single discrete variable and a bool abstract
+        # variable.
+        rimless = RimlessWheel()
+        context = rimless.CreateDefaultContext()
+        x = np.array([1.125])
+        context.SetDiscreteState(xd=2 * x)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), 2 * x)
+        context.SetDiscreteState(group_index=0, xd=3 * x)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), 3 * x)
+
+        context.SetAbstractState(index=0, value=True)
+        value = context.get_abstract_state(0)
+        self.assertTrue(value.get_value())
+        context.SetAbstractState(index=0, value=False)
+        value = context.get_abstract_state(0)
+        self.assertFalse(value.get_value())
 
     def test_event_api(self):
         # TriggerType - existence check.

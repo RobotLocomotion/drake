@@ -311,6 +311,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples:rimless_wheel_py",
     ],
 )
 
