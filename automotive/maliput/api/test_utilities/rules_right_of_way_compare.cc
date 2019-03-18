@@ -101,6 +101,8 @@ namespace test {
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.is_static(), b.is_static()));
   if (a.is_static() && b.is_static()) {
     MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.static_state(), b.static_state()));
+  } else {
+    MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.states(), b.states()));
   }
   return c.result();
 }

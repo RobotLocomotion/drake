@@ -1,0 +1,37 @@
+#pragma once
+
+#include <memory>
+#include <string>
+
+#include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/base/simple_rulebook.h"
+
+namespace drake {
+namespace maliput {
+
+/// Instantiates RightOfWayRule instances based on the specified @p
+/// road_geometry and @p input document.
+///
+/// @param road_geometry The road geometry to which the loaded RightOfWayRule
+/// instance apply.
+///
+/// @param input The YAML RightOfWayRules document.
+///
+/// @return A SimpleRulebook containing the loaded RightOfWayRule instances.
+std::unique_ptr<SimpleRulebook> LoadRightOfWayRules(
+    const api::RoadGeometry* road_geometry, const std::string& input);
+
+/// Instantiates RightOfWayRule instances based on the specified @p
+/// road_geometry and file.
+///
+/// @param road_geometry The road geometry to which the loaded RightOfWayRule
+/// instance apply.
+///
+/// @param filename The YAML file that contains an RightOfWayRules document.
+///
+/// @return A SimpleRulebook containing the loaded RightOfWayRule instances.
+std::unique_ptr<SimpleRulebook> LoadRightOfWayRulesFile(
+    const api::RoadGeometry* road_geometry, const std::string& filename);
+
+}  // namespace maliput
+}  // namespace drake
