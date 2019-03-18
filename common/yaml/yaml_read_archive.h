@@ -19,31 +19,70 @@
 #include "drake/common/name_value.h"
 #include "drake/common/nice_type_name.h"
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 
-/// YAML-backed implementation of the Serialize/Archive pattern.
+/// Loads data from a YAML file into a C++ structure, using the Serialize /
+/// Archive pattern.
 ///
-/// TODO(jeremy.nimmer) Add documentation of YAML / struct mapping.
-/// TODO(jeremy.nimmer) Add much more diagnostics / error reporting.
-/// TODO(jeremy.nimmer) Add much more input data test coverage.
+/// Sample data:
+/// @code{yaml}
+/// doc:
+///   foo: 1.0
+///   bar: [2.0, 3.0]
+/// @endcode
+///
+/// Sample code:
+/// @code{cpp}
+/// struct MyData {
+///   double foo{NAN};
+///   std::vector<double> bar;
+///
+///   template <typename Archive>
+///   void Serialize(Archive* a) {
+///     a->Visit(DRAKE_NVP(foo));
+///     a->Visit(DRAKE_NVP(bar));
+///   }
+/// };
+///
+/// MyData LoadData(const std::string& filename) {
+///   MyData result;
+///   const YAML::Node& root = YAML::LoadFile(filename);
+///   common::YamlReadArchive(root).Accept(&result);
+///   return result;
+/// }
+/// @endcode
+///
+/// Structures can be arbitrarily nested, as long as each `struct` has a
+/// `Serialize` method.  Many common built-in types (int, double, std::string,
+/// std::vector, std::array, std::optional, std::variant, Eigen::Matrix) may
+/// also be used.
+///
+/// For inspiration and background, see:
+/// https://www.boost.org/doc/libs/release/libs/serialization/doc/tutorial.html
 class YamlReadArchive final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(YamlReadArchive)
 
+  /// Creates an archive that reads from @p root.  See the %YamlReadArchive
+  /// class overview for details.
   explicit YamlReadArchive(const YAML::Node& root)
       : YamlReadArchive(root, nullptr) {}
 
+  /// Sets the contents `serializable` based on the YAML file associated with
+  /// this archive.  See the %YamlReadArchive class overview for details.
   template <typename Serializable>
-  YamlReadArchive& Accept(Serializable* serializable) {
+  void Accept(Serializable* serializable) {
     if (!root_) {
-      // TODO(jeremy.nimmer) This should probably be a ReportMissingYaml error.
-      return *this;
+      // TODO(jwnimmer-tri) This should probably be a ReportMissingYaml error.
+      return;
     }
     DoAccept(this, serializable, static_cast<int32_t>(0));
-    return *this;
   }
 
+  /// (Advanced.)  Sets the value pointed to by `nvp.value()` based on the YAML
+  /// file associated with this archive.  Most users should should call Accept,
+  /// not Visit.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp) {
     this->Visit(nvp, VisitShouldMemorizeType::kYes);
@@ -53,11 +92,14 @@ class YamlReadArchive final {
   // N.B. In the private details below, we use "NVP" to abbreviate the
   // "NameValuePair" template concept.
 
+  // Iff we are recursing, parent will be non-nullptr.
   YamlReadArchive(const YAML::Node& root, const YamlReadArchive* parent)
       : root_(root), parent_(parent) {}
 
   enum class VisitShouldMemorizeType { kNo, kYes };
 
+  // Like the 1-arg Visit, except that the (private) caller can opt-out of this
+  // visit frame appearing in error reports.
   template <typename NameValuePair>
   void Visit(const NameValuePair& nvp, VisitShouldMemorizeType trace) {
     if (trace == VisitShouldMemorizeType::kYes) {
@@ -73,8 +115,7 @@ class YamlReadArchive final {
   }
 
   // --------------------------------------------------------------------------
-  /// @name Overloads for the Accept() implementation
-  //@{
+  // @name Overloads for the Accept() implementation
 
   // This version applies when Serialize is member method.
   template <typename Archive, typename Serializable>
@@ -82,16 +123,15 @@ class YamlReadArchive final {
       decltype(serializable->Serialize(a)) {
     serializable->Serialize(a);
   }
+
   // This version applies when Serialize is an ADL free function.
   template <typename Archive, typename Serializable>
   void DoAccept(Archive* a, Serializable* serializable, int64_t) {
     Serialize(a, serializable);
   }
 
-  //@}
   // --------------------------------------------------------------------------
-  /// @name Overloads for the Visit() implementation
-  //@{
+  // @name Overloads for the Visit() implementation
 
   // This version applies when the type has a Serialize member function.
   template <typename NVP, typename T>
@@ -120,8 +160,6 @@ class YamlReadArchive final {
     this->VisitArray(nvp.name(), N, nvp.value()->data());
   }
 
-  // TODO(jeremy.nimmer) Implement these.
-#if 0
   // For std::map.
   template <typename NVP, typename K, typename V, typename C>
   void DoVisit(const NVP& nvp, const std::map<K, V, C>&, int32_t) {
@@ -133,7 +171,6 @@ class YamlReadArchive final {
   void DoVisit(const NVP& nvp, const std::unordered_map<K, V, H, E>&, int32_t) {
     this->VisitMap(nvp);
   }
-#endif
 
   // For drake::optional (which is std::optional iff we have new enough C++).
   template <typename NVP, typename T>
@@ -169,10 +206,8 @@ class YamlReadArchive final {
     this->VisitScalar(nvp);
   }
 
-  //@}
   // --------------------------------------------------------------------------
-  /// @name Implementations of Visit() once the shape is known
-  //@{
+  // @name Implementations of Visit() once the shape is known
 
   template <typename NVP>
   void VisitSerializable(const NVP& nvp) {
@@ -187,7 +222,7 @@ class YamlReadArchive final {
   void VisitScalar(const NVP& nvp) {
     const auto& sub_node = GetSubNode(nvp.name(), YAML::NodeType::Scalar);
     if (!sub_node) { return; }
-    // TODO(jeremy.nimmer) Add better reporting of type errors here.
+    // TODO(jwnimmer-tri) Add better reporting of type errors here.
     using T = typename NVP::value_type;
     *nvp.value() = sub_node.template as<T>();
   }
@@ -357,7 +392,14 @@ class YamlReadArchive final {
     }
   }
 
-  //@}
+  template <typename NVP>
+  void VisitMap(const NVP& nvp) {
+    // TODO(jwnimmer-tri) Implement me.
+    throw std::logic_error("Map-like values are not yet supported");
+  }
+
+  // --------------------------------------------------------------------------
+  // @name Helpers, utilities, and member variables.
 
   // If root_ is a Map and has child with the given name and type, return the
   // child.  Otherwise, report an error and return an undefined node.
@@ -376,5 +418,5 @@ class YamlReadArchive final {
   const std::type_info* debug_visit_type_{};
 };
 
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake
