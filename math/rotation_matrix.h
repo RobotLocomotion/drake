@@ -329,31 +329,39 @@ class RotationMatrix {
   /// Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
   /// For `this` rotation matrix R_AB (which relates right-handed
   /// sets of orthogonal unit vectors Ax, Ay, Az to Bx, By, Bz),
-  /// <br>row(0) returns Ax expressed in terms of Bx, By, Bz,
-  /// <br>row(1) returns Ay expressed in terms of Bx, By, Bz.
-  /// <br>row(2) returns Az expressed in terms of Bx, By, Bz.
-  /// @param[in] i requested row index, between 0 and 2 (0 <= i <= 2).
+  /// - row(0) returns Ax_B (Ax expressed in terms of Bx, By, Bz).
+  /// - row(1) returns Ay_B (Ay expressed in terms of Bx, By, Bz).
+  /// - row(2) returns Az_B (Az expressed in terms of Bx, By, Bz).
+  /// @param[in] index requested row index (0 <= index <= 2).
   /// @see col(), matrix()
-  /// @throws std::runtime_error if i < 0 or i > 2.
-    const Vector3<T> row(int i) const {
-    const bool is_i_valid = (0 <= i && i <= 2);
-    if (!is_i_valid) throw std::runtime_error("0 <= i && i <= 2 is not true");
-    return R_AB_.row(i);
+  /// @throws In debug builds, asserts (0 <= index <= 2).
+  const Eigen::Block<const Matrix3<T>, 1, 3, false> row(int index) const {
+    // The returned value from this method mimics Eigen's row() method which was
+    // found in  Eigen/src/plugins/BlockMethods.h.  The Matrix3 R_AB_ that
+    // underlies this class is column major (so IsRowMajor is false).
+    // Since the boolean that should be passed is (IsRowMajor = false), the last
+    // argument to the returned Eigen::Block<...> is false.
+    DRAKE_ASSERT_VOID(ThrowIfIndexIsNot012(index));
+    return R_AB_.row(index);
   }
 
   /// Returns `this` rotation matrix's iᵗʰ column (i = 0, 1, 2).
   /// For `this` rotation matrix R_AB (which relates right-handed
   /// sets of orthogonal unit vectors Ax, Ay, Az to Bx, By, Bz),
-  /// <br>col(0) returns Bx expressed in terms of Ax, Ay, Az,
-  /// <br>col(1) returns By expressed in terms of Ax, Ay, Az.
-  /// <br>col(2) returns Bz expressed in terms of Ax, Ay, Az.
-  /// @param[in] i requested column index, between 0 and 2 (0 <= i <= 2).
+  /// - col(0) returns Bx_A (Bx expressed in terms of Ax, Ay, Az).
+  /// - col(1) returns By_A (By expressed in terms of Ax, Ay, Az).
+  /// - col(2) returns Bz_A (By expressed in terms of Ax, Ay, Az_.
+  /// @param[in] index requested column index (0 <= index <= 2).
   /// @see row(), matrix()
-  /// @throws std::runtime_error if i < 0 or i > 2.
-  const Vector3<T> col(int i) const {
-    const bool is_i_valid = (0 <= i && i <= 2);
-    if (!is_i_valid) throw std::runtime_error("0 <= i && i < 3 is not true");
-    return R_AB_.col(i);
+  /// @throws In debug builds, asserts (0 <= index <= 2).
+  const Eigen::Block<const Matrix3<T>, 3, 1, true> col(int index) const {
+    // The returned value from this method mimics Eigen's col() method which was
+    // found in  Eigen/src/plugins/BlockMethods.h.  The Matrix3 R_AB_ that
+    // underlies this class is column major (so IsRowMajor is false).
+    // Since the boolean that should be passed is (!IsRowMajor = true), the last
+    // argument to the returned Eigen::Block<...> is true.
+    DRAKE_ASSERT_VOID(ThrowIfIndexIsNot012(index));
+    return R_AB_.col(index);
   }
 
   /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
@@ -697,6 +705,14 @@ class RotationMatrix {
                                     double tolerance) {
     const T R_max_difference = GetMaximumAbsoluteDifference(R, other);
     return R_max_difference <= tolerance;
+  }
+
+  // Throws an exception if index is not 0, 1, or 2.
+  static void ThrowIfIndexIsNot012(int index) {
+    const bool is_index_in_range = (0 <= index && index <= 2);
+    if (!is_index_in_range) {
+      throw std::logic_error("Error: index must be 0, 1, or 2");
+    }
   }
 
   // Throws an exception if R is not a valid %RotationMatrix.

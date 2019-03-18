@@ -227,10 +227,10 @@ GTEST_TEST(RotationMatrix, GetRowsOrColumnsFromRotationmatrix) {
 
   if (kDrakeAssertIsArmed) {
     // Bad index (not equal to 0, 1, 2) should throw exception.
-    EXPECT_THROW(R_AB.row(-1), std::runtime_error);
-    EXPECT_THROW(R_AB.col(-1), std::runtime_error);
-    EXPECT_THROW(R_AB.row(3), std::runtime_error);
-    EXPECT_THROW(R_AB.col(3), std::runtime_error);
+    EXPECT_THROW(R_AB.row(-1), std::logic_error);
+    EXPECT_THROW(R_AB.col(-1), std::logic_error);
+    EXPECT_THROW(R_AB.row(3), std::logic_error);
+    EXPECT_THROW(R_AB.col(3), std::logic_error);
   }
 }
 
