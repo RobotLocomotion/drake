@@ -49,10 +49,12 @@ drake_cc_library(
     name = "rules_test_utilities",
     testonly = 1,
     srcs = [
+        "rules_direction_usage_compare.cc",
         "rules_right_of_way_compare.cc",
         "rules_speed_limit_compare.cc",
     ],
     hdrs = [
+        "rules_direction_usage_compare.h",
         "rules_right_of_way_compare.h",
         "rules_speed_limit_compare.h",
         "rules_test_utilities.h",
