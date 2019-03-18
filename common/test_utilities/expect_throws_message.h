@@ -22,18 +22,23 @@ boilerplate you don't care to match at the beginning and end, surround with
 `.*` to ignore.
 
 Following GTest's conventions, failure to perform as expected here is a
-non-fatal test error. An `ASSERT` variant is provided to make it fatal. Also,
-we provide `IF_ARMED` variants for testing error messages that are thrown only
-in Debug builds (or any builds where `DRAKE_ENABLE_ASSERTS` has been defined).
+non-fatal test error. An `ASSERT` variant is provided to make it fatal. There
+are also `*_IF_ARMED` variants. These require an exception in Debug builds (or
+any builds where `DRAKE_ENABLE_ASSERTS` has been defined). In Release builds,
+the expression will pass if it _doesn't_ throw or if it throws an
+exception that would pass the same test as in Debug builds. There is no
+mechanism for testing _exclusive_ throwing behavior (i.e., only throws in
+Debug).
 @see DRAKE_ASSERT_THROWS_MESSAGE
-@see DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED, DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED */
+@see DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED, DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED
+*/
 #define DRAKE_EXPECT_THROWS_MESSAGE(expression, exception, regexp)
 
 /** Fatal error version of `DRAKE_EXPECT_THROWS_MESSAGE`.
 @see DRAKE_EXPECT_THROWS_MESSAGE */
 #define DRAKE_ASSERT_THROWS_MESSAGE(expression, exception, regexp)
 
-/** Same as `DRAKE_EXPECT_THROWS_MESSAGE` in Debug builds, but doesn't require
+/** Same as `DRAKE_EXPECT_THROWS_MESSAGE` in Debug builds, but doesn't _require_
 a throw in Release builds. However, if the Release build does throw it must
 throw the right message. More precisely, the thrown message is required
 whenever `DRAKE_ENABLE_ASSERTS` is defined, which Debug builds do be default.
