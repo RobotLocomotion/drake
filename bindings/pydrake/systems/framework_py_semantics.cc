@@ -185,6 +185,15 @@ void DefineFrameworkPySemantics(py::module m) {
             overload_cast_explicit<const DiscreteValues<T>&>(
                 &Context<T>::get_discrete_state),
             py_reference_internal, doc.Context.get_discrete_state.doc_0args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            doc.Context.SetDiscreteState.doc_1args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            doc.Context.SetDiscreteState.doc_2args)
         .def("get_mutable_discrete_state",
             overload_cast_explicit<DiscreteValues<T>&>(
                 &Context<T>::get_mutable_discrete_state),
