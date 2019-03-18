@@ -1,4 +1,4 @@
-#include "drake/common/yaml/dev/yaml_read_archive.h"
+#include "drake/common/yaml/yaml_read_archive.h"
 
 #include <cmath>
 #include <limits>
@@ -12,9 +12,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-using anzu::common::YamlReadArchive;
-
-// TODO(jeremy.nimmer) All of these regexps would be better off using the
+// TODO(jwnimmer-tri) All of these regexps would be better off using the
 // std::regex::basic grammar, where () and {} are not special characters.
 
 namespace {
@@ -23,12 +21,12 @@ namespace {
 // a user may write for their own schemas.
 
 struct DoubleStruct {
-  double value = NAN;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
   }
+
+  double value = NAN;
 };
 
 bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
@@ -36,8 +34,6 @@ bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
 }
 
 struct ArrayStruct {
-  std::array<double, 3> value;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
@@ -46,11 +42,11 @@ struct ArrayStruct {
   ArrayStruct() {
     value.fill(NAN);
   }
+
+  std::array<double, 3> value;
 };
 
 struct VectorStruct {
-  std::vector<double> value;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
@@ -59,11 +55,11 @@ struct VectorStruct {
   VectorStruct() {
     value.resize(1, NAN);
   }
+
+  std::vector<double> value;
 };
 
 struct OptionalStruct {
-  drake::optional<double> value;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
@@ -72,6 +68,8 @@ struct OptionalStruct {
   OptionalStruct() {
     value = NAN;
   }
+
+  drake::optional<double> value;
 };
 
 using Variant3 = drake::variant<std::string, double, DoubleStruct>;
@@ -88,8 +86,6 @@ std::ostream& operator<<(std::ostream& os, const Variant3& value) {
 }
 
 struct VariantStruct {
-  Variant3 value;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
@@ -98,21 +94,21 @@ struct VariantStruct {
   VariantStruct() {
     value = NAN;
   }
+
+  Variant3 value;
 };
 
 struct VariantWrappingStruct {
-  VariantStruct inner;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(inner));
   }
+
+  VariantStruct inner;
 };
 
 template <int Rows, int Cols>
 struct EigenStruct {
-  Eigen::Matrix<double, Rows, Cols> value;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(value));
@@ -121,6 +117,8 @@ struct EigenStruct {
   EigenStruct() {
     value.setConstant(NAN);
   }
+
+  Eigen::Matrix<double, Rows, Cols> value;
 };
 
 using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
@@ -138,20 +136,20 @@ struct OuterStruct {
     }
   };
 
-  double outer_value = NAN;
-  InnerStruct inner_struct;
-
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(outer_value));
     a->Visit(DRAKE_NVP(inner_struct));
   }
+
+  double outer_value = NAN;
+  InnerStruct inner_struct;
 };
 
 }  // namespace
 
-namespace anzu {
-namespace common {
+namespace drake {
+namespace yaml {
 namespace {
 
 // A test fixture with common helpers.
@@ -626,5 +624,5 @@ doc:
 }
 
 }  // namespace
-}  // namespace common
-}  // namespace anzu
+}  // namespace yaml
+}  // namespace drake
