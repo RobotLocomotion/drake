@@ -185,6 +185,15 @@ void DefineFrameworkPySemantics(py::module m) {
             overload_cast_explicit<const DiscreteValues<T>&>(
                 &Context<T>::get_discrete_state),
             py_reference_internal, doc.Context.get_discrete_state.doc_0args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            doc.Context.SetDiscreteState.doc_1args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            doc.Context.SetDiscreteState.doc_2args)
         .def("get_mutable_discrete_state",
             overload_cast_explicit<DiscreteValues<T>&>(
                 &Context<T>::get_mutable_discrete_state),
@@ -231,6 +240,14 @@ void DefineFrameworkPySemantics(py::module m) {
             },
             py_reference_internal,
             doc.Context.get_mutable_abstract_state.doc_1args)
+        .def("SetAbstractState",
+            [](py::object self, int index, py::object value) {
+              // Get Python-bound abstract value.
+              py::object abstract_value =
+                  self.attr("get_mutable_abstract_state")(index);
+              abstract_value.attr("set_value")(value);
+            },
+            doc.Context.SetAbstractState.doc)
         .def("get_parameters", &Context<T>::get_parameters,
             py_reference_internal, doc.Context.get_parameters.doc)
         .def("num_numeric_parameter_groups",

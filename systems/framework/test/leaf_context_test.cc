@@ -805,6 +805,19 @@ TEST_F(LeafContextTest, Invalidation) {
   context_.get_mutable_discrete_state(DiscreteStateIndex(0));
   CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
 
+  const Vector1d xd0_val(2.);
+  const Eigen::Vector2d xd1_val(3., 4.);
+
+  // SetDiscreteState(group) should be more discerning but currently invalidates
+  // dependents of all groups when only one changes.
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.SetDiscreteState(DiscreteStateIndex(0), xd0_val);
+  CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.SetDiscreteState(DiscreteStateIndex(1), xd1_val);
+  CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
+
   // Modify abstract state.
   const std::set<CacheIndex> xa_dependent
       {depends[internal::kXaTicket],
@@ -818,6 +831,10 @@ TEST_F(LeafContextTest, Invalidation) {
 
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_abstract_state<int>(AbstractStateIndex(0));
+  CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
+
+  MarkAllCacheValuesUpToDate(&cache);
+  context_.SetAbstractState(AbstractStateIndex(0), 5);  // <int> inferred.
   CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
 
   // Modify parameters.
@@ -859,6 +876,45 @@ TEST_F(LeafContextTest, Invalidation) {
   CheckAllCacheValuesUpToDateExcept(cache,
       {depends[internal::kAllInputPortsTicket],
        depends[internal::kAllSourcesTicket]});
+}
+
+// Verify that safe Set() sugar for modifying state variables works. Cache
+// invalidation is tested separately above; this just checks values.
+TEST_F(LeafContextTest, TestStateSettingSugar) {
+  const Vector1d xd0_init{128.}, xd0_new{1.};
+  const Eigen::Vector2d xd1_init{256., 512.}, xd1_new{2., 3.};
+  EXPECT_EQ(context_.get_discrete_state(0).get_value(), xd0_init);
+  EXPECT_EQ(context_.get_discrete_state(1).get_value(), xd1_init);
+
+  context_.SetDiscreteState(0, xd0_new);
+  EXPECT_EQ(context_.get_discrete_state(0).get_value(), xd0_new);
+  context_.SetDiscreteState(1, xd1_new);
+  EXPECT_EQ(context_.get_discrete_state(1).get_value(), xd1_new);
+
+  // With two groups the abbreviated signature isn't allowed.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context_.SetDiscreteState(xd0_new), std::logic_error,
+      ".*SetDiscreteState.*: expected exactly 1.*but there were 2 groups.*");
+
+  // Change to just one group, then it should work.
+  std::vector<std::unique_ptr<BasicVector<double>>> xd;
+  const Eigen::VectorXd xd_init = Eigen::Vector3d{1., 2., 3.};
+  const Eigen::Vector3d xd_new{4., 5., 6.};
+  xd.push_back(std::make_unique<BasicVector<double>>(xd_init));
+  context_.init_discrete_state(
+      std::make_unique<DiscreteValues<double>>(std::move(xd)));
+  EXPECT_EQ(context_.get_discrete_state_vector().get_value(), xd_init);
+  context_.SetDiscreteState(xd_new);
+  EXPECT_EQ(context_.get_discrete_state_vector().get_value(), xd_new);
+
+  EXPECT_EQ(context_.get_abstract_state<int>(0), 42);
+  context_.SetAbstractState(0, 29);  // Template arg is inferred.
+  EXPECT_EQ(context_.get_abstract_state<int>(0), 29);
+
+  // Type mismatch should be caught.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      context_.SetAbstractState(0, std::string("hello")), std::logic_error,
+      ".*cast to.*std::string.*failed.*actual type.*int.*");
 }
 
 }  // namespace
