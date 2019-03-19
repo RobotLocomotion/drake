@@ -143,7 +143,7 @@ class DoublePendulumModel {
         *world_body_,
         {},      /* Default to Identity; frame Si IS the world frame W. */
         *link1_,
-        X_L1So.GetAsmath::RigidTransform(),  /* Pose of So in link 1's frame L1. */
+        X_L1So,  /* Pose of So in link 1's frame L1. */
         Vector3d::UnitZ()  /* revolute axis */);
 
     // The elbow is the joint that connects links 1 and 2.

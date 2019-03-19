@@ -15,6 +15,7 @@
 #include "drake/common/random.h"
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
@@ -851,15 +852,21 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
-  template<template<typename> class JointType, typename... Args>
-  const JointType<T>& AddJoint(
-      const std::string& name,
-      const Body<T>& parent, const optional<Isometry3<double>>& X_PF,
-      const Body<T>& child, const optional<Isometry3<double>>& X_BM,
-      Args&&... args) {
+  template <template <typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
+                               const optional<Isometry3<double>>& X_PF,
+                               const Body<T>& child,
+                               const optional<Isometry3<double>>& X_BM,
+                               Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
+
+    optional<math::RigidTransform<T>> X_PF_rt =
+        X_PF ? optional<math::RigidTransform<T>>(*X_PF) : nullopt;
+    optional<math::RigidTransform<T>> X_BM_rt =
+        X_BM ? optional<math::RigidTransform<T>>(*X_BM) : nullopt;
+
     return this->mutable_tree().template AddJoint<JointType>(
-        name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
+        name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
   }
 
   /// Adds a new force element model of type `ForceElementType` to `this`
@@ -1367,7 +1374,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   The pose of body frame B in the world frame W.
   /// @throws std::exception if Finalize() was not called on `this` model or if
   /// `body_B` does not belong to this model.
-  const Isometry3<T>& EvalBodyPoseInWorld(
+  const math::RigidTransform<T>& EvalBodyPoseInWorld(
       const systems::Context<T>& context,
       const Body<T>& body_B) const {
     return internal_tree().EvalBodyPoseInWorld(context, body_B);
