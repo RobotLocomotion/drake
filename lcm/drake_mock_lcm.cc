@@ -78,5 +78,23 @@ void DrakeMockLcm::InduceSubscriberCallback(const std::string& channel,
   }
 }
 
+int DrakeMockLcm::HandleSubscriptions(int) {
+  int result = 0;
+  for (auto pub_iter : last_published_messages_) {
+    const std::string& channel = pub_iter.first;
+    LastPublishedMessage& record = pub_iter.second;
+    if (!record.handled) {
+      const auto& sub_range = subscriptions_.equal_range(channel);
+      for (auto iter = sub_range.first; iter != sub_range.second; ++iter) {
+        const HandlerFunction& handler = iter->second;
+        handler(record.data.data(), record.data.size());
+      }
+      ++result;
+      record.handled = true;
+    }
+  }
+  return result;
+}
+
 }  // namespace lcm
 }  // namespace drake

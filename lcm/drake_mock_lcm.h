@@ -111,12 +111,15 @@ class DrakeMockLcm : public DrakeLcmInterface {
   void InduceSubscriberCallback(const std::string& channel, const void* data,
                                int data_size);
 
+  int HandleSubscriptions(int) override;
+
  private:
   bool enable_loop_back_{false};
 
   struct LastPublishedMessage {
     std::vector<uint8_t> data{};
     optional<double> time_sec{};
+    bool handled{};
   };
 
   std::map<std::string, LastPublishedMessage> last_published_messages_;

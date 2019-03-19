@@ -62,6 +62,14 @@ void DrakeLcmLog::Subscribe(const std::string& channel,
   subscriptions_.emplace(channel, std::move(handler));
 }
 
+int DrakeLcmLog::HandleSubscriptions(int) {
+  if (is_write_) {
+    throw std::logic_error(
+        "HandleSubscriptions is only available for log playback.");
+  }
+  return 0;
+}
+
 double DrakeLcmLog::GetNextMessageTime() const {
   if (is_write_) {
     throw std::logic_error(

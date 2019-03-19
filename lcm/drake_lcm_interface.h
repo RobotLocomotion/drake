@@ -56,6 +56,14 @@ class DrakeLcmInterface {
    */
   virtual void Subscribe(const std::string& channel, HandlerFunction) = 0;
 
+  /**
+   * Invokes the HandlerFunction callbacks for all subscriptions' pending
+   * messages.  If @p timeout_millis is >0, blocks for up to that long until at
+   * least one message is handled.  Returns the number of messages handled, or
+   * 0 on timeout.
+   */
+  virtual int HandleSubscriptions(int timeout_millis) = 0;
+
  protected:
   DrakeLcmInterface() = default;
 };

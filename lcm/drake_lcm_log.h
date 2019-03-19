@@ -73,6 +73,11 @@ class DrakeLcmLog : public DrakeLcmInterface {
   void Subscribe(const std::string& channel, HandlerFunction handler) override;
 
   /**
+   * This is a no-op for Read mode, and an exception in Write mode.
+   */
+  int HandleSubscriptions(int) override;
+
+  /**
    * Returns the time in seconds for the next logged message's occurrence time
    * or infinity if there are no more messages in the current log.
    *
