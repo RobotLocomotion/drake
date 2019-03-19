@@ -27,9 +27,9 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
       tree.AddRigidBody("Body3", instance1, SpatialInertia<double>());
 
   tree.AddJoint<WeldJoint>(
-      "weld1", tree.world_body(), Eigen::math::RigidTransformd::Identity(),
-      body1, Eigen::math::RigidTransformd::Identity(),
-      Eigen::math::RigidTransformd::Identity());
+      "weld1", tree.world_body(), math::RigidTransformd::Identity(),
+      body1, math::RigidTransformd::Identity(),
+      math::RigidTransformd::Identity());
   // Test minimal `AddJoint` overload.
   const Joint<double>& body1_body2 =
       tree.AddJoint(
@@ -40,8 +40,8 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
 
   const Joint<double>& body2_body3 =
       tree.AddJoint<PrismaticJoint>(
-          "prism2", body2, Eigen::math::RigidTransformd::Identity(),
-          body3, Eigen::math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
+          "prism2", body2, math::RigidTransformd::Identity(),
+          body3, math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
   tree.AddJointActuator("act2", body2_body3);
 
   const ModelInstanceIndex instance2 = tree.AddModelInstance("instance2");
@@ -53,8 +53,8 @@ GTEST_TEST(ModelInstance, ModelInstanceTest) {
 
   const Joint<double>& body4_body5 =
       tree.AddJoint<PrismaticJoint>(
-          "prism3", body4, Eigen::math::RigidTransformd::Identity(),
-          body5, Eigen::math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
+          "prism3", body4, math::RigidTransformd::Identity(),
+          body5, math::RigidTransformd::Identity(), Eigen::Vector3d(0, 0, 1));
   tree.AddJointActuator("act3", body4_body5);
 
   tree.Finalize();

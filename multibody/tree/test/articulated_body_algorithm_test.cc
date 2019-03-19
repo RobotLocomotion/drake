@@ -62,8 +62,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     const T translation = get_translation(context);
     const Vector3<T> p_FM = translation * axis_translation_F;
 
-    const math::RigidTransform<T> X_FM(R_FM, p_FM);
-    return X_FM.GetAsmath::RigidTransform();
+    return math::RigidTransform<T>(R_FM, p_FM);
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(

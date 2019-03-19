@@ -23,11 +23,13 @@ namespace internal {
 namespace {
 
 using Eigen::AngleAxisd;
-using Eigen::math::RigidTransformd;
+using math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using std::unique_ptr;
 using systems::Context;
+
+const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // This unit test fixture sets up a simple MultibodyTree model containing a
 // number frames to verify the correctness of the frame methods.
@@ -135,23 +137,23 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // frame B to which this frame attaches to. Since in this case frame F IS the
   // body frame B, X_BF = Id and this method should return the identity
   // transformation.
-  EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).
-      isApprox(math::RigidTransformd::Identity()));
+  EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).IsExactlyIdentity());
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().
-      isApprox(math::RigidTransformd::Identity()));
+  EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().IsExactlyIdentity());
 
   // Verify this method computes the pose of a frame G measured in this
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.
   // Since in this case frame F IS the body frame B, X_BF = Id and this method
   // simply returns X_FG.
-  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_).isApprox(X_FG_));
+  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_)
+                  .IsNearlyEqualTo(X_FG_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
   // As in the variant above, since in this case frame F IS the body frame B,
   // X_BF = Id and this method simply returns X_FG.
-  EXPECT_TRUE(frameB_->GetFixedOffsetPoseInBody(X_FG_).isApprox(X_FG_));
+  EXPECT_TRUE(frameB_->GetFixedOffsetPoseInBody(X_FG_).IsNearlyEqualTo(
+      X_FG_, kEpsilon));
 }
 
 // Verifies the FixedOffsetFrame methods to compute poses in different frames.
@@ -162,19 +164,22 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
 //     B -------> P
 TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // Verify this method returns the pose X_BP of frame P in body frame B.
-  EXPECT_TRUE(frameP_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_));
+  EXPECT_TRUE(
+      frameP_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BP_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameP_->GetFixedPoseInBodyFrame().isApprox(X_BP_));
+  EXPECT_TRUE(
+      frameP_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BP_, kEpsilon));
 
   // Verify this method computes the pose X_BQ of a third frame Q measured in
   // the body frame B given we know the pose X_PQ of frame G in our frame P as:
   // X_BQ = X_BP * X_PQ
-  EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_).
-      isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_)
+                  .IsNearlyEqualTo(X_BP_ * X_PQ_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameP_->GetFixedOffsetPoseInBody(X_PQ_).isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameP_->GetFixedOffsetPoseInBody(X_PQ_).IsNearlyEqualTo(
+      X_BP_ * X_PQ_, kEpsilon));
 }
 
 // Verifies FixedOffsetFrame methods to compute poses in different frames when
@@ -188,20 +193,22 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   EXPECT_TRUE(frameQ_->name().empty());
   // Verify this method computes the pose of frame Q in the body frame B as:
   // X_BQ = X_BP * X_PQ
-  EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(
+      X_BP_ * X_PQ_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameQ_->GetFixedPoseInBodyFrame().isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameQ_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BP_ * X_PQ_,
+                                                                 kEpsilon));
 
   // Verify this method computes the pose X_BG of a fourth frame G measured in
   // the body frame B given we know the pose X_QG of frame G in our frame Q as:
   // X_BG = X_BP * X_PQ * X_QG
   EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(*context_, X_QG_).
-      isApprox(X_BP_ * X_PQ_ * X_QG_));
+      IsNearlyEqualTo(X_BP_ * X_PQ_ * X_QG_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
   EXPECT_TRUE(frameQ_->GetFixedOffsetPoseInBody(X_QG_).
-      isApprox(X_BP_ * X_PQ_ * X_QG_));
+      IsNearlyEqualTo(X_BP_ * X_PQ_ * X_QG_, kEpsilon));
 }
 
 TEST_F(FrameTests, NamedFrame) {

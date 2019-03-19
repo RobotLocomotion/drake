@@ -159,7 +159,7 @@ class DoublePendulumModel {
     elbow_ = &model->template AddJoint<RevoluteJoint>(
         "ElbowJoint",
         *link1_,
-        X_L1Ei.GetAsmath::RigidTransform(),  /* Pose of Ei in L1. */
+        X_L1Ei,  /* Pose of Ei in L1. */
         *link2_,
         {},      /* Default to Identity; frame Eo IS frame L2. */
         Vector3d::UnitZ() /* revolute axis */);

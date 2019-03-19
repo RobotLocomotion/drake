@@ -11,7 +11,7 @@ namespace drake {
 namespace multibody {
 namespace {
 
-using Eigen::math::RigidTransformd;
+using math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using systems::Context;
@@ -53,7 +53,7 @@ class WeldJointTest : public ::testing::Test {
 
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
-  const math::RigidTransformd X_FM_{Translation3d(0, 0.5, 0)};
+  const math::RigidTransformd X_FM_{Vector3d(0, 0.5, 0)};
 };
 
 // Verify the expected number of dofs.
@@ -70,7 +70,7 @@ TEST_F(WeldJointTest, NumDOFs) {
 
 // Verify we can retrieve the fixed posed between the welded frames.
 TEST_F(WeldJointTest, GetX_PC) {
-  EXPECT_EQ(joint_->X_PC().matrix(), X_FM_.matrix());
+  EXPECT_TRUE(joint_->X_PC().IsExactlyEqualTo(X_FM_));
 }
 
 TEST_F(WeldJointTest, GetJointLimits) {

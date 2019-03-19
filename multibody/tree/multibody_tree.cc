@@ -851,8 +851,10 @@ void MultibodyTree<T>::CalcPointsPositions(
   const math::RigidTransform<T> X_AB =
       CalcRelativeTransform(context, frame_A, frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
-  // Eigen so.
-  p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
+  // Eigen so. We also convert to Isometry3 to take advantage of the operator*()
+  // for a column vector of Vector3 without using heap allocation.
+  p_AQi->template topRows<3>() =
+      X_AB.GetAsIsometry3() * p_BQi.template topRows<3>();
 }
 
 template <typename T>
