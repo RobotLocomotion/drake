@@ -2,6 +2,10 @@
 
 #include <gtest/gtest.h>
 
+#include <iostream>
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 namespace drake {
 namespace math {
 namespace {
@@ -117,6 +121,9 @@ GTEST_TEST(RigidTransform, ConstructorAndSet) {
     EXPECT_THROW(RigidTransform<double>(RotationMatrix<double>(bad), p),
                  std::logic_error);
   }
+
+  const Isometry3<double>& Xiso = X;
+  PRINT_VARn(Xiso.matrix());
 }
 
 // Tests constructing a RigidTransform from just a RotationMatrix.

@@ -275,6 +275,14 @@ class RigidTransform {
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
 
+  operator Isometry3<T>() const {
+    return GetAsIsometry3();
+  }
+
+  const Matrix3<T>& linear() const {
+    return R_AB_.matrix();
+  }
+
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
   /// %RigidTransform `X_BC`.
   /// @param[in] other %RigidTransform that post-multiplies `this`.
