@@ -32,10 +32,12 @@ load("@drake//tools/workspace/ignition_math:repository.bzl", "ignition_math_repo
 load("@drake//tools/workspace/ignition_rndf:repository.bzl", "ignition_rndf_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/json:repository.bzl", "json_repository")
+load("@drake//tools/workspace/jsoncpp:repository.bzl", "jsoncpp_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
 load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
+load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libprotobuf:repository.bzl", "libprotobuf_repository")  # noqa
@@ -150,6 +152,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ipopt_repository(name = "ipopt")
     if "json" not in excludes:
         json_repository(name = "json", mirrors = mirrors)
+    if "jsoncpp" not in excludes:
+        jsoncpp_repository(name = "jsoncpp")
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:
@@ -158,6 +162,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         lcmtypes_bot2_core_repository(name = "lcmtypes_bot2_core", mirrors = mirrors)  # noqa
     if "lcmtypes_robotlocomotion" not in excludes:
         lcmtypes_robotlocomotion_repository(name = "lcmtypes_robotlocomotion", mirrors = mirrors)  # noqa
+    if "libjpeg" not in excludes:
+        libjpeg_repository(name = "libjpeg")
     if "liblz4" not in excludes:
         liblz4_repository(name = "liblz4")
     if "libpng" not in excludes:
