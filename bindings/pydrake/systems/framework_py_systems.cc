@@ -413,9 +413,7 @@ struct Impl {
               return self->DeclareAbstractOutputPort(arg1, arg2);
             }),
             py_reference_internal, py::arg("alloc"), py::arg("calc"),
-            doc.LeafSystem
-                .DeclareAbstractOutputPort
-                // NOLINTNEXTLINE(whitespace/line_length)
+            doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
         .def("_DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -442,9 +440,7 @@ struct Impl {
               return self->DeclareVectorOutputPort(arg1, arg2);
             }),
             py_reference_internal,
-            doc.LeafSystem
-                .DeclareVectorOutputPort
-                // NOLINTNEXTLINE(whitespace/line_length)
+            doc.LeafSystem.DeclareVectorOutputPort
                 .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc)
         .def("_DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {
