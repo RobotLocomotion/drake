@@ -113,10 +113,12 @@ class TestGeneral(unittest.TestCase):
         pendulum = PendulumPlant()
         context = pendulum.CreateDefaultContext()
         self.assertEqual(context.num_numeric_parameter_groups(), 1)
+        self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         self.assertTrue(
             context.get_parameters().get_numeric_parameter(0) is
             context.get_numeric_parameter(index=0))
         self.assertEqual(context.num_abstract_parameters(), 0)
+        self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         # TODO(russt): Bind _Declare*Parameter or find an example with an
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))

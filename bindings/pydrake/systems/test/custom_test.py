@@ -339,6 +339,7 @@ class TestCustom(unittest.TestCase):
     def test_context_api(self):
         # Capture miscellaneous functions not yet tested.
         model_value = AbstractValue.Make("Hello")
+        model_vector = BasicVector([1., 2.])
 
         class TrivialSystem(LeafSystem):
             def __init__(self):
@@ -346,6 +347,8 @@ class TestCustom(unittest.TestCase):
                 self._DeclareContinuousState(1)
                 self._DeclareDiscreteState(2)
                 self._DeclareAbstractState(model_value.Clone())
+                self._DeclareAbstractParameter(model_value.Clone())
+                self._DeclareNumericParameter(model_vector.Clone())
 
         system = TrivialSystem()
         context = system.CreateDefaultContext()
@@ -380,7 +383,7 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(
             context.get_abstract_state(0).get_value(), model_value.get_value())
 
-        # Check AbstractValues API.
+        # Check abstract state API (also test AbstractValues).
         values = context.get_abstract_state()
         self.assertEqual(values.size(), 1)
         self.assertEqual(
@@ -391,7 +394,17 @@ class TestCustom(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             values.CopyFrom(values.Clone())
 
-        # - Check diagram context accessors.
+        # Check parameter accessors.
+        self.assertEqual(system.num_abstract_parameters(), 1)
+        self.assertEqual(
+            context.get_abstract_parameter(index=0).get_value(),
+            model_value.get_value())
+        self.assertEqual(system.num_numeric_parameter_groups(), 1)
+        np.testing.assert_equal(
+            context.get_numeric_parameter(index=0).get_value(),
+            model_vector.get_value())
+
+        # Check diagram context accessors.
         builder = DiagramBuilder()
         builder.AddSystem(system)
         diagram = builder.Build()
