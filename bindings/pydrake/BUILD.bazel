@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -21,6 +20,7 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings:__subpackages__",
@@ -461,9 +461,7 @@ drake_py_unittest(
     tags = ["lint"],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
+add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
         ":test/common_install_test.py",

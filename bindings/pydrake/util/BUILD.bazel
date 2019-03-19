@@ -2,7 +2,6 @@
 # Backwards-compatibility aliases.
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_test",
@@ -17,6 +16,7 @@ load(
     "drake_py_unittest",
 )
 load(":build_macros.bzl", "util_cc_alias", "util_py_alias")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -101,7 +101,4 @@ drake_py_unittest(
     deps = [":util"],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()

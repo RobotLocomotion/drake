@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
@@ -11,6 +10,7 @@ load(
     "get_pybind_package_info",
 )
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -75,7 +75,4 @@ install(
     doc_dest = "share/doc",
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()
