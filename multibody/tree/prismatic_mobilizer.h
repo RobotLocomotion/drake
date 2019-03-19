@@ -107,7 +107,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// along this mobilizer's axis (see translation_axis().)
   /// The generalized coordinate q for `this` mobilizer (the translation
   /// distance) is read from in `context`.
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame

@@ -23,7 +23,7 @@ namespace internal {
 namespace {
 
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
+using Eigen::math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using std::unique_ptr;
@@ -74,15 +74,15 @@ class FrameTests : public ::testing::Test {
 
     // Frame R is arbitrary, but named.
     frameR_ = &model->AddFrame<FixedOffsetFrame>(
-        "R", *frameP_, Isometry3d::Identity());
+        "R", *frameP_, math::RigidTransformd::Identity());
 
     // Frame S is arbitrary, but named and with a specific model instance.
     extra_instance_ = model->AddModelInstance("extra_instance");
     frameS_ = &model->AddFrame<FixedOffsetFrame>(
-        "S", model->world_frame(), Isometry3d::Identity(), extra_instance_);
+        "S", model->world_frame(), math::RigidTransformd::Identity(), extra_instance_);
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
-        "SChild", *frameS_, Isometry3d::Identity());
+        "SChild", *frameS_, math::RigidTransformd::Identity());
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -122,11 +122,11 @@ class FrameTests : public ::testing::Test {
   const Frame<double>* frameS_{};
   const Frame<double>* frameSChild_{};
   // Poses:
-  Isometry3d X_BP_;
-  Isometry3d X_PQ_;
-  Isometry3d X_FG_;
-  Isometry3d X_QF_;
-  Isometry3d X_QG_;
+  math::RigidTransformd X_BP_;
+  math::RigidTransformd X_PQ_;
+  math::RigidTransformd X_FG_;
+  math::RigidTransformd X_QF_;
+  math::RigidTransformd X_QG_;
 };
 
 // Verifies the BodyFrame methods to compute poses in different frames.
@@ -136,11 +136,11 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // body frame B, X_BF = Id and this method should return the identity
   // transformation.
   EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).
-      isApprox(Isometry3d::Identity()));
+      isApprox(math::RigidTransformd::Identity()));
 
   // Now verify the fixed pose version of the same method.
   EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().
-      isApprox(Isometry3d::Identity()));
+      isApprox(math::RigidTransformd::Identity()));
 
   // Verify this method computes the pose of a frame G measured in this
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.

@@ -35,7 +35,7 @@ class SpringTester : public ::testing::Test {
     bodyC_ = &model->AddRigidBody("BodyC", SpatialInertia<double>());
 
     model->AddJoint<WeldJoint>("WeldBodyAToWorld", model->world_body(), {},
-                               *bodyA_, {}, Isometry3<double>::Identity());
+                               *bodyA_, {}, math::RigidTransform<double>::Identity());
 
     // Allow body B to rotate about the z axis.
     joint_ = &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, {}, *bodyB_,

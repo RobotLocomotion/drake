@@ -283,6 +283,12 @@ class RigidTransform {
     return R_AB_.matrix();
   }
 
+#if 0
+  Matrix3<T>& linear() {
+    return R_AB_.mutable_matrix();
+  }
+#endif
+
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
   /// %RigidTransform `X_BC`.
   /// @param[in] other %RigidTransform that post-multiplies `this`.

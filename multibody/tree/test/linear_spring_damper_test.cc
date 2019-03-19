@@ -36,7 +36,7 @@ class SpringDamperTester : public ::testing::Test {
 
     model->AddJoint<WeldJoint>(
         "WeldBodyAToWorld", model->world_body(), {}, *bodyA_, {},
-        Isometry3<double>::Identity());
+        math::RigidTransform<double>::Identity());
 
     // Allow body B to slide along the x axis.
     slider_ = &model->AddJoint<PrismaticJoint>(

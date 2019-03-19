@@ -45,10 +45,10 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation_rate(
 }
 
 template <typename T>
-Isometry3<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
-  return Isometry3<T>(
-      Translation3<T>(get_translation(context) * translation_axis()));
+  return math::RigidTransform<T>(
+      get_translation(context) * translation_axis());
 }
 
 template <typename T>

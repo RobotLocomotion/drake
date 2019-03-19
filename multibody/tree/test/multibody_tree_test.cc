@@ -315,7 +315,7 @@ class KukaIiwaModelTests : public ::testing::Test {
       // Add a frame H with a fixed pose X_GH in the end effector frame G.
       // Note: frame names are documented in MakeKukaIiwaModel().
       frame_H_ = &tree->AddFrame<FixedOffsetFrame>(
-          "H", *end_effector_link_, X_GH_.GetAsIsometry3());
+          "H", *end_effector_link_, X_GH_.GetAsmath::RigidTransform());
 
       // Create a system to manage context resources.
       system_ =
@@ -1065,20 +1065,20 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   const Vector3d p_L7Q = Vector3d(0.2, -0.1, 0.5);
 
   // Link 3 kinematics.
-  const Isometry3<double>& X_WL3 = tree().EvalBodyPoseInWorld(*context_, link3);
+  const math::RigidTransform<double>& X_WL3 = tree().EvalBodyPoseInWorld(*context_, link3);
   const Matrix3<double>& R_WL3 = X_WL3.linear();
 
   // link 5 kinematics.
-  const Isometry3<double>& X_WL5 = tree().EvalBodyPoseInWorld(*context_, link5);
+  const math::RigidTransform<double>& X_WL5 = tree().EvalBodyPoseInWorld(*context_, link5);
   const Matrix3<double>& R_WL5 = X_WL5.linear();
 
   // link 7 kinematics.
-  const Isometry3<double>& X_WL7 = tree().EvalBodyPoseInWorld(*context_, link7);
+  const math::RigidTransform<double>& X_WL7 = tree().EvalBodyPoseInWorld(*context_, link7);
   const Matrix3<double>& R_WL7 = X_WL7.linear();
 
   // Position of Q in L3, expressed in world.
   // Spatial velocity of frame L3 shifted to Q.
-  const Isometry3<double> X_L3L7 = tree().CalcRelativeTransform(
+  const math::RigidTransform<double> X_L3L7 = tree().CalcRelativeTransform(
       *context_, link3.body_frame(), link7.body_frame());
   const Vector3<double> p_L3Q_W = R_WL3 * X_L3L7 * p_L7Q;
 
@@ -1170,16 +1170,16 @@ class WeldMobilizerTest : public ::testing::Test {
 
     model->AddMobilizer<WeldMobilizer>(model->world_body().body_frame(),
                                        body1_->body_frame(),
-                                       X_WB1_.GetAsIsometry3());
+                                       X_WB1_.GetAsmath::RigidTransform());
 
     // Add a weld joint between bodies 1 and 2 by welding together inboard
     // frame F (on body 1) with outboard frame M (on body 2).
     const auto& frame_F =
-        model->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_.GetAsIsometry3());
+        model->AddFrame<FixedOffsetFrame>(*body1_, X_B1F_.GetAsmath::RigidTransform());
     const auto& frame_M =
-        model->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_.GetAsIsometry3());
+        model->AddFrame<FixedOffsetFrame>(*body2_, X_B2M_.GetAsmath::RigidTransform());
     model->AddMobilizer<WeldMobilizer>(frame_F, frame_M,
-                                       X_FM_.GetAsIsometry3());
+                                       X_FM_.GetAsmath::RigidTransform());
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -1203,7 +1203,7 @@ class WeldMobilizerTest : public ::testing::Test {
   const RigidBody<double>* body1_{nullptr};
   const RigidBody<double>* body2_{nullptr};
 
-  const Eigen::Isometry3d X_WB1{AngleAxisd(-M_PI_4, Vector3d::UnitZ()) *
+  const Eigen::math::RigidTransformd X_WB1{AngleAxisd(-M_PI_4, Vector3d::UnitZ()) *
                                 Eigen::Translation3d(0.5, 0.0, 0.0)};
   math::RigidTransformd X_WB1_{X_WB1};
   math::RigidTransformd X_FM_{math::RotationMatrixd::MakeZRotation(-M_PI_2)};
@@ -1222,7 +1222,7 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   // Numerical tolerance used to verify numerical results.
   const double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 
-  std::vector<Eigen::Isometry3d> body_poses;
+  std::vector<Eigen::math::RigidTransformd> body_poses;
   tree().CalcAllBodyPosesInWorld(*context_, &body_poses);
 
   EXPECT_TRUE(CompareMatrices(

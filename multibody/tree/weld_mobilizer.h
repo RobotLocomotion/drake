@@ -40,15 +40,15 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   /// @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
   WeldMobilizer(const Frame<T>& inboard_frame_F,
                 const Frame<T>& outboard_frame_M,
-                const Isometry3<double>& X_FM) :
+                const math::RigidTransform<double>& X_FM) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
 
   /// @retval X_FM The pose of the outboard frame M in the inboard frame F.
-  const Isometry3<double>& get_X_FM() const { return X_FM_; }
+  const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
 
   /// Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   /// is independent of the state stored in `context`.
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;
 
   /// Computes the across-mobilizer velocity `V_FM` which for this mobilizer is
@@ -118,7 +118,7 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   // Pose of the outboard frame M in the inboard frame F.
-  Isometry3<double> X_FM_;
+  math::RigidTransform<double> X_FM_;
 };
 
 }  // namespace internal

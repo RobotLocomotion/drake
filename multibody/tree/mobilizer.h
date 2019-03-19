@@ -376,7 +376,7 @@ class Mobilizer : public MultibodyTreeElement<Mobilizer<T>, MobilizerIndex> {
   ///
   /// Additionally, `context` can provide any other parameters the mobilizer
   /// could depend on.
-  virtual Isometry3<T> CalcAcrossMobilizerTransform(
+  virtual math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const = 0;
 
   /// Computes the across-mobilizer spatial velocity `V_FM(q, v)` of the

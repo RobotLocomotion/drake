@@ -44,19 +44,19 @@ class FixedOffsetFrame final : public Frame<T> {
   ///   The frame to which this frame is attached with a fixed pose.
   /// @param[in] X_PF
   ///   The _default_ transform giving the pose of F in P, therefore only the
-  ///   value (as an Isometry3<double>) is provided.
+  ///   value (as an math::RigidTransform<double>) is provided.
   /// @param[in] model_instance
   ///   The model instance to which this frame belongs to. If unspecified, will
   ///   use P.body().model_instance().
   FixedOffsetFrame(
       const std::string& name, const Frame<T>& P,
-      const Isometry3<double>& X_PF,
+      const math::RigidTransform<double>& X_PF,
       optional<ModelInstanceIndex> model_instance = {});
 
   /// Creates an unnamed material Frame F. See overload with name for more
   /// information.
   FixedOffsetFrame(
-      const Frame<T>& P, const Isometry3<double>& X_PF)
+      const Frame<T>& P, const math::RigidTransform<double>& X_PF)
       : FixedOffsetFrame("", P, X_PF) {}
 
   /// Creates a material Frame F whose pose is fixed with respect to the
@@ -69,21 +69,21 @@ class FixedOffsetFrame final : public Frame<T> {
   /// @param[in] X_BF  The transform giving the pose of F in B.
   FixedOffsetFrame(
       const std::string& name, const Body<T>& bodyB,
-      const Isometry3<double>& X_BF);
+      const math::RigidTransform<double>& X_BF);
 
   /// Creates an unnamed material Frame F. See overload with name for more
   /// information.
   FixedOffsetFrame(
-      const Body<T>& bodyB, const Isometry3<double>& X_BF)
+      const Body<T>& bodyB, const math::RigidTransform<double>& X_BF)
       : FixedOffsetFrame("", bodyB, X_BF) {}
 
-  Isometry3<T> CalcPoseInBodyFrame(
+  math::RigidTransform<T> CalcPoseInBodyFrame(
       const systems::Context<T>& context) const override {
     // X_BF = X_BP * X_PF
     return parent_frame_.CalcOffsetPoseInBody(context, X_PF_.cast<T>());
   }
 
-  Isometry3<T> GetFixedPoseInBodyFrame() const override {
+  math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     // X_BF = X_BP * X_PF
     return parent_frame_.GetFixedOffsetPoseInBody(X_PF_.cast<T>());
   }
@@ -121,7 +121,7 @@ class FixedOffsetFrame final : public Frame<T> {
 
   // Spatial transform giving the fixed pose of this frame F measured in the
   // parent frame P.
-  const Isometry3<double> X_PF_;
+  const math::RigidTransform<double> X_PF_;
 };
 
 }  // namespace multibody

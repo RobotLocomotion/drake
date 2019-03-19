@@ -11,7 +11,7 @@ namespace drake {
 namespace multibody {
 namespace {
 
-using Eigen::Isometry3d;
+using Eigen::math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using systems::Context;
@@ -53,7 +53,7 @@ class WeldJointTest : public ::testing::Test {
 
   const RigidBody<double>* body_{nullptr};
   const WeldJoint<double>* joint_{nullptr};
-  const Isometry3d X_FM_{Translation3d(0, 0.5, 0)};
+  const math::RigidTransformd X_FM_{Translation3d(0, 0.5, 0)};
 };
 
 // Verify the expected number of dofs.

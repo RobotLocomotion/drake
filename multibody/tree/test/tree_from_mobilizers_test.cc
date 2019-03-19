@@ -177,7 +177,7 @@ class PendulumTests : public ::testing::Test {
     // upper_link.
     shoulder_outboard_frame_ =
         &model_->AddFrame<FixedOffsetFrame>(
-            upper_link_->body_frame(), X_USo_.GetAsIsometry3());
+            upper_link_->body_frame(), X_USo_.GetAsmath::RigidTransform());
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -207,7 +207,7 @@ class PendulumTests : public ::testing::Test {
     // MultibodyTree::AddJoint() method do that for us:
     elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *upper_link_, X_UEi_.GetAsIsometry3(), /* Pose of Ei in U. */
+        *upper_link_, X_UEi_.GetAsmath::RigidTransform(), /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
     elbow_inboard_frame_ = &elbow_joint_->frame_on_parent();
@@ -276,7 +276,7 @@ class PendulumTests : public ::testing::Test {
   // this method initializes the poses of each link in the position kinematics
   // cache.
   void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_.GetAsIsometry3();
+    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_.GetAsmath::RigidTransform();
   }
 
   // Add elements to this model_ and then transfer the whole thing to
@@ -431,7 +431,7 @@ TEST_F(PendulumTests, Finalize) {
   SpatialInertia<double> M_Bo_B;
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(
-      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_.GetAsIsometry3()),
+      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_.GetAsmath::RigidTransform()),
       std::logic_error);
   EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
       *shoulder_inboard_frame_, *shoulder_outboard_frame_,

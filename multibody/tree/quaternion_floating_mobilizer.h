@@ -185,7 +185,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   /// @name Mobilizer overrides
   /// Refer to the Mobilizer class documentation for details.
   /// @{
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(

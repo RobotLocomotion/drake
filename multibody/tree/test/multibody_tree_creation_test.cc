@@ -268,7 +268,7 @@ class TreeTopologyTests : public ::testing::Test {
       const auto* joint = &model_->AddJoint<RevoluteJoint>(
           "FooJoint",
           inboard, {}, /* Model does not create frame F, and makes F = P.  */
-          outboard, Eigen::Isometry3d::Identity(), /* Model creates frame M. */
+          outboard, Eigen::math::RigidTransformd::Identity(), /* Model creates frame M. */
           Vector3d::UnitZ());
       joints_.push_back(joint);
     } else {
@@ -652,7 +652,7 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
       [&model](const std::string& name,
                const Body<double>& parent, const Body<double>& child) {
         model.AddJoint<WeldJoint>(
-            name, parent, {}, child, {}, Eigen::Isometry3d::Identity());
+            name, parent, {}, child, {}, Eigen::math::RigidTransformd::Identity());
       };
 
   // Start building the test model.
