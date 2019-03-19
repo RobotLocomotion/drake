@@ -4,6 +4,7 @@
 
 #include "drake/automotive/maliput/api/intersection.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_book.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase_provider.h"
@@ -20,6 +21,9 @@ namespace test {
 /// Returns a rules::LaneSRoute containing an arbitrary route.
 rules::LaneSRoute LaneSRoute();
 
+/// Returns a rules::LaneSRange containing an arbitrary range.
+rules::LaneSRange LaneSRange();
+
 /// Returns a rules::RightOfWayRule::State::YieldGroup of size two.
 rules::RightOfWayRule::State::YieldGroup YieldGroup2();
 
@@ -31,6 +35,12 @@ rules::RightOfWayRule::State YieldState();
 
 /// Returns a rules::RightOfWayRule containing arbitrary state.
 rules::RightOfWayRule Rule();
+
+/// Returns a rules::DirectionUsageRule::State.
+rules::DirectionUsageRule::State GetDirectionUsageRuleState();
+
+/// Returns a rules::DirectionUsageRule containing an arbitrary state.
+rules::DirectionUsageRule GetDirectionUsageRule();
 
 /// Returns an arbitrary RoadGeometry.
 std::unique_ptr<RoadGeometry> CreateRoadGeometry();

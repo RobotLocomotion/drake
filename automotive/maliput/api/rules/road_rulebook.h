@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
@@ -32,6 +33,7 @@ class RoadRulebook {
   struct QueryResults {
     std::vector<RightOfWayRule> right_of_way;
     std::vector<SpeedLimitRule> speed_limit;
+    std::vector<rules::DirectionUsageRule> direction_usage;
   };
 
   /// Returns a QueryResults structure which contains any rules which are
@@ -64,6 +66,13 @@ class RoadRulebook {
     return DoGetRule(id);
   }
 
+  /// Returns the DirectionUsageRule with the specified `id`.
+  ///
+  /// @throws std::out_of_range if `id` is unknown.
+  DirectionUsageRule GetRule(const DirectionUsageRule::Id& id) const {
+    return DoGetRule(id);
+  }
+
  protected:
   RoadRulebook() = default;
 
@@ -76,6 +85,8 @@ class RoadRulebook {
       const std::vector<LaneSRange>& ranges, double tolerance) const = 0;
   virtual RightOfWayRule DoGetRule(const RightOfWayRule::Id& id) const = 0;
   virtual SpeedLimitRule DoGetRule(const SpeedLimitRule::Id& id) const = 0;
+  virtual DirectionUsageRule DoGetRule(
+    const DirectionUsageRule::Id& id) const = 0;
   //@}
 };
 

@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
@@ -31,6 +32,14 @@ const SpeedLimitRule kSpeedLimit(SpeedLimitRule::Id("slr_id"),
                                  SpeedLimitRule::Severity::kStrict,
                                  0., 44.);
 
+const DirectionUsageRule kDirectionUsage(
+  DirectionUsageRule::Id("dur_id"), kZone,
+  {DirectionUsageRule::State(
+    DirectionUsageRule::State::Id("dur_state"),
+    DirectionUsageRule::State::Type::kWithS,
+    DirectionUsageRule::State::Severity::kPreferred)});
+
+
 // This class does not provide any semblance of useful functionality.
 // It merely exercises the RoadRulebook abstract interface.
 class MockRulebook : public RoadRulebook {
@@ -44,6 +53,7 @@ class MockRulebook : public RoadRulebook {
         (ranges[0].s_range().s1() == kZone.s_range().s1())) {
       results.right_of_way.push_back(kRightOfWay);
       results.speed_limit.push_back(kSpeedLimit);
+      results.direction_usage.push_back(kDirectionUsage);
     }
     return results;
   }
@@ -61,6 +71,13 @@ class MockRulebook : public RoadRulebook {
     }
     return kSpeedLimit;
   }
+
+  virtual DirectionUsageRule DoGetRule(const DirectionUsageRule::Id& id) const {
+    if (id != kDirectionUsage.id()) {
+      throw std::out_of_range("");
+    }
+    return kDirectionUsage;
+  }
 };
 
 
@@ -72,9 +89,11 @@ GTEST_TEST(RoadRulebookTest, ExerciseInterface) {
   RoadRulebook::QueryResults nonempty = dut.FindRules({kZone}, kZeroTolerance);
   EXPECT_EQ(nonempty.right_of_way.size(), 1);
   EXPECT_EQ(nonempty.speed_limit.size(), 1);
+  EXPECT_EQ(nonempty.direction_usage.size(), 1);
   RoadRulebook::QueryResults empty = dut.FindRules({}, kZeroTolerance);
   EXPECT_EQ(empty.right_of_way.size(), 0);
   EXPECT_EQ(empty.speed_limit.size(), 0);
+  EXPECT_EQ(empty.direction_usage.size(), 0);
 
   const double kNegativeTolerance = -1.;
   EXPECT_THROW(dut.FindRules({}, kNegativeTolerance),
@@ -85,6 +104,9 @@ GTEST_TEST(RoadRulebookTest, ExerciseInterface) {
 
   EXPECT_EQ(dut.GetRule(kSpeedLimit.id()).id(), kSpeedLimit.id());
   EXPECT_THROW(dut.GetRule(SpeedLimitRule::Id("xxx")), std::out_of_range);
+
+  EXPECT_EQ(dut.GetRule(kDirectionUsage.id()).id(), kDirectionUsage.id());
+  EXPECT_THROW(dut.GetRule(DirectionUsageRule::Id("xxx")), std::out_of_range);
 }
 
 

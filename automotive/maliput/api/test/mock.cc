@@ -16,7 +16,7 @@ namespace api {
 namespace test {
 namespace {
 
-using rules::LaneSRange;
+using rules::DirectionUsageRule;
 using rules::RightOfWayRule;
 
 class MockIdIndex final : public RoadGeometry::IdIndex {
@@ -75,10 +75,15 @@ class MockRoadRulebook final : public rules::RoadRulebook {
   }
   rules::SpeedLimitRule DoGetRule(
       const rules::SpeedLimitRule::Id&) const override {
-    const rules::LaneSRange kZone(rules::LaneSRange(LaneId("a"), {0., 9.}));
-    return rules::SpeedLimitRule(rules::SpeedLimitRule::Id("some_id"), kZone,
+    return rules::SpeedLimitRule(rules::SpeedLimitRule::Id("some_id"),
+                                 LaneSRange(),
                                  rules::SpeedLimitRule::Severity::kStrict, 33.,
                                  77.);
+  }
+
+  rules::DirectionUsageRule DoGetRule(
+      const rules::DirectionUsageRule::Id&) const override {
+    return GetDirectionUsageRule();
   }
 };
 
@@ -142,7 +147,12 @@ class MockIntersection final : public Intersection {
 
 rules::LaneSRoute LaneSRoute() {
   return rules::LaneSRoute(
-      {LaneSRange(LaneId("a"), {0., 9.}), LaneSRange(LaneId("b"), {17., 12.})});
+      {rules::LaneSRange(LaneId("a"), {0., 9.}),
+       rules::LaneSRange(LaneId("b"), {17., 12.})});
+}
+
+rules::LaneSRange LaneSRange() {
+  return rules::LaneSRange(LaneId("a"), {0., 9.});
 }
 
 RightOfWayRule::State::YieldGroup YieldGroup2() {
@@ -164,6 +174,18 @@ RightOfWayRule Rule() {
   return RightOfWayRule(RightOfWayRule::Id("mock_id"), LaneSRoute(),
                         RightOfWayRule::ZoneType::kStopExcluded,
                         {NoYieldState(), YieldState()});
+}
+
+DirectionUsageRule::State GetDirectionUsageRuleState() {
+  return DirectionUsageRule::State(
+    DirectionUsageRule::State::Id("dur_state"),
+    DirectionUsageRule::State::Type::kWithS,
+    DirectionUsageRule::State::Severity::kStrict);
+}
+
+DirectionUsageRule GetDirectionUsageRule() {
+  return DirectionUsageRule(DirectionUsageRule::Id("dur_id"), LaneSRange(),
+                            {GetDirectionUsageRuleState()});
 }
 
 std::unique_ptr<RoadGeometry> CreateRoadGeometry() {
