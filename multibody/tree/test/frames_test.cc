@@ -81,7 +81,8 @@ class FrameTests : public ::testing::Test {
     // Frame S is arbitrary, but named and with a specific model instance.
     extra_instance_ = model->AddModelInstance("extra_instance");
     frameS_ = &model->AddFrame<FixedOffsetFrame>(
-        "S", model->world_frame(), math::RigidTransformd::Identity(), extra_instance_);
+        "S", model->world_frame(), math::RigidTransformd::Identity(),
+        extra_instance_);
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
         "SChild", *frameS_, math::RigidTransformd::Identity());

@@ -266,9 +266,10 @@ class TreeTopologyTests : public ::testing::Test {
       // We DO want the model to have a frame M on body "outbaord" (frame B)
       // with a pose X_BM = Identity. We therefore pass the identity transform.
       const auto* joint = &model_->AddJoint<RevoluteJoint>(
-          "FooJoint",
-          inboard, {}, /* Model does not create frame F, and makes F = P.  */
-          outboard, math::RigidTransformd::Identity(), /* Model creates frame M. */
+          "FooJoint", inboard,
+          {}, /* Model does not create frame F, and makes F = P.  */
+          outboard,
+          math::RigidTransformd::Identity(), /* Model creates frame M. */
           Vector3d::UnitZ());
       joints_.push_back(joint);
     } else {

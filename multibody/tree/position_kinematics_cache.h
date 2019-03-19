@@ -45,8 +45,8 @@ class PositionKinematicsCache {
 
   /// Constructs a position kinematics cache entry for the given
   /// MultibodyTreeTopology.
-  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology) :
-      num_nodes_(topology.num_bodies()) {
+  explicit PositionKinematicsCache(const MultibodyTreeTopology& topology)
+      : num_nodes_(topology.num_bodies()) {
     Allocate();
   }
 
@@ -119,7 +119,7 @@ class PositionKinematicsCache {
   // Allocates resources for this position kinematics cache.
   void Allocate() {
     X_WB_pool_.resize(num_nodes_);
-    //X_WB_pool_[world_index()] = RigidTransform<T>::Identity();
+    // X_WB_pool_[world_index()] = RigidTransform<T>::Identity();
 
     X_PB_pool_.resize(num_nodes_);
     X_PB_pool_[world_index()] = NaNPose();  // It should never be used.

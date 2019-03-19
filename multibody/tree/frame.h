@@ -107,7 +107,8 @@ class Frame : public FrameBase<T> {
   /// frame W as a function of the state of the model stored in `context`.
   /// @note Body::EvalPoseInWorld() provides a more efficient way to obtain
   /// the pose for a body frame.
-  math::RigidTransform<T> CalcPoseInWorld(const systems::Context<T>& context) const {
+  math::RigidTransform<T> CalcPoseInWorld(
+      const systems::Context<T>& context) const {
     return this->get_parent_tree().CalcRelativeTransform(
         context, this->get_parent_tree().world_frame(), *this);
   }

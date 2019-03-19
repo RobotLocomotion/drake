@@ -188,7 +188,8 @@ Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
 }
 
 template <typename T>
-math::RigidTransform<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T>
+QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);

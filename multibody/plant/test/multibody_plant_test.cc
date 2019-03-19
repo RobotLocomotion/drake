@@ -1139,7 +1139,7 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   // Test the API taking a RigidTransform.
-  auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));  
+  auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));
 
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.SetFreeBodyPose(

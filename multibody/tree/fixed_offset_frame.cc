@@ -20,9 +20,9 @@ FixedOffsetFrame<T>::FixedOffsetFrame(
     parent_frame_(P), X_PF_(X_PF) {}
 
 template <typename T>
-FixedOffsetFrame<T>::FixedOffsetFrame(
-    const std::string& name, const Body<T>& B, const math::RigidTransform<double>& X_BF) :
-    Frame<T>(name, B), parent_frame_(B.body_frame()), X_PF_(X_BF) {}
+FixedOffsetFrame<T>::FixedOffsetFrame(const std::string& name, const Body<T>& B,
+                                      const math::RigidTransform<double>& X_BF)
+    : Frame<T>(name, B), parent_frame_(B.body_frame()), X_PF_(X_BF) {}
 
 template <typename T>
 template <typename ToScalar>

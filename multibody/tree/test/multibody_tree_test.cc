@@ -1065,15 +1065,18 @@ TEST_F(KukaIiwaModelTests, CalcRelativeFrameGeometricJacobian) {
   const Vector3d p_L7Q = Vector3d(0.2, -0.1, 0.5);
 
   // Link 3 kinematics.
-  const math::RigidTransform<double>& X_WL3 = tree().EvalBodyPoseInWorld(*context_, link3);
+  const math::RigidTransform<double>& X_WL3 =
+      tree().EvalBodyPoseInWorld(*context_, link3);
   const Matrix3<double>& R_WL3 = X_WL3.linear();
 
   // link 5 kinematics.
-  const math::RigidTransform<double>& X_WL5 = tree().EvalBodyPoseInWorld(*context_, link5);
+  const math::RigidTransform<double>& X_WL5 =
+      tree().EvalBodyPoseInWorld(*context_, link5);
   const Matrix3<double>& R_WL5 = X_WL5.linear();
 
   // link 7 kinematics.
-  const math::RigidTransform<double>& X_WL7 = tree().EvalBodyPoseInWorld(*context_, link7);
+  const math::RigidTransform<double>& X_WL7 =
+      tree().EvalBodyPoseInWorld(*context_, link7);
   const Matrix3<double>& R_WL7 = X_WL7.linear();
 
   // Position of Q in L3, expressed in world.
