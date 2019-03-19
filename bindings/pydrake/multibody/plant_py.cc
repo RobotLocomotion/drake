@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_info.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -24,6 +25,7 @@ using T = double;
 using std::string;
 
 using geometry::SceneGraph;
+using math::RigidTransform;
 using systems::Context;
 using systems::State;
 
@@ -109,6 +111,9 @@ PYBIND11_MODULE(plant, m) {
             doc.MultibodyPlant.AddRigidBody.doc_2args)
         .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
             py::arg("X_AB") = Isometry3<double>::Identity(),
+            py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
+        .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
+            py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
         .def("AddForceElement",
             [](Class * self,

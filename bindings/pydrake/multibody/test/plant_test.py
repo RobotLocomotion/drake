@@ -284,7 +284,7 @@ class TestPlant(unittest.TestCase):
 
         # Compute body pose.
         X_WBase = plant.EvalBodyPoseInWorld(context, base)
-        self.assertIsInstance(X_WBase, Isometry3)
+        self.assertIsInstance(X_WBase, RigidTransform)
 
         # Set pose for the base.
         X_WB_desired = Isometry3.Identity()
@@ -723,7 +723,7 @@ class TestPlant(unittest.TestCase):
             model_instance=None))
         self.assertIsInstance(frame, Frame)
         np.testing.assert_equal(
-            np.eye(4), frame.GetFixedPoseInBodyFrame().matrix())
+            np.eye(4), frame.GetFixedPoseInBodyFrame().GetAsMatrix4())
 
     def test_multibody_dynamics(self):
         file_name = FindResourceOrThrow(
