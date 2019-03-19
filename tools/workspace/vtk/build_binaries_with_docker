@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile and shell scripts are used
+# by the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
+
+set -euxo pipefail
+
+rm -f vtk-*-bionic-x86_64.tar.gz vtk-*-xenial-x86_64.tar.gz vtk-bionic-xenial-x86_64.tar.gz.sha256
+
+docker build --build-arg CODENAME=bionic --tag vtk-bionic "${BASH_SOURCE%/*}"
+trap 'docker rmi vtk-bionic' EXIT
+docker run --detach --name vtk-bionic-build --tty vtk-bionic
+trap 'docker stop vtk-bionic-build && docker rm vtk-bionic-build && docker rmi vtk-bionic' EXIT
+docker cp vtk-bionic-build:$(docker exec vtk-bionic-build find /opt/vtk/ -maxdepth 1 -name 'vtk-*-bionic-x86_64.tar.gz') .
+
+docker build --build-arg CODENAME=xenial --tag vtk-xenial "${BASH_SOURCE%/*}"
+trap 'docker stop vtk-xenial-build && docker rm vtk-xenial-build && docker rmi vtk-bionic vtk-xenial' EXIT
+docker run --detach --name vtk-xenial-build --tty vtk-xenial
+trap 'docker stop vtk-bionic-build vtk-xenial-build && docker rm vtk-bionic-build vtk-xenial-build && docker rmi vtk-bionic vtk-xenial' EXIT
+docker cp vtk-xenial-build:$(docker exec vtk-xenial-build find /opt/vtk/ -maxdepth 1 -name 'vtk-*-xenial-x86_64.tar.gz') .
+
+shasum --algorithm 256 vtk-*-bionic-x86_64.tar.gz vtk-*-xenial-x86_64.tar.gz  | tee vtk-bionic-xenial-x86_64.tar.gz.sha256
