@@ -861,9 +861,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     DRAKE_MBP_THROW_IF_FINALIZED();
 
     optional<math::RigidTransform<T>> X_PF_rt =
-        X_PF ? optional<math::RigidTransform<T>>(*X_PF) : nullopt;
+        X_PF ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_PF))
+             : nullopt;
     optional<math::RigidTransform<T>> X_BM_rt =
-        X_BM ? optional<math::RigidTransform<T>>(*X_BM) : nullopt;
+        X_BM ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_BM))
+             : nullopt;
 
     return this->mutable_tree().template AddJoint<JointType>(
         name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);

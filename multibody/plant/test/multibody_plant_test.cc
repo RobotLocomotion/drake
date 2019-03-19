@@ -55,6 +55,7 @@ using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using math::RigidTransform;
+using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::benchmarks::Acrobot;
@@ -1137,10 +1138,12 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
+  // Test the API taking a RigidTransform.
+  auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));  
+
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.SetFreeBodyPose(
-      context.get(), sphere1,
-      Isometry3d(Translation3d(-x_offset, radius, 0.0)));
+      context.get(), sphere1, X_WS1);
   // Place sphere 2 on top of the ground, with offset x = x_offset.
   plant.SetFreeBodyPose(
       context.get(), sphere2,
