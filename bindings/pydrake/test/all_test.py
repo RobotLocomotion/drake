@@ -170,6 +170,9 @@ class TestAll(unittest.TestCase):
             "TemplateSystem",
             # - sensors
             "Image",
+            # visualization
+            # - matplotlib_util
+            "plot_sublevelset_quadratic",
         )
         # Ensure each symbol is exposed as globals from the above import
         # statement.

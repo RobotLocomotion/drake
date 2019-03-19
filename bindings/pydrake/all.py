@@ -34,7 +34,6 @@ from .attic.all import *
 from . import getDrakePath
 from .autodiffutils import *
 from .automotive import *
-from .drawing import *
 from .forwarddiff import *
 from .geometry import *
 from .lcm import *
@@ -52,3 +51,4 @@ from .multibody.all import *
 from .solvers.all import *
 from .systems.all import *
 # - `third_party` does not offer public Drake library symbols.
+from .visualization.all import *
