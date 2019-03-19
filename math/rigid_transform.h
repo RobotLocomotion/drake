@@ -119,7 +119,10 @@ class RigidTransform {
   /// orthonormal 3x3 rotation matrix.
   /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  // TODO(amcastro-tri): Mark this ctor "explicit".
+  // TODO(amcastro-tri): Mark this constructor "explicit" once #9865 is
+  // resolved. This implicit constructor from Isometry3 is only provided to ease
+  // the transition to RigidTransform as #9865 is resolved.
+  // NOLINTNEXTLINE[runtime/explicit]
   RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
   /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.
@@ -276,17 +279,21 @@ class RigidTransform {
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // DO NOT USE. This operator will soon be deprecated as #9865 is resolved.
+  // This implicit conversion operator is only provided to support backwards
+  // compatibility with Isometry3 as we migrate Drake's codebase to use
+  // RigidTransform. New uses of Isometry3 are discouraged.
   operator Isometry3<T>() const {
     return GetAsIsometry3();
   }
 
+  // DO NOT USE. This method will soon be deprecated as #9865 is resolved.
+  // This method is only provided to support backwards compatibility with
+  // Isometry3 as we migrate Drake's codebase to use RigidTransform. New uses of
+  // Isometry3 are discouraged.
   const Matrix3<T>& linear() const {
     return R_AB_.matrix();
-  }
-
-#if 0
-  Matrix3<T>& linear() {
-    return R_AB_.mutable_matrix();
   }
 #endif
 
