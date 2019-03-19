@@ -136,16 +136,6 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
 )
 
-drake_py_library(
-    name = "drawing_py",
-    srcs = ["drawing.py"],
-    imports = PACKAGE_INFO.py_imports,
-    deps = [
-        ":module_py",
-        ":symbolic_py",
-    ],
-)
-
 drake_pybind_library(
     name = "geometry_py",
     cc_deps = [
@@ -256,10 +246,10 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/systems",
     "//bindings/pydrake/third_party",
     "//bindings/pydrake/util",
+    "//bindings/pydrake/visualization",
 ]
 
 PY_LIBRARIES = [
-    ":drawing_py",
     ":module_py",
 ]
 
@@ -338,13 +328,6 @@ drake_py_unittest(
         ":algebra_test_util_py",
         ":autodiffutils_py",
         ":autodiffutils_test_util_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "drawing_test",
-    deps = [
-        ":drawing_py",
     ],
 )
 

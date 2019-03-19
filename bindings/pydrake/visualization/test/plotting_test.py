@@ -1,4 +1,4 @@
-import pydrake.drawing as mut
+import pydrake.visualization.plotting as mut
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,7 +7,7 @@ import unittest
 from pydrake.symbolic import Variable
 
 
-class TestDrawing(unittest.TestCase):
+class TestMatplotlibUtil(unittest.TestCase):
     def test_plot_sublevelset_quadratic(self):
         fig, ax = plt.subplots()
 
