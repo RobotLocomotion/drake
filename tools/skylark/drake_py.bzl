@@ -51,6 +51,8 @@ def _py_target_isolated(
         visibility = None,
         **kwargs):
     # See #8041 for more details.
+    # TODO(eric.cousineau): See if we can remove these shims once we stop
+    # supporting Python 2 (#10606).
     if py_target == None:
         fail("Must supply macro function for defining `py_target`.")
 
