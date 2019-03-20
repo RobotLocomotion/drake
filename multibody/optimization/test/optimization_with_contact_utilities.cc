@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "drake/multibody/tree/uniform_gravity_field_element.h"
+
 namespace drake {
 namespace multibody {
 template <typename T>
@@ -47,6 +49,7 @@ FreeSpheresAndBoxes<T>::FreeSpheresAndBoxes(
   X_WG.translation()(2) = -ground_box_size(2) / 2;
   plant_->WeldFrames(plant_->world_frame(), ground.body_frame(), X_WG);
 
+  plant_->template AddForceElement<UniformGravityFieldElement>();
   plant_->Finalize();
   diagram_ = builder.Build();
 
