@@ -144,7 +144,9 @@ TEST_F(SubvectorTest, AddToVectorInvalidSize) {
 TEST_F(SubvectorTest, SetZero) {
   Subvector<double> subvec(vector_.get(), 0, kSubVectorLength);
   subvec.SetZero();
-  for (int i = 0; i < subvec.size(); i++) EXPECT_EQ(subvec.GetAtIndex(i), 0);
+  for (int i = 0; i < subvec.size(); i++) {
+    EXPECT_EQ(subvec.GetAtIndex(i), 0);
+  }
 }
 
 // Tests the infinity norm.

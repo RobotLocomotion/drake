@@ -717,7 +717,7 @@ TEST_F(LeafSystemTest, NumericParameters) {
   EXPECT_EQ(7.0, vec[1]);
   BasicVector<double>& mutable_vec =
       system_.GetVanillaMutableNumericParameters(context.get());
-  mutable_vec.SetAtIndex(1, 42.0);
+  mutable_vec[1] = 42.0;
   EXPECT_EQ(42.0, vec[1]);
 
   EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
@@ -1230,8 +1230,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
-  EXPECT_EQ(1.1, param.GetAtIndex(0));
-  EXPECT_EQ(2.2, param.GetAtIndex(1));
+  EXPECT_EQ(1.1, param[0]);
+  EXPECT_EQ(2.2, param[1]);
 }
 
 // Tests that various DeclareDiscreteState() signatures work correctly and
@@ -2189,7 +2189,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(0));
+    *value = Vector1d(context.get_continuous_state_vector()[0]);
   }
   void CalcStateConstraint(const Context<double>& context,
                            Eigen::VectorXd* value) const {
@@ -2264,7 +2264,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
 
   ContextConstraintCalc<double> calc0 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+    *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
                                             { Vector1d::Zero(), nullopt },
@@ -2275,8 +2275,8 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   ContextConstraintCalc<double> calc1 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value =
-        Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
-                        context.get_continuous_state_vector().GetAtIndex(0));
+        Eigen::Vector2d(context.get_continuous_state_vector()[1],
+                        context.get_continuous_state_vector()[0]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
                                             { nullopt, Eigen::Vector2d(2, 3) },
@@ -2388,20 +2388,20 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   auto context = dut.CreateDefaultContext();
 
   // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `1.0 >= 11.0`.
-  context->get_mutable_numeric_parameter(0).SetAtIndex(0, 1.0);
+  context->get_mutable_numeric_parameter(0)[0] = 1.0;
   Eigen::VectorXd value0;
   constraint0.Calc(*context, &value0);
   EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(1.0)));
 
   // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `2.0 >= 22.0`.
-  context->get_mutable_continuous_state_vector().SetAtIndex(0, 2.0);
+  context->get_mutable_continuous_state_vector()[0] = 2.0;
   Eigen::VectorXd value1;
   constraint1.Calc(*context, &value1);
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(2.0)));
 
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `3.0 >= 33.0`.
   InputVector input;
-  input.SetAtIndex(0, 3.0);
+  input[0] = 3.0;
   dut.get_input_port(0).FixValue(&*context, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
@@ -2436,8 +2436,8 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
     for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
-      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
-                                                          uniform(*generator));
+      params->get_mutable_numeric_parameter(0).SetAtIndex(
+          i, uniform(*generator));
     }
   }
 };

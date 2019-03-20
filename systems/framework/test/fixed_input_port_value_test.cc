@@ -166,8 +166,8 @@ TEST_F(FixedInputPortTest, Clone) {
   // Make sure changing a value in the old context doesn't change a value
   // in the new one, and vice versa.
   port0_value_->GetMutableVectorData<double>()->SetAtIndex(0, 99);
-  EXPECT_EQ(port0_value_->get_vector_value<double>().GetAtIndex(0), 99);
-  EXPECT_EQ(free0->get_vector_value<double>().GetAtIndex(0), 5);
+  EXPECT_EQ(port0_value_->get_vector_value<double>()[0], 99);
+  EXPECT_EQ(free0->get_vector_value<double>()[0], 5);
 
   free1->GetMutableData()->get_mutable_value<std::string>() = "hello";
   EXPECT_EQ(free1->get_value().get_value<std::string>(), "hello");

@@ -64,22 +64,22 @@ TEST_F(ContinuousStateTest, Access) {
   EXPECT_EQ(kLength, continuous_state_->size());
   EXPECT_EQ(kPositionLength,
             continuous_state_->get_generalized_position().size());
-  EXPECT_EQ(1, continuous_state_->get_generalized_position().GetAtIndex(0));
-  EXPECT_EQ(2, continuous_state_->get_generalized_position().GetAtIndex(1));
+  EXPECT_EQ(1, continuous_state_->get_generalized_position()[0]);
+  EXPECT_EQ(2, continuous_state_->get_generalized_position()[1]);
 
   EXPECT_EQ(kVelocityLength,
             continuous_state_->get_generalized_velocity().size());
-  EXPECT_EQ(3, continuous_state_->get_generalized_velocity().GetAtIndex(0));
+  EXPECT_EQ(3, continuous_state_->get_generalized_velocity()[0]);
 
   EXPECT_EQ(kMiscLength, continuous_state_->get_misc_continuous_state().size());
-  EXPECT_EQ(4, continuous_state_->get_misc_continuous_state().GetAtIndex(0));
+  EXPECT_EQ(4, continuous_state_->get_misc_continuous_state()[0]);
 }
 
 TEST_F(ContinuousStateTest, Mutation) {
-  continuous_state_->get_mutable_generalized_position().SetAtIndex(0, 5);
-  continuous_state_->get_mutable_generalized_position().SetAtIndex(1, 6);
-  continuous_state_->get_mutable_generalized_velocity().SetAtIndex(0, 7);
-  continuous_state_->get_mutable_misc_continuous_state().SetAtIndex(0, 8);
+  continuous_state_->get_mutable_generalized_position()[0] = 5;
+  continuous_state_->get_mutable_generalized_position()[1] = 6;
+  continuous_state_->get_mutable_generalized_velocity()[0] = 7;
+  continuous_state_->get_mutable_misc_continuous_state()[0] = 8;
 
   EXPECT_EQ(5, continuous_state_->get_vector()[0]);
   EXPECT_EQ(6, continuous_state_->get_vector()[1]);

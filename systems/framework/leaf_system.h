@@ -2563,7 +2563,7 @@ class LeafSystem : public System<T> {
           const VectorBase<T>& model_vec = get_vector_from_context(context);
           value->resize(indices.size());
           for (int i = 0; i < static_cast<int>(indices.size()); ++i) {
-            (*value)(i) = model_vec.GetAtIndex(indices[i]);
+            (*value)[i] = model_vec[indices[i]];
           }
         },
         {constraint_lower_bound, constraint_upper_bound},

@@ -43,13 +43,13 @@ class ParametersTest : public ::testing::Test {
 TEST_F(ParametersTest, Numeric) {
   ASSERT_EQ(2, params_->num_numeric_parameter_groups());
   ASSERT_EQ(2, params_->get_numeric_parameters().num_groups());
-  EXPECT_EQ(3.0, params_->get_numeric_parameter(0).GetAtIndex(0));
-  EXPECT_EQ(6.0, params_->get_numeric_parameter(0).GetAtIndex(1));
-  EXPECT_EQ(9.0, params_->get_numeric_parameter(1).GetAtIndex(0));
-  EXPECT_EQ(12.0, params_->get_numeric_parameter(1).GetAtIndex(1));
+  EXPECT_EQ(3.0, params_->get_numeric_parameter(0)[0]);
+  EXPECT_EQ(6.0, params_->get_numeric_parameter(0)[1]);
+  EXPECT_EQ(9.0, params_->get_numeric_parameter(1)[0]);
+  EXPECT_EQ(12.0, params_->get_numeric_parameter(1)[1]);
 
-  params_->get_mutable_numeric_parameter(0).SetAtIndex(1, 42.0);
-  EXPECT_EQ(42.0, params_->get_numeric_parameter(0).GetAtIndex(1));
+  params_->get_mutable_numeric_parameter(0)[1] = 42.0;
+  EXPECT_EQ(42.0, params_->get_numeric_parameter(0)[1]);
 }
 
 TEST_F(ParametersTest, Abstract) {
@@ -64,14 +64,14 @@ TEST_F(ParametersTest, Abstract) {
 TEST_F(ParametersTest, Clone) {
   // Test that data is copied into the clone.
   auto clone = params_->Clone();
-  EXPECT_EQ(3.0, clone->get_numeric_parameter(0).GetAtIndex(0));
+  EXPECT_EQ(3.0, clone->get_numeric_parameter(0)[0]);
   EXPECT_EQ(72, UnpackIntValue(clone->get_abstract_parameter(0)));
   EXPECT_EQ(144, UnpackIntValue(clone->get_abstract_parameter(1)));
 
   // Test that changes to the clone don't write through to the original.
   // - numeric
-  clone->get_mutable_numeric_parameter(0).SetAtIndex(1, 42.0);
-  EXPECT_EQ(6.0, params_->get_numeric_parameter(0).GetAtIndex(1));
+  clone->get_mutable_numeric_parameter(0)[1] = 42.0;
+  EXPECT_EQ(6.0, params_->get_numeric_parameter(0)[1]);
   // - abstract
   clone->get_mutable_abstract_parameter(0).set_value<int>(256);
   EXPECT_EQ(72, UnpackIntValue(params_->get_abstract_parameter(0)));
@@ -84,11 +84,11 @@ TEST_F(ParametersTest, SetSymbolicFromDouble) {
 
   // The numeric parameters have been converted to symbolic constants.
   const auto& p0 = symbolic_params->get_numeric_parameter(0);
-  EXPECT_EQ("3", p0.GetAtIndex(0).to_string());
-  EXPECT_EQ("6", p0.GetAtIndex(1).to_string());
+  EXPECT_EQ("3", p0[0].to_string());
+  EXPECT_EQ("6", p0[1].to_string());
   const auto& p1 = symbolic_params->get_numeric_parameter(1);
-  EXPECT_EQ("9", p1.GetAtIndex(0).to_string());
-  EXPECT_EQ("12", p1.GetAtIndex(1).to_string());
+  EXPECT_EQ("9", p1[0].to_string());
+  EXPECT_EQ("12", p1[1].to_string());
 
   // The abstract parameters have simply been cloned.
   EXPECT_EQ(72, UnpackIntValue(symbolic_params->get_abstract_parameter(0)));
@@ -122,11 +122,11 @@ TEST_F(ParametersTest, SetAutodiffFromDouble) {
 
   // The numeric parameters have been converted to autodiff.
   const auto& p0 = autodiff_params->get_numeric_parameter(0);
-  EXPECT_EQ(3.0, p0.GetAtIndex(0).value());
-  EXPECT_EQ(6.0, p0.GetAtIndex(1).value());
+  EXPECT_EQ(3.0, p0[0].value());
+  EXPECT_EQ(6.0, p0[1].value());
   const auto& p1 = autodiff_params->get_numeric_parameter(1);
-  EXPECT_EQ(9.0, p1.GetAtIndex(0).value());
-  EXPECT_EQ(12.0, p1.GetAtIndex(1).value());
+  EXPECT_EQ(9.0, p1[0].value());
+  EXPECT_EQ(12.0, p1[1].value());
 
   // The abstract parameters have simply been cloned.
   EXPECT_EQ(72, UnpackIntValue(autodiff_params->get_abstract_parameter(0)));
