@@ -164,13 +164,6 @@ class TestSystem : public LeafSystem<T> {
     this->DeclarePeriodicUnrestrictedUpdate(period, offset);
   }
 
-  // Note: we define this here so that we do not have to support
-  // forced-raw-Context-updates generally.
-  void CalcRawContextUpdate(Context<double>* context,
-      const EventCollection<RawContextUpdateEvent<double>>& events) const {
-    System<double>::CalcRawContextUpdate(context, events);
-  }
-
   void AddPublish(double period) { this->DeclarePeriodicPublish(period); }
 
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -2192,20 +2185,24 @@ class TestTriggerSystem : public LeafSystem<double> {
   }
 
   void DoGetPerStepEvents(
-      const Context<double>& context,
+      const Context<double>&,
       CompositeEventCollection<double>* events) const override {
     {
       PublishEvent<double> event(
-          std::bind(&TestTriggerSystem::StringCallback, this,
-              std::placeholders::_1, std::placeholders::_2,
-              std::make_shared<const std::string>("hello")));
+          [this](const Context<double>& context,
+              const PublishEvent<double>& publish_event) {
+            StringCallback(context, publish_event,
+                std::make_shared<const std::string>("hello"));
+          });
       event.AddToComposite(TriggerType::kPerStep, events);
     }
 
     {
       PublishEvent<double> event(
-          std::bind(&TestTriggerSystem::IntCallback, this,
-              std::placeholders::_1, std::placeholders::_2, 42));
+          [this](const Context<double>& context,
+              const PublishEvent<double>& publish_event) {
+            IntCallback(context, publish_event, 42 /* arbitrary data */);
+          });
       event.AddToComposite(TriggerType::kPerStep, events);
     }
   }
@@ -2650,13 +2647,6 @@ GTEST_TEST(InitializationTest, InitializationTest) {
           std::bind(&InitializationTestSystem::InitRawUpdate, this,
                     std::placeholders::_1, std::placeholders::_2));
       DeclareInitializationEvent(raw_event);
-    }
-
-    // Note: we define this here so that we do not have to support
-    // forced-raw-Context-updates generally.
-    void CalcRawContextUpdate(Context<double>* context,
-        const EventCollection<RawContextUpdateEvent<double>>& events) const {
-      System<double>::CalcRawContextUpdate(context, events);
     }
 
     bool get_pub_init() const { return pub_init_; }

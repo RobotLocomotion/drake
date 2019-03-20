@@ -749,6 +749,8 @@ class System : public SystemBase {
 
     DispatchUnrestrictedUpdateHandler(context, events, state);
 
+    // TODO(edrumwri) Verify that the dimension of each discrete state within
+    // a group has not changed as well.
     if (continuous_state_dim != state->get_continuous_state().size() ||
         discrete_state_dim != state->get_discrete_state().num_groups() ||
         abstract_state_dim != state->get_abstract_state().size())
@@ -773,10 +775,11 @@ class System : public SystemBase {
 
   /// (Advanced) This method is the public entry point for dispatching all "raw"
   /// Context update event handlers. Raw Context updates are a very fast type
-  /// of unrestricted update where the @System can update the Context directly
-  /// instead of updating copies of state, but it has high potential for danger
-  /// because the state becomes dependent upon the order that subsystems are
-  /// updated in a Diagram.
+  /// of unrestricted update where the %System can update the Context directly
+  /// instead of updating a copy of the state, but it is dangerous
+  /// because the final state becomes dependent upon the order that subsystems
+  /// are updated in a Diagram (and we do not promise to update in any
+  /// particular order).`
   ///
   /// Functionally, the raw Context update has the same power as an
   /// unrestricted update: it can modify any part of the state.
@@ -784,7 +787,11 @@ class System : public SystemBase {
   /// require frequent unrestricted updates to be simulated more quickly when
   /// the state is large; Simulator currently copies the state twice on
   /// unrestricted updates, which is slow (and motivated the introduction of the
-  /// raw Context updating strategy).
+  /// raw Context updating strategy). Note that if any subsystem in a Diagram
+  /// does an unrestricted update, the entire state is copied. To see a
+  /// performance benefit from using RawContextUpdate, *all* of the
+  /// high-frequency unrestricted updates in a diagram must be replaced with
+  /// raw Context updates.
   ///
   /// CalcRawContextUpdate(.) updates `context` using all of the
   /// raw-Context-update handlers in `events`. Time, parameters, and the
@@ -806,6 +813,8 @@ class System : public SystemBase {
 
     DispatchRawContextUpdateHandler(context, events);
 
+    // TODO(edrumwri) Verify that the dimension of each discrete state within
+    // a group has not changed as well.
     if (continuous_state_dim != context->get_continuous_state().size() ||
         discrete_state_dim != context->get_discrete_state().num_groups() ||
         abstract_state_dim != context->get_abstract_state().size()) {
@@ -1668,6 +1677,7 @@ class System : public SystemBase {
 
   /// This function dispatches all unrestricted update events to the appropriate
   /// handlers. @p state cannot be null.
+  /// @post In `state`, dimensions have not been changed.
   virtual void DispatchUnrestrictedUpdateHandler(
       const Context<T>& context,
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
@@ -1675,6 +1685,8 @@ class System : public SystemBase {
 
   /// This function dispatches all raw Context update events to the appropriate
   /// handlers.
+  /// @post In `context`, parameters, time, and state dimensions have not been
+  /// changed.
   virtual void DispatchRawContextUpdateHandler(
       Context<T>* context,
       const EventCollection<RawContextUpdateEvent<T>>& events) const = 0;

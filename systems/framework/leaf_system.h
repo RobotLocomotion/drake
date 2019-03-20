@@ -2288,26 +2288,6 @@ class LeafSystem : public System<T> {
     }
   }
 
-  /// Derived-class event dispatcher for all simultaneous raw Context update
-  /// events.  This method traverses events in the arbitrary order they
-  /// appear in `events` (see related warning in
-  /// System::CalcRawContextUpdate()), and for each event that has a callback
-  /// function, to invoke the callback with `context` and that event. Note that
-  /// the same (possibly modified) `context` is passed to subsequent callbacks.
-  ///
-  /// @param[in,out] context The "before" and "after" state used both for
-  ///                        calculating the update to the state and holding the
-  ///                        resulting update to the state.
-  /// @param[in]     events All the raw Context update events that need
-  ///                       handling.
-  void DoCalcRawContextUpdate(
-      Context<T>* context,
-      const std::vector<const RawContextUpdateEvent<T>*>& events) const {
-    for (const RawContextUpdateEvent<T>* event : events) {
-      event->handle(context);
-    }
-  }
-
  private:
   using SystemBase::NextInputPortName;
   using SystemBase::NextOutputPortName;
@@ -2393,20 +2373,30 @@ class LeafSystem : public System<T> {
     this->DoCalcUnrestrictedUpdate(context, leaf_events.get_events(), state);
   }
 
-  // Calls DoCalcRawContextUpdate.
-  // Assumes @param events is an instance of LeafEventCollection, throws
-  // std::bad_cast otherwise.
-  // Assumes @param events is not empty. Aborts otherwise.
+  // Derived-class event dispatcher for all simultaneous raw Context update
+  // events.  This method traverses events in the arbitrary order they
+  // appear in `events` (see related warning in
+  // System::CalcRawContextUpdate()), and for each event that has a callback
+  // function, to invoke the callback with `context` and that event. Note that
+  // the same (possibly modified) `context` is passed to subsequent callbacks.
+  //
+  // @param[in,out] context The "before" and "after" state used both for
+  //                        calculating the update to the state and holding the
+  //                        resulting update to the state.
+  // @param[in]     events All the raw Context update events that need
+  //                       handling. Method aborts if `events` is empty.
+  // @throws std::bad_cast if `events` is not an instance of
+  //         LeafEventCollection.
   void DispatchRawContextUpdateHandler(
       Context<T>* context,
       const EventCollection<RawContextUpdateEvent<T>>& events) const final {
     const LeafEventCollection<RawContextUpdateEvent<T>>& leaf_events =
         dynamic_cast<const LeafEventCollection<RawContextUpdateEvent<T>>&>(
             events);
-    // Only call DoCalcRawContextUpdate if there are raw context update
-    // events.
+
     DRAKE_DEMAND(leaf_events.HasEvents());
-    this->DoCalcRawContextUpdate(context, leaf_events.get_events());
+    for (const RawContextUpdateEvent<T>* event : leaf_events.get_events())
+      event->handle(context);
   }
 
   void DoGetPerStepEvents(

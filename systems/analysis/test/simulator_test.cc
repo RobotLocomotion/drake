@@ -1945,8 +1945,10 @@ GTEST_TEST(SimulatorTest, PerStepAction) {
     void AddPerStepRawContextUpdateEvent() {
       RawContextUpdateEvent<double> update_event(
           TriggerType::kPerStep,
-          std::bind(&PerStepActionTestSystem::RawUpdate, this,
-                    std::placeholders::_1, std::placeholders::_2));
+          [this](Context<double>* context,
+              const RawContextUpdateEvent<double>& event) {
+            RawUpdate(context, event);
+          });
       this->DeclarePerStepEvent(update_event);
     }
 
@@ -2074,8 +2076,10 @@ GTEST_TEST(SimulatorTest, Initialization) {
     InitializationTestSystem() {
       PublishEvent<double> pub_event(
           TriggerType::kInitialization,
-          std::bind(&InitializationTestSystem::InitPublish, this,
-                    std::placeholders::_1, std::placeholders::_2));
+          [this](const Context<double>& context,
+              const PublishEvent<double>& event) {
+            InitPublish(context, event);
+          });
       DeclareInitializationEvent(pub_event);
 
       DeclareInitializationEvent(DiscreteUpdateEvent<double>(
@@ -2090,8 +2094,11 @@ GTEST_TEST(SimulatorTest, Initialization) {
 
       RawContextUpdateEvent<double> update_event(
           TriggerType::kInitialization,
-          std::bind(&InitializationTestSystem::RawUpdate, this,
-                    std::placeholders::_1, std::placeholders::_2));
+          [this](Context<double>* context,
+              const RawContextUpdateEvent<double>& event) {
+            RawUpdate(context, event);
+          });
+
       DeclareInitializationEvent(update_event);
     }
 

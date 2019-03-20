@@ -1985,8 +1985,10 @@ class SystemWithAbstractStateUpdatedRaw : public LeafSystem<double> {
  public:
   SystemWithAbstractStateUpdatedRaw(int id, double update_period) : id_(id) {
     RawContextUpdateEvent<double> raw_event(
-        std::bind(&SystemWithAbstractStateUpdatedRaw::RawUpdate, this,
-                  std::placeholders::_1, std::placeholders::_2));
+        [this](Context<double>* context,
+            const RawContextUpdateEvent<double>& event) {
+              RawUpdate(context, event);
+            });
     DeclarePeriodicEvent(update_period, 0 /* offset */, raw_event);
     DeclareAbstractState(AbstractValue::Make<double>(id_));
 
@@ -2024,13 +2026,6 @@ class AbstractStateDiagramUpdatedRaw : public Diagram<double> {
         1, 3.);
     sys1_->set_name("sys1");
     builder.BuildInto(this);
-  }
-
-  // Note: we define this here so that we do not have to support
-  // forced-raw-Context-updates generally.
-  void CalcRawContextUpdate(Context<double>* context,
-      const EventCollection<RawContextUpdateEvent<double>>& events) const {
-    System<double>::CalcRawContextUpdate(context, events);
   }
 
   const SystemWithAbstractStateUpdatedRaw& get_sys(int i) const {
