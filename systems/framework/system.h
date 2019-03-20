@@ -779,7 +779,7 @@ class System : public SystemBase {
   /// instead of updating a copy of the state, but it is dangerous
   /// because the final state becomes dependent upon the order that subsystems
   /// are updated in a Diagram (and we do not promise to update in any
-  /// particular order).`
+  /// particular order).
   ///
   /// Functionally, the raw Context update has the same power as an
   /// unrestricted update: it can modify any part of the state.
@@ -787,7 +787,7 @@ class System : public SystemBase {
   /// require frequent unrestricted updates to be simulated more quickly when
   /// the state is large; Simulator currently copies the state twice on
   /// unrestricted updates, which is slow (and motivated the introduction of the
-  /// raw Context updating strategy). Note that if any subsystem in a Diagram
+  /// raw Context updating strategy). Note that if *any* subsystem in a Diagram
   /// does an unrestricted update, the entire state is copied. To see a
   /// performance benefit from using RawContextUpdate, *all* of the
   /// high-frequency unrestricted updates in a diagram must be replaced with
