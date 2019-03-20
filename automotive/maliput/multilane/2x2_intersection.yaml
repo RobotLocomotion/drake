@@ -113,89 +113,90 @@ maliput_multilane_builder:
        arc: [11.25, 90]
        explicit_end: ["lane.0", "connections.ew_intersection_segment.start.0.forward"]
 
-RightOfWayRules:
-  # Straight-through rules have both Go and Stop states and yield to no other
-  # rules.
-  - ID: NorthStraight
-    States:
-      Go: []
-      Stop: []
-    Zone:
-    - Lane: l:ns_intersection_segment_0
-      SRange: [0, 18.75]
-    ZoneType: StopExcluded
-  - ID: SouthStraight
-    States:
-      Go: []
-      Stop: []
-    Zone:
-    - Lane: l:ns_intersection_segment_1
-  - ID: EastStraight
-    States:
-      Go: []
-      Stop: []
-    Zone:
-    - Lane: l:ew_intersection_segment_0
-  - ID: WestStraight
-    States:
-      Go: []
-      Stop: []
-    Zone:
-    - Lane: l:ew_intersection_segment_1
-  # Right-turn rules only have both Go and StopThenGo states to model an
-  # intersection that allows turn-on-red. When in state Go, they yield to no
-  # other rule since their original direction of travel will have right-of-way.
-  # When in state StopThenGo, they yield to both perpendicular straight-through
-  # rules and antiparallel left-turn rules since their original direction of
-  # travel will not have right-of-way.
-  - ID: NorthRightTurn
-    States:
-      Go: []
-      StopThenGo: [EastStraight, SouthLeftTurn]
-    Zone:
-    - Lane: l:north_right_turn_segment_0
-  - ID: SouthRightTurn
-    States:
-      Go: []
-      StopThenGo: [WestStraight, NorthLeftTurn]
-    Zone:
-    - Lane: l:south_right_turn_segment_0
-  - ID: EastRightTurn
-    States:
-      Go: []
-      StopThenGo: [SouthStraight, WestLeftTurn]
-    Zone:
-    - Lane: l:east_right_turn_segment_0
-  - ID: WestRightTurn
-    States:
-      Go: []
-      StopThenGo: [NorthStraight, EastLeftTurn]
-    Zone:
-    - Lane: l:west_right_turn_segment_0
-   # Left-turn rules have both Go and Stop states. They yield to antiparallel
-   # straight-through rules.
-  - ID: NorthLeftTurn
-    States:
-      Go: [SouthStraight]
-      Stop: []
-    Zone:
-    - Lane: l:north_left_turn_segment_0
-  - ID: SouthLeftTurn
-    States:
-      Go: [NorthStraight]
-      Stop: []
-    Zone:
-    - Lane: l:south_left_turn_segment_0
-  - ID: EastLeftTurn
-    States:
-      Go: [WestStraight]
-      Stop: []
-    Zone:
-    - Lane: l:east_left_turn_segment_0
-  - ID: WestLeftTurn
-    States:
-      Go: [EastStraight]
-      Stop: []
-    Zone:
-    - Lane: l:west_left_turn_segment_0
+RoadRulebook:
+  RightOfWayRules:
+    # Straight-through rules have both Go and Stop states and yield to no other
+    # rules.
+    - ID: NorthStraight
+      States:
+        Go: []
+        Stop: []
+      Zone:
+      - Lane: l:ns_intersection_segment_0
+        SRange: [0, 18.75]
+      ZoneType: StopExcluded
+    - ID: SouthStraight
+      States:
+        Go: []
+        Stop: []
+      Zone:
+      - Lane: l:ns_intersection_segment_1
+    - ID: EastStraight
+      States:
+        Go: []
+        Stop: []
+      Zone:
+      - Lane: l:ew_intersection_segment_0
+    - ID: WestStraight
+      States:
+        Go: []
+        Stop: []
+      Zone:
+      - Lane: l:ew_intersection_segment_1
+    # Right-turn rules only have both Go and StopThenGo states to model an
+    # intersection that allows turn-on-red. When in state Go, they yield to no
+    # other rule since their original direction of travel will have right-of-way.
+    # When in state StopThenGo, they yield to both perpendicular straight-through
+    # rules and antiparallel left-turn rules since their original direction of
+    # travel will not have right-of-way.
+    - ID: NorthRightTurn
+      States:
+        Go: []
+        StopThenGo: [EastStraight, SouthLeftTurn]
+      Zone:
+      - Lane: l:north_right_turn_segment_0
+    - ID: SouthRightTurn
+      States:
+        Go: []
+        StopThenGo: [WestStraight, NorthLeftTurn]
+      Zone:
+      - Lane: l:south_right_turn_segment_0
+    - ID: EastRightTurn
+      States:
+        Go: []
+        StopThenGo: [SouthStraight, WestLeftTurn]
+      Zone:
+      - Lane: l:east_right_turn_segment_0
+    - ID: WestRightTurn
+      States:
+        Go: []
+        StopThenGo: [NorthStraight, EastLeftTurn]
+      Zone:
+      - Lane: l:west_right_turn_segment_0
+     # Left-turn rules have both Go and Stop states. They yield to antiparallel
+     # straight-through rules.
+    - ID: NorthLeftTurn
+      States:
+        Go: [SouthStraight]
+        Stop: []
+      Zone:
+      - Lane: l:north_left_turn_segment_0
+    - ID: SouthLeftTurn
+      States:
+        Go: [NorthStraight]
+        Stop: []
+      Zone:
+      - Lane: l:south_left_turn_segment_0
+    - ID: EastLeftTurn
+      States:
+        Go: [WestStraight]
+        Stop: []
+      Zone:
+      - Lane: l:east_left_turn_segment_0
+    - ID: WestLeftTurn
+      States:
+        Go: [EastStraight]
+        Stop: []
+      Zone:
+      - Lane: l:west_left_turn_segment_0
 
