@@ -3,67 +3,15 @@
 
 """
 Makes selected VTK headers and precompiled shared libraries available to be
-used as a C++ dependency. On Ubuntu, a VTK archive is downloaded and unpacked.
-On macOS, VTK must be installed from the robotlocomotion/director tap
-(https://git.io/vN6ft) using Homebrew.
+used as a C++ dependency. On Ubuntu, a VTK archive, built by the project
+maintainers from the Dockerfile and shell scripts in this directory, is
+downloaded and unpacked. On macOS, VTK must be installed from the
+robotlocomotion/director tap (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:
     vtk-<version>-embree-<embree version>-ospray-<ospray version>
         -python-<python 2.x version>[-python-<python 3.x version>]
         -qt-<qt version>-<platform>-<arch>[-<rebuild>]
-
-Build configuration:
-    Embree (https://git.io/fNR7Q):
-        BUILD_SHARED_LIBS=ON
-        BUILD_TESTING=OFF
-        CMAKE_BUILD_TYPE=Release
-        CMAKE_C_FLAGS=-D_FORTIFY_SOURCE=2
-        CMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=2
-        CMAKE_EXE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-        CMAKE_SHARED_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-        EMBREE_IGNORE_CMAKE_CXX_FLAGS=OFF
-        EMBREE_MAX_ISA=SSE4.2
-        EMBREE_STACK_PROTECTOR=ON
-        EMBREE_TUTORIALS=OFF
-
-    OSPRay (https://git.io/fNR7b applying ospray_no_fast_math.patch):
-        BUILD_SHARED_LIBS=ON
-        CMAKE_BUILD_TYPE=Release
-        CMAKE_C_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-        CMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-        CMAKE_SHARED_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-        OSPRAY_ENABLE_APPS=OFF
-        OSPRAY_ENABLE_TESTING=OFF
-        OSPRAY_ENABLE_TUTORIALS=OFF
-
-    VTK (applying vtk_rendering_ospray.patch):
-        BUILD_SHARED_LIBS=ON
-        BUILD_TESTING=OFF
-        CMAKE_BUILD_TYPE=Release
-        CMAKE_C_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-        CMAKE_CXX_FLAGS=-D_FORTIFY_SOURCE=2 -fstack-protector-strong
-        CMAKE_EXE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-        CMAKE_MODULE_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-        CMAKE_SHARED_LINKER_FLAGS=-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro
-        Module_vtkRenderingOSPRay=ON
-        VTK_ENABLE_VTKPYTHON=OFF
-        VTK_Group_Qt=ON
-        VTK_LEGACY_REMOVE=ON
-        VTK_QT_VERSION=5
-        VTK_USE_SYSTEM_EXPAT=ON
-        VTK_USE_SYSTEM_FREETYPE=ON
-        VTK_USE_SYSTEM_HDF5=ON
-        VTK_USE_SYSTEM_JPEG=ON
-        VTK_USE_SYSTEM_JSONCPP=ON
-        VTK_USE_SYSTEM_LIBXML2=ON
-        VTK_USE_SYSTEM_LZ4=ON
-        VTK_USE_SYSTEM_NETCDF=ON
-        VTK_USE_SYSTEM_OGG=ON
-        VTK_USE_SYSTEM_PNG=ON
-        VTK_USE_SYSTEM_THEORA=ON
-        VTK_USE_SYSTEM_TIFF=ON
-        VTK_USE_SYSTEM_ZLIB=ON
-        VTK_WRAP_PYTHON=ON
 
 Example:
     WORKSPACE:

@@ -1,0 +1,3 @@
+build_binaries_with_docker
+BUILD.bazel
+repository.bzl
