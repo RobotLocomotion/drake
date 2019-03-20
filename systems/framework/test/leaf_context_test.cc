@@ -245,15 +245,15 @@ void VerifyClonedState(const State<double>& clone) {
 
   // Verify that the second-order structure was preserved.
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
-  EXPECT_EQ(1.0, xc.get_generalized_position().GetAtIndex(0));
-  EXPECT_EQ(2.0, xc.get_generalized_position().GetAtIndex(1));
+  EXPECT_EQ(1.0, xc.get_generalized_position()[0]);
+  EXPECT_EQ(2.0, xc.get_generalized_position()[1]);
 
   EXPECT_EQ(kGeneralizedVelocitySize, xc.get_generalized_velocity().size());
-  EXPECT_EQ(3.0, xc.get_generalized_velocity().GetAtIndex(0));
-  EXPECT_EQ(5.0, xc.get_generalized_velocity().GetAtIndex(1));
+  EXPECT_EQ(3.0, xc.get_generalized_velocity()[0]);
+  EXPECT_EQ(5.0, xc.get_generalized_velocity()[1]);
 
   EXPECT_EQ(kMiscContinuousStateSize, xc.get_misc_continuous_state().size());
-  EXPECT_EQ(8.0, xc.get_misc_continuous_state().GetAtIndex(0));
+  EXPECT_EQ(8.0, xc.get_misc_continuous_state()[0]);
 }
 
 TEST_F(LeafContextTest, CheckPorts) {
@@ -511,20 +511,20 @@ TEST_F(LeafContextTest, Clone) {
   // Verify that changes to the cloned state do not affect the original state.
   // -- Continuous
   ContinuousState<double>& xc = clone->get_mutable_continuous_state();
-  xc.get_mutable_generalized_velocity().SetAtIndex(1, 42.0);
+  xc.get_mutable_generalized_velocity()[1] = 42.0;
   EXPECT_EQ(42.0, xc[3]);
-  EXPECT_EQ(5.0, context_.get_continuous_state_vector().GetAtIndex(3));
+  EXPECT_EQ(5.0, context_.get_continuous_state_vector()[3]);
 
   // -- Discrete
   BasicVector<double>& xd1 = clone->get_mutable_discrete_state(1);
-  xd1.SetAtIndex(0, 1024.0);
-  EXPECT_EQ(1024.0, clone->get_discrete_state(1).GetAtIndex(0));
-  EXPECT_EQ(256.0, context_.get_discrete_state(1).GetAtIndex(0));
+  xd1[0] = 1024.0;
+  EXPECT_EQ(1024.0, clone->get_discrete_state(1)[0]);
+  EXPECT_EQ(256.0, context_.get_discrete_state(1)[0]);
 
   // Check State indexed discrete methods too.
   State<double>& state = clone->get_mutable_state();
-  EXPECT_EQ(1024.0, state.get_discrete_state(1).GetAtIndex(0));
-  EXPECT_EQ(1024.0, state.get_mutable_discrete_state(1).GetAtIndex(0));
+  EXPECT_EQ(1024.0, state.get_discrete_state(1)[0]);
+  EXPECT_EQ(1024.0, state.get_mutable_discrete_state(1)[0]);
 
   // -- Abstract (even though it's not owned in context_)
   clone->get_mutable_abstract_state<int>(0) = 2048;
@@ -551,7 +551,7 @@ TEST_F(LeafContextTest, Clone) {
 
   // Verify that changes to the cloned parameters do not affect the originals.
   leaf_clone->get_mutable_numeric_parameter(0)[0] = 76.0;
-  EXPECT_EQ(1.0, context_.get_numeric_parameter(0).GetAtIndex(0));
+  EXPECT_EQ(1.0, context_.get_numeric_parameter(0)[0]);
 }
 
 // Tests that a LeafContext can provide a clone of its State.
@@ -625,10 +625,10 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   EXPECT_EQ(kGeneralizedPositionSize, xc.get_generalized_position().size());
   EXPECT_EQ(5.0, xc.get_generalized_velocity()[1].value());
   EXPECT_EQ(0, xc.get_generalized_velocity()[1].derivatives().size());
-  EXPECT_EQ(128.0, target.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(128.0, target.get_discrete_state(0)[0]);
   // Verify that parameters were set.
   target.get_numeric_parameter(0);
-  EXPECT_EQ(2.0, (target.get_numeric_parameter(0).GetAtIndex(1).value()));
+  EXPECT_EQ(2.0, (target.get_numeric_parameter(0)[1].value()));
 
   // Set the accuracy in the context.
   context_.set_accuracy(accuracy);
