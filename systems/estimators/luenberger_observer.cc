@@ -82,8 +82,8 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
   if (observed_system_->get_num_input_ports() > 0) {
     // TODO(russt): Avoid this dynamic allocation by fixing the input port once
     // and updating it here.
-    observed_system_context_->FixInputPort(
-        0, this->get_input_port(1).Eval(context));
+    observed_system_->get_input_port(0).FixValue(
+        observed_system_context_.get(), this->get_input_port(1).Eval(context));
   }
   // Set observed system state.
   observed_system_context_->get_mutable_continuous_state_vector().SetFrom(

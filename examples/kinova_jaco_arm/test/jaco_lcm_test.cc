@@ -39,8 +39,7 @@ GTEST_TEST(JacoLcmTest, JacoCommandPassthroughTest) {
   command.finger_velocity = std::vector<double>{
     -10, -20, -30, -40, -50, -60, -70};
 
-  context->FixInputPort(
-      0, std::make_unique<Value<lcmt_jaco_command>>(command));
+  diagram->get_input_port(0).FixValue(context.get(), command);
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();
@@ -109,8 +108,7 @@ GTEST_TEST(JacoLcmTest, JacoStatusPassthroughTest) {
     status.finger_current[i] = -i * 1000;
   }
 
-  context->FixInputPort(
-      0, std::make_unique<Value<lcmt_jaco_status>>(status));
+  diagram->get_input_port(0).FixValue(context.get(), status);
 
   std::unique_ptr<systems::DiscreteValues<double>> update =
       diagram->AllocateDiscreteVariables();

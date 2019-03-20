@@ -115,9 +115,9 @@ class InputPort final : public InputPortBase {
   type has a copy constructor it will be copied into a `Value<ValueType>`
   object for storage. Otherwise it must have an accessible `Clone()` method and
   it is stored using the type returned by that method, which must be ValueType
-  or a base class of ValueType. Eigen expressions are simplified using `.eval()`
-  before being stored as `Value<E>` where E is the type resulting
-  from `.eval()`.
+  or a base class of ValueType. Eigen objects and expressions are not
+  accepted directly, but you can store then in abstract ports by providing
+  an already-abstract object like `Value<MatrixXd>(your_matrix)`.
 
   The returned FixedInputPortValue reference may be used to modify the input
   port's value subsequently using the appropriate FixedInputPortValue method,
