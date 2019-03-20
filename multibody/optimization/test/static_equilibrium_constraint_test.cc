@@ -31,14 +31,17 @@ class TwoFreeSpheresTest : public ::testing::Test {
             query_object.inspector().GetCollisionCandidates();
     const auto& plant = spheres_->plant();
     q_vars_ = prog_.NewContinuousVariables(plant.num_positions(), "q");
+    int geometry_pair_count = 0;
     for (const auto& geometry_pair : collision_candidate_pairs) {
       auto wrench_evaluator =
           std::make_shared<ContactWrenchFromForceInWorldFrameEvaluator>(
               &plant, spheres_->get_mutable_plant_context(), geometry_pair);
       auto lambda_i = prog_.NewContinuousVariables(
-          wrench_evaluator->num_lambda(), "lambda");
+          wrench_evaluator->num_lambda(),
+          "lambda" + std::to_string(geometry_pair_count));
       contact_wrench_evaluators_and_lambda_.push_back(
           std::make_pair(wrench_evaluator, lambda_i));
+      geometry_pair_count++;
     }
   }
 
@@ -155,20 +158,20 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   const auto static_equilibrium_binding = CreateStaticEquilibriumConstraint(
       &plant, spheres_->get_mutable_plant_context(),
       contact_wrench_evaluators_and_lambda_, q_vars_, u_vars_);
-  math::RigidTransform<double> X_WS1, X_WS2;
-  // Set the sphere pose X_WS1 and X_WS2 arbitrarily.
-  X_WS1.set(math::RotationMatrix<double>(Eigen::AngleAxisd(
+  math::RigidTransform<double> X_WS0, X_WS1;
+  // Set the sphere pose X_WS0 and X_WS1 arbitrarily.
+  X_WS0.set(math::RotationMatrix<double>(Eigen::AngleAxisd(
                 M_PI_4, Eigen::Vector3d(1.0 / 3, 2.0 / 3, 2.0 / 3))),
             Eigen::Vector3d(0.1, 0.2, 0.3));
-  X_WS2.set(math::RotationMatrix<double>(Eigen::AngleAxisd(
+  X_WS1.set(math::RotationMatrix<double>(Eigen::AngleAxisd(
                 -0.1, Eigen::Vector3d(0.1, 0.2, 0.3).normalized())),
             Eigen::Vector3d(0.15, 0.25, 0.2));
 
   Eigen::VectorXd q_val(14);
-  q_val.head<4>() = X_WS1.rotation().ToQuaternionAsVector4();
-  q_val.segment<3>(4) = X_WS1.translation();
-  q_val.segment<4>(7) = X_WS2.rotation().ToQuaternionAsVector4();
-  q_val.tail<3>() = X_WS2.translation();
+  q_val.head<4>() = X_WS0.rotation().ToQuaternionAsVector4();
+  q_val.segment<3>(4) = X_WS0.translation();
+  q_val.segment<4>(7) = X_WS1.rotation().ToQuaternionAsVector4();
+  q_val.tail<3>() = X_WS1.translation();
   Eigen::VectorXd lambda_val(9);
   // Test lambda = 0.
   lambda_val.setZero();
@@ -189,13 +192,13 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   // contact_force = 0, or the friction cone constraint.
   // First set the spheres position, such that they are both on the ground, and
   // touching each other.
-  X_WS1.set_translation(Eigen::Vector3d(0, 0, spheres_->spheres()[0].radius));
-  X_WS2.set_translation(
+  X_WS0.set_translation(Eigen::Vector3d(0, 0, spheres_->spheres()[0].radius));
+  X_WS1.set_translation(
       Eigen::Vector3d(std::sqrt(4 * spheres_->spheres()[0].radius *
                                 spheres_->spheres()[1].radius),
                       0, spheres_->spheres()[1].radius));
-  q_val.segment<3>(4) = X_WS1.translation();
-  q_val.tail<3>() = X_WS2.translation();
+  q_val.segment<3>(4) = X_WS0.translation();
+  q_val.tail<3>() = X_WS1.translation();
 
   prog_.AddBoundingBoxConstraint(q_val, q_val, q_vars_);
   prog_.AddConstraint(static_equilibrium_binding);
@@ -210,6 +213,69 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   spheres_double_->plant().SetPositions(
       spheres_double_->get_mutable_plant_context(),
       result.GetSolution(q_vars_));
+
+  // Compute the total wrench applied on each sphere, expressed in the world
+  // frame.
+  Vector6<double> sphere0_total_wrench, sphere1_total_wrench;
+  const double gravity = 9.81;
+  sphere0_total_wrench.tail<3>() << 0, 0,
+      -spheres_double_->spheres()[0].inertia.get_mass() * gravity;
+  sphere0_total_wrench.head<3>() =
+      X_WS0.translation().cross(sphere0_total_wrench.tail<3>());
+  sphere1_total_wrench.tail<3>() << 0, 0,
+      -spheres_double_->spheres()[1].inertia.get_mass() * gravity;
+  sphere1_total_wrench.head<3>() =
+      X_WS1.translation().cross(sphere1_total_wrench.tail<3>());
+  for (const auto& contact_wrench_evaluator_and_lambda :
+       contact_wrench_evaluators_and_lambda_) {
+    const Eigen::Vector3d lambda_sol =
+        result.GetSolution(contact_wrench_evaluator_and_lambda.second);
+    if (contact_wrench_evaluator_and_lambda.first->geometry_id_pair() ==
+        std::make_pair(spheres_->sphere_geometry_ids()[0],
+                       spheres_->sphere_geometry_ids()[1])) {
+      // contact between two spheres.
+      // Compute the witness points on sphere 0 and sphere 1.
+      const Eigen::Vector3d p_WC0 =
+          X_WS0.translation() +
+          (X_WS1.translation() - X_WS0.translation()).normalized() *
+              spheres_double_->spheres()[0].radius;
+      const Eigen::Vector3d p_WC1 =
+          X_WS1.translation() +
+          (X_WS0.translation() - X_WS1.translation()).normalized() *
+              spheres_double_->spheres()[1].radius;
+      sphere0_total_wrench.head<3>() += p_WC0.cross(-lambda_sol);
+      sphere1_total_wrench.head<3>() += p_WC1.cross(lambda_sol);
+      sphere0_total_wrench.tail<3>() += -lambda_sol;
+      sphere1_total_wrench.tail<3>() += lambda_sol;
+    } else if (contact_wrench_evaluator_and_lambda.first->geometry_id_pair() ==
+               std::make_pair(spheres_->sphere_geometry_ids()[0],
+                              spheres_->ground_geometry_id())) {
+      // contact between the ground and the sphere 0.
+      // Compute the witness point on sphere 0
+      const Eigen::Vector3d p_WC0 =
+          X_WS0.translation() -
+          Eigen::Vector3d(0, 0, spheres_double_->spheres()[0].radius);
+      sphere0_total_wrench.head<3>() += p_WC0.cross(-lambda_sol);
+      sphere0_total_wrench.tail<3>() += -lambda_sol;
+    } else if (contact_wrench_evaluator_and_lambda.first->geometry_id_pair() ==
+               std::make_pair(spheres_->sphere_geometry_ids()[1],
+                              spheres_->ground_geometry_id())) {
+      // contact between the ground and the sphere 1.
+      // Compute the witness point on sphere 1
+      const Eigen::Vector3d p_WC1 =
+          X_WS1.translation() -
+          Eigen::Vector3d(0, 0, spheres_double_->spheres()[1].radius);
+      sphere1_total_wrench.head<3>() += p_WC1.cross(-lambda_sol);
+      sphere1_total_wrench.tail<3>() += -lambda_sol;
+    } else {
+      throw std::runtime_error("Unknown contact geometry pairs.");
+    }
+  }
+  const double tol = 1E-5;
+  EXPECT_TRUE(
+      CompareMatrices(sphere0_total_wrench, Vector6<double>::Zero(), tol));
+  EXPECT_TRUE(
+      CompareMatrices(sphere1_total_wrench, Vector6<double>::Zero(), tol));
 }
 }  // namespace multibody
 }  // namespace drake
