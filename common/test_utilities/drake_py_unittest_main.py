@@ -26,22 +26,20 @@ if __name__ == '__main__':
     main_py = sys.argv[0]
 
     # Parse the test case name out of the runfiles directory name.
-    match = re.search("/([^/]*_test).runfiles/", main_py)
+    match = re.search("^(.*bin/(.*?/)py/([^/]*_test).runfiles/)", main_py)
     if not match:
         print("error: no test name match in {}".format(main_py))
         sys.exit(1)
-    test_name, = match.groups()
+    runfiles, test_package, test_name, = match.groups()
     test_filename = test_name + ".py"
 
-    # Find the test_filename and check it for a (misleading) __main__.
-    found_filename = None
-    for dirpath, dirs, files in os.walk("."):
-        if test_filename in files:
-            assert not found_filename
-            found_filename = os.path.join(dirpath, test_filename)
-    if not found_filename:
-        raise RuntimeError("No such file found {}!".format(
-            test_filename))
+    # Determine the test_filename and check it for a (misleading) __main__.
+    expected_filename = (
+        runfiles + "drake/" + test_package + "test/" + test_filename)
+    if not os.path.exists(expected_filename):
+        raise RuntimeError("Could not find {} at {}".format(
+            test_filename, expected_filename))
+    found_filename = os.path.realpath(expected_filename)
     with io.open(found_filename, "r", encoding="utf8") as infile:
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
