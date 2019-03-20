@@ -6,8 +6,12 @@
 set -euxo pipefail
 
 if [[ "${EUID}" -eq 0 ]]; then
-  echo 'This script must NOT be run as root' >&2
+  echo 'ERROR: This script must NOT be run as root' >&2
   exit 1
+fi
+
+if command -v conda &>/dev/null; then
+  echo 'WARNING: Anaconda is NOT supported. Please remove the Anaconda bin directory from the PATH.' >&2
 fi
 
 if ! command -v /usr/local/bin/brew &>/dev/null; then
