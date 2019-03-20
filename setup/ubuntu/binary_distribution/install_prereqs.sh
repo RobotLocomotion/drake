@@ -10,6 +10,10 @@ if [[ "${EUID}" -ne 0 ]]; then
   exit 1
 fi
 
+if command -v conda &>/dev/null; then
+  echo 'WARNING: Anaconda is NOT supported. Please remove the Anaconda bin directory from the PATH.' >&2
+fi
+
 apt-get update
 apt-get install --no-install-recommends lsb-release
 

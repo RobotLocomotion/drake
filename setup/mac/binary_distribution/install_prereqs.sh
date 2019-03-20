@@ -10,6 +10,10 @@ if [[ "${EUID}" -eq 0 ]]; then
   exit 1
 fi
 
+if command -v conda &>/dev/null; then
+  echo 'WARNING: Anaconda is NOT supported. Please remove the Anaconda bin directory from the PATH.' >&2
+fi
+
 if ! command -v /usr/local/bin/brew &>/dev/null; then
   /usr/bin/ruby -e "$(/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 fi
