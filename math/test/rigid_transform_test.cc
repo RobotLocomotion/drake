@@ -89,10 +89,9 @@ GTEST_TEST(RigidTransform, DefaultRigidTransformIsIdentity) {
 // This test will fail once the conversion operator is removed per
 // resolution of #9865, and thus this test should be removed as well.
 GTEST_TEST(RigidTransform, ImplicitConstructionFromIsometry3) {
-  const RotationMatrix<double> R1 = GetRotationMatrixB();
-  const Matrix3d m = R1.matrix();
+  const RotationMatrix<double> R = GetRotationMatrixB();
   const Vector3<double> p(4, 5, 6);
-  RigidTransform<double> X(R1, p);
+  RigidTransform<double> X(R, p);
 
   // An implicit conversion happens here and we hold a reference to the newly
   // created object.
