@@ -495,6 +495,47 @@ GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {
         adder2->get_output_port()), 1 /* exported output port id */);
 }
 
+class DtorTraceSystem final : public LeafSystem<double> {
+ public:
+  explicit DtorTraceSystem(int nonce) : nonce_(nonce) {}
+  ~DtorTraceSystem() { destroyed_nonces().push_back(nonce_); }
+
+  static std::vector<int>& destroyed_nonces() {
+    static never_destroyed<std::vector<int>> nonces;
+    return nonces.access();
+  }
+
+ private:
+  int nonce_{};
+};
+
+// Tests the destruction order of DiagramBuilder.
+GTEST_TEST(DiagramBuilderTest, DtorOrder_Builder) {
+  auto& nonces = DtorTraceSystem::destroyed_nonces();
+
+  nonces.clear();
+  auto dut = std::make_unique<DiagramBuilder<double>>();
+  dut->AddSystem<DtorTraceSystem>(1);
+  dut->AddSystem<DtorTraceSystem>(2);
+  EXPECT_EQ(nonces.size(), 0);
+  dut.reset();
+  EXPECT_EQ(nonces, (std::vector<int>{2, 1}));
+}
+
+// Tests the destruction order of Diagram.
+GTEST_TEST(DiagramBuilderTest, DtorOrder_Built) {
+  auto& nonces = DtorTraceSystem::destroyed_nonces();
+
+  nonces.clear();
+  auto builder = std::make_unique<DiagramBuilder<double>>();
+  builder->AddSystem<DtorTraceSystem>(-1);
+  builder->AddSystem<DtorTraceSystem>(-2);
+  auto dut = builder->Build();
+  EXPECT_EQ(nonces.size(), 0);
+  dut.reset();
+  EXPECT_EQ(nonces, (std::vector<int>{-2, -1}));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
