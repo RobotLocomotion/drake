@@ -40,7 +40,7 @@ class AutoDiffXdTest : public ::testing::Test {
     // by a machine precision order of magnitude.
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     const double kValueTolerance =
-        kEpsilon * std::max(std::abs(e1.value()), std::abs(e2.value()));
+        10 * kEpsilon * std::max(std::abs(e1.value()), std::abs(e2.value()));
     if (std::abs(e1.value() - e2.value()) > kValueTolerance) {
       return ::testing::AssertionFailure()
              << "Values do not match: " << e1.value() << " and " << e2.value();
@@ -50,7 +50,8 @@ class AutoDiffXdTest : public ::testing::Test {
       // Both derivatives are NaN.
       return ::testing::AssertionSuccess();
     }
-    if (!e1.derivatives().isApprox(e2.derivatives(), kEpsilon)) {
+    const double kDerivativeTolerance = 10 * kEpsilon;  // relative tolerance.
+    if (!e1.derivatives().isApprox(e2.derivatives(), kDerivativeTolerance)) {
       return ::testing::AssertionFailure() << "Derivatives do not match:\n"
                                            << e1.derivatives() << "\n----\n"
                                            << e2.derivatives() << "\n";
