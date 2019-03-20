@@ -217,7 +217,7 @@ TEST_F(RgbdRendererVTKTest, MeshTest) {
   const int x = kInlier.x;
   const int y = kInlier.y;
   // Color
-  CompareColor(color_.at(x, y), ColorI({4u, 241u, 33u}), 255u,
+  CompareColor(color_.at(x, y), ColorI({6u, 255u, 46u}), 255u,
                kColorPixelTolerance);
   // Depth
   ASSERT_NEAR(depth_.at(x, y)[0], 2., kDepthTolerance);

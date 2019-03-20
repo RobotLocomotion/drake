@@ -1,23 +1,31 @@
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Tue, 19 Mar 2019 00:00:00 -0400
+Subject: [PATCH] Do not enable fast-math compiler optimizations when compiling with GCC and ISPC
+---
+ components/ospcommon/cmake/gcc.cmake  |    4 ++--
+ components/ospcommon/cmake/ispc.cmake |    1 -
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
 diff --git a/components/ospcommon/cmake/gcc.cmake b/components/ospcommon/cmake/gcc.cmake
-index 3463cd075..6b1c67130 100644
+index dff29f7b6..5d209322a 100644
 --- a/components/ospcommon/cmake/gcc.cmake
 +++ b/components/ospcommon/cmake/gcc.cmake
-@@ -30,8 +30,8 @@ ENDIF()
+@@ -31,8 +31,8 @@ endif()
 
- SET(CMAKE_CXX_FLAGS "${OSPRAY_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
- SET(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g     -Wstrict-aliasing=1")
--SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1 -ffast-math -fno-finite-math-only ")
--SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=1 -ffast-math -fno-finite-math-only ")
-+SET(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1 ")
-+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=1 ")
- SET(CMAKE_C_FLAGS "-std=c99 ${CMAKE_C_FLAGS}")
+ set(CMAKE_CXX_FLAGS "${OSPRAY_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+ set(CMAKE_CXX_FLAGS_DEBUG          "-DDEBUG  -g     -Wstrict-aliasing=1")
+-set(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1 -ffast-math -fno-finite-math-only ")
+-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=1 -ffast-math -fno-finite-math-only ")
++set(CMAKE_CXX_FLAGS_RELEASE        "-DNDEBUG    -O3 -Wstrict-aliasing=1")
++set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-DNDEBUG -g -O3 -Wstrict-aliasing=1")
 
- IF (APPLE)
+ if (APPLE)
+   set(CMAKE_CXX_FLAGS "-mmacosx-version-min=10.9 ${CMAKE_CXX_FLAGS}") # we only use MacOSX 10.9 features
 diff --git a/components/ospcommon/cmake/ispc.cmake b/components/ospcommon/cmake/ispc.cmake
-index 7d02f37c2..12f91aacd 100644
+index fde7eff06..a1abce4b4 100644
 --- a/components/ospcommon/cmake/ispc.cmake
 +++ b/components/ospcommon/cmake/ispc.cmake
-@@ -186,7 +186,6 @@ MACRO (OSPRAY_ISPC_COMPILE)
+@@ -199,7 +199,6 @@ MACRO (OSPRAY_ISPC_COMPILE)
        ${ISPC_OPT_FLAGS}
        --target=${ISPC_TARGET_ARGS}
        --woff
