@@ -44,6 +44,7 @@ LIBDRAKE_COMPONENTS = [
     "//common",
     "//common/proto",
     "//common/trajectories",
+    "//common/yaml",
     "//common:drake_marker_shared_library",  # unpackaged
     "//common:text_logging_gflags_h",  # unpackaged
     "//examples/acrobot:acrobot_input",  # unpackaged

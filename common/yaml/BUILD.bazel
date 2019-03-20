@@ -9,11 +9,10 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//visibility:public"])
 
 drake_cc_package_library(
     name = "yaml",
-    visibility = ["//visibility:private"],
     deps = [
         ":yaml_read_archive",
     ],

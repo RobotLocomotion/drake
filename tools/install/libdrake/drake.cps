@@ -55,6 +55,10 @@
     "stx": {
       "Hints": ["@prefix@/lib/cmake/stx"],
       "X-CMake-Find-Args": ["CONFIG"]
+    },
+    "yaml-cpp": {
+      "Hints": ["@prefix@/lib/cmake/yaml-cpp"],
+      "X-CMake-Find-Args": ["CONFIG"]
     }
   },
   "Default-Components": [":drake"],
