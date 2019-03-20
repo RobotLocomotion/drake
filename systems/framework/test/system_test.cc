@@ -244,15 +244,15 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   BasicVector<double> state_vec2(kSize);
 
   system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2[0]);
+  EXPECT_EQ(2.0, state_vec2[1]);
+  EXPECT_EQ(3.0, state_vec2[2]);
 
   // Test Eigen specialized function specially.
   system_.MapVelocityToQDot(context_, state_vec1->CopyToVector(), &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2[0]);
+  EXPECT_EQ(2.0, state_vec2[1]);
+  EXPECT_EQ(3.0, state_vec2[2]);
 }
 
 TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
@@ -260,15 +260,15 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   BasicVector<double> state_vec2(kSize);
 
   system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2[0]);
+  EXPECT_EQ(2.0, state_vec2[1]);
+  EXPECT_EQ(3.0, state_vec2[2]);
 
   // Test Eigen specialized function specially.
   system_.MapQDotToVelocity(context_, state_vec1->CopyToVector(), &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2[0]);
+  EXPECT_EQ(2.0, state_vec2[1]);
+  EXPECT_EQ(3.0, state_vec2[2]);
 }
 
 TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
