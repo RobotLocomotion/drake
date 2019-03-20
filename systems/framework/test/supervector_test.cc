@@ -30,31 +30,42 @@ class SupervectorTest : public ::testing::Test {
   std::unique_ptr<Supervector<double>> supervector_;
 };
 
-TEST_F(SupervectorTest, GetAtIndex) {
+TEST_F(SupervectorTest, Get) {
   ASSERT_EQ(kLength, supervector_->size());
   for (int i = 0; i < kLength; ++i) {
+    EXPECT_EQ(i, supervector_->at(i));
+    EXPECT_EQ(i, (*supervector_)[i]);
     EXPECT_EQ(i, supervector_->GetAtIndex(i));
   }
 }
 
-TEST_F(SupervectorTest, SetAtIndex) {
+TEST_F(SupervectorTest, Set) {
   for (int i = 0; i < kLength; ++i) {
-    supervector_->SetAtIndex(i, i * 2);
+    switch (i % 3) {
+      case 0: { supervector_->at(i) = i * 2; break; }
+      case 1: { (*supervector_)[i] = i * 2; break; }
+      case 2: { supervector_->SetAtIndex(i, i * 2); break; }
+    }
   }
   for (int i = 0; i < kLength; ++i) {
-    EXPECT_EQ(i * 2, supervector_->GetAtIndex(i));
+    // N.B. We mix up which getter is used for which setter.
+    switch (i % 3) {
+      case 0: { EXPECT_EQ(i * 2, supervector_->GetAtIndex(i)); break; }
+      case 1: { EXPECT_EQ(i * 2, supervector_->at(i)); break; }
+      case 2: { EXPECT_EQ(i * 2, (*supervector_)[i]); break; }
+    }
   }
 
   // Confirm the changes were written through to the constituent vectors.
-  EXPECT_EQ(0, vec1_->GetAtIndex(0));
-  EXPECT_EQ(2, vec1_->GetAtIndex(1));
-  EXPECT_EQ(4, vec1_->GetAtIndex(2));
-  EXPECT_EQ(6, vec1_->GetAtIndex(3));
-  EXPECT_EQ(8, vec2_->GetAtIndex(0));
-  EXPECT_EQ(10, vec2_->GetAtIndex(1));
-  EXPECT_EQ(12, vec4_->GetAtIndex(0));
-  EXPECT_EQ(14, vec4_->GetAtIndex(1));
-  EXPECT_EQ(16, vec4_->GetAtIndex(2));
+  EXPECT_EQ(0, vec1_->at(0));
+  EXPECT_EQ(2, vec1_->at(1));
+  EXPECT_EQ(4, vec1_->at(2));
+  EXPECT_EQ(6, vec1_->at(3));
+  EXPECT_EQ(8, vec2_->at(0));
+  EXPECT_EQ(10, vec2_->at(1));
+  EXPECT_EQ(12, vec4_->at(0));
+  EXPECT_EQ(14, vec4_->at(1));
+  EXPECT_EQ(16, vec4_->at(2));
 }
 
 
@@ -66,8 +77,8 @@ TEST_F(SupervectorTest, ArrayOperator) {
 }
 
 TEST_F(SupervectorTest, OutOfRange) {
-  EXPECT_THROW(supervector_->GetAtIndex(-1), std::out_of_range);
-  EXPECT_THROW(supervector_->GetAtIndex(10), std::out_of_range);
+  EXPECT_THROW(supervector_->at(-1), std::out_of_range);
+  EXPECT_THROW(supervector_->at(10), std::out_of_range);
 }
 
 TEST_F(SupervectorTest, Empty) {

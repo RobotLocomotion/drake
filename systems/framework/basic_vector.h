@@ -47,7 +47,7 @@ class BasicVector : public VectorBase<T> {
       : BasicVector<T>(init.size()) {
     int i = 0;
     for (const T& datum : init) {
-      this->SetAtIndex(i++, datum);
+      (*this)[i++] = datum;
     }
   }
 
@@ -70,6 +70,10 @@ class BasicVector : public VectorBase<T> {
 
   int size() const override { return static_cast<int>(values_.rows()); }
 
+  // Shadow the base class to avoid virtual dispatch.
+  T& operator[](int index) { return values_[index]; }
+  const T& operator[](int index) const { return values_[index]; }
+
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
   /// @throws std::out_of_range if the new value has different dimensions.
@@ -91,16 +95,6 @@ class BasicVector : public VectorBase<T> {
   /// mutation of the values, but does not allow resizing the vector itself.
   Eigen::VectorBlock<VectorX<T>> get_mutable_value() {
     return values_.head(values_.rows());
-  }
-
-  const T& GetAtIndex(int index) const override {
-    DRAKE_THROW_UNLESS(index < size());
-    return values_[index];
-  }
-
-  T& GetAtIndex(int index) override {
-    DRAKE_THROW_UNLESS(index < size());
-    return values_[index];
   }
 
   void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) override {
@@ -137,6 +131,16 @@ class BasicVector : public VectorBase<T> {
   }
 
  protected:
+  const T& DoGetAtIndex(int index) const override {
+    DRAKE_THROW_UNLESS(index < size());
+    return values_[index];
+  }
+
+  T& DoGetAtIndex(int index) override {
+    DRAKE_THROW_UNLESS(index < size());
+    return values_[index];
+  }
+
   /// Returns a new BasicVector containing a copy of the entire vector.
   /// Caller must take ownership, and may rely on the NVI wrapper to initialize
   /// the clone elementwise.
@@ -154,7 +158,7 @@ class BasicVector : public VectorBase<T> {
   template<typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg, Fargs&&... recursive_args) {
-    data->SetAtIndex(index++, T(constructor_arg));
+    (*data)[index++] = T(constructor_arg);
     BasicVector<T>::MakeRecursive(data, index, recursive_args...);
   }
 
@@ -162,7 +166,7 @@ class BasicVector : public VectorBase<T> {
   template<typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg) {
-    data->SetAtIndex(index++, T(constructor_arg));
+    (*data)[index++] = T(constructor_arg);
   }
 
   /// Provides const access to the element storage.

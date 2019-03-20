@@ -82,7 +82,7 @@ void SystemSymbolicInspector::InitializeVectorInputs(
       std::ostringstream name;
       name << "u" << i << "_" << j;
       input_variables_[i][j] = symbolic::Variable(name.str());
-      value->SetAtIndex(j, input_variables_[i][j]);
+      value->at(j) = input_variables_[i][j];
     }
     context_->FixInputPort(i, *value);
   }
@@ -180,7 +180,7 @@ bool SystemSymbolicInspector::IsConnectedInputToOutput(
   const BasicVector<symbolic::Expression>* output_exprs =
       output_->get_vector_data(output_port_index);
   for (int j = 0; j < output_exprs->size(); ++j) {
-    output_variables.insert(output_exprs->GetAtIndex(j).GetVariables());
+    output_variables.insert(output_exprs->at(j).GetVariables());
   }
 
   // Check whether any of the variables in any of the input_variables_ are

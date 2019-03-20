@@ -244,15 +244,15 @@ TEST_F(SystemTest, MapVelocityToConfigurationDerivatives) {
   BasicVector<double> state_vec2(kSize);
 
   system_.MapVelocityToQDot(context_, *state_vec1, &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2.at(0));
+  EXPECT_EQ(2.0, state_vec2.at(1));
+  EXPECT_EQ(3.0, state_vec2.at(2));
 
   // Test Eigen specialized function specially.
   system_.MapVelocityToQDot(context_, state_vec1->CopyToVector(), &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2.at(0));
+  EXPECT_EQ(2.0, state_vec2.at(1));
+  EXPECT_EQ(3.0, state_vec2.at(2));
 }
 
 TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
@@ -260,15 +260,15 @@ TEST_F(SystemTest, MapConfigurationDerivativesToVelocity) {
   BasicVector<double> state_vec2(kSize);
 
   system_.MapQDotToVelocity(context_, *state_vec1, &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2.at(0));
+  EXPECT_EQ(2.0, state_vec2.at(1));
+  EXPECT_EQ(3.0, state_vec2.at(2));
 
   // Test Eigen specialized function specially.
   system_.MapQDotToVelocity(context_, state_vec1->CopyToVector(), &state_vec2);
-  EXPECT_EQ(1.0, state_vec2.GetAtIndex(0));
-  EXPECT_EQ(2.0, state_vec2.GetAtIndex(1));
-  EXPECT_EQ(3.0, state_vec2.GetAtIndex(2));
+  EXPECT_EQ(1.0, state_vec2.at(0));
+  EXPECT_EQ(2.0, state_vec2.at(1));
+  EXPECT_EQ(3.0, state_vec2.at(2));
 }
 
 TEST_F(SystemTest, ConfigurationDerivativeVelocitySizeMismatch) {
@@ -811,8 +811,8 @@ TEST_F(SystemIOTest, TransmogrifyAndFix) {
   const TestTypedVector<AutoDiffXd>* fixed_vec =
       dest_system.EvalVectorInput<TestTypedVector>(*dest_context, 1);
   EXPECT_NE(fixed_vec, nullptr);
-  EXPECT_EQ(2, fixed_vec->GetAtIndex(0).value());
-  EXPECT_EQ(0, fixed_vec->GetAtIndex(0).derivatives().size());
+  EXPECT_EQ(2, fixed_vec->at(0).value());
+  EXPECT_EQ(0, fixed_vec->at(0).derivatives().size());
 }
 
 // This class implements various computational methods so we can check that

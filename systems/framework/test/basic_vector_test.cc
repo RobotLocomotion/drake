@@ -59,9 +59,9 @@ GTEST_TEST(BasicVectorTest, DoubleInitiallyNaN) {
 // Tests that the BasicVector<AutoDiffXd> is initialized to NaN.
 GTEST_TEST(BasicVectorTest, AutodiffInitiallyNaN) {
   BasicVector<AutoDiffXd> vec(3);
-  EXPECT_TRUE(std::isnan(vec.GetAtIndex(0).value()));
-  EXPECT_TRUE(std::isnan(vec.GetAtIndex(1).value()));
-  EXPECT_TRUE(std::isnan(vec.GetAtIndex(2).value()));
+  EXPECT_TRUE(std::isnan(vec.at(0).value()));
+  EXPECT_TRUE(std::isnan(vec.at(1).value()));
+  EXPECT_TRUE(std::isnan(vec.at(2).value()));
 }
 
 // Tests that the BasicVector<symbolic::Expression> is initialized to NaN.
@@ -85,9 +85,9 @@ GTEST_TEST(BasicVectorTest, MakeSymbolic) {
       symbolic::Variable("x"),
       2.0,
       symbolic::Variable("y") + 2.0);
-  EXPECT_EQ("x", vec->GetAtIndex(0).to_string());
-  EXPECT_EQ("2", vec->GetAtIndex(1).to_string());
-  EXPECT_EQ("(2 + y)", vec->GetAtIndex(2).to_string());
+  EXPECT_EQ("x", vec->at(0).to_string());
+  EXPECT_EQ("2", vec->at(1).to_string());
+  EXPECT_EQ("(2 + y)", vec->at(2).to_string());
 }
 
 // Tests that the BasicVector has a size as soon as it is constructed.
@@ -187,7 +187,7 @@ GTEST_TEST(BasicVectorTest, NormInfAutodiff) {
   // The norminf(DUT) is now 33.5 and the ∂/∂t of norminf(DUT) is -3.5.
   // The element0 has the max absolute value of the AutoDiffScalar's scalar.
   // It is negative, so the sign of its derivatives gets flipped.
-  dut.GetAtIndex(0).value() = -33.5;
+  dut.at(0).value() = -33.5;
   expected_norminf.value() = 33.5;
   expected_norminf.derivatives() = Vector1d(-1.5);
   EXPECT_EQ(dut.NormInf().value(), expected_norminf.value());

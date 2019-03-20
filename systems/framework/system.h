@@ -197,8 +197,8 @@ class System : public SystemBase {
   /// provide random initial conditions using the stdc++ random library, e.g.:
   /// @code
   ///   std::normal_distribution<T> gaussian();
-  ///   state->get_mutable_continuous_state()->get_mutable_vector()
-  ///        ->SetAtIndex(0, gaussian(*generator));
+  ///   state->get_mutable_continuous_state()->get_mutable_vector()->at(0) =
+  ///       gaussian(*generator);
   /// @endcode
   /// Overrides must not change the number of state variables.
   ///
@@ -214,8 +214,8 @@ class System : public SystemBase {
   /// method to provide random parameters using the stdc++ random library, e.g.:
   /// @code
   ///   std::uniform_real_distribution<T> uniform();
-  ///   parameters->get_mutable_numeric_parameter(0)
-  ///             ->SetAtIndex(0, uniform(*generator));
+  ///   parameters->get_mutable_numeric_parameter(0)->at(0) =
+  ///       uniform(*generator);
   /// @endcode
   /// Overrides must not change the number of state variables.
   ///

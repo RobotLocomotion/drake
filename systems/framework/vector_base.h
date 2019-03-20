@@ -40,22 +40,44 @@ class VectorBase {
   virtual int size() const = 0;
 
   /// Returns the element at the given index in the vector.
-  /// @throws std::runtime_error if the index is >= size().
-  ///
-  /// Implementations should ensure this operation is O(1) and allocates no
-  /// memory.
-  virtual const T& GetAtIndex(int index) const = 0;
+  /// @pre 0 <= `index` < size()
+  T& operator[](int index) { return DoGetAtIndex(index); }
 
+  /// Returns the element at the given index in the vector.
+  /// @pre 0 <= `index` < size()
+  const T& operator[](int index) const { return DoGetAtIndex(index); }
+
+  /// Returns the element at the given index in the vector.
+  /// @throws std::runtime_error if the index is >= size() or negative.
+  T& at(int index) { return DoGetAtIndex(index); }
+
+  /// Returns the element at the given index in the vector.
+  /// @throws std::runtime_error if the index is >= size() or negative.
+  const T& at(int index) const { return DoGetAtIndex(index); }
+
+  /// This method is dispreferred in new code, and may eventually be removed.
+  /// Please call at() or operator[]() instead.
+  ///
   /// Returns the element at the given index in the vector.
   /// @throws std::runtime_error if the index is >= size().
   ///
   /// Implementations should ensure this operation is O(1) and allocates no
   /// memory.
-  virtual T& GetAtIndex(int index) = 0;
+  const T& GetAtIndex(int index) const { return DoGetAtIndex(index); }
 
-  T& operator[](std::size_t idx) { return GetAtIndex(idx); }
-  const T& operator[](std::size_t idx) const { return GetAtIndex(idx); }
+  /// This method is dispreferred in new code, and may eventually be removed.
+  /// Please call at() or operator[]() instead.
+  ///
+  /// Returns the element at the given index in the vector.
+  /// @throws std::runtime_error if the index is >= size().
+  ///
+  /// Implementations should ensure this operation is O(1) and allocates no
+  /// memory.
+  T& GetAtIndex(int index) { return DoGetAtIndex(index); }
 
+  /// This method is dispreferred in new code, and may eventually be removed.
+  /// Please assign to the result of at() or operator[]() instead.
+  ///
   /// Replaces the state at the given index with the value.
   /// @throws std::runtime_error if the index is >= size().
   void SetAtIndex(int index, const T& value) {
@@ -71,7 +93,7 @@ class VectorBase {
   virtual void SetFrom(const VectorBase<T>& value) {
     DRAKE_THROW_UNLESS(value.size() == size());
     for (int i = 0; i < value.size(); ++i) {
-      SetAtIndex(i, value.GetAtIndex((i)));
+      (*this)[i] = value[i];
     }
   }
 
@@ -83,14 +105,14 @@ class VectorBase {
   virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
     DRAKE_THROW_UNLESS(value.rows() == size());
     for (int i = 0; i < value.rows(); ++i) {
-      SetAtIndex(i, value[i]);
+      (*this)[i] = value[i];
     }
   }
 
   virtual void SetZero() {
     const int sz = size();
     for (int i = 0; i < sz; ++i) {
-      SetAtIndex(i, T(0));
+      (*this)[i] = T(0.0);
     }
   }
 
@@ -101,7 +123,7 @@ class VectorBase {
   virtual VectorX<T> CopyToVector() const {
     VectorX<T> vec(size());
     for (int i = 0; i < size(); ++i) {
-      vec[i] = GetAtIndex(i);
+      vec[i] = (*this)[i];
     }
     return vec;
   }
@@ -115,7 +137,7 @@ class VectorBase {
     DRAKE_THROW_UNLESS(vec != nullptr);
     DRAKE_THROW_UNLESS(vec->rows() == size());
     for (int i = 0; i < size(); ++i) {
-      (*vec)[i] = GetAtIndex(i);
+      (*vec)[i] = (*this)[i];
     }
   }
 
@@ -133,7 +155,7 @@ class VectorBase {
       throw std::out_of_range("Addends must be the same size.");
     }
     for (int i = 0; i < size(); ++i) {
-      (*vec)[i] += scale * GetAtIndex(i);
+      (*vec)[i] += scale * (*this)[i];
     }
   }
 
@@ -179,7 +201,7 @@ class VectorBase {
     T norm(0);
     const int count = size();
     for (int i = 0; i < count; ++i) {
-      T val = abs(GetAtIndex(i));
+      T val = abs((*this)[i]);
       norm = max(norm, val);
     }
 
@@ -188,7 +210,7 @@ class VectorBase {
 
   /// Get the bounds for the elements.
   /// If lower and upper are both empty size vectors, then there are no bounds.
-  /// Otherwise, the bounds are (*lower)(i) <= GetAtIndex(i) <= (*upper)(i)
+  /// Otherwise, the bounds are (*lower)(i) <= this->at(i) <= (*upper)(i).
   /// The default output is no bounds.
   virtual void GetElementBounds(Eigen::VectorXd* lower,
                                 Eigen::VectorXd* upper) const {
@@ -198,6 +220,14 @@ class VectorBase {
 
  protected:
   VectorBase() {}
+
+  /// Implementations should ensure this operation is O(1) and allocates no
+  /// memory.
+  virtual const T& DoGetAtIndex(int index) const = 0;
+
+  /// Implementations should ensure this operation is O(1) and allocates no
+  /// memory.
+  virtual T& DoGetAtIndex(int index) = 0;
 
   /// Adds in multiple scaled vectors to this vector. All vectors
   /// are guaranteed to be the same size.
@@ -216,8 +246,8 @@ class VectorBase {
     for (int i = 0; i < sz; ++i) {
       T value(0);
       for (const auto& operand : rhs_scale)
-        value += operand.second.GetAtIndex(i) * operand.first;
-      SetAtIndex(i, GetAtIndex(i) + value);
+        value += operand.second[i] * operand.first;
+      (*this)[i] += value;
     }
   }
 };
@@ -231,7 +261,7 @@ std::ostream& operator<<(std::ostream& os, const VectorBase<T>& vec) {
   for (int i = 0; i < vec.size(); ++i) {
     if (i > 0)
       os << ", ";
-    os << vec.GetAtIndex(i);
+    os << vec[i];
   }
 
   os << "]";

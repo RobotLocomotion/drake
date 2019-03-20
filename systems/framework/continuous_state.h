@@ -287,7 +287,7 @@ class ContinuousState {
     // The storage addresses of `state_` elements contain no duplicates.
     std::unordered_set<const T*> state_element_pointers;
     for (int i = 0; i < num_total; ++i) {
-      const T* element = &(state_->GetAtIndex(i));
+      const T* element = &(state_->at(i));
       state_element_pointers.emplace(element);
     }
     DRAKE_DEMAND(static_cast<int>(state_element_pointers.size()) == num_total);
@@ -298,17 +298,17 @@ class ContinuousState {
     // same unique underlying data, just with different indexing.
     std::unordered_set<const T*> qvz_element_pointers;
     for (int i = 0; i < num_q(); ++i) {
-      const T* element = &(generalized_position_->GetAtIndex(i));
+      const T* element = &(generalized_position_->at(i));
       qvz_element_pointers.emplace(element);
       DRAKE_DEMAND(state_element_pointers.count(element) == 1);
     }
     for (int i = 0; i < num_v(); ++i) {
-      const T* element = &(generalized_velocity_->GetAtIndex(i));
+      const T* element = &(generalized_velocity_->at(i));
       qvz_element_pointers.emplace(element);
       DRAKE_DEMAND(state_element_pointers.count(element) == 1);
     }
     for (int i = 0; i < num_z(); ++i) {
-      const T* element = &(misc_continuous_state_->GetAtIndex(i));
+      const T* element = &(misc_continuous_state_->at(i));
       qvz_element_pointers.emplace(element);
       DRAKE_DEMAND(state_element_pointers.count(element) == 1);
     }

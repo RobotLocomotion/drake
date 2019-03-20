@@ -82,11 +82,11 @@ GTEST_TEST(ModelValuesTest, VectorValueTest) {
 
   // Some BasicVector access patterns are okay.
   EXPECT_EQ(dut.CloneVectorModel<double>(3)->size(), 2);
-  EXPECT_EQ(dut.CloneVectorModel<double>(3)->GetAtIndex(0), 33);
-  EXPECT_EQ(dut.CloneVectorModel<double>(3)->GetAtIndex(1), 34);
+  EXPECT_EQ(dut.CloneVectorModel<double>(3)->at(0), 33);
+  EXPECT_EQ(dut.CloneVectorModel<double>(3)->at(1), 34);
   EXPECT_EQ(dut.CloneVectorModel<double>(5)->size(), 2);
-  EXPECT_EQ(dut.CloneVectorModel<double>(5)->GetAtIndex(0), 55);
-  EXPECT_EQ(dut.CloneVectorModel<double>(5)->GetAtIndex(1), 56);
+  EXPECT_EQ(dut.CloneVectorModel<double>(5)->at(0), 55);
+  EXPECT_EQ(dut.CloneVectorModel<double>(5)->at(1), 56);
 
   // The subclass comes through okay.
   auto basic_vector = dut.CloneVectorModel<double>(5);

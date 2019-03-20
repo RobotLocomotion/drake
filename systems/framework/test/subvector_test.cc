@@ -29,7 +29,7 @@ TEST_F(SubvectorTest, NullptrVector) {
 TEST_F(SubvectorTest, EmptySubvector) {
   Subvector<double> subvec(vector_.get());
   EXPECT_EQ(0, subvec.size());
-  EXPECT_THROW(subvec.GetAtIndex(0), std::runtime_error);
+  EXPECT_THROW(subvec.at(0), std::runtime_error);
 }
 
 TEST_F(SubvectorTest, OutOfBoundsSubvector) {
@@ -38,7 +38,13 @@ TEST_F(SubvectorTest, OutOfBoundsSubvector) {
 
 TEST_F(SubvectorTest, Access) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
-  EXPECT_EQ(2, subvec.GetAtIndex(0));
+  EXPECT_EQ(2, subvec[0]);
+  EXPECT_EQ(3, subvec.at(1));
+  EXPECT_THROW(subvec.at(2), std::runtime_error);
+}
+
+TEST_F(SubvectorTest, LecagyAccess) {
+  Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   EXPECT_EQ(3, subvec.GetAtIndex(1));
   EXPECT_THROW(subvec.GetAtIndex(2), std::runtime_error);
 }
@@ -64,14 +70,20 @@ TEST_F(SubvectorTest, Mutation) {
   VectorX<double> next_value(kSubVectorLength);
   next_value << 5, 6;
   subvec.SetFromVector(next_value);
-  EXPECT_EQ(5, subvec.GetAtIndex(0));
-  EXPECT_EQ(6, subvec.GetAtIndex(1));
+  EXPECT_EQ(5, subvec.at(0));
+  EXPECT_EQ(6, subvec.at(1));
+
+  subvec.at(0) = 41;
+  EXPECT_EQ(1, vector_->at(0));
+  EXPECT_EQ(41, vector_->at(1));
+  EXPECT_EQ(6, vector_->at(2));
+  EXPECT_EQ(4, vector_->at(3));
 
   subvec.SetAtIndex(1, 42);
-  EXPECT_EQ(1, vector_->GetAtIndex(0));
-  EXPECT_EQ(5, vector_->GetAtIndex(1));
-  EXPECT_EQ(42, vector_->GetAtIndex(2));
-  EXPECT_EQ(4, vector_->GetAtIndex(3));
+  EXPECT_EQ(1, vector_->at(0));
+  EXPECT_EQ(41, vector_->at(1));
+  EXPECT_EQ(42, vector_->at(2));
+  EXPECT_EQ(4, vector_->at(3));
 }
 
 // Tests that a subvector can be SetFrom another VectorBase.
@@ -79,15 +91,15 @@ TEST_F(SubvectorTest, SetFrom) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   auto next_value = BasicVector<double>::Make({7, 8});
   subvec.SetFrom(*next_value);
-  EXPECT_EQ(7, subvec.GetAtIndex(0));
-  EXPECT_EQ(8, subvec.GetAtIndex(1));
+  EXPECT_EQ(7, subvec.at(0));
+  EXPECT_EQ(8, subvec.at(1));
 }
 
 // Tests that the Subvector can be addressed as an array.
 TEST_F(SubvectorTest, ArrayOperator) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   subvec[0] = 42;
-  EXPECT_EQ(42, vector_->GetAtIndex(1));
+  EXPECT_EQ(42, vector_->at(1));
   EXPECT_EQ(3, subvec[1]);
 }
 
@@ -98,10 +110,10 @@ TEST_F(SubvectorTest, PlusEq) {
   Subvector<double> subvec(vector_.get(), 1, kSubVectorLength);
   subvec += addend;
 
-  EXPECT_EQ(1, vector_->GetAtIndex(0));
-  EXPECT_EQ(9, vector_->GetAtIndex(1));
-  EXPECT_EQ(11, vector_->GetAtIndex(2));
-  EXPECT_EQ(4, vector_->GetAtIndex(3));
+  EXPECT_EQ(1, vector_->at(0));
+  EXPECT_EQ(9, vector_->at(1));
+  EXPECT_EQ(11, vector_->at(2));
+  EXPECT_EQ(4, vector_->at(3));
 }
 
 // Tests that a Subvector can be added to an Eigen vector.
@@ -144,7 +156,9 @@ TEST_F(SubvectorTest, AddToVectorInvalidSize) {
 TEST_F(SubvectorTest, SetZero) {
   Subvector<double> subvec(vector_.get(), 0, kSubVectorLength);
   subvec.SetZero();
-  for (int i = 0; i < subvec.size(); i++) EXPECT_EQ(subvec.GetAtIndex(i), 0);
+  for (int i = 0; i < subvec.size(); i++) {
+    EXPECT_EQ(subvec.at(i), 0);
+  }
 }
 
 // Tests the infinity norm.
@@ -179,7 +193,7 @@ TEST_F(SubvectorTest, InfNormAutodiff) {
 
   // The element0 has the max absolute value of the AutoDiffScalar's scalar.
   // It is negative, so the sign of its derivatives gets flipped.
-  basic_vector->GetAtIndex(0).value() = -33.5;
+  basic_vector->at(0).value() = -33.5;
   expected_norminf.value() = 33.5;
   expected_norminf.derivatives() = Eigen::Vector2d(-1.5, 2.5);
   EXPECT_EQ(subvec.NormInf().value(), expected_norminf.value());
@@ -203,28 +217,28 @@ TEST_F(SubvectorTest, PlusEqScaled) {
 
   orig_vec.SetZero();
   orig_vec.PlusEqScaled(2, v1);
-  EXPECT_EQ(orig_vec.GetAtIndex(0), 2);
-  EXPECT_EQ(orig_vec.GetAtIndex(1), 4);
+  EXPECT_EQ(orig_vec.at(0), 2);
+  EXPECT_EQ(orig_vec.at(1), 4);
 
   orig_vec.SetZero();
   orig_vec.PlusEqScaled({{2, v1}, {3, v2}});
-  EXPECT_EQ(orig_vec.GetAtIndex(0), 11);
-  EXPECT_EQ(orig_vec.GetAtIndex(1), 19);
+  EXPECT_EQ(orig_vec.at(0), 11);
+  EXPECT_EQ(orig_vec.at(1), 19);
 
   orig_vec.SetZero();
   orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}});
-  EXPECT_EQ(orig_vec.GetAtIndex(0), 46);
-  EXPECT_EQ(orig_vec.GetAtIndex(1), 74);
+  EXPECT_EQ(orig_vec.at(0), 46);
+  EXPECT_EQ(orig_vec.at(1), 74);
 
   orig_vec.SetZero();
   orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}});
-  EXPECT_EQ(orig_vec.GetAtIndex(0), 137);
-  EXPECT_EQ(orig_vec.GetAtIndex(1), 193);
+  EXPECT_EQ(orig_vec.at(0), 137);
+  EXPECT_EQ(orig_vec.at(1), 193);
 
   orig_vec.SetZero();
   orig_vec.PlusEqScaled({{2, v1}, {3, v2}, {5, v3}, {7, v4}, {11, v5}});
-  EXPECT_EQ(orig_vec.GetAtIndex(0), 346);
-  EXPECT_EQ(orig_vec.GetAtIndex(1), 446);
+  EXPECT_EQ(orig_vec.at(0), 346);
+  EXPECT_EQ(orig_vec.at(1), 446);
 }
 
 }  // namespace
