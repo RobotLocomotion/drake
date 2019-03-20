@@ -6,6 +6,7 @@
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
@@ -131,10 +132,14 @@ class PositionKinematicsCache {
     X_MB_pool_[world_index()] = NaNPose();  // It should never be used.
   }
 
-  // Helper method to initialize poses to NaN.
+  // Helper method to initialize poses to garbage values including NaNs.
+  // This allow us to quickly verify some of the values stored in the pools are
+  // never used (however we store them anyway to simplify the indexing).
   static RigidTransform<T> NaNPose() {
-    return RigidTransform<T>(Isometry3<T>(
-        Matrix4<T>::Constant(Eigen::NumTraits<double>::quiet_NaN())));
+    // Note: RotationMatrix will throw in Debug builds if values are NaN. For
+    // our purposes, it is enough the translation has NaN values.
+    return RigidTransform<T>(math::RotationMatrix<T>::Identity(),
+        Vector3<T>::Constant(Eigen::NumTraits<double>::quiet_NaN()));
   }
 
   // Number of body nodes in the corresponding MultibodyTree.
