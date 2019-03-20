@@ -111,7 +111,7 @@ given tₘₐₓ.
 // Advance the trajectory (time and state) from start value {tₛ, x⁻(tₛ)} to an
 // end value {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
 procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
-  // Update any variables (no restrictions).
+  // Update any state variables immediately, subsystem by subsystem.
   x^(tₛ) ← DoAnyRawContextUpdates(tₛ, x⁻(tₛ))
 
   // Update any variables (no restrictions).
@@ -186,10 +186,13 @@ and periodic or timed publish events that trigger at t₀.
 
 @note As indicated in System::CalcRawContextUpdate(), raw Context updates
 are just a special form of unrestricted update. When Simulator performs
-the unrestricted updates, the raw Context updates are performed first and
-the "regular" unrestricted updates (using the state variables newly updated
-in the raw Context updates) follow. See caveat on ordering-dependent
-computation in System::CalcRawContextUpdate().
+the unrestricted updates, the raw Context updates are performed first (subsystem
+by subsystem, for Diagram systems) and the "regular" unrestricted updates (using
+the state variables newly updated in the raw Context updates) follow. See caveat
+on ordering-dependent computation in System::CalcRawContextUpdate(). Contrast
+the behavior of the raw Context updates, in which every event handler sees a
+different state (potentially) with unrestricted updates, in which every event
+handler sees the same input state.
 
 @tparam T The vector element type, which must be a valid Eigen scalar.
 
@@ -904,9 +907,7 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   auto merged_events = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(timed_events_ != nullptr);
   DRAKE_DEMAND(witnessed_events_ != nullptr);
-  DRAKE_DEMAND(merged_events != nullptr);
-
-  // Clear events for the loop iteration.
+  DRAKE_DEMAND(merged_events != nullptr  // Clear events for the loop iteration.
   merged_events->Clear();
   merged_events->Merge(*per_step_events_);
 
