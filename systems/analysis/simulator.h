@@ -907,7 +907,9 @@ void Simulator<T>::StepTo(const T& boundary_time) {
   auto merged_events = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(timed_events_ != nullptr);
   DRAKE_DEMAND(witnessed_events_ != nullptr);
-  DRAKE_DEMAND(merged_events != nullptr  // Clear events for the loop iteration.
+  DRAKE_DEMAND(merged_events != nullptr);
+
+  // Clear events for the loop iteration.
   merged_events->Clear();
   merged_events->Merge(*per_step_events_);
 
