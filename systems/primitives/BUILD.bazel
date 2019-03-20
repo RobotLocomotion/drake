@@ -605,6 +605,7 @@ drake_cc_googletest(
     deps = [
         ":symbolic_vector_system",
         "//common/test_utilities:eigen_geometry_compare",
+        "//systems/framework/test_utilities:scalar_conversion",
     ],
 )
 
