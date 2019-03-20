@@ -44,7 +44,7 @@ class FixedOffsetFrame final : public Frame<T> {
   ///   The frame to which this frame is attached with a fixed pose.
   /// @param[in] X_PF
   ///   The _default_ transform giving the pose of F in P, therefore only the
-  ///   value (as an math::RigidTransform<double>) is provided.
+  ///   value (as a RigidTransform<double>) is provided.
   /// @param[in] model_instance
   ///   The model instance to which this frame belongs to. If unspecified, will
   ///   use P.body().model_instance().

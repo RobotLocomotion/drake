@@ -465,7 +465,7 @@ class MultibodyTree {
   ///   the frame P of that body. `X_PF` is an optional parameter; empty curly
   ///   braces `{}` imply that frame F **is** the same body frame P. If instead
   ///   your intention is to make a frame F with pose `X_PF`, provide
-  ///   `math::RigidTransform<double>::Identity()` as your input.
+  ///   `RigidTransform<double>::Identity()` as your input.
   /// @param[in] child
   ///   The child body connected by the new joint.
   /// @param[in] X_BM
@@ -473,7 +473,7 @@ class MultibodyTree {
   ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
   ///   your intention is to make a frame F with pose `X_PF`, provide
-  ///   `math::RigidTransform<double>::Identity()` as your input.
+  ///   `RigidTransform<double>::Identity()` as your input.
   /// @tparam JointType
   ///   The type of the new joint to add, which must be a subclass of Joint<T>.
   /// @returns A constant reference to the new joint just added, of type
