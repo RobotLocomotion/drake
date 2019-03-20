@@ -629,7 +629,7 @@ class RawContextUpdateEvent final : public Event<T> {
    */
   explicit RawContextUpdateEvent(const RawContextUpdateCallback& callback)
       : Event<T>(), callback_(callback) {}
-`
+
   // Note: Users should not be calling these.
   #if !defined(DRAKE_DOXYGEN_CXX)
   // Makes a RawContextUpdateEvent with `trigger_type` and callback function
