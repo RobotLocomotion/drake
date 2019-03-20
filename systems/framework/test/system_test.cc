@@ -223,7 +223,7 @@ class TestSystem : public System<double> {
  private:
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
     auto context = std::make_unique<LeafContext<double>>();
-    InitializeContextBase(&*context);
+    InitializeContextBase(context.get());
     return context;
   }
 
@@ -532,7 +532,7 @@ class ValueIOTestSystem : public System<T> {
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
     auto context = std::make_unique<LeafContext<T>>();
-    this->InitializeContextBase(&*context);
+    this->InitializeContextBase(context.get());
     return context;
   }
 
@@ -734,10 +734,10 @@ class SystemIOTest : public ::testing::Test {
     output_ = test_sys_.AllocateOutput();
 
     // make string input
-    context_->FixInputPort(0, Value<std::string>("input"));
+    test_sys_.get_input_port(0).FixValue(context_.get(), "input");
 
     // make vector input
-    context_->FixInputPort(1, {2.0});
+    test_sys_.get_input_port(1).FixValue(context_.get(), 2.0);
   }
 
   ValueIOTestSystem<double> test_sys_;
@@ -858,7 +858,7 @@ class ComputationTestSystem final : public System<double> {
 
   std::unique_ptr<ContextBase> DoAllocateContext() const final {
     auto context = std::make_unique<LeafContext<double>>();
-    InitializeContextBase(&*context);
+    InitializeContextBase(context.get());
     return context;
   }
 
@@ -994,7 +994,7 @@ TEST_F(ComputationTest, Eval) {
 
   // Each of the Calc methods should cause computation.
   auto derivatives = test_sys_.AllocateTimeDerivatives();
-  test_sys_.CalcTimeDerivatives(*context_, &*derivatives);
+  test_sys_.CalcTimeDerivatives(*context_, derivatives.get());
   test_sys_.ExpectCount(2, 1, 1, 1, 1);
   EXPECT_EQ((*derivatives)[1], -2.);
   EXPECT_EQ(test_sys_.CalcPotentialEnergy(*context_), 1.);

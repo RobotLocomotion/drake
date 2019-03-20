@@ -39,7 +39,7 @@ class AcrobotSpongController : public systems::LeafSystem<T> {
                                   &AcrobotSpongController::CalcControlTorque);
 
     // Setup context for linearization.
-    acrobot_context_->FixInputPort(0, Vector1d(0));
+    acrobot_.GetInputPort("elbow_torque").FixValue(acrobot_context_.get(), 0.0);
 
     // Set nominal state to the upright fixed point.
     AcrobotState<T>& state =
