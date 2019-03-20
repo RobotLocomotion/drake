@@ -457,3 +457,106 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(type(basic), BasicVector)
         self.assertEqual(type(basic.get_value()), np.ndarray)
         np.testing.assert_equal(basic.get_value(), np_value)
+
+    def test_abstract_input_port_fix_string(self):
+        model_value = AbstractValue.Make("")
+        system = PassThrough(copy.copy(model_value))
+        context = system.CreateDefaultContext()
+        input_port = system.get_input_port(0)
+
+        # Fix to a literal.
+        input_port.FixValue(context, "Alpha")
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, "Alpha")
+
+        # Fix to a type-erased string.
+        input_port.FixValue(context, AbstractValue.Make("Bravo"))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, "Bravo")
+
+        # Fix to a non-string.
+        with self.assertRaises(RuntimeError):
+            # A RuntimeError occurs when the Context detects that the
+            # type-erased Value objects are incompatible.
+            input_port.FixValue(context, AbstractValue.Make(1))
+        with self.assertRaises(TypeError):
+            # A TypeError occurs when pybind Value.set_value cannot match any
+            # overload for how to assign the argument into the erased storage.
+            input_port.FixValue(context, 1)
+        with self.assertRaises(TypeError):
+            input_port.FixValue(context, np.array([2.]))
+
+    def test_abstract_input_port_fix_object(self):
+        # The port type is py::object, not any specific C++ type.
+        model_value = AbstractValue.Make(object())
+        system = PassThrough(copy.copy(model_value))
+        context = system.CreateDefaultContext()
+        input_port = system.get_input_port(0)
+
+        # Fix to a type-erased py::object.
+        input_port.FixValue(context, AbstractValue.Make(object()))
+
+        # Fix to an int.
+        input_port.FixValue(context, 1)
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), int)
+        self.assertEqual(value, 1)
+
+        # Fixing to an explicitly-typed Value instantation is an error ...
+        with self.assertRaises(RuntimeError):
+            input_port.FixValue(context, AbstractValue.Make("string"))
+        # ... but implicit typing works just fine.
+        input_port.FixValue(context, "string")
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), str)
+        self.assertEqual(value, "string")
+
+    def test_vector_input_port_fix(self):
+        np_zeros = np.array([0.])
+        model_value = AbstractValue.Make(BasicVector(np_zeros))
+        system = PassThrough(len(np_zeros))
+        context = system.CreateDefaultContext()
+        input_port = system.get_input_port(0)
+
+        # Fix to a scalar.
+        input_port.FixValue(context, 1.)
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([1.]))
+
+        # Fix to an ndarray.
+        input_port.FixValue(context, np.array([2.]))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([2.]))
+
+        # Fix to a BasicVector.
+        input_port.FixValue(context, BasicVector([3.]))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([3.]))
+
+        # Fix to a type-erased BasicVector.
+        input_port.FixValue(context, AbstractValue.Make(BasicVector([4.])))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([4.]))
+
+        # Fix to wrong-sized vector.
+        with self.assertRaises(RuntimeError):
+            input_port.FixValue(context, np.array([0., 1.]))
+        with self.assertRaises(RuntimeError):
+            input_port.FixValue(
+                context, AbstractValue.Make(BasicVector([0., 1.])))
+
+        # Fix to a non-vector.
+        with self.assertRaises(TypeError):
+            # A TypeError occurs when pybind Value.set_value cannot match any
+            # overload for how to assign the argument into the erased storage.
+            input_port.FixValue(context, "string")
+        with self.assertRaises(RuntimeError):
+            # A RuntimeError occurs when the Context detects that the
+            # type-erased Value objects are incompatible.
+            input_port.FixValue(context, AbstractValue.Make("string"))
