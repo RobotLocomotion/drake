@@ -158,7 +158,6 @@ def drake_py_binary(
 
 def drake_py_unittest(
         name,
-        srcs = [],
         **kwargs):
     """Declares a `unittest`-based python test.
 
@@ -168,11 +167,13 @@ def drake_py_unittest(
     to "small" to indicate a unit test.
     """
     helper = "//common/test_utilities:drake_py_unittest_main.py"
-    if not srcs:
-        srcs = ["test/%s.py" % name]
+    if kwargs.pop("srcs", None):
+        fail("Changing srcs= is not allowed by drake_py_unittest." +
+             " Use drake_py_test instead, if you need something weird.")
+    srcs = ["test/%s.py" % name, helper]
     drake_py_test(
         name = name,
-        srcs = srcs + [helper],
+        srcs = srcs,
         main = helper,
         allow_import_unittest = True,
         **kwargs
