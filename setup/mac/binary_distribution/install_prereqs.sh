@@ -15,6 +15,9 @@ if ! command -v /usr/local/bin/brew &>/dev/null; then
 fi
 
 /usr/local/bin/brew update
+# TODO(jamiesnape): Remove line uninstalling embree, ospray, and vtk@8.1
+# formulae on or after 2019-06-30.
+/usr/local/bin/brew uninstall --force embree ospray vtk@8.1
 /usr/local/bin/brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
 /usr/local/bin/pip2 install --upgrade --requirement "${BASH_SOURCE%/*}/requirements.txt"
