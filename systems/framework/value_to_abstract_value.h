@@ -278,7 +278,7 @@ class ValueToVectorValue {
                   std::is_base_of<BasicVector<T>, ValueType>::value ||
                   std::is_base_of<AbstractValue, ValueType>::value)>>
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-                                                   const ValueType& value) {
+                                                   const ValueType&) {
     throw std::logic_error(
         fmt::format("{}(): the given value of type {} is not "
                     "suitable for storage as a Drake vector quantity.",
