@@ -495,7 +495,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
  public:
   Impl() = default;
 
-  Impl(const Impl& other) {
+  Impl(const Impl& other) : ShapeReifier(other) {
     dynamic_tree_.clear();
     dynamic_objects_.clear();
     anchored_tree_.clear();
