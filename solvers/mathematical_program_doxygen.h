@@ -17,11 +17,12 @@
  * optimization, and other non-convex mathematical programs.
  *
  * The MathematicalProgram class handles the coordination of decision variables,
- * objectives, and constraints.  The solvers::Solve() method
- * reflects on the accumulated objectives and constraints and will dispatch to
- * the most appropriate solver.  Alternatively, one can invoke specific solver
- * by instantiating its SolverInterface and passing the MathematicalProgram
- * directly to the SolverInterface::Solve() method.
+ * objectives, and constraints.  The @ref drake::solvers::Solve() "Solve()"
+ * method reflects on the accumulated objectives and constraints and will
+ * dispatch to the most appropriate solver.  Alternatively, one can invoke
+ * specific solver by instantiating its @ref drake::solvers::SolverInterface
+ * "SolverInterface" and passing the MathematicalProgram directly to the @ref
+ * drake::solvers::SolverInterface::Solve() "SolverInterface::Solve()" method.
  *
  * Our solver coverage still has many gaps, but is under active development.
  *
@@ -31,7 +32,8 @@
  * find x
  * s.t Ax = b
  * </pre>
- * , then solvers::LinearSystemSolver provides efficient closed form solution.
+ * , then @ref drake::solvers::LinearSystemSolver "LinearSystemSolver" provides
+ * efficient closed form solution.
  *
  * When the mathematical problem is formulated as the following (convex)
  * quadratic program with only linear equality constraint
@@ -39,8 +41,8 @@
  * min 0.5 xᵀHx + aᵀx + b
  * s.t Ax = b
  * </pre>
- * , then solvers::EqualityConstrainedQPSolver provides efficient closed form
- * solution.
+ * , then @ref drake::solvers::EqualityConstrainedQPSolver
+ * "EqualityConstraintQPSolver" provides efficient closed form solution.
  *
  * <b>Convex Optimization</b>
  *
@@ -129,7 +131,7 @@
  *   <td><a href="https://en.wikipedia.org/wiki/Satisfiability_modulo_theories">
  *     SMT</a></td>
  * </tr>
- * <tr><td>&dagger;
+ * <tr><td>&dagger; &Dagger;
  *   <a href="http://www.sbsi-sol-optimize.com/asp/sol_product_snopt.htm">
  *    SNOPT</a></td></tr>
  *    <td align="center">&diams;</td>
@@ -158,5 +160,7 @@
  *
  * &dagger; indicates that this is a commercial solver which requires a license
  * (note that some have free licenses for academics).
+ *
+ * &Dagger; Note that Drake's pre-compiled binary releases provide SNOPT.
  * @}
  */
