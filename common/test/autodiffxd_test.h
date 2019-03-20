@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
@@ -42,7 +44,10 @@ class AutoDiffXdTest : public ::testing::Test {
       // Both derivatives are NaN.
       return ::testing::AssertionSuccess();
     }
-    if (e1.derivatives() != e2.derivatives()) {
+    // Slightly different execution branches might lead to results that differ
+    // by a machine precision order of magnitude.
+    const double kTolerance = std::numeric_limits<double>::epsilon();
+    if (!e1.derivatives().isApprox(e2.derivatives(), kTolerance)) {
       return ::testing::AssertionFailure() << "Derivatives do not match:\n"
                                            << e1.derivatives() << "\n----\n"
                                            << e2.derivatives() << "\n";

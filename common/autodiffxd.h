@@ -32,8 +32,11 @@ namespace Eigen {
 // overloading for VectorXd and change the return types of its operators. With
 // this change, the operators evaluate terms immediately and return an
 // AutoDiffScalar<VectorXd> instead of expression trees (such as CwiseBinaryOp).
-// This ensures internal::make_coherent does the correct operation (resizing and
-// setting-to-zero) when needed.
+// Eigen's implementation of internal::make_coherent makes use of const_cast in
+// order to promote zero sized derivatives. This however interferes badly with
+// our caching system and produces unexpected behaviors. See #10971 for details.
+// Therefore our implementation stops using internal::make_coherent and treats
+// scalars with zero sized derivatives as constants, as it should.
 //
 // We also provide overloading of math functions for AutoDiffScalar<VectorXd>
 // which return AutoDiffScalar<VectorXd> instead of an expression tree.
@@ -185,7 +188,12 @@ class AutoDiffScalar<VectorXd>
   template <typename OtherDerType>
   inline const AutoDiffScalar<DerType> operator+(
       const AutoDiffScalar<OtherDerType>& other) const {
-    internal::make_coherent(m_derivatives, other.derivatives());
+    if (m_derivatives.size() == 0) {
+      return AutoDiffScalar<DerType>(m_value + other.value(),
+                                     other.derivatives());
+    } else if (other.derivatives().size() == 0) {
+      return AutoDiffScalar<DerType>(m_value + other.value(), m_derivatives);
+    }
     return AutoDiffScalar<DerType>(m_value + other.value(),
                                    m_derivatives + other.derivatives());
   }
@@ -213,7 +221,12 @@ class AutoDiffScalar<VectorXd>
   template <typename OtherDerType>
   inline const AutoDiffScalar<DerType> operator-(
       const AutoDiffScalar<OtherDerType>& other) const {
-    internal::make_coherent(m_derivatives, other.derivatives());
+    if (m_derivatives.size() == 0) {
+      return AutoDiffScalar<DerType>(m_value - other.value(),
+                                     -other.derivatives());
+    } else if (other.derivatives().size() == 0) {
+      return AutoDiffScalar<DerType>(m_value - other.value(), m_derivatives);
+    }
     return AutoDiffScalar<DerType>(m_value - other.value(),
                                    m_derivatives - other.derivatives());
   }
@@ -252,7 +265,14 @@ class AutoDiffScalar<VectorXd>
   template <typename OtherDerType>
   inline const AutoDiffScalar<DerType> operator/(
       const AutoDiffScalar<OtherDerType>& other) const {
-    internal::make_coherent(m_derivatives, other.derivatives());
+    if (m_derivatives.size() == 0) {
+      return MakeAutoDiffScalar(
+          m_value / other.value(),
+          -other.derivatives() * (m_value / (other.value() * other.value())));
+    } else if (other.derivatives().size() == 0) {
+      return MakeAutoDiffScalar(m_value / other.value(),
+                                m_derivatives / other.value());
+    }
     return MakeAutoDiffScalar(
         m_value / other.value(),
         ((m_derivatives * other.value()) - (other.derivatives() * m_value)) *
@@ -262,7 +282,13 @@ class AutoDiffScalar<VectorXd>
   template <typename OtherDerType>
   inline const AutoDiffScalar<DerType> operator*(
       const AutoDiffScalar<OtherDerType>& other) const {
-    internal::make_coherent(m_derivatives, other.derivatives());
+    if (m_derivatives.size() == 0) {
+      return MakeAutoDiffScalar(m_value * other.value(),
+                                other.derivatives() * m_value);
+    } else if (other.derivatives().size() == 0) {
+      return MakeAutoDiffScalar(m_value * other.value(),
+                                m_derivatives * other.value());
+    }
     return MakeAutoDiffScalar(
         m_value * other.value(),
         (m_derivatives * other.value()) + (other.derivatives() * m_value));
@@ -373,8 +399,6 @@ inline const AutoDiffScalar<VectorXd> atan2(const AutoDiffScalar<VectorXd>& a,
   typedef double Scalar;
   typedef AutoDiffScalar<Matrix<Scalar, Dynamic, 1>> PlainADS;
 
-  internal::make_coherent(a.derivatives(), b.derivatives());
-
   PlainADS ret;
   ret.value() = atan2(a.value(), b.value());
 
@@ -382,34 +406,71 @@ inline const AutoDiffScalar<VectorXd> atan2(const AutoDiffScalar<VectorXd>& a,
 
   // if (squared_hypot==0) the derivation is undefined and the following results
   // in a NaN:
-  ret.derivatives() =
-      (a.derivatives() * b.value() - a.value() * b.derivatives()) /
-      squared_hypot;
-
+  if (a.derivatives().size() == 0) {
+    ret.derivatives() = (-a.value() * b.derivatives()) / squared_hypot;
+  } else if (b.derivatives().size() == 0) {
+    ret.derivatives() = (a.derivatives() * b.value()) / squared_hypot;
+  } else {
+    ret.derivatives() =
+        (a.derivatives() * b.value() - a.value() * b.derivatives()) /
+        squared_hypot;
+  }
   return ret;
 }
 
 // We have this specialization here because the Eigen-3.3.3's implementation of
-// min for AutoDiffScalar does not call `make_coherent` function.
+// max for AutoDiffScalar does not make a return with properly sized
+// derivatives.
 //
 // For example, `min(x, y) + x` gives a runtime error if x.value() < y.value()
 // but x's derivatives are not properly initialized while y's ones are.
 inline AutoDiffScalar<VectorXd> min(const AutoDiffScalar<VectorXd>& x,
                                     const AutoDiffScalar<VectorXd>& y) {
-  internal::make_coherent(x.derivatives(), y.derivatives());
-  return (x.value() < y.value() ? x : y);
+  typedef double Scalar;
+  typedef AutoDiffScalar<Matrix<Scalar, Dynamic, 1>> PlainADS;
+
+  PlainADS ret;
+  const bool return_x = x.value() <= y.value();
+  ret.value() = return_x ? x.value() : y.value();
+
+  if (x.derivatives().size() == 0) {
+    ret.derivatives() =
+        return_x ? VectorXd::Zero(y.derivatives().size()) : y.derivatives();
+  } else if (y.derivatives().size() == 0) {
+    ret.derivatives() =
+        return_x ? x.derivatives() : VectorXd::Zero(x.derivatives().size());
+  } else {
+    ret.derivatives() = return_x ? x.derivatives() : y.derivatives();
+  }
+  return ret;
 }
 
 // We have this specialization here because the Eigen-3.3.3's implementation of
-// max for AutoDiffScalar does not call `make_coherent` function.
+// max for AutoDiffScalar does not make a return with properly sized
+// derivatives.
 //
 // For example, `max(x, y) + x` gives a runtime error if x.value() > y.value()
 // but x's derivatives are not properly initialized while y's ones are.
 // NOLINTNEXTLINE(build/include_what_you_use): Suppress false alarm.
 inline AutoDiffScalar<VectorXd> max(const AutoDiffScalar<VectorXd>& x,
                                     const AutoDiffScalar<VectorXd>& y) {
-  internal::make_coherent(x.derivatives(), y.derivatives());
-  return (x.value() >= y.value() ? x : y);
+  typedef double Scalar;
+  typedef AutoDiffScalar<Matrix<Scalar, Dynamic, 1>> PlainADS;
+
+  PlainADS ret;
+  const bool return_x = x.value() >= y.value();
+  ret.value() = return_x ? x.value() : y.value();
+
+  if (x.derivatives().size() == 0) {
+    ret.derivatives() =
+        return_x ? VectorXd::Zero(y.derivatives().size()) : y.derivatives();
+  } else if (y.derivatives().size() == 0) {
+    ret.derivatives() =
+        return_x ? x.derivatives() : VectorXd::Zero(x.derivatives().size());
+  } else {
+    ret.derivatives() = return_x ? x.derivatives() : y.derivatives();
+  }
+  return ret;
 }
 
 inline const AutoDiffScalar<VectorXd> pow(const AutoDiffScalar<VectorXd>& a,
