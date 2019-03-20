@@ -126,7 +126,19 @@ void DefineFrameworkPyValues(py::module m) {
   // types.
   auto bind_abstract_basic_vectors = [m](auto dummy) {
     using T = decltype(dummy);
-    AddValueInstantiation<BasicVector<T>>(m);
+    auto cls = AddValueInstantiation<BasicVector<T>>(m);
+    cls  // BR
+        .def("set_value",
+            [](Value<BasicVector<T>>* self, const T& value) {
+              self->set_value(BasicVector<T>{value});
+            },
+            py::arg("value"))
+        .def("set_value",
+            [](Value<BasicVector<T>>* self,
+                const Eigen::Ref<const Eigen::VectorXd>& value) {
+              self->set_value(BasicVector<T>(value));
+            },
+            py::arg("value"));
   };
   type_visit(bind_abstract_basic_vectors, pysystems::CommonScalarPack{});
 

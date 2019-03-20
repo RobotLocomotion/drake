@@ -37,7 +37,8 @@ void DefClone(PyClass* ppy_class) {
 /// @tparam Class Class to be bound. By default, `Value<T>` is used.
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = drake::Value<T>>
-py::object AddValueInstantiation(py::module scope) {
+py::class_<Class, drake::AbstractValue> AddValueInstantiation(
+    py::module scope) {
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
