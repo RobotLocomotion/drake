@@ -734,10 +734,10 @@ class SystemIOTest : public ::testing::Test {
     output_ = test_sys_.AllocateOutput();
 
     // make string input
-    context_->FixInputPort(0, Value<std::string>("input"));
+    test_sys_.get_input_port(0).FixValue(&*context_, "input");
 
     // make vector input
-    context_->FixInputPort(1, {2.0});
+    test_sys_.get_input_port(1).FixValue(&*context_, {2.0});
   }
 
   ValueIOTestSystem<double> test_sys_;

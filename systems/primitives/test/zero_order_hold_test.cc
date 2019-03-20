@@ -69,11 +69,10 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
     }
     context_ = hold_->CreateDefaultContext();
     if (!is_abstract_) {
-      context_->FixInputPort(
-          0, std::make_unique<BasicVector<double>>(input_value_));
+      hold_->get_input_port().FixValue(&*context_, input_value_);
     } else {
-      context_->FixInputPort(
-          0, AbstractValue::Make(SimpleAbstractType(input_value_)));
+      hold_->get_input_port().FixValue(&*context_,
+                                       SimpleAbstractType(input_value_));
     }
 
     event_info_ = hold_->AllocateCompositeEventCollection();
@@ -281,8 +280,8 @@ class SymbolicZeroOrderHoldTest : public ::testing::Test {
 
     // Initialize the context with symbolic variables.
     context_ = hold_->CreateDefaultContext();
-    context_->FixInputPort(0, BasicVector<symbolic::Expression>::Make(
-        symbolic::Variable("u0")));
+    hold_->get_input_port().FixValue(&*context_,
+        symbolic::Expression(symbolic::Variable("u0")));
     auto& xd = context_->get_mutable_discrete_state(0);
     xd[0] = symbolic::Variable("x0");
 
