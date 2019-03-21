@@ -58,6 +58,11 @@ class Image {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Image)
 
+  /// This is used by generic helpers such as drake::Value to deduce a non-type
+  /// template argument.
+  using NonTypeTemplateParameter =
+      std::integral_constant<PixelType, kPixelType>;
+
   /// An alias for ImageTraits that contains the data type for a channel,
   /// the number of channels and the pixel format in it.
   using Traits = ImageTraits<kPixelType>;
