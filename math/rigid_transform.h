@@ -286,21 +286,13 @@ class RigidTransform {
     return *this * RigidTransform<T>(isometry3);
   }
 
-  // DO NOT USE. This operator will soon be deprecated as #9865 is resolved.
-  // This implicit conversion operator is only provided to support backwards
-  // compatibility with Isometry3 as we migrate Drake's codebase to use
-  // RigidTransform. New uses of Isometry3 are discouraged.
-  operator Isometry3<T>() const {
-    return GetAsIsometry3();
-  }
-
-  // DO NOT USE. This method will soon be deprecated as #9865 is resolved.
-  // This method is only provided to support backwards compatibility with
+  // DO NOT USE. These methods will soon be deprecated as #9865 is resolved.
+  // They are only provided to support backwards compatibility with
   // Isometry3 as we migrate Drake's codebase to use RigidTransform. New uses of
   // Isometry3 are discouraged.
-  const Matrix3<T>& linear() const {
-    return R_AB_.matrix();
-  }
+  operator Isometry3<T>() const { return GetAsIsometry3(); }
+  const Matrix3<T>& linear() const { return R_AB_.matrix(); }
+  Matrix4<T> matrix() const { return GetAsMatrix4(); }
 #endif
 
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`

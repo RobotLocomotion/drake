@@ -120,7 +120,9 @@ class PositionKinematicsCache {
   // Allocates resources for this position kinematics cache.
   void Allocate() {
     X_WB_pool_.resize(num_nodes_);
-    // X_WB_pool_[world_index()] = RigidTransform<T>::Identity();
+    // Even though RigidTransform defaults to identity, we make it explicit.
+    // This pose will never change after this initialization.
+    X_WB_pool_[world_index()] = RigidTransform<T>::Identity();
 
     X_PB_pool_.resize(num_nodes_);
     X_PB_pool_[world_index()] = NaNPose();  // It should never be used.

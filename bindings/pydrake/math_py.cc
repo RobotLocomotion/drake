@@ -5,6 +5,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
@@ -138,7 +139,18 @@ PYBIND11_MODULE(math, m) {
           [](const RigidTransform<T>* self, const Vector3<T>& p_BoQ_B) {
             return *self * p_BoQ_B;
           },
-          py::arg("p_BoQ_B"), "See ``multiply``.");
+          py::arg("p_BoQ_B"), "See ``multiply``.")
+      .def("multiply",
+          [](const RigidTransform<T>* self, const Isometry3<T>& other) {
+            WarnDeprecated(
+                "2019-21-03. "
+                "Do not mix RigidTransform with Isometry3. Only use "
+                "RigidTransform per #9865.");
+            return *self * RigidTransform<T>(other);
+          },
+          py::arg("other"))
+      .def("matrix", &RigidTransform<T>::matrix)
+      .def("linear", &RigidTransform<T>::linear, py_reference_internal);
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 

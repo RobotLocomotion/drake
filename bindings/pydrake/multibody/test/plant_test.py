@@ -255,7 +255,7 @@ class TestPlant(unittest.TestCase):
         base_frame = plant.GetFrameByName("base")
         X_WL = plant.CalcRelativeTransform(
             context, frame_A=world_frame, frame_B=base_frame)
-        self.assertIsInstance(X_WL, Isometry3)
+        self.assertIsInstance(X_WL, RigidTransform)
 
         p_AQi = plant.CalcPointsPositions(
             context=context, frame_B=base_frame,
