@@ -179,8 +179,8 @@ drake_pybind_library(
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
     ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
