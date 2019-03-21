@@ -81,7 +81,6 @@ drake_cc_library(
     srcs = ["continuous_lyapunov_equation.cc"],
     hdrs = ["continuous_lyapunov_equation.h"],
     deps = [
-        "//common",
         "//common:is_approx_equal_abstol",
     ],
 )
@@ -91,7 +90,6 @@ drake_cc_library(
     srcs = ["discrete_lyapunov_equation.cc"],
     hdrs = ["discrete_lyapunov_equation.h"],
     deps = [
-        "//common",
         "//common:is_approx_equal_abstol",
     ],
 )

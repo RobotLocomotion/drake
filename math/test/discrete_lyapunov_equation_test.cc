@@ -60,17 +60,6 @@ GTEST_TEST(RealDiscreteLyapunovEquation, ThrowInvalidSizedMatricesTest) {
   }
 }
 
-/*GTEST_TEST(RealDiscreteLyapunovEquation, ThrowNonSymmetricQTest) {
-  // Tests if an exception is thrown if Q is not symmetric. Q needs to be
-  // symmetric for the implemented algorithm.
-  const int n{2};
-  MatrixXd A(n, n);
-  A << 1, 1, 1, 1;
-  MatrixXd Q(n, n);
-  Q << 1, 1, 2, 1;
-  EXPECT_ANY_THROW(RealDiscreteLyapunovEquation(A, Q));
-}*/
-
 GTEST_TEST(RealDiscreteLyapunovEquation, ThrowEigenValuesATest) {
   // Given the Eigenvalues of @param A as lambda_1, ..., lambda_n, then the
   // solution is unique if and only if lambda_i * lambda_j != 1 for all  i, j.
@@ -79,7 +68,7 @@ GTEST_TEST(RealDiscreteLyapunovEquation, ThrowEigenValuesATest) {
   // This tests if an exception is thrown if the eigenvalues violate this
   // requirement.
   const int n{3};
-  // pair which multipliers to 1
+  // pair which multiplies to 1
   MatrixXd A1(n, n);
   A1 << 1, 0, 0, 0, 1, 0, 0, 0, 1;
   // pair which multiplies to i, i.e should not throw
@@ -158,6 +147,30 @@ GTEST_TEST(RealDiscreteLyapunovEquation, Solve3by3Test2) {
 
   EXPECT_TRUE(CompareMatrices(RealDiscreteLyapunovEquation(A, Q), X, kTolerance,
                               MatrixCompareType::absolute));
+  SolveRealLyapunovEquationAndVerify(A, Q);
+}
+
+GTEST_TEST(RealDiscreteLyapunovEquation, Solve4by4Test1) {
+  // The system has eigenvalues: lambda_1/2  = -0.4500 +/- 0.7794i
+  // and lambda_3/4 = -0.9.
+
+  const int n{4};
+  MatrixXd A(n, n);
+  A << -0.9, 0, 0, 0, 0, 0, 0.9, 0, 0, -0.9, -0.9, 0, 0, 0, 0, -0.9;
+  MatrixXd Q(n, n);
+  Q << MatrixXd::Identity(n, n);
+  SolveRealLyapunovEquationAndVerify(A, Q);
+}
+
+GTEST_TEST(RealDiscreteLyapunovEquation, Solve4by4Test2) {
+  // The system has eigenvalues: lambda_1/2  = 0.3 +/- 0.4i
+  // and lambda_3/4 = 0.4 +/- 0.5i
+
+  const int n{4};
+  MatrixXd A(n, n);
+  A << 0.3, 0, 0, 0.4, 0, 0.4, 0.5, 0, 0, -0.5, 0.4, 0, -0.4, 0, 0, 0.3;
+  MatrixXd Q(n, n);
+  Q << MatrixXd::Identity(n, n);
   SolveRealLyapunovEquationAndVerify(A, Q);
 }
 

@@ -8,48 +8,43 @@
 namespace drake {
 namespace math {
 
-// TODO(FischerGundlach) Reserve memory and pass it to recusrive function
+// TODO(FischerGundlach) Reserve memory and pass it to recursive function
 // calls.
 
 /**
- * @param A A user defined real values matrix.
- * @param Q A user defined real symmetric matrix. Even if Q is non-symmetric,
- * only the upper triangular part will be used. Thus symmetry is implied for all
- * Q.
- * Computes a unique solution X to the discrete-time Lyapunov equation:
+ * @param A A user defined real square matrix.
+ * @param Q A user defined real symmetric matrix.
  *
- * @verbatim
- * A'XA -X + Q = 0
- * @endverbatim
+ * Computes the unique solution X to the discrete-time Lyapunov equation: A'XA -
+ * X + Q = 0, where @p A is real and square, and @p Q is real, symmetric and of
+ * equal size as @p A.
+ * @throws std::runtime_error if A or Q are not square matrices or do not have
+ * the same size.
  *
- * where @ A is real and square, and @p Q is real, symmetric and of
- * equal size as @p A. If @p A or @p Q are not square or of same size,
- * @throws std::runtime_error("A and Q must be square and of equal size!").
+ * @throws std::runtime_error if Q is not symmetric.
  *
- * As @p Q is required to be symmetric, only the upper triangular part of @p Q
- * is used. Therefore, no tests on symmetry of @p Q are performed.
+ * Limitations: Given the Eigenvalues of @p A as λ₁, ..., λ₁, there exists
+ * a unique solution if and only if λᵢ * λⱼ ≠ 1 ∀ i,j and λᵢ ≠ ±1, ∀ i [1].
+ * @throws std::runtime_error if the solution is not unique.[3]
  *
- *
- * Limitations: Given the Eigenvalues of @p A as λ₁, ..., λ₁,there exists
- * a unique solution if and only if λᵢ * λⱼ ≠ 1 ∀ i,j. If the
- * solution is not unique, @throws std::runtime_error("Solution is not
- * unique!").[3] There are no further limitations on the eigenvalues of A.
- * Further, if all λᵢ are negative, and if @p Q is
- * semi-positive definite, then X is also semi-positive definite [2].
- * Therefore, if one searchs for a Lyapunov function V(z) = z'Xz for the stable
- * linear system z_n+1 = Az_n, then the solution of the Lyapunov Equation A'XA
- * -X + Q = 0 only returns a valid Lyapunov function if Q is semi-positive
- * definite.
+ * There are no further limitations on the eigenvalues of A.
+ * Further, if |λᵢ|<1, ∀ i, and if @p Q is
+ * positive semi-definite, then X is also positive semi-definite [2].
+ * Therefore, if one searches for a Lyapunov function V(z) = z'Xz for the stable
+ * linear system zₙ₊₁ = Azₙ, then the solution of the Lyapunov Equation A'XA
+ * -X + Q = 0 only returns a valid Lyapunov function if Q is positive
+ * semi-definite.
  *
  * The implementation is based on SLICOT routine SB03MD [2]. Note the
  * transformation Q = -C. The complexity of this routine is O(n³).
- * If @p A is larger than 2-by-2, then a Schur factorization is performed. If
- * the factorization failed, a @throw std::runtime_error("Schur
- * factorization failed.")/ is thrown.
+ * If @p A is larger than 2-by-2, then a Schur factorization is performed.
+ * @throws std::runtime_error if Schur factorization fails.
  *
- * [1]  Barraud, A.Y., "A numerical algorithm to solve A XA - X = Q," IEEE®
+ * [1]  Barraud, A.Y., "A numerical algorithm to solve AᵀXA - X = Q," IEEE®
  * Trans. Auto. Contr., AC-22, pp. 883-885, 1977.
+ *
  * [2] http://slicot.org/objects/software/shared/doc/SB03MD.html
+ *
  * [3] https://www.mathworks.com/help/control/ref/dlyap.html
  *
  */

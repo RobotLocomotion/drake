@@ -8,47 +8,42 @@
 namespace drake {
 namespace math {
 
-// TODO(FischerGundlach) Reserve memory and pass it to recusrive function
+// TODO(FischerGundlach) Reserve memory and pass it to recursive function
 // calls.
 
 /**
- * @param A A user defined real values matrix.
- * @param Q A user defined real symmetric matrix. Even if Q is non-symmetric,
- * only the upper triangular part will be used. Thus symmetry is implied for all
- * Q.
- * Computes a unique solution X to the continuouse-time Lyapunov equation:
+ * @param A A user defined real square matrix.
+ * @param Q A user defined real symmetric matrix.
  *
- * @verbatim
- * A'X + XA + Q = 0
- * @endverbatim
+ * Computes a unique solution X to the continuouse-time Lyapunov equation: A'X +
+ * XA + Q = 0, where @p A is real and square, and @p Q is real, symmetric and of
+ * equal size as @p A.
  *
- * where @p A is real and square, and @ Q is real, symmetric and of
- * equal size as @ A. If @p A or @p Q are not square or of same size,
- * @throws std::runtime_error("A and Q must be square and of equal size!")
+ * @throws std::runtime_error if A or Q are not square matrices or do not have
+ * the same size.
  *
- * As @p Q is required to be symmetric, only the upper triangular part of @p Q
- * is used. Therefore, no tests on symmetry of @p Q are performed.
+ * @throws std::runtime_error if Q is not symmetric.
  *
  * Limitations: Given the Eigenvalues of @p A as λ₁, ..., λ₁, there exists
  * a unique solution if and only if λᵢ + λ̅ ⱼ ≠ 0 ∀ i,j, where λ̅ ⱼ is
- * the complex conjugate of λⱼ. If the solution is not unique, @throws
- * std::runtime_error("Solution is not unique!"). There are no further
- * limitations on the eigenvalues of A.
- * Further, if all lambda_i are negative, and if @p Q is
- * semi-positive definite, then X is also semi-positive definite [1].
- * Therefore, if one searchs for a Lyapunov function V(z) = z'Xz for the stable
- * linear system z_dot = Az, then the solution of the Lyapunov Equation A'X + XA
- * + Q = 0 only returns a valid Lyapunov function if Q is semi-positive
- * definite.
+ * the complex conjugate of λⱼ. @throws std::runtime_error if the solution is
+ * not unique.
+ *
+ * There are no further limitations on the eigenvalues of A.
+ * Further, if all λᵢ have negative real parts, and if @p Q is positive
+ * semi-definite, then X is also positive semi-definite [1]. Therefore, if one
+ * searches for a Lyapunov function V(z) = z'Xz for the stable linear system ż =
+ * Az, then the solution of the Lyapunov Equation A'X + XA + Q = 0 only returns
+ * a valid Lyapunov function if Q is positive semi-definite.
  *
  * The implementation is based on SLICOT routine SB03MD [2]. Note the
  * transformation Q = -C. The complexity of this routine is O(n³).
- * If @p A is larger than 2-by-2, then a Schur factorization is performed. If
- * the factorization failed, a @throw std::runtime_error("Schur
- * factorization failed.")/ is thrown.
+ * If @p A is larger than 2-by-2, then a Schur factorization is performed.
+ * @throw std::runtime_error if Schur factorization failed.
  *
- * [1]  Barraud, A.Y., "A numerical algorithm to solve A XA - X = Q," IEEE®
- * Trans. Auto. Contr., AC-22, pp. 883-885, 1977.
+ * [1] Bartels, R.H. and G.W. Stewart, "Solution of the Matrix Equation AX + XB
+ * = C," Comm. of the ACM, Vol. 15, No. 9, 1972.
+ *
  * [2] http://slicot.org/objects/software/shared/doc/SB03MD.html
  *
  */
@@ -69,7 +64,7 @@ Eigen::Matrix2d Solve2By2RealContinuousLyapunovEquation(
     const Eigen::Ref<const Eigen::Matrix2d>& A,
     const Eigen::Ref<const Eigen::Matrix2d>& Q);
 
-// If the problem is larger than in size 2-by-2, than it is reduced into a form
+// If the problem size is larger than 2-by-2, then it is reduced into a form
 // which can be recursively solved by smaller problems.
 
 Eigen::MatrixXd SolveReducedRealContinuousLyapunovEquation(

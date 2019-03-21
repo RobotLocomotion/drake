@@ -20,19 +20,24 @@ const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 MatrixXd RealContinuousLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
                                         const Eigen::Ref<const MatrixXd>& Q) {
   if (A.rows() != A.cols() || Q.rows() != Q.cols() || A.rows() != Q.rows()) {
-    throw std::runtime_error("A and Q must be square and of equal size!");
+    throw std::runtime_error(
+        "RealContinuousLyapunovEquation: A and Q must be square and of equal "
+        "size!");
   }
+  DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
 
   // The cases where A is 1-by-1 or 2-by-2 are caught as we have an efficient
   // methods at hand to solve these without the use of Schur factorization.
   if (static_cast<int>(A.cols()) == 1) {
     if (A(0, 0) == 0) {
-      throw std::runtime_error("Solution is not unique!");
+      throw std::runtime_error(
+          "RealContinuousLyapunovEquation: Solution is not unique!");
     }
     return internal::Solve1By1RealContinuousLyapunovEquation(A, Q);
   } else if (static_cast<int>(A.cols()) == 2) {
     if (A(0, 0) * A(1, 1) == 0 || A(0, 0) * A(1, 1) - A(1, 0) * A(0, 1) == 0) {
-      throw std::runtime_error("Solution is not unique!");
+      throw std::runtime_error(
+          "RealContinuousLyapunovEquation: Solution is not unique!");
     }
     // Reducing Q to upper triangular form.
     MatrixXd Q_upper{Q};
@@ -42,31 +47,30 @@ MatrixXd RealContinuousLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
     VectorXcd eig_val{A.eigenvalues()};
     for (int i = 0; i < eig_val.size(); ++i) {
       for (int j = i; j < eig_val.size(); ++j) {
-        if (std::norm(eig_val(i) + std::conj(eig_val(j))) == 0 ||
-            std::norm(std::conj(eig_val(i)) + eig_val(j)) == 0) {
-          throw std::runtime_error("Solution is not unique!");
+        std::complex<double> eig_sum = eig_val(i) + std::conj(eig_val(j));
+        if (eig_sum.real() == 0 && eig_sum.imag() == 0) {
+          throw std::runtime_error(
+              "RealContinuousLyapunovEquation: Solution is not unique!");
         }
       }
     }
-    // Transform into reduced form S'*X̅  + X̅ *S = -Q̅, where A = U*S*U',
-    // U is the unitary matrix, and S the reduced form.
+    // Transform into reduced form S'*X̅  + X̅ *S = -Q̅, where A = U*S*U', X̅ =
+    // U'*X*U, Q̅ = U'*Q*U, U is the unitary matrix, and S the reduced form. Note
+    // that the expression for X̅ in [2] is incorrect.
     Eigen::RealSchur<MatrixXd> schur(A);
-    MatrixXd U{schur.matrixU()};
-    MatrixXd S{schur.matrixT()};
+    const MatrixXd U{schur.matrixU()};
+    const MatrixXd S{schur.matrixT()};
     if (schur.info() != Eigen::Success) {
-      throw std::runtime_error("Schur factorization failed.");
+      throw std::runtime_error(
+          "RealContinuousLyapunovEquation: Schur factorization failed.");
     }
     // Reduce the symmetric Q̅ to its upper triangular form Q̅_ᵤₚₚₑᵣ.
     MatrixXd Q_bar_upper{MatrixXd::Constant(Q.rows(), Q.cols(), NAN)};
     Q_bar_upper.triangularView<Eigen::Upper>() = U.transpose() * Q * U;
-    MatrixXd X{
-        internal::SolveReducedRealContinuousLyapunovEquation(S, Q_bar_upper)};
-    // This transformation is not in adherence to [2]! In keeping with the
-    // routine, the transformation should be U.transpose()*X*U, however this is
-    // a typo! See [1] for references!
-    return (U * internal::SolveReducedRealContinuousLyapunovEquation(
-                    S, Q_bar_upper) *
-            U.transpose());
+    return (
+        U *
+        internal::SolveReducedRealContinuousLyapunovEquation(S, Q_bar_upper) *
+        U.transpose());
   }
 }
 
@@ -91,8 +95,7 @@ Matrix2d Solve2By2RealContinuousLyapunovEquation(
   Matrix3d A_vec;
   A_vec << 2 * A(0, 0), 2 * A(1, 0), 0, A(0, 1), A(0, 0) + A(1, 1), A(1, 0), 0,
       2 * A(0, 1), 2 * A(1, 1);
-  Vector3d Q_vec;
-  Q_vec << -Q(0, 0), -Q(0, 1), -Q(1, 1);
+  const Vector3d Q_vec(-Q(0, 0), -Q(0, 1), -Q(1, 1));
 
   // See https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html for
   // quick overview of possible solver algorithms.
@@ -162,28 +165,28 @@ MatrixXd SolveReducedRealContinuousLyapunovEquation(
       //  Notation:
       //
       //  The elements in s₁₁ are names as the following:
-      //  s₁₁ = [s₁₁(1,1) s₁₁(1,2); s₁₁(2,1) s₁₁(2,2)].
+      //  s₁₁ = [s₁₁(0,0) s₁₁(0,1); s₁₁(1,0) s₁₁(1,1)].
       //  Note that eigen starts counting at 0, and not as above at 1.
       //
       //  The ith column of a matrix is accessed by [i], i.e. the first column
-      //  of x̅ is x̅[1].
+      //  of x̅ is x̅[0].
       //
       //  Define:
       //
-      //  S_vec = [S₁' 0; 0 S₁'] with 0 \in R^mxm
+      //  S_1_vec = [S₁' 0; 0 S₁'] with 0 \in ∈ℝᵐˣᵐ
       //
-      //  S_11_vec = [s₁₁(1,1)*I s₁₁(2,1)*I; s₁₁(1,2)*I s₁₁(2,2)*I] with I
-      //  \in R^mxm.
+      //  S_11_vec = [s₁₁(0,0)*I s₁₁(1,0)*I; s₁₁(0,1)*I s₁₁(1,1)*I] with I
+      //  \in ∈ℝᵐˣᵐ.
       //
-      //  Now define rhs = S_vec + S_11_vec.
+      //  Now define lhs = S_1_vec + S_11_vec.
       //
-      //  x_vec = [x̅[1]' x̅[2]']' where [i] is the ith column
+      //  x_vec = [x̅[0]' x̅[1]']' where [i] is the ith column
       //
-      //  lhs = - [(q̅+sx̅₁₁)[1]' (q̅+s*x̅₁₁)[2]']'
+      //  rhs = - [(q̅+sx̅₁₁)[0]' (q̅+s*x̅₁₁)[1]']'
       //
       //  Now S₁'x̅ + x̅s₁₁ = -q̅₁₁ - sx̅₁₁  can be rewritten into:
       //
-      //  rhs*x_vec = lhs.
+      //  lhs*x_vec = rhs.
       //
       //  This expression can be feed into colPivHouseHolderQr() and solved.
       //  Finally, construct x_bar from x_vec.
@@ -210,7 +213,7 @@ MatrixXd SolveReducedRealContinuousLyapunovEquation(
 
     // Set up equation 3.3
     const Eigen::MatrixXd temp_summand{s * x_bar.transpose()};
-    // Since Q₁ is only a upper triangular matrix, with NAN in the lower part,
+    // Since Q₁ is only an upper triangular matrix, with NAN in the lower part,
     // Q_NEW_ᵤₚₚₑᵣ is so as well.
     const Eigen::MatrixXd Q_new_upper{
         (Q_1 + temp_summand + temp_summand.transpose())};

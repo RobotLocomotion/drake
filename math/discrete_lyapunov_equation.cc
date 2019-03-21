@@ -20,15 +20,24 @@ const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 MatrixXd RealDiscreteLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
                                       const Eigen::Ref<const MatrixXd>& Q) {
   if (A.rows() != A.cols() || Q.rows() != Q.cols() || A.rows() != Q.rows()) {
-    throw std::runtime_error("A and Q must be square and of equal size!");
+    throw std::runtime_error(
+        "RealContinuousLyapunovEquation: A and Q must be square and of equal "
+        "size!");
   }
+  DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
 
   VectorXcd eig_val{A.eigenvalues()};
   for (int i = 0; i < eig_val.size(); ++i) {
+    if (eig_val(i).imag() == 0 &&
+        (eig_val(i).real() == 1 || eig_val(i).real() == -1)) {
+      throw std::runtime_error(
+          "RealDiscreteLyapunovEquation: Solution is not unique!");
+    }
     for (int j = i; j < eig_val.size(); ++j) {
-      if (((eig_val(i) * eig_val(j)).real() == 1) &&
-          ((eig_val(i) * eig_val(j)).imag() == 0)) {
-        throw std::runtime_error("Solution is not unique!");
+      std::complex<double> eig_prod = eig_val(i) * eig_val(j);
+      if (eig_prod.real() == 1 && eig_prod.imag() == 0) {
+        throw std::runtime_error(
+            "RealDiscreteLyapunovEquation: Solution is not unique!");
       }
     }
   }
@@ -43,14 +52,15 @@ MatrixXd RealDiscreteLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
     Q_upper(1, 0) = NAN;
     return internal::Solve2By2RealDiscreteLyapunovEquation(A, Q_upper);
   } else {
-    // Transform into reduced form S'*X̅  + X̅ *S = -Q̅, where A = U*S*U',
-    // U is the unitary matrix, and S the reduced form.
+    // Transform into reduced form S' * X̅ * S - X̅ = -Q̅, where A = U*S*U', X =
+    // U*X̅*U', Q = U*Q̅*U', U is the unitary matrix, and S the reduced form.
     Eigen::RealSchur<MatrixXd> schur(A);
-    MatrixXd U{schur.matrixU()};
+    const MatrixXd U{schur.matrixU()};
     MatrixXd S{schur.matrixT()};
 
     if (schur.info() != Eigen::Success) {
-      throw std::runtime_error("Schur factorization failed.");
+      throw std::runtime_error(
+          "RealDiscreteLyapunovEquation: Schur factorization failed.");
     }
     // Reduce the symmetric Q̅ to its upper triangular form Q̅_ᵤₚₚₑᵣ.
     MatrixXd Q_bar_upper{MatrixXd::Constant(Q.rows(), Q.cols(), NAN)};
@@ -86,13 +96,12 @@ Matrix2d Solve2By2RealDiscreteLyapunovEquation(
       A(0, 0) * A(0, 1), A(0, 0) * A(1, 1) + A(0, 1) * A(1, 0) - 1,
       A(1, 0) * A(1, 1), A(0, 1) * A(0, 1), 2 * A(0, 1) * A(1, 1),
       A(1, 1) * A(1, 1) - 1;
-  Vector3d Q_vec;
-  Q_vec << -Q(0, 0), -Q(0, 1), -Q(1, 1);
+  const Vector3d Q_vec(-Q(0, 0), -Q(0, 1), -Q(1, 1));
 
   // See https://eigen.tuxfamily.org/dox/group__TutorialLinearAlgebra.html for
   // quick overview of possible solver algorithms.
   // ColPivHouseholderQR is accurate and fast for small systems.
-  Vector3d x{A_vec.colPivHouseholderQr().solve(Q_vec)};
+  const Vector3d x{A_vec.colPivHouseholderQr().solve(Q_vec)};
   Matrix2d X;
   X << x(0), x(1), x(1), x(2);
 
@@ -125,11 +134,10 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     int n{1};  // n equals the size of the n-by-n block in the left-upper
                // corner of S.
     // Check if the top block of S is 1-by-1 or 2-by-2.
-    if (!(S(1, 0) < kTolerance * S.norm() &&
-          S(1, 0) > -kTolerance * S.norm())) {
+    if (std::abs(S(1, 0)) > kTolerance * S.norm()) {
       n = 2;
     }
-    // TODO(FischerGundlach) Reserve memory and pass it to recusrive function
+    // TODO(FischerGundlach) Reserve memory and pass it to recursive function
     // calls.
     const MatrixXd s_11{S.topLeftCorner(n, n)};
     const MatrixXd s{S.transpose().bottomLeftCorner(m - n, n)};
@@ -161,7 +169,7 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
       //  Notation:
       //
       //  The elements in s₁₁ are names as the following:
-      //  s₁₁ = [s₁₁(1,1) s₁₁(1,2); s₁₁(2,1) s₁₁(2,2)].
+      //  s₁₁ = [s₁₁(0,0) s₁₁(0,1); s₁₁(1,0) s₁₁(1,1)].
       //  Note that eigen starts counting at 0, and not as above at 1.
       //
       //  The ith column of a matrix is accessed by [i], i.e. the first column
@@ -171,22 +179,22 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
       //
       //  S₁'x̅s₁₁ - x̅ =
       //
-      //  [ s₁₁(1,1)*S₁'x̅[1]+s₁₁(2,1)*S₁₁'x̅[2],
-      //            s₁₁(1,2)*S₁'x̅[1]+s₁₁(2,2)*S₁'x̅[2] ]
+      //  [ s₁₁(0,0)*S₁'x̅[0]+s₁₁(1,0)*S₁₁'x̅[1],
+      //            s₁₁(0,1)*S₁'x̅[0]+s₁₁(1,1)*S₁'x̅[1] ]
       //
       //  This equation can be vectorized by stacking the columns of x̅.
       //
       //  Define:
       //
-      //  x_bar_vec = [x̅[1]' x̅[2]']' where [i] is the ith column
+      //  x_bar_vec = [x̅[0]' x̅[1]']' where [i] is the ith column
       //
-      //  rhs = [s₁(1,1)*S₁' s₁₁(2,1)*S₁'; s₁₁(1,2)*S₁' s₁₁(2,2)*S₁']
+      //  lhs = [s₁(0,0)*S₁' s₁₁(1,0)*S₁'; s₁₁(0,1)*S₁' s₁₁(1,1)*S₁']
       //
-      //  lhs = -[(q̅+sx̅₁₁s₁₁)[1]' (q̅+sx̅₁₁s₁₁)[2]']'
+      //  rhs = -[(q̅+sx̅₁₁s₁₁)[1]' (q̅+sx̅₁₁s₁₁)[2]']'
       //
-      //  rhs*x_vec = lhs.
+      //  lhs*x_vec = rhs.
       //
-      //  This expression can be feed into colPivHouseHolderQr() and solved.
+      //  This expression can be fed into colPivHouseHolderQr() and solved.
       //  Finally, construct x_bar from x_vec.
       //
 
