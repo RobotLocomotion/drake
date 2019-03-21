@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
 #include "drake/lcm/lcm_receive_thread.h"
 #include "drake/lcm/lcmt_drake_signal_utils.h"
 #include "drake/lcmt_drake_signal.hpp"
@@ -148,9 +149,10 @@ class MessageHandler final {
   }
 
   void Subscribe(const std::string& channel, DrakeLcmInterface* dut) {
-    dut->Subscribe(channel, [this](const void* data, int size) {
-        this->HandleMessage(data, size);
-      });
+    dut->Subscribe(
+        channel, 1, [this](const void* data, int size) {
+          this->HandleMessage(data, size);
+        })->set_unsubscribe_on_delete(false);
   }
 
   // This is the callback method.
@@ -213,6 +215,7 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   DrakeLcm dut;
   EXPECT_EQ(dut.get_requested_lcm_url(), "");
+  EXPECT_GT(dut.get_lcm_url().size(), 0);
 
   MessageHandler handler;
   EXPECT_THROW(handler.Subscribe("", &dut), std::exception);
@@ -226,7 +229,7 @@ TEST_F(DrakeLcmTest, UrlTest) {
   const std::string custom_url = "udpm://239.255.66.66:6666?ttl=0";
   const DrakeLcm dut(custom_url);
 
-  EXPECT_EQ(dut.get_requested_lcm_url(), custom_url);
+  EXPECT_EQ(dut.get_lcm_url(), custom_url);
 }
 
 }  // namespace

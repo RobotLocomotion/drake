@@ -19,8 +19,6 @@ class DrakeLcmInterfaceTest : public ::testing::Test {
   using Message = lcmt_drake_signal;
 
   DrakeLcmInterfaceTest() {
-    lcm_.EnableLoopBack();
-
     sample_.timestamp = 123;
     sample_.dim = 1;
     sample_.coord.emplace_back("x");
@@ -50,6 +48,7 @@ TEST_F(DrakeLcmInterfaceTest, FreeFunctionTest) {
 
   // Publish using the helper free-function.
   Publish(&lcm_, channel_, sample_);
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
 }
 
@@ -62,14 +61,16 @@ TEST_F(DrakeLcmInterfaceTest, DefaultErrorHandlingTest) {
 
   // Publish successfully.
   lcm_.Publish(channel_, sample_bytes_.data(), sample_bytes_.size(), {});
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
   received = {};
 
   // Corrupt the message.
   std::vector<uint8_t> corrupt_bytes = sample_bytes_;
   corrupt_bytes.at(0) = 0;
+  lcm_.Publish(channel_, corrupt_bytes.data(), corrupt_bytes.size(), {});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      lcm_.Publish(channel_, corrupt_bytes.data(), corrupt_bytes.size(), {}),
+      lcm_.HandleSubscriptions(0),
       std::runtime_error,
       "Error decoding message on NAME");
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, Message{}));
@@ -87,6 +88,7 @@ TEST_F(DrakeLcmInterfaceTest, CustomErrorHandlingTest) {
 
   // Publish successfully.
   lcm_.Publish(channel_, sample_bytes_.data(), sample_bytes_.size(), {});
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, sample_));
   EXPECT_FALSE(error);
   received = {};
@@ -95,6 +97,7 @@ TEST_F(DrakeLcmInterfaceTest, CustomErrorHandlingTest) {
   std::vector<uint8_t> corrupt_bytes = sample_bytes_;
   corrupt_bytes.at(0) = 0;
   lcm_.Publish(channel_, corrupt_bytes.data(), corrupt_bytes.size(), {});
+  EXPECT_EQ(lcm_.HandleSubscriptions(0), 1);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(received, Message{}));
   EXPECT_TRUE(error);
 }

@@ -51,15 +51,26 @@ void DrakeLcmLog::Publish(const std::string& channel, const void* data,
   }
 }
 
-void DrakeLcmLog::Subscribe(const std::string& channel,
-                            HandlerFunction handler) {
+std::unique_ptr<DrakeSubscription> DrakeLcmLog::Subscribe(
+    const std::string& channel, int queue_capacity, HandlerFunction handler) {
   if (is_write_) {
     throw std::logic_error("Subscribe is only available for log playback.");
   }
-
+  if (queue_capacity != 1) {
+    throw std::logic_error(
+        "Only queue_capacity == 1 is available for log playback.");
+  }
   std::lock_guard<std::mutex> lock(mutex_);
-
   subscriptions_.emplace(channel, std::move(handler));
+  return nullptr;
+}
+
+int DrakeLcmLog::HandleSubscriptions(int) {
+  if (is_write_) {
+    throw std::logic_error(
+        "HandleSubscriptions is only available for log playback.");
+  }
+  return 0;
 }
 
 double DrakeLcmLog::GetNextMessageTime() const {

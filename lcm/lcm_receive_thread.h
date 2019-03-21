@@ -6,15 +6,19 @@
 #include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_copyable.h"
+#include "drake/lcm/drake_lcm.h"
 
 namespace drake {
 namespace lcm {
 
 /**
- * Maintains a thread that receives LCM messages and dispatches the messages to
- * the appropriate message handlers.
+ * (Advanced.)  Maintains a thread that receives LCM messages and dispatches
+ * the messages to the appropriate message handlers.
+ *
+ * @warning Almost no Drake uses of LCM should require a background thread.
+ * Please use HandleSubscriptions() or systems::LcmInterfaceSystem instead.
  */
-class LcmReceiveThread {
+class LcmReceiveThread final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LcmReceiveThread);
 
@@ -26,6 +30,8 @@ class LcmReceiveThread {
    * the lifetime of this object.
    */
   explicit LcmReceiveThread(::lcm::LCM* lcm);
+
+  explicit LcmReceiveThread(DrakeLcm* lcm);
 
   /**
    * The destructor that ensures the thread that receives LCM message is
@@ -41,10 +47,10 @@ class LcmReceiveThread {
  private:
   // Loops waiting for LCM messages and dispatching them to the appropriate
   // subscriber message handlers when they arrive.
-  void LoopWithSelect();
+  void Looper();
 
   // Whether to stop lcm_thread_.
-  std::atomic<bool> stop_{false};
+  std::atomic_bool stop_{false};
 
   // A pointer to the LCM instance.
   ::lcm::LCM* const lcm_{nullptr};
