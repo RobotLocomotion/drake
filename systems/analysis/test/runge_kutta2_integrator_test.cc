@@ -154,6 +154,51 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   CheckStatsValidity(&integrator);
 }
 
+// System where the state at t corresponds to the quadratic equation
+// 4t² + 4t + C, where C is the initial value (the state at t=0).
+class Quadratic : public LeafSystem<double> {
+ public:
+  Quadratic() { this->DeclareContinuousState(1); }
+
+ private:
+  void DoCalcTimeDerivatives(
+    const Context<double>& context,
+    ContinuousState<double>* deriv) const override {
+    const double t = context.get_time();
+    (*deriv)[0] = 8 * t + 4;
+  }
+};
+
+// Tests accuracy for integrating the quadratic system (with the state at time t
+// corresponding to f(t) ≡ 4t² + 4t + C, where C is the initial state) over
+// t ∈ [0, 1]. The RK2 integrator is second order, meaning it uses the Taylor
+// Series expansion:
+// f(t+h) ≈ f(t) + hf'(t) + ½h²f''(t) + O(h³)
+// This formula indicates that the approximation error will be zero if
+// f'''(t) = 0, which is true for the quadratic equation. We check that the
+// RK2 integrator is indeed able to obtain the true result.
+GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
+  Quadratic quadratic;
+
+  auto quadratic_context = quadratic.CreateDefaultContext();
+  const double C = 0.0;
+  quadratic_context->get_mutable_continuous_state_vector()[0] = C;
+
+  const double t_final = 1.0;
+
+  RungeKutta2Integrator<double> rk2(
+      quadratic, t_final, quadratic_context.get());
+  rk2.set_maximum_step_size(t_final);
+  rk2.set_fixed_step_mode(true);
+  rk2.Initialize();
+  rk2.IntegrateWithSingleFixedStepToTime(t_final);
+
+  const double expected_result = t_final * (4 * t_final + 4);
+  EXPECT_NEAR(
+      quadratic_context->get_continuous_state_vector()[0], expected_result,
+      10 * std::numeric_limits<double>::epsilon());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
