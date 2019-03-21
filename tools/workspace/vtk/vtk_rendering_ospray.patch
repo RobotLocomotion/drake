@@ -1,0 +1,204 @@
+From: Jamie Snape <jamie.snape@kitware.com>
+Date: Tue, 19 Mar 2019 00:00:00 -0400
+Subject: [PATCH] Ensure that there is at most one OSPRay context per process to avoid crashes (https://bit.ly/2CsS0BL)
+---
+ Rendering/OSPRay/vtkOSPRayPass.cxx       |   95 +++++++++++++++++++++++++-----------------------
+ Rendering/OSPRay/vtkOSPRayPass.h         |    5 ++
+ Rendering/OSPRay/vtkOSPRayWindowNode.cxx |   16 +-------
+ 3 files changed, 58 insertions(+), 58 deletions(-)
+
+diff --git a/Rendering/OSPRay/vtkOSPRayPass.cxx b/Rendering/OSPRay/vtkOSPRayPass.cxx
+index feddf1d0f5..7bd3020844 100644
+--- a/Rendering/OSPRay/vtkOSPRayPass.cxx
++++ b/Rendering/OSPRay/vtkOSPRayPass.cxx
+@@ -57,6 +57,8 @@ public:
+   vtkOSPRayPass *Parent;
+ };
+ 
++int vtkOSPRayPass::OSPDeviceRefCount = 0;
++
+ // ----------------------------------------------------------------------------
+ vtkStandardNewMacro(vtkOSPRayPassInternals);
+ 
+@@ -68,50 +70,7 @@ vtkOSPRayPass::vtkOSPRayPass()
+ {
+   this->SceneGraph = nullptr;
+ 
+-  int ac = 1;
+-  const char* envArgs = getenv("VTKOSPRAY_ARGS");
+-  if (envArgs)
+-  {
+-    std::stringstream ss(envArgs);
+-    std::string arg;
+-    std::vector<std::string> args;
+-    while (ss >> arg)
+-    {
+-      args.push_back(arg);
+-    }
+-    ac = static_cast<int>(args.size()+1);
+-    const char** av = new const char*[ac];
+-    av[0] = "pvOSPRay";
+-    for(int i=1;i < ac; i++)
+-    {
+-      av[i] = args[i - 1].c_str();
+-    }
+-    try
+-    {
+-      ospInit(&ac, av);
+-    }
+-    catch (std::runtime_error &vtkNotUsed(e))
+-    {
+-#if OSPRAY_VERSION_MAJOR == 1 && OSPRAY_VERSION_MINOR >= 6
+-      ospShutdown();
+-#endif
+-    }
+-    delete [] av;
+-  }
+-  else
+-  {
+-    const char* av[] = {"pvOSPRay\0"};
+-    try
+-    {
+-      ospInit(&ac, av);
+-    }
+-    catch (std::runtime_error &vtkNotUsed(e))
+-    {
+-#if OSPRAY_VERSION_MAJOR == 1 && OSPRAY_VERSION_MINOR >= 6
+-      ospShutdown();
+-#endif
+-    }
+-  }
++  vtkOSPRayPass::OSPInit();
+ 
+   vtkOSPRayViewNodeFactory *vnf = vtkOSPRayViewNodeFactory::New();
+   this->Internal = vtkOSPRayPassInternals::New();
+@@ -131,7 +90,6 @@ vtkOSPRayPass::vtkOSPRayPass()
+ 
+   this->SequencePass->SetPasses(this->RenderPassCollection);
+   this->CameraPass->SetDelegatePass(this->SequencePass);
+-
+ }
+ 
+ // ----------------------------------------------------------------------------
+@@ -170,6 +128,8 @@ vtkOSPRayPass::~vtkOSPRayPass()
+     this->RenderPassCollection->Delete();
+     this->RenderPassCollection = 0;
+   }
++
++  vtkOSPRayPass::OSPShutdown();
+ }
+ 
+ // ----------------------------------------------------------------------------
+@@ -277,3 +237,48 @@ void vtkOSPRayPass::RenderInternal(const vtkRenderState *s)
+     }
+   }
+ }
++
++// ----------------------------------------------------------------------------
++void vtkOSPRayPass::OSPInit()
++{
++  int ac = 1;
++  if (OSPDeviceRefCount == 0)
++  {
++    const char* envArgs = getenv("VTKOSPRAY_ARGS");
++    if (envArgs)
++    {
++      std::stringstream ss(envArgs);
++      std::string arg;
++      std::vector<std::string> args;
++      while (ss >> arg)
++      {
++        args.push_back(arg);
++      }
++      ac = static_cast<int>(args.size()+1);
++      const char** av = new const char*[ac];
++      av[0] = "pvOSPRay";
++      for(int i=1;i < ac; i++)
++      {
++        av[i] = args[i - 1].c_str();
++      }
++      ospInit(&ac, av);
++      delete [] av;
++    }
++    else
++    {
++      const char* av[] = {"pvOPSRay"};
++      ospInit(&ac, av);
++    }
++  }
++  OSPDeviceRefCount++;
++}
++
++// ----------------------------------------------------------------------------
++void vtkOSPRayPass::OSPShutdown()
++{
++  --OSPDeviceRefCount;
++  if (OSPDeviceRefCount == 0)
++  {
++    ospShutdown();
++  }
++}
+diff --git a/Rendering/OSPRay/vtkOSPRayPass.h b/Rendering/OSPRay/vtkOSPRayPass.h
+index d99f2ddc69..f67fd19a82 100644
+--- a/Rendering/OSPRay/vtkOSPRayPass.h
++++ b/Rendering/OSPRay/vtkOSPRayPass.h
+@@ -74,6 +74,9 @@ public:
+    */
+   virtual void RenderInternal(const vtkRenderState *s);
+ 
++  static void OSPInit();
++  static void OSPShutdown();
++
+  protected:
+   /**
+    * Default constructor.
+@@ -97,6 +100,8 @@ public:
+   vtkOSPRayPass(const vtkOSPRayPass&) = delete;
+   void operator=(const vtkOSPRayPass&) = delete;
+ 
++  static int OSPDeviceRefCount;
++
+   vtkOSPRayPassInternals *Internal;
+ };
+ 
+diff --git a/Rendering/OSPRay/vtkOSPRayWindowNode.cxx b/Rendering/OSPRay/vtkOSPRayWindowNode.cxx
+index a8f7b9fe93..1ba095242c 100644
+--- a/Rendering/OSPRay/vtkOSPRayWindowNode.cxx
++++ b/Rendering/OSPRay/vtkOSPRayWindowNode.cxx
+@@ -17,6 +17,7 @@
+ #include "vtkCollectionIterator.h"
+ #include "vtkFloatArray.h"
+ #include "vtkObjectFactory.h"
++#include "vtkOSPRayPass.h"
+ #include "vtkOSPRayRendererNode.h"
+ #include "vtkOSPRayViewNodeFactory.h"
+ #include "vtkRendererCollection.h"
+@@ -33,19 +34,7 @@ vtkStandardNewMacro(vtkOSPRayWindowNode);
+ //----------------------------------------------------------------------------
+ vtkOSPRayWindowNode::vtkOSPRayWindowNode()
+ {
+-  int ac = 1;
+-  const char* av[] = {"pvOSPRay\0"};
+-  try
+-  {
+-    ospInit(&ac, av);
+-  }
+-  catch (std::runtime_error &vtkNotUsed(e))
+-  {
+-#if OSPRAY_VERSION_MAJOR == 1 && OSPRAY_VERSION_MINOR >= 6
+-    ospShutdown();
+-#endif
+-    //cerr << "warning: double init" << endl;
+-  }
++  vtkOSPRayPass::OSPInit();
+   vtkOSPRayViewNodeFactory *fac = vtkOSPRayViewNodeFactory::New();
+   this->SetMyFactory(fac);
+   fac->Delete();
+@@ -54,6 +43,7 @@ vtkOSPRayWindowNode::vtkOSPRayWindowNode()
+ //----------------------------------------------------------------------------
+ vtkOSPRayWindowNode::~vtkOSPRayWindowNode()
+ {
++  vtkOSPRayPass::OSPShutdown();
+ }
+ 
+ //----------------------------------------------------------------------------
