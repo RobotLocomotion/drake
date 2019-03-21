@@ -74,7 +74,9 @@ PYBIND11_MODULE(math, m) {
       .def("MeshValuesFrom", &BarycentricMesh<T>::MeshValuesFrom,
           doc.BarycentricMesh.MeshValuesFrom.doc);
 
-  py::class_<RigidTransform<T>>(m, "RigidTransform", doc.RigidTransform.doc)
+  py::class_<RigidTransform<T>> py_rt(
+      m, "RigidTransform", doc.RigidTransform.doc);
+  py_rt  // BR
       .def(py::init(), doc.RigidTransform.ctor.doc_0args)
       .def(py::init<const RigidTransform<T>&>(), py::arg("other"))
       .def(py::init<const RotationMatrix<T>&, const Vector3<T>&>(),
@@ -139,10 +141,12 @@ PYBIND11_MODULE(math, m) {
             return *self * p_BoQ_B;
           },
           py::arg("p_BoQ_B"), "See ``multiply``.");
+  DefCopyAndDeepCopy(&py_rt);
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
-  py::class_<RollPitchYaw<T>>(m, "RollPitchYaw", doc.RollPitchYaw.doc)
+  py::class_<RollPitchYaw<T>> py_rpy(m, "RollPitchYaw", doc.RollPitchYaw.doc);
+  py_rpy  // BR
       .def(py::init<const RollPitchYaw<T>&>(), py::arg("other"))
       .def(py::init<const Vector3<T>>(), py::arg("rpy"),
           doc.RollPitchYaw.ctor.doc_1args_rpy)
@@ -170,8 +174,11 @@ PYBIND11_MODULE(math, m) {
           doc.RollPitchYaw.ToQuaternion.doc)
       .def("ToRotationMatrix", &RollPitchYaw<T>::ToRotationMatrix,
           doc.RollPitchYaw.ToRotationMatrix.doc);
+  DefCopyAndDeepCopy(&py_rpy);
 
-  py::class_<RotationMatrix<T>>(m, "RotationMatrix", doc.RotationMatrix.doc)
+  py::class_<RotationMatrix<T>> py_rot(
+      m, "RotationMatrix", doc.RotationMatrix.doc);
+  py_rot  // BR
       .def(py::init(), doc.RotationMatrix.ctor.doc_0args)
       .def(py::init<const RotationMatrix<T>&>(), py::arg("other"))
       .def(py::init<const Matrix3<T>&>(), py::arg("R"),
@@ -199,6 +206,7 @@ PYBIND11_MODULE(math, m) {
           doc.RotationMatrix.ToQuaternion.doc_0args)
       .def_static("Identity", &RotationMatrix<T>::Identity,
           doc.RotationMatrix.Identity.doc);
+  DefCopyAndDeepCopy(&py_rot);
 
   // Quadratic Form.
   m  // BR

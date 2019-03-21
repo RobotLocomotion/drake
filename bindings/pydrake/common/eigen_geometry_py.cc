@@ -169,6 +169,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
             py::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); });
     py::implicitly_convertible<Matrix4<T>, Class>();
+    DefCopyAndDeepCopy(&py_class);
   }
 
   // Quaternion.
@@ -264,6 +265,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
             py::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
+    DefCopyAndDeepCopy(&py_class);
   }
 
   // Angle-axis.
@@ -342,6 +344,7 @@ PYBIND11_MODULE(eigen_geometry, m) {
         .def("__matmul__",
             [](const Class& self, const Class& other) { return self * other; })
         .def("inverse", [](const Class* self) { return self->inverse(); });
+    DefCopyAndDeepCopy(&py_class);
   }
 }
 

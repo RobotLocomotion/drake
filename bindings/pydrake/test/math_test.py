@@ -4,11 +4,12 @@ import pydrake.math as mut
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3, Quaternion, AngleAxis
 
-import numpy as np
-import six
+import copy
+import math
 import unittest
 
-import math
+import numpy as np
+import six
 
 
 class TestBarycentricMesh(unittest.TestCase):
@@ -103,6 +104,7 @@ class TestMath(unittest.TestCase):
         X_I = np.eye(4)
         check_equality(mut.RigidTransform(), X_I)
         check_equality(mut.RigidTransform(other=mut.RigidTransform()), X_I)
+        check_equality(copy.copy(mut.RigidTransform()), X_I)
         R_I = mut.RotationMatrix()
         p_I = np.zeros(3)
         rpy_I = mut.RollPitchYaw(0, 0, 0)
@@ -143,6 +145,7 @@ class TestMath(unittest.TestCase):
         self.assertTrue(np.allclose(
             mut.RotationMatrix(other=R).matrix(), np.eye(3)))
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
+        self.assertTrue(np.allclose(copy.copy(R).matrix(), np.eye(3)))
         self.assertTrue(np.allclose(
             mut.RotationMatrix.Identity().matrix(), np.eye(3)))
         R = mut.RotationMatrix(R=np.eye(3))
