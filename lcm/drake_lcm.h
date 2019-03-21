@@ -4,6 +4,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/lcm/drake_lcm_interface.h"
 
 // Forward declaration from "lcm/lcm-cpp.hpp".
@@ -54,6 +55,8 @@ class DrakeLcm : public DrakeLcmInterface {
    *
    * @pre StartReceiveThread() was not called.
    */
+  DRAKE_DEPRECATED("2019-08-01",
+      "See StartReceiveThread's API text for replacement suggestion.")
   void StartReceiveThread();
 
   /**
@@ -65,6 +68,8 @@ class DrakeLcm : public DrakeLcmInterface {
    *
    * @pre StartReceiveThread() was called.
    */
+  DRAKE_DEPRECATED("2019-08-01",
+      "See StartReceiveThread's API text for replacement suggestion.")
   void StopReceiveThread();
 
   /**
@@ -73,11 +78,14 @@ class DrakeLcm : public DrakeLcmInterface {
    * @warning Almost no Drake uses of LCM should require a background thread.
    * Please use HandleSubscriptions() or systems::LcmInterfaceSystem instead.
    */
+  DRAKE_DEPRECATED("2019-08-01",
+      "See StartReceiveThread's API text for replacement suggestion.")
   bool IsReceiveThreadRunning() const;
 
   /**
    * Returns the LCM URL passed into the constructor; this can be empty.
    */
+  DRAKE_DEPRECATED("2019-06-01", "Call get_lcm_url instead.")
   std::string get_requested_lcm_url() const;
 
   /**

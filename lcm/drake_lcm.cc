@@ -178,10 +178,13 @@ std::unique_ptr<DrakeSubscription> DrakeLcm::Subscribe(
 }
 
 int DrakeLcm::HandleSubscriptions(int timeout_millis) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   if (IsReceiveThreadRunning()) {
     // Only *our* receive thread should be dispatching subscriptions.
     DRAKE_THROW_UNLESS(timeout_millis == kMagicTimeoutMillis);
   }
+#pragma GCC diagnostic pop
 
   // Keep pumping handleTimeout until its empty, but only pause for the timeout
   // on the first attempt.
@@ -194,7 +197,10 @@ int DrakeLcm::HandleSubscriptions(int timeout_millis) {
   }
 
   // Remove any unwanted subscribers.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   if (!IsReceiveThreadRunning()) {
+#pragma GCC diagnostic pop
     auto& subs = impl_->subscriptions_;
     subs.erase(std::remove_if(subs.begin(), subs.end(), [](const auto& data) {
       return data->has_subscriber.expired();

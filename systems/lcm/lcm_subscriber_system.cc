@@ -43,9 +43,10 @@ LcmSubscriberSystem::LcmSubscriberSystem(
   DRAKE_DEMAND((translator_ != nullptr) != (serializer_ != nullptr));
   DRAKE_DEMAND(lcm);
 
-  lcm->Subscribe(channel_, [this](const void* buffer, int size) {
-      this->HandleMessage(buffer, size);
-    });
+  subscription_ = lcm->Subscribe(
+      channel_, 1, [this](const void* buffer, int size) {
+        this->HandleMessage(buffer, size);
+      });
 
   // Declare the single output port.
   if (translator_ != nullptr) {

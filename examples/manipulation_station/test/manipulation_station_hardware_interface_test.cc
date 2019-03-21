@@ -75,11 +75,8 @@ GTEST_TEST(ManipulationStationHardwareInterfaceTest, CheckPorts) {
               0);
   }
 
-  // TODO(russt): Consider adding mock lcm tests.  But doing so right now
-  // would require (1) exposing lcm to the constructor in the public interface,
-  // when I've so far tried to hide it, and (2) adding (empty)
-  // implementations of StartReceiveThread() and other lcm calls to the
-  // DrakeMockLcm.
+  // TODO(russt): Consider adding mock lcm tests.  But doing so right now would
+  // require exposing DrakeLcmInterface when I've so far tried to hide it.
 }
 
 }  // namespace

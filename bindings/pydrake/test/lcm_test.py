@@ -4,39 +4,54 @@ from pydrake.lcm import DrakeLcm, DrakeLcmInterface, DrakeMockLcm
 
 from robotlocomotion import quaternion_t
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+
 
 class TestLcm(unittest.TestCase):
+    def setUp(self):
+        # Create a simple ground-truth message.
+        self.wxyz = (1, 2, 3, 4)
+        quat = quaternion_t()
+        quat.w, quat.x, quat.y, quat.z = self.wxyz
+        self.quat = quat
+        self.count = 0
+
     def test_lcm(self):
         dut = DrakeLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
         # Quickly start and stop the receiving thread.
-        dut.StartReceiveThread()
-        dut.StopReceiveThread()
+        with catch_drake_warnings(expected_count=2):
+            dut.StartReceiveThread()
+            dut.StopReceiveThread()
         # Test virtual function names.
         dut.Publish
+        dut.HandleSubscriptions
+
+    def _handler(self, raw):
+        quat = quaternion_t.decode(raw)
+        self.assertTupleEqual((quat.w, quat.x, quat.y, quat.z), self.wxyz)
+        self.count += 1
 
     def test_mock_lcm(self):
         dut = DrakeMockLcm()
         self.assertIsInstance(dut, DrakeLcmInterface)
+        dut.Subscribe(channel="TEST_CHANNEL", handler=self._handler)
+        dut.Publish(channel="TEST_CHANNEL", buffer=self.quat.encode())
+        self.assertEqual(self.count, 0)
+        dut.HandleSubscriptions(0)
+        self.assertEqual(self.count, 1)
 
-        # Create a simple ground-truth message.
-        msg = quaternion_t()
-        wxyz = (1, 2, 3, 4)
-        msg.w, msg.x, msg.y, msg.z = wxyz
+    def test_mock_lcm_deprecated_pub(self):
+        dut = DrakeMockLcm()
+        dut.Publish(channel="TEST_CHANNEL", buffer=self.quat.encode())
+        with catch_drake_warnings(expected_count=1):
+            raw = dut.get_last_published_message("TEST_CHANNEL")
+            self.assertEqual(raw, self.quat.encode())
 
-        dut.Publish(channel="TEST_CHANNEL", buffer=msg.encode())
-        raw = dut.get_last_published_message("TEST_CHANNEL")
-        self.assertEqual(raw, msg.encode())
-
-        # Use an array so that we can mutate the contained value.
-        called = [False]
-
-        def handler(raw):
-            msg = quaternion_t.decode(raw)
-            self.assertTupleEqual((msg.w, msg.x, msg.y, msg.z), wxyz)
-            called[0] = True
-
-        dut.Subscribe(channel="TEST_CHANNEL", handler=handler)
-        dut.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=msg.encode())
-        self.assertTrue(called[0])
+    def test_mock_lcm_deprecated_sub(self):
+        dut = DrakeMockLcm()
+        dut.Subscribe(channel="TEST_CHANNEL", handler=self._handler)
+        with catch_drake_warnings(expected_count=1):
+            dut.InduceSubscriberCallback(
+                channel="TEST_CHANNEL", buffer=self.quat.encode())
+        self.assertEqual(self.count, 1)

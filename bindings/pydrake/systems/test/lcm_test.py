@@ -10,6 +10,7 @@ from six import text_type as unicode
 
 from robotlocomotion import header_t, quaternion_t
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.lcm import DrakeLcm, DrakeMockLcm
 from pydrake.systems.framework import (
     AbstractValue, BasicVector, DiagramBuilder, LeafSystem)
@@ -91,8 +92,8 @@ class TestSystemsLcm(unittest.TestCase):
         dut = mut.LcmSubscriberSystem.Make(
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm)
         model_message = self._model_message()
-        lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
         actual_message = self._calc_output(dut).get_value()
         self.assert_lcm_equal(actual_message, model_message)
 
@@ -102,8 +103,8 @@ class TestSystemsLcm(unittest.TestCase):
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             use_cpp_serializer=True)
         model_message = self._model_message()
-        lcm.InduceSubscriberCallback(
-            channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.Publish(channel="TEST_CHANNEL", buffer=model_message.encode())
+        lcm.HandleSubscriptions(0)
         actual_message = self._cpp_value_to_py_message(self._calc_output(dut))
         self.assert_lcm_equal(actual_message, model_message)
 
@@ -113,7 +114,8 @@ class TestSystemsLcm(unittest.TestCase):
         # N.B. This will fail with `threading`. See below for using
         # `multithreading`.
         lcm = DrakeLcm("memq://")
-        lcm.StartReceiveThread()
+        with catch_drake_warnings(expected_count=1):
+            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         value = AbstractValue.Make(header_t())
         for i in range(3):
@@ -126,7 +128,8 @@ class TestSystemsLcm(unittest.TestCase):
     def test_subscriber_wait_for_message_with_timeout(self):
         """Confirms that the subscriber times out."""
         lcm = DrakeLcm("memq://")
-        lcm.StartReceiveThread()
+        with catch_drake_warnings(expected_count=1):
+            lcm.StartReceiveThread()
         sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
         sub.WaitForMessage(0, timeout=0.02)
         # This test fails if the test hangs.
@@ -142,10 +145,15 @@ class TestSystemsLcm(unittest.TestCase):
             channel="TEST_CHANNEL", lcm_type=quaternion_t, lcm=lcm,
             publish_period=0.1)
         model_message = self._model_message()
+
+        def handler(raw):
+            received.append(quaternion_t.decode(raw))
+        received = []
+        lcm.Subscribe(channel="TEST_CHANNEL", handler=handler)
+
         self._fix_and_publish(dut, AbstractValue.Make(model_message))
-        raw = lcm.get_last_published_message("TEST_CHANNEL")
-        actual_message = quaternion_t.decode(raw)
-        self.assert_lcm_equal(actual_message, model_message)
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(received[0], model_message)
 
     def test_publisher_cpp(self):
         lcm = DrakeMockLcm()
@@ -154,10 +162,15 @@ class TestSystemsLcm(unittest.TestCase):
             use_cpp_serializer=True)
         model_message = self._model_message()
         model_value = self._model_value_cpp()
+
+        def handler(raw):
+            received.append(quaternion_t.decode(raw))
+        received = []
+        lcm.Subscribe(channel="TEST_CHANNEL", handler=handler)
+
         self._fix_and_publish(dut, model_value)
-        raw = lcm.get_last_published_message("TEST_CHANNEL")
-        actual_message = quaternion_t.decode(raw)
-        self.assert_lcm_equal(actual_message, model_message)
+        lcm.HandleSubscriptions(0)
+        self.assert_lcm_equal(received[0], model_message)
 
     def test_connect_lcm_scope(self):
         builder = DiagramBuilder()

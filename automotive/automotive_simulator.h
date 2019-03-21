@@ -51,7 +51,8 @@ class AutomotiveSimulator {
   AutomotiveSimulator();
 
   /// A constructor that configures this object to use a DrakeLcmInterface
-  /// instance. If nullptr, no visualization is produced.
+  /// instance. If nullptr, no visualization is produced.  Do NOT call
+  /// StartRecieveThread on this lcm object.
   explicit AutomotiveSimulator(std::unique_ptr<lcm::DrakeLcmInterface> lcm);
 
   ~AutomotiveSimulator();
@@ -369,7 +370,8 @@ class AutomotiveSimulator {
   void InitializeMaliputRailcars();
 
   // For both building and simulation.
-  std::unique_ptr<lcm::DrakeLcmInterface> lcm_{};
+  std::unique_ptr<lcm::DrakeLcmInterface> owned_lcm_{};
+  lcm::DrakeLcmInterface* lcm_{};
   std::unique_ptr<const maliput::api::RoadGeometry> road_{};
 
   // === Start for building. ===

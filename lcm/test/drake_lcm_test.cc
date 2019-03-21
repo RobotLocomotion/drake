@@ -99,9 +99,12 @@ TEST_F(DrakeLcmTest, PublishTest) {
   // resources it uses are destroyed. If the Lcm receive thread is stopped after
   // the resources it relies on are destroyed, a segmentation fault may occur.
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_FALSE(dut.IsReceiveThreadRunning());
   dut.StartReceiveThread();
   EXPECT_TRUE(dut.IsReceiveThreadRunning());
+#pragma GCC diagnostic pop
 
   // Records whether the receiver received an LCM message published by the DUT.
   bool done = false;
@@ -127,9 +130,12 @@ TEST_F(DrakeLcmTest, PublishTest) {
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   dut.StopReceiveThread();
   EXPECT_TRUE(done);
   EXPECT_FALSE(dut.IsReceiveThreadRunning());
+#pragma GCC diagnostic pop
 }
 
 // Handles received LCM messages.
@@ -185,7 +191,10 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
   handler.Subscribe(channel_name, &dut);
 
   // Starts the LCM receive thread after the subscribers are created.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   dut.StartReceiveThread();
+#pragma GCC diagnostic pop
   ::lcm::LCM* lcm = dut.get_lcm_instance();
 
   // Prevents this unit test from running indefinitely when the receiver fails
@@ -208,13 +217,19 @@ TEST_F(DrakeLcmTest, SubscribeTest) {
     if (!done) sleep_for(milliseconds(kDelayMS));
   }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   dut.StopReceiveThread();
   EXPECT_TRUE(done);
+#pragma GCC diagnostic pop
 }
 
 TEST_F(DrakeLcmTest, EmptyChannelTest) {
   DrakeLcm dut;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(dut.get_requested_lcm_url(), "");
+#pragma GCC diagnostic pop
   EXPECT_GT(dut.get_lcm_url().size(), 0);
 
   MessageHandler handler;

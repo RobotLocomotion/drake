@@ -31,7 +31,10 @@ void DrakeMockLcm::Publish(const std::string& channel, const void* data,
   record->handled = false;
 
   if (enable_loop_back_) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     InduceSubscriberCallback(channel, data, data_size);
+#pragma GCC diagnostic pop
   }
 }
 

@@ -245,6 +245,7 @@ drake_py_unittest(
     deps = [
         ":lcm_py",
         ":primitives_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 

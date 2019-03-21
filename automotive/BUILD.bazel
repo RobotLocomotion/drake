@@ -419,6 +419,7 @@ drake_cc_library(
         "//lcm",
         "//lcmtypes:lcmtypes_drake_cc",
         "//systems/analysis",
+        "//systems/lcm:lcm_interface_system",
         "//systems/lcm:lcm_pubsub_system",
         "//systems/lcm:lcmt_drake_signal_translator",
         "//systems/primitives:constant_value_source",

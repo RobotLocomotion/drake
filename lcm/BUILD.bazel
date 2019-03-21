@@ -110,6 +110,7 @@ drake_cc_googletest(
     deps = [
         ":lcmt_drake_signal_utils",
         ":real",
+        "//common:unused",
     ],
 )
 
@@ -123,9 +124,16 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_mock_lcm_test",
+    copts = [
+        # TODO(jwnimmer-tri) Almost all of this unit test can be purged, once
+        # the deprecated methods are purged and the DUT is rewritten to use a
+        # memq:// LCM URL.
+        "-Wno-deprecated-declarations",
+    ],
     deps = [
         ":lcmt_drake_signal_utils",
         ":mock",
+        "//common:unused",
     ],
 )
 
