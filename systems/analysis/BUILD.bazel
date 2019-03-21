@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":monte_carlo",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":runge_kutta5_integrator",
         ":scalar_dense_output",
         ":scalar_initial_value_problem",
         ":scalar_view_dense_output",
@@ -160,6 +161,18 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         ":runge_kutta2_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "runge_kutta5_integrator",
+    srcs = ["runge_kutta5_integrator.cc"],
+    hdrs = [
+        "runge_kutta5_integrator.h",
+        "runge_kutta5_integrator-inl.h",
+    ],
+    deps = [
+        ":integrator_base",
     ],
 )
 
@@ -329,6 +342,20 @@ drake_cc_googletest(
     timeout = "moderate",
     deps = [
         ":runge_kutta3_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "runge_kutta5_integrator_test",
+    # Test timeout increased to not timeout when run with Valgrind.
+    timeout = "moderate",
+    deps = [
+        ":runge_kutta2_integrator",
+        ":runge_kutta5_integrator",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//multibody/plant",
