@@ -224,14 +224,6 @@ GTEST_TEST(RotationMatrix, GetRowsOrColumnsFromRotationmatrix) {
   EXPECT_TRUE(CompareMatrices(Bx_A, Vector3d(cos_q, sin_q, 0), tolerance));
   EXPECT_TRUE(CompareMatrices(By_A, Vector3d(-sin_q, cos_q, 0), tolerance));
   EXPECT_TRUE(CompareMatrices(Bz_A, Vector3d(0, 0, 1), tolerance));
-
-  if (kDrakeAssertIsArmed) {
-    // Bad index (not equal to 0, 1, 2) should throw exception.
-    EXPECT_THROW(R_AB.row(-1), std::logic_error);
-    EXPECT_THROW(R_AB.col(-1), std::logic_error);
-    EXPECT_THROW(R_AB.row(3), std::logic_error);
-    EXPECT_THROW(R_AB.col(3), std::logic_error);
-  }
 }
 
 // Test setting a RotationMatrix to an identity matrix.
