@@ -169,6 +169,7 @@ cc_library(
         "@libprotobuf",
         "@scs//:scsdir",
         "@tinyxml2",
+        "@yaml_cpp",
     ] + [
         # The list of depended-on header-only libraries that libdrake's header
         # files depend on.
