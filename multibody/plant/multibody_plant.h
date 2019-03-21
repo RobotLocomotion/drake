@@ -375,7 +375,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetFreeBodyPose(
       systems::Context<T>* context, const Body<T>& body,
       const Isometry3<T>& X_WB) const {
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+    internal_tree().SetFreeBodyPoseOrThrow(body, math::RigidTransform<T>(X_WB),
+                                           context);
   }
 
   /// Sets `state` to store the pose `X_WB` of a given `body` B in the world
@@ -390,7 +391,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context, systems::State<T>* state,
       const Body<T>& body, const Isometry3<T>& X_WB) const {
     CheckValidState(state);
-    internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
+    internal_tree().SetFreeBodyPoseOrThrow(body, math::RigidTransform<T>(X_WB),
+                                           context, state);
   }
 
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
@@ -860,10 +862,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
 
-    optional<math::RigidTransform<T>> X_PF_rt =
+    optional<math::RigidTransform<double>> X_PF_rt =
         X_PF ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_PF))
              : nullopt;
-    optional<math::RigidTransform<T>> X_BM_rt =
+    optional<math::RigidTransform<double>> X_BM_rt =
         X_BM ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_BM))
              : nullopt;
 
@@ -1322,9 +1324,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @retval X_AB
   ///   The relative transform from frame B to frame A, such that
   ///   `p_AQ = X_AB⋅p_BQ`.
-  Isometry3<T> CalcRelativeTransform(
-      const systems::Context<T>& context,
-      const Frame<T>& frame_A, const Frame<T>& frame_B) const {
+  math::RigidTransform<T> CalcRelativeTransform(
+      const systems::Context<T>& context, const Frame<T>& frame_A,
+      const Frame<T>& frame_B) const {
     return internal_tree().CalcRelativeTransform(context, frame_A, frame_B);
   }
 

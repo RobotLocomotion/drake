@@ -638,8 +638,7 @@ void ManipulationStation<T>::Finalize() {
           plant_->GetBodyFrameIdIfExists(info.parent_frame->body().index());
       DRAKE_THROW_UNLESS(parent_body_id.has_value());
       const Isometry3<double> X_PC =
-          info.parent_frame->GetFixedPoseInBodyFrame() *
-          info.X_PC.GetAsIsometry3();
+          info.parent_frame->GetFixedPoseInBodyFrame() * info.X_PC;
 
       auto camera =
           builder.template AddSystem<systems::sensors::dev::RgbdCamera>(

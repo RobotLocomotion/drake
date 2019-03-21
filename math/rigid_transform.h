@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -119,12 +120,7 @@ class RigidTransform {
   /// orthonormal 3x3 rotation matrix.
   /// @note no attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  RigidTransform(const Isometry3<T>& pose) {  // NOLINT[runtime/explicit]
-    // TODO(amcastro-tri): Mark this constructor "explicit" once #9865 is
-    // resolved. This implicit constructor from Isometry3 is only provided to
-    // ease the transition to RigidTransform as #9865 is resolved.
-    SetFromIsometry3(pose);
-  }
+  explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
 
   /// Sets `this` %RigidTransform from a RotationMatrix and a position vector.
   /// @param[in] R rotation matrix relating frames A and B (e.g., `R_AB`).
@@ -281,6 +277,15 @@ class RigidTransform {
   }
 
 #ifndef DRAKE_DOXYGEN_CXX
+  /// Until #9865 is resolved, this operator temporarily allows users mixing the
+  /// use of %RigidTransform with Isometry3.
+  DRAKE_DEPRECATED("2019-21-03",
+                   "Do not mix RigidTransform with Isometry3. Only use "
+                   "RigidTransform per #9865.")
+  RigidTransform<T> operator*(const Isometry3<T>& isometry3) const {
+    return *this * RigidTransform<T>(isometry3);
+  }
+
   // DO NOT USE. This operator will soon be deprecated as #9865 is resolved.
   // This implicit conversion operator is only provided to support backwards
   // compatibility with Isometry3 as we migrate Drake's codebase to use

@@ -41,6 +41,7 @@ using systems::InputPort;
 using systems::OutputPort;
 using systems::State;
 
+using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::MultibodyForces;
 using drake::multibody::SpatialAcceleration;
@@ -267,8 +268,8 @@ template<typename T>
 const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
     const Frame<T>& A, const Frame<T>& B, const Isometry3<double>& X_AB) {
   const std::string joint_name = A.name() + "_welds_to_" + B.name();
-  return this->mutable_tree().AddJoint(
-      std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
+  return this->mutable_tree().AddJoint(std::make_unique<WeldJoint<T>>(
+      joint_name, A, B, RigidTransform<double>(X_AB)));
 }
 
 template <typename T>
@@ -456,7 +457,8 @@ void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
     const Body<T>& body, const Isometry3<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+  internal_tree().SetFreeBodyPoseOrThrow(body, RigidTransform<T>(X_WB),
+                                         context);
 }
 
 template<typename T>
@@ -1160,9 +1162,7 @@ void MultibodyPlant<T>::AddAppliedExternalSpatialForces(
     const auto body_node_index = body.node_index();
 
     // Get the pose for this body in the world frame.
-    // TODO(amcastro) When we can evaluate body poses and return a reference
-    // to a RigidTransform, use that reference here instead.
-    math::RigidTransform<T> X_WB(EvalBodyPoseInWorld(context, body));
+    const RigidTransform<T>& X_WB = EvalBodyPoseInWorld(context, body);
 
     // Get the position vector from the body origin (Bo) to the point of
     // force application (Bq), expressed in the world frame (W).
