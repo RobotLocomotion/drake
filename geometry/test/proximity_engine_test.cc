@@ -332,6 +332,62 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
 using std::make_shared;
 using std::shared_ptr;
 
+// Test the broad-phase part of ComputeSignedDistanceToPoint.
+
+// We put two small spheres with radius 0.1 centered at (1,1,1) and
+// (-1,-1,-1). The query point will be at (3,3,3), so we can test that our code
+// calls computeAABB() of the query point (by default, its AABB is
+// [0,0]x[0,0]x[0,0]). We test several values of the distance threshold to
+// include different numbers of spheres.
+GTEST_TEST(SignedDistanceToPointBroadphaseTest, SmallThreshold) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+  const double radius = 0.1;
+  const Vector3d center1(1., 1., 1.);
+  const Vector3d center2(-1, -1, -1.);
+  int index = 0;
+  for (const Vector3d p_WG : {center1, center2}) {
+    const RigidTransformd X_WG(p_WG);
+    // We use a temporary variable because AddAnchoredGeometry() store a
+    // copy of FCL object converted from this Drake object.
+    const Sphere sphere(radius);
+    engine.AddAnchoredGeometry(sphere, X_WG.GetAsIsometry3(),
+                               GeometryIndex(index++));
+    geometry_map.push_back(GeometryId::get_new_id());
+  }
+  const Vector3d p_WQ(3., 3., 3.);
+  // This smaller threshold eliminates all spheres.
+  double threshold = 0.001;
+  auto results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map,
+                                                     threshold);
+  EXPECT_EQ(0, results.size())
+    << "Expect zero result, but we get "<< results.size() <<" result(s).";
+  // This threshold approximately touches the bounding box of the first sphere
+  // but still too small to yield any result.
+  threshold = (p_WQ - (center1 + Vector3d(radius, radius, radius))).norm();
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
+  EXPECT_EQ(0, results.size())
+    << "Expect zero result, but we get "<< results.size() <<" result(s).";
+  // This threshold allows the first sphere.
+  threshold = (p_WQ - center1).norm();
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
+  EXPECT_EQ(1, results.size())
+    << "Expect one result, but we get "<< results.size() <<" result(s).";
+  // This threshold approximately touches the bounding box of the second
+  // sphere but still too small to allow the second sphere.
+  threshold = (p_WQ - (center2 + Vector3d(radius, radius, radius))).norm();
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
+  EXPECT_EQ(1, results.size())
+    << "Expect one result, but we get "<< results.size() <<" result(s).";
+  // This threshold allows both spheres.
+  threshold = (p_WQ - center2).norm();
+  results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
+  EXPECT_EQ(2, results.size())
+    << "Expect two results, but we get "<< results.size() <<" result(s).";
+}
+
+// Test the narrow-phase part of ComputeSignedDistanceToPoint.
+
 // Parameter for the value-parameterized test fixture SignedDistanceToPointTest.
 struct SignedDistanceToPointTestData {
   SignedDistanceToPointTestData(shared_ptr<Shape> geometry_in,
@@ -731,7 +787,6 @@ INSTANTIATE_TEST_CASE_P(TransformBoxBoundary, SignedDistanceToPointTest,
 INSTANTIATE_TEST_CASE_P(
     TransformInsideBoxUnique, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
-
 
 
 // Penetration tests -- testing data flow; not testing the value of the query.
