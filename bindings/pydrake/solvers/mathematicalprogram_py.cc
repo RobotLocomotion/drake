@@ -110,11 +110,13 @@ class PyFunctionCost : public Cost {
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
       Eigen::VectorXd* y) const override {
+    y->resize(1);
     (*y)[0] = double_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
       AutoDiffVecXd* y) const override {
+    y->resize(1);
     (*y)[0] = autodiff_func_(x);
   }
 
@@ -821,7 +823,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       using T_y = decltype(dummy_y);
       cls.def("Eval",
           [](const Class& self, const Eigen::Ref<const VectorX<T_x>>& x) {
-            VectorX<T_y> y;
+            VectorX<T_y> y(self.num_outputs());
             self.Eval(x, &y);
             return y;
           },
