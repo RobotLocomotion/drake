@@ -332,6 +332,47 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMultipleAnchored) {
 using std::make_shared;
 using std::shared_ptr;
 
+// Test the broad-phase part of ComputeSignedDistanceToPoint.
+
+// We put 8 small spheres with radius 0.1 at the 8 vertices of a unit
+// cube [0,1]x[0,1]x[0,1].  The query point will be at (1,1,1), which has
+// negative distance -0.1 from one sphere and positive distance at least 0.9
+// from all other spheres. With a small threshold distance 0.001, we used to
+// have a bug that trick the broadphase to perform incorrectly, and
+// ComputeSigdedDistanceToPoint returned no result. It should give one result.
+GTEST_TEST(SignedDistanceToPointBroadphaseTest, SmallThreshold) {
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+  int index = 0;
+  for (double x : {0., 1.}) {
+    for (double y : {0., 1.}) {
+      for (double z : {0., 1.}) {
+        // The center of the sphere G is at a vertex of a unit cube.
+        Vector3d p_WG(x,y,z);
+        RigidTransformd X_WG(p_WG);
+        // G is a small sphere of radius 0.1.
+        // We use a temporary variable because AddAnchoredGeometry() store a
+        // copy of FCL object converted from this Drake object.
+        Sphere small_sphere(0.1);
+        engine.AddAnchoredGeometry(small_sphere, X_WG.GetAsIsometry3(),
+                                   GeometryIndex(index++));
+        geometry_map.push_back(GeometryId::get_new_id());
+      }
+    }
+  }
+  // The query point Q is at the center of a small sphere.
+  Vector3d p_WQ(1., 1., 1.);
+  // This threshold will eliminate all the other spheres.
+  double small_threshold = 0.001;
+  auto results =
+      engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, small_threshold);
+  ASSERT_EQ(1, results.size())
+    << "Expect one result, but we get "<< results.size() <<" result(s).";
+  EXPECT_EQ(-0.1, results[0].distance);
+}
+
+// Test the narrow-phase part of ComputeSignedDistanceToPoint.
+
 // Parameter for the value-parameterized test fixture SignedDistanceToPointTest.
 struct SignedDistanceToPointTestData {
   SignedDistanceToPointTestData(shared_ptr<Shape> geometry_in,
@@ -731,7 +772,6 @@ INSTANTIATE_TEST_CASE_P(TransformBoxBoundary, SignedDistanceToPointTest,
 INSTANTIATE_TEST_CASE_P(
     TransformInsideBoxUnique, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
-
 
 
 // Penetration tests -- testing data flow; not testing the value of the query.
