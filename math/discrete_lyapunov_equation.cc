@@ -173,7 +173,7 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
       //  Note that eigen starts counting at 0, and not as above at 1.
       //
       //  The ith column of a matrix is accessed by [i], i.e. the first column
-      //  of x̅ is x̅[1].
+      //  of x̅ is x̅[0].
       //
       //  Writing out the rhs of equation 4.2 gives:
       //
@@ -190,7 +190,7 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
       //
       //  lhs = [s₁(0,0)*S₁' s₁₁(1,0)*S₁'; s₁₁(0,1)*S₁' s₁₁(1,1)*S₁']
       //
-      //  rhs = -[(q̅+sx̅₁₁s₁₁)[1]' (q̅+sx̅₁₁s₁₁)[2]']'
+      //  rhs = -[(q̅+sx̅₁₁s₁₁)[0]' (q̅+sx̅₁₁s₁₁)[1]']'
       //
       //  lhs*x_vec = rhs.
       //
