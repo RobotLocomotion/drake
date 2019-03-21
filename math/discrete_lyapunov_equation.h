@@ -18,21 +18,21 @@ namespace math {
  * Computes the unique solution X to the discrete-time Lyapunov equation: A'XA -
  * X + Q = 0, where @p A is real and square, and @p Q is real, symmetric and of
  * equal size as @p A.
- * @throws std::runtime_error if A or Q are not square matrices or do not have
- * the same size.
+ * @throws std::runtime_error if @p A or @p Q are not square matrices or do not
+ * have the same size.
  *
- * @throws std::runtime_error if Q is not symmetric.
+ * @throws std::runtime_error if @p Q is not symmetric.
  *
  * Limitations: Given the Eigenvalues of @p A as λ₁, ..., λ₁, there exists
  * a unique solution if and only if λᵢ * λⱼ ≠ 1 ∀ i,j and λᵢ ≠ ±1, ∀ i [1].
  * @throws std::runtime_error if the solution is not unique.[3]
  *
- * There are no further limitations on the eigenvalues of A.
+ * There are no further limitations on the eigenvalues of @p A.
  * Further, if |λᵢ|<1, ∀ i, and if @p Q is
  * positive semi-definite, then X is also positive semi-definite [2].
  * Therefore, if one searches for a Lyapunov function V(z) = z'Xz for the stable
  * linear system zₙ₊₁ = Azₙ, then the solution of the Lyapunov Equation A'XA
- * -X + Q = 0 only returns a valid Lyapunov function if Q is positive
+ * -X + Q = 0 only returns a valid Lyapunov function if @p Q is positive
  * semi-definite.
  *
  * The implementation is based on SLICOT routine SB03MD [2]. Note the
