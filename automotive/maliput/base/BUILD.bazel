@@ -15,7 +15,7 @@ drake_cc_package_library(
     deps = [
         ":intersection",
         ":phase_based_right_of_way_state_provider",
-        ":right_of_way_rules_loader",
+        ":road_rulebook_loader",
         ":simple_right_of_way_phase_book",
         ":simple_right_of_way_phase_provider",
         ":simple_rulebook",
@@ -54,16 +54,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "right_of_way_rules_loader",
+    name = "road_rulebook_loader",
     srcs = [
-        "right_of_way_rules_loader.cc",
+        "road_rulebook_loader.cc",
     ],
     hdrs = [
-        "right_of_way_rules_loader.h",
+        "road_rulebook_loader.h",
     ],
     deps = [
         ":simple_rulebook",
-        "//automotive/maliput/multilane:loader",
+        "//common:essential",
         "//common:find_resource",
         "@yaml_cpp",
     ],
@@ -160,13 +160,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "right_of_way_rules_loader_test",
+    name = "road_rulebook_loader_test",
     data = [
         "//automotive/maliput/multilane:yamls",
     ],
     deps = [
-        ":right_of_way_rules_loader",
+        ":road_rulebook_loader",
         "//automotive/maliput/api/test_utilities:rules_test_utilities",
+        "//automotive/maliput/multilane:loader",
     ],
 )
 

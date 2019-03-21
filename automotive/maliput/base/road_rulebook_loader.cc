@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/right_of_way_rules_loader.h"
+#include "drake/automotive/maliput/base/road_rulebook_loader.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -9,7 +9,9 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
+#include "drake/automotive/maliput/base/simple_rulebook.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_throw.h"
 
 using drake::maliput::api::Lane;
 using drake::maliput::api::LaneId;
@@ -161,34 +163,42 @@ RightOfWayRule BuildRightOfWayRule(const api::RoadGeometry* road_geometry,
   const RightOfWayRule::Id rule_id(rule_node["ID"].as<std::string>());
 
   const YAML::Node& states_node = rule_node["States"];
+  DRAKE_THROW_UNLESS(states_node.IsDefined());
   const std::vector<RightOfWayRule::State> states = BuildStates(states_node);
 
   const YAML::Node& zone_node = rule_node["Zone"];
+  DRAKE_THROW_UNLESS(zone_node.IsDefined());
   const LaneSRoute zone = BuildLaneSRoute(road_geometry, zone_node);
 
   return RightOfWayRule(rule_id, zone, BuildZoneType(rule_node), states);
 }
 
-std::unique_ptr<SimpleRulebook> BuildFrom(
+std::unique_ptr<api::rules::RoadRulebook> BuildFrom(
     const api::RoadGeometry* road_geometry, const YAML::Node& root_node) {
   DRAKE_DEMAND(root_node.IsMap());
-  const YAML::Node& rules_node = root_node["RightOfWayRules"];
-  DRAKE_DEMAND(rules_node.IsSequence());
+  const YAML::Node& rulebook_node = root_node["RoadRulebook"];
+  DRAKE_THROW_UNLESS(rulebook_node.IsDefined());
+  DRAKE_DEMAND(rulebook_node.IsMap());
+  const YAML::Node& right_of_way_rules_node = rulebook_node["RightOfWayRules"];
+  DRAKE_THROW_UNLESS(right_of_way_rules_node.IsDefined());
+  DRAKE_DEMAND(right_of_way_rules_node.IsSequence());
   std::unique_ptr<SimpleRulebook> rulebook = std::make_unique<SimpleRulebook>();
-  for (const YAML::Node& rule_node : rules_node) {
-    rulebook->AddRule(BuildRightOfWayRule(road_geometry, rule_node));
+  for (const YAML::Node& right_of_way_rule_node : right_of_way_rules_node) {
+    rulebook->AddRule(
+        BuildRightOfWayRule(road_geometry, right_of_way_rule_node));
   }
+  // TODO(liang.fok) Add loading of speed limit rules.
   return rulebook;
 }
 
 }  // namespace
 
-std::unique_ptr<SimpleRulebook> LoadRightOfWayRules(
+std::unique_ptr<api::rules::RoadRulebook> LoadRoadRulebook(
     const api::RoadGeometry* road_geometry, const std::string& input) {
   return BuildFrom(road_geometry, YAML::Load(input));
 }
 
-std::unique_ptr<SimpleRulebook> LoadRightOfWayRulesFromFile(
+std::unique_ptr<api::rules::RoadRulebook> LoadRoadRulebookFromFile(
     const api::RoadGeometry* road_geometry, const std::string& filename) {
   return BuildFrom(road_geometry, YAML::LoadFile(filename));
 }
