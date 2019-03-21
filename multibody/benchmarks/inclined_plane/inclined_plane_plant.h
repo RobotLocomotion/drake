@@ -28,6 +28,7 @@ namespace inclined_plane {
 /// @param[in] coefficient_friction_inclined_plane Coulomb's coefficient of
 ///   friction for inclined-plane A (sliding friction, static friction).
 /// @param[out] plant Plant that contains inclined-plane A and body B.
+/// The top-surface of the inclined-plane passes through Wo (World origin).
 /// @throws std::exception if plant is nullptr or there is invalid data.
 /// @pre plant must be registered with a scene graph.
 void AddInclinedPlaneAndEarthGravityToPlant(
@@ -66,6 +67,7 @@ void AddInclinedPlaneAndEarthGravityToPlant(
 ///   welded to the block B's four "bottom" corners, whereas this flag is
 ///   `false`if block B's contact is modeled with a block (box).
 /// @param[out] plant Plant that contains inclined-plane A and body B.
+/// The top-surface of the inclined-plane passes through Wo (World origin).
 /// @throws std::exception if plant is nullptr or there is invalid data.
 /// @pre plant must be registered with a scene graph.
 void AddInclinedPlaneWithBlockPlant(
@@ -103,6 +105,7 @@ void AddInclinedPlaneWithBlockPlant(
 ///   contact with block B is modeled using a half-space whereas `false` means
 ///   inclined-plane A is modeled using a box whose dimensions scale with B.
 /// @param[out] plant Plant that contains inclined-plane A and body B.
+/// The top-surface of the inclined-plane passes through Wo (World origin).
 /// @throws std::exception if plant is nullptr or there is invalid data.
 /// @pre plant must be registered with a scene graph.
 void AddInclinedPlaneWithSpherePlant(

@@ -16,7 +16,7 @@ void AddInclinedPlaneAndEarthGravityToPlant(
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(LAx >= 0 && LAy >= 0 && LAz >= 0);
 
-  // The inclined-plane is oriented by initially setting Ax=Wx, Ay=Wy, Az=Wz,
+  // The inclined-plane A is oriented by initially setting Ax=Wx, Ay=Wy, Az=Wz,
   // and then subjecting A to a right-handed rotation in W about Ay=Wy, so that
   // Ax is directed downhill.  Wz points locally upward (opposite gravity).
   const math::RotationMatrix<double> R_WA =
@@ -42,6 +42,9 @@ void AddInclinedPlaneAndEarthGravityToPlant(
                                      "InclinedPlaneCollisionGeometry",
                                      coefficient_friction_inclined_plane);
   } else {
+    // If using a box, ensure its dimensions are positive.
+    DRAKE_THROW_UNLESS(LAx > 0 && LAy > 0 && LAz > 0);
+
     // Set inclined plane A's visual geometry to a box.
     // Make box A's top-surface pass through World origin Wo.  To do this,
     // set Ao's position from Wo as -0.5 * LAz * Az (half-width of box A).

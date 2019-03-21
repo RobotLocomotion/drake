@@ -138,7 +138,7 @@ int do_main() {
   // p_Wo_Bcm [position from Wo (World origin) to Bcm (B's center of mass)] and
   // p_Wo_Bo  [position from Wo to Bo (B's origin)] is zero vector [0; 0; 0],
   // B is stationary in world (B's velocity and angular velocity in W are zero).
-  // Set body B's initial position so it is above the inclined plane.
+  // Overwrite B's default initial position so it is above the inclined-plane.
   const drake::multibody::Body<double> &bodyB = plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
