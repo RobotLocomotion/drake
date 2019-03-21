@@ -11,6 +11,8 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
@@ -20,6 +22,27 @@ using std::string;
 namespace drake {
 namespace pydrake {
 
+namespace {
+
+using pysystems::AddValueInstantiation;
+
+// Add instantiations on an as-needed basis. Please be conservative.
+void AddCommonValueInstantiations(py::module m) {
+  AddValueInstantiation<string>(m);
+  AddValueInstantiation<bool>(m);
+}
+
+template <typename T>
+void AddCommonValueTemplateInstantiations(py::module m) {
+  AddValueInstantiation<math::RigidTransform<T>>(m);
+  AddValueInstantiation<math::RotationMatrix<T>>(m);
+  // TODO(eric): Consider deprecating / removing `Isometry3` pending resolution
+  // of #9865.
+  AddValueInstantiation<Isometry3<T>>(m);
+}
+
+}  // namespace
+
 using pysystems::AddValueInstantiation;
 using pysystems::DefClone;
 
@@ -27,6 +50,9 @@ void DefineFrameworkPyValues(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::systems;
   constexpr auto& doc = pydrake_doc.drake.systems;
+
+  py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.math");
 
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [m, &doc](auto dummy) {
@@ -119,11 +145,12 @@ void DefineFrameworkPyValues(py::module m) {
       .def("set_value", abstract_stub("set_value"),
           pydrake_doc.drake.AbstractValue.SetValue.doc);
 
-  // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
-  AddValueInstantiation<string>(m);
-
-  // Add `Value<bool>` instantiation (visible in Python as `Value[bool]`).
-  AddValueInstantiation<bool>(m);
+  // Add value instantiations for nominal data types. Types that require more
+  // pizazz are listed below.
+  AddCommonValueInstantiations(m);
+  // TODO(eric.cousineau): Move inside loop once bindings support other
+  // scalars.
+  AddCommonValueTemplateInstantiations<double>(m);
 
   // Add `Value<>` instantiations for basic vectors templated on common scalar
   // types.
