@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/base/right_of_way_rules_loader.h"
+#include "drake/automotive/maliput/base/road_rulebook_loader.h"
 
 #include <iterator>
 #include <memory>
@@ -141,8 +141,8 @@ TEST_F(TestLoading2x2IntersectionRules, LoadFromFile) {
   test_cases.insert(test_cases.end(), std::begin(left_turn_cases),
                     std::end(left_turn_cases));
 
-  const std::unique_ptr<SimpleRulebook> rulebook =
-      LoadRightOfWayRulesFromFile(road_geometry_.get(), filepath_);
+  const std::unique_ptr<api::rules::RoadRulebook> rulebook =
+      LoadRoadRulebookFromFile(road_geometry_.get(), filepath_);
   EXPECT_NE(rulebook, nullptr);
   for (const auto& test_case : test_cases) {
     const RightOfWayRule rule = rulebook->GetRule(test_case.id());
