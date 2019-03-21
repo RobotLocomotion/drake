@@ -439,10 +439,16 @@ class TestMathematicalProgram(unittest.TestCase):
         def constraint(x):
             return x
 
-        prog.AddCost(cost, vars=x)
-        prog.AddConstraint(constraint, lb=[0.], ub=[2.], vars=x)
+        cost_binding = prog.AddCost(cost, vars=x)
+        constraint_binding = prog.AddConstraint(
+            constraint, lb=[0.], ub=[2.], vars=x)
         result = mp.Solve(prog)
-        self.assertAlmostEqual(result.GetSolution(x)[0], 1.)
+        xstar = result.GetSolution(x)
+        self.assertAlmostEqual(xstar[0], 1.)
+
+        # Verify that they can be evaluated.
+        self.assertAlmostEqual(cost_binding.evaluator().Eval(xstar), 0.)
+        self.assertAlmostEqual(constraint_binding.evaluator().Eval(xstar), 1.)
 
     def test_addcost_symbolic(self):
         prog = mp.MathematicalProgram()
