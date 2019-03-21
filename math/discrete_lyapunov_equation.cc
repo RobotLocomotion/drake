@@ -21,7 +21,7 @@ MatrixXd RealDiscreteLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
                                       const Eigen::Ref<const MatrixXd>& Q) {
   if (A.rows() != A.cols() || Q.rows() != Q.cols() || A.rows() != Q.rows()) {
     throw std::runtime_error(
-        "RealContinuousLyapunovEquation: A and Q must be square and of equal "
+        "RealDiscreteLyapunovEquation: A and Q must be square and of equal "
         "size!");
   }
   DRAKE_DEMAND(is_approx_equal_abstol(Q, Q.transpose(), 1e-10));
