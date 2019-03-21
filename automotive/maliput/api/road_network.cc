@@ -15,14 +15,16 @@ RoadNetwork::RoadNetwork(
     std::unique_ptr<rules::RightOfWayPhaseBook> phase_book,
     std::unique_ptr<rules::RightOfWayStateProvider> state_provider,
     std::unique_ptr<rules::RightOfWayPhaseProvider> phase_provider,
-    std::vector<rules::SpeedLimitRule> speed_limits)
+    std::vector<rules::SpeedLimitRule> speed_limits,
+    std::vector<rules::DirectionUsageRule> direction_usage_rules)
     : road_geometry_(std::move(road_geometry)),
       rulebook_(std::move(rulebook)),
       intersections_(std::move(intersections)),
       phase_book_(std::move(phase_book)),
       state_provider_(std::move(state_provider)),
       phase_provider_(std::move(phase_provider)),
-      speed_limits_(std::move(speed_limits)) {
+      speed_limits_(std::move(speed_limits)),
+      direction_usage_rules_(std::move(direction_usage_rules)) {
   DRAKE_THROW_UNLESS(road_geometry_.get() != nullptr);
   DRAKE_THROW_UNLESS(rulebook_.get() != nullptr);
   DRAKE_THROW_UNLESS(phase_book_.get() != nullptr);
