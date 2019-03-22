@@ -45,8 +45,8 @@ class TestSystem : public LeafSystem<T> {
 TYPED_TEST(UserscalarAcceptanceTest, LeafSystemTest) {
   using T = TypeParam;
   const TestSystem<T> dut;
-  EXPECT_EQ(dut.get_num_input_ports(), 0);
-  EXPECT_EQ(dut.get_num_output_ports(), 1);
+  EXPECT_EQ(dut.num_input_ports(), 0);
+  EXPECT_EQ(dut.num_output_ports(), 1);
   auto context = dut.CreateDefaultContext();
   EXPECT_NE(context, nullptr);
 }

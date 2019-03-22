@@ -171,16 +171,17 @@ class SystemBase : public internal::SystemMessageInterface {
   //@}
 
   /** Returns the number of input ports currently allocated in this System.
-  These are indexed from 0 to %get_num_input_ports()-1. */
-  int get_num_input_ports() const {
+  These are indexed from 0 to %num_input_ports()-1. */
+  int num_input_ports() const {
     return static_cast<int>(input_ports_.size());
   }
 
   /** Returns the number of output ports currently allocated in this System.
-  These are indexed from 0 to %get_num_output_ports()-1. */
-  int get_num_output_ports() const {
+  These are indexed from 0 to %num_output_ports()-1. */
+  int num_output_ports() const {
     return static_cast<int>(output_ports_.size());
   }
+
 
   /** Returns a reference to an InputPort given its `port_index`.
   @pre `port_index` selects an existing input port of this System. */
@@ -196,7 +197,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns the total dimension of all of the vector-valued input ports (as if
   they were muxed). */
-  int get_num_total_inputs() const {
+  int num_total_inputs() const {
     int count = 0;
     for (const auto& in : input_ports_) count += in->size();
     return count;
@@ -204,7 +205,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns the total dimension of all of the vector-valued output ports (as
   if they were muxed). */
-  int get_num_total_outputs() const {
+  int num_total_outputs() const {
     int count = 0;
     for (const auto& out : output_ports_) count += out->size();
     return count;
@@ -615,7 +616,7 @@ class SystemBase : public internal::SystemMessageInterface {
   by `index`.
   @pre `index` selects an existing input port of this System. */
   DependencyTicket input_port_ticket(InputPortIndex index) {
-    DRAKE_DEMAND(0 <= index && index < get_num_input_ports());
+    DRAKE_DEMAND(0 <= index && index < num_input_ports());
     return input_ports_[index]->ticket();
   }
 
@@ -720,7 +721,7 @@ class SystemBase : public internal::SystemMessageInterface {
   meaningfully depend on that system's own output ports.
   @pre `index` selects an existing output port of this System. */
   DependencyTicket output_port_ticket(OutputPortIndex index) {
-    DRAKE_DEMAND(0 <= index && index < get_num_output_ports());
+    DRAKE_DEMAND(0 <= index && index < num_output_ports());
     return output_ports_[index]->ticket();
   }
 
@@ -747,6 +748,22 @@ class SystemBase : public internal::SystemMessageInterface {
   }
   //@}
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // These are to-be-deprecated. Use methods without the initial get_.
+  int get_num_total_inputs() const {
+    return num_total_inputs();
+  }
+  int get_num_total_outputs() const {
+    return num_total_outputs();
+  }
+  int get_num_input_ports() const {
+    return num_input_ports();
+  }
+  int get_num_output_ports() const {
+    return num_output_ports();
+  }
+#endif
+
  protected:
   /** (Internal use only) Default constructor. */
   SystemBase() = default;
@@ -761,11 +778,11 @@ class SystemBase : public internal::SystemMessageInterface {
   void AddInputPort(std::unique_ptr<InputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
-    DRAKE_DEMAND(port->get_index() == get_num_input_ports());
+    DRAKE_DEMAND(port->get_index() == num_input_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
     // Check that name is unique.
-    for (InputPortIndex i{0}; i < get_num_input_ports(); i++) {
+    for (InputPortIndex i{0}; i < num_input_ports(); i++) {
       if (port->get_name() == get_input_port_base(i).get_name()) {
         throw std::logic_error("System " + GetSystemName() +
             " already has an input port named " +
@@ -786,11 +803,11 @@ class SystemBase : public internal::SystemMessageInterface {
   void AddOutputPort(std::unique_ptr<OutputPortBase> port) {
     DRAKE_DEMAND(port != nullptr);
     DRAKE_DEMAND(&port->get_system_base() == this);
-    DRAKE_DEMAND(port->get_index() == get_num_output_ports());
+    DRAKE_DEMAND(port->get_index() == num_output_ports());
     DRAKE_DEMAND(!port->get_name().empty());
 
     // Check that name is unique.
-    for (OutputPortIndex i{0}; i < get_num_output_ports(); i++) {
+    for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
       if (port->get_name() == get_output_port_base(i).get_name()) {
         throw std::logic_error("System " + GetSystemName() +
                                " already has an output port named " +
@@ -809,7 +826,7 @@ class SystemBase : public internal::SystemMessageInterface {
       variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
-           ? std::string("u") + std::to_string(get_num_input_ports())
+           ? std::string("u") + std::to_string(num_input_ports())
            : get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
@@ -823,7 +840,7 @@ class SystemBase : public internal::SystemMessageInterface {
       variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
-           ? std::string("y") + std::to_string(get_num_output_ports())
+           ? std::string("y") + std::to_string(num_output_ports())
            : get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
@@ -980,7 +997,7 @@ class SystemBase : public internal::SystemMessageInterface {
     if (port_index < 0)
       ThrowNegativePortIndex(func, port_index);
     const InputPortIndex port(port_index);
-    if (port_index >= get_num_input_ports())
+    if (port_index >= num_input_ports())
       ThrowInputPortIndexOutOfRange(func, port);
     return *input_ports_[port];
   }
@@ -994,7 +1011,7 @@ class SystemBase : public internal::SystemMessageInterface {
     if (port_index < 0)
       ThrowNegativePortIndex(func, port_index);
     const OutputPortIndex port(port_index);
-    if (port_index >= get_num_output_ports())
+    if (port_index >= num_output_ports())
       ThrowOutputPortIndexOutOfRange(func, port);
     return *output_ports_[port_index];
   }

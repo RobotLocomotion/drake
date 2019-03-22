@@ -167,7 +167,7 @@ class DiagramContext final : public Context<T> {
     const InputPortIndex subsystem_iport_index = subsystem_input_port.second;
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem_index);
     DRAKE_DEMAND(0 <= subsystem_iport_index &&
-                 subsystem_iport_index < subcontext.get_num_input_ports());
+                 subsystem_iport_index < subcontext.num_input_ports());
 
     // Get this Diagram's input port that serves as the source.
     const DependencyTicket iport_ticket =
@@ -195,7 +195,7 @@ class DiagramContext final : public Context<T> {
     const OutputPortIndex subsystem_oport_index = subsystem_output_port.second;
     Context<T>& subcontext = GetMutableSubsystemContext(subsystem_index);
     DRAKE_DEMAND(0 <= subsystem_oport_index &&
-                 subsystem_oport_index < subcontext.get_num_output_ports());
+                 subsystem_oport_index < subcontext.num_output_ports());
 
     // Get the child subsystem's output port tracker that serves as the source.
     const DependencyTicket subcontext_oport_ticket =
@@ -227,14 +227,14 @@ class DiagramContext final : public Context<T> {
     const OutputPortIndex oport_index = output_port.second;
     Context<T>& oport_context = GetMutableSubsystemContext(oport_system_index);
     DRAKE_DEMAND(oport_index >= 0);
-    DRAKE_DEMAND(oport_index < oport_context.get_num_output_ports());
+    DRAKE_DEMAND(oport_index < oport_context.num_output_ports());
 
     // Identify and validate the destination input port.
     const SubsystemIndex iport_system_index = input_port.first;
     const InputPortIndex iport_index = input_port.second;
     Context<T>& iport_context = GetMutableSubsystemContext(iport_system_index);
     DRAKE_DEMAND(iport_index >= 0);
-    DRAKE_DEMAND(iport_index < iport_context.get_num_input_ports());
+    DRAKE_DEMAND(iport_index < iport_context.num_input_ports());
 
     // Dig out the dependency trackers for both ports so we can subscribe the
     // input port tracker to the output port tracker.
@@ -404,18 +404,18 @@ class DiagramContext final : public Context<T> {
 
     os << this->GetSystemPathname() << " Context (of a Diagram)\n";
     os << std::string(this->GetSystemPathname().size() + 24, '-') << "\n";
-    if (this->get_continuous_state().size())
-      os << this->get_continuous_state().size() << " total continuous states\n";
-    if (this->get_num_discrete_state_groups()) {
+    if (this->num_continuous_states())
+      os << this->num_continuous_states() << " total continuous states\n";
+    if (this->num_discrete_state_groups()) {
       int num_discrete_states = 0;
-      for (int i = 0; i < this->get_num_discrete_state_groups(); i++) {
+      for (int i = 0; i < this->num_discrete_state_groups(); i++) {
         num_discrete_states += this->get_discrete_state(i).size();
       }
       os << num_discrete_states << " total discrete states in "
-         << this->get_num_discrete_state_groups() << " groups\n";
+         << this->num_discrete_state_groups() << " groups\n";
     }
-    if (this->get_num_abstract_states())
-      os << this->get_num_abstract_states() << " total abstract states\n";
+    if (this->num_abstract_states())
+      os << this->num_abstract_states() << " total abstract states\n";
 
     if (this->num_numeric_parameter_groups()) {
       int num_numeric_parameters = 0;
@@ -432,8 +432,8 @@ class DiagramContext final : public Context<T> {
       const Context<T>& subcontext = this->GetSubsystemContext(i);
       // Only print this context if it has something useful to print.
       if (subcontext.get_continuous_state_vector().size() ||
-          subcontext.get_num_discrete_state_groups() ||
-          subcontext.get_num_abstract_states() ||
+          subcontext.num_discrete_state_groups() ||
+          subcontext.num_abstract_states() ||
           subcontext.num_numeric_parameter_groups() ||
           subcontext.num_abstract_parameters()) {
         os << "\n" << subcontext.to_string();

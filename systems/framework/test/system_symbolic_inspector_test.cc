@@ -159,8 +159,8 @@ TEST_F(SystemSymbolicInspectorTest, InputToOutput) {
 TEST_F(SystemSymbolicInspectorTest, AbstractContextThwartsSparsity) {
   system_.AddAbstractInputPort();
   inspector_ = std::make_unique<SystemSymbolicInspector>(system_);
-  for (int i = 0; i < system_.get_num_input_ports(); ++i) {
-    for (int j = 0; j < system_.get_num_output_ports(); ++j) {
+  for (int i = 0; i < system_.num_input_ports(); ++i) {
+    for (int j = 0; j < system_.num_output_ports(); ++j) {
       EXPECT_TRUE(inspector_->IsConnectedInputToOutput(i, j));
     }
   }
