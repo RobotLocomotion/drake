@@ -2988,7 +2988,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   const WeldJoint<T>& WeldFrames(
       const Frame<T>& A, const Frame<T>& B,
-      const Isometry3<double>& X_AB = Isometry3<double>::Identity()) {
+      const Isometry3<double>& X_AB) {
     return WeldFrames(A, B, math::RigidTransformd(X_AB));
   }
 

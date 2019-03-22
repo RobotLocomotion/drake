@@ -116,9 +116,8 @@ PYBIND11_MODULE(plant, m) {
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const Isometry3<double>&>(&Class::WeldFrames),
-            py::arg("A"), py::arg("B"),
-            py::arg("X_AB") = Isometry3<double>::Identity(),
-            py_reference_internal, doc_iso3_depreaction)
+            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
+            doc_iso3_depreaction)
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
