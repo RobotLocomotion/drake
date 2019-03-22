@@ -116,7 +116,9 @@ TEST_F(SymbolicPolynomialTest, ConstructFromMapType3) {
   // We cannot construct a polynomial from the `map` because variable a is used
   // as a decision variable (x ↦ -2a) and an indeterminate (a² ↦ 4b) at the same
   // time.
-  EXPECT_THROW(Polynomial{map}, runtime_error);
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(Polynomial{map}, runtime_error);
+  }
 }
 
 TEST_F(SymbolicPolynomialTest, ConstructFromMonomial) {

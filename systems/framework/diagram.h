@@ -30,6 +30,39 @@
 namespace drake {
 namespace systems {
 
+namespace internal {
+
+/// Destroys owned systems in the reverse order they were added; this enables
+/// Systems to refer to each other during destruction, in the usual "undo"
+/// resource order one would expect for C++.
+template <typename T>
+class OwnedSystems {
+ public:
+  OwnedSystems() = default;
+  OwnedSystems(OwnedSystems&&) = default;
+  OwnedSystems& operator=(OwnedSystems&&) = default;
+  ~OwnedSystems() {
+    while (!vec_.empty()) {
+      vec_.pop_back();
+    }
+  }
+
+  // These mimic the std::vector APIs directly.
+  decltype(auto) empty() const { return vec_.empty(); }
+  decltype(auto) size() const { return vec_.size(); }
+  decltype(auto) begin() const { return vec_.begin(); }
+  decltype(auto) end() const { return vec_.end(); }
+  decltype(auto) operator[](size_t i) const { return vec_[i]; }
+  void push_back(std::unique_ptr<System<T>>&& sys) {
+    vec_.push_back(std::move(sys));
+  }
+
+ private:
+  std::vector<std::unique_ptr<System<T>>> vec_;
+};
+
+}  // namespace internal
+
 template <typename T>
 class DiagramBuilder;
 
@@ -1245,7 +1278,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   template <typename NewType>
   std::unique_ptr<typename Diagram<NewType>::Blueprint> ConvertScalarType()
       const {
-    std::vector<std::unique_ptr<System<NewType>>> new_systems;
+    internal::OwnedSystems<NewType> new_systems;
     // Recursively convert all the subsystems.
     std::map<const System<T>*, const System<NewType>*> old_to_new_map;
     for (const auto& old_system : registered_systems_) {
@@ -1372,7 +1405,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     // contain an algebraic loop.
     std::map<InputPortLocator, OutputPortLocator> connection_map;
     // All of the systems to be included in the diagram.
-    std::vector<std::unique_ptr<System<T>>> systems;
+    internal::OwnedSystems<T> systems;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
@@ -1576,7 +1609,7 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   // The Systems in this Diagram, which are owned by this Diagram, in the order
   // they were registered. Index by SubsystemIndex.
-  std::vector<std::unique_ptr<System<T>>> registered_systems_;
+  internal::OwnedSystems<T> registered_systems_;
 
   // Map to quickly satisfy "What is the subsystem index of the child system?"
   std::map<const System<T>*, SubsystemIndex> system_index_map_;

@@ -13,7 +13,6 @@ libhdf5-100
 libjpeg8
 libjsoncpp1
 liblapack3
-libnetcdf-c++4
 libnetcdf13
 libnlopt0
 libogg0

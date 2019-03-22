@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/geometry/dev/render/render_engine.h"
 #include "drake/geometry/dev/scene_graph.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -272,6 +273,13 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @see multibody::MultibodyPlant<T>::Finalize()
   void Finalize();
 
+  /// Finalizes the station with the option of specifying the renderers the
+  /// manipulation station uses. Calling this method with an empty map is
+  /// equivalent to calling Finalize(). See Finalize() for more details.
+  void Finalize(std::map<std::string,
+                         std::unique_ptr<geometry::dev::render::RenderEngine>>
+                    render_engines);
+
   /// Returns a reference to the main plant responsible for the dynamics of
   /// the robot and the environment.  This can be used to, e.g., add
   /// additional elements into the world before calling Finalize().
@@ -297,6 +305,9 @@ class ManipulationStation : public systems::Diagram<T> {
   /// geometry for the robot and the environment.  This can be used to, e.g.,
   /// add additional elements into the world before calling Finalize().
   geometry::SceneGraph<T>& get_mutable_scene_graph() { return *scene_graph_; }
+
+  /// Returns the name of the station's default renderer.
+  static std::string default_renderer_name() { return default_renderer_name_; }
 
   /// Returns a const reference to the SceneGraph used for rendering
   /// camera images. Since the SceneGraph for rendering is constructed in
@@ -483,7 +494,7 @@ class ManipulationStation : public systems::Diagram<T> {
     const multibody::Frame<T>* parent_frame{};
     math::RigidTransform<double> X_PC{math::RigidTransform<double>::Identity()};
     geometry::dev::render::DepthCameraProperties properties{
-        0, 0, 0, geometry::dev::render::Fidelity::kLow, 0, 0};
+        0, 0, 0, default_renderer_name_, 0, 0};
   };
 
   // Assumes iiwa_model_info_ and wsg_model_info_ have already being populated.
@@ -503,6 +514,8 @@ class ManipulationStation : public systems::Diagram<T> {
   geometry::SceneGraph<T>* scene_graph_;
   // This is made in Finalize().
   geometry::dev::SceneGraph<T>* render_scene_graph_{};
+  static constexpr const char* default_renderer_name_ =
+      "manip_station_renderer";
 
   // Populated by RegisterIiwaControllerModel() and
   // RegisterWsgControllerModel().

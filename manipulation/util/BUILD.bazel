@@ -124,9 +124,8 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "meshlab_to_sdf_test",
-    srcs = [
+    data = [
         "meshlab_to_sdf.py",
-        "test/meshlab_to_sdf_test.py",
     ],
 )
 
