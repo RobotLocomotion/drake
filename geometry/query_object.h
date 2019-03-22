@@ -192,8 +192,8 @@ class QueryObject {
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
 
-   @warning Currently supports spheres and boxes only. Silently ignores other
-   kinds of geometries, which will be added later.
+   @warning Currently supports spheres, boxes, and cylinders only. Silently
+   ignores other kinds of geometries, which will be added later.
 
    This query provides φᵢ(p), φᵢ:ℝ³→ℝ, the signed distance to the position
    p of a query point from geometry Gᵢ in the scene.  It returns an array of
@@ -227,7 +227,7 @@ class QueryObject {
    will assign a unit vector in the direction of the average of the outward
    face unit normals of the incident faces of the edge or the corner.
    A point p is considered being on a face, or an edge, or a corner of the
-   box if its lies within a certain tolerance from them.
+   box if it lies within a certain tolerance from them.
 
    @note For a box B, if a point p is inside the box, and it is equidistant to
    to multiple nearest faces, the signed distance function φᵢ(p) at p will have
