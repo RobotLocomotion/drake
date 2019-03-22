@@ -39,11 +39,12 @@ class SpringTester : public ::testing::Test {
                                math::RigidTransform<double>::Identity());
 
     // Allow body B to rotate about the z axis.
-    joint_ = &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, {}, *bodyB_,
-                                             {}, Vector3<double>::UnitZ());
+    joint_ =
+        &model->AddJoint<RevoluteJoint>("joint_AB", *bodyA_, nullopt, *bodyB_,
+                                        nullopt, Vector3<double>::UnitZ());
 
-    model->AddJoint<RevoluteJoint>("joint_BC", *bodyB_, {}, *bodyC_, {},
-                                   Vector3<double>::UnitX());
+    model->AddJoint<RevoluteJoint>("joint_BC", *bodyB_, nullopt, *bodyC_,
+                                   nullopt, Vector3<double>::UnitX());
 
     // Add spring
     spring_ = &model->AddForceElement<RevoluteSpring>(*joint_, nominal_angle_,

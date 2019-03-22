@@ -374,10 +374,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called pre-finalize.
   void SetFreeBodyPose(
       systems::Context<T>* context, const Body<T>& body,
-      const Isometry3<T>& X_WB) const {
-    internal_tree().SetFreeBodyPoseOrThrow(body, math::RigidTransform<T>(X_WB),
-                                           context);
-  }
+      const math::RigidTransform<T>& X_WB) const {
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
+  }  
 
   /// Sets `state` to store the pose `X_WB` of a given `body` B in the world
   /// frame W, for a given `context` of `this` model.
@@ -389,10 +388,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @pre `state` comes from this MultibodyPlant.
   void SetFreeBodyPose(
       const systems::Context<T>& context, systems::State<T>* state,
-      const Body<T>& body, const Isometry3<T>& X_WB) const {
+      const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
     CheckValidState(state);
-    internal_tree().SetFreeBodyPoseOrThrow(body, math::RigidTransform<T>(X_WB),
-                                           context, state);
+    internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context, state);
   }
 
   /// Sets `context` to store the spatial velocity `V_WB` of a given `body` B in
@@ -808,7 +806,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   the frame P of that body. `X_PF` is an optional parameter; empty curly
   ///   braces `{}` imply that frame F **is** the same body frame P. If instead
   ///   your intention is to make a frame F with pose `X_PF` equal to the
-  ///   identity pose, provide `Isometry3<double>::Identity()` as your input.
+  ///   identity pose, provide `RigidTransform<double>::Identity()` as your
+  ///   input.
   /// @param[in] child
   ///   The child body connected by the new joint.
   /// @param[in] X_BM
@@ -816,7 +815,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   the frame B of that body. `X_BM` is an optional parameter; empty curly
   ///   braces `{}` imply that frame M **is** the same body frame B. If instead
   ///   your intention is to make a frame M with pose `X_BM` equal to the
-  ///   identity pose, provide `Isometry3<double>::Identity()` as your input.
+  ///   identity pose, provide `RigidTransform<double>::Identity()` as your
+  ///   input.
   /// @param[in] args
   ///   Zero or more parameters provided to the constructor of the new joint. It
   ///   must be the case that
@@ -855,22 +855,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see The Joint class's documentation for further details on how a Joint
   /// is defined.
   template <template <typename> class JointType, typename... Args>
-  const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
-                               const optional<Isometry3<double>>& X_PF,
-                               const Body<T>& child,
-                               const optional<Isometry3<double>>& X_BM,
-                               Args&&... args) {
+  const JointType<T>& AddJoint(
+      const std::string& name, const Body<T>& parent,
+      const optional<math::RigidTransform<double>>& X_PF, const Body<T>& child,
+      const optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
     DRAKE_MBP_THROW_IF_FINALIZED();
-
-    optional<math::RigidTransform<double>> X_PF_rt =
-        X_PF ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_PF))
-             : nullopt;
-    optional<math::RigidTransform<double>> X_BM_rt =
-        X_BM ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_BM))
-             : nullopt;
-
     return this->mutable_tree().template AddJoint<JointType>(
-        name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
+        name, parent, X_PF, child, X_BM, std::forward<Args>(args)...);
   }
 
   /// Adds a new force element model of type `ForceElementType` to `this`
@@ -959,9 +950,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// The call to this method creates and adds a new WeldJoint to the model.
   /// The new WeldJoint is named as: A.name() + "_welds_to_" + B.name().
   /// @returns a constant reference to the WeldJoint welding frames A and B.
-  const WeldJoint<T>& WeldFrames(
-      const Frame<T>& A, const Frame<T>& B,
-      const Isometry3<double>& X_AB = Isometry3<double>::Identity());
+  const WeldJoint<T>& WeldFrames(const Frame<T>& A, const Frame<T>& B,
+                                 const math::RigidTransform<double>& X_AB =
+                                     math::RigidTransform<double>::Identity());  
   /// @}
 
   /// @name Querying for multibody elements by name
@@ -1294,7 +1285,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::logic_error if called pre-finalize.
   void SetFreeBodyPoseInWorldFrame(
       systems::Context<T>* context,
-      const Body<T>& body, const Isometry3<T>& X_WB) const;
+      const Body<T>& body, const math::RigidTransform<T>& X_WB) const;
 
   /// Updates `context` to store the pose `X_FB` of a given `body` B in a frame
   /// F.
@@ -1306,7 +1297,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetFreeBodyPoseInAnchoredFrame(
       systems::Context<T>* context,
       const Frame<T>& frame_F, const Body<T>& body,
-      const Isometry3<T>& X_FB) const;
+      const math::RigidTransform<T>& X_FB) const;
 
   /// Computes the relative transform `X_AB(q)` from a frame B to a frame A, as
   /// a function of the generalized positions q of the model.
@@ -2323,7 +2314,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// instance with which RegisterAsSourceForSceneGraph() was called.
   /// @returns the id for the registered geometry.
   geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const geometry::IllustrationProperties& properties,
       geometry::SceneGraph<T>* scene_graph = nullptr);
@@ -2333,7 +2324,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::ConnectDrakeVisualizer()-compatible set of
   /// geometry::IllustrationProperties.
   geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const Vector4<double>& diffuse_color,
       geometry::SceneGraph<T>* scene_graph = nullptr);
@@ -2342,7 +2333,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// geometry::IllustrationProperties _consumer_ to provide default parameter
   /// values (see @ref geometry_roles for details).
   geometry::GeometryId RegisterVisualGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       geometry::SceneGraph<T>* scene_graph = nullptr);
 
@@ -2386,7 +2377,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `scene_graph` does not correspond to the
   /// same instance with which RegisterAsSourceForSceneGraph() was called.
   geometry::GeometryId RegisterCollisionGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
       const CoulombFriction<double>& coulomb_friction,
       geometry::SceneGraph<T>* scene_graph = nullptr);
@@ -2945,6 +2936,114 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetRandomState(context, state, generator);
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // These APIs using Isometry3 will be deprecated soon with the resolution of
+  // #9865. Right now we offer them for backwards compatibility.
+
+  void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
+                       const Isometry3<T>& X_WB) const {
+    SetFreeBodyPose(context, body, math::RigidTransform<T>(X_WB));
+  }
+
+  void SetFreeBodyPose(const systems::Context<T>& context,
+                       systems::State<T>* state, const Body<T>& body,
+                       const Isometry3<T>& X_WB) const {
+    SetFreeBodyPose(context, state, body, math::RigidTransform<T>(X_WB));
+  }
+
+  // Allows having a non-empty X_PF isometry and a nullopt X_BM.
+  template <template <typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
+                               const Isometry3<double>& X_PF,
+                               const Body<T>& child,
+                               const optional<Isometry3<double>>& X_BM,
+                               Args&&... args) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+
+    const math::RigidTransform<double> X_PF_rt(X_PF);
+    const optional<math::RigidTransform<double>> X_BM_rt =
+        X_BM ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_BM))
+             : nullopt;
+
+    return this->mutable_tree().template AddJoint<JointType>(
+        name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
+  }
+
+  // Allows having a nullopt X_PF and a non-empty X_BM isometry.
+  template <template <typename> class JointType, typename... Args>
+  const JointType<T>& AddJoint(const std::string& name, const Body<T>& parent,
+                               const optional<Isometry3<double>>& X_PF,
+                               const Body<T>& child,
+                               const Isometry3<double>& X_BM,
+                               Args&&... args) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+
+    optional<math::RigidTransform<double>> X_PF_rt =
+        X_PF ? optional<math::RigidTransform<T>>(math::RigidTransform<T>(*X_PF))
+             : nullopt;
+    const math::RigidTransform<double> X_BM_rt(X_BM);
+
+    return this->mutable_tree().template AddJoint<JointType>(
+        name, parent, X_PF_rt, child, X_BM_rt, std::forward<Args>(args)...);
+  }
+
+  const WeldJoint<T>& WeldFrames(
+      const Frame<T>& A, const Frame<T>& B,
+      const Isometry3<double>& X_AB = Isometry3<double>::Identity()) {
+    return WeldFrames(A, B, math::RigidTransformd(X_AB));
+  }
+
+  void SetFreeBodyPoseInWorldFrame(systems::Context<T>* context,
+                                   const Body<T>& body,
+                                   const Isometry3<T>& X_WB) const {
+    SetFreeBodyPoseInWorldFrame(context, body, math::RigidTransform<T>(X_WB));
+  }
+
+  void SetFreeBodyPoseInAnchoredFrame(systems::Context<T>* context,
+                                      const Frame<T>& frame_F,
+                                      const Body<T>& body,
+                                      const Isometry3<T>& X_FB) const {
+    SetFreeBodyPoseInAnchoredFrame(context, frame_F, body,
+                                   math::RigidTransform<T>(X_FB));
+  }
+
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      const geometry::IllustrationProperties& properties,
+      geometry::SceneGraph<T>* scene_graph = nullptr) {
+    return RegisterVisualGeometry(body, math::RigidTransform<double>(X_BG),
+                                  shape, name, properties, scene_graph);
+  }
+
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      const Vector4<double>& diffuse_color,
+      geometry::SceneGraph<T>* scene_graph = nullptr) {
+    return RegisterVisualGeometry(body, math::RigidTransform<double>(X_BG),
+                                  shape, name, diffuse_color, scene_graph);
+  }
+
+  geometry::GeometryId RegisterVisualGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      geometry::SceneGraph<T>* scene_graph = nullptr) {
+    return RegisterVisualGeometry(body, math::RigidTransform<double>(X_BG),
+                                  shape, name, scene_graph);
+  }
+
+  geometry::GeometryId RegisterCollisionGeometry(
+      const Body<T>& body, const Isometry3<double>& X_BG,
+      const geometry::Shape& shape, const std::string& name,
+      const CoulombFriction<double>& coulomb_friction,
+      geometry::SceneGraph<T>* scene_graph = nullptr) {
+    return RegisterCollisionGeometry(body, math::RigidTransform<double>(X_BG),
+                                     shape, name, coulomb_friction,
+                                     scene_graph);
+  }
+#endif
+
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
@@ -3159,7 +3258,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // 3. `scene_graph` points to the same SceneGraph instance previously
   //    passed to RegisterAsSourceForSceneGraph().
   geometry::GeometryId RegisterGeometry(
-      const Body<T>& body, const Isometry3<double>& X_BG,
+      const Body<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape,
       const std::string& name);
 

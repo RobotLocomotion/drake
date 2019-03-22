@@ -273,7 +273,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
-          "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+          "AnotherJoint", link1, nullopt, link2, nullopt, Vector3d::UnitZ()),
       std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
@@ -881,8 +881,8 @@ class SphereChainScenario {
     // Add hinges between spheres.
     for (int i = 0; i < sphere_count - 1; ++i) {
       plant_->AddJoint<RevoluteJoint>(
-          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i], {},
-          *spheres_[i + 1], {}, Vector3d::UnitY());
+          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
+          nullopt, *spheres_[i + 1], nullopt, Vector3d::UnitY());
     }
 
     // Body with no registered frame.

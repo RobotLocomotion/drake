@@ -649,12 +649,12 @@ GTEST_TEST(WeldedBodies, CreateListOfWeldedBodies) {
   };
 
   // Helper method to add a WeldJoint between two bodies.
-  auto AddWeldJoint =
-      [&model](const std::string& name,
-               const Body<double>& parent, const Body<double>& child) {
-        model.AddJoint<WeldJoint>(
-            name, parent, {}, child, {}, math::RigidTransformd::Identity());
-      };
+  auto AddWeldJoint = [&model](const std::string& name,
+                               const Body<double>& parent,
+                               const Body<double>& child) {
+    model.AddJoint<WeldJoint>(name, parent, nullopt, child, nullopt,
+                              math::RigidTransformd::Identity());
+  };
 
   // Start building the test model.
   const RigidBody<double>& body_a = AddRigidBody("a");

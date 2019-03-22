@@ -186,9 +186,9 @@ struct JointLimitsPenaltyParametersEstimator {
 
           const SpatialInertia<T>& M_PPo_P =
               body->default_spatial_inertia().template cast<T>();
-          const Isometry3<T> X_PJ = frame.GetFixedPoseInBodyFrame();
+          const RigidTransform<T> X_PJ = frame.GetFixedPoseInBodyFrame();
           const Vector3<T>& p_PJ = X_PJ.translation();
-          const math::RotationMatrix<T> R_PJ(X_PJ.linear());
+          const math::RotationMatrix<T>& R_PJ = X_PJ.rotation();
           const SpatialInertia<T> M_PJo_J =
               M_PPo_P.Shift(p_PJ).ReExpress(R_PJ);
           const RotationalInertia<T> I_PJo_J =
@@ -264,12 +264,13 @@ void MultibodyPlant<T>::SetFreeBodyRandomRotationDistributionToUniform(
   SetFreeBodyRandomRotationDistribution(body, q_FM);
 }
 
-template<typename T>
+template <typename T>
 const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
-    const Frame<T>& A, const Frame<T>& B, const Isometry3<double>& X_AB) {
+    const Frame<T>& A, const Frame<T>& B,
+    const math::RigidTransform<double>& X_AB) {
   const std::string joint_name = A.name() + "_welds_to_" + B.name();
-  return this->mutable_tree().AddJoint(std::make_unique<WeldJoint<T>>(
-      joint_name, A, B, RigidTransform<double>(X_AB)));
+  return this->mutable_tree().AddJoint(
+      std::make_unique<WeldJoint<T>>(joint_name, A, B, X_AB));
 }
 
 template <typename T>
@@ -291,7 +292,7 @@ geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body, const Isometry3<double>& X_BG,
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     geometry::SceneGraph<T>* scene_graph) {
   return RegisterVisualGeometry(
@@ -300,7 +301,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body, const Isometry3<double>& X_BG,
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     const Vector4<double>& diffuse_color,
     SceneGraph<T>* scene_graph) {
@@ -311,7 +312,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
-    const Body<T>& body, const Isometry3<double>& X_BG,
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     const geometry::IllustrationProperties& properties,
     SceneGraph<T>* scene_graph) {
@@ -327,8 +328,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+  GeometryId id =
+      RegisterGeometry(body, X_BG, shape,
+                       GetScopedName(*this, body.model_instance(), name));
   member_scene_graph().AssignRole(*source_id_, id, properties);
   const int visual_index = geometry_id_to_visual_index_.size();
   geometry_id_to_visual_index_[id] = visual_index;
@@ -345,7 +347,7 @@ MultibodyPlant<T>::GetVisualGeometriesForBody(const Body<T>& body) const {
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
-    const Body<T>& body, const Isometry3<double>& X_BG,
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     const CoulombFriction<double>& coulomb_friction,
     SceneGraph<T>* scene_graph) {
@@ -356,8 +358,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+  GeometryId id =
+      RegisterGeometry(body, X_BG, shape,
+                       GetScopedName(*this, body.model_instance(), name));
 
   // TODO(SeanCurtis-TRI): Push the contact parameters into the
   // ProximityProperties.
@@ -422,7 +425,7 @@ std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
-    const Body<T>& body, const Isometry3<double>& X_BG,
+    const Body<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape,
     const std::string& name) {
   DRAKE_ASSERT(!is_finalized());
@@ -444,7 +447,8 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 
   // Register geometry in the body frame.
   std::unique_ptr<geometry::GeometryInstance> geometry_instance =
-      std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
+      std::make_unique<GeometryInstance>(X_BG.GetAsIsometry3(), shape.Clone(),
+                                         name);
   GeometryId geometry_id = member_scene_graph().RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
       std::move(geometry_instance));
@@ -455,17 +459,16 @@ geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
 template<typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInWorldFrame(
     systems::Context<T>* context,
-    const Body<T>& body, const Isometry3<T>& X_WB) const {
+    const Body<T>& body, const math::RigidTransform<T>& X_WB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  internal_tree().SetFreeBodyPoseOrThrow(body, RigidTransform<T>(X_WB),
-                                         context);
+  internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
 }
 
 template<typename T>
 void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
     systems::Context<T>* context,
     const Frame<T>& frame_F, const Body<T>& body,
-    const Isometry3<T>& X_FB) const {
+    const math::RigidTransform<T>& X_FB) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
 
   if (!internal_tree().get_topology().IsBodyAnchored(frame_F.body().index())) {
@@ -474,11 +477,11 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   }
 
   // Pose of frame F in its parent body frame P.
-  const Isometry3<T> X_PF = frame_F.GetFixedPoseInBodyFrame();
+  const RigidTransform<T> X_PF = frame_F.GetFixedPoseInBodyFrame();
   // Pose of frame F's parent body P in the world.
-  const Isometry3<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
+  const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
   // Pose of "body" B in the world frame.
-  const Isometry3<T> X_WB = X_WP * X_PF * X_FB;
+  const RigidTransform<T> X_WB = X_WP * X_PF * X_FB;
   SetFreeBodyPoseInWorldFrame(context, body, X_WB);
 }
 
