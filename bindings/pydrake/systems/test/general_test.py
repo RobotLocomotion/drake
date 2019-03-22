@@ -76,14 +76,14 @@ class TestGeneral(unittest.TestCase):
     def _compare_system_instances(self, lhs, rhs):
         # Compares two different scalar type instantiation instances of a
         # system.
-        self.assertEqual(lhs.get_num_input_ports(), rhs.get_num_input_ports())
+        self.assertEqual(lhs.num_input_ports(), rhs.num_input_ports())
         self.assertEqual(
-            lhs.get_num_output_ports(), rhs.get_num_output_ports())
-        for i in range(lhs.get_num_input_ports()):
+            lhs.num_output_ports(), rhs.num_output_ports())
+        for i in range(lhs.num_input_ports()):
             lhs_port = lhs.get_input_port(i)
             rhs_port = rhs.get_input_port(i)
             self.assertEqual(lhs_port.size(), rhs_port.size())
-        for i in range(lhs.get_num_output_ports()):
+        for i in range(lhs.num_output_ports()):
             lhs_port = lhs.get_output_port(i)
             rhs_port = rhs.get_output_port(i)
             self.assertEqual(lhs_port.size(), rhs_port.size())
@@ -91,8 +91,8 @@ class TestGeneral(unittest.TestCase):
     def test_system_base_api(self):
         # Test a system with a different number of inputs from outputs.
         system = Adder(3, 10)
-        self.assertEqual(system.get_num_input_ports(), 3)
-        self.assertEqual(system.get_num_output_ports(), 1)
+        self.assertEqual(system.num_input_ports(), 3)
+        self.assertEqual(system.num_output_ports(), 1)
         self.assertEqual(system.GetInputPort("u1").get_index(), 1)
         self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
@@ -227,7 +227,7 @@ class TestGeneral(unittest.TestCase):
             def check_output(context):
                 # Check number of output ports and value for a given context.
                 output = system.AllocateOutput()
-                self.assertEqual(output.get_num_ports(), 1)
+                self.assertEqual(output.num_ports(), 1)
                 system.CalcOutput(context, output)
                 if T == float:
                     value = output.get_vector_data(0).get_value()
@@ -253,9 +253,9 @@ class TestGeneral(unittest.TestCase):
 
             # Create simulator specifying context.
             context = system.CreateDefaultContext()
-            context.set_time(0.)
+            context.SetTime(0.)
 
-            context.set_accuracy(1e-4)
+            context.SetAccuracy(1e-4)
             self.assertEqual(context.get_accuracy(), 1e-4)
 
             # @note `simulator` now owns `context`.

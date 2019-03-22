@@ -677,7 +677,7 @@ class IntegratorBase {
     const double tol = 10 * std::numeric_limits<double>::epsilon() *
         ExtractDoubleOrThrow(max(t_target, context_->get_time()));
     DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
-    context_->set_time(t_target);
+    context_->SetTime(t_target);
   }
 
   /**
@@ -839,7 +839,7 @@ class IntegratorBase {
     if (!is_initialized()) {
       throw std::logic_error("Integrator was not initialized.");
     }
-    if (get_context().get_continuous_state().size() == 0) {
+    if (get_context().num_continuous_states() == 0) {
       throw std::logic_error("System has no continuous state,"
                              " no dense output can be built.");
     }
@@ -1710,7 +1710,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       step_size_to_attempt = next_step_size;
 
       // Reset the time, state, and time derivative at t0.
-      get_mutable_context()->set_time(current_time);
+      get_mutable_context()->SetTime(current_time);
       xc.SetFromVector(xc0_save_);
       if (get_dense_output()) {
         // Take dense output one step back to undo
@@ -1974,9 +1974,9 @@ typename IntegratorBase<T>::StepResult
 
   // If there is no continuous state, there will be no need to limit the
   // integration step size.
-  if (get_context().get_continuous_state().size() == 0) {
+  if (get_context().num_continuous_states() == 0) {
     Context<T>* context = get_mutable_context();
-    context->set_time(target_time);
+    context->SetTime(target_time);
     return candidate_result;
   }
 
@@ -2027,7 +2027,7 @@ typename IntegratorBase<T>::StepResult
   if (full_step || context_->get_time() >= target_time) {
     // Correct any rounding error that may have caused the time to overrun
     // the target time.
-    context_->set_time(target_time);
+    context_->SetTime(target_time);
 
     // If the integrator took the entire maximum step size we allowed above,
     // we report to the caller that a step constraint was hit, which may

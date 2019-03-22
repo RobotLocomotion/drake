@@ -272,7 +272,7 @@ TEST_F(ImplicitIntegratorTest, ContextAccess) {
   // Create the integrator.
   ImplicitEulerIntegrator<double> integrator(*spring_, context_.get());
 
-  integrator.get_mutable_context()->set_time(3.);
+  integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context_->get_time(), 3.);
   integrator.reset_context(nullptr);
@@ -419,7 +419,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassDamperStiff) {
       kCentralDifference);
 
   // Reset the time, position, and velocity.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   spring_damper_->set_position(context_.get(), initial_position);
   spring_damper_->set_velocity(context_.get(), initial_velocity);
 
@@ -440,7 +440,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassDamperStiff) {
       kAutomatic);
 
   // Reset the time, position, and velocity.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   spring_damper_->set_position(context_.get(), initial_position);
   spring_damper_->set_velocity(context_.get(), initial_velocity);
 
@@ -516,7 +516,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStep) {
       kCentralDifference);
 
   // Reset the time, position, and velocity.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   spring_mass.set_position(context_.get(), initial_position);
   spring_mass.set_velocity(context_.get(), initial_velocity);
 
@@ -538,7 +538,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStep) {
       kAutomatic);
 
   // Reset the time, position, and velocity.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   spring_mass.set_position(context_.get(), initial_position);
   spring_mass.set_velocity(context_.get(), initial_velocity);
 
@@ -608,7 +608,7 @@ TEST_P(ImplicitIntegratorTest, ErrorEstimation) {
   for (int j = 0; j < n_dts; ++j) {
     for (int i = 0; i < n_initial_conditions; ++i) {
       // Reset the time.
-      context_->set_time(0.0);
+      context_->SetTime(0.0);
 
       // Set initial condition.
       spring_mass.set_position(context_.get(), initial_position[i]);
@@ -692,7 +692,7 @@ TEST_P(ImplicitIntegratorTest, SpringMassStepAccuracyEffects) {
   EXPECT_NEAR(integrator.get_accuracy_in_use(), 100.0,
               std::numeric_limits<double>::epsilon());
   integrator.Initialize();
-  context_->set_time(0);
+  context_->SetTime(0);
   spring_mass.set_position(context_.get(), initial_position);
   spring_mass.set_velocity(context_.get(), initial_velocity);
   integrator.IntegrateWithMultipleStepsToTime(context_->get_time() + large_dt_);
@@ -751,7 +751,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
       kCentralDifference);
 
   // Reset the time, position, and velocity.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   mod_spring_damper_->set_position(context_.get(), initial_position);
   mod_spring_damper_->set_velocity(context_.get(), initial_velocity);
 
@@ -771,7 +771,7 @@ TEST_P(ImplicitIntegratorTest, DiscontinuousSpringMassDamper) {
       kAutomatic);
 
   // Reset the time, position, and velocity.
-  context_->set_time(0.0);
+  context_->SetTime(0.0);
   mod_spring_damper_->set_position(context_.get(), initial_position);
   mod_spring_damper_->set_velocity(context_.get(), initial_velocity);
 
