@@ -120,8 +120,7 @@ class TestMeshcat(unittest.TestCase):
             "extra_heavy_duty_table_surface_only_collision.sdf")
 
         # T: tabletop frame.
-        X_TObject = Isometry3.Identity()
-        X_TObject.set_translation([0, 0, 0.2])
+        X_TObject = RigidTransform([0, 0, 0.2])
 
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)
