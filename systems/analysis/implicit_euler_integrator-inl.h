@@ -150,7 +150,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeForwardDiffJacobian(
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
 
   // Get the number of continuous state variables xc.
-  const int n = context->get_continuous_state().size();
+  const int n = context->num_continuous_states();
 
   // Get the current continuous state.
   const VectorX<T> xtplus = context->get_continuous_state().CopyToVector();
@@ -222,7 +222,7 @@ MatrixX<T> ImplicitEulerIntegrator<T>::ComputeCentralDiffJacobian(
   const double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0/12);
 
   // Get the number of continuous state variables xc.
-  const int n = context->get_continuous_state().size();
+  const int n = context->num_continuous_states();
 
   SPDLOG_DEBUG(drake::log(), "  IE Compute Centraldiff {}-Jacobian t={}",
                n, context->get_time());

@@ -94,8 +94,8 @@ class SingleOutputVectorSource : public LeafSystem<T> {
  private:
   // Confirms the single-output invariant when allocating the context.
   void DoValidateAllocatedLeafContext(const LeafContext<T>&) const final {
-    DRAKE_DEMAND(this->get_num_input_ports() == 0);
-    DRAKE_DEMAND(this->get_num_output_ports() == 1);
+    DRAKE_DEMAND(this->num_input_ports() == 0);
+    DRAKE_DEMAND(this->num_output_ports() == 1);
   }
 
   // Converts the parameters to Eigen::VectorBlock form, then delegates to

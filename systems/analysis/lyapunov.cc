@@ -42,7 +42,7 @@ Eigen::VectorXd SampleBasedLyapunovAnalysis(
 
   // TODO(russt): handle discrete state.
   DRAKE_DEMAND(context.has_only_continuous_state());
-  DRAKE_DEMAND(context.get_continuous_state().size() == state_size);
+  DRAKE_DEMAND(context.num_continuous_states() == state_size);
 
   // TODO(russt): check that the system is time-invariant.
 
