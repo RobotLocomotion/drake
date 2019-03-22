@@ -10,7 +10,8 @@ namespace drake {
 namespace systems {
 
 /**
- * A fifth-order Runge Kutta integrator with a fourth order error estimate.
+ * A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
+ * with a fourth order error estimate.
  * @tparam T A double or autodiff type.
  *
  * This class uses Drake's `-inl.h` pattern.  When seeing linker errors from
@@ -38,9 +39,10 @@ namespace systems {
  *        35/384      0             500/1113 	 125/192 	 −2187/6784 	  11/84     0
  *        5179/57600 	0             7571/16695 393/640 	 −92097/339200  187/2100 	1/40
  * </pre>
- * where the second to last row is the 5th-order propagated solution and
- * the last row gives an alternate solution which, when subtracted from the
- * propagated solution, yields the error estimate.
+ * where the second to last row is the 5th-order (propagated) solution and
+ * the last row gives a 4th-order accurate solution which, when subtracted
+ * from the propagated solution, yields the 4th-order error estimate of the
+ * error.
  *
  * - [Hairer, 1993] E. Hairer, S. Noersett, and G. Wanner. Solving ODEs I. 2nd
  *   rev. ed. Springer, 1993. p. 166.
@@ -71,8 +73,8 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
    */
   bool supports_error_estimation() const override { return true; }
 
-  /// This integrator provides fifth order error estimates.
-  int get_error_estimate_order() const override { return 5; }
+  /// This integrator provides fourth order error estimates.
+  int get_error_estimate_order() const override { return 4; }
 
  private:
   void DoInitialize() override;

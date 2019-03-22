@@ -73,8 +73,12 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // x and inputs u (which may depend on t and x).
   // Define x⁽ᵃ⁾ ≜ {xc⁽ᵃ⁾, xd₀, xa₀} and u⁽ᵃ⁾ ≜ u(t⁽ᵃ⁾, x⁽ᵃ⁾).
 
-  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
-  // into a temporary since we'll be calculating more derivatives below.
+  // Notation: we use Butcher tableaux notation
+
+  // Save the continuous state at t₀.
+  context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
+
+  // Evaluate the derivative at t₀, xc₀.
   derivs1_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k1 = derivs1_->get_vector();
@@ -82,64 +86,67 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // Cache: k1 references a *copy* of the derivative result so is immune
   // to subsequent evaluations.
 
-  // Compute the first intermediate state and derivative
-  // (at t⁽ᵃ⁾=t₀+h/5, x⁽ᵃ⁾, u⁽ᵃ⁾).
+  // Compute the first intermediate state and derivative (i.e., Stage 2).
   const double c2 = 1.0 / 5;
   const double a21 = 1.0 / 5;
-
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. Note that xc is a live reference into the
   // context -- subsequent changes through that reference are unobservable so
   // will require manual out-of-date notifications.
   VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
-      t0 + c2 * h);                      // t⁽ᵃ⁾ ← t₀ + h/5
-  xc.CopyToPreSizedVector(&save_xc0_);   // Save xc₀ while we can.
-  xc.PlusEqScaled(a21 * h, k1);          // xc⁽ᵃ⁾ ← xc₀ + h/5 xcdot₀
+      t0 + c2 * h);
+  xc.PlusEqScaled(a21 * h, k1);
 
+  // Evaluate the derivative (denoted k2) at t₀ + c2 * h, xc₀ + a21 * h * k1.
   derivs2_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k2 = derivs2_->get_vector();  // xcdot⁽ᵃ⁾
 
-  // Cache: xcdot_a references a *copy* of the derivative result so is immune
+  // Cache: k2 references a *copy* of the derivative result so is immune
   // to subsequent evaluations.
 
-  // Compute the second intermediate state and derivative
-  // (at t⁽ᵇ⁾=t₁, x⁽ᵇ⁾, u⁽ᵇ⁾).
-
-  // This call marks t- and xc-dependent cache entries out of date, including
-  // the derivative cache entry. (We already have the xc reference but must
-  // issue the out-of-date notification here since we're about to change it.)
+  // Compute the second intermediate state and derivative (i.e., Stage 3).
   const double c3 = 3.0 / 10;
   const double a31 = 3.0 / 40;
   const double a32 = 9.0 / 40;
+  // This call marks t- and xc-dependent cache entries out of date, including
+  // the derivative cache entry. (We already have the xc reference but must
+  // issue the out-of-date notification here since we're about to change it.)
   context.SetTimeAndNoteContinuousStateChange(t0 + c3 * h);
 
-  // xcⱼ ← xc₀ - h xcdot₀ + 2 h xcdot⁽ᵃ⁾
+  // Evaluate the derivative (denoted k3) at t₀ + c3 * h,
+  //   xc₀ + a31 * h * k1 + a32 * h * k2.
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a31 * h, k1}, {a32 * h, k2}});
   derivs3_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k3 =  derivs3_->get_vector();
 
+  // Compute the third intermediate state and derivative (i.e., Stage 4).
   const double c4 = 4.0 / 5;
   const double a41 = 44.0 / 45;
   const double a42 = -56.0 / 15;
   const double a43 = 32.0 / 9;
   context.SetTimeAndNoteContinuousStateChange(t0 + c4 * h);
 
-  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  // Evaluate the derivative (denoted k4) at t₀ + c4 * h,
+  //   xc₀ + a41 * h * k1 + a42 * h * k2 + a43 * h * k3.
+  xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{a41 * h, k1}, {a42 * h, k2}, {a43 * h, k3}});
   derivs4_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k4 =  derivs4_->get_vector();
 
-
+  // Compute the fourth intermediate state and derivative (i.e., Stage 5).
   const double c5 = 8.0 / 9;
   const double a51 = 19372.0 / 6561;
   const double a52 = -25360.0 / 2187;
   const double a53 = 64448.0 / 6561;
   const double a54 = -212.0 / 729;
   context.SetTimeAndNoteContinuousStateChange(t0 + c5 * h);
+
+  // Evaluate the derivative (denoted k5) at t₀ + c5 * h,
+  //   xc₀ + a51 * h * k1 + a52 * h * k2 + a53 * h * k3 + a54 * h * k4.
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a51 * h, k1}, {a52 * h, k2}, {a53 * h, k3}, {a54 * h, k4}});
   derivs5_->get_mutable_vector().SetFrom(
@@ -150,13 +157,18 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // mark xc-dependent cache entries out of date, including xcdot_b; time
   // doesn't change here.
 
+  // Compute the fifth intermediate state and derivative (i.e., Stage 6).
   const double a61 = 9017.0 / 3168;
   const double a62 = -355.0 /33;
   const double a63 = 46732.0 / 5247;
   const double a64 = 49.0 / 176;
   const double a65 = -5103.0 / 18656;
   context.SetTimeAndNoteContinuousStateChange(t1);
-  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+
+  // Evaluate the derivative (denoted k6) at t₀ + c6 * h,
+  //   xc₀ + a61 * h * k1 + a62 * h * k2 + a63 * h * k3 + a64 * h * k4 +
+  //       a65 * h * k5.
+  xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{a61 * h, k1}, {a62 * h, k2}, {a63 * h, k3}, {a64 * h, k4},
       {a65 * h, k5}});
   derivs6_->get_mutable_vector().SetFrom(
@@ -168,20 +180,25 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // doesn't change here.
   context.NoteContinuousStateChange();
 
-  // Note: a72 is 0.0; it has been removed from the formula below.
+  // Compute the sixth intermediate state and derivative (i.e., Stage 7).
   const double a71 = 35.0 / 384;
   const double a73 = 500.0 / 1113;
   const double a74 = 125.0 / 192;
   const double a75 = -2187.0 / 6784;
   const double a76 = 11.0 / 84;
-  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+
+  // Evaluate the derivative (denoted k7) at t₀ + c6 * h,
+  //   xc₀ + a71 * h * k1 + a73 * h * k3 + a74 * h * k4 +
+  //       a75 * h * k5 + a76 * h * k6.
+  // Note: a72 is 0.0; terms that it scales have been removed from the formula.
+  xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{a71 * h, k1}, {a73 * h, k3}, {a74 * h, k4}, {a75 * h, k5},
       {a76 * h, k6}});
   derivs7_->get_mutable_vector().SetFrom(
       this->EvalTimeDerivatives(context).get_vector());
   const VectorBase<T>& k7 =  derivs7_->get_vector();
 
-  // Calculate the second solution that will be used for the error estimate.
+  // Calculate the 4th-order solution that will be used for the error estimate.
   // Note: d2 is 0.0; it has been removed from the formula below.
   const double d1 = 5179.0 / 57600;
   const double d3 = 7571.0 / 16695;
@@ -189,29 +206,35 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   const double d5 = -92097.0 / 339200;
   const double d6 = 187.0 / 2100;
   const double d7 = 1.0 / 40;
-  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{d1 * h, k1}, {d3 * h, k3}, {d4 * h, k4}, {d5 * h, k5},
       {d6 * h, k6}, {d7 * h, k7}});
+
+  // The error estimator vector will be set to y5 - y4, where y4 is the fourth
+  // order solution and y5 is the fifth order solution that we calculate below.
+  // Go ahead and set the error estimator vector to -y4.
   err_est_vec_ = -xc.CopyToVector();
 
   // If the size of the system has changed, the error estimate will no longer
   // be sized correctly. Verify that the error estimate is the correct size.
   DRAKE_DEMAND(this->get_error_estimate()->size() == xc.size());
 
-  // Calculate the final O(h5) state at t₁.
+  // Calculate the final O(h^5) state at t₁.
   // Note: b2 and b7 are 0.0; they have been removed from the formula below.
   const double b1 = 35.0 / 384;
   const double b3 = 500.0 / 1113;
   const double b4 = 125.0 / 192;
   const double b5 = -2187.0 / 6784;
   const double b6 = 11.0 / 84;
-  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{b1 * h, k1}, {b3 * h, k3}, {b4 * h, k4}, {b5 * h, k5},
       {b6 * h, k6}});
-  err_est_vec_ += xc.CopyToVector();  // ε ← xc₀
+
+  // Add y5 (defined above) to -y4 to yield the error estimator vector, which
+  // we then take the absolute value of.
+  err_est_vec_ += xc.CopyToVector();
   err_est_vec_ = err_est_vec_.cwiseAbs();
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
-
 
   // RK5 always succeeds in taking its desired step.
   return true;

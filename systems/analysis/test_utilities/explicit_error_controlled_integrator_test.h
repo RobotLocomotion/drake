@@ -1,6 +1,6 @@
 #pragma once
 
-#include <iomanip>
+#include
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -499,7 +499,7 @@ TYPED_TEST_P(PleidesTest, Pleides) {
   this->integrator->set_fixed_step_mode(false);
 
   // Request tight accuracy.
-  const double requested_accuracy = 1e-4;
+  const double requested_accuracy = 1e-10;
   this->integrator->set_target_accuracy(requested_accuracy);
 
   // Initialize the integrator.
