@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iomanip>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -515,10 +516,6 @@ TYPED_TEST_P(PleidesTest, Pleides) {
         this->context->get_time());
   for (int i = 0; i < q.size(); ++i)
     EXPECT_NEAR(q[i], q_des[i], 100 * requested_accuracy) << i;
-
-  // Check the statistics.
-  std::cout << "number of derivative evaluations: " << this->integrator->get_num_derivative_evaluations() << std::endl;
-  std::cout << "smallest step size taken: " << this->integrator->get_smallest_adapted_step_size_taken() << std::endl;
 }
 
 REGISTER_TYPED_TEST_CASE_P(PleidesTest, Pleides);

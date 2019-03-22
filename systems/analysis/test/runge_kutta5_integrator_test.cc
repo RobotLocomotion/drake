@@ -18,6 +18,7 @@ namespace analysis_test {
 
 typedef ::testing::Types<RungeKutta5Integrator<double>> Types;
 INSTANTIATE_TYPED_TEST_CASE_P(My, ExplicitErrorControlledIntegratorTest, Types);
+INSTANTIATE_TYPED_TEST_CASE_P(My, PleidesTest, Types);
 
 // A testing fixture for RK5 integrators, providing a simple
 // free body plant with closed form solutions to test against.
