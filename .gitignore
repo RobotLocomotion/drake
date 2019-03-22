@@ -66,3 +66,6 @@ xcode
 external/
 /user.bazelrc
 /gen/
+# See #10996 for more info.
+*.pyc
+__pycache__/
