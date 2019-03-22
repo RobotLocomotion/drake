@@ -31,10 +31,10 @@ class Intersection {
   /// @param region The region of the road network that should be considered
   /// part of the intersection.
   ///
-  /// @param ring The ring that defines the phases within the intersection. The
-  /// pointer must remain valid throughout this class instance's lifetime.
+  /// @param ring_id The ID of the ring that defines the phases within the
+  /// intersection.
   Intersection(const Id& id, const std::vector<rules::LaneSRange>& region,
-               const rules::RightOfWayPhaseRing* ring);
+               const rules::RightOfWayPhaseRing::Id& ring_id);
 
   virtual ~Intersection() = default;
 
@@ -48,14 +48,15 @@ class Intersection {
   /// Returns the region. See constructor parameter @p region for more details.
   const std::vector<rules::LaneSRange>& region() const { return region_; }
 
-  /// Returns the rules::RightOfWayPhaseRing that applies to this intersection.
-  /// See constructor parameter @p ring for more details.
-  const rules::RightOfWayPhaseRing* ring() const { return ring_; }
+  /// Returns the rules::RightOfWayPhaseRing::Id of the
+  /// rules::RightOfWayPhaseRing that applies to this intersection.
+  /// See constructor parameter @p ring_id for more details.
+  const rules::RightOfWayPhaseRing::Id& ring_id() const { return ring_id_; }
 
  private:
   const Id id_;
   const std::vector<rules::LaneSRange> region_;
-  const rules::RightOfWayPhaseRing* ring_{};
+  const rules::RightOfWayPhaseRing::Id ring_id_;
 };
 
 }  // namespace api
