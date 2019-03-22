@@ -33,7 +33,6 @@ from pydrake.systems.meshcat_visualizer import (
     MeshcatPointCloudVisualizer
 )
 from pydrake.common.eigen_geometry import Isometry3
-from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
 
 import pydrake.perception as mut
@@ -121,7 +120,8 @@ class TestMeshcat(unittest.TestCase):
             "extra_heavy_duty_table_surface_only_collision.sdf")
 
         # T: tabletop frame.
-        X_TObject = RigidTransform([0, 0, 0.2])
+        X_TObject = Isometry3.Identity()
+        X_TObject.set_translation([0, 0, 0.2])
 
         builder = DiagramBuilder()
         plant = MultibodyPlant(0.002)
@@ -175,7 +175,7 @@ class TestMeshcat(unittest.TestCase):
         plant.SetFreeBodyPose(
             mbp_context,
             plant.GetBodyByName("base_link", object_model),
-            X_WT.multiply(X_TObject).GetAsIsometry3())
+            X_WT.multiply(X_TObject))
 
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
