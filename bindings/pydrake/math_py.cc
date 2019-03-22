@@ -28,6 +28,11 @@ PYBIND11_MODULE(math, m) {
 
   py::module::import("pydrake.common.eigen_geometry");
 
+  const char* doc_iso3_depreaction =
+      "DO NOT USE!. We only offer this API for backwards compatibility with "
+      "Isometry3 and it will be deprecated soon with the resolution of "
+      "#9865.";
+
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
   // conversion.
@@ -143,14 +148,15 @@ PYBIND11_MODULE(math, m) {
       .def("multiply",
           [](const RigidTransform<T>* self, const Isometry3<T>& other) {
             WarnDeprecated(
-                "2019-21-03. "
+                "2019-03-21. "
                 "Do not mix RigidTransform with Isometry3. Only use "
                 "RigidTransform per #9865.");
             return *self * RigidTransform<T>(other);
           },
-          py::arg("other"))
-      .def("matrix", &RigidTransform<T>::matrix)
-      .def("linear", &RigidTransform<T>::linear, py_reference_internal);
+          py::arg("other"), doc_iso3_depreaction)
+      .def("matrix", &RigidTransform<T>::matrix, doc_iso3_depreaction)
+      .def("linear", &RigidTransform<T>::linear, py_reference_internal,
+          doc_iso3_depreaction);
   // .def("IsNearlyEqualTo", ...)
   // .def("IsExactlyEqualTo", ...)
 
