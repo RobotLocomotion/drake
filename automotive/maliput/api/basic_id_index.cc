@@ -58,6 +58,11 @@ const Lane* BasicIdIndex::DoGetLane(const LaneId& id) const {
   return find_or_nullptr(lane_map_, id);
 }
 
+const std::unordered_map<LaneId, const Lane*>& BasicIdIndex::DoGetLanes()
+    const {
+  return lane_map_;
+}
+
 
 const Segment* BasicIdIndex::DoGetSegment(const SegmentId& id) const {
   return find_or_nullptr(segment_map_, id);
