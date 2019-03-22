@@ -6,14 +6,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace test {
 
 class AutoDiffXdTest : public ::testing::Test {
  protected:
-  void SetUp() override {}
-
   // Evaluates a given function f with values of AutoDiffXd and values with
   // AutoDiffd<3>. It checks if the values and the derivatives of those
   // evaluation results are matched.
@@ -22,49 +21,37 @@ class AutoDiffXdTest : public ::testing::Test {
     // AutoDiffXd constants -- x and y.
     const AutoDiffXd x_xd{0.4};
     AutoDiffXd y_xd{0.3};
+
     // AutoDiffd<3> constants -- x and y.
     const AutoDiffd<3> x_3d{x_xd.value()};
     AutoDiffd<3> y_3d{y_xd.value()};
+
     // We only set the derivatives of y and leave x's uninitialized.
     y_xd.derivatives() = Eigen::VectorXd::Ones(3);
     y_3d.derivatives() = Eigen::Vector3d::Ones();
 
+    // Compute the expression results.
     const AutoDiffXd e_xd{f(x_xd, y_xd)};
     const AutoDiffd<3> e_3d{f(x_3d, y_3d)};
 
+    // Check the value() of each result.
     if (std::isnan(e_xd.value()) && std::isnan(e_3d.value())) {
-      // Both values are NaN.
+      // Both values are NaN.  In this case, we shall not compare the
+      // derivatives because they are allowed to be nonsense.
       return ::testing::AssertionSuccess();
     }
-    // Slightly different execution branches might lead to results that differ
-    // by a machine precision order of magnitude.
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
-    const double kValueTolerance =
-        10 * kEpsilon *
-        std::max(std::abs(e_xd.value()), std::abs(e_3d.value()));
-    if (std::abs(e_xd.value() - e_3d.value()) > kValueTolerance) {
+    if (!(e_xd.value() == e_3d.value())) {
       return ::testing::AssertionFailure()
              << "Values do not match: " << e_xd.value() << " and "
              << e_3d.value();
     }
-    if (e_xd.derivatives().array().isNaN().all() &&
-        e_3d.derivatives().array().isNaN().all()) {
-      // Both derivatives are NaN.
-      return ::testing::AssertionSuccess();
+
+    // Check the derivatives() of each result.  When an AutoDiffXd derivatives
+    // vector is empty, the implication is that all derivatives are zero.
+    if (e_xd.derivatives().size() == 0) {
+      return CompareMatrices(Eigen::Vector3d::Zero(), e_3d.derivatives());
     }
-    const double kDerivativeTolerance = 10 * kEpsilon;  // relative tolerance.
-    const bool derivatives_match =
-        // Zero derivatives.
-        (e_xd.derivatives().size() == 0 &&
-         e_3d.derivatives().isZero(kDerivativeTolerance)) ||
-        // Non-zero derivatives
-        e_xd.derivatives().isApprox(e_3d.derivatives(), kDerivativeTolerance);
-    if (!derivatives_match) {
-      return ::testing::AssertionFailure() << "Derivatives do not match:\n"
-                                           << e_xd.derivatives() << "\n----\n"
-                                           << e_3d.derivatives() << "\n";
-    }
-    return ::testing::AssertionSuccess();
+    return CompareMatrices(e_xd.derivatives(), e_3d.derivatives());
   }
 };
 
