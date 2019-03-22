@@ -402,14 +402,32 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "math_overloads_test",
-    deps = [
-        ":autodiffutils_py",
-        ":math_py",
-        ":symbolic_py",
-    ],
-)
+# N.B. We use this awkward dispatch to avoid needing to handle sharding
+# dispatch logic (which can be overridden), and permit `sys.modules` to start
+# fresh each time without resorting to multiprocess delegation from the script
+# itself.
+# TODO(eric): Consider making it easier for test composition with process
+# boundaries so we can remove this.
+_NUM_OVERLOAD_TESTS = 5
+
+[
+    drake_py_test(
+        name = "math_overloads_{}_test".format(i),
+        srcs = ["test/math_overloads_test.py"],
+        allow_import_unittest = True,
+        args = [
+            str(_NUM_OVERLOAD_TESTS),
+            str(i),
+        ],
+        main = "test/math_overloads_test.py",
+        deps = [
+            ":autodiffutils_py",
+            ":math_py",
+            ":symbolic_py",
+        ],
+    )
+    for i in range(_NUM_OVERLOAD_TESTS)
+]
 
 drake_py_unittest(
     name = "perception_test",
