@@ -402,13 +402,40 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "math_overloads_test",
+drake_py_library(
+    name = "math_overloads_test_utilities_py",
+    testonly = 1,
+    srcs = ["test/math_overloads_test_utilities.py"],
     deps = [
         ":autodiffutils_py",
         ":math_py",
         ":symbolic_py",
     ],
+)
+
+drake_py_unittest(
+    name = "math_overloads_float_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_sym_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_ad_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_sym_ad_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_ad_sym_test",
+    deps = [":math_overloads_test_utilities_py"],
 )
 
 drake_py_unittest(
