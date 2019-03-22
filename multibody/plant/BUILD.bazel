@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":coulomb_friction",
         ":externally_applied_spatial_force",
         ":implicit_stribeck_solver",
+        ":implicit_stribeck_solver_results",
         ":multibody_plant_core",
     ],
 )
@@ -89,6 +90,7 @@ drake_cc_library(
     ],
     deps = [
         "//common:default_scalars",
+        "//math:geometric_transform",
     ],
 )
 
@@ -100,7 +102,6 @@ drake_cc_library(
     hdrs = [
         "implicit_stribeck_solver_results.h",
     ],
-    tags = ["exclude_from_package"],
     deps = [
         "//common:default_scalars",
     ],

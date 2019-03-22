@@ -43,7 +43,7 @@ class FrameVelocity final : public BasicVector<T> {
   static constexpr int kSize = 6;
 
  protected:
-  FrameVelocity<T>* DoClone() const override;
+  DRAKE_NODISCARD FrameVelocity<T>* DoClone() const override;
 
  private:
   // Assigns the translational velocity p_WA.

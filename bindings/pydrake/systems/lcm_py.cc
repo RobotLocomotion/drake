@@ -173,7 +173,7 @@ PYBIND11_MODULE(lcm, m) {
             py::arg("state"), cls_doc.CopyLatestMessageInto.doc)
         .def("WaitForMessage", &Class::WaitForMessage,
             py::arg("old_message_count"), py::arg("message") = nullptr,
-            cls_doc.WaitForMessage.doc);
+            py::arg("timeout") = -1, cls_doc.WaitForMessage.doc);
   }
 
   {

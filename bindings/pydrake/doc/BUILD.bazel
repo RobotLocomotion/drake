@@ -3,7 +3,7 @@
 package(default_visibility = ["//visibility:private"])
 
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
-load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 drake_py_binary(
     name = "gen_sphinx",
@@ -36,8 +36,6 @@ drake_py_binary(
     deps = ["//doc:sphinx_base"],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
+add_lint_tests_pydrake(
     python_lint_exclude = [":conf.py"],
 )

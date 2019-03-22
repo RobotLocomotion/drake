@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -13,6 +14,7 @@
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/input_port_base.h"
+#include "drake/systems/framework/value_to_abstract_value.h"
 
 namespace drake {
 namespace systems {
@@ -96,9 +98,61 @@ class InputPort final : public InputPortBase {
   }
 #endif  // DRAKE_DOXYGEN_CXX
 
-  /** Returns true iff this port is connected.  Beware that at the moment, this
-  could be an expensive operation, because the value is brought up-to-date as
-  part of this operation. */
+  /** Provides a fixed value for this %InputPort in the given Context. If the
+  port is already connected, this value will override the connected source
+  value. (By "connected" we mean that the port appeared in a
+  DiagramBuilder::Connect() call.)
+
+  For vector-valued input ports, you can provide an Eigen vector expression,
+  a BasicVector object, or a scalar (treated as a Vector1). In each of these
+  cases the value is copied into a `Value<BasicVector>`. If the original
+  value was a BasicVector-derived object, its concrete type is maintained
+  although the stored type is still `Value<BasicVector>`. The supplied vector
+  must have the right size for the vector port or an std::logic_error is thrown.
+
+  For abstract-valued input ports, you can provide any ValueType that is
+  compatible with the model type provided when the port was declared. If the
+  type has a copy constructor it will be copied into a `Value<ValueType>`
+  object for storage. Otherwise it must have an accessible `Clone()` method and
+  it is stored using the type returned by that method, which must be ValueType
+  or a base class of ValueType. Eigen objects and expressions are not
+  accepted directly, but you can store then in abstract ports by providing
+  an already-abstract object like `Value<MatrixXd>(your_matrix)`.
+
+  The returned FixedInputPortValue reference may be used to modify the input
+  port's value subsequently using the appropriate FixedInputPortValue method,
+  which will ensure that cache invalidation notifications are delivered.
+
+  @tparam ValueType The type of the supplied `value` object. This will be
+      inferred so no template argument need be specified. The type must be
+      copy constructible or have an accessible `Clone()` method.
+
+  @param[in,out] context A Context that is compatible with the System that
+                         owns this port.
+  @param[in]     value   The fixed value for this port. Must be convertible
+                         to the input port's data type.
+  @returns a reference to the the FixedInputPortValue object in the Context
+           that contains this port's value.
+
+  @pre `context` is compatible with the System that owns this %InputPort.
+  @pre `value` is compatible with this %InputPort's data type. */
+  template <typename ValueType>
+  FixedInputPortValue& FixValue(Context<T>* context,
+                                const ValueType& value) const {
+    DRAKE_DEMAND(context != nullptr);
+    DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(*context));
+    const bool is_vector_port = (get_data_type() == kVectorValued);
+    std::unique_ptr<AbstractValue> abstract_value =
+        is_vector_port
+            ? internal::ValueToVectorValue<T>::ToAbstract(__func__, value)
+            : internal::ValueToAbstractValue::ToAbstract(__func__, value);
+    return context->FixInputPort(get_index(), std::move(abstract_value));
+  }
+
+  /** Returns true iff this port is connected or has had a fixed value provided
+  in the given Context.  Beware that at the moment, this could be an expensive
+  operation, because the value is brought up-to-date as part of this
+  operation. */
   bool HasValue(const Context<T>& context) const {
     DRAKE_ASSERT_VOID(get_system_base().ThrowIfContextNotCompatible(context));
     return DoEvalOptional(context);

@@ -4,6 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -17,7 +18,7 @@ namespace internal {
 /// A, expressed in the world frame W. See PenetrationAsPointPair for further
 /// details on the definition of each contact pair. Versors `Cx_W` and `Cy_W`
 /// constitute a basis of the plane normal to `Cz_W` and are arbitrarily chosen.
-/// Bellow, v denotes the vector of generalized velocities, of size `nv`.
+/// Below, v denotes the vector of generalized velocities, of size `nv`.
 /// @see MultibodyPlant::EvalContactJacobians().
 template <class T>
 struct ContactJacobians {
@@ -37,7 +38,7 @@ struct ContactJacobians {
 
   /// List of contact frames orientation R_WC in the world frame W for each
   /// contact pair.
-  std::vector<Matrix3<T>> R_WC_list;
+  std::vector<drake::math::RotationMatrix<T>> R_WC_list;
 };
 
 }  // namespace internal

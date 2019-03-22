@@ -83,22 +83,28 @@ TEST_F(SymbolicRationalFunctionTest, ConstructorWithError) {
   // numerator.
   const Polynomial p1(var_x_ * var_a_, {var_x_});
   const Polynomial p2(var_x_ * var_b_ + var_y_, {var_b_, var_y_});
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RationalFunction(p2, p1), std::logic_error,
-      "[^]* are used as decision variables in the numerator [^]*");
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RationalFunction(p2, p1), std::logic_error,
+        "[^]* are used as decision variables in the numerator [^]*");
+  }
   // The indeterminate in the numerator is a decision variable in the
   // denominator.
   const symbolic::Polynomial p3(var_x_ * var_y_, {var_y_});
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RationalFunction(p1, p3), std::logic_error,
-      "[^]* are used as indeterminates in the numerator [^]*");
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RationalFunction(p1, p3), std::logic_error,
+        "[^]* are used as indeterminates in the numerator [^]*");
+  }
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      RationalFunction(Polynomial(var_a_ * var_x_, {var_x_}),
-                       Polynomial(var_a_ * var_x_, {var_a_})),
-      std::logic_error,
-      "[^]* are used as indeterminates in the numerator [^]* are used as "
-      "decision variables in the numerator [^]*");
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        RationalFunction(Polynomial(var_a_ * var_x_, {var_x_}),
+                         Polynomial(var_a_ * var_x_, {var_a_})),
+        std::logic_error,
+        "[^]* are used as indeterminates in the numerator [^]* are used as "
+        "decision variables in the numerator [^]*");
+  }
 }
 
 TEST_F(SymbolicRationalFunctionTest, EqualTo) {
@@ -141,24 +147,35 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   EXPECT_PRED2(RationalFunctionEqual, f1_f2_sum, f1_f2_sum_expected);
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p5_, p6_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p5_, p2_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p2_, p5_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) + f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) + f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) + f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) += f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) += f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) += f3,
-                              std::runtime_error, polynomial_invariant_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p5_, p6_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p5_, p2_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + RationalFunction(p2_, p5_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) + f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) + f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) + f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) += f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) += f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) += f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+  }
 
   const RationalFunction f1_p3_sum_expected(p1_ + p2_ * p3_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 + p3_, f1_p3_sum_expected);
@@ -167,10 +184,12 @@ TEST_F(SymbolicRationalFunctionTest, Addition) {
   f1_p3_sum += p3_;
   EXPECT_PRED2(RationalFunctionEqual, f1_p3_sum, f1_p3_sum_expected);
   // p5 contains variable a in its indeterminates.
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_, std::runtime_error,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3, std::runtime_error,
-                              polynomial_invariant_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 + p5_, std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ + f3, std::runtime_error,
+                                polynomial_invariant_error_);
+  }
 
   const double c = 2;
   const RationalFunction f1_c_sum_expected(p1_ + c * p2_, p2_);
@@ -192,24 +211,35 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
   EXPECT_PRED2(RationalFunctionEqual, f1_minus_f2, f1_minus_f2_expected);
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 - RationalFunction(p5_, p6_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 - RationalFunction(p5_, p2_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 - RationalFunction(p2_, p5_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) - f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) - f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) - f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) -= f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) -= f3,
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) -= f3,
-                              std::runtime_error, polynomial_invariant_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - RationalFunction(p5_, p6_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - RationalFunction(p5_, p2_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - RationalFunction(p2_, p5_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) - f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) - f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) - f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) -= f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) -= f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) -= f3,
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+  }
 
   const RationalFunction f1_minus_p3_expected(p1_ - p2_ * p3_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 - p3_, f1_minus_p3_expected);
@@ -218,10 +248,12 @@ TEST_F(SymbolicRationalFunctionTest, Subtraction) {
   f1_minus_p3 -= p3_;
   EXPECT_PRED2(RationalFunctionEqual, f1_minus_p3, f1_minus_p3_expected);
   // p5 contains variable a in its indeterminates.
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_, std::runtime_error,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3, std::runtime_error,
-                              polynomial_invariant_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 - p5_, std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ - f3, std::runtime_error,
+                                polynomial_invariant_error_);
+  }
 
   const double c = 2;
   const RationalFunction f1_minus_c_expected(p1_ - p2_ * c, p2_);
@@ -243,25 +275,30 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
   EXPECT_PRED2(RationalFunctionEqual, f1_times_f2, f1_times_f2_expected);
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p5_, p6_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p5_, p2_), std::logic_error,
-                              rational_function_indeterminates_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p5_, p6_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p5_, p2_),
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(f3 * RationalFunction(p2_, p5_),
                               std::runtime_error, polynomial_invariant_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) * f3,
                               std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) * f3, std::logic_error,
-                              rational_function_indeterminates_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) * f3,
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) * f3,
                               std::runtime_error, polynomial_invariant_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) *= f3,
                               std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) *= f3,
-                              std::logic_error,
-                              rational_function_indeterminates_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) *= f3,
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) *= f3,
                               std::runtime_error, polynomial_invariant_error_);
+  }
 
   const RationalFunction f1_times_p3_expected(p1_ * p3_, p2_);
   EXPECT_PRED2(RationalFunctionEqual, f1 * p3_, f1_times_p3_expected);
@@ -270,10 +307,12 @@ TEST_F(SymbolicRationalFunctionTest, Product) {
   f1_times_p3 *= p3_;
   EXPECT_PRED2(RationalFunctionEqual, f1_times_p3, f1_times_p3_expected);
   // p5 contains variable a in its indeterminates.
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 * p5_, std::logic_error,
-                              rational_function_indeterminates_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(p5_ * f3, std::logic_error,
-                              rational_function_indeterminates_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 * p5_, std::logic_error,
+                                rational_function_indeterminates_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ * f3, std::logic_error,
+                                rational_function_indeterminates_error_);
+  }
 
   const double c = 2;
   const RationalFunction f1_times_c_expected(p1_ * c, p2_);
@@ -295,25 +334,31 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   EXPECT_PRED2(RationalFunctionEqual, f1_divides_f2, f1_divides_f2_expected);
   // p5, p6 contains variable a in its indeterminates.
   const RationalFunction f3(p1_, p3_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p5_, p6_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p5_, p2_),
-                              std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p2_, p5_), std::logic_error,
-                              rational_function_indeterminates_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p5_, p6_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p5_, p2_),
+                                std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / RationalFunction(p2_, p5_),
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) / f3,
                               std::runtime_error, polynomial_invariant_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) / f3,
                               std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) / f3, std::logic_error,
-                              rational_function_indeterminates_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) / f3,
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p6_) /= f3,
                               std::runtime_error, polynomial_invariant_error_);
   DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p5_, p2_) /= f3,
                               std::runtime_error, polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) /= f3,
-                              std::logic_error,
-                              rational_function_indeterminates_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p2_, p5_) /= f3,
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
+  }
 
   const RationalFunction p3_divides_f1_expected(p1_, p2_ * p3_);
   EXPECT_PRED2(RationalFunctionEqual, f1 / p3_, p3_divides_f1_expected);
@@ -321,13 +366,15 @@ TEST_F(SymbolicRationalFunctionTest, Division) {
   RationalFunction p3_divides_f1 = f1;
   p3_divides_f1 /= p3_;
   EXPECT_PRED2(RationalFunctionEqual, p3_divides_f1, p3_divides_f1_expected);
-  DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_, std::runtime_error,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3, std::runtime_error,
-                              polynomial_invariant_error_);
-  DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p3_, p1_) / p5_,
-                              std::logic_error,
-                              rational_function_indeterminates_error_);
+  if (kDrakeAssertIsArmed) {
+    DRAKE_EXPECT_THROWS_MESSAGE(f3 / p5_, std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(p5_ / f3, std::runtime_error,
+                                polynomial_invariant_error_);
+    DRAKE_EXPECT_THROWS_MESSAGE(RationalFunction(p3_, p1_) / p5_,
+                                std::logic_error,
+                                rational_function_indeterminates_error_);
+  }
 
   const double c = 2;
   const RationalFunction c_divides_f1_expected(p1_, p2_ * c);

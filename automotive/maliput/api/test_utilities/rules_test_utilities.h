@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/rules/regions.h"
+#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/common/unused.h"
 
@@ -219,6 +220,20 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   return ::testing::internal::CmpHelperEQ(a_expression, b_expression, a, b);
 }
 
+/// Predicate-formatter which tests equality of Bulb::BoundingBox.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const Bulb::BoundingBox& a,
+                                          const Bulb::BoundingBox& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  for (int i = 0; i < 3; ++i) {
+    MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.p_BMin(i), b.p_BMin(i)));
+    MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.p_BMax(i), b.p_BMax(i)));
+  }
+  return c.result();
+}
+
 /// Predicate-formatter which tests equality of Bulb.
 inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
@@ -241,6 +256,7 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   for (int i = 0; i < smallest; ++i) {
     MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a_states[i], b_states[i]));
   }
+  MALIPUT_IS_EQUAL(a.bounding_box(), b.bounding_box());
   return c.result();
 }
 
@@ -298,6 +314,53 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   }
   return c.result();
 }
+
+/// Predicate-formatter which tests equality of RuleStates.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const RuleStates& a,
+                                          const RuleStates& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.size(), b.size()));
+  for (const auto& rule_state : a) {
+    MALIPUT_ADD_RESULT(
+        c, MALIPUT_IS_EQUAL(b.at(rule_state.first), rule_state.second));
+  }
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of optional<BulbStates>.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const optional<BulbStates>& a,
+                                          const optional<BulbStates>& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.has_value(), b.has_value()));
+  if (a.has_value()) {
+    MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a->size(), b->size()));
+    for (const auto& bulb_state : *a) {
+      MALIPUT_ADD_RESULT(
+          c, MALIPUT_IS_EQUAL(b->at(bulb_state.first), bulb_state.second));
+    }
+  }
+  return c.result();
+}
+
+/// Predicate-formatter which tests equality of RightOfWayPhase.
+inline ::testing::AssertionResult IsEqual(const char* a_expression,
+                                          const char* b_expression,
+                                          const RightOfWayPhase& a,
+                                          const RightOfWayPhase& b) {
+  unused(a_expression, b_expression);
+  AssertionResultCollector c;
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.rule_states(), b.rule_states()));
+  MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.bulb_states(), b.bulb_states()));
+  return c.result();
+}
+
 }  // namespace test
 }  // namespace rules
 }  // namespace api

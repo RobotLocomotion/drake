@@ -110,11 +110,13 @@ class PyFunctionCost : public Cost {
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
       Eigen::VectorXd* y) const override {
+    y->resize(1);
     (*y)[0] = double_func_(x);
   }
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
       AutoDiffVecXd* y) const override {
+    y->resize(1);
     (*y)[0] = autodiff_func_(x);
   }
 
@@ -334,27 +336,30 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           [](const MathematicalProgramResult& self, int solution_number) {
             return self.get_suboptimal_objective(solution_number);
           },
-          doc.MathematicalProgramResult.get_suboptimal_objective.doc);
+          doc.MathematicalProgramResult.get_suboptimal_objective.doc)
+      .def("EvalBinding",
+          [](const MathematicalProgramResult& self,
+              const Binding<EvaluatorBase>& binding) {
+            return self.EvalBinding(binding);
+          },
+          doc.MathematicalProgramResult.EvalBinding.doc);
 
   py::class_<MathematicalProgram> prog_cls(
       m, "MathematicalProgram", doc.MathematicalProgram.doc);
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc)
       .def("NewContinuousVariables",
-          // NOLINTNEXTLINE(whitespace/parens)
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(
               int, const std::string&)>(
               &MathematicalProgram::NewContinuousVariables),
           py::arg("rows"), py::arg("name") = "x",
           doc.MathematicalProgram.NewContinuousVariables.doc_2args)
       .def("NewContinuousVariables",
-          // NOLINTNEXTLINE(whitespace/parens)
           static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               int, int, const std::string&)>(
               &MathematicalProgram::NewContinuousVariables),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "x",
           doc.MathematicalProgram.NewContinuousVariables.doc_3args)
       .def("NewBinaryVariables",
-          // NOLINTNEXTLINE(whitespace/parens)
           static_cast<VectorXDecisionVariable (MathematicalProgram::*)(int,
               const std::string&)>(&MathematicalProgram::NewBinaryVariables),
           py::arg("rows"), py::arg("name") = "b",
@@ -388,13 +393,11 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               &MathematicalProgram::NewSosPolynomial),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
       .def("NewIndeterminates",
-          // NOLINTNEXTLINE(whitespace/parens)
           static_cast<VectorXIndeterminate (MathematicalProgram::*)(int,
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("name") = "x",
           doc.MathematicalProgram.NewIndeterminates.doc_2args)
       .def("NewIndeterminates",
-          // NOLINTNEXTLINE(whitespace/parens)
           static_cast<MatrixXIndeterminate (MathematicalProgram::*)(int, int,
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "X",
@@ -560,26 +563,26 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           py::arg("A"), py::arg("b"), py::arg("vars"),
           doc.MathematicalProgram.AddL2NormCost.doc)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Polynomial&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_p_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
-              const Polynomial&)>(&MathematicalProgram::AddSosConstraint),
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const Polynomial&)>(
+              &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_p)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
+          static_cast<MatrixXDecisionVariable (MathematicalProgram::*)(
               const Expression&, const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_2args_e_monomial_basis)
       .def("AddSosConstraint",
-          static_cast<std::pair<MatrixXDecisionVariable,
-              Binding<LinearEqualityConstraint>> (MathematicalProgram::*)(
-              const Expression&)>(&MathematicalProgram::AddSosConstraint),
+          static_cast<
+              std::pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>> (
+                  MathematicalProgram::*)(const Expression&)>(
+              &MathematicalProgram::AddSosConstraint),
           doc.MathematicalProgram.AddSosConstraint.doc_1args_e)
       .def("AddVisualizationCallback",
           static_cast<Binding<VisualizationCallback> (MathematicalProgram::*)(
@@ -769,9 +772,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
           },
           py::arg("decision_variables"),
           py::arg("decision_variables_new_values"), py::arg("values"),
-          doc.MathematicalProgram
-              .SetDecisionVariableValueInVector
-              // NOLINTNEXTLINE(whitespace/line_length)
+          doc.MathematicalProgram.SetDecisionVariableValueInVector
               .doc_3args_decision_variables_decision_variables_new_values_values)
       .def("SetSolverOption", &SetSolverOptionBySolverType<double>,
           doc.MathematicalProgram.SetSolverOption.doc)
@@ -822,7 +823,7 @@ PYBIND11_MODULE(mathematicalprogram, m) {
       using T_y = decltype(dummy_y);
       cls.def("Eval",
           [](const Class& self, const Eigen::Ref<const VectorX<T_x>>& x) {
-            VectorX<T_y> y;
+            VectorX<T_y> y(self.num_outputs());
             self.Eval(x, &y);
             return y;
           },

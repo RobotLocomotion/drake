@@ -82,7 +82,7 @@ void DefineFrameworkPyValues(py::module m) {
             [](BasicVector<T>* self, int index) -> T& {
               return self->GetAtIndex(index);
             },
-            py_reference_internal, doc.BasicVector.GetAtIndex.doc)
+            py_reference_internal, doc.VectorBase.GetAtIndex.doc)
         .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
@@ -122,11 +122,26 @@ void DefineFrameworkPyValues(py::module m) {
   // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
   AddValueInstantiation<string>(m);
 
+  // Add `Value<bool>` instantiation (visible in Python as `Value[bool]`).
+  AddValueInstantiation<bool>(m);
+
   // Add `Value<>` instantiations for basic vectors templated on common scalar
   // types.
   auto bind_abstract_basic_vectors = [m](auto dummy) {
     using T = decltype(dummy);
-    AddValueInstantiation<BasicVector<T>>(m);
+    auto cls = AddValueInstantiation<BasicVector<T>>(m);
+    cls  // BR
+        .def("set_value",
+            [](Value<BasicVector<T>>* self, const T& value) {
+              self->set_value(BasicVector<T>{value});
+            },
+            py::arg("value"))
+        .def("set_value",
+            [](Value<BasicVector<T>>* self,
+                const Eigen::Ref<const Eigen::VectorXd>& value) {
+              self->set_value(BasicVector<T>(value));
+            },
+            py::arg("value"));
   };
   type_visit(bind_abstract_basic_vectors, pysystems::CommonScalarPack{});
 

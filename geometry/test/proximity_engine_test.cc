@@ -1715,6 +1715,32 @@ INSTANTIATE_TEST_CASE_P(SphereBoxBoundary, SignedDistancePairTest,
 INSTANTIATE_TEST_CASE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundaryTransform()));
 
+// This tests that signed distance queries against a halfspace throw an
+// intelligible exception rather than a segfault.
+GTEST_TEST(SignedDistancePairError, HalfspaceException) {
+  // Note: this doesn't fully test the condition for emitting the error; we
+  // have no *real* control over which geometry is the first geometry and
+  // second geometry in the pair being tested. However, this test isn't
+  // intended to be long-lasting; we want to correct FCL's short-coming soon
+  // so that the behavior (and this test) can be removed.
+  ProximityEngine<double> engine;
+  std::vector<GeometryId> geometry_map;
+
+  Sphere sphere{0.5};
+  engine.AddDynamicGeometry(sphere, GeometryIndex(0));
+  geometry_map.push_back(GeometryId::get_new_id());
+
+  HalfSpace halfspace;
+  engine.AddAnchoredGeometry(halfspace, Isometry3d::Identity(),
+                             GeometryIndex(1));
+  geometry_map.push_back(GeometryId::get_new_id());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      engine.ComputeSignedDistancePairwiseClosestPoints(geometry_map),
+      std::logic_error,
+      "Signed distance .* halfspaces .* not .* supported.* Try .* box .*");
+}
+
 // Concentric geometries A, B do not have a unique pair of witness points
 // Na, Nb. We inherit another test fixture from SignedDistancePairTest, so we
 // can define another TEST_P that checks |Na-Nb| = -signed_distance but does

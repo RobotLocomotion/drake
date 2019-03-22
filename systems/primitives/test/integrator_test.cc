@@ -56,7 +56,8 @@ TEST_F(IntegratorTest, Topology) {
 // Tests that the output of an integrator is its state.
 TEST_F(IntegratorTest, Output) {
   ASSERT_EQ(1, context_->get_num_input_ports());
-  context_->FixInputPort(0, BasicVector<double>::Make({1.0, 2.0, 3.0}));
+  integrator_->get_input_port(0).FixValue(context_.get(),
+      Eigen::Vector3d{1.0, 2.0, 3.0});
 
   Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, integrator_->get_output_port(0).Eval(*context_));
@@ -69,7 +70,8 @@ TEST_F(IntegratorTest, Output) {
 // Tests that the derivatives of an integrator's state are its input.
 TEST_F(IntegratorTest, Derivatives) {
   ASSERT_EQ(1, context_->get_num_input_ports());
-  context_->FixInputPort(0, BasicVector<double>::Make({1.0, 2.0, 3.0}));
+  integrator_->get_input_port(0).FixValue(context_.get(),
+                                          Eigen::Vector3d{1.0, 2.0, 3.0});
 
   integrator_->CalcTimeDerivatives(*context_, derivatives_.get());
   Eigen::Vector3d expected(1.0, 2.0, 3.0);
@@ -90,11 +92,10 @@ class SymbolicIntegratorTest : public IntegratorTest {
     symbolic_derivatives_ = symbolic_integrator_->AllocateTimeDerivatives();
 
     ASSERT_EQ(1, symbolic_context_->get_num_input_ports());
-    symbolic_context_->FixInputPort(
-        0, BasicVector<symbolic::Expression>::Make(
-            symbolic::Variable("u0"),
-            symbolic::Variable("u1"),
-            symbolic::Variable("u2")));
+    symbolic_integrator_->get_input_port(0).FixValue(symbolic_context_.get(),
+        Vector3<symbolic::Expression>{symbolic::Variable("u0"),
+                                      symbolic::Variable("u1"),
+                                      symbolic::Variable("u2")});
 
     auto& xc = symbolic_context_->get_mutable_continuous_state_vector();
     xc[0] = symbolic::Variable("x0");

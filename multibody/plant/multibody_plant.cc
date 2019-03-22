@@ -41,6 +41,7 @@ using systems::InputPort;
 using systems::OutputPort;
 using systems::State;
 
+using drake::math::RotationMatrix;
 using drake::multibody::MultibodyForces;
 using drake::multibody::SpatialAcceleration;
 using drake::multibody::SpatialForce;
@@ -764,7 +765,7 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     const systems::Context<T>& context,
     const std::vector<geometry::PenetrationAsPointPair<T>>& point_pairs_set,
     MatrixX<T>* Jn_ptr, MatrixX<T>* Jt_ptr,
-    std::vector<Matrix3<T>>* R_WC_set) const {
+    std::vector<RotationMatrix<T>>* R_WC_set) const {
   DRAKE_DEMAND(Jn_ptr != nullptr);
   DRAKE_DEMAND(Jt_ptr != nullptr);
 
@@ -835,13 +836,13 @@ void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
     // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
     // arbitrary, with the only requirement being that they form a valid right
     // handed basis with nhat_BA.
-    const Matrix3<T> R_WC = math::ComputeBasisFromAxis(2, nhat_BA_W);
+    const RotationMatrix<T> R_WC(math::ComputeBasisFromAxis(2, nhat_BA_W));
     if (R_WC_set != nullptr) {
       R_WC_set->push_back(R_WC);
     }
 
-    const Vector3<T> that1_W = R_WC.col(0);  // that1 = Cx.
-    const Vector3<T> that2_W = R_WC.col(1);  // that2 = Cy.
+    const Vector3<T> that1_W = R_WC.matrix().col(0);  // that1 = Cx.
+    const Vector3<T> that2_W = R_WC.matrix().col(1);  // that2 = Cy.
 
     // The velocity of Bc relative to Ac is
     //   v_AcBc_W = v_WBc - v_WAc.
@@ -983,7 +984,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       EvalPointPairPenetrations(context);
-  const std::vector<Matrix3<T>>& R_WC_set =
+  const std::vector<RotationMatrix<T>>& R_WC_set =
       EvalContactJacobians(context).R_WC_list;
   const internal::ImplicitStribeckSolverResults<T>& solver_results =
       EvalImplicitStribeckResults(context);
@@ -1010,7 +1011,7 @@ void MultibodyPlant<T>::CalcContactResults(
 
     const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
 
-    const Matrix3<T>& R_WC = R_WC_set[icontact];
+    const RotationMatrix<T>& R_WC = R_WC_set[icontact];
 
     // Contact forces applied on B at contact point C.
     const Vector3<T> f_Bc_C(-ft(2 * icontact), -ft(2 * icontact + 1),
@@ -1725,7 +1726,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         point_pairs_cache = this->CalcPointPairPenetrations(context);
       },
       {this->configuration_ticket()});
-  cache_indexes_.point_pairs_ = point_pairs_cache_entry.cache_index();
+  cache_indexes_.point_pairs = point_pairs_cache_entry.cache_index();
 
   // Cache contact Jacobians.
   auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
@@ -1745,7 +1746,7 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // Eval() above implicitly evaluates configuration dependent cache
       // entries.
       {this->configuration_ticket()});
-  cache_indexes_.contact_jacobians_ =
+  cache_indexes_.contact_jacobians =
       contact_jacobians_cache_entry.cache_index();
 
   // Cache ImplicitStribeckSolver computations.
@@ -1758,17 +1759,34 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       [this](const systems::ContextBase& context_base,
              AbstractValue* cache_value) {
         auto& context = dynamic_cast<const Context<T>&>(context_base);
-        auto& implicit_stribeck_solver_cache =
-            cache_value->get_mutable_value<
-                internal::ImplicitStribeckSolverResults<T>>();
+        auto& implicit_stribeck_solver_cache = cache_value->get_mutable_value<
+            internal::ImplicitStribeckSolverResults<T>>();
         this->CalcImplicitStribeckResults(context,
                                           &implicit_stribeck_solver_cache);
       },
-      // We explicitly declare the kinematics (q and v) dependence even though
-      // the Eval() above implicitly evaluates kinematics dependent cache
-      // entries.
-      {this->kinematics_ticket()});
-  cache_indexes_.implicit_stribeck_solver_results_ =
+      // The Correct Solution:
+      // The Implicit Stribeck solver solution S is a function of state x,
+      // actuation input u (and externally applied forces) and even time if any
+      // of the force elements in the model is time dependent. We can write this
+      // as S = S(t, x, u).
+      // Even though this variables can change continuously with time, we want
+      // the solver solution to be updated periodically (with period
+      // time_step()) only. That is, ImplicitStribeckSolverResults should be
+      // handled as an abstract state with periodic updates. In the systems::
+      // framework terminology, we'd like to have an "unrestricted update" with
+      // a periodic event trigger.
+      // The Problem (#10149):
+      // From issue #10149 we know unrestricted updates incur a very noticeably
+      // performance hit that at this stage we are not willing to pay.
+      // The Work Around (#10888):
+      // To emulate the correct behavior until #10149 is addressed we declare
+      // the Implicit Stribeck solver solution dependent only on the discrete
+      // state. This is not the correct solution given these results do depend
+      // on time and (even continuous) inputs. However it does emulate the
+      // discrete update of these values as if zero-order held, which is what we
+      // want.
+      {this->xd_ticket()});
+  cache_indexes_.implicit_stribeck_solver_results =
       implicit_stribeck_solver_cache_entry.cache_index();
 
   // Cache contact results.
@@ -1785,8 +1803,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       // We explicitly declare the dependence on the implicit Stribeck solver
       // even though the Eval() above does the evaluation.
       {this->cache_entry_ticket(
-          cache_indexes_.implicit_stribeck_solver_results_)});
-  cache_indexes_.contact_results_ = contact_results_cache_entry.cache_index();
+          cache_indexes_.implicit_stribeck_solver_results)});
+  cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 }
 
 template <typename T>

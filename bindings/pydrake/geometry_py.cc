@@ -10,6 +10,7 @@
 #include "drake/geometry/geometry_visualization.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace pydrake {
@@ -138,6 +139,27 @@ PYBIND11_MODULE(geometry, m) {
           doc.PenetrationAsPointPair.nhat_BA_W.doc)
       .def_readwrite("depth", &PenetrationAsPointPair<T>::depth,
           doc.PenetrationAsPointPair.depth.doc);
+
+  // Shape constructors
+  {
+    py::class_<Shape>(m, "Shape", doc.Shape.doc);
+    py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
+        .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc);
+    py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
+        .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
+            doc.Cylinder.ctor.doc);
+    py::class_<Box, Shape>(m, "Box", doc.Box.doc)
+        .def(py::init<double, double, double>(), py::arg("width"),
+            py::arg("depth"), py::arg("height"), doc.Box.ctor.doc);
+    py::class_<HalfSpace, Shape>(m, "HalfSpace", doc.HalfSpace.doc)
+        .def(py::init<>(), doc.HalfSpace.ctor.doc);
+    py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)
+        .def(py::init<std::string, double>(), py::arg("absolute_filename"),
+            py::arg("scale") = 1.0, doc.Mesh.ctor.doc);
+    py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
+        .def(py::init<std::string, double>(), py::arg("absolute_filename"),
+            py::arg("scale") = 1.0, doc.Convex.ctor.doc);
+  }
 }
 
 }  // namespace

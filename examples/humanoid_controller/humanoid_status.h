@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/drake_nodiscard.h"
 #include "drake/common/eigen_stl_types.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/rigid_body_tree_alias_groups.h"
@@ -197,7 +198,7 @@ class HumanoidStatus final
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
-  RobotKinematicState<double>* DoClone() const override {
+  DRAKE_NODISCARD RobotKinematicState<double>* DoClone() const override {
     return new HumanoidStatus(*this);
   }
 

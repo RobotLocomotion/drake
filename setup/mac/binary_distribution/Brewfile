@@ -22,7 +22,7 @@ brew 'python@2'
 brew 'scipy'
 brew 'tinyxml'
 brew 'tinyxml2'
-brew 'vtk@8.1'
+brew 'vtk@8.2'
 brew 'yaml-cpp'
 brew 'zeromq'
 

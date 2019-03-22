@@ -914,25 +914,27 @@ size_t MathematicalProgram::FindIndeterminateIndex(const Variable& var) const {
   return it->second;
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
-MathematicalProgram::AddSosConstraint(
+MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Polynomial& p,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   const auto pair = NewSosPolynomial(monomial_basis);
   const symbolic::Polynomial& sos_poly{pair.first};
   const MatrixXDecisionVariable& Q{pair.second};
-  const auto leq_binding = AddLinearEqualityConstraint(sos_poly == p);
-  return make_pair(Q, leq_binding);
+  const symbolic::Polynomial poly_diff = sos_poly - p;
+  for (const auto& term : poly_diff.monomial_to_coefficient_map()) {
+    AddLinearEqualityConstraint(term.second, 0);
+  }
+  return Q;
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(const symbolic::Polynomial& p) {
-  return AddSosConstraint(
-      p, ConstructMonomialBasis(p));
+  const VectorX<symbolic::Monomial> m = ConstructMonomialBasis(p);
+  const MatrixXDecisionVariable Q = AddSosConstraint(p, m);
+  return std::make_pair(Q, m);
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
-MathematicalProgram::AddSosConstraint(
+MatrixXDecisionVariable MathematicalProgram::AddSosConstraint(
     const symbolic::Expression& e,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis) {
   return AddSosConstraint(
@@ -940,7 +942,7 @@ MathematicalProgram::AddSosConstraint(
       monomial_basis);
 }
 
-pair<MatrixXDecisionVariable, Binding<LinearEqualityConstraint>>
+pair<MatrixXDecisionVariable, VectorX<symbolic::Monomial>>
 MathematicalProgram::AddSosConstraint(const symbolic::Expression& e) {
   return AddSosConstraint(
       symbolic::Polynomial{e, symbolic::Variables{indeterminates_}});

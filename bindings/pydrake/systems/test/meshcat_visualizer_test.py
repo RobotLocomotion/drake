@@ -1,5 +1,22 @@
+"""
+Tests for meshcat functionality.
+
+Example workflow visualize a specific test case:
+
+    # Terminal 1: Run Server.
+    bazel run @meshcat_python//:meshcat-server -- \
+        --zmq-url=tcp://127.0.0.1:6000
+
+    # Terminal 2: Run test case.
+    bazel run --run_under='env TEST_ZMQ_URL=tcp://127.0.0.1:6000' \
+        //bindings/pydrake/systems:py/meshcat_visualizer_test -- \
+        'TestMeshcat.test_point_cloud_visualization'
+"""
+
+import os
 import unittest
 
+import meshcat
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -9,16 +26,24 @@ from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph)
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import AbstractValue, DiagramBuilder
 from pydrake.systems.meshcat_visualizer import (
     MeshcatVisualizer,
-    MeshcatContactVisualizer
+    MeshcatContactVisualizer,
+    MeshcatPointCloudVisualizer
 )
 from pydrake.common.eigen_geometry import Isometry3
 from pydrake.multibody.plant import MultibodyPlant
 
+import pydrake.perception as mut
+
+ZMQ_URL = os.environ.get("TEST_ZMQ_URL")
+
 
 class TestMeshcat(unittest.TestCase):
+    def setUp(self):
+        np.random.seed(42)
+
     def test_cart_pole(self):
         """Cart-Pole with simple geometry."""
         file_name = FindResourceOrThrow(
@@ -32,7 +57,7 @@ class TestMeshcat(unittest.TestCase):
         assert cart_pole.geometry_source_is_registered()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=None,
+                                                         zmq_url=ZMQ_URL,
                                                          open_browser=False))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
@@ -67,7 +92,7 @@ class TestMeshcat(unittest.TestCase):
         kuka.Finalize()
 
         visualizer = builder.AddSystem(MeshcatVisualizer(scene_graph,
-                                                         zmq_url=None,
+                                                         zmq_url=ZMQ_URL,
                                                          open_browser=False))
         builder.Connect(scene_graph.get_pose_bundle_output_port(),
                         visualizer.get_input_port(0))
@@ -115,7 +140,7 @@ class TestMeshcat(unittest.TestCase):
         # Add meshcat visualizer.
         viz = builder.AddSystem(
             MeshcatVisualizer(scene_graph,
-                              zmq_url=None,
+                              zmq_url=ZMQ_URL,
                               open_browser=False))
         builder.Connect(
             scene_graph.get_pose_bundle_output_port(),
@@ -194,3 +219,66 @@ class TestMeshcat(unittest.TestCase):
         simulator = Simulator(diagram, diagram_context)
         simulator.set_publish_every_time_step(False)
         simulator.StepTo(1.0)
+
+    def test_point_cloud_visualization(self):
+        """A small point cloud"""
+
+        draw_period = 1 / 30.
+        sim_time = draw_period * 3.
+
+        def se3_from_xyz(xyz):
+            return Isometry3(np.eye(3), xyz)
+
+        def show_cloud(pc, use_native=False, **kwargs):
+            # kwargs go to ctor.
+            builder = DiagramBuilder()
+            # Add point cloud visualization.
+            if use_native:
+                viz = meshcat.Visualizer(zmq_url=ZMQ_URL)
+            else:
+                plant, scene_graph = AddMultibodyPlantSceneGraph(builder)
+                plant.Finalize()
+                viz = builder.AddSystem(MeshcatVisualizer(
+                    scene_graph, zmq_url=ZMQ_URL, open_browser=False))
+                builder.Connect(
+                    scene_graph.get_pose_bundle_output_port(),
+                    viz.get_input_port(0))
+            pc_viz = builder.AddSystem(
+                MeshcatPointCloudVisualizer(viz, **kwargs))
+            # Make sure the system runs.
+            diagram = builder.Build()
+            diagram_context = diagram.CreateDefaultContext()
+            context = diagram.GetMutableSubsystemContext(
+                pc_viz, diagram_context)
+            context.FixInputPort(
+                pc_viz.GetInputPort("point_cloud_P").get_index(),
+                AbstractValue.Make(pc))
+            simulator = Simulator(diagram, diagram_context)
+            simulator.set_publish_every_time_step(False)
+            simulator.StepTo(sim_time)
+
+        # Generate some random points that are visually noticeable.
+        # ~300000 makes the visualizer less responsive on my (Eric) machine.
+        count = 100000
+        xyzs = np.random.uniform(-0.1, 0.1, (3, count))
+        rgbs = np.random.uniform(0., 255.0, (3, count))
+
+        pc = mut.PointCloud(
+            count, mut.Fields(mut.BaseField.kXYZs | mut.BaseField.kRGBs))
+        pc.mutable_xyzs()[:] = xyzs
+        pc.mutable_rgbs()[:] = rgbs
+
+        pc_no_rgbs = mut.PointCloud(count, mut.Fields(mut.BaseField.kXYZs))
+        pc_no_rgbs.mutable_xyzs()[:] = xyzs
+
+        show_cloud(pc)
+        # Exercise arguments.
+        show_cloud(
+            pc, use_native=True, name="point_cloud_2",
+            X_WP=se3_from_xyz([0.3, 0, 0]))
+        show_cloud(pc, name="point_cloud_3", X_WP=se3_from_xyz([0.6, 0, 0]))
+        show_cloud(
+            pc_no_rgbs, name="point_cloud_4", X_WP=se3_from_xyz([0.9, 0, 0]))
+        show_cloud(
+            pc_no_rgbs, name="point_cloud_5", X_WP=se3_from_xyz([1.2, 0, 0]),
+            default_rgb=[255., 0., 0.])
