@@ -26,7 +26,7 @@ from pydrake.systems.primitives import FirstOrderLowPassFilter
 from pydrake.systems.sensors import ImageToLcmImageArrayT, PixelType
 from pydrake.util.eigen_geometry import Isometry3
 
-from differential_ik import DifferentialIK
+from drake.examples.manipulation_station.differential_ik import DifferentialIK
 
 from robotlocomotion import image_array_t
 
