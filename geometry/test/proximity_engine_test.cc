@@ -339,7 +339,7 @@ using std::shared_ptr;
 // calls computeAABB() of the query point (by default, its AABB is
 // [0,0]x[0,0]x[0,0]). We test several values of the distance threshold to
 // include different numbers of spheres.
-GTEST_TEST(SignedDistanceToPointBroadphaseTest, SmallThreshold) {
+GTEST_TEST(SignedDistanceToPointBroadphaseTest, MultipleThreshold) {
   ProximityEngine<double> engine;
   std::vector<GeometryId> geometry_map;
   const double radius = 0.1;
@@ -360,30 +360,27 @@ GTEST_TEST(SignedDistanceToPointBroadphaseTest, SmallThreshold) {
   double threshold = 0.001;
   auto results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map,
                                                      threshold);
-  EXPECT_EQ(0, results.size())
-    << "Expect zero result, but we get "<< results.size() <<" result(s).";
+  EXPECT_EQ(0, results.size());
   // This threshold approximately touches the bounding box of the first sphere
   // but still too small to yield any result.
   threshold = (p_WQ - (center1 + Vector3d(radius, radius, radius))).norm();
   results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
-  EXPECT_EQ(0, results.size())
-    << "Expect zero result, but we get "<< results.size() <<" result(s).";
-  // This threshold allows the first sphere.
-  threshold = (p_WQ - center1).norm();
+  EXPECT_EQ(0, results.size());
+  // This threshold touches the first sphere.
+  threshold = (p_WQ - center1).norm() - radius +
+              std::numeric_limits<double>::epsilon();
   results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
-  EXPECT_EQ(1, results.size())
-    << "Expect one result, but we get "<< results.size() <<" result(s).";
+  EXPECT_EQ(1, results.size());
   // This threshold approximately touches the bounding box of the second
   // sphere but still too small to allow the second sphere.
   threshold = (p_WQ - (center2 + Vector3d(radius, radius, radius))).norm();
   results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
-  EXPECT_EQ(1, results.size())
-    << "Expect one result, but we get "<< results.size() <<" result(s).";
-  // This threshold allows both spheres.
-  threshold = (p_WQ - center2).norm();
+  EXPECT_EQ(1, results.size());
+  // This threshold touches the second sphere.
+  threshold = (p_WQ - center2).norm() - radius +
+              std::numeric_limits<double>::epsilon();
   results = engine.ComputeSignedDistanceToPoint(p_WQ, geometry_map, threshold);
-  EXPECT_EQ(2, results.size())
-    << "Expect two results, but we get "<< results.size() <<" result(s).";
+  EXPECT_EQ(2, results.size());
 }
 
 // Test the narrow-phase part of ComputeSignedDistanceToPoint.
