@@ -437,7 +437,7 @@ PYBIND11_MODULE(plant, m) {
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterVisualGeometry
-                .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)        
+                .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const Isometry3<double>&,
                 const geometry::Shape&, const std::string&,
@@ -452,7 +452,7 @@ PYBIND11_MODULE(plant, m) {
                 const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
-            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,    
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterCollisionGeometry.doc)
         .def("get_source_id", &Class::get_source_id,
             doc.MultibodyPlant.get_source_id.doc)

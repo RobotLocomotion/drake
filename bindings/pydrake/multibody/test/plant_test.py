@@ -95,7 +95,7 @@ class TestPlant(unittest.TestCase):
         body = plant.AddRigidBody(name="new_body",
                                   M_BBo_B=spatial_inertia)
         box = Box(width=0.5, depth=1.0, height=2.0)
-        body_X_BG = Isometry3()
+        body_X_BG = RigidTransform()
         body_friction = CoulombFriction(static_friction=0.6,
                                         dynamic_friction=0.5)
         plant.RegisterVisualGeometry(
@@ -287,7 +287,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(X_WBase, RigidTransform)
 
         # Set pose for the base.
-        X_WB_desired =  RigidTransform.Identity()
+        X_WB_desired = RigidTransform.Identity()
         X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
         plant.SetFreeBodyPose(
             context=context, body=base, X_WB=X_WB_desired)
@@ -556,11 +556,8 @@ class TestPlant(unittest.TestCase):
             file_name=wsg50_sdf_path, model_name='gripper')
 
         # Weld the base of arm and gripper to reduce the number of states.
-        X_EeGripper = Isometry3.Identity()
-        X_EeGripper.set_translation([0, 0, 0.081])
-        X_EeGripper.set_rotation(
-            RollPitchYaw(np.pi / 2, 0, np.pi / 2).
-            ToRotationMatrix().matrix())
+        X_EeGripper = RigidTransform(
+            RollPitchYaw(np.pi / 2, 0, np.pi / 2), [0, 0, 0.081])
         plant.WeldFrames(
             A=plant.world_frame(),
             B=plant.GetFrameByName("iiwa_link_0", iiwa_model))

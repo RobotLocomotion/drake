@@ -372,11 +372,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// to simplify this process when we know the body is free in space.
   /// @throws std::exception if `body` is not a free body in the model.
   /// @throws std::exception if called pre-finalize.
-  void SetFreeBodyPose(
-      systems::Context<T>* context, const Body<T>& body,
-      const math::RigidTransform<T>& X_WB) const {
+  void SetFreeBodyPose(systems::Context<T>* context, const Body<T>& body,
+                       const math::RigidTransform<T>& X_WB) const {
     internal_tree().SetFreeBodyPoseOrThrow(body, X_WB, context);
-  }  
+  }
 
   /// Sets `state` to store the pose `X_WB` of a given `body` B in the world
   /// frame W, for a given `context` of `this` model.
@@ -952,7 +951,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @returns a constant reference to the WeldJoint welding frames A and B.
   const WeldJoint<T>& WeldFrames(const Frame<T>& A, const Frame<T>& B,
                                  const math::RigidTransform<double>& X_AB =
-                                     math::RigidTransform<double>::Identity());  
+                                     math::RigidTransform<double>::Identity());
   /// @}
 
   /// @name Querying for multibody elements by name
