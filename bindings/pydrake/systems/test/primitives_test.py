@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.symbolic import Expression
+from pydrake.symbolic import Expression, Variable
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (
     AbstractValue,
@@ -39,6 +39,7 @@ from pydrake.systems.primitives import (
     Saturation, Saturation_,
     SignalLogger, SignalLogger_,
     Sine, Sine_,
+    SymbolicVectorSystem, SymbolicVectorSystem_,
     UniformRandomSource,
     TrajectorySource,
     WrapToSystem, WrapToSystem_,
@@ -80,6 +81,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(Saturation_)
         self._check_instantiations(SignalLogger_)
         self._check_instantiations(Sine_)
+        self._check_instantiations(SymbolicVectorSystem_)
         self._check_instantiations(WrapToSystem_)
         self._check_instantiations(ZeroOrderHold_)
 
@@ -268,6 +270,21 @@ class TestGeneral(unittest.TestCase):
         mytest(0.0, (2.0, 2.0))
         mytest(0.5, (2.5, 1.5))
         mytest(1.0, (3.0, 1.0))
+
+    def test_symbolic_vector_system(self):
+        t = Variable("t")
+        x = [Variable("x0"), Variable("x1")]
+        u = [Variable("u0"), Variable("u1")]
+        system = SymbolicVectorSystem(time=t, state=x, input=u,
+                                      dynamics=[x[0] + x[1], t],
+                                      output=[u[1]],
+                                      time_period=0.0)
+        context = system.CreateDefaultContext()
+
+        self.assertEqual(context.get_continuous_state().size(), 2)
+        self.assertEqual(context.get_num_discrete_state_groups(), 0)
+        self.assertEqual(system.get_input_port(0).size(), 2)
+        self.assertEqual(system.get_output_port(0).size(), 1)
 
     def test_wrap_to_system(self):
         system = WrapToSystem(2)
