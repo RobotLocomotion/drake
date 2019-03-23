@@ -196,7 +196,7 @@ class LeafOutputPortTest : public ::testing::Test {
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
           "absport",
-          OutputPortIndex(dummy_.get_num_output_ports()),
+          OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
           &dummy_.DeclareCacheEntry(
               "absport", alloc_string, calc_string));
@@ -206,7 +206,7 @@ class LeafOutputPortTest : public ::testing::Test {
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
           "vecport",
-          OutputPortIndex(dummy_.get_num_output_ports()),
+          OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
           &dummy_.DeclareCacheEntry(
               "vecport", alloc_myvector3, calc_vector3));
@@ -289,7 +289,7 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_),
       "null_port",
-      OutputPortIndex(dummy_.get_num_output_ports()),
+      OutputPortIndex(dummy_.num_output_ports()),
       dummy_.assign_next_dependency_ticket(),
       kAbstractValued, 0 /* size */,
       &dummy_.DeclareCacheEntry("null", alloc_null, calc_string));
@@ -340,7 +340,7 @@ class SystemWithNStates : public LeafSystem<double> {
  private:
   void ReturnNumContinuous(const Context<double>& context, int* nc) const {
     ASSERT_NE(nc, nullptr);
-    *nc = context.get_state().get_continuous_state().size();
+    *nc = context.num_continuous_states();
   }
 };
 

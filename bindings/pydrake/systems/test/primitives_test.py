@@ -262,7 +262,7 @@ class TestGeneral(unittest.TestCase):
         output = system.AllocateOutput()
 
         def mytest(input, expected):
-            context.set_time(input)
+            context.SetTime(input)
             system.CalcOutput(context, output)
             self.assertTrue(np.allclose(output.get_vector_data(
                 0).CopyToVector(), expected))
@@ -305,8 +305,8 @@ class TestGeneral(unittest.TestCase):
         # Test demultiplexer with scalar outputs.
         demux = Demultiplexer(size=4)
         context = demux.CreateDefaultContext()
-        self.assertEqual(demux.get_num_input_ports(), 1)
-        self.assertEqual(demux.get_num_output_ports(), 4)
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), 4)
 
         input_vec = np.array([1., 2., 3., 4.])
         context.FixInputPort(0, BasicVector(input_vec))
@@ -321,8 +321,8 @@ class TestGeneral(unittest.TestCase):
         # Test demultiplexer with vector outputs.
         demux = Demultiplexer(size=4, output_ports_sizes=2)
         context = demux.CreateDefaultContext()
-        self.assertEqual(demux.get_num_input_ports(), 1)
-        self.assertEqual(demux.get_num_output_ports(), 2)
+        self.assertEqual(demux.num_input_ports(), 1)
+        self.assertEqual(demux.num_output_ports(), 2)
 
         context.FixInputPort(0, BasicVector(input_vec))
         output = demux.AllocateOutput()
@@ -350,7 +350,7 @@ class TestGeneral(unittest.TestCase):
             context = mux.CreateDefaultContext()
             output = mux.AllocateOutput()
             num_ports = len(case['data'])
-            self.assertEqual(context.get_num_input_ports(), num_ports)
+            self.assertEqual(context.num_input_ports(), num_ports)
             for j, vec in enumerate(case['data']):
                 context.FixInputPort(j, BasicVector(vec))
             mux.CalcOutput(context, output)

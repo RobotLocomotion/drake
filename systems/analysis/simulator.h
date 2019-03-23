@@ -766,14 +766,14 @@ void Simulator<T>::Initialize() {
   const T current_time = context_->get_time();
   const T slightly_before_current_time = internal::GetPreviousNormalizedValue(
       current_time);
-  context_->set_time(slightly_before_current_time);
+  context_->SetTime(slightly_before_current_time);
 
   // Get the next timed event.
   next_timed_event_time_ =
       system_.CalcNextUpdateTime(*context_, timed_events_.get());
 
   // Reset the context time.
-  context_->set_time(current_time);
+  context_->SetTime(current_time);
 
   // Indicate a timed event is to be handled, if appropriate.
   timed_or_witnessed_event_triggered_ =
@@ -1048,7 +1048,7 @@ void Simulator<T>::IsolateWitnessTriggers(
   std::function<void(const T&)> integrate_forward =
       [&t0, &x0, &context, this](const T& t_des) {
     const T inf = std::numeric_limits<double>::infinity();
-    context.set_time(t0);
+    context.SetTime(t0);
     context.get_mutable_continuous_state().SetFromVector(x0);
     while (context.get_time() < t_des)
       integrator_->IntegrateNoFurtherThanTime(inf, inf, t_des);
