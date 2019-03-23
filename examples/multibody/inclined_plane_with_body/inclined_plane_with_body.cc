@@ -20,44 +20,28 @@ namespace {
 // This simulates the motion of a rigid body B (e.g., a sphere or a block) on an
 // inclined-plane A (which may be an infinite half-space or a finite box).
 //
-// To visualize this example, open a terminal, change to the drake directory and
-// type something like the following at the operating system command prompt.
-// ./bazel-bin/tools/drake_visualizer &
-//
-// Open another terminal, change to the drake directory, and compile/run this
-// example with its default parameters by typing (all on one command line)
-// bazel run
-// examples/multibody/inclined_plane_with_body:inclined_plane_with_body
-//
-// To simulate body B as a block that has 4 contacting spheres welded to its
-// lowest four corners on an inclined-plane A (modeled as a half-space), pass
-// command line arguments to the executable by typing (all on one command line)
-// bazel run
-// examples/multibody/inclined_plane_with_body:inclined_plane_with_body --
-// --target_realtime_rate=0.5 --simulation_time=2.8 --time_step=1.0E-4
-// --slope_degrees=30 --is_inclined_plane_half_space=true
-// --penetration_allowance=1.0E-4 --muS_bodyB=0.1 --muK_bodyB=0.1
-// --bodyB_type=sphere
-//
-// To get a list of all command-line arguments, type (all on one command line):
-// bazel run
-// examples/multibody/inclined_plane_with_body:inclined_plane_with_body
-// -- --help
+// Information on how to build/run the visualizer, build/run this simulation
+// and how to use command-line arguments is in the README.md file at
+// drake/examples/multibody/inclined_plane_with_body/README.md
 DEFINE_double(target_realtime_rate, 1.0,
-              "Desired rate relative to real time.  See documentation for "
-              "Simulator::set_target_realtime_rate() for details.");
+              "Desired rate relative to real time (usually between 0 and 1). "
+              "This is documented in Simulator::set_target_realtime_rate().");
 DEFINE_double(simulation_time, 2.0, "Simulation duration in seconds");
-DEFINE_double(time_step, 1.0E-5,
+DEFINE_double(time_step, 1.0E-3,
               "If zero, the plant is modeled as a continuous system. "
               "If positive, the period (in seconds) of the discrete updates "
               "for the plant modeled as a discrete system."
               "This parameter must be non-negative.");
 DEFINE_double(penetration_allowance, 1.E-5, "Allowable penetration (meters).");
-DEFINE_double(slope_degrees, 15.0, "Inclined-plane angle in degrees.");
-DEFINE_double(muS_inclined_plane, 0.3, "Inclined-plane static friction coef.");
-DEFINE_double(muK_inclined_plane, 0.3, "Inclined-plane kinetic friction coef.");
-DEFINE_double(muS_bodyB, 0.3, "Body B's static friction coefficient.");
-DEFINE_double(muK_bodyB, 0.3, "Body B's kinetic friction coefficient.");
+DEFINE_double(slope_degrees, 15.0, "Inclined-plane angle (degrees).");
+DEFINE_double(inclined_plane_coef_static_friction, 0.3,
+              "Inclined-plane's coefficient of static friction (no units).");
+DEFINE_double(inclined_plane_coef_kinetic_friction, 0.3,
+              "Inclined-plane's coefficient of kinetic friction (no units).");
+DEFINE_double(bodyB_coef_static_friction, 0.3,
+              "Body B's coefficient of static friction (no units).");
+DEFINE_double(bodyB_coef_kinetic_friction, 0.3,
+              "Body B's coefficient of kinetic friction (no units).");
 DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined-plane a half-space (true) or box (false).");
 DEFINE_string(bodyB_type, "sphere", "Valid body types are "
@@ -70,18 +54,17 @@ int do_main() {
   systems::DiagramBuilder<double> builder;
   auto pair = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
-  MultibodyPlant<double> &plant = pair.plant;
+  MultibodyPlant<double>& plant = pair.plant;
 
   // Set constants that are relevant whether body B is a sphere or block.
   const double massB = 0.1;       // Body B's mass (kg).
   const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
   const double slope_radians = FLAGS_slope_degrees / 180 * M_PI;
-  const drake::multibody::CoulombFriction<double>
-      coefficient_friction_bodyB(FLAGS_muS_bodyB,
-                                 FLAGS_muK_bodyB);
-  const drake::multibody::CoulombFriction<double>
-      coefficient_friction_inclined_plane(FLAGS_muS_inclined_plane,
-                                          FLAGS_muK_inclined_plane);
+  const drake::multibody::CoulombFriction<double> coef_friction_bodyB(
+      FLAGS_bodyB_coef_static_friction, FLAGS_bodyB_coef_kinetic_friction);
+  const drake::multibody::CoulombFriction<double> coef_friction_inclined_plane(
+      FLAGS_inclined_plane_coef_static_friction,
+      FLAGS_inclined_plane_coef_kinetic_friction);
 
   if (FLAGS_bodyB_type == "sphere") {
     const double radiusB = 0.04;      // B's radius when modeled as a sphere.
@@ -92,8 +75,7 @@ int do_main() {
         gravity, slope_radians,
         FLAGS_is_inclined_plane_half_space, LAx, LAy, LAz,
         radiusB, massB,
-        coefficient_friction_inclined_plane, coefficient_friction_bodyB,
-        &plant);
+        coef_friction_inclined_plane, coef_friction_bodyB, &plant);
   } else if (FLAGS_bodyB_type == "block" ||
              FLAGS_bodyB_type == "block_with_4Spheres") {
     // B's contacting surface can be modeled with 4 spheres or a single box.
@@ -109,7 +91,7 @@ int do_main() {
         gravity, slope_radians,
         FLAGS_is_inclined_plane_half_space, LAx, LAy, LAz,
         LBx, LBy, LBz, massB,
-        coefficient_friction_inclined_plane, coefficient_friction_bodyB,
+        coef_friction_inclined_plane, coef_friction_bodyB,
         is_bodyB_block_with_4Spheres, &plant);
   } else {
     std::cerr << "Invalid body_type '" << FLAGS_bodyB_type
@@ -139,7 +121,7 @@ int do_main() {
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
-  systems::Context<double> &plant_context =
+  systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
   plant.SetDefaultContext(&plant_context);
 
@@ -149,14 +131,14 @@ int do_main() {
   // p_Wo_Bo  [position from Wo to Bo (B's origin)] is zero vector [0; 0; 0],
   // B is stationary in world (B's velocity and angular velocity in W are zero).
   // Overwrite B's default initial position so it is above the inclined-plane.
-  const drake::multibody::Body<double> &bodyB = plant.GetBodyByName("BodyB");
+  const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB,
                                     X_WB.GetAsIsometry3());
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-  systems::IntegratorBase<double> *integrator =
+  systems::IntegratorBase<double>* integrator =
       simulator.get_mutable_integrator();
 
   // Set the integration accuracy when the plant is integrated with a variable-
@@ -180,10 +162,10 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "Simulation of a user-selected body (e.g., sphere or block) on an "
-      "inclined-plane that may slip or stick (roll).  To visualize results, "
-      "launch Drake-visualizer before running this example by typing, e.g., "
-      "./bazel-bin/tools/drake_visualizer &");
+      "\nSimulation of a body (e.g., sphere or block) on an inclined-plane."
+      "\nThe body is user-selected and may slip or stick (roll)."
+      "\nBuild, run, simulation, and visualization information is in the file:"
+      "\n\ndrake/examples/multibody/inclined_plane_with_body/README.md\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
   return drake::multibody::examples::inclined_plane_with_body::do_main();

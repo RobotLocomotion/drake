@@ -49,7 +49,7 @@ void AddInclinedPlaneAndEarthGravityToPlant(
     // Make box A's top-surface pass through World origin Wo.  To do this,
     // set Ao's position from Wo as -0.5 * LAz * Az (half-width of box A).
     // First step is to express unit vector Az in terms of World Wx, Wy, Wz.
-    const Vector3<double> Az_W = R_WA.matrix().col(2);
+    const Vector3<double> Az_W = R_WA.col(2);
     const Vector3<double> p_WoAo_W = -0.5 * LAz * Az_W;
     const math::RigidTransform<double> X_WA(R_WA, p_WoAo_W);
     plant->RegisterVisualGeometry(plant->world_body(),
