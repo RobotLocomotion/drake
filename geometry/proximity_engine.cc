@@ -1297,6 +1297,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     auto fcl_sphere = make_shared<fcl::Sphered>(0.0);  // sphere of zero radius
     fcl::CollisionObjectd query_point(fcl_sphere);
     query_point.setTranslation(p_WQ);
+    query_point.computeAABB();
 
     std::vector<SignedDistanceToPoint<double>> distances;
 
