@@ -15,6 +15,14 @@ GTEST_TEST(VanDerPolTest, ScalarConversionTest) {
   EXPECT_TRUE(is_symbolic_convertible(vdp));
 }
 
+GTEST_TEST(VanDerPolTest, LimitCycle) {
+  const auto cycle = VanDerPolOscillator<double>::CalcLimitCycle();
+
+  const int N = cycle.cols();
+  EXPECT_NEAR(cycle(0, 0), cycle(0, N - 1), 1e-2);
+  EXPECT_NEAR(cycle(1, 0), cycle(1, N - 1), 5e-3);
+}
+
 }  // namespace
 }  // namespace van_der_pol
 }  // namespace examples
