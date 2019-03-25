@@ -602,8 +602,16 @@ class SceneGraph final : public systems::LeafSystem<T> {
   void CalcPoseBundle(const systems::Context<T>& context,
                       systems::rendering::PoseBundle<T>* output) const;
 
-  // Updates the state of geometry world from *all* the inputs.
-  void FullPoseUpdate(const GeometryContext<T>& context) const;
+  // Refreshes the pose of the various engines which exploits the caching
+  // infrastructure.
+  void FullPoseUpdate(const GeometryContext<T>& context) const {
+    this->get_cache_entry(pose_update_index_).template Eval<int>(context);
+  }
+
+  // Updates the state of geometry world from *all* the inputs. This is the calc
+  // method for the corresponding cache entry. The entry *value* (the int) is
+  // strictly a dummy -- the value is unimportant; only the side effect matters.
+  void CalcPoseUpdate(const GeometryContext<T>& context, int*) const;
 
   // Override of construction to account for
   //    - instantiating a GeometryContext instance (as opposed to LeafContext),
@@ -647,6 +655,9 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   // The index of the geometry state in the context's abstract state.
   int geometry_state_index_{-1};
+
+  // The cache index for the pose update cache entry.
+  systems::CacheIndex pose_update_index_{};
 };
 
 }  // namespace geometry
