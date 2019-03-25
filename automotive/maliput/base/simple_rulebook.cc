@@ -13,6 +13,7 @@ namespace drake {
 namespace maliput {
 
 using api::LaneId;
+using api::rules::DirectionUsageRule;
 using api::rules::LaneSRange;
 using api::rules::RightOfWayRule;
 using api::rules::SpeedLimitRule;
@@ -28,6 +29,7 @@ namespace {
 struct IdVariant {
   drake::optional<RightOfWayRule::Id> r;
   drake::optional<SpeedLimitRule::Id> s;
+  drake::optional<DirectionUsageRule::Id> d;
 
   // NOLINTNEXTLINE(runtime/explicit)
   IdVariant(const RightOfWayRule::Id& r_in) : r(r_in) {}
@@ -35,17 +37,21 @@ struct IdVariant {
   // NOLINTNEXTLINE(runtime/explicit)
   IdVariant(const SpeedLimitRule::Id& s_in) : s(s_in) {}
 
+  // NOLINTNEXTLINE(runtime/explicit)
+  IdVariant(const DirectionUsageRule::Id& d_in) : d(d_in) {}
+
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher,
                           const IdVariant& item) noexcept {
     using drake::hash_append;
     hash_append(hasher, item.r);
     hash_append(hasher, item.s);
+    hash_append(hasher, item.d);
   }
 };
 
 bool operator==(const IdVariant& lhs, const IdVariant& rhs) {
-  return (lhs.r == rhs.r) && (lhs.s == rhs.s);
+  return (lhs.r == rhs.r) && (lhs.s == rhs.s) && (lhs.d == rhs.d);
 }
 
 }  // namespace
@@ -60,6 +66,7 @@ class SimpleRulebook::Impl {
   void RemoveAll() {
     right_of_ways_.clear();
     speed_limits_.clear();
+    direction_usage_rules_.clear();
     index_->RemoveAll();
   }
 
@@ -79,6 +86,14 @@ class SimpleRulebook::Impl {
     RemoveAnyRule(id, &speed_limits_);
   }
 
+  void AddRule(const api::rules::DirectionUsageRule& rule) {
+    AddAnyRule(rule, &direction_usage_rules_);
+  }
+
+  void RemoveRule(const api::rules::DirectionUsageRule::Id& id) {
+    RemoveAnyRule(id, &direction_usage_rules_);
+  }
+
   QueryResults DoFindRules(const std::vector<LaneSRange>& ranges,
                            double tolerance) const {
     QueryResults result;
@@ -88,6 +103,8 @@ class SimpleRulebook::Impl {
           result.right_of_way.push_back(right_of_ways_.at(*id.r));
         } else if (id.s) {
           result.speed_limit.push_back(speed_limits_.at(*id.s));
+        } else if (id.d) {
+          result.direction_usage.push_back(direction_usage_rules_.at(*id.d));
         } else {
           std::stringstream s;
           s << "SimpleRulebook: IdVariant is empty (LaneId: "
@@ -106,6 +123,10 @@ class SimpleRulebook::Impl {
 
   SpeedLimitRule DoGetRule(const SpeedLimitRule::Id& id) const {
     return GetAnyRule(id, speed_limits_);
+  }
+
+  DirectionUsageRule DoGetRule(const DirectionUsageRule::Id& id) const {
+    return GetAnyRule(id, direction_usage_rules_);
   }
 
  private:
@@ -134,6 +155,14 @@ class SimpleRulebook::Impl {
       for (const LaneSRange& range : rule.zone().ranges()) {
         RemoveRanges(rule.id(), range.lane_id());
       }
+    }
+
+    void AddRule(const DirectionUsageRule& rule) {
+      AddRange(rule.id(), rule.zone());
+    }
+
+    void RemoveRule(const DirectionUsageRule& rule) {
+      RemoveRanges(rule.id(), rule.zone().lane_id());
     }
 
     std::vector<IdVariant> FindRules(const LaneSRange& range,
@@ -217,6 +246,7 @@ class SimpleRulebook::Impl {
   std::unique_ptr<RangeIndex> index_;
   IdIndex<api::rules::RightOfWayRule> right_of_ways_;
   IdIndex<api::rules::SpeedLimitRule> speed_limits_;
+  IdIndex<api::rules::DirectionUsageRule> direction_usage_rules_;
 };
 
 SimpleRulebook::SimpleRulebook() : impl_(std::make_unique<Impl>()) {}
@@ -241,6 +271,14 @@ void SimpleRulebook::RemoveRule(const api::rules::SpeedLimitRule::Id& id) {
   impl_->RemoveRule(id);
 }
 
+void SimpleRulebook::AddRule(const api::rules::DirectionUsageRule& rule) {
+  impl_->AddRule(rule);
+}
+
+void SimpleRulebook::RemoveRule(const api::rules::DirectionUsageRule::Id& id) {
+  impl_->RemoveRule(id);
+}
+
 QueryResults SimpleRulebook::DoFindRules(const std::vector<LaneSRange>& ranges,
                                          double tolerance) const {
   return impl_->DoFindRules(ranges, tolerance);
@@ -251,6 +289,11 @@ RightOfWayRule SimpleRulebook::DoGetRule(const RightOfWayRule::Id& id) const {
 }
 
 SpeedLimitRule SimpleRulebook::DoGetRule(const SpeedLimitRule::Id& id) const {
+  return impl_->DoGetRule(id);
+}
+
+DirectionUsageRule SimpleRulebook::DoGetRule(
+    const DirectionUsageRule::Id& id) const {
   return impl_->DoGetRule(id);
 }
 

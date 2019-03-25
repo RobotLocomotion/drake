@@ -58,6 +58,7 @@ class BasicIdIndex : public RoadGeometry::IdIndex {
 
  private:
   const Lane* DoGetLane(const LaneId& id) const final;
+  const std::unordered_map<LaneId, const Lane*>& DoGetLanes() const override;
   const Segment* DoGetSegment(const SegmentId& id) const final;
   const Junction* DoGetJunction(const JunctionId& id) const final;
   const BranchPoint* DoGetBranchPoint(const BranchPointId& id) const final;
