@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/pleides_system.h"
 
 namespace drake {
 namespace systems {
@@ -444,6 +445,54 @@ REGISTER_TYPED_TEST_CASE_P(ExplicitErrorControlledIntegratorTest,
     ReqInitialStepTarget, ContextAccess, ErrorEstSupport, MagDisparity, Scaling,
     BulletProofSetup, ErrEst, SpringMassStepEC, MaxStepSizeRespected,
     IllegalFixedStep, CheckStat, StepToCurrentTimeNoOp);
+
+// T is the integrator type (e.g., RungeKutta3Integrator<double>).
+template <class T>
+struct PleidesTest : public ::testing::Test {
+ public:
+  PleidesTest() {
+    // Create the Pleides system.
+    pleides = std::make_unique<analysis::test::PleidesSystem>();
+    context = pleides->CreateDefaultContext();
+
+    // Create the integrator.
+    integrator = std::make_unique<T>(*pleides, context.get());
+  }
+
+  std::unique_ptr<analysis::test::PleidesSystem> pleides;
+  std::unique_ptr<Context<double>> context;
+  std::unique_ptr<IntegratorBase<double>> integrator;
+};
+
+TYPED_TEST_CASE_P(PleidesTest);
+
+// Verifies that the Pleides system can be integrated efficiently.
+TYPED_TEST_P(PleidesTest, Pleides) {
+  // Set integrator parameters: do error control.
+  this->integrator->set_maximum_step_size(0.1);
+  this->integrator->set_fixed_step_mode(false);
+
+  // Request tight accuracy.
+  const double requested_accuracy = 1e-4;
+  this->integrator->set_target_accuracy(requested_accuracy);
+
+  // Initialize the integrator.
+  this->integrator->Initialize();
+
+  // Simulate to the designated time.
+  const double t_final = this->pleides->get_end_time();
+  this->integrator->IntegrateWithMultipleStepsToTime(t_final);
+
+  // Check the result.
+  const VectorX<double> q = this->context->get_continuous_state().
+    get_generalized_position().CopyToVector();
+  const VectorX<double> q_des = analysis::test::PleidesSystem::GetSolution(
+        this->context->get_time());
+  for (int i = 0; i < q.size(); ++i)
+    EXPECT_NEAR(q[i], q_des[i], 100 * requested_accuracy) << i;
+}
+
+REGISTER_TYPED_TEST_CASE_P(PleidesTest, Pleides);
 
 }  // namespace analysis_test
 }  // namespace systems
