@@ -62,6 +62,8 @@ install(
         "//examples:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
+        # TODO(eric.cousineau): Clean this up per #11009.
+        "//multibody/benchmarks/acrobot:install_data",
         "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",

@@ -8,6 +8,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+# TODO(eric): Demote these to test models. Do NOT install (#11009).
 filegroup(
     name = "models",
     srcs = [

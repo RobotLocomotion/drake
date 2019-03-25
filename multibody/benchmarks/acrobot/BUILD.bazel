@@ -6,6 +6,7 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -29,16 +30,6 @@ drake_cc_library(
     ],
 )
 
-filegroup(
-    name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
-)
-
 drake_cc_library(
     name = "make_acrobot_plant",
     srcs = [
@@ -53,5 +44,7 @@ drake_cc_library(
         "//multibody/plant",
     ],
 )
+
+install_data()
 
 add_lint_tests()
