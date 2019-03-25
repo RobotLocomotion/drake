@@ -140,8 +140,8 @@ class MockIntersection final : public Intersection {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MockIntersection)
   explicit MockIntersection(const Intersection::Id& id,
-                            const rules::RightOfWayPhaseRing* ring)
-      : Intersection(id, {}, ring) {}
+                            const rules::RightOfWayPhaseRing::Id& ring_id)
+      : Intersection(id, {}, ring_id) {}
 
  private:
   const optional<rules::RightOfWayPhaseProvider::Result> Phase()
@@ -219,8 +219,8 @@ CreateRightOfWayPhaseProvider() {
 }
 
 std::unique_ptr<Intersection> CreateIntersection(
-    const Intersection::Id& id, const rules::RightOfWayPhaseRing* ring) {
-  return std::make_unique<MockIntersection>(id, ring);
+    const Intersection::Id& id, const rules::RightOfWayPhaseRing::Id& ring_id) {
+  return std::make_unique<MockIntersection>(id, ring_id);
 }
 
 }  // namespace test

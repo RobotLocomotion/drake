@@ -59,7 +59,7 @@ std::unique_ptr<rules::RightOfWayPhaseProvider> CreateRightOfWayPhaseProvider();
 
 /// Returns an arbitrary Intersection.
 std::unique_ptr<Intersection> CreateIntersection(
-    const Intersection::Id& id, const rules::RightOfWayPhaseRing* ring);
+    const Intersection::Id& id, const rules::RightOfWayPhaseRing::Id& ring_id);
 
 }  // namespace test
 }  // namespace api

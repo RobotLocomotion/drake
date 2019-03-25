@@ -85,9 +85,9 @@ TEST_F(RoadNetworkTest, InstantiateAndUseAccessors) {
       rules::RightOfWayPhaseRing::Id("ring2_id"),
       {rules::RightOfWayPhase(rules::RightOfWayPhase::Id("phase_id_2"), {})});
   intersections.emplace_back(
-      test::CreateIntersection(intersection_id_1, &mock_ring_1));
+      test::CreateIntersection(intersection_id_1, mock_ring_1.id()));
   intersections.emplace_back(
-      test::CreateIntersection(intersection_id_2, &mock_ring_2));
+      test::CreateIntersection(intersection_id_2, mock_ring_2.id()));
   std::vector<SpeedLimitRule> speed_limits;
   const SpeedLimitRule::Id speed_limit_id("speed_limit_id");
   speed_limits.emplace_back(SpeedLimitRule(
