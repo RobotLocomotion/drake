@@ -26,27 +26,25 @@ if __name__ == '__main__':
     main_py = sys.argv[0]
 
     # Parse the test case name out of the runfiles directory name.
-    match = re.search("/([^/]*_test).runfiles/", main_py)
+    match = re.search("^(.*bin/(.*?/)?(py/)?([^/]*_test).runfiles/)", main_py)
     if not match:
         print("error: no test name match in {}".format(main_py))
         sys.exit(1)
-    test_name, = match.groups()
-    test_filename = test_name + ".py"
+    runfiles, test_package, _, test_name, = match.groups()
+    test_basename = test_name + ".py"
 
-    # Find the test_filename and check it for a (misleading) __main__.
-    found_filename = None
-    for dirpath, dirs, files in os.walk("."):
-        if test_filename in files:
-            assert not found_filename
-            found_filename = os.path.join(dirpath, test_filename)
-    if not found_filename:
-        raise RuntimeError("No such file found {}!".format(
-            test_filename))
-    with io.open(found_filename, "r", encoding="utf8") as infile:
+    # Check the test's source code for a (misleading) __main__.
+    runfiles_test_filename = (
+        runfiles + "drake/" + test_package + "test/" + test_basename)
+    if not os.path.exists(runfiles_test_filename):
+        raise RuntimeError("Could not find {} at {}".format(
+            test_basename, runfiles_test_filename))
+    realpath_test_filename = os.path.realpath(runfiles_test_filename)
+    with io.open(realpath_test_filename, "r", encoding="utf8") as infile:
         for line in infile.readlines():
             if any([line.startswith("if __name__ =="),
                     line.strip().startswith("unittest.main")]):
-                print("error: " + test_filename + " appears to have a main " +
+                print("error: " + test_basename + " appears to have a main " +
                       "function (checks 'if __name__ == ') or call the main " +
                       "function of unittest ('unittest.main') but also uses " +
                       "drake_py_unittest; when using drake_py_unittest, " +
@@ -55,12 +53,12 @@ if __name__ == '__main__':
                       "as drake_py_test instead of drake_py_unittest and " +
                       "keep the main function intact")
                 sys.exit(1)
-    if os.access(found_filename, os.X_OK):
-        print("error: " + test_filename + " uses drake_py_unittest but is " +
+    if os.access(realpath_test_filename, os.X_OK):
+        print("error: " + test_basename + " uses drake_py_unittest but is " +
               "marked executable in the filesystem; fix this via chmod a-x " +
-              test_filename)
+              test_basename)
         sys.exit(1)
-    module = imp.load_source(test_name, found_filename)
+    module = imp.load_source(test_name, runfiles_test_filename)
 
     # Figure out which arguments are for unittest and which are for the module
     # under test.

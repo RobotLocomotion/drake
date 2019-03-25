@@ -185,6 +185,16 @@ void DefineFrameworkPySemantics(py::module m) {
             overload_cast_explicit<const DiscreteValues<T>&>(
                 &Context<T>::get_discrete_state),
             py_reference_internal, doc.Context.get_discrete_state.doc_0args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            py::arg("xd"), doc.Context.SetDiscreteState.doc_1args)
+        .def("SetDiscreteState",
+            overload_cast_explicit<void, int,
+                const Eigen::Ref<const VectorX<T>>&>(
+                &Context<T>::SetDiscreteState),
+            py::arg("group_index"), py::arg("xd"),
+            doc.Context.SetDiscreteState.doc_2args)
         .def("get_mutable_discrete_state",
             overload_cast_explicit<DiscreteValues<T>&>(
                 &Context<T>::get_mutable_discrete_state),
@@ -231,6 +241,15 @@ void DefineFrameworkPySemantics(py::module m) {
             },
             py_reference_internal,
             doc.Context.get_mutable_abstract_state.doc_1args)
+        .def("SetAbstractState",
+            [](py::object self, int index, py::object value) {
+              // Use type erasure from Python bindings of Value[T].set_value.
+              py::object abstract_value =
+                  self.attr("get_mutable_abstract_state")(index);
+              abstract_value.attr("set_value")(value);
+            },
+            py::arg("index"), py::arg("value"),
+            doc.Context.SetAbstractState.doc)
         .def("get_parameters", &Context<T>::get_parameters,
             py_reference_internal, doc.Context.get_parameters.doc)
         .def("num_numeric_parameter_groups",
@@ -377,7 +396,32 @@ void DefineFrameworkPySemantics(py::module m) {
             "as a BasicVector. Most users should call Eval() instead. "
             "This method is only needed when the result will be passed "
             "into some other API that only accepts a BasicVector.",
-            py_reference_internal);
+            py_reference_internal)
+        // For FixValue, treat an already-erased AbstractValue specially ...
+        .def("FixValue",
+            [](const InputPort<T>* self, Context<T>* context,
+                const AbstractValue& value) {
+              FixedInputPortValue& result = self->FixValue(context, value);
+              return &result;
+            },
+            py::arg("context"), py::arg("value"), py_reference,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
+        // ... but then for anything not yet erased, use set_value to copy.
+        .def("FixValue",
+            [](const InputPort<T>* self, Context<T>* context,
+                const py::object& value) {
+              const auto& system = self->get_system();
+              // Allocate is a bit wasteful, but FixValue is already expensive.
+              std::unique_ptr<AbstractValue> storage =
+                  system.AllocateInputAbstract(*self);
+              py::cast(storage.get(), py_reference).attr("set_value")(value);
+              FixedInputPortValue& result = self->FixValue(context, *storage);
+              return &result;
+            },
+            py::arg("context"), py::arg("value"), py_reference,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc);
 
     // Parameters.
     auto parameters = DefineTemplateClassWithDefault<Parameters<T>>(

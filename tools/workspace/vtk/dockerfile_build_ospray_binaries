@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile and shell scripts are used
+# by the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
+
+set -euxo pipefail
+
+mkdir -p ospray-build /opt/vtk
+pushd ospray-build
+cmake \
+  -DCMAKE_BUILD_TYPE:STRING=Release \
+  -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong' \
+  -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong' \
+  -DCMAKE_INSTALL_PREFIX:PATH=/opt/vtk \
+  -DCMAKE_PREFIX_PATH:PATH=/opt/vtk \
+  -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+  -DOSPRAY_ENABLE_APPS:BOOL=OFF \
+  -DOSPRAY_ENABLE_TESTING:BOOL=OFF \
+  -DOSPRAY_ENABLE_TUTORIALS:BOOL=OFF \
+  -GNinja \
+  -Wno-dev \
+  ../ospray
+ninja install/strip
+pushd
+rm -rf ospray-build

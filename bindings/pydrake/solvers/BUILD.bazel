@@ -1,11 +1,14 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:test_tags.bzl",
     "gurobi_test_tags",
     "mosek_test_tags",
+)
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
@@ -23,6 +26,7 @@ load(
     "@drake//tools/skylark:alias.bzl",
     "drake_py_library_aliases",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -60,9 +64,19 @@ drake_pybind_library(
     ],
 )
 
+drake_cc_library(
+    name = "solvers_pybind",
+    hdrs = ["solvers_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+)
+
 drake_pybind_library(
     name = "gurobi_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        ":solvers_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
     cc_srcs = ["gurobi_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -78,7 +92,10 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "mosek_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        ":solvers_pybind",
+        "//bindings/pydrake:documentation_pybind",
+    ],
     cc_srcs = ["mosek_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [":mathematicalprogram_py"],
@@ -198,7 +215,4 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()

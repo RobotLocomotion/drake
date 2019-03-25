@@ -263,18 +263,19 @@ class AutoDiffScalar<VectorXd>
   template <typename OtherDerType>
   inline const AutoDiffScalar<DerType> operator/(
       const AutoDiffScalar<OtherDerType>& other) const {
+    const auto& this_der = m_derivatives;
+    const auto& other_der = other.derivatives();
     const bool has_this_der = m_derivatives.size() > 0;
     const bool has_both_der = has_this_der && (other.derivatives().size() > 0);
+    const double scale = 1. / (other.value() * other.value());
     return MakeAutoDiffScalar(
         m_value / other.value(),
-        has_both_der
-            ? VectorXd((m_derivatives * other.value() -
-                        other.derivatives() * m_value) *
-                       (Scalar(1) / (other.value() * other.value())))
-            : has_this_der
-                  ? VectorXd(m_derivatives / other.value())
-                  : VectorXd(-other.derivatives() *
-                             (m_value / (other.value() * other.value()))));
+        has_both_der ?
+            VectorXd(this_der * other.value() - other_der * m_value) * scale :
+        has_this_der ?
+            VectorXd(this_der * other.value()) * scale :
+        // has_other_der || has_neither
+            VectorXd(other_der * -m_value) * scale);
   }
 
   template <typename OtherDerType>

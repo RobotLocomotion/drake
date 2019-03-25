@@ -115,7 +115,7 @@ SceneGraph<T>::SceneGraph()
 }
 
 template <typename T>
-SceneGraph<T>::SceneGraph(const geometry::SceneGraph<T>& other) : SceneGraph() {
+void SceneGraph<T>::CopyFrom(const geometry::SceneGraph<T>& other) {
   // NOTE: It is *absolutely* critical that the internal state get copied first.
   // Otherwise, port configuration will fail.
   DRAKE_DEMAND(initial_state_ != nullptr);
@@ -246,6 +246,27 @@ GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
   GS_THROW_IF_CONTEXT_ALLOCATED
   return initial_state_->RegisterAnchoredGeometry(source_id,
                                                   std::move(geometry));
+}
+
+template <typename T>
+void SceneGraph<T>::AddRenderer(
+    std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+  return initial_state_->AddRenderer(std::move(name), std::move(renderer));
+}
+
+template <typename T>
+bool SceneGraph<T>::HasRenderer(const std::string& name) const {
+  return initial_state_->HasRenderer(name);
+}
+
+template <typename T>
+int SceneGraph<T>::RendererCount() const {
+  return initial_state_->RendererCount();
+}
+
+template <typename T>
+std::vector<std::string> SceneGraph<T>::RegisteredRendererNames() const {
+  return initial_state_->RegisteredRendererNames();
 }
 
 template <typename T>

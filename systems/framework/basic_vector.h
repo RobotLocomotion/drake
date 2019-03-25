@@ -47,7 +47,7 @@ class BasicVector : public VectorBase<T> {
       : BasicVector<T>(init.size()) {
     int i = 0;
     for (const T& datum : init) {
-      this->SetAtIndex(i++, datum);
+      (*this)[i++] = datum;
     }
   }
 
@@ -68,7 +68,7 @@ class BasicVector : public VectorBase<T> {
     return data;
   }
 
-  int size() const override { return static_cast<int>(values_.rows()); }
+  int size() const final { return static_cast<int>(values_.rows()); }
 
   /// Sets the vector to the given value. After a.set_value(b.get_value()), a
   /// must be identical to b.
@@ -93,24 +93,14 @@ class BasicVector : public VectorBase<T> {
     return values_.head(values_.rows());
   }
 
-  const T& GetAtIndex(int index) const override {
-    DRAKE_THROW_UNLESS(index < size());
-    return values_[index];
-  }
-
-  T& GetAtIndex(int index) override {
-    DRAKE_THROW_UNLESS(index < size());
-    return values_[index];
-  }
-
-  void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) override {
+  void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) final {
     set_value(value);
   }
 
-  VectorX<T> CopyToVector() const override { return values_; }
+  VectorX<T> CopyToVector() const final { return values_; }
 
   void ScaleAndAddToVector(const T& scale,
-                           EigenPtr<VectorX<T>> vec) const override {
+                           EigenPtr<VectorX<T>> vec) const final {
     DRAKE_THROW_UNLESS(vec != nullptr);
     if (vec->rows() != size()) {
       throw std::out_of_range("Addends must be the same size.");
@@ -118,10 +108,10 @@ class BasicVector : public VectorBase<T> {
     *vec += scale * values_;
   }
 
-  void SetZero() override { values_.setZero(); }
+  void SetZero() final { values_.setZero(); }
 
   DRAKE_DEPRECATED("2019-06-01", "Use get_value() + Eigen lpNorm.")
-  T NormInf() const override {
+  T NormInf() const final {
     return values_.template lpNorm<Eigen::Infinity>();
   }
 
@@ -137,6 +127,16 @@ class BasicVector : public VectorBase<T> {
   }
 
  protected:
+  const T& DoGetAtIndex(int index) const final {
+    DRAKE_THROW_UNLESS(index < size());
+    return values_[index];
+  }
+
+  T& DoGetAtIndex(int index) final {
+    DRAKE_THROW_UNLESS(index < size());
+    return values_[index];
+  }
+
   /// Returns a new BasicVector containing a copy of the entire vector.
   /// Caller must take ownership, and may rely on the NVI wrapper to initialize
   /// the clone elementwise.
@@ -154,7 +154,7 @@ class BasicVector : public VectorBase<T> {
   template<typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg, Fargs&&... recursive_args) {
-    data->SetAtIndex(index++, T(constructor_arg));
+    (*data)[index++] = T(constructor_arg);
     BasicVector<T>::MakeRecursive(data, index, recursive_args...);
   }
 
@@ -162,7 +162,7 @@ class BasicVector : public VectorBase<T> {
   template<typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg) {
-    data->SetAtIndex(index++, T(constructor_arg));
+    (*data)[index++] = T(constructor_arg);
   }
 
   /// Provides const access to the element storage.
@@ -179,7 +179,7 @@ class BasicVector : public VectorBase<T> {
   // is also (i.e., in addition to 'this') a contiguous vector.
   void DoPlusEqScaled(
       const std::initializer_list<std::pair<T, const VectorBase<T>&>>& rhs_scal)
-      override {
+      final {
     for (const auto& operand : rhs_scal)
       operand.second.ScaleAndAddToVector(operand.first, &values_);
   }

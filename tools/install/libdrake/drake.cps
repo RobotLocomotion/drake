@@ -78,7 +78,8 @@
         "protobuf:libprotobuf",
         "robotlocomotion-lcmtypes:robotlocomotion-lcmtypes-cpp",
         "spdlog:spdlog",
-        "stx:stx"
+        "stx:stx",
+        "yaml-cpp"
       ]
     },
     "drake-common-text-logging-gflags": {

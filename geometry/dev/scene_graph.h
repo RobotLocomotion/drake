@@ -209,11 +209,12 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   SceneGraph();
 
-  /** Constructs a *development* %SceneGraph instances from a mainstream
-   geometry::SceneGraph instance. All registered sources are shared with the
-   newly constructed development %SceneGraph instance and its model is
-   constructed from the given geometry::SceneGraph's model.  */
-  explicit SceneGraph(const geometry::SceneGraph<T>& other);
+  /** Populate `this` _development_ %SceneGraph instance from a mainstream
+   geometry::SceneGraph instance. It is important to add renderers to the
+   SceneGraph after constructing but _before_ calling this -- all renderers
+   must be added prior to registering the first geometry (see AddRenderer()).
+   */
+  void CopyFrom(const geometry::SceneGraph<T>& other);
 
   /** Constructor used for scalar conversions. It should only be used to convert
    _from_ double _to_ other scalar types. */
@@ -386,6 +387,28 @@ class SceneGraph final : public systems::LeafSystem<T> {
       SourceId source_id, std::unique_ptr<GeometryInstance> geometry);
 
   //@}
+
+  /** Adds a new render engine to this %SceneGraph. The %SceneGraph owns the
+   render engine. All render engines must be assigned prior to any geometry
+   registration. The render engine's name should be referenced in the
+   @ref render::CameraProperties "CameraProperties" provided in the render
+   queries (see QueryObject::RenderColorImage as an example).
+   @param name      The unique name of the renderer.
+   @param renderer  The `renderer` to add.
+   @throws std::logic_error if the name is not unique, or geometry has already
+                               been registered.  */
+  void AddRenderer(std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Reports if this %SceneGraph has a renderer registered to the given name.
+   */
+  bool HasRenderer(const std::string& name) const;
+
+  /** Reports the number of renderers registered to this %SceneGraph.  */
+  int RendererCount() const;
+
+  /** Reports the names of all registered renderers.  */
+  std::vector<std::string> RegisteredRendererNames() const;
 
   /** @name     Assigning roles to geometry
 
