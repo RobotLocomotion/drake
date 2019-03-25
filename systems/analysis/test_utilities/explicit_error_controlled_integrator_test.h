@@ -466,14 +466,15 @@ struct PleidesTest : public ::testing::Test {
 
 TYPED_TEST_CASE_P(PleidesTest);
 
-// Verifies that the Pleides system can be integrated efficiently.
+// Verifies that the Pleides system can be integrated accurately.
 TYPED_TEST_P(PleidesTest, Pleides) {
   // Set integrator parameters: do error control.
   this->integrator->set_maximum_step_size(0.1);
   this->integrator->set_fixed_step_mode(false);
 
-  // Request tight accuracy.
-  const double requested_accuracy = 1e-4;
+  // Request semi-tight accuracy, allowing us to use this test for various
+  // error controlled integrators.
+  const double requested_accuracy = 1e-7;
   this->integrator->set_target_accuracy(requested_accuracy);
 
   // Initialize the integrator.
