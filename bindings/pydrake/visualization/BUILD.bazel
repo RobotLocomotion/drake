@@ -1,0 +1,73 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_py_library(
+    name = "module_py",
+    srcs = ["__init__.py"],
+    deps = [
+        "//bindings/pydrake:module_py",
+    ],
+)
+
+drake_py_library(
+    name = "plotting_py",
+    srcs = ["plotting.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":module_py",
+        "//bindings/pydrake:symbolic_py",
+    ],
+)
+
+PY_LIBRARIES = [
+    ":module_py",
+    ":plotting_py",
+]
+
+# Symbol roll-up (for user ease).
+drake_py_library(
+    name = "all_py",
+    srcs = ["all.py"],
+    deps = PY_LIBRARIES,
+)
+
+# Package roll-up (for Bazel dependencies).
+drake_py_library(
+    name = "visualization",
+    imports = PACKAGE_INFO.py_imports,
+    deps = [":all_py"],
+)
+
+install(
+    name = "install",
+    targets = PY_LIBRARIES + [":all_py"],
+    py_dest = PACKAGE_INFO.py_dest,
+)
+
+drake_py_unittest(
+    name = "plotting_test",
+    deps = [
+        ":plotting_py",
+    ],
+)
+
+add_lint_tests_pydrake()
