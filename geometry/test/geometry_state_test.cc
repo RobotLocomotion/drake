@@ -1688,6 +1688,9 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
       geometry_state_.get_pose_in_world(GeometryId::get_new_id()),
       std::logic_error,
       "No world pose available for invalid geometry id: \\d+");
+  EXPECT_TRUE(CompareMatrices(
+      geometry_state_.get_pose_in_world(anchored_geometry_).matrix(),
+      X_WA_.matrix()));
 
   EXPECT_TRUE(
       CompareMatrices(geometry_state_.get_pose_in_parent(frames_[0]).matrix(),

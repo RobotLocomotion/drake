@@ -540,7 +540,11 @@ GeometryId GeometryState<T>::RegisterGeometry(
   // compactly distributed. Is there a more robust way to do this?
   DRAKE_ASSERT(geometry_index_to_id_map_.size() == X_WG_.size());
   FrameIndex index(static_cast<int>(X_WG_.size()));
-  X_WG_.push_back(Isometry3<T>::Identity());
+  // NOTE: No implicit conversion from Isometry3<double> to Isometry3<AutoDiff>.
+  // However, we can implicitly assign Matrix<double> to Matrix<AutoDiff>.
+  Isometry3<T> X_WG;
+  X_WG.matrix() = geometry->pose().matrix();
+  X_WG_.push_back(X_WG);
   geometry_index_to_id_map_.push_back(geometry_id);
 
   geometries_.emplace(geometry_id,
