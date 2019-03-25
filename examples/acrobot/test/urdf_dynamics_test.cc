@@ -18,6 +18,7 @@ namespace {
 // generated from the urdf via the RigidBodyPlant class.
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
+  // TODO(eric.cousineau): Upgrade this test to MBP, and use `benchmarks` model.
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
     FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
     multibody::joints::kFixed, tree.get());

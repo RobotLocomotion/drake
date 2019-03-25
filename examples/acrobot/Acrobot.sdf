@@ -1,4 +1,7 @@
+<?xml version="1.0"?>
 <sdf version='1.5'>
+  <!-- DEPRECATED: This model will be removed on 2019-06-01. Please use
+  `multibody/bencmarks/acrobot/acrobot.sdf instead. -->
   <model name='Acrobot'>
     <link name='base_link'>
       <pose frame=''>0 0 0 0 0 0</pose>

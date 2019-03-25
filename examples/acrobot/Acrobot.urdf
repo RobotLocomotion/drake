@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-
 <robot xmlns="https://drake.mit.edu"
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="https://drake.mit.edu ../../doc/drakeURDF.xsd" name="Acrobot">
-
+ <!-- DEPRECATED: This model will be removed on 2019-06-01. Please use
+  `multibody/bencmarks/acrobot/acrobot.urdf instead. -->
   <link name="base_link">
     <visual>
       <geometry>

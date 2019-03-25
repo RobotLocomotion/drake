@@ -77,6 +77,8 @@ class TestParsers(unittest.TestCase):
             self.assertIsInstance(actuator, RigidBodyActuator)
 
     def test_sdf(self):
+        # TODO(eric.cousineau): Use `benchmarks` model if it's compatible
+        # (#11009).
         sdf_file = os.path.join(
             getDrakePath(), "examples/acrobot/Acrobot.sdf")
         with open(sdf_file) as f:
@@ -111,6 +113,8 @@ class TestParsers(unittest.TestCase):
 
     def test_id_table(self):
         robot = RigidBodyTree()
+        # TODO(eric.cousineau): Use `benchmarks` model if it's compatible
+        # (#11009).
         id_table = AddModelInstancesFromSdfFile(
             FindResourceOrThrow("drake/examples/acrobot/Acrobot.sdf"),
             FloatingBaseType.kRollPitchYaw, None, robot)
@@ -138,6 +142,8 @@ class TestParsers(unittest.TestCase):
                     FloatingBaseType.kRollPitchYaw, None, robot, **kwargs)
             return robot
 
+        # TODO(eric.cousineau): Use `benchmarks` model if it's compatible
+        # (#11009).
         sdf = "drake/examples/acrobot/Acrobot.sdf"
         urdf = (
             "drake/examples/pr2/models/pr2_description/urdf/"

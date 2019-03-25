@@ -79,6 +79,7 @@ int do_main() {
 
   lcm::DrakeLcm lcm;
   auto tree = std::make_unique<RigidBodyTree<double>>();
+  // TODO(eric.cousineau): Upgrade this test to MBP, and use `benchmarks` model.
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
       FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"),
       multibody::joints::kFixed, tree.get());
