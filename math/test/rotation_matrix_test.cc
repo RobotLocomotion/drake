@@ -204,6 +204,28 @@ GTEST_TEST(RotationMatrix, SetRotationMatrix) {
   }
 }
 
+// Test getting rows or columns from a RotationMatrix.
+GTEST_TEST(RotationMatrix, GetRowsOrColumnsFromRotationmatrix) {
+  const double q = 1.2345;  // Angle in radians.
+  RotationMatrix<double> R_AB = RotationMatrix<double>::MakeZRotation(q);
+  const Vector3d Ax_B = R_AB.row(0);
+  const Vector3d Ay_B = R_AB.row(1);
+  const Vector3d Az_B = R_AB.row(2);
+  const Vector3d Bx_A = R_AB.col(0);
+  const Vector3d By_A = R_AB.col(1);
+  const Vector3d Bz_A = R_AB.col(2);
+
+  constexpr double tolerance = 32 * kEpsilon;
+  const double cos_q = std::cos(q);
+  const double sin_q = std::sin(q);
+  EXPECT_TRUE(CompareMatrices(Ax_B, Vector3d(cos_q, -sin_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(Ay_B, Vector3d(sin_q, cos_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(Az_B, Vector3d(0, 0, 1), tolerance));
+  EXPECT_TRUE(CompareMatrices(Bx_A, Vector3d(cos_q, sin_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(By_A, Vector3d(-sin_q, cos_q, 0), tolerance));
+  EXPECT_TRUE(CompareMatrices(Bz_A, Vector3d(0, 0, 1), tolerance));
+}
+
 // Test setting a RotationMatrix to an identity matrix.
 GTEST_TEST(RotationMatrix, MakeIdentityMatrix) {
   const RotationMatrix<double>& R = RotationMatrix<double>::Identity();

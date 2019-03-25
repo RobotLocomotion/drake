@@ -124,6 +124,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//common:value",
         "//systems/framework",
     ],
 )
@@ -283,6 +284,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:symbolic",
+        "//math:gradient",
         "//systems/framework",
     ],
 )

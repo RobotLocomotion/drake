@@ -275,7 +275,11 @@ drake_cc_googletest(
     data = [
         "//systems/sensors:test_models",
     ],
-    tags = vtk_test_tags(),
+    tags = vtk_test_tags() + [
+        # Thread leaks in nouveau graphics driver and various system libraries
+        # that have not been instrumented.
+        "no_tsan",
+    ],
     deps = [
         ":rgbd_renderer",
         ":rgbd_renderer_test_util",

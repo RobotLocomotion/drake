@@ -4,7 +4,7 @@ Generates documentation for `drake.mit.edu`.
 
 from os.path import abspath, dirname
 
-from sphinx_base import gen_main
+from drake.doc.sphinx_base import gen_main
 
 if __name__ == "__main__":
     input_dir = dirname(abspath(__file__))

@@ -130,7 +130,7 @@ InitialValueProblem<T>::InitialValueProblem(
   // Allocates a new default integration context with the
   // given default initial time.
   context_ = system_->CreateDefaultContext();
-  context_->set_time(default_values_.t0.value());
+  context_->SetTime(default_values_.t0.value());
 
   // Instantiates an explicit RK3 integrator by default.
   integrator_ = std::make_unique<RungeKutta3Integrator<T>>(
@@ -176,7 +176,7 @@ template <typename T>
 void InitialValueProblem<T>::ResetCachedState(
     const SpecifiedValues& values) const {
   // Sets context (initial) time.
-  context_->set_time(values.t0.value());
+  context_->SetTime(values.t0.value());
 
   // Sets context (initial) state. This cast is safe because the
   // ContinuousState<T> of a LeafSystem<T> is flat i.e. it is just

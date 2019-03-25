@@ -323,7 +323,52 @@ class RotationMatrix {
   }
 
   /// Returns the Matrix3 underlying a %RotationMatrix.
+  /// @see col(), row()
   const Matrix3<T>& matrix() const { return R_AB_; }
+
+  /// Returns `this` rotation matrix's iᵗʰ row (i = 0, 1, 2).
+  /// For `this` rotation matrix R_AB (which relates right-handed
+  /// sets of orthogonal unit vectors Ax, Ay, Az to Bx, By, Bz),
+  /// - row(0) returns Ax_B (Ax expressed in terms of Bx, By, Bz).
+  /// - row(1) returns Ay_B (Ay expressed in terms of Bx, By, Bz).
+  /// - row(2) returns Az_B (Az expressed in terms of Bx, By, Bz).
+  /// @param[in] index requested row index (0 <= index <= 2).
+  /// @see col(), matrix()
+  /// @throws In debug builds, asserts (0 <= index <= 2).
+  /// @note For efficiency and consistency with Eigen, this method returns
+  /// the same quantity returned by Eigen's row() operator.
+  /// The returned quantity can be assigned in various ways, e.g., as
+  /// `const auto& Az_B = row(2);` or `RowVector3<T> Az_B = row(2);`
+  const Eigen::Block<const Matrix3<T>, 1, 3, false> row(int index) const {
+    // The returned value from this method mimics Eigen's row() method which was
+    // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
+    // underlies this class is a column major matrix.  To return a row,
+    // InnerPanel = false is passed as the last template parameter above.
+    DRAKE_ASSERT(0 <= index && index <= 2);
+    return R_AB_.row(index);
+  }
+
+  /// Returns `this` rotation matrix's iᵗʰ column (i = 0, 1, 2).
+  /// For `this` rotation matrix R_AB (which relates right-handed
+  /// sets of orthogonal unit vectors Ax, Ay, Az to Bx, By, Bz),
+  /// - col(0) returns Bx_A (Bx expressed in terms of Ax, Ay, Az).
+  /// - col(1) returns By_A (By expressed in terms of Ax, Ay, Az).
+  /// - col(2) returns Bz_A (Bz expressed in terms of Ax, Ay, Az).
+  /// @param[in] index requested column index (0 <= index <= 2).
+  /// @see row(), matrix()
+  /// @throws In debug builds, asserts (0 <= index <= 2).
+  /// @note For efficiency and consistency with Eigen, this method returns
+  /// the same quantity returned by Eigen's col() operator.
+  /// The returned quantity can be assigned in various ways, e.g., as
+  /// `const auto& Bz_A = col(2);` or `Vector3<T> Bz_A = col(2);`
+  const Eigen::Block<const Matrix3<T>, 3, 1, true> col(int index) const {
+    // The returned value from this method mimics Eigen's col() method which was
+    // found in  Eigen/src/plugins/BlockMethods.h.  The Eigen Matrix3 R_AB_ that
+    // underlies this class is a column major matrix.  To return a column,
+    // InnerPanel = true is passed as the last template parameter above.
+    DRAKE_ASSERT(0 <= index && index <= 2);
+    return R_AB_.col(index);
+  }
 
   /// In-place multiply of `this` rotation matrix `R_AB` by `other` rotation
   /// matrix `R_BC`.  On return, `this` is set to equal `R_AB * R_BC`.

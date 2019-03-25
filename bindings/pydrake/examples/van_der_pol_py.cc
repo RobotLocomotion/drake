@@ -1,3 +1,4 @@
+#include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -25,7 +26,17 @@ PYBIND11_MODULE(van_der_pol, m) {
 
   py::class_<VanDerPolOscillator<T>, LeafSystem<T>>(
       m, "VanDerPolOscillator", doc.VanDerPolOscillator.doc)
-      .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc);
+      .def(py::init<>(), doc.VanDerPolOscillator.ctor.doc)
+      .def("get_position_output_port",
+          &VanDerPolOscillator<T>::get_position_output_port,
+          py_reference_internal,
+          doc.VanDerPolOscillator.get_position_output_port.doc)
+      .def("get_full_state_output_port",
+          &VanDerPolOscillator<T>::get_full_state_output_port,
+          py_reference_internal,
+          doc.VanDerPolOscillator.get_full_state_output_port.doc)
+      .def_static("CalcLimitCycle", &VanDerPolOscillator<T>::CalcLimitCycle,
+          doc.VanDerPolOscillator.CalcLimitCycle.doc);
 }
 
 }  // namespace pydrake

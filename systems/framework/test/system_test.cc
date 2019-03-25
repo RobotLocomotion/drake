@@ -43,11 +43,6 @@ class TestSystem : public System<double> {
     this->set_name("TestSystem");
   }
 
-  int get_num_continuous_states() const final {
-    ADD_FAILURE() << "Implementation is required, but unused here.";
-    return {};
-  }
-
   ~TestSystem() override {}
 
   using System::AddConstraint;  // allow access to protected method.
@@ -84,8 +79,8 @@ class TestSystem : public System<double> {
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
-        "y" + std::to_string(get_num_output_ports()),
-        OutputPortIndex(this->get_num_output_ports()),
+        "y" + std::to_string(num_output_ports()),
+        OutputPortIndex(this->num_output_ports()),
         assign_next_dependency_ticket(),
         kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
@@ -96,8 +91,8 @@ class TestSystem : public System<double> {
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
     // Report *everything* as having direct feedthrough.
-    for (int i = 0; i < get_num_input_ports(); ++i) {
-      for (int o = 0; o < get_num_output_ports(); ++o) {
+    for (int i = 0; i < num_input_ports(); ++i) {
+      for (int o = 0; o < num_output_ports(); ++o) {
         pairs.emplace(i, o);
       }
     }
@@ -132,6 +127,11 @@ class TestSystem : public System<double> {
   }
 
  protected:
+  int do_get_num_continuous_states() const final {
+    ADD_FAILURE() << "Implementation is required, but unused here.";
+    return {};
+  }
+
   std::unique_ptr<AbstractValue> DoAllocateInput(
       const InputPort<double>&) const final {
     return {};
@@ -290,7 +290,7 @@ TEST_F(SystemTest, VelocityConfigurationDerivativeSizeMismatch) {
 // Tests that the default DoPublish is invoked when no other handler is
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscretePublish) {
-  context_.set_time(5.0);
+  context_.SetTime(5.0);
   auto event_info = system_.AllocateCompositeEventCollection();
   system_.CalcNextUpdateTime(context_, event_info.get());
   const auto& events =
@@ -308,7 +308,7 @@ TEST_F(SystemTest, DiscretePublish) {
 // handler is
 // registered in DoCalcNextUpdateTime.
 TEST_F(SystemTest, DiscreteUpdate) {
-  context_.set_time(15.0);
+  context_.SetTime(15.0);
 
   auto event_info = system_.AllocateCompositeEventCollection();
   system_.CalcNextUpdateTime(context_, event_info.get());
@@ -329,8 +329,8 @@ TEST_F(SystemTest, PortReferencesAreStable) {
     system_.AddAbstractInputPort();
     system_.AddAbstractOutputPort();
   }
-  EXPECT_EQ(1001, system_.get_num_input_ports());
-  EXPECT_EQ(1001, system_.get_num_output_ports());
+  EXPECT_EQ(1001, system_.num_input_ports());
+  EXPECT_EQ(1001, system_.num_output_ports());
 
   // Check for address equality.
   EXPECT_EQ(&first_input, &system_.get_input_port(0));
@@ -378,7 +378,7 @@ TEST_F(SystemTest, PortNameTest) {
 
 // Tests the constraint list logic.
 TEST_F(SystemTest, SystemConstraintTest) {
-  EXPECT_EQ(system_.get_num_constraints(), 0);
+  EXPECT_EQ(system_.num_constraints(), 0);
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
@@ -467,7 +467,7 @@ class ValueIOTestSystem : public System<T> {
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "absport",
-        OutputPortIndex(this->get_num_output_ports()),
+        OutputPortIndex(this->num_output_ports()),
         this->assign_next_dependency_ticket(),
         kAbstractValued, 0 /* size */,
         &this->DeclareCacheEntry(
@@ -485,7 +485,7 @@ class ValueIOTestSystem : public System<T> {
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
         "vecport",
-        OutputPortIndex(this->get_num_output_ports()),
+        OutputPortIndex(this->num_output_ports()),
         this->assign_next_dependency_ticket(),
         kVectorValued, 1 /* size */,
         &this->DeclareCacheEntry(
@@ -498,12 +498,12 @@ class ValueIOTestSystem : public System<T> {
     this->set_name("ValueIOTestSystem");
   }
 
-  int get_num_continuous_states() const final {
+  ~ValueIOTestSystem() override {}
+
+  int do_get_num_continuous_states() const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
     return {};
   }
-
-    ~ValueIOTestSystem() override {}
 
   T DoCalcWitnessValue(const Context<T>&,
                        const WitnessFunction<T>&) const override {
@@ -550,8 +550,8 @@ class ValueIOTestSystem : public System<T> {
   std::multimap<int, int> GetDirectFeedthroughs() const override {
     std::multimap<int, int> pairs;
     // Report *everything* as having direct feedthrough.
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
-      for (int o = 0; o < this->get_num_output_ports(); ++o) {
+    for (int i = 0; i < this->num_input_ports(); ++i) {
+      for (int o = 0; o < this->num_output_ports(); ++o) {
         pairs.emplace(i, o);
       }
     }
@@ -642,7 +642,7 @@ class WrongVector : public MyVector<T, 2> {
 
 // Test error messages from the EvalInput methods.
 TEST_F(SystemInputErrorTest, CheckMessages) {
-  ASSERT_EQ(system_.get_num_input_ports(), 4);
+  ASSERT_EQ(system_.num_input_ports(), 4);
 
   // Sanity check that this works with a good port number.
   EXPECT_NO_THROW(system_.get_input_port(1));
@@ -748,8 +748,8 @@ class SystemIOTest : public ::testing::Test {
 TEST_F(SystemIOTest, SystemValueIOTest) {
   test_sys_.CalcOutput(*context_, output_.get());
 
-  EXPECT_EQ(context_->get_num_input_ports(), 4);
-  EXPECT_EQ(output_->get_num_ports(), 2);
+  EXPECT_EQ(context_->num_input_ports(), 4);
+  EXPECT_EQ(output_->num_ports(), 2);
 
   EXPECT_EQ(output_->get_data(0)->get_value<std::string>(),
             std::string("inputoutput"));
@@ -841,12 +841,12 @@ class ComputationTestSystem final : public System<double> {
     EXPECT_EQ(pnc, pnc_count_);
   }
 
-  int get_num_continuous_states() const final {
+ private:
+  int do_get_num_continuous_states() const final {
     ADD_FAILURE() << "Implementation is required, but unused here.";
     return {};
   }
 
- private:
   // Two discrete variable groups of lengths 2 and 4.
   std::unique_ptr<DiscreteValues<double>> AllocateDiscreteVariables()
       const final {
@@ -966,7 +966,7 @@ class ComputationTest : public ::testing::Test {
 };
 
 TEST_F(ComputationTest, Eval) {
-  context_->set_time(1.);
+  context_->SetTime(1.);
 
   //                 xcdot, pe, ke, pc, pnc
   test_sys_.ExpectCount(0, 0, 0, 0, 0);
@@ -1010,7 +1010,7 @@ TEST_F(ComputationTest, Eval) {
   // about dependencies here. For now we'll just verify that changing
   // some significant variables causes recomputation, not that *only*
   // significant variables cause recomputation.
-  context_->set_time(2.);
+  context_->SetTime(2.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[0], -2.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[1], -4.);
   EXPECT_EQ(test_sys_.EvalTimeDerivatives(*context_)[2], -6.);

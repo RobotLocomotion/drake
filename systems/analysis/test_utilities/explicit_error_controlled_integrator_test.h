@@ -44,7 +44,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ReqInitialStepTarget) {
 }
 
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ContextAccess) {
-  this->integrator->get_mutable_context()->set_time(3.);
+  this->integrator->get_mutable_context()->SetTime(3.);
   EXPECT_EQ(this->integrator->get_context().get_time(), 3.);
   EXPECT_EQ(this->context->get_time(), 3.);
 }
@@ -61,7 +61,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, ErrorEstSupport) {
 // Verifies that the stepping works with relatively small
 // magnitude step sizes.
 TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, MagDisparity) {
-  this->context->set_time(0.0);
+  this->context->SetTime(0.0);
 
   // Set integrator parameters.
   this->integrator->set_maximum_step_size(0.1);
@@ -270,7 +270,7 @@ TYPED_TEST_P(ExplicitErrorControlledIntegratorTest, SpringMassStepEC) {
   this->integrator->Initialize();
 
   // Set initial conditions.
-  this->integrator->get_mutable_context()->set_time(0.);
+  this->integrator->get_mutable_context()->SetTime(0.);
   this->spring_mass->set_position(this->integrator->get_mutable_context(),
                              initial_position);
   this->spring_mass->set_velocity(this->integrator->get_mutable_context(),

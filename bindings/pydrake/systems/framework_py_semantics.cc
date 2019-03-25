@@ -129,8 +129,10 @@ void DefineFrameworkPySemantics(py::module m) {
     DefineTemplateClassWithDefault<Context<T>>(
         m, "Context", GetPyParam<T>(), doc.Context.doc)
         .def("__str__", &Context<T>::to_string, doc.Context.to_string.doc)
+        .def("num_input_ports", &Context<T>::num_input_ports,
+            doc.ContextBase.num_input_ports.doc)
         .def("get_num_input_ports", &Context<T>::get_num_input_ports,
-            doc.ContextBase.get_num_input_ports.doc)
+            "Use num_input_ports() instead.")
         .def("FixInputPort",
             py::overload_cast<int, const BasicVector<T>&>(
                 &Context<T>::FixInputPort),
@@ -148,9 +150,12 @@ void DefineFrameworkPySemantics(py::module m) {
             py::arg("index"), py::arg("data"), py_reference_internal,
             doc.Context.FixInputPort.doc_2args_index_data)
         .def("get_time", &Context<T>::get_time, doc.Context.get_time.doc)
-        .def("set_time", &Context<T>::set_time, doc.Context.set_time.doc)
+        .def("SetTime", &Context<T>::SetTime, doc.Context.SetTime.doc)
+        .def("set_time", &Context<T>::set_time, "Use SetTime() instead.")
+        .def("SetAccuracy", &Context<T>::SetAccuracy,
+            doc.Context.SetAccuracy.doc)
         .def("set_accuracy", &Context<T>::set_accuracy,
-            doc.Context.set_accuracy.doc)
+            "Use SetAccuracy() instead.")
         .def("get_accuracy", &Context<T>::get_accuracy,
             doc.Context.get_accuracy.doc)
         .def("Clone", &Context<T>::Clone, doc.Context.Clone.doc)
@@ -163,6 +168,8 @@ void DefineFrameworkPySemantics(py::module m) {
             py_reference_internal, doc.Context.get_mutable_state.doc)
         // Sugar methods
         // - Continuous.
+        .def("num_continuous_states", &Context<T>::num_continuous_states,
+            doc.Context.num_continuous_states.doc)
         .def("get_continuous_state", &Context<T>::get_continuous_state,
             py_reference_internal, doc.Context.get_continuous_state.doc)
         .def("get_mutable_continuous_state",
@@ -178,9 +185,12 @@ void DefineFrameworkPySemantics(py::module m) {
             py_reference_internal,
             doc.Context.get_mutable_continuous_state_vector.doc)
         // - Discrete.
+        .def("num_discrete_state_groups",
+            &Context<T>::num_discrete_state_groups,
+            doc.Context.num_discrete_state_groups.doc)
         .def("get_num_discrete_state_groups",
             &Context<T>::get_num_discrete_state_groups,
-            doc.Context.get_num_discrete_state_groups.doc)
+            "Use num_discrete_state_groups() instead.")
         .def("get_discrete_state",
             overload_cast_explicit<const DiscreteValues<T>&>(
                 &Context<T>::get_discrete_state),
@@ -217,8 +227,10 @@ void DefineFrameworkPySemantics(py::module m) {
             py_reference_internal,
             doc.Context.get_mutable_discrete_state.doc_1args)
         // - Abstract.
+        .def("num_abstract_states", &Context<T>::num_abstract_states,
+            doc.Context.num_abstract_states.doc)
         .def("get_num_abstract_states", &Context<T>::get_num_abstract_states,
-            doc.Context.get_num_abstract_states.doc)
+            "Use num_abstract_states() instead.")
         .def("get_abstract_state",
             static_cast<const AbstractValues& (Context<T>::*)() const>(
                 &Context<T>::get_abstract_state),
@@ -353,8 +365,10 @@ void DefineFrameworkPySemantics(py::module m) {
     auto system_output = DefineTemplateClassWithDefault<SystemOutput<T>>(
         m, "SystemOutput", GetPyParam<T>(), doc.SystemOutput.doc);
     system_output
+        .def("num_ports", &SystemOutput<T>::num_ports,
+            doc.SystemOutput.num_ports.doc)
         .def("get_num_ports", &SystemOutput<T>::get_num_ports,
-            doc.SystemOutput.get_num_ports.doc)
+            "Use num_ports() instead.")
         .def("get_data", &SystemOutput<T>::get_data, py_reference_internal,
             doc.SystemOutput.get_data.doc)
         .def("get_vector_data", &SystemOutput<T>::get_vector_data,

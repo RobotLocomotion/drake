@@ -1,8 +1,10 @@
 import pydrake.common.eigen_geometry as mut
 
+import copy
+import unittest
+
 import numpy as np
 import six
-import unittest
 
 import pydrake.common.test.eigen_geometry_test_util as test_util
 
@@ -16,6 +18,8 @@ class TestEigenGeometry(unittest.TestCase):
         # Simple API.
         q_identity = mut.Quaternion()
         self.assertTrue(np.allclose(q_identity.wxyz(), [1, 0, 0, 0]))
+        self.assertTrue(np.allclose(
+            copy.copy(q_identity).wxyz(), [1, 0, 0, 0]))
         self.assertTrue(np.allclose(
             q_identity.wxyz(), mut.Quaternion.Identity().wxyz()))
         self.assertEqual(
@@ -90,6 +94,7 @@ class TestEigenGeometry(unittest.TestCase):
         transform = mut.Isometry3()
         X = np.eye(4, 4)
         self.assertTrue(np.allclose(transform.matrix(), X))
+        self.assertTrue(np.allclose(copy.copy(transform).matrix(), X))
         self.assertEqual(str(transform), str(X))
         # - Constructor with (X)
         transform = mut.Isometry3(matrix=X)
@@ -161,6 +166,8 @@ class TestEigenGeometry(unittest.TestCase):
             [0, 0, 1]])
         value = mut.AngleAxis(rotation=R)
         self.assertTrue(np.allclose(value.rotation(), R, atol=1e-15, rtol=0))
+        self.assertTrue(np.allclose(
+            copy.copy(value).rotation(), R, atol=1e-15, rtol=0))
         self.assertTrue(np.allclose(
             value.inverse().rotation(), R.T, atol=1e-15, rtol=0))
         self.assertTrue(np.allclose(

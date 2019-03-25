@@ -12,8 +12,8 @@ from fnmatch import fnmatch
 import os
 import platform
 import re
+import shutil
 import sys
-from tempfile import NamedTemporaryFile, mkdtemp
 import textwrap
 
 from clang import cindex
@@ -1006,24 +1006,24 @@ def main():
             include_file_map[filename] = include_file
     assert len(include_files) > 0
     # Generate the glue include file, which will include all relevant include
-    # files, and parse. Add a unique prefix so we do not leak accidentally leak
-    # in paths in `/tmp`.
-    dir_prefix = mkdtemp(prefix="drake_mkdoc_")
-    glue_include_file = NamedTemporaryFile(
-        'w', prefix="glue_include_file_", dir=dir_prefix)
-    with glue_include_file:
+    # files, and parse. Use a tempdir that is relative to the output file for
+    # usage with Bazel.
+    tmpdir = output_filename + ".tmp_artifacts"
+    os.mkdir(tmpdir)
+    glue_filename = os.path.join(tmpdir, "mkdoc_glue.h")
+    with open(glue_filename, 'w') as glue_f:
         for include_file in sorted(include_files):
             line = "#include \"{}\"".format(include_file)
-            glue_include_file.write(line + "\n")
+            glue_f.write(line + "\n")
             f.write("// " + line + "\n")
         f.write("\n")
-        glue_include_file.flush()
+        glue_f.flush()
         if not quiet:
             eprint("Parse headers...")
         index = cindex.Index(
             cindex.conf.lib.clang_createIndex(False, True))
-        translation_unit = index.parse(glue_include_file.name, parameters)
-    os.rmdir(dir_prefix)
+        translation_unit = index.parse(glue_filename, parameters)
+    shutil.rmtree(tmpdir)
     # Extract symbols.
     if not quiet:
         eprint("Extract relevant symbols...")

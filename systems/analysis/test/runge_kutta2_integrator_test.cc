@@ -49,7 +49,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   // Create the integrator
   RungeKutta2Integrator<double> integrator(spring_mass, dt, context.get());
-  integrator.get_mutable_context()->set_time(3.);
+  integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);
 }

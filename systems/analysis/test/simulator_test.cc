@@ -180,7 +180,7 @@ GTEST_TEST(SimulatorTest, DiagramWitness) {
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
 
-  context.set_time(0);
+  context.SetTime(0);
   simulator.StepTo(1);
 
   // Publication should occur at witness function crossing.
@@ -373,7 +373,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
 
   // Set the initial accuracy in the context.
   double accuracy = 1.0;
-  context.set_accuracy(accuracy);
+  context.SetAccuracy(accuracy);
 
   // Set the initial empty system evaluation.
   double eval = std::numeric_limits<double>::infinity();
@@ -391,7 +391,7 @@ GTEST_TEST(SimulatorTest, VariableStepIsolation) {
     // Increase the accuracy, which should shrink the isolation window when
     // next retrieved.
     accuracy *= 0.1;
-    context.set_accuracy(accuracy);
+    context.SetAccuracy(accuracy);
   }
 }
 
@@ -421,7 +421,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
 
   // Set the initial accuracy in the context.
   double accuracy = 1.0;
-  context.set_accuracy(accuracy);
+  context.SetAccuracy(accuracy);
 
   // Set the initial empty system evaluation.
   double eval = std::numeric_limits<double>::infinity();
@@ -429,13 +429,13 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
   // Loop, decreasing accuracy as we go.
   while (accuracy > 1e-8) {
     // (Re)set the time and initial state.
-    context.set_time(0);
+    context.SetTime(0);
 
     // Simulate to dt.
     simulator.StepTo(dt);
 
     // CalcWitnessValue the witness function.
-    context.set_time(publish_time);
+    context.SetTime(publish_time);
     double new_eval = witness.front()->CalcWitnessValue(context);
 
     // Verify that the new evaluation is closer to zero than the old one.
@@ -444,7 +444,7 @@ GTEST_TEST(SimulatorTest, FixedStepIncreasingIsolationAccuracy) {
 
     // Increase the accuracy.
     accuracy *= 0.1;
-    context.set_accuracy(accuracy);
+    context.SetAccuracy(accuracy);
   }
 }
 
@@ -490,11 +490,11 @@ GTEST_TEST(SimulatorTest, MultipleWitnesses) {
   // Set initial time and state.
   Context<double>& context = simulator.get_mutable_context();
   context.get_mutable_continuous_state()[0] = -1;
-  context.set_time(0);
+  context.SetTime(0);
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-10;
-  context.set_accuracy(tol);
+  context.SetAccuracy(tol);
 
   // Simulate.
   simulator.StepTo(0.1);
@@ -546,7 +546,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesIdentical) {
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-12;
-  simulator->get_mutable_context().set_accuracy(tol);
+  simulator->get_mutable_context().SetAccuracy(tol);
 
   // Simulate.
   simulator->StepTo(10);
@@ -585,7 +585,7 @@ GTEST_TEST(SimulatorTest, MultipleWitnessesStaggered) {
 
   // Isolate witness functions to high accuracy.
   const double tol = 1e-12;
-  simulator.get_mutable_context().set_accuracy(tol);
+  simulator.get_mutable_context().SetAccuracy(tol);
 
   // Get the isolation interval tolerance.
   const optional<double> iso_tol = simulator.GetCurrentWitnessTimeIsolation();
@@ -619,7 +619,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegToZero) {
   Simulator<double> simulator(system);
   InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>& context = simulator.get_mutable_context();
-  context.set_time(0);
+  context.SetTime(0);
   simulator.StepTo(1);
 
   // Publication should occur at witness function crossing.
@@ -643,7 +643,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleZeroToPos) {
   Simulator<double> simulator(system);
   InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>& context = simulator.get_mutable_context();
-  context.set_time(0);
+  context.SetTime(0);
   simulator.StepTo(1);
 
   // Verify that no publication is performed when stepping to 1.
@@ -666,7 +666,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimplePositiveToNegative) {
   Simulator<double> simulator(system);
   InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>& context = simulator.get_mutable_context();
-  context.set_time(0);
+  context.SetTime(0);
   simulator.StepTo(2);
 
   // Publication should not occur (witness function should initially evaluate
@@ -689,7 +689,7 @@ GTEST_TEST(SimulatorTest, WitnessTestCountSimpleNegativeToPositive) {
   Simulator<double> simulator(system);
   InitFixedStepIntegratorForWitnessTesting(&simulator, dt);
   Context<double>& context = simulator.get_mutable_context();
-  context.set_time(-1);
+  context.SetTime(-1);
   simulator.StepTo(1);
 
   // Publication should occur at witness function crossing.
@@ -728,7 +728,7 @@ GTEST_TEST(SimulatorTest, SecondConstructor) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Mark the context with an arbitrary value.
-  context->set_time(3.);
+  context->SetTime(3.);
 
   /// Construct the simulator with the created context.
   Simulator<double> simulator(spring_mass, std::move(context));
@@ -781,7 +781,7 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   simulator.Initialize();
 
   // Try some other context stuff.
-  simulator.get_mutable_context().set_time(3.);
+  simulator.get_mutable_context().SetTime(3.);
   EXPECT_EQ(simulator.get_context().get_time(), 3.);
   EXPECT_TRUE(simulator.has_context());
   simulator.release_context();
@@ -790,7 +790,7 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
 
   // Create another context.
   auto ucontext = spring_mass.CreateDefaultContext();
-  ucontext->set_time(3.);
+  ucontext->SetTime(3.);
   simulator.reset_context(std::move(ucontext));
   EXPECT_EQ(simulator.get_context().get_time(), 3.);
   EXPECT_TRUE(simulator.has_context());
@@ -892,13 +892,13 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
 
   simulator.set_target_realtime_rate(1.);  // No faster than 1X real time.
   simulator.get_mutable_integrator()->set_maximum_step_size(0.001);
-  simulator.get_mutable_context().set_time(0.);
+  simulator.get_mutable_context().SetTime(0.);
   simulator.Initialize();
   simulator.StepTo(1.);  // Simulate for 1 simulated second.
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 1.1);
 
   simulator.set_target_realtime_rate(5.);  // No faster than 5X real time.
-  simulator.get_mutable_context().set_time(0.);
+  simulator.get_mutable_context().SetTime(0.);
   simulator.Initialize();
   simulator.StepTo(1.);  // Simulate for 1 more simulated second.
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
@@ -912,7 +912,7 @@ GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(false);
 
-  simulator.get_mutable_context().set_time(0.);
+  simulator.get_mutable_context().SetTime(0.);
   simulator.Initialize();
   // Publish should happen on initialization.
   EXPECT_EQ(1, simulator.get_num_publishes());
@@ -1324,14 +1324,14 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
 
   // Test with spike time = 3*h.
   delta->set_spike_time(3 * DiscreteInputAccumulator::kPeriod);
-  simulator.get_mutable_context().set_time(0.);
+  simulator.get_mutable_context().SetTime(0.);
   simulator.Initialize();
   simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 1, 1}));
 
   // Test with spike time not coinciding with a sample time.
   delta->set_spike_time(2.7 * DiscreteInputAccumulator::kPeriod);
-  simulator.get_mutable_context().set_time(0.);
+  simulator.get_mutable_context().SetTime(0.);
   simulator.Initialize();
   simulator.StepTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 0, 0}));
@@ -1397,7 +1397,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
 
   // Set time to an exact floating point representation; we want t_upd to
   // be much smaller in magnitude than the time, hence the negative time.
-  simulator.get_mutable_context().set_time(-1.0 / 1024);
+  simulator.get_mutable_context().SetTime(-1.0 / 1024);
 
   // Capture the time at which an update is done using a callback function.
   std::vector<double> updates;
@@ -1700,7 +1700,7 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   simulator.Initialize();
 
   // Set initial condition using the Simulator's internal Context.
-  simulator.get_mutable_context().set_time(0);
+  simulator.get_mutable_context().SetTime(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
 
@@ -1785,7 +1785,7 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
       directed_t_final, &simulator.get_mutable_context());
 
   // Set initial condition using the Simulator's internal Context.
-  simulator.get_mutable_context().set_time(0);
+  simulator.get_mutable_context().SetTime(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
 
@@ -1844,7 +1844,7 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   // Set the time to right before an event, which should trigger artificial
   // limiting.
   const double desired_dt = req_initial_step_size * 1e-2;
-  simulator.get_mutable_context().set_time(event_time - desired_dt);
+  simulator.get_mutable_context().SetTime(event_time - desired_dt);
 
   // Step to the event time.
   integrator->IntegrateNoFurtherThanTime(
@@ -1889,7 +1889,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   integrator->set_target_accuracy(accuracy);
 
   // Set initial condition using the Simulator's internal Context.
-  simulator.get_mutable_context().set_time(0);
+  simulator.get_mutable_context().SetTime(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
 
@@ -1901,7 +1901,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   // Now disable exceptions on violating the minimum step size and step again.
   // Since we are changing the state between successive StepTo(.) calls, it is
   // wise to call Initialize() prior to the second call.
-  simulator.get_mutable_context().set_time(0);
+  simulator.get_mutable_context().SetTime(0);
   spring_mass.set_position(&simulator.get_mutable_context(), 0.1);
   spring_mass.set_velocity(&simulator.get_mutable_context(), 0);
   integrator->set_throw_on_minimum_step_size_violation(false);

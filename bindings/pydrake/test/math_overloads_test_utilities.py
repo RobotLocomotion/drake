@@ -1,3 +1,14 @@
+"""
+Provides utilities to test overload algebra.
+
+The actual tests are separated into different processes which test different
+loading orders, which guarantees the same behavior regardless of when a module
+is imported.
+
+Generally, we would try to unload the modules; however, this does not work well
+with pybind11 modules that rely on NumPy.
+"""
+
 from __future__ import print_function
 
 import math
@@ -5,16 +16,13 @@ import subprocess
 import sys
 import unittest
 
-# N.B. Do not import modules here, as we want to test the order in which
-# they're imported (if they're imported at all).
-
 # Change this to inspect output.
-verbose = False
+VERBOSE = False
 
 
 def debug_print(*args):
-    # Prints only if `verbose` is true.
-    if verbose:
+    # Prints only if `VERBOSE` is true.
+    if VERBOSE:
         print(*args)
 
 
@@ -40,8 +48,8 @@ class Overloads(object):
 class FloatOverloads(Overloads):
     # Imports `math` and provides support for testing `float` overloads.
     def __init__(self):
-        from pydrake import math as drake_math
-        self.m = drake_math
+        import pydrake.math as m
+        self.m = m
         self.T = float
 
     def supports(self, func):
@@ -58,9 +66,9 @@ class AutoDiffOverloads(Overloads):
     # Imports `pydrake.autodiffutils` and provides support for testing its
     # overloads.
     def __init__(self):
-        from pydrake import autodiffutils
-        self.m = autodiffutils
-        self.T = self.m.AutoDiffXd
+        import pydrake.autodiffutils as m
+        self.m = m
+        self.T = m.AutoDiffXd
 
     def supports(self, func):
         backwards_compat = [
@@ -87,9 +95,9 @@ class SymbolicOverloads(Overloads):
     # Imports `pydrake.symbolic` and provides support for testing its
     # overloads.
     def __init__(self):
-        from pydrake import symbolic
-        self.m = symbolic
-        self.T = self.m.Expression
+        import pydrake.symbolic as m
+        self.m = m
+        self.T = m.Expression
 
     def supports(self, func):
         backwards_compat = [
@@ -111,11 +119,21 @@ class SymbolicOverloads(Overloads):
         return self.T(y_float)
 
 
-class TestMathOverloads(unittest.TestCase):
+class MathOverloadsBase(unittest.TestCase):
     """Tests overloads of math functions, specifically ensuring that we will be
     robust against import order."""
 
-    def _check_overload(self, overload):
+    def setUp(self):
+        # Explicitly ensure we're loading the modules anew.
+        should_be_fresh = [
+            "pydrake.autodiffutils",
+            "pydrake.math",
+            "pydrake.symoblic"
+        ]
+        for m in should_be_fresh:
+            self.assertNotIn(m, sys.modules, m)
+
+    def check_overload(self, overload):
         # TODO(eric.cousineau): Consider comparing against `numpy` ufunc
         # methods.
         import pydrake.math as drake_math
@@ -176,33 +194,3 @@ class TestMathOverloads(unittest.TestCase):
         check_eval(unary, 1)
         debug_print("Binary:")
         check_eval(binary, 2)
-
-    def _check_overloads(self, order):
-        for overload_cls in order:
-            self._check_overload(overload_cls())
-
-    def test_overloads(self):
-        # Each of these orders implies the relevant module is imported in this
-        # test, in the order specified. This is done to guarantee that the
-        # cross-module overloading does not affect functionality.
-        orders = [
-            (FloatOverloads,),
-            (SymbolicOverloads,),
-            (AutoDiffOverloads,),
-            (AutoDiffOverloads, SymbolicOverloads),
-            (SymbolicOverloads, AutoDiffOverloads),
-        ]
-        # At present, the `pybind11` modules appear not to be destroyed, even
-        # when we try to completely dergister them and garbage collect.
-        # To keep this test self-contained, we will just reinvoke this test
-        # with the desired order so we can control which modules get imported.
-        if len(sys.argv) == 1:
-            # We have arrived here from a direct call. Call the specified
-            # ordering.
-            for i in range(len(orders)):
-                args = [sys.executable, sys.argv[0], str(i)]
-                subprocess.check_call(args)
-        else:
-            self.assertEqual(len(sys.argv), 2)
-            i = int(sys.argv[1])
-            self._check_overloads(orders[i])
