@@ -40,18 +40,27 @@ class AutoDiffXdTest : public ::testing::Test {
       // derivatives because they are allowed to be nonsense.
       return ::testing::AssertionSuccess();
     }
+    // We use op== not op!= here, so that NaNs are handled correctly.
     if (!(e_xd.value() == e_3d.value())) {
       return ::testing::AssertionFailure()
              << "Values do not match: " << e_xd.value() << " and "
              << e_3d.value();
     }
-
+    // If the values are infinite, we shall not compare the derivatives because
+    // they are allowed to be nonsense.
+    if (!(std::isfinite(e_xd.value()) && std::isfinite(e_3d.value()))) {
+      return ::testing::AssertionSuccess();
+    }
     // Check the derivatives() of each result.  When an AutoDiffXd derivatives
     // vector is empty, the implication is that all derivatives are zero.
     if (e_xd.derivatives().size() == 0) {
-      return CompareMatrices(Eigen::Vector3d::Zero(), e_3d.derivatives());
+      return CompareMatrices(Eigen::Vector3d::Zero(), e_3d.derivatives())
+          << "\n(where m1 was zero-sized"
+          << " and value was " << e_xd.value() << ")";
     }
-    return CompareMatrices(e_xd.derivatives(), e_3d.derivatives());
+    return CompareMatrices(e_xd.derivatives(), e_3d.derivatives())
+          << "\n(where m1 was nonzero-sized"
+          << " and value was " << e_xd.value() << ")";
   }
 };
 
