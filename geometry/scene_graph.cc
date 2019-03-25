@@ -81,6 +81,11 @@ SceneGraph<T>::SceneGraph()
       this->DeclareAbstractOutputPort("query",
                                       &SceneGraph::CalcQueryObject)
           .get_index();
+
+  auto& pose_update_cache_entry = this->DeclareCacheEntry(
+      "Cache guard for pose updates", &SceneGraph::CalcPoseUpdate,
+      {this->all_input_ports_ticket()});
+  pose_update_index_ = pose_update_cache_entry.cache_index();
 }
 
 template <typename T>
@@ -339,8 +344,6 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
   int i = 0;
 
   const auto& g_context = static_cast<const GeometryContext<T>&>(context);
-  // TODO(SeanCurtis-TRI): Modify this when the cache is available to use the
-  // cache instead of this heavy-handed update.
   FullPoseUpdate(g_context);
   const auto& g_state = g_context.get_geometry_state();
 
@@ -363,7 +366,8 @@ void SceneGraph<T>::CalcPoseBundle(const Context<T>& context,
 }
 
 template <typename T>
-void SceneGraph<T>::FullPoseUpdate(const GeometryContext<T>& context) const {
+void SceneGraph<T>::CalcPoseUpdate(const GeometryContext<T>& context,
+                                   int*) const {
   // TODO(SeanCurtis-TRI): Update this when the cache is available.
   // This method is const and the context is const. Ultimately, this will pull
   // cached entities to do the query work. For now, we have to const cast the
