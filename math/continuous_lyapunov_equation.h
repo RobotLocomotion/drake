@@ -15,30 +15,29 @@ namespace math {
  * @param A A user defined real square matrix.
  * @param Q A user defined real symmetric matrix.
  *
- * Computes a unique solution X to the continuouse-time Lyapunov equation: A'X +
- * XA + Q = 0, where @p A is real and square, and @p Q is real, symmetric and of
- * equal size as @p A.
+ * @pre Q is a symmetric matrix.
  *
- * @throws std::runtime_error if @p A or @p Q are not square matrices or do not
+ * Computes a unique solution X to the continuous Lyapunov equation: `AᵀX + XA +
+ * Q = 0`, where A is real and square, and Q is real, symmetric and of equal
+ * size as A.
+ * @throws std::runtime_error if A or Q are not square matrices or do not
  * have the same size.
  *
- * @throws std::runtime_error if @p Q is not symmetric.
+ * Limitations: Given the Eigenvalues of A as λ₁, ..., λₙ, there exists
+ * a unique solution if and only if λᵢ + λ̅ⱼ ≠ 0 ∀ i,j, where λ̅ⱼ is
+ * the complex conjugate of λⱼ.
+ * @throws std::runtime_error if the solution is not unique.
  *
- * Limitations: Given the Eigenvalues of @p A as λ₁, ..., λ₁, there exists
- * a unique solution if and only if λᵢ + λ̅ ⱼ ≠ 0 ∀ i,j, where λ̅ ⱼ is
- * the complex conjugate of λⱼ. @throws std::runtime_error if the solution is
- * not unique.
- *
- * There are no further limitations on the eigenvalues of @p A.
- * Further, if all λᵢ have negative real parts, and if @p Q is positive
+ * There are no further limitations on the eigenvalues of A.
+ * Further, if all λᵢ have negative real parts, and if Q is positive
  * semi-definite, then X is also positive semi-definite [1]. Therefore, if one
- * searches for a Lyapunov function V(z) = z'Xz for the stable linear system ż =
- * Az, then the solution of the Lyapunov Equation A'X + XA + Q = 0 only returns
- * a valid Lyapunov function if @p Q is positive semi-definite.
+ * searches for a Lyapunov function V(z) = zᵀXz for the stable linear system ż =
+ * Az, then the solution of the Lyapunov Equation `AᵀX + XA + Q = 0` only
+ * returns a valid Lyapunov function if Q is positive semi-definite.
  *
  * The implementation is based on SLICOT routine SB03MD [2]. Note the
  * transformation Q = -C. The complexity of this routine is O(n³).
- * If @p A is larger than 2-by-2, then a Schur factorization is performed.
+ * If A is larger than 2-by-2, then a Schur factorization is performed.
  * @throw std::runtime_error if Schur factorization failed.
  *
  * [1] Bartels, R.H. and G.W. Stewart, "Solution of the Matrix Equation AX + XB

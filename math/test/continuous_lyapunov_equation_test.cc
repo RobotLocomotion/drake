@@ -73,11 +73,19 @@ GTEST_TEST(RealContinuousLyapunovEquation, ThrowEigenValuesATest) {
   // 0 eigenvalue
   MatrixXd A2(n, n);
   A2 << 0, 0, 0, -1;
+  // eigenvalue within tol of zero
+  MatrixXd A3(n, n);
+  A3 << 1, 0, 0, -1e-11;
+  // sum of eigenvalues within tol of zero
+  MatrixXd A4(n, n);
+  A4 << -1 + 1e-10, 0, 0, 1 - 5e-11;
   MatrixXd Q(n, n);
   Q << 1, 0, 0, 1;
 
   EXPECT_ANY_THROW(RealContinuousLyapunovEquation(A1, Q));
   EXPECT_ANY_THROW(RealContinuousLyapunovEquation(A2, Q));
+  EXPECT_ANY_THROW(RealContinuousLyapunovEquation(A3, Q));
+  EXPECT_ANY_THROW(RealContinuousLyapunovEquation(A4, Q));
 }
 
 GTEST_TEST(RealContinuousLyapunovEquation, Solve1by1Test) {
