@@ -39,7 +39,18 @@ namespace math {
 /// operator*() methods act like 4x4 matrix multiplication.  Instead, this class
 /// contains a rotation matrix class as well as a 3x1 position vector.  To form
 /// a 4x4 matrix, use GetAsMatrix().  GetAsIsometry() is treated similarly.
+///
 /// @note An isometry is sometimes regarded as synonymous with rigid transform.
+/// The %RigidTransform class has advantages over the Eigen::Isometry class.
+/// - %RigidTransform is built on an underlying rigorous 3x3 RotationMatrix
+///   class that has significant functionality for 3D orientation.
+/// - In debug versions, %RigidTransform requires a valid 3x3 rotation matrix
+///   and a valid (non-NAN) position vector.  Eigen::Isometry does not.
+/// - %RigidTransform caught bugs that were previously undetected with Isometry.
+/// - %RigidTransform has additional functionality and ease-of-use,
+///   resulting in shorter more coherent code.
+/// - The name Isometry is unfamiliar to many roboticists and dynamicists and to
+///   them, Isometry.linear() is counter-intuitive to return a rotation matrix.
 ///
 /// @authors Paul Mitiguy (2018) Original author.
 /// @authors Drake team (see https://drake.mit.edu/credits).
