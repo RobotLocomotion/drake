@@ -253,6 +253,7 @@ drake_cc_library(
     deps = [
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
+        ":runge_kutta5_integrator",
         "//common:extract_double",
         "//systems/framework:context",
         "//systems/framework:system",
