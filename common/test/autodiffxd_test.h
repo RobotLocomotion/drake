@@ -12,8 +12,6 @@ namespace test {
 
 class AutoDiffXdTest : public ::testing::Test {
  protected:
-  void SetUp() override {}
-
   // Evaluates a given function f with values of AutoDiffXd and values with
   // AutoDiffd<3>. It checks if the values and the derivatives of those
   // evaluation results are matched.
@@ -29,10 +27,10 @@ class AutoDiffXdTest : public ::testing::Test {
     y_xd.derivatives() = Eigen::VectorXd::Ones(3);
     y_3d.derivatives() = Eigen::Vector3d::Ones();
 
-    const AutoDiffXd e1{f(x_xd, y_xd)};
-    const AutoDiffd<3> e2{f(x_3d, y_3d)};
+    const AutoDiffXd e_xd{f(x_xd, y_xd)};
+    const AutoDiffd<3> e_3d{f(x_3d, y_3d)};
 
-    if (std::isnan(e1.value()) && std::isnan(e2.value())) {
+    if (std::isnan(e_xd.value()) && std::isnan(e_3d.value())) {
       // Both values are NaN.
       return ::testing::AssertionSuccess();
     }
@@ -40,27 +38,29 @@ class AutoDiffXdTest : public ::testing::Test {
     // by a machine precision order of magnitude.
     const double kEpsilon = std::numeric_limits<double>::epsilon();
     const double kValueTolerance =
-        10 * kEpsilon * std::max(std::abs(e1.value()), std::abs(e2.value()));
-    if (std::abs(e1.value() - e2.value()) > kValueTolerance) {
+        10 * kEpsilon *
+        std::max(std::abs(e_xd.value()), std::abs(e_3d.value()));
+    if (std::abs(e_xd.value() - e_3d.value()) > kValueTolerance) {
       return ::testing::AssertionFailure()
-             << "Values do not match: " << e1.value() << " and " << e2.value();
+             << "Values do not match: " << e_xd.value() << " and "
+             << e_3d.value();
     }
-    if (e1.derivatives().array().isNaN().all() &&
-        e2.derivatives().array().isNaN().all()) {
+    if (e_xd.derivatives().array().isNaN().all() &&
+        e_3d.derivatives().array().isNaN().all()) {
       // Both derivatives are NaN.
       return ::testing::AssertionSuccess();
     }
     const double kDerivativeTolerance = 10 * kEpsilon;  // relative tolerance.
     const bool derivatives_match =
         // Zero derivatives.
-        (e1.derivatives().size() == 0 &&
-         e2.derivatives().isZero(kDerivativeTolerance)) ||
+        (e_xd.derivatives().size() == 0 &&
+         e_3d.derivatives().isZero(kDerivativeTolerance)) ||
         // Non-zero derivatives
-        e1.derivatives().isApprox(e2.derivatives(), kDerivativeTolerance);
+        e_xd.derivatives().isApprox(e_3d.derivatives(), kDerivativeTolerance);
     if (!derivatives_match) {
       return ::testing::AssertionFailure() << "Derivatives do not match:\n"
-                                           << e1.derivatives() << "\n----\n"
-                                           << e2.derivatives() << "\n";
+                                           << e_xd.derivatives() << "\n----\n"
+                                           << e_3d.derivatives() << "\n";
     }
     return ::testing::AssertionSuccess();
   }
