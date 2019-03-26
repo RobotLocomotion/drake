@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/solvers/solvers_pybind.h"
 #include "drake/solvers/mosek_solver.h"
 
 namespace drake {
@@ -16,12 +17,13 @@ PYBIND11_MODULE(mosek, m) {
 
   py::module::import("pydrake.solvers.mathematicalprogram");
 
-  py::class_<MosekSolver, SolverInterface>(
-      m, "MosekSolver", doc.MosekSolver.doc)
-      .def(py::init<>(), doc.MosekSolver.ctor.doc)
+  py::class_<MosekSolver, SolverInterface> cls(
+      m, "MosekSolver", doc.MosekSolver.doc);
+  cls.def(py::init<>(), doc.MosekSolver.ctor.doc)
       .def("set_stream_logging", &MosekSolver::set_stream_logging,
           py::arg("flag"), py::arg("log_file"),
           doc.MosekSolver.set_stream_logging.doc);
+  pysolvers::BindAcquireLicense(&cls, doc.MosekSolver);
 }
 
 }  // namespace pydrake

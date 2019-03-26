@@ -73,10 +73,12 @@ struct Impl {
     // (ordered by how they are bound).
     using Base::DeclareAbstractInputPort;
     using Base::DeclareAbstractOutputPort;
+    using Base::DeclareAbstractParameter;
     using Base::DeclareAbstractState;
     using Base::DeclareContinuousState;
     using Base::DeclareDiscreteState;
     using Base::DeclareInitializationEvent;
+    using Base::DeclareNumericParameter;
     using Base::DeclarePeriodicDiscreteUpdate;
     using Base::DeclarePeriodicEvent;
     using Base::DeclarePeriodicPublish;
@@ -262,21 +264,27 @@ struct Impl {
     // TODO(eric.cousineau): Resolve `str_py` workaround.
     auto str_py = py::eval("str");
 
+    // TODO(eric.cousineau): Separate bindings for `SystemBase` into a separate
+    // class.
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     DefineTemplateClassWithDefault<System<T>, PySystem>(
         m, "System", GetPyParam<T>(), doc.SystemBase.doc)
         .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
+        .def("num_input_ports", &System<T>::num_input_ports,
+            doc.SystemBase.num_input_ports.doc)
         .def("get_num_input_ports", &System<T>::get_num_input_ports,
-            doc.SystemBase.get_num_input_ports.doc)
+            "Use num_input_ports() instead.")
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
         .def("GetInputPort", &System<T>::GetInputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetInputPort.doc)
+        .def("num_output_ports", &System<T>::num_output_ports,
+            doc.SystemBase.num_output_ports.doc)
         .def("get_num_output_ports", &System<T>::get_num_output_ports,
-            doc.SystemBase.get_num_output_ports.doc)
+            "Use num_output_ports() instead.")
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)
@@ -307,6 +315,12 @@ struct Impl {
                 &System<T>::HasDirectFeedthrough),
             py::arg("input_port"), py::arg("output_port"),
             doc.System.HasDirectFeedthrough.doc_2args)
+        // - Parameters
+        .def("num_abstract_parameters", &System<T>::num_abstract_parameters,
+            doc.SystemBase.num_abstract_parameters.doc)
+        .def("num_numeric_parameter_groups",
+            &System<T>::num_numeric_parameter_groups,
+            doc.SystemBase.num_numeric_parameter_groups.doc)
         // Context.
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
             doc.System.CreateDefaultContext.doc)
@@ -399,6 +413,11 @@ struct Impl {
             },
             py_reference_internal, py::arg("name"),
             "(This method is deprecated.)")
+        .def("_DeclareAbstractParameter",
+            &PyLeafSystem::DeclareAbstractParameter, py::arg("model_value"),
+            doc.LeafSystem.DeclareAbstractParameter.doc)
+        .def("_DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
+            py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
         .def("_DeclareAbstractOutputPort",
             WrapCallbacks([](PyLeafSystem* self, const std::string& name,
                               AllocCallback arg1,
@@ -413,9 +432,7 @@ struct Impl {
               return self->DeclareAbstractOutputPort(arg1, arg2);
             }),
             py_reference_internal, py::arg("alloc"), py::arg("calc"),
-            doc.LeafSystem
-                .DeclareAbstractOutputPort
-                // NOLINTNEXTLINE(whitespace/line_length)
+            doc.LeafSystem.DeclareAbstractOutputPort
                 .doc_4args_name_alloc_function_calc_function_prerequisites_of_calc)
         .def("_DeclareVectorInputPort",
             [](PyLeafSystem* self, std::string name,
@@ -442,9 +459,7 @@ struct Impl {
               return self->DeclareVectorOutputPort(arg1, arg2);
             }),
             py_reference_internal,
-            doc.LeafSystem
-                .DeclareVectorOutputPort
-                // NOLINTNEXTLINE(whitespace/line_length)
+            doc.LeafSystem.DeclareVectorOutputPort
                 .doc_4args_name_model_vector_vector_calc_function_prerequisites_of_calc)
         .def("_DeclareInitializationEvent",
             [](PyLeafSystem* self, const Event<T>& event) {

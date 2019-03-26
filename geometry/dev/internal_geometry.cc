@@ -38,6 +38,20 @@ bool InternalGeometry::has_role(Role role) const {
   }
 }
 
+optional<RenderIndex> InternalGeometry::render_index(
+    const std::string& renderer_name) const {
+  auto iter = render_indices_.find(renderer_name);
+  if (iter != render_indices_.end()) return iter->second;
+  return {};
+}
+
+void InternalGeometry::set_render_index(std::string renderer_name,
+                                        RenderIndex index) {
+  // Internally, this should never be called with a duplicate renderer name.
+  DRAKE_ASSERT(render_indices_.count(renderer_name) == 0);
+  render_indices_[move(renderer_name)] = index;
+}
+
 }  // namespace internal
 }  // namespace dev
 }  // namespace geometry

@@ -148,20 +148,20 @@ TEST_F(VectorSystemTest, Topology) {
   TestVectorSystem dut;
 
   // One input port.
-  ASSERT_EQ(dut.get_num_input_ports(), 1);
+  ASSERT_EQ(dut.num_input_ports(), 1);
   const InputPort<double>& input_port = dut.get_input_port();
   EXPECT_EQ(input_port.get_data_type(), kVectorValued);
   EXPECT_EQ(input_port.size(), TestVectorSystem::kSize);
 
   // One output port.
-  ASSERT_EQ(dut.get_num_output_ports(), 1);
+  ASSERT_EQ(dut.num_output_ports(), 1);
   const OutputPort<double>& output_port = dut.get_output_port();
   EXPECT_EQ(output_port.get_data_type(), kVectorValued);
   EXPECT_EQ(output_port.size(), TestVectorSystem::kSize);
 
   // No state by default ...
   auto context = dut.CreateDefaultContext();
-  ASSERT_EQ(context->get_num_input_ports(), 1);
+  ASSERT_EQ(context->num_input_ports(), 1);
   EXPECT_TRUE(context->is_stateless());
 
   // ... but subclasses may declare it.
@@ -307,8 +307,8 @@ TEST_F(VectorSystemTest, TimeDerivatives) {
   dut.CalcTimeDerivatives(*context, derivatives.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_time_derivatives_count(), 1);
-  EXPECT_EQ(derivatives->get_vector().GetAtIndex(0), 2.0);
-  EXPECT_EQ(derivatives->get_vector().GetAtIndex(1), 3.0);
+  EXPECT_EQ(derivatives->get_vector()[0], 2.0);
+  EXPECT_EQ(derivatives->get_vector()[1], 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 0);
@@ -336,8 +336,8 @@ TEST_F(VectorSystemTest, DiscreteVariableUpdates) {
   dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
   EXPECT_EQ(dut.get_last_context(), context.get());
   EXPECT_EQ(dut.get_discrete_variable_updates_count(), 1);
-  EXPECT_EQ(discrete_updates->get_vector(0).GetAtIndex(0), 2.0);
-  EXPECT_EQ(discrete_updates->get_vector(0).GetAtIndex(1), 3.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)[0], 2.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)[1], 3.0);
 
   // Nothing else weird happened.
   EXPECT_EQ(dut.get_time_derivatives_count(), 0);
@@ -428,7 +428,7 @@ TEST_F(VectorSystemTest, NoInputContinuousTimeSystemTest) {
   std::unique_ptr<ContinuousState<double>> derivatives =
       dut.AllocateTimeDerivatives();
   dut.CalcTimeDerivatives(*context, derivatives.get());
-  EXPECT_EQ(derivatives->get_vector().GetAtIndex(0), -1.0);
+  EXPECT_EQ(derivatives->get_vector()[0], -1.0);
 
   const auto& output = dut.get_output_port();
   EXPECT_EQ(output.Eval(*context)[0], 1.0);
@@ -465,9 +465,9 @@ TEST_F(VectorSystemTest, NoInputNoOutputDiscreteTimeSystemTest) {
 
   auto discrete_updates = dut.AllocateDiscreteVariables();
   dut.CalcDiscreteVariableUpdates(*context, discrete_updates.get());
-  EXPECT_EQ(discrete_updates->get_vector(0).GetAtIndex(0), 8.0);
+  EXPECT_EQ(discrete_updates->get_vector(0)[0], 8.0);
 
-  EXPECT_EQ(dut.get_num_output_ports(), 0);
+  EXPECT_EQ(dut.num_output_ports(), 0);
 }
 
 /// A system that can use any scalar type: AutoDiff, symbolic form, etc.

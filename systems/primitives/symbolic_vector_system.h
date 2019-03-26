@@ -33,22 +33,23 @@ namespace systems {
 /// Instantiated templates for the following scalar types @p T are provided:
 ///
 /// - double
+/// - symbolic::Expression
 template <typename T>
 class SymbolicVectorSystem final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SymbolicVectorSystem)
 
   /// Construct the SymbolicVectorSystem.
-  /// @param time_var an (optional) Variable used to represent time
-  /// in the dynamics.
   ///
-  /// @param state_vars an (optional) vector of Variables representing the
-  /// state.  The order in this vector will determine the order of the
-  /// elements in the state vector.  Each element must be unique.
+  /// @param time an (optional) Variable used to represent time in the dynamics.
   ///
-  /// @param input_vars an (optional) vector of Variables representing the
-  /// input.  The order in this vector will determine the order of the
-  /// elements in the vector-valued input port.  Each element must be unique.
+  /// @param state an (optional) vector of Variables representing the state. The
+  /// order in this vector will determine the order of the elements in the state
+  /// vector.  Each element must be unique.
+  ///
+  /// @param input an (optional) vector of Variables representing the input. The
+  /// order in this vector will determine the order of the elements in the
+  /// vector-valued input port.  Each element must be unique.
   ///
   /// @param dynamics a vector of Expressions representing the dynamics of the
   /// system.  If @p time_period == 0, then this describes the continuous time
@@ -66,18 +67,22 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   /// declared as discrete state and the dynamics will be implemented as a
   /// dicraete variable update.
   SymbolicVectorSystem(
-      const optional<symbolic::Variable>& time_var,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& state_vars,
-      const Eigen::Ref<const VectorX<symbolic::Variable>>& input_vars,
+      const optional<symbolic::Variable>& time,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& state,
+      const Eigen::Ref<const VectorX<symbolic::Variable>>& input,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& dynamics,
       const Eigen::Ref<const VectorX<symbolic::Expression>>& output =
           Vector0<symbolic::Expression>{},
       double time_period = 0.0);
 
-  // TODO(russt): Add sugar to the constructor to make the default values
-  //  cleaner.  (What I really want is something like kwargs).
-
   // TODO(russt): Add support for parameters.
+
+  /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit SymbolicVectorSystem(const SymbolicVectorSystem<U>& other)
+      : SymbolicVectorSystem<T>(other.time_var_, other.state_vars_,
+                                other.input_vars_, other.dynamics_,
+                                other.output_, other.time_period_) {}
 
   ~SymbolicVectorSystem() override = default;
 
@@ -98,12 +103,17 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   optional<bool> DoHasDirectFeedthrough(int input_port,
                                         int output_port) const final;
 
-  // Shared code for setting up an environment for evaluation.
-  void PopulateEnvironmentFromContext(const Context<double>& context,
-                                      symbolic::Environment* env) const;
+  template <typename Container>
+  void PopulateFromContext(const Context<T>& context, Container* penv) const;
 
-  void CalcOutput(const Context<double>& context,
-                  BasicVector<double>* output_vector) const;
+  // Evaluate context to a vector.
+  void EvaluateWithContext(const Context<T>& context,
+                           const VectorX<symbolic::Expression>& expr,
+                           const MatrixX<symbolic::Expression>& jacobian,
+                           VectorBase<T>* out) const;
+
+  void CalcOutput(const Context<T>& context,
+                  BasicVector<T>* output_vector) const;
 
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const final;
@@ -118,8 +128,13 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
   const VectorX<symbolic::Variable> input_vars_{};
   const VectorX<symbolic::Expression> dynamics_{};
   const VectorX<symbolic::Expression> output_{};
+
   symbolic::Environment env_{};
   const double time_period_{0.0};
+
+  // Storage for Jacobians (empty unless T == AutoDiffXd).
+  MatrixX<symbolic::Expression> dynamics_jacobian_{};
+  MatrixX<symbolic::Expression> output_jacobian_{};
 
   template <typename U>
   friend class SymbolicVectorSystem;
@@ -236,8 +251,31 @@ class SymbolicVectorSystemBuilder {
   double time_period_{0.0};
 };
 
+#ifndef DRAKE_DOXYGEN_CXX
+// Forward-declare specializations, prior to DRAKE_DECLARE... below.
+template <>
+void SymbolicVectorSystem<double>::EvaluateWithContext(
+    const Context<double>& context, const VectorX<symbolic::Expression>& expr,
+    const MatrixX<symbolic::Expression>& jacobian,
+    VectorBase<double>* out) const;
+
+template <>
+void SymbolicVectorSystem<AutoDiffXd>::EvaluateWithContext(
+    const Context<AutoDiffXd>& context,
+    const VectorX<symbolic::Expression>& expr,
+    const MatrixX<symbolic::Expression>& jacobian,
+    VectorBase<AutoDiffXd>* out) const;
+
+template <>
+void SymbolicVectorSystem<symbolic::Expression>::EvaluateWithContext(
+    const Context<symbolic::Expression>& context,
+    const VectorX<symbolic::Expression>& expr,
+    const MatrixX<symbolic::Expression>& jacobian,
+    VectorBase<symbolic::Expression>* out) const;
+#endif
+
 }  // namespace systems
 }  // namespace drake
 
-// TODO(russt): support AutoDiffXd and symbolic::Expression.
-extern template class ::drake::systems::SymbolicVectorSystem<double>;
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::systems::SymbolicVectorSystem);

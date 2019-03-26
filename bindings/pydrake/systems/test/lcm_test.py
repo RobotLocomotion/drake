@@ -227,7 +227,7 @@ class TestSystemsLcm(unittest.TestCase):
         publish_proc.start()
         # Initialize to first message.
         first_msg = dut.WaitForMessage()
-        dut.get_mutable_context().set_time(utime.GetTimeInSeconds(first_msg))
+        dut.get_mutable_context().SetTime(utime.GetTimeInSeconds(first_msg))
         # Run to desired amount. (Anything more will cause interpreter to
         # "freeze".)
         dut.RunToSecondsAssumingInitialized(t_end)

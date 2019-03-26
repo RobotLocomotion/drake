@@ -473,14 +473,14 @@ class DiagramTest : public ::testing::Test {
 
     // Initialize the integrator states.
     auto& integrator0_xc = GetMutableContinuousState(integrator0());
-    integrator0_xc.get_mutable_vector().SetAtIndex(0, 3);
-    integrator0_xc.get_mutable_vector().SetAtIndex(1, 9);
-    integrator0_xc.get_mutable_vector().SetAtIndex(2, 27);
+    integrator0_xc.get_mutable_vector()[0] = 3;
+    integrator0_xc.get_mutable_vector()[1] = 9;
+    integrator0_xc.get_mutable_vector()[2] = 27;
 
     auto& integrator1_xc = GetMutableContinuousState(integrator1());
-    integrator1_xc.get_mutable_vector().SetAtIndex(0, 81);
-    integrator1_xc.get_mutable_vector().SetAtIndex(1, 243);
-    integrator1_xc.get_mutable_vector().SetAtIndex(2, 729);
+    integrator1_xc.get_mutable_vector()[0] = 81;
+    integrator1_xc.get_mutable_vector()[1] = 243;
+    integrator1_xc.get_mutable_vector()[2] = 729;
   }
 
   // Returns the continuous state of the given @p system.
@@ -551,7 +551,7 @@ class DiagramTest : public ::testing::Test {
 // without a context. The class ExampleDiagram above contains two integrators,
 // each of which has three state variables.
 TEST_F(DiagramTest, NumberOfContinuousStates) {
-  EXPECT_EQ(3+3, diagram_->get_num_continuous_states());
+  EXPECT_EQ(3+3, diagram_->num_continuous_states());
 }
 
 // Tests that the diagram returns the correct number of witness functions and
@@ -567,7 +567,7 @@ TEST_F(DiagramTest, Witness) {
 
 // Tests that the diagram exports the correct topology.
 TEST_F(DiagramTest, Topology) {
-  ASSERT_EQ(kSize, diagram_->get_num_input_ports());
+  ASSERT_EQ(kSize, diagram_->num_input_ports());
   for (int i = 0; i < kSize; ++i) {
     const auto& input_port = diagram_->get_input_port(i);
     EXPECT_EQ(diagram_.get(), &input_port.get_system());
@@ -575,7 +575,7 @@ TEST_F(DiagramTest, Topology) {
     EXPECT_EQ(kSize, input_port.size());
   }
 
-  ASSERT_EQ(kSize, diagram_->get_num_output_ports());
+  ASSERT_EQ(kSize, diagram_->num_output_ports());
   for (int i = 0; i < kSize; ++i) {
     const auto& port = diagram_->get_output_port(i);
     EXPECT_EQ(diagram_.get(), &port.get_system());
@@ -736,7 +736,7 @@ TEST_F(DiagramTest, CalcOutput) {
   AttachInputs();
   diagram_->CalcOutput(*context_, output_.get());
 
-  ASSERT_EQ(kSize, output_->get_num_ports());
+  ASSERT_EQ(kSize, output_->num_ports());
   ExpectDefaultOutputs();
 }
 
@@ -748,9 +748,9 @@ TEST_F(DiagramTest, EvalOutput) {
   // Sanity check output port prerequisites. Diagram ports should designate
   // a subsystem since they are resolved internally. We don't know the right
   // dependency ticket, but at least it should be valid.
-  ASSERT_EQ(diagram_->get_num_output_ports(), 3);
+  ASSERT_EQ(diagram_->num_output_ports(), 3);
   const int expected_subsystem[] = {1, 2, 5};  // From drawing above.
-  for (OutputPortIndex i(0); i < diagram_->get_num_output_ports(); ++i) {
+  for (OutputPortIndex i(0); i < diagram_->num_output_ports(); ++i) {
     internal::OutputPortPrerequisite prereq =
         diagram_->get_output_port(i).GetPrerequisite();
     EXPECT_EQ(*prereq.child_subsystem, expected_subsystem[i]);
@@ -773,16 +773,16 @@ TEST_F(DiagramTest, CalcTimeDerivatives) {
   // The derivative of the first integrator is A.
   const ContinuousState<double>& integrator0_xcdot =
       diagram_->GetSubsystemDerivatives(*integrator0(), *derivatives);
-  EXPECT_EQ(1 + 8, integrator0_xcdot.get_vector().GetAtIndex(0));
-  EXPECT_EQ(2 + 16, integrator0_xcdot.get_vector().GetAtIndex(1));
-  EXPECT_EQ(4 + 32, integrator0_xcdot.get_vector().GetAtIndex(2));
+  EXPECT_EQ(1 + 8, integrator0_xcdot.get_vector()[0]);
+  EXPECT_EQ(2 + 16, integrator0_xcdot.get_vector()[1]);
+  EXPECT_EQ(4 + 32, integrator0_xcdot.get_vector()[2]);
 
   // The derivative of the second integrator is the state of the first.
   const ContinuousState<double>& integrator1_xcdot =
       diagram_->GetSubsystemDerivatives(*integrator1(), *derivatives);
-  EXPECT_EQ(3, integrator1_xcdot.get_vector().GetAtIndex(0));
-  EXPECT_EQ(9, integrator1_xcdot.get_vector().GetAtIndex(1));
-  EXPECT_EQ(27, integrator1_xcdot.get_vector().GetAtIndex(2));
+  EXPECT_EQ(3, integrator1_xcdot.get_vector()[0]);
+  EXPECT_EQ(9, integrator1_xcdot.get_vector()[1]);
+  EXPECT_EQ(27, integrator1_xcdot.get_vector()[2]);
 }
 
 // Tests the AllocateInput logic.
@@ -878,7 +878,7 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   context->FixInputPort(2, input2);
 
   ad_diagram->CalcOutput(*context, output.get());
-  ASSERT_EQ(kSize, output->get_num_ports());
+  ASSERT_EQ(kSize, output->num_ports());
 
   // Spot-check some values and gradients.
   // A = [1.0 + 2.0, 1.1 + 2.2, 1.2 + 2.4]
@@ -908,13 +908,13 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   }
 
   // Make sure that the input port names survive type conversion.
-  for (InputPortIndex i{0}; i < diagram_->get_num_input_ports(); i++) {
+  for (InputPortIndex i{0}; i < diagram_->num_input_ports(); i++) {
     EXPECT_EQ(diagram_->get_input_port(i).get_name(),
               ad_diagram->get_input_port(i).get_name());
   }
 
   // Make sure that the output port names survive type conversion.
-  for (OutputPortIndex i{0}; i < diagram_->get_num_output_ports(); i++) {
+  for (OutputPortIndex i{0}; i < diagram_->num_output_ports(); i++) {
     EXPECT_EQ(diagram_->get_output_port(i).get_name(),
               ad_diagram->get_output_port(i).get_name());
   }
@@ -1048,22 +1048,22 @@ class DiagramOfDiagramsTest : public ::testing::Test {
     State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator0(), &d0_context);
     integrator0_x.get_mutable_continuous_state()
-        .get_mutable_vector().SetAtIndex(0, 3);
+        .get_mutable_vector()[0] = 3;
 
     State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator1(), &d0_context);
     integrator1_x.get_mutable_continuous_state()
-        .get_mutable_vector().SetAtIndex(0, 9);
+        .get_mutable_vector()[0] = 9;
 
     State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator0(), &d1_context);
     integrator2_x.get_mutable_continuous_state()
-        .get_mutable_vector().SetAtIndex(0, 27);
+        .get_mutable_vector()[0] = 27;
 
     State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator1(), &d1_context);
     integrator3_x.get_mutable_continuous_state()
-        .get_mutable_vector().SetAtIndex(0, 81);
+        .get_mutable_vector()[0] = 81;
   }
 
   const int kSize = 1;
@@ -1136,21 +1136,21 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   FixedInputPortValue& port_value =
       context_->FixInputPort(0, std::move(value10));
   EXPECT_EQ(1255, diagram_->get_output_port(0).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+      Eval<BasicVector<double>>(*context_)[0]);
   EXPECT_EQ(2501, diagram_->get_output_port(1).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+      Eval<BasicVector<double>>(*context_)[0]);
   EXPECT_EQ(81, diagram_->get_output_port(2).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+      Eval<BasicVector<double>>(*context_)[0]);
 
   // Now change the value back to 8 using mutable access to the port_value
   // object. Should also cause re-evaluation.
   port_value.GetMutableVectorData<double>()->SetAtIndex(0, 8.0);
   EXPECT_EQ(1249, diagram_->get_output_port(0).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+      Eval<BasicVector<double>>(*context_)[0]);
   EXPECT_EQ(2489, diagram_->get_output_port(1).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+      Eval<BasicVector<double>>(*context_)[0]);
   EXPECT_EQ(81, diagram_->get_output_port(2).
-      Eval<BasicVector<double>>(*context_).GetAtIndex(0));
+      Eval<BasicVector<double>>(*context_)[0]);
 }
 
 TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
@@ -1200,7 +1200,7 @@ GTEST_TEST(DiagramSubclassTest, TwelvePlusSevenIsNineteen) {
   context->FixInputPort(0, {12.0});
   plus_seven.CalcOutput(*context, output.get());
 
-  ASSERT_EQ(1, output->get_num_ports());
+  ASSERT_EQ(1, output->num_ports());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
   EXPECT_EQ(1, output_vector->size());
   EXPECT_EQ(19.0, output_vector->get_value().x());
@@ -1581,14 +1581,14 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
 
   // The order of these derivatives is defined to be the same as the order
   // subsystems are added.
-  EXPECT_EQ(qdot.GetAtIndex(0), 26);
-  EXPECT_EQ(qdot.GetAtIndex(1), 34);
+  EXPECT_EQ(qdot[0], 26);
+  EXPECT_EQ(qdot[1], 34);
 
   // Now map the configuration derivatives back to v.
   BasicVector<double> vmutable(v.size());
   diagram.MapQDotToVelocity(*context, qdot, &vmutable);
-  EXPECT_EQ(vmutable.GetAtIndex(0), 13);
-  EXPECT_EQ(vmutable.GetAtIndex(1), 17);
+  EXPECT_EQ(vmutable[0], 13);
+  EXPECT_EQ(vmutable[1], 17);
 }
 
 // Test for GetSystems.
@@ -1714,7 +1714,7 @@ class DiscreteStateTest : public ::testing::Test {
 
 // Tests that the next update time after 0.05 is 2.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
-  context_->set_time(0.05);
+  context_->SetTime(0.05);
   auto events = diagram_.AllocateCompositeEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
@@ -1728,7 +1728,7 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
 
 // Tests that the next update time after 5.1 is 6.0.
 TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
-  context_->set_time(5.1);
+  context_->SetTime(5.1);
   auto events = diagram_.AllocateCompositeEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
@@ -1754,10 +1754,10 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   // Initialize the zero-order holds to different values than their input ports.
   Context<double>& ctx1 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold1(), context_.get());
-  ctx1.get_mutable_discrete_state(0).SetAtIndex(0, 1001.0);
+  ctx1.get_mutable_discrete_state(0)[0] = 1001.0;
   Context<double>& ctx2 =
       diagram_.GetMutableSubsystemContext(*diagram_.hold2(), context_.get());
-  ctx2.get_mutable_discrete_state(0).SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0)[0] = 1002.0;
 
   // Allocate the discrete variables.
   std::unique_ptr<DiscreteValues<double>> updates =
@@ -1770,7 +1770,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
           .GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
 
       // Set the time to 8.5, so only hold2 updates.
-      context_->set_time(8.5);
+      context_->SetTime(8.5);
 
   // Request the next update time.
   auto events = diagram_.AllocateCompositeEventCollection();
@@ -1779,7 +1779,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
   EXPECT_TRUE(events->HasDiscreteUpdateEvents());
 
   // Fast forward to 9.0 sec and do the update.
-  context_->set_time(9.0);
+  context_->SetTime(9.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
   EXPECT_EQ(1001.0, updates1[0]);
@@ -1787,19 +1787,19 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Apply the updates to the context_.
   context_->get_mutable_discrete_state().SetFrom(*updates);
-  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0).GetAtIndex(0));
-  EXPECT_EQ(23.0, ctx2.get_discrete_state(0).GetAtIndex(0));
+  EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)[0]);
+  EXPECT_EQ(23.0, ctx2.get_discrete_state(0)[0]);
 
   // Restore hold2 to its original value.
-  ctx2.get_mutable_discrete_state(0).SetAtIndex(0, 1002.0);
+  ctx2.get_mutable_discrete_state(0)[0] = 1002.0;
   // Set the time to 11.5, so both hold1 and hold2 update.
-  context_->set_time(11.5);
+  context_->SetTime(11.5);
   time = diagram_.CalcNextUpdateTime(*context_, events.get());
   EXPECT_EQ(12.0, time);
   EXPECT_TRUE(events->HasDiscreteUpdateEvents());
 
   // Fast forward to 12.0 sec and do the update again.
-  context_->set_time(12.0);
+  context_->SetTime(12.0);
   diagram_.CalcDiscreteVariableUpdates(
       *context_, events->get_discrete_update_events(), updates.get());
   EXPECT_EQ(17.0, updates1[0]);
@@ -1808,7 +1808,7 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
 // Tests that a publish action is taken at 19 sec.
 TEST_F(DiscreteStateTest, Publish) {
-  context_->set_time(18.5);
+  context_->SetTime(18.5);
   auto events = diagram_.AllocateCompositeEventCollection();
   double time = diagram_.CalcNextUpdateTime(*context_, events.get());
 
@@ -1817,7 +1817,7 @@ TEST_F(DiscreteStateTest, Publish) {
 
   // Fast forward to 19.0 sec and do the publish.
   EXPECT_EQ(false, diagram_.publisher()->published());
-  context_->set_time(19.0);
+  context_->SetTime(19.0);
   diagram_.Publish(*context_, events->get_publish_events());
   // Check that publication occurred.
   EXPECT_EQ(true, diagram_.publisher()->published());
@@ -1921,7 +1921,7 @@ class AbstractStateDiagramTest : public ::testing::Test {
 
 TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   double time = 1;
-  context_->set_time(time);
+  context_->SetTime(time);
 
   // The abstract data should be initialized to their ids.
   EXPECT_EQ(get_sys0_abstract_data_as_double(), 0);
@@ -1961,7 +1961,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   // Sets time to 5.5, both system should be updating at 6 sec.
   time = 5.5;
-  context_->set_time(time);
+  context_->SetTime(time);
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6.);
   for (int i = 0; i < 2; i++) {
     const auto& subevent_collection =
@@ -2070,34 +2070,26 @@ TEST_F(NestedDiagramContextTest, GetSubsystemContext) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
   big_diagram_->GetMutableSubsystemContext(*integrator0_, big_context_.get())
-      .get_mutable_continuous_state_vector()
-      .SetAtIndex(0, 1);
+      .get_mutable_continuous_state_vector()[0] = 1;
   big_diagram_->GetMutableSubsystemContext(*integrator1_, big_context_.get())
-      .get_mutable_continuous_state_vector()
-      .SetAtIndex(0, 2);
+      .get_mutable_continuous_state_vector()[0] = 2;
   big_diagram_->GetMutableSubsystemContext(*integrator2_, big_context_.get())
-      .get_mutable_continuous_state_vector()
-      .SetAtIndex(0, 3);
+      .get_mutable_continuous_state_vector()[0] = 3;
   big_diagram_->GetMutableSubsystemContext(*integrator3_, big_context_.get())
-      .get_mutable_continuous_state_vector()
-      .SetAtIndex(0, 4);
+      .get_mutable_continuous_state_vector()[0] = 4;
 
   // Checks states.
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator0_, *big_context_)
-                .get_continuous_state_vector()
-                .GetAtIndex(0),
+                .get_continuous_state_vector()[0],
             1);
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator1_, *big_context_)
-                .get_continuous_state_vector()
-                .GetAtIndex(0),
+                .get_continuous_state_vector()[0],
             2);
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator2_, *big_context_)
-                .get_continuous_state_vector()
-                .GetAtIndex(0),
+                .get_continuous_state_vector()[0],
             3);
   EXPECT_EQ(big_diagram_->GetSubsystemContext(*integrator3_, *big_context_)
-                .get_continuous_state_vector()
-                .GetAtIndex(0),
+                .get_continuous_state_vector()[0],
             4);
 
   // Checks output.
@@ -2123,23 +2115,19 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   big_diagram_
       ->GetMutableSubsystemState(*integrator0_, &big_state)
       .get_mutable_continuous_state()
-      .get_mutable_vector()
-      .SetAtIndex(0, 1);
+      .get_mutable_vector()[0] = 1;
   big_diagram_
       ->GetMutableSubsystemState(*integrator1_, &big_state)
       .get_mutable_continuous_state()
-      .get_mutable_vector()
-      .SetAtIndex(0, 2);
+      .get_mutable_vector()[0] = 2;
   big_diagram_
       ->GetMutableSubsystemState(*integrator2_, &big_state)
       .get_mutable_continuous_state()
-      .get_mutable_vector()
-      .SetAtIndex(0, 3);
+      .get_mutable_vector()[0] = 3;
   big_diagram_
       ->GetMutableSubsystemState(*integrator3_, &big_state)
       .get_mutable_continuous_state()
-      .get_mutable_vector()
-      .SetAtIndex(0, 4);
+      .get_mutable_vector()[0] = 4;
 
   // Checks state.
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, big_state)
@@ -2345,16 +2333,16 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   EXPECT_EQ(derivative_cache.serial_number(), expected_derivative_serial);
 
   // Time & accuracy changes are allowed at the root (diagram) level.
-  EXPECT_NO_THROW(diagram_context->set_time(1.));
+  EXPECT_NO_THROW(diagram_context->SetTime(1.));
   EXPECT_NO_THROW(diagram_context->SetTimeAndContinuousState(2., init_state));
   auto diagram_context_clone = diagram_context->Clone();
   EXPECT_NO_THROW(
       diagram_context->SetTimeStateAndParametersFrom(*diagram_context_clone));
-  EXPECT_NO_THROW(diagram_context->set_accuracy(1e-6));
+  EXPECT_NO_THROW(diagram_context->SetAccuracy(1e-6));
 
   // Time & accuracy changes NOT allowed at child (leaf) level.
-  DRAKE_EXPECT_THROWS_MESSAGE(context0.set_time(3.), std::logic_error,
-                              ".*set_time.*Time change allowed only.*root.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(context0.SetTime(3.), std::logic_error,
+                              ".*SetTime.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       context0.SetTimeAndContinuousState(4., new_x0), std::logic_error,
       ".*SetTimeAndContinuousState.*Time change allowed only.*root.*");
@@ -2362,8 +2350,8 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
       context0.SetTimeStateAndParametersFrom(context1), std::logic_error,
       ".*SetTimeStateAndParametersFrom.*Time change allowed only.*root.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      context0.set_accuracy(1e-7), std::logic_error,
-      ".*set_accuracy.*Accuracy change allowed only.*root.*");
+      context0.SetAccuracy(1e-7), std::logic_error,
+      ".*SetAccuracy.*Accuracy change allowed only.*root.*");
 }
 
 // Tests that an exception is thrown if the systems in a Diagram do not have
@@ -2423,7 +2411,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
       const Context<double>& context,
       const std::vector<const DiscreteUpdateEvent<double>*>& events,
       DiscreteValues<double>* discrete_state) const override {
-    (*discrete_state)[0] = context.get_discrete_state(0).GetAtIndex(0) + 1;
+    (*discrete_state)[0] = context.get_discrete_state(0)[0] + 1;
   }
 
   void DoCalcUnrestrictedUpdate(
@@ -2431,7 +2419,7 @@ class PerStepActionTestSystem : public LeafSystem<double> {
       const std::vector<const UnrestrictedUpdateEvent<double>*>& events,
       State<double>* state) const override {
     int int_num =
-        static_cast<int>(context.get_discrete_state(0).GetAtIndex(0));
+        static_cast<int>(context.get_discrete_state(0)[0]);
     state->get_mutable_abstract_state<std::string>(0) =
         "wow" + std::to_string(int_num);
   }
@@ -2511,17 +2499,17 @@ GTEST_TEST(DiagramPerStepActionTest, TestEverything) {
 
   // sys0 doesn't have any updates.
   auto& sys0_context = diagram->GetSubsystemContext(*sys0, *context);
-  EXPECT_EQ(sys0_context.get_discrete_state(0).GetAtIndex(0), 0);
+  EXPECT_EQ(sys0_context.get_discrete_state(0)[0], 0);
   EXPECT_EQ(sys0_context.get_abstract_state<std::string>(0), "wow");
 
   // sys1 should have an unrestricted update then a discrete update.
   auto& sys1_context = diagram->GetSubsystemContext(*sys1, *context);
-  EXPECT_EQ(sys1_context.get_discrete_state(0).GetAtIndex(0), 1);
+  EXPECT_EQ(sys1_context.get_discrete_state(0)[0], 1);
   EXPECT_EQ(sys1_context.get_abstract_state<std::string>(0), "wow0");
 
   // sys2 should have a unrestricted update then a publish.
   auto& sys2_context = diagram->GetSubsystemContext(*sys2, *context);
-  EXPECT_EQ(sys2_context.get_discrete_state(0).GetAtIndex(0), 0);
+  EXPECT_EQ(sys2_context.get_discrete_state(0)[0], 0);
   EXPECT_EQ(sys2_context.get_abstract_state<std::string>(0), "wow0");
 }
 
@@ -2573,7 +2561,7 @@ GTEST_TEST(MyEventTest, MyEventTestLeaf) {
   auto context = dut.CreateDefaultContext();
 
   double time = dut.CalcNextUpdateTime(*context, events.get());
-  context->set_time(time);
+  context->SetTime(time);
   dut.Publish(*context, events->get_publish_events());
 
   EXPECT_EQ(dut.get_periodic_count(), 1);
@@ -2619,7 +2607,7 @@ GTEST_TEST(MyEventTest, MyEventTestDiagram) {
   events->Merge(*periodic_events);
   events->Merge(*perstep_events);
 
-  context->set_time(time);
+  context->SetTime(time);
   dut->Publish(*context, events->get_publish_events());
 
   EXPECT_EQ(sys[0]->get_periodic_count(), 0);
@@ -2662,7 +2650,7 @@ class ConstraintTestSystem : public LeafSystem<T> {
 
   void CalcState0Constraint(const Context<T>& context,
                             VectorX<T>* value) const {
-    *value = Vector1<T>(context.get_continuous_state_vector().GetAtIndex(0));
+    *value = Vector1<T>(context.get_continuous_state_vector()[0]);
   }
   void CalcStateConstraint(const Context<T>& context, VectorX<T>* value) const {
     *value = context.get_continuous_state_vector().CopyToVector();
@@ -2684,7 +2672,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   auto sys2 = builder.AddSystem<ConstraintTestSystem<double>>();
 
   auto diagram = builder.Build();
-  EXPECT_EQ(diagram->get_num_constraints(), 4);  // two from each system
+  EXPECT_EQ(diagram->num_constraints(), 4);  // two from each system
 
   auto context = diagram->CreateDefaultContext();
 
@@ -2744,7 +2732,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
 
   // Check that constraints survive ToAutoDiffXd.
   auto autodiff_diagram = diagram->ToAutoDiffXd();
-  EXPECT_EQ(autodiff_diagram->get_num_constraints(), 4);
+  EXPECT_EQ(autodiff_diagram->num_constraints(), 4);
   auto autodiff_context = autodiff_diagram->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(*context);
   const SystemConstraint<AutoDiffXd>& autodiff_constraint =
@@ -2755,7 +2743,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
 
   // Check that constraints survive ToSymbolic.
   auto symbolic_diagram = diagram->ToSymbolic();
-  EXPECT_EQ(symbolic_diagram->get_num_constraints(), 4);
+  EXPECT_EQ(symbolic_diagram->num_constraints(), 4);
   auto symbolic_context = symbolic_diagram->CreateDefaultContext();
   symbolic_context->SetTimeStateAndParametersFrom(*context);
   const SystemConstraint<symbolic::Expression>& symbolic_constraint =
@@ -2829,8 +2817,8 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
     for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
-      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
-                                                          uniform(*generator));
+      params->get_mutable_numeric_parameter(0).SetAtIndex(
+          i, uniform(*generator));
     }
   }
 };

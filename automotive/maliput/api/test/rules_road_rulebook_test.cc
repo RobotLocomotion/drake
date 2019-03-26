@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/speed_limit_rule.h"
@@ -16,24 +17,29 @@ namespace api {
 namespace rules {
 namespace {
 
-const LaneSRange kZone(LaneId("some_lane"), {10., 20.});
-
-const RightOfWayRule kRightOfWay(
+// This class does not provide any semblance of useful functionality.
+// It merely exercises the RoadRulebook abstract interface.
+class MockRulebook : public RoadRulebook {
+ public:
+  const LaneSRange kZone{LaneId("some_lane"), {10., 20.}};
+  const RightOfWayRule kRightOfWay{
     RightOfWayRule::Id("rowr_id"),
     LaneSRoute({kZone}), RightOfWayRule::ZoneType::kStopExcluded,
     {RightOfWayRule::State(
         RightOfWayRule::State::Id("green"),
         RightOfWayRule::State::Type::kGo,
-        {})});
+        {})}};
+  const SpeedLimitRule kSpeedLimit{SpeedLimitRule::Id("slr_id"),
+                                   kZone,
+                                   SpeedLimitRule::Severity::kStrict,
+                                   0., 44.};
+  const DirectionUsageRule kDirectionUsage{
+    DirectionUsageRule::Id("dur_id"), kZone,
+    {DirectionUsageRule::State(
+      DirectionUsageRule::State::Id("dur_state"),
+      DirectionUsageRule::State::Type::kWithS,
+      DirectionUsageRule::State::Severity::kPreferred)}};
 
-const SpeedLimitRule kSpeedLimit(SpeedLimitRule::Id("slr_id"),
-                                 kZone,
-                                 SpeedLimitRule::Severity::kStrict,
-                                 0., 44.);
-
-// This class does not provide any semblance of useful functionality.
-// It merely exercises the RoadRulebook abstract interface.
-class MockRulebook : public RoadRulebook {
  private:
   virtual QueryResults DoFindRules(
       const std::vector<LaneSRange>& ranges, double) const {
@@ -44,6 +50,7 @@ class MockRulebook : public RoadRulebook {
         (ranges[0].s_range().s1() == kZone.s_range().s1())) {
       results.right_of_way.push_back(kRightOfWay);
       results.speed_limit.push_back(kSpeedLimit);
+      results.direction_usage.push_back(kDirectionUsage);
     }
     return results;
   }
@@ -61,6 +68,13 @@ class MockRulebook : public RoadRulebook {
     }
     return kSpeedLimit;
   }
+
+  virtual DirectionUsageRule DoGetRule(const DirectionUsageRule::Id& id) const {
+    if (id != kDirectionUsage.id()) {
+      throw std::out_of_range("");
+    }
+    return kDirectionUsage;
+  }
 };
 
 
@@ -69,22 +83,30 @@ GTEST_TEST(RoadRulebookTest, ExerciseInterface) {
 
   const double kZeroTolerance = 0.;
 
-  RoadRulebook::QueryResults nonempty = dut.FindRules({kZone}, kZeroTolerance);
+  RoadRulebook::QueryResults nonempty = dut.FindRules({dut.kZone},
+                                                      kZeroTolerance);
   EXPECT_EQ(nonempty.right_of_way.size(), 1);
   EXPECT_EQ(nonempty.speed_limit.size(), 1);
+  EXPECT_EQ(nonempty.direction_usage.size(), 1);
   RoadRulebook::QueryResults empty = dut.FindRules({}, kZeroTolerance);
   EXPECT_EQ(empty.right_of_way.size(), 0);
   EXPECT_EQ(empty.speed_limit.size(), 0);
+  EXPECT_EQ(empty.direction_usage.size(), 0);
 
   const double kNegativeTolerance = -1.;
   EXPECT_THROW(dut.FindRules({}, kNegativeTolerance),
                std::runtime_error);
 
-  EXPECT_EQ(dut.GetRule(kRightOfWay.id()).id(), kRightOfWay.id());
+  EXPECT_EQ(dut.GetRule(dut.kRightOfWay.id()).id(), dut.kRightOfWay.id());
   EXPECT_THROW(dut.GetRule(RightOfWayRule::Id("xxx")), std::out_of_range);
 
-  EXPECT_EQ(dut.GetRule(kSpeedLimit.id()).id(), kSpeedLimit.id());
+  EXPECT_EQ(dut.GetRule(dut.kSpeedLimit.id()).id(), dut.kSpeedLimit.id());
   EXPECT_THROW(dut.GetRule(SpeedLimitRule::Id("xxx")), std::out_of_range);
+
+  EXPECT_EQ(dut.GetRule(dut.kDirectionUsage.id()).id(),
+                        dut.kDirectionUsage.id());
+  EXPECT_THROW(dut.GetRule(DirectionUsageRule::Id("xxx")),
+                           std::out_of_range);
 }
 
 

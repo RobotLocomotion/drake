@@ -59,7 +59,7 @@ GTEST_TEST(MyVectorTest, Clone) {
   auto clone = vector3.Clone();
 
   // Changing the original should not affect the clone.
-  vector3.SetAtIndex(1, 20.);
+  vector3[1] = 20.;
   EXPECT_EQ(vector3.get_value(), Vector3d(1., 20., 3.));
 
   EXPECT_EQ(clone->get_value(), Vector3d(1., 2., 3.));

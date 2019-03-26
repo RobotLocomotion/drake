@@ -144,6 +144,55 @@ using std::make_unique;
 using std::move;
 using std::unique_ptr;
 
+// A simple dummy render engine implementation to facilitate testing. The
+// methods are mostly no-ops. The single exception is in registering geometry.
+// Every call returns a valid RenderIndex with the value `n` for the `n`th
+// call to `RegisterVisual()`.
+class DummyRenderEngine final : public render::RenderEngine {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DummyRenderEngine);
+  DummyRenderEngine() = default;
+  void UpdateViewpoint(const Eigen::Isometry3d&) const final {}
+  void RenderColorImage(const render::CameraProperties&,
+                        systems::sensors::ImageRgba8U*, bool) const final {}
+  void RenderDepthImage(const render::DepthCameraProperties&,
+                        systems::sensors::ImageDepth32F*) const final {}
+  void RenderLabelImage(const render::CameraProperties&,
+                        systems::sensors::ImageLabel16I*, bool) const final {}
+  void ImplementGeometry(const Sphere& sphere, void* user_data) final {}
+  void ImplementGeometry(const Cylinder& cylinder, void* user_data) final {}
+  void ImplementGeometry(const HalfSpace& half_space, void* user_data) final {}
+  void ImplementGeometry(const Box& box, void* user_data) final {}
+  void ImplementGeometry(const Mesh& mesh, void* user_data) final {}
+  void ImplementGeometry(const Convex& convex, void* user_data) final {}
+
+  void set_moved_render_index(optional<RenderIndex> index) {
+    moved_render_index_ = index;
+  }
+
+ protected:
+  optional<RenderIndex> DoRegisterVisual(const Shape&,
+                                         const PerceptionProperties&,
+                                         const Isometry3<double>&) final {
+    return RenderIndex(calls_to_register_++);
+  }
+  void DoUpdateVisualPose(const Eigen::Isometry3d&, RenderIndex) final {}
+
+  optional<RenderIndex> DoRemoveGeometry(RenderIndex index) final {
+    return moved_render_index_;
+  }
+
+  unique_ptr<render::RenderEngine> DoClone() const final {
+    return make_unique<DummyRenderEngine>(*this);
+  }
+
+ private:
+  int calls_to_register_{};
+  // The value that `DoRemoveGeometry()` returns. Configurable by test. Defaults
+  // to returning nothing.
+  optional<RenderIndex> moved_render_index_{nullopt};
+};
+
 class GeometryStateTest : public ::testing::Test {
  protected:
   void SetUp() {
@@ -153,6 +202,9 @@ class GeometryStateTest : public ::testing::Test {
     instance_ = make_unique<GeometryInstance>(
         instance_pose_, make_unique<Sphere>(1.0), "instance");
     gs_tester_.set_state(&geometry_state_);
+    auto render_engine = make_unique<DummyRenderEngine>();
+    render_engine_ = render_engine.get();
+    geometry_state_.AddRenderer(dummy_render_name_, move(render_engine));
   }
 
   // Utility method for adding a source to the state.
@@ -344,6 +396,7 @@ class GeometryStateTest : public ::testing::Test {
   Isometry3<double> instance_pose_{Isometry3<double>::Identity()};
   GeometryState<double> geometry_state_;
   GeometryStateTester<double> gs_tester_;
+  DummyRenderEngine* render_engine_{};
 
   // Values for setting up and testing the dummy tree.
   enum Counts {
@@ -371,6 +424,8 @@ class GeometryStateTest : public ::testing::Test {
   vector<Isometry3<double>> X_FG_;
   // The default source name.
   const std::string kSourceName{"default_source"};
+  // The name of the dummy renderer added to the geometry state.
+  const std::string dummy_render_name_{"dummy_renderer"};
 };
 
 // Confirms that a new GeometryState has no data.
@@ -582,7 +637,7 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       EXPECT_EQ(geometry.internal_index(), i);
       // We automatically assign render labels to any geometry with non-zero
       // alpha value in its diffuse color.
-      EXPECT_TRUE(geometry.render_index().is_valid());
+      EXPECT_TRUE(geometry.render_index(dummy_render_name_));
       EXPECT_FALSE(geometry.proximity_index().is_valid());
       EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
@@ -1826,17 +1881,24 @@ TEST_F(GeometryStateTest, RemovePerceptionFromGeometry) {
   EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
             expected_count);
 
-  // Case: Remove perception causes *anchored* geometry to be moved.
+  // Case: Remove perception from first dynamic geometry causes *anchored*
+  // geometry render index to be moved.
   {
     const GeometryId id = geometries_[0];
     const InternalGeometry* geometry = gs_tester_.GetGeometry(id);
     EXPECT_TRUE(geometry->has_perception_role());
-    RenderIndex target_index = geometry->render_index();
+    RenderIndex target_index = *geometry->render_index(dummy_render_name_);
+    // Set the dummy render engine to report that the anchored geometry has
+    // moved.
+    render_engine_->set_moved_render_index(
+        gs_tester_.GetGeometry(anchored_geometry_)
+            ->render_index(dummy_render_name_));
     EXPECT_EQ(geometry_state_.RemoveRole(source_id_, id, Role::kPerception), 1);
     EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
               --expected_count);
     EXPECT_FALSE(geometry->has_perception_role());
-    EXPECT_EQ(gs_tester_.GetGeometry(anchored_geometry_)->render_index(),
+    EXPECT_EQ(*gs_tester_.GetGeometry(anchored_geometry_)
+                   ->render_index(dummy_render_name_),
               target_index);
   }
 
@@ -1845,7 +1907,7 @@ TEST_F(GeometryStateTest, RemovePerceptionFromGeometry) {
     const GeometryId id = geometries_[1];
     const InternalGeometry* geometry = gs_tester_.GetGeometry(id);
     EXPECT_TRUE(geometry->has_perception_role());
-    RenderIndex target_index = geometry->render_index();
+    RenderIndex target_index = *geometry->render_index(dummy_render_name_);
     // The second to last geometry added was the last dynamic geometry (i.e.,
     // the last id stored in geometries_. It should *now* have the render index
     // of the removed geometry.
@@ -1853,12 +1915,16 @@ TEST_F(GeometryStateTest, RemovePerceptionFromGeometry) {
         gs_tester_.GetGeometry(geometries_.back());
     // These will ultimately be tested for equality; confirm they don't start
     // equal.
-    EXPECT_NE(last_geometry->render_index(), target_index);
+    EXPECT_NE(*last_geometry->render_index(dummy_render_name_), target_index);
+    // Set the dummy render engine to report that the last dynamic geometry has
+    // moved.
+    render_engine_->set_moved_render_index(
+        last_geometry->render_index(dummy_render_name_));
     EXPECT_EQ(geometry_state_.RemoveRole(source_id_, id, Role::kPerception), 1);
     EXPECT_EQ(geometry_state_.GetNumGeometriesWithRole(Role::kPerception),
               --expected_count);
     EXPECT_FALSE(geometry->has_perception_role());
-    EXPECT_EQ(last_geometry->render_index(), target_index);
+    EXPECT_EQ(last_geometry->render_index(dummy_render_name_), target_index);
   }
 
   // Case: Removing role from a geometry that does not have that role has no

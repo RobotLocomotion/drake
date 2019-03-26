@@ -57,7 +57,7 @@ PYBIND11_MODULE(sensors, m) {
           py::arg("show_window") = bool{RenderingConfig::kDefaultShowWindow},
           py::arg("width") = int{RenderingConfig::kDefaultWidth},
           py::arg("height") = int{RenderingConfig::kDefaultHeight},
-          // Keep alive, reference: `this` keeps  `RigidBodyTree` alive.
+          // Keep alive, reference: `this` keeps `RigidBodyTree` alive.
           py::keep_alive<1, 3>(), doc.RgbdCamera.ctor.doc_10args)
       .def("color_camera_info", &RgbdCamera::color_camera_info,
           py_reference_internal, doc.RgbdCamera.color_camera_info.doc)

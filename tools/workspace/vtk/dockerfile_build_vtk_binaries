@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# This shell script and the accompanying Dockerfile and shell scripts are used
+# by the project maintainers to create the precompiled vtk binaries that are
+# downloaded during the build. They are neither called during the build nor
+# expected to be called by most developers or users of the project.
+
+set -euxo pipefail
+
+PYTHON_EXECUTABLE="$1"
+mkdir -p vtk-build /opt/vtk
+pushd vtk-build
+cmake \
+  -DBUILD_TESTING:BOOL=OFF \
+  -DCMAKE_BUILD_TYPE:STRING=Release \
+  -DCMAKE_C_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations' \
+  -DCMAKE_CXX_FLAGS:STRING='-D_FORTIFY_SOURCE=2 -fstack-protector-strong -Wno-deprecated-declarations' \
+  -DCMAKE_EXE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+  -DCMAKE_INSTALL_PREFIX:PATH=/opt/vtk \
+  -DCMAKE_MODULE_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+  -DCMAKE_SHARED_LINKER_FLAGS:STRING='-Wl,-Bsymbolic-functions -Wl,-z,now -Wl,-z,relro' \
+  -DModule_vtkRenderingOSPRay:BOOL=ON \
+  -DOSPRAY_INSTALL_DIR:PATH=/opt/vtk \
+  -DPYTHON_EXECUTABLE:PATH="${PYTHON_EXECUTABLE}" \
+  -DVTK_ENABLE_VTKPYTHON:BOOL=OFF \
+  -DVTK_Group_Qt:BOOL=ON \
+  -DVTK_LEGACY_REMOVE:BOOL=ON \
+  -DVTK_QT_VERSION:STRING=5 \
+  -DVTK_USE_SYSTEM_EXPAT:BOOL=ON \
+  -DVTK_USE_SYSTEM_FREETYPE:BOOL=ON \
+  -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
+  -DVTK_USE_SYSTEM_JPEG:BOOL=ON \
+  -DVTK_USE_SYSTEM_JSONCPP:BOOL=ON \
+  -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
+  -DVTK_USE_SYSTEM_LZ4:BOOL=ON \
+  -DVTK_USE_SYSTEM_NETCDF:BOOL=ON \
+  -DVTK_USE_SYSTEM_OGG:BOOL=ON \
+  -DVTK_USE_SYSTEM_PNG:BOOL=ON \
+  -DVTK_USE_SYSTEM_THEORA:BOOL=ON \
+  -DVTK_USE_SYSTEM_TIFF:BOOL=ON \
+  -DVTK_USE_SYSTEM_ZLIB:BOOL=ON \
+  -DVTK_WRAP_PYTHON:BOOL=ON \
+  -GNinja \
+  -Wno-dev \
+  ../vtk
+ninja install/strip
+pushd
+rm -rf vtk-build

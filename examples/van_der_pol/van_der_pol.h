@@ -10,8 +10,8 @@ namespace van_der_pol {
 ///
 /// The van der Pol oscillator, governed by the following equations:
 ///   q̈ + μ(q² - 1)q̇ + q = 0, μ > 0
-///   y₁ = q
-///   y₂ = [q,q̇]'
+///   y₀ = q
+///   y₁ = [q,q̇]'
 /// is a canonical example of a nonlinear system that exhibits a
 /// limit cycle stability.  As such it serves as an important for
 /// examining nonlinear stability and stochastic stability.
@@ -50,6 +50,14 @@ class VanDerPolOscillator final : public systems::LeafSystem<T> {
   const systems::OutputPort<T>& get_full_state_output_port() const {
     return this->get_output_port(1);
   }
+
+  // TODO(russt): generalize this to any mu using trajectory optimization
+  //  (this could also improve the numerical accuracy).
+  /// Returns a 2-row matrix containing the result of simulating the oscillator
+  /// with the default mu=1 from (approximately) one point on the limit cycle
+  /// for (approximately) one period.  The first row is q, and the second row
+  /// is q̇.
+  static Eigen::Matrix2Xd CalcLimitCycle();
 
  private:
   void DoCalcTimeDerivatives(

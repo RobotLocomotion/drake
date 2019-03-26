@@ -11,6 +11,8 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
@@ -19,6 +21,34 @@ using std::string;
 
 namespace drake {
 namespace pydrake {
+
+namespace {
+
+using pysystems::AddValueInstantiation;
+
+// Add instantiations of primitive types on an as-needed basis; Please be
+// conservative.
+void AddPrimitiveValueInstantiations(py::module m) {
+  AddValueInstantiation<string>(m);
+  AddValueInstantiation<bool>(m);
+}
+
+// Same as above, but for templated types.
+template <typename T>
+void AddPrimitiveValueTemplateInstantiations(py::module m) {
+  // Imports for the relevant types.
+  py::module::import("pydrake.common.eigen_geometry");
+  py::module::import("pydrake.math");
+  // TODO(eric): When `Value[]` moves to `pydrake.common`, move these to their
+  // respective modules.
+  AddValueInstantiation<math::RigidTransform<T>>(m);
+  AddValueInstantiation<math::RotationMatrix<T>>(m);
+  // TODO(eric): Consider deprecating / removing `Isometry3` pending resolution
+  // of #9865.
+  AddValueInstantiation<Isometry3<T>>(m);
+}
+
+}  // namespace
 
 using pysystems::AddValueInstantiation;
 using pysystems::DefClone;
@@ -82,7 +112,7 @@ void DefineFrameworkPyValues(py::module m) {
             [](BasicVector<T>* self, int index) -> T& {
               return self->GetAtIndex(index);
             },
-            py_reference_internal, doc.BasicVector.GetAtIndex.doc)
+            py_reference_internal, doc.VectorBase.GetAtIndex.doc)
         .def("SetZero", &BasicVector<T>::SetZero, doc.BasicVector.SetZero.doc);
 
     DefineTemplateClassWithDefault<Supervector<T>, VectorBase<T>>(
@@ -119,14 +149,30 @@ void DefineFrameworkPyValues(py::module m) {
       .def("set_value", abstract_stub("set_value"),
           pydrake_doc.drake.AbstractValue.SetValue.doc);
 
-  // Add `Value<std::string>` instantiation (visible in Python as `Value[str]`).
-  AddValueInstantiation<string>(m);
+  // Add value instantiations for nominal data types. Types that require more
+  // pizazz are listed below.
+  AddPrimitiveValueInstantiations(m);
+  // TODO(eric.cousineau): Move inside loop once bindings support other
+  // scalars.
+  AddPrimitiveValueTemplateInstantiations<double>(m);
 
   // Add `Value<>` instantiations for basic vectors templated on common scalar
   // types.
   auto bind_abstract_basic_vectors = [m](auto dummy) {
     using T = decltype(dummy);
-    AddValueInstantiation<BasicVector<T>>(m);
+    auto cls = AddValueInstantiation<BasicVector<T>>(m);
+    cls  // BR
+        .def("set_value",
+            [](Value<BasicVector<T>>* self, const T& value) {
+              self->set_value(BasicVector<T>{value});
+            },
+            py::arg("value"))
+        .def("set_value",
+            [](Value<BasicVector<T>>* self,
+                const Eigen::Ref<const Eigen::VectorXd>& value) {
+              self->set_value(BasicVector<T>(value));
+            },
+            py::arg("value"));
   };
   type_visit(bind_abstract_basic_vectors, pysystems::CommonScalarPack{});
 

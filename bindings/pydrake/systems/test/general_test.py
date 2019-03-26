@@ -14,6 +14,7 @@ from pydrake.autodiffutils import (
     AutoDiffXd,
     )
 from pydrake.examples.pendulum import PendulumPlant
+from pydrake.examples.rimless_wheel import RimlessWheel
 from pydrake.symbolic import (
     Expression,
     )
@@ -75,14 +76,14 @@ class TestGeneral(unittest.TestCase):
     def _compare_system_instances(self, lhs, rhs):
         # Compares two different scalar type instantiation instances of a
         # system.
-        self.assertEqual(lhs.get_num_input_ports(), rhs.get_num_input_ports())
+        self.assertEqual(lhs.num_input_ports(), rhs.num_input_ports())
         self.assertEqual(
-            lhs.get_num_output_ports(), rhs.get_num_output_ports())
-        for i in range(lhs.get_num_input_ports()):
+            lhs.num_output_ports(), rhs.num_output_ports())
+        for i in range(lhs.num_input_ports()):
             lhs_port = lhs.get_input_port(i)
             rhs_port = rhs.get_input_port(i)
             self.assertEqual(lhs_port.size(), rhs_port.size())
-        for i in range(lhs.get_num_output_ports()):
+        for i in range(lhs.num_output_ports()):
             lhs_port = lhs.get_output_port(i)
             rhs_port = rhs.get_output_port(i)
             self.assertEqual(lhs_port.size(), rhs_port.size())
@@ -90,8 +91,8 @@ class TestGeneral(unittest.TestCase):
     def test_system_base_api(self):
         # Test a system with a different number of inputs from outputs.
         system = Adder(3, 10)
-        self.assertEqual(system.get_num_input_ports(), 3)
-        self.assertEqual(system.get_num_output_ports(), 1)
+        self.assertEqual(system.num_input_ports(), 3)
+        self.assertEqual(system.num_output_ports(), 1)
         self.assertEqual(system.GetInputPort("u1").get_index(), 1)
         self.assertEqual(system.GetOutputPort("sum").get_index(), 0)
         # TODO(eric.cousineau): Consolidate the main API tests for `System`
@@ -113,10 +114,12 @@ class TestGeneral(unittest.TestCase):
         pendulum = PendulumPlant()
         context = pendulum.CreateDefaultContext()
         self.assertEqual(context.num_numeric_parameter_groups(), 1)
+        self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         self.assertTrue(
             context.get_parameters().get_numeric_parameter(0) is
             context.get_numeric_parameter(index=0))
         self.assertEqual(context.num_abstract_parameters(), 0)
+        self.assertEqual(pendulum.num_numeric_parameter_groups(), 1)
         # TODO(russt): Bind _Declare*Parameter or find an example with an
         # abstract parameter to actually call this method.
         self.assertTrue(hasattr(context, "get_abstract_parameter"))
@@ -124,6 +127,25 @@ class TestGeneral(unittest.TestCase):
         context.SetContinuousState(x)
         np.testing.assert_equal(
             context.get_continuous_state_vector().CopyToVector(), x)
+
+        # RimlessWheel has a single discrete variable and a bool abstract
+        # variable.
+        rimless = RimlessWheel()
+        context = rimless.CreateDefaultContext()
+        x = np.array([1.125])
+        context.SetDiscreteState(xd=2 * x)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), 2 * x)
+        context.SetDiscreteState(group_index=0, xd=3 * x)
+        np.testing.assert_equal(
+            context.get_discrete_state_vector().CopyToVector(), 3 * x)
+
+        context.SetAbstractState(index=0, value=True)
+        value = context.get_abstract_state(0)
+        self.assertTrue(value.get_value())
+        context.SetAbstractState(index=0, value=False)
+        value = context.get_abstract_state(0)
+        self.assertFalse(value.get_value())
 
     def test_event_api(self):
         # TriggerType - existence check.
@@ -205,7 +227,7 @@ class TestGeneral(unittest.TestCase):
             def check_output(context):
                 # Check number of output ports and value for a given context.
                 output = system.AllocateOutput()
-                self.assertEqual(output.get_num_ports(), 1)
+                self.assertEqual(output.num_ports(), 1)
                 system.CalcOutput(context, output)
                 if T == float:
                     value = output.get_vector_data(0).get_value()
@@ -231,9 +253,9 @@ class TestGeneral(unittest.TestCase):
 
             # Create simulator specifying context.
             context = system.CreateDefaultContext()
-            context.set_time(0.)
+            context.SetTime(0.)
 
-            context.set_accuracy(1e-4)
+            context.SetAccuracy(1e-4)
             self.assertEqual(context.get_accuracy(), 1e-4)
 
             # @note `simulator` now owns `context`.
@@ -455,3 +477,106 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(type(basic), BasicVector)
         self.assertEqual(type(basic.get_value()), np.ndarray)
         np.testing.assert_equal(basic.get_value(), np_value)
+
+    def test_abstract_input_port_fix_string(self):
+        model_value = AbstractValue.Make("")
+        system = PassThrough(copy.copy(model_value))
+        context = system.CreateDefaultContext()
+        input_port = system.get_input_port(0)
+
+        # Fix to a literal.
+        input_port.FixValue(context, "Alpha")
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, "Alpha")
+
+        # Fix to a type-erased string.
+        input_port.FixValue(context, AbstractValue.Make("Bravo"))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), type(model_value.get_value()))
+        self.assertEqual(value, "Bravo")
+
+        # Fix to a non-string.
+        with self.assertRaises(RuntimeError):
+            # A RuntimeError occurs when the Context detects that the
+            # type-erased Value objects are incompatible.
+            input_port.FixValue(context, AbstractValue.Make(1))
+        with self.assertRaises(TypeError):
+            # A TypeError occurs when pybind Value.set_value cannot match any
+            # overload for how to assign the argument into the erased storage.
+            input_port.FixValue(context, 1)
+        with self.assertRaises(TypeError):
+            input_port.FixValue(context, np.array([2.]))
+
+    def test_abstract_input_port_fix_object(self):
+        # The port type is py::object, not any specific C++ type.
+        model_value = AbstractValue.Make(object())
+        system = PassThrough(copy.copy(model_value))
+        context = system.CreateDefaultContext()
+        input_port = system.get_input_port(0)
+
+        # Fix to a type-erased py::object.
+        input_port.FixValue(context, AbstractValue.Make(object()))
+
+        # Fix to an int.
+        input_port.FixValue(context, 1)
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), int)
+        self.assertEqual(value, 1)
+
+        # Fixing to an explicitly-typed Value instantation is an error ...
+        with self.assertRaises(RuntimeError):
+            input_port.FixValue(context, AbstractValue.Make("string"))
+        # ... but implicit typing works just fine.
+        input_port.FixValue(context, "string")
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), str)
+        self.assertEqual(value, "string")
+
+    def test_vector_input_port_fix(self):
+        np_zeros = np.array([0.])
+        model_value = AbstractValue.Make(BasicVector(np_zeros))
+        system = PassThrough(len(np_zeros))
+        context = system.CreateDefaultContext()
+        input_port = system.get_input_port(0)
+
+        # Fix to a scalar.
+        input_port.FixValue(context, 1.)
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([1.]))
+
+        # Fix to an ndarray.
+        input_port.FixValue(context, np.array([2.]))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([2.]))
+
+        # Fix to a BasicVector.
+        input_port.FixValue(context, BasicVector([3.]))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([3.]))
+
+        # Fix to a type-erased BasicVector.
+        input_port.FixValue(context, AbstractValue.Make(BasicVector([4.])))
+        value = input_port.Eval(context)
+        self.assertEqual(type(value), np.ndarray)
+        np.testing.assert_equal(value, np.array([4.]))
+
+        # Fix to wrong-sized vector.
+        with self.assertRaises(RuntimeError):
+            input_port.FixValue(context, np.array([0., 1.]))
+        with self.assertRaises(RuntimeError):
+            input_port.FixValue(
+                context, AbstractValue.Make(BasicVector([0., 1.])))
+
+        # Fix to a non-vector.
+        with self.assertRaises(TypeError):
+            # A TypeError occurs when pybind Value.set_value cannot match any
+            # overload for how to assign the argument into the erased storage.
+            input_port.FixValue(context, "string")
+        with self.assertRaises(RuntimeError):
+            # A RuntimeError occurs when the Context detects that the
+            # type-erased Value objects are incompatible.
+            input_port.FixValue(context, AbstractValue.Make("string"))

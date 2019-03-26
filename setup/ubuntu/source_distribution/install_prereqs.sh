@@ -9,7 +9,7 @@
 set -euo pipefail
 
 if [[ "${EUID}" -ne 0 ]]; then
-  echo 'This script must be run as root' >&2
+  echo 'ERROR: This script must be run as root' >&2
   exit 1
 fi
 
@@ -61,7 +61,7 @@ dpkg_install_from_wget() {
   if echo "${checksum} ${tmpdeb}" | sha256sum -c -; then
     echo  # Blank line between checkout output and dpkg output.
   else
-    echo "The ${package} deb does not have the expected SHA256. Not installing." >&2
+    echo "ERROR: The ${package} deb does NOT have the expected SHA256. Not installing." >&2
     exit 2
   fi
 

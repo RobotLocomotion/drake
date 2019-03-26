@@ -2,6 +2,7 @@
 
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
@@ -26,8 +27,11 @@ using Eigen::Translation3d;
 using Eigen::Vector4d;
 using std::make_unique;
 using std::unique_ptr;
+using std::vector;
 using systems::sensors::Color;
+using systems::sensors::ColorD;
 using systems::sensors::ColorI;
+using systems::sensors::ColorPalette;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
@@ -105,10 +109,9 @@ std::ostream& operator<<(std::ostream& out, const RgbaColor& c) {
       abs(expected.a - tested.a) < tolerance) {
     return ::testing::AssertionSuccess();
   }
-  return ::testing::AssertionFailure() << "Expected: " << expected
-                                       << " at " << p
-                                       << ", tested: " << tested
-                                       << " with tolerance: " << tolerance;
+  return ::testing::AssertionFailure()
+         << "Expected: " << expected << " at " << p << ", tested: " << tested
+         << " with tolerance: " << tolerance;
 }
 
 // This suite tests RenderEngine. All of these tests introduce a ground plane
@@ -134,10 +137,10 @@ class RenderEngineVtkTest : public ::testing::Test {
       : color_(kWidth, kHeight),
         depth_(kWidth, kHeight),
         label_(kWidth, kHeight),
-      // Looking straight down from 3m above the ground.
+        // Looking straight down from 3m above the ground.
         X_WR_(Eigen::Translation3d(0, 0, kDefaultDistance) *
-            Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) *
-            Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ())) {}
+              Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitY()) *
+              Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitZ())) {}
 
  protected:
   // Method to allow the normal case (render with the built-in renderer against
@@ -164,7 +167,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     const RgbaColor test_color{pixel, alpha};
     for (int y = 0; y < kHeight; ++y) {
       for (int x = 0; x < kWidth; ++x) {
-        ASSERT_TRUE(CompareColor(test_color, color_, ScreenCoord(x,  y)));
+        ASSERT_TRUE(CompareColor(test_color, color_, ScreenCoord(x, y)));
       }
     }
   }
@@ -213,15 +216,18 @@ class RenderEngineVtkTest : public ::testing::Test {
   // the expected depth to within a tolerance. Handles the special case where
   // the expected distance is infinity.
   static ::testing::AssertionResult IsExpectedDepth(const ImageDepth32F& image,
-  const ScreenCoord& coord, float expected_depth, float tolerance) {
+                                                    const ScreenCoord& coord,
+                                                    float expected_depth,
+                                                    float tolerance) {
     const float actual_depth = image.at(coord.x, coord.y)[0];
     if (expected_depth == std::numeric_limits<float>::infinity()) {
       if (actual_depth == expected_depth) {
         return ::testing::AssertionSuccess();
       } else {
         return ::testing::AssertionFailure()
-            << "Expected depth at (" << coord.x << ", " << coord.y << ") to be "
-            << "infinity. Found: " << actual_depth;
+               << "Expected depth at (" << coord.x << ", " << coord.y
+               << ") to be "
+               << "infinity. Found: " << actual_depth;
       }
     } else {
       float delta = std::abs(expected_depth - actual_depth);
@@ -229,9 +235,10 @@ class RenderEngineVtkTest : public ::testing::Test {
         return ::testing::AssertionSuccess();
       } else {
         return ::testing::AssertionFailure()
-            << "Expected depth at (" << coord.x << ", " << coord.y << ") to be "
-            << expected_depth << ". Found " << actual_depth << ". Difference "
-            << delta << "is greater than tolerance " << tolerance;
+               << "Expected depth at (" << coord.x << ", " << coord.y
+               << ") to be " << expected_depth << ". Found " << actual_depth
+               << ". Difference " << delta << "is greater than tolerance "
+               << tolerance;
       }
     }
   }
@@ -240,8 +247,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   // If images are provided, the given images will be tested, otherwise the
   // member images will be tested.
   void VerifyOutliers(const RenderEngineVtk& renderer,
-                      const DepthCameraProperties& camera,
-                      const char* name,
+                      const DepthCameraProperties& camera, const char* name,
                       ImageRgba8U* color_in = nullptr,
                       ImageDepth32F* depth_in = nullptr,
                       ImageLabel16I* label_in = nullptr) {
@@ -257,7 +263,8 @@ class RenderEngineVtkTest : public ::testing::Test {
       EXPECT_TRUE(CompareColor({kTerrain, 255}, color, screen_coord)) << name;
       // Depth
       EXPECT_TRUE(IsExpectedDepth(depth, screen_coord, expected_outlier_depth_,
-                                  kDepthTolerance))<< name;
+                                  kDepthTolerance))
+          << name;
       // Label
       EXPECT_EQ(label.at(x, y)[0], RenderLabel::terrain_label()) << name;
     }
@@ -270,7 +277,20 @@ class RenderEngineVtkTest : public ::testing::Test {
     renderer_ = make_unique<RenderEngineVtk>();
     renderer_->UpdateViewpoint(X_WR);
 
-    if (add_terrain) renderer_->AddFlatTerrain();
+    if (add_terrain) {
+      ColorD terrain_color =
+          ColorPalette<int>::Normalize(renderer_->get_flat_terrain_color());
+      PerceptionProperties material;
+      material.AddGroup("label");
+      material.AddProperty("label", "id", RenderLabel::terrain_label());
+      material.AddGroup("phong");
+      material.AddProperty("phong", "diffuse",
+                           Eigen::Vector4d{terrain_color.r, terrain_color.g,
+                                           terrain_color.b, 1.0});
+      renderer_->RegisterVisual(InternalIndex(0), HalfSpace(), material,
+                                Isometry3<double>::Identity(),
+                                false /** needs update */);
+    }
   }
 
   // Creates a simple perception properties set for fixed, known results.
@@ -290,10 +310,12 @@ class RenderEngineVtkTest : public ::testing::Test {
   void PopulateSphereTest(RenderEngineVtk* renderer) {
     Sphere sphere{0.5};
     expected_label_ = RenderLabel::new_label();
-    RenderIndex geometry_index = renderer->RegisterVisual(
-        sphere, simple_material(), Isometry3d::Identity());
+    renderer->RegisterVisual(InternalIndex(0), sphere, simple_material(),
+                             Isometry3d::Identity(), true /* needs update */);
     Isometry3d X_WV{Eigen::Translation3d(0, 0, 0.5)};
-    renderer->UpdateVisualPose(X_WV, geometry_index);
+    renderer->UpdatePoses(vector<Isometry3d>{X_WV});
+    X_WV_.clear();
+    X_WV_.push_back(X_WV);
   }
 
   // Performs the work to test the rendering with a sphere centered in the
@@ -301,8 +323,7 @@ class RenderEngineVtkTest : public ::testing::Test {
   // compliant sphere and camera configuration (e.g., PopulateSphereTest()).
   // If force_hidden is true, then the render windows will be suppressed
   // regardless of any other settings.
-  void PerformCenterShapeTest(RenderEngineVtk* renderer,
-                              const char* name,
+  void PerformCenterShapeTest(RenderEngineVtk* renderer, const char* name,
                               const DepthCameraProperties* camera = nullptr) {
     const DepthCameraProperties& cam = camera ? *camera : camera_;
     // Can't use the member images in case the camera has been configured to a
@@ -321,8 +342,9 @@ class RenderEngineVtkTest : public ::testing::Test {
     // Color
     EXPECT_TRUE(CompareColor(expected_color_, color, inlier)) << name;
     // Depth
-    EXPECT_TRUE(IsExpectedDepth(depth, inlier, expected_object_depth_,
-                                kDepthTolerance)) << name;
+    EXPECT_TRUE(
+        IsExpectedDepth(depth, inlier, expected_object_depth_, kDepthTolerance))
+        << name;
     // Label
     EXPECT_EQ(label.at(x, y)[0], static_cast<int>(expected_label_)) << name;
   }
@@ -341,13 +363,16 @@ class RenderEngineVtkTest : public ::testing::Test {
   float expected_object_depth_{2.f};
   RenderLabel expected_label_;
 
-  const DepthCameraProperties camera_ = {kWidth, kHeight, kFovY, Fidelity::kLow,
-                                         kZNear, kZFar};
+  const DepthCameraProperties camera_ = {kWidth,         kHeight, kFovY,
+                                         "test_default", kZNear,  kZFar};
 
   ImageRgba8U color_;
   ImageDepth32F depth_;
   ImageLabel16I label_;
   Isometry3d X_WR_;
+
+  // The pose of the sphere created in PopulateSphereTest().
+  std::vector<Isometry3d> X_WV_;
 
   unique_ptr<RenderEngineVtk> renderer_;
 };
@@ -406,8 +431,8 @@ TEST_F(RenderEngineVtkTest, TerrainTest) {
 TEST_F(RenderEngineVtkTest, HorizonTest) {
   // Camera at the origin, pointing in a direction parallel to the ground.
   Isometry3d X_WR = Eigen::Translation3d(0, 0, 0) *
-      Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
-      Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
+                    Eigen::AngleAxisd(-M_PI_2, Eigen::Vector3d::UnitX()) *
+                    Eigen::AngleAxisd(M_PI_2, Eigen::Vector3d::UnitY());
   SetUp(X_WR, true);
 
   // Returns y in [0, kHeight / 2], index of horizon location in image
@@ -450,10 +475,10 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
   // Sets up a box.
   Box box(1, 1, 1);
   expected_label_ = RenderLabel::new_label();
-  RenderIndex geometry_index =
-      renderer_->RegisterVisual(box, simple_material(), Isometry3d::Identity());
+  renderer_->RegisterVisual(InternalIndex(0), box, simple_material(),
+                            Isometry3d::Identity(), true /* needs update */);
   Isometry3d X_WV{Eigen::Translation3d(0, 0, 0.5)};
-  renderer_->UpdateVisualPose(X_WV, geometry_index);
+  renderer_->UpdatePoses(vector<Isometry3d>{X_WV});
 
   PerformCenterShapeTest(renderer_.get(), "Box test");
 }
@@ -474,11 +499,11 @@ TEST_F(RenderEngineVtkTest, CylinderTest) {
   // Sets up a cylinder.
   Cylinder cylinder(0.2, 1.2);
   expected_label_ = RenderLabel::new_label();
-  RenderIndex geometry_index = renderer_->RegisterVisual(
-      cylinder, simple_material(), Isometry3d::Identity());
+  renderer_->RegisterVisual(InternalIndex(0), cylinder, simple_material(),
+                            Isometry3d::Identity(), true /* needs update */);
   // Position the top of the cylinder to be 1 m above the terrain.
   Isometry3d X_WV{Eigen::Translation3d(0, 0, 0.4)};
-  renderer_->UpdateVisualPose(X_WV, geometry_index);
+  renderer_->UpdatePoses(vector<Isometry3d>{X_WV});
 
   PerformCenterShapeTest(renderer_.get(), "Cylinder test");
 }
@@ -499,9 +524,9 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   // to get the diffuse RGBA value (otherwise it would pick up the `box.png`
   // texture.
   material.AddProperty("phong", "diffuse_map", "bad_path");
-  RenderIndex geometry_index = renderer_->RegisterVisual(
-      mesh, material, Isometry3d::Identity());
-  renderer_->UpdateVisualPose(Isometry3d::Identity(), geometry_index);
+  renderer_->RegisterVisual(InternalIndex(0), mesh, material,
+                            Isometry3d::Identity(), true /* needs update */);
+  renderer_->UpdatePoses(std::vector<Isometry3d>{Isometry3d::Identity()});
 
   PerformCenterShapeTest(renderer_.get(), "Mesh test");
 }
@@ -519,9 +544,9 @@ TEST_F(RenderEngineVtkTest, TextureMeshTest) {
   material.AddProperty(
       "phong", "diffuse_map",
       FindResourceOrThrow("drake/systems/sensors/test/models/meshes/box.png"));
-  RenderIndex geometry_index = renderer_->RegisterVisual(
-      mesh, material, Isometry3d::Identity());
-  renderer_->UpdateVisualPose(Isometry3d::Identity(), geometry_index);
+  renderer_->RegisterVisual(InternalIndex(0), mesh, material,
+                            Isometry3d::Identity(), true /* needs update */);
+  renderer_->UpdatePoses(std::vector<Isometry3d>{Isometry3d::Identity()});
 
   // box.png contains a single pixel with the color (4, 241, 33). If the image
   // changes, the expected color would likewise have to change.
@@ -547,9 +572,9 @@ TEST_F(RenderEngineVtkTest, ImpliedTextureMeshTest) {
   Mesh mesh(filename);
   expected_label_ = RenderLabel::new_label();
   PerceptionProperties material = simple_material();
-  RenderIndex geometry_index = renderer_->RegisterVisual(
-      mesh, material, Isometry3d::Identity());
-  renderer_->UpdateVisualPose(Isometry3d::Identity(), geometry_index);
+  renderer_->RegisterVisual(InternalIndex(0), mesh, material,
+                            Isometry3d::Identity(), true /* needs update */);
+  renderer_->UpdatePoses(std::vector<Isometry3d>{Isometry3d::Identity()});
 
   // box.png contains a single pixel with the color (4, 241, 33). If the image
   // changes, the expected color would likewise have to change.
@@ -603,7 +628,8 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   float default_depth = expected_object_depth_;
 
   // Positions a sphere centered at <0, 0, z> with the given color.
-  auto add_sphere = [this](const RgbaColor& diffuse, double z) {
+  auto add_sphere = [this](const RgbaColor& diffuse, double z,
+                           InternalIndex geometry_index) {
     const double kRadius = 0.5;
     Sphere sphere{kRadius};
     const float depth = kDefaultDistance - kRadius - z;
@@ -615,11 +641,14 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
     material.AddProperty("phong", "diffuse", norm_diffuse);
     material.AddGroup("label");
     material.AddProperty("label", "id", label);
-    RenderIndex index =
-        renderer_->RegisterVisual(sphere, material, Isometry3d::Identity());
+    // This will accept all registered geometries and therefore, (bool)index
+    // should always be true.
+    optional<RenderIndex> index = renderer_->RegisterVisual(
+        geometry_index, sphere, material, Isometry3d::Identity());
     Isometry3d X_WV{Eigen::Translation3d(0, 0, z)};
-    renderer_->UpdateVisualPose(X_WV, index);
-    return std::make_tuple(index, label, depth);
+    X_WV_.push_back(X_WV);
+    renderer_->UpdatePoses(X_WV_);
+    return std::make_tuple(*index, label, depth);
   };
 
   // Sets the expected values prior to calling PerformCenterShapeTest().
@@ -635,7 +664,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   float depth1{};
   RenderLabel label1{};
   RenderIndex index1{};
-  std::tie(index1, label1, depth1) = add_sphere(color1, 0.75);
+  std::tie(index1, label1, depth1) = add_sphere(color1, 0.75, InternalIndex(1));
   set_expectations(color1, depth1, label1);
   PerformCenterShapeTest(renderer_.get(), "First sphere added in remove test");
 
@@ -644,16 +673,16 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   float depth2{};
   RenderLabel label2{};
   RenderIndex index2{};
-  std::tie(index2, label2, depth2) = add_sphere(color2, 1.0);
+  std::tie(index2, label2, depth2) = add_sphere(color2, 1.0, InternalIndex(2));
   set_expectations(color2, depth2, label2);
   PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
 
   // Remove the first sphere added:
   //  1. index2 should be returned as the index of the shape that got moved.
   //  2. The test should pass without changing expectations.
-  optional<RenderIndex> moved = renderer_->RemoveVisual(index1);
+  optional<InternalIndex> moved = renderer_->RemoveGeometry(index1);
   EXPECT_TRUE(moved);
-  EXPECT_EQ(*moved, index2);
+  EXPECT_EQ(*moved, InternalIndex(2));
   PerformCenterShapeTest(renderer_.get(), "First added sphere removed");
 
   // Remove the second added sphere (now indexed by index1):
@@ -661,7 +690,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   //  2. The rendering should match the default sphere test results.
   // Confirm restoration to original image.
   moved = nullopt;
-  moved = renderer_->RemoveVisual(index1);
+  moved = renderer_->RemoveGeometry(index1);
   EXPECT_FALSE(moved);
   set_expectations(default_color, default_depth, default_label);
   PerformCenterShapeTest(renderer_.get(),
@@ -707,7 +736,7 @@ TEST_F(RenderEngineVtkTest, CloneIndependence) {
   // Move the terrain *up* 10 units in the z.
   Isometry3d X_WT_new{Translation3d{0, 0, 10}};
   // This assumes that the terrain is zero-indexed.
-  renderer_->UpdateVisualPose(X_WT_new, RenderIndex(0));
+  renderer_->UpdatePoses(std::vector<Isometry3d>{X_WT_new});
   PerformCenterShapeTest(dynamic_cast<RenderEngineVtk*>(clone.get()),
                          "Clone independence");
 }
@@ -767,8 +796,7 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
     DepthCameraProperties clipping_near_plane(camera_);
     clipping_near_plane.z_near = expected_object_depth_ + 0.1;
     expected_object_depth_ = 0;
-    PerformCenterShapeTest(renderer_.get(),
-                           "Camera change - z near clips mesh",
+    PerformCenterShapeTest(renderer_.get(), "Camera change - z near clips mesh",
                            &clipping_near_plane);
   }
 }
@@ -778,14 +806,14 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
 // public API, actually test for the *default values*. Until then, error-free
 // rendering is sufficient.
 TEST_F(RenderEngineVtkTest, DefaultProperties) {
-  SetUp(X_WR_, false  /* no terrain */);
+  SetUp(X_WR_, false /* no terrain */);
 
   // Sets up a box.
   Box box(1, 1, 1);
-  RenderIndex geometry_index = renderer_->RegisterVisual(
-      box, PerceptionProperties(), Isometry3d::Identity());
+  renderer_->RegisterVisual(InternalIndex(0), box, PerceptionProperties(),
+                            Isometry3d::Identity(), true /* needs update */);
   Isometry3d X_WV{Eigen::Translation3d(0, 0, 0.5)};
-  renderer_->UpdateVisualPose(X_WV, geometry_index);
+  renderer_->UpdatePoses(std::vector<Isometry3d>{X_WV});
 
   EXPECT_NO_THROW(Render());
 }

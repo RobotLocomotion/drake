@@ -6,57 +6,61 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
 namespace test {
 
 class AutoDiffXdTest : public ::testing::Test {
  protected:
-  void SetUp() override {}
-
   // Evaluates a given function f with values of AutoDiffXd and values with
   // AutoDiffd<3>. It checks if the values and the derivatives of those
   // evaluation results are matched.
   template <typename F>
   ::testing::AssertionResult Check(const F& f) {
     // AutoDiffXd constants -- x and y.
-    const AutoDiffXd x_xd_{0.4};
-    AutoDiffXd y_xd_{0.3};
+    const AutoDiffXd x_xd{0.4};
+    AutoDiffXd y_xd{0.3};
+
     // AutoDiffd<3> constants -- x and y.
-    const AutoDiffd<3> x_3d_{x_xd_.value()};
-    AutoDiffd<3> y_3d_{y_xd_.value()};
+    const AutoDiffd<3> x_3d{x_xd.value()};
+    AutoDiffd<3> y_3d{y_xd.value()};
+
     // We only set the derivatives of y and leave x's uninitialized.
-    y_xd_.derivatives() = Eigen::VectorXd::Ones(3);
-    y_3d_.derivatives() = Eigen::Vector3d::Ones();
+    y_xd.derivatives() = Eigen::VectorXd::Ones(3);
+    y_3d.derivatives() = Eigen::Vector3d::Ones();
 
-    const AutoDiffXd e1{f(x_xd_, y_xd_)};
-    const AutoDiffd<3> e2{f(x_3d_, y_3d_)};
+    // Compute the expression results.
+    const AutoDiffXd e_xd{f(x_xd, y_xd)};
+    const AutoDiffd<3> e_3d{f(x_3d, y_3d)};
 
-    if (std::isnan(e1.value()) && std::isnan(e2.value())) {
-      // Both values are NaN.
-      return ::testing::AssertionSuccess();
+    // Pack the results into a 4-vector (for easier comparison and reporting).
+    Eigen::Vector4d value_and_der_x;
+    Eigen::Vector4d value_and_der_3;
+    value_and_der_x.setZero();
+    value_and_der_3.setZero();
+    value_and_der_x(0) = e_xd.value();
+    value_and_der_3(0) = e_3d.value();
+
+    // When the values are finite, compare the derivatives.  When the value are
+    // not finite, then derivatives are allowed to be nonsense.
+    if (std::isfinite(e_xd.value()) && std::isfinite(e_3d.value())) {
+      value_and_der_3.tail(3) = e_3d.derivatives();
+      // When an AutoDiffXd derivatives vector is empty, the implication is
+      // that all derivatives are zero.
+      if (e_xd.derivatives().size() > 0) {
+        value_and_der_x.tail(3) = e_xd.derivatives();
+      }
+    } else {
+      value_and_der_3.tail(3) = Eigen::Vector3d::Constant(NAN);
+      value_and_der_x.tail(3) = Eigen::Vector3d::Constant(NAN);
     }
-    // Slightly different execution branches might lead to results that differ
-    // by a machine precision order of magnitude.
-    const double kEpsilon = std::numeric_limits<double>::epsilon();
-    const double kValueTolerance =
-        10 * kEpsilon * std::max(std::abs(e1.value()), std::abs(e2.value()));
-    if (std::abs(e1.value() - e2.value()) > kValueTolerance) {
-      return ::testing::AssertionFailure()
-             << "Values do not match: " << e1.value() << " and " << e2.value();
-    }
-    if (e1.derivatives().array().isNaN().all() &&
-        e2.derivatives().array().isNaN().all()) {
-      // Both derivatives are NaN.
-      return ::testing::AssertionSuccess();
-    }
-    const double kDerivativeTolerance = 10 * kEpsilon;  // relative tolerance.
-    if (!e1.derivatives().isApprox(e2.derivatives(), kDerivativeTolerance)) {
-      return ::testing::AssertionFailure() << "Derivatives do not match:\n"
-                                           << e1.derivatives() << "\n----\n"
-                                           << e2.derivatives() << "\n";
-    }
-    return ::testing::AssertionSuccess();
+
+    return CompareMatrices(
+        value_and_der_x, value_and_der_3,
+        2.0 * std::numeric_limits<double>::epsilon(),
+        MatrixCompareType::relative)
+      << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
   }
 };
 

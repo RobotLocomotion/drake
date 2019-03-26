@@ -113,7 +113,7 @@ class SystemSymbolicInspector {
   /// @param i The discrete state group number.
   Eigen::VectorBlock<const VectorX<symbolic::Expression>> discrete_update(
       int i) const {
-    DRAKE_DEMAND(i >= 0 && i < context_->get_num_discrete_state_groups());
+    DRAKE_DEMAND(i >= 0 && i < context_->num_discrete_state_groups());
     return discrete_updates_->get_vector(i).get_value();
   }
 

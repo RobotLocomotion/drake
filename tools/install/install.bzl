@@ -1,7 +1,7 @@
 # -*- python -*-
 
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
-load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
+load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")
 load(
     "@drake//tools/skylark:pathutils.bzl",
     "dirname",
@@ -926,17 +926,22 @@ def install_test(
 
     src = "//tools/install:install_test.py"
 
-    drake_py_unittest(
+    # We can't use drake_py_unittest here, because the srcs path is atypical.
+    drake_py_test(
         name = name,
         # This is an integration test with significant I/O that requires an
-        # "eternal" timeout so that debug builds are successful.
-        # Therefore, the test size is increased to "medium", and the timeout to
-        # "eternal".
+        # "eternal" timeout so that debug builds are successful.  Therefore,
+        # the test size is increased to "medium", and the timeout to "eternal".
         # TODO(jamiesnape): Try to shorten the duration of this test.
         size = "medium",
         srcs = [src],
         timeout = "eternal",
         deps = ["//tools/install:install_test_helper"],
+        # The commands in our "list of commands" use unittest themselves, so we
+        # do the same for our own test rig.  That means that both our rig and
+        # the "list of commands" python programs must have a __main__ clause
+        # (i.e., they must all be binaries, not libraries).
+        allow_import_unittest = True,
         **kwargs
     )
 

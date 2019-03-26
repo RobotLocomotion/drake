@@ -29,7 +29,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   SemiExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());  // Use default Context.
 
-  integrator.get_mutable_context()->set_time(3.);
+  integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
@@ -94,7 +94,7 @@ GTEST_TEST(IntegratorTest, RigidBody) {
       CopyToVector();
 
   // Re-integrate with semi-explicit Euler.
-  context->set_time(0.);
+  context->SetTime(0.);
   plant.SetDefaultState(*context, &context->get_mutable_state());
   plant.SetVelocities(context.get(), generalized_velocities);
   SemiExplicitEulerIntegrator<double> see(plant, small_dt, context.get());

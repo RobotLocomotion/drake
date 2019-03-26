@@ -199,8 +199,8 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
   void Connect(const System<T>& src, const System<T>& dest) {
-    DRAKE_THROW_UNLESS(src.get_num_output_ports() == 1);
-    DRAKE_THROW_UNLESS(dest.get_num_input_ports() == 1);
+    DRAKE_THROW_UNLESS(src.num_output_ports() == 1);
+    DRAKE_THROW_UNLESS(dest.num_input_ports() == 1);
     Connect(src.get_output_port(0), dest.get_input_port(0));
   }
 
@@ -473,7 +473,7 @@ class DiagramBuilder {
   // registered_systems_. Used for fast membership queries.
   std::unordered_set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
-  std::vector<std::unique_ptr<System<T>>> registered_systems_;
+  internal::OwnedSystems<T> registered_systems_;
 
   friend int AddRandomInputs(double, systems::DiagramBuilder<double>*);
 };
