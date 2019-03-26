@@ -1,8 +1,8 @@
+.. raw:: html
 
-.. image:: images/logo_w_text.jpg
-	:align: center
-	:width: 60%
-
+    <div style="text-align: center; padding: 10px">
+        <img src="_images/logo_w_text.jpg" width="400px"/>
+    </div>
 
 ********
 Overview
@@ -26,22 +26,21 @@ Core Library
 
     <table align="center" style="border-spacing: 50px">
         <tr>
-            <td style="text-align:center;vertical-align:top" width=200
-            height=150>
+            <td style="text-align:center;vertical-align:top" width="200px" height="150px">
                 <a href="https://drake.mit.edu/doxygen_cxx/group__systems.html">Modeling Dynamical Systems</a>
                 <p/>
-                <img src="_images/systems.svg" width=195 />
+                <img src="_images/systems.svg" width="195px"/>
             </td>
-            <td style="text-align:center;vertical-align:top" width=200>
+            <td style="text-align:center;vertical-align:top" width="200px">
                 <a target="_mathematical_program" href="https://colab.research.google.com/github/RussTedrake/underactuated/blob/master/src/mathematical_program_examples.ipynb">
                 Solving Mathematical Programs</a>
                 <p/>
-                <img src="_images/mathematical_program.svg" width=150 />
+                <img src="_images/mathematical_program.svg" width="150px"/>
             </td>
-            <td style="text-align:center;vertical-align:top" width=200>
+            <td style="text-align:center;vertical-align:top" width="200px">
                 <a href="https://drake.mit.edu/doxygen_cxx/group__multibody.html">Multibody Kinematics and Dynamics</a>
                 <p/>
-                <img width="195" src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png"/>
+                <img src="https://github.com/caelan/pddlstream/raw/d0eb256e88b8b5174fbd136a82867fd9e9cebc67/images/drake_kuka.png" width="195px"/>
             </td>
         </tr>
     </table>
