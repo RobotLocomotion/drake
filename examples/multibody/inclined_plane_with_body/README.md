@@ -9,19 +9,21 @@ half-space or as a finite box (so the block can fall off the inclined-plane).
 
 ### 1. How do I run the visualizer?
 If the visualizer has already been built, you can run it by opening a terminal,
-change to the drake directory, and at the operating system command prompt, type:
+change to the drake directory, and typing:
 ```
 ./bazel-bin/tools/drake_visualizer &
 ```
 
 #### Optional: How do I build the visualizer?
 If the visualizer needs to be built, open a terminal, change to the drake
-directory, and type something like the following at the operating system prompt:
+directory, and type:
 ```
 bazel build //tools:drake_visualizer
 ```
-Note: This requires that bazel (build tool) has been installed.  If the previous
-command is successful, do step #1 to see the visualizer on your computer screen.
+Note: This command requires that bazel has been installed.  If this command is
+successful, do step #1 to see the visualizer on your computer screen.  
+Note: General instructions for using bazel are at:
+```https://drake.mit.edu/bazel.html#using-bazel```
 
 ### 2. How do I run this simulation (with visualization)?
 To run this simulation, open a terminal, change to the drake directory, and
@@ -41,12 +43,12 @@ pass command line arguments to the executable by typing:
 ```
 
 ### 4. How do I see a list of all possible command-line arguments?
-Open an operating-system prompt, change to the drake directory, and then type:
+Open a terminal, change to the drake directory, and then type:
 ```
 ./bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -help
 ```
 
-### 5. How do I build this simulation?
+#### Optional: How do I build this simulation?
 There is no need to build the simulation unless it has not been built or you
 want to change the underlying source code. To build this simulation, open a 
 terminal, change to the drake directory, and build this example by typing:
@@ -56,7 +58,7 @@ bazel build examples/multibody/inclined_plane_with_body:inclined_plane_with_body
 See step #2 or #3 for instructions on how to run this simulation.
 
 
-### 6. How are the coefficients of friction used?
+### 5. How are the coefficients of friction used?
 1. A coefficient of friction is assigned separately to each object (a default
    value is assigned or you may assign a value via command-line arguments).
    Thereafter, a "combining equation" calculates the coefficient of friction
