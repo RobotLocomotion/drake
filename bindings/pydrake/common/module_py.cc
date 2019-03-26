@@ -30,6 +30,33 @@ PYBIND11_MODULE(_module_py, m) {
   constexpr auto& doc = pydrake_doc.drake;
   m.attr("_HAVE_SPDLOG") = logging::kHaveSpdlog;
 
+  m.def("set_log_level",
+      [](const std::string& str) {
+        spdlog::level::level_enum value{};
+        if (str == "trace") {
+          value = spdlog::level::trace;
+        } else if (str == "debug") {
+          value = spdlog::level::debug;
+        } else if (str == "info") {
+          value = spdlog::level::info;
+        } else if (str == "warn") {
+          value = spdlog::level::warn;
+        } else if (str == "err") {
+          value = spdlog::level::err;
+        } else if (str == "critical") {
+          value = spdlog::level::critical;
+        } else if (str == "off") {
+          value = spdlog::level::off;
+        } else {
+          throw std::runtime_error(fmt::format("Unknown level: {}", str));
+        }
+        drake::log()->set_level(value);
+      },
+      py::arg("level"),
+      "Invokes ``drake::log()->set_level(level)``. ``level`` must be a "
+      "string from spdlog enumerations: `trace', 'debug', 'info', 'warn', "
+      "'err', 'critical', 'off'");
+
   py::enum_<drake::RandomDistribution>(
       m, "RandomDistribution", doc.RandomDistribution.doc)
       .value("kUniform", drake::RandomDistribution::kUniform,

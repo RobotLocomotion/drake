@@ -45,8 +45,14 @@ class TestCommon(unittest.TestCase):
         pydrake.common.RandomDistribution.kGaussian
         pydrake.common.RandomDistribution.kExponential
 
-    def test_logging_enabled(self):
+    def test_logging(self):
         self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
+        # Test flag enumerations.
+        levels = ["trace", "debug", "info", "warn", "err", "critical", "off"]
+        for level in levels:
+            pydrake.common.set_log_level(level)
+        with self.assertRaises(RuntimeError):
+            pydrake.common.set_log_level("bad")
 
     def test_random_generator(self):
         g1 = pydrake.common.RandomGenerator()
