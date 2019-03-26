@@ -34,33 +34,33 @@ class AutoDiffXdTest : public ::testing::Test {
     const AutoDiffXd e_xd{f(x_xd, y_xd)};
     const AutoDiffd<3> e_3d{f(x_3d, y_3d)};
 
-    // Check the value() of each result.
-    if (std::isnan(e_xd.value()) && std::isnan(e_3d.value())) {
-      // Both values are NaN.  In this case, we shall not compare the
-      // derivatives because they are allowed to be nonsense.
-      return ::testing::AssertionSuccess();
+    // Pack the results into a 4-vector (for easier comparison and reporting).
+    Eigen::Vector4d value_and_der_x;
+    Eigen::Vector4d value_and_der_3;
+    value_and_der_x.setZero();
+    value_and_der_3.setZero();
+    value_and_der_x(0) = e_xd.value();
+    value_and_der_3(0) = e_3d.value();
+
+    // When the values are finite, compare the derivatives.  When the value are
+    // not finite, then derivatives are allowed to be nonsense.
+    if (std::isfinite(e_xd.value()) && std::isfinite(e_3d.value())) {
+      value_and_der_3.tail(3) = e_3d.derivatives();
+      // When an AutoDiffXd derivatives vector is empty, the implication is
+      // that all derivatives are zero.
+      if (e_xd.derivatives().size() > 0) {
+        value_and_der_x.tail(3) = e_xd.derivatives();
+      }
+    } else {
+      value_and_der_3.tail(3) = Eigen::Vector3d::Constant(NAN);
+      value_and_der_x.tail(3) = Eigen::Vector3d::Constant(NAN);
     }
-    // We use op== not op!= here, so that NaNs are handled correctly.
-    if (!(e_xd.value() == e_3d.value())) {
-      return ::testing::AssertionFailure()
-             << "Values do not match: " << e_xd.value() << " and "
-             << e_3d.value();
-    }
-    // If the values are infinite, we shall not compare the derivatives because
-    // they are allowed to be nonsense.
-    if (!(std::isfinite(e_xd.value()) && std::isfinite(e_3d.value()))) {
-      return ::testing::AssertionSuccess();
-    }
-    // Check the derivatives() of each result.  When an AutoDiffXd derivatives
-    // vector is empty, the implication is that all derivatives are zero.
-    if (e_xd.derivatives().size() == 0) {
-      return CompareMatrices(Eigen::Vector3d::Zero(), e_3d.derivatives())
-          << "\n(where m1 was zero-sized"
-          << " and value was " << e_xd.value() << ")";
-    }
-    return CompareMatrices(e_xd.derivatives(), e_3d.derivatives())
-          << "\n(where m1 was nonzero-sized"
-          << " and value was " << e_xd.value() << ")";
+
+    return CompareMatrices(
+        value_and_der_x, value_and_der_3,
+        2.0 * std::numeric_limits<double>::epsilon(),
+        MatrixCompareType::relative)
+      << "\n(where xd.size() = " << e_xd.derivatives().size() << ")";
   }
 };
 
