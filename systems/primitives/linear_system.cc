@@ -88,7 +88,8 @@ namespace {
 // Linearize.
 std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    int input_port_index, int output_port_index,
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    variant<OutputPortSelection, OutputPortIndex> output_port_index,
     optional<double> equilibrium_check_tolerance = nullopt) {
   DRAKE_ASSERT_VOID(system.CheckValidContext(context));
 
@@ -115,31 +116,10 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
       autodiff_system->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(context);
 
-  // By default, use the first input / output ports (if they exist).
-  const InputPort<AutoDiffXd>* input_port = nullptr;
-  if (input_port_index == kUseFirstInputIfItExists) {
-    if (system.get_num_input_ports() > 0) {
-      input_port = &(autodiff_system->get_input_port(0));
-    }
-  } else if (input_port_index >= 0 &&
-             input_port_index < system.get_num_input_ports()) {
-    input_port = &(autodiff_system->get_input_port(input_port_index));
-  } else if (input_port_index != kNoInput) {
-    throw std::domain_error("Invalid input_port_index specified.");
-  }
-
-  // By default, use the first input / output ports (if they exist).
-  const OutputPort<AutoDiffXd>* output_port = nullptr;
-  if (output_port_index == kUseFirstOutputIfItExists) {
-    if (system.get_num_output_ports() > 0) {
-      output_port = &(autodiff_system->get_output_port(0));
-    }
-  } else if (output_port_index >= 0 &&
-             output_port_index < system.get_num_output_ports()) {
-    output_port = &(autodiff_system->get_output_port(output_port_index));
-  } else if (output_port_index != kNoOutput) {
-    throw std::domain_error("Invalid output_port_index specified.");
-  }
+  const InputPort<AutoDiffXd>* input_port =
+      autodiff_system->get_input_port_selection(input_port_index);
+  const OutputPort<AutoDiffXd>* output_port =
+      autodiff_system->get_output_port_selection(output_port_index);
 
   // Verify that the input port is not abstract valued.
   if (input_port &&
@@ -294,12 +274,13 @@ std::unique_ptr<AffineSystem<double>> DoFirstOrderTaylorApproximation(
 
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
-    int input_port_index, int output_port_index,
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    variant<OutputPortSelection, OutputPortIndex> output_port_index,
     double equilibrium_check_tolerance) {
   std::unique_ptr<AffineSystem<double>> affine =
-      DoFirstOrderTaylorApproximation(system, context, input_port_index,
-                                      output_port_index,
-                                      equilibrium_check_tolerance);
+      DoFirstOrderTaylorApproximation(
+          system, context, std::move(input_port_index),
+          std::move(output_port_index), equilibrium_check_tolerance);
 
   return std::make_unique<LinearSystem<double>>(affine->A(), affine->B(),
                                                 affine->C(), affine->D(),
@@ -308,9 +289,11 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    int input_port_index, int output_port_index) {
-  return DoFirstOrderTaylorApproximation(system, context, input_port_index,
-                                         output_port_index);
+    variant<InputPortSelection, InputPortIndex> input_port_index,
+    variant<OutputPortSelection, OutputPortIndex> output_port_index) {
+  return DoFirstOrderTaylorApproximation(system, context,
+                                         std::move(input_port_index),
+                                         std::move(output_port_index));
 }
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].

@@ -376,6 +376,37 @@ TEST_F(SystemTest, PortNameTest) {
       std::logic_error, ".*does not have an output port named.*");
 }
 
+TEST_F(SystemTest, PortSelectionTest) {
+  // Input ports.
+  EXPECT_EQ(system_.get_input_port_selection(InputPortSelection::kNoInput),
+            nullptr);
+  EXPECT_EQ(system_.get_input_port_selection(
+                InputPortSelection::kUseFirstInputIfItExists),
+            nullptr);
+
+  const auto& input_port =
+      system_.DeclareInputPort("my_input", kVectorValued, 3);
+  EXPECT_EQ(system_.get_input_port_selection(
+                InputPortSelection::kUseFirstInputIfItExists),
+            &input_port);
+
+  EXPECT_EQ(system_.get_input_port_selection(0), &system_.get_input_port(0));
+
+  // Output ports.
+  EXPECT_EQ(system_.get_output_port_selection(OutputPortSelection::kNoOutput),
+            nullptr);
+  EXPECT_EQ(system_.get_output_port_selection(
+                OutputPortSelection::kUseFirstOutputIfItExists),
+            nullptr);
+
+  const auto& output_port = system_.AddAbstractOutputPort();
+  EXPECT_EQ(system_.get_output_port_selection(
+                OutputPortSelection::kUseFirstOutputIfItExists),
+            &output_port);
+
+  EXPECT_EQ(system_.get_output_port_selection(0), &system_.get_output_port(0));
+}
+
 // Tests the constraint list logic.
 TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_EQ(system_.num_constraints(), 0);
