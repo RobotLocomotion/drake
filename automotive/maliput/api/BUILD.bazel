@@ -26,8 +26,8 @@ drake_cc_library(
         "lane_data.cc",
         "road_geometry.cc",
         "road_network.cc",
+        "rules/phase_ring.cc",
         "rules/right_of_way_phase.cc",
-        "rules/right_of_way_phase_ring.cc",
         "rules/traffic_lights.cc",
     ],
     hdrs = [
@@ -40,11 +40,11 @@ drake_cc_library(
         "road_geometry.h",
         "road_network.h",
         "rules/direction_usage_rule.h",
+        "rules/phase_ring.h",
         "rules/regions.h",
         "rules/right_of_way_phase.h",
         "rules/right_of_way_phase_book.h",
         "rules/right_of_way_phase_provider.h",
-        "rules/right_of_way_phase_ring.h",
         "rules/right_of_way_rule.h",
         "rules/right_of_way_state_provider.h",
         "rules/road_rulebook.h",
@@ -111,7 +111,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "rules_test",
     srcs = [
-        "test/right_of_way_phase_ring_test.cc",
+        "test/phase_ring_test.cc",
         "test/right_of_way_phase_test.cc",
         "test/right_of_way_state_provider_test.cc",
         "test/rules_direction_usage_test.cc",

@@ -9,8 +9,8 @@ namespace drake {
 namespace maliput {
 namespace {
 
+using maliput::api::rules::PhaseRing;
 using maliput::api::rules::RightOfWayPhase;
-using maliput::api::rules::RightOfWayPhaseRing;
 using maliput::api::rules::RightOfWayRule;
 using maliput::api::rules::RightOfWayStateProvider;
 
@@ -30,8 +30,8 @@ GTEST_TEST(PhaseBasedRightOfWayStateProviderTest, BasicTest) {
       {{rule_id_a, state_id_stop},
        {rule_id_b, state_id_go}});
 
-  const RightOfWayPhaseRing::Id ring_id("ring");
-  const RightOfWayPhaseRing ring(ring_id, {phase1, phase2});
+  const PhaseRing::Id ring_id("ring");
+  const PhaseRing ring(ring_id, {phase1, phase2});
 
   SimpleRightOfWayPhaseBook phase_book;
   phase_book.AddPhaseRing(ring);

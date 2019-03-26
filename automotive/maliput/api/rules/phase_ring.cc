@@ -1,4 +1,4 @@
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 
 #include "drake/common/drake_throw.h"
 
@@ -38,7 +38,7 @@ void VerifyAllPhasesHaveSameCoverage(
 
 }  // namespace
 
-RightOfWayPhaseRing::RightOfWayPhaseRing(
+PhaseRing::PhaseRing(
     const Id& id, const std::vector<RightOfWayPhase>& phases)
     : id_(id) {
   DRAKE_THROW_UNLESS(phases.size() >= 1);
