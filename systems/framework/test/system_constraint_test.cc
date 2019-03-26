@@ -174,7 +174,7 @@ ExternalSystemConstraint ZeroStateDerivativeConstraint(
   // We don't handle discrete state yet, because to do so efficiently we'd
   // need a method like System::EvalDiscreteVariableUpdates, but only the Calc
   // flavor of that method currently exists.
-  DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
+  DRAKE_DEMAND(dummy_context->num_discrete_state_groups() == 0);
   const int n_xc = dummy_context->get_continuous_state_vector().size();
   return ExternalSystemConstraint::MakeForAllScalars(
       "xc_dot = 0 and xd_{n+1} = 0",
@@ -196,7 +196,7 @@ ExternalSystemConstraint ZeroVelocityConstraint(
   auto dummy_context = shape.AllocateContext();
 
   // We can't handle discrete state yet, because of #9171.
-  DRAKE_DEMAND(dummy_context->get_num_discrete_state_groups() == 0);
+  DRAKE_DEMAND(dummy_context->num_discrete_state_groups() == 0);
   const int num_v = dummy_context->get_continuous_state().num_v();
   return ExternalSystemConstraint::MakeForAllScalars(
       "zero velocity", SystemConstraintBounds::Equality(num_v),

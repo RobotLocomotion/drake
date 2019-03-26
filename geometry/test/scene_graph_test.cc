@@ -48,8 +48,7 @@ class QueryObjectTester {
   static void set_query_object(QueryObject<T>* q_object,
                                const SceneGraph<T>* scene_graph,
                                const GeometryContext<T>* context) {
-    q_object->context_ = context;
-    q_object->scene_graph_ = scene_graph;
+    q_object->set(context, scene_graph);
   }
 };
 
@@ -144,15 +143,12 @@ class SceneGraphTest : public ::testing::Test {
 // Test sources.
 
 // Tests registration using a default source name. Confirms that the source
-// registered and that a name is available.
+// registered.
 TEST_F(SceneGraphTest, RegisterSourceDefaultName) {
   SourceId id = scene_graph_.RegisterSource();
   EXPECT_TRUE(id.is_valid());
-  EXPECT_NO_THROW(scene_graph_.model_inspector().GetSourceName(id));
-  AllocateContext();
-  EXPECT_THROW(scene_graph_.model_inspector().GetSourceName(id),
-               std::logic_error);
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(id));
+  EXPECT_TRUE(scene_graph_.model_inspector().SourceIsRegistered(id));
 }
 
 // Tests registration using a specified source name. Confirms that the source
@@ -161,18 +157,26 @@ TEST_F(SceneGraphTest, RegisterSourceSpecifiedName) {
   std::string name = "some_unique_name";
   SourceId id = scene_graph_.RegisterSource(name);
   EXPECT_TRUE(id.is_valid());
-  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(id), name);
-  AllocateContext();
   EXPECT_TRUE(scene_graph_.SourceIsRegistered(id));
+  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(id), name);
 }
 
-// Tests that sources cannot be registered after context allocation.
-TEST_F(SceneGraphTest, PoseContextSourceRegistration) {
+// Tests that sources can be registered after context allocation; it should be
+// considered registered by the scene graph, but *not* the previously
+// allocated context.. It also implicitly tests that the model inspector is
+// available _after_ allocation.
+TEST_F(SceneGraphTest, RegisterSourcePostContext) {
   AllocateContext();
+  const std::string new_source_name = "register_source_post_context";
+  SourceId new_source = scene_graph_.RegisterSource(new_source_name);
+  EXPECT_TRUE(scene_graph_.SourceIsRegistered(new_source));
+  // Contained in scene graph.
+  EXPECT_EQ(scene_graph_.model_inspector().GetSourceName(new_source),
+            new_source_name);
+  // Not found in allocated context.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterSource(), std::logic_error,
-      "The call to RegisterSource is invalid; a context has already been "
-      "allocated.");
+      query_object().inspector().GetSourceName(new_source),
+      std::logic_error, "Querying source name for an invalid source id.*");
 }
 
 // Tests ability to report if a source is registered or not.
@@ -204,56 +208,61 @@ TEST_F(SceneGraphTest, AcquireInputPortsAfterAllocation) {
   EXPECT_NO_THROW(scene_graph_.get_source_pose_port(id));
 }
 
-// Test topology changes (registration, removal, clearing, etc.)
-
-// Tests that topology operations (registration, removal, clearing, etc.) after
-// allocation is not allowed -- and an exception with an intelligible message is
-// thrown. The underlying handling of the *values* of the parameters is handled
-// in the GeometryState unit tests. SceneGraph merely confirms the context
-// hasn't been allocated.
+// Tests that topology operations after allocation _are_ allowed. This compares
+// the GeometryState instances of the original context and the new context.
+// This doesn't check the details of each of the registered members -- just that
+// it was registered. It relies on the GeometryState tests to confirm that the
+// details are correct.
 TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   SourceId id = scene_graph_.RegisterSource();
+  FrameId old_frame_id = scene_graph_.RegisterFrame(
+      id, GeometryFrame("old_frame", Isometry3<double>::Identity()));
+  // This geometry will be removed after allocation.
+  GeometryId old_geometry_id = scene_graph_.RegisterGeometry(id, old_frame_id,
+      make_sphere_instance());
+
   AllocateContext();
 
-  // Attach frame to world.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterFrame(
-          id, GeometryFrame("frame", Isometry3<double>::Identity())),
-      std::logic_error,
-      "The call to RegisterFrame is invalid; a context has already been "
-      "allocated.");
+  FrameId parent_frame_id = scene_graph_.RegisterFrame(
+      id, GeometryFrame("frame", Isometry3<double>::Identity()));
+  FrameId child_frame_id = scene_graph_.RegisterFrame(
+      id, parent_frame_id,
+      GeometryFrame("frame", Isometry3<double>::Identity()));
+  GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
+      id, parent_frame_id, make_sphere_instance());
+  GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
+      id, parent_geometry_id, make_sphere_instance());
+  GeometryId anchored_id =
+      scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance());
+  scene_graph_.RemoveGeometry(id, old_geometry_id);
 
-  // Attach frame to another frame.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterFrame(
-          id, FrameId::get_new_id(),
-          GeometryFrame("frame", Isometry3<double>::Identity())),
-      std::logic_error,
-      "The call to RegisterFrame is invalid; a context has already been "
-      "allocated.");
+  const SceneGraphInspector<double>& model_inspector =
+      scene_graph_.model_inspector();
+  const SceneGraphInspector<double>& context_inspector =
+      query_object().inspector();
 
-  // Attach geometry to frame.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterGeometry(id, FrameId::get_new_id(),
-                                    make_sphere_instance()),
-      std::logic_error,
-      "The call to RegisterGeometry is invalid; a context has already been "
-      "allocated.");
+  // Now test registration (non-registration) in the new (old) state,
+  // respectively.
+  EXPECT_TRUE(model_inspector.BelongsToSource(parent_frame_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(child_frame_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(parent_geometry_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(child_geometry_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(anchored_id, id));
+  // Removed geometry from SceneGraph; "invalid" id throws.
+  EXPECT_THROW(model_inspector.BelongsToSource(old_geometry_id, id),
+               std::logic_error);
 
-  // Attach geometry to another geometry.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterGeometry(id, GeometryId::get_new_id(),
-                                    make_sphere_instance()),
-      std::logic_error,
-      "The call to RegisterGeometry is invalid; a context has already been "
-      "allocated.");
-
-  // Attach anchored geometry to world.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance()),
-      std::logic_error,
-      "The call to RegisterAnchoredGeometry is invalid; a context has already "
-      "been allocated.");
+  EXPECT_THROW(context_inspector.BelongsToSource(parent_frame_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(child_frame_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(parent_geometry_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(child_geometry_id, id),
+               std::logic_error);
+  EXPECT_THROW(context_inspector.BelongsToSource(anchored_id, id),
+               std::logic_error);
+  EXPECT_TRUE(context_inspector.BelongsToSource(old_geometry_id, id));
 }
 
 // Confirms that the direct feedthrough logic is correct -- there is total
@@ -291,8 +300,8 @@ TEST_F(SceneGraphTest, FullPoseUpdateAnchoredOnly) {
       SceneGraphTester::FullPoseUpdate(scene_graph_, *geom_context_));
 }
 
-// Tests transmogrification of SceneGraph in the case where a Context has
-// *not* been allocated yet. Registration should still be possible.
+// Tests operations on a transmogrified SceneGraph. Whether a context has been
+// allocated or not, subsequent operations should be allowed.
 TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
   SourceId s_id = scene_graph_.RegisterSource();
   // This should allow additional geometry registration.
@@ -303,14 +312,13 @@ TEST_F(SceneGraphTest, TransmogrifyWithoutAllocation) {
   EXPECT_NO_THROW(
       scene_graph_ad.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 
-  // After allocation, registration should *not* be valid.
+  // After allocation, registration should _still_ be valid.
   AllocateContext();
   system_ad = scene_graph_.ToAutoDiffXd();
   SceneGraph<AutoDiffXd>& scene_graph_ad2 =
       *dynamic_cast<SceneGraph<AutoDiffXd>*>(system_ad.get());
-  EXPECT_THROW(
-      scene_graph_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()),
-      std::logic_error);
+  EXPECT_NO_THROW(
+      scene_graph_ad2.RegisterAnchoredGeometry(s_id, make_sphere_instance()));
 }
 
 // Tests that the ports are correctly mapped.
@@ -354,23 +362,19 @@ TEST_F(SceneGraphTest, TransmogrifyContext) {
                std::logic_error);
 }
 
-// Tests that exercising the collision filtering logic *after* allocation leads
-// to an exception being thrown.
+// Tests that exercising the collision filtering logic *after* allocation is
+// allowed.
 TEST_F(SceneGraphTest, PostAllocationCollisionFiltering) {
+  SourceId source_id = scene_graph_.RegisterSource("filter_after_allocation");
+  FrameId frame_id = scene_graph_.RegisterFrame(
+      source_id, GeometryFrame("dummy", Isometry3d::Identity()));
   AllocateContext();
 
-  GeometrySet geometry_set1{FrameId::get_new_id()};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.ExcludeCollisionsWithin(geometry_set1), std::logic_error,
-      "The call to ExcludeCollisionsWithin is invalid; a context has already "
-      "been allocated.");
+  GeometrySet geometry_set{frame_id};
+  EXPECT_NO_THROW(scene_graph_.ExcludeCollisionsWithin(geometry_set));
 
-  GeometrySet geometry_set2{FrameId::get_new_id()};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      scene_graph_.ExcludeCollisionsBetween(geometry_set1, geometry_set2),
-      std::logic_error,
-      "The call to ExcludeCollisionsBetween is invalid; a context has already "
-      "been allocated.");
+  EXPECT_NO_THROW(
+      scene_graph_.ExcludeCollisionsBetween(geometry_set, geometry_set));
 }
 
 // Tests the model inspector. Exercises a token piece of functionality. The

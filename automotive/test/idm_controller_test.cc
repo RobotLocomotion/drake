@@ -264,8 +264,14 @@ TEST_P(IdmControllerTest, ToAutoDiff) {
     // It suffices to check that the autodiff derivative seeded at the inputs
     // produces a sane value and that the derivatives field is correctly sized.
     EXPECT_LT(0., (*result)[0]);
-    EXPECT_EQ(1, (*result)[0].derivatives().size());
-    EXPECT_EQ(0., (*result)[0].derivatives()(0));
+    // We expect the derivative to be zero. Therefore the derivatives vector
+    // either:
+    //   1. It has zero size or,
+    //   2. Has size of one (1) and first entry equal to zero.
+    // Note: C++'s "short-circuit evaluation" ensures that the second expression
+    //       is never evaluated if the derivatives vector has zero size.
+    EXPECT_TRUE((*result)[0].derivatives().size() == 0 ||
+                (*result)[0].derivatives()(0) == 0.);
   }));
 }
 

@@ -55,6 +55,7 @@ using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using math::RigidTransform;
+using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::benchmarks::Acrobot;
@@ -272,7 +273,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
-          "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+          "AnotherJoint", link1, nullopt, link2, nullopt, Vector3d::UnitZ()),
       std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
@@ -880,8 +881,8 @@ class SphereChainScenario {
     // Add hinges between spheres.
     for (int i = 0; i < sphere_count - 1; ++i) {
       plant_->AddJoint<RevoluteJoint>(
-          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i], {},
-          *spheres_[i + 1], {}, Vector3d::UnitY());
+          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
+          nullopt, *spheres_[i + 1], nullopt, Vector3d::UnitY());
     }
 
     // Body with no registered frame.
@@ -1137,10 +1138,12 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
+  // Test the API taking a RigidTransform.
+  auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));
+
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.SetFreeBodyPose(
-      context.get(), sphere1,
-      Isometry3d(Translation3d(-x_offset, radius, 0.0)));
+      context.get(), sphere1, X_WS1);
   // Place sphere 2 on top of the ground, with offset x = x_offset.
   plant.SetFreeBodyPose(
       context.get(), sphere2,

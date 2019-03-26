@@ -51,7 +51,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     return *this;
   }
 
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override {
     const Vector3<T> axis_rotation_F = rotation_axis();
     const T rotation = get_rotation(context);
@@ -62,8 +62,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     const T translation = get_translation(context);
     const Vector3<T> p_FM = translation * axis_translation_F;
 
-    const math::RigidTransform<T> X_FM(R_FM, p_FM);
-    return X_FM.GetAsIsometry3();
+    return math::RigidTransform<T>(R_FM, p_FM);
   }
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(

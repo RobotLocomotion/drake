@@ -72,9 +72,9 @@ MakeAcrobotPlant(const AcrobotParameters& params, bool finalize,
   plant->AddJoint<RevoluteJoint>(
       params.shoulder_joint_name(),
       /* Shoulder inboard frame Si IS the the world frame W. */
-      plant->world_body(), {},
+      plant->world_body(), nullopt,
       /* Shoulder outboard frame So IS frame L1. */
-      link1, {},
+      link1, nullopt,
       Vector3d::UnitY()); /* acrobot oscillates in the x-z plane. */
 
   // Pose of the elbow inboard frame Ei in Link 1's frame.

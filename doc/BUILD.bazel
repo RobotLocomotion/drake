@@ -17,7 +17,6 @@ drake_py_binary(
 drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
-    imports = ["."],
     deps = [":sphinx_build"],
 )
 

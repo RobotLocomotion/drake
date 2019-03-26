@@ -42,14 +42,14 @@ class SingleOutputVectorSourceTest : public ::testing::Test {
 
 // Tests that the output is correct.
 TEST_F(SingleOutputVectorSourceTest, OutputTest) {
-  ASSERT_EQ(context_->get_num_input_ports(), 0);
+  ASSERT_EQ(context_->num_input_ports(), 0);
   EXPECT_EQ(source_->get_output_port(0).Eval(*context_),
             Eigen::Vector3d::Ones());
 }
 
 // Tests that the state is empty.
 TEST_F(SingleOutputVectorSourceTest, IsStateless) {
-  EXPECT_EQ(context_->get_continuous_state().size(), 0);
+  EXPECT_EQ(context_->num_continuous_states(), 0);
 }
 
 // Some tag types used to select which constructor gets called.

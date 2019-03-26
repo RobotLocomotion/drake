@@ -30,8 +30,7 @@ class WeldMobilizerTest :  public MobilizerTester {
   void SetUp() override {
     weld_body_to_world_ = &AddMobilizerAndFinalize(
         std::make_unique<WeldMobilizer<double>>(
-            tree().world_body().body_frame(), body_->body_frame(),
-            X_WB_.GetAsIsometry3()));
+            tree().world_body().body_frame(), body_->body_frame(), X_WB_));
   }
 
  protected:

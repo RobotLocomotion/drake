@@ -272,15 +272,19 @@ struct Impl {
         m, "System", GetPyParam<T>(), doc.SystemBase.doc)
         .def("set_name", &System<T>::set_name, doc.SystemBase.set_name.doc)
         // Topology.
+        .def("num_input_ports", &System<T>::num_input_ports,
+            doc.SystemBase.num_input_ports.doc)
         .def("get_num_input_ports", &System<T>::get_num_input_ports,
-            doc.SystemBase.get_num_input_ports.doc)
+            "Use num_input_ports() instead.")
         .def("get_input_port", &System<T>::get_input_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_input_port.doc)
         .def("GetInputPort", &System<T>::GetInputPort, py_reference_internal,
             py::arg("port_name"), doc.System.GetInputPort.doc)
+        .def("num_output_ports", &System<T>::num_output_ports,
+            doc.SystemBase.num_output_ports.doc)
         .def("get_num_output_ports", &System<T>::get_num_output_ports,
-            doc.SystemBase.get_num_output_ports.doc)
+            "Use num_output_ports() instead.")
         .def("get_output_port", &System<T>::get_output_port,
             py_reference_internal, py::arg("port_index"),
             doc.System.get_output_port.doc)

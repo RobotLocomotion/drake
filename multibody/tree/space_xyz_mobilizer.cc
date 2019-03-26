@@ -62,14 +62,12 @@ const SpaceXYZMobilizer<T>& SpaceXYZMobilizer<T>::set_angular_velocity(
 }
 
 template <typename T>
-Isometry3<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T> SpaceXYZMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const Eigen::Matrix<T, 3, 1>& rpy = this->get_positions(context);
   DRAKE_ASSERT(rpy.size() == kNq);
-  Isometry3<T> X_FM = Isometry3<T>::Identity();
   const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
-  const math::RotationMatrix<T> R(roll_pitch_yaw);
-  X_FM.linear() = R.matrix();
+  math::RigidTransform<T> X_FM(roll_pitch_yaw, Vector3<T>::Zero());
   return X_FM;
 }
 

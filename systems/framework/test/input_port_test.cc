@@ -178,7 +178,7 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   std::unique_ptr<Context<double>> context = dut.CreateDefaultContext();
 
   // None of the ports should have a value initially.
-  for (int i = 0; i < dut.get_num_input_ports(); ++i) {
+  for (int i = 0; i < dut.num_input_ports(); ++i) {
     EXPECT_FALSE(dut.get_input_port(i).HasValue(*context));
   }
 
@@ -300,7 +300,7 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   EXPECT_EQ(dut.string_port.Eval<std::string>(*context), "replacement string");
 
   // All of the ports should have values by now.
-  for (int i = 0; i < dut.get_num_input_ports(); ++i) {
+  for (int i = 0; i < dut.num_input_ports(); ++i) {
     EXPECT_TRUE(dut.get_input_port(i).HasValue(*context));
   }
 }

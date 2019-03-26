@@ -23,11 +23,13 @@ namespace internal {
 namespace {
 
 using Eigen::AngleAxisd;
-using Eigen::Isometry3d;
+using math::RigidTransformd;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using std::unique_ptr;
 using systems::Context;
+
+const double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // This unit test fixture sets up a simple MultibodyTree model containing a
 // number frames to verify the correctness of the frame methods.
@@ -57,32 +59,33 @@ class FrameTests : public ::testing::Test {
         Vector3d::UnitZ() /*revolute axis*/);
 
     // Some arbitrary pose of frame P in the body frame B.
-    X_BP_ = AngleAxisd(M_PI / 6.0, Vector3d::UnitZ()) *
-            AngleAxisd(M_PI / 5.0, Vector3d::UnitX()) *
-            Translation3d(0.0, -1.0, 0.0);
+    X_BP_ = RigidTransformd(AngleAxisd(M_PI / 6.0, Vector3d::UnitZ()) *
+                            AngleAxisd(M_PI / 5.0, Vector3d::UnitX()) *
+                            Translation3d(0.0, -1.0, 0.0));
     // Frame P is rigidly attached to B with pose X_BP.
     frameP_ =
         &model->AddFrame<FixedOffsetFrame>(bodyB_->body_frame(), X_BP_);
 
     // Some arbitrary pose of frame Q in frame P.
-    X_PQ_ = AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *
-            AngleAxisd(M_PI / 7.0, Vector3d::UnitX()) *
-            Translation3d(0.5, 1.0, -2.0);
+    X_PQ_ = RigidTransformd(AngleAxisd(-M_PI / 3.0, Vector3d::UnitZ()) *
+                            AngleAxisd(M_PI / 7.0, Vector3d::UnitX()) *
+                            Translation3d(0.5, 1.0, -2.0));
     // Frame Q is rigidly attached to P with pose X_PQ.
     frameQ_ =
         &model->AddFrame<FixedOffsetFrame>(*frameP_, X_PQ_);
 
     // Frame R is arbitrary, but named.
     frameR_ = &model->AddFrame<FixedOffsetFrame>(
-        "R", *frameP_, Isometry3d::Identity());
+        "R", *frameP_, math::RigidTransformd::Identity());
 
     // Frame S is arbitrary, but named and with a specific model instance.
     extra_instance_ = model->AddModelInstance("extra_instance");
     frameS_ = &model->AddFrame<FixedOffsetFrame>(
-        "S", model->world_frame(), Isometry3d::Identity(), extra_instance_);
+        "S", model->world_frame(), math::RigidTransformd::Identity(),
+        extra_instance_);
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
-        "SChild", *frameS_, Isometry3d::Identity());
+        "SChild", *frameS_, math::RigidTransformd::Identity());
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.
@@ -91,10 +94,10 @@ class FrameTests : public ::testing::Test {
     context_ = system_->CreateDefaultContext();
 
     // An arbitrary pose of an arbitrary frame G in an arbitrary frame F.
-    X_FG_ = AngleAxisd(M_PI / 6.0, Vector3d::UnitY()) *
-            AngleAxisd(M_PI / 8.0, Vector3d::UnitZ()) *
-            AngleAxisd(M_PI / 5.0, Vector3d::UnitX()) *
-            Translation3d(2.0, -1.0, 0.5);
+    X_FG_ = RigidTransformd(AngleAxisd(M_PI / 6.0, Vector3d::UnitY()) *
+                            AngleAxisd(M_PI / 8.0, Vector3d::UnitZ()) *
+                            AngleAxisd(M_PI / 5.0, Vector3d::UnitX()) *
+                            Translation3d(2.0, -1.0, 0.5));
 
     // An arbitrary pose of an arbitrary frame F in an arbitrary frame Q.
     X_QF_ = X_FG_;
@@ -122,11 +125,11 @@ class FrameTests : public ::testing::Test {
   const Frame<double>* frameS_{};
   const Frame<double>* frameSChild_{};
   // Poses:
-  Isometry3d X_BP_;
-  Isometry3d X_PQ_;
-  Isometry3d X_FG_;
-  Isometry3d X_QF_;
-  Isometry3d X_QG_;
+  math::RigidTransformd X_BP_;
+  math::RigidTransformd X_PQ_;
+  math::RigidTransformd X_FG_;
+  math::RigidTransformd X_QF_;
+  math::RigidTransformd X_QG_;
 };
 
 // Verifies the BodyFrame methods to compute poses in different frames.
@@ -135,23 +138,23 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
   // frame B to which this frame attaches to. Since in this case frame F IS the
   // body frame B, X_BF = Id and this method should return the identity
   // transformation.
-  EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).
-      isApprox(Isometry3d::Identity()));
+  EXPECT_TRUE(frameB_->CalcPoseInBodyFrame(*context_).IsExactlyIdentity());
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().
-      isApprox(Isometry3d::Identity()));
+  EXPECT_TRUE(frameB_->GetFixedPoseInBodyFrame().IsExactlyIdentity());
 
   // Verify this method computes the pose of a frame G measured in this
   // frame F given the pose of frame G in this frame F as: X_BG = X_BF * X_FG.
   // Since in this case frame F IS the body frame B, X_BF = Id and this method
   // simply returns X_FG.
-  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_).isApprox(X_FG_));
+  EXPECT_TRUE(frameB_->CalcOffsetPoseInBody(*context_, X_FG_)
+                  .IsNearlyEqualTo(X_FG_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
   // As in the variant above, since in this case frame F IS the body frame B,
   // X_BF = Id and this method simply returns X_FG.
-  EXPECT_TRUE(frameB_->GetFixedOffsetPoseInBody(X_FG_).isApprox(X_FG_));
+  EXPECT_TRUE(frameB_->GetFixedOffsetPoseInBody(X_FG_).IsNearlyEqualTo(
+      X_FG_, kEpsilon));
 }
 
 // Verifies the FixedOffsetFrame methods to compute poses in different frames.
@@ -162,19 +165,22 @@ TEST_F(FrameTests, BodyFrameCalcPoseMethods) {
 //     B -------> P
 TEST_F(FrameTests, FixedOffsetFrameCalcPoseMethods) {
   // Verify this method returns the pose X_BP of frame P in body frame B.
-  EXPECT_TRUE(frameP_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_));
+  EXPECT_TRUE(
+      frameP_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(X_BP_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameP_->GetFixedPoseInBodyFrame().isApprox(X_BP_));
+  EXPECT_TRUE(
+      frameP_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BP_, kEpsilon));
 
   // Verify this method computes the pose X_BQ of a third frame Q measured in
   // the body frame B given we know the pose X_PQ of frame G in our frame P as:
   // X_BQ = X_BP * X_PQ
-  EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_).
-      isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameP_->CalcOffsetPoseInBody(*context_, X_PQ_)
+                  .IsNearlyEqualTo(X_BP_ * X_PQ_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameP_->GetFixedOffsetPoseInBody(X_PQ_).isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameP_->GetFixedOffsetPoseInBody(X_PQ_).IsNearlyEqualTo(
+      X_BP_ * X_PQ_, kEpsilon));
 }
 
 // Verifies FixedOffsetFrame methods to compute poses in different frames when
@@ -188,20 +194,22 @@ TEST_F(FrameTests, ChainedFixedOffsetFrames) {
   EXPECT_TRUE(frameQ_->name().empty());
   // Verify this method computes the pose of frame Q in the body frame B as:
   // X_BQ = X_BP * X_PQ
-  EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameQ_->CalcPoseInBodyFrame(*context_).IsNearlyEqualTo(
+      X_BP_ * X_PQ_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
-  EXPECT_TRUE(frameQ_->GetFixedPoseInBodyFrame().isApprox(X_BP_ * X_PQ_));
+  EXPECT_TRUE(frameQ_->GetFixedPoseInBodyFrame().IsNearlyEqualTo(X_BP_ * X_PQ_,
+                                                                 kEpsilon));
 
   // Verify this method computes the pose X_BG of a fourth frame G measured in
   // the body frame B given we know the pose X_QG of frame G in our frame Q as:
   // X_BG = X_BP * X_PQ * X_QG
   EXPECT_TRUE(frameQ_->CalcOffsetPoseInBody(*context_, X_QG_).
-      isApprox(X_BP_ * X_PQ_ * X_QG_));
+      IsNearlyEqualTo(X_BP_ * X_PQ_ * X_QG_, kEpsilon));
 
   // Now verify the fixed pose version of the same method.
   EXPECT_TRUE(frameQ_->GetFixedOffsetPoseInBody(X_QG_).
-      isApprox(X_BP_ * X_PQ_ * X_QG_));
+      IsNearlyEqualTo(X_BP_ * X_PQ_ * X_QG_, kEpsilon));
 }
 
 TEST_F(FrameTests, NamedFrame) {

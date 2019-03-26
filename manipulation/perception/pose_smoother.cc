@@ -82,7 +82,7 @@ Isometry3d Vector7ToIsometry3d(const VectorX<double>& pose_vector) {
   // change this function so it instead returns a rigid transform.  The
   // RigidTransform constructor shown below indirectly normalizes the quaternion
   // in an efficient way that avoids a square-root.
-  // return math::RigidTransform(quaternion, pose_vector.head<3>());
+  // return RigidTransform(quaternion, pose_vector.head<3>());
   return pose;
 }
 

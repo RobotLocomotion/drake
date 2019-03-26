@@ -117,19 +117,19 @@ class LeafContext : public Context<T> {
     os << std::string(this->GetSystemPathname().size() + 9, '-') << "\n";
     os << "Time: " << this->get_time() << "\n";
 
-    if (this->get_continuous_state().size() ||
-        this->get_num_discrete_state_groups() ||
-        this->get_num_abstract_states()) {
+    if (this->num_continuous_states() ||
+        this->num_discrete_state_groups() ||
+        this->num_abstract_states()) {
       os << "States:\n";
-      if (this->get_continuous_state().size()) {
-        os << "  " << this->get_continuous_state().size()
+      if (this->num_continuous_states()) {
+        os << "  " << this->num_continuous_states()
            << " continuous states\n";
         os << "    " << this->get_continuous_state_vector() << "\n";
       }
-      if (this->get_num_discrete_state_groups()) {
-        os << "  " << this->get_num_discrete_state_groups()
+      if (this->num_discrete_state_groups()) {
+        os << "  " << this->num_discrete_state_groups()
            << " discrete state groups with\n";
-        for (int i = 0; i < this->get_num_discrete_state_groups(); i++) {
+        for (int i = 0; i < this->num_discrete_state_groups(); i++) {
           os << "     " << this->get_discrete_state(i).size() << " states\n";
           os << "       " << this->get_discrete_state(i) << "\n";
         }
