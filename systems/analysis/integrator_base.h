@@ -1186,8 +1186,7 @@ class IntegratorBase {
    * system.EvalTimeDerivatives() directly.
    */
   const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
-    ++num_ode_evals_;
-    return get_system().EvalTimeDerivatives(context);
+    return EvalTimeDerivatives(get_system(), context);  // See below.
   }
 
   /**
@@ -1200,8 +1199,15 @@ class IntegratorBase {
   template <typename U>
   const ContinuousState<U>& EvalTimeDerivatives(const System<U>& system,
                                                 const Context<U>& context) {
-    ++num_ode_evals_;
-    return system.EvalTimeDerivatives(context);
+    const CacheEntry& entry = system.get_time_derivatives_cache_entry();
+    const CacheEntryValue& value = entry.get_cache_entry_value(context);
+    const int64_t serial_number_before = value.serial_number();
+    const ContinuousState<U>& derivs =
+        system.EvalTimeDerivatives(context);
+    if (value.serial_number() != serial_number_before) {
+      ++num_ode_evals_;  // Wasn't already cached.
+    }
+    return derivs;
   }
 
   /**
