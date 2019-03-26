@@ -380,12 +380,17 @@ class System : public SystemBase {
   /// @retval xcdot The time derivatives of `xc` returned as a reference to an
   ///               object of the same type and size as this %Context's
   ///               continuous state.
-  /// @see CalcTimeDerivatives()
+  /// @see CalcTimeDerivatives(), get_time_derivatives_cache_entry()
   const ContinuousState<T>& EvalTimeDerivatives(
       const Context<T>& context) const {
-    const CacheEntry& entry =
-        this->get_cache_entry(time_derivatives_cache_index_);
+    const CacheEntry& entry = get_time_derivatives_cache_entry();
     return entry.Eval<ContinuousState<T>>(context);
+  }
+
+  /// (Advanced) Returns the CacheEntry used to cache time derivatives for
+  /// EvalTimeDerivatives().
+  const CacheEntry& get_time_derivatives_cache_entry() const {
+    return this->get_cache_entry(time_derivatives_cache_index_);
   }
 
   /// Returns a reference to the cached value of the potential energy (PE),
