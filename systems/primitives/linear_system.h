@@ -149,16 +149,6 @@ class TimeVaryingLinearSystem : public TimeVaryingAffineSystem<T> {
   }
 };
 
-#ifndef DRAKE_DOXYGEN_CXX
-// LinearSystem special values for port indices.  Omitted from Doxygen because
-// we should really not be using `int`s here in the first place, and we don't
-// really want to leak these into the drake::systems namespace globally.
-const int kNoInput = -1;
-const int kUseFirstInputIfItExists = -2;
-const int kNoOutput = -3;
-const int kUseFirstOutputIfItExists = -4;
-#endif
-
 /// Takes the first-order Taylor expansion of a System around a nominal
 /// operating point (defined by the Context).
 ///
@@ -202,8 +192,10 @@ const int kUseFirstOutputIfItExists = -4;
 ///
 std::unique_ptr<LinearSystem<double>> Linearize(
     const System<double>& system, const Context<double>& context,
-    int input_port_index = kUseFirstInputIfItExists,
-    int output_port_index = kUseFirstOutputIfItExists,
+    variant<InputPortSelection, InputPortIndex> input_port_index =
+        InputPortSelection::kUseFirstInputIfItExists,
+    variant<OutputPortSelection, OutputPortIndex> output_port_index =
+        OutputPortSelection::kUseFirstOutputIfItExists,
     double equilibrium_check_tolerance = 1e-6);
 
 /// A first-order Taylor series approximation to a @p system in the neighborhood
@@ -253,8 +245,10 @@ std::unique_ptr<LinearSystem<double>> Linearize(
 // me handle the additional options without a lot of boilerplate.
 std::unique_ptr<AffineSystem<double>> FirstOrderTaylorApproximation(
     const System<double>& system, const Context<double>& context,
-    int input_port_index = kUseFirstInputIfItExists,
-    int output_port_index = kUseFirstOutputIfItExists);
+    variant<InputPortSelection, InputPortIndex> input_port_index =
+        InputPortSelection::kUseFirstInputIfItExists,
+    variant<OutputPortSelection, OutputPortIndex> output_port_index =
+        OutputPortSelection::kUseFirstOutputIfItExists);
 
 /// Returns the controllability matrix:  R = [B, AB, ..., A^{n-1}B].
 /// @ingroup control_systems

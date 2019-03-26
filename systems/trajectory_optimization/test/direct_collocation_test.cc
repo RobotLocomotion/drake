@@ -313,6 +313,10 @@ GTEST_TEST(DirectCollocationTest, AddDirectCollocationConstraint) {
   EXPECT_TRUE(val.isZero());
 }
 
+GTEST_TEST(DirectCollocation, InputPortSelection) {
+
+}
+
 }  // anonymous namespace
 }  // namespace trajectory_optimization
 }  // namespace systems

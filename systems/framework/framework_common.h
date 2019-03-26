@@ -95,6 +95,15 @@ inline bool operator==(
   return holds_alternative<UseDefaultName>(value);
 }
 
+/** Intended for use in e.g. variant<InputPortSelection, InputPortIndex> for
+algorithms that support optional and/or default port indices. */
+enum class InputPortSelection { kNoInput = -1, kUseFirstInputIfItExists = -2 };
+
+/** Intended for use in e.g. variant<OutputPortSelection, OutputPortIndex> for
+algorithms that support optional and/or default port indices. */
+enum class OutputPortSelection { kNoOutput = -1, kUseFirstOutputIfItExists =
+    -2 };
+
 #ifndef DRAKE_DOXYGEN_CXX
 class ContextBase;
 class InputPortBase;
