@@ -27,9 +27,6 @@ def scoped_file(filepath, is_fifo=False):
 
 assert "TEST_TMPDIR" in os.environ, "Must run under `bazel test`"
 
-# Set backend so that the test does not open windows.
-os.environ["MPLBACKEND"] = "ps"
-
 SIGPIPE_STATUS = 141
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))

@@ -1,23 +1,13 @@
 import matplotlib.pyplot as plt
 
 from pydrake.common import FindResourceOrThrow
-from pydrake.geometry import (ConnectDrakeVisualizer, SceneGraph)
+from pydrake.geometry import ConnectDrakeVisualizer, SceneGraph
 from pydrake.lcm import DrakeLcm
 from pydrake.multibody.tree import UniformGravityFieldElement
-from pydrake.multibody.plant import MultibodyPlant
 from pydrake.multibody.parsing import Parser
+from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.drawing import plot_system_graphviz
 from pydrake.systems.framework import DiagramBuilder
-
-import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--test",
-                    action='store_true',
-                    help="Causes the script to run without blocking for "
-                         "user input.",
-                    default=False)
-args = parser.parse_args()
 
 file_name = FindResourceOrThrow(
     "drake/examples/multibody/cart_pole/cart_pole.sdf")
@@ -45,5 +35,4 @@ diagram.set_name("graphviz_example")
 
 plot_system_graphviz(diagram, max_depth=2)
 
-if not args.test:
-    plt.show()
+plt.show()
