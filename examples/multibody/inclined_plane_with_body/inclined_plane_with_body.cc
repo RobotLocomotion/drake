@@ -20,9 +20,8 @@ namespace {
 // This simulates the motion of a rigid body B (e.g., a sphere or a block) on an
 // inclined-plane A (which may be an infinite half-space or a finite box).
 //
-// Information on how to build/run the visualizer, build/run this simulation
-// and how to use command-line arguments is in the README.md file at
-// drake/examples/multibody/inclined_plane_with_body/README.md
+// Information on how to build, run, and visualize this example and how to use
+// command-line arguments is in the accompanying file README.md.
 DEFINE_double(target_realtime_rate, 1.0,
               "Desired rate relative to real time (usually between 0 and 1). "
               "This is documented in Simulator::set_target_realtime_rate().");
@@ -43,11 +42,15 @@ DEFINE_double(slope_degrees, 15.0, "Inclined-plane angle (degrees).");
 DEFINE_double(inclined_plane_coef_static_friction, 0.3,
               "Inclined-plane's coefficient of static friction (no units).");
 DEFINE_double(inclined_plane_coef_kinetic_friction, 0.3,
-              "Inclined-plane's coefficient of kinetic friction (no units).");
+              "Inclined-plane's coefficient of kinetic friction (no units).  "
+              "When time_step > 0, this value is ignored since only the "
+              "coefficient of static friction is used in fixed-time step.");
 DEFINE_double(bodyB_coef_static_friction, 0.3,
               "Body B's coefficient of static friction (no units).");
 DEFINE_double(bodyB_coef_kinetic_friction, 0.3,
-              "Body B's coefficient of kinetic friction (no units).");
+              "Body B's coefficient of kinetic friction (no units).  "
+              "When time_step > 0, this value is ignored since only the "
+              "coefficient of static friction is used in fixed-time step.");
 DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined-plane a half-space (true) or box (false).");
 DEFINE_string(bodyB_type, "sphere", "Valid body types are "
@@ -66,6 +69,9 @@ int do_main() {
   const double massB = 0.1;       // Body B's mass (kg).
   const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
   const double slope_radians = FLAGS_slope_degrees / 180 * M_PI;
+
+  // Information on how coefficients of friction are used in the README.md file:
+  // drake/examples/multibody/inclined_plane_with_body/README.md
   const drake::multibody::CoulombFriction<double> coef_friction_bodyB(
       FLAGS_bodyB_coef_static_friction, FLAGS_bodyB_coef_kinetic_friction);
   const drake::multibody::CoulombFriction<double> coef_friction_inclined_plane(
@@ -145,8 +151,7 @@ int do_main() {
   const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
   const math::RigidTransform<double> X_WB(p_WoBo_W);
-  plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB,
-                                    X_WB.GetAsIsometry3());
+  plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>* integrator =
@@ -174,8 +179,9 @@ int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "\nSimulation of a body (e.g., sphere or block) on an inclined-plane."
       "\nThe type of body is user-selected and may slip or stick (roll)."
-      "\nBuild, run, simulation, and visualization information is in the file:"
-      "\n\ndrake/examples/multibody/inclined_plane_with_body/README.md\n");
+      "\nInformation on how to build, run, and visualize this example and how "
+      "\nto use command-line arguments is in the file README.md "
+      "\n(which is in the folder associated with this example).\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   drake::logging::HandleSpdlogGflags();
   return drake::multibody::examples::inclined_plane_with_body::do_main();

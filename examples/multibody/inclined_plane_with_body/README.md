@@ -18,10 +18,10 @@ change to the drake directory, and at the operating system command prompt, type:
 If the visualizer needs to be built, open a terminal, change to the drake
 directory, and type something like the following at the operating system prompt:
 ```
-bazel run //tools:drake_visualizer
+bazel build //tools:drake_visualizer
 ```
 Note: This requires that bazel (build tool) has been installed.  If the previous
-command is successful, you should see the visualizer on your computer screen.
+command is successful, do step #1 to see the visualizer on your computer screen.
 
 ### 2. How do I run this simulation (with visualization)?
 To run this simulation, open a terminal, change to the drake directory, and
@@ -46,7 +46,7 @@ Open an operating-system prompt, change to the drake directory, and then type:
 ./bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -help
 ```
 
-### 5. How do I build this simulation (and then run it)?
+### 5. How do I build this simulation?
 There is no need to build the simulation unless it has not been built or you
 want to change the underlying source code. To build this simulation, open a 
 terminal, change to the drake directory, and build this example by typing:
@@ -56,7 +56,11 @@ bazel build examples/multibody/inclined_plane_with_body:inclined_plane_with_body
 See step #2 or #3 for instructions on how to run this simulation.
 
 
-#### Optional: How do I build then run with command-line arguments?  
-```
-bazel run examples/multibody/inclined_plane_with_body:inclined_plane_with_body -- -slope_degrees=30 -bodyB_type='block_with_4Spheres'
-```
+### 6. How are the coefficients of friction used?
+1. A coefficient of friction is assigned separately to each object (a default
+   value is assigned or you may assign a value via command-line arguments).
+   Thereafter, a "combining equation" calculates the coefficient of friction
+   by combining the coefficients of friction assigned to each object.
+2. When time_step > 0 (fixed-time step), the coefficient of_kinetic_friction is 
+   ignored since only the coefficient of static friction is used.
+3. More information on the CoulombFriction class is in coulomb_friction.h.

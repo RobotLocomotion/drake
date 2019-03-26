@@ -14,7 +14,6 @@ void AddInclinedPlaneAndEarthGravityToPlant(
     const CoulombFriction<double>& coefficient_friction_inclined_plane,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(LAx >= 0 && LAy >= 0 && LAz >= 0);
 
   // The inclined-plane A is oriented by initially setting Ax=Wx, Ay=Wy, Az=Wz,
   // and then subjecting A to a right-handed rotation in W about Ay=Wy, so that
@@ -29,15 +28,13 @@ void AddInclinedPlaneAndEarthGravityToPlant(
     // Make half-space A's top-surface pass through World origin Wo.
     const Vector3<double> p_WoAo_W = Vector3<double>::Zero();
     const math::RigidTransform<double> X_WA(R_WA, p_WoAo_W);
-    plant->RegisterVisualGeometry(plant->world_body(),
-                                  X_WA.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(plant->world_body(), X_WA,
                                   geometry::HalfSpace(),
                                   "InclinedPlaneVisualGeometry",
                                   green);
 
     // Set inclined-plane A's collision geometry to a half-space.
-    plant->RegisterCollisionGeometry(plant->world_body(),
-                                     X_WA.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(plant->world_body(), X_WA,
                                      geometry::HalfSpace(),
                                      "InclinedPlaneCollisionGeometry",
                                      coefficient_friction_inclined_plane);
@@ -52,15 +49,13 @@ void AddInclinedPlaneAndEarthGravityToPlant(
     const Vector3<double> Az_W = R_WA.col(2);
     const Vector3<double> p_WoAo_W = -0.5 * LAz * Az_W;
     const math::RigidTransform<double> X_WA(R_WA, p_WoAo_W);
-    plant->RegisterVisualGeometry(plant->world_body(),
-                                  X_WA.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(plant->world_body(), X_WA,
                                   geometry::Box(LAx, LAy, LAz),
                                   "InclinedPlaneVisualGeometry",
                                   green);
 
     // Set inclined-plane A's collision geometry to a box.
-    plant->RegisterCollisionGeometry(plant->world_body(),
-                                     X_WA.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(plant->world_body(), X_WA,
                                      geometry::Box(LAx, LAy, LAz),
                                      "InclinedPlaneCollisionGeometry",
                                      coefficient_friction_inclined_plane);
@@ -80,7 +75,6 @@ void AddInclinedPlaneWithBlockPlant(
     bool is_block_with_4Spheres,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(LAx >= 0 && LAy >= 0 && LAz >= 0);
   DRAKE_THROW_UNLESS(LBx > 0 && LBy > 0 && LBz > 0 && massB > 0);
 
   // Add the inclined plane and gravity to the plant.
@@ -101,7 +95,7 @@ void AddInclinedPlaneWithBlockPlant(
   // The pose X_BG of block B's geometry frame G is an identity transform.
   const math::RigidTransformd X_BG;   // Identity transform.
   const Vector4<double> lightBlue(0.5, 0.8, 1.0, 1.0);
-  plant->RegisterVisualGeometry(blockB, X_BG.GetAsIsometry3(),
+  plant->RegisterVisualGeometry(blockB, X_BG,
                                 geometry::Box(LBx, LBy, LBz),
                                 "BlockB_VisualGeometry", lightBlue);
 
@@ -121,40 +115,40 @@ void AddInclinedPlaneWithBlockPlant(
 
     // Register collision geometry for all 4 spheres.
 
-    plant->RegisterCollisionGeometry(blockB, X_BSphere1.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(blockB, X_BSphere1,
                                      geometry::Sphere(radius),
                                      "Sphere1_CollisionGeometry",
                                      coefficient_friction_bodyB);
-    plant->RegisterCollisionGeometry(blockB, X_BSphere2.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(blockB, X_BSphere2,
                                      geometry::Sphere(radius),
                                      "Sphere2_CollisionGeometry",
                                      coefficient_friction_bodyB);
-    plant->RegisterCollisionGeometry(blockB, X_BSphere3.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(blockB, X_BSphere3,
                                      geometry::Sphere(radius),
                                      "Sphere3_CollisionGeometry",
                                      coefficient_friction_bodyB);
-    plant->RegisterCollisionGeometry(blockB, X_BSphere4.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(blockB, X_BSphere4,
                                      geometry::Sphere(radius),
                                      "Sphere4_CollisionGeometry",
                                      coefficient_friction_bodyB);
 
     // Register visual geometry for all 4 spheres.
     const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
-    plant->RegisterVisualGeometry(blockB, X_BSphere1.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(blockB, X_BSphere1,
                                   geometry::Sphere(radius),
                                   "Sphere1_VisualGeometry", red);
-    plant->RegisterVisualGeometry(blockB, X_BSphere2.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(blockB, X_BSphere2,
                                   geometry::Sphere(radius),
                                   "Sphere2_VisualGeometry", red);
-    plant->RegisterVisualGeometry(blockB, X_BSphere3.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(blockB, X_BSphere3,
                                   geometry::Sphere(radius),
                                   "Sphere3_VisualGeometry", red);
-    plant->RegisterVisualGeometry(blockB, X_BSphere4.GetAsIsometry3(),
+    plant->RegisterVisualGeometry(blockB, X_BSphere4,
                                   geometry::Sphere(radius),
                                   "Sphere4_VisualGeometry", red);
   } else {
     // Block B's collision geometry is a solid box.
-    plant->RegisterCollisionGeometry(blockB, X_BG.GetAsIsometry3(),
+    plant->RegisterCollisionGeometry(blockB, X_BG,
                                      geometry::Box(LBx, LBy, LBz),
                                      "BlockB_VisualGeometry",
                                      coefficient_friction_bodyB);
@@ -169,7 +163,6 @@ void AddInclinedPlaneWithSpherePlant(
     const CoulombFriction<double>& coefficient_friction_bodyB,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(LAx >= 0 && LAy >= 0 && LAz >= 0);
   DRAKE_THROW_UNLESS(radiusB > 0 && massB > 0);
 
   // Add the inclined plane and gravity to the plant.
@@ -189,10 +182,10 @@ void AddInclinedPlaneWithSpherePlant(
   // The pose X_BG of block B's geometry frame G is an identity transform.
   const math::RigidTransformd X_BG;   // Identity transform.
   const Vector4<double> lightBlue(0.5, 0.8, 1.0, 1.0);
-  plant->RegisterVisualGeometry(sphereB, X_BG.GetAsIsometry3(),
+  plant->RegisterVisualGeometry(sphereB, X_BG,
                                 geometry::Sphere(radiusB),
                                 "SphereB_VisualGeometry", lightBlue);
-  plant->RegisterCollisionGeometry(sphereB, X_BG.GetAsIsometry3(),
+  plant->RegisterCollisionGeometry(sphereB, X_BG,
                                    geometry::Sphere(radiusB),
                                    "SphereB_CollisionGeometry",
                                    coefficient_friction_bodyB);
@@ -204,16 +197,16 @@ void AddInclinedPlaneWithSpherePlant(
   const math::RigidTransformd X_B_Spoke2(Vector3<double>(0, 0, -radiusB));
   const math::RigidTransformd X_B_Spoke3(Vector3<double>(radiusB, 0, 0));
   const math::RigidTransformd X_B_Spoke4(Vector3<double>(-radiusB, 0, 0));
-  plant->RegisterVisualGeometry(sphereB, X_B_Spoke1.GetAsIsometry3(),
+  plant->RegisterVisualGeometry(sphereB, X_B_Spoke1,
                                 geometry::Sphere(radius_spoke),
                                 "Spoke1_VisualGeometry", red);
-  plant->RegisterVisualGeometry(sphereB, X_B_Spoke2.GetAsIsometry3(),
+  plant->RegisterVisualGeometry(sphereB, X_B_Spoke2,
                                 geometry::Sphere(radius_spoke),
                                 "Spoke2_VisualGeometry", red);
-  plant->RegisterVisualGeometry(sphereB, X_B_Spoke3.GetAsIsometry3(),
+  plant->RegisterVisualGeometry(sphereB, X_B_Spoke3,
                                 geometry::Sphere(radius_spoke),
                                 "Spoke3_VisualGeometry", red);
-  plant->RegisterVisualGeometry(sphereB, X_B_Spoke4.GetAsIsometry3(),
+  plant->RegisterVisualGeometry(sphereB, X_B_Spoke4,
                                 geometry::Sphere(radius_spoke),
                                 "Spoke4_VisualGeometry", red);
 }
