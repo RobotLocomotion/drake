@@ -135,6 +135,26 @@ GTEST_TEST(TextLoggingTest, DrakeMacrosDontEvaluateArguments) {
   debugarg = 0;
 }
 
+GTEST_TEST(TextLoggingTest, SetLogLevel) {
+  using drake::logging::set_log_level;
+
+  #if TEXT_LOGGING_TEST_SPDLOG
+    EXPECT_THROW(set_log_level("bad"), std::runtime_error);
+    const std::vector<std::string> levels = {
+        "trace", "debug", "info", "warn", "err", "critical", "off"};
+    const std::string first_level = set_log_level("unchanged");
+    std::string prev_level = "off";
+    set_log_level(prev_level);
+    for (const std::string& level : levels) {
+      EXPECT_EQ(set_log_level(level), prev_level);
+      prev_level = level;
+    }
+    set_log_level(first_level);
+  #else
+    ASSERT_EQ(drake::logging::set_log_level("anything really"), "");
+  #endif
+}
+
 // We must run this test last because it changes the default configuration.
 GTEST_TEST(TextLoggingTest, ZZZ_ChangeDefaultSink) {
   // The getter should never return nullptr, even with spdlog disabled.
