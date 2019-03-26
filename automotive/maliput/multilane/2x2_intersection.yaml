@@ -151,25 +151,25 @@ RoadRulebook:
     # travel will not have right-of-way.
     - ID: NorthRightTurn
       States:
-        Go: []
+        Go: [SouthLeftTurn]
         StopThenGo: [EastStraight, SouthLeftTurn]
       Zone:
       - Lane: l:north_right_turn_segment_0
     - ID: SouthRightTurn
       States:
-        Go: []
+        Go: [NorthLeftTurn]
         StopThenGo: [WestStraight, NorthLeftTurn]
       Zone:
       - Lane: l:south_right_turn_segment_0
     - ID: EastRightTurn
       States:
-        Go: []
+        Go: [WestLeftTurn]
         StopThenGo: [SouthStraight, WestLeftTurn]
       Zone:
       - Lane: l:east_right_turn_segment_0
     - ID: WestRightTurn
       States:
-        Go: []
+        Go: [EastLeftTurn]
         StopThenGo: [NorthStraight, EastLeftTurn]
       Zone:
       - Lane: l:west_right_turn_segment_0
@@ -200,3 +200,19 @@ RoadRulebook:
       Zone:
       - Lane: l:west_left_turn_segment_0
 
+PhaseRings:
+- ID: 2x2Intersection
+  Rules: [NorthStraight, SouthStraight, EastStraight, WestStraight,
+          NorthRightTurn, SouthRightTurn, EastRightTurn, WestRightTurn,
+          NorthLeftTurn, SouthLeftTurn, EastLeftTurn, WestLeftTurn]
+  Phases:
+  - ID: NorthSouthPhase
+    RightOfWayRuleStates: {NorthStraight: Go, SouthStraight: Go,
+                           NorthLeftTurn: Go, SouthLeftTurn: Go,
+                           NorthRightTurn: Go, SouthRightTurn: Go,
+                           EastRightTurn: StopThenGo, WestRightTurn: StopThenGo}
+  - ID: EastWestPhase
+    RightOfWayRuleStates: {EastStraight: Go, WestStraight: Go,
+                           EastLeftTurn: Go, WestLeftTurn: Go,
+                           EastRightTurn: Go, WestRightTurn: Go,
+                           NorthRightTurn: StopThenGo, SouthRightTurn: StopThenGo}
