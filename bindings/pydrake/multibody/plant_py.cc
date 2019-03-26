@@ -54,7 +54,7 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
 
-  const char* doc_iso3_depreaction =
+  const char* doc_iso3_deprecation =
       "This API using Isometry3 will be deprecated soon with the resolution of "
       "#9865. We only offer it for backwards compatibility. DO NOT USE!.";
 
@@ -117,7 +117,7 @@ PYBIND11_MODULE(plant, m) {
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const Isometry3<double>&>(&Class::WeldFrames),
             py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
-            doc_iso3_depreaction)
+            doc_iso3_deprecation)
         .def("WeldFrames",
             py::overload_cast<const Frame<T>&, const Frame<T>&,
                 const RigidTransform<double>&>(&Class::WeldFrames),
@@ -164,7 +164,7 @@ PYBIND11_MODULE(plant, m) {
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const Isometry3<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
-            doc_iso3_depreaction)
+            doc_iso3_deprecation)
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const RigidTransform<T>&>(&Class::SetFreeBodyPose),
@@ -427,7 +427,7 @@ PYBIND11_MODULE(plant, m) {
                 &Class::RegisterVisualGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
-            doc_iso3_depreaction)
+            doc_iso3_deprecation)
         .def("RegisterVisualGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,
@@ -444,7 +444,7 @@ PYBIND11_MODULE(plant, m) {
                 &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
-            doc_iso3_depreaction)
+            doc_iso3_deprecation)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const Body<T>&, const RigidTransform<double>&,
                 const geometry::Shape&, const std::string&,

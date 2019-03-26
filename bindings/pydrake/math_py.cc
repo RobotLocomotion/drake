@@ -28,7 +28,7 @@ PYBIND11_MODULE(math, m) {
 
   py::module::import("pydrake.common.eigen_geometry");
 
-  const char* doc_iso3_depreaction = ￼
+  const char* doc_iso3_deprecation = ￼
       "DO NOT USE!. We only offer this API for backwards compatibility with " ￼
       "Isometry3 and it will be deprecated soon with the resolution of " ￼
       "#9865.";
@@ -148,10 +148,10 @@ PYBIND11_MODULE(math, m) {
               ￼ return *self * RigidTransform<T>(other);
               ￼
             },
-            ￼py::arg("other"), doc_iso3_depreaction)
-        .def("matrix", &RigidTransform<T>::matrix, doc_iso3_depreaction)
+            ￼py::arg("other"), doc_iso3_deprecation)
+        .def("matrix", &RigidTransform<T>::matrix, doc_iso3_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
-            doc_iso3_depreaction);
+            doc_iso3_deprecation);
     DefCopyAndDeepCopy(&cls);
     // .def("IsNearlyEqualTo", ...)
     // .def("IsExactlyEqualTo", ...)
