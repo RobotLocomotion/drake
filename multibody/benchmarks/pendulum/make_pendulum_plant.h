@@ -100,9 +100,9 @@ class PendulumParameters {
 ///   will register the new multibody plant to be a source for that geometry
 ///   system and it will also register geometry for visualization.
 ///   If this argument is omitted, no geometry will be registered.
-std::unique_ptr<MultibodyPlant<double>>
-MakePendulumPlant(const PendulumParameters& default_parameters,
-                  geometry::SceneGraph<double>* scene_graph = nullptr);
+std::unique_ptr<MultibodyPlant<double>> MakePendulumPlant(
+    const PendulumParameters& default_parameters = PendulumParameters(),
+    geometry::SceneGraph<double>* scene_graph = nullptr);
 
 }  // namespace pendulum
 }  // namespace benchmarks

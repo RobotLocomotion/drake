@@ -79,6 +79,8 @@ drake_cc_googletest(
     deps = [
         ":direct_collocation",
         "//common/test_utilities:eigen_matrix_compare",
+        "//examples/rimless_wheel",
+        "//multibody/benchmarks/pendulum",
         "//solvers:solve",
         "//systems/primitives:linear_system",
     ],
