@@ -55,6 +55,46 @@ logging::sink* logging::get_dist_sink() {
   return result;
 }
 
+std::string logging::set_log_level(const std::string& level) {
+  spdlog::level::level_enum prev_value = drake::log()->level();
+  spdlog::level::level_enum value{};
+  if (level == "trace") {
+    value = spdlog::level::trace;
+  } else if (level == "debug") {
+    value = spdlog::level::debug;
+  } else if (level == "info") {
+    value = spdlog::level::info;
+  } else if (level == "warn") {
+    value = spdlog::level::warn;
+  } else if (level == "err") {
+    value = spdlog::level::err;
+  } else if (level == "critical") {
+    value = spdlog::level::critical;
+  } else if (level == "off") {
+    value = spdlog::level::off;
+  } else if (level == "unchanged") {
+    value = prev_value;
+  } else {
+    throw std::runtime_error(fmt::format("Unknown spdlog level: {}", level));
+  }
+  drake::log()->set_level(value);
+  switch (prev_value) {
+    case spdlog::level::trace: return "trace";
+    case spdlog::level::debug: return "debug";
+    case spdlog::level::info: return "info";
+    case spdlog::level::warn: return "warn";
+    case spdlog::level::err: return "err";
+    case spdlog::level::critical: return "critical";
+    case spdlog::level::off: return "off";
+    default: {
+      // N.B. `spdlog::level::level_enum` is not a `enum class`, so the
+      // compiler does not know that it has a closed set of values. For
+      // simplicity in linking, we do not use `DRAKE_UNREACHABLE`.
+      throw std::runtime_error("Should not reach here!");
+    }
+  }
+}
+
 #else  // HAVE_SPDLOG
 
 logging::logger::logger() {}
@@ -71,6 +111,10 @@ logging::sink* logging::get_dist_sink() {
   // An empty sink instance.
   static logging::sink g_sink;
   return &g_sink;
+}
+
+std::string logging::set_log_level(const std::string&) {
+  return "";
 }
 
 #endif  // HAVE_SPDLOG
