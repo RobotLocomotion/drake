@@ -111,7 +111,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
   // Use specified input and no outputs (the output dynamics are irrelevant for
   // LQR design).
   auto linear_system = Linearize(
-    system, context, input_port_index, kNoOutput);
+    system, context, input_port_index, OutputPortSelection::kNoOutput);
 
   // DiscreteTimeLinearQuadraticRegulator does not support N yet.
   DRAKE_DEMAND(linear_system->time_period() == 0.0 || N.rows() == 0);

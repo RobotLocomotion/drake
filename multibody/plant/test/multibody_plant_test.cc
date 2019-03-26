@@ -1277,7 +1277,7 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   unique_ptr<LinearSystem<double>> linearized_pendulum =
       Linearize(*pendulum, *context,
                 pendulum->get_actuation_input_port().get_index(),
-                systems::kNoOutput);
+                systems::OutputPortSelection::kNoOutput);
 
   // Compute the expected solution by hand.
   Eigen::Matrix2d A;
@@ -1296,7 +1296,8 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   pin.set_angular_rate(context.get(), 0.0);
   linearized_pendulum = Linearize(
       *pendulum, *context,
-      pendulum->get_actuation_input_port().get_index(), systems::kNoOutput);
+      pendulum->get_actuation_input_port().get_index(),
+      systems::OutputPortSelection::kNoOutput);
   // Compute the expected solution by hand.
   A << 0.0, 1.0,
       -parameters.g() / parameters.l(), domegadot_domega;

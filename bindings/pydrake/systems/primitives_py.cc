@@ -3,6 +3,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -255,14 +256,18 @@ PYBIND11_MODULE(primitives, m) {
       py::arg("builder"), doc.AddRandomInputs.doc);
 
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
-      py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
-      py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
+      py::arg("input_port_index") =
+          systems::InputPortSelection::kUseFirstInputIfItExists,
+      py::arg("output_port_index") =
+          systems::OutputPortSelection::kUseFirstOutputIfItExists,
       py::arg("equilibrium_check_tolerance") = 1e-6, doc.Linearize.doc);
 
   m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation,
       py::arg("system"), py::arg("context"),
-      py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
-      py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
+      py::arg("input_port_index") =
+          systems::InputPortSelection::kUseFirstInputIfItExists,
+      py::arg("output_port_index") =
+          systems::OutputPortSelection::kUseFirstOutputIfItExists,
       doc.FirstOrderTaylorApproximation.doc);
 
   m.def("ControllabilityMatrix", &ControllabilityMatrix,

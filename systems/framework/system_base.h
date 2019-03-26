@@ -1003,7 +1003,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** (Internal use only) Returns the OutputPortBase at index `port_index`,
-  throwing std::out_of_range we don't like the port index. The name of the
+  throwing std::out_of_range if we don't like the port index. The name of the
   public API method that received the bad index is provided in `func` and is
   included in the error message. */
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,

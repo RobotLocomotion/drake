@@ -65,6 +65,15 @@ void DefineFrameworkPySemantics(py::module m) {
       .value("kVectorValued", kVectorValued)
       .value("kAbstractValued", kAbstractValued);
 
+  py::enum_<InputPortSelection>(m, "InputPortSelection")
+      .value("kNoInput", InputPortSelection::kNoInput)
+      .value("kUseFirstInputIfItExists",
+          InputPortSelection::kUseFirstInputIfItExists);
+  py::enum_<OutputPortSelection>(m, "OutputPortSelection")
+      .value("kNoOutput", OutputPortSelection::kNoOutput)
+      .value("kUseFirstOutputIfItExists",
+          OutputPortSelection::kUseFirstOutputIfItExists);
+
   BindTypeSafeIndex<DependencyTicket>(m, "DependencyTicket");
   BindTypeSafeIndex<CacheIndex>(m, "CacheIndex");
   BindTypeSafeIndex<SubsystemIndex>(m, "SubsystemIndex");
