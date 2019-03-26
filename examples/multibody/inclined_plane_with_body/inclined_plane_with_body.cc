@@ -28,11 +28,17 @@ DEFINE_double(target_realtime_rate, 1.0,
               "This is documented in Simulator::set_target_realtime_rate().");
 DEFINE_double(simulation_time, 2.0, "Simulation duration in seconds");
 DEFINE_double(time_step, 1.0E-3,
-              "If zero, the plant is modeled as a continuous system. "
               "If positive, the period (in seconds) of the discrete updates "
-              "for the plant modeled as a discrete system."
-              "This parameter must be non-negative.");
-DEFINE_double(penetration_allowance, 1.E-5, "Allowable penetration (meters).");
+              "for the plant modeled as a discrete system.  If time_step = 0, "
+              "the plant is modeled as a continuous system and no contact "
+              "forces are displayed.  Note: time_step must be >= 0.");
+DEFINE_double(integration_accuracy, 1.0E-6,
+              "When time_step = 0 (plant is modeled as a continuous system), "
+              "this is the desired integration accuracy.  This value is not "
+              "used if time_step > 0 (fixed-time step).");
+DEFINE_double(penetration_allowance, 1.0E-5, "Allowable penetration (meters).");
+DEFINE_double(stiction_tolerance, 1.0E-5,
+              "Allowable drift speed during stiction (m/s).");
 DEFINE_double(slope_degrees, 15.0, "Inclined-plane angle (degrees).");
 DEFINE_double(inclined_plane_coef_static_friction, 0.3,
               "Inclined-plane's coefficient of static friction (no units).");
@@ -104,15 +110,20 @@ int do_main() {
   // Set allowable penetration (in meters) for body B to inclined-plane.
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
 
-  // Set the stiction tolerance for the underlying Stribeck friction model.
-  plant.set_stiction_tolerance(1.0E-5);
+  // Set the speed tolerance (m/s) for the underlying Stribeck friction model
+  // (the allowable drift speed during stiction).  For two points in contact,
+  // this is the maximum sliding speed for the points to be regarded as
+  // stationary relative to each other (so that static friction is used).
+  plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
   // Do a reality check that body B is a free-flying rigid body.
   DRAKE_DEMAND(plant.num_velocities() == 6);
   DRAKE_DEMAND(plant.num_positions() == 7);
 
   // Publish contact results for visualization.
-  ConnectContactResultsToDrakeVisualizer(&builder, plant);
+  // TODO(Mitiguy) Ensure contact forces can be displayed when time_step = 0.
+  if (FLAGS_time_step > 0)
+    ConnectContactResultsToDrakeVisualizer(&builder, plant);
 
   geometry::ConnectDrakeVisualizer(&builder, pair.scene_graph);
   auto diagram = builder.Build();
@@ -143,8 +154,7 @@ int do_main() {
 
   // Set the integration accuracy when the plant is integrated with a variable-
   // step integrator. This value is not used if time_step > 0 (fixed-time step).
-  const double integration_accuracy = 1.0E-6;
-  integrator->set_target_accuracy(integration_accuracy);
+  integrator->set_target_accuracy(FLAGS_integration_accuracy);
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
@@ -163,7 +173,7 @@ int do_main() {
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
       "\nSimulation of a body (e.g., sphere or block) on an inclined-plane."
-      "\nThe body is user-selected and may slip or stick (roll)."
+      "\nThe type of body is user-selected and may slip or stick (roll)."
       "\nBuild, run, simulation, and visualization information is in the file:"
       "\n\ndrake/examples/multibody/inclined_plane_with_body/README.md\n");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
