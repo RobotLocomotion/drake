@@ -5,6 +5,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/math/barycentric.h"
@@ -26,6 +27,11 @@ PYBIND11_MODULE(math, m) {
   constexpr auto& doc = pydrake_doc.drake.math;
 
   py::module::import("pydrake.common.eigen_geometry");
+
+  const char* doc_iso3_depreaction = ￼
+      "DO NOT USE!. We only offer this API for backwards compatibility with " ￼
+      "Isometry3 and it will be deprecated soon with the resolution of " ￼
+      "#9865.";
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -132,7 +138,20 @@ PYBIND11_MODULE(math, m) {
             [](const Class* self, const Vector3<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },
-            py::arg("p_BoQ_B"), "See ``multiply``.");
+            py::arg("p_BoQ_B"), "See ``multiply``.")
+        .def("multiply",
+            ￼[](const RigidTransform<T>* self, const Isometry3<T>& other) {
+              ￼ WarnDeprecated(
+                  ￼ "2019-03-21. " ￼
+                    "Do not mix RigidTransform with Isometry3. Only use " ￼
+                    "RigidTransform per #9865.");
+              ￼ return *self * RigidTransform<T>(other);
+              ￼
+            },
+            ￼py::arg("other"), doc_iso3_depreaction)
+        .def("matrix", &RigidTransform<T>::matrix, doc_iso3_depreaction)
+        .def("linear", &RigidTransform<T>::linear, py_reference_internal,
+            doc_iso3_depreaction);
     DefCopyAndDeepCopy(&cls);
     // .def("IsNearlyEqualTo", ...)
     // .def("IsExactlyEqualTo", ...)
