@@ -4,11 +4,6 @@
 Using Drake from Python
 ***********************
 
-.. warning::
-   Drake is incompatible with the Python environment supplied by Anaconda.
-   Please uninstall Anaconda or remove the Anaconda ``bin`` directory from the
-   ``PATH`` before building or using the Drake Python bindings.
-
 A limited subset of the Drake C++ functionality is available from Python. The
 Drake Python bindings are generated using `pybind11
 <https://github.com/pybind/pybind11>`_, which means that every function or
@@ -23,6 +18,11 @@ Installation
 
 Binary Installation for Python
 ------------------------------
+
+.. warning::
+   Drake is incompatible with the Python environment supplied by Anaconda.
+   Please uninstall Anaconda or remove the Anaconda ``bin`` directory from the
+   ``PATH`` before building or using the Drake Python bindings.
 
 First, download and extract an :ref:`available binary package
 <binary-installation>`.
