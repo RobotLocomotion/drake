@@ -26,6 +26,8 @@ bool InternalGeometry::has_role(Role role) const {
       return has_proximity_role();
     case Role::kIllustration:
       return has_illustration_role();
+    case Role::kPerception:
+      throw std::logic_error("Unsupported internal geometry role: perception");
     case Role::kUnassigned:
       return !(has_proximity_role() || has_illustration_role());
   }
