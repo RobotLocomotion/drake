@@ -12,16 +12,16 @@ namespace maliput {
 namespace api {
 namespace rules {
 
-/// A set of mutually exclusive phases, e.g., that comprise the signalling
+/// A set of mutually exclusive phases, e.g., that comprise the signaling
 /// cycle for an intersection.
-class RightOfWayPhaseRing final {
+class PhaseRing final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RightOfWayPhaseRing);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PhaseRing);
 
-  /// Unique identifier for a RightOfWayPhaseRing.
-  using Id = TypeSpecificIdentifier<class RightOfWayPhaseRing>;
+  /// Unique identifier for a PhaseRing.
+  using Id = TypeSpecificIdentifier<class PhaseRing>;
 
-  /// Constructs a RightOfWayPhaseRing.
+  /// Constructs a PhaseRing.
   ///
   /// @param id the unique ID of this phase ring
   /// @param phases the phases within this ring.
@@ -29,7 +29,7 @@ class RightOfWayPhaseRing final {
   /// @throws std::exception if `phases` is empty, `phases` contains duplicate
   /// RightOfWayPhase::Id's, the phases define different sets of
   /// RightOfWayRule::Ids, or the phases define different sets of bulb states.
-  RightOfWayPhaseRing(const Id& id, const std::vector<RightOfWayPhase>& phases);
+  PhaseRing(const Id& id, const std::vector<RightOfWayPhase>& phases);
 
   /// Returns the phase ring's identifier.
   const Id& id() const { return id_; }

@@ -10,7 +10,7 @@ namespace maliput {
 using api::rules::RightOfWayPhaseProvider;
 
 void SimpleRightOfWayPhaseProvider::AddPhaseRing(
-    const api::rules::RightOfWayPhaseRing::Id& id,
+    const api::rules::PhaseRing::Id& id,
     const api::rules::RightOfWayPhase::Id& initial_phase) {
   auto result = phases_.emplace(id, initial_phase);
   if (!result.second) {
@@ -21,14 +21,14 @@ void SimpleRightOfWayPhaseProvider::AddPhaseRing(
 
 
 void SimpleRightOfWayPhaseProvider::SetPhase(
-    const api::rules::RightOfWayPhaseRing::Id& id,
+    const api::rules::PhaseRing::Id& id,
     const api::rules::RightOfWayPhase::Id& phase) {
   phases_.at(id) = phase;
 }
 
 optional<RightOfWayPhaseProvider::Result>
 SimpleRightOfWayPhaseProvider::DoGetPhase(
-    const api::rules::RightOfWayPhaseRing::Id& id) const {
+    const api::rules::PhaseRing::Id& id) const {
   auto it = phases_.find(id);
   if (it == phases_.end()) {
     return nullopt;

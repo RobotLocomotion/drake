@@ -7,8 +7,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
 #include "drake/automotive/maliput/api/test_utilities/rules_test_utilities.h"
@@ -24,9 +24,9 @@ namespace maliput {
 namespace {
 
 using api::RoadGeometry;
+using api::rules::PhaseRing;
 using api::rules::RightOfWayPhase;
 using api::rules::RightOfWayPhaseBook;
-using api::rules::RightOfWayPhaseRing;
 using api::rules::RightOfWayRule;
 using api::rules::RoadRulebook;
 
@@ -102,9 +102,9 @@ TEST_F(TestLoading2x2IntersectionPhasebook, LoadFromFile) {
   std::unique_ptr<RightOfWayPhaseBook> phasebook =
       LoadPhaseRingBookFromFile(rulebook_.get(), filepath_);
   EXPECT_NE(phasebook, nullptr);
-  const RightOfWayPhaseRing::Id ring_id("2x2Intersection");
-  const optional<RightOfWayPhaseRing> ring =
-      phasebook->GetPhaseRing(RightOfWayPhaseRing::Id(ring_id));
+  const PhaseRing::Id ring_id("2x2Intersection");
+  const optional<PhaseRing> ring =
+      phasebook->GetPhaseRing(PhaseRing::Id(ring_id));
   EXPECT_NE(ring, nullopt);
   EXPECT_EQ(ring->id(), ring_id);
   const auto& phases = ring->phases();

@@ -5,9 +5,9 @@
 
 #include "yaml-cpp/yaml.h"
 
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/base/simple_right_of_way_phase_book.h"
 #include "drake/common/drake_assert.h"
@@ -18,9 +18,9 @@ namespace maliput {
 namespace {
 
 using api::rules::LaneSRange;
+using api::rules::PhaseRing;
 using api::rules::RightOfWayPhase;
 using api::rules::RightOfWayPhaseBook;
-using api::rules::RightOfWayPhaseRing;
 using api::rules::RightOfWayRule;
 using api::rules::RoadRulebook;
 using api::rules::RuleStates;
@@ -81,11 +81,10 @@ RuleStates CreateDefaultRuleStates(
   return result;
 }
 
-RightOfWayPhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
-                                   const YAML::Node& phase_ring_node) {
+PhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
+                         const YAML::Node& phase_ring_node) {
   DRAKE_DEMAND(phase_ring_node.IsMap());
-  const RightOfWayPhaseRing::Id ring_id(
-      phase_ring_node["ID"].as<std::string>());
+  const PhaseRing::Id ring_id(phase_ring_node["ID"].as<std::string>());
   const std::unordered_map<RightOfWayRule::Id, RightOfWayRule> rules =
       GetRules(rulebook, phase_ring_node["Rules"]);
 
@@ -112,7 +111,7 @@ RightOfWayPhaseRing BuildPhaseRing(const RoadRulebook* rulebook,
     }
     phases.push_back(RightOfWayPhase(phase_id, rule_states));
   }
-  return RightOfWayPhaseRing(ring_id, phases);
+  return PhaseRing(ring_id, phases);
 }
 
 std::unique_ptr<api::rules::RightOfWayPhaseBook> BuildFrom(
