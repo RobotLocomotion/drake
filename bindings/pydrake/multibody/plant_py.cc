@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/contact_info.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
@@ -24,6 +25,7 @@ using T = double;
 using std::string;
 
 using geometry::SceneGraph;
+using math::RigidTransform;
 using systems::Context;
 using systems::State;
 
@@ -51,6 +53,10 @@ PYBIND11_MODULE(plant, m) {
   py::module::import("pydrake.multibody.math");
   py::module::import("pydrake.multibody.tree");
   py::module::import("pydrake.systems.framework");
+
+  const char* doc_iso3_deprecation =
+      "This API using Isometry3 will be deprecated soon with the resolution of "
+      "#9865. We only offer it for backwards compatibility. DO NOT USE!.";
 
   {
     using Class = MultibodyPlant<T>;
@@ -107,8 +113,16 @@ PYBIND11_MODULE(plant, m) {
                 const SpatialInertia<double>&>(&Class::AddRigidBody),
             py::arg("name"), py::arg("M_BBo_B"), py_reference_internal,
             doc.MultibodyPlant.AddRigidBody.doc_2args)
-        .def("WeldFrames", &Class::WeldFrames, py::arg("A"), py::arg("B"),
-            py::arg("X_AB") = Isometry3<double>::Identity(),
+        .def("WeldFrames",
+            py::overload_cast<const Frame<T>&, const Frame<T>&,
+                const Isometry3<double>&>(&Class::WeldFrames),
+            py::arg("A"), py::arg("B"), py::arg("X_AB"), py_reference_internal,
+            doc_iso3_deprecation)
+        .def("WeldFrames",
+            py::overload_cast<const Frame<T>&, const Frame<T>&,
+                const RigidTransform<double>&>(&Class::WeldFrames),
+            py::arg("A"), py::arg("B"),
+            py::arg("X_AB") = RigidTransform<double>::Identity(),
             py_reference_internal, doc.MultibodyPlant.WeldFrames.doc)
         .def("AddForceElement",
             [](Class * self,
@@ -149,6 +163,11 @@ PYBIND11_MODULE(plant, m) {
         .def("SetFreeBodyPose",
             overload_cast_explicit<void, Context<T>*, const Body<T>&,
                 const Isometry3<T>&>(&Class::SetFreeBodyPose),
+            py::arg("context"), py::arg("body"), py::arg("X_WB"),
+            doc_iso3_deprecation)
+        .def("SetFreeBodyPose",
+            overload_cast_explicit<void, Context<T>*, const Body<T>&,
+                const RigidTransform<T>&>(&Class::SetFreeBodyPose),
             py::arg("context"), py::arg("body"), py::arg("X_WB"),
             doc.MultibodyPlant.SetFreeBodyPose.doc_3args)
         .def("SetActuationInArray",
@@ -408,9 +427,29 @@ PYBIND11_MODULE(plant, m) {
                 &Class::RegisterVisualGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
+            doc_iso3_deprecation)
+        .def("RegisterVisualGeometry",
+            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
+                const geometry::Shape&, const std::string&,
+                const Vector4<double>&, geometry::SceneGraph<T>*>(
+                &Class::RegisterVisualGeometry),
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("diffuse_color"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterVisualGeometry
                 .doc_6args_body_X_BG_shape_name_diffuse_color_scene_graph)
-        .def("RegisterCollisionGeometry", &Class::RegisterCollisionGeometry,
+        .def("RegisterCollisionGeometry",
+            py::overload_cast<const Body<T>&, const Isometry3<double>&,
+                const geometry::Shape&, const std::string&,
+                const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
+                &Class::RegisterCollisionGeometry),
+            py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
+            py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
+            doc_iso3_deprecation)
+        .def("RegisterCollisionGeometry",
+            py::overload_cast<const Body<T>&, const RigidTransform<double>&,
+                const geometry::Shape&, const std::string&,
+                const CoulombFriction<double>&, geometry::SceneGraph<T>*>(
+                &Class::RegisterCollisionGeometry),
             py::arg("body"), py::arg("X_BG"), py::arg("shape"), py::arg("name"),
             py::arg("coulomb_friction"), py::arg("scene_graph") = nullptr,
             doc.MultibodyPlant.RegisterCollisionGeometry.doc)

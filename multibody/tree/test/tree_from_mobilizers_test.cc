@@ -176,8 +176,7 @@ class PendulumTests : public ::testing::Test {
     // In this case the frame is created explicitly from the body frame of
     // upper_link.
     shoulder_outboard_frame_ =
-        &model_->AddFrame<FixedOffsetFrame>(
-            upper_link_->body_frame(), X_USo_.GetAsIsometry3());
+        &model_->AddFrame<FixedOffsetFrame>(upper_link_->body_frame(), X_USo_);
 
     // Adds the shoulder and elbow mobilizers of the pendulum.
     // Using:
@@ -207,7 +206,7 @@ class PendulumTests : public ::testing::Test {
     // MultibodyTree::AddJoint() method do that for us:
     elbow_joint_ = &model_->AddJoint<RevoluteJoint>(
         "ElbowJoint",
-        *upper_link_, X_UEi_.GetAsIsometry3(), /* Pose of Ei in U. */
+        *upper_link_, X_UEi_, /* Pose of Ei in U. */
         *lower_link_, {},     /* No pose provided, frame Eo IS frame L. */
         Vector3d::UnitZ()     /* revolute axis */);
     elbow_inboard_frame_ = &elbow_joint_->frame_on_parent();
@@ -276,7 +275,7 @@ class PendulumTests : public ::testing::Test {
   // this method initializes the poses of each link in the position kinematics
   // cache.
   void SetPendulumPoses(PositionKinematicsCache<double>* pc) {
-    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_.GetAsIsometry3();
+    pc->get_mutable_X_WB(BodyNodeIndex(1)) = X_WL_;
   }
 
   // Add elements to this model_ and then transfer the whole thing to
@@ -431,7 +430,7 @@ TEST_F(PendulumTests, Finalize) {
   SpatialInertia<double> M_Bo_B;
   EXPECT_THROW(model_->AddBody<RigidBody>(M_Bo_B), std::logic_error);
   EXPECT_THROW(
-      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_.GetAsIsometry3()),
+      model_->AddFrame<FixedOffsetFrame>(*lower_link_, X_LEo_),
       std::logic_error);
   EXPECT_THROW(model_->AddMobilizer<RevoluteMobilizer>(
       *shoulder_inboard_frame_, *shoulder_outboard_frame_,
@@ -888,10 +887,9 @@ TEST_F(PendulumKinematicTests, CalcPositionKinematics) {
       RigidTransformd X_EiEo(RotationMatrixd::MakeZRotation(elbow_angle));
 
       // Verify the values in the position kinematics cache.
-      EXPECT_TRUE(pc.get_X_FM(shoulder_node).matrix().isApprox(
-          X_SiSo.GetAsMatrix4()));
-      EXPECT_TRUE(pc.get_X_FM(elbow_node).matrix().isApprox(
-          X_EiEo.GetAsMatrix4()));
+      EXPECT_TRUE(
+          pc.get_X_FM(shoulder_node).IsNearlyEqualTo(X_SiSo, kTolerance));
+      EXPECT_TRUE(pc.get_X_FM(elbow_node).IsNearlyEqualTo(X_EiEo, kTolerance));
 
       // Verify that both, const and mutable versions point to the same address.
       EXPECT_EQ(&pc.get_X_FM(shoulder_node),

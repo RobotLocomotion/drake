@@ -9,7 +9,7 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-Isometry3<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>&) const { return X_FM_.cast<T>(); }
 
 template <typename T>

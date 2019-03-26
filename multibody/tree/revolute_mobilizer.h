@@ -110,7 +110,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   /// The generalized coordinate q for `this` mobilizer (the rotation angle) is
   /// stored in `context`.
   /// This method aborts in Debug builds if `v.size()` is not one.
-  Isometry3<T> CalcAcrossMobilizerTransform(
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
 
   /// Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame

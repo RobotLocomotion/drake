@@ -5,6 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/rotation_matrix.h"
@@ -286,6 +287,25 @@ class RigidTransform {
     const RotationMatrix<T> R_BA = R_AB_.inverse();
     return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
   }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  /// Until #9865 is resolved, this operator temporarily allows users mixing the
+  /// use of %RigidTransform with Isometry3.
+  DRAKE_DEPRECATED("2019-06-26",
+                   "Do not mix RigidTransform with Isometry3. Only use "
+                   "RigidTransform per #9865.")
+  RigidTransform<T> operator*(const Isometry3<T>& isometry3) const {
+    return *this * RigidTransform<T>(isometry3);
+  }
+
+  // DO NOT USE. These methods will soon be deprecated as #9865 is resolved.
+  // They are only provided to support backwards compatibility with
+  // Isometry3 as we migrate Drake's codebase to use RigidTransform. New uses of
+  // Isometry3 are discouraged.
+  operator Isometry3<T>() const { return GetAsIsometry3(); }
+  const Matrix3<T>& linear() const { return R_AB_.matrix(); }
+  Matrix4<T> matrix() const { return GetAsMatrix4(); }
+#endif
 
   /// In-place multiply of `this` %RigidTransform `X_AB` by `other`
   /// %RigidTransform `X_BC`.

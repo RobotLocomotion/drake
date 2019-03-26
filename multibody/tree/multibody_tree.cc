@@ -379,7 +379,7 @@ math::RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
-    const Body<T>& body, const Isometry3<T>& X_WB,
+    const Body<T>& body, const math::RigidTransform<T>& X_WB,
     systems::Context<T>* context) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   SetFreeBodyPoseOrThrow(body, X_WB, *context, &context->get_mutable_state());
@@ -396,7 +396,7 @@ void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
-    const Body<T>& body, const Isometry3<T>& X_WB,
+    const Body<T>& body, const math::RigidTransform<T>& X_WB,
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   const QuaternionFloatingMobilizer<T>& mobilizer =
@@ -438,10 +438,10 @@ void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
 template <typename T>
 void MultibodyTree<T>::CalcAllBodyPosesInWorld(
     const systems::Context<T>& context,
-    std::vector<Isometry3<T>>* X_WB) const {
+    std::vector<math::RigidTransform<T>>* X_WB) const {
   DRAKE_THROW_UNLESS(X_WB != nullptr);
   if (static_cast<int>(X_WB->size()) != num_bodies()) {
-    X_WB->resize(num_bodies(), Isometry3<T>::Identity());
+    X_WB->resize(num_bodies(), math::RigidTransform<T>::Identity());
   }
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
   for (BodyIndex body_index(0); body_index < num_bodies(); ++body_index) {
@@ -824,14 +824,14 @@ void MultibodyTree<T>::DoCalcBiasTerm(
 }
 
 template <typename T>
-Isometry3<T> MultibodyTree<T>::CalcRelativeTransform(
+math::RigidTransform<T> MultibodyTree<T>::CalcRelativeTransform(
     const systems::Context<T>& context,
     const Frame<T>& frame_A, const Frame<T>& frame_B) const {
   const PositionKinematicsCache<T>& pc = EvalPositionKinematics(context);
-  const Isometry3<T>& X_WA =
+  const math::RigidTransform<T>& X_WA =
       pc.get_X_WB(frame_A.body().node_index()) *
       frame_A.CalcPoseInBodyFrame(context);
-  const Isometry3<T>& X_WB =
+  const math::RigidTransform<T>& X_WB =
       pc.get_X_WB(frame_B.body().node_index()) *
       frame_B.CalcPoseInBodyFrame(context);
   return X_WA.inverse() * X_WB;
@@ -848,15 +848,17 @@ void MultibodyTree<T>::CalcPointsPositions(
   DRAKE_THROW_UNLESS(p_AQi != nullptr);
   DRAKE_THROW_UNLESS(p_AQi->rows() == 3);
   DRAKE_THROW_UNLESS(p_AQi->cols() == p_BQi.cols());
-  const Isometry3<T> X_AB =
+  const math::RigidTransform<T> X_AB =
       CalcRelativeTransform(context, frame_A, frame_B);
   // We demanded above that these matrices have three rows. Therefore we tell
-  // Eigen so.
-  p_AQi->template topRows<3>() = X_AB * p_BQi.template topRows<3>();
+  // Eigen so. We also convert to Isometry3 to take advantage of the operator*()
+  // for a column vector of Vector3 without using heap allocation. See #10986.
+  p_AQi->template topRows<3>() =
+      X_AB.GetAsIsometry3() * p_BQi.template topRows<3>();
 }
 
 template <typename T>
-const Isometry3<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
+const math::RigidTransform<T>& MultibodyTree<T>::EvalBodyPoseInWorld(
     const systems::Context<T>& context,
     const Body<T>& body_B) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
@@ -997,7 +999,7 @@ VectorX<T> MultibodyTree<T>::CalcBiasForPointsGeometricJacobianExpressedInWorld(
     const Matrix3<T>& R_WB = pc.get_X_WB(body_B.node_index()).linear();
 
     // We need to compute p_BPi_W, the position of Pi in B, expressed in W.
-    const Isometry3<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
+    const math::RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
     const Vector3<T> p_BPi = X_BF * p_FPi;
     const Vector3<T> p_BPi_W = R_WB * p_BPi;
 
@@ -1113,7 +1115,7 @@ void MultibodyTree<T>::CalcJacobianSpatialVelocity(
   // If the expressed-in frame E is not the world frame, we need to perform
   // an additional operation.
   if (frame_E.index() != world_frame().index()) {
-    const Isometry3<T> X_EW =
+    const math::RigidTransform<T> X_EW =
         CalcRelativeTransform(context, frame_E, world_frame());
     const Matrix3<T>& R_EW = X_EW.linear();
     Jw_V_ABp_E->template topRows<3>() =
@@ -1271,7 +1273,7 @@ Vector6<T> MultibodyTree<T>::CalcBiasForFrameGeometricJacobianExpressedInWorld(
 
   // We need to compute p_BoP_W, the position of P from B's origin Bo,
   // expressed in W.
-  const Isometry3<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
+  const math::RigidTransform<T> X_BF = frame_F.GetFixedPoseInBodyFrame();
   const Vector3<T> p_BP = X_BF * p_FP;
   const Vector3<T> p_BP_W = R_WB * p_BP;
 

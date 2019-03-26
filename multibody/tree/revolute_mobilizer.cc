@@ -44,13 +44,13 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::set_angular_rate(
 }
 
 template <typename T>
-Isometry3<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == 1);
   const Eigen::AngleAxis<T> angle_axis(q[0], axis_F_);
   const math::RigidTransform<T> X_FM(angle_axis, Vector3<T>::Zero());
-  return X_FM.GetAsIsometry3();
+  return X_FM;
 }
 
 template <typename T>

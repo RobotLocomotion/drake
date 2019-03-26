@@ -56,9 +56,9 @@ MakePendulumPlant(const PendulumParameters& params,
   const RevoluteJoint<double>& pin = plant->AddJoint<RevoluteJoint>(
       params.pin_joint_name(),
       /* Shoulder inboard frame IS the world frame W. */
-      plant->world_body(), {},
+      plant->world_body(), nullopt,
       /* Pin joint outboard frame IS the body frame B. */
-      point_mass, {},
+      point_mass, nullopt,
       Vector3d::UnitY(), /* Pendulum oscillates in the x-z plane. */
       params.damping());
 
