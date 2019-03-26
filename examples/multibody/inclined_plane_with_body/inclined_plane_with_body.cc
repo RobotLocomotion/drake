@@ -70,8 +70,8 @@ int do_main() {
   const double gravity = 9.8;     // Earth's gravitational acceleration (m/s^2).
   const double slope_radians = FLAGS_slope_degrees / 180 * M_PI;
 
-  // Information on how coefficients of friction are used in the README.md file:
-  // drake/examples/multibody/inclined_plane_with_body/README.md
+  // Information on how coefficients of friction are used in the file README.md
+  // (which is in the folder associated with this example).
   const drake::multibody::CoulombFriction<double> coef_friction_bodyB(
       FLAGS_bodyB_coef_static_friction, FLAGS_bodyB_coef_kinetic_friction);
   const drake::multibody::CoulombFriction<double> coef_friction_inclined_plane(
