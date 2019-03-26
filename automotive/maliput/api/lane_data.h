@@ -204,6 +204,33 @@ auto operator!=(const GeoPositionT<T>& lhs, const GeoPositionT<T>& rhs) {
   return !(lhs.xyz() == rhs.xyz());
 }
 
+/// GeoPosition overload for the plus operator.
+template <typename T>
+GeoPositionT<T> operator+(const GeoPositionT<T>& lhs,
+                          const GeoPositionT<T>& rhs) {
+  Vector3<T> result = lhs.xyz();
+  result += rhs.xyz();
+  return GeoPositionT<T>(result);
+}
+
+/// GeoPosition overload for the minus operator.
+template <typename T>
+GeoPositionT<T> operator-(const GeoPositionT<T>& lhs,
+                          const GeoPositionT<T>& rhs) {
+  Vector3<T> result = lhs.xyz();
+  result -= rhs.xyz();
+  return GeoPositionT<T>(result);
+}
+
+/// GeoPosition overload for the multiplication by scalar operator.
+template <typename T>
+GeoPositionT<T> operator*(double lhs,
+                          const GeoPositionT<T>& rhs) {
+  Vector3<T> result = rhs.xyz();
+  result *= lhs;
+  return GeoPositionT<T>(result);
+}
+
 /// A 3-dimensional position in a `Lane`-frame, consisting of three components:
 ///
 /// * s is longitudinal position, as arc-length along a Lane's reference line.
