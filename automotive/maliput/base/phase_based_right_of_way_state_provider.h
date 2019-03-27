@@ -11,11 +11,11 @@ namespace drake {
 namespace maliput {
 
 /// Provides the state of api::rules::RightOfWayRule instances based on
-/// the current api::rules::RightOfWayPhase. The states of the rules
-/// that govern an intersection are organized into phases. Each phase typically
-/// assigns different states to each rule to ensure intersection safety and
-/// fairness. For example, given an intersection between streets A and B
-/// governed by Rule_A and Rule_B, respectively, two phases are necessary:
+/// the current api::rules::Phase. The states of the rules that govern an
+/// intersection are organized into phases. Each phase typically assigns
+/// different states to each rule to ensure intersection safety and fairness.
+/// For example, given an intersection between streets A and B governed by
+/// Rule_A and Rule_B, respectively, two phases are necessary:
 ///
 /// Phase  | Rule_A State | Rule_B State
 /// ------ | ------------ | ------------

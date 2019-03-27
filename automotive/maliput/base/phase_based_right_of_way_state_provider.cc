@@ -1,14 +1,14 @@
 #include "drake/automotive/maliput/base/phase_based_right_of_way_state_provider.h"
 
+#include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/phase_ring.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/common/drake_assert.h"
 
 namespace drake {
 namespace maliput {
 
+using api::rules::Phase;
 using api::rules::PhaseRing;
-using api::rules::RightOfWayPhase;
 using api::rules::RightOfWayPhaseBook;
 using api::rules::RightOfWayPhaseProvider;
 using api::rules::RightOfWayRule;
@@ -30,14 +30,14 @@ PhaseBasedRightOfWayStateProvider::DoGetState(const RightOfWayRule::Id& rule_id)
     const optional<RightOfWayPhaseProvider::Result> phase_result
         = phase_provider_->GetPhase(ring->id());
     if (phase_result.has_value()) {
-      const RightOfWayPhase::Id phase_id = phase_result->id;
-      const RightOfWayPhase& phase = ring->phases().at(phase_id);
+      const Phase::Id phase_id = phase_result->id;
+      const Phase& phase = ring->phases().at(phase_id);
       const RightOfWayRule::State::Id state_id =
           phase.rule_states().at(rule_id);
       optional<Result::Next> next = nullopt;
       if (phase_result->next.has_value()) {
-        const RightOfWayPhase::Id next_phase_id = phase_result->next->id;
-        const RightOfWayPhase& next_phase = ring->phases().at(next_phase_id);
+        const Phase::Id next_phase_id = phase_result->next->id;
+        const Phase& next_phase = ring->phases().at(next_phase_id);
         const RightOfWayRule::State::Id next_state_id =
           next_phase.rule_states().at(rule_id);
         next = Result::Next{next_state_id, phase_result->next->duration_until};

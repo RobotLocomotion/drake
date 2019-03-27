@@ -80,10 +80,10 @@ TEST_F(RoadNetworkTest, InstantiateAndUseAccessors) {
   std::vector<std::unique_ptr<Intersection>> intersections;
   const rules::PhaseRing mock_ring_1 = rules::PhaseRing(
       rules::PhaseRing::Id("ring1_id"),
-      {rules::RightOfWayPhase(rules::RightOfWayPhase::Id("phase_id_1"), {})});
+      {rules::Phase(rules::Phase::Id("phase_id_1"), {})});
   const rules::PhaseRing mock_ring_2 = rules::PhaseRing(
       rules::PhaseRing::Id("ring2_id"),
-      {rules::RightOfWayPhase(rules::RightOfWayPhase::Id("phase_id_2"), {})});
+      {rules::Phase(rules::Phase::Id("phase_id_2"), {})});
   intersections.emplace_back(
       test::CreateIntersection(intersection_id_1, mock_ring_1.id()));
   intersections.emplace_back(

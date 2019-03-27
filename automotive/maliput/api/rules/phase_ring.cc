@@ -13,8 +13,7 @@ namespace {
 /// or Bulb::Id referenced in any one phase must be referenced in all phases.
 /// This is because every phase must specify the complete state of all the rules
 /// and bulb states mentioned by the ring.
-void VerifyAllPhasesHaveSameCoverage(
-    const std::vector<RightOfWayPhase>& phases) {
+void VerifyAllPhasesHaveSameCoverage(const std::vector<Phase>& phases) {
   DRAKE_THROW_UNLESS(phases.size() >= 1);
   const auto& r = phases.at(0);  // The reference phase.
   for (const auto& phase : phases) {
@@ -39,10 +38,10 @@ void VerifyAllPhasesHaveSameCoverage(
 }  // namespace
 
 PhaseRing::PhaseRing(
-    const Id& id, const std::vector<RightOfWayPhase>& phases)
+    const Id& id, const std::vector<Phase>& phases)
     : id_(id) {
   DRAKE_THROW_UNLESS(phases.size() >= 1);
-  for (const RightOfWayPhase& phase : phases) {
+  for (const Phase& phase : phases) {
     // Construct index of phases by ID, ensuring uniqueness of ID's.
     auto result = phases_.emplace(phase.id(), phase);
     DRAKE_THROW_UNLESS(result.second);

@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/automotive/maliput/api/rules/phase.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
 #include "drake/automotive/maliput/api/rules/traffic_lights.h"
 #include "drake/common/unused.h"
 
@@ -348,11 +348,11 @@ inline ::testing::AssertionResult IsEqual(const char* a_expression,
   return c.result();
 }
 
-/// Predicate-formatter which tests equality of RightOfWayPhase.
+/// Predicate-formatter which tests equality of Phase.
 inline ::testing::AssertionResult IsEqual(const char* a_expression,
                                           const char* b_expression,
-                                          const RightOfWayPhase& a,
-                                          const RightOfWayPhase& b) {
+                                          const Phase& a,
+                                          const Phase& b) {
   unused(a_expression, b_expression);
   AssertionResultCollector c;
   MALIPUT_ADD_RESULT(c, MALIPUT_IS_EQUAL(a.id(), b.id()));

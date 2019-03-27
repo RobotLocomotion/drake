@@ -10,9 +10,9 @@
 namespace drake {
 namespace maliput {
 
+using api::rules::Phase;
 using api::rules::PhaseRing;
 using api::rules::RightOfWayRule;
-using api::rules::RightOfWayPhase;
 
 class SimpleRightOfWayPhaseBook::Impl {
  public:
@@ -27,7 +27,7 @@ class SimpleRightOfWayPhaseBook::Impl {
       throw std::logic_error("Attempted to add multiple PhaseRing instances "
                              "with ID " + ring.id().string());
     }
-    const RightOfWayPhase& phase = ring.phases().begin()->second;
+    const Phase& phase = ring.phases().begin()->second;
     for (const auto& element : phase.rule_states()) {
       auto r = rule_book_.emplace(element.first, ring.id());
       if (!r.second) {
@@ -45,7 +45,7 @@ class SimpleRightOfWayPhaseBook::Impl {
                              ring_id.string());
     }
     DRAKE_THROW_UNLESS(ring_book_.erase(ring_id) == 1);
-    const RightOfWayPhase& phase = ring->phases().begin()->second;
+    const Phase& phase = ring->phases().begin()->second;
     for (const auto& element : phase.rule_states()) {
       DRAKE_THROW_UNLESS(rule_book_.erase(element.first) == 1);
     }

@@ -25,14 +25,14 @@ using BulbStates = std::unordered_map<Bulb::Id, BulbState>;
 /// A group of RightOfWayRule instances and their states. It models coupling
 /// between these rules due to, for example, spatial co-location at
 /// intersections.
-class RightOfWayPhase final {
+class Phase final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RightOfWayPhase);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Phase);
 
-  /// Unique identifier for a RightOfWayPhase.
-  using Id = TypeSpecificIdentifier<RightOfWayPhase>;
+  /// Unique identifier for a Phase.
+  using Id = TypeSpecificIdentifier<Phase>;
 
-  /// Constructs a RightOfWayPhase.
+  /// Constructs a Phase.
   ///
   /// @param id the unique ID of the phase (in the RightOfWayRulePhaseRing)
   ///
@@ -41,8 +41,8 @@ class RightOfWayPhase final {
   ///
   /// @param bulb_states the states of the bulbs when this phase is applied,
   /// e.g., to an intersection.
-  RightOfWayPhase(const Id& id, const RuleStates& rule_states,
-                  optional<BulbStates> bulb_states = nullopt);
+  Phase(const Id& id, const RuleStates& rule_states,
+        optional<BulbStates> bulb_states = nullopt);
 
   /// Returns the phase's identifier.
   const Id& id() const { return id_; }

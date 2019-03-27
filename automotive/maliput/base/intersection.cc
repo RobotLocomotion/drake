@@ -16,7 +16,7 @@ Intersection::Phase() const {
   return phase_provider_->GetPhase(ring_id());
 }
 
-void Intersection::SetPhase(const api::rules::RightOfWayPhase::Id& phase_id) {
+void Intersection::SetPhase(const api::rules::Phase::Id& phase_id) {
   phase_provider_->SetPhase(ring_id(), phase_id);
 }
 
