@@ -386,11 +386,13 @@ PYBIND11_MODULE(mathematicalprogram, m) {
               MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<Monomial>>&)>(
               &MathematicalProgram::NewSosPolynomial),
+          py::arg("monomial_basis"),
           doc.MathematicalProgram.NewSosPolynomial.doc_1args)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(const Variables&, int)>(
               &MathematicalProgram::NewSosPolynomial),
+          py::arg("indeterminates"), py::arg("degree"),
           doc.MathematicalProgram.NewSosPolynomial.doc_2args)
       .def("NewIndeterminates",
           static_cast<VectorXIndeterminate (MathematicalProgram::*)(int,
