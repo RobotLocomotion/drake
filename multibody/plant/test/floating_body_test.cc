@@ -37,8 +37,9 @@ using internal::MultibodyTreeTester;
 
 GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   const double kEpsilon = std::numeric_limits<double>::epsilon();
-  const double kAccuracy = 1.0e-5;  // The integrator's desired accuracy.
-  // The numerical tolerance accepted for these tests.
+  // The integrator's desired local accuracy, chosen to pass the tests under
+  // the global error tolerance defined below.
+  const double kAccuracy = 1.0e-7;
   const double kTolerance = 1.0e-5;
   const double kMaxDt = 0.1;
   const double kEndTime = 10.0;
@@ -220,19 +221,18 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   // After numerical integration, and with no projection, the quaternion
   // representing the body's orientation is no longer unit length, however close
-  // to it by kNormalizationTolerance.
-  const double kNormalizationTolerance = 5e-9;
-  EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kNormalizationTolerance);
+  // to it by kTolerance.
+  EXPECT_TRUE(std::abs(q_WB.norm() - 1.0) < kTolerance);
 
   // Since the quaternion must live in the unit sphere (in 4D), we must have
   // q.dot(Dt_q) = 0:
   EXPECT_TRUE(std::abs(q_WB_vec4.dot(DtW_quat)) < 10 * kEpsilon);
 
   // The time derivative of the quaternion component can only be expected to be
-  // accurate within kNormalizationTolerance due to the loss of normalization in
+  // accurate within kTolerance due to the loss of normalization in
   // the quaternion.
   EXPECT_TRUE(CompareMatrices(DtW_quat, quatDt_WB_exact,
-                              kNormalizationTolerance,
+                              kTolerance,
                               MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(DtW_p_WBcm, v_WB, kEpsilon,
                               MatrixCompareType::relative));
@@ -241,10 +241,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // original generalized velocities.
   // Since the quaternion orientation in this test is the result of a numerical
   // integration that introduces truncation errors, we can only expect this
-  // result to be within kNormalizationTolerance accurate.
+  // result to be within kTolerance accurate.
   VectorX<double> v_back(model.num_velocities());
   model.MapQDotToVelocity(context, qdot_from_v, &v_back);
-  EXPECT_TRUE(CompareMatrices(v_back, v, kNormalizationTolerance,
+  EXPECT_TRUE(CompareMatrices(v_back, v, kTolerance,
                               MatrixCompareType::relative));
 
   // TODO(amcastro-tri): Verify angular momentum is conserved.
