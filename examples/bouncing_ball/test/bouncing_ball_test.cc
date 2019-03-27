@@ -157,7 +157,7 @@ TEST_F(BouncingBallTest, Simulate) {
   const double t_final = 10.0;
   const double x0 = 1.0;
   const double v0 = 0.0;
-  const double accuracy = 1e-4;
+  const double accuracy = 1e-2;
 
   // Prepare to integrate.
   // TODO(edrumwri): Update the code below when accuracy is settable purely
@@ -168,6 +168,21 @@ TEST_F(BouncingBallTest, Simulate) {
   simulator.get_mutable_context().set_accuracy(accuracy);
   simulator.get_mutable_integrator()->request_initial_step_size_target(1e-3);
   simulator.get_mutable_integrator()->set_target_accuracy(accuracy);
+
+  // Note: the witness function isolation for the bouncing ball does not require
+  // the ball to have a non-negative signed distance, the assumption being that
+  // the signed distance will be positive after the next integration step (after
+  // the impact event which reverses the velocity). But a second order
+  // integrator is able to simulate a parabolic trajectory without error, so
+  // the Simulator will actually see two negative signed distances on its next
+  // witness function evaluations! We limit the step size (constants taken
+  // from CalcClosedFormHeightAndVelocity()) to fix this.
+  const double g = dut_->get_gravitational_acceleration();
+  const double a = g/2;
+  const double c = x0;
+  const double drop_time = std::sqrt(-c/a);
+  simulator.get_mutable_integrator()->set_maximum_step_size(drop_time);
+
   simulator.Initialize();
 
   // Set the initial state for the bouncing ball.
@@ -177,6 +192,7 @@ TEST_F(BouncingBallTest, Simulate) {
   xc.SetAtIndex(1, v0);
 
   // Integrate.
+  simulator.StepTo(t_final);
   simulator.StepTo(t_final);
   EXPECT_EQ(simulator.get_mutable_context().get_time(), t_final);
 
