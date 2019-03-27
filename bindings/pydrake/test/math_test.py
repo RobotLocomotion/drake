@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import pydrake.math as mut
+import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3, Quaternion, AngleAxis
 
@@ -138,6 +139,12 @@ class TestMath(unittest.TestCase):
             self.assertIsInstance(
                 eval("X @ mut.RigidTransform()"), mut.RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
+
+    def test_isometry_implicit(self):
+        # Explicitly disabled, to mirror C++ API.
+        with self.assertRaises(TypeError):
+            self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
+        self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
 
     def test_rotation_matrix(self):
         # - Constructors.

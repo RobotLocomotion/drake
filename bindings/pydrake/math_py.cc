@@ -26,12 +26,12 @@ PYBIND11_MODULE(math, m) {
   m.doc() = "Bindings for //math.";
   constexpr auto& doc = pydrake_doc.drake.math;
 
-  py::module::import("pydrake.common.eigen_geometry");
+  auto eigen_geometry_py = py::module::import("pydrake.common.eigen_geometry");
 
   const char* doc_iso3_deprecation =
       "DO NOT USE!. We only offer this API for backwards compatibility with "
       "Isometry3 and it will be deprecated soon with the resolution of "
-      "#9865.";
+      "#9865. This will be removed on or around 2019-06-26.";
 
   // TODO(eric.cousineau): At present, we only bind doubles.
   // In the future, we will bind more scalar types, and enable scalar
@@ -126,35 +126,36 @@ PYBIND11_MODULE(math, m) {
         .def("multiply",
             [](const Class* self, const Class& other) { return *self * other; },
             py::arg("other"), cls_doc.operator_mul.doc_1args_other)
-        .def("__matmul__",
-            [](const Class* self, const Class& other) { return *self * other; },
-            py::arg("other"), "See ``multiply``.")
         .def("multiply",
             [](const Class* self, const Vector3<T>& p_BoQ_B) {
               return *self * p_BoQ_B;
             },
             py::arg("p_BoQ_B"), cls_doc.operator_mul.doc_1args_p_BoQ_B)
-        .def("__matmul__",
-            [](const Class* self, const Vector3<T>& p_BoQ_B) {
-              return *self * p_BoQ_B;
-            },
-            py::arg("p_BoQ_B"), "See ``multiply``.")
         .def("multiply",
-            [](const RigidTransform<T>* self, const Isometry3<T>& other) {
-              WarnDeprecated(
-                  "2019-03-21. "
-                  "Do not mix RigidTransform with Isometry3. Only use "
-                  "RigidTransform per #9865.");
+            [doc_iso3_deprecation](
+                const RigidTransform<T>* self, const Isometry3<T>& other) {
+              WarnDeprecated(doc_iso3_deprecation);
               return *self * RigidTransform<T>(other);
             },
             py::arg("other"), doc_iso3_deprecation)
         .def("matrix", &RigidTransform<T>::matrix, doc_iso3_deprecation)
         .def("linear", &RigidTransform<T>::linear, py_reference_internal,
             doc_iso3_deprecation);
+    cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
     // .def("IsNearlyEqualTo", ...)
     // .def("IsExactlyEqualTo", ...)
   }
+
+  // Install constructor to Isometry3 to permit `implicitly_convertible` to
+  // work.
+  // TODO(eric.cousineau): Add deprecation message.
+  // TODO(eric.cousineau): Consider more elegant implicit conversion process.
+  // See pybind/pybind11#1735
+  py::class_<Isometry3<T>>(eigen_geometry_py.attr("Isometry3"))
+      .def(py::init(
+          [](const RigidTransform<T>& X) { return X.GetAsIsometry3(); }));
+  py::implicitly_convertible<RigidTransform<T>, Isometry3<T>>();
 
   {
     using Class = RollPitchYaw<T>;
@@ -204,14 +205,12 @@ PYBIND11_MODULE(math, m) {
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             cls_doc.operator_mul.doc_1args_other)
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; },
-            "See ``multiply``")
         .def("inverse", &Class::inverse, cls_doc.inverse.doc)
         .def("ToQuaternion",
             overload_cast_explicit<Eigen::Quaternion<T>>(&Class::ToQuaternion),
             cls_doc.ToQuaternion.doc_0args)
         .def_static("Identity", &Class::Identity, cls_doc.Identity.doc);
+    cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -256,6 +255,15 @@ PYBIND11_MODULE(math, m) {
       .def("max", [](double x, double y) { return fmax(x, y); })
       .def("ceil", [](double x) { return ceil(x); })
       .def("floor", [](double x) { return floor(x); });
+
+  // Add testing module.
+  {
+    auto mtest = m.def_submodule("_test");
+    // Implicit conversions.
+    mtest.def("TakeIsometry3", [](const Isometry3<T>&) { return true; });
+    mtest.def(
+        "TakeRigidTransform", [](const RigidTransform<T>&) { return true; });
+  }
 }
 
 }  // namespace pydrake
