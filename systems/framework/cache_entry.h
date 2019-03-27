@@ -90,10 +90,30 @@ class CacheEntry {
              AllocCallback alloc_function, CalcCallback calc_function,
              std::set<DependencyTicket> prerequisites_of_calc);
 
-  /** Returns a reference to the list of prerequisites needed by this cache
+  /** Returns a reference to the set of prerequisites needed by this cache
   entry's Calc() function. These are all within the same subsystem that
   owns this %CacheEntry. */
   const std::set<DependencyTicket>& prerequisites() const {
+    return prerequisites_of_calc_;
+  }
+
+  /** (Advanced) Returns a mutable reference to the set of prerequisites needed
+  by this entry's Calc() function. Any tickets in this set are interpreted as
+  referring to prerequisites within the same subsystem that owns this
+  %CacheEntry. Modifications take effect the next time the containing System is
+  asked to create a Context.
+
+  A cache entry should normally be given its complete set of prerequisites
+  at the time it is declared (typically in a System constructor). If
+  possible, defer declaration of cache entries until all their prerequisites
+  have been declared so that all necessary tickets are available. In Systems
+  with complicated extended construction phases it may be awkward or impossible
+  to know all the prerequisites at that time. In that case, consider choosing
+  a comprehensive prerequisite like `all_input_ports_ticket()` that can include
+  as-yet-undeclared prerequisites. If performance requirements preclude that
+  approach, then an advanced user may use this method to add more prerequisites
+  as their tickets become available. */
+  std::set<DependencyTicket>& mutable_prerequisites() {
     return prerequisites_of_calc_;
   }
 
@@ -312,7 +332,7 @@ class CacheEntry {
   // changes, the cache value must be recalculated. Note that all possible
   // prerequisites are internal to the containing subsystem, so the ticket
   // alone is a unique specification of a prerequisite.
-  const std::set<DependencyTicket> prerequisites_of_calc_;
+  std::set<DependencyTicket> prerequisites_of_calc_;
 };
 
 }  // namespace systems

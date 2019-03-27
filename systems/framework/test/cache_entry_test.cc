@@ -443,6 +443,58 @@ TEST_F(CacheEntryTest, InvalidateAllWorks) {
   EXPECT_TRUE(vector_entry().is_out_of_date(context_));
 }
 
+// Make sure we can modify the set of prerequisites for a cache entry after
+// its initial declaration, and that the new set is properly reflected in
+// the next generated Context.
+TEST_F(CacheEntryTest, ModifyPrerequisites) {
+  const std::set<DependencyTicket>& string_prereqs =
+      string_entry().prerequisites();
+  EXPECT_EQ(string_prereqs.size(), 1);  // Just time_ticket.
+  EXPECT_FALSE(string_entry().is_out_of_date(context_));
+  const DependencyTracker& entry1_tracker =
+      context_.get_tracker(entry1().ticket());
+  const DependencyTracker& entry2_tracker =
+      context_.get_tracker(entry2().ticket());
+
+  // If we change entry1 or entry2, string_entry should not be invalidated.
+  entry1_tracker.NoteValueChange(1001);  // Arbitrary unused change event #.
+  entry2_tracker.NoteValueChange(1002);
+  EXPECT_FALSE(string_entry().is_out_of_date(context_));
+
+  // Now add entry1 as a prerequisite.
+  CacheEntry& mutable_string_entry =
+      system_.get_mutable_cache_entry(string_entry().cache_index());
+  mutable_string_entry.mutable_prerequisites().insert(entry1().ticket());
+  auto new_context = system_.AllocateContext();
+  EXPECT_TRUE(string_entry().is_out_of_date(*new_context));
+  string_entry()
+      .get_mutable_cache_entry_value(*new_context)
+      .SetValueOrThrow<std::string>("something");
+  EXPECT_FALSE(string_entry().is_out_of_date(*new_context));
+
+  const DependencyTracker& new_entry1_tracker =
+      new_context->get_tracker(entry1().ticket());
+  const DependencyTracker& new_entry2_tracker =
+      new_context->get_tracker(entry2().ticket());
+
+  // entry2 should still not be a prerequisite.
+  new_entry2_tracker.NoteValueChange(1003);
+  EXPECT_FALSE(string_entry().is_out_of_date(*new_context));
+  // But entry1 is now a prerequisite.
+  new_entry1_tracker.NoteValueChange(1004);
+  EXPECT_TRUE(string_entry().is_out_of_date(*new_context));
+
+  // And let's make sure time is still a prerequisite.
+  string_entry()
+      .get_mutable_cache_entry_value(*new_context)
+      .SetValueOrThrow<std::string>("something else");
+  const DependencyTracker& new_time_tracker =
+      new_context->get_tracker(system_.time_ticket());
+  EXPECT_FALSE(string_entry().is_out_of_date(*new_context));
+  new_time_tracker.NoteValueChange(1005);
+  EXPECT_TRUE(string_entry().is_out_of_date(*new_context));
+}
+
 // Make sure the debugging routine to disable the cache works, and is
 // independent of the out_of_date flags.
 TEST_F(CacheEntryTest, DisableCacheWorks) {

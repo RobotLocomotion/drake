@@ -223,6 +223,12 @@ class SystemBase : public internal::SystemMessageInterface {
     return *cache_entries_[index];
   }
 
+  /** Return a mutable reference to a CacheEntry given its `index`. */
+  CacheEntry& get_mutable_cache_entry(CacheIndex index) {
+    DRAKE_ASSERT(0 <= index && index < num_cache_entries());
+    return *cache_entries_[index];
+  }
+
   // TODO(sherm1) Consider whether to make DeclareCacheEntry methods protected.
   //============================================================================
   /** @name                    Declare cache entries
