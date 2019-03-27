@@ -156,7 +156,8 @@ GTEST_TEST(ResetOnCopyTest, Copy) {
   EXPECT_EQ(w, 4);
 
   // Self copy assignment preserves value.
-  w = w;
+  auto const& other = w;
+  w = other;
   EXPECT_EQ(w, 4);
 
   // Make sure the example works.
