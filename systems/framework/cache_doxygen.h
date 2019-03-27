@@ -299,7 +299,7 @@ v                    |    | continuous velocity      | — ¹
 z                    |    | misc. continuous state   | — ¹
 xc                   |    | any continuous state     | q v z
 xd                   |    | any discrete state       | xdᵢ ∀i ¹ ²
-xa                   |    | any abstract state       | xaⱼ ∀j ¹ ²
+xa                   |    | any abstract state       | xaᵢ ∀i ¹ ²
 all_state            | x  | any state variable       | xc xd xa
 pn                   |    | any numeric parameter    | pnᵢ ∀i ¹ ²
 pa                   |    | any abstract parameter   | paᵢ ∀i ¹ ²
@@ -481,6 +481,20 @@ time derivative cache entry might depend on the fixed input port. As long as
 the composite %Diagram time derivatives cache entry has subscribed to its
 subsystems' time derivative cache entries, that change will also mark the
 %Diagram time derivative out of date.
+
+<h3>Tracker Subscriptions</h3>
+
+The below figure depicts the tracker subscriptions detailed in the above sections.
+The arrow direction reads as "subscribes to (up)", i.e., "depends on".
+
+Black arrows are per the "Subscribes to" column in the the "Predefined
+dependency tickets" table.
+Blue arrows are per the "Subscribes to" column in the "Diagram-specific
+implementation" table.
+Red arrows are per the "Notifications sent" column in the "Diagram-specific
+implementation" table.
+
+@dotfile systems/framework/images/cache_doxygen_trackers.dot
 
 @anchor cache_design_implementation
 <h2>Implementation</h2>

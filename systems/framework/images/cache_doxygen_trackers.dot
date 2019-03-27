@@ -1,0 +1,106 @@
+digraph {
+rankdir=LR;
+ranksep=0.2;
+
+// This list exactly mirrors the "Predefined dependency tickets" table.
+// We omit some nodes for conciseness.
+// (omitted) leaf_nothing
+leaf_t;
+leaf_a;
+leaf_q;
+leaf_v;
+leaf_z;
+leaf_xc -> { leaf_q leaf_v leaf_z };
+leaf_xd -> "leaf_xd_i ∀i";
+leaf_xa -> "leaf_xa_i ∀i";
+leaf_x -> { leaf_xc leaf_xd leaf_xa };
+leaf_pn -> { "leaf_pn_i ∀i" };
+leaf_pa -> { "leaf_pa_i ∀i" };
+leaf_p -> { leaf_pn leaf_pa };
+leaf_u -> "leaf_u_i ∀i";
+leaf_all_sources -> { leaf_t, leaf_a, leaf_x, leaf_p, leaf_u };
+leaf_configuration -> { leaf_q, leaf_a, leaf_p};
+  leaf_configuration -> { leaf_xd, leaf_xa }[label="(#9171)",fontcolor="gray"];
+leaf_kinematics -> { leaf_configuration, leaf_v };
+leaf_xcdot -> leaf_all_sources;
+leaf_pe -> leaf_all_sources;
+leaf_ke -> leaf_all_sources;
+leaf_pc -> leaf_all_sources;
+leaf_pnc -> leaf_all_sources;
+// (omitted) leaf_pn_i
+// (omitted) leaf_pa_i
+// (omitted) leaf_xd_i
+// (omitted) leaf_xa_i
+// (omitted) leaf_u_i
+// (omitted) leaf_c_i
+
+// This list repeats the above stanza but with "leaf_" renamed to "diagram_",
+// and with the "footnote 2" edges removed.
+diagram_t;
+diagram_a;
+diagram_q;
+diagram_v;
+diagram_z;
+diagram_xc -> { diagram_q diagram_v diagram_z };
+diagram_xd;  // N.B. Footnote 2 removal.
+diagram_xa;  // N.B. Footnote 2 removal.
+diagram_x -> { diagram_xc diagram_xd diagram_xa };
+diagram_pn;  // N.B. Footnote 2 removal.
+diagram_pa;  // N.B. Footnote 2 removal.
+diagram_p -> { diagram_pn diagram_pa };
+diagram_u -> "diagram_u_i ∀i";
+diagram_all_sources -> { diagram_t, diagram_a, diagram_x, diagram_p, diagram_u };
+diagram_configuration -> { diagram_q, diagram_a, diagram_p, diagram_xd, diagram_xa };
+diagram_kinematics -> { diagram_configuration, diagram_v };
+diagram_xcdot -> diagram_all_sources;
+diagram_pe -> diagram_all_sources;
+diagram_ke -> diagram_all_sources;
+diagram_pc -> diagram_all_sources;
+diagram_pnc -> diagram_all_sources;
+// (omitted) diagram_u_i
+// (omitted) diagram_c_i
+
+// This list exactly mirrors the "Diagram-specific implementation" table, for
+// the "Subscribes to" column.
+// (omitted) diagram_t
+// (omitted) diagram_a
+diagram_q -> leaf_q[color="blue"];
+diagram_v -> leaf_v[color="blue"];
+diagram_z -> leaf_z[color="blue"];
+diagram_xd -> leaf_xd[color="blue"];
+diagram_xa -> leaf_xa[color="blue"];
+diagram_pn -> leaf_pn[color="blue"];
+diagram_pa -> leaf_pa[color="blue"];
+diagram_xcdot -> leaf_xcdot[color="blue"];
+diagram_pe -> leaf_pe[color="blue"];
+diagram_ke -> leaf_ke[color="blue"];
+diagram_pc -> leaf_pc[color="blue"];
+diagram_pnc -> leaf_pnc[color="blue"];
+
+// This list exactly mirrors the "Diagram-specific implementation" table, for
+// the "Notifications send" column.
+diagram_t -> leaf_t[dir="back",color="red",style="dotted"];
+diagram_a -> leaf_a[dir="back",color="red",style="dotted"];
+diagram_q -> leaf_q[dir="back",color="red",style="dotted"];
+diagram_v -> leaf_v[dir="back",color="red",style="dotted"];
+diagram_z -> leaf_z[dir="back",color="red",style="dotted"];
+diagram_xd -> leaf_xd[dir="back",color="red",style="dotted"];
+diagram_xa -> leaf_xa[dir="back",color="red",style="dotted"];
+diagram_pn -> leaf_pn[dir="back",color="red",style="dotted"];
+diagram_pa -> leaf_pa[dir="back",color="red",style="dotted"];
+
+// TODO(jwnimmer-tri) What about diagram_u_i -> leaf_u_i?
+
+// Add the layout rules that we care about.
+{ rank=same; diagram_all_sources; diagram_configuration; diagram_kinematics; }
+{ rank=same; diagram_t; diagram_x; diagram_x; diagram_p; diagram_u; }
+{ rank=same; diagram_xc; diagram_xd; diagram_xa; diagram_pn; diagram_pa; }
+{ rank=same  diagram_q; diagram_v; diagram_z; }
+{ rank=same; leaf_ke; leaf_pc; leaf_pnc; leaf_pe; leaf_xcdot; }
+{ rank=same; leaf_all_sources; leaf_configuration; leaf_kinematics; }
+{ rank=same; leaf_t; leaf_x; leaf_x; leaf_p; leaf_u; }
+{ rank=same; leaf_xc; leaf_xd; leaf_xa; leaf_pn; leaf_pa; }
+{ rank=same; "leaf_xd_i ∀i"; "leaf_xa_i ∀i"; "leaf_pn_i ∀i"; "leaf_pa_i ∀i"; "leaf_u_i ∀i"; { leaf_q; leaf_v; leaf_z; } }
+diagram_q -> leaf_xcdot[style=invis];
+
+}  // diagraph
