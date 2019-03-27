@@ -33,7 +33,6 @@ drake_py_binary(
     name = "plot_limit_cycle",
     srcs = ["plot_limit_cycle.py"],
     add_test_rule = 1,
-    test_rule_args = ["--test"],
     deps = [
         "//bindings/pydrake",
     ],
