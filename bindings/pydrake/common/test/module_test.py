@@ -45,8 +45,9 @@ class TestCommon(unittest.TestCase):
         pydrake.common.RandomDistribution.kGaussian
         pydrake.common.RandomDistribution.kExponential
 
-    def test_logging_enabled(self):
+    def test_logging(self):
         self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
+        self.assertIsInstance(pydrake.common.set_log_level("unchanged"), str)
 
     def test_random_generator(self):
         g1 = pydrake.common.RandomGenerator()
