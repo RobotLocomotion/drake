@@ -2131,6 +2131,60 @@ GTEST_TEST(SimulatorTest, OwnedSystemTest) {
       nullptr);
 }
 
+// This integrator is just explicit Euler with an extra unnecessary derivative
+// calculation thrown in to test that the derivative counter isn't fooled.
+class WastefulIntegrator final : public IntegratorBase<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WastefulIntegrator)
+  ~WastefulIntegrator() override = default;
+
+  WastefulIntegrator(const System<double>& system, double max_step_size,
+                     Context<double>* context = nullptr)
+      : IntegratorBase<double>(system, context) {
+    IntegratorBase<double>::set_maximum_step_size(max_step_size);
+  }
+
+  bool supports_error_estimation() const final { return false; }
+  int get_error_estimate_order() const final { return 0; }
+
+ private:
+  bool DoStep(const double& dt) final {
+    Context<double>& context = *this->get_mutable_context();
+    this->EvalTimeDerivatives(context);  // Unused, but now up-to-date.
+
+    // The rest of this is copied from ExplicitEuler.
+    const ContinuousState<double>& xc_deriv =
+        this->EvalTimeDerivatives(context);
+    const VectorBase<double>& xcdot0 = xc_deriv.get_vector();
+    VectorBase<double>& xc = context.SetTimeAndGetMutableContinuousStateVector(
+        context.get_time() + dt);
+    xc.PlusEqScaled(dt, xcdot0);
+    return true;
+  }
+};
+
+// The integrators are supposed to keep count of how many _actual_ derivative
+// evaluations are performed. Requests to evaluate that just return an
+// already-cached value don't count. For this test we use the fake "integrator"
+// above whose only "virtue" is that it makes multiple calls to derivatives
+// without changing the context so only the first of those should count.
+GTEST_TEST(SimulatorTest, EvalDerivativesCounter) {
+  SpringMassSystem<double> spring_mass(1., 1., 0.);
+
+  Simulator<double> simulator(spring_mass);
+  Context<double>& context = simulator.get_mutable_context();
+  context.DisableCaching();
+  simulator.reset_integrator<WastefulIntegrator>(spring_mass, 0.125, &context);
+  simulator.StepTo(1.);  // 8 steps, but 16 evaluations since no caching.
+  EXPECT_EQ(simulator.get_integrator()->get_num_steps_taken(), 8);
+  EXPECT_EQ(simulator.get_integrator()->get_num_derivative_evaluations(), 16);
+
+  context.EnableCaching();
+  simulator.StepTo(2.);  // 8 more steps, but only 8 more evaluations.
+  EXPECT_EQ(simulator.get_integrator()->get_num_steps_taken(), 16);
+  EXPECT_EQ(simulator.get_integrator()->get_num_derivative_evaluations(), 24);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

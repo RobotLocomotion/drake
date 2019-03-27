@@ -1062,6 +1062,15 @@ TEST_F(ComputationTest, Eval) {
   test_sys_.ExpectCount(4, 3, 3, 3, 3);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 8.);  // Again.
   test_sys_.ExpectCount(4, 3, 3, 3, 4);
+
+  // Check that the reported time derivatives cache entry is the right one.
+  context_->SetTime(3.);  // Invalidate.
+  const CacheEntry& entry = test_sys_.get_time_derivatives_cache_entry();
+  const int64_t serial_number =
+      entry.get_cache_entry_value(*context_).serial_number();
+  test_sys_.EvalTimeDerivatives(*context_);
+  EXPECT_NE(entry.get_cache_entry_value(*context_).serial_number(),
+            serial_number);
 }
 
 }  // namespace
