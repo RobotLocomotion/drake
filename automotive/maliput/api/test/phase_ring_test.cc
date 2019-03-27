@@ -1,5 +1,5 @@
 /* clang-format off to disable clang-format-includes */
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 /* clang-format on */
 // TODO(liang.fok) Satisfy clang-format via rules tests directory reorg.
 
@@ -45,38 +45,34 @@ RightOfWayPhase CreatePhaseWithMissingBulbStates(
   return RightOfWayPhase(id, mock_phase.rule_states(), bulb_states);
 }
 
-GTEST_TEST(RightOfWayPhaseRingTest, Constructor) {
-  EXPECT_NO_THROW(RightOfWayPhaseRing(
-      RightOfWayPhaseRing::Id("dut"),
-      {CreateFullPhase(RightOfWayPhase::Id("my_phase_1")),
-       CreateFullPhase(RightOfWayPhase::Id("my_phase_2"))}));
+GTEST_TEST(PhaseRingTest, Constructor) {
+  EXPECT_NO_THROW(
+      PhaseRing(PhaseRing::Id("dut"),
+                {CreateFullPhase(RightOfWayPhase::Id("my_phase_1")),
+                 CreateFullPhase(RightOfWayPhase::Id("my_phase_2"))}));
 
   // No phases.
-  EXPECT_THROW(RightOfWayPhaseRing(RightOfWayPhaseRing::Id("dut"), {}),
-               std::exception);
+  EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"), {}), std::exception);
 
   // Duplicate phases.
-  EXPECT_THROW(
-      RightOfWayPhaseRing(RightOfWayPhaseRing::Id("dut"),
-                          {CreateFullPhase(RightOfWayPhase::Id("my_phase")),
-                           CreateFullPhase(RightOfWayPhase::Id("my_phase"))}),
-      std::exception);
+  EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"),
+                         {CreateFullPhase(RightOfWayPhase::Id("my_phase")),
+                          CreateFullPhase(RightOfWayPhase::Id("my_phase"))}),
+               std::exception);
 
   // Phases that differ in RightOfWayRule coverage.
-  EXPECT_THROW(
-      RightOfWayPhaseRing(RightOfWayPhaseRing::Id("dut"),
-                          {CreateFullPhase(RightOfWayPhase::Id("full")),
-                           CreatePhaseWithMissingRuleStates(
-                               RightOfWayPhase::Id("missing_rules"))}),
-      std::exception);
+  EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"),
+                         {CreateFullPhase(RightOfWayPhase::Id("full")),
+                          CreatePhaseWithMissingRuleStates(
+                              RightOfWayPhase::Id("missing_rules"))}),
+               std::exception);
 
   // Phases that differ in bulb state coverage.
-  EXPECT_THROW(
-      RightOfWayPhaseRing(RightOfWayPhaseRing::Id("dut"),
-                          {CreateFullPhase(RightOfWayPhase::Id("full")),
-                           CreatePhaseWithMissingBulbStates(
-                               RightOfWayPhase::Id("missing_rules"))}),
-      std::exception);
+  EXPECT_THROW(PhaseRing(PhaseRing::Id("dut"),
+                         {CreateFullPhase(RightOfWayPhase::Id("full")),
+                          CreatePhaseWithMissingBulbStates(
+                              RightOfWayPhase::Id("missing_rules"))}),
+               std::exception);
 }
 
 }  // namespace

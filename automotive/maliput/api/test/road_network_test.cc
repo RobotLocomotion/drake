@@ -78,11 +78,11 @@ TEST_F(RoadNetworkTest, InstantiateAndUseAccessors) {
   const Intersection::Id intersection_id_1("intersection_1");
   const Intersection::Id intersection_id_2("intersection_2");
   std::vector<std::unique_ptr<Intersection>> intersections;
-  const rules::RightOfWayPhaseRing mock_ring_1 = rules::RightOfWayPhaseRing(
-      rules::RightOfWayPhaseRing::Id("ring1_id"),
+  const rules::PhaseRing mock_ring_1 = rules::PhaseRing(
+      rules::PhaseRing::Id("ring1_id"),
       {rules::RightOfWayPhase(rules::RightOfWayPhase::Id("phase_id_1"), {})});
-  const rules::RightOfWayPhaseRing mock_ring_2 = rules::RightOfWayPhaseRing(
-      rules::RightOfWayPhaseRing::Id("ring2_id"),
+  const rules::PhaseRing mock_ring_2 = rules::PhaseRing(
+      rules::PhaseRing::Id("ring2_id"),
       {rules::RightOfWayPhase(rules::RightOfWayPhase::Id("phase_id_2"), {})});
   intersections.emplace_back(
       test::CreateIntersection(intersection_id_1, mock_ring_1.id()));
