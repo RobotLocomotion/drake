@@ -33,6 +33,9 @@ class RenderEngineTester {
 
 namespace {
 
+using systems::sensors::ColorI;
+using systems::sensors::ColorD;
+
 // Dummy implementation of the RenderEngine interface to facilitate testing
 // the specific RenderEngine functionality.
 class DummyRenderEngine final : public RenderEngine {
@@ -44,6 +47,8 @@ class DummyRenderEngine final : public RenderEngine {
                         systems::sensors::ImageRgba8U*) const final {}
   void RenderDepthImage(const render::DepthCameraProperties&,
                         systems::sensors::ImageDepth32F*) const final {}
+  void RenderLabelImage(const render::CameraProperties&, bool,
+                        systems::sensors::ImageLabel16I*) const final {}
   void ImplementGeometry(const Sphere& sphere, void* user_data) final {}
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final {}
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final {}
@@ -65,6 +70,11 @@ class DummyRenderEngine final : public RenderEngine {
   void set_moved_index(optional<RenderIndex> index) {
     moved_index_ = index;
   }
+
+  // Promote these to be public to facilitate testing.
+  using RenderEngine::LabelFromColor;
+  using RenderEngine::GetColorDFromLabel;
+  using RenderEngine::GetColorIFromLabel;
 
  protected:
   // Conditionally register the visual based on the properties having an
@@ -322,6 +332,56 @@ GTEST_TEST(RenderEngine, RemoveGeometry) {
     expect_removal(remove_index, moved_render_index, moved_geometry_index,
                    expected_dynamic_map, expected_anchored_map, "case 6");
   }
+}
+
+GTEST_TEST(RenderEngine, ColorLabelConversion) {
+  // Explicitly testing labels at *both* ends of the reserved space -- this
+  // assumes that the reserved labels are at the top end; if that changes, we'll
+  // need a different mechanism to get a large-valued label.
+  RenderLabel label1 = RenderLabel(0);
+  RenderLabel label2 = RenderLabel(RenderLabel::kMaxUnreserved - 1);
+  RenderLabel label3 = RenderLabel::kEmpty;
+
+  // A ColorI should be invertible back to the original label.
+  ColorI color1 = DummyRenderEngine::GetColorIFromLabel(label1);
+  ColorI color2 = DummyRenderEngine::GetColorIFromLabel(label2);
+  ColorI color3 = DummyRenderEngine::GetColorIFromLabel(label3);
+  EXPECT_EQ(label1, DummyRenderEngine::LabelFromColor(color1));
+  EXPECT_EQ(label2, DummyRenderEngine::LabelFromColor(color2));
+  EXPECT_EQ(label3, DummyRenderEngine::LabelFromColor(color3));
+
+  // Different labels should produce different colors.
+  ASSERT_NE(label1, label2);
+  ASSERT_NE(label2, label3);
+  ASSERT_NE(label1, label3);
+  auto same_colors = [](const auto& expected, const auto& test) {
+    if (expected.r != test.r || expected.g != test.g || expected.b != test.b) {
+      return ::testing::AssertionFailure()
+          << "Expected color " << expected << ", found " << test;
+    }
+    return ::testing::AssertionSuccess();
+  };
+
+  EXPECT_FALSE(same_colors(color1, color2));
+  EXPECT_FALSE(same_colors(color2, color3));
+  EXPECT_FALSE(same_colors(color1, color3));
+
+  // Different labels should also produce different Normalized colors.
+  ColorD color1_d = DummyRenderEngine::GetColorDFromLabel(label1);
+  ColorD color2_d = DummyRenderEngine::GetColorDFromLabel(label2);
+  ColorD color3_d = DummyRenderEngine::GetColorDFromLabel(label3);
+  EXPECT_FALSE(same_colors(color1_d, color2_d));
+  EXPECT_FALSE(same_colors(color1_d, color3_d));
+  EXPECT_FALSE(same_colors(color2_d, color3_d));
+
+  // THe normalized color should simply be the integer color divided by 255.
+  ColorD color1_d_by_hand{color1.r / 255., color1.g / 255., color1.b / 255.};
+  ColorD color2_d_by_hand{color2.r / 255., color2.g / 255., color2.b / 255.};
+  ColorD color3_d_by_hand{color3.r / 255., color3.g / 255., color3.b / 255.};
+
+  EXPECT_TRUE(same_colors(color1_d, color1_d_by_hand));
+  EXPECT_TRUE(same_colors(color2_d, color2_d_by_hand));
+  EXPECT_TRUE(same_colors(color3_d, color3_d_by_hand));
 }
 
 }  // namespace

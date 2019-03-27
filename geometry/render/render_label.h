@@ -152,6 +152,10 @@ class RenderLabel {
   friend std::string to_string(const RenderLabel& label);
 
  private:
+  // RenderEngine needs access to encode labels as raster colors and to convert
+  // rasterized colors back into labels.
+  friend class RenderEngine;
+
   // Private constructor precludes general construction except by the approved
   // factories (see above).
   RenderLabel(int value, bool needs_testing)

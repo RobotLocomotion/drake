@@ -11,7 +11,6 @@
 namespace drake {
 namespace geometry {
 namespace render {
-
 namespace  {
 
 class RenderLabelTests : public ::testing::Test {
