@@ -17,12 +17,14 @@ using Eigen::VectorXcd;
 
 namespace {
 const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-int is_zero(double x, double eps = 1e-10) {
-  if (fabs(x) < eps)
-    return 1;
-  else
-    return 0;
-}
+
+// This function returns true if the double variable x is close to zero within
+// a tolerance of epsilon. The default value for epsilon is 1e-10.
+// It has been used to check (1) if λᵢ + λ̅ⱼ = 0, ∀ i,j, where λᵢ and λⱼ are
+// eigenvalues (not necessarily distinct) of the input matrix A; (2) if A is a
+// 1-by-1 zero matrix; (3) if A's trace or determinant is 0 when A is a 2-by-2
+// matrix.
+bool is_zero(double x, double eps = 1e-10) { return std::fabs(x) < eps; }
 }  // namespace
 
 MatrixXd RealContinuousLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,

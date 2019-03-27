@@ -17,12 +17,12 @@ using Eigen::VectorXcd;
 
 namespace {
 const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-int is_zero(double x, double eps = 1e-10) {
-  if (fabs(x) < eps)
-    return 1;
-  else
-    return 0;
-}
+
+// This function returns true if the double variable x is close to zero within
+// a tolerance of epsilon. The default value for epsilon is 1e-10.
+// It has been used to check (1) if λᵢ = ±1 ∀ i, where λᵢ is an eigenvalue of
+// the input matrix A; (2) if λᵢ * λⱼ = 1, i ≠ j.
+bool is_zero(double x, double eps = 1e-10) { return std::fabs(x) < eps; }
 }  // namespace
 
 MatrixXd RealDiscreteLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
@@ -41,7 +41,7 @@ MatrixXd RealDiscreteLyapunovEquation(const Eigen::Ref<const MatrixXd>& A,
       throw std::runtime_error(
           "RealDiscreteLyapunovEquation(): Solution is not unique!");
     }
-    for (int j = i; j < eig_val.size(); ++j) {
+    for (int j = i + 1; j < eig_val.size(); ++j) {
       std::complex<double> eig_prod = eig_val(i) * eig_val(j);
       if (is_zero(eig_prod.real() - 1) && is_zero(eig_prod.imag())) {
         throw std::runtime_error(
