@@ -11,8 +11,10 @@
 namespace drake {
 namespace geometry {
 namespace render {
-
 namespace  {
+
+using systems::sensors::ColorI;
+using systems::sensors::ColorD;
 
 class RenderLabelTests : public ::testing::Test {
  protected:
@@ -140,6 +142,56 @@ TEST_F(RenderLabelTests, ServeAsSetMember) {
   EXPECT_EQ(label_set.size(), 2);
 
   EXPECT_EQ(label_set.find(labels_[2]), label_set.end());
+}
+
+TEST_F(RenderLabelTests, ColorLabelConversion) {
+  // Explicitly testing labels at *both* ends of the reserved space -- this
+  // assumes that the reserved labels are at the top end; if that changes, we'll
+  // need a different mechanism to get a large-valued label.
+  RenderLabel label1 = RenderLabel(0);
+  RenderLabel label2 = RenderLabel(RenderLabel::kMaxUnreserved - 1);
+  RenderLabel label3 = RenderLabel::kEmpty;
+
+  // A ColorI should be invertible back to the original label.
+  ColorI color1 = label1.GetColorI();
+  ColorI color2 = label2.GetColorI();
+  ColorI color3 = label3.GetColorI();
+  EXPECT_EQ(label1, RenderLabel::LabelFromColor(color1));
+  EXPECT_EQ(label2, RenderLabel::LabelFromColor(color2));
+  EXPECT_EQ(label3, RenderLabel::LabelFromColor(color3));
+
+  // Different labels should produce different colors.
+  ASSERT_NE(label1, label2);
+  ASSERT_NE(label2, label3);
+  ASSERT_NE(label1, label3);
+  auto same_colors = [](const auto& expected, const auto& test) {
+    if (expected.r != test.r || expected.g != test.g || expected.b != test.b) {
+      return ::testing::AssertionFailure()
+          << "Expected color " << expected << ", found " << test;
+    }
+    return ::testing::AssertionSuccess();
+  };
+
+  EXPECT_FALSE(same_colors(color1, color2));
+  EXPECT_FALSE(same_colors(color2, color3));
+  EXPECT_FALSE(same_colors(color1, color3));
+
+  // Different labels should also produce different Normalized colors.
+  ColorD color1_d = label1.GetColorD();
+  ColorD color2_d = label2.GetColorD();
+  ColorD color3_d = label3.GetColorD();
+  EXPECT_FALSE(same_colors(color1_d, color2_d));
+  EXPECT_FALSE(same_colors(color1_d, color3_d));
+  EXPECT_FALSE(same_colors(color2_d, color3_d));
+
+  // THe normalized color should simply be the integer color divided by 255.
+  ColorD color1_d_by_hand{color1.r / 255., color1.g / 255., color1.b / 255.};
+  ColorD color2_d_by_hand{color2.r / 255., color2.g / 255., color2.b / 255.};
+  ColorD color3_d_by_hand{color3.r / 255., color3.g / 255., color3.b / 255.};
+
+  EXPECT_TRUE(same_colors(color1_d, color1_d_by_hand));
+  EXPECT_TRUE(same_colors(color2_d, color2_d_by_hand));
+  EXPECT_TRUE(same_colors(color3_d, color3_d_by_hand));
 }
 
 }  // namespace

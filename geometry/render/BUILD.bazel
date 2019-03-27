@@ -30,6 +30,7 @@ drake_cc_library(
         "render_engine.h",
     ],
     deps = [
+        ":render_label",
         "//geometry:geometry_index",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
@@ -46,6 +47,7 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:hash",
+        "//systems/sensors:color_palette",
         "//systems/sensors:image",
     ],
 )

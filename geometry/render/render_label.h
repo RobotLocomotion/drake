@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/hash.h"
+#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/pixel_types.h"
 
 namespace drake {
@@ -150,6 +151,40 @@ class RenderLabel {
 
   /** Converts the RenderLabel value to a string representation.  */
   friend std::string to_string(const RenderLabel& label);
+
+  /** @name   RenderLabel-Color Utilities
+
+   These methods provide the basic ability to convert RenderLabel values into
+   their corresponding rasterizable color and back again. Colors are either
+   _byte-valued_ in that they are encoded with unsigned bytes in the range
+   [0, 255] per channel or _double-valued_ such that each channel is encoded
+   with a double in the range [0, 1].
+
+   These colors are not intended for human consumption. It is merely a unique
+   mapping from %RenderLabel values to computer-distinguishable color values for
+   use in rasterization operations that depend on colors.
+   */
+  //@{
+
+  /** Transforms the given byte-valued RGB color value into its corresponding
+   RenderLabel.  */
+  static RenderLabel LabelFromColor(const systems::sensors::ColorI& color) {
+    return RenderLabel(color.r | (color.g << 8), false);
+  }
+
+  /** Transforms `this` render label into a byte-valued RGB color.  */
+  systems::sensors::ColorI GetColorI() const {
+    return systems::sensors::ColorI{value_ & 0xFF, (value_ >> 8) & 0xFF, 0};
+  }
+
+  /** Transforms `this` render label into a double-valued RGB color.  */
+  systems::sensors::ColorD GetColorD() const {
+    systems::sensors::ColorI i_color = GetColorI();
+    return systems::sensors::ColorD{i_color.r / 255., i_color.g / 255.,
+                                    i_color.b / 255.};
+  }
+
+  //@}
 
  private:
   // Private constructor precludes general construction except by the approved

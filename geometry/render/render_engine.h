@@ -12,6 +12,7 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
@@ -37,7 +38,14 @@ namespace render {
      Note that this is different from the range data used by laser
      range finders (like that provided by DepthSensor) in which the depth
      value represents the distance from the sensor origin to the object's
-     surface.  */
+     surface.
+
+   - Label (ImageLabel16I) : the label image has single channel represented
+     by an int16_t. The value stored in the channel holds a RenderLabel value
+     which corresponds to an object class in the scene. Pixels attributable to
+     no geometry contain the RenderLabel::kEmpty value.
+
+     @see RenderLabel  */
 class RenderEngine : public ShapeReifier {
  public:
   RenderEngine() = default;
@@ -119,6 +127,17 @@ class RenderEngine : public ShapeReifier {
   virtual void RenderDepthImage(
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const = 0;
+
+  /** Renders the registered geometry into the given label image.
+
+   @param camera                The intrinsic properties of the camera.
+   @param show_window           If true, the render window will be displayed.
+   @param[out] label_image_out  The rendered label image.
+  */
+  virtual void RenderLabelImage(
+      const CameraProperties& camera,
+      bool show_window,
+      systems::sensors::ImageLabel16I* label_image_out) const = 0;
 
  protected:
   // Allow derived classes to implement Cloning via copy-construction.

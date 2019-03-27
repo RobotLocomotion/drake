@@ -44,6 +44,8 @@ class DummyRenderEngine final : public RenderEngine {
                         systems::sensors::ImageRgba8U*) const final {}
   void RenderDepthImage(const render::DepthCameraProperties&,
                         systems::sensors::ImageDepth32F*) const final {}
+  void RenderLabelImage(const render::CameraProperties&, bool,
+                        systems::sensors::ImageLabel16I*) const final {}
   void ImplementGeometry(const Sphere& sphere, void* user_data) final {}
   void ImplementGeometry(const Cylinder& cylinder, void* user_data) final {}
   void ImplementGeometry(const HalfSpace& half_space, void* user_data) final {}
