@@ -151,13 +151,13 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
           const AxiallySymmetricFreeBodyPlant<double>& axisymmetric_plant,
           drake::systems::Context<double>* context,
           drake::systems::ContinuousState<double>* stateDt_drake,
-          const double dt_max, const double t_final,
+          const double dt,
           const double maximum_absolute_error_per_integration_step) {
-  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt_max >= 0.0);
+  DRAKE_DEMAND(context != NULL  &&  stateDt_drake != NULL  &&  dt >= 0.0);
 
   // Integrate with variable-step Runge-Kutta3 integrator.
   systems::RungeKutta3Integrator<double> rk3(axisymmetric_plant, context);
-  rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
+  rk3.set_maximum_step_size(dt);  // Need before Initialize (or exception).
   rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
   rk3.Initialize();
 
@@ -166,48 +166,18 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
   // counter is in place - which allows testing of StepOnceExactly to ensure
   // it works as well (or probably better) than this temporary solution.
 
-  // Integrate to within a small amount of dt of t_final.
-  const double epsilon_based_on_dt_max = 1.0E-11 * dt_max;
-  const double t_final_minus_epsilon = t_final - epsilon_based_on_dt_max;
-  while (true) {
-    // At boundary of each numerical integration step, test Drake's simulation
-    // accuracy versus exact (closed-form) solution.
-    const double tolerance = 4 * maximum_absolute_error_per_integration_step;
-    TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
-        torque_free_cylinder_exact,
-        axisymmetric_plant,
-        *context,
-        stateDt_drake,
-        tolerance);
+  // At boundary of each numerical integration step, test Drake's simulation
+  // accuracy versus exact (closed-form) solution.
+  const double tolerance = 4 * maximum_absolute_error_per_integration_step;
+  TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
+      torque_free_cylinder_exact,
+      axisymmetric_plant,
+      *context,
+      stateDt_drake,
+      tolerance);
 
-    const double t = context->get_time();
-    if (t >= t_final_minus_epsilon) break;
-
-    // Set the torque free cylinder state.
-    Quaterniond quat_NB_exact;
-    Vector4d quatDt_NB_exact;
-    Vector3d w_NB_B_exact, wDt_NB_B_exact;
-    std::tie(quat_NB_exact, quatDt_NB_exact, w_NB_B_exact, wDt_NB_B_exact) =
-        torque_free_cylinder_exact.CalculateExactRotationalSolutionNB(t);
-    Vector3d xyz_exact, xyzDt_exact, xyzDDt_exact;
-    std::tie(xyz_exact, xyzDt_exact, xyzDDt_exact) =
-        torque_free_cylinder_exact.CalculateExactTranslationalSolution(t);
-
-    // Get the state at time t from the context and pull out meaningful results.
-    systems::VectorBase<double>& state_drake =
-        context->get_mutable_continuous_state_vector();
-    VectorXd state_as_vector = state_drake.CopyToVector();
-    state_as_vector.segment<4>(0) = Vector4d(quat_NB_exact.w(),
-        quat_NB_exact.x(), quat_NB_exact.y(), quat_NB_exact.z());
-    state_as_vector.segment<3>(4) = xyz_exact;
-    state_as_vector.segment<3>(7) = w_NB_B_exact;
-    state_as_vector.segment<3>(10) = xyzDt_exact;
-    state_drake.SetFromVector(state_as_vector);
-
-    // Step forward by at most dt.
-    const double t_max = std::min(t + dt_max, t_final);
-    rk3.IntegrateWithMultipleStepsToTime(t_max);
-  }
+  // Step forward by dt.
+  rk3.IntegrateWithMultipleStepsToTime(dt);
 }
 
 
@@ -271,14 +241,14 @@ void  TestDrakeSolutionForSpecificInitialValue(
 
   // Maybe numerically integrate.
   if (should_numerically_integrate) {
-    const double dt_max = 0.2, t_final = 10.0;
+    const double dt = 0.2;
     const double maximum_absolute_error_per_integration_step = 1.0E-5;
 
     // Integrate forward, testing Drake's results vs. exact solution frequently.
     IntegrateForwardWithVariableStepRungeKutta3(
         torque_free_cylinder_exact,
         axisymmetric_plant, context, stateDt_drake,
-        dt_max, t_final, maximum_absolute_error_per_integration_step);
+        dt, maximum_absolute_error_per_integration_step);
   }
 }
 

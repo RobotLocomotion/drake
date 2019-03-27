@@ -176,7 +176,9 @@ TEST_F(BouncingBallTest, Simulate) {
   // integrator is able to simulate a parabolic trajectory without error, so
   // the Simulator will actually see two negative signed distances on its next
   // witness function evaluations! We limit the step size (constants taken
-  // from CalcClosedFormHeightAndVelocity()) to fix this.
+  // from CalcClosedFormHeightAndVelocity()) to fix this. Step size limit only
+  // works when restitution is unity.
+  ASSERT_EQ(dut_->get_restitution_coef(), 1.0);
   const double g = dut_->get_gravitational_acceleration();
   const double a = g/2;
   const double c = x0;

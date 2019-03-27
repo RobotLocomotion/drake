@@ -164,6 +164,11 @@ bool RoadCurve::AreFastComputationsAccurate(double r) const {
 std::function<double(double)> RoadCurve::OptimizeCalcSFromP(double r) const {
   DRAKE_THROW_UNLESS(CalcMinimumRadiusAtOffset(r) > 0.0);
   const double absolute_tolerance = relative_tolerance_ * 1.;
+
+  // Note: Setting this tolerance is necessray to satisfy the
+  // road geometry invariants (i.e., CheckInvariants()) in Builder::Build().
+  s_from_p_func_->get_mutable_integrator()->set_target_accuracy(
+      absolute_tolerance * 1e-2);
   if (computation_policy() == ComputationPolicy::kPreferAccuracy
       && !AreFastComputationsAccurate(r)) {
     // Populates parameter vector with (r, h) coordinate values.
