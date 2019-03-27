@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/drake_assert.h"
 #include "drake/lcmt_drake_signal.hpp"
 
 using std::string;
@@ -91,15 +92,20 @@ class MockMessageHandler final {
   MockMessageHandler() { }
 
   void Subscribe(const std::string& channel, DrakeLcmInterface* dut) {
-    dut->Subscribe(channel, [this](const void* data, int size) {
-        this->HandleMessage(data, size);
-      });
+    auto subscription = dut->Subscribe(
+        channel, [this](const void* data, int size) {
+          this->HandleMessage(data, size);
+        });
+    // Can't unsubscribe.
+    DRAKE_DEMAND(subscription == nullptr);
   }
 
   // This is the callback method.
   void HandleMessage(const void* message_buffer, int message_size) {
     buffer_.resize(message_size);
-    std::memcpy(&buffer_[0], message_buffer, message_size);
+    if (message_size > 0) {
+      std::memcpy(&buffer_[0], message_buffer, message_size);
+    }
   }
 
   const vector<uint8_t>& get_buffer() {
@@ -108,6 +114,10 @@ class MockMessageHandler final {
 
   int get_buffer_size() {
     return buffer_.size();
+  }
+
+  void clear() {
+    buffer_.clear();
   }
 
  private:
@@ -201,7 +211,16 @@ GTEST_TEST(DrakeMockLcmTest, WithoutLoopbackTest) {
   dut.Publish(kChannelName, &message_bytes[0], kMessageSize, nullopt);
 
   // Verifies that the message was not received via loopback.
-  EXPECT_NE(kMessageSize, handler.get_buffer_size());
+  EXPECT_EQ(handler.get_buffer_size(), 0);
+
+  // Calling Handle pushes the message.
+  dut.HandleSubscriptions(0);
+  EXPECT_EQ(handler.get_buffer_size(), kMessageSize);
+
+  // A second Handle does nothing (it was already handled).
+  handler.clear();
+  dut.HandleSubscriptions(0);
+  EXPECT_EQ(handler.get_buffer_size(), 0);
 }
 
 GTEST_TEST(DrakeMockLcmTest, EmptyChannelTest) {
