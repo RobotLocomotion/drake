@@ -121,8 +121,9 @@ PYBIND11_MODULE(rigid_body_tree, m) {
             // behavior.
             py::object self = py::cast(&tree);
             for (auto& body_unique_ptr : body_unique_ptrs) {
-              py_bodies.append(
-                  py::cast(body_unique_ptr.get(), py_reference_internal, self));
+              py::object body_py =
+                  py::cast(body_unique_ptr.get(), py_reference);
+              py_bodies.append(py_keep_alive(body_py, self));
             }
             return py_bodies;
           },

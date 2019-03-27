@@ -205,11 +205,12 @@ PYBIND11_MODULE(plant, m) {
         // reference, while `GetX(context, model_instance)` returns a copy.
         .def("GetPositions",
             [](const Class* self, const Context<T>& context) {
-              // Reference. Hack in effective `keep_alive` for Eigen casting.
-              return py::cast(self->GetPositions(context),
-                  py_reference_internal, py::cast(&context, py_reference));
+              // Reference.
+              return self->GetPositions(context);
             },
-            py::arg("context"), doc.MultibodyPlant.GetPositions.doc_1args)
+            py::arg("context"), py_reference_internal,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), doc.MultibodyPlant.GetPositions.doc_1args)
         .def("GetPositions",
             [](const Class* self, const Context<T>& context,
                 ModelInstanceIndex model_instance) {
@@ -220,11 +221,12 @@ PYBIND11_MODULE(plant, m) {
             doc.MultibodyPlant.GetPositions.doc_2args)
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context) {
-              // Reference. Hack in effective `keep_alive` for Eigen casting.
-              return py::cast(self->GetVelocities(context),
-                  py_reference_internal, py::cast(&context, py_reference));
+              // Reference.
+              return self->GetVelocities(context);
             },
-            py::arg("context"), doc.MultibodyPlant.GetVelocities.doc_1args)
+            py::arg("context"), py_reference_internal,
+            // Keep alive, ownership: `return` keeps `context` alive.
+            py::keep_alive<0, 2>(), doc.MultibodyPlant.GetVelocities.doc_1args)
         .def("GetVelocities",
             [](const Class* self, const Context<T>& context,
                 ModelInstanceIndex model_instance) {
@@ -684,13 +686,13 @@ PYBIND11_MODULE(plant, m) {
             builder, std::move(plant), std::move(scene_graph));
         // Must do manual keep alive to dig into tuple.
         py::object builder_py = py::cast(builder, py_reference);
-        // Keep alive, ownership: `plant` keeps `builder` alive.
-        py::object plant_py =
-            py::cast(pair.plant, py_reference_internal, builder_py);
-        // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-        py::object scene_graph_py =
-            py::cast(pair.scene_graph, py_reference_internal, builder_py);
-        return py::make_tuple(plant_py, scene_graph_py);
+        py::object plant_py = py::cast(pair.plant, py_reference);
+        py::object scene_graph_py = py::cast(pair.scene_graph, py_reference);
+        return py::make_tuple(
+            // Keep alive, ownership: `plant` keeps `builder` alive.
+            py_keep_alive(plant_py, builder_py),
+            // Keep alive, ownership: `scene_graph` keeps `builder` alive.
+            py_keep_alive(scene_graph_py, builder_py));
       },
       py::arg("builder"), py::arg("plant") = nullptr,
       py::arg("scene_graph") = nullptr, doc.AddMultibodyPlantSceneGraph.doc);
