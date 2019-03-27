@@ -65,7 +65,8 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   // Now check the data (against the known solution to the diff eq).
   const Eigen::MatrixXd expected_x = exp(-t.transpose().array());
 
-  double tol = 1e-6;  // Not bad for numerical integration!
+  // Tolerance allows the default RK3 integrator to just squeak by.
+  double tol = 1e-5;
   EXPECT_TRUE(CompareMatrices(expected_x, x, tol));
 
   // Confirm that both loggers acquired the same data.
