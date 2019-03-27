@@ -24,7 +24,7 @@ GTEST_TEST(Fibonacci, CheckSequence) {
   systems::Simulator<double> simulator(*diagram);
 
   // Simulate forward to fibonacci(6): 0 1 1 2 3 5 8
-  simulator.StepTo(6 * FibonacciDifferenceEquation::kPeriod);
+  simulator.AdvanceTo(6 * FibonacciDifferenceEquation::kPeriod);
 
   Eigen::VectorXd expected(7);
   expected << 0, 1, 1, 2, 3, 5, 8;

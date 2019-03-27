@@ -73,7 +73,7 @@ int main() {
   xc[0] = 0.9;  // xc(0)
 
   // Simulate for 10 seconds.
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   // Make sure the simulation converges to the stable fixed point at x=0.
   DRAKE_DEMAND(xd[0] < 1.0e-4);

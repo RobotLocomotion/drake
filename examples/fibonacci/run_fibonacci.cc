@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 
   // Create a Simulator and use it to advance time until t=steps*h.
   systems::Simulator<double> simulator(*diagram);
-  simulator.StepTo(FLAGS_steps * FibonacciDifferenceEquation::kPeriod);
+  simulator.AdvanceTo(FLAGS_steps * FibonacciDifferenceEquation::kPeriod);
 
   // Print out the contents of the log.
   for (int n = 0; n < logger->sample_times().size(); ++n) {

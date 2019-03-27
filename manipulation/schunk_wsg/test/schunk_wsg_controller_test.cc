@@ -34,7 +34,7 @@ std::pair<double, double> RunWsgControllerTestStep(
   wsg_state_vec(1) = (wsg_position / 1e3) / 2.;
   context->FixInputPort(dut.GetInputPort("state").get_index(), wsg_state_vec);
   systems::Simulator<double> simulator(dut, std::move(context));
-  simulator.StepTo(1.0);
+  simulator.AdvanceTo(1.0);
   dut.CalcOutput(simulator.get_context(), output.get());
   return {output->get_vector_data(0)->GetAtIndex(0),
           output->get_vector_data(0)->GetAtIndex(1)};

@@ -50,7 +50,7 @@ int main() {
   plant->set_state_vector(&plant_context, initial_state);
   lcm.StartReceiveThread();
 
-  simulator.StepTo(std::numeric_limits<double>::infinity());
+  simulator.AdvanceTo(std::numeric_limits<double>::infinity());
 
   lcm.StopReceiveThread();
   return 0;

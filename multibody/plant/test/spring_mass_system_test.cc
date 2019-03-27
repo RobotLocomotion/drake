@@ -142,7 +142,7 @@ TEST_F(SpringMassSystemTest, UnDampedCase) {
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
   simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   const double x_analytic = CalcAnalyticSolution(
       period, damping_ratio, amplitude, 0.0, simulation_time);
@@ -173,7 +173,7 @@ TEST_F(SpringMassSystemTest, UnderDampedCase) {
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
   simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   const double x_analytic = CalcAnalyticSolution(
       period, damping_ratio, amplitude, 0.0, simulation_time);
@@ -204,7 +204,7 @@ TEST_F(SpringMassSystemTest, OverDampedCase) {
   slider_->set_translation_rate(&context, 0.0);
   simulator.Initialize();
   simulator.get_mutable_integrator()->set_target_accuracy(integration_accuracy);
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   const double x_analytic = CalcAnalyticSolution(
       period, damping_ratio, amplitude, 0.0, simulation_time);

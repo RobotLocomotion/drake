@@ -513,7 +513,7 @@ GTEST_TEST(DrakeVisualizerTests, TestPublishPeriod) {
   VerifyLoadMessage(lcm.get_last_published_message("DRAKE_VIEWER_LOAD_ROBOT"));
 
   for (double time = 0; time < 4; time += 0.01) {
-    simulator.StepTo(time);
+    simulator.AdvanceTo(time);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =

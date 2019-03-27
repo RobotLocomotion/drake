@@ -44,7 +44,7 @@ GTEST_TEST(DiscreteDerivativeTest, FirstOrderHold) {
   Simulator<double> simulator(*diagram);
   simulator.set_publish_at_initialization(false);
   simulator.set_publish_every_time_step(false);
-  simulator.StepTo(kDuration);
+  simulator.AdvanceTo(kDuration);
 
   for (int i = 0; i < log->sample_times().size(); i++) {
     if (log->sample_times()(i) == 0.0) {

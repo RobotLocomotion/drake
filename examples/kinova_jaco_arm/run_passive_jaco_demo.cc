@@ -87,7 +87,7 @@ int DoMain() {
 
   // Simulate for the desired duration.
   simulator.set_target_realtime_rate(1);
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
   // Ensures the simulation was successful.
   const Context<double>& context = simulator.get_context();

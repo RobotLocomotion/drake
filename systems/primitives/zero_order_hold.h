@@ -34,9 +34,9 @@ namespace systems {
 ///
 /// @note This system uses a periodic update with zero offset, so the first
 ///       update occurs at t=0. When used with a Simulator, the output port
-///       is equal to xᵢₙᵢₜ after Simulator.Initialize(), but is immediately
+///       is equal to xᵢₙᵢₜ after simulator.Initialize(), but is immediately
 ///       updated to u₀ at the start of the first step. If you want to force
-///       that initial update, use Simulator.StepTo(0.).
+///       that initial update, use simulator.AdvanceTo(0.).
 ///
 /// @note For an abstract-valued ZeroOrderHold, scalar-type conversion is not
 ///       supported since AbstractValue does not support it.

@@ -137,7 +137,7 @@ int do_main() {
   simulator.get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
   // Plot the results (launch call_matlab_client to see the plots).
   using common::CallMatlab;

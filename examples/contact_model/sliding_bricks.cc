@@ -157,7 +157,7 @@ int main() {
                    FLAGS_v, 0, 0, 0, 0, 0;     // brick 2 velocity
   plant.set_state_vector(&plant_context, initial_state);
 
-  simulator.StepTo(FLAGS_sim_duration);
+  simulator.AdvanceTo(FLAGS_sim_duration);
 
   return 0;
 }

@@ -204,7 +204,7 @@ VectorXd RunSimulation(const bool is_analytic) {
   const double h = rod2d->get_period_sec();
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-  simulator.StepTo(7.5);
+  simulator.AdvanceTo(7.5);
 
   VectorXd q_final = log_state->data().topRightCorner(n1, 1);
   return q_final;

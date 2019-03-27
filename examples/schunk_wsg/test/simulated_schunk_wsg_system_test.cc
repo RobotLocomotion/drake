@@ -123,7 +123,7 @@ GTEST_TEST(SimulatedSchunkWsgSystemTest, OpenGripper) {
 
   // Simulate for 1 second.  In real life this takes <1 second but this gives
   // time for any bouncy dynamics to settle.
-  simulator.StepTo(1.0);
+  simulator.AdvanceTo(1.0);
 
   // Extract and log the final state of the robot.
   auto final_output = model->AllocateOutput();

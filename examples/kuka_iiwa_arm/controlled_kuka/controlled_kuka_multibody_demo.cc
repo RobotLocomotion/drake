@@ -103,7 +103,7 @@ int DoMain() {
   simulator.set_target_realtime_rate(1.0);
   simulator.get_mutable_integrator()->set_target_accuracy(1e-3);
 
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
   return 0;
 }
 

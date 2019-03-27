@@ -61,7 +61,7 @@ int do_main() {
   state->set_theta2dot(0.02);
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
   DRAKE_DEMAND(std::abs(math::wrap_to(state->theta1(), 0., 2. * M_PI) - M_PI) <
                1e-2);

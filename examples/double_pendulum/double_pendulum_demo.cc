@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
   simulator->Initialize();
   // Run simulation.
   lcm_interface->StartReceiveThread();
-  simulator->StepTo(FLAGS_simulation_time);
+  simulator->AdvanceTo(FLAGS_simulation_time);
   lcm_interface->StopReceiveThread();
   return 0;
 }

@@ -93,15 +93,13 @@ value of an individual partition at a particular stage of the stepping
 algorithm.
 
 The following pseudocode uses the above notation to describe the algorithm
-"Advance()" that the %Simulator uses to incrementally advance the system
-trajectory (time t and state x). We refer to such an advancement as a "substep"
-to make it clear that we are not talking about a StepTo() call, which may cause
-many substeps to occur. (We'll define StepTo() in terms of Advance() below.) In
-general, the length of a substep is not known a priori and is determined by
-the Advance() algorithm. Each substep consists of zero or more unrestricted
-updates, followed by zero or more discrete updates, followed by (possibly
-zero-length) continuous time and state advancement, followed by zero or more
-publishes.
+"Step()" that the %Simulator uses to incrementally advance the system
+trajectory (time t and state x). The Simulator's AdvanceTo() method will be
+defined in terms of Step below. In general, the length of a step is not known a
+priori and is determined by the Step() algorithm. Each step consists of zero or
+more unrestricted updates, followed by zero or more discrete updates, followed
+by (possibly zero-length) continuous time and state advancement, followed by
+zero or more publishes.
 
 The pseudocode will clarify the effects on time and state of each of the update
 stages above. This algorithm is given a starting Context value `{tₛ, x⁻(tₛ)}`
@@ -110,7 +108,7 @@ given tₘₐₓ.
 ```
 // Advance the trajectory (time and state) from start value {tₛ, x⁻(tₛ)} to an
 // end value {tₑ, x⁻(tₑ)}, where tₛ ≤ tₑ ≤ tₘₐₓ.
-procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
+procedure Step(tₛ, x⁻(tₛ), tₘₐₓ)
 
   // Update any variables (no restrictions).
   x*(tₛ) ← DoAnyUnrestrictedUpdates(tₛ, x⁻(tₛ))
@@ -149,14 +147,14 @@ procedure Advance(tₛ, x⁻(tₛ), tₘₐₓ)
   return {tₑ, x⁻(tₑ)}
 ```
 
-We can use the notation and pseudocode to flesh out the StepTo() and
+We can use the notation and pseudocode to flesh out the AdvanceTo() and
 Initialize() functions:
 ```
 // Advance the simulation until time tₘₐₓ.
-procedure StepTo(tₘₐₓ)
+procedure AdvanceTo(tₘₐₓ)
   t ← current_time
   while t < tₘₐₓ
-    {tₑ, x⁻(tₑ)} ← Advance(t, x⁻(t), tₘₐₓ)
+    {tₑ, x⁻(tₑ)} ← Step(t, x⁻(t), tₘₐₓ)
     {t, x⁻(t)} ← {tₑ, x⁻(tₑ)}
   endwhile
 
@@ -164,7 +162,7 @@ procedure StepTo(tₘₐₓ)
 // trajectory, and thus the value the Context should contain at the start of the
 // first simulation substep.
 procedure Initialize(t₀, x₀)
-  x⁺(t₀) ← DoAnyUpdates as in Advance()
+  x⁺(t₀) ← DoAnyUpdates as in Step()
   x⁻(t₀) ← x⁺(t₀)  // No continuous update needed.
 
   // ----------------------------------
@@ -173,11 +171,11 @@ procedure Initialize(t₀, x₀)
 
   DoAnyPublishes(t₀, x⁻(t₀))
 ```
-Initialize() can be viewed as a "0ᵗʰ substep" that occurs before the first
-Advance() substep as described above. Like Advance(), Initialize() first
+Initialize() can be viewed as a "0ᵗʰ step" that occurs before the first
+Step() call as described above. Like Step(), Initialize() first
 performs pending updates (in this case only initialization events can be
 "pending"). Time doesn't advance so there is no continuous update phase and
-witnesses cannot trigger. Finally, again like Advance(), the initial trajectory
+witnesses cannot trigger. Finally, again like Step(), the initial trajectory
 point `{t₀, x⁻(t₀)}` is provided to the handlers for any triggered publish
 events. That includes initialization publish events, per-step publish events,
 and periodic or timed publish events that trigger at t₀.
@@ -191,9 +189,6 @@ available to link against in the containing library:
 
 Other instantiations are permitted but take longer to compile.
 */
-
-// TODO(sherm1) When API stabilizes, should list the methods above in addition
-// to describing them.
 template <typename T>
 class Simulator {
  public:
@@ -236,12 +231,13 @@ class Simulator {
   /// See the class documentation for more information. We recommend calling
   /// Initialize() explicitly prior to beginning a simulation so that error
   /// conditions will be discovered early. However, Initialize() will be called
-  /// automatically by the first StepTo() call if it hasn't already been called.
+  /// automatically by the first AdvanceTo() call if it hasn't already been
+  /// called.
   ///
   /// @note If you make a change to the Context or to Simulator options between
-  /// StepTo() calls you should consider whether to call Initialize() before
-  /// resuming; StepTo() will not do that automatically for you. Whether to do
-  /// so depends on whether you want the above initialization operations
+  /// AdvanceTo() calls you should consider whether to call Initialize() before
+  /// resuming; AdvanceTo() will not do that automatically for you. Whether to
+  /// do so depends on whether you want the above initialization operations
   /// performed. For example, if you changed the time you will likely want the
   /// time-triggered events to be recalculated in case one is due at the new
   /// starting time.
@@ -255,7 +251,7 @@ class Simulator {
   /// integrator in use.
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
   // TODO(sherm1) Add a ReInitialize() or Resume() method that is called
-  //              automatically by StepTo() if the Context has changed.
+  //              automatically by AdvanceTo() if the Context has changed.
   void Initialize();
 
   /// Advances the System's trajectory until `boundary_time` is reached in
@@ -266,20 +262,36 @@ class Simulator {
   /// and display the `what()` message.
   ///
   /// We recommend that you call Initialize() prior to making the first call
-  /// to StepTo(). However, if you don't it will be called for you the first
+  /// to AdvanceTo(). However, if you don't it will be called for you the first
   /// time that you attempt a step, possibly resulting in unexpected error
   /// conditions. See documentation for `Initialize()` for the error conditions
   /// it might produce.
   ///
   /// @warning You should consider calling Initialize() if you alter the
-  /// the Context or Simulator options between successive StepTo() calls. See
+  /// the Context or Simulator options between successive AdvanceTo() calls. See
   /// Initialize() for more information.
   ///
   /// @param boundary_time The time to advance the context to.
   /// @pre The internal Context satisfies all System constraints or will after
   ///      pending Context updates are performed.
-  void StepTo(const T& boundary_time);
+  void AdvanceTo(const T &boundary_time);
 
+  /// (Advanced) Invokes discrete and abstract state update that are pending
+  /// from the previous AdvanceTo() call, without advancing time. This is
+  /// equivalent to `AdvanceTo(get_context().get_time())`. See the class
+  /// description for details about how the %Simulator advances time and
+  /// handles events.
+  void AdvancePendingEvents() {
+    AdvanceTo(get_context().get_time());
+  }
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // To be deprecated -- use AdvanceTo() instead.
+  void StepTo(const T& boundary_time) { AdvanceTo(boundary_time); }
+#endif
+
+  // TODO(sherm1): Provide options for issuing a warning or aborting the
+  // simulation if the desired rate cannot be achieved.
   /// Slow the simulation down to *approximately* synchronize with real time
   /// when it would otherwise run too fast. Normally the %Simulator takes steps
   /// as quickly as it can. You can request that it slow down to synchronize
@@ -303,8 +315,6 @@ class Simulator {
   ///   run twice as fast as real time, 0.5 for half speed, etc. Zero or
   ///   negative restores the rate to its default of 0, meaning the simulation
   ///   will proceed as fast as possible.
-  // TODO(sherm1): Provide options for issuing a warning or aborting the
-  // simulation if the desired rate cannot be achieved.
   void set_target_realtime_rate(double realtime_rate) {
     target_realtime_rate_ = std::max(realtime_rate, 0.);
   }
@@ -609,15 +619,15 @@ class Simulator {
   std::unique_ptr<CompositeEventCollection<T>> timed_events_;
 
   // Witnessed events are triggered as a witness function crosses zero during
-  // StepTo(). This collection is constructed within Initialize().
+  // AdvanceTo(). This collection is constructed within Initialize().
   std::unique_ptr<CompositeEventCollection<T>> witnessed_events_;
 
   // Indicates when a timed or witnessed event needs to be handled on the next
-  // call to StepTo().
+  // call to AdvanceTo().
   bool timed_or_witnessed_event_triggered_{false};
 
   // The time that the next timed event is to be handled. This value is set in
-  // both Initialize() and StepTo().
+  // both Initialize() and AdvanceTo().
   T next_timed_event_time_{std::numeric_limits<double>::quiet_NaN()};
 
   // Pre-allocated temporaries for updated discrete states.
@@ -848,15 +858,8 @@ void Simulator<T>::HandlePublish(
   }
 }
 
-// TODO(edrumwri): Consider adding a special function to "complete" a simulation
-//                 by calling, in effect, StepTo(get_context().get_time()) to
-//                 process any events that have triggered but not been processed
-//                 at the conclusion to a StepTo() call. At the present time, we
-//                 believe the issue of remaining, unprocessed events is rarely
-//                 likely to be important and can be circumvented in multiple
-//                 ways, like calling StepTo(get_context().get_time()).
 template <typename T>
-void Simulator<T>::StepTo(const T& boundary_time) {
+void Simulator<T>::AdvanceTo(const T &boundary_time) {
   if (!initialization_done_) Initialize();
 
   DRAKE_THROW_UNLESS(boundary_time >= context_->get_time());

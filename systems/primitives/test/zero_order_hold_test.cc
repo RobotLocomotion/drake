@@ -254,16 +254,16 @@ GTEST_TEST(ZeroOrderHoldTest, UseInDiagram) {
   // No update should have occurred yet.
   EXPECT_EQ(0., eval());
 
-  simulator.StepTo(0);  // Force an update at 0.
+  simulator.AdvancePendingEvents();  // Force an update at 0.
 
   // Should have sampled at t=0.
   EXPECT_NEAR(sine_eval(0.), eval(), kMachineTol);
 
-  simulator.StepTo(1.5 * kPeriod);
+  simulator.AdvanceTo(1.5 * kPeriod);
   // Should have sampled at t=kPeriod, NOT 1.5 * kPeriod.
   EXPECT_NEAR(sine_eval(kPeriod), eval(), kMachineTol);
 
-  simulator.StepTo(9.1 * kPeriod);  // Last sample at 9 * kPeriod.
+  simulator.AdvanceTo(9.1 * kPeriod);  // Last sample at 9 * kPeriod.
   EXPECT_NEAR(sine_eval(9 * kPeriod), eval(), kMachineTol);
 }
 

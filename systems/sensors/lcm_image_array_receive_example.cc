@@ -69,7 +69,7 @@ int DoMain() {
   simulator->set_publish_every_time_step(false);
   simulator->set_target_realtime_rate(1.0);
   simulator->Initialize();
-  simulator->StepTo(FLAGS_duration);
+  simulator->AdvanceTo(FLAGS_duration);
 
   return 0;
 }

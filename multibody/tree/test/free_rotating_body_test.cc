@@ -83,7 +83,7 @@ GTEST_TEST(RollPitchYawTest, TimeDerivatives) {
   EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
 
   // Simulate:
-  simulator.StepTo(kEndTime);
+  simulator.AdvanceTo(kEndTime);
 
   // Get solution:
   math::RigidTransformd X_WB = free_body_plant.CalcPoseInWorldFrame(context);

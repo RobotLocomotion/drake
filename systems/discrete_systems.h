@@ -91,7 +91,7 @@ The following code fragment can be used to step this system forward:
 
   // Create a Simulator and use it to advance time until t=3*h.
   Simulator<double> simulator(*diagram);
-  simulator.StepTo(3 * ExampleDiscreteSystem::kPeriod);
+  simulator.AdvanceTo(3 * ExampleDiscreteSystem::kPeriod);
 
   // Print out the contents of the log.
   for (int n = 0; n < logger->sample_times().size(); ++n) {

@@ -64,7 +64,7 @@ void LcmDrivenLoop::RunToSecondsAssumingInitialized(double stop_time) {
     msg_time = time_converter_->GetTimeInSeconds(WaitForMessage());
     if (msg_time >= stop_time) break;
 
-    stepper_->StepTo(msg_time);
+    stepper_->AdvanceTo(msg_time);
 
     // Explicitly publish after we are done with all the intermediate
     // computation.

@@ -161,7 +161,7 @@ class TestCustom(unittest.TestCase):
 
         simulator = Simulator(diagram, context)
         simulator.Initialize()
-        simulator.StepTo(1)
+        simulator.AdvanceTo(1)
         # Ensure that we have the outputs we want.
         value = (diagram.GetMutableSubsystemContext(zoh, context)
                  .get_discrete_state_vector().get_value())
@@ -297,7 +297,7 @@ class TestCustom(unittest.TestCase):
         system = TrivialSystem()
         simulator = Simulator(system)
         # Stepping to 0.99 so that we get exactly one periodic event.
-        simulator.StepTo(0.99)
+        simulator.AdvanceTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
 

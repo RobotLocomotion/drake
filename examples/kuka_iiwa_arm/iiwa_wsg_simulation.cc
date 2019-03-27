@@ -282,7 +282,7 @@ int DoMain() {
   simulator.reset_integrator<RungeKutta2Integrator<double>>(*sys,
       FLAGS_dt, &simulator.get_mutable_context());
   simulator.set_publish_every_time_step(false);
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
   lcm.StopReceiveThread();
   return 0;
