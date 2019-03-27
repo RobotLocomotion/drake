@@ -24,6 +24,7 @@ const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 // eigenvalues (not necessarily distinct) of the input matrix A; (2) if A is a
 // 1-by-1 zero matrix; (3) if A's trace or determinant is 0 when A is a 2-by-2
 // matrix.
+// TODO(weiqiao.han): figure out what the tolerance eps ought to be.
 bool is_zero(double x, double eps = 1e-10) { return std::fabs(x) < eps; }
 }  // namespace
 
