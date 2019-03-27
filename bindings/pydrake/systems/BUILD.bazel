@@ -99,6 +99,7 @@ drake_pybind_library(
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
+        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,

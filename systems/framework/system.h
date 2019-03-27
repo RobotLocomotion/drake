@@ -1099,6 +1099,28 @@ class System : public SystemBase {
         this->GetInputPortBaseOrThrow(__func__, port_index));
   }
 
+  /// Returns the typed input port specified by the InputPortSelection or by
+  /// the InputPortIndex.  Returns nullptr if no port is selected.  This is
+  /// provided as a convenience method since many algorithms provide the same
+  /// common default or optional port semantics.
+  const InputPort<T>* get_input_port_selection(
+      variant<InputPortSelection, InputPortIndex> port_index) const {
+    if (holds_alternative<InputPortIndex>(port_index)) {
+      return &get_input_port(get<InputPortIndex>(port_index));
+    }
+
+    switch (get<InputPortSelection>(port_index)) {
+      case InputPortSelection::kUseFirstInputIfItExists:
+        if (num_input_ports() > 0) {
+          return &get_input_port(0);
+        }
+        return nullptr;
+      case InputPortSelection::kNoInput:
+        return nullptr;
+    }
+    return nullptr;
+  }
+
   /// Returns the typed input port with the unique name @p port_name.
   /// The current implementation performs a linear search over strings; prefer
   /// get_input_port() when performance is a concern.
@@ -1119,6 +1141,27 @@ class System : public SystemBase {
   const OutputPort<T>& get_output_port(int port_index) const {
     return dynamic_cast<const OutputPort<T>&>(
         this->GetOutputPortBaseOrThrow(__func__, port_index));
+  }
+
+  /// Returns the typed output port specified by the OutputPortSelection or by
+  /// the OutputPortIndex.  Returns nullptr if no port is selected. This is
+  /// provided as a convenience method since many algorithms provide the same
+  /// common default or optional port semantics.
+  const OutputPort<T>* get_output_port_selection(
+      variant<OutputPortSelection, OutputPortIndex> port_index) const {
+    if (holds_alternative<OutputPortIndex>(port_index)) {
+      return &get_output_port(get<OutputPortIndex>(port_index));
+    }
+    switch (get<OutputPortSelection>(port_index)) {
+      case OutputPortSelection::kUseFirstOutputIfItExists:
+        if (num_output_ports() > 0) {
+          return &get_output_port(0);
+        }
+        return nullptr;
+      case OutputPortSelection::kNoOutput:
+        return nullptr;
+    }
+    return nullptr;
   }
 
   /// Returns the typed output port with the unique name @p port_name.
