@@ -821,7 +821,7 @@ TEST_F(Rod2DDiscretizedTest, RodGoesToRest) {
 
   // Integrate forward to a point where the rod should be at rest.
   const double t_final = 10;
-  simulator.StepTo(t_final);
+  simulator.AdvanceTo(t_final);
 
   // Get angular orientation and velocity.
   const auto xd = simulator.get_context().get_discrete_state(0).get_value();
@@ -877,7 +877,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSliding) {
   // Integrate forward by a single *large* dt. Note that the update rate
   // is set by the time stepping system, so stepping to dt should yield
   // exactly one step.
-  simulator_ts.StepTo(dt);
+  simulator_ts.AdvanceTo(dt);
   EXPECT_EQ(simulator_ts.get_num_discrete_updates(), 1);
 
   // Manually integrate the continuous state forward for the piecewise DAE
@@ -949,7 +949,7 @@ GTEST_TEST(Rod2DCrossValidationTest, OneStepSolutionSticking) {
   // Integrate forward by a single *large* dt. Note that the update rate
   // is set by the discretized system, so stepping to dt should yield
   // exactly one step.
-  simulator_ts.StepTo(dt);
+  simulator_ts.AdvanceTo(dt);
   EXPECT_EQ(simulator_ts.get_num_discrete_updates(), 1);
 
   // TODO(edrumwri): Manually integrate the continuous state forward for the

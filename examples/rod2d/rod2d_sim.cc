@@ -143,6 +143,6 @@ int main(int argc, char* argv[]) {
   simulator.set_target_realtime_rate(1.0);
   while (simulator.get_context().get_time() < FLAGS_sim_duration) {
     const double t = simulator.get_context().get_time();
-    simulator.StepTo(std::min(t + 1, FLAGS_sim_duration));
+    simulator.AdvanceTo(std::min(t + 1, FLAGS_sim_duration));
   }
 }

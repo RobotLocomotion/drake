@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
   simulator->set_target_realtime_rate(FLAGS_realtime_rate);
   simulator->Initialize();
   // Run simulation.
-  simulator->StepTo(FLAGS_simulation_time);
+  simulator->AdvanceTo(FLAGS_simulation_time);
   interface->StopReceiveThread();
   return 0;
 }

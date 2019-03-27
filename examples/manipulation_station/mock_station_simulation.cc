@@ -145,7 +145,7 @@ int do_main(int argc, char* argv[]) {
 
   simulator.set_publish_every_time_step(false);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.StepTo(FLAGS_duration);
+  simulator.AdvanceTo(FLAGS_duration);
 
   return 0;
 }

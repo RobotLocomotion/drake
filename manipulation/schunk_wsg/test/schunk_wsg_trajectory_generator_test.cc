@@ -34,13 +34,13 @@ GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, BasicTest) {
   // trajectory wider than zero, but not to the target yet.
   const double expected_target = -0.05;  // 50mm
   systems::Simulator<double> simulator(dut, std::move(context));
-  simulator.StepTo(0.1);
+  simulator.AdvanceTo(0.1);
   dut.CalcOutput(simulator.get_context(), output.get());
   EXPECT_LT(output->get_vector_data(0)->GetAtIndex(0), 0);
   EXPECT_GT(output->get_vector_data(0)->GetAtIndex(0), expected_target);
 
   // Step quite a bit longer and see that we get there.
-  simulator.StepTo(2.0);
+  simulator.AdvanceTo(2.0);
   dut.CalcOutput(simulator.get_context(), output.get());
   EXPECT_FLOAT_EQ(output->get_vector_data(0)->GetAtIndex(0), expected_target);
 }

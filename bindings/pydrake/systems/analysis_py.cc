@@ -82,7 +82,8 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc)
-        .def("StepTo", &Simulator<T>::StepTo, doc.Simulator.StepTo.doc)
+        .def("AdvanceTo", &Simulator<T>::AdvanceTo, doc.Simulator.AdvanceTo.doc)
+        .def("StepTo", &Simulator<T>::StepTo, "Use AdvanceTo() instead.")
         .def("get_context", &Simulator<T>::get_context, py_reference_internal,
             doc.Simulator.get_context.doc)
         .def("get_integrator", &Simulator<T>::get_integrator,

@@ -110,7 +110,7 @@ int do_main(int argc, char* argv[]) {
   }
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
-  simulator.StepTo(FLAGS_duration);
+  simulator.AdvanceTo(FLAGS_duration);
 
   // Check that the arm is (very roughly) in the commanded position.
   VectorXd q = station->GetIiwaPosition(station_context);

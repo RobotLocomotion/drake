@@ -93,7 +93,7 @@ GTEST_TEST(TrajectoryFollowerTest, Outputs) {
 
     const double end_time = it.distance / kSpeed;
     for (double time = 0.; time <= end_time; time += 0.1) {
-      simulator.StepTo(time);
+      simulator.AdvanceTo(time);
 
       const double scalar =
           std::min(std::max(0.0, (time * kSpeed) / it.distance), 1.);

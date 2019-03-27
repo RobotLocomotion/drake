@@ -76,7 +76,7 @@ int DoMain() {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   // Adds a numerical test to make sure we're stabilizing the fixed point.
   DRAKE_DEMAND(is_approx_equal_abstol(state.get_value(),

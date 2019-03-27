@@ -173,7 +173,7 @@ int do_main() {
                                             &generator);
 
     simulator.Initialize();
-    simulator.StepTo(FLAGS_simulation_time);
+    simulator.AdvanceTo(FLAGS_simulation_time);
   }
 
   return 0;

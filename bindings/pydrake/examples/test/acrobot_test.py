@@ -76,7 +76,7 @@ class TestAcrobot(unittest.TestCase):
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
 
         self.assertLessEqual(acrobot.CalcPotentialEnergy(context) +
                              acrobot.CalcKineticEnergy(context),

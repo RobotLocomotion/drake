@@ -122,7 +122,7 @@ GTEST_TEST(BeamModelTest, TestProbabilityDensity) {
   };
 
   simulator.Initialize();
-  simulator.StepTo(50);
+  simulator.AdvanceTo(50);
 
   const auto& x = logger->data();
 

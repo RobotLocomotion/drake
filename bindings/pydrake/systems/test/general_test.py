@@ -249,7 +249,7 @@ class TestGeneral(unittest.TestCase):
             self.assertTrue(simulator.get_context() is
                             simulator.get_mutable_context())
             check_output(simulator.get_context())
-            simulator.StepTo(1)
+            simulator.AdvanceTo(1)
 
             # Create simulator specifying context.
             context = system.CreateDefaultContext()
@@ -262,7 +262,7 @@ class TestGeneral(unittest.TestCase):
             simulator = Simulator_[T](system, context)
             self.assertTrue(simulator.get_context() is context)
             check_output(context)
-            simulator.StepTo(1)
+            simulator.AdvanceTo(1)
 
     def test_copy(self):
         # Copy a context using `deepcopy` or `clone`.
@@ -337,7 +337,7 @@ class TestGeneral(unittest.TestCase):
         times = np.linspace(0, 1, n)
         context_log = []
         for t in times:
-            simulator.StepTo(t)
+            simulator.AdvanceTo(t)
             # Record snapshot of *entire* context.
             context_log.append(context.Clone())
 
