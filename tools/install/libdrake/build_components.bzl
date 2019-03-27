@@ -1,8 +1,10 @@
 # -*- python -*-
 
-# Should include everything any consumer of Drake would ever need.
-#
-# Do not update this list by hand; instead, run build_components_refresh.py.
+# This file governs the contents of libdrake.so.
+
+# Do not update this list by hand; instead, from the drake workspace run
+#   tools/install/libdrake/build_components_refresh.py
+# and it will rewrite this file automatically for you.
 LIBDRAKE_COMPONENTS = [
     "//attic/manipulation/dev:remote_tree_viewer_wrapper",  # unpackaged
     "//attic/manipulation/planner",
