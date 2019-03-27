@@ -89,7 +89,7 @@ int DoMain() {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.get_mutable_context().set_accuracy(FLAGS_accuracy);
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   // Check that the state is still inside the expected region (I did not miss
   // any collisions).

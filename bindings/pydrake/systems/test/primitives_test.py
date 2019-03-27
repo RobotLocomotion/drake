@@ -112,7 +112,7 @@ class TestGeneral(unittest.TestCase):
         diagram = builder.Build()
         simulator = Simulator(diagram)
         kTime = 1.
-        simulator.StepTo(kTime)
+        simulator.AdvanceTo(kTime)
 
         # Verify outputs of the every-step logger
         t = logger_per_step.sample_times()

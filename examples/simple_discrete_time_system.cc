@@ -53,7 +53,7 @@ int main() {
   state[0] = 0.99;
 
   // Simulate for 10 seconds.
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   // Make sure the simulation converges to the stable fixed point at x=0.
   DRAKE_DEMAND(state[0] < 1.0e-4);

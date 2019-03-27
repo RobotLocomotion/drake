@@ -163,7 +163,7 @@ void CheckLog() {
   auto diagram = builder.Build();
 
   Simulator<double> sim(*diagram);
-  sim.StepTo(0.5);
+  sim.AdvanceTo(0.5);
 
   // printer0 should have msg at t = [0.1, 0.3], with val = [1, 5].
   CheckLog({0.1, 0.3}, {1, 5}, "Ch0", printer0->get_received_msgs(),

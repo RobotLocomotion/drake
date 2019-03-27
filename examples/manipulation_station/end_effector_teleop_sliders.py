@@ -296,4 +296,4 @@ differential_ik.SetPositions(diagram.GetMutableSubsystemContext(
 simulator.set_publish_every_time_step(False)
 
 simulator.set_target_realtime_rate(args.target_realtime_rate)
-simulator.StepTo(args.duration)
+simulator.AdvanceTo(args.duration)

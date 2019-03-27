@@ -65,7 +65,7 @@ def main():
     simulator.set_publish_every_time_step(False)
     simulator.set_target_realtime_rate(args.target_realtime_rate)
     simulator.Initialize()
-    simulator.StepTo(args.simulation_time)
+    simulator.AdvanceTo(args.simulation_time)
 
 
 if __name__ == "__main__":

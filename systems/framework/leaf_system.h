@@ -935,9 +935,9 @@ class LeafSystem : public System<T> {
   /// @name                 Declare per-step events
   /// These methods are used to declare events that are triggered whenever the
   /// Drake Simulator advances the simulated trajectory. Note that each call to
-  /// Simulator::StepTo() typically generates many trajectory-advancing substeps
-  /// of varying time intervals; per-step events are triggered for each of those
-  /// substeps.
+  /// Simulator::AdvanceTo() typically generates many trajectory-advancing
+  /// steps of varying time intervals; per-step events are triggered for each
+  /// of those steps.
   ///
   /// Per-step events are useful for taking discrete action at every point of a
   /// simulated trajectory (generally spaced irregularly in time) without
@@ -958,10 +958,10 @@ class LeafSystem : public System<T> {
   /// method queries and records the set of declared per-step events. That set
   /// does not change during a simulation. Any per-step publish events are
   /// dispatched at the end of Initialize() to publish the initial value of the
-  /// trajectory. Then every StepTo() internal substep dispatches unrestricted
-  /// and discrete update events at the start of the substep, and dispatches
-  /// publish events at the end of the substep (that is, after time advances).
-  /// This means that a per-step event at fixed substep size h behaves
+  /// trajectory. Then every AdvanceTo() internal step dispatches unrestricted
+  /// and discrete update events at the start of the step, and dispatches
+  /// publish events at the end of the step (that is, after time advances).
+  /// This means that a per-step event at fixed step size h behaves
   /// identically to a periodic event of period h, offset 0.
   ///
   /// Template arguments to these methods are inferred from the argument lists
@@ -969,7 +969,7 @@ class LeafSystem : public System<T> {
   //@{
 
   /// Declares that a Publish event should occur at initialization and at the
-  /// end of every trajectory-advancing substep and that it should invoke the
+  /// end of every trajectory-advancing step and that it should invoke the
   /// given event handler method. The handler should be a class member function
   /// (method) with this signature:
   /// @code
@@ -1012,7 +1012,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that a DiscreteUpdate event should occur at the start of every
-  /// trajectory-advancing substep and that it should invoke the given event
+  /// trajectory-advancing step and that it should invoke the given event
   /// handler method. The handler should be a class member function (method)
   /// with this signature:
   /// @code
@@ -1051,7 +1051,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that an UnrestrictedUpdate event should occur at the start of
-  /// every trajectory-advancing substep and that it should invoke the given
+  /// every trajectory-advancing step and that it should invoke the given
   /// event handler method. The handler should be a class member function
   /// (method) with this signature:
   /// @code
@@ -1090,9 +1090,9 @@ class LeafSystem : public System<T> {
   }
 
   /// (Advanced) Declares that a particular Event object should be dispatched at
-  /// every trajectory-advancing substep. Publish events are dispatched at
-  /// the end of initialization and at the end of each substep. Discrete- and
-  /// unrestricted update events are dispatched at the start of each substep.
+  /// every trajectory-advancing step. Publish events are dispatched at
+  /// the end of initialization and at the end of each step. Discrete- and
+  /// unrestricted update events are dispatched at the start of each step.
   /// This is the most general form for declaring per-step events and most users
   /// should use one of the other methods in this group instead.
   ///
@@ -1299,7 +1299,7 @@ class LeafSystem : public System<T> {
   /// or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
   /// rather than as a response to some computation-related event (e.g.,
   /// the beginning of a period of time was reached, a trajectory advancing
-  /// substep was performed, etc.) One useful application of a forced publish:
+  /// step was performed, etc.) One useful application of a forced publish:
   /// a process receives a network message and wants to trigger message
   /// emissions in various systems embedded within a Diagram in response.
   ///

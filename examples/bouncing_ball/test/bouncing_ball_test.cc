@@ -177,7 +177,7 @@ TEST_F(BouncingBallTest, Simulate) {
   xc.SetAtIndex(1, v0);
 
   // Integrate.
-  simulator.StepTo(t_final);
+  simulator.AdvanceTo(t_final);
   EXPECT_EQ(simulator.get_mutable_context().get_time(), t_final);
 
   // Check against closed form solution for the bouncing ball. We anticipate

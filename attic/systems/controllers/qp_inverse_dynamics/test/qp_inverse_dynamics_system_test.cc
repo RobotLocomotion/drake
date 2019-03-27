@@ -103,7 +103,7 @@ GTEST_TEST(testQpInverseDynamicsSystem, IiwaInverseDynamics) {
   std::unique_ptr<SystemOutput<double>> output =
       diagram->AllocateOutput();
   sim.Initialize();
-  sim.StepTo(controller->get_control_dt());
+  sim.AdvanceTo(controller->get_control_dt());
 
   // Gets the output from the plan eval block.
   diagram->CalcOutput(sim.get_context(), output.get());

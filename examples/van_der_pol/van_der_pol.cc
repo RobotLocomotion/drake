@@ -56,7 +56,7 @@ Eigen::Matrix2Xd VanDerPolOscillator<T>::CalcLimitCycle() {
 
   // Simulate for the approximate period (acquired by inspection of numerical
   // simulation results) of the cycle for μ=1.
-  simulator.StepTo(6.667);
+  simulator.AdvanceTo(6.667);
 
   return logger->data();
 }

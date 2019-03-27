@@ -101,7 +101,7 @@ int do_main() {
 
   simulator.set_target_realtime_rate(FLAGS_realtime_factor);
   simulator.Initialize();
-  simulator.StepTo(pp_xtraj.end_time());
+  simulator.AdvanceTo(pp_xtraj.end_time());
   return 0;
 }
 
