@@ -12,9 +12,11 @@
 #include "drake/geometry/geometry_index.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/camera_properties.h"
+#include "drake/geometry/render/render_label.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/geometry/utilities.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/systems/sensors/color_palette.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -37,7 +39,14 @@ namespace render {
      Note that this is different from the range data used by laser
      range finders (like that provided by DepthSensor) in which the depth
      value represents the distance from the sensor origin to the object's
-     surface.  */
+     surface.
+
+   - Label (ImageLabel16I) : the label image has single channel represented
+     by an int16_t. The value stored in the channel holds a RenderLabel value
+     which corresponds to an object class in the scene. Pixels attributable to
+     no geometry contain the RenderLabel::kEmpty value.
+
+     @see RenderLabel  */
 class RenderEngine : public ShapeReifier {
  public:
   RenderEngine() = default;
@@ -120,6 +129,17 @@ class RenderEngine : public ShapeReifier {
       const DepthCameraProperties& camera,
       systems::sensors::ImageDepth32F* depth_image_out) const = 0;
 
+  /** Renders the registered geometry into the given label image.
+
+   @param camera                The intrinsic properties of the camera.
+   @param show_window           If true, the render window will be displayed.
+   @param[out] label_image_out  The rendered label image.
+  */
+  virtual void RenderLabelImage(
+      const CameraProperties& camera,
+      bool show_window,
+      systems::sensors::ImageLabel16I* label_image_out) const = 0;
+
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine)
@@ -160,6 +180,41 @@ class RenderEngine : public ShapeReifier {
 
   /** The NVI-function for cloning this render engine.  */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
+
+  /** @name   RenderLabel-Color Utilities
+
+   These methods provide the basic ability to convert RenderLabel values into
+   their corresponding rasterizable color and back again. Colors are either
+   _byte-valued_ in that they are encoded with unsigned bytes in the range
+   [0, 255] per channel or _double-valued_ such that each channel is encoded
+   with a double in the range [0, 1].
+
+   These colors are not intended for human consumption. It is merely a unique
+   mapping from %RenderLabel values to computer-distinguishable color values for
+   use in rasterization operations that depend on colors.
+   */
+  //@{
+
+  /** Transforms the given byte-valued RGB color value into its corresponding
+   RenderLabel.  */
+  static RenderLabel LabelFromColor(const systems::sensors::ColorI& color) {
+    return RenderLabel(color.r | (color.g << 8), false);
+  }
+
+  /** Transforms `this` render label into a byte-valued RGB color.  */
+  static systems::sensors::ColorI GetColorIFromLabel(const RenderLabel& label) {
+    return systems::sensors::ColorI{label.value_ & 0xFF,
+                                    (label.value_ >> 8) & 0xFF, 0};
+  }
+
+  /** Transforms `this` render label into a double-valued RGB color.  */
+  static systems::sensors::ColorD GetColorDFromLabel(const RenderLabel& label) {
+    systems::sensors::ColorI i_color = GetColorIFromLabel(label);
+    return systems::sensors::ColorD{i_color.r / 255., i_color.g / 255.,
+                                    i_color.b / 255.};
+  }
+
+  //@}
 
   friend class RenderEngineTester;
 
