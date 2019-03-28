@@ -129,7 +129,8 @@ void StaticEquilibriumConstraint::DoEval(
       "and expressions.");
 }
 
-solvers::Binding<StaticEquilibriumConstraint> CreateStaticEquilibriumConstraint(
+solvers::Binding<StaticEquilibriumConstraint>
+StaticEquilibriumConstraint::MakeBinding(
     const MultibodyPlant<AutoDiffXd>* plant,
     systems::Context<AutoDiffXd>* context,
     const std::vector<std::pair<std::shared_ptr<ContactWrenchEvaluator>,
@@ -173,8 +174,11 @@ solvers::Binding<StaticEquilibriumConstraint> CreateStaticEquilibriumConstraint(
       plant->num_positions() + plant->num_actuated_dofs() + num_lambda);
   q_u_lambda << q_vars, u_vars, all_lambda;
   auto static_equilibrium_constraint =
-      std::make_shared<StaticEquilibriumConstraint>(
-          plant, context, contact_pair_to_wrench_evaluator);
+      // Do not call make_shared because the constructor
+      // StaticEquilibriumConstraint is private.
+      std::shared_ptr<StaticEquilibriumConstraint>(
+          new StaticEquilibriumConstraint(plant, context,
+                                          contact_pair_to_wrench_evaluator));
   return solvers::Binding<StaticEquilibriumConstraint>(
       static_equilibrium_constraint, q_u_lambda);
 }

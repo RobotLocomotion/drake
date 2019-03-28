@@ -138,27 +138,46 @@ class TwoFreeSpheresTest : public ::testing::Test {
 
 TEST_F(TwoFreeSpheresTest, Constructor) {
   const auto& plant = spheres_->plant();
-  const auto static_equilibrium_binding = CreateStaticEquilibriumConstraint(
-      &plant, spheres_->get_mutable_plant_context(),
-      contact_wrench_evaluators_and_lambda_, q_vars_, u_vars_);
+  const auto static_equilibrium_binding =
+      StaticEquilibriumConstraint::MakeBinding(
+          &plant, spheres_->get_mutable_plant_context(),
+          contact_wrench_evaluators_and_lambda_, q_vars_, u_vars_);
   // Test constructor of StaticEquilibriumConstraint
   EXPECT_EQ(static_equilibrium_binding.evaluator()->num_vars(),
             23 /* 14 for position, 9 for lambda */);
   EXPECT_EQ(static_equilibrium_binding.evaluator()->num_constraints(),
-             plant.num_velocities());
+            plant.num_velocities());
   EXPECT_TRUE(
       CompareMatrices(static_equilibrium_binding.evaluator()->lower_bound(),
                       Eigen::VectorXd::Zero(12)));
   EXPECT_TRUE(
       CompareMatrices(static_equilibrium_binding.evaluator()->upper_bound(),
                       Eigen::VectorXd::Zero(12)));
+  // Now check if each contact wrench evaluator is bound to the correct lambda.
+  for (const auto& contact_wrench_evaluator_and_lambda :
+       contact_wrench_evaluators_and_lambda_) {
+    const auto& lambda_indices =
+        static_equilibrium_binding.evaluator()
+            ->contact_pair_to_wrench_evaluator()
+            .at(contact_wrench_evaluator_and_lambda.first->geometry_id_pair())
+            .lambda_indices_in_all_lambda;
+    // Check if lambda_indices_in_all_lambda is correct.
+    EXPECT_EQ(lambda_indices.size(),
+              contact_wrench_evaluator_and_lambda.second.rows());
+    for (int i = 0; i < static_cast<int>(lambda_indices.size()); ++i) {
+      EXPECT_EQ(static_equilibrium_binding.variables()(
+                    q_vars_.rows() + u_vars_.rows() + lambda_indices[i]),
+                contact_wrench_evaluator_and_lambda.second.coeff(i));
+    }
+  }
 }
 
 TEST_F(TwoFreeSpheresTest, Eval) {
   const auto& plant = spheres_->plant();
-  const auto static_equilibrium_binding = CreateStaticEquilibriumConstraint(
-      &plant, spheres_->get_mutable_plant_context(),
-      contact_wrench_evaluators_and_lambda_, q_vars_, u_vars_);
+  const auto static_equilibrium_binding =
+      StaticEquilibriumConstraint::MakeBinding(
+          &plant, spheres_->get_mutable_plant_context(),
+          contact_wrench_evaluators_and_lambda_, q_vars_, u_vars_);
   math::RigidTransform<double> X_WS0, X_WS1;
   // Set the sphere pose X_WS0 and X_WS1 arbitrarily.
   X_WS0.set(math::RotationMatrix<double>(Eigen::AngleAxisd(
@@ -205,6 +224,7 @@ TEST_F(TwoFreeSpheresTest, Eval) {
   prog_.AddConstraint(static_equilibrium_binding);
 
   Eigen::VectorXd x_init(prog_.num_vars());
+  x_init.setZero();
   prog_.SetDecisionVariableValueInVector(q_vars_, q_val, &x_init);
 
   auto result = solvers::Solve(prog_, x_init);
