@@ -75,8 +75,8 @@ path to ``drake/tools/clion/bazel_wrapper`` from any recent Drake source tree
 Downgrading the Bazel Plugin
 ----------------------------
 These instructions were tested with CLion 2018.3.4.
-1. Download the older version of Bazel Plugin from JetBrains web page
-   to get the file ijwb_bazel.zip.
+1. Download the older version of Bazel Plugin from JetBrains web page to get the
+ file ijwb_bazel.zip.
 2. ``Install Plugin from Disk...`` by:
 2.1 ``File > Settings``.
 2.2 Select ``Plugins``.
