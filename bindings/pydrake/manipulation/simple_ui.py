@@ -76,7 +76,7 @@ class JointSliders(VectorSystem):
             self.window = window
 
         # Schedule window updates in either case (new or existing window):
-        self._DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicPublish(update_period_sec, 0.0)
 
         self._slider = []
         self._slider_position_start = []
@@ -130,11 +130,11 @@ class JointSliders(VectorSystem):
         for i in range(len(self._slider)):
             self._slider[i].set(q[i])
 
-    def _DoPublish(self, context, event):
+    def DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
 
-    def _DoCalcVectorOutput(self, context, unused, unused2, output):
+    def DoCalcVectorOutput(self, context, unused, unused2, output):
         output[:] = self._default_position
         for i in range(0, len(self._slider)):
             output[self._slider_position_start[i]] = self._slider[i].get()
@@ -166,10 +166,10 @@ class SchunkWsgButtons(LeafSystem):
             force_limit:     Force limit to send to Schunk WSG controller.
         """
         LeafSystem.__init__(self)
-        self._DeclareVectorOutputPort("position", BasicVector(1),
-                                      self.CalcPositionOutput)
-        self._DeclareVectorOutputPort("force_limit", BasicVector(1),
-                                      self.CalcForceLimitOutput)
+        self.DeclareVectorOutputPort("position", BasicVector(1),
+                                     self.CalcPositionOutput)
+        self.DeclareVectorOutputPort("force_limit", BasicVector(1),
+                                     self.CalcForceLimitOutput)
 
         if window is None:
             self.window = tk.Tk()
@@ -178,7 +178,7 @@ class SchunkWsgButtons(LeafSystem):
             self.window = window
 
         # Schedule window updates in either case (new or existing window):
-        self._DeclarePeriodicPublish(update_period_sec, 0.0)
+        self.DeclarePeriodicPublish(update_period_sec, 0.0)
 
         self._open_button = tk.Button(self.window, text="Open Gripper",
                                       state=tk.DISABLED,
@@ -218,7 +218,7 @@ class SchunkWsgButtons(LeafSystem):
         else:
             self.open()
 
-    def _DoPublish(self, context, event):
+    def DoPublish(self, context, event):
         self.window.update_idletasks()
         self.window.update()
 
