@@ -25,21 +25,21 @@
 namespace drake {
 namespace systems {
 
-/**
- A class for advancing the state of hybrid dynamic systems, represented by
- `System<T>` objects, forward in time. Starting with an initial Context for a
- given System, %Simulator advances time and produces a series of Context
- values that forms a trajectory satisfying the system's dynamic equations to
- a specified accuracy. Only the Context is modified by a %Simulator; the
- System is const.
+/** @ingroup simulation
+A class for advancing the state of hybrid dynamic systems, represented by
+`System<T>` objects, forward in time. Starting with an initial Context for a
+given System, %Simulator advances time and produces a series of Context
+values that forms a trajectory satisfying the system's dynamic equations to
+a specified accuracy. Only the Context is modified by a %Simulator; the
+System is const.
 
- A Drake System is a continuous/discrete/hybrid dynamic system where the
- continuous part is a DAE, that is, it is expected to consist of a set of
- differential equations and bilateral algebraic constraints. The set of
- active constraints may change as a result of particular events, such as
- contact.
+A Drake System is a continuous/discrete/hybrid dynamic system where the
+continuous part is a DAE, that is, it is expected to consist of a set of
+differential equations and bilateral algebraic constraints. The set of
+active constraints may change as a result of particular events, such as
+contact.
 
- Given a current Context, we expect a System to provide us with
+Given a current Context, we expect a System to provide us with
  - derivatives for the continuous differential equations that already satisfy
    the differentiated form of the constraints (typically, acceleration
    constraints),
