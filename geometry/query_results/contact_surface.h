@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -9,8 +10,6 @@
 namespace drake {
 namespace geometry {
 
-template <class T>
-class ContactSurfaceFace;
 // TODO(DamrongGuoy): Move this documentation to QueryObject.
 /*
   The classes in this file collectively represent the contact surface Sₘₙ
@@ -56,127 +55,224 @@ class ContactSurfaceFace;
   with finer discretization.
  */
 
-/* Design factors (will change as we go).
-   1. Basic entities (vertex, triangle) are referenced by pointers instead of
-      indexes.
-      upside: Direct access to their attributes without tables/containers.
-              No need for continuous indexing in dynamic settings (adding +
-              removing).
-      downside: Serialization for writing data files to external visualization
-                package (unique id can help).
+/* Detailed decisions (will change as we go).
+   1. Basic entities (vertices, triangles) are referenced by integer indices
+      instead of pointers.
+      upside: Straightforward copy operations of meshes and field variables.
+              Serialization to write data files for visualization packages is
+              straightforward.
+              Useful for debugging, hashing, sorting (sorting pointers can
+              introduce repeatability problems).
+      downside: Integer index alone cannot access data directly; it needs
+                tables/containers to access data.
+                In dynamic settings(adding + removing), we need extra work to
+                maintain continuous indexing, or we need an extra indirection
+                to go from an arbitrary id to a continuous index.
 
-   2. Triangle-to-vertex topology.
-      upside: More compact, avoid duplication of vertex data.
-      downside: Construction is more involved (manageable using hash
-                tables)
+   2. Triangle-to-vertex connectivity (triangles share vertices).
+      upside: More compact, avoid duplication of vertex data, compared to
+              triangle soup.
+              Enable straightforward mapping from mesh to physical field
+              variables.
+      downside: Construction is more involved (manageable using hash tables)
+                to avoid "double count".
 
-   3. Vertex-to-triangle topology.
-      upside: Allow topology-based operations like averaging normal vectors
-              of all triangles sharing a vertex.
+   3. Vertex-to-triangle topology (not finalized yet)
+      upside: Allow topology-based operations like traversal and averaging
+              among all triangles sharing a vertex.
       downside: A vertex can have an arbitrary number of incident triangles.
-                Extra mapping data to maintain.
+                Extra data to maintain.
+                Not all applications need it.
+ */
 
-   4. Entity id or not.
-      upside: Useful for debugging, hashing, sorting (sorting id's is much
-              better than sorting pointers).
-      downside: Extra code to maintain unique id.
+/** Design concepts.
+ *
+ We roughly partition the data structures into domain discretization
+ (triangulated surface meshes) and the physical field variables (pressure, slip,
+ traction, etc.) defined on the domain, and the class ContactSurface combines
+ both of them together.  This design has motivation from Finite Element
+ representations.
+
+ The collection of classes that represent a triangulated surface mesh consist
+ of SurfaceVertex, SurfaceFace, and SurfaceMesh. The class that maps an
+ underlying surface mesh to a physical field is MeshField. Users can define
+ many MeshField's on the same SurfaceMesh.
+
+ MeshField have two storage traits: vertex data and face data. Most field
+ variables (e.g., pressure, slip, traction) are vertex data. In a few
+ cases (e.g., face normal vector, face area), they are face data.
+
+ ContactSurface has four built-in MeshField's: the scalar field e(), the
+ vector field grad_h_M(), the face normal vector nhat_M(), and the face area().
+ */
+
+//------------------------------------------------------------------------------
+/** @name                  Indexing in Contact Surfaces
+
+ We use indexing in communication between various parts of data structures.
+ For example, a triangular face identified by FaceIndex refers to its three
+ vertices via their VertexIndex.  We also use VertexIndex or FaceIndex to look
+ up field variables.
+
+ Currently we have two classes of indices: VertexIndex and FaceIndex. They
+ are suffice for linear elements. In the future, we may consider EdgeIndex,
+ which is useful for quadratic elements.
+ */
+// TODO(DamrongGuoy): Use type-safe index for VertexIndex and FaceIndex.
+/**
+ Index of a vertex in a contact surface. A triangular face identifies its
+ vertices using VertexIndex. We also use VertexIndex to look up a physical
+ field variable in MeshField. VertexIndex starts with 0.
+ */
+typedef int VertexIndex;
+/**
+ Index of a triangular face in a contact surface. We use FaceIndex to identify
+ a triangular face. FaceIndex starts with 0.
+ */
+typedef int FaceIndex;
+
+//------------------------------------------------------------------------------
+/** @name                       Field Variables
+
+ Conceptually a field variable is represented by an array of field values: one
+ value per one mesh entity. Currently we support two kinds of values: scalar
+ and 3-d vector. We also support two storage schemes: vertex data and face data.
+
+ Most field variables (e.g., pressure, slip, traction) are vertex data, which
+ stores one field value per one mesh vertex and allow interpolation on a
+ triangular face. A few cases (e.g., face normal vector, area of triangular
+ face) are face data, which stores one field value per one mesh face.
+
+ For vertex data, we use VertexIndex to look up the field value. For face
+ data, we use FaceIndex to look up the field value.
  */
 
  /**
-  %ContactSurfaceVertex represents a vertex v in the contact surface between
-  bodies M and N.  It provides:
-    - position `r_MV` of vertex v, expressed in M's frame,
-    - a scalar value `e` of a scalar field at v,
-    - a vector value `grad_h_M` of the vector field ∇hₘₙ at v, expressed in
-      M's frame.
-
-  @tparam T the underlying scalar type. Must be a valid Eigen scalar.
+  %MeshField represents the value of a field variable. We store one value per
+   one mesh entity (vertex or face).
+ * @tparam FieldValueType a valid Eigen scalar or vector.
+ * @tparam IndexType  VertexIndex or FaceIndex.
  */
-template <class T>
-class ContactSurfaceVertex {
+template <class FieldValueType, class IndexType>
+class MeshField {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactSurfaceVertex)
+  MeshField(const std::string& name,
+            const std::vector<FieldValueType>& values);
+  const FieldValueType& at(IndexType i) { return values_.at(i); }
 
-  ContactSurfaceVertex() = default;
+  // TODO(DamrongGuoy): Check array bound.
+  FieldValueType& operator[](IndexType i) { return values_[i]; }
+  void set(IndexType i, const FieldValueType& value) { values_[i] = value; }
+ private:
+  std::string name_;
+  std::vector<FieldValueType> values_;
+};
 
-  /** Constructs ContactSurfaceVertex.
-   @param r_MV      vertex position.
-   @param e         value of the scalar field at the vertex.
-   @param grad_h_M  value of the vector field at the vertex.
+//------------------------------------------------------------------------------
+/** @name                   Domain Discretization
+
+ We use triangulated surface meshes to represent our domains and mimic Finite
+ Element representations. Currently we only use the linear triangular element
+ (3-node triangle) with possible extension to the quadratic triangular element
+ (6-node triangle) in the future.
+
+ We provide a building block for interpolation on a triangular element. We
+ also provide conversion between Cartesian coordinates and barycentric
+ coordinates with respect to a triangular element.
+
+ A physical field variable is stored in a related class MeshField (see Field
+ Variables).
+ */
+
+/**
+ %SurfaceVertex represents a vertex v in the contact surface between
+ bodies M and N.  It provides:
+   1. the `index` of this vertex in the contact surface,
+   2. the position `r_MV` of this vertex, expressed in M's frame.
+
+ @tparam T the underlying scalar type. Must be a valid Eigen scalar.
+*/
+template <class T>
+class SurfaceVertex {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceVertex)
+
+  SurfaceVertex() = default;
+
+  /** Constructs SurfaceVertex.
+   @param index  vertex index in the contact surface.
+   @param r_MV   position of vertex v in M's frame.
    */
-  ContactSurfaceVertex(Vector3<T> r_MV, T e, Vector3<T> grad_h_M)
-  : r_MV_(r_MV), e_(e), grad_h_M_(grad_h_M) {
-  }
+  SurfaceVertex(VertexIndex index, const Vector3<T>& r_MV)
+      : index_(index), r_MV_(r_MV) {}
 
   // We provide API functions to read/write the values at the vertex, so
   // that, in the future, we can change the internal representation of vertex
   // data without affecting callers.
-  Vector3<T> r_MV() { return r_MV_; }
-  void set_r_MV(Vector3<T> r_MV) { r_MV_ = r_MV; }
-  T e() { return e_; }
-  void set_e(T e) { e_ = e; }
-  Vector3<T> grad_h_M() { return grad_h_M_; }
-  void set_grad_h_M(Vector3<T> grad_h_M) { grad_h_M_ = grad_h_M; }
-
+  VertexIndex index() const { return index_; }
+  void set_index(const VertexIndex& index) { index_ = index; }
+  const Vector3<T>& r_MV() const { return r_MV_; }
+  void set_r_MV(const Vector3<T>& r_MV) { r_MV_ = r_MV; }
 
   friend std::ostream& operator<<(std::ostream& os,
-                                 const ContactSurfaceVertex<T>& vertex) {
-    return os << "Contact surface vertex"
+                                  const SurfaceVertex<T>& vertex) {
+    return os << "Surface vertex"
+              << "\n  index() = " << vertex.index()
               << "\n  r_MV() = " << vertex.r_MV().transpose()
-              << "\n  e() = " << vertex.e()
-              << "\n  grad_h_M() = " << vertex.grad_h_M()
               << std::endl;
   }
 
  private:
-  /** Position of vertex v in M's frame. */
+  // Index of this vertex in the contact surface.
+  VertexIndex index_;
+  // Position of vertex v in M's frame.
   Vector3<T> r_MV_;
-  /** Scalar value at vertex v. */
-  T e_;
-  /** Vector value at vertex v, in M's frame. */
-  Vector3<T> grad_h_M_;
 };
 
-
 /*
-  %ContactSurfaceFace represents a triangle in the contact surface between
+  %SurfaceFace represents a triangle in the contact surface between
   bodies M and N. It provides:
-    - access to its three vertices,
-    - interpolation of field values of its vertices,
-    - unit normal vector in the direction of increasing scalar field eₘ of
-      body M, expressed in M's frame,
-    - area of the triangle,
-    - mapping between barycentric coordinates and Cartesian coordinates.
-
-  @tparam T the underlying scalar type. Must be a valid Eigen scalar.
+    1. the `index` of this face in the contact surface,
+    2. indices of its three vertices.
  */
-template <class T>
-class ContactSurfaceFace {
+class SurfaceFace {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactSurfaceFace)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceFace)
 
-  ContactSurfaceFace() = default;
+  SurfaceFace() = default;
 
   /** Constructs ContactSurfaceFace.
-   @param v0 the first vertex.
-   @param v1 the second vertex.
-   @param v2 the last vertex.
+   @param f  FaceIndex of this face.
+   @param v0 VertexIndex of the first vertex.
+   @param v1 VertexIndex of the second vertex.
+   @param v2 VertexIndex of the last vertex.
    @pre   The order of the three vertices gives the counterclockwise normal
           direction, i.e. (v1-v0)x(v2-v0), towards increasing eₘ the scalar
           field on body M.
    */
-  ContactSurfaceFace(ContactSurfaceVertex<T>* vertex_A,
-                     ContactSurfaceVertex<T>* vertex_B,
-                     ContactSurfaceVertex<T>* vertex_C);
-
-
-  ContactSurfaceVertex<T>* vertex_A();
-  ContactSurfaceVertex<T>* vertex_B();
-  ContactSurfaceVertex<T>* vertex_C();
+  SurfaceFace(FaceIndex f, VertexIndex v0, VertexIndex v1, VertexIndex v2)
+      : index_(f), v_({v0, v1, v2}) {}
 
   // @pre 0 <= i < 3
-  ContactSurfaceVertex<T>* vertex(int i);
+  VertexIndex vertex(int i) const { return v_[i]; }
 
+ protected:
+  // Index of this face in the contact surface.
+  FaceIndex index_;
+  // The vertices of this face.
+  std::array<VertexIndex, 3> v_;
+};
+
+/**
+- a building block for interpolation of field values,
+- unit normal vector in the direction of increasing scalar field eₘ of
+body M, expressed in M's frame,
+- area of the triangle,
+- mapping between barycentric coordinates and Cartesian coordinates.
+ */
+template <class T>
+class SurfaceMesh {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SurfaceMesh)
   // Converts between Cartesian coordinates r_MQ = (x,y,z) of a point q,
   // expressed in M's frame, to the barycentric coordinates b = (b0,b1,b2)
   // with respect to vertices v0, v1, v2 of this face of the contact surface,
@@ -186,14 +282,11 @@ class ContactSurfaceFace {
   // @note barycentric(cartesian(b)) = b; however,
   //       cartesian(barycentric(p)) = p if and only if p is on the plane
   //       of the triangle.
-  Vector3<T> barycentric(const Vector3<T>& r_MQ);
-  Vector3<T> cartesian(const Vector3<T>& barycentric);
+  Vector3<T> barycentric(FaceIndex f, const Vector3<T>& r_MQ);
+  Vector3<T> cartesian(FaceIndex f, const Vector3<T>& barycentric);
 
-  // Performs interpolation in barycentric coordinates.
-  // Linear interpolation from scalar values at vertices.
-  // Spherical linear interpolation from vector values at vertices.
-  T e(const Vector3<T>& barycentric);
-  Vector3<T> grad_h_M(const Vector3<T>& barycentric);
+  T interpolate(const MeshField<T, VertexIndex>& field, FaceIndex f,
+                const Vector3<T>& barycentric);
 
   // Returns the unit normal vector nhat_M to the triangle, expressed in M's
   // frame. The normal vector is oriented towards increasing eₘ the scalar
@@ -201,52 +294,56 @@ class ContactSurfaceFace {
   // @note   Due to discretization, nhat_M of this triangle and grad_h_M of
   //         its vertices are approximately parallel.  With finer
   //         discretization, they become more parallel.
-  Vector3<T> nhat_M();
+  Vector3<T> nhat_M(FaceIndex f) { return nhat_M_.at(f); }
 
   // Returns the area of this triangle.
-  T area();
+  T area(FaceIndex f) { return area_.at(f); }
 
-  // TODO(DamrongGuoy): Implement all the functions declare above.
+  const SurfaceVertex<T>& vertex(VertexIndex v) { return vertices_[v]; }
 
- protected:
-  // The vertices of the face.
-  ContactSurfaceVertex<T>* v_[3];
-  // The unit normal vector, computed on construction.
-  Vector3<T> nhat_M_;
-  // The area, computed on construction.
-  T area_;
+ private:
+  // Triangles comprising the surface.
+  std::vector<SurfaceFace> faces_;
+  // Shared vertices of the triangles.
+  std::vector<SurfaceVertex<T>> vertices_;
+
+  MeshField<T, FaceIndex> area_;
+  MeshField<Vector3<T>, FaceIndex> nhat_M_;
 };
 
-/// The contact surface computed by the geometry system.
-
+//@tparam T the underlying scalar type. Must be a valid Eigen scalar.
 template <class T>
 class ContactSurface {
  public:
-  typedef ContactSurfaceFace<T> FaceType;
-  typedef ContactSurfaceVertex<T> VertexType;
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactSurface)
 
-  const std::vector<FaceType>& triangles() const { return faces_; }
-  const std::vector<VertexType>& vertices() const { return vertices_; }
-  GeometryId id_A() const { return id_A_; }
-  GeometryId id_B() const { return id_B_; }
+  GeometryId id_M() const { return id_M_; }
+  GeometryId id_N() const { return id_N_; }
+
+  // Linear interpolation of scalar field e()
+  T e(FaceIndex f, const Vector3<T>& barycentric);
+  // Spherical linear interpolation from vector field grad_h_M()
+  Vector3<T> grad_h_M(FaceIndex f, const Vector3<T>& barycentric);
+
+  Vector3<T> nhat_M(FaceIndex f) { return mesh_.nhat_M(f); }
+  T area(FaceIndex f) { return mesh_.area(f); }
+
+  const SurfaceVertex<T>& vertex(VertexIndex v) { return mesh_.vertex(v); }
 
  private:
   /// The id of the first geometry in the contact.
-  GeometryId id_A_;
+  GeometryId id_M_;
   /// The id of the second geometry in the contact.
-  GeometryId id_B_;
-  /// Triangles comprising the contact surface.
-  std::vector<FaceType> faces_;
-  // Vertices of the contact surface.
-  std::vector<VertexType> vertices_;
+  GeometryId id_N_;
+
+  SurfaceMesh<T> mesh_;
+  // Scalar field `e` at vertex v.
+  MeshField<T, VertexIndex> e_;
+  // Vector field ∇hₘₙ at vertex v, expressed in M's frame.
+  MeshField<Vector3<T>, VertexIndex> grad_h_M_;
 };
 
-//  template <class FaceType>
-//  class ContactSurfaceType {
-//  };
-//  template <class T>
-//  using ContactSurface = ContactSurfaceType<ContactSurfaceFace<T>>;
+using ContactSurfaced = ContactSurface<double>;
 
 }  // namespace geometry
 }  // namespace drake
