@@ -310,7 +310,16 @@ class SurfaceMesh {
   MeshField<Vector3<T>, FaceIndex> nhat_M_;
 };
 
-//@tparam T the underlying scalar type. Must be a valid Eigen scalar.
+/** A characterization of the intersection of two penetrating geometries M
+ and N as a contact surface with a scalar field and a vector field. The
+ surface is represented as a triangulated surface with vertex's positions
+ expressed in M's frame. The scalar field e() defined on the contact surface
+ is related to the equilibrium pressure distribution e = eₘ = eₙ between M
+ and N. The vector field grad_h_M(), expressed in M's frame, defined on the
+ contact surface is the pressure differential grad_h_M = ∇hₘₙ = ∇eₘ - ∇eₙ
+
+ @tparam T the underlying scalar type. Must be a valid Eigen scalar.
+ */
 template <class T>
 class ContactSurface {
  public:
