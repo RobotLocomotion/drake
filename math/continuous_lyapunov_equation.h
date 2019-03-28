@@ -40,6 +40,13 @@ namespace math {
  * If A is larger than 2-by-2, then a Schur factorization is performed.
  * @throw std::runtime_error if Schur factorization failed.
  *
+ * A tolerance of ε is used to check if a double variable is equal to zero,
+ * where the default value for ε is 1e-10. It has been used to check (1) if λᵢ +
+ * λ̅ⱼ = 0, ∀ i,j; (2) if A is a 1-by-1 zero matrix; (3) if A's trace or
+ * determinant is 0 when A is a 2-by-2 matrix.
+ *
+ * TODO(weiqiao.han): figure out what the tolerance ε ought to be.
+ *
  * [1] Bartels, R.H. and G.W. Stewart, "Solution of the Matrix Equation AX + XB
  * = C," Comm. of the ACM, Vol. 15, No. 9, 1972.
  *

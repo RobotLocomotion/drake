@@ -67,7 +67,7 @@ GTEST_TEST(RealContinuousLyapunovEquation, ThrowEigenValuesATest) {
   // This tests if an exception is thrown if the eigenvalues violate this
   // requirement.
   int n{2};
-  // complex pair which adds to zero
+  // complex pair of eigenvalues that adds to zero
   MatrixXd A1(n, n);
   A1 << 0, 1, -1, 0;
   // 0 eigenvalue

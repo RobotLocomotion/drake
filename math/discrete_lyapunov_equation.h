@@ -40,6 +40,12 @@ namespace math {
  * If A is larger than 2-by-2, then a Schur factorization is performed.
  * @throws std::runtime_error if Schur factorization fails.
  *
+ * A tolerance of ε is used to check if a double variable is equal to zero,
+ * where the default value for ε is 1e-10. It has been used to check (1) if λᵢ =
+ * ±1 ∀ i; (2) if λᵢ * λⱼ = 1, i ≠ j.
+ *
+ * TODO(weiqiao.han): figure out what the tolerance ε ought to be.
+ *
  * [1]  Barraud, A.Y., "A numerical algorithm to solve AᵀXA - X = Q," IEEE®
  * Trans. Auto. Contr., AC-22, pp. 883-885, 1977.
  *

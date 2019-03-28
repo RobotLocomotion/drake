@@ -68,16 +68,16 @@ GTEST_TEST(RealDiscreteLyapunovEquation, ThrowEigenValuesATest) {
   // This tests if an exception is thrown if the eigenvalues violate this
   // requirement.
   const int n{3};
-  // pair which multiplies to 1
+  // pair of eigenvalues that multiplies to 1
   MatrixXd A1(n, n);
   A1 << 1, 0, 0, 0, 1, 0, 0, 0, 1;
-  // pair which multiplies to i, i.e should not throw
+  // pairs of eigenvalues that multiply to ±i, i.e should not throw
   MatrixXd A2(n, n);
-  A2 << 0.5, 0, 0, 0, 0, 0.5, 0, -0.5, 0;
-  // pair whose product is within tol of 1
+  A2 << 0.5, 0, 0, 0, 0, 2.0, 0, -2.0, 0;
+  // pair of eigenvalues whose product is within tol of 1
   MatrixXd A3(n, n);
   A3 << 1 + 1e-6, 0, 0, 0, 0.5, 0, 0, 0, 1 - 1e-6;
-  // no pair whose product is within tol of 1
+  // no pair of eigenvalues whose product is within tol of 1
   MatrixXd A4(n, n);
   A4 << 1 + 1e-6, 0, 0, 0, 1 + 1e-6, 0, 0, 0, 1 + 1e-6;
   MatrixXd Q(n, n);
