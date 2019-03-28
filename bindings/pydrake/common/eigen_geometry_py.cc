@@ -157,20 +157,13 @@ PYBIND11_MODULE(eigen_geometry, m) {
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; },
             py::arg("other"))
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; },
-            py::arg("other"))
         .def("multiply",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
             py::arg("position"))
-        .def("__matmul__",
-            [](const Class& self, const Vector3<T>& position) {
-              return self * position;
-            },
-            py::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); });
+    cls.attr("__matmul__") = cls.attr("multiply");
     py::implicitly_convertible<Matrix4<T>, Class>();
     DefCopyAndDeepCopy(&cls);
   }
@@ -253,20 +246,14 @@ PYBIND11_MODULE(eigen_geometry, m) {
             })
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; })
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; })
         .def("multiply",
-            [](const Class& self, const Vector3<T>& position) {
-              return self * position;
-            },
-            py::arg("position"))
-        .def("__matmul__",
             [](const Class& self, const Vector3<T>& position) {
               return self * position;
             },
             py::arg("position"))
         .def("inverse", [](const Class* self) { return self->inverse(); })
         .def("conjugate", [](const Class* self) { return self->conjugate(); });
+    cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -342,9 +329,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
             })
         .def("multiply",
             [](const Class& self, const Class& other) { return self * other; })
-        .def("__matmul__",
-            [](const Class& self, const Class& other) { return self * other; })
         .def("inverse", [](const Class* self) { return self->inverse(); });
+    cls.attr("__matmul__") = cls.attr("multiply");
     DefCopyAndDeepCopy(&cls);
   }
 }
