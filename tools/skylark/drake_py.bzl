@@ -188,6 +188,7 @@ def drake_py_test(
         deps = None,
         isolate = True,
         allow_import_unittest = False,
+        tags = [],
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -217,6 +218,8 @@ def drake_py_test(
         deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
+    if "py" not in tags:
+        tags = tags + ["py"]
     _py_target_isolated(
         name = name,
         py_target = native.py_test,
@@ -224,6 +227,7 @@ def drake_py_test(
         size = size,
         srcs = srcs,
         deps = deps,
+        tags = tags,
         **kwargs
     )
 
