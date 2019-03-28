@@ -24,6 +24,7 @@
 // Define systems here so that we can control the order in which they appear
 /// @addtogroup systems
 /// @{
+///   @defgroup terminology_and_notation Terminology and Notation
 ///   @defgroup primitive_systems Primitives
 ///   @defgroup control_systems Controllers
 ///   @defgroup estimator_systems Estimators

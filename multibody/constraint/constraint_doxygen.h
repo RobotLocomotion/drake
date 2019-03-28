@@ -1,4 +1,4 @@
-/** @addtogroup constraint_overview
+/** @defgroup constraint_overview Multibody dynamics constraints
     @ingroup multibody
 
 This documentation describes the types of multibody constraints supported in

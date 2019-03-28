@@ -7,9 +7,8 @@
 
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody Multibody Dynamics
-@{
-    @ingroup algorithms
+/** @addtogroup terminology_and_notation
+    @ingroup systems
 
 Translating from the mathematics of multibody mechanics to correct code is a
 difficult process and requires careful discipline to ensure that the resulting
@@ -34,31 +33,6 @@ source code used to generate it (for example, ASCII drawings instead of image
 files, simple Markdown tables rather than fancy-but-unreadable html ones).
 However, much of this can be useful to users of the Drake API also so it
 is included in the external documentation.
-
-@warning Drake is under development and these concepts have not yet been
-adopted consistently throughout the code. New code uses these concepts and
-older code will be retrofitted over time. The documentation here applies to
-the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
-@ref drake::multibody::MultibodyPlant "MultibodyPlant"
-family of classes; there are some differences from the earlier `RigidBodyTree`
-family.
-
-<em><b>Developers</b>: you can link directly to specific discussion topics here
-from your Doxygen comments; instructions are at the top of the source file used
-to generate them.</em>
-
-Next topic: @ref multibody_notation
-
-  @defgroup multibody_notation Terminology and Notation
-  @defgroup multibody_spatial_algebra Spatial Algebra
-  @defgroup constraint_overview Multibody dynamics constraints
-@}
-*/
-
-
-//------------------------------------------------------------------------------
-/** @addtogroup multibody_notation
-@ingroup multibody
 
 Drake uses consistent terminology and notation for multibody mechanics
 - for clear communication among Drake programmers and users,
@@ -105,6 +79,18 @@ a typeset font like @f$A@f$ (which appears in the source as @c \@f\$A\@f\$),
 but then refer in the text to A (source: just @c A) using the
 default font that is much easier to write and to read in the source.
 
+@warning Drake is under development and these concepts have not yet been
+adopted consistently throughout the code. New code uses these concepts and
+older code will be retrofitted over time. The documentation here applies to
+the new @ref drake::multibody::MultibodyTree "MultibodyTree "/
+@ref drake::multibody::MultibodyPlant "MultibodyPlant"
+family of classes; there are some differences from the earlier `RigidBodyTree`
+family.
+
+<em><b>Developers</b>: you can link directly to specific discussion topics here
+from your Doxygen comments; instructions are at the top of the source file used
+to generate them.</em>
+
 Next topic: @ref multibody_notation_basics
 */
 
@@ -115,7 +101,7 @@ Next topic: @ref multibody_notation_basics
 // code comments if you can express the same thing in a more readable way!
 
 /** @defgroup multibody_notation_basics Notation Basics
-@ingroup multibody_notation
+@ingroup terminology_and_notation
 
 We are interested in representing physical quantities like position,
 orientation, inertia, and spatial velocity. For discussion here, let @f$Q@f$
@@ -201,7 +187,7 @@ Next topic: @ref multibody_frames_and_bodies
 */
 
 /** @defgroup multibody_frames_and_bodies Frames and Bodies
-@ingroup multibody_notation
+@ingroup terminology_and_notation
 
 The most fundamental object in multibody mechanics is the _coordinate frame_, or
 just _frame_. Unless specified otherwise, all frames we use are right-handed
@@ -288,7 +274,7 @@ Next topic: @ref multibody_quantities
 */
 
 /** @defgroup multibody_quantities Multibody Quantities
-@ingroup multibody_notation
+@ingroup terminology_and_notation
 
 Quantities of interest in multibody dynamics have distinct types. For example,
 a rotation matrix is denoted with `R` and a position vector with `p`. New
@@ -389,7 +375,7 @@ Next topic: @ref Dt_multibody_quantities
 
 //------------------------------------------------------------------------------
 /** @defgroup Dt_multibody_quantities Time Derivatives of Multibody Quantities
-@ingroup multibody_notation
+@ingroup terminology_and_notation
 
 <b>Scalar quantities</b>: The ordinary first time-derivative of the scalar x is
  denoted xdot or xDt whereas the ordinary second time-derivative of x is denoted
@@ -439,8 +425,8 @@ Next topic: @ref multibody_spatial_algebra
 */
 
 //------------------------------------------------------------------------------
-/** @addtogroup multibody_spatial_algebra
-@ingroup multibody
+/** @defgroup multibody_spatial_algebra Spatial Algebra
+@ingroup terminology_and_notation
 
 Multibody dynamics involves both rotational and translational quantities, for
 motion, forces, and mass properties. It is much more effective to group
