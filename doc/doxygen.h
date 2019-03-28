@@ -40,8 +40,19 @@ only updated nightly.</p>
 /**
   @defgroup solvers Formulating and Solving Optimization Problems
   @defgroup systems Modeling Dynamical Systems
+  @defgroup multibody Multibody Kinematics and Dynamics
   @defgroup algorithms Algorithms
   @defgroup technical_notes Technical Notes
+*/
+
+/**
+  @defgroup multibody_notation Terminology and Notation
+  @ingroup multibody
+*/
+
+/**
+  @defgroup constraint_overview Multibody Dynamics Constraints
+  @ingroup multibody
 */
 
 // TODO(russt): Take a thorough pass through the algorithms group
@@ -49,7 +60,6 @@ only updated nightly.</p>
 // algorithms throughout the code.
 /** @addtogroup algorithms
  @{
-   @defgroup multibody Multibody Dynamics
    @defgroup simulation Simulation
    @defgroup analysis Analysis
    @defgroup planning Planning
