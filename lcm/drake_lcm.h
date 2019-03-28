@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <memory>
 #include <string>
 
@@ -8,7 +7,6 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
-#include "drake/lcm/lcm_receive_thread.h"
 
 namespace drake {
 namespace lcm {
@@ -37,38 +35,40 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   ~DrakeLcm() override;
 
-   /**
-   * Starts the receive thread. This must be called for subscribers to receive
-   * any messages.
+  /**
+   * (Advanced.) Starts the receive thread.  Either HandleSubscriptions() xor
+   * this method must be called for subscribers to receive any messages.
+   *
+   * @warning Almost no Drake uses of LCM should require a background thread.
+   * Please use HandleSubscriptions() instead.
    *
    * @pre StartReceiveThread() was not called.
    */
   void StartReceiveThread();
 
   /**
-   * Stops the receive thread. This must be called prior to any subscribers
-   * being destroyed. Note that the receive thread will be automatically stopped
-   * by this class's destructor, so usage of this method will be extremely rare.
-   * It will only be needed if this class's instance and the subscribers to LCM
-   * channels are owned by different classes. In such a scenario, this method
-   * can be used to ensure the receive thread is destroyed before the
-   * subscribers are destroyed.
+   * (Advanced.) Stops the receive thread. This must be called prior to any
+   * subscribers being destroyed.
+   *
+   * @warning Almost no Drake uses of LCM should require a background thread.
+   * Please use HandleSubscriptions() instead.
    *
    * @pre StartReceiveThread() was called.
    */
   void StopReceiveThread();
 
   /**
-   * Indicates that the receiving thread is running.
+   * (Advanced.) Indicates that the receiving thread is running.
+   *
+   * @warning Almost no Drake uses of LCM should require a background thread.
+   * Please use HandleSubscriptions() instead.
    */
-  bool IsReceiveThreadRunning() const {
-    return receive_thread_ != nullptr;
-  }
+  bool IsReceiveThreadRunning() const;
 
   /**
-   * An accessor to the real LCM instance encapsulated by this object. The
-   * returned pointer is guaranteed to be valid for the duration of this
-   * object's lifetime.
+   * (Advanced.) An accessor to the underlying LCM instance. The returned
+   * pointer is guaranteed to be valid for the duration of this object's
+   * lifetime.
    */
   ::lcm::LCM* get_lcm_instance();
 
@@ -77,16 +77,19 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   std::string get_requested_lcm_url() const;
 
-  void Publish(const std::string& channel, const void* data,
-               int data_size, optional<double> time_sec) override;
+  /**
+   * Returns the LCM URL.
+   */
+  std::string get_lcm_url() const;
 
-  void Subscribe(const std::string&, HandlerFunction) override;
+  void Publish(const std::string&, const void*, int, optional<double>) override;
+  std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
+      const std::string&, HandlerFunction) override;
+  int HandleSubscriptions(int) override;
 
  private:
-  std::string requested_lcm_url_;
-  ::lcm::LCM lcm_;
-  std::unique_ptr<LcmReceiveThread> receive_thread_{nullptr};
-  std::list<HandlerFunction> handlers_;
+  class Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace lcm

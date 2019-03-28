@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "lcm/lcm-cpp.hpp"
 #include "nlohmann/json.hpp"
 
 #include "drake/lcmt_viewer2_comms.hpp"
