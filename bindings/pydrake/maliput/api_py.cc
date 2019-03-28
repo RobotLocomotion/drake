@@ -5,6 +5,7 @@
 #include "drake/automotive/maliput/api/lane.h"
 #include "drake/automotive/maliput/api/lane_data.h"
 #include "drake/automotive/maliput/api/road_geometry.h"
+#include "drake/automotive/maliput/api/road_network.h"
 #include "drake/automotive/maliput/api/segment.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -57,6 +58,10 @@ PYBIND11_MODULE(api, m) {
       .def(
           "quat", &Rotation::quat, py_reference_internal, doc.Rotation.quat.doc)
       .def("rpy", &Rotation::rpy, doc.Rotation.rpy.doc);
+
+  py::class_<RoadNetwork>(m, "RoadNetwork", doc.RoadNetwork.doc)
+      .def("road_geometry", &RoadNetwork::road_geometry,
+          doc.RoadNetwork.road_geometry.doc);
 
   py::class_<RoadGeometry>(m, "RoadGeometry", doc.RoadGeometry.doc)
       .def("num_junctions", &RoadGeometry::num_junctions,
