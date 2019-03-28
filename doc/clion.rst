@@ -27,14 +27,19 @@ Installing CLion
 
 The most recent versions that we have tested for compatibility are:
   - Ubuntu 16.04
-  - Bazel 0.21.0
-  - CLion 2018.2.7 with:
+  - Bazel 0.23.1
+  - CLion 2018.3.4 (January 31, 2019) with:
 
-    - Bazel plug-in 2018.12.03.0.2.
+    - Bazel Plugin 2019.01.14.0.5.
 
 Many versions the above (Bazel / CLion / plug-in) are *not* compatible with
 each other.  We strongly suggest using only the versions shown above, when
 working with Drake.
+
+At the time of this writing, CLion 2018.3.4 will install
+Bazel Plugin 2019.03.04, which has a problem with "Run/Debug..."
+("Run/Run..." is fine). We have to downgrade Bazel Plugin to 2019.01.14.
+See "Downgrading the Bazel Plugin" below.
 
 For developers on macOS, see the :ref:`macOS` details.
 
@@ -67,6 +72,17 @@ Open ``Settings > Bazel Settings``.  For ``Bazel binary location`` select the
 path to ``drake/tools/clion/bazel_wrapper`` from any recent Drake source tree
 (it doesn't have to match the current project open in CLion).
 
+Downgrading the Bazel Plugin
+----------------------------
+These instructions were tested with CLion 2018.3.4.
+1. Download the older version of Bazel Plugin from JetBrains web page
+   to get the file ijwb_bazel.zip.
+2. ``Install Plugin from Disk...`` by:
+2.1 ``File > Settings``.
+2.2 Select ``Plugins``.
+2.3 Click on the ``gear`` icon to get a pop-up menu.
+2.4 Select ``Install Plugin from Disk...`` and then choose the
+    file ijwb_bazel.zip.
 
 Setting up Drake in CLion
 -------------------------
