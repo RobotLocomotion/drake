@@ -138,8 +138,8 @@ class QuadrotorTest: public ::testing::Test {
     ge_simulator_->Initialize();
     rb_simulator_->Initialize();
 
-    ge_simulator_->StepTo(t);
-    rb_simulator_->StepTo(t);
+    ge_simulator_->AdvanceTo(t);
+    rb_simulator_->AdvanceTo(t);
   }
 
   VectorX<double> GetState(systems::Simulator<double> *simulator) {

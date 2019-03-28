@@ -13,26 +13,51 @@
 namespace drake {
 namespace systems {
 
-/// A ZeroOrderHold block with input `u`, which may be vector-valued (discrete
-/// or continuous) or abstract, and discrete output `y`, where the y is sampled
+/// A zero order hold block with input u, which may be vector-valued (discrete
+/// or continuous) or abstract, and discrete output y, where the y is sampled
 /// from u with a fixed period.
-/// @note For an abstract-valued ZeroOrderHold, transmografication is not
-/// supported since AbstractValue does not support it.
+///
+/// @system{ZeroOrderHold, @input_port{u}, @output_port{y}}
+///
+/// The discrete state space dynamics of %ZeroOrderHold is:
+/// ```
+///   xₙ₊₁ = uₙ     // update
+///   yₙ   = xₙ     // output
+///   x₀   = xᵢₙᵢₜ  // initialize
+/// ```
+/// where xᵢₙᵢₜ = 0 for vector-valued %ZeroOrderHold, and xᵢₙᵢₜ is a given
+/// value for abstract-valued %ZeroOrderHold.
+///
+/// See @ref discrete_systems "Discrete Systems" for general information about
+/// discrete systems in Drake, including how they interact with continuous
+/// systems.
+///
+/// @note This system uses a periodic update with zero offset, so the first
+///       update occurs at t=0. When used with a Simulator, the output port
+///       is equal to xᵢₙᵢₜ after simulator.Initialize(), but is immediately
+///       updated to u₀ at the start of the first step. If you want to force
+///       that initial update, use simulator.AdvanceTo(0.).
+///
+/// @note For an abstract-valued ZeroOrderHold, scalar-type conversion is not
+///       supported since AbstractValue does not support it.
+///
 /// @ingroup primitive_systems
 template <typename T>
 class ZeroOrderHold final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ZeroOrderHold)
 
-  /// Constructs a ZeroOrderHold system with the given @p period_sec, over a
+  /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
   /// vector-valued input of size `vector_size`. The default initial
-  /// value for this system will be zero.
+  /// value for this system will be zero. The offset is always zero, meaning
+  /// that the first update occurs at t=0.
   ZeroOrderHold(double period_sec, int vector_size)
       : ZeroOrderHold(period_sec, vector_size, nullptr) {}
 
-  /// Constructs a ZeroOrderHold system with the given @p period_sec, over a
+  /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
   /// abstract-valued input `abstract_model_value`. The default initial value
-  /// for this system will be `abstract_model_value`.
+  /// for this system will be `abstract_model_value`. The offset is always
+  /// zero, meaning that the first update occurs at t=0.
   ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value)
       : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone()) {}
 
@@ -48,16 +73,21 @@ class ZeroOrderHold final : public LeafSystem<T> {
     return LeafSystem<T>::get_input_port(0);
   }
 
-  // Don't use the indexed get_input_port when calling this system directly.
-  void get_input_port(int) = delete;
-
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {
     return LeafSystem<T>::get_output_port(0);
   }
 
-  // Don't use the indexed get_output_port when calling this system directly.
-  void get_output_port(int) = delete;
+  /// (Advanced) Manually sample the input port and copy ("latch") the value
+  /// into the state. This emulates an update event and is mostly useful for
+  /// testing.
+  void LatchInputPortToState(Context<T>* context) const {
+    if (is_abstract()) {
+      LatchInputAbstractValueToState(*context, &context->get_mutable_state());
+    } else {
+      LatchInputVectorToState(*context, &context->get_mutable_discrete_state());
+    }
+  }
 
  private:
   // Allow different specializations to access each other's private data.
@@ -73,26 +103,25 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
   // Sets the output port value to the vector value that is currently
   // latched in the zero-order hold.
-  void DoCalcVectorOutput(
+  void CopyLatchedVector(
       const Context<T>& context,
       BasicVector<T>* output) const;
 
   // Latches the input port into the discrete vector-valued state.
-  void DoCalcDiscreteVariableUpdates(
+  void LatchInputVectorToState(
       const Context<T>& context,
-      const std::vector<const DiscreteUpdateEvent<T>*>& events,
-      DiscreteValues<T>* discrete_state) const final;
+      DiscreteValues<T>* discrete_state) const;
 
-  // Same as `DoCalcVectorOutput`, but for abstract values.
-  void DoCalcAbstractOutput(
+  // Sets the output port value to the abstract value that is currently
+  // latched in the zero-order hold.
+  void CopyLatchedAbstractValue(
       const Context<T>& context,
       AbstractValue* output) const;
 
-  // Same as `DoCalcDiscreteVariablesUpdate`, but for abstract values.
-  void DoCalcUnrestrictedUpdate(
+  // Latches the abstract input port into the abstract-valued state.
+  void LatchInputAbstractValueToState(
       const Context<T>& context,
-      const std::vector<const UnrestrictedUpdateEvent<T>*>& events,
-      State<T>* state) const final;
+      State<T>* state) const;
 
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
@@ -112,27 +141,33 @@ ZeroOrderHold<T>::ZeroOrderHold(
     // TODO(david-german-tri): remove the size parameter from the constructor
     // once #3109 supporting automatic sizes is resolved.
     BasicVector<T> model_value(vector_size);
-    this->DeclareVectorInputPort(model_value);
-    this->DeclareVectorOutputPort(
-        model_value, &ZeroOrderHold::DoCalcVectorOutput);
+    this->DeclareVectorInputPort("u", model_value);
+    this->DeclareVectorOutputPort("y",
+        model_value, &ZeroOrderHold::CopyLatchedVector);
     this->DeclareDiscreteState(vector_size);
-    this->DeclarePeriodicDiscreteUpdate(period_sec_);
+    this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, 0.,
+        &ZeroOrderHold::LatchInputVectorToState);
   } else {
     DRAKE_DEMAND(vector_size == -1);
     // TODO(eric.cousineau): Remove value parameter from the constructor once
     // the equivalent of #3109 for abstract values is also resolved.
-    this->DeclareAbstractInputPort(*abstract_model_value_);
-    // Use the std::function<> overloads to work with `AbstractValue` type
-    // directly and maintain type erasure.
-    auto abstract_value_allocator = [this]() {
-      return abstract_model_value_->Clone();
-    };
-    namespace sp = std::placeholders;
-    this->DeclareAbstractOutputPort(
-        abstract_value_allocator,
-        std::bind(&ZeroOrderHold::DoCalcAbstractOutput, this, sp::_1, sp::_2));
+    this->DeclareAbstractInputPort("u", *abstract_model_value_);
+
+    // Because we're working with type-erased AbstractValue objects directly
+    // (not typical), there isn't a nice sugar method available that takes
+    // class methods. We have to use the generic port declaration method that
+    // uses free functions.
+    this->DeclareAbstractOutputPort("y",
+        // Allocator function.
+        [this]() { return abstract_model_value_->Clone(); },
+        // Calculator function.
+        [this](const Context<T>& context, AbstractValue* output) {
+          this->CopyLatchedAbstractValue(context, &*output);
+        });
+
     this->DeclareAbstractState(abstract_model_value_->Clone());
-    this->DeclarePeriodicUnrestrictedUpdate(period_sec_, 0.);
+    this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
+        &ZeroOrderHold::LatchInputAbstractValueToState);
   }
 }
 
@@ -145,7 +180,7 @@ ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
                                         : nullptr) {}
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcVectorOutput(
+void ZeroOrderHold<T>::CopyLatchedVector(
       const Context<T>& context,
       BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());
@@ -154,9 +189,8 @@ void ZeroOrderHold<T>::DoCalcVectorOutput(
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
+void ZeroOrderHold<T>::LatchInputVectorToState(
     const Context<T>& context,
-    const std::vector<const DiscreteUpdateEvent<T>*>&,
     DiscreteValues<T>* discrete_state) const {
   DRAKE_ASSERT(!is_abstract());
   const auto& input = get_input_port().Eval(context);
@@ -165,25 +199,19 @@ void ZeroOrderHold<T>::DoCalcDiscreteVariableUpdates(
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcAbstractOutput(const Context<T>& context,
-                                            AbstractValue* output) const {
+void ZeroOrderHold<T>::CopyLatchedAbstractValue(const Context<T>& context,
+                                                AbstractValue* output) const {
   DRAKE_ASSERT(is_abstract());
-  // Do not use `get_abstract_state<AbstractValue>` since it would cast
-  // the value to `Value<AbstractValue>`, which is an invalid type by design.
-  const AbstractValue& state_value =
-      context.get_abstract_state().get_value(0);
+  const AbstractValue& state_value = context.get_abstract_state().get_value(0);
   output->SetFrom(state_value);
 }
 
 template <typename T>
-void ZeroOrderHold<T>::DoCalcUnrestrictedUpdate(
+void ZeroOrderHold<T>::LatchInputAbstractValueToState(
     const Context<T>& context,
-    const std::vector<const UnrestrictedUpdateEvent<T>*>&,
     State<T>* state) const {
   DRAKE_ASSERT(is_abstract());
   const auto& input = get_input_port().template Eval<AbstractValue>(context);
-  // See `DoCalcAbstractOutput` for rationale regarding non-templated value
-  // accessor.
   AbstractValue& state_value =
       state->get_mutable_abstract_state().get_mutable_value(0);
   state_value.SetFrom(input);

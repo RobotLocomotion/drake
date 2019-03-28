@@ -6,6 +6,10 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
@@ -16,24 +20,21 @@ drake_cc_library(
     hdrs = ["van_der_pol.h"],
     visibility = ["//visibility:public"],
     deps = [
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
         "//systems/framework:system_constraint",
         "//systems/framework:vector",
+        "//systems/primitives:signal_logger",
     ],
 )
 
-drake_cc_binary(
+drake_py_binary(
     name = "plot_limit_cycle",
-    testonly = 1,
-    srcs = ["plot_limit_cycle.cc"],
+    srcs = ["plot_limit_cycle.py"],
     add_test_rule = 1,
     deps = [
-        "van_der_pol",
-        "//common:is_approx_equal_abstol",
-        "//common/proto:call_matlab",
-        "//systems/analysis:simulator",
-        "//systems/framework",
-        "//systems/primitives:signal_logger",
+        "//bindings/pydrake",
     ],
 )
 

@@ -53,7 +53,7 @@ int DoMain() {
 
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(10);
+  simulator.AdvanceTo(10);
 
   const double final_energy = pendulum->CalcTotalEnergy(pendulum_context);
 

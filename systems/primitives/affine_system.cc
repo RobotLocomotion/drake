@@ -34,7 +34,6 @@ TimeVaryingAffineSystem<T>::TimeVaryingAffineSystem(
   if (time_period_ == 0.0) {
     this->DeclareContinuousState(num_states_);
   } else {
-    this->DeclareContinuousState(0);
     this->DeclareDiscreteState(num_states_);
     this->DeclarePeriodicDiscreteUpdate(time_period_, 0.0);
   }

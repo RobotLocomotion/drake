@@ -66,7 +66,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   toe = 0.0;
   double_support = false;
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.0);
   // Should have taken one step forward.
@@ -87,7 +87,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
   state.set_thetadot(state.thetadot() + 0.2);
   double initial_energy = rw.CalcTotalEnergy(context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.0);
   // Should have taken one step forward.
@@ -103,7 +103,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   set_thetadot_to_achieve_energy(rw, steady_state_energy, &context);
   state.set_thetadot(state.thetadot() - 0.2);
   initial_energy = rw.CalcTotalEnergy(context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_LT(state.theta(), 0.);
   // Should have taken one step forward.
@@ -119,7 +119,7 @@ GTEST_TEST(RimlessWheelTest, StepTest) {
   toe = 0.0;
   double_support = false;
   initial_energy = rw.CalcTotalEnergy(context);
-  simulator.StepTo(.2);
+  simulator.AdvanceTo(.2);
   // Theta should now be on the other side of zero.
   EXPECT_GT(state.theta(), 0.);
   // Should have taken one step backward.
@@ -156,7 +156,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   state.set_thetadot(0.0);
   toe = 0.0;
   double_support = false;
-  simulator.StepTo(0.2);
+  simulator.AdvanceTo(0.2);
   EXPECT_TRUE(double_support);
   EXPECT_NEAR(std::abs(state.theta() - params.slope()), alpha, 1e-8);
   EXPECT_EQ(state.thetadot(), 0.0);
@@ -167,7 +167,7 @@ GTEST_TEST(RimlessWheelTest, FixedPointTest) {
   state.set_thetadot(0.0);
   toe = 0.0;
   double_support = false;
-  simulator.StepTo(0.2);
+  simulator.AdvanceTo(0.2);
   EXPECT_TRUE(double_support);
   EXPECT_NEAR(std::abs(state.theta() - params.slope()), alpha, 1e-8);
   EXPECT_EQ(state.thetadot(), 0.0);

@@ -317,6 +317,15 @@ const auto py_reference = py::return_value_policy::reference;
 /// implies "Keep alive, reference: `return` keeps` self` alive".
 const auto py_reference_internal = py::return_value_policy::reference_internal;
 
+/// Use this when you must do manual casting - e.g. lists or tuples of nurses,
+/// where the container may get discarded but the items kept. Prefer this over
+/// `py::cast(obj, reference_internal, parent)` (pending full resolution of
+/// #11046).
+inline py::object py_keep_alive(py::object nurse, py::object patient) {
+  py::detail::keep_alive_impl(nurse, patient);
+  return nurse;
+}
+
 // Implementation for `overload_cast_explicit`. We must use this structure so
 // that we can constrain what is inferred. Otherwise, the ambiguity confuses
 // the compiler.

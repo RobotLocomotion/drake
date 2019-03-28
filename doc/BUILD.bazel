@@ -17,7 +17,6 @@ drake_py_binary(
 drake_py_library(
     name = "sphinx_base",
     srcs = ["sphinx_base.py"],
-    imports = ["."],
     deps = [":sphinx_build"],
 )
 
@@ -31,6 +30,8 @@ drake_py_binary(
         "conf.py",
         "images/favicon.ico",
         "images/logo_w_text.jpg",
+        "images/mathematical_program.svg",
+        "images/systems.svg",
         "images/doxygen_instructions/visual_studio_build_targets.png",
         "sample_vimrc",
     ],

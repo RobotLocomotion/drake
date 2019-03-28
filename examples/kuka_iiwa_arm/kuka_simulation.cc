@@ -205,7 +205,7 @@ int DoMain() {
       VectorX<double>::Zero(tree.get_num_positions()));
 
   // Simulate for a very long time.
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
   lcm.StopReceiveThread();
   return 0;

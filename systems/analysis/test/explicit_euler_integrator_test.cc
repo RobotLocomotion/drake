@@ -53,7 +53,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   ExplicitEulerIntegrator<double> integrator(
       spring_mass, dt, context.get());  // Use default Context.
 
-  integrator.get_mutable_context()->set_time(3.);
+  integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
   EXPECT_EQ(context->get_time(), 3.);\
   integrator.reset_context(nullptr);
@@ -118,7 +118,7 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
   context->EnableCaching();
 
   // Set a large magnitude time.
-  context->set_time(1e10);
+  context->SetTime(1e10);
 
   // Setup the integration size and infinity.
   const double dt = 1e-6;
@@ -208,7 +208,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
   context->EnableCaching();
-  context->set_time(0.0);
+  context->SetTime(0.0);
   double t = 0.0;
   // Create the integrator.
   ExplicitEulerIntegrator<double> integrator(

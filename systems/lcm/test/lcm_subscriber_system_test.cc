@@ -257,6 +257,32 @@ GTEST_TEST(LcmSubscriberSystemTest, WaitTest) {
   sample_data.MockPublish(&lcm, channel_name);
   EXPECT_TRUE(CompareLcmtDrakeSignalMessages(
       future_message.get(), sample_data.value));
+
+  // Test WaitForMessageTimeout, when no message is sent
+  int old_count = dut->GetInternalMessageCount();
+  started = false;
+  auto timeout_count = std::async(std::launch::async, [&]() {
+    started = true;
+    return dut->WaitForMessage(old_count, nullptr, 0.01 /** 10 ms */);
+  });
+  wait();
+  // Expect a timeout, since no message has been sent
+  EXPECT_EQ(timeout_count.get(), old_count);
+
+  // Reset atomic and test WaitForMessageTimeout, with a message
+  // Note: this generates a race condition between the timeout and the receive
+  // thread. Success relies on the probability of failure being extremely small,
+  // but it is theoretically possible for WaitForMessageTimeout to timeout
+  // before the message is received, leading to test failure.
+  started = false;
+  auto second_timeout_count = std::async(std::launch::async, [&]() {
+    EXPECT_EQ(dut->GetInternalMessageCount(), old_count);
+    started = true;
+    return dut->WaitForMessage(old_count, nullptr, 0.02 /** 20 ms */);
+  });
+  wait();
+  sample_data.MockPublish(&lcm, channel_name);
+  EXPECT_GE(second_timeout_count.get(), old_count + 1);
 }
 
 #pragma GCC diagnostic push

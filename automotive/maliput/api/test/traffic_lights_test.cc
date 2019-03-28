@@ -108,6 +108,7 @@ TEST_F(BulbTest, Accessors) {
   EXPECT_EQ(bulb_.states().size(), 2);
   EXPECT_EQ(bulb_.states().at(0), BulbState::kOff);
   EXPECT_EQ(bulb_.states().at(1), BulbState::kOn);
+  MALIPUT_IS_EQUAL(bulb_.bounding_box(), Bulb::BoundingBox());
 }
 
 TEST_F(BulbTest, Copying) {

@@ -158,8 +158,8 @@ GTEST_TEST(DiscreteValuesSingleGroupTest, ConvenienceSugar) {
   EXPECT_EQ(42.0, xd[0]);
   EXPECT_EQ(43.0, xd[1]);
   xd[0] = 100.0;
-  EXPECT_EQ(100.0, xd.get_vector().GetAtIndex(0));
-  xd.get_mutable_vector().SetAtIndex(1, 1000.0);
+  EXPECT_EQ(100.0, xd.get_vector()[0]);
+  xd.get_mutable_vector()[1] = 1000.0;
   EXPECT_EQ(1000.0, xd[1]);
 }
 

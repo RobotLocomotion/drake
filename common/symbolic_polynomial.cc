@@ -340,7 +340,7 @@ class DecomposePolynomialVisitor {
 
 Polynomial::Polynomial(MapType init)
     : monomial_to_coefficient_map_{move(init)} {
-  CheckInvariant();
+  DRAKE_ASSERT_VOID(CheckInvariant());
 };
 
 Polynomial::Polynomial(const Monomial& m)
@@ -517,7 +517,7 @@ Polynomial& Polynomial::operator+=(const Polynomial& p) {
     const Expression& coeff{item.second};
     DoAddProduct(coeff, m, &monomial_to_coefficient_map_);
   }
-  CheckInvariant();
+  DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
 
@@ -559,7 +559,7 @@ Polynomial& Polynomial::operator*=(const Polynomial& p) {
     }
   }
   monomial_to_coefficient_map_ = std::move(new_map);
-  CheckInvariant();
+  DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
 
@@ -572,7 +572,7 @@ Polynomial& Polynomial::operator*=(const Monomial& m) {
     new_map.emplace(m * m_i, coeff_i);
   }
   monomial_to_coefficient_map_ = std::move(new_map);
-  CheckInvariant();
+  DRAKE_ASSERT_VOID(CheckInvariant());
   return *this;
 }
 
@@ -670,6 +670,9 @@ Polynomial Polynomial::RemoveTermsWithSmallCoefficients(
 }
 
 void Polynomial::CheckInvariant() const {
+  // TODO(hongkai.dai and soonho.kong): improves the computation time of
+  // CheckInvariant(). See github issue
+  // https://github.com/RobotLocomotion/drake/issues/10229
   Variables vars{intersect(decision_variables(), indeterminates())};
   if (!vars.empty()) {
     ostringstream oss;

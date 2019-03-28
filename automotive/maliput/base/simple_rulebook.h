@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/automotive/maliput/api/rules/direction_usage_rule.h"
 #include "drake/automotive/maliput/api/rules/regions.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_rule.h"
 #include "drake/automotive/maliput/api/rules/road_rulebook.h"
@@ -48,6 +49,17 @@ class SimpleRulebook : public api::rules::RoadRulebook {
   /// @throws std::runtime_error if no such rule exists.
   void RemoveRule(const api::rules::SpeedLimitRule::Id& id);
 
+  /// Adds a new DirectionUsageRule.
+  ///
+  /// @throws std::runtime_error if a rule with the same ID already exists
+  /// in the SimpleRulebook.
+  void AddRule(const api::rules::DirectionUsageRule& rule);
+
+  /// Removes the DirectionUsageRule labeled by `id`.
+  ///
+  /// @throws std::runtime_error if no such rule exists.
+  void RemoveRule(const api::rules::DirectionUsageRule::Id& id);
+
  private:
   api::rules::RoadRulebook::QueryResults DoFindRules(
       const std::vector<api::rules::LaneSRange>& ranges,
@@ -56,6 +68,8 @@ class SimpleRulebook : public api::rules::RoadRulebook {
       const api::rules::RightOfWayRule::Id& id) const override;
   api::rules::SpeedLimitRule DoGetRule(
       const api::rules::SpeedLimitRule::Id& id) const override;
+  api::rules::DirectionUsageRule DoGetRule(
+      const api::rules::DirectionUsageRule::Id& id) const override;
 
   class Impl;
   std::unique_ptr<Impl> impl_;

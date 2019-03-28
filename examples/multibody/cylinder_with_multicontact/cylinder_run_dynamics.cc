@@ -110,6 +110,7 @@ int do_main() {
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
       diagram->CreateDefaultContext();
+  diagram_context->EnableCaching();
   systems::Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
@@ -129,7 +130,7 @@ int do_main() {
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
 }

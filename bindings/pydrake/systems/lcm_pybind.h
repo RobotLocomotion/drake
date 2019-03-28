@@ -4,6 +4,7 @@
 /// Helpers for defining C++ LCM type serializers.
 
 #include <string>
+#include <utility>
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -35,7 +36,9 @@ py::object BindCppSerializer(const std::string& lcm_package) {
       DefineTemplateClassWithDefault<Serializer<CppType>, SerializerInterface>(
           lcm_py, "_Serializer", py::make_tuple(py_type));
   py_cls.def(py::init());
-  return py_cls;
+  // We use move here because the type of py_class differs from our declared
+  // return type.
+  return std::move(py_cls);
 }
 
 }  // namespace pylcm

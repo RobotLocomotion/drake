@@ -92,7 +92,7 @@ int DoMain() {
 
   lcm.StartReceiveThread();
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
   lcm.StopReceiveThread();
   return 0;
 }

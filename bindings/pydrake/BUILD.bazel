@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -21,6 +20,7 @@ load(
     "get_drake_py_installs",
     "get_pybind_package_info",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings:__subpackages__",
@@ -168,7 +168,10 @@ drake_pybind_library(
 
 drake_pybind_library(
     name = "math_py",
-    cc_deps = ["//bindings/pydrake:documentation_pybind"],
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
+    ],
     cc_srcs = ["math_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -246,6 +249,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     "//bindings/pydrake/systems",
     "//bindings/pydrake/third_party",
     "//bindings/pydrake/util",
+    "//bindings/pydrake/visualization",
 ]
 
 PY_LIBRARIES = [
@@ -361,6 +365,9 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "geometry_test",
+    data = [
+        "//systems/sensors:test_models",
+    ],
     deps = [
         ":geometry_py",
     ],
@@ -381,13 +388,40 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "math_overloads_test",
+drake_py_library(
+    name = "math_overloads_test_utilities_py",
+    testonly = 1,
+    srcs = ["test/math_overloads_test_utilities.py"],
     deps = [
         ":autodiffutils_py",
         ":math_py",
         ":symbolic_py",
     ],
+)
+
+drake_py_unittest(
+    name = "math_overloads_float_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_sym_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_ad_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_sym_ad_test",
+    deps = [":math_overloads_test_utilities_py"],
+)
+
+drake_py_unittest(
+    name = "math_overloads_ad_sym_test",
+    deps = [":math_overloads_test_utilities_py"],
 )
 
 drake_py_unittest(
@@ -425,6 +459,7 @@ drake_py_unittest(
 drake_py_binary(
     name = "math_example",
     srcs = ["math_example.py"],
+    add_test_rule = 1,
     isolate = 1,
     deps = [
         ":math_py",
@@ -440,9 +475,7 @@ drake_py_unittest(
     tags = ["lint"],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
+add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         ":test/all_install_test.py",
         ":test/common_install_test.py",

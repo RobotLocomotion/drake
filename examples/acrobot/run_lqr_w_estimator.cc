@@ -66,7 +66,8 @@ int do_main() {
     x0.set_theta2(0.0);
     x0.set_theta1dot(0.0);
     x0.set_theta2dot(0.0);
-    observer_context->FixInputPort(0, Vector1d::Constant(0.0));
+    observer_acrobot->GetInputPort("elbow_torque")
+        .FixValue(observer_context.get(), 0.0);
   }
   // Make a linearization here for the exercise below.  Need to do it before I
   // std::move the pointers.
@@ -136,7 +137,7 @@ int do_main() {
   simulator.get_mutable_integrator()->set_maximum_step_size(0.01);
   simulator.get_mutable_integrator()->set_fixed_step_mode(true);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
 
   // Plot the results (launch call_matlab_client to see the plots).
   using common::CallMatlab;

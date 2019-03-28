@@ -8,7 +8,7 @@
 set -euxo pipefail
 
 if [[ "${EUID}" -eq 0 ]]; then
-  echo 'This script must NOT be run as root' >&2
+  echo 'ERROR: This script must NOT be run as root' >&2
   exit 1
 fi
 

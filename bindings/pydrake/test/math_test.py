@@ -1,14 +1,16 @@
 from __future__ import absolute_import, division, print_function
 
 import pydrake.math as mut
+import pydrake.math._test as mtest
 from pydrake.math import (BarycentricMesh, wrap_to)
 from pydrake.common.eigen_geometry import Isometry3, Quaternion, AngleAxis
 
-import numpy as np
-import six
+import copy
+import math
 import unittest
 
-import math
+import numpy as np
+import six
 
 
 class TestBarycentricMesh(unittest.TestCase):
@@ -103,6 +105,7 @@ class TestMath(unittest.TestCase):
         X_I = np.eye(4)
         check_equality(mut.RigidTransform(), X_I)
         check_equality(mut.RigidTransform(other=mut.RigidTransform()), X_I)
+        check_equality(copy.copy(mut.RigidTransform()), X_I)
         R_I = mut.RotationMatrix()
         p_I = np.zeros(3)
         rpy_I = mut.RollPitchYaw(0, 0, 0)
@@ -137,12 +140,19 @@ class TestMath(unittest.TestCase):
                 eval("X @ mut.RigidTransform()"), mut.RigidTransform)
             self.assertIsInstance(eval("X @ [0, 0, 0]"), np.ndarray)
 
+    def test_isometry_implicit(self):
+        # Explicitly disabled, to mirror C++ API.
+        with self.assertRaises(TypeError):
+            self.assertTrue(mtest.TakeRigidTransform(Isometry3()))
+        self.assertTrue(mtest.TakeIsometry3(mut.RigidTransform()))
+
     def test_rotation_matrix(self):
         # - Constructors.
         R = mut.RotationMatrix()
         self.assertTrue(np.allclose(
             mut.RotationMatrix(other=R).matrix(), np.eye(3)))
         self.assertTrue(np.allclose(R.matrix(), np.eye(3)))
+        self.assertTrue(np.allclose(copy.copy(R).matrix(), np.eye(3)))
         self.assertTrue(np.allclose(
             mut.RotationMatrix.Identity().matrix(), np.eye(3)))
         R = mut.RotationMatrix(R=np.eye(3))
@@ -189,3 +199,14 @@ class TestMath(unittest.TestCase):
         R = mut.ComputeBasisFromAxis(axis_index=0, axis_W=[1, 0, 0])
         self.assertAlmostEqual(np.linalg.det(R), 1.0)
         self.assertTrue(np.allclose(R.dot(R.T), np.eye(3)))
+
+    def test_quadratic_form(self):
+        Q = np.diag([1., 2., 3.])
+        X = mut.DecomposePSDmatrixIntoXtransposeTimesX(Q, 1e-8)
+        np.testing.assert_array_almost_equal(X, np.sqrt(Q))
+        b = np.zeros(3)
+        c = 4.
+        R, d = mut.DecomposePositiveQuadraticForm(Q, b, c)
+        self.assertEqual(np.size(R, 0), 4)
+        self.assertEqual(np.size(R, 1), 3)
+        self.assertEqual(len(d), 4)

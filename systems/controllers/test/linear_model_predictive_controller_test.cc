@@ -206,7 +206,7 @@ class TestMpcWithCubicSystem : public ::testing::Test {
 
     simulator_->set_target_realtime_rate(1.);
     simulator_->Initialize();
-    simulator_->StepTo(time_horizon_);
+    simulator_->AdvanceTo(time_horizon_);
   }
 
   const double time_step_ = 0.1;

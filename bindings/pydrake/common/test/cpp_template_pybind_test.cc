@@ -5,6 +5,7 @@
 // `cpp_template_pybind.h`.
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -38,7 +39,9 @@ py::object BindSimpleTemplate(py::module m) {
       .def(py::init<>())
       .def("GetNames", &Class::GetNames);
   AddTemplateClass(m, "SimpleTemplate", py_class, GetPyParam<Ts...>());
-  return py_class;
+  // We use move here because the type of py_class differs from our declared
+  // return type.
+  return std::move(py_class);
 }
 
 template <typename T>

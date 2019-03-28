@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":constant_vector_source",
         ":demultiplexer",
         ":discrete_derivative",
+        ":discrete_time_delay",
         ":first_order_low_pass_filter",
         ":gain",
         ":integrator",
@@ -34,6 +35,7 @@ drake_cc_package_library(
         ":signal_log",
         ":signal_logger",
         ":sine",
+        ":symbolic_vector_system",
         ":time_varying_data",
         ":trajectory_source",
         ":wrap_to_system",
@@ -111,6 +113,18 @@ drake_cc_library(
         ":linear_system",
         ":multiplexer",
         ":pass_through",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_delay",
+    srcs = ["discrete_time_delay.cc"],
+    hdrs = ["discrete_time_delay.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//common:value",
         "//systems/framework",
     ],
 )
@@ -264,6 +278,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "symbolic_vector_system",
+    srcs = ["symbolic_vector_system.cc"],
+    hdrs = ["symbolic_vector_system.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:symbolic",
+        "//math:gradient",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
     name = "time_varying_data",
     srcs = ["time_varying_data.cc"],
     hdrs = ["time_varying_data.h"],
@@ -395,6 +421,19 @@ drake_cc_googletest(
         ":trajectory_source",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/trajectories:piecewise_polynomial",
+        "//systems/analysis:simulator",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_delay_test",
+    deps = [
+        ":affine_system",
+        ":discrete_time_delay",
+        ":sine",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework/test_utilities",
@@ -564,6 +603,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "symbolic_vector_system_test",
+    deps = [
+        ":symbolic_vector_system",
+        "//common/test_utilities:eigen_geometry_compare",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
     name = "time_varying_data_test",
     deps = [
         ":piecewise_linear_affine_test",
@@ -593,8 +641,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "zero_order_hold_test",
     deps = [
+        ":sine",
         ":zero_order_hold",
         "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

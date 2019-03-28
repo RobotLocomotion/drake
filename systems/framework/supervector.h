@@ -41,14 +41,15 @@ class Supervector : public VectorBase<T> {
     return lookup_table_.empty() ? 0 : lookup_table_.back();
   }
 
-  const T& GetAtIndex(int index) const override {
+ protected:
+  const T& DoGetAtIndex(int index) const override {
     const auto target = GetSubvectorAndOffset(index);
-    return target.first->GetAtIndex(target.second);
+    return (*target.first)[target.second];
   }
 
-  T& GetAtIndex(int index) override {
+  T& DoGetAtIndex(int index) override {
     const auto target = GetSubvectorAndOffset(index);
-    return target.first->GetAtIndex(target.second);
+    return (*target.first)[target.second];
   }
 
  private:

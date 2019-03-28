@@ -46,14 +46,15 @@ class Subvector : public VectorBase<T> {
 
   int size() const override { return num_elements_; }
 
-  const T& GetAtIndex(int index) const override {
+ protected:
+  const T& DoGetAtIndex(int index) const override {
     DRAKE_THROW_UNLESS(index < size());
-    return vector_->GetAtIndex(first_element_ + index);
+    return (*vector_)[first_element_ + index];
   }
 
-  T& GetAtIndex(int index) override {
+  T& DoGetAtIndex(int index) override {
     DRAKE_THROW_UNLESS(index < size());
-    return vector_->GetAtIndex(first_element_ + index);
+    return (*vector_)[first_element_ + index];
   }
 
  private:

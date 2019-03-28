@@ -123,6 +123,14 @@ class TestSystemsLcm(unittest.TestCase):
             sub.WaitForMessage(i, value)
             self.assertEqual(value.get_value().utime, i)
 
+    def test_subscriber_wait_for_message_with_timeout(self):
+        """Confirms that the subscriber times out."""
+        lcm = DrakeLcm("memq://")
+        lcm.StartReceiveThread()
+        sub = mut.LcmSubscriberSystem.Make("TEST_LOOP", header_t, lcm)
+        sub.WaitForMessage(0, timeout=0.02)
+        # This test fails if the test hangs.
+
     def _fix_and_publish(self, dut, value):
         context = dut.CreateDefaultContext()
         context.FixInputPort(0, value)
@@ -219,7 +227,7 @@ class TestSystemsLcm(unittest.TestCase):
         publish_proc.start()
         # Initialize to first message.
         first_msg = dut.WaitForMessage()
-        dut.get_mutable_context().set_time(utime.GetTimeInSeconds(first_msg))
+        dut.get_mutable_context().SetTime(utime.GetTimeInSeconds(first_msg))
         # Run to desired amount. (Anything more will cause interpreter to
         # "freeze".)
         dut.RunToSecondsAssumingInitialized(t_end)

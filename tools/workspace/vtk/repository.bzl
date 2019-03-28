@@ -3,53 +3,15 @@
 
 """
 Makes selected VTK headers and precompiled shared libraries available to be
-used as a C++ dependency. On Ubuntu, a VTK archive is downloaded and unpacked.
-On macOS, VTK must be installed from the robotlocomotion/director tap
-(https://git.io/vN6ft) using Homebrew.
+used as a C++ dependency. On Ubuntu, a VTK archive, built by the project
+maintainers from the Dockerfile and shell scripts in this directory, is
+downloaded and unpacked. On macOS, VTK must be installed from the
+robotlocomotion/director tap (https://git.io/vN6ft) using Homebrew.
 
 Archive naming convention:
     vtk-<version>-embree-<embree version>-ospray-<ospray version>
         -python-<python 2.x version>[-python-<python 3.x version>]
         -qt-<qt version>-<platform>-<arch>[-<rebuild>]
-
-Build configuration:
-    Embree (https://git.io/fNR7Q):
-        BUILD_SHARED_LIBS=ON
-        BUILD_TESTING=OFF
-        CMAKE_BUILD_TYPE=Release
-        EMBREE_MAX_ISA=SSE4.2
-        EMBREE_STACK_PROTECTOR=ON
-        EMBREE_TUTORIALS=OFF
-
-    OSPRay (https://git.io/fNR7b applying ospray_no_fast_math.patch):
-        BUILD_SHARED_LIBS=ON
-        CMAKE_BUILD_TYPE=Release
-        OSPRAY_ENABLE_APPS=OFF
-        OSPRAY_ENABLE_TESTING=OFF
-
-    VTK:
-        BUILD_SHARED_LIBS=ON
-        BUILD_TESTING=OFF
-        CMAKE_BUILD_TYPE=Release
-        Module_vtkRenderingOSPRay=ON
-        VTK_ENABLE_VTKPYTHON=OFF
-        VTK_Group_Qt=ON
-        VTK_LEGACY_REMOVE=ON
-        VTK_QT_VERSION=5
-        VTK_USE_SYSTEM_EXPAT=ON
-        VTK_USE_SYSTEM_FREETYPE=ON
-        VTK_USE_SYSTEM_HDF5=ON
-        VTK_USE_SYSTEM_JPEG=ON
-        VTK_USE_SYSTEM_JSONCPP=ON
-        VTK_USE_SYSTEM_LIBXML2=ON
-        VTK_USE_SYSTEM_LZ4=ON
-        VTK_USE_SYSTEM_NETCDF=ON
-        VTK_USE_SYSTEM_NETCDFCPP=ON
-        VTK_USE_SYSTEM_OGGTHEORA=ON
-        VTK_USE_SYSTEM_PNG=ON
-        VTK_USE_SYSTEM_TIFF=ON
-        VTK_USE_SYSTEM_ZLIB=ON
-        VTK_WRAP_PYTHON=ON
 
 Example:
     WORKSPACE:
@@ -70,7 +32,7 @@ Argument:
 
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
-VTK_MAJOR_MINOR_VERSION = "8.1"
+VTK_MAJOR_MINOR_VERSION = "8.2"
 
 def _vtk_cc_library(
         os_name,
@@ -103,9 +65,13 @@ def _vtk_cc_library(
 
     if os_name == "mac os x":
         if not header_only:
+            lib_dir = "/usr/local/opt/vtk@{}/lib".format(
+                VTK_MAJOR_MINOR_VERSION,
+            )
             linkopts = linkopts + [
-                "-L/usr/local/opt/vtk@{}/lib".format(VTK_MAJOR_MINOR_VERSION),
+                "-L{}".format(lib_dir),
                 "-l{}-{}".format(name, VTK_MAJOR_MINOR_VERSION),
+                "-Wl,-rpath,{}".format(lib_dir),
             ]
     elif not header_only:
         srcs = ["lib/lib{}-{}.so.1".format(name, VTK_MAJOR_MINOR_VERSION)]
@@ -131,7 +97,7 @@ def _impl(repository_ctx):
 
     if os_result.is_macos:
         repository_ctx.symlink(
-            "/usr/local/opt/ospray/include",
+            "/usr/local/opt/ospray@1.8/include",
             "ospray_include",
         )
         repository_ctx.symlink("/usr/local/opt/vtk@{}/include".format(
@@ -139,11 +105,11 @@ def _impl(repository_ctx):
         ), "include")
     elif os_result.is_ubuntu:
         if os_result.ubuntu_release == "16.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64-4.tar.gz"  # noqa
-            sha256 = "7f06386c47918da96fd3db384e3d3656f373b781f991e5b077afee648d135f8e"  # noqa
+            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-2.7.12-python-3.5.2-qt-5.5.1-xenial-x86_64.tar.gz"  # noqa
+            sha256 = "c0b27f3b0e9e4212190702afdfe49f2c5f0f41ee89354e94b4417bbc840cb2f6"  # noqa
         elif os_result.ubuntu_release == "18.04":
-            archive = "vtk-8.1.1-embree-3.2.0-ospray-1.6.1-python-2.7.15-python-3.6.7-qt-5.9.5-bionic-x86_64-4.tar.gz"  # noqa
-            sha256 = "b21a295ab170fa6e0787e5d4295f0bd8d482bbda16aa783ecd7016382d988437"  # noqa
+            archive = "vtk-8.2.0-embree-3.5.1-ospray-1.8.2-python-2.7.15-python-3.6.7-qt-5.9.5-bionic-x86_64.tar.gz"  # noqa
+            sha256 = "bcf01f7968a9c3d7d5ed6297bcb5dd7a9d753c2ccabbc4120747b97ae3502c76"  # noqa
         else:
             fail("Operating system is NOT supported", attr = os_result)
 
@@ -278,6 +244,7 @@ licenses([
             "vtkDataObject.h",
             "vtkDataSet.h",
             "vtkDataSetAttributes.h",
+            "vtkDataSetAttributesFieldList.h",
             "vtkFieldData.h",
             "vtkImageData.h",
             "vtkPointSet.h",
@@ -292,6 +259,7 @@ licenses([
             ":vtkCommonMisc",
             ":vtkCommonSystem",
             ":vtkCommonTransforms",
+            ":vtksys",
         ],
     )
 
@@ -308,6 +276,7 @@ licenses([
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonMisc",
+            ":vtkCommonSystem",
         ],
     )
 
@@ -328,13 +297,17 @@ licenses([
         deps = [
             ":vtkCommonCore",
             ":vtkCommonMath",
+            ":vtksys",
         ],
     )
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkCommonSystem",
-        deps = [":vtkCommonCore"],
+        deps = [
+            ":vtkCommonCore",
+            ":vtksys",
+        ],
     )
 
     file_content += _vtk_cc_library(
@@ -361,6 +334,26 @@ licenses([
 
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
+        "vtkdoubleconversion",
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkFiltersAMR",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonSystem",
+            ":vtkFiltersCore",
+            ":vtkIOXML",
+            ":vtkParallelCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
         "vtkFiltersCore",
         hdrs = [
             "vtkCleanPolyData.h",
@@ -371,7 +364,10 @@ licenses([
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
             ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
         ],
     )
 
@@ -382,6 +378,7 @@ licenses([
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkFiltersCore",
         ],
     )
 
@@ -397,7 +394,10 @@ licenses([
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
             ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
             ":vtkFiltersCore",
         ],
     )
@@ -413,8 +413,11 @@ licenses([
             "vtkSphereSource.h",
         ],
         deps = [
+            ":vtkCommonComputationalGeometry",
+            ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonTransforms",
             ":vtkFiltersCore",
             ":vtkFiltersGeneral",
         ],
@@ -429,8 +432,14 @@ licenses([
         ],
         deps = [
             ":vtkCommonCore",
+            ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtkdoubleconversion",
+            ":vtklzma",
+            ":vtksys",
             "@liblz4",
+            "@zlib",
         ],
     )
 
@@ -462,6 +471,8 @@ licenses([
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
             ":vtkIOCore",
             ":vtkIOXMLParser",
             ":vtksys",
@@ -471,6 +482,18 @@ licenses([
     file_content += _vtk_cc_library(
         repository_ctx.os.name,
         "vtkImagingCore",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonTransforms",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkImagingMath",
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
@@ -486,10 +509,17 @@ licenses([
             "vtkOBJReader.h",
         ],
         deps = [
+            ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
             ":vtkIOCore",
+            ":vtkIOImage",
             ":vtkIOLegacy",
+            ":vtksys",
+            "@zlib",
         ],
     )
 
@@ -509,12 +539,18 @@ licenses([
         ],
         deps = [
             ":vtkCommonCore",
+            ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
             ":vtkDICOMParser",
             ":vtkmetaio",
+            "@libjpeg",
             "@libpng",
-            "@zlib",
             "@libtiff",
+            "@zlib",
         ],
     )
 
@@ -528,8 +564,13 @@ licenses([
         ],
         deps = [
             ":vtkCommonCore",
+            ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
             ":vtkCommonMisc",
+            ":vtkCommonTransforms",
+            ":vtkFiltersCore",
+            ":vtkFiltersSources",
+            ":vtkIOImage",
             ":vtkRenderingCore",
             ":vtksys",
         ],
@@ -542,7 +583,23 @@ licenses([
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
+            ":vtkCommonMisc",
             ":vtkIOCore",
+            ":vtksys",
+        ],
+    )
+
+    file_content += _vtk_cc_library(repository_ctx.os.name, "vtklzma")
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkParallelCore",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonSystem",
+            ":vtkIOLegacy",
+            ":vtksys",
         ],
     )
 
@@ -575,12 +632,18 @@ licenses([
         ],
         deps = [
             ":vtkCommonColor",
+            ":vtkCommonComputationalGeometry",
             ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkCommonExecutionModel",
             ":vtkCommonMath",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
             ":vtkFiltersCore",
+            ":vtkFiltersGeneral",
             ":vtkFiltersGeometry",
+            ":vtkFiltersSources",
+            ":vtksys",
         ],
     )
 
@@ -603,17 +666,43 @@ licenses([
             "vtkRenderingOpenGLConfigure.h",
             "vtkShader.h",
             "vtkShaderProgram.h",
+            "vtkStateStorage.h",
             "vtkTextureObject.h",
         ],
         deps = [
             ":vtkCommonCore",
             ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
             ":vtkRenderingCore",
+            ":vtksys",
             VTKGLEW,
         ],
     )
 
     if repository_ctx.os.name == "mac os x":
+        EMBREE_MAJOR_MINOR_VERSION = "3.5"
+        embree_lib_dir = "/usr/local/opt/embree@{}/lib".format(
+            EMBREE_MAJOR_MINOR_VERSION,
+        )
+        file_content += """
+cc_library(
+    name = "embree",
+    linkopts = [
+        "-L{0}",
+        "-lembree3",
+        "-Wl,-rpath,{0}",
+    ],
+    visibility = ["//visibility:private"],
+)
+""".format(embree_lib_dir)
+
+        OSPRAY_MAJOR_MINOR_VERSION = "1.8"
+        ospray_lib_dir = "/usr/local/opt/ospray@{}/lib".format(
+            OSPRAY_MAJOR_MINOR_VERSION,
+        )
         file_content += """
 cc_library(
     name = "ospray",
@@ -624,14 +713,23 @@ cc_library(
     ],
     includes = ["ospray_include"],
     linkopts = [
-        "-L/usr/local/opt/ospray/lib",
+        "-L{0}",
         "-lospray",
+        "-Wl,-rpath,{0}",
     ],
     visibility = ["//visibility:public"],
+    deps = [":embree"],
 )
-"""
+""".format(ospray_lib_dir)
+
     else:
         file_content += """
+cc_library(
+    name = "embree",
+    srcs = glob(["lib/libembree3.so*"]),
+    visibility = ["//visibility:private"],
+)
+
 cc_library(
     name = "ospray",
     srcs = glob([
@@ -647,6 +745,7 @@ cc_library(
     ],
     includes = ["include"],
     visibility = ["//visibility:public"],
+    deps = [":embree"],
 )
 """
 
@@ -663,14 +762,20 @@ cc_library(
             "vtkRenderingVolumeModule.h",
         ],
         deps = [
+            ":ospray",
+            ":vtkCommonCore",
             ":vtkCommonDataModel",
             ":vtkImagingCore",
+            ":vtkIOImage",
+            ":vtkIOLegacy",
             ":vtkIOXML",
-            ":vtkRenderingOpenGL2",
             ":vtkRenderingCore",
+            ":vtkRenderingOpenGL2",
             ":vtkRenderingSceneGraph",
             ":vtkRenderingVolume",
-            ":ospray",
+            ":vtkRenderingVolumeAMR",
+            ":vtksys",
+            "@jsoncpp",
         ],
     )
 
@@ -686,6 +791,9 @@ cc_library(
         ],
         deps = [
             ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonMath",
+            ":vtkRenderingCore",
         ],
     )
 
@@ -694,7 +802,53 @@ cc_library(
         "vtkRenderingVolume",
         deps = [
             ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonMath",
+            ":vtkCommonMisc",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
+            ":vtkImagingCore",
+            ":vtkIOXML",
             ":vtkRenderingCore",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingVolumeAMR",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonExecutionModel",
+            ":vtkCommonMath",
+            ":vtkCommonSystem",
+            ":vtkFiltersAMR",
+            ":vtkImagingCore",
+            ":vtkRenderingCore",
+            ":vtkRenderingVolume",
+            ":vtkRenderingVolumeOpenGL2",
+        ],
+    )
+
+    file_content += _vtk_cc_library(
+        repository_ctx.os.name,
+        "vtkRenderingVolumeOpenGL2",
+        deps = [
+            ":vtkCommonCore",
+            ":vtkCommonDataModel",
+            ":vtkCommonMath",
+            ":vtkCommonSystem",
+            ":vtkCommonTransforms",
+            ":vtkFiltersCore",
+            ":vtkFiltersGeneral",
+            ":vtkFiltersSources",
+            ":vtkImagingCore",
+            ":vtkImagingMath",
+            ":vtkRenderingCore",
+            ":vtkRenderingOpenGL2",
+            ":vtkRenderingVolume",
+            ":vtksys",
+            VTKGLEW,
         ],
     )
 

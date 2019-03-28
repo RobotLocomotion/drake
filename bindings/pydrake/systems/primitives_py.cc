@@ -3,6 +3,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/drake_optional_pybind.h"
+#include "drake/bindings/pydrake/common/drake_variant_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/systems_pybind.h"
@@ -23,6 +24,7 @@
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/signal_logger.h"
 #include "drake/systems/primitives/sine.h"
+#include "drake/systems/primitives/symbolic_vector_system.h"
 #include "drake/systems/primitives/trajectory_source.h"
 #include "drake/systems/primitives/wrap_to_system.h"
 #include "drake/systems/primitives/zero_order_hold.h"
@@ -32,6 +34,9 @@ using Eigen::VectorXd;
 
 namespace drake {
 namespace pydrake {
+
+using symbolic::Expression;
+using symbolic::Variable;
 
 PYBIND11_MODULE(primitives, m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
@@ -185,6 +190,16 @@ PYBIND11_MODULE(primitives, m) {
         .def("data", &SignalLogger<T>::data, doc.SignalLogger.data.doc)
         .def("reset", &SignalLogger<T>::reset, doc.SignalLogger.reset.doc);
 
+    DefineTemplateClassWithDefault<SymbolicVectorSystem<T>, LeafSystem<T>>(m,
+        "SymbolicVectorSystem", GetPyParam<T>(), doc.SymbolicVectorSystem.doc)
+        .def(py::init<optional<Variable>, VectorX<Variable>, VectorX<Variable>,
+                 VectorX<Expression>, VectorX<Expression>, double>(),
+            py::arg("time") = nullopt, py::arg("state") = Vector0<Variable>{},
+            py::arg("input") = Vector0<Variable>{},
+            py::arg("dynamics") = Vector0<Expression>{},
+            py::arg("output") = Vector0<Expression>{},
+            py::arg("time_period") = 0.0, doc.SymbolicVectorSystem.ctor.doc);
+
     DefineTemplateClassWithDefault<WrapToSystem<T>, LeafSystem<T>>(
         m, "WrapToSystem", GetPyParam<T>(), doc.WrapToSystem.doc)
         .def(py::init<int>(), doc.WrapToSystem.ctor.doc)
@@ -241,14 +256,18 @@ PYBIND11_MODULE(primitives, m) {
       py::arg("builder"), doc.AddRandomInputs.doc);
 
   m.def("Linearize", &Linearize, py::arg("system"), py::arg("context"),
-      py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
-      py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
+      py::arg("input_port_index") =
+          systems::InputPortSelection::kUseFirstInputIfItExists,
+      py::arg("output_port_index") =
+          systems::OutputPortSelection::kUseFirstOutputIfItExists,
       py::arg("equilibrium_check_tolerance") = 1e-6, doc.Linearize.doc);
 
   m.def("FirstOrderTaylorApproximation", &FirstOrderTaylorApproximation,
       py::arg("system"), py::arg("context"),
-      py::arg("input_port_index") = systems::kUseFirstInputIfItExists,
-      py::arg("output_port_index") = systems::kUseFirstOutputIfItExists,
+      py::arg("input_port_index") =
+          systems::InputPortSelection::kUseFirstInputIfItExists,
+      py::arg("output_port_index") =
+          systems::OutputPortSelection::kUseFirstOutputIfItExists,
       doc.FirstOrderTaylorApproximation.doc);
 
   m.def("ControllabilityMatrix", &ControllabilityMatrix,

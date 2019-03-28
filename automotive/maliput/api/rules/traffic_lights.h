@@ -47,6 +47,30 @@ class Bulb final {
   /// Unique identifier for a Bulb.
   using Id = TypeSpecificIdentifier<class Bulb>;
 
+  /// Defines the bounding box of the bulb. The bounding box's corners are
+  /// interpreted as follows: Given two points, @p p_BMin and @p p_BMax), these
+  /// are points in the bulb's frame B, such that the former is the minimum
+  /// corner of the axis-aligned bounding box, and the latter is the maximum
+  /// corner. The box should have the minimum volume needed to fully enclose the
+  /// bulb.
+  struct BoundingBox {
+    /// The default constructor creates a bounding box based on the approximate
+    /// dimensions of a bulb with a 12" lens, as shown by the following website:
+    /// https://www.oksolar.com/images/signal_dimensions_large.jpg. These
+    /// dimensions are 14" (0.356m) tall, 14" (0.356m) wide, and 7" (0.177m)
+    /// deep. Note that the visor is not included as part of the depth since
+    /// it is relatively thin and typically not obviously visible to approaching
+    /// vehicles. Assuming the bulb frame's origin is in the middle of the light
+    /// bulb's body, the bounding box has a `p_BMin` of (-3.5", -7", -7") and a
+    /// `p_BMax` of (3.5", 7", 7"). In metric units, this is a `p_BMin` of
+    /// (-0.0889m, -0.1778m, -0.1778m) and a `p_BMax` of (0.0889m, 0.1778m,
+    /// 0.1778m).
+    BoundingBox()
+        : p_BMin(-0.0889, -0.1778, -0.1778), p_BMax(0.0889, 0.1778, 0.1778) {}
+    Eigen::Vector3d p_BMin;
+    Eigen::Vector3d p_BMax;
+  };
+
   /// Constructs a Bulb instance.
   ///
   /// @param id The bulb's unique ID.
@@ -80,11 +104,15 @@ class Bulb final {
   ///
   /// @param states The possible states of this bulb. If this is nullopt, this
   /// bulb has states {BulbState::kOff, BulbState::kOn}.
+  ///
+  /// @param bounding_box The bounding box of the bulb. See BoundingBox for
+  /// details about the default value.
   Bulb(const Id& id, const GeoPosition& position_bulb_group,
        const Rotation& orientation_bulb_group, const BulbColor& color,
        const BulbType& type,
        const optional<double>& arrow_orientation_rad = nullopt,
-       const optional<std::vector<BulbState>>& states = nullopt);
+       const optional<std::vector<BulbState>>& states = nullopt,
+       BoundingBox bounding_box = BoundingBox());
 
   /// Returns this Bulb instance's unique identifier.
   const Id& id() const { return id_; }
@@ -116,6 +144,9 @@ class Bulb final {
   /// Returns the possible states of this bulb.
   const std::vector<BulbState>& states() const { return states_; }
 
+  /// Returns the bounding box of the bulb.
+  const BoundingBox& bounding_box() const { return bounding_box_; }
+
  private:
   Id id_;
   GeoPosition position_bulb_group_;
@@ -124,6 +155,7 @@ class Bulb final {
   BulbType type_ = BulbType::kRound;
   optional<double> arrow_orientation_rad_ = nullopt;
   std::vector<BulbState> states_;
+  BoundingBox bounding_box_;
 };
 
 /// Models a group of bulbs within a traffic light. All of the bulbs within a

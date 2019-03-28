@@ -94,7 +94,7 @@ FittedValueIteration(
 
       cost[input](state) = timestep * cost_function(context);
 
-      simulator->StepTo(timestep);
+      simulator->AdvanceTo(timestep);
       state_vec = sim_state.CopyToVector();
 
       for (const auto& b : options.periodic_boundary_conditions) {
@@ -224,7 +224,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
 
       const double cost = timestep * cost_function(context);
 
-      simulator->StepTo(timestep);
+      simulator->AdvanceTo(timestep);
       next_state_vec = sim_state.CopyToVector();
 
       for (const auto& b : options.periodic_boundary_conditions) {

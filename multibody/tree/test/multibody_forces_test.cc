@@ -31,10 +31,10 @@ class MultibodyForcesTests : public ::testing::Test {
     SpatialInertia<double> M;
     const RigidBody<double>& body1 = model_.AddBody<RigidBody>(M);
     const RigidBody<double>& body2 = model_.AddBody<RigidBody>(M);
-    model_.AddJoint<RevoluteJoint>(
-        "Joint1", model_.world_body(), {}, body1, {}, Vector3d::UnitZ());
-    model_.AddJoint<RevoluteJoint>(
-        "Joint2", body1, {}, body2, {}, Vector3d::UnitZ());
+    model_.AddJoint<RevoluteJoint>("Joint1", model_.world_body(), nullopt,
+                                   body1, nullopt, Vector3d::UnitZ());
+    model_.AddJoint<RevoluteJoint>("Joint2", body1, nullopt, body2, nullopt,
+                                   Vector3d::UnitZ());
     model_.Finalize();
   }
  protected:

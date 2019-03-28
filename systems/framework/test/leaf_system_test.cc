@@ -495,7 +495,7 @@ TEST_F(LeafSystemTest, WitnessDeclarations) {
 
 // Tests that if no update events are configured, none are reported.
 TEST_F(LeafSystemTest, NoUpdateEvents) {
-  context_.set_time(25.0);
+  context_.SetTime(25.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(std::numeric_limits<double>::infinity(), time);
   EXPECT_TRUE(!leaf_info_->HasEvents());
@@ -528,7 +528,7 @@ TEST_F(LeafSystemTest, MultipleNonUniquePeriods) {
 // Tests that if the current time is smaller than the offset, the next
 // update time is the offset.
 TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
-  context_.set_time(2.0);
+  context_.SetTime(2.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -542,7 +542,7 @@ TEST_F(LeafSystemTest, OffsetHasNotArrivedYet) {
 // update time is the offset, DiscreteUpdate and UnrestrictedUpdate happen
 // at the same time.
 TEST_F(LeafSystemTest, EventsAtTheSameTime) {
-  context_.set_time(2.0);
+  context_.SetTime(2.0);
   // Both actions happen at t = 5.
   system_.AddPeriodicUpdate();
   system_.AddPeriodicUnrestrictedUpdate(3, 5);
@@ -565,7 +565,7 @@ TEST_F(LeafSystemTest, EventsAtTheSameTime) {
 // Tests that if the current time is exactly the offset, the next
 // update time is in the future.
 TEST_F(LeafSystemTest, ExactlyAtOffset) {
-  context_.set_time(5.0);
+  context_.SetTime(5.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -578,7 +578,7 @@ TEST_F(LeafSystemTest, ExactlyAtOffset) {
 // Tests that if the current time is larger than the offset, the next
 // update time is determined by the period.
 TEST_F(LeafSystemTest, OffsetIsInThePast) {
-  context_.set_time(23.0);
+  context_.SetTime(23.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -591,7 +591,7 @@ TEST_F(LeafSystemTest, OffsetIsInThePast) {
 // Tests that if the current time is exactly an update time, the next update
 // time is in the future.
 TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
-  context_.set_time(25.0);
+  context_.SetTime(25.0);
   system_.AddPeriodicUpdate();
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
 
@@ -605,15 +605,15 @@ TEST_F(LeafSystemTest, ExactlyOnUpdateTime) {
 TEST_F(LeafSystemTest, PeriodicUpdateZeroOffset) {
   system_.AddPeriodicUpdate(2.0);
 
-  context_.set_time(0.0);
+  context_.SetTime(0.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(2.0, time);
 
-  context_.set_time(1.0);
+  context_.SetTime(1.0);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(2.0, time);
 
-  context_.set_time(2.1);
+  context_.SetTime(2.1);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(4.0, time);
 }
@@ -625,7 +625,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   system_.AddPublish(12.0);
 
   // The publish event fires at 12sec.
-  context_.set_time(9.0);
+  context_.SetTime(9.0);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(12.0, time);
   {
@@ -635,7 +635,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   }
 
   // The update event fires at 15sec.
-  context_.set_time(14.0);
+  context_.SetTime(14.0);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(15.0, time);
   {
@@ -645,7 +645,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
   }
 
   // Both events fire at 60sec.
-  context_.set_time(59.0);
+  context_.SetTime(59.0);
   time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_EQ(60.0, time);
   {
@@ -664,7 +664,7 @@ TEST_F(LeafSystemTest, UpdateAndPublish) {
 // time for that sample is slightly less than k * period due to floating point
 // rounding, the next sample time is (k + 1) * period.
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
-  context_.set_time(0.015 * 11);  // Slightly less than 0.165.
+  context_.SetTime(0.015 * 11);  // Slightly less than 0.165.
   system_.AddPeriodicUpdate(0.015);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   // 0.015 * 12 = 0.18.
@@ -675,7 +675,7 @@ TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroOneFive) {
 // time for that sample is slightly less than k * period due to floating point
 // rounding, the next sample time is (k + 1) * period.
 TEST_F(LeafSystemTest, FloatingPointRoundingZeroPointZeroZeroTwoFive) {
-  context_.set_time(0.0025 * 977);  // Slightly less than 2.4425
+  context_.SetTime(0.0025 * 977);  // Slightly less than 2.4425
   system_.AddPeriodicUpdate(0.0025);
   double time = system_.CalcNextUpdateTime(context_, event_info_.get());
   EXPECT_NEAR(2.445, time, 1e-8);
@@ -717,7 +717,7 @@ TEST_F(LeafSystemTest, NumericParameters) {
   EXPECT_EQ(7.0, vec[1]);
   BasicVector<double>& mutable_vec =
       system_.GetVanillaMutableNumericParameters(context.get());
-  mutable_vec.SetAtIndex(1, 42.0);
+  mutable_vec[1] = 42.0;
   EXPECT_EQ(42.0, vec[1]);
 
   EXPECT_EQ(system_.num_numeric_parameter_groups(), 1);
@@ -762,8 +762,8 @@ TEST_F(LeafSystemTest, AbstractParameters) {
 TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
   system_.DeclareContinuousState(2);
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -778,8 +778,8 @@ TEST_F(LeafSystemTest, DeclareVanillaMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
   system_.DeclareContinuousState(MyVector2d());
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -797,8 +797,8 @@ TEST_F(LeafSystemTest, DeclareTypedMiscContinuousState) {
 TEST_F(LeafSystemTest, DeclareVanillaContinuousState) {
   system_.DeclareContinuousState(4, 3, 2);
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(4 + 3 + 2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -814,8 +814,8 @@ TEST_F(LeafSystemTest, DeclareTypedContinuousState) {
   using MyVector9d = MyVector<double, 4 + 3 + 2>;
   system_.DeclareContinuousState(MyVector9d(), 4, 3, 2);
 
-  // Tests get_num_continuous_states without a context.
-  EXPECT_EQ(4 + 3 + 2, system_.get_num_continuous_states());
+  // Tests num_continuous_states without a context.
+  EXPECT_EQ(4 + 3 + 2, system_.num_continuous_states());
 
   std::unique_ptr<Context<double>> context = system_.CreateDefaultContext();
   const ContinuousState<double>& xc = context->get_continuous_state();
@@ -933,8 +933,8 @@ class DeclaredModelPortsSystem : public LeafSystem<double> {
 GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   DeclaredModelPortsSystem dut;
 
-  ASSERT_EQ(dut.get_num_input_ports(), 5);
-  ASSERT_EQ(dut.get_num_output_ports(), 4);
+  ASSERT_EQ(dut.num_input_ports(), 5);
+  ASSERT_EQ(dut.num_output_ports(), 4);
 
   // Check that SystemBase port APIs work properly.
   const InputPortBase& in3_base = dut.get_input_port_base(InputPortIndex(3));
@@ -951,7 +951,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsTopology) {
   auto context = dut.AllocateContext();
   const DependencyTracker& all_inputs_tracker =
       context->get_tracker(dut.all_input_ports_ticket());
-  for (InputPortIndex i(0); i < dut.get_num_input_ports(); ++i) {
+  for (InputPortIndex i(0); i < dut.num_input_ports(); ++i) {
     const DependencyTracker& tracker =
         context->get_tracker(dut.input_port_ticket(i));
     EXPECT_TRUE(all_inputs_tracker.HasPrerequisite(tracker));
@@ -1184,7 +1184,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   // *may* avoid invalidation if the time hasn't actually changed.
 
   // Should invalidate time- and everything-dependents.
-  context->set_time(context->get_time() + 1.);
+  context->SetTime(context->get_time() + 1.);
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   EXPECT_EQ(cacheval2.serial_number(), 2);  // Unchanged since invalid.
   (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
@@ -1196,7 +1196,7 @@ GTEST_TEST(ModelLeafSystemTest, ModelPortsCalcOutput) {
   // Should invalidate accuracy- and everything-dependents. Note that the
   // method *may* avoid invalidation if the accuracy hasn't actually changed.
   EXPECT_FALSE(context->get_accuracy());  // None set initially.
-  context->set_accuracy(.000025);  // This is a change.
+  context->SetAccuracy(.000025);  // This is a change.
   EXPECT_TRUE(cache2.is_out_of_date(*context));
   (void)port2.template Eval<AbstractValue>(*context);  // Recalculate.
   EXPECT_FALSE(cache2.is_out_of_date(*context));
@@ -1230,8 +1230,8 @@ GTEST_TEST(ModelLeafSystemTest, ModelNumericParams) {
   // Check that type was preserved.
   ASSERT_TRUE(is_dynamic_castable<const MyVector2d>(&param));
   EXPECT_EQ(2, param.size());
-  EXPECT_EQ(1.1, param.GetAtIndex(0));
-  EXPECT_EQ(2.2, param.GetAtIndex(1));
+  EXPECT_EQ(1.1, param[0]);
+  EXPECT_EQ(2.2, param[1]);
 }
 
 // Tests that various DeclareDiscreteState() signatures work correctly and
@@ -1438,8 +1438,8 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   context->EnableCaching();
 
   // Check topology.
-  EXPECT_EQ(dut.get_num_input_ports(), 0);
-  EXPECT_EQ(dut.get_num_output_ports(), 5);
+  EXPECT_EQ(dut.num_input_ports(), 0);
+  EXPECT_EQ(dut.num_output_ports(), 5);
 
   auto& out0 = dut.get_output_port(0);
   auto& out1 = dut.get_output_port(1);
@@ -1455,7 +1455,7 @@ GTEST_TEST(NonModelLeafSystemTest, NonModelPortsOutput) {
   // Sanity check output port prerequisites. Leaf ports should not designate
   // a subsystem since they are resolved internally. We don't know the right
   // dependency ticket, but at least it should be valid.
-  for (OutputPortIndex i(0); i < dut.get_num_output_ports(); ++i) {
+  for (OutputPortIndex i(0); i < dut.num_output_ports(); ++i) {
     internal::OutputPortPrerequisite prereq =
         dut.get_output_port(i).GetPrerequisite();
     EXPECT_FALSE(prereq.child_subsystem.has_value());
@@ -1686,7 +1686,7 @@ GTEST_TEST(AutodiffLeafSystemTest, NextUpdateTimeAutodiff) {
   TestSystem<AutoDiffXd> system;
   LeafContext<AutoDiffXd> context;
 
-  context.set_time(21.0);
+  context.SetTime(21.0);
   system.AddPeriodicUpdate();
 
   auto event_info = system.AllocateCompositeEventCollection();
@@ -2189,7 +2189,7 @@ class ConstraintTestSystem : public LeafSystem<double> {
 
   void CalcState0Constraint(const Context<double>& context,
                             Eigen::VectorXd* value) const {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(0));
+    *value = Vector1d(context.get_continuous_state_vector()[0]);
   }
   void CalcStateConstraint(const Context<double>& context,
                            Eigen::VectorXd* value) const {
@@ -2216,12 +2216,12 @@ class ConstraintTestSystem : public LeafSystem<double> {
 // Tests adding constraints implemented as methods inside the System class.
 GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
   ConstraintTestSystem dut;
-  EXPECT_EQ(dut.get_num_constraints(), 0);
+  EXPECT_EQ(dut.num_constraints(), 0);
 
   EXPECT_EQ(dut.DeclareEqualityConstraint(
                 &ConstraintTestSystem::CalcState0Constraint, 1, "x0"),
             0);
-  EXPECT_EQ(dut.get_num_constraints(), 1);
+  EXPECT_EQ(dut.num_constraints(), 1);
 
   EXPECT_EQ(
       dut.DeclareInequalityConstraint(
@@ -2229,7 +2229,7 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
           { Eigen::Vector2d::Zero(), nullopt },
           "x"),
       1);
-  EXPECT_EQ(dut.get_num_constraints(), 2);
+  EXPECT_EQ(dut.num_constraints(), 2);
 
   auto context = dut.CreateDefaultContext();
   context->get_mutable_continuous_state_vector().SetFromVector(
@@ -2260,23 +2260,23 @@ GTEST_TEST(SystemConstraintTest, ClassMethodTest) {
 // Tests adding constraints implemented as function handles (lambda functions).
 GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   ConstraintTestSystem dut;
-  EXPECT_EQ(dut.get_num_constraints(), 0);
+  EXPECT_EQ(dut.num_constraints(), 0);
 
   ContextConstraintCalc<double> calc0 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
-    *value = Vector1d(context.get_continuous_state_vector().GetAtIndex(1));
+    *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc0,
                                             { Vector1d::Zero(), nullopt },
                                             "x1_lower"),
             0);
-  EXPECT_EQ(dut.get_num_constraints(), 1);
+  EXPECT_EQ(dut.num_constraints(), 1);
 
   ContextConstraintCalc<double> calc1 = [](
       const Context<double>& context, Eigen::VectorXd* value) {
     *value =
-        Eigen::Vector2d(context.get_continuous_state_vector().GetAtIndex(1),
-                        context.get_continuous_state_vector().GetAtIndex(0));
+        Eigen::Vector2d(context.get_continuous_state_vector()[1],
+                        context.get_continuous_state_vector()[0]);
   };
   EXPECT_EQ(dut.DeclareInequalityConstraint(calc1,
                                             { nullopt, Eigen::Vector2d(2, 3) },
@@ -2306,7 +2306,7 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
   EXPECT_EQ(inequality_constraint1.description(), "x_upper");
 
   EXPECT_EQ(dut.DeclareEqualityConstraint(calc0, 1, "x1eq"), 2);
-  EXPECT_EQ(dut.get_num_constraints(), 3);
+  EXPECT_EQ(dut.num_constraints(), 3);
 
   const SystemConstraint<double>& equality_constraint =
       dut.get_constraint(SystemConstraintIndex(2));
@@ -2320,13 +2320,13 @@ GTEST_TEST(SystemConstraintTest, FunctionHandleTest) {
 // Tests constraints implied by BasicVector subtypes.
 GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   ConstraintTestSystem dut;
-  EXPECT_EQ(dut.get_num_constraints(), 0);
+  EXPECT_EQ(dut.num_constraints(), 0);
 
   // Declaring a constrained model vector parameter should add constraints.
   // We want `vec[0] >= 11` on the parameter vector.
   using ParameterVector = ConstraintBasicVector<double, 11>;
   dut.DeclareNumericParameter(ParameterVector{});
-  ASSERT_EQ(dut.get_num_constraints(), 1);
+  ASSERT_EQ(dut.num_constraints(), 1);
   using Index = SystemConstraintIndex;
   const SystemConstraint<double>& constraint0 = dut.get_constraint(Index{0});
   const double kInf = std::numeric_limits<double>::infinity();
@@ -2340,7 +2340,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // We want `vec[0] >= 22` on the state vector.
   using StateVector = ConstraintBasicVector<double, 22>;
   dut.DeclareContinuousState(StateVector{}, 0, 0, StateVector::kSize);
-  EXPECT_EQ(dut.get_num_constraints(), 2);
+  EXPECT_EQ(dut.num_constraints(), 2);
   const SystemConstraint<double>& constraint1 = dut.get_constraint(Index{1});
   EXPECT_TRUE(CompareMatrices(constraint1.lower_bound(), Vector1d(22)));
   EXPECT_TRUE(CompareMatrices(constraint1.upper_bound(), Vector1d(kInf)));
@@ -2352,7 +2352,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // We want `vec[0] >= 33` on the input vector.
   using InputVector = ConstraintBasicVector<double, 33>;
   dut.DeclareVectorInputPort(InputVector{});
-  EXPECT_EQ(dut.get_num_constraints(), 3);
+  EXPECT_EQ(dut.num_constraints(), 3);
   const SystemConstraint<double>& constraint2 = dut.get_constraint(Index{2});
   EXPECT_TRUE(CompareMatrices(constraint2.lower_bound(), Vector1d(33)));
   EXPECT_TRUE(CompareMatrices(constraint2.upper_bound(), Vector1d(kInf)));
@@ -2363,7 +2363,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // Declaring a constrained model vector output should add constraints.
   // We want `vec[0] >= 44` on the output vector.
   dut.DeclareVectorOutputPort(&ConstraintTestSystem::CalcOutput);
-  EXPECT_EQ(dut.get_num_constraints(), 4);
+  EXPECT_EQ(dut.num_constraints(), 4);
   const SystemConstraint<double>& constraint3 = dut.get_constraint(Index{3});
   EXPECT_TRUE(CompareMatrices(constraint3.lower_bound(), Vector1d(44)));
   EXPECT_TRUE(CompareMatrices(constraint3.upper_bound(), Vector1d(kInf)));
@@ -2375,7 +2375,7 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   // We want `vec[0] >= 55` on the state vector.
   using DiscreteStateVector = ConstraintBasicVector<double, 55>;
   dut.DeclareDiscreteState(DiscreteStateVector{});
-  EXPECT_EQ(dut.get_num_constraints(), 5);
+  EXPECT_EQ(dut.num_constraints(), 5);
   const SystemConstraint<double>& constraint4 = dut.get_constraint(Index{4});
   EXPECT_TRUE(CompareMatrices(constraint4.lower_bound(), Vector1d(55)));
   EXPECT_TRUE(CompareMatrices(constraint4.upper_bound(), Vector1d(kInf)));
@@ -2388,21 +2388,21 @@ GTEST_TEST(SystemConstraintTest, ModelVectorTest) {
   auto context = dut.CreateDefaultContext();
 
   // `param0[0] >= 11.0` with `param0[0] == 1.0` produces `1.0 >= 11.0`.
-  context->get_mutable_numeric_parameter(0).SetAtIndex(0, 1.0);
+  context->get_mutable_numeric_parameter(0)[0] = 1.0;
   Eigen::VectorXd value0;
   constraint0.Calc(*context, &value0);
   EXPECT_TRUE(CompareMatrices(value0, Vector1<double>::Constant(1.0)));
 
   // `xc[0] >= 22.0` with `xc[0] == 2.0` produces `2.0 >= 22.0`.
-  context->get_mutable_continuous_state_vector().SetAtIndex(0, 2.0);
+  context->get_mutable_continuous_state_vector()[0] = 2.0;
   Eigen::VectorXd value1;
   constraint1.Calc(*context, &value1);
   EXPECT_TRUE(CompareMatrices(value1, Vector1<double>::Constant(2.0)));
 
   // `u0[0] >= 33.0` with `u0[0] == 3.0` produces `3.0 >= 33.0`.
   InputVector input;
-  input.SetAtIndex(0, 3.0);
-  context->FixInputPort(0, input);
+  input[0] = 3.0;
+  dut.get_input_port(0).FixValue(&*context, input);
   Eigen::VectorXd value2;
   constraint2.Calc(*context, &value2);
   EXPECT_TRUE(CompareMatrices(value2, Vector1<double>::Constant(3.0)));
@@ -2436,8 +2436,8 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
     for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
-      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
-                                                          uniform(*generator));
+      params->get_mutable_numeric_parameter(0).SetAtIndex(
+          i, uniform(*generator));
     }
   }
 };

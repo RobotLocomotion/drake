@@ -19,6 +19,10 @@
 
 namespace drake {
 
+/// The empty column vector (zero rows, one column), templated on scalar type.
+template <typename Scalar>
+using Vector0 = Eigen::Matrix<Scalar, 0, 1>;
+
 /// A column vector of size 1 (that is, a scalar), templated on scalar type.
 template <typename Scalar>
 using Vector1 = Eigen::Matrix<Scalar, 1, 1>;

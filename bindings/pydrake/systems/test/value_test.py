@@ -7,6 +7,8 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
+from pydrake.common.eigen_geometry import Isometry3
+from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     AbstractValue,
@@ -151,6 +153,17 @@ class TestValue(unittest.TestCase):
                 "get_value",
                 "AddValueInstantiation",
             ]), cm.exception)
+
+    def test_value_registration(self):
+        # Existience check.
+        Value[object]
+        Value[str]
+        Value[bool]
+        Value[RigidTransform]
+        Value[RotationMatrix]
+        Value[Isometry3]
+        for T in [float, AutoDiffXd, Expression]:
+            Value[BasicVector_[T]]
 
     def test_parameters_api(self):
 

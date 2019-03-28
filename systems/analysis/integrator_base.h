@@ -562,7 +562,7 @@ class IntegratorBase {
    * @return The reason for the integration step ending.
    * @warning Users should generally not call this function directly; within
    *          simulation circumstances, users will typically call
-   *          `Simulator::StepTo()`. In other circumstances, users will
+   *          `Simulator::AdvanceTo()`. In other circumstances, users will
    *          typically call
    *          `IntegratorBase::IntegrateWithMultipleStepsToTime()`.
    *
@@ -590,7 +590,7 @@ class IntegratorBase {
   /// discontinuous, mid-interval updates. This method will step the integrator
   /// multiple times, as necessary, to attain requested error tolerances and
   /// to ensure the integrator converges.
-  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  /// @warning Users should simulate systems using `Simulator::AdvanceTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
   /// @param t_final The current or future time to integrate to.
@@ -631,7 +631,7 @@ class IntegratorBase {
   /// semantics of this function, error controlled integration is not supported
   /// (though error estimates will be computed for integrators that support that
   /// feature), which is a minimal requirement for "consistency".
-  /// @warning Users should simulate systems using `Simulator::StepTo()` in
+  /// @warning Users should simulate systems using `Simulator::AdvanceTo()` in
   ///          place of this function (which was created for off-simulation
   ///          purposes), generally.
   /// @param t_target The current or future time to integrate to.
@@ -677,7 +677,7 @@ class IntegratorBase {
     const double tol = 10 * std::numeric_limits<double>::epsilon() *
         ExtractDoubleOrThrow(max(t_target, context_->get_time()));
     DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
-    context_->set_time(t_target);
+    context_->SetTime(t_target);
   }
 
   /**
@@ -839,7 +839,7 @@ class IntegratorBase {
     if (!is_initialized()) {
       throw std::logic_error("Integrator was not initialized.");
     }
-    if (get_context().get_continuous_state().size() == 0) {
+    if (get_context().num_continuous_states() == 0) {
       throw std::logic_error("System has no continuous state,"
                              " no dense output can be built.");
     }
@@ -1205,8 +1205,7 @@ class IntegratorBase {
    * system.EvalTimeDerivatives() directly.
    */
   const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
-    ++num_ode_evals_;
-    return get_system().EvalTimeDerivatives(context);
+    return EvalTimeDerivatives(get_system(), context);  // See below.
   }
 
   /**
@@ -1219,8 +1218,15 @@ class IntegratorBase {
   template <typename U>
   const ContinuousState<U>& EvalTimeDerivatives(const System<U>& system,
                                                 const Context<U>& context) {
-    ++num_ode_evals_;
-    return system.EvalTimeDerivatives(context);
+    const CacheEntry& entry = system.get_time_derivatives_cache_entry();
+    const CacheEntryValue& value = entry.get_cache_entry_value(context);
+    const int64_t serial_number_before = value.serial_number();
+    const ContinuousState<U>& derivs =
+        system.EvalTimeDerivatives(context);
+    if (value.serial_number() != serial_number_before) {
+      ++num_ode_evals_;  // Wasn't already cached.
+    }
+    return derivs;
   }
 
   /**
@@ -1729,7 +1735,7 @@ bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& dt_max) {
       step_size_to_attempt = next_step_size;
 
       // Reset the time, state, and time derivative at t0.
-      get_mutable_context()->set_time(current_time);
+      get_mutable_context()->SetTime(current_time);
       xc.SetFromVector(xc0_save_);
       if (get_dense_output()) {
         // Take dense output one step back to undo
@@ -1940,12 +1946,12 @@ typename IntegratorBase<T>::StepResult
   // and boundary times, may both conceptually be deemed events, the distinction
   // is made for a reason. If both an update and a boundary time occur
   // simultaneously, the following behavior should result:
-  // (1) kReachedUpdateTime is returned, (2) Simulator::StepTo() performs the
+  // (1) kReachedUpdateTime is returned, (2) Simulator::AdvanceTo() performs the
   // necessary update, (3) IntegrateNoFurtherThanTime() is called with
   // boundary_time equal to the current time in the context and returns
   // kReachedBoundaryTime, and (4) the simulation terminates. This sequence of
   // operations will ensure that the simulation state is valid if
-  // Simulator::StepTo() is called again to advance time further.
+  // Simulator::AdvanceTo() is called again to advance time further.
 
   // We now analyze the following simultaneous cases with respect to Simulator:
   //
@@ -1960,18 +1966,18 @@ typename IntegratorBase<T>::StepResult
   // { publish, boundary time, max step }
   // kReachedPublishTime will be returned, a publish will be performed followed
   // by another call to this function, which should return kReachedBoundaryTime
-  // (followed in rapid succession by StepTo(.) return).
+  // (followed in rapid succession by AdvanceTo(.) return).
   //
   // { publish, boundary time, max step }
   // kReachedPublishTime will be returned, a publish will be performed followed
   // by another call to this function, which should return kReachedBoundaryTime
-  // (followed in rapid succession by StepTo(.) return).
+  // (followed in rapid succession by AdvanceTo(.) return).
   //
   // { publish, update, boundary time, maximum step size }
   // kUpdateTimeReached will be returned, an update followed by a publish
   // will then be performed followed by another call to this function, which
   // should return kReachedBoundaryTime (followed in rapid succession by
-  // StepTo(.) return).
+  // AdvanceTo(.) return).
 
   // By default, the target time is that of the the next discrete update event.
   StepResult candidate_result = IntegratorBase<T>::kReachedUpdateTime;
@@ -1993,9 +1999,9 @@ typename IntegratorBase<T>::StepResult
 
   // If there is no continuous state, there will be no need to limit the
   // integration step size.
-  if (get_context().get_continuous_state().size() == 0) {
+  if (get_context().num_continuous_states() == 0) {
     Context<T>* context = get_mutable_context();
-    context->set_time(target_time);
+    context->SetTime(target_time);
     return candidate_result;
   }
 
@@ -2046,7 +2052,7 @@ typename IntegratorBase<T>::StepResult
   if (full_step || context_->get_time() >= target_time) {
     // Correct any rounding error that may have caused the time to overrun
     // the target time.
-    context_->set_time(target_time);
+    context_->SetTime(target_time);
 
     // If the integrator took the entire maximum step size we allowed above,
     // we report to the caller that a step constraint was hit, which may

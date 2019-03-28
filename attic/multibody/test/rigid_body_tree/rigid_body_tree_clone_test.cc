@@ -197,8 +197,8 @@ TEST_F(RigidBodyTreeCloneTest, PendulumDynamicsTest) {
   const SignalLogger<double>& original_logger = original_diagram.get_logger();
   const SignalLogger<double>& cloned_logger = cloned_diagram.get_logger();
 
-  original_simulator.StepTo(swing_period);
-  cloned_simulator.StepTo(swing_period);
+  original_simulator.AdvanceTo(swing_period);
+  cloned_simulator.AdvanceTo(swing_period);
   ASSERT_TRUE(CompareMatrices(original_logger.data(), cloned_logger.data()));
 }
 

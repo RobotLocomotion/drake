@@ -422,7 +422,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
   const double kSimDuration = lift_breaks[lift_breaks.size() - 1] + 1.0;
 
   // Simulation in two pieces -- see notes below on the test for details.
-  simulator.StepTo(kLiftStart);
+  simulator.AdvanceTo(kLiftStart);
 
   // Capture the "initial" positions of the box and the gripper finger as
   // discussed in the test notes below.
@@ -439,7 +439,7 @@ TEST_P(SchunkWsgLiftTest, BoxLiftTest) {
       interim_kinematics_results.get_body_position(finger_index);
 
   // Now run to the end of the simulation.
-  simulator.StepTo(kSimDuration);
+  simulator.AdvanceTo(kSimDuration);
 
   // Extract and log the state of the robot.
   model->CalcOutput(simulator.get_context(), state_output.get());

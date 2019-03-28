@@ -283,8 +283,8 @@ class LeafSystem : public System<T> {
 
     // Iterate all input-output pairs, populating the map with the "true" terms.
     std::multimap<int, int> pairs;
-    for (int u = 0; u < this->get_num_input_ports(); ++u) {
-      for (int v = 0; v < this->get_num_output_ports(); ++v) {
+    for (int u = 0; u < this->num_input_ports(); ++u) {
+      for (int v = 0; v < this->num_output_ports(); ++v) {
         // Ask our subclass whether it wants to directly express feedthrough.
         const optional<bool> overridden_feedthrough =
             DoHasDirectFeedthrough(u, v);
@@ -299,13 +299,6 @@ class LeafSystem : public System<T> {
     }
     return pairs;
   };
-
-  int get_num_continuous_states() const final {
-    int total = num_generalized_positions_ +
-                num_generalized_velocities_+
-                num_misc_continuous_states_;
-    return total;
-  }
 
  protected:
   // Promote so we don't need "this->" in defaults which show up in Doxygen.
@@ -455,7 +448,7 @@ class LeafSystem : public System<T> {
 
     // Append input ports to the label.
     *dot << "{";
-    for (int i = 0; i < this->get_num_input_ports(); ++i) {
+    for (int i = 0; i < this->num_input_ports(); ++i) {
       if (i != 0) *dot << "|";
       *dot << "<u" << i << ">" << this->get_input_port(i).get_name();
     }
@@ -463,7 +456,7 @@ class LeafSystem : public System<T> {
 
     // Append output ports to the label.
     *dot << " | {";
-    for (int i = 0; i < this->get_num_output_ports(); ++i) {
+    for (int i = 0; i < this->num_output_ports(); ++i) {
       if (i != 0) *dot << "|";
       *dot << "<y" << i << ">" << this->get_output_port(i).get_name();
     }
@@ -942,9 +935,9 @@ class LeafSystem : public System<T> {
   /// @name                 Declare per-step events
   /// These methods are used to declare events that are triggered whenever the
   /// Drake Simulator advances the simulated trajectory. Note that each call to
-  /// Simulator::StepTo() typically generates many trajectory-advancing substeps
-  /// of varying time intervals; per-step events are triggered for each of those
-  /// substeps.
+  /// Simulator::AdvanceTo() typically generates many trajectory-advancing
+  /// steps of varying time intervals; per-step events are triggered for each
+  /// of those steps.
   ///
   /// Per-step events are useful for taking discrete action at every point of a
   /// simulated trajectory (generally spaced irregularly in time) without
@@ -965,10 +958,10 @@ class LeafSystem : public System<T> {
   /// method queries and records the set of declared per-step events. That set
   /// does not change during a simulation. Any per-step publish events are
   /// dispatched at the end of Initialize() to publish the initial value of the
-  /// trajectory. Then every StepTo() internal substep dispatches unrestricted
-  /// and discrete update events at the start of the substep, and dispatches
-  /// publish events at the end of the substep (that is, after time advances).
-  /// This means that a per-step event at fixed substep size h behaves
+  /// trajectory. Then every AdvanceTo() internal step dispatches unrestricted
+  /// and discrete update events at the start of the step, and dispatches
+  /// publish events at the end of the step (that is, after time advances).
+  /// This means that a per-step event at fixed step size h behaves
   /// identically to a periodic event of period h, offset 0.
   ///
   /// Template arguments to these methods are inferred from the argument lists
@@ -976,7 +969,7 @@ class LeafSystem : public System<T> {
   //@{
 
   /// Declares that a Publish event should occur at initialization and at the
-  /// end of every trajectory-advancing substep and that it should invoke the
+  /// end of every trajectory-advancing step and that it should invoke the
   /// given event handler method. The handler should be a class member function
   /// (method) with this signature:
   /// @code
@@ -1019,7 +1012,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that a DiscreteUpdate event should occur at the start of every
-  /// trajectory-advancing substep and that it should invoke the given event
+  /// trajectory-advancing step and that it should invoke the given event
   /// handler method. The handler should be a class member function (method)
   /// with this signature:
   /// @code
@@ -1058,7 +1051,7 @@ class LeafSystem : public System<T> {
   }
 
   /// Declares that an UnrestrictedUpdate event should occur at the start of
-  /// every trajectory-advancing substep and that it should invoke the given
+  /// every trajectory-advancing step and that it should invoke the given
   /// event handler method. The handler should be a class member function
   /// (method) with this signature:
   /// @code
@@ -1097,9 +1090,9 @@ class LeafSystem : public System<T> {
   }
 
   /// (Advanced) Declares that a particular Event object should be dispatched at
-  /// every trajectory-advancing substep. Publish events are dispatched at
-  /// the end of initialization and at the end of each substep. Discrete- and
-  /// unrestricted update events are dispatched at the start of each substep.
+  /// every trajectory-advancing step. Publish events are dispatched at
+  /// the end of initialization and at the end of each step. Discrete- and
+  /// unrestricted update events are dispatched at the start of each step.
   /// This is the most general form for declaring per-step events and most users
   /// should use one of the other methods in this group instead.
   ///
@@ -1306,7 +1299,7 @@ class LeafSystem : public System<T> {
   /// or System::CalcUnrestrictedUpdate(const Context&, State<T>*),
   /// rather than as a response to some computation-related event (e.g.,
   /// the beginning of a period of time was reached, a trajectory advancing
-  /// substep was performed, etc.) One useful application of a forced publish:
+  /// step was performed, etc.) One useful application of a forced publish:
   /// a process receives a network message and wants to trigger message
   /// emissions in various systems embedded within a Diagram in response.
   ///
@@ -1520,7 +1513,7 @@ class LeafSystem : public System<T> {
       const BasicVector<T>& model_vector,
       optional<RandomDistribution> random_type = nullopt) {
     const int size = model_vector.size();
-    const int index = this->get_num_input_ports();
+    const int index = this->num_input_ports();
     model_input_values_.AddVectorModel(index, model_vector.Clone());
     MaybeDeclareVectorBaseInequalityConstraint(
         "input " + std::to_string(index), model_vector,
@@ -1542,7 +1535,7 @@ class LeafSystem : public System<T> {
   const InputPort<T>& DeclareAbstractInputPort(
       variant<std::string, UseDefaultName> name,
       const AbstractValue& model_value) {
-    const int next_index = this->get_num_input_ports();
+    const int next_index = this->num_input_ports();
     model_input_values_.AddModel(next_index, model_value.Clone());
     return this->DeclareInputPort(NextInputPortName(std::move(name)),
                                   kAbstractValued, 0 /* size */);
@@ -2292,6 +2285,13 @@ class LeafSystem : public System<T> {
   using SystemBase::NextInputPortName;
   using SystemBase::NextOutputPortName;
 
+  int do_get_num_continuous_states() const final {
+    int total = num_generalized_positions_ +
+        num_generalized_velocities_+
+        num_misc_continuous_states_;
+    return total;
+  }
+
   // Either clones the model_value, or else for vector ports allocates a
   // BasicVector, or else for abstract ports throws an exception.
   std::unique_ptr<AbstractValue> DoAllocateInput(
@@ -2480,7 +2480,7 @@ class LeafSystem : public System<T> {
       std::set<DependencyTicket> calc_prerequisites) {
     DRAKE_DEMAND(!calc_prerequisites.empty());
     // Create a cache entry for this output port.
-    const OutputPortIndex oport_index(this->get_num_output_ports());
+    const OutputPortIndex oport_index(this->num_output_ports());
     const CacheEntry& cache_entry = this->DeclareCacheEntry(
         "output port " + std::to_string(oport_index) + "(" + name + ") cache",
         std::move(allocator), std::move(calculator),
@@ -2563,7 +2563,7 @@ class LeafSystem : public System<T> {
           const VectorBase<T>& model_vec = get_vector_from_context(context);
           value->resize(indices.size());
           for (int i = 0; i < static_cast<int>(indices.size()); ++i) {
-            (*value)(i) = model_vec.GetAtIndex(indices[i]);
+            (*value)[i] = model_vec[indices[i]];
           }
         },
         {constraint_lower_bound, constraint_upper_bound},

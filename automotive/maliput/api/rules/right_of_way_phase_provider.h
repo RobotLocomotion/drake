@@ -1,7 +1,7 @@
 #pragma once
 
+#include "drake/automotive/maliput/api/rules/phase_ring.h"
 #include "drake/automotive/maliput/api/rules/right_of_way_phase.h"
-#include "drake/automotive/maliput/api/rules/right_of_way_phase_ring.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_optional.h"
 
@@ -11,7 +11,7 @@ namespace api {
 namespace rules {
 
 /// Abstract interface for providing the dynamic states (RightOfWayPhase::Id) of
-/// a collection of RightOfWayPhaseRings.
+/// a collection of PhaseRings.
 class RightOfWayPhaseProvider {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RightOfWayPhaseProvider);
@@ -35,9 +35,9 @@ class RightOfWayPhaseProvider {
     drake::optional<Next> next;
   };
 
-  /// Gets the phase within a specified RightOfWayPhaseRing. Returns nullopt if
+  /// Gets the phase within a specified PhaseRing. Returns nullopt if
   /// @p id is unrecognized.
-  const optional<Result> GetPhase(const RightOfWayPhaseRing::Id& id) const {
+  const optional<Result> GetPhase(const PhaseRing::Id& id) const {
     return DoGetPhase(id);
   }
 
@@ -45,7 +45,7 @@ class RightOfWayPhaseProvider {
   RightOfWayPhaseProvider() = default;
 
  private:
-  virtual optional<Result> DoGetPhase(const RightOfWayPhaseRing::Id& id)
+  virtual optional<Result> DoGetPhase(const PhaseRing::Id& id)
       const = 0;
 };
 

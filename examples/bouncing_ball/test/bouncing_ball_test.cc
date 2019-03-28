@@ -157,7 +157,7 @@ TEST_F(BouncingBallTest, Simulate) {
   const double t_final = 10.0;
   const double x0 = 1.0;
   const double v0 = 0.0;
-  const double accuracy = 1e-2;
+  const double accuracy = 1e-4;
 
   // Prepare to integrate.
   // TODO(edrumwri): Update the code below when accuracy is settable purely
@@ -194,8 +194,7 @@ TEST_F(BouncingBallTest, Simulate) {
   xc.SetAtIndex(1, v0);
 
   // Integrate.
-  simulator.StepTo(t_final);
-  simulator.StepTo(t_final);
+  simulator.AdvanceTo(t_final);
   EXPECT_EQ(simulator.get_mutable_context().get_time(), t_final);
 
   // Check against closed form solution for the bouncing ball. We anticipate

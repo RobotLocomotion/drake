@@ -50,7 +50,7 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   simulator.Initialize();
   // The Simulator schedules SignalLogger's default per-step event, which
   // performs data logging.
-  simulator.StepTo(3);
+  simulator.AdvanceTo(3);
 
   // Gets the time stamps when each data point is saved.
   const auto& t = logger->sample_times();
@@ -79,7 +79,7 @@ GTEST_TEST(TestSignalLogger, LinearSystemTest) {
   EXPECT_EQ(logger->sample_times().size(), 0);
   EXPECT_EQ(logger->data().cols(), 0);
 
-  simulator.StepTo(4.);
+  simulator.AdvanceTo(4.);
   EXPECT_EQ(logger->data().cols(), logger->num_samples());
 }
 
@@ -97,7 +97,7 @@ GTEST_TEST(TestSignalLogger, SetPublishPeriod) {
   Simulator<double> simulator(*diagram);
 
   // Run simulation
-  simulator.StepTo(1);
+  simulator.AdvanceTo(1);
 
   EXPECT_EQ(logger->num_samples(), 11);
 

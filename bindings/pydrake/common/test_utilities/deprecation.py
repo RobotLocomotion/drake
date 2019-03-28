@@ -20,9 +20,9 @@ def _check_expected(caught, expected_count):
 
 @contextlib.contextmanager
 def catch_drake_warnings(action="always", expected_count=None):
-    try:
-        with warnings.catch_warnings(record=True) as caught:
-            warnings.simplefilter(action, DrakeDeprecationWarning)
-            yield caught
-    finally:
-        _check_expected(caught, expected_count)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter(action, DrakeDeprecationWarning)
+        yield caught
+    # N.B. If an error occurs in the contained context, this will not get
+    # executed. This is intended behavior; see #10924 for more information.
+    _check_expected(caught, expected_count)

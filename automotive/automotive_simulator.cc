@@ -796,7 +796,7 @@ template <typename T>
 void AutomotiveSimulator<T>::StepBy(const T& time_step) {
   const T time = simulator_->get_context().get_time();
   SPDLOG_TRACE(drake::log(), "Time is now {}", time);
-  simulator_->StepTo(time + time_step);
+  simulator_->AdvanceTo(time + time_step);
 }
 
 template <typename T>

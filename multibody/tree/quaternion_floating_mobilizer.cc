@@ -188,7 +188,8 @@ Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
 }
 
 template <typename T>
-Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
+math::RigidTransform<T>
+QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
   DRAKE_ASSERT(q.size() == kNq);
@@ -199,7 +200,7 @@ Isometry3<T> QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
   const Vector3<T> p_FM = q.template tail<3>();  // position from Fo to Mo.
   Eigen::Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   const math::RigidTransform<T> X_FM(quaternion_FM, p_FM);
-  return X_FM.GetAsIsometry3();
+  return X_FM;
 }
 
 template <typename T>

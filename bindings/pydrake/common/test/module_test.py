@@ -4,6 +4,7 @@ import os
 import unittest
 
 import six
+from six import text_type as unicode
 
 import pydrake.common
 
@@ -45,8 +46,10 @@ class TestCommon(unittest.TestCase):
         pydrake.common.RandomDistribution.kGaussian
         pydrake.common.RandomDistribution.kExponential
 
-    def test_logging_enabled(self):
+    def test_logging(self):
         self.assertTrue(pydrake.common._module_py._HAVE_SPDLOG)
+        self.assertIsInstance(
+            pydrake.common.set_log_level(level="unchanged"), unicode)
 
     def test_random_generator(self):
         g1 = pydrake.common.RandomGenerator()

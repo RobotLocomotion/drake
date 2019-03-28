@@ -57,7 +57,7 @@ class CustomAdder(LeafSystem):
         # since they are not stored densely.
         sum = sum_data.get_mutable_value()
         sum[:] = 0
-        for i in range(context.get_num_input_ports()):
+        for i in range(context.num_input_ports()):
             input_vector = self.EvalVectorInput(context, i)
             sum += input_vector.get_value()
 
@@ -123,15 +123,15 @@ class TestCustom(unittest.TestCase):
         return system
 
     def _fix_adder_inputs(self, context):
-        self.assertEqual(context.get_num_input_ports(), 2)
+        self.assertEqual(context.num_input_ports(), 2)
         context.FixInputPort(0, BasicVector([1, 2, 3]))
         context.FixInputPort(1, BasicVector([4, 5, 6]))
 
     def test_diagram_adder(self):
         system = CustomDiagram(2, 3)
-        self.assertEqual(system.get_num_input_ports(), 2)
+        self.assertEqual(system.num_input_ports(), 2)
         self.assertEqual(system.get_input_port(0).size(), 3)
-        self.assertEqual(system.get_num_output_ports(), 1)
+        self.assertEqual(system.num_output_ports(), 1)
         self.assertEqual(system.get_output_port(0).size(), 3)
 
     def test_adder_execution(self):
@@ -139,7 +139,7 @@ class TestCustom(unittest.TestCase):
         context = system.CreateDefaultContext()
         self._fix_adder_inputs(context)
         output = system.AllocateOutput()
-        self.assertEqual(output.get_num_ports(), 1)
+        self.assertEqual(output.num_ports(), 1)
         system.CalcOutput(context, output)
         value = output.get_vector_data(0).get_value()
         self.assertTrue(np.allclose([5, 7, 9], value))
@@ -161,7 +161,7 @@ class TestCustom(unittest.TestCase):
 
         simulator = Simulator(diagram, context)
         simulator.Initialize()
-        simulator.StepTo(1)
+        simulator.AdvanceTo(1)
         # Ensure that we have the outputs we want.
         value = (diagram.GetMutableSubsystemContext(zoh, context)
                  .get_discrete_state_vector().get_value())
@@ -297,7 +297,7 @@ class TestCustom(unittest.TestCase):
         system = TrivialSystem()
         simulator = Simulator(system)
         # Stepping to 0.99 so that we get exactly one periodic event.
-        simulator.StepTo(0.99)
+        simulator.AdvanceTo(0.99)
         self.assertTrue(system.called_per_step)
         self.assertTrue(system.called_periodic)
 
@@ -339,6 +339,7 @@ class TestCustom(unittest.TestCase):
     def test_context_api(self):
         # Capture miscellaneous functions not yet tested.
         model_value = AbstractValue.Make("Hello")
+        model_vector = BasicVector([1., 2.])
 
         class TrivialSystem(LeafSystem):
             def __init__(self):
@@ -346,15 +347,18 @@ class TestCustom(unittest.TestCase):
                 self._DeclareContinuousState(1)
                 self._DeclareDiscreteState(2)
                 self._DeclareAbstractState(model_value.Clone())
+                self._DeclareAbstractParameter(model_value.Clone())
+                self._DeclareNumericParameter(model_vector.Clone())
 
         system = TrivialSystem()
         context = system.CreateDefaultContext()
         self.assertTrue(
             context.get_state() is context.get_mutable_state())
+        self.assertEqual(context.num_continuous_states(), 1)
         self.assertTrue(
             context.get_continuous_state_vector() is
             context.get_mutable_continuous_state_vector())
-        self.assertEqual(context.get_num_discrete_state_groups(), 1)
+        self.assertEqual(context.num_discrete_state_groups(), 1)
         self.assertTrue(
             context.get_discrete_state_vector() is
             context.get_mutable_discrete_state_vector())
@@ -370,7 +374,7 @@ class TestCustom(unittest.TestCase):
         self.assertTrue(
             context.get_mutable_discrete_state(0) is
             context.get_mutable_discrete_state().get_vector(0))
-        self.assertEqual(context.get_num_abstract_states(), 1)
+        self.assertEqual(context.num_abstract_states(), 1)
         self.assertTrue(
             context.get_abstract_state() is
             context.get_mutable_abstract_state())
@@ -380,7 +384,7 @@ class TestCustom(unittest.TestCase):
         self.assertEqual(
             context.get_abstract_state(0).get_value(), model_value.get_value())
 
-        # Check AbstractValues API.
+        # Check abstract state API (also test AbstractValues).
         values = context.get_abstract_state()
         self.assertEqual(values.size(), 1)
         self.assertEqual(
@@ -391,7 +395,17 @@ class TestCustom(unittest.TestCase):
         with catch_drake_warnings(expected_count=1):
             values.CopyFrom(values.Clone())
 
-        # - Check diagram context accessors.
+        # Check parameter accessors.
+        self.assertEqual(system.num_abstract_parameters(), 1)
+        self.assertEqual(
+            context.get_abstract_parameter(index=0).get_value(),
+            model_value.get_value())
+        self.assertEqual(system.num_numeric_parameter_groups(), 1)
+        np.testing.assert_equal(
+            context.get_numeric_parameter(index=0).get_value(),
+            model_vector.get_value())
+
+        # Check diagram context accessors.
         builder = DiagramBuilder()
         builder.AddSystem(system)
         diagram = builder.Build()
@@ -494,10 +508,10 @@ class TestCustom(unittest.TestCase):
             system = CustomAbstractSystem()
             context = system.CreateDefaultContext()
 
-            self.assertEqual(context.get_num_input_ports(), 1)
+            self.assertEqual(context.num_input_ports(), 1)
             context.FixInputPort(0, AbstractValue.Make(expected_input_value))
             output = system.AllocateOutput()
-            self.assertEqual(output.get_num_ports(), 1)
+            self.assertEqual(output.num_ports(), 1)
             system.CalcOutput(context, output)
             value = output.get_data(0)
             self.assertEqual(value.get_value(), expected_output_value)

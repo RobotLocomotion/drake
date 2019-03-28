@@ -36,6 +36,7 @@ drake_cc_package_library(
         ":is_approx_equal_abstol",
         ":is_cloneable",
         ":is_less_than_comparable",
+        ":name_value",
         ":nice_type_name",
         ":pointer_cast",
         ":polynomial",
@@ -68,6 +69,7 @@ drake_cc_library(
         "drake_assertion_error.h",
         "drake_copyable.h",
         "drake_deprecated.h",
+        "drake_nodiscard.h",
         "drake_optional.h",
         "drake_throw.h",
         "drake_variant.h",
@@ -347,6 +349,14 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "name_value",
+    hdrs = ["name_value.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "nice_type_name",
     srcs = ["nice_type_name.cc"],
     hdrs = ["nice_type_name.h"],
@@ -566,6 +576,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":autodiff",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -727,6 +738,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "drake_nodiscard_test",
+    deps = [
+        ":essential",
+        ":unused",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_optional_test",
     deps = [
         ":essential",
@@ -836,6 +855,13 @@ drake_cc_googletest(
     deps = [
         ":essential",
         ":is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_googletest(
+    name = "name_value_test",
+    deps = [
+        ":name_value",
     ],
 )
 

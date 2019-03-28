@@ -55,6 +55,7 @@ using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using math::RigidTransform;
+using math::RigidTransformd;
 using math::RollPitchYaw;
 using math::RotationMatrix;
 using multibody::benchmarks::Acrobot;
@@ -93,7 +94,7 @@ class MultibodyPlantTester {
       const MultibodyPlant<double>& plant, const Context<double>& context,
       const std::vector<PenetrationAsPointPair<double>>& point_pairs,
       MatrixX<double>* Jn, MatrixX<double>* Jt,
-      std::vector<Matrix3<double>>* R_WC_set) {
+      std::vector<RotationMatrix<double>>* R_WC_set) {
     plant.CalcNormalAndTangentContactJacobians(
         context, point_pairs, Jn, Jt, R_WC_set);
   }
@@ -272,7 +273,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
       "calls to this method must happen before Finalize\\(\\).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->AddJoint<RevoluteJoint>(
-          "AnotherJoint", link1, {}, link2, {}, Vector3d::UnitZ()),
+          "AnotherJoint", link1, nullopt, link2, nullopt, Vector3d::UnitZ()),
       std::logic_error,
       "Post-finalize calls to '.*' are not allowed; "
       "calls to this method must happen before Finalize\\(\\).");
@@ -880,8 +881,8 @@ class SphereChainScenario {
     // Add hinges between spheres.
     for (int i = 0; i < sphere_count - 1; ++i) {
       plant_->AddJoint<RevoluteJoint>(
-          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i], {},
-          *spheres_[i + 1], {}, Vector3d::UnitY());
+          "hinge" + to_string(i) + "_" + to_string(i + 1), *spheres_[i],
+          nullopt, *spheres_[i + 1], nullopt, Vector3d::UnitY());
     }
 
     // Body with no registered frame.
@@ -1137,10 +1138,12 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
 
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
+  // Test the API taking a RigidTransform.
+  auto X_WS1 = RigidTransformd(Vector3d(-x_offset, radius, 0.0));
+
   // Place sphere 1 on top of the ground, with offset x = -x_offset.
   plant.SetFreeBodyPose(
-      context.get(), sphere1,
-      Isometry3d(Translation3d(-x_offset, radius, 0.0)));
+      context.get(), sphere1, X_WS1);
   // Place sphere 2 on top of the ground, with offset x = x_offset.
   plant.SetFreeBodyPose(
       context.get(), sphere2,
@@ -1277,7 +1280,7 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   unique_ptr<LinearSystem<double>> linearized_pendulum =
       Linearize(*pendulum, *context,
                 pendulum->get_actuation_input_port().get_index(),
-                systems::kNoOutput);
+                systems::OutputPortSelection::kNoOutput);
 
   // Compute the expected solution by hand.
   Eigen::Matrix2d A;
@@ -1296,7 +1299,8 @@ GTEST_TEST(MultibodyPlantTest, LinearizePendulum) {
   pin.set_angular_rate(context.get(), 0.0);
   linearized_pendulum = Linearize(
       *pendulum, *context,
-      pendulum->get_actuation_input_port().get_index(), systems::kNoOutput);
+      pendulum->get_actuation_input_port().get_index(),
+      systems::OutputPortSelection::kNoOutput);
   // Compute the expected solution by hand.
   A << 0.0, 1.0,
       -parameters.g() / parameters.l(), domegadot_domega;
@@ -1495,6 +1499,14 @@ GTEST_TEST(MultibodyPlantTest, ScalarConversionConstructor) {
       plant_autodiff.GetBodyByName("link2")).size(), link2_num_visuals);
   EXPECT_EQ(plant_autodiff.GetVisualGeometriesForBody(
       plant_autodiff.GetBodyByName("link3")).size(), link3_num_visuals);
+  for (const auto& link_name : {"link1", "link2", "link3"}) {
+    auto collision_geometries = plant_autodiff.GetCollisionGeometriesForBody(
+        plant_autodiff.GetBodyByName(link_name));
+    for (const auto& geometry : collision_geometries) {
+      EXPECT_EQ(plant_autodiff.default_coulomb_friction(geometry),
+                plant.default_coulomb_friction(geometry));
+    }
+  }
 
   // Make sure the geometry ports were included in the autodiffed plant.
   EXPECT_NO_THROW(plant_autodiff.get_geometry_query_input_port());
@@ -1712,7 +1724,7 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       const MultibodyPlant<T>& plant_on_T,
       const Context<T>& context_on_T,
       const std::vector<PenetrationAsPointPair<double>>& pairs_set,
-      const std::vector<Matrix3<double>>& R_WC_set) const {
+      const std::vector<RotationMatrix<double>>& R_WC_set) const {
     VectorX<T> vt(2 * pairs_set.size());
     int icontact = 0;
     for (const auto& pair : pairs_set) {
@@ -1748,8 +1760,8 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
       // contains the versors of C's basis, expressed in the world frame.
       // In particular, the first two columns corresponds to the versors tangent
       // to the contact plane.
-      const Vector3<T> that1_W = R_WC_set[icontact].col(0).cast<T>();
-      const Vector3<T> that2_W = R_WC_set[icontact].col(1).cast<T>();
+      const Vector3<T> that1_W = R_WC_set[icontact].matrix().col(0).cast<T>();
+      const Vector3<T> that2_W = R_WC_set[icontact].matrix().col(1).cast<T>();
 
       // Compute the relative velocity of B in A and obtain its components
       // in the contact frame C. The tangential velocities correspond to the
@@ -1780,7 +1792,7 @@ TEST_F(MultibodyPlantContactJacobianTests, NormalAndTangentJacobian) {
 
   // Store the orientation of the contact frames so that we can use them later
   // to compute the same Jacobian using autodifferentiation.
-  std::vector<Matrix3<double>> R_WC_set;
+  std::vector<RotationMatrix<double>> R_WC_set;
 
   // Compute separation velocities Jacobian.
   MatrixX<double> N, D;

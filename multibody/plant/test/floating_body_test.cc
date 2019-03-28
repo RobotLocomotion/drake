@@ -164,7 +164,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
 
   // Simulate:
-  simulator.StepTo(kEndTime);
+  simulator.AdvanceTo(kEndTime);
 
   // Get solution:
   const math::RigidTransformd X_WB =
@@ -289,7 +289,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   const math::RigidTransformd X_WB(q_WB, p_WB);
   EXPECT_NO_THROW(
       model.SetFreeBodyPoseOrThrow(
-          free_body_plant.body(), X_WB.GetAsIsometry3(), context.get()));
+          free_body_plant.body(), X_WB, context.get()));
 
   // Set velocities.
   const Vector3d w_WB(1.0, 2.0, 3.0);

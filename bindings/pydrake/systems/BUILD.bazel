@@ -1,7 +1,6 @@
 # -*- python -*-
 
 load("@drake//tools/install:install.bzl", "install")
-load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "drake_pybind_library",
@@ -18,6 +17,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -99,6 +99,7 @@ drake_pybind_library(
         ":systems_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:drake_optional_pybind",
+        "//bindings/pydrake/common:drake_variant_pybind",
     ],
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
@@ -311,6 +312,7 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake/examples:pendulum_py",
+        "//bindings/pydrake/examples:rimless_wheel_py",
     ],
 )
 
@@ -321,7 +323,6 @@ drake_py_binary(
     data = [
         "//examples/multibody/cart_pole:cart_pole.sdf",
     ],
-    test_rule_args = ["--test"],
     test_rule_timeout = "moderate",
     deps = [
         ":drawing_py",
@@ -408,6 +409,7 @@ drake_py_unittest(
         ":meshcat_visualizer_py",
         ":test_util_py",
         "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake:perception_py",
         "//bindings/pydrake/multibody",
     ],
 )
@@ -457,7 +459,4 @@ drake_py_unittest(
     ],
 )
 
-add_lint_tests(
-    cpplint_data = ["//bindings/pydrake:.clang-format"],
-    enable_clang_format_lint = True,
-)
+add_lint_tests_pydrake()
