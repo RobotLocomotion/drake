@@ -15,8 +15,8 @@ class TwoFreeSpheresTest : public ::testing::Test {
  public:
   TwoFreeSpheresTest() {
     std::vector<SphereSpecification> spheres;
-    spheres.emplace_back(0.1, 1E3, 0.8, 0.7);
-    spheres.emplace_back(0.2, 1E3, 0.9, 0.7);
+    spheres.emplace_back(0.1, 1E3, CoulombFriction<double>(0.8, 0.7));
+    spheres.emplace_back(0.2, 1E3, CoulombFriction<double>(0.9, 0.7));
     spheres_ = std::make_unique<FreeSpheresAndBoxes<AutoDiffXd>>(
         spheres, std::vector<BoxSpecification>() /* no boxes */,
         CoulombFriction<double>(1, 0.8));
@@ -144,7 +144,8 @@ TEST_F(TwoFreeSpheresTest, Constructor) {
   // Test constructor of StaticEquilibriumConstraint
   EXPECT_EQ(static_equilibrium_binding.evaluator()->num_vars(),
             23 /* 14 for position, 9 for lambda */);
-  EXPECT_EQ(static_equilibrium_binding.evaluator()->num_constraints(), 12);
+  EXPECT_EQ(static_equilibrium_binding.evaluator()->num_constraints(),
+             plant.num_velocities());
   EXPECT_TRUE(
       CompareMatrices(static_equilibrium_binding.evaluator()->lower_bound(),
                       Eigen::VectorXd::Zero(12)));

@@ -12,9 +12,9 @@ class ContactWrenchEvaluatorTest : public ::testing::Test {
  public:
   ContactWrenchEvaluatorTest() {
     std::vector<SphereSpecification> spheres;
-    spheres.emplace_back(0.1, 1E3, 0.5, 0.4);
-    spheres.emplace_back(0.2, 2E3, 1, 0.9);
-    spheres.emplace_back(0.3, 2E3, 1, 0.8);
+    spheres.emplace_back(0.1, 1E3, CoulombFriction<double>(0.5, 0.4));
+    spheres.emplace_back(0.2, 2E3, CoulombFriction<double>(1, 0.9));
+    spheres.emplace_back(0.3, 2E3, CoulombFriction<double>(1, 0.8));
     std::vector<BoxSpecification> boxes;
 
     const CoulombFriction<double> ground_friction(1.5, 0.9);
@@ -42,7 +42,7 @@ TEST_F(ContactWrenchEvaluatorTest,
   const Vector3<AutoDiffXd> lambda_val =
       math::initializeAutoDiff(Eigen::Vector3d(1, 2, 3));
   const VectorX<AutoDiffXd> x_value =
-      evaluator.SetVariableValues(*plant_context, lambda_val);
+      evaluator.ComposeVariableValues(*plant_context, lambda_val);
   AutoDiffVecXd y;
   evaluator.Eval(x_value, &y);
   EXPECT_EQ(math::autoDiffToValueMatrix(y.head<3>()), Eigen::Vector3d::Zero());

@@ -8,10 +8,10 @@
 namespace drake {
 namespace multibody {
 // An abstract class that computes the contact wrench between a pair of
-// geometry. The input to the Eval function is λ, the user-specified
-// parameterization of the contact wrench. The output is the Fapp_B_W, namely
-// the wrench (torque/force) applied at the witness point of geometry B from
-// geometryA, expressed in the world frame.
+// geometries. The input to the Eval function is q and λ, where λ is the
+// user-specified parameterization of the contact wrench. The output is the
+// Fapp_AB_W, namely the 6 x 1 wrench (torque/force) applied at the witness
+// point of geometry B from geometry A, expressed in the world frame.
 class ContactWrenchEvaluator : public solvers::EvaluatorBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchEvaluator)
@@ -23,7 +23,7 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
   template <typename T, typename Derived>
   typename std::enable_if<std::is_same<T, typename Derived::Scalar>::value,
                           VectorX<T>>::type
-  SetVariableValues(const systems::Context<T>& context,
+  ComposeVariableValues(const systems::Context<T>& context,
                     const Derived& lambda_value) const {
     VectorX<T> x(num_vars());
     x.template head(plant_->num_positions()) = plant_->GetPositions(context);
@@ -36,12 +36,22 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
    */
   int num_lambda() const { return num_lambda_; }
 
+  /**
+   * Returns the pair of geometry IDs.
+   */
   const std::pair<geometry::GeometryId, geometry::GeometryId>&
   geometry_id_pair() const {
     return geometry_id_pair_;
   }
 
  protected:
+  /**
+   * Each derived class should call this constructor.
+   * @param plant The robot on which the contact wrench is computed.
+   * @param geometry_id_pair The pair of geometries for which the contact wrench
+   * is computed. Notice that the order of the geometries in the pair should
+   * match with that in SceneGraphInspector::GetCollisionCandidates().
+   */
   ContactWrenchEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context, int num_lambda,
@@ -51,19 +61,29 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
         plant_(plant),
         context_(context),
         geometry_id_pair_{geometry_id_pair},
-        num_lambda_{num_lambda} {}
+        num_lambda_{num_lambda} {
+    DRAKE_DEMAND(plant);
+    DRAKE_DEMAND(context);
+  }
 
  protected:
+  /**
+   * Extract the generalized configuration q from x (x is used in Eval(x, &y)).
+   */
   template <typename Derived>
   Eigen::VectorBlock<const Derived> q(const Derived& x) const {
     return x.head(plant_->num_positions());
   }
 
+  /**
+   * Extract lambda from x (x is used in Eval(x, &y)).
+   */
   template <typename Derived>
   Eigen::VectorBlock<const Derived> lambda(const Derived& x) const {
     return x.tail(num_lambda_);
   }
 
+  /** Getter for the mutable context */
   systems::Context<AutoDiffXd>* get_mutable_context() const { return context_; }
 
  private:
@@ -74,13 +94,22 @@ class ContactWrenchEvaluator : public solvers::EvaluatorBase {
 };
 
 /**
- * The contact wrench is τ_B_W = 0, f_B_W = λ
+ * The contact wrench is τ_AB_W = 0, f_AB_W = λ
+ * Namely we assume that λ is the contact force from A to B, applied directly
+ * at B's witness point.
  */
 class ContactWrenchFromForceInWorldFrameEvaluator
     : public ContactWrenchEvaluator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ContactWrenchFromForceInWorldFrameEvaluator)
 
+  /**
+   * @param plant The robot on which the contact wrench is computed.
+   * @param context The context of the robot.
+   * @param geometry_id_pair The pair of geometries for which the contact wrench
+   * is computed. Notice that the order of the geometries in the pair should
+   * match with that in SceneGraphInspector::GetCollisionCandidates().
+   */
   ContactWrenchFromForceInWorldFrameEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,
       systems::Context<AutoDiffXd>* context,
