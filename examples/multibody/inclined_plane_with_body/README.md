@@ -1,64 +1,45 @@
 ## Simulate slip/stick of a body (e.g., sphere or block) on an inclined plane.
 
 ### Description
+
 This example simulates the motion of a rigid body B (e.g., a sphere or a block)
 on an inclined-plane A.  You can simulate a uniform-density sphere B rolling 
 down an inclined-plane A or simulate a block B that is sticking or slipping on 
 an inclined-plane A.  The inclined-plane can be modeled as either an infinite 
 half-space or as a finite box (so the block can fall off the inclined-plane).
 
-### 1. How do I run the visualizer?
-If the visualizer has already been built, you can run it by opening a terminal,
-change to the drake directory, and typing:
+### Building and running this example
+
+First complete the one-time setup instructions, if you have not already done so:
+https://drake.mit.edu/from_source.html#mandatory-platform-specific-instructions
+
+Open a terminal in the `drake` workspace, and type commands as shown below.
+
+Build the example like so:
 ```
-./bazel-bin/tools/drake_visualizer &
+bazel build //tools:drake_visualizer //examples/multibody/inclined_plane_with_body
 ```
 
-#### Optional: How do I build the visualizer?
-If the visualizer needs to be built, open a terminal, change to the drake
-directory, and type:
+Run the example like so:
 ```
-bazel build //tools:drake_visualizer
+bazel-bin/tools/drake_visualizer &
+bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body
 ```
-Note: This command requires that bazel has been installed.  If this command is
-successful, do step #1 to see the visualizer on your computer screen.  
-Note: General instructions for using bazel are at:
-```https://drake.mit.edu/bazel.html#using-bazel```
 
-### 2. How do I run this simulation (with visualization)?
-To run this simulation, open a terminal, change to the drake directory, and
-run this example with its default parameters by typing:
-```
-./bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body
-```
-Note: If the visualizer was launched prior to this step, you should see the
-simulation on your computer screen.
-
-### 3. How do I run this simulation using command-line arguments?
-To simulate body B as a block that has 4 contacting spheres welded to its
+Alternatively,
+to simulate body B as a block that has 4 contacting spheres welded to its
 lowest four corners on a 30 degree inclined-plane A (modeled as a half-space), 
 pass command line arguments to the executable by typing:
 ```
-./bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -slope_degrees=30 -bodyB_type='block_with_4Spheres'
+bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -slope_degrees=30 -bodyB_type=block_with_4Spheres
 ```
 
-### 4. How do I see a list of all possible command-line arguments?
-Open a terminal, change to the drake directory, and then type:
+To see a list of all possible command-line arguments:
 ```
-./bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -help
+bazel-bin/examples/multibody/inclined_plane_with_body/inclined_plane_with_body -help
 ```
 
-#### Optional: How do I build this simulation?
-There is no need to build the simulation unless it has not been built or you
-want to change the underlying source code. To build this simulation, open a 
-terminal, change to the drake directory, and build this example by typing:
-```
-bazel build examples/multibody/inclined_plane_with_body:inclined_plane_with_body
-```
-See step #2 or #3 for instructions on how to run this simulation.
-
-
-### 5. How are the coefficients of friction used?
+### How are the coefficients of friction used?
 1. A coefficient of friction is assigned separately to each object (a default
    value is assigned or you may assign a value via command-line arguments).
    Thereafter, a "combining equation" calculates the coefficient of friction
