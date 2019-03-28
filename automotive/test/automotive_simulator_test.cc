@@ -377,14 +377,14 @@ GTEST_TEST(AutomotiveSimulatorTest, TestIdmControlledSimpleCarAutoDiff) {
   auto plant_simulator =
       std::make_unique<systems::Simulator<double>>(plant);
 
-  plant_simulator->StepTo(0.5);
+  plant_simulator->AdvanceTo(0.5);
 
   // Converts to AutoDiffXd.
   auto plant_ad = plant.ToAutoDiffXd();
   auto plant_ad_simulator =
       std::make_unique<systems::Simulator<AutoDiffXd>>(*plant_ad);
 
-  plant_ad_simulator->StepTo(0.5);
+  plant_ad_simulator->AdvanceTo(0.5);
 }
 
 // Returns the x-position of the vehicle based on an lcmt_viewer_draw message.

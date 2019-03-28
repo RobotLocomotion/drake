@@ -155,7 +155,7 @@ GTEST_TEST(TestAccelerometer, TestSensorAttachedToSwingingPendulum) {
   const RigidBodyTree<double>& tree = diagram.get_tree();
 
   const double kStepToTime = 0.01;
-  simulator.StepTo(kStepToTime);
+  simulator.AdvanceTo(kStepToTime);
 
   const Context<double>& simulator_context = simulator.get_context();
   const Context<double>& logger_context =

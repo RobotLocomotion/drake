@@ -287,7 +287,7 @@ int do_main() {
   simulator.set_target_realtime_rate(0);
   simulator.get_mutable_integrator()->set_maximum_step_size(h);
   simulator.Initialize();
-  simulator.StepTo(kTimes.back());
+  simulator.AdvanceTo(kTimes.back());
 
   // Comparing the final position and orientation of the object in world frame
   // to expected values.

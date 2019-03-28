@@ -15,7 +15,7 @@ double RandomSimulation(const SimulatorFactory& make_simulator,
   const System<double>& system = simulator->get_system();
   system.SetRandomContext(&simulator->get_mutable_context(), generator);
 
-  simulator->StepTo(final_time);
+  simulator->AdvanceTo(final_time);
 
   return output(system, simulator->get_context());
 }

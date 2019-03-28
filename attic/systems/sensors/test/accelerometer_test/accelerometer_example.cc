@@ -46,7 +46,7 @@ int exec(int argc, char* argv[]) {
   Simulator<double> simulator(diagram, std::move(context));
   simulator.Initialize();
   simulator.set_target_realtime_rate(1);
-  simulator.StepTo(FLAGS_simulation_sec);
+  simulator.AdvanceTo(FLAGS_simulation_sec);
   return 0;
 }
 

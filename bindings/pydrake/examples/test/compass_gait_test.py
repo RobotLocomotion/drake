@@ -55,5 +55,5 @@ class TestCompassGait(unittest.TestCase):
 
         # Simulate (and make sure the state actually changes).
         initial_state = state.CopyToVector()
-        simulator.StepTo(1.0)
+        simulator.AdvanceTo(1.0)
         self.assertFalse((state.CopyToVector() == initial_state).any())

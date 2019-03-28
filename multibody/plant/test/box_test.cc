@@ -106,7 +106,7 @@ GTEST_TEST(Box, UnderStiction) {
   Simulator<double> simulator(*diagram, std::move(diagram_context));
   simulator.set_publish_every_time_step(true);
   simulator.Initialize();
-  simulator.StepTo(simulation_time);
+  simulator.AdvanceTo(simulation_time);
 
   auto VerifyContactResults = [&](const MultibodyPlant<double>& the_plant,
                                   const Context<double>& the_context) {

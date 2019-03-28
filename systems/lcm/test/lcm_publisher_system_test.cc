@@ -251,7 +251,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublish) {
 
   // Ensure that the integrator takes at least a few steps.
   for (double time = 0; time < 1; time += 0.25)
-    simulator.StepTo(time);
+    simulator.AdvanceTo(time);
 
   // Check that we get exactly the number of publishes desired: one (at
   // initialization) plus another for each step.
@@ -290,7 +290,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPerStepPublishTrigger) {
   // Since there is no internal continuous state for the system, the integrator
   // will not subdivide its steps.
   for (double time = 0.0; time < 1; time += 0.25)
-    simulator.StepTo(time);
+    simulator.AdvanceTo(time);
 
   // Check that we get exactly the number of publishes desired: one (at
   // initialization) plus another for each step.
@@ -356,7 +356,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriod) {
   EXPECT_EQ(transmission_count, 1);
 
   for (double time = 0; time < 4; time += 0.01) {
-    simulator.StepTo(time);
+    simulator.AdvanceTo(time);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
     // Note that the expected time is in milliseconds.
     const double expected_time =
@@ -402,7 +402,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodTrigger) {
   EXPECT_EQ(transmission_count, 1);
 
   for (double time = 0.0; time < 4; time += 0.01) {
-    simulator.StepTo(time);
+    simulator.AdvanceTo(time);
     EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
   }
 
@@ -448,7 +448,7 @@ GTEST_TEST(LcmPublisherSystemTest, TestPublishPeriodDeprecated) {
 
   // Step the simulator to one second.
   const double time = 1.0;
-  simulator.StepTo(time);
+  simulator.AdvanceTo(time);
   EXPECT_NEAR(simulator.get_mutable_context().get_time(), time, 1e-10);
   // Note that the expected time is in milliseconds.
   const double expected_time =

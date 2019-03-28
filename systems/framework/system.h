@@ -797,8 +797,8 @@ class System : public SystemBase {
     return time;
   }
 
-  /// This method is called by Simulator::Initialize() to gather all
-  /// update and publish events that are to be handled in StepTo() at the point
+  /// This method is called by Simulator::Initialize() to gather all update
+  /// and publish events that are to be handled in AdvanceTo() at the point
   /// before Simulator integrates continuous state. It is assumed that these
   /// events remain constant throughout the simulation. The "step" here refers
   /// to the major time step taken by the Simulator. During every simulation

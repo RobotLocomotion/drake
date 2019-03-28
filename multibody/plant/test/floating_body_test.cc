@@ -163,7 +163,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_EQ(integrator->get_target_accuracy(), kAccuracy);
 
   // Simulate:
-  simulator.StepTo(kEndTime);
+  simulator.AdvanceTo(kEndTime);
 
   // Get solution:
   const math::RigidTransformd X_WB =

@@ -381,7 +381,7 @@ int do_main() {
   simulator.set_publish_every_time_step(true);
   simulator.set_target_realtime_rate(FLAGS_target_realtime_rate);
   simulator.Initialize();
-  simulator.StepTo(FLAGS_simulation_time);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   if (FLAGS_time_stepping) {
     fmt::print("Used time stepping with dt={}\n", FLAGS_max_time_step);
